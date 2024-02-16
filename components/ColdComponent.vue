@@ -2,7 +2,7 @@
 
 <template>
   <div>
-    Component: ColdComponent; Version: 2024feb15b
+    Component: ColdComponent; Version: 2024feb15f
   </div>
 </template>
 
