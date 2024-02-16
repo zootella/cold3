@@ -4,6 +4,8 @@ Part of the larger experiment organized at [coldstart](https://github.com/zootel
 
 This is 🍺 [cold3.cc](https://cold3.cc/) on [Cloudflare](https://developers.cloudflare.com/) using [Nuxt](https://nuxt.com/).
 
+Notes:
+
 ## Make a new site on Cloudflare
 
 ```
@@ -24,7 +26,10 @@ $ npx wrangler whoami
 $ npx wrangler login
 ```
 
- * Fixed a mess on Windows where wrangler was installed globally, and had an expired or incorrectly permissioned OAuth token. Wranger should be installed in the project, only. Deleted `C:\Users\UserName\AppData\Roaming\npm\wrangler.ps1` and `C:\Users\UserName\.wrangler`. Also deleted `cold3/.wrangler` and `cold3/node_modules` and repeated `npm install` to fix this.
+Previously fixed a mess on Windows where wrangler was installed globally, and had an expired or incorrectly permissioned OAuth token.
+Wranger should be installed in the project, only.
+Deleted `C:\Users\UserName\AppData\Roaming\npm\wrangler.ps1` and `C:\Users\UserName\.wrangler`.
+Also deleted `cold3/.wrangler` and `cold3/node_modules` and repeated `npm install`.
 
 ## Make a new repo on GitHub
 
@@ -34,7 +39,8 @@ $ git branch -M main
 $ git push -u origin main
 ```
 
- * GitHub, *Repositories*, *New*. Type name and description, but start with no readme, gitignore, or license to make a completely blank repository
+GitHub, *Repositories*, *New*.
+Type name and description, but start with no readme, gitignore, or license to make a completely blank repository
 
 ## Push to GitHub
 
@@ -45,7 +51,7 @@ $ git commit -a -n -m "note"
 $ git push
 ```
 
- * Pushing to GitHub does not start Cloudflare deploy; they're separate and I like that better.
+Pushing to GitHub does not start Cloudflare deploy; they're separate and I like that better.
 
 ## Run locally and deploy to Cloudflare
 
@@ -56,7 +62,7 @@ $ npm run pages:deploy
 ```
 
  * Unlike Amplify, builds locally and pushes static assets, which is faster
- * `dev` runs Vite for Nuxt, while `pages:dev` and `pages:deploy` run Wrangler, which runs Vite for Nuxt
+ * `dev` runs Vite for Nuxt, while `pages:dev` and `pages:deploy` run Wrangler, which in turn runs Vite for Nuxt
  * `pages:dev` works great everywhere; in React-land, a problem between Wrangler and webpack breaks local development
 
 ## Nuxt commands
@@ -88,7 +94,7 @@ AAAA   www       100::            Proxied  Auto
 CNAME  cold3.cc  cold3.pages.dev  Proxied  Auto
 ```
 
-During DNS propegation, Cloudflare had the button *Check nameservers now*, and after, the message *Good news! Cloudflare is now protecting your site*.
+During DNS propegation, Cloudflare had a button *Check nameservers now*, and after, the message *Good news! Cloudflare is now protecting your site*.
 Text said wait 24 hours, but things started working in less than 30 minutes.
 After that was the *Quick Start Guide*, wizard steps where you configured:
 
@@ -102,7 +108,7 @@ Then in the *Workers & Pages* area, *Custom Domains*, *Set up a custom domain*.
 There was a note about changing an `A` record to a `CNAME` record, then *Activate domain*.
 A row expanded with more stuff to click, ignored that, in less than a minute the yellow *Verifying* changed to green *Active*.
 
-These steps were enough to get `http://` to redirect to `https://`, but you had to do more to get `www.cold3.cc` to redirect to just `cold3.cc`:
+These steps were enough to get `http://` to redirect to `https://`, but more was necessary to get `www.cold3.cc` to redirect to just `cold3.cc`:
 Dash top, left column, *Bulk Redirects*.
 One rule will contain one list, and that list will contain one or several redirects.
 Make one like this:
