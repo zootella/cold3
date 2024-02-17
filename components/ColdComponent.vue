@@ -25,12 +25,17 @@ function mySubmit() {
 
 const logText = ref("");
 
+/*
+const { data } = await useFetch('/api/hello');
+console.log(data.hello);
+*/
+
 </script>
 <template>
 
 <p>
 	Loaded {{ sayTick(tick1) }}.
-	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb16c.
+	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb16d.
 </p>
 
 <div>
