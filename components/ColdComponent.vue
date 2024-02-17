@@ -2,6 +2,8 @@
 
 import { ref } from "vue";
 
+const tick1 = ref(Date.now());
+
 function sayTick(tick) {
 	if (!tick) return "(not yet)";//don't render jan1 1970 as a time something actually happened
 	var date = new Date(tick);//create a Date object using the given tick count
@@ -27,7 +29,7 @@ const logText = ref("");
 <template>
 
 <p>
-	Loaded {{ sayTick(Date.now()) }}.
+	Loaded {{ sayTick(tick1) }}.
 	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb16c.
 </p>
 
