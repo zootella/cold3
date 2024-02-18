@@ -25,17 +25,17 @@ function mySubmit() {
 
 const logText = ref("");
 
-/*
-const { data } = await useFetch('/api/hello');
-console.log(data.hello);
-*/
+const r = await useFetch("/api/mirror");
+console.log("got from use fetch, message: " + r.data.value.message);
+console.log("secret length: " + r.data.value.secretLength);
+console.log("server tick: " + sayTick(r.data.value.serverTick));
 
 </script>
 <template>
 
 <p>
 	Loaded {{ sayTick(tick1) }}.
-	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb16d.
+	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb17g.
 </p>
 
 <div>
