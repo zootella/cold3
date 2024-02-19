@@ -22,3 +22,6 @@ logs
 .env
 .env.*
 !.env.example
+
+# Added this for cloudflare
+# .wrangler
