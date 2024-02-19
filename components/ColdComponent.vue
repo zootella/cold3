@@ -36,7 +36,7 @@ console.log("server tick: " + sayTick(r.data.value.serverTick));
 
 <p>
 	Loaded {{ sayTick(tick1) }}.
-	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb17g.
+	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb18a.
 </p>
 
 <div>

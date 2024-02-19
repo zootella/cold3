@@ -5,7 +5,7 @@
 	<NuxtLink to="/">Root</NuxtLink>{{" "}}
 	<NuxtLink to="/page1">Page 1</NuxtLink>{{" "}}
 	<NuxtLink to="/page2">Page 2</NuxtLink>{{" "}}
-	on 404 page
+	on error page
 </p>
 
 </div>
