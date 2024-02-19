@@ -127,13 +127,23 @@ Here are some links to test `http -> https` and `www -> (no subdomain)`.
 The redirects need to keep the route.
 
 No route:
-[plain, has www](http://www.cold3.cc)
-[plain, no subdomain](http://cold3.cc)
+[plain, has www](http://www.cold3.cc),
+[plain, no subdomain](http://cold3.cc),
 [secure, has www](https://www.cold3.cc) should all redirect to
 [secure, no subdomain](https://cold3.cc)
 
 Route to `page1`:
-[plain, has www](http://www.cold3.cc/page1)
-[plain, no subdomain](http://cold3.cc/page1)
+[plain, has www](http://www.cold3.cc/page1),
+[plain, no subdomain](http://cold3.cc/page1),
 [secure, has www](https://www.cold3.cc/page1) should all redirect to
 [secure, no subdomain](https://cold3.cc/page1)
+
+To get this working, you went into another part of the Cloudflare dashboard.
+Dash top, *Websites*, `cold3.cc`, *Rules*, *Page Rules*, this uses one of your three free ones.
+
+```
+www.cold3.cc/*       url
+Forwarding URL       setting
+301                  status code
+https://cold3.cc/$1  destination
+```
