@@ -32,6 +32,7 @@ console.log("server tick: " + sayTick(r.data.value.serverTick));
 
 </script>
 <template>
+<div>
 
 <p>
 	Loaded {{ sayTick(tick1) }}.
@@ -47,6 +48,7 @@ console.log("server tick: " + sayTick(r.data.value.serverTick));
 
 <div><p><textarea readOnly placeholder="log box" :value="logText"></textarea></p></div>
 
+</div>
 </template>
 <style scoped>
 

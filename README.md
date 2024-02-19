@@ -69,7 +69,10 @@ $ npm run pages:deploy
 
 ```
 $ npx nuxi add component ColdComponent
+$ npx nuxi add page page1
 ```
+
+Git diff makes it look like these commands aren't adding configuration outside the obvious news folders and files, which is good.
 
 ## Domains and DNS
 
@@ -117,3 +120,20 @@ Make one like this:
 Source URL     Target URL        Status
 www.cold3.cc/  https://cold3.cc  301
 ```
+
+## Test redirects
+
+Here are some links to test `http -> https` and `www -> (no subdomain)`.
+The redirects need to keep the route.
+
+No route:
+[plain, has www](http://www.cold3.cc)
+[plain, no subdomain](http://cold3.cc)
+[secure, has www](https://www.cold3.cc) should all redirect to
+[secure, no subdomain](https://cold3.cc)
+
+Route to `page1`:
+[plain, has www](http://www.cold3.cc/page1)
+[plain, no subdomain](http://cold3.cc/page1)
+[secure, has www](https://www.cold3.cc/page1) should all redirect to
+[secure, no subdomain](https://cold3.cc/page1)
