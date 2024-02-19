@@ -127,16 +127,16 @@ Here are some links to test `http -> https` and `www -> (no subdomain)`.
 The redirects need to keep the route.
 
 No route:
-[plain, www](http://www.cold3.cc),
-[plain, apex](http://cold3.cc), and
-[secure, www](https://www.cold3.cc) should all redirect to
-[secure, apex](https://cold3.cc)
+[plain www](http://www.cold3.cc),
+[plain apex](http://cold3.cc), and
+[secure www](https://www.cold3.cc) should all redirect to
+[secure apex](https://cold3.cc)
 
 Route to `page1`:
-[plain, www](http://www.cold3.cc/page1),
-[plain, apex](http://cold3.cc/page1), and
-[secure, www](https://www.cold3.cc/page1) should all redirect to
-[secure, apex](https://cold3.cc/page1)
+[plain www](http://www.cold3.cc/page1),
+[plain apex](http://cold3.cc/page1), and
+[secure www](https://www.cold3.cc/page1) should all redirect to
+[secure apex](https://cold3.cc/page1)
 
 To get this working, you went into another part of the Cloudflare dashboard.
 Dash top, *Websites*, `cold3.cc`, *Rules*, *Page Rules*, this uses one of your three free ones.
