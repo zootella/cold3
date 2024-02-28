@@ -1,8 +1,17 @@
 <script lang="ts" setup>
 
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
-const tick1 = ref(Date.now());
+const tick1 = ref(Date.now());//tick1 is start of script
+const tick2 = ref(0);//tick2 is on mounted
+const tick3 = ref(0);//tick3 is before fetch
+const tick4 = ref(0);//tick4 is after fetch
+const tick5 = ref(0);//tick5 is the time on the server
+
+onMounted(() => {
+	tick2.value = Date.now();
+});
+
 
 function sayTick(tick) {
 	if (!tick) return "(not yet)";//don't render jan1 1970 as a time something actually happened
@@ -25,18 +34,35 @@ function mySubmit() {
 
 const logText = ref("");
 
-const r = await useFetch("/api/mirror");
-console.log("got from use fetch, message: " + r.data.value.message);
-console.log("secret length: " + r.data.value.secretLength);
-console.log("server tick: " + sayTick(r.data.value.serverTick));
+await doFetch();
+async function doFetch() {
+	tick3.value = Date.now();
+	const r = await useFetch("/api/mirror");
+	tick4.value = Date.now();
+	console.log("got from use fetch, message: " + r.data.value.message);
+	console.log("secret length: " + r.data.value.secretLength);
+	console.log("server tick: " + sayTick(r.data.value.serverTick));
+	tick5.value = r.data.value.serverTick;
+}
+async function clickedFetch() {
+	await doFetch();
+}
+
+
 
 </script>
 <template>
 <div>
 
 <p>
-	Loaded {{ sayTick(tick1) }}.
-	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb18a.
+	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb28a.
+</p>
+<p>
+	tick1 {{ sayTick(tick1) }}, script start<br/>
+	tick2 {{ sayTick(tick2) }}, on loaded<br/>
+	tick3 {{ sayTick(tick3) }}, before fetch<br/>
+	tick4 {{ sayTick(tick4) }}, after fetch<br/>
+	tick4 {{ sayTick(tick5) }}, time on the server<br/>
 </p>
 
 <div>
@@ -44,6 +70,12 @@ console.log("server tick: " + sayTick(r.data.value.serverTick));
 		Text <input type="text" v-model="textContents" /> <button>Send</button>
 		{{ textContents.length ? `measured ${textContents.length} characters` : "no contents" }}
 	</form>
+</div>
+
+<div>
+	<p>
+		<button @click="clickedFetch">Fetch</button>
+	</p>
 </div>
 
 <div><p><textarea readOnly placeholder="log box" :value="logText"></textarea></p></div>
