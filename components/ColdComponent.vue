@@ -1,18 +1,48 @@
 <script lang="ts" setup>
 
-import { ref, onMounted } from "vue";
+//imports
+import { ref, reactive, onMounted } from "vue";
 
-const tick1 = ref(Date.now());//tick1 is start of script
-const tick2 = ref(0);//tick2 is on mounted
-const tick3 = ref(0);//tick3 is before fetch
-const tick4 = ref(0);//tick4 is after fetch
-const tick5 = ref(0);//tick5 is the time on the server
-
-onMounted(() => {
-	tick2.value = Date.now();
+//ticks
+const t = reactive({
+	tick1: 0,//start of script
+	tick2: 0,//on mounted
+	tick3: 0,//before fetch
+	tick4: 0,//after fetch
+	tick5: 0,//time on server
+	duration34: 0,//how long the fetch took
+	difference35: 0//differences between the clocks
 });
+t.tick1 = Date.now();
+onMounted(() => { t.tick2 = Date.now(); });
 
+//enter button and log box
+const textContents = ref("");
+function submitEnter() {
+	log(`entered "${textContents.value}"`);
+	textContents.value = "";
+}
+const logText = ref("");
 
+//fetch button and use fetch
+await doFetch();
+async function doFetch() {
+	t.tick3 = Date.now();
+	const r = await useFetch("/api/mirror");
+	t.tick4 = Date.now();
+	t.duration34 = t.tick4 - t.tick3;
+	log(`fetched message "${r.data.value.message}", secret length "${r.data.value.secretLength}", server tick "${r.data.value.serverTick}"`);
+	t.tick5 = r.data.value.serverTick;
+	t.difference35 = t.tick5 - t.tick3;
+}
+async function clickedFetch() { await doFetch(); }
+
+//library functions
+function log(s) {
+	let s2 = `${sayTick(Date.now())} '${s}'`;
+	console.log(s2);
+	logText.value += `\r\n ${s2}`;
+}
 function sayTick(tick) {
 	if (!tick) return "(not yet)";//don't render jan1 1970 as a time something actually happened
 	var date = new Date(tick);//create a Date object using the given tick count
@@ -24,60 +54,33 @@ function sayTick(tick) {
 	return `${weekday} ${hours}h ${minutes}m ${seconds}.${milliseconds}s`;
 }
 
-const textContents = ref("");
-function mySubmit() {
-	var s = `${sayTick(Date.now())} '${textContents.value}'`;
-	console.log(s);
-	logText.value += "\r\n" + s;
-	textContents.value = "";
-}
-
-const logText = ref("");
-
-await doFetch();
-async function doFetch() {
-	tick3.value = Date.now();
-	const r = await useFetch("/api/mirror");
-	tick4.value = Date.now();
-	console.log("got from use fetch, message: " + r.data.value.message);
-	console.log("secret length: " + r.data.value.secretLength);
-	console.log("server tick: " + sayTick(r.data.value.serverTick));
-	tick5.value = r.data.value.serverTick;
-}
-async function clickedFetch() {
-	await doFetch();
-}
-
-
-
 </script>
 <template>
 <div>
 
 <p>
-	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb28a.
+	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb28e.
 </p>
+
 <p>
-	tick1 {{ sayTick(tick1) }}, script start<br/>
-	tick2 {{ sayTick(tick2) }}, on loaded<br/>
-	tick3 {{ sayTick(tick3) }}, before fetch<br/>
-	tick4 {{ sayTick(tick4) }}, after fetch<br/>
-	tick4 {{ sayTick(tick5) }}, time on the server<br/>
+	tick1 {{ sayTick(t.tick1) }}, script start<br/>
+	tick2 {{ sayTick(t.tick2) }}, on mounted<br/>
+	tick3 {{ sayTick(t.tick3) }}, before fetch<br/>
+	tick4 {{ sayTick(t.tick4) }}, after fetch, duration {{ t.duration34 }}ms<br/>
+	tick5 {{ sayTick(t.tick5) }}, server time, difference {{ t.difference35 }}ms<br/>
 </p>
-
-<div>
-	<form @submit.prevent="mySubmit">
-		Text <input type="text" v-model="textContents" /> <button>Send</button>
-		{{ textContents.length ? `measured ${textContents.length} characters` : "no contents" }}
-	</form>
-</div>
-
 <div>
 	<p>
 		<button @click="clickedFetch">Fetch</button>
 	</p>
 </div>
 
+<div>
+	<form @submit.prevent="submitEnter">
+		Text <input type="text" v-model="textContents" /> <button>Enter</button>
+		{{ textContents.length ? `measured ${textContents.length} characters` : "no contents" }}
+	</form>
+</div>
 <div><p><textarea readOnly placeholder="log box" :value="logText"></textarea></p></div>
 
 </div>
