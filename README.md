@@ -163,4 +163,10 @@ Hosting
 * [Cloudflare Pages](https://pages.cloudflare.com/)
 * [Cloudflare Workers](https://developers.cloudflare.com/workers/)
 
-todo pinia, orm, database
+big areas still to explore, try out, and choose:
+
+* spelunking to a serverless database with pinia, some orm, a proven serverless database provider avoiding vendor lock-in. maybe supabase, prisma, drizzle orm. find []local offline development, []spreadsheet-like visual data editor, and []csv export and import
+* pretty components and fonts, maybe nuxt ui which is on tailwindcss, or primevue, vuesax
+* authentication, including wallets
+* media file upload, resize, encode, download. maybe separate and ec2
+* open graph protocol cards
