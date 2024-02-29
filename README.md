@@ -1,6 +1,9 @@
 
 How quick, simple, and cheap can the web2 stack be in 2024?
 Part of the larger experiment organized at [coldstart](https://github.com/zootella/coldstart).
+[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
+exploring pouring and curing a
+tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
 
 This is 🍺 [cold3.cc](https://cold3.cc/) on [Cloudflare](https://developers.cloudflare.com/) using [Nuxt](https://nuxt.com/).
 
