@@ -147,3 +147,20 @@ Forwarding URL       setting
 301                  status code
 https://cold3.cc/$1  destination
 ```
+
+## Roster
+
+Stack
+
+* [Vue](https://vuejs.org/)
+* [Nuxt](https://nuxt.com/)
+* [nuxi](https://nuxt.com/docs/api/commands/add)
+* [Vite](https://vitejs.dev/)
+* [Nitro](https://nitro.unjs.io/)
+
+Hosting
+
+* [Cloudflare Pages](https://pages.cloudflare.com/)
+* [Cloudflare Workers](https://developers.cloudflare.com/workers/)
+
+todo pinia, orm, database
