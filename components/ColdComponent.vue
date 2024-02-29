@@ -2,15 +2,7 @@
 
 //imports
 import { ref, reactive, onMounted } from "vue";
-
-/*
-import { nanoid } from 'nanoid'
-console.log(typeof(nanoid));
-const id1 = nanoid();
-console.log(id1);
-/*
-model.id = nanoid() //=> "V1StGXR8_Z5jdHi6B-myT"
-*/
+import { unique } from "~/library/library";//nuxt makes tilde project root
 
 //ticks
 const t = reactive({
@@ -40,7 +32,7 @@ async function doFetch() {
 	const r = await useFetch("/api/mirror");
 	t.tick4 = Date.now();
 	t.duration34 = t.tick4 - t.tick3;
-	log(`fetched message "${r.data.value.message}", secret length "${r.data.value.secretLength}", message2 "${r.data.value.message2}", server tick "${r.data.value.serverTick}"`);
+	log(`fetched message "${r.data.value.message}", secret length "${r.data.value.secretLength}", unique "${r.data.value.unique}", tick "${r.data.value.serverTick}"`);
 	t.tick5 = r.data.value.serverTick;
 	t.difference35 = t.tick5 - t.tick3;
 }
@@ -50,7 +42,7 @@ async function clickedFetch() { await doFetch(); }
 function log(s) {
 	let s2 = `${sayTick(Date.now())} '${s}'`;
 	console.log(s2);
-	logText.value += `\r\n ${s2}`;
+	logText.value += `\r\n${s2}`;
 }
 function sayTick(tick) {
 	if (!tick) return "(not yet)";//don't render jan1 1970 as a time something actually happened
@@ -68,7 +60,7 @@ function sayTick(tick) {
 <div>
 
 <p>
-	This is cold3.cc, on Cloudflare with Nuxt, version 2024feb29a.
+	This is cold3.cc, on Cloudflare with Nuxt, unique {{ unique() }}, version 2024feb29d.
 </p>
 
 <p>
