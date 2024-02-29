@@ -60,7 +60,7 @@ function sayTick(tick) {
 <div>
 
 <p>
-	This is cold3.cc, on Cloudflare with Nuxt, unique {{ unique() }}, version 2024feb29d.
+	This is cold3.cc, on Cloudflare with Nuxt, unique {{ unique() }}, version 2024feb29e.
 </p>
 
 <p>
@@ -75,6 +75,8 @@ function sayTick(tick) {
 		<button @click="clickedFetch">Fetch</button>
 	</p>
 </div>
+
+<NoteComponent />
 
 <div>
 	<form @submit.prevent="submitEnter">
@@ -99,5 +101,5 @@ textarea {
 	overflow-x: hidden; /* Hide horizontal scrollbar */
 	white-space: pre-wrap; /* Wrap lines */
 }
-	
+
 </style>

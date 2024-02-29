@@ -11,7 +11,7 @@ export default defineEventHandler((event) => {
 	let id = generator();
 
 	let o = {};
-	o.message = "hello from cold3 api mirror, version 2024feb29d";
+	o.message = "hello from cold3 api mirror, version 2024feb29e";
 	o.serverTick = Date.now();
 	o.headers = event.req.headers;
 	o.secretLength = (process.env.MY_FIRST_SECRET) ? process.env.MY_FIRST_SECRET.length : 0;
