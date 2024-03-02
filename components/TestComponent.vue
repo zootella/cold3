@@ -2,6 +2,7 @@
 
 import { ref, reactive, onMounted } from 'vue'
 import { log, newline, runTests, ok, test, addLogDestination } from '~/library/library0'
+import { unique } from '~/library/library1'
 
 const logContents = ref('');
 
