@@ -2,7 +2,7 @@
 
 //imports
 import { ref, reactive, onMounted } from "vue";
-import { unique } from "~/library/library";//nuxt makes tilde project root
+import { unique } from "~/library/library1";//nuxt makes tilde project root
 
 //ticks
 const t = reactive({
@@ -60,7 +60,7 @@ function sayTick(tick) {
 <div>
 
 <p>
-	This is cold3.cc, on Cloudflare with Nuxt, unique {{ unique() }}, version 2024mar2c.
+	This is cold3.cc, on Cloudflare with Nuxt, unique <i>{{ unique() }}</i>, version 2024mar2d.
 </p>
 
 <p>
