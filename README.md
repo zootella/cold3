@@ -155,16 +155,17 @@ https://cold3.cc/$1  destination
 
 Stack
 
-* [Vue](https://vuejs.org/)
-* [Nuxt](https://nuxt.com/)
-* [nuxi](https://nuxt.com/docs/api/commands/add)
-* [Vite](https://vitejs.dev/)
-* [Nitro](https://nitro.unjs.io/)
+[Nuxt](https://nuxt.com/) the framework, which includes:
+[Vue](https://vuejs.org/) for components and dom-diffing;
+[Vue Router](https://router.vuejs.org/) for pages and routes;
+[Vite](https://vitejs.dev/) the bundler;
+[Nitro](https://nitro.unjs.io/) the server engine; and
+[nuxi](https://nuxt.com/docs/api/commands/add) Nuxt's command line interface.
 
 Hosting
 
-* [Cloudflare Pages](https://pages.cloudflare.com/)
-* [Cloudflare Workers](https://developers.cloudflare.com/workers/)
+[Cloudflare Pages](https://pages.cloudflare.com/) and
+[Workers](https://developers.cloudflare.com/workers/)
 
 big areas still to explore, try out, and choose:
 
