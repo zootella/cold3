@@ -9,3 +9,30 @@ export function unique() {
 	let id = generator();
 	return id;
 }
+
+
+
+
+
+/*
+
+group into two layers:
+deepslate.js - uses bedrock below, and the imports of the nuxt project
+bedrock.js - no imports, uses only the features of java in a tab and worker
+for each feature, let as much logic as you can drop down to the bedrock level
+
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
