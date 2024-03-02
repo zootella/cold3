@@ -60,7 +60,7 @@ function sayTick(tick) {
 <div>
 
 <p>
-	This is cold3.cc, on Cloudflare with Nuxt, unique {{ unique() }}, version 2024feb29f.
+	This is cold3.cc, on Cloudflare with Nuxt, unique {{ unique() }}, version 2024mar2a.
 </p>
 
 <p>
