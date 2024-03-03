@@ -151,6 +151,43 @@ Forwarding URL       setting
 https://cold3.cc/$1  destination
 ```
 
+## Environment variables
+
+Set secret API keys as environment variables that running code can access, but do not appear in code.
+For deployment, set them in the Cloudflare dashboard, and server-side code like */server/api/mirror.ts* can access them with `process.env.TOKEN_SECRET_1`.
+
+In development, put them in an `.env` file in the project root, as below, and make sure `.gitignore` ignores it.
+
+```
+TOKEN_SECRET_1=secret_value_1
+TOKEN_SECRET_2=secret_value_2
+```
+
+Running locally in development mode, API code can access them the same way, at `process.env.TOKEN_SECRET_1`.
+
+To get them in a component, you have to do more.
+Add a section to *nuxt.config.tx*:
+
+```
+  runtimeConfig: {
+    tokenSecret1: process.env.TOKEN_SECRET_1,
+    public: {
+      tokenSecret2: process.env.TOKEN_SECRET_2
+    }
+  }
+```
+
+And then in a component's `<script>`:
+
+```
+const config = useRuntimeConfig()
+log(config.public.tokenSecret2)
+```
+
+Hydration in Universal Rendering means that a component's script can run on the server and the client.
+Configured as above, only the `public` token should be sent to the client.
+But, it's simpler to not configure or access these keys for use in a component, and just use them in API code which only runs on the server.
+
 ## Roster
 
 Stack

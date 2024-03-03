@@ -10,11 +10,6 @@ import { customAlphabet } from 'nanoid'
 
 
 
-
-
-
-
-
 //generate a new universally unique double-clickable string of 21 letters and numbers
 export function unique() {
 	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
@@ -52,19 +47,6 @@ test(() => {
 
 
 
-
-
-/*
-
-use nanoid for the sms and email codes, too
-here, you want
--can't start with zero
--can't have the same digit three times in a row
-maybe use random to compose them digit-by-digit, actually
-
-
-
-*/
 
 
 
