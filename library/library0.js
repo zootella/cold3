@@ -116,7 +116,7 @@ Size.pb = 1024*Size.tb//pebibyte, really big
 //                                                           
 
 export function toss(note, watch) {//prepare your own watch object with named variables you'd like to see
-	let s = `toss ${sayNow()} ~ ${note} ${_look(watch)}`
+	let s = `toss ${sayNow()} ~ ${note} ${see(watch)}`
 	console.error(s)
 	if (watch) console.error(watch)
 	throw new Error(s)
@@ -161,69 +161,22 @@ export function log(...a) {
 // |___/\__,_|\__, |  \__,_|_| |_|\__,_| |___/\___|\___|
 //            |___/                                     
 
-//say a variable and see more inside it
 export function say(...a) {//turn anything into text, always know you're dealing with a string
 	let s = '';
 	for (let i = 0; i < a.length; i++) {
-		s += (i ? ' ' : '') + (a[i]+'');//don't start with a space
+		s += (i ? ' ' : '') + (a[i]+'');//spaces between, not at the start
 	}
 	return s;
 }
-export function see(...a) {//TODO, uses typeof and stringify
-	if (a.length == 0) return '(seeing no arguments)'
+export function look(...a) { log(see(...a)) }//log what you see
+export function see(...a) {//see into things, including key name, type, and value
 	let s = ''
 	for (let i = 0; i < a.length; i++) {
-		if (i) s += newline//don't start with a blank line
-		s += `(${typeof a[i]}) ${_seeValue(a[i])}`//type and value
+		s += (a.length > 1 ? newline : '') + _see2(a[i])//put multiple arguments on separate lines
 	}
 	return s
 }
-export function seeKeys(o) {
-	let s = '';
-	for (let k in o)
-		s += `${k} (${typeof o[k]}) ${_seeValue(o[k])}, `
-	return s
-}
-function _seeValue(o) {
-	if (o instanceof Error) {
-		return 'error ~ ' + o.stack//errors have their information here
-	} else {
-		try {
-			return JSON.stringify(o, null, 2)//use multiple lines, indenting with two spaces
-		} catch (e) { return '(seeing a circular reference)' }//watch out for circular references
-	}
-}
-
-
-
-test(() => {
-	ok(say() == '')
-	ok(say('a') == 'a')
-	ok(say('a', 'b') == 'a b')
-	ok(say(7) == '7')
-	let o = {};
-	ok(say(o.notThere) == 'undefined')
-})
-test(() => {
-	/*
-	ok(see() == '(seeing no arguments)')
-	ok(see("a") == '(string) "a"')
-	ok(see(5) == '(number) 5')
-	ok(see({}) == '(object) {}')
-	*/
-})
-
-export function look(...a) {
-	log(see2(...a))
-}
-export function see2(...a) {
-	let s = ''
-	for (let i = 0; i < a.length; i++) {
-		s += (a.length > 1 ? newline : '') + see2a(a[i])//see multiple arguments on separate lines
-	}
-	return s
-}
-function see2a(o) {
+function _see2(o) {
 	let s = ''
 	if (o instanceof Error) {
 		s = '(error) ' + o.stack//errors have their information here
@@ -234,27 +187,36 @@ function see2a(o) {
 		let first = true
 		for (let k in o) {
 			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
-			s += `${k} (${typeof o[k]}) ${see2b(o[k])}`
+			s += `${k} (${typeof o[k]}) ${_see3(o[k])}`
 		}
 		s += '}'
 	} else {
-		s = `(${typeof o}) ${see2b(o)}`
+		s = `(${typeof o}) ${_see3(o)}`
 	}
 	return s
 }
-function see2b(o) {
+function _see3(o) {
 	try {
 		return JSON.stringify(o, null)//single line
 	} catch (e) { return '(circular reference)' }//watch out for circular references
 }
-
-
-
-
-
-
 test(() => {
-
+	ok(say() == '')
+	ok(say('a') == 'a')
+	ok(say('a', 'b') == 'a b')
+	ok(say(7) == '7')
+	let o = {};
+	ok(say(o.notThere) == 'undefined')
+})
+test(() => {
+	ok(see() == '')
+	ok(see("a") == '(string) "a"')
+	ok(see(5) == '(number) 5')
+	ok(see({}) == '(object) {}')
+})
+test(() => {
+	//uncomment to try out look
+	/*
 	let b = true
 	let s = 'hello'
 	let n = 721
@@ -275,17 +237,12 @@ test(() => {
 			return e
 		}
 	})()
-
-	look(1)
-	look(2, "two")
-
-
-
-
-
-
-
+	look(b, s, n, a, o, e)
+	look(b, s, {n, a, o, e})
+	*/
 })
+
+
 
 
 
@@ -321,17 +278,6 @@ export const now = Date.now;//just a shortcut
 
 
 
-
-
-
-
-/*
-//call look({a, b}) to log out the name, type, and value of those variables
-//but if any are undefined, your code will throw before the call even happens, so watch out for that
-export function look(o) {
-	log(_look(o))
-}
-*/
 
 
 

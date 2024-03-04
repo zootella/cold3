@@ -3,6 +3,7 @@ import { log, see, look } from '../../library/library0.js'
 
 export default defineEventHandler(async (event) => {
 
+//first conversation
 /*
 	const url = 'https://api.sendgrid.com/v3/mail/send';
 	const apiKey = 'YOUR_SENDGRID_API_KEY'; // Your SendGrid API Key
@@ -23,13 +24,55 @@ export default defineEventHandler(async (event) => {
 		body: body,
 	});
 */
+//second conversation
+/*
+async function sendEmailWithSendGrid(to, from, subject, htmlContent) {
+  const apiKey = 'your_sendgrid_api_key_here'; // Securely store and access your API key
+  const url = 'https://api.sendgrid.com/v3/mail/send';
+
+  const data = {
+    personalizations: [{ to: [{ email: to }] }],
+    from: { email: from },
+    subject: subject,
+    content: [{ type: 'text/html', value: htmlContent }],
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorMessage = await response.text();
+    throw new Error(`Failed to send email: ${errorMessage}`);
+  }
+
+  return await response.json(); // or handle the response as needed
+}
+
+// Example usage:
+sendEmailWithSendGrid(
+  'recipient@example.com',
+  'sender@example.com',
+  'Test Subject',
+  '<p>This is the email content</p>'
+).then(() => {
+  console.log('Email sent successfully!');
+}).catch(error => {
+  console.error('Error sending email:', error);
+});
+*/
 
 
 
 	try {
 		// Assuming the content type is JSON
 		const body = await readBody(event)
-		log(see({readBody, event, body}))
+		look(readBody, event, body)
 
 
 		/*
