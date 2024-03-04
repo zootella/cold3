@@ -116,17 +116,10 @@ Size.pb = 1024*Size.tb//pebibyte, really big
 //                                                           
 
 export function toss(note, watch) {//prepare your own watch object with named variables you'd like to see
-	let s = `toss ${sayNow()} ~ ${note} ${_tossSee(watch)}`
+	let s = `toss ${sayNow()} ~ ${note} ${_look(watch)}`
 	console.error(s)
 	if (watch) console.error(watch)
 	throw new Error(s)
-}
-function _tossSee(watch) {
-	let s = '';
-	if (watch)
-		for (let k in watch)
-			s += `${newline}${k} ${see(watch[k])}`
-	return s
 }
 
 //  _               _          _   _            
@@ -169,7 +162,7 @@ export function log(...a) {
 //            |___/                                     
 
 //say a variable and see more inside it
-export function say(...a) {//turn anything into a little text, always know you're dealing with a string
+export function say(...a) {//turn anything into text, always know you're dealing with a string
 	let s = '';
 	for (let i = 0; i < a.length; i++) {
 		s += (i ? ' ' : '') + (a[i]+'');//don't start with a space
@@ -180,12 +173,18 @@ export function see(...a) {//TODO, uses typeof and stringify
 	if (a.length == 0) return '(seeing no arguments)'
 	let s = ''
 	for (let i = 0; i < a.length; i++) {
-		s += (i ? newline : '') +//don't start with a blank line
-			typeof a[i] + ': ' + _see(a[i])//include the type
+		if (i) s += newline//don't start with a blank line
+		s += `(${typeof a[i]}) ${_seeValue(a[i])}`//type and value
 	}
 	return s
 }
-function _see(o) {
+export function seeKeys(o) {
+	let s = '';
+	for (let k in o)
+		s += `${k} (${typeof o[k]}) ${_seeValue(o[k])}, `
+	return s
+}
+function _seeValue(o) {
 	if (o instanceof Error) {
 		return 'error ~ ' + o.stack//errors have their information here
 	} else {
@@ -194,6 +193,9 @@ function _see(o) {
 		} catch (e) { return '(seeing a circular reference)' }//watch out for circular references
 	}
 }
+
+
+
 test(() => {
 	ok(say() == '')
 	ok(say('a') == 'a')
@@ -203,10 +205,86 @@ test(() => {
 	ok(say(o.notThere) == 'undefined')
 })
 test(() => {
+	/*
 	ok(see() == '(seeing no arguments)')
-	ok(see("a") == 'string: "a"')
-	ok(see(5) == 'number: 5')
-	ok(see({}) == 'object: {}')
+	ok(see("a") == '(string) "a"')
+	ok(see(5) == '(number) 5')
+	ok(see({}) == '(object) {}')
+	*/
+})
+
+export function look(...a) {
+	log(see2(...a))
+}
+export function see2(...a) {
+	let s = ''
+	for (let i = 0; i < a.length; i++) {
+		s += (a.length > 1 ? newline : '') + see2a(a[i])//see multiple arguments on separate lines
+	}
+	return s
+}
+function see2a(o) {
+	let s = ''
+	if (o instanceof Error) {
+		s = '(error) ' + o.stack//errors have their information here
+	} else if (Array.isArray(o)) {
+		s = `(array) [${o}]`
+	} else if (typeof o == 'object') {
+		s += '(object) {'
+		let first = true
+		for (let k in o) {
+			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
+			s += `${k} (${typeof o[k]}) ${see2b(o[k])}`
+		}
+		s += '}'
+	} else {
+		s = `(${typeof o}) ${see2b(o)}`
+	}
+	return s
+}
+function see2b(o) {
+	try {
+		return JSON.stringify(o, null)//single line
+	} catch (e) { return '(circular reference)' }//watch out for circular references
+}
+
+
+
+
+
+
+test(() => {
+
+	let b = true
+	let s = 'hello'
+	let n = 721
+	let a = ["p", "q", "r"]
+	let o = {
+		name: 'apple',
+		quantity: 11,
+		f: (()=>{}),
+		below: {
+			block: 'bedrock'
+		}
+	}
+	let e = (() => {
+		let o = {}
+		try {
+			o.notThere.andBeyond
+		} catch (e) {
+			return e
+		}
+	})()
+
+	look(1)
+	look(2, "two")
+
+
+
+
+
+
+
 })
 
 
@@ -247,10 +325,13 @@ export const now = Date.now;//just a shortcut
 
 
 
-
-
-
-
+/*
+//call look({a, b}) to log out the name, type, and value of those variables
+//but if any are undefined, your code will throw before the call even happens, so watch out for that
+export function look(o) {
+	log(_look(o))
+}
+*/
 
 
 

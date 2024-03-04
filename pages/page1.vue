@@ -9,5 +9,7 @@
 	on page 1
 </p>
 
+<SendComponent />
+
 </div>
 </template>
