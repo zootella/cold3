@@ -241,6 +241,34 @@ test(() => {
 	look(b, s, {n, a, o, e})
 	*/
 })
+/*
+todo, javascript is so wonky it's hard to make a see that lets you easily look inside
+here are some possible improvements
+get things on multiple lines and indent them 2 spaces
+there's lots of:
+
+ok (boolean) true
+n (number) 7
+responseText (string) ""
+clone (function) undefined
+o (object) {message (string) "hello"...}
+a (array) [1,2,3]
+
+shorten this so it's just:
+
+ok: true,
+n: 7,
+responseText: "",
+clone(),
+o {
+	message: "hello"
+	...
+},
+a [1,2,3]
+
+because json stringify skips functions, you'll probably have to write your own recursive walker and indenter
+and that's fine, go three levels deep by default
+*/
 
 
 

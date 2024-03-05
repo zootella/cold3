@@ -2,109 +2,84 @@
 import { log, see, look } from '../../library/library0.js'
 
 export default defineEventHandler(async (event) => {
+	var r = {}//the response object this server function will fill and send back to the page
+	r.message = 'hello, function send email, version 2024mar5'//hello and version no matter what
+	try {//protect the server from all your code, even seemingly safe code, with a big try block
 
-//first conversation
-/*
-	const url = 'https://api.sendgrid.com/v3/mail/send';
-	const apiKey = 'YOUR_SENDGRID_API_KEY'; // Your SendGrid API Key
+		//set and bring in constants about the test email to send
+		const sendgridUrl = 'https://api.sendgrid.com/v3/mail/send'
+		const sendgridApiKey = process.env.ACCESS_SENDGRID//works in dev and deployed
 
-	const body = JSON.stringify({
-		personalizations: [{ to: [{ email: 'user@example.com' }] }],
-		from: { email: 'your-email@example.com' }, // Your verified sender email
-		subject: 'Your Authentication Code',
-		content: [{ type: 'text/plain', value: 'Your authentication code: 123456' }],
-	});
+		const emailFromName = 'Cold Three'
+		const emailFromAddress = 'noreply@cold3.cc'//only works if you change to approved sender
+		const emailToName = 'Example User'
+		const emailToAddress = 'user@example.com'//and, you think, approved recipient
 
-	const response = await fetch(url, {
-		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${apiKey}`,
-			'Content-Type': 'application/json',
-		},
-		body: body,
-	});
-*/
-//second conversation
-/*
-async function sendEmailWithSendGrid(to, from, subject, htmlContent) {
-  const apiKey = 'your_sendgrid_api_key_here'; // Securely store and access your API key
-  const url = 'https://api.sendgrid.com/v3/mail/send';
+		//prepare objects for the fetch request
+		const o1 = {
+			from:     { name: emailFromName, email: emailFromAddress },
+			reply_to: { name: emailFromName, email: emailFromAddress },
+			personalizations: [
+				{
+					to: [{ name: emailToName, email: emailToAddress }],
+					subject: 'Hello, World!'
+				}
+			],
+			content: [
+				{
+					type: 'text/plain',
+					value: 'email body, text, version 2024mar5a'
+				},
+				{
+					type: 'text/html',
+					value: '<html><body><p>email body, html</p><p>version <i>2024mar5e</i></p></body></html>'
+				}
+			],
+		}
+		const o2 = {
+			method: 'POST',
+			headers: {
+				'Authorization': 'Bearer ' + sendgridApiKey,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(o1)
+		}
 
-  const data = {
-    personalizations: [{ to: [{ email: to }] }],
-    from: { email: from },
-    subject: subject,
-    content: [{ type: 'text/html', value: htmlContent }],
-  };
+		//fetch sendgrid's api to send an email
+		async function sendEmail() {
+			try {
+				let response = await fetch(sendgridUrl, o2);
+				r.response = response
+				r.responseStatus = response.status
+				if (response.ok) {
+					r.responseText = await response.text()//might be nothing, even on success
+					if (r.responseText) r.responseData = JSON.parse(r.responseText)//throws if you give it nothing
+					r.responseResult = 'fetch success'
+				} else {
+					r.responseResult = 'fetch response not ok'
+				}
+			} catch (e) {
+				r.responseResult = 'fetch threw'
+				r.fetchThrew = e
+			}
+		}
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorMessage = await response.text();
-    throw new Error(`Failed to send email: ${errorMessage}`);
-  }
-
-  return await response.json(); // or handle the response as needed
-}
-
-// Example usage:
-sendEmailWithSendGrid(
-  'recipient@example.com',
-  'sender@example.com',
-  'Test Subject',
-  '<p>This is the email content</p>'
-).then(() => {
-  console.log('Email sent successfully!');
-}).catch(error => {
-  console.error('Error sending email:', error);
-});
-*/
-
-
-
-	try {
-		// Assuming the content type is JSON
+		//confirm the password from the page form, and the api key from the environment variables look ok
+		//and send the email if both are ok
 		const body = await readBody(event)
-		look(readBody, event, body)
+		r.passwordCorrect = (body.password == process.env.ACCESS_SEND_PASSWORD)
+		r.sendgridApiKeyLength = sendgridApiKey.length
+		if (r.passwordCorrect && r.sendgridApiKeyLength) {
+			r.sendNote = 'api key and password ok, will send'
+			await sendEmail()
+		} else {
+			r.sendNote = "api key or password not ok, won't send"
+		}
+		r.handlerEnd = 'made it to the end'
+		look(r)
 
-
-		/*
-		put it in log
-		if log has multiple arguments, it puts each on a line
-		if an argument is an object, it spells it out name, type, value
-		*/
-
-/*
-		// Example logic: Echo back the received name with a message
-		const name = body.name;
-
-		// You can perform database operations or other logic here
-
-		return { message: `Hello, ${name}! Your form was submitted successfully.` };
-	} catch (error) {
-		// Handle potential errors
-		return createError({
-			statusCode: 400,
-			statusMessage: 'Bad Request',
-			data: { message: 'Error processing the form submission.' },
-		});
-	}
-});
-*/
 	} catch (e) {
-		log('error', see(e))
-	
+		r.handlerThrew = e
 	}
-
-
-	return {
-		message: "hello, function send email"
-	}
-});
+	return r
+})
