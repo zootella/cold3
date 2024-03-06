@@ -28,7 +28,19 @@ test(() => {
 	log('hi within a test')
 })
 
+/*
+new design
 
+make the page not hvae a box that scrolls down, that's the log panel
+instead, the page starts with the traffic light and stats
+
+log still goes to the developer panel
+but there's another function, box(s), which puts text on the page to see your output
+
+make getting here just the regular $ npm run pages:dev
+and make changing and saving library0 rerun the tests and refresh the page
+maybe you can't do this within nuxt because it won't update unless necessary, though
+*/
 
 
 

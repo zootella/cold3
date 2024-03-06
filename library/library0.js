@@ -268,6 +268,22 @@ a [1,2,3]
 
 because json stringify skips functions, you'll probably have to write your own recursive walker and indenter
 and that's fine, go three levels deep by default
+
+moar notes for your return to this bike shed:
+
+remove look(o), instead you have to call log(see(o))
+
+remove the multiple loggers feature
+you want icarus, but will do that later as a separate system
+that system will have auto refresh
+in-place traffic lights
+and an in-place log that is maybe icarus()
+
+you just remembered that log shouldn't turn everything into a string
+doing so breaks the inspector's > arrow
+this may also be why earlier log didn't tickstamp
+if log gets a single string, do it all on one line
+if log gets a single non-string, or multiple anything, call console.log multiple times for multiple lines
 */
 
 
