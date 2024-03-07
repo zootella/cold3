@@ -288,6 +288,9 @@ if log gets a single non-string, or multiple anything, call console.log multiple
 
 
 
+test(() => {
+	log('hi hopefully on reload, 2')
+})
 
 
 

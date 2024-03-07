@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>library test</title>
+		<script>
+
+			const tickLaunched = Date.now()
+
+		</script>
+	</head>
+	<body>
+		<script type="module">
+
+			import { runTests, log, now } from './library0.js'
+
+			runTests()
+			log(`loaded in ${now() - tickLaunched}ms 🎂`)
+
+/*
+todo
+
+this requires serve, unfortunately
+but maybe with serve you could get auto reload working
+
+also, notes on getting library functions working in both modern and vintage environments:
+
+import * as allExports from './library.js';
+// Reflect on the imported module
+console.log(Object.keys(allExports));
+
+you could probably loop to pin them all to global from there
+
+to get file:// to work, you have to not use script type module
+code in the library can tell if it's being loaded as a module or not
+
+if (typeof exports === 'undefined' && typeof window !== 'undefined' && this === undefined) {
+	console.log('This script is running as an ES6 module.');
+} else {
+	console.log('This script is running as a traditional script.');
+}
+*/
+
+		</script>
+	</body>
+</html>
