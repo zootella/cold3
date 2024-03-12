@@ -323,7 +323,25 @@ export const now = Date.now;//just a shortcut
 
 
 
+export function jsonStringify(o) {
+	/*
+//watch out for a circular reference
+try {
+return JSON.stringify(o, null)//single line
+} catch (e) { return '(circular reference)' }//watch out for circular references
+*/
+}
 
+export function jsonParse(s) {
+	/*
+//watch out for a blank body
+//get the text first, and keep that, too
+
+r.responseText = await response.text()//might be nothing, even on success
+if (r.responseText) r.responseData = JSON.parse(r.responseText)//throws if you give it nothing
+*/
+
+}
 
 
 
