@@ -351,3 +351,44 @@ if (r.responseText) r.responseData = JSON.parse(r.responseText)//throws if you g
 
 
 
+
+
+/*
+2024apr26
+code encoding, some bikeshedding
+
+[]from separate project entry point, Ctrl+S leads to green or red check on page
+
+library0 ~
+
+[]base16 data
+[]base64 data
+[]base62 data, your code
+[]base62 integer, chatGPT's code
+
+[]round trip check
+[]toss on failure
+[]speed test your base62 with the browser's base64
+
+library1 ~
+
+[]random 1-9
+[]random 0-9
+[]random 0-9 A-Z a-z
+
+not in scope for this first pass:
+-page rendered width analysis
+-unicode search for narrow accents that still render
+-unified chinese base256
+
+
+*/
+
+
+
+
+
+
+
+
+
