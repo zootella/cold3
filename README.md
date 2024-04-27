@@ -211,3 +211,21 @@ big areas still to explore, try out, and choose:
 * authentication, including wallets
 * media file upload, resize, encode, download. maybe separate and ec2
 * open graph protocol cards
+
+## (notes, drafts)
+
+```
+library functions useful in other projects, including other js environments
+library0 require no imports, bare metal
+library1 need the imports of package.json
+a function in library1 can depend on library0, but not the other way around, of course
+factor every function potentially widely useful into these two files
+
+and now for the bike shed
+you want Ctrl+S to show a green or red emoji on a browser page off to the side
+as this closes the loop for developer bliss and flow
+
+when you get this working, add notes to this readme about two project development entry points
+one that runs nuxt and is slower but more complete
+the other that runs whatever makes the checkmark show
+```
