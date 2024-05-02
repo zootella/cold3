@@ -9,7 +9,7 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "pages:dev": "wrangler pages dev --compatibility-date=2024-02-08 --proxy 3000 -- npm run dev",
-    "pages:deploy": "npm run build && wrangler pages deploy ./dist"
+    "pages:deploy": "npm run build && wrangler pages deploy ./dist --project-name cold3"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",
