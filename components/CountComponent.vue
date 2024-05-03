@@ -1,10 +1,8 @@
 <script setup>
 
-import { ref, watch, onMounted } from 'vue'
-import { log } from "~/library/library0";
-import { unique } from "~/library/library1";
-
-//try {
+import { ref, reactive, watch, onMounted } from 'vue'
+import { log } from '~/library/library0'
+import { unique } from '~/library/library1'
 
 let browserTag = ref('')
 let count = reactive({
@@ -13,19 +11,25 @@ let count = reactive({
 })
 
 function queryStorage() {
+	try {
+		if (process.client) {
 
-	let b = localStorage.getItem('browserTag')
-	if (b) {
-		browserTag.value = b
-	} else {
-		b = unique()
-		browserTag.value = b
-		localStorage.setItem('browserTag', b)
+			let b = localStorage.getItem('browserTag')
+			if (b) {
+				browserTag.value = b
+			} else {
+				b = unique()
+				browserTag.value = b
+				localStorage.setItem('browserTag', b)
+			}
+			//you'll probably move browserTag into pinia so all the components can get to it
+		}
+	} catch (e) {
+		log('caught error in query storage')
 	}
-	//you'll probably move browserTag into pinia so all the components can get to it
 }
-queryStorage()
 
+/*
 async function queryServer() {
 	try {
 
@@ -35,23 +39,27 @@ async function queryServer() {
 		log(`fetched counts ${count.global} global, and ${count.browser} browser`)
 
 	} catch (e) {
-		log('caught exception in query server')
+		log('caught error in query server')
 	}
 }
-//queryServer()
+*/
 
 onMounted(() => {
+	queryStorage()
 })
 
+/*
 async function clickedFetch() {
 	await queryServer()
 }
 
-async function clickedGlobal() {
+		<button @click="clickedFetch">fetch counts</button>,
+*/
+
+function clickedGlobal() {
 	count.global++
 }
-
-async function clickedBrowser() {
+function clickedBrowser() {
 	count.browser++
 }
 
@@ -60,7 +68,6 @@ async function clickedBrowser() {
 
 <div>
 	<p>
-		<button @click="clickedFetch">fetch counts</button>,
 		Count
 		<button @click="clickedGlobal">{{ count.global }} global</button>,
 		<button @click="clickedBrowser">{{ count.browser }} browser</button>

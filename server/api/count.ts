@@ -2,7 +2,7 @@
 export default defineEventHandler((event) => {
 
 	let o = {}
-	o.message = 'hello from cold3 api count, version 2024may3i'
+	o.message = 'hello from cold3 api count, version 2024may3j'
 	o.countGlobal = 5
 	o.countBrowser = 6
 
