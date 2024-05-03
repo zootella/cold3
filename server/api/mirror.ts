@@ -5,7 +5,7 @@ import { unique } from '../../library/library1.js'//on the server, can't use ~ a
 export default defineEventHandler((event) => {
 
 	let o = {};
-	o.message = "hello from cold3 api mirror, version 2024may2a";
+	o.message = "hello from cold3 api mirror, version 2024may3b";
 	o.serverTick = Date.now();
 	o.headers = event.req.headers;
 	o.accessLength = (process.env.ACCESS_TOKEN_2) ? process.env.ACCESS_TOKEN_2.length : 0;

@@ -1,0 +1,13 @@
+
+SQL statements fed into Supabase to create the database tables.
+Here in text notes; it would be better if they were tracked in git some other way!
+
+CREATE TABLE table_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE table_counts (
+  identifier CHAR(21) PRIMARY KEY,
+  count BIGINT DEFAULT 0 NOT NULL
+);
