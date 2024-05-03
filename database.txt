@@ -8,6 +8,6 @@ CREATE TABLE table_settings (
 );
 
 CREATE TABLE table_counts (
-  identifier CHAR(21) PRIMARY KEY,
+  browser_tag CHAR(21) PRIMARY KEY,
   count BIGINT DEFAULT 0 NOT NULL
 );

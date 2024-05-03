@@ -22,11 +22,13 @@ onMounted(() => {
 	console.log(alreadySaved)
 	console.log('^ type and value of already saved')
 
-	if (!alreadySaved) {
+	if (alreadySaved) {
+		browserTag.value = alreadySaved
+	} else {
 		let tag = unique()
 		console.log('picked new tag ' + tag)
 		browserTag.value = tag
-		localStorage.setItem('localNote', tag)
+		localStorage.setItem('browserTag', tag)
 	}
 
 	//you'll probably move browserTag into pinia so all the components can get to it
