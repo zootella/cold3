@@ -4,6 +4,8 @@ import { ref, watch, onMounted } from 'vue'
 import { log } from "~/library/library0";
 import { unique } from "~/library/library1";
 
+//try {
+
 let browserTag = ref('')
 let count = reactive({
 	global: 0,
@@ -22,24 +24,34 @@ function queryStorage() {
 	}
 	//you'll probably move browserTag into pinia so all the components can get to it
 }
+queryStorage()
+
 async function queryServer() {
+	try {
 
-	const r = await useFetch("/api/count")
-	count.global = r.data.value.countGlobal
-	count.browser = r.data.value.countBrowser
-	log(`fetched counts ${count.global} global, and ${count.browser} browser`)
+		let r = await useFetch('/api/count')
+		count.global = r.data.value.countGlobal
+		count.browser = r.data.value.countBrowser
+		log(`fetched counts ${count.global} global, and ${count.browser} browser`)
+
+	} catch (e) {
+		log('caught exception in query server')
+	}
 }
+//queryServer()
 
-onMounted(async () => {
-	queryStorage()
-	await queryServer()
+onMounted(() => {
 })
+
+async function clickedFetch() {
+	await queryServer()
+}
 
 async function clickedGlobal() {
 	count.global++
 }
 
-function clickedBrowser() {
+async function clickedBrowser() {
 	count.browser++
 }
 
@@ -48,6 +60,7 @@ function clickedBrowser() {
 
 <div>
 	<p>
+		<button @click="clickedFetch">fetch counts</button>,
 		Count
 		<button @click="clickedGlobal">{{ count.global }} global</button>,
 		<button @click="clickedBrowser">{{ count.browser }} browser</button>
