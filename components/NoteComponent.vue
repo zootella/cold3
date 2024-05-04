@@ -11,7 +11,9 @@ watch(note, (s) => {
 
 //load a note from local storage after the component mounts
 onMounted(() => {
-	note.value = localStorage.getItem('localNote') || ''
+	if (process.client) {//remember, nuxt could call this on the server!
+		note.value = localStorage.getItem('localNote') || ''
+	}
 });
 
 </script>

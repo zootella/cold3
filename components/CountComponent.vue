@@ -10,6 +10,7 @@ let count = reactive({
 	browser: 0
 })
 
+//only will work on client
 function queryStorage() {
 	try {
 		if (process.client) {
@@ -29,7 +30,7 @@ function queryStorage() {
 	}
 }
 
-/*
+//can work on server or client
 async function queryServer() {
 	try {
 
@@ -42,20 +43,17 @@ async function queryServer() {
 		log('caught error in query server')
 	}
 }
-*/
+
+if (process.client) queryStorage()
+queryServer()
 
 onMounted(() => {
-	queryStorage()
+	//would like to query server and storage before the component mounts
 })
 
-/*
 async function clickedFetch() {
 	await queryServer()
 }
-
-		<button @click="clickedFetch">fetch counts</button>,
-*/
-
 function clickedGlobal() {
 	count.global++
 }
@@ -63,11 +61,24 @@ function clickedBrowser() {
 	count.browser++
 }
 
+/*
+refactor based on current theories:
+
+useFetch right away
+that should be fine
+doing it later gets that warning, too
+
+protect localstorage with if process.client everywhere
+but it should still be able to go before onmounted
+
+*/
+
 </script>
 <template>
 
 <div>
 	<p>
+		<button @click="clickedFetch">fetch counts</button>,
 		Count
 		<button @click="clickedGlobal">{{ count.global }} global</button>,
 		<button @click="clickedBrowser">{{ count.browser }} browser</button>
