@@ -382,6 +382,15 @@ not in scope for this first pass:
 -unified chinese base256
 
 
+
+more bikeshedding here, but what if log worked like this
+log(a)
+turns a into text, and prefixes it with the timestamp
+log(a, b)
+not sure anymore
+the thing you forgot when designing this refactor above was that in the browser, you don't want everything text, because the browser inspector has arrows to go deep into nested objects, which you won't code yourself, and which is incredible
+
+
 */
 
 

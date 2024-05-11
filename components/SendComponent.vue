@@ -29,6 +29,7 @@ watch(phoneBox, (s) => {
 async function clickEmail() {
 	log(`clicked email, fetch sending password ${passwordBox.value} and email ${emailBox.value}`)
 	try {
+		//v just noticed that this is fetch, not useFetch, nor $fetch?!
 		let response = await fetch('/api/send_email', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
