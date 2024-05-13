@@ -64,7 +64,7 @@ function sayTick(tick) {
 	This is cold3.cc, on Cloudflare with Nuxt, unique <i>{{ unique() }}</i>, version 2024may13b.
 </p>
 
-<CountComponent />
+<DirectCountComponent />
 
 <p>
 	tick1 {{ sayTick(t.tick1) }}, script start<br/>

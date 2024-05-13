@@ -1,57 +1,95 @@
 <script setup>
-import { watch } from 'vue'
+
+import { ref, reactive, watch } from 'vue'
 import { log, see } from '~/library/library0'
+import { unique } from '~/library/library1'
+
+let browserTag = ref('')
+function queryStorage() {
+	try {
+		if (process.client) {//remember, nuxt runs this stuff on the cloudflare worker, too
+
+			let b = localStorage.getItem('browserTag')
+			if (b) {
+				browserTag.value = b
+			} else {
+				b = unique()
+				browserTag.value = b
+				localStorage.setItem('browserTag', b)
+			}
+			//you'll probably move browserTag into pinia so all the components can get to it
+		}
+	} catch (e) {
+		log('query storage caught', e)
+	}
+}
+queryStorage()
+
+let tick = reactive({
+	durationGlobal: '-',
+	durationBrowser: '-'
+})
 
 // useFetch with POST method to manage count data
 let { data, fetching, error } = useFetch('/api/count', {
 	method: 'POST',
 	body: {
-		count1: 0,
-		count2: 0,
+		countGlobal: 0,
+		countBrowser: 0,
 		message: 'first message'
 	}
 })
 
 // Function to increment counts
 async function incrementCount(increment1, increment2) {
-	let tick1 = Date.now()
-	let f = await $fetch('/api/count', {
-		method: 'POST',
-		body: {
-			count1: increment1,
-			count2: increment2,
-			message: 'later message'
-		}
-	})
-	let tick2 = Date.now()
-	log(`fetch ran in ${tick2 - tick1}ms`)
-	console.log(f)
+	try {
+
+		let tick1 = Date.now()
+		let data2 = await $fetch('/api/count', {
+			method: 'POST',
+			body: {
+				countGlobal: increment1,
+				countBrowser: increment2,
+				message: 'later message'
+			}
+		})
+		let tick2 = Date.now()
+		log(`fetch ran in ${tick2 - tick1}ms`)
+		console.log('data.value.countGlobal')
+		console.log(data.value.countGlobal)
+
+		data.value.countGlobal = data2.countGlobal
+		tick.durationGlobal = tick2 - tick1
+
+	} catch (e) {
+		log('increment count caught', e)
+	}
 }
 
 // Watch for changes to the data object and log the message
 watch(data, (newData, oldData) => {//data contains reactive members, newData and oldData are unwrapped
-	log('watch data', see(oldData), see(newData))
+//	log('watch data', see(oldData), see(newData))
 })
 
 </script>
 
 <template>
 	<div>
-		<h1>Count Details, hi</h1>
 
 		<!-- Only display the count details if the data is available -->
 		<p v-if="data">
-			count1: {{ data.count1 }} <br>
-			count2: {{ data.count2 }}
+
+			Counts
+			<button @click="incrementCount(1, 0)">{{ data.countGlobal }} global</button>
+			updated in {{ tick.durationGlobal }}ms, and
+			<button @click="incrementCount(0, 1)">{{ data.countBrowser }} browser</button>
+			updated in {{ tick.durationBrowser }}ms for this browser tagged <i>{{ browserTag }}</i>.
+
 		</p>
 		<!-- Display a loading message while the data is being fetched -->
 		<p v-else-if="fetching">Loading...</p>
 		<!-- Display an error message if there was an error fetching the data -->
 		<p v-else>Error: {{ error }}</p>
-
-		<!-- Buttons to increment counts -->
-		<button @click="incrementCount(1, 0)">Increment Count 1</button>
-		<button @click="incrementCount(0, 1)">Increment Count 2</button>
 
 	</div>
 </template>
