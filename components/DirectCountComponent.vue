@@ -1,41 +1,48 @@
 <script setup>
 import { watch } from 'vue'
-import { log } from '~/library/library0'
+import { log, see } from '~/library/library0'
 
 // useFetch with POST method to manage count data
-let { data, fetching, error, execute } = useFetch('/api/count', {
+let { data, fetching, error } = useFetch('/api/count', {
 	method: 'POST',
-	params: { count1: 0, count2: 0 } // Default params to fetch counts without incrementing
+	body: {
+		count1: 0,
+		count2: 0,
+		message: 'first message'
+	}
 })
 
 // Function to increment counts
 async function incrementCount(increment1, increment2) {
-	await execute({
+	let tick1 = Date.now()
+	let f = await $fetch('/api/count', {
 		method: 'POST',
-		params: {
+		body: {
 			count1: increment1,
-			count2: increment2
+			count2: increment2,
+			message: 'later message'
 		}
 	})
+	let tick2 = Date.now()
+	log(`fetch ran in ${tick2 - tick1}ms`)
+	console.log(f)
 }
 
 // Watch for changes to the data object and log the message
-watch(data, (newData) => {
-	if (newData && newData.message) {
-		log('component got response with message: ' + newData.message);
-	}
+watch(data, (newData, oldData) => {//data contains reactive members, newData and oldData are unwrapped
+	log('watch data', see(oldData), see(newData))
 })
 
 </script>
 
 <template>
 	<div>
-		<h1>Count Details</h1>
+		<h1>Count Details, hi</h1>
 
 		<!-- Only display the count details if the data is available -->
 		<p v-if="data">
-			Count 1: {{ data.count1 }} <br>
-			Count 2: {{ data.count2 }}
+			count1: {{ data.count1 }} <br>
+			count2: {{ data.count2 }}
 		</p>
 		<!-- Display a loading message while the data is being fetched -->
 		<p v-else-if="fetching">Loading...</p>

@@ -1,79 +1,66 @@
 
 import { log, see } from '../../library/library0.js'
+/*
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY)
+*/
 
 export default defineEventHandler(async (event) => {
-
 	let o = {}
-	o.message = 'hello from cold3 api count, version 2024may11b'
-	o.countGlobal = 5
-	o.countBrowser = 6
-	o.count1 = 1
-	o.count2 = 2
+	try {
 
-	log('hi from the count api, before')
 
-  const { data, error } = await supabase.from('countries').select('*')
-  if (error) {
-  	log('error', see(error))
-  } else {
-  	log('no error, got data:', see(data), see(data[0]))
-  }
+		let body = await readBody(event)
+		log('body is:', see(body))
 
-	log('hi from the count api, after')
+		o.message = 'hi from api count, version 2024may13b'
+		o.mirroredBody = body
 
 
 /*
-		const body = await readBody(event)
-		r.passwordCorrect = (body.password == process.env.ACCESS_SEND_PASSWORD)
-		r.sendgridApiKeyLength = sendgridApiKey.length
-		if (r.passwordCorrect && r.sendgridApiKeyLength) {
-			r.sendNote = 'api key and password ok, will send'
-			await sendEmail()
-		} else {
-			r.sendNote = "api key or password not ok, won't send"
+
+		//create the row if it doesn't exist
+		if (!(await rowExists())) {
+			await createRow()
+			log("row didn't exist, created it")
 		}
-		r.handlerEnd = 'made it to the end'
-		look(r)
+
+
+		//increment
+		let i = 0
+		if (body.count1 > 0) {
+			log('need to increment the count')
+
+			i = +(await readRow())//read, convert string to int afterards
+			i += body.count1//increment with requested value
+//			writeRow(i+'')//write, convert int to string beforehand
+
+			log('deep inside', i+'')
+		}
+
+		//read
+//		i = +(await readRow())//read or read again to check, convert string to int afterards
+
+
+		o.countGlobal = 0
+		o.countBrowser = 0
+		o.count1 = i
+		o.count2 = 0
+		o.message = 'hello from cold3 api count, version 2024may11b'
+
 */
 
-
-
-	/*
-	import { createClient } from '@supabase/supabase-js'
-
-	const supabaseUrl = 'your-supabase-url';
-	const supabaseKey = 'your-supabase-key';
-	const supabase = createClient(supabaseUrl, supabaseKey);
-
-	async function getGlobalCount() {
-		const { data, error } = await supabase
-			.from('table_settings')
-			.select('value')
-			.eq('key', 'global_count')
-			.single();  // Use `.single()` to return a single row directly
-
-		if (error) {
-			console.error('Error fetching global_count:', error);
-			return null; // Or handle the error as needed
-		}
-
-		return data.value;
+	} catch (e) {
+		log('count caught: ', e)
 	}
-
-	getGlobalCount().then(value => console.log('Global Count:', value));
-	*/
-
-
 	return o;
 });
 
 
 
 
-
+/*
 
 // Four functions for the row 'hits' in table 'table_settings'
 
@@ -105,6 +92,7 @@ async function readRow() {
 
 // 4. Write a new value
 async function writeRow(newValue) {
+	log('hi in write row')
 	// SQL equivalent: UPDATE table_settings SET value = 'newValue' WHERE key = 'hits'
 	let { data, error } = await supabase
 		.from('table_settings').update({ value: newValue }).eq('key', 'hits')
@@ -113,7 +101,7 @@ async function writeRow(newValue) {
 }
 
 
-
+*/
 
 
 
