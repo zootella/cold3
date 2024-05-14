@@ -1,6 +1,6 @@
 <script setup>
 
-import { log } from '~/library/library0'
+//import { log } from '~/library/library0'
 import { customAlphabet } from 'nanoid'
 
 const generator1 = customAlphabet('abcdefghijklmnopqrstuvwxyz', 4)

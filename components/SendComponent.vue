@@ -1,6 +1,6 @@
 <script setup>
 
-import { log, see } from '~/library/library0'
+//import { log, see } from '~/library/library0'
 import { ref, reactive, watch, onMounted } from 'vue'
 
 const passwordMessage = ref('')

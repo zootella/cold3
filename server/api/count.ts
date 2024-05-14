@@ -8,11 +8,14 @@ export default defineEventHandler(async (event) => {
 	let o = {}
 	try {
 
+		//no, you have to import stuff manually for the api
+		//log('compostable on server? ' + typeof utility1)
+
 
 		let body = await readBody(event)
 		log('body is:', see(body))
 
-		o.message = 'hi from api count, version 2024may13b'
+		o.message = 'hi from api count, version 2024may14a'
 		o.mirroredBody = body
 
 

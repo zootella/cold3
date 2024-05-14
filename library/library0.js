@@ -6,7 +6,9 @@
 
 
 
-
+export function utility1() {
+	return 'hi from utility 1'
+}
 
 
 

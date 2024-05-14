@@ -1,7 +1,7 @@
 <script setup>
 
 import { ref, reactive, watch, onMounted } from 'vue'
-import { log } from '~/library/library0'
+//import { log } from '~/library/library0'
 import { unique } from '~/library/library1'
 
 let browserTag = ref('')
