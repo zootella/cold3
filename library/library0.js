@@ -6,9 +6,6 @@
 
 
 
-export function utility1() {
-	return 'hi from utility 1'
-}
 
 
 
@@ -63,7 +60,6 @@ export function runTests() {
 		log(m)
 	}
 }
-
 
 
 

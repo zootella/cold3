@@ -13,7 +13,7 @@ and if that works, can you not open the dev tools until you want to walk an obje
 
 <template>
 <div>
-<p>icarus, version 2024mar6</p>
+<p>icarus, version 2024may14a</p>
 </div>
 </template>
 
