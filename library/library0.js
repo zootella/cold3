@@ -442,6 +442,104 @@ i guess refactor it so you don't have log destinations anymore
 
 
 
+/*
+
+2014may17 hopefully good thinking on finishing off this bike shed
+
+inspect
+if you want to inspect an object directly, and y ou know you're in the browser inspector, just use console.log directly
+your function inspect() is new, replaces lots of old stuff, and works like this
+doesn't log anything, always returns a string
+string is always indented, never tries to be single line
+doesn't return a tick count, obviously
+better than json stringify and node util inspect, actually gets the functions and stuff those miss
+always indents by two spaces
+goes deep, stopping at 2k of text output
+uses 7 number, true boolean, "string", [array], {object}, function()
+if you want to see the name of an object, you have to wrap like inspect({object})
+test with exception objects
+you're going to use inspect to see what third party rest apis are telling your worker
+
+log
+starts with timestamp and tilde
+logs to record and console.log
+turns everything into text, always, using say
+keeps everything on one line, always
+doesn't call inspect, ever--you have to call that manually
+
+say
+turns directly into text, succicently--inspect is the verbose and deep one
+
+
+
+
+
+
+
+*/
+
+
+
+function inspect(...a) {
+	return 'write the new inspect here'
+}
+
+
+
+
+
+export function earlierSee(...a) {//see into things, including key name, type, and value
+	let s = ''
+	for (let i = 0; i < a.length; i++) {
+		s += (a.length > 1 ? newline : '') + _earlierSee2(a[i])//put multiple arguments on separate lines
+	}
+	return s
+}
+function _earlierSee2(o) {
+	let s = ''
+	if (o instanceof Error) {
+		s = '(error) ' + o.stack//errors have their information here
+	} else if (Array.isArray(o)) {
+		s = `(array) [${o}]`
+	} else if (typeof o == 'object') {
+		s += '(object) {'
+		let first = true
+		for (let k in o) {
+			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
+			s += `${k} (${typeof o[k]}) ${_earlierSee3(o[k])}`
+		}
+		s += '}'
+	} else {
+		s = `(${typeof o}) ${_earlierSee3(o)}`
+	}
+	return s
+}
+function _earlierSee3(o) {
+	try {
+		return JSON.stringify(o, null)//single line
+	} catch (e) { return '(circular reference)' }//watch out for circular references
+}
+test(() => {
+	ok(earlierSee() == '')
+	ok(earlierSee("a") == '(string) "a"')
+	ok(earlierSee(5) == '(number) 5')
+	ok(earlierSee({}) == '(object) {}')
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
