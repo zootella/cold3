@@ -31,7 +31,7 @@ export function ok(assertion) {
 		assertionsFailed++
 		let m = 'Test not ok, second line number expanded below:'
 		console.error(m)
-		log(m)
+		return m
 	}
 }
 export function runTests() {
@@ -43,17 +43,18 @@ export function runTests() {
 			tests[i]()
 		} catch (e) {
 			testsThrew++
-			log(e)
 			console.error(e)
+			return e
 		}
 	}
 	if (assertionsFailed || testsThrew) {
 		let m = `❌ 🠕🠕🠕 Tests failed 🠕🠕🠕 ❌`
 		console.error(m)
-		log(m)
+		return m
 	} else {
-		let m = `✅ ${assertionsPassed} assertions in ${tests.length} tests all passed on ${sayNow()} ✅`
-		log(m)
+		let m = `✅ ${sayNow()} ~ ${assertionsPassed} assertions in ${tests.length} tests all passed ✅`
+		console.log(m)
+		return m
 	}
 }
 
@@ -146,6 +147,12 @@ export function log(...a) {
 
 	//log to each destination
 	logDestinations.forEach(f => f(display))
+}
+
+
+//todo
+export function temporaryGetLogRecord() {
+	return logRecord
 }
 
 //                                    _                 
@@ -283,11 +290,21 @@ if log gets a single non-string, or multiple anything, call console.log multiple
 
 
 test(() => {
-	log('hi hopefully on reload, 2')
+	log('hi hopefully on reload, 5')
 })
 
 
 
+test(() => {
+	ok(true)
+	ok(true)
+	ok(true)
+
+
+
+
+
+})
 
 
 
