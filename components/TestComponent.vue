@@ -5,6 +5,9 @@ import { newline, runTests, ok, test, addLogDestination } from '~/library/librar
 //import { log, newline, runTests, ok, test, addLogDestination } from '~/library/library0'
 import { unique } from '~/library/library1'
 
+
+import { getLogsAndRunTests } from '~/library/library2'
+
 const logContents = ref('');
 
 
@@ -43,7 +46,9 @@ and make changing and saving library0 rerun the tests and refresh the page
 maybe you can't do this within nuxt because it won't update unless necessary, though
 */
 
-
+function getLogs() {
+	return getLogsAndRunTests()
+}
 
 
 
@@ -52,6 +57,9 @@ maybe you can't do this within nuxt because it won't update unless necessary, th
 <div>
 
 <p><button @click="runTests">run tests again, oh yeah!</button></p>
+<p>new design:</p>
+<p><textarea readOnly :value="getLogsAndRunTests()"></textarea></p>
+<p>earlier design</p>
 <p><textarea readOnly :value="logContents"></textarea></p>
 
 </div>

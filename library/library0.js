@@ -35,10 +35,6 @@ export function ok(assertion) {
 	}
 }
 export function runTests() {
-	let g = String.fromCodePoint(0x2705);//green check emoji
-	let r = String.fromCodePoint(0x274C);//red x
-	let a = String.fromCodePoint(0x1F815);//up arrow
-
 	assertionsPassed = 0
 	assertionsFailed = 0
 	testsThrew = 0
@@ -52,11 +48,11 @@ export function runTests() {
 		}
 	}
 	if (assertionsFailed || testsThrew) {
-		let m = `${r} ${a}${a}${a} Tests failed ${a}${a}${a} ${r}`
+		let m = `❌ 🠕🠕🠕 Tests failed 🠕🠕🠕 ❌`
 		console.error(m)
 		log(m)
 	} else {
-		let m = `${g} ${assertionsPassed} assertions in ${tests.length} tests all passed on ${sayNow()} ${g}`
+		let m = `✅ ${assertionsPassed} assertions in ${tests.length} tests all passed on ${sayNow()} ✅`
 		log(m)
 	}
 }
@@ -347,6 +343,18 @@ if (r.responseText) r.responseData = JSON.parse(r.responseText)//throws if you g
 
 
 
+/*
+2024may16
+dustiest corner of the bike shed
+make sure your log and see plan is good before you go back in there
+-get rid of log destinations
+-do program an indented deep object sayer
+-dont use it when there's a browser inspector which has arrows
+
+
+
+
+*/
 
 
 
@@ -388,6 +396,30 @@ log(a, b)
 not sure anymore
 the thing you forgot when designing this refactor above was that in the browser, you don't want everything text, because the browser inspector has arrows to go deep into nested objects, which you won't code yourself, and which is incredible
 
+
+*/
+
+
+/*
+moar notes and ideas
+
+instead of see doing lines like
+(string) s "hello"
+all you need is "hello" because quotes mean string
+{object}
+[array]
+"string"
+7 with no punctuation is a number
+true with no punctuation is a boolean
+
+
+you made the separte vite entry point
+but now nuxt localhost:3000/test is working so well you don't need it(?)
+like, it's just as fast
+and you can Ctrl+S library0.js several times in a row and it refreshes each time
+and, the text stays in place on the page, and also scrolls down in the console
+so, what more is there to do here?
+i guess refactor it so you don't have log destinations anymore
 
 */
 

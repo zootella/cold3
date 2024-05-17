@@ -1,4 +1,14 @@
 
+/*
+database.js
+database schema, sql statements to create the tables
+database utility functions
+interface between the application and the database
+keep it all here together for easy refactoring and auditing
+*/
+
+
+/*
 SQL statements fed into Supabase to create the database tables.
 Here in text notes; it would be better if they were tracked in git some other way!
 
@@ -11,3 +21,43 @@ CREATE TABLE table_counts (
   browser_tag CHAR(21) PRIMARY KEY,
   count BIGINT DEFAULT 0 NOT NULL
 );
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
