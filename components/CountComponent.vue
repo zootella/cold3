@@ -1,8 +1,6 @@
 <script setup>
 
 import { ref, reactive, watch, onMounted } from 'vue'
-//import { log } from '~/library/library0'
-import { unique } from '~/library/library1'
 
 let browserTag = ref('')
 let count = reactive({
@@ -19,7 +17,7 @@ function queryStorage() {
 			if (b) {
 				browserTag.value = b
 			} else {
-				b = unique()
+				b = tag()
 				browserTag.value = b
 				localStorage.setItem('browserTag', b)
 			}

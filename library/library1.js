@@ -1,6 +1,6 @@
 
 //library1 can import modules saved in the nuxt project's package.json above
-import { test, ok, now, say, see, log, sayNow } from './library0.js'
+import { test, ok, now, say, inspect, log, sayNow } from './library0.js'
 import { customAlphabet } from 'nanoid'
 
 
@@ -8,10 +8,8 @@ import { customAlphabet } from 'nanoid'
 
 
 
-
-
-//generate a new universally unique double-clickable string of 21 letters and numbers
-export function unique() {
+//generate a new universally unique double-clickable tag of 21 letters and numbers
+export function tag() {
 	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
 	return customAlphabet(alphabet, 21)()//same default nanoid length
 }

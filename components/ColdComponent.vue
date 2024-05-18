@@ -2,8 +2,6 @@
 
 //imports
 import { ref, reactive, onMounted } from "vue";
-import { unique } from "~/library/library1";//nuxt makes tilde project root
-//import { see, log } from "~/library/library0";//nuxt makes tilde project root
 
 //ticks
 const t = reactive({
@@ -15,13 +13,13 @@ const t = reactive({
 	duration34: 0,//how long the fetch took
 	difference35: 0//differences between the clocks
 });
-t.tick1 = Date.now();
-onMounted(() => { t.tick2 = Date.now(); });
+t.tick1 = now();
+onMounted(() => { t.tick2 = now(); });
 
 //enter button and log box
 const textContents = ref("");
 function submitEnter() {
-	log(`entered "${textContents.value}"`);
+	logToBox(`entered "${textContents.value}"`);
 	textContents.value = "";
 }
 const logText = ref("");
@@ -29,31 +27,21 @@ const logText = ref("");
 //fetch button and use fetch
 await doFetch();
 async function doFetch() {
-	t.tick3 = Date.now();
+	t.tick3 = now();
 	const r = await useFetch("/api/mirror");
-	t.tick4 = Date.now();
+	t.tick4 = now();
 	t.duration34 = t.tick4 - t.tick3;
-	log(`fetched message "${r.data.value.message}", access length "${r.data.value.accessLength}", unique "${r.data.value.unique}", tick "${r.data.value.serverTick}"`);
+	logToBox(`fetched message "${r.data.value.message}", access length "${r.data.value.accessLength}", tag "${r.data.value.tag}", tick "${r.data.value.serverTick}"`);
 	t.tick5 = r.data.value.serverTick;
 	t.difference35 = t.tick5 - t.tick3;
 }
 async function clickedFetch() { await doFetch(); }
 
 //library functions
-function log(s) {
-	let s2 = `${sayTick(Date.now())} '${s}'`;
-	console.log(s2);
+function logToBox(s) {
+	let s2 = `${sayTick(now())} '${s}'`;
+	log(s2);
 	logText.value += `\r\n${s2}`;
-}
-function sayTick(tick) {
-	if (!tick) return "(not yet)";//don't render jan1 1970 as a time something actually happened
-	var date = new Date(tick);//create a Date object using the given tick count
-	var weekday = date.toLocaleDateString('en-US', { weekday: 'short' });//get text like "Mon"
-	var hours = date.getHours();//extract hours, minutes, seconds, and milliseconds
-	var minutes = date.getMinutes();
-	var seconds = date.getSeconds();
-	var milliseconds = date.getMilliseconds().toString().padStart(3, "0");
-	return `${weekday} ${hours}h ${minutes}m ${seconds}.${milliseconds}s`;
 }
 
 </script>
@@ -61,7 +49,7 @@ function sayTick(tick) {
 <div>
 
 <p>
-	This is cold3.cc, on Cloudflare with Nuxt, unique <i>{{ unique() }}</i>, version 2024may15a.
+	This is cold3.cc, on Cloudflare with Nuxt, tag <i>{{ tag() }}</i>, version 2024may17a.
 </p>
 
 <DirectCountComponent />

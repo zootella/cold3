@@ -8,10 +8,6 @@
 
 
 
-
-
-
-
 //  _   _               _            _       
 // | |_(_)_ __  _   _  | |_ ___  ___| |_ ___ 
 // | __| | '_ \| | | | | __/ _ \/ __| __/ __|
@@ -48,7 +44,7 @@ export function runTests() {
 		}
 	}
 	if (assertionsFailed || testsThrew) {
-		let m = `❌ 🠕🠕🠕 Tests failed 🠕🠕🠕 ❌`
+		let m = `❌ Tests failed ❌`
 		console.error(m)
 		return m
 	} else {
@@ -111,7 +107,7 @@ Size.pb = 1024*Size.tb//pebibyte, really big
 //                                                           
 
 export function toss(note, watch) {//prepare your own watch object with named variables you'd like to see
-	let s = `toss ${sayNow()} ~ ${note} ${see(watch)}`
+	let s = `toss ${sayNow()} ~ ${note} ${inspect(watch)}`
 	console.error(s)
 	if (watch) console.error(watch)
 	throw new Error(s)
@@ -143,12 +139,12 @@ export function log(...a) {
 	if (logRecord.length > logRecordLimit) logRecord = 'early logs too long to keep ~';
 }
 
-//                                    _                 
-//  ___  __ _ _   _    __ _ _ __   __| |  ___  ___  ___ 
-// / __|/ _` | | | |  / _` | '_ \ / _` | / __|/ _ \/ _ \
-// \__ \ (_| | |_| | | (_| | | | | (_| | \__ \  __/  __/
-// |___/\__,_|\__, |  \__,_|_| |_|\__,_| |___/\___|\___|
-//            |___/                                     
+//                                    _   _                           _   
+//  ___  __ _ _   _    __ _ _ __   __| | (_)_ __  ___ _ __   ___  ___| |_ 
+// / __|/ _` | | | |  / _` | '_ \ / _` | | | '_ \/ __| '_ \ / _ \/ __| __|
+// \__ \ (_| | |_| | | (_| | | | | (_| | | | | | \__ \ |_) |  __/ (__| |_ 
+// |___/\__,_|\__, |  \__,_|_| |_|\__,_| |_|_| |_|___/ .__/ \___|\___|\__|
+//            |___/                                  |_|                  
 
 export function say(...a) {//turn anything into text, always know you're dealing with a string
 	let s = '';
@@ -157,306 +153,8 @@ export function say(...a) {//turn anything into text, always know you're dealing
 	}
 	return s;
 }
-/*
-TODO
-see is too confusing; your planned replacement will be called inspect
-so then the core functions are log, say, and inspect
-*/
-export function see(...a) {//see into things, including key name, type, and value
-	let s = ''
-	for (let i = 0; i < a.length; i++) {
-		s += (a.length > 1 ? newline : '') + _see2(a[i])//put multiple arguments on separate lines
-	}
-	return s
-}
-function _see2(o) {
-	let s = ''
-	if (o instanceof Error) {
-		s = '(error) ' + o.stack//errors have their information here
-	} else if (Array.isArray(o)) {
-		s = `(array) [${o}]`
-	} else if (typeof o == 'object') {
-		s += '(object) {'
-		let first = true
-		for (let k in o) {
-			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
-			s += `${k} (${typeof o[k]}) ${_see3(o[k])}`
-		}
-		s += '}'
-	} else {
-		s = `(${typeof o}) ${_see3(o)}`
-	}
-	return s
-}
-function _see3(o) {
-	try {
-		return JSON.stringify(o, null)//single line
-	} catch (e) { return '(circular reference)' }//watch out for circular references
-}
-test(() => {
-	ok(say() == '')
-	ok(say('a') == 'a')
-	ok(say('a', 'b') == 'a b')
-	ok(say(7) == '7')
-	let o = {};
-	ok(say(o.notThere) == 'undefined')
-})
-test(() => {
-	ok(see() == '')
-	ok(see("a") == '(string) "a"')
-	ok(see(5) == '(number) 5')
-	ok(see({}) == '(object) {}')
-})
-test(() => {
-	//uncomment to try out look
-	/*
-	let b = true
-	let s = 'hello'
-	let n = 721
-	let a = ["p", "q", "r"]
-	let o = {
-		name: 'apple',
-		quantity: 11,
-		f: (()=>{}),
-		below: {
-			block: 'bedrock'
-		}
-	}
-	let e = (() => {
-		let o = {}
-		try {
-			o.notThere.andBeyond
-		} catch (e) {
-			return e
-		}
-	})()
-	log(see(b, s, n, a, o, e))
-	log(see(b, s, {n, a, o, e}))
-	*/
-})
-/*
-todo, javascript is so wonky it's hard to make a see that lets you easily look inside
-here are some possible improvements
-get things on multiple lines and indent them 2 spaces
-there's lots of:
 
-ok (boolean) true
-n (number) 7
-responseText (string) ""
-clone (function) undefined
-o (object) {message (string) "hello"...}
-a (array) [1,2,3]
-
-shorten this so it's just:
-
-ok: true,
-n: 7,
-responseText: "",
-clone(),
-o {
-	message: "hello"
-	...
-},
-a [1,2,3]
-
-because json stringify skips functions, you'll probably have to write your own recursive walker and indenter
-and that's fine, go three levels deep by default
-
-moar notes for your return to this bike shed:
-
-remove look(o), instead you have to call log(see(o))
-
-remove the multiple loggers feature
-you want icarus, but will do that later as a separate system
-that system will have auto refresh
-in-place traffic lights
-and an in-place log that is maybe icarus()
-
-you just remembered that log shouldn't turn everything into a string
-doing so breaks the inspector's > arrow
-this may also be why earlier log didn't tickstamp
-if log gets a single string, do it all on one line
-if log gets a single non-string, or multiple anything, call console.log multiple times for multiple lines
-*/
-
-
-
-
-
-
-
-
-
-//  _   _      _    
-// | |_(_) ___| | __
-// | __| |/ __| |/ /
-// | |_| | (__|   < 
-//  \__|_|\___|_|\_\
-//                 
-
-//turn a tick count into text like 'Sat 15h 49m 55.384s'
-export function sayTick(tick) {
-	if (!tick) return '(not yet)';//don't render 1970jan1 as a time something actually happened
-	let date = new Date(tick);//create a date object using the given tick count
-	let weekday = date.toLocaleDateString('en-US', { weekday: 'short' });//get text like 'Mon'
-	let hours = date.getHours();//extract hours, minutes, seconds, and milliseconds
-	let minutes = date.getMinutes();
-	let seconds = date.getSeconds();
-	let milliseconds = date.getMilliseconds().toString().padStart(3, '0');
-	return `${weekday} ${hours}h ${minutes}m ${seconds}.${milliseconds}s`;
-}
-export function sayNow() { return sayTick(now()) }
-export const now = Date.now;//just a shortcut
-
-
-
-export function jsonStringify(o) {
-	/*
-//watch out for a circular reference
-try {
-return JSON.stringify(o, null)//single line
-} catch (e) { return '(circular reference)' }//watch out for circular references
-*/
-}
-
-export function jsonParse(s) {
-	/*
-//watch out for a blank body
-//get the text first, and keep that, too
-
-r.responseText = await response.text()//might be nothing, even on success
-if (r.responseText) r.responseData = JSON.parse(r.responseText)//throws if you give it nothing
-*/
-
-}
-
-
-
-
-
-
-
-/*
-2024may16
-dustiest corner of the bike shed
-make sure your log and see plan is good before you go back in there
--get rid of log destinations
--do program an indented deep object sayer
--dont use it when there's a browser inspector which has arrows
-
-
-
-
-*/
-
-
-
-
-/*
-2024apr26
-code encoding, some bikeshedding
-
-[]from separate project entry point, Ctrl+S leads to green or red check on page
-
-library0 ~
-
-[]base16 data
-[]base64 data
-[]base62 data, your code
-[]base62 integer, chatGPT's code
-
-[]round trip check
-[]toss on failure
-[]speed test your base62 with the browser's base64
-
-library1 ~
-
-[]random 1-9
-[]random 0-9
-[]random 0-9 A-Z a-z
-
-not in scope for this first pass:
--page rendered width analysis
--unicode search for narrow accents that still render
--unified chinese base256
-
-
-
-more bikeshedding here, but what if log worked like this
-log(a)
-turns a into text, and prefixes it with the timestamp
-log(a, b)
-not sure anymore
-the thing you forgot when designing this refactor above was that in the browser, you don't want everything text, because the browser inspector has arrows to go deep into nested objects, which you won't code yourself, and which is incredible
-
-
-*/
-
-
-/*
-moar notes and ideas
-
-instead of see doing lines like
-(string) s "hello"
-all you need is "hello" because quotes mean string
-{object}
-[array]
-"string"
-7 with no punctuation is a number
-true with no punctuation is a boolean
-
-
-you made the separte vite entry point
-but now nuxt localhost:3000/test is working so well you don't need it(?)
-like, it's just as fast
-and you can Ctrl+S library0.js several times in a row and it refreshes each time
-and, the text stays in place on the page, and also scrolls down in the console
-so, what more is there to do here?
-i guess refactor it so you don't have log destinations anymore
-
-*/
-
-
-
-/*
-
-2014may17 hopefully good thinking on finishing off this bike shed
-
-inspect
-if you want to inspect an object directly, and y ou know you're in the browser inspector, just use console.log directly
-your function inspect() is new, replaces lots of old stuff, and works like this
-doesn't log anything, always returns a string
-string is always indented, never tries to be single line
-doesn't return a tick count, obviously
-better than json stringify and node util inspect, actually gets the functions and stuff those miss
-always indents by two spaces
-goes deep, stopping at 2k of text output
-uses 7 number, true boolean, "string", [array], {object}, function()
-if you want to see the name of an object, you have to wrap like inspect({object})
-test with exception objects
-you're going to use inspect to see what third party rest apis are telling your worker
-
-log
-starts with timestamp and tilde
-logs to record and console.log
-turns everything into text, always, using say
-keeps everything on one line, always
-doesn't call inspect, ever--you have to call that manually
-
-say
-turns directly into text, succicently--inspect is the verbose and deep one
-
-
-
-
-
-
-
-*/
-
-
-
-export function inspect(...a) {
+export function inspect(...a) {//inspect into things, including key name, type, and value
 	let s = ''
 	for (let i = 0; i < a.length; i++) {
 		s += (a.length > 1 ? newline : '') + _inspect2(a[i])//put multiple arguments on separate lines
@@ -489,6 +187,20 @@ function _inspect3(o) {
 		return JSON.stringify(o, null)//single line
 	} catch (e) { return '(circular reference)' }//watch out for circular references
 }
+test(() => {
+	ok(say() == '')
+	ok(say('a') == 'a')
+	ok(say('a', 'b') == 'a b')
+	ok(say(7) == '7')
+	let o = {};
+	ok(say(o.notThere) == 'undefined')
+})
+test(() => {
+	ok(inspect() == '')
+	ok(inspect("a") == '"a"')
+	ok(inspect(5) == '5')
+	ok(inspect({}) == '{}')
+})
 /*
 TODO never add these additional features, because this bike shed is fancy enough:
 -recurse, indenting two spaces, stopping if the text grows above 2kb
@@ -501,9 +213,35 @@ stack trace lines start with four spaces, maybe just remove them
 spaces and tabs in function code come through, maybe trim them and separate with the pilcrow
 */
 test(() => {
-	//comment to see inspect in action
-	return
-
+	//early inspect practice
+	/*
+	let b = true
+	let s = 'hello'
+	let n = 721
+	let a = ["p", "q", "r"]
+	let o = {
+		name: 'apple',
+		quantity: 11,
+		f: (()=>{}),
+		below: {
+			block: 'bedrock'
+		}
+	}
+	let e = (() => {
+		let o = {}
+		try {
+			o.notThere.andBeyond
+		} catch (e) {
+			return e
+		}
+	})()
+	log(inspect(b, s, n, a, o, e))
+	log(inspect(b, s, {n, a, o, e}))
+	*/
+})
+test(() => {
+	//more recent inspect practice
+	/*
 	log(inspect(true))//boolean
 	log(inspect(7))//number
 	log(inspect('hello'))//string
@@ -523,48 +261,7 @@ test(() => {
 	} catch (e) {
 		log(inspect(e))//error with stack trace
 	}
-})
-
-
-
-
-
-export function earlierSee(...a) {//see into things, including key name, type, and value
-	let s = ''
-	for (let i = 0; i < a.length; i++) {
-		s += (a.length > 1 ? newline : '') + _earlierSee2(a[i])//put multiple arguments on separate lines
-	}
-	return s
-}
-function _earlierSee2(o) {
-	let s = ''
-	if (o instanceof Error) {
-		s = '(error) ' + o.stack//errors have their information here
-	} else if (Array.isArray(o)) {
-		s = `(array) [${o}]`
-	} else if (typeof o == 'object') {
-		s += '(object) {'
-		let first = true
-		for (let k in o) {
-			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
-			s += `${k} (${typeof o[k]}) ${_earlierSee3(o[k])}`
-		}
-		s += '}'
-	} else {
-		s = `(${typeof o}) ${_earlierSee3(o)}`
-	}
-	return s
-}
-function _earlierSee3(o) {
-	try {
-		return JSON.stringify(o, null)//single line
-	} catch (e) { return '(circular reference)' }//watch out for circular references
-}
-test(() => {
-	ok(earlierSee() == '')
-	ok(earlierSee("a") == '(string) "a"')
-	ok(earlierSee(5) == '(number) 5')
-	ok(earlierSee({}) == '(object) {}')
+	*/
 })
 
 
@@ -575,6 +272,27 @@ test(() => {
 
 
 
+
+//  _   _      _    
+// | |_(_) ___| | __
+// | __| |/ __| |/ /
+// | |_| | (__|   < 
+//  \__|_|\___|_|\_\
+//                 
+
+//turn a tick count into text like 'Sat 15h 49m 55.384s'
+export function sayTick(tick) {
+	if (!tick) return '(not yet)';//don't render 1970jan1 as a time something actually happened
+	let date = new Date(tick);//create a date object using the given tick count
+	let weekday = date.toLocaleDateString('en-US', { weekday: 'short' });//get text like 'Mon'
+	let hours = date.getHours();//extract hours, minutes, seconds, and milliseconds
+	let minutes = date.getMinutes();
+	let seconds = date.getSeconds();
+	let milliseconds = date.getMilliseconds().toString().padStart(3, '0');
+	return `${weekday} ${hours}h ${minutes}m ${seconds}.${milliseconds}s`;
+}
+export function sayNow() { return sayTick(now()) }
+export const now = Date.now;//just a shortcut
 
 
 

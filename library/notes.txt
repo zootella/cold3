@@ -1,0 +1,307 @@
+
+
+
+
+
+
+
+
+
+//maybe wrap json parse and stringify to deal with errors you've encountered
+
+
+
+
+
+//    _                 
+//   (_)___  ___  _ __  
+//   | / __|/ _ \| '_ \ 
+//   | \__ \ (_) | | | |
+//  _/ |___/\___/|_| |_|
+// |__/                 
+
+export function jsonStringify(o) {//watch out for a circular reference
+	/*
+//watch out for a circular reference
+try {
+return JSON.stringify(o, null)//single line
+} catch (e) { return '(circular reference)' }//watch out for circular references
+*/
+}
+
+export function jsonParse(s) {//watch out for a blank body
+	/*
+//watch out for a blank body
+//get the text first, and keep that, too
+
+r.responseText = await response.text()//might be nothing, even on success
+if (r.responseText) r.responseData = JSON.parse(r.responseText)//throws if you give it nothing
+*/
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+2024apr26
+code encoding, some bikeshedding
+
+[x]from separate project entry point, Ctrl+S leads to green or red check on page
+
+library0 ~
+
+[]base16 data
+[]base64 data
+[]base62 data, your code
+[]base62 integer, chatGPT's code
+
+[]round trip check
+[]toss on failure
+[]speed test your base62 with the browser's base64
+
+library1 ~
+
+[]random 1-9
+[]random 0-9
+[]random 0-9 A-Z a-z
+
+not in scope for this first pass:
+-page rendered width analysis
+-unicode search for narrow accents that still render
+-unified chinese base256
+
+
+
+
+
+*/
+
+
+
+
+
+
+
+/*
+
+2014may17 hopefully good thinking on finishing off this bike shed
+
+inspect
+if you want to inspect an object directly, and y ou know you're in the browser inspector, just use console.log directly
+your function inspect() is new, replaces lots of old stuff, and works like this
+doesn't log anything, always returns a string
+string is always indented, never tries to be single line
+doesn't return a tick count, obviously
+better than json stringify and node util inspect, actually gets the functions and stuff those miss
+always indents by two spaces
+goes deep, stopping at 2k of text output
+uses 7 number, true boolean, "string", [array], {object}, function()
+if you want to see the name of an object, you have to wrap like inspect({object})
+test with exception objects
+you're going to use inspect to see what third party rest apis are telling your worker
+
+log
+starts with timestamp and tilde
+logs to record and console.log
+turns everything into text, always, using say
+keeps everything on one line, always
+doesn't call inspect, ever--you have to call that manually
+
+say
+turns directly into text, succicently--inspect is the verbose and deep one
+
+
+
+
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+2024may16
+dustiest corner of the bike shed
+make sure your log and see plan is good before you go back in there
+-get rid of log destinations
+-do program an indented deep object sayer
+-dont use it when there's a browser inspector which has arrows
+
+
+
+
+*/
+
+
+
+
+/*
+more bikeshedding here, but what if log worked like this
+log(a)
+turns a into text, and prefixes it with the timestamp
+log(a, b)
+not sure anymore
+the thing you forgot when designing this refactor above was that in the browser, you don't want everything text, because the browser inspector has arrows to go deep into nested objects, which you won't code yourself, and which is incredible
+
+
+
+
+*/
+
+
+/*
+moar notes and ideas
+
+instead of see doing lines like
+(string) s "hello"
+all you need is "hello" because quotes mean string
+{object}
+[array]
+"string"
+7 with no punctuation is a number
+true with no punctuation is a boolean
+
+
+you made the separte vite entry point
+but now nuxt localhost:3000/test is working so well you don't need it(?)
+like, it's just as fast
+and you can Ctrl+S library0.js several times in a row and it refreshes each time
+and, the text stays in place on the page, and also scrolls down in the console
+so, what more is there to do here?
+i guess refactor it so you don't have log destinations anymore
+
+*/
+
+
+
+
+
+
+/*
+TODO
+see is too confusing; your planned replacement will be called inspect
+so then the core functions are log, say, and inspect
+*/
+/*
+export function see(...a) {//see into things, including key name, type, and value
+	let s = ''
+	for (let i = 0; i < a.length; i++) {
+		s += (a.length > 1 ? newline : '') + _see2(a[i])//put multiple arguments on separate lines
+	}
+	return s
+}
+function _see2(o) {
+	let s = ''
+	if (o instanceof Error) {
+		s = '(error) ' + o.stack//errors have their information here
+	} else if (Array.isArray(o)) {
+		s = `(array) [${o}]`
+	} else if (typeof o == 'object') {
+		s += '(object) {'
+		let first = true
+		for (let k in o) {
+			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
+			s += `${k} (${typeof o[k]}) ${_see3(o[k])}`
+		}
+		s += '}'
+	} else {
+		s = `(${typeof o}) ${_see3(o)}`
+	}
+	return s
+}
+function _see3(o) {
+	try {
+		return JSON.stringify(o, null)//single line
+	} catch (e) { return '(circular reference)' }//watch out for circular references
+}
+*/
+
+
+
+
+/*
+todo, javascript is so wonky it's hard to make a see that lets you easily look inside
+here are some possible improvements
+get things on multiple lines and indent them 2 spaces
+there's lots of:
+
+ok (boolean) true
+n (number) 7
+responseText (string) ""
+clone (function) undefined
+o (object) {message (string) "hello"...}
+a (array) [1,2,3]
+
+shorten this so it's just:
+
+ok: true,
+n: 7,
+responseText: "",
+clone(),
+o {
+	message: "hello"
+	...
+},
+a [1,2,3]
+
+because json stringify skips functions, you'll probably have to write your own recursive walker and indenter
+and that's fine, go three levels deep by default
+
+moar notes for your return to this bike shed:
+
+remove look(o), instead you have to call log(see(o))
+
+remove the multiple loggers feature
+you want icarus, but will do that later as a separate system
+that system will have auto refresh
+in-place traffic lights
+and an in-place log that is maybe icarus()
+
+you just remembered that log shouldn't turn everything into a string
+doing so breaks the inspector's > arrow
+this may also be why earlier log didn't tickstamp
+if log gets a single string, do it all on one line
+if log gets a single non-string, or multiple anything, call console.log multiple times for multiple lines
+*/
+
+
+
+

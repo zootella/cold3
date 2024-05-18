@@ -1,5 +1,5 @@
 
-import { log, see } from '../../library/library0.js'
+import { log, inspect } from '../../library/library0.js'
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY)
@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
 
 		let body = await readBody(event)
-		log('body is:', see(body))
+		log('body is:', inspect(body))
 
 		o.message = 'hi from api count, version 2024may15a'
 		o.mirroredBody = body
@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
 		o.countBrowser = 0
 		o.count1 = countGlobal
 		o.count2 = 0
-		o.message = 'hello from cold3 api count, version 2024may11b'
+		o.message = 'hello from cold3 api count, version 2024may17a'
 
 
 	} catch (e) {

@@ -1,8 +1,6 @@
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-//import { log, see } from '~/library/library0'
-import { unique } from '~/library/library1'
 
 
 
@@ -19,7 +17,7 @@ function queryStorage() {
 			if (b) {
 				browserTag.value = b
 			} else {
-				b = unique()
+				b = tag()
 				browserTag.value = b
 				localStorage.setItem('browserTag', b)
 			}
@@ -50,7 +48,7 @@ let { data, fetching, error } = useFetch('/api/count', {
 async function incrementCount(increment1, increment2) {
 	try {
 
-		let tick1 = Date.now()
+		let tick1 = now()
 		let data2 = await $fetch('/api/count', {
 			method: 'POST',
 			body: {
@@ -59,7 +57,7 @@ async function incrementCount(increment1, increment2) {
 				message: 'later message'
 			}
 		})
-		let tick2 = Date.now()
+		let tick2 = now()
 		log(`fetch ran in ${tick2 - tick1}ms`)
 		console.log('data.value.countGlobal')
 		console.log(data.value.countGlobal)
@@ -74,7 +72,7 @@ async function incrementCount(increment1, increment2) {
 
 // Watch for changes to the data object and log the message
 watch(data, (newData, oldData) => {//data contains reactive members, newData and oldData are unwrapped
-//	log('watch data', see(oldData), see(newData))
+//	log('watch data', inspect(oldData), inspect(newData))
 })
 
 </script>

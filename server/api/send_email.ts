@@ -76,7 +76,7 @@ export default defineEventHandler(async (event) => {
 			r.sendNote = "api key or password not ok, won't send"
 		}
 		r.handlerEnd = 'made it to the end'
-		log(see(r))
+		log(inspect(r))
 
 	} catch (e) {
 		r.handlerThrew = e

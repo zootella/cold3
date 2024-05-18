@@ -4,8 +4,18 @@
 
 import {
 	log as _log,
-	see as _see
+	inspect as _inspect,
+	now as _now,
+	sayTick as _sayTick
 } from '~/library/library0'
 
+import {
+	tag as _tag
+} from '~/library/library1'
+
 export const log = _log
-export const see = _see
+export const inspect = _inspect
+export const now = _now
+export const sayTick = _sayTick
+
+export const tag = _tag

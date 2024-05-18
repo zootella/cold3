@@ -1,6 +1,5 @@
 <script setup>
 
-//import { log, see } from '~/library/library0'
 import { ref, reactive, watch, onMounted } from 'vue'
 
 const passwordMessage = ref('')
@@ -39,9 +38,9 @@ async function clickEmail() {
 			log('response not ok')
 		}
 		let result = await response.json()
-		log('fetch result:', see(result))
+		log('fetch result:', inspect(result))
 	} catch (e) {
-		log('fetch error:', see(e))
+		log('fetch error:', inspect(e))
 	}
 }
 async function clickPhone() {
