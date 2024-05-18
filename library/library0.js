@@ -126,11 +126,7 @@ export function toss(note, watch) {//prepare your own watch object with named va
 
 let logRecord = "";//all the text log has logged
 const logRecordLimit = 256*Size.kb;//until its length reaches this limit
-const logDestinations = [console.log];//all the loggers we'll log to
-export function addLogDestination(f) {//takes another function like console.log we should log to
-	f(logRecord)//immediatley give it the history so far
-	logDestinations.push(f)//add it to our list so we'll log to it also moving forward
-}
+export function getLogRecord() { return logRecord }
 export function log(...a) {
 	let s = ''//compose some nice display text
 	if (a.length == 0) {//no arguments, just the timestamp
@@ -140,19 +136,11 @@ export function log(...a) {
 		a.forEach(e => { s += newline + say(e) })
 	}
 	let display = sayNow() + ' ~' + (s.length ? (' ' + s) : '')
+	console.log(display)
 
 	//append to the log record
 	logRecord += (logRecord.length ? newline : '') + display//don't start with a blank line
 	if (logRecord.length > logRecordLimit) logRecord = 'early logs too long to keep ~';
-
-	//log to each destination
-	logDestinations.forEach(f => f(display))
-}
-
-
-//todo
-export function temporaryGetLogRecord() {
-	return logRecord
 }
 
 //                                    _                 
@@ -169,7 +157,11 @@ export function say(...a) {//turn anything into text, always know you're dealing
 	}
 	return s;
 }
-export function look(...a) { log(see(...a)) }//log what you see
+/*
+TODO
+see is too confusing; your planned replacement will be called inspect
+so then the core functions are log, say, and inspect
+*/
 export function see(...a) {//see into things, including key name, type, and value
 	let s = ''
 	for (let i = 0; i < a.length; i++) {
@@ -238,8 +230,8 @@ test(() => {
 			return e
 		}
 	})()
-	look(b, s, n, a, o, e)
-	look(b, s, {n, a, o, e})
+	log(see(b, s, n, a, o, e))
+	log(see(b, s, {n, a, o, e}))
 	*/
 })
 /*
@@ -289,22 +281,6 @@ if log gets a single non-string, or multiple anything, call console.log multiple
 
 
 
-test(() => {
-	log('hi hopefully on reload, 5')
-})
-
-
-
-test(() => {
-	ok(true)
-	ok(true)
-	ok(true)
-
-
-
-
-
-})
 
 
 
@@ -480,9 +456,74 @@ turns directly into text, succicently--inspect is the verbose and deep one
 
 
 
-function inspect(...a) {
-	return 'write the new inspect here'
+export function inspect(...a) {
+	let s = ''
+	for (let i = 0; i < a.length; i++) {
+		s += (a.length > 1 ? newline : '') + _inspect2(a[i])//put multiple arguments on separate lines
+	}
+	return s
 }
+function _inspect2(o) {
+	let s = ''
+	if (o instanceof Error) {
+		s = o.stack//errors have their information here
+	} else if (Array.isArray(o)) {
+		s = `[${o}]`
+	} else if (typeof o == 'function') {
+		s = o.toString()
+	} else if (typeof o == 'object') {
+		s += '{'
+		let first = true
+		for (let k in o) {
+			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
+			s += `${k}: ${_inspect3(o[k])}`
+		}
+		s += '}'
+	} else {//boolean like true, number like 7, string like "hello"
+		s = _inspect3(o)
+	}
+	return s
+}
+function _inspect3(o) {
+	try {
+		return JSON.stringify(o, null)//single line
+	} catch (e) { return '(circular reference)' }//watch out for circular references
+}
+/*
+TODO never add these additional features, because this bike shed is fancy enough:
+-recurse, indenting two spaces, stopping if the text grows above 2kb
+-deal with tabs and newlines in function definitions and the error stack trace
+-show short arrays and objects on a single line; long ones on multiple indented lines
+-say the length of a very long array, showing starting and ending items with an ellipsis in the middle
+
+short notes relevant to those never-do improvements
+stack trace lines start with four spaces, maybe just remove them
+spaces and tabs in function code come through, maybe trim them and separate with the pilcrow
+*/
+test(() => {
+	//comment to see inspect in action
+	return
+
+	log(inspect(true))//boolean
+	log(inspect(7))//number
+	log(inspect('hello'))//string
+	log(inspect(['a', 'b', 'c']))//array
+	log(inspect({key1: 'value1', key2: 'value2'}))//object
+
+	let f1 = function namedFunction() {
+		let i = 7
+		return 'named function result'
+	}
+	let f2 = function() { return 'anonymous function result' }
+	log(inspect(f1))//function
+	log(inspect(f2))//function
+
+	try {
+		notDefined
+	} catch (e) {
+		log(inspect(e))//error with stack trace
+	}
+})
 
 
 

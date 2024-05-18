@@ -8,14 +8,6 @@
 
 
 
-export function getLogsAndRunTests() {
-	return "4, here are the logged logs, and this is when we'll run the tests"
-}
-
-
-
-
-
 
 
 
