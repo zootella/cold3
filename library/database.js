@@ -30,6 +30,17 @@ CREATE TABLE table_counts (
 */
 
 
+/*
+make sure postgresql has the default utf-8 character encoding with a sql statement like this:
+
+SELECT pg_encoding_to_char(encoding) AS encoding
+FROM pg_database
+WHERE datname = current_database()
+
+ran this in supabase's sql editor, and the result is "UTF8"
+*/
+
+
 
 
 
@@ -75,7 +86,14 @@ export async function writeRow(newValue) {
 
 
 
+/*
+confirm that crazy unicode text like from instagram:
+♦✎  𝓕𝔢βᖇǗ𝔞𝐑𝕪  🐸♔
+can make it way all the way into the database and back up again
+just code the user's note box that's stored in the database
+*/
 
+let nonsense = '♦✎  𝓕𝔢βᖇǗ𝔞𝐑𝕪  🐸♔'
 
 
 

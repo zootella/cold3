@@ -7,6 +7,63 @@
 
 
 
+
+
+
+
+
+
+/*
+trail notes
+you've been doing a great job of making each of these a one screen show!
+
+[x]check
+[x]integer, text convert
+[x]data, text convert
+[x]string clip to parse
+[x]string validation, like only alphanumeric, regex from chatgpt
+[x]randbetween, inclusive, just in case you need it
+[x]ticks to nice text for the user in the current time zone, see if you can avoid a library actually--yes, you can avoid a library and do all the internationalization you need, and very succinctly
+[x]say four digit byte size, don't otherwise internationalize numbers
+
+[]browser crypto, symmetric and asymetric, hashing
+[~]uri encoding, get taht in here just for compleness, have tests that show one+space or one%20space
+[]email validation, another one for chatgpt, 1raw, 2cleaned for use, 3normalized for duplicate detection
+
+do all the text checking you need for the database
+and for validating single-line user input, like a screen name
+not, at this time, the text checking for a user writing a comment
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //maybe wrap json parse and stringify to deal with errors you've encountered
 
 
@@ -301,6 +358,151 @@ this may also be why earlier log didn't tickstamp
 if log gets a single string, do it all on one line
 if log gets a single non-string, or multiple anything, call console.log multiple times for multiple lines
 */
+
+
+
+
+
+
+
+
+do encoding at the same time as you do cryptography
+maybe make a little object so you dont have to type Uint8array over and over again
+the object is indelible
+holds some binary data
+and has methods to convert between all these different formats:
+
+text, like a string of cleartext
+length, how long is it in bytes when you look at it as bytes
+base16
+base64, checking roundtrips and whatnot
+
+you create these from:
+text strings
+base16
+base64
+random data, cryptographically secure
+
+following hte model, this should be tiny, it shouldn't be your node project's Data object
+
+
+
+remind yourself of the pattern, but you think you remember it
+and now you can use const!
+
+export function Data(c) {
+	const o = {}
+	o.type = 'Data'//no how do you make that const?
+	const type 
+	
+
+	const function fromText(s) {
+
+	}
+
+	const function base16()
+	const function text()
+
+	return o
+}
+this constructor makes a new data object
+
+have it lazily create and then save the different forms
+understand how utf8 text encoding plays a role with all this, bake that into Data as the default
+
+
+
+
+
+
+
+
+
+server logs
+dog() and log() goes to datadog
+or, figure out your pattern for an api function
+with a total covereage try catch
+and then maybe if there's an error, inspect it into text and send it back to the browser
+and even use status codes, maybe--ask chatgpt
+first just see if you can get a stack trace from a worker
+but then you have to make sure this isn't an attack vector, you have to know if you're built for production or not
+
+the api full catch also dogs if it takes longer than 2s
+
+a little clock appears in the page at 2s indicating (clock) working 2s...
+
+dog is great because it's secure and private even in deployment--if the attacker figures out how to break an api, they can't get information mistakingly included in a log
+
+duh the workign clock can totally be completely client-side
+ask chatgpt if there's a convention in nuxt to guard against repeat requests to the same api
+the don't click or you'll mess up your order, thing
+
+ask chatgpt about the confirm form resubmission browser warning
+you don't think you're coding any forms that could cause this, but understand it for the first time ever to be sure
+
+
+
+
+
+
+
+
+
+/*
+this one is for birthdates, stored in the database as text like "1980-02-14"
+take the user's input free-form
+allow months as feb, 2, 02, whatever
+allow years 02, 2002, 76, whatever
+figure out what they may mean and put up one or more buttons that snap to
+
+you also need to take a well formatted one, and return the year, month, day as numbers
+
+Date of birth
+You must be 18+
+Enter like YYYYMMDD four digit year, two digit month, two digit day
+Tell us your real birthday!
+Not posted on profile, kept private and secure
+We check IDs for creators, date must match
+Got that as January 22, 1999
+
+If you become a creator
+Must match your birthdate on your ID
+Private, secure, not posted on profile
+We won't post on profile
+Must match your ID
+Kept private from fans and collaborators
+It'll
+Birthday with 
+that's February 14, 1980
+
+
+have icarus have a little expandable text box where you can live type into a function to test it
+
+
+
+idea for how to get dates the fastest
+worst, by the way, is putting up a calendar clicker for today, asking for a dob
+phone puts up number pad
+instruction text says birthday, YYYYMMDD
+see if you can infer other orders, including shorter orders like 040176
+if they type YYMMDD, YYYYDDMM
+one or two buttons pop up that say "do you mean 2002 Jan 26"
+if it's ambiguous, multiple buttons pop up
+a single backspace clears the whole field, maybe
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

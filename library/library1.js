@@ -1,6 +1,6 @@
 
 //library1 can import modules saved in the nuxt project's package.json above
-import { test, ok, now, say, inspect, log, sayNow } from './library0.js'
+import { test, ok, now, say, inspect, log } from './library0.js'
 import { customAlphabet } from 'nanoid'
 
 
