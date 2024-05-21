@@ -780,14 +780,10 @@ function arrayBufferToArray(b) { return new Uint8Array(b) }//convert an ArrayBuf
 function newArrayOfSize(size) { return new Uint8Array(size) }//make a new empty Uint8Array to hold the given size bytes
 
 async function createKey() {
-	let key = await crypto.subtle.generateKey(
-		{ name: _encryption.name, length: _encryption.strength, },
-		_encryption.extractable,
-		_encryption.use
-	)
+	let key = await crypto.subtle.generateKey({ name: _encryption.name, length: _encryption.strength, }, _encryption.extractable, _encryption.use)
 	return key
 }
-async function exportKey(key) {//do this once per application instance launch
+async function exportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
 	let keyBuffer = await crypto.subtle.exportKey(_encryption.format, key)
 	let keyArray = arrayBufferToArray(keyBuffer)
 	let keyBase16 = arrayToBase16(keyArray, false)//skipping round trip tests, code above should round trip check the whole encryption
@@ -827,8 +823,11 @@ test(async () => {
 
 	let k = await createKey()
 	let b = await exportKey(k)
+	log(b, b.length)
 	let k2 = await importKey(b)
-	console.log({k, b, k2})
+	console.log({k, k2})
+
+	let exampleKey = 'b14696ce 2e743e0d 65dded45 c6c78551 448be431 8ba193b9 0a446f79 c4b3cd6f'
 
 	let p = 'hello'
 	let c = await encrypt(p, k)
@@ -839,7 +838,23 @@ test(async () => {
 })
 
 
+/*
+next one, hashing:
 
+async function hashData(data) {
+	const encoder = new TextEncoder();
+	const dataBuffer = encoder.encode(data);
+	const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+	const hashArray = Array.from(new Uint8Array(hashBuffer)); // Convert buffer to byte array
+	const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // Convert bytes to hex string
+	return hashHex;
+}
+
+// Example usage
+hashData('Hello, World!').then(hash => console.log(hash));
+
+
+*/
 
 
 

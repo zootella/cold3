@@ -26,7 +26,7 @@ you've been doing a great job of making each of these a one screen show!
 [x]ticks to nice text for the user in the current time zone, see if you can avoid a library actually--yes, you can avoid a library and do all the internationalization you need, and very succinctly
 [x]say four digit byte size, don't otherwise internationalize numbers
 
-[]browser crypto, symmetric and asymetric, hashing
+[x]browser crypto, symmetric and asymetric, []hashing
 [~]uri encoding, get taht in here just for compleness, have tests that show one+space or one%20space
 []email validation, another one for chatgpt, 1raw, 2cleaned for use, 3normalized for duplicate detection
 
