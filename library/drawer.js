@@ -20,75 +20,6 @@
 
 
 
-//        _               _    
-//    ___| |__   ___  ___| | __
-//   / __| '_ \ / _ \/ __| |/ /
-//  | (__| | | |  __/ (__|   < 
-//   \___|_| |_|\___|\___|_|\_\
-//                             
-
-/*************************************************************************/
-/*                                                                       */
-/*                                  (`-.                                 */
-/*                                   \  `                                */
-/*      /)         ,   '--.           \    `                             */
-/*     //     , '          \/          \   `   `                         */
-/*    //    ,'              ./         /\    \>- `   ,----------.        */
-/*   ( \  ,'    .-.-._        /      ,' /\    \   . `            `.      */
-/*    \ \'     /.--. .)       ./   ,'  /  \     .      `           `.    */
-/*     \     -{/    \ .)        / /   / ,' \       `     `-----.     \   */
-/*     <\      )     ).:)       ./   /,' ,' \        `.  /\)    `.    \  */
-/*      >^,  //     /..:)       /   //--'    \         `(         )    ) */
-/*       | ,'/     /. .:)      /   (/         \          \       /    /  */
-/*       ( |(_    (...::)     (                \       .-.\     /   ,'   */
-/*       (O| /     \:.::)                      /\    ,'   \)   /  ,'     */
-/*        \|/      /`.:::)                   ,/  \  /         (  /       */
-/*                /  /`,.:)                ,'/    )/           \ \       */
-/*              ,' ,'.'  `:>-._._________,<;'    (/            (,'       */
-/*            ,'  /  |     `^-^--^--^-^-^-'                              */
-/*  .--------'   /   |                                                   */
-/* (       .----'    |   *************************************************/
-/*  \ <`.  \         |   */
-/*   \ \ `. \        |   */  // Make sure s is a string that has some text,
-/*    \ \  `.`.      |   */  // meaning it's not blank, and not just space
-/*     \ \   `.`.    |   */  function checkText(s) {
-/*      \ \    `.`.  |   */    if (!hasText(s)) toss("no text", {s});
-/*       \ \     `.`.|   */  }
-/*        \ \      `.`.  */  function badText(s) {
-/*         \ \     ,^-'  */    return !hasText(s);
-/*          \ \    |     */  }
-/*           `.`.  |     */  function hasText(s) {
-/*              .`.|     */    return (
-/*               `._>    */      typeof s == "string" &&
-/*                       */      s.length &&
-/*       g o o d w i n   */      s.trim() != ""
-/*                       */    );
-/*************************/  }
-
-// Make sure i is a whole integer with a value of m or greater
-function toIntCheck(n, m) { var i = toInt(n); checkInt(i, m); return i; }
-function toInt(n) {
-	var i = parseInt(n, 10);//specify radix of base10
-	if (i+"" !== n) toss("round trip mismatch", {n, i});
-	return i;
-}
-function checkInt(i, m) { if (badInt(i, m)) toss("Must be an integer m or higher", {i, m}); }
-function minInt(i, m) { return !badInt(i, m); }
-function badInt(i, m) {
-	if (!m) m = 0;//TODO potentially huge change, make sure -5 is truthy enough to make it through this
-	return !(typeof i === "number" && !isNaN(i) && Number.isInteger(i) && i >= m);
-}
-
-// Make sure a is an array with at least one element
-function checkArray(a) { if (badArray(a)) toss("Must be an array", {a}); }
-function badArray(a) {
-	return !(typeof a === "object" && typeof a.length == "number" && a.length > 0);
-}
-//TODO added new stuff, write test cases
-
-exporty({checkText, badText, hasText});
-exporty({toIntCheck, toInt, checkInt, minInt, badInt});
-exporty({checkArray, badArray});
 
 
 
@@ -99,43 +30,6 @@ exporty({checkArray, badArray});
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-//               _ _       
-//   _   _ _ __ (_) |_ ___ 
-//  | | | | '_ \| | __/ __|
-//  | |_| | | | | | |_\__ \
-//   \__,_|_| |_|_|\__|___/
-//                         
-
-// Describe big sizes and counts in four digits or less
-function size4(n)   { return _number4(n, 1024, [" bytes", " KB", " MB", " GB", " TB", " PB", " EB", " ZB", " YB"]); }
-function number4(n) { return _number4(n, 1000, ["",       " K",  " M",  " B",  " T",  " P",  " E",  " Z",  " Y"]);  }
-function _number4(n, power, units) {
-	var u = 0; // Start on the first unit
-	var d = 1; // Which has a value of 1 each
-	while (u < units.length) { // Loop to larger units until we can say n in four digits or less
-
-		var w = Math.floor(n / d); // Find out how many of the current unit we have
-		if (w <= 9999) return w + units[u]; // Four digits or less, use this unit
-
-		u++; // Move to the next larger unit
-		d *= power;
-	}
-	return n+""; // We ran out of units
-}
-
-exporty({size4, number4});
 
 
 
@@ -473,57 +367,6 @@ test(function() {
 
 
 
-
-
-
-
-
-
-
-//   ____        _       
-//  |  _ \  __ _| |_ ___ 
-//  | | | |/ _` | __/ _ \
-//  | |_| | (_| | ||  __/
-//  |____/ \__,_|\__\___|
-//                       
-
-var pattern1 = "YYYYMMMDD";
-var pattern2 = "YYYY-MMM-DD h:mma";
-var pattern3 = "YYYY MMMM D dddd h:mm A";
-var pattern4 = "YYYYMMMDD.HH.mm.ss.SSS";
-var pattern5 = "ddhh:mm:ss.SSS";
-function sayDateDataShort(t) { checkInt(t); return moment(t).utc().format(pattern1).toLowerCase(); }//for file names
-function sayDateDataLong(t)  { checkInt(t); return t + " " + ((new Date(t)).toUTCString()); }//for front matter
-function sayDatePageShort(t) { checkInt(t); return moment(t).format(pattern2); }//for the page, local time zone
-function sayDatePageLong(t)  { checkInt(t); return moment(t).format(pattern3); }
-function tickToText(t)       { checkInt(t); return moment(t).utc().format(pattern4).toLowerCase(); }//for the location bar
-function textToTick(s)       {              return moment.utc(s, pattern4).utc().valueOf(); }
-exporty({sayDateDataShort, sayDateDataLong, sayDatePageShort, sayDatePageLong, tickToText, textToTick});
-function nowStamp()          { return sayStamp(now()); }
-function sayStamp(t)         { checkInt(t); return moment(t).format(pattern5); }
-exporty({nowStamp, sayStamp});
-
-noop(function() {
-
-	var t = now();
-	log(margin(`
-		${sayDateDataLong(t)} -- sayDateDataLong()
-		${sayDateDataShort(t)} -- sayDateDataShort()
-
-		${sayDatePageShort(t)} -- sayDatePageShort()
-		${sayDatePageLong(t)} -- sayDatePageLong()
-
-		${tickToText(t)} -- tickToText()
-
-		${t} -- now()
-		${textToTick(tickToText(t))} -- round trip
-	`));
-
-	for (var i = 0; i < 10000; i++) {
-		var t = now() - randomBetween(1, 20*Time.year);
-		ok(textToTick(tickToText(t)) == t);
-	}
-});
 
 
 

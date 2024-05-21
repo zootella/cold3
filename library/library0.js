@@ -594,20 +594,7 @@ function _number4(n, power, units) {
 
 
 
-
-
-
-
-
-
-
-//      _       _        
-//   __| | __ _| |_ __ _ 
-//  / _` |/ _` | __/ _` |
-// | (_| | (_| | || (_| |
-//  \__,_|\__,_|\__\__,_|
-//                       
-
+//older design
 export function arrayToData(a)    { return _Data({fromArray:  a})   }//factory functions
 export function textToData(t)     { return _Data({fromText:   t})   }
 export function base16ToData(b16) { return _Data({fromBase16: b16}) }
@@ -637,6 +624,73 @@ function _Data(p) {//private constructor which takes object of parameters
 	o.base16 = function() { if (_base16) { return _base16 } else { _base16 = arrayToBase16(_array, true); return _base16 } }
 	o.base64 = function() { if (_base64) { return _base64 } else { _base64 = arrayToBase64(_array, true); return _base64 } }
 	return o
+}
+
+
+
+
+
+
+
+//      _       _        
+//   __| | __ _| |_ __ _ 
+//  / _` |/ _` | __/ _` |
+// | (_| | (_| | || (_| |
+//  \__,_|\__,_|\__\__,_|
+//                       
+
+function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds checks and format conversion
+	checkInt(capacity, 1)//must request capacity of 1+ bytes
+
+	//private members hang out in this function the return object came from, and are still here later!
+	let _capacity = capacity//how many bytes it can hold
+	let _size = 0//how many bytes it does hold
+	let _buffer = new ArrayBuffer(_capacity)
+	let _array = new Uint8Array(_buffer)//view on the buffer that does unsigned 8 bit numbers like 0x00 through 0xff
+
+	let b = { type: 'Bin' }//note the type
+	b.capacity = function() { return _capacity }//how many bytes it can hold
+	b.size = function() { return _size }//how many bytes it does hold
+	b.data = function() { return Data({buffer: _buffer}) }//wrap in Data to view, clip, and convert
+	b.add = function(p) {
+		if (typeof p == 'number') {
+			checkInt(p); if (p > 255) toss('value', {b, p})
+			if (_size + 1 > _capacity) toss('bounds', {b, p})
+			_array[_size] = p; _size++
+		} else if (p.type == 'Data') {
+			if (_size + p.size() > _capacity) toss('bounds', {b, p})
+			_array.set(p.array(), _size); _size += p.size()
+		} else { toss('type', {p}) }
+	}
+	return b
+}
+
+function Data(p) {//a Data wraps Uint8Array for type and bounds checks and format conversion conversion
+	let _array, _text, _base16, _base62, _base64//private members
+
+	//constructor, a Data always contains an array, keeps the given form, and makes and keeps the others as requested
+	if      (p.buffer instanceof ArrayBuffer) { _array = new Uint8Array(p.buffer) }//put a uint8 array view over the buffer
+	else if (p.array  instanceof Uint8Array)  { _array = p.array                  }//just save the given array
+	else if (p.text)   { checkText(p.text);   _array = textToArray(p.text,     true); _text   = p.text   }//decode the text to make the array
+	else if (p.base16) { checkText(p.base16); _array = base16ToArray(p.base16, true); _base16 = p.base16 }
+	else if (p.base62) { checkText(p.base62); _array = base62ToArray(p.base62, true); _base62 = p.base62 }
+	else if (p.base64) { checkText(p.base64); _array = base64ToArray(p.base64, true); _base64 = p.base64 }
+	else if (p.random) { checkInt(p.random, 1); _array = new Uint8Array(p.random); crypto.getRandomValues(_array) }//generate a random array
+	else { toss('type', {p}) }
+
+	//methods
+	let d = { type: 'Data' }//note the type
+	d.size   = function() { return _array.length }//size in bytes
+	d.array  = function() { return _array        }
+	d.text   = function() { if (_text)   { return _text;  } else { _text   = arrayToText(_array,   true); return _text   } }
+	d.base16 = function() { if (_base16) { return _base16 } else { _base16 = arrayToBase16(_array, true); return _base16 } }
+	d.base62 = function() { if (_base62) { return _base62 } else { _base62 = arrayToBase62(_array, true); return _base62 } }
+	d.base64 = function() { if (_base64) { return _base64 } else { _base64 = arrayToBase64(_array, true); return _base64 } }
+	d.clip = function(i, n) {//from index i, clip out a new Data of n bytes
+		checkInt(i); checkInt(n, 1); if (i + n > _array.length) toss('bounds', {d, i, n})
+		return Data({array: _array.slice(i, i + n)})
+	}
+	return d
 }
 
 //private helper functions, use methods in Data which call down here
@@ -722,6 +776,225 @@ test(() => {
 
 
 
+function base62ToArray(s, trip) {
+}
+function arrayToBase62(a, trip) {
+}
+
+
+
+
+
+
+
+
+//here's the draft alphabet, essentially
+const alphabetBase62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghklmnopqrstuvwxyzij'
+test(() => {
+	ok(alphabetBase62.length == 62)
+})
+//uppercase first because that's how it is in the ascii table
+//i and j are narrow, and neighbors, so it's less random than il
+
+/*
+//ok maybe instead of using base16 sometimes and base64 other times, if you get base62 defined and confirm that it's equivalently fast, maybe use that everywhere
+//just measure which letters are the most frequent, and replace them with lowercase i and l or something
+//you can make that decision without doing the whole rendered text analysis
+//for the narrowest unicode, etc, you do have to do narrowest, but that can be later
+
+
+
+
+
+
+// The Unicode number value of the character a distance i characters into s
+// Also gets ASCII codes, code("A") is 65
+// You can omit i to get the code of the first character
+function code(s, i) {
+	if (!i) i = 0; // Turn undefined into 0 so the math below works
+	if (i < 0 || i > s.length - 1) toss("bounds");
+	return s.charCodeAt(i);
+}
+
+// True if s has a code in the range of c1 through c2
+// For instance, range("m", "a", "z") == true
+// Takes three strings to look at the first character of each
+function range(s, c1, c2) { return (code(s) >= code(c1)) && (code(s) <= code(c2)); }
+
+
+
+// Turn data into text using base 62, each 4 or 6 bits will become a character 0-9, a-z, and A-Z
+function toBase62(d) {
+
+	// Use 0-9, a-z and A-Z, 62 different characters, to describe the data
+	var alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	
+	// Loop through the memory, encoding its bits into letters and numbers
+	var i = 0;                 // The index in bits, from 0 through all the bits in the given data
+	var byteIndex, bitIndex;   // The same index as a distance in bytes followed by a distance in bits
+	var pair, mask, code;      // Use the data bytes a pair at a time, with a mask of six 1s, to read a code 0 through 63
+	var s = "";                // Target string to build up and return
+	while (i < d.size() * 8) { // When the bit index moves beyond the memory, we're done
+		
+		// Calculate the byte and bit to move to from the bit index
+		byteIndex = divideFast(i, 8); // Divide by 8 and chop off the remainder to get the byte index
+		bitIndex  = i % 8;            // The bit index within that byte is the remainder
+		
+		// Copy the two bytes at byteIndex into pair
+		pair = (d.get(byteIndex) & 0xff) << 8; // Copy the byte at byteindex into pair, shifted left to bring eight 0s on the right
+		if (byteIndex + 1 < d.size()) pair |= (d.get(byteIndex + 1) & 0xff); // On the last byte, leave the right byte in pair all 0s
+		
+		// Read the 6 bits at i as a number, called code, which will be 0 through 63
+		mask = 63 << (10 - bitIndex);    // Start the mask 111111 63 shifted into position     0011111100000000
+		code = pair & mask;              // Use the mask to clip out just that portion of pair --101101--------
+		code = code >>> (10 - bitIndex); // Shift it to the right to read it as a number       ----------101101
+		
+		// Describe the 6 bits with a numeral or letter, 111100 is 60 and Y, if more than that use Z and move forward 4, not 6
+		if (code < 61) { s += alphabet.charAt(code); i += 6; } // 000000  0 '0' through 111100 60 'Y'
+		else           { s += alphabet.charAt(61);   i += 4; } // 111101 61, 111110 62, and 111111 63 are 'Z', move past the four 1s
+	}
+	return s; // Combine the characters in the array into a string
+}
+//TODO swap YZ with ji in the alphebet above so the only more common letters are as narrow as possible in pixels
+
+// Turn base 62-encoded text back into the data it was made from
+function base62(s, bay) {
+	var p = ParseToBay(bay);
+	try {
+
+		// Loop for each character in the text
+		var c;           // The character we are converting into bits
+		var code;        // The bits the character gets turned into
+		var hold = 0;    // A place to hold bits from several characters until we have 8 and can write a byte
+		var bits = 0;    // The number of bits stored in the right side of hold right now
+		for (var i = 0; i < s.length; i++) {
+
+			// Get a character from the text
+			c = s.get(i);
+			if      (c.range("0", "9")) code = c.code() - "0".code();      // '0'  0 000000 through '9'  9 001001
+			else if (c.range("a", "z")) code = c.code() - "a".code() + 10; // 'a' 10 001010 through 'z' 35 100011
+			else if (c.range("A", "Y")) code = c.code() - "A".code() + 36; // 'A' 36 100100 through 'Y' 60 111100
+			else if (c.range("Z", "Z")) code = 61;                         // 'Z' indicates 61 111101, 62 111110, or 63 111111 are next, we will just write four 1s
+			else toss("data");                                             // Invalid character
+
+			// Insert the bits from code into hold
+			if (code == 61) { hold = (hold << 4) | 15;   bits += 4; } // Insert 1111 for 'Z'
+			else            { hold = (hold << 6) | code; bits += 6; } // Insert 000000 for '0' through 111100 for 'Y'
+
+			// If we have enough bits in hold to write a byte
+			if (bits >= 8) {
+
+				// Move the 8 leftmost bits in hold to our Bay object
+				p.add(toByte((hold >>> (bits - 8)) & 0xff));
+				bits -= 8; // Remove the bits we wrote from hold, any extra bits there will be written next time
+			}
+		}
+		var d = p.parsed();
+		parseCheck(d.base62(), s);
+		return d;
+
+	} catch (e) { p.reset(); throw e; }
+}
+
+// Takes an integer 0 through 255, 0x00 through 0xff, or throws bounds
+// Returns a Data object with a single byte in it with that value
+function toByte(i) {
+	if (i < 0x00 || i > 0xff) toss("bounds");
+	var b = new Buffer(1); // Make a Buffer that can hold one byte
+	b.writeUInt8(i, 0); // Write the byte at the start, position 0
+	return Data(b);
+}
+
+
+function example() {
+	// Create an ArrayBuffer of 20 bytes
+	let capacity = 20
+	let buffer = new ArrayBuffer(capacity);
+
+	// Create a Uint8Array view for the buffer
+	let array = new Uint8Array(buffer);
+
+	// Fill only the first 16 bytes
+	for (let i = 0; i < 16; i++) { array[i] = i }
+
+	// Option 2: Create a new view that only covers the filled part
+	let viewArray = new Uint8Array(buffer, 0, 16)//this does not copy any data
+	console.log("View of Filled Array:", viewArray);
+}
+
+
+//should you implement Bay as a single screen?
+//you'd use it to put the initialization vector in front of the ciphertext
+//and for base62
+
+/*
+
+if you did Bay, it would be like this
+
+let b = Bay() -- new empty one
+b.size() -- how many bytes are in there
+b.add(array) -- add the given Uint8Array to the end
+b.data() -- the view you can slice and convert
+
+so then i guess you also have to add to data 
+
+b.data().clip(0, 12)
+
+the magic inside is:
+automatic growth
+bounds checking
+round trip checks
+
+
+
+
+*/
+
+
+
+
+
+
+
+function base62ToInt(s, trip) {
+}
+function intToBase62(i, trip) {
+}
+
+
+/*
+//here's a way to make a tick count like 1716255488471 shorter by treating them as a base62 number
+const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+function encodeBase62(num) {
+    if (num === 0) return BASE62[0];
+    let encoded = '';
+    while (num > 0) {
+        encoded = BASE62[num % 62] + encoded;
+        num = Math.floor(num / 62);
+    }
+    return encoded;
+}
+
+function decodeBase62(str) {
+    let decoded = 0;
+    for (let i = 0; i < str.length; i++) {
+        decoded = decoded * 62 + BASE62.indexOf(str[i]);
+    }
+    return decoded;
+}
+
+// Example usage
+const num = 12345;
+const encoded = encodeBase62(num);
+const decoded = decodeBase62(encoded);
+
+console.log(`Number: ${num}`);
+console.log(`Encoded: ${encoded}`);
+console.log(`Decoded: ${decoded}`);
+*/
+
+
 
 
 
@@ -789,15 +1062,21 @@ async function exportKey(key) {//do this once per application instance launch. t
 	let keyBase16 = arrayToBase16(keyArray, false)//skipping round trip tests, code above should round trip check the whole encryption
 	return keyBase16
 }
+//return Data({buffer: await crypto.subtle.exportKey(_encryption.format, key)}).base16()
+
 async function importKey(keyBase16) {//do this once per script run, not every time a function that needs it is called!
 	let keyArray = base16ToArray(keyBase16, false)
 	let key = await crypto.subtle.importKey(_encryption.format, keyArray, { name: _encryption.name, length: _encryption.strength }, _encryption.extractable, _encryption.use)
 	return key
 }
+//return await crypto.subtle.importKey(_encryption.format, Data({base16: keyBase16}).array(), { name: _encryption.name, length: _encryption.strength }, _encryption.extractable, _encryption.use)
+
+
 
 export async function encrypt(plainText, key) {
 	let plainArray = textToArray(plainText, false)
-	let vectorArray = crypto.getRandomValues(newArrayOfSize(_encryption.vector))
+	let vectorArray = newArrayOfSize(_encryption.vector)
+	crypto.getRandomValues(vectorArray)
 	let cipherBuffer = await crypto.subtle.encrypt({ name: _encryption.name, iv: vectorArray }, key, plainArray)
 	let cipherArray = arrayBufferToArray(cipherBuffer)
 
@@ -808,6 +1087,20 @@ export async function encrypt(plainText, key) {
 	let store64 = arrayToBase64(a, false)//base64 text to store in the database
 	return store64
 }
+
+/*
+export async function encrypt2(plainText, key) {
+
+	let vectorData = Data({random: _encryption.vector})
+	let cipherData = Data({buffer: await crypto.subtle.encrypt({ name: _encryption.name, iv: vectorData.array() }, key, Data({text: plainText}).array(})
+
+	let combinedData = Data({capacity: vectorData.size() + cipherData.size()})
+	combinedData.add(vectorData)
+	combinedData.add(cipherData)
+	return combinedData.base64()
+}
+*/
+
 export async function decrypt(store64, key) {
 	let a = base64ToArray(store64, false)
 	let vectorArray = a.slice(0, _encryption.vector)//unpack the vector and cipher from the combined array
@@ -816,6 +1109,17 @@ export async function decrypt(store64, key) {
 	let decryptedBuffer = await crypto.subtle.decrypt({ name: _encryption.name, iv: vectorArray }, key, cipherArray)
 	let decryptedText = arrayToText(decryptedBuffer, false)
 	return decryptedText
+}
+//imaging you'r eusing Bay and Data, and see what encrypt and decrypt look like
+//you're guess is that they're not sufficiently better to warrant coding Bay
+
+
+export async function decrypt2(store64, key) {
+	let combinedData = Data({base64: store64})
+	let vectorData = combinedData.clip(0, _encryption.vector)//unpack the vector and cipher from the combined array
+	let cipherData = combinedData.clip(_encryption.vector, combinedData.size() - _encryption.vector)
+
+	return Data({buffer: await crypto.subtle.decrypt({ name: _encryption.name, iv: vectorArray }, key, cipherArray)}).text()
 }
 
 
@@ -840,6 +1144,8 @@ test(async () => {
 
 /*
 next one, hashing:
+
+does textencoder encode return an ArrayBuffer, or a UInt8Array? should you update your own function to wrap a uint8array around the buffer?
 
 async function hashData(data) {
 	const encoder = new TextEncoder();
