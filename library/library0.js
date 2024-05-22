@@ -64,6 +64,16 @@ export function runTests() {
 		return m
 	}
 }
+/*
+TODO make this an object that fills up here
+but which is exported, and you can bring into a vue component
+and run tests there and see results
+
+also, get tests to await async tests etc correctly
+this should be pretty easy
+
+and have it return an object of stats and outcomes, one of which is the composed status line
+*/
 
 export function toss(note, watch) {//prepare your own watch object with named variables you'd like to see
 	let s = `toss ${sayTick(now())} ~ ${note} ${inspect(watch)}`
@@ -81,7 +91,7 @@ Size.tb = 1024*Size.gb//tebibyte
 Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
 
-let logRecord = "";//all the text log has logged
+let logRecord = ''//all the text log has logged
 const logRecordLimit = 256*Size.kb;//until its length reaches this limit
 export function getLogRecord() { return logRecord }
 export function log(...a) {
@@ -514,15 +524,6 @@ test(() => {
 
 
 
-//make sure a tag is exactly 21 letters and numbers, for the database
-export function checkTag(s) {
-	checkText(s)
-	checkAlpha(s)
-	if (s.length != 21) toss('data', {s})
-}
-test(() => {
-	checkTag('qqdTuhRdZwJwo7KKeaegs')
-})
 
 //make sure a birthdate is like '1990.2.14', for the database
 export function checkDate(s) {
@@ -654,7 +655,7 @@ function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds checks and
 	b.data = function() { return Data({buffer: _buffer}) }//wrap in Data to view, clip, and convert
 	b.add = function(p) {
 		if (typeof p == 'number') {
-			checkInt(p); if (p > 255) toss('value', {b, p})
+			checkInt(p, 0); if (p > 255) toss('value', {b, p})
 			if (_size + 1 > _capacity) toss('bounds', {b, p})
 			_array[_size] = p; _size++
 		} else if (p.type == 'Data') {
@@ -687,7 +688,7 @@ function Data(p) {//a Data wraps Uint8Array for type and bounds checks and forma
 	d.base62 = function() { if (_base62) { return _base62 } else { _base62 = arrayToBase62(_array, true); return _base62 } }
 	d.base64 = function() { if (_base64) { return _base64 } else { _base64 = arrayToBase64(_array, true); return _base64 } }
 	d.clip = function(i, n) {//from index i, clip out a new Data of n bytes
-		checkInt(i); checkInt(n, 1); if (i + n > _array.length) toss('bounds', {d, i, n})
+		checkInt(i, 0); checkInt(n, 1); if (i + n > _array.length) toss('bounds', {d, i, n})
 		return Data({array: _array.slice(i, i + n)})
 	}
 	return d
@@ -789,9 +790,11 @@ function arrayToBase62(a, trip) {
 
 
 //here's the draft alphabet, essentially
-const alphabetBase62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghklmnopqrstuvwxyzij'
+const alphabetBase62Stream = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghklmnopqrstuvwxyzij'//last two more common, picked i j to render narrow
+const alphabetBase62Int    = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//ascii order
 test(() => {
-	ok(alphabetBase62.length == 62)
+	ok(alphabetBase62Stream.length == 62)
+	ok(alphabetBase62Int.length    == 62)
 })
 //uppercase first because that's how it is in the ascii table
 //i and j are narrow, and neighbors, so it's less random than il
@@ -1123,23 +1126,97 @@ export async function decrypt2(store64, key) {
 }
 
 
-test(async () => {
 
-	let k = await createKey()
-	let b = await exportKey(k)
-	log(b, b.length)
-	let k2 = await importKey(b)
-	console.log({k, k2})
 
-	let exampleKey = 'b14696ce 2e743e0d 65dded45 c6c78551 448be431 8ba193b9 0a446f79 c4b3cd6f'
 
-	let p = 'hello'
-	let c = await encrypt(p, k)
-	console.log({p, c})
 
-	let d = await decrypt(c, k)
-	console.log({d})
+
+/*
+_encryption.vector > _subtle.vectorSize
+*/
+
+const _subtle = {//these are the factory presets the system uses as a whole for symmetric encryption of sensitive user data
+	name: 'AES-GCM',
+	strength: 256, // 256-bit AES, only slightly slower than 128, and the strongest ever
+	vectorSize: 12, // 12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
+	use: ['encrypt', 'decrypt'],//create and import keys that can do these things
+	extractable: true,//say we want to be able to export the key
+	format: 'raw'//we want the raw bytes, please
+}
+Object.freeze(_subtle)
+async function createKey_new() {
+	return await crypto.subtle.generateKey(
+		{ name: _subtle.name, length: _subtle.strength },
+		_subtle.extractable, _subtle.use)
+}
+async function exportKey_new(key) {//do this once per application instance launch. the length is 64 base16 characters
+	return Data({buffer: await crypto.subtle.exportKey(
+		_subtle.format,
+		key)})//key is an imported CryptoKey object
+}
+async function importKey_new(keyData) {//do this once per script run, not every time a function that needs it is called!
+	return await crypto.subtle.importKey(
+		_subtle.format,
+		keyData.array(),
+		{ name: _subtle.name, length: _subtle.strength },
+		_subtle.extractable, _subtle.use)
+}
+export async function encrypt_new(plainText, key) {
+	let vector = Data({random: _subtle.vectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
+	let cipher = Data({buffer: await crypto.subtle.encrypt(
+		{ name: _subtle.name, iv: vector.array() },
+		key,
+		Data({text: plainText}).array())})
+	let storeBin = Bin(vector.size() + cipher.size())
+	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
+	storeBin.add(cipher)
+	return storeBin.data()
+}
+export async function decrypt_new(storeData, key) {//stored data that is initialization vector followed by cipher bytes
+	let vector = storeData.clip(0, _subtle.vectorSize)//unpack
+	let cipher = storeData.clip(_subtle.vectorSize, storeData.size() - _subtle.vectorSize)
+	return Data({buffer: await crypto.subtle.decrypt(
+		{ name: _subtle.name, iv: vector.array() },
+		key,
+		cipher.array())})
+}
+
+
+
+
+test(() => {
+	/*
+	let t = now()
+	let i = 0;
+	while (now() < i + Time.second) {
+		i++
+
+	}
+	log(i)
+	*/
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*
@@ -1302,6 +1379,93 @@ test(() => {
 
 
 
+noop(async () => {
+
+	let k = await createKey()
+	let b = await exportKey(k)
+	log(b, b.length)
+	let k2 = await importKey(b)
+	console.log({k, k2})
+
+	let exampleKey = 'b14696ce 2e743e0d 65dded45 c6c78551 448be431 8ba193b9 0a446f79 c4b3cd6f'
+
+	let p = 'hello'
+	let c = await encrypt(p, k)
+	console.log({p, c})
+
+	let d = await decrypt(c, k)
+	console.log({d})
+})
+
+noop(async () => {
+
+	let k = await createKey_new()
+	let b = await exportKey_new(k)
+	log(b.base16(), b.size()+' bytes')
+
+	let k2 = await importKey_new(b)
+	console.log({k, k2})
+
+	let p = 'a short message, like card info'
+	let c = await encrypt_new(p, k)
+	console.log({p}, c.base64(), c.size()+' bytes')
+
+	let d = await decrypt_new(c, k)
+	console.log(d.text())
+
+})
+
+
+async function f2() {
+	let k = await createKey()
+	let b = await exportKey(k)
+	let k2 = await importKey(b)
+	let p = 'a short message, like card info'
+	let c = await encrypt(p, k)
+	let d = await decrypt(c, k)
+	if (d != p) log('decryption mismatch')
+}
+async function f3() {
+	let k = await createKey_new()
+	let b = await exportKey_new(k)
+	let k2 = await importKey_new(b)
+	let p = 'a short message, like card info'
+	let c = await encrypt_new(p, k)
+	let d = await decrypt_new(c, k)
+	if (d.text() != p) log('decryption mismatch')
+}
+
+
+
+async function f() {
+	log('just in a function f')
+
+
+	let r1 = 0
+	let t = now()
+	while (now() < t + 4*Time.second) {
+		r1++
+	}
+	log(r1+' empty')
+
+	let r2 = 0
+	t = now()
+	while (now() < t + 4*Time.second) {
+		await f2()
+		r2++
+	}
+	log(r2+' direct')
+
+	let r3 = 0
+	t = now()
+	while (now() < t + 4*Time.second) {
+		await f3()
+		r3++
+	}
+	log(r3+' custom')
+
+}
+f()
 
 
 

@@ -1,6 +1,6 @@
 
 //library1 can import modules saved in the nuxt project's package.json above
-import { test, ok, now, say, inspect, log } from './library0.js'
+import { test, ok, now, say, inspect, log, checkText, checkAlpha } from './library0.js'
 import { customAlphabet } from 'nanoid'
 
 
@@ -8,11 +8,23 @@ import { customAlphabet } from 'nanoid'
 
 
 
+const tagLength = 21
+
 //generate a new universally unique double-clickable tag of 21 letters and numbers
 export function tag() {
 	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-	return customAlphabet(alphabet, 21)()//same default nanoid length
+	return customAlphabet(alphabet, tagLength)()//same default nanoid length
 }
+
+//make sure a tag is exactly 21 letters and numbers, for the database
+export function checkTag(s) {
+	checkText(s); checkAlpha(s)
+	if (s.length != tagLength) toss('data', {s})
+}
+test(() => {
+	checkTag('qqdTuhRdZwJwo7KKeaegs')
+})
+
 
 //generate a short code of 6 numbers to confirm the user's email or sms
 export function uniqueCode4() {
