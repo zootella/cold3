@@ -8,8 +8,29 @@
 
 
 
+export const now = Date.now//just a shortcut
 
 
+
+export const Time = {}
+Time.second = 1000//number of milliseconds in a second
+Time.minute = 60*Time.second//number of milliseconds in a minute
+Time.hour = 60*Time.minute
+Time.day = 24*Time.hour
+Time.week = 7*Time.day
+Time.year = Math.floor(365.25 * Time.day)
+Time.month = Math.floor((Time.year) / 12)
+Object.freeze(Time)//prevents changes and additions
+
+
+export const Size = {}
+Size.b  = 1//one byte
+Size.kb = 1024*Size.b//number of bytes in a kibibyte, a kilobyte would be 1000 instead of 1024
+Size.mb = 1024*Size.kb//number of bytes in a mebibyte
+Size.gb = 1024*Size.mb//gibibyte
+Size.tb = 1024*Size.gb//tebibyte
+Size.pb = 1024*Size.tb//pebibyte, really big
+Object.freeze(Size)
 
 
 
@@ -81,15 +102,6 @@ export function toss(note, watch) {//prepare your own watch object with named va
 	if (watch) console.error(watch)
 	throw new Error(s)
 }
-
-export const Size = {}
-Size.b  = 1//one byte
-Size.kb = 1024*Size.b//number of bytes in a kibibyte, a kilobyte would be 1000 instead of 1024
-Size.mb = 1024*Size.kb//number of bytes in a mebibyte
-Size.gb = 1024*Size.mb//gibibyte
-Size.tb = 1024*Size.gb//tebibyte
-Size.pb = 1024*Size.tb//pebibyte, really big
-Object.freeze(Size)
 
 let logRecord = ''//all the text log has logged
 const logRecordLimit = 256*Size.kb;//until its length reaches this limit
@@ -652,7 +664,9 @@ function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds checks and
 	let b = { type: 'Bin' }//note the type
 	b.capacity = function() { return _capacity }//how many bytes it can hold
 	b.size = function() { return _size }//how many bytes it does hold
-	b.data = function() { return Data({buffer: _buffer}) }//wrap in Data to view, clip, and convert
+	b.data = function() {//wrap in Data to view, clip, and convert
+		return Data({array: new Uint8Array(_buffer, 0, _size)})
+	}
 	b.add = function(p) {
 		if (typeof p == 'number') {
 			checkInt(p, 0); if (p > 255) toss('value', {b, p})
@@ -687,6 +701,10 @@ function Data(p) {//a Data wraps Uint8Array for type and bounds checks and forma
 	d.base16 = function() { if (_base16) { return _base16 } else { _base16 = arrayToBase16(_array, true); return _base16 } }
 	d.base62 = function() { if (_base62) { return _base62 } else { _base62 = arrayToBase62(_array, true); return _base62 } }
 	d.base64 = function() { if (_base64) { return _base64 } else { _base64 = arrayToBase64(_array, true); return _base64 } }
+	d.get    = function(i) {//get the byte at index i, returns a number 0x00 0 through 0xff 255
+		checkInt(i); if (i >= _array.length) toss('bounds', {d, i})
+		return _array[i]
+	}
 	d.clip = function(i, n) {//from index i, clip out a new Data of n bytes
 		checkInt(i, 0); checkInt(n, 1); if (i + n > _array.length) toss('bounds', {d, i, n})
 		return Data({array: _array.slice(i, i + n)})
@@ -804,126 +822,198 @@ test(() => {
 //just measure which letters are the most frequent, and replace them with lowercase i and l or something
 //you can make that decision without doing the whole rendered text analysis
 //for the narrowest unicode, etc, you do have to do narrowest, but that can be later
+*/
 
 
 
 
-
-
-// The Unicode number value of the character a distance i characters into s
-// Also gets ASCII codes, code("A") is 65
-// You can omit i to get the code of the first character
-function code(s, i) {
-	if (!i) i = 0; // Turn undefined into 0 so the math below works
-	if (i < 0 || i > s.length - 1) toss("bounds");
-	return s.charCodeAt(i);
-}
-
-// True if s has a code in the range of c1 through c2
-// For instance, range("m", "a", "z") == true
-// Takes three strings to look at the first character of each
-function range(s, c1, c2) { return (code(s) >= code(c1)) && (code(s) <= code(c2)); }
 
 
 
 // Turn data into text using base 62, each 4 or 6 bits will become a character 0-9, a-z, and A-Z
-function toBase62(d) {
+function _arrayToBase62(a) {
 
 	// Use 0-9, a-z and A-Z, 62 different characters, to describe the data
-	var alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	const alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 	
 	// Loop through the memory, encoding its bits into letters and numbers
-	var i = 0;                 // The index in bits, from 0 through all the bits in the given data
-	var byteIndex, bitIndex;   // The same index as a distance in bytes followed by a distance in bits
-	var pair, mask, code;      // Use the data bytes a pair at a time, with a mask of six 1s, to read a code 0 through 63
-	var s = "";                // Target string to build up and return
-	while (i < d.size() * 8) { // When the bit index moves beyond the memory, we're done
+	let i = 0                 // The index in bits, from 0 through all the bits in the given data
+	let byteIndex, bitIndex   // The same index as a distance in bytes followed by a distance in bits
+	let pair, mask, code      // Use the data bytes a pair at a time, with a mask of six 1s, to read a code 0 through 63
+	let s = ''                // Target string to build up and return
+	while (i < a.length * 8) { // When the bit index moves beyond the memory, we're done
 		
 		// Calculate the byte and bit to move to from the bit index
-		byteIndex = divideFast(i, 8); // Divide by 8 and chop off the remainder to get the byte index
-		bitIndex  = i % 8;            // The bit index within that byte is the remainder
+		byteIndex = Math.floor(i / 8) // Divide by 8 and chop off the remainder to get the byte index
+		bitIndex  = i % 8             // The bit index within that byte is the remainder
 		
 		// Copy the two bytes at byteIndex into pair
-		pair = (d.get(byteIndex) & 0xff) << 8; // Copy the byte at byteindex into pair, shifted left to bring eight 0s on the right
-		if (byteIndex + 1 < d.size()) pair |= (d.get(byteIndex + 1) & 0xff); // On the last byte, leave the right byte in pair all 0s
+		pair = (a[byteIndex] & 0xff) << 8 // Copy the byte at byteindex into pair, shifted left to bring eight 0s on the right
+		if (byteIndex + 1 < a.length) pair |= (a[byteIndex + 1] & 0xff) // On the last byte, leave the right byte in pair all 0s
 		
 		// Read the 6 bits at i as a number, called code, which will be 0 through 63
-		mask = 63 << (10 - bitIndex);    // Start the mask 111111 63 shifted into position     0011111100000000
-		code = pair & mask;              // Use the mask to clip out just that portion of pair --101101--------
-		code = code >>> (10 - bitIndex); // Shift it to the right to read it as a number       ----------101101
+		mask = 63 << (10 - bitIndex)    // Start the mask 111111 63 shifted into position     0011111100000000
+		code = pair & mask              // Use the mask to clip out just that portion of pair --101101--------
+		code = code >>> (10 - bitIndex) // Shift it to the right to read it as a number       ----------101101
 		
 		// Describe the 6 bits with a numeral or letter, 111100 is 60 and Y, if more than that use Z and move forward 4, not 6
-		if (code < 61) { s += alphabet.charAt(code); i += 6; } // 000000  0 '0' through 111100 60 'Y'
-		else           { s += alphabet.charAt(61);   i += 4; } // 111101 61, 111110 62, and 111111 63 are 'Z', move past the four 1s
+		if (code < 61) { s += alphabet.charAt(code); i += 6 } // 000000  0 '0' through 111100 60 'Y'
+		else           { s += alphabet.charAt(61);   i += 4 } // 111101 61, 111110 62, and 111111 63 are 'Z', move past the four 1s
 	}
-	return s; // Combine the characters in the array into a string
+	return s
 }
 //TODO swap YZ with ji in the alphebet above so the only more common letters are as narrow as possible in pixels
 
+
+
+
+/*
+_base62ToArray1--measured codes, as below
+_base62ToArray2--lookup in alphabet, compare speed
+*/
+
 // Turn base 62-encoded text back into the data it was made from
-function base62(s, bay) {
-	var p = ParseToBay(bay);
-	try {
+function _base62ToArray1(s) {
+	let b = Bin(s.length)
 
-		// Loop for each character in the text
-		var c;           // The character we are converting into bits
-		var code;        // The bits the character gets turned into
-		var hold = 0;    // A place to hold bits from several characters until we have 8 and can write a byte
-		var bits = 0;    // The number of bits stored in the right side of hold right now
-		for (var i = 0; i < s.length; i++) {
+	// Loop for each character in the text
+	let c        // The character we are converting into bits
+	let code     // The bits the character gets turned into
+	let hold = 0 // A place to hold bits from several characters until we have 8 and can write a byte
+	let bits = 0 // The number of bits stored in the right side of hold right now
+	for (let i = 0; i < s.length; i++) {
 
-			// Get a character from the text
-			c = s.get(i);
-			if      (c.range("0", "9")) code = c.code() - "0".code();      // '0'  0 000000 through '9'  9 001001
-			else if (c.range("a", "z")) code = c.code() - "a".code() + 10; // 'a' 10 001010 through 'z' 35 100011
-			else if (c.range("A", "Y")) code = c.code() - "A".code() + 36; // 'A' 36 100100 through 'Y' 60 111100
-			else if (c.range("Z", "Z")) code = 61;                         // 'Z' indicates 61 111101, 62 111110, or 63 111111 are next, we will just write four 1s
-			else toss("data");                                             // Invalid character
+		// Get a character from the text
+		c = s.charAt(i)
+		if      (_range(c, '0', '9')) code = c.charCodeAt(0) - '0'.charCodeAt(0)      // '0'  0 000000 through '9'  9 001001
+		else if (_range(c, 'a', 'z')) code = c.charCodeAt(0) - 'a'.charCodeAt(0) + 10 // 'a' 10 001010 through 'z' 35 100011
+		else if (_range(c, 'A', 'Y')) code = c.charCodeAt(0) - 'A'.charCodeAt(0) + 36 // 'A' 36 100100 through 'Y' 60 111100
+		else if (_range(c, 'Z', 'Z')) code = 61 // 'Z' indicates 61 111101, 62 111110, or 63 111111 are next, we will just write four 1s
+		else toss('data') // Invalid character
 
-			// Insert the bits from code into hold
-			if (code == 61) { hold = (hold << 4) | 15;   bits += 4; } // Insert 1111 for 'Z'
-			else            { hold = (hold << 6) | code; bits += 6; } // Insert 000000 for '0' through 111100 for 'Y'
+		// Insert the bits from code into hold
+		if (code == 61) { hold = (hold << 4) | 15;   bits += 4 } // Insert 1111 for 'Z'
+		else            { hold = (hold << 6) | code; bits += 6 } // Insert 000000 for '0' through 111100 for 'Y'
 
-			// If we have enough bits in hold to write a byte
-			if (bits >= 8) {
+		// If we have enough bits in hold to write a byte
+		if (bits >= 8) {
 
-				// Move the 8 leftmost bits in hold to our Bay object
-				p.add(toByte((hold >>> (bits - 8)) & 0xff));
-				bits -= 8; // Remove the bits we wrote from hold, any extra bits there will be written next time
-			}
+			// Move the 8 leftmost bits in hold to our Bay object
+			b.add((hold >>> (bits - 8)) & 0xff)
+			bits -= 8 // Remove the bits we wrote from hold, any extra bits there will be written next time
 		}
-		var d = p.parsed();
-		parseCheck(d.base62(), s);
-		return d;
+	}
+	return b.data().array()
+}
+function _range(s, c1, c2) { return (s.charCodeAt(0) >= c1.charCodeAt(0)) && (s.charCodeAt(0) <= c2.charCodeAt(0)) }
 
-	} catch (e) { p.reset(); throw e; }
+function _base62ToArray2(s) {
+	const alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+	let b = Bin(s.length)
+
+	// Loop for each character in the text
+	let c        // The character we are converting into bits
+	let code     // The bits the character gets turned into
+	let hold = 0 // A place to hold bits from several characters until we have 8 and can write a byte
+	let bits = 0 // The number of bits stored in the right side of hold right now
+	for (let i = 0; i < s.length; i++) {
+
+		// Get a character from the text
+		c = s.charAt(i)
+		code = alphabet.indexOf(c)
+		if (code < 0) toss('data', {s})
+		/*
+		if      (_range(c, '0', '9')) code = c.charCodeAt(0) - '0'.charCodeAt(0)      // '0'  0 000000 through '9'  9 001001
+		else if (_range(c, 'a', 'z')) code = c.charCodeAt(0) - 'a'.charCodeAt(0) + 10 // 'a' 10 001010 through 'z' 35 100011
+		else if (_range(c, 'A', 'Y')) code = c.charCodeAt(0) - 'A'.charCodeAt(0) + 36 // 'A' 36 100100 through 'Y' 60 111100
+		else if (_range(c, 'Z', 'Z')) code = 61 // 'Z' indicates 61 111101, 62 111110, or 63 111111 are next, we will just write four 1s
+		else toss('data') // Invalid character
+		*/
+
+		// Insert the bits from code into hold
+		if (code == 61) { hold = (hold << 4) | 15;   bits += 4 } // Insert 1111 for 'Z'
+		else            { hold = (hold << 6) | code; bits += 6 } // Insert 000000 for '0' through 111100 for 'Y'
+
+		// If we have enough bits in hold to write a byte
+		if (bits >= 8) {
+
+			// Move the 8 leftmost bits in hold to our Bay object
+			b.add((hold >>> (bits - 8)) & 0xff)
+			bits -= 8 // Remove the bits we wrote from hold, any extra bits there will be written next time
+		}
+	}
+	return b.data().array()
 }
 
-// Takes an integer 0 through 255, 0x00 through 0xff, or throws bounds
-// Returns a Data object with a single byte in it with that value
-function toByte(i) {
-	if (i < 0x00 || i > 0xff) toss("bounds");
-	var b = new Buffer(1); // Make a Buffer that can hold one byte
-	b.writeUInt8(i, 0); // Write the byte at the start, position 0
-	return Data(b);
+
+noop(() => {
+
+	let d = Data({random: 40})
+	let b62 = _arrayToBase62(d.array())
+	log(
+		b62,
+		d.base16(),
+		Data({array: _base62ToArray1(b62)}).base16(),
+		Data({array: _base62ToArray2(b62)}).base16()
+	)
+
+
+})
+
+
+
+async function f() {
+	let d, s
+	let size = 50
+	let duration = 4*Time.second
+
+
+	let r1 = 0
+	let t = now()
+	while (now() < t + duration) {
+		d = Data({random: size})
+		s = arrayToBase64(d.array())
+		base64ToArray(s)
+		r1++
+	}
+	log(r1+' base64')
+
+	let r2 = 0
+	t = now()
+	while (now() < t + duration) {
+		d = Data({random: size})
+		s = _arrayToBase62(d.array())
+		_base62ToArray1(s)
+		r2++
+	}
+	log(r2+' base62 to array method 1')
+
+	let r3 = 0
+	t = now()
+	while (now() < t + duration) {
+		d = Data({random: size})
+		s = _arrayToBase62(d.array())
+		_base62ToArray2(s)
+		r3++
+	}
+	log(r3+' base62 to array method 2')
 }
+f()
 
 
-function example() {
-	// Create an ArrayBuffer of 20 bytes
-	let capacity = 20
-	let buffer = new ArrayBuffer(capacity);
-
-	// Create a Uint8Array view for the buffer
-	let array = new Uint8Array(buffer);
-
-	// Fill only the first 16 bytes
-	for (let i = 0; i < 16; i++) { array[i] = i }
-
-	// Option 2: Create a new view that only covers the filled part
-	let viewArray = new Uint8Array(buffer, 0, 16)//this does not copy any data
-	console.log("View of Filled Array:", viewArray);
+/*
+// The Unicode number value of the character a distance i characters into s
+// Also gets ASCII codes, code("A") is 65
+// You can omit i to get the code of the first character
+function code(s, i) {
+	if (!i) i = 0 // Turn undefined into 0 so the math below works
+	if (i < 0 || i > s.length - 1) toss('bounds')
+	return s.charCodeAt(i)
 }
+*/
+
+
 
 
 //should you implement Bay as a single screen?
@@ -1039,102 +1129,6 @@ test(() => {
 
 
 
-
-
-const _encryption = {//these are the factory presets the system uses as a whole for symmetric encryption of sensitive user data
-	name: 'AES-GCM',
-	strength: 256, // 256-bit AES, only slightly slower than 128, and the strongest ever
-	vector: 12, // 12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
-	use: ['encrypt', 'decrypt'],//create and import keys that can do these things
-	extractable: true,//say we want to be able to export the key
-	format: 'raw'//we want the raw bytes, please
-}
-Object.freeze(_encryption)
-
-//wrapping these calls to the uint8array constructor to show meaning
-function arrayBufferToArray(b) { return new Uint8Array(b) }//convert an ArrayBuffer to a Uint8Array so we can see it that way
-function newArrayOfSize(size) { return new Uint8Array(size) }//make a new empty Uint8Array to hold the given size bytes
-
-async function createKey() {
-	let key = await crypto.subtle.generateKey({ name: _encryption.name, length: _encryption.strength, }, _encryption.extractable, _encryption.use)
-	return key
-}
-async function exportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
-	let keyBuffer = await crypto.subtle.exportKey(_encryption.format, key)
-	let keyArray = arrayBufferToArray(keyBuffer)
-	let keyBase16 = arrayToBase16(keyArray, false)//skipping round trip tests, code above should round trip check the whole encryption
-	return keyBase16
-}
-//return Data({buffer: await crypto.subtle.exportKey(_encryption.format, key)}).base16()
-
-async function importKey(keyBase16) {//do this once per script run, not every time a function that needs it is called!
-	let keyArray = base16ToArray(keyBase16, false)
-	let key = await crypto.subtle.importKey(_encryption.format, keyArray, { name: _encryption.name, length: _encryption.strength }, _encryption.extractable, _encryption.use)
-	return key
-}
-//return await crypto.subtle.importKey(_encryption.format, Data({base16: keyBase16}).array(), { name: _encryption.name, length: _encryption.strength }, _encryption.extractable, _encryption.use)
-
-
-
-export async function encrypt(plainText, key) {
-	let plainArray = textToArray(plainText, false)
-	let vectorArray = newArrayOfSize(_encryption.vector)
-	crypto.getRandomValues(vectorArray)
-	let cipherBuffer = await crypto.subtle.encrypt({ name: _encryption.name, iv: vectorArray }, key, plainArray)
-	let cipherArray = arrayBufferToArray(cipherBuffer)
-
-	let a = newArrayOfSize(vectorArray.length + cipherBuffer.byteLength)//make a new array
-	a.set(vectorArray)//the first 12 bytes are the initialization vector unique to this encryption
-	a.set(cipherArray, vectorArray.length)//after that are the bytes of encrypted ciphertext
-
-	let store64 = arrayToBase64(a, false)//base64 text to store in the database
-	return store64
-}
-
-/*
-export async function encrypt2(plainText, key) {
-
-	let vectorData = Data({random: _encryption.vector})
-	let cipherData = Data({buffer: await crypto.subtle.encrypt({ name: _encryption.name, iv: vectorData.array() }, key, Data({text: plainText}).array(})
-
-	let combinedData = Data({capacity: vectorData.size() + cipherData.size()})
-	combinedData.add(vectorData)
-	combinedData.add(cipherData)
-	return combinedData.base64()
-}
-*/
-
-export async function decrypt(store64, key) {
-	let a = base64ToArray(store64, false)
-	let vectorArray = a.slice(0, _encryption.vector)//unpack the vector and cipher from the combined array
-	let cipherArray = a.slice(_encryption.vector)
-
-	let decryptedBuffer = await crypto.subtle.decrypt({ name: _encryption.name, iv: vectorArray }, key, cipherArray)
-	let decryptedText = arrayToText(decryptedBuffer, false)
-	return decryptedText
-}
-//imaging you'r eusing Bay and Data, and see what encrypt and decrypt look like
-//you're guess is that they're not sufficiently better to warrant coding Bay
-
-
-export async function decrypt2(store64, key) {
-	let combinedData = Data({base64: store64})
-	let vectorData = combinedData.clip(0, _encryption.vector)//unpack the vector and cipher from the combined array
-	let cipherData = combinedData.clip(_encryption.vector, combinedData.size() - _encryption.vector)
-
-	return Data({buffer: await crypto.subtle.decrypt({ name: _encryption.name, iv: vectorArray }, key, cipherArray)}).text()
-}
-
-
-
-
-
-
-
-/*
-_encryption.vector > _subtle.vectorSize
-*/
-
 const _subtle = {//these are the factory presets the system uses as a whole for symmetric encryption of sensitive user data
 	name: 'AES-GCM',
 	strength: 256, // 256-bit AES, only slightly slower than 128, and the strongest ever
@@ -1180,41 +1174,22 @@ export async function decrypt_new(storeData, key) {//stored data that is initial
 		key,
 		cipher.array())})
 }
+noop(async () => {
 
+	let k = await createKey_new()
+	let b = await exportKey_new(k)
+	log(b.base16(), b.size()+' bytes')
 
+	let k2 = await importKey_new(b)
+	console.log({k, k2})
 
+	let p = 'a short message, like card info'
+	let c = await encrypt_new(p, k)
+	console.log({p}, c.base64(), c.size()+' bytes')
 
-test(() => {
-	/*
-	let t = now()
-	let i = 0;
-	while (now() < i + Time.second) {
-		i++
-
-	}
-	log(i)
-	*/
+	let d = await decrypt_new(c, k)
+	console.log(d.text())
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1248,22 +1223,6 @@ hashData('Hello, World!').then(hash => console.log(hash));
 
 
 
-/*
-maybe store encrypted strings as a.BASE64BLOB
-meaning encryption environment and choices and secret key all represented by a
-that way, if you change anything related to that,  you can use both simultaneously with b
-or replace the as with bs, etc.
-
-actually, now that you're 256, just store it
-you can do a migration, or use a different database table
-*/
-
-
-
-
-
-
-
 
 
 
@@ -1290,22 +1249,6 @@ you can do a migration, or use a different database table
 // | |_| | | | | | |  __/
 //  \__|_|_| |_| |_|\___|
 //                       
-
-export const Time = {}
-Time.second = 1000//number of milliseconds in a second
-Time.minute = 60*Time.second//number of milliseconds in a minute
-Time.hour = 60*Time.minute
-Time.day = 24*Time.hour
-Time.week = 7*Time.day
-Time.year = Math.floor(365.25 * Time.day)
-Time.month = Math.floor((Time.year) / 12)
-Object.freeze(Time)//prevents changes and additions
-test(() => {
-	ok(Time.month == 2629800000)
-	ok(Time.year == 31557600000)
-})
-
-export const now = Date.now//just a shortcut
 
 //turn a tick count into text like 'Sat 15h 49m 55.384s', short but specific for logs and development bliss
 export function sayTick(t) {
@@ -1373,49 +1316,18 @@ test(() => {
 
 
 
-
-
-
-
-
-
-noop(async () => {
-
-	let k = await createKey()
-	let b = await exportKey(k)
-	log(b, b.length)
-	let k2 = await importKey(b)
-	console.log({k, k2})
-
-	let exampleKey = 'b14696ce 2e743e0d 65dded45 c6c78551 448be431 8ba193b9 0a446f79 c4b3cd6f'
-
-	let p = 'hello'
-	let c = await encrypt(p, k)
-	console.log({p, c})
-
-	let d = await decrypt(c, k)
-	console.log({d})
-})
-
-noop(async () => {
-
-	let k = await createKey_new()
-	let b = await exportKey_new(k)
-	log(b.base16(), b.size()+' bytes')
-
-	let k2 = await importKey_new(b)
-	console.log({k, k2})
-
-	let p = 'a short message, like card info'
-	let c = await encrypt_new(p, k)
-	console.log({p}, c.base64(), c.size()+' bytes')
-
-	let d = await decrypt_new(c, k)
-	console.log(d.text())
+test(() => {
 
 })
 
 
+
+/*
+*/
+
+
+
+/*
 async function f2() {
 	let k = await createKey()
 	let b = await exportKey(k)
@@ -1434,9 +1346,6 @@ async function f3() {
 	let d = await decrypt_new(c, k)
 	if (d.text() != p) log('decryption mismatch')
 }
-
-
-
 async function f() {
 	log('just in a function f')
 
@@ -1466,7 +1375,7 @@ async function f() {
 
 }
 f()
-
+*/
 
 
 
