@@ -6,7 +6,7 @@
 
 
 
-
+//units
 
 export const now = Date.now//just a shortcut
 
@@ -373,8 +373,8 @@ export const thinSpace = ' '
 test(() => {
 	ok(middleDot === '\u00B7')//U+00B7 on websites about unicode
 	ok(thinSpace === '\u2009')//U+2009
-	ok(middleDot.length == 1 && textToData(middleDot).base16() == 'c2b7')//one character, but two bytes
-	ok(thinSpace.length == 1 && textToData(thinSpace).base16() == 'e28089')//one character, but three bytes
+	ok(middleDot.length == 1 && Data({text: middleDot}).base16() == 'c2b7')//one character, but two bytes
+	ok(thinSpace.length == 1 && Data({text: thinSpace}).base16() == 'e28089')//one character, but three bytes
 })
 
 export function start(s, n)  { return clip(s, 0, n) }            // Clip out the first n characters of s, start(s, 3) is CCCccccccc	
@@ -607,38 +607,6 @@ function _number4(n, power, units) {
 
 
 
-//older design
-export function arrayToData(a)    { return _Data({fromArray:  a})   }//factory functions
-export function textToData(t)     { return _Data({fromText:   t})   }
-export function base16ToData(b16) { return _Data({fromBase16: b16}) }
-export function base64ToData(b64) { return _Data({fromBase64: b64}) }
-export function randomData(i)     { return _Data({randomSize: i})   }
-function _Data(p) {//private constructor which takes object of parameters
-	let o = { type: 'Data' }//note the type
-
-	//private members hang out in this function the return object came from, and are still here later!
-	let _array, _text, _base16, _base64
-
-	//constructors, a Data always contains an array, keeps the given form, and makes and keeps the others as it's asked for them
-	if      (p.fromArray)  { _array = p.fromArray                                               }
-	else if (p.fromText)   { _array = textToArray(p.fromText,     true); _text   = p.fromText   }
-	else if (p.fromBase16) { _array = base16ToArray(p.fromBase16, true); _base16 = p.fromBase16 }
-	else if (p.fromBase64) { _array = base64ToArray(p.fromBase64, true); _base64 = p.fromBase64 }
-	else if (p.randomSize) {
-		checkInt(p.randomSize, 1)//must request 1+ random bytes
-		_array = new Uint8Array(randomSize)//in this library, array by itself means Uint8Array, unsigned 8 bit
-		crypto.getRandomValues(_array)
-	} else { toss('argument', {p}) }
-
-	//methods
-	o.size   = function() { return _array.length }//size in bytes
-	o.array  = function() { return _array        }
-	o.text   = function() { if (_text)   { return _text;  } else { _text   = arrayToText(_array,   true); return _text   } }
-	o.base16 = function() { if (_base16) { return _base16 } else { _base16 = arrayToBase16(_array, true); return _base16 } }
-	o.base64 = function() { if (_base64) { return _base64 } else { _base64 = arrayToBase64(_array, true); return _base64 } }
-	return o
-}
-
 
 
 
@@ -686,7 +654,7 @@ function Data(p) {//a Data wraps Uint8Array for type and bounds checks and forma
 	//constructor, a Data always contains an array, keeps the given form, and makes and keeps the others as requested
 	if      (p.buffer instanceof ArrayBuffer) { _array = new Uint8Array(p.buffer) }//put a uint8 array view over the buffer
 	else if (p.array  instanceof Uint8Array)  { _array = p.array                  }//just save the given array
-	else if (p.text)   { checkText(p.text);   _array = textToArray(p.text,     true); _text   = p.text   }//decode the text to make the array
+	else if (p.text)   {                      _array = textToArray(p.text,     true); _text   = p.text   }//decode the text to make the array
 	else if (p.base16) { checkText(p.base16); _array = base16ToArray(p.base16, true); _base16 = p.base16 }
 	else if (p.base62) { checkText(p.base62); _array = base62ToArray(p.base62, true); _base62 = p.base62 }
 	else if (p.base64) { checkText(p.base64); _array = base64ToArray(p.base64, true); _base64 = p.base64 }
@@ -727,15 +695,24 @@ function arrayToText(a, trip) {
 function base16ToArray(s, trip) {
 	if (s.length % 2 != 0) toss('data', {s})
 	let a = new Uint8Array(s.length / 2)
-	for (let i = 0; i < a.length; i++) {
-		a[i] = parseInt(s.substr(i*2, 2), 16)
-	}
+	for (let i = 0; i < a.length; i++) { a[i] = parseInt(s.substr(i*2, 2), 16) }
 	if (trip) checkSame(s, arrayToBase16(a, false))
 	return a
 }
 function arrayToBase16(a, trip) {
 	let s = Array.from(a, byte => byte.toString(16).padStart(2, '0')).join('')
 	if (trip) checkSameArray(a, base16ToArray(s, false))
+	return s
+}
+
+function base62ToArray(s, trip) {
+	let a = _base62ToArray(s)
+	if (trip) checkSame(s, arrayToBase62(a, false))
+	return a
+}
+function arrayToBase62(a, trip) {
+	let s = _arrayToBase62(a)
+	if (trip) checkSameArray(a, base62ToArray(s, false))
 	return s
 }
 
@@ -769,25 +746,26 @@ function checkSameArray(a1, a2) {
 	}
 }
 test(() => {
-	c('6b', 'aw==')//make sure whatever platform we're running on uses special and padding characters as we expect
-	c('13', 'Ew==')
-	c('7015', 'cBU=')
-	c('da04ce', '2gTO')
-	c('be2d76ceb8', 'vi12zrg=')
-	c('887919a10433090c', 'iHkZoQQzCQw=')
-	c('7d3d2bff5fefdd09145a49eadd', 'fT0r/1/v3QkUWknq3Q==')
-	c('eff64d5ef4917f0569a2bfe7d39d6453d7c644689e', '7/ZNXvSRfwVpor/n051kU9fGRGie')
-	c('77ea82e471d483aea44330a4f5fc231fcb46b760ee0f360544f6c7da464f01908ea8', 'd+qC5HHUg66kQzCk9fwjH8tGt2DuDzYFRPbH2kZPAZCOqA==')
-	c('8cdd5d5c4bd850125ae4825f3bfb8e209600cfc8cb93383a821db3d9f783ffa3abb59e6b65343a16542598f4fe27ad85ba7e3d4ff4254b', 'jN1dXEvYUBJa5IJfO/uOIJYAz8jLkzg6gh2z2feD/6OrtZ5rZTQ6FlQlmPT+J62Fun49T/QlSw==')
-	c('447c70a59147c304c5086551b151e57a3551512d7a2d9fa05f756a2fafd0b6e3f7f7deabc43a9ca2bcad57713ba63ab61b822775aea679a445d4a87c789119da07cd8bac08c728f3f888c5c41a25a7b1b3f600476694c82f2f', 'RHxwpZFHwwTFCGVRsVHlejVRUS16LZ+gX3VqL6/QtuP3996rxDqcorytV3E7pjq2G4Inda6meaRF1Kh8eJEZ2gfNi6wIxyjz+IjFxBolp7Gz9gBHZpTILy8=')
-	c('3e1f850c3146cda8cb0b4be4848c74538321229027eb3e40191c31484a6d198b5e4c9cd3c2917440e24676be4d7f45dde181202d6bd755854e78574d7a9bf8da7f28a6601821037527b21f1d26fc6779a77ee42e09e7573cdebb6096db693229ea030aec0d1258f82786b7e877ba79383c707ed8588fc171db4404517842120ff419ffb1aef47f990a5322e3744abaaa', 'Ph+FDDFGzajLC0vkhIx0U4MhIpAn6z5AGRwxSEptGYteTJzTwpF0QOJGdr5Nf0Xd4YEgLWvXVYVOeFdNepv42n8opmAYIQN1J7IfHSb8Z3mnfuQuCedXPN67YJbbaTIp6gMK7A0SWPgnhrfod7p5ODxwfthYj8Fx20QEUXhCEg/0Gf+xrvR/mQpTIuN0Srqq')
-	function c(base16, base64) {
-		let d = base64ToData(base64)//will go through base64 round trip
+	c('6b', 'Qo', 'aw==')//make sure whatever platform we're running on uses special and padding characters as we expect
+	c('13', '4o', 'Ew==')
+	c('7015', 'S1K', 'cBU=')
+	c('da04ce', 'uWJE', '2gTO')
+	c('be2d76ceb8', 'nYturhW', 'vi12zrg=')
+	c('887919a10433090c', 'Y7aPeGGr2Go', 'iHkZoQQzCQw=')
+	c('7d3d2bff5fefdd09145a49eadd', 'VJshjjNjnvGaKMadgvG', 'fT0r/1/v3QkUWknq3Q==')
+	c('eff64d5ef4917f0569a2bfe7d39d6453d7c644689e', 'zjuJLzsaNi5QQAjjdsxtaKjNpaHedW', '7/ZNXvSRfwVpor/n051kU9fGRGie')
+	c('77ea82e471d483aea44330a4f5fc231fcb46b760ee0f360544f6c7da464f01908ea8', 'TjgWmHpt8Emf4CofFNi8pjqsQvOEwFDWL4jR7uaPF0P2Eg0', 'd+qC5HHUg66kQzCk9fwjH8tGt2DuDzYFRPbH2kZPAZCOqA==')
+	c('8cdd5d5c4bd850125ae4825f3bfb8e209600cfc8cb93383a821db3d9f783ffa3abb59e6b65343a16542598f4fe27ad85ba7e3d4ff4254b', 'ZDtTN4nOK19Qx89VEjzZY2M0CjqCmJE3g27RFPjU3jjeymtdclbD3eML2MOjJjYUlXRfjZtFjGbIo', 'jN1dXEvYUBJa5IJfO/uOIJYAz8jLkzg6gh2z2feD/6OrtZ5rZTQ6FlQlmPT+J62Fun49T/QlSw==')
+	c('447c70a59147c304c5086551b151e57a3551512d7a2d9fa05f756a2fafd0b6e3f7f7deabc43a9ca2bcad57713ba63ab61b822775aea679a445d4a87c789119da07cd8bac08c728f3f888c5c41a25a7b1b3f600476694c82f2f', 'H7pofP57ooJ526LHkL7bUZLHKItyBPje5jTMenhjGlmFvjVUgiGydAAihLTpEyOylXm29vMmfdcaHTIeV7YH6Te7rOmk2CSeijwYCN46YMdkRFu04TcbCWnBo', 'RHxwpZFHwwTFCGVRsVHlejVRUS16LZ+gX3VqL6/QtuP3996rxDqcorytV3E7pjq2G4Inda6meaRF1Kh8eJEZ2gfNi6wIxyjz+IjFxBolp7Gz9gBHZpTILy8=')
+	c('3e1f850c3146cda8cb0b4be4848c74538321229027eb3e40191c31484a6d198b5e4c9cd3c2917440e24676be4d7f45dde181202d6bd755854e78574d7a9bf8da7f28a6601821037527b21f1d26fc6779a77ee42e09e7573cdebb6096db693229ea030aec0d1258f82786b7e877ba79383c707ed8588fc171db4404517842120ff419ffb1aef47f990a5322e3744abaaa', 'FXjXGopHkueqolBx8ICT5E38IAG9jhFa0P7358IcsPYtxCdDF2aNH0waPunatjsNTwO4WBMnNLOLEU5TDUfnwudiefc0O8GDt9z8V7IRiPvcdVmGm2UTNFDyzO9RRQJ8fyWCAz0sIMFWdXhVeTzfxE3poVlXOZi5pusG4KNX24WjjGPjjkQzsVxaAKqBZT4gygW', 'Ph+FDDFGzajLC0vkhIx0U4MhIpAn6z5AGRwxSEptGYteTJzTwpF0QOJGdr5Nf0Xd4YEgLWvXVYVOeFdNepv42n8opmAYIQN1J7IfHSb8Z3mnfuQuCedXPN67YJbbaTIp6gMK7A0SWPgnhrfod7p5ODxwfthYj8Fx20QEUXhCEg/0Gf+xrvR/mQpTIuN0Srqq')
+	function c(base16, base62, base64) {
+		let d = Data({base64: base64})//will go through base64 round trip
 		ok(d.base16() == base16)//will go through base16 round trip, as well as this comparison
+		ok(d.base62() == base62)
 	}
 })
 test(() => {
-	let d = textToData('ABC')
+	let d = Data({text: 'ABC'})
 	ok(d.size() == 3)
 	ok(d.base16() == '414243')
 	ok(d.text() == 'ABC')
@@ -795,10 +773,6 @@ test(() => {
 
 
 
-function base62ToArray(s, trip) {
-}
-function arrayToBase62(a, trip) {
-}
 
 
 
@@ -808,33 +782,17 @@ function arrayToBase62(a, trip) {
 
 
 //here's the draft alphabet, essentially
-const alphabetBase62Stream = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghklmnopqrstuvwxyzij'//last two more common, picked i j to render narrow
-const alphabetBase62Int    = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//ascii order
-test(() => {
-	ok(alphabetBase62Stream.length == 62)
-	ok(alphabetBase62Int.length    == 62)
-})
+const alphabet62Classic = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const alphabet62Stream  = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghklmnopqrstuvwxyzij'//last two more common, picked i j to render narrow
+const alphabet62Int     = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//ascii order
 //uppercase first because that's how it is in the ascii table
 //i and j are narrow, and neighbors, so it's less random than il
-
-/*
-//ok maybe instead of using base16 sometimes and base64 other times, if you get base62 defined and confirm that it's equivalently fast, maybe use that everywhere
-//just measure which letters are the most frequent, and replace them with lowercase i and l or something
-//you can make that decision without doing the whole rendered text analysis
-//for the narrowest unicode, etc, you do have to do narrowest, but that can be later
-*/
-
-
-
-
-
-
+//TODO swap YZ with ji in the alphebet above so the only more common letters are as narrow as possible in pixels
 
 // Turn data into text using base 62, each 4 or 6 bits will become a character 0-9, a-z, and A-Z
 function _arrayToBase62(a) {
 
 	// Use 0-9, a-z and A-Z, 62 different characters, to describe the data
-	const alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 	
 	// Loop through the memory, encoding its bits into letters and numbers
 	let i = 0                 // The index in bits, from 0 through all the bits in the given data
@@ -857,94 +815,115 @@ function _arrayToBase62(a) {
 		code = code >>> (10 - bitIndex) // Shift it to the right to read it as a number       ----------101101
 		
 		// Describe the 6 bits with a numeral or letter, 111100 is 60 and Y, if more than that use Z and move forward 4, not 6
-		if (code < 61) { s += alphabet.charAt(code); i += 6 } // 000000  0 '0' through 111100 60 'Y'
-		else           { s += alphabet.charAt(61);   i += 4 } // 111101 61, 111110 62, and 111111 63 are 'Z', move past the four 1s
+		if (code < 61) { s += alphabet62Stream.charAt(code); i += 6 } // 000000  0 '0' through 111100 60 'Y'
+		else           { s += alphabet62Stream.charAt(61);   i += 4 } // 111101 61, 111110 62, and 111111 63 are 'Z', move past the four 1s
 	}
 	return s
 }
-//TODO swap YZ with ji in the alphebet above so the only more common letters are as narrow as possible in pixels
+
+function _base62ToArray(s) {
+
+	let b = Bin(s.length)//always more characters than bytes, TODO measure this
+
+	// Loop for each character in the text
+	let c        // The character we are converting into bits
+	let code     // The bits the character gets turned into
+	let hold = 0 // A place to hold bits from several characters until we have 8 and can write a byte
+	let bits = 0 // The number of bits stored in the right side of hold right now
+	for (let i = 0; i < s.length; i++) {
+
+		// Get a character from the text
+		c = s.charAt(i)
+		code = alphabet62Stream.indexOf(c)
+		if (code < 0) toss('data', {s})
+
+		// Insert the bits from code into hold
+		if (code == 61) { hold = (hold << 4) | 15;   bits += 4 } // Insert 1111 for 'Z'
+		else            { hold = (hold << 6) | code; bits += 6 } // Insert 000000 for '0' through 111100 for 'Y'
+
+		// If we have enough bits in hold to write a byte
+		if (bits >= 8) {
+
+			// Move the 8 leftmost bits in hold to our Bay object
+			b.add((hold >>> (bits - 8)) & 0xff)
+			bits -= 8 // Remove the bits we wrote from hold, any extra bits there will be written next time
+		}
+	}
+	return b.data().array()
+}
+
+
+function base62ToInt(s, trip) {
+}
+function intToBase62(i, trip) {
+}
+/*
+//here's a way to make a tick count like 1716255488471 shorter by treating them as a base62 number
+const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+function encodeBase62(num) {
+    if (num === 0) return BASE62[0];
+    let encoded = '';
+    while (num > 0) {
+        encoded = BASE62[num % 62] + encoded;
+        num = Math.floor(num / 62);
+    }
+    return encoded;
+}
+
+function decodeBase62(str) {
+    let decoded = 0;
+    for (let i = 0; i < str.length; i++) {
+        decoded = decoded * 62 + BASE62.indexOf(str[i]);
+    }
+    return decoded;
+}
+
+// Example usage
+const num = 12345;
+const encoded = encodeBase62(num);
+const decoded = decodeBase62(encoded);
+
+console.log(`Number: ${num}`);
+console.log(`Encoded: ${encoded}`);
+console.log(`Decoded: ${decoded}`);
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 /*
-_base62ToArray1--measured codes, as below
-_base62ToArray2--lookup in alphabet, compare speed
-*/
+noop(() => {
 
-// Turn base 62-encoded text back into the data it was made from
-function _base62ToArray1(s) {
-	let b = Bin(s.length)
+	//get some random bytes
+	let b16 = Data({random: 40}).base16()
+	//encode into base62
+	let b62 = arrayToBase62(Data({base16: b16}).array())
+	//and back again
+	let b16a = Data({array: base62ToArray(b62)}).base16()
+	//log to confirm looks good
+	log(b62, b16, b16a)
 
-	// Loop for each character in the text
-	let c        // The character we are converting into bits
-	let code     // The bits the character gets turned into
-	let hold = 0 // A place to hold bits from several characters until we have 8 and can write a byte
-	let bits = 0 // The number of bits stored in the right side of hold right now
-	for (let i = 0; i < s.length; i++) {
 
-		// Get a character from the text
-		c = s.charAt(i)
-		if      (_range(c, '0', '9')) code = c.charCodeAt(0) - '0'.charCodeAt(0)      // '0'  0 000000 through '9'  9 001001
-		else if (_range(c, 'a', 'z')) code = c.charCodeAt(0) - 'a'.charCodeAt(0) + 10 // 'a' 10 001010 through 'z' 35 100011
-		else if (_range(c, 'A', 'Y')) code = c.charCodeAt(0) - 'A'.charCodeAt(0) + 36 // 'A' 36 100100 through 'Y' 60 111100
-		else if (_range(c, 'Z', 'Z')) code = 61 // 'Z' indicates 61 111101, 62 111110, or 63 111111 are next, we will just write four 1s
-		else toss('data') // Invalid character
-
-		// Insert the bits from code into hold
-		if (code == 61) { hold = (hold << 4) | 15;   bits += 4 } // Insert 1111 for 'Z'
-		else            { hold = (hold << 6) | code; bits += 6 } // Insert 000000 for '0' through 111100 for 'Y'
-
-		// If we have enough bits in hold to write a byte
-		if (bits >= 8) {
-
-			// Move the 8 leftmost bits in hold to our Bay object
-			b.add((hold >>> (bits - 8)) & 0xff)
-			bits -= 8 // Remove the bits we wrote from hold, any extra bits there will be written next time
-		}
-	}
-	return b.data().array()
-}
-function _range(s, c1, c2) { return (s.charCodeAt(0) >= c1.charCodeAt(0)) && (s.charCodeAt(0) <= c2.charCodeAt(0)) }
-
-function _base62ToArray2(s) {
-	const alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-	let b = Bin(s.length)
-
-	// Loop for each character in the text
-	let c        // The character we are converting into bits
-	let code     // The bits the character gets turned into
-	let hold = 0 // A place to hold bits from several characters until we have 8 and can write a byte
-	let bits = 0 // The number of bits stored in the right side of hold right now
-	for (let i = 0; i < s.length; i++) {
-
-		// Get a character from the text
-		c = s.charAt(i)
-		code = alphabet.indexOf(c)
-		if (code < 0) toss('data', {s})
-		/*
-		if      (_range(c, '0', '9')) code = c.charCodeAt(0) - '0'.charCodeAt(0)      // '0'  0 000000 through '9'  9 001001
-		else if (_range(c, 'a', 'z')) code = c.charCodeAt(0) - 'a'.charCodeAt(0) + 10 // 'a' 10 001010 through 'z' 35 100011
-		else if (_range(c, 'A', 'Y')) code = c.charCodeAt(0) - 'A'.charCodeAt(0) + 36 // 'A' 36 100100 through 'Y' 60 111100
-		else if (_range(c, 'Z', 'Z')) code = 61 // 'Z' indicates 61 111101, 62 111110, or 63 111111 are next, we will just write four 1s
-		else toss('data') // Invalid character
-		*/
-
-		// Insert the bits from code into hold
-		if (code == 61) { hold = (hold << 4) | 15;   bits += 4 } // Insert 1111 for 'Z'
-		else            { hold = (hold << 6) | code; bits += 6 } // Insert 000000 for '0' through 111100 for 'Y'
-
-		// If we have enough bits in hold to write a byte
-		if (bits >= 8) {
-
-			// Move the 8 leftmost bits in hold to our Bay object
-			b.add((hold >>> (bits - 8)) & 0xff)
-			bits -= 8 // Remove the bits we wrote from hold, any extra bits there will be written next time
-		}
-	}
-	return b.data().array()
-}
+})
 
 
 noop(() => {
@@ -962,7 +941,7 @@ noop(() => {
 })
 
 
-
+/*
 async function f() {
 	let d, s
 	let size = 50
@@ -1000,47 +979,6 @@ async function f() {
 	log(r3+' base62 to array method 2')
 }
 f()
-
-
-/*
-// The Unicode number value of the character a distance i characters into s
-// Also gets ASCII codes, code("A") is 65
-// You can omit i to get the code of the first character
-function code(s, i) {
-	if (!i) i = 0 // Turn undefined into 0 so the math below works
-	if (i < 0 || i > s.length - 1) toss('bounds')
-	return s.charCodeAt(i)
-}
-*/
-
-
-
-
-//should you implement Bay as a single screen?
-//you'd use it to put the initialization vector in front of the ciphertext
-//and for base62
-
-/*
-
-if you did Bay, it would be like this
-
-let b = Bay() -- new empty one
-b.size() -- how many bytes are in there
-b.add(array) -- add the given Uint8Array to the end
-b.data() -- the view you can slice and convert
-
-so then i guess you also have to add to data 
-
-b.data().clip(0, 12)
-
-the magic inside is:
-automatic growth
-bounds checking
-round trip checks
-
-
-
-
 */
 
 
@@ -1049,43 +987,9 @@ round trip checks
 
 
 
-function base62ToInt(s, trip) {
-}
-function intToBase62(i, trip) {
-}
 
 
-/*
-//here's a way to make a tick count like 1716255488471 shorter by treating them as a base62 number
-const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-function encodeBase62(num) {
-    if (num === 0) return BASE62[0];
-    let encoded = '';
-    while (num > 0) {
-        encoded = BASE62[num % 62] + encoded;
-        num = Math.floor(num / 62);
-    }
-    return encoded;
-}
-
-function decodeBase62(str) {
-    let decoded = 0;
-    for (let i = 0; i < str.length; i++) {
-        decoded = decoded * 62 + BASE62.indexOf(str[i]);
-    }
-    return decoded;
-}
-
-// Example usage
-const num = 12345;
-const encoded = encodeBase62(num);
-const decoded = decodeBase62(encoded);
-
-console.log(`Number: ${num}`);
-console.log(`Encoded: ${encoded}`);
-console.log(`Decoded: ${decoded}`);
-*/
 
 
 
@@ -1174,7 +1078,7 @@ export async function decrypt_new(storeData, key) {//stored data that is initial
 		key,
 		cipher.array())})
 }
-noop(async () => {
+test(async () => {
 
 	let k = await createKey_new()
 	let b = await exportKey_new(k)
@@ -1183,9 +1087,9 @@ noop(async () => {
 	let k2 = await importKey_new(b)
 	console.log({k, k2})
 
-	let p = 'a short message, like card info'
+	let p = 'a short message'
 	let c = await encrypt_new(p, k)
-	console.log({p}, c.base64(), c.size()+' bytes')
+	console.log({p}, c.base62(), c.size()+' bytes')
 
 	let d = await decrypt_new(c, k)
 	console.log(d.text())
