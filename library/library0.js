@@ -6,11 +6,15 @@
 
 
 
-//units
-
-export const now = Date.now//just a shortcut
 
 
+
+//              _ _       
+//  _   _ _ __ (_) |_ ___ 
+// | | | | '_ \| | __/ __|
+// | |_| | | | | | |_\__ \
+//  \__,_|_| |_|_|\__|___/
+//                        
 
 export const Time = {}
 Time.second = 1000//number of milliseconds in a second
@@ -22,7 +26,6 @@ Time.year = Math.floor(365.25 * Time.day)
 Time.month = Math.floor((Time.year) / 12)
 Object.freeze(Time)//prevents changes and additions
 
-
 export const Size = {}
 Size.b  = 1//one byte
 Size.kb = 1024*Size.b//number of bytes in a kibibyte, a kilobyte would be 1000 instead of 1024
@@ -31,6 +34,10 @@ Size.gb = 1024*Size.mb//gibibyte
 Size.tb = 1024*Size.gb//tebibyte
 Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
+
+export const now = Date.now//just a shortcut
+
+
 
 
 
@@ -360,6 +367,12 @@ test(() => {
 
 
 
+
+
+
+
+
+
 //  _            _   
 // | |_ _____  _| |_ 
 // | __/ _ \ \/ / __|
@@ -632,9 +645,13 @@ function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds checks and
 	let b = { type: 'Bin' }//note the type
 	b.capacity = function() { return _capacity }//how many bytes it can hold
 	b.size = function() { return _size }//how many bytes it does hold
+	b.array = function() { return new Uint8Array(_buffer, 0, _size) }//clip a uint8array around the data in our bin
+	b.data = function() { return Data({array: b.array()}) }//wrap in Data to view, clip, and convert
+	/*
 	b.data = function() {//wrap in Data to view, clip, and convert
 		return Data({array: new Uint8Array(_buffer, 0, _size)})
 	}
+	*/
 	b.add = function(p) {
 		if (typeof p == 'number') {
 			checkInt(p, 0); if (p > 255) toss('value', {b, p})
@@ -745,85 +762,57 @@ function checkSameArray(a1, a2) {
 		}
 	}
 }
-test(() => {
-	c('6b', 'Qo', 'aw==')//make sure whatever platform we're running on uses special and padding characters as we expect
-	c('13', '4o', 'Ew==')
-	c('7015', 'S1K', 'cBU=')
-	c('da04ce', 'uWJE', '2gTO')
-	c('be2d76ceb8', 'nYturhW', 'vi12zrg=')
-	c('887919a10433090c', 'Y7aPeGGr2Go', 'iHkZoQQzCQw=')
-	c('7d3d2bff5fefdd09145a49eadd', 'VJshjjNjnvGaKMadgvG', 'fT0r/1/v3QkUWknq3Q==')
-	c('eff64d5ef4917f0569a2bfe7d39d6453d7c644689e', 'zjuJLzsaNi5QQAjjdsxtaKjNpaHedW', '7/ZNXvSRfwVpor/n051kU9fGRGie')
-	c('77ea82e471d483aea44330a4f5fc231fcb46b760ee0f360544f6c7da464f01908ea8', 'TjgWmHpt8Emf4CofFNi8pjqsQvOEwFDWL4jR7uaPF0P2Eg0', 'd+qC5HHUg66kQzCk9fwjH8tGt2DuDzYFRPbH2kZPAZCOqA==')
-	c('8cdd5d5c4bd850125ae4825f3bfb8e209600cfc8cb93383a821db3d9f783ffa3abb59e6b65343a16542598f4fe27ad85ba7e3d4ff4254b', 'ZDtTN4nOK19Qx89VEjzZY2M0CjqCmJE3g27RFPjU3jjeymtdclbD3eML2MOjJjYUlXRfjZtFjGbIo', 'jN1dXEvYUBJa5IJfO/uOIJYAz8jLkzg6gh2z2feD/6OrtZ5rZTQ6FlQlmPT+J62Fun49T/QlSw==')
-	c('447c70a59147c304c5086551b151e57a3551512d7a2d9fa05f756a2fafd0b6e3f7f7deabc43a9ca2bcad57713ba63ab61b822775aea679a445d4a87c789119da07cd8bac08c728f3f888c5c41a25a7b1b3f600476694c82f2f', 'H7pofP57ooJ526LHkL7bUZLHKItyBPje5jTMenhjGlmFvjVUgiGydAAihLTpEyOylXm29vMmfdcaHTIeV7YH6Te7rOmk2CSeijwYCN46YMdkRFu04TcbCWnBo', 'RHxwpZFHwwTFCGVRsVHlejVRUS16LZ+gX3VqL6/QtuP3996rxDqcorytV3E7pjq2G4Inda6meaRF1Kh8eJEZ2gfNi6wIxyjz+IjFxBolp7Gz9gBHZpTILy8=')
-	c('3e1f850c3146cda8cb0b4be4848c74538321229027eb3e40191c31484a6d198b5e4c9cd3c2917440e24676be4d7f45dde181202d6bd755854e78574d7a9bf8da7f28a6601821037527b21f1d26fc6779a77ee42e09e7573cdebb6096db693229ea030aec0d1258f82786b7e877ba79383c707ed8588fc171db4404517842120ff419ffb1aef47f990a5322e3744abaaa', 'FXjXGopHkueqolBx8ICT5E38IAG9jhFa0P7358IcsPYtxCdDF2aNH0waPunatjsNTwO4WBMnNLOLEU5TDUfnwudiefc0O8GDt9z8V7IRiPvcdVmGm2UTNFDyzO9RRQJ8fyWCAz0sIMFWdXhVeTzfxE3poVlXOZi5pusG4KNX24WjjGPjjkQzsVxaAKqBZT4gygW', 'Ph+FDDFGzajLC0vkhIx0U4MhIpAn6z5AGRwxSEptGYteTJzTwpF0QOJGdr5Nf0Xd4YEgLWvXVYVOeFdNepv42n8opmAYIQN1J7IfHSb8Z3mnfuQuCedXPN67YJbbaTIp6gMK7A0SWPgnhrfod7p5ODxwfthYj8Fx20QEUXhCEg/0Gf+xrvR/mQpTIuN0Srqq')
-	function c(base16, base62, base64) {
-		let d = Data({base64: base64})//will go through base64 round trip
-		ok(d.base16() == base16)//will go through base16 round trip, as well as this comparison
-		ok(d.base62() == base62)
-	}
-})
-test(() => {
-	let d = Data({text: 'ABC'})
-	ok(d.size() == 3)
-	ok(d.base16() == '414243')
-	ok(d.text() == 'ABC')
-})
 
+//  _                     __  ____  
+// | |__   __ _ ___  ___ / /_|___ \ 
+// | '_ \ / _` / __|/ _ \ '_ \ __) |
+// | |_) | (_| \__ \  __/ (_) / __/ 
+// |_.__/ \__,_|___/\___|\___/_____|
+//                                  
 
+const alphabet62Int    = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//ascii order, for integers, below
+const alphabet62Stream = '1023456789ABCDEFIGHJKLMNOPQRSTUVjWXYZabcdefghkmnlopqrstuvwxyzi'//narrow characters in popular spots, for data
+/*                        ^               ^               ^               ^            ^
+         moved character '1'             'I'             'j'             'l'          'i'
+                to index  0               16              32              48           61
 
-
-
-
-
-
-
-
-
-//here's the draft alphabet, essentially
-const alphabet62Classic = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-const alphabet62Stream  = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghklmnopqrstuvwxyzij'//last two more common, picked i j to render narrow
-const alphabet62Int     = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//ascii order
-//uppercase first because that's how it is in the ascii table
-//i and j are narrow, and neighbors, so it's less random than il
-//TODO swap YZ with ji in the alphebet above so the only more common letters are as narrow as possible in pixels
-
+Encoding random short data, some characters appear more frequently than others
+The last character, at index 61, is the most common
+Also, the charcters at 0, 16, 32, and 48 are slightly more common
+Rendered to pixels for a user, we want base62 text to be as short as possible!
+So, we've adjusted the alphabet to put narrow characters in the popular spots
+*/
 // Turn data into text using base 62, each 4 or 6 bits will become a character 0-9, a-z, and A-Z
 function _arrayToBase62(a) {
-
-	// Use 0-9, a-z and A-Z, 62 different characters, to describe the data
 	
 	// Loop through the memory, encoding its bits into letters and numbers
-	let i = 0                 // The index in bits, from 0 through all the bits in the given data
-	let byteIndex, bitIndex   // The same index as a distance in bytes followed by a distance in bits
-	let pair, mask, code      // Use the data bytes a pair at a time, with a mask of six 1s, to read a code 0 through 63
-	let s = ''                // Target string to build up and return
+	let i = 0                  // The index in bits, from 0 through all the bits in the given data
+	let byteIndex, bitIndex    // The same index as a distance in bytes followed by a distance in bits
+	let pair, mask, code       // Look at a pair of bytes at a time, with a mask of six 1s, to read a code 0 through 63
+	let s = ''                 // Target string to build up and return
 	while (i < a.length * 8) { // When the bit index moves beyond the memory, we're done
 		
-		// Calculate the byte and bit to move to from the bit index
+		// Calculate our byte and bit position for this run of the loop
 		byteIndex = Math.floor(i / 8) // Divide by 8 and chop off the remainder to get the byte index
 		bitIndex  = i % 8             // The bit index within that byte is the remainder
 		
 		// Copy the two bytes at byteIndex into pair
 		pair = (a[byteIndex] & 0xff) << 8 // Copy the byte at byteindex into pair, shifted left to bring eight 0s on the right
-		if (byteIndex + 1 < a.length) pair |= (a[byteIndex + 1] & 0xff) // On the last byte, leave the right byte in pair all 0s
+		if (byteIndex + 1 < a.length) pair |= (a[byteIndex + 1] & 0xff) // On the very last byte, leave the right byte in pair all 0s
 		
 		// Read the 6 bits at i as a number, called code, which will be 0 through 63
 		mask = 63 << (10 - bitIndex)    // Start the mask 111111 63 shifted into position     0011111100000000
 		code = pair & mask              // Use the mask to clip out just that portion of pair --101101--------
 		code = code >>> (10 - bitIndex) // Shift it to the right to read it as a number       ----------101101
 		
-		// Describe the 6 bits with a numeral or letter, 111100 is 60 and Y, if more than that use Z and move forward 4, not 6
-		if (code < 61) { s += alphabet62Stream.charAt(code); i += 6 } // 000000  0 '0' through 111100 60 'Y'
-		else           { s += alphabet62Stream.charAt(61);   i += 4 } // 111101 61, 111110 62, and 111111 63 are 'Z', move past the four 1s
+		// Describe the 6 bits with a numeral or letter, 111100 is 60, if 61 move forward 4, not 6
+		if (code < 61) { s += alphabet62Stream.charAt(code); i += 6 } // 000000 0 through 111100 60 append character at that index
+		else           { s += alphabet62Stream.charAt(61);   i += 4 } // 111101 61, 111110 62, and 111111 63 append 'i' and move past '1111'
 	}
 	return s
 }
-
 function _base62ToArray(s) {
-
-	let b = Bin(s.length)//always more characters than bytes, TODO measure this
+	let b = Bin(s.length) // More characters become fewer bytes, so this capacity will always be plenty
 
 	// Loop for each character in the text
 	let c        // The character we are converting into bits
@@ -838,56 +827,124 @@ function _base62ToArray(s) {
 		if (code < 0) toss('data', {s})
 
 		// Insert the bits from code into hold
-		if (code == 61) { hold = (hold << 4) | 15;   bits += 4 } // Insert 1111 for 'Z'
-		else            { hold = (hold << 6) | code; bits += 6 } // Insert 000000 for '0' through 111100 for 'Y'
+		if (code == 61) { hold = (hold << 4) | 15;   bits += 4 } // Insert 1111 for common 'i' at last alphabet index 61
+		else            { hold = (hold << 6) | code; bits += 6 } // Insert 000000 through 111100 for other characters
 
 		// If we have enough bits in hold to write a byte
 		if (bits >= 8) {
-
-			// Move the 8 leftmost bits in hold to our Bay object
-			b.add((hold >>> (bits - 8)) & 0xff)
+			b.add((hold >>> (bits - 8)) & 0xff) // Move the 8 leftmost bits in hold to our Bin object
 			bits -= 8 // Remove the bits we wrote from hold, any extra bits there will be written next time
 		}
 	}
-	return b.data().array()
+	return b.array()
 }
 
+//express integers the user may see, like a tick count in the location bar, in base62
+function base62ToInt(s) { return _base62ToInt(s, true) }//true to perform round-trip check
+function intToBase62(i) { return _intToBase62(i, true) }
+function _base62ToInt(s, trip) {
+	checkText(s)
+	let i = 0
+	for (let sIndex = 0; sIndex < s.length; sIndex++) {
+		i = (i * 62) + alphabet62Int.indexOf(s[sIndex])
+	}
+	if (trip) checkSame(s, _intToBase62(i, false))//false to not round-trip check forever!
+	return i
+}
+function _intToBase62(i, trip) {
+	checkInt(i)
+	if (i == 0) return alphabet62Int[0]
+	let remaining = i
+	let s = ''
+	while (remaining > 0) {//loop until there's no quantity remaining to encode
+		s = alphabet62Int[remaining % 62] + s//prefix s with the character the distance into alphabet of the base62 remainder 
+		remaining = Math.floor(remaining / 62)//move 62x larger
+	}
+	if (trip) checkSame(i, _base62ToInt(s, false))
+	return s
+}
 
-function base62ToInt(s, trip) {
-}
-function intToBase62(i, trip) {
-}
+//turn this test back on when you're done messing with the base62 alphabet!
+test(() => {
+	c('6b', 'Ql', 'aw==')//make sure whatever platform we're running on uses special and padding characters as we expect
+	c('13', '4l', 'Ew==')
+	c('7015', 'S0K', 'cBU=')
+	c('da04ce', 'tjJE', '2gTO')
+	c('be2d76ceb8', 'nXstqgj', 'vi12zrg=')
+	c('887919a10433090c', 'X7ZPdIIq2Il', 'iHkZoQQzCQw=')
+	c('7d3d2bff5fefdd09145a49eadd', 'VJrgiiNinuIZKMZcfuI', 'fT0r/1/v3QkUWknq3Q==')
+	c('eff64d5ef4917f0569a2bfe7d39d6453d7c644689e', 'yitJLyrZNz5QQAiicrwsZKiNoZGdcj', '7/ZNXvSRfwVpor/n051kU9fGRGie')
+	c('77ea82e471d483aea44330a4f5fc231fcb46b760ee0f360544f6c7da464f01908ea8', 'TifjmGos8Eme4CleFNz8oiprQuOEvFDjL4iR7tZPF1P2Ef1', 'd+qC5HHUg66kQzCk9fwjH8tGt2DuDzYFRPbH2kZPAZCOqA==')
+	c('8cdd5d5c4bd850125ae4825f3bfb8e209600cfc8cb93383a821db3d9f783ffa3abb59e6b65343a16542598f4fe27ad85ba7e3d4ff4254b', 'YDsTN4nOK09Qw89VEiyYX2M1CipCmJE3f27RFPiU3iidxmscbkaD3dML2MOiJiXUkWReiYsFiIaHl', 'jN1dXEvYUBJa5IJfO/uOIJYAz8jLkzg6gh2z2feD/6OrtZ5rZTQ6FlQlmPT+J62Fun49T/QlSw==')
+	c('447c70a59147c304c5086551b151e57a3551512d7a2d9fa05f756a2fafd0b6e3f7f7deabc43a9ca2bcad57713ba63ab61b822775aea679a445d4a87c789119da07cd8bac08c728f3f888c5c41a25a7b1b3f600476694c82f2f', 'G7oleP57llJ526LGhL7aUYLGKHsxBPid5iTMdngiIkmFuiVUfzIxcAAzgLToExOxkWm29uMmecbZGTHdV7XG6Td7qOmh2CSdzivXCN46XMchRFt14TbaCjnBl', 'RHxwpZFHwwTFCGVRsVHlejVRUS16LZ+gX3VqL6/QtuP3996rxDqcorytV3E7pjq2G4Inda6meaRF1Kh8eJEZ2gfNi6wIxyjz+IjFxBolp7Gz9gBHZpTILy8=')
+	c('3e1f850c3146cda8cb0b4be4848c74538321229027eb3e40191c31484a6d198b5e4c9cd3c2917440e24676be4d7f45dde181202d6bd755854e78574d7a9bf8da7f28a6601821037527b21f1d26fc6779a77ee42e09e7573cdebb6096db693229ea030aec0d1258f82786b7e877ba79383c707ed8588fc171db4404517842120ff419ffb1aef47f990a5322e3744abaaa', 'FWiWIloGhtdplkBw8HCT5E38HAI9igFZ1P7358HbrPXswCcDF2ZNG1vZPtnZsirNTvO4jBMnNLOLEU5TDUenvtczdeb1O8IDs9y8V7HRzPubcVmIm2UTNFDxyO9RRQJ8exjCAy1rHMFjcWgVdTyewE3olVkWOYz5otrI4KNW24jiiIPiihQyrVwZAKpBYT4fxfj', 'Ph+FDDFGzajLC0vkhIx0U4MhIpAn6z5AGRwxSEptGYteTJzTwpF0QOJGdr5Nf0Xd4YEgLWvXVYVOeFdNepv42n8opmAYIQN1J7IfHSb8Z3mnfuQuCedXPN67YJbbaTIp6gMK7A0SWPgnhrfod7p5ODxwfthYj8Fx20QEUXhCEg/0Gf+xrvR/mQpTIuN0Srqq')
+	function c(base16, base62, base64) {
+		let data16 = Data({base16: base16}); ok(data16.base16() == base16)//there and back again
+		let data62 = Data({base62: base62}); ok(data62.base62() == base62)
+		let data64 = Data({base64: base64}); ok(data64.base64() == base64)
+		ok(data62.base16() == base16)//all the same data
+		ok(data64.base16() == base16)
+	}
+})
+test(() => {
+	let d = Data({text: 'ABC'})
+	ok(d.size() == 3)
+	ok(d.base16() == '414243')
+	ok(d.text() == 'ABC')
+})
+test(() => {
+	ok(intToBase62(0) == '0')
+	ok(intToBase62(9) == '9')//same as base10
+	ok(intToBase62(10) == 'A')
+	ok(intToBase62(15) == 'F')//same as base16
+	ok(intToBase62(16) == 'G')
+	ok(intToBase62(61) == 'z')
+	ok(intToBase62(62) == '10')//now base62 needs a second digit
+
+	let n1 = c(1716404608909, '1716404608909', 'UDX0oqz')//tick counts go from 13 characters to just 7!
+	let n2 = c(9999999999999, '9999999999999', '2q3Rktod')//biggest number in same base10 length
+	let n3 = c(Number.MAX_SAFE_INTEGER, '9007199254740991', 'fFgnDxSe7')
+	function c(i, b10, b62) {
+		ok(say(i) == b10)
+		ok(intToBase62(i) == b62)
+	}
+})
+
+
+
+
+
 /*
-//here's a way to make a tick count like 1716255488471 shorter by treating them as a base62 number
-const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+function f() {
 
-function encodeBase62(num) {
-    if (num === 0) return BASE62[0];
-    let encoded = '';
-    while (num > 0) {
-        encoded = BASE62[num % 62] + encoded;
-        num = Math.floor(num / 62);
-    }
-    return encoded;
+	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+	let census = {}
+	for (let c of alphabet) census[c] = 0
+
+	let duration = 1*Time.second
+	let t = now()
+	let d, b
+	while (now() < t + duration) {
+		d = Data({random: randomBetween(1, 32)})
+		b = d.base62()
+		for (let c of b) census[c]++
+	}
+
+	let s = ''
+	for (let c of alphabet) s += `\r\n${c}\t${census[c]}`
+	log(s)
+
+
 }
+//f()
 
-function decodeBase62(str) {
-    let decoded = 0;
-    for (let i = 0; i < str.length; i++) {
-        decoded = decoded * 62 + BASE62.indexOf(str[i]);
-    }
-    return decoded;
-}
+test(() => {
 
-// Example usage
-const num = 12345;
-const encoded = encodeBase62(num);
-const decoded = decodeBase62(encoded);
 
-console.log(`Number: ${num}`);
-console.log(`Encoded: ${encoded}`);
-console.log(`Decoded: ${decoded}`);
+})
 */
+
+
 
 
 
@@ -1030,10 +1087,14 @@ test(() => {
 
 
 
+//                                   _   _             
+//   ___ _ __   ___ _ __ _   _ _ __ | |_(_) ___  _ __  
+//  / _ \ '_ \ / __| '__| | | | '_ \| __| |/ _ \| '_ \ 
+// |  __/ | | | (__| |  | |_| | |_) | |_| | (_) | | | |
+//  \___|_| |_|\___|_|   \__, | .__/ \__|_|\___/|_| |_|
+//                       |___/|_|                      
 
-
-
-const _subtle = {//these are the factory presets the system uses as a whole for symmetric encryption of sensitive user data
+const _subtle = {//our choices for symmetric encryption of sensitive user data
 	name: 'AES-GCM',
 	strength: 256, // 256-bit AES, only slightly slower than 128, and the strongest ever
 	vectorSize: 12, // 12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
@@ -1042,24 +1103,24 @@ const _subtle = {//these are the factory presets the system uses as a whole for 
 	format: 'raw'//we want the raw bytes, please
 }
 Object.freeze(_subtle)
-async function createKey_new() {
+async function createKey() {
 	return await crypto.subtle.generateKey(
 		{ name: _subtle.name, length: _subtle.strength },
 		_subtle.extractable, _subtle.use)
 }
-async function exportKey_new(key) {//do this once per application instance launch. the length is 64 base16 characters
+async function exportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
 	return Data({buffer: await crypto.subtle.exportKey(
 		_subtle.format,
 		key)})//key is an imported CryptoKey object
 }
-async function importKey_new(keyData) {//do this once per script run, not every time a function that needs it is called!
+async function importKey(keyData) {//do this once per script run, not every time a function that needs it is called!
 	return await crypto.subtle.importKey(
 		_subtle.format,
 		keyData.array(),
 		{ name: _subtle.name, length: _subtle.strength },
 		_subtle.extractable, _subtle.use)
 }
-export async function encrypt_new(plainText, key) {
+export async function symmetricEncrypt(plainText, key) {
 	let vector = Data({random: _subtle.vectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
 	let cipher = Data({buffer: await crypto.subtle.encrypt(
 		{ name: _subtle.name, iv: vector.array() },
@@ -1070,7 +1131,7 @@ export async function encrypt_new(plainText, key) {
 	storeBin.add(cipher)
 	return storeBin.data()
 }
-export async function decrypt_new(storeData, key) {//stored data that is initialization vector followed by cipher bytes
+export async function symmetricDecrypt(storeData, key) {//stored data that is initialization vector followed by cipher bytes
 	let vector = storeData.clip(0, _subtle.vectorSize)//unpack
 	let cipher = storeData.clip(_subtle.vectorSize, storeData.size() - _subtle.vectorSize)
 	return Data({buffer: await crypto.subtle.decrypt(
@@ -1078,20 +1139,20 @@ export async function decrypt_new(storeData, key) {//stored data that is initial
 		key,
 		cipher.array())})
 }
-test(async () => {
+noop(async () => {
 
-	let k = await createKey_new()
-	let b = await exportKey_new(k)
+	let k = await createKey()
+	let b = await exportKey(k)
 	log(b.base16(), b.size()+' bytes')
 
-	let k2 = await importKey_new(b)
+	let k2 = await importKey(b)
 	console.log({k, k2})
 
 	let p = 'a short message'
-	let c = await encrypt_new(p, k)
-	console.log({p}, c.base62(), c.size()+' bytes')
+	let c = await symmetricEncrypt(p, k)
+	console.log({p}, c.base62(), `${c.size()} bytes of ciphertext in ${c.base62().length} base62 characters'`)
 
-	let d = await decrypt_new(c, k)
+	let d = await symmetricDecrypt(c, k)
 	console.log(d.text())
 })
 
@@ -1121,6 +1182,50 @@ hashData('Hello, World!').then(hash => console.log(hash));
 
 
 
+/*
+async function f2() {
+	let k = await createKey()
+	let b = await exportKey(k)
+	let k2 = await importKey(b)
+	let p = 'a short message, like card info'
+	let c = await encrypt(p, k)
+	let d = await decrypt(c, k)
+	if (d != p) log('decryption mismatch')
+}
+async function f3() {
+	let k = await createKey_new()
+	let b = await exportKey_new(k)
+	let k2 = await importKey_new(b)
+	let p = 'a short message, like card info'
+	let c = await encrypt_new(p, k)
+	let d = await decrypt_new(c, k)
+	if (d.text() != p) log('decryption mismatch')
+}
+async function f() {
+	log('just in a function f')
+	let r1 = 0
+	let t = now()
+	while (now() < t + 4*Time.second) {
+		r1++
+	}
+	log(r1+' empty')
+	let r2 = 0
+	t = now()
+	while (now() < t + 4*Time.second) {
+		await f2()
+		r2++
+	}
+	log(r2+' direct')
+	let r3 = 0
+	t = now()
+	while (now() < t + 4*Time.second) {
+		await f3()
+		r3++
+	}
+	log(r3+' custom')
+}
+f()
+*/
 
 
 
@@ -1220,66 +1325,12 @@ test(() => {
 
 
 
-test(() => {
-
-})
 
 
 
-/*
-*/
 
 
 
-/*
-async function f2() {
-	let k = await createKey()
-	let b = await exportKey(k)
-	let k2 = await importKey(b)
-	let p = 'a short message, like card info'
-	let c = await encrypt(p, k)
-	let d = await decrypt(c, k)
-	if (d != p) log('decryption mismatch')
-}
-async function f3() {
-	let k = await createKey_new()
-	let b = await exportKey_new(k)
-	let k2 = await importKey_new(b)
-	let p = 'a short message, like card info'
-	let c = await encrypt_new(p, k)
-	let d = await decrypt_new(c, k)
-	if (d.text() != p) log('decryption mismatch')
-}
-async function f() {
-	log('just in a function f')
-
-
-	let r1 = 0
-	let t = now()
-	while (now() < t + 4*Time.second) {
-		r1++
-	}
-	log(r1+' empty')
-
-	let r2 = 0
-	t = now()
-	while (now() < t + 4*Time.second) {
-		await f2()
-		r2++
-	}
-	log(r2+' direct')
-
-	let r3 = 0
-	t = now()
-	while (now() < t + 4*Time.second) {
-		await f3()
-		r3++
-	}
-	log(r3+' custom')
-
-}
-f()
-*/
 
 
 
