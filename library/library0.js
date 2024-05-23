@@ -100,6 +100,8 @@ and run tests there and see results
 also, get tests to await async tests etc correctly
 this should be pretty easy
 
+also, did you have mustThrow or something before? you need that again; right now you're just skipping writing tests of check* functions
+
 and have it return an object of stats and outcomes, one of which is the composed status line
 */
 
@@ -534,25 +536,13 @@ test(function() {
 
 
 
-/*
-TODO these will be really slow because most of the time is success, and success does a full text comparison
-you trust regular expressions now, unlike douglas crockford, so implement them both side by side with corresponding regular expressions
-
-const checkNumerals = /^[0-9A-Za-z]+$/.test(s)
-
-also won't blank pass all these? throw in checkText()?
 
 
-
-
-*/
-
-
-//toss if s has any characters that are not
-export function checkNumerals(s) { checkSame(s, onlyNumerals(s)) }//to use that one regular expression, confirm no change
-export function checkBase16(s)   { checkSame(s, onlyBase16(s)) }
-export function checkAlpha(s)    { checkSame(s, onlyAlpha(s)) }
-export function checkName(s)     { checkSame(s, onlyName(s)) }
+//toss if s is blank or has any characters that are not
+export function checkNumerals(s) { if(!(/^[0-9]+$/.test(s)))           toss('data', {s}) }
+export function checkBase16(s)   { if(!(/^[0-9a-f]+$/.test(s)))        toss('data', {s}) }
+export function checkAlpha(s)    { if(!(/^[0-9A-Za-z]+$/.test(s)))     toss('data', {s}) }
+export function checkName(s)     { if(!(/^[0-9A-Za-z.\-_]+$/.test(s))) toss('data', {s}) }
 
 //return s with everything removed except
 export function onlyNumerals(s) { return s.replace(/[^0-9]/g,           '') }//numerals 0-9
@@ -1082,12 +1072,12 @@ f()
 //pass 0 and 1 to flip a coin, 1 and 6 to roll a dice, and so on
 //https://stackoverflow.com/questions/1527803/generating-random-whole-numbers-in-javascript-in-a-specific-range
 //and then chatGPT produced an indentical result in a chat starting with excel's randbetween
-function randomBetween(minimum, maximum) {
+export function randomBetween(minimum, maximum) {
 	return Math.floor(Math.random() * (maximum - minimum + 1)) + minimum
 }
 //but this doesn't use the browser's crypto source of randomness of cryptographic quality! for that, chatGPT suggests
 //for that, chatgpt suggests:
-function cryptoRandomBetween(minimum, maximum) {
+export function cryptoRandomBetween(minimum, maximum) {
 	let a32 = new Uint32Array(1)//an array of one 32-bit unsigned integer
 	crypto.getRandomValues(a32)//fill it with cryptographically secure random bits
 	return Math.floor(a[0] / (0xffffffff + 1) * (maximum - minimum + 1)) + minimum//scale and shift
@@ -1119,13 +1109,18 @@ test(() => {
 //  \___|_| |_|\___|_|   \__, | .__/ \__|_|\___/|_| |_|
 //                       |___/|_|                      
 
-const _subtle = {//our choices for symmetric encryption of sensitive user data
+const _subtle = {
+
+	//our choices for symmetric encryption of sensitive user data
 	name: 'AES-GCM',
 	strength: 256, // 256-bit AES, only slightly slower than 128, and the strongest ever
 	vectorSize: 12, // 12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 	use: ['encrypt', 'decrypt'],//create and import keys that can do these things
 	extractable: true,//say we want to be able to export the key
-	format: 'raw'//we want the raw bytes, please
+	format: 'raw',//we want the raw bytes, please
+
+	//and for one directional hashing of that data
+	hash256: 'SHA-256'
 }
 Object.freeze(_subtle)
 async function createKey() {
@@ -1179,6 +1174,24 @@ noop(async () => {
 
 	let d = await symmetricDecrypt(c, k)
 	console.log(d.text())
+})
+
+
+//compute the 32 byte SHA-256 hash value of data
+export async function hashDigest(data) {
+	return Data({buffer: await crypto.subtle.digest(_subtle.hash256, data.array())})
+}
+test(async () => {
+	let d = Data({random: 256})
+	let h = await hashDigest(d)
+	log(h.size()+' byte hash value', h.base16(), h.base64(), `${h.base62()}, ${h.base62().length} base62 characters`)
+
+	/*
+	get good ol' fashioned sha1 in here, too, and compare speeds
+
+	run a bunch of times to see the distribution of numbers of base62 characters, you're seeing 42-45
+	while base64 is always 44 characters, you think
+	*/
 })
 
 

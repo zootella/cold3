@@ -1,6 +1,6 @@
 
 //library1 can import modules saved in the nuxt project's package.json above
-import { test, ok, now, say, inspect, log, checkText, checkAlpha } from './library0.js'
+import { noop, Time, test, ok, now, say, inspect, log, checkText, checkAlpha, randomBetween, sayWhenFeed, sayWhenPage } from './library0.js'
 import { customAlphabet } from 'nanoid'
 
 
@@ -58,6 +58,23 @@ test(() => {
 
 
 
+//bookmark, the start of data for the 500 dummy posts
+noop(() => {
+
+
+	let n = now()
+	let when = n
+	let earlier
+	let s = ''
+	for (let i = 500; i >= 1; i--) {
+		earlier = randomBetween(5*Time.minute, 5*Time.day)
+		when -= earlier
+		s += `\r\ntag ${tag()}, post ${i}, tick ${n} (${sayWhenPage(when)}, ${sayWhenFeed(when, n)})`
+
+
+	}
+	log(s)
+})
 
 
 
