@@ -316,10 +316,47 @@ test(() => {
 	ok(!hasText('\r\n'))//nonprinting characters
 })
 
-export function checkInt(i, m) { if (!minInt(i, m)) toss('must be an integer m or higher', {i, m}) }
+export function checkInt(i, m) { if (!minInt(i, m)) toss('bounds', {i, m}) }
 export function minInt(i, m = 0) {
 	return typeof i === 'number' && !isNaN(i) && Number.isInteger(i) && i >= m
+	/*
+	TODO
+	https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger
+	so, that's crazy, and means you don't need
+	[]typeof i === 'number' && !isNaN(i) above, those checks are redundant
+	but maybe add:
+	[]in the safe range for integers, Number.MAX_SAFE_INTEGER
+	[]+''and then regex test for only digits, to guard against "for example, Number.isInteger(4500000000000000.1) is true,"
+
+	without doing the full round trip textToInt/intToText checks, can you just:
+	allow === 0 to get that out of here
+	convert to text quickly with +''
+	allow a single leading -
+	look for the mistake of a leading zero
+	make sure everything else is digits
+	*/
 }
+export function minIntImprovements(i, m = 0) {
+	return (
+		Number.isInteger(i) &&//includes typeof i == 'number' and !isNaN(i)
+		i >= m &&//make sure at or beyond given minimum
+		i <= Number.MAX_SAFE_INTEGER &&//will stay an integer in JavaScript, and fit into BIGINT in PostgreSQL
+		/^-?[1-9]\d*$|^0$/.test(i+'')//plus blank for quick convert, then the regex allows zero but not a leading 0, allows negative, and makes sure all numerals, no decimal, no scientific notation
+	)
+}
+/*
+checkInt(0) is going to be really common, maybe make this faster by short circuiting to
+return (
+		i === 0 && i >= m
+	) || (
+		other stuff above
+
+		/^-?[1-9]\d*$/
+		should match positive or negative integers without leading zeroes
+
+	)
+)
+*/
 test(() => {
 	ok(minInt(0))//these are fine integers
 	ok(minInt(7))
@@ -515,7 +552,18 @@ test(function() {
 
 
 
+/*
+TODO these will be really slow because most of the time is success, and success does a full text comparison
+you trust regular expressions now, unlike douglas crockford, so implement them both side by side with corresponding regular expressions
 
+const checkNumerals = /^[0-9A-Za-z]+$/.test(s)
+
+also won't blank pass all these? throw in checkText()?
+
+
+
+
+*/
 
 
 //toss if s has any characters that are not
@@ -647,11 +695,6 @@ function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds checks and
 	b.size = function() { return _size }//how many bytes it does hold
 	b.array = function() { return new Uint8Array(_buffer, 0, _size) }//clip a uint8array around the data in our bin
 	b.data = function() { return Data({array: b.array()}) }//wrap in Data to view, clip, and convert
-	/*
-	b.data = function() {//wrap in Data to view, clip, and convert
-		return Data({array: new Uint8Array(_buffer, 0, _size)})
-	}
-	*/
 	b.add = function(p) {
 		if (typeof p == 'number') {
 			checkInt(p, 0); if (p > 255) toss('value', {b, p})
@@ -704,7 +747,7 @@ function textToArray(s, trip) {//true to check conversion in a round trip
 	return a
 }
 function arrayToText(a, trip) {
-	let s = (new TextDecoder()).decode(a)//TextDecoder can take a Uint8Array or an ArrayBuffer
+	let s = (new TextDecoder()).decode(a)//can take a Uint8Array or an ArrayBuffer
 	if (trip) checkSameArray(a, textToArray(s, false))
 	return s
 }
@@ -848,7 +891,7 @@ function _base62ToInt(s, trip) {
 	for (let sIndex = 0; sIndex < s.length; sIndex++) {
 		i = (i * 62) + alphabet62Int.indexOf(s[sIndex])
 	}
-	if (trip) checkSame(s, _intToBase62(i, false))//false to not round-trip check forever!
+	if (trip) checkSame(s, _intToBase62(i, false))//runs checkInt(i), which you should do before returning it
 	return i
 }
 function _intToBase62(i, trip) {
@@ -1161,8 +1204,6 @@ noop(async () => {
 
 /*
 next one, hashing:
-
-does textencoder encode return an ArrayBuffer, or a UInt8Array? should you update your own function to wrap a uint8array around the buffer?
 
 async function hashData(data) {
 	const encoder = new TextEncoder();
