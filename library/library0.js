@@ -317,46 +317,28 @@ test(() => {
 })
 
 export function checkInt(i, m) { if (!minInt(i, m)) toss('bounds', {i, m}) }
-export function minInt(i, m = 0) {
-	return typeof i === 'number' && !isNaN(i) && Number.isInteger(i) && i >= m
-	/*
-	TODO
-	https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger
-	so, that's crazy, and means you don't need
-	[]typeof i === 'number' && !isNaN(i) above, those checks are redundant
-	but maybe add:
-	[]in the safe range for integers, Number.MAX_SAFE_INTEGER
-	[]+''and then regex test for only digits, to guard against "for example, Number.isInteger(4500000000000000.1) is true,"
-
-	without doing the full round trip textToInt/intToText checks, can you just:
-	allow === 0 to get that out of here
-	convert to text quickly with +''
-	allow a single leading -
-	look for the mistake of a leading zero
-	make sure everything else is digits
-	*/
-}
-export function minIntImprovements(i, m = 0) {
+export function minInt(i, m = 0) { // Note (0)
 	return (
-		Number.isInteger(i) &&//includes typeof i == 'number' and !isNaN(i)
-		i >= m &&//make sure at or beyond given minimum
-		i <= Number.MAX_SAFE_INTEGER &&//will stay an integer in JavaScript, and fit into BIGINT in PostgreSQL
-		/^-?[1-9]\d*$|^0$/.test(i+'')//plus blank for quick convert, then the regex allows zero but not a leading 0, allows negative, and makes sure all numerals, no decimal, no scientific notation
+		i === 0 &&                               // Note (1)
+		i >= m                                   /* Note (2)
+		Default minimum m 0 in arguments (Note 0); Negative works fine, but must specify allowed negative minimum.
+		Frequently, i will be zero (1); check value and type (1), and bounds (2) quickly. */
+	) || (
+		Number.isInteger(i)          && // Note (3)
+		i >= m                       && // Note (4)
+		i <= Number.MAX_SAFE_INTEGER && // Note (5)
+		/^-?[1-9]\d*$/.test(i+'')       /* Note (6)
+		(3) Includes typeof i == 'number' and !isNaN(i) checks, according to MDN.
+		(4) At or above the given minimum.
+		(5) Small enough to stay an integer everywhere; biggest integers are:
+		    (2^53)-1 ==      9,007,199,254,740,991 in JavaScript;
+		    (2^63)-1 == 19,223,372,036,854,775,807 in a BIGINT PostgreSQL field, a signed 8 byte integer.
+		(6) Plus blank for quick convert, then regular expression that:
+		    allows one optional minus sign at the start;
+		    blocks a leading zero;
+		    and ensures all numerals, blocking JavaScript numbers like 2.5 decimal and 5e-7 scientific notation. */
 	)
 }
-/*
-checkInt(0) is going to be really common, maybe make this faster by short circuiting to
-return (
-		i === 0 && i >= m
-	) || (
-		other stuff above
-
-		/^-?[1-9]\d*$/
-		should match positive or negative integers without leading zeroes
-
-	)
-)
-*/
 test(() => {
 	ok(minInt(0))//these are fine integers
 	ok(minInt(7))
