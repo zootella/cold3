@@ -565,6 +565,19 @@ test(() => {
 })
 
 
+/*
+TODO
+consider this pattern
+
+checkThing - throws if not
+isThing - false if not
+makeThing - shapes to bring into compliance and returns
+
+then you put all the tests around isThing
+and instead of *Soft here, you use isThing when you don't want an exception
+*/
+
+
 
 
 

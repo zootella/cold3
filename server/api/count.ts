@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
 		o.countBrowser = 0
 		o.count1 = countGlobal
 		o.count2 = 0
-		o.message = 'hello from cold3 api count, version 2024may17a'
+		o.message = 'hello from cold3 api count'
 
 
 	} catch (e) {
