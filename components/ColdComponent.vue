@@ -49,7 +49,7 @@ function logToBox(s) {
 <div>
 
 <p>
-	This is cold3.cc, on Cloudflare with Nuxt, tag <i>{{ tag() }}</i>, version 2024may27a.
+	This is cold3.cc, Nuxt on Cloudflare, version 2024may27a.
 </p>
 
 <DirectCountComponent />

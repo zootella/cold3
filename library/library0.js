@@ -134,9 +134,9 @@ export function log(...a) {
 export function say(...a) {//turn anything into text, always know you're dealing with a string
 	let s = '';
 	for (let i = 0; i < a.length; i++) {
-		s += (i ? ' ' : '') + (a[i]+'');//spaces between, not at the start
+		s += (i ? ' ' : '') + (a[i]+'')//spaces between, not at the start
 	}
-	return s;
+	return s
 }
 
 export function inspect(...a) {//inspect into things, including key name, type, and value
@@ -1194,7 +1194,7 @@ noop(async () => {
 export async function hashDigest(data) {
 	return Data({buffer: await crypto.subtle.digest(_subtle.hash256, data.array())})
 }
-test(async () => {
+noop(async () => {
 	let d = Data({random: 256})
 	let h = await hashDigest(d)
 	log(h.size()+' byte hash value', h.base16(), h.base64(), `${h.base62()}, ${h.base62().length} base62 characters`)
