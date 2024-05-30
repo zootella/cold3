@@ -1,9 +1,4 @@
 <script setup>
-/*
-here in [more].vue, are the tasks:
--get the tag from the route
--render a single PostAloneComponent on the page
-*/
 
 import { useRoute } from 'vue-router'
 import { log, cutLast } from '~/library/library0'
@@ -34,7 +29,7 @@ if (index < postDatabase.chronology.length - 1) below = postDatabase.chronology[
 <template>
 
 <NavigationComponent note="on post" />
-<PostAloneComponent
+<PostComponent
 	:key="post.tag"
 	:post="post"
 	:isStandalone="true"

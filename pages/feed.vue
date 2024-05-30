@@ -1,8 +1,4 @@
 <script setup>
-/*
-here in feed.vue, are the tasks:
--render the list of posts
-*/
 
 import { postDatabase } from '~/library/library1'
 
@@ -12,7 +8,7 @@ const posts = postDatabase.chronology
 <template>
 
 <NavigationComponent note="on feed" />
-<PostInFeedComponent
+<PostComponent
 	v-for="post in posts" 
 	:key="post.tag"
 	:post="post"

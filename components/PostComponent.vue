@@ -1,10 +1,7 @@
 <script setup>
-/*
-here in PostAloneComponent.vue, are the tasks:
--render a single post according to the given props
-*/
 
-import { log, sayWhenPage } from '~/library/library0'
+import { log, inspect, cutLast, sayWhenPage, sayWhenFeed } from '~/library/library0'
+import { postDatabase } from '~/library/library1'
 
 const props = defineProps(['post', 'isStandalone', 'postAbove', 'postBelow'])
 
@@ -24,7 +21,6 @@ const props = defineProps(['post', 'isStandalone', 'postAbove', 'postBelow'])
 		<NuxtLink :to="'/post/' + postBelow?.tag" v-if="postBelow">Earlier{{' >'}}</NuxtLink>
 		<span v-else>(first post ever)</span>
 	</p>
-	<p><i>post alone component</i></p>
 </div>
 
 </template>
