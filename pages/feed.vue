@@ -4,16 +4,26 @@ import { Time, log, inspect } from '~/library/library0'
 import { postDatabase } from '~/library/library1'
 
 const instance = getCurrentInstance()
-
 const posts = postDatabase.chronology
 
 
 
 
 
-//const boundingBox = ref(null)//must be reactive, because vue changes it, even if we don't
 
 function measure() {
+
+	const r = instance.refs['postReferenceValue']//reference used for all posts currently rendered
+	const e = r[2].$el // Accessing the DOM element of the third PostComponent
+	const rect = e.getBoundingClientRect()
+	console.log(rect) // Logs the bounding rectangle of the third item
+
+
+
+
+
+
+
 
 /*
 	const p = instance.refs['Fouv7hYGoytFMpU8JF0Fp']
@@ -48,18 +58,7 @@ function measure() {
 onMounted(() => {
 	window.addEventListener('scroll', bounce1)
 	window.addEventListener('resize', bounce1)
-
-
-	const i = getCurrentInstance();
-	const r = i.refs.feedreferencevalue;
-	log('refs length is ' + r.length)
-	if (r && r.length >= 3) {
-		const e = r[2].$el; // Accessing the DOM element of the third PostComponent
-		const rect = e.getBoundingClientRect();
-		console.log(rect); // Logs the bounding rectangle of the third item
-	}
-
-
+	measure()
 })
 onUnmounted(() => {
 	window.removeEventListener('scroll', bounce1)
@@ -86,11 +85,11 @@ function bounce2() {//runs 100ms after the start of any group of scroll events
 <PostComponent
 	v-for="post in posts" 
 	:key="post.tag"
-	ref="feedreferencevalue"
 	:post="post"
 	:isStandalone="false"
 	:postAbove="null"
 	:postBelow="null"
+	ref="postReferenceValue"
 />
 
 </template>
