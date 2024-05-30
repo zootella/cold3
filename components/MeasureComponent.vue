@@ -7,11 +7,11 @@ const boundingBox = ref(null)//must be reactive, because vue changes it, even if
 
 function measure() {
 	if (boundingBox.value) {
-		const rect = boundingBox.value.getBoundingClientRect()
+		const r = boundingBox.value.getBoundingClientRect()
 
 		//pixel height distances from the top of the page to:
-		const divTop = rect.top + window.pageYOffset
-		const divBottom = rect.bottom + window.pageYOffset
+		const divTop = r.top + window.pageYOffset
+		const divBottom = r.bottom + window.pageYOffset
 		const viewportTop = window.pageYOffset
 		const viewportBottom = window.innerHeight + window.pageYOffset
 		const totalHeight = document.documentElement.scrollHeight;//total height of page
