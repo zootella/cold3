@@ -1,7 +1,7 @@
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-
+import { log, inspect } from '~/library/library0'
 
 
 

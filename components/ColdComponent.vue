@@ -2,6 +2,7 @@
 
 //imports
 import { ref, reactive, onMounted } from "vue";
+import { log, inspect, now, sayTick } from '~/library/library0'
 
 //ticks
 const t = reactive({
