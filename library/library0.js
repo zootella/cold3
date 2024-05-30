@@ -17,6 +17,7 @@
 //                        
 
 export const Time = {}
+Time.millisecond = 1//just for documentation in code
 Time.second = 1000//number of milliseconds in a second
 Time.minute = 60*Time.second//number of milliseconds in a minute
 Time.hour = 60*Time.minute
