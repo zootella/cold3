@@ -1,13 +1,18 @@
 <script setup>
 
-import { Time, log, inspect } from '~/library/library0'
+import { Time, log, inspect, now } from '~/library/library0'
 import { postDatabase } from '~/library/library1'
 
 //const instance = getCurrentInstance()
 const posts = postDatabase.chronology
 
 
-let statusMessage = ref('')
+let status = reactive({line1:'', line2:''})
+
+
+let lastMeasure = 0, sinceMeasure = 0, shortestMeasure = -1
+let lastMeasurements = []
+let keepMeasurements = 20
 
 
 
@@ -29,7 +34,23 @@ function measure() {
 		else if (rect.top > window.innerHeight) countBelow++
 		else countWithin++
 	}
-	statusMessage.value = `${countAbove} above, ${countWithin} within, ${countBelow} below`
+
+	let n = now()
+	if (!lastMeasure) {//first measurement ever
+		lastMeasure = n
+	} else {
+		sinceMeasure = n - lastMeasure//how long since most recent
+		lastMeasure = n
+		if (shortestMeasure == -1 || sinceMeasure < shortestMeasure) shortestMeasure = sinceMeasure//new smallest every winner
+
+		lastMeasurements.push(sinceMeasure)
+		if (lastMeasurements.length > keepMeasurements) lastMeasurements.shift()
+
+
+	}
+
+	status.line1 = `${countAbove} above, ${countWithin} within, ${countBelow} below, ${shortestMeasure}ms shortest`
+	status.line2 = `${lastMeasurements}`
 }
 
 
@@ -61,16 +82,20 @@ keep /feed and /infinity separate
 
 
 onMounted(() => {
-	window.addEventListener('scroll', bounce1)
-	window.addEventListener('resize', bounce1)
-	measure()
+	window.addEventListener('scroll', bounce0)
+	window.addEventListener('resize', bounce0)
+	bounce0()
 })
 onUnmounted(() => {
-	window.removeEventListener('scroll', bounce1)
-	window.removeEventListener('resize', bounce1)
+	window.removeEventListener('scroll', bounce0)
+	window.removeEventListener('resize', bounce0)
 })
 
-const delay = 20*Time.millisecond//surely scroll events won't happen faster than 1000/60=16 frames? maybe don't need
+function bounce0() {
+	measure()
+}
+
+const delay = 5*Time.millisecond//surely scroll events won't happen faster than 1000/60=16 frames? maybe don't need
 let timer = null
 function bounce1() {//called every time there's a scroll event; can be frequently!
 	if (!timer) timer = setTimeout(bounce2, delay)
@@ -79,7 +104,6 @@ function bounce2() {//runs 100ms after the start of any group of scroll events
 	clearTimeout(timer); timer = null
 	measure()
 }
-
 
 
 
@@ -98,22 +122,24 @@ function bounce2() {//runs 100ms after the start of any group of scroll events
 <!--
 	ref="postReferenceValue"
 -->
-<div class="floating-status">{{ statusMessage }}</div>
+<div class="floating-status">
+{{ status.line1 }}<br/>
+{{ status.line2 }}
+</div>
 
 </template>
 <style scoped>
 
 .floating-status {
-    position: fixed;
-    bottom: 24px;
-    left: 24px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    z-index: 1000;
-    font-family: monospace;
-    font-size: 1.5em;
+	position: fixed;
+	bottom: 24px;
+	left: 24px;
+	background-color: rgba(0, 0, 0, 0.7);
+	color: white;
+	padding: 5px 10px;
+	border-radius: 5px;
+	z-index: 1000;
+	font-family: monospace;
 }
 
 </style>
