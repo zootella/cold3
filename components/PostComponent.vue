@@ -8,7 +8,7 @@ const props = defineProps(['post', 'isStandalone', 'postAbove', 'postBelow'])
 </script>
 <template>
 
-<div class="post-container">
+<div class="post-class">
 	<h2>post {{ post.order }} of {{ post.quantity }}</h2>
 	<p>{{ sayWhenPage(post.tick) }}</p>
 	<p>tag <i>{{ post.tag }}</i>, tick <i>{{ post.tick }}</i></p>
@@ -26,8 +26,8 @@ const props = defineProps(['post', 'isStandalone', 'postAbove', 'postBelow'])
 </template>
 <style scoped>
 
-.post-container {
-	height: 300px; /* Fixed height of 200px */
+.post-class {
+	height: 250px; /* Fixed height of 200px */
 	background-color: #eee; /* Light gray background */
 	border: 4px dashed #bbb; /* Thick dashed border */
 	padding: 20px;

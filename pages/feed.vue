@@ -3,46 +3,52 @@
 import { Time, log, inspect } from '~/library/library0'
 import { postDatabase } from '~/library/library1'
 
-const instance = getCurrentInstance()
+//const instance = getCurrentInstance()
 const posts = postDatabase.chronology
 
 
+let statusMessage = ref('')
 
 
 
+
+/*
+current above/below/on, and smallest delay between hits
+and test on both mobile platforms, every browser!
+*/
 
 function measure() {
+	if (!(window && document)) return//todo, figure out how to guard this better
 
-	const r = instance.refs['postReferenceValue']//reference used for all posts currently rendered
-	const e = r[2].$el // Accessing the DOM element of the third PostComponent
-	const rect = e.getBoundingClientRect()
-	console.log(rect) // Logs the bounding rectangle of the third item
+	let divs = document.querySelectorAll('.post-class')
+	let countAbove = 0, countBelow = 0, countWithin = 0//within means entirely or partially visible
+	for (let div of divs) {
+		let rect = div.getBoundingClientRect()
+
+		if (rect.bottom < 0) countAbove++
+		else if (rect.top > window.innerHeight) countBelow++
+		else countWithin++
+	}
+	statusMessage.value = `${countAbove} above, ${countWithin} within, ${countBelow} below`
+}
+
+
 
 
 /*
 
-really, you just want to know how many are above, in or partially in, and below the viewport
-and then probably if it gets to less than a fourth are on a tip, you do the scroll
 
 factory settings are how many posts, like 40
 and how many a tip too small are, like /4=10
 
 but obviously make sure there's no way that it creates an oscillation where once the infinity happens, it needs to immediately take action again
 
-plan out the algorithm on paper! there could be very few posts, very short posts, a very very tall computer monitor, etc
+plan out the algorithm on paper!
+there could be very few posts,
+very short posts,
+a very very tall computer monitor, etc
 
-
-
-	const r = boundingBox.value.getBoundingClientRect()
-
-	//pixel height distances from the top of the page to:
-	const divTop = r.top + window.pageYOffset
-	const divBottom = r.bottom + window.pageYOffset
-	const viewportTop = window.pageYOffset
-	const viewportBottom = window.innerHeight + window.pageYOffset
-	const totalHeight = document.documentElement.scrollHeight;//total height of page
-
-	log(`div at ${divTop}-${divBottom}, viewport at ${viewportTop}-${viewportBottom}, document height ${totalHeight}`)
+keep /feed and /infinity separate
 
 
 
@@ -51,34 +57,6 @@ plan out the algorithm on paper! there could be very few posts, very short posts
 
 
 
-
-/*
-	const p = instance.refs['Fouv7hYGoytFMpU8JF0Fp']
-	console.log(p)
-	if (p) {
-		let element = p.$el || p
-		let rect
-		if (element && element.getBoundingClientRect) rect = element.getBoundingClientRect()
-//		log(p, p.$el, element, element.getBoundingClientRect, rect)
-	} else {
-//		log('no p')
-	}
-
-	/*
-	if (boundingBox.value) {
-		const r = boundingBox.value.getBoundingClientRect()
-
-		//pixel height distances from the top of the page to:
-		const divTop = r.top + window.pageYOffset
-		const divBottom = r.bottom + window.pageYOffset
-		const viewportTop = window.pageYOffset
-		const viewportBottom = window.innerHeight + window.pageYOffset
-		const totalHeight = document.documentElement.scrollHeight;//total height of page
-
-		log(`div at ${divTop}-${divBottom}, viewport at ${viewportTop}-${viewportBottom}, document height ${totalHeight}`)
-	}
-	*/
-}
 
 
 
@@ -92,7 +70,7 @@ onUnmounted(() => {
 	window.removeEventListener('resize', bounce1)
 })
 
-const delay = 50*Time.millisecond
+const delay = 20*Time.millisecond//surely scroll events won't happen faster than 1000/60=16 frames? maybe don't need
 let timer = null
 function bounce1() {//called every time there's a scroll event; can be frequently!
 	if (!timer) timer = setTimeout(bounce2, delay)
@@ -116,7 +94,26 @@ function bounce2() {//runs 100ms after the start of any group of scroll events
 	:isStandalone="false"
 	:postAbove="null"
 	:postBelow="null"
-	ref="postReferenceValue"
 />
+<!--
+	ref="postReferenceValue"
+-->
+<div class="floating-status">{{ statusMessage }}</div>
 
 </template>
+<style scoped>
+
+.floating-status {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    font-family: monospace;
+    font-size: 1.5em;
+}
+
+</style>
