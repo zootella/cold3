@@ -28,7 +28,6 @@ onUnmounted(() => {
 	window.removeEventListener('scroll', bounce1)
 	window.removeEventListener('resize', bounce1)
 })
-
 const delay = 50*Time.millisecond
 let timer = null
 function bounce1() {//called every time there's a scroll event; can be frequently!

@@ -19,7 +19,34 @@ function measure() {
 	console.log(rect) // Logs the bounding rectangle of the third item
 
 
+/*
 
+really, you just want to know how many are above, in or partially in, and below the viewport
+and then probably if it gets to less than a fourth are on a tip, you do the scroll
+
+factory settings are how many posts, like 40
+and how many a tip too small are, like /4=10
+
+but obviously make sure there's no way that it creates an oscillation where once the infinity happens, it needs to immediately take action again
+
+plan out the algorithm on paper! there could be very few posts, very short posts, a very very tall computer monitor, etc
+
+
+
+	const r = boundingBox.value.getBoundingClientRect()
+
+	//pixel height distances from the top of the page to:
+	const divTop = r.top + window.pageYOffset
+	const divBottom = r.bottom + window.pageYOffset
+	const viewportTop = window.pageYOffset
+	const viewportBottom = window.innerHeight + window.pageYOffset
+	const totalHeight = document.documentElement.scrollHeight;//total height of page
+
+	log(`div at ${divTop}-${divBottom}, viewport at ${viewportTop}-${viewportBottom}, document height ${totalHeight}`)
+
+
+
+*/
 
 
 
