@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
 		let body = await readBody(event)
 		log('body is:', inspect(body))
 
-		o.message = 'hi from api count, version 2024may15a'
+		o.message = 'hi from api count'
 		o.mirroredBody = body
 
 
