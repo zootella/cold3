@@ -1,9 +1,9 @@
 <script setup>
 
-import { log, inspect, now, Time } from '~/library/library0'
+import { log, inspect, now, Time, sameObject } from '~/library/library0'
 import { generatePosts } from '~/library/library1'
 
-const allPosts = window ? generatePosts(500) : []//all the posts in the database
+const allPosts = window ? generatePosts(10) : []//all the posts in the database
 const visibleCapacity = 50//keep this number of posts on the page
 const edgeSmall = 10
 const edgeBig = 20
@@ -180,27 +180,6 @@ there's only one timer rather than a bunch of events
 absolutely not every post trying to register for events!
 
 
-every scroll or
-
-
-
-
-
-
-
-
-two bouncers
-one: fires immediately upon the first event
-in a swarm of events
-
-
-two:
-
-
-
-
-
-
 
 
 
@@ -217,22 +196,112 @@ two:
 
 */
 
-/*
-function every() {
-	log('every')
-	reslice({i: visibleSlice.i+1, j: visibleSlice.j})//remove the first post from the top every 2 seconds
+
+
+//factory settings for infinite scroll
+const timeFast = 50//milliseconds, load more posts nearly immediately
+const timeSlow = 500//milliseconds, remove distant posts after a longer quiet period
+const postsPage    = 100//number of posts, load this onto a page for the user to scroll down into
+const postsEdge    = 20//number of posts, near the edge so load more
+const postsHorizon = 140//number of posts, beyond this number is too far, unload
+
+//a feed has a single pulse timer
+//avoid listening to multiple events, running multiple timers, messaging post components, and intersection observer
+let pulseTimer
+onMounted(() => { pulseTimer = setInterval(pulse, timeFast) })
+onUnmounted(() => { clearInterval(pulseTimer); pulseTimer = null })
+let measured, measuredWhen, waitForThingsToSettleDown//page and scroll measurements
+function pulse() {//runs 50 times a second, so be quick about it
+	let n = now()
+	let m = {
+		scrollWidth:  document.documentElement.scrollWidth,
+		scrollHeight: document.documentElement.scrollHeight,
+		clientWidth:  document.documentElement.clientWidth,
+		clientHeight: document.documentElement.clientHeight,
+		scrollX: window.scrollX,
+		scrollY: window.scrollY
+	}
+	if (!measured || !sameObject(measured, m)) {//the user scrolled or the page changed size, like by loading
+		measured = m//save measurements for next time
+		measuredWhen = n//and when the saved measurements are from
+		infiniteGrow()//add more posts to a short end, if necessary
+		waitForThingsToSettleDown = true
+		//it's correct for this part to happen frequently through continuous scroll changes
+	}
+	if (waitForThingsToSettleDown && n > measuredWhen + timeSlow) {//once things have settled down
+		waitForThingsToSettleDown = false
+
+
+
+		//it's correct for this part to not happen at all if there are continuous scroll changes
+
+
+
+	}
+
 }
-*/
+
+let grewWhen
+function infiniteGrow() {//right away, add more posts to the infinite scroll
+
+
+
+	//if you added more, make a note when
+
+}
+function infiniteShrink() {//after a longer quiet period, remove posts that are far away from being seen
+
+
+	//if you
+
+}
+
+
+
+//notice when something changes that could affect the infinite scroll
+let resizeObserver//save reference to put away
 onMounted(() => {
-	window.addEventListener('scroll', measure)
-	window.addEventListener('resize', measure)
-	measure()
-//	setInterval(every, 2*Time.second)
+	window.addEventListener('scroll', somethingJustChanged)//the user scrolled
+	window.addEventListener('resize', somethingJustChanged)//the user turned their phone
+	resizeObserver = new ResizeObserver(somethingJustChanged)//content loading made the page longer
+	resizeObserver.observe(document.documentElement)//above <body>, watch <html>
+
+	somethingJustChanged()//also run at the very start
 })
 onUnmounted(() => {
-	window.removeEventListener('scroll', measure)
-	window.removeEventListener('resize', measure)
+	window.removeEventListener('scroll', somethingJustChanged)
+	window.removeEventListener('resize', somethingJustChanged)
+	resizeObserver.disconnect()
 })
+
+
+
+
+
+function somethingJustChanged() {
+
+}
+function nothingsChangedForAwhile() {
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 </script>
 <template>
