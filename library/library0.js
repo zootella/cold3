@@ -1383,3 +1383,80 @@ test(() => {
 
 
 
+//compare two simple objects
+//same means same keys and values
+//uses triple equals, imagining strings and numbers
+//only goes one level deep
+export function sameObject(o1, o2) {
+	let keys1 = Object.keys(o1)
+	let keys2 = Object.keys(o2)
+	if (keys1.length != keys2.length) return false
+
+	for (let key of keys1) {
+		if (o1[key] !== o2[key]) {//matches missing key in one with undefined value in the other
+			return false
+		}
+	}
+	return true
+}
+//compare two arrays
+//same means same length and values
+//uses triple equals, imagining strings and numbers
+export function sameArray(a1, a2) {
+	if (a1.length != a2.length) return false
+
+	for (let i = 0; i < a1.length; i++) {
+		if (a1[i] !== a2[i]) {
+			return false
+		}
+	}
+	return true
+}
+test(() => {
+	ok(sameObject({a:5, b:7}, {a:5, b:7}))
+	ok(!sameObject({a:5, b:7}, {a:5, b:8}))//different value
+	ok(!sameObject({a:5, b:7}, {a:5}))//missing key
+
+	ok(!sameObject({a:5, b:7}, {a:5, b:undefined}))
+	ok(!sameObject({a:5, b:undefined}, {a:5, b:7}))
+
+	//ok, here's the corner case sameObject can't do, but to be really fast we're ok with that
+	ok(!sameObject({a:5, corner:9}, {a:5, b:undefined}))//correct
+	ok(sameObject({a:5, b:undefined}, {a:5, corner:9}))//incorrect, absent b in o2 matches undefined value in o1
+
+	ok(sameArray([2, 4, 6, 8], [2, 4, 6, 8]))
+	ok(!sameArray([2, 4, 6, 8], [2, 4, 7, 8]))//different value
+	ok(!sameArray([2, 4, 6, 8], [2, 4, 6]))//different length
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

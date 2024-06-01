@@ -78,6 +78,31 @@ noop(() => {
 })
 
 
+export function generatePosts(quantity) {
+	let durationShort = 5*Time.minute
+	let durationLong = 5*Time.day
+
+	let posts = []
+
+	let n = now()
+	let when = n
+	let earlier
+	let s = ''
+	for (let i = quantity; i >= 1; i--) {
+		earlier = randomBetween(durationShort, durationLong)
+		when -= earlier
+
+		posts.push({
+			tag: tag(),
+			order: i,
+			quantity: quantity,
+			tick: when
+		})
+	}
+	return posts
+}
+
+
 //dummy posts, later this will come from the database and be in pinia
 let chronology = [
 {tag: 'Fouv7hYGoytFMpU8JF0Fp', order: 50, quantity: 50, tick: 1716455539307 },
