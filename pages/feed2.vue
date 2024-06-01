@@ -199,8 +199,7 @@ absolutely not every post trying to register for events!
 
 
 //factory settings for infinite scroll
-const timeFast = 50//milliseconds, load more posts nearly immediately
-const timeSlow = 500//milliseconds, remove distant posts after a longer quiet period
+const timeSlow     = Time.second //remove distant posts after a longer quiet period
 const postsPage    = 100//number of posts, load this onto a page for the user to scroll down into
 const postsEdge    = 20//number of posts, near the edge so load more
 const postsHorizon = 140//number of posts, beyond this number is too far, unload
