@@ -107,7 +107,6 @@ function slicePosts(suggestedSlice) {
 
 	//determine if this would actually change anything
 	if (!visibleSlice || !sameObject(visibleSlice, suggestedSlice)) {
-
 		visibleSlice = suggestedSlice
 		visiblePosts.value = allPosts.slice(visibleSlice.i, visibleSlice.j)
 		log(`sliced to ${visibleSlice.i},${visibleSlice.j}`)
@@ -121,8 +120,46 @@ very short posts,
 a very very tall computer monitor, etc
 
 watch out for oscillations!
-*/
 
+2024jun2
+ok, now on day 4, infinite scrolling has become a quagmire
+current solution works on desktop, not mobile
+on desktop, works, but messes up dragging the scrollbar, which is annoying
+on mobile, adding or removing from above the fold doesn't keep the current post in view, and creates an infinite loop of removing posts
+popular platforms never remove from the top, instead just adding to the bottom until the tab runs out of memory
+it's possible that your components will be so efficient that you could survive the memory issue
+possible solutions at this point:
+
+(1) affect the scroll
+there are javascript apis to scroll, window.scrollBy(0, -heightDifference) and window.scroll
+when adding or removing posts above, you could measure the distance below, add or remove, and then scroll so there's the same distance below
+but this could deepen the quagmire
+then three things would be scrolling: the user, the browser, and the page!
+when you tell vue to affect the post list, it doesn't do it immediately--you've already demonstrated not being able to get a revised total page height right away
+
+(2) posts out of field switch to lightweight divs of the same height
+the vue list will have to be of PostOrSpacerComponent components
+and then the feed tells them to be a post or a spacer
+immediately on scroll, spacers need to become posts
+after the 4s cooldown, distant posts can become spacers
+it's easy to get to and change properties of individual items in the list:
+
+	<PostOrSpacerComponent
+		v-for="post in visiblePosts" 
+		:key="post.tag"
+		:show="true" ... />
+
+	visiblePosts.value[index].show = false
+
+you still have to pass all the properties Post needs through PostOrSpacer
+you're not coding this now, but are confident you could
+also, the page can ask the browser how much memory its using with performance.measureUserAgentSpecificMemory().bytes
+something you like about this solution is while the desktop scrollbar is wonky going down, it always works to drag it up--dragging all the way up to get the menu may be a frequent user activity
+
+also, you do eventually want a pagination option
+probably as a route rather than a setting
+so users who want it can find it, while infinite scroll is always the default
+*/
 
 
 

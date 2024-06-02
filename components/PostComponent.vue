@@ -3,12 +3,19 @@
 import { log, inspect, cutLast, sayWhenPage, sayWhenFeed } from '~/library/library0'
 import { postDatabase } from '~/library/library1'
 
-const props = defineProps(['post', 'isStandalone', 'postAbove', 'postBelow'])
+let props = defineProps(['post', 'isStandalone', 'postAbove', 'postBelow'])
+
+let assignedElement = ref()
+
+function myFunction(e) {
+	assignedElement.value = e//save the dom element reference for later, not sure if we have to save it in a reactive variable or not
+//	console.log(e.getBoundingClientRect())//use it to find out where we are on the page
+}
 
 </script>
 <template>
 
-<div class="post-class">
+<div class="post-class" :ref="myFunction">
 	<h2>post {{ post.order }} of {{ post.quantity }}</h2>
 	<p>{{ sayWhenPage(post.tick) }}</p>
 	<p>tag <i>{{ post.tag }}</i>, tick <i>{{ post.tick }}</i></p>
