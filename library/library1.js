@@ -6,7 +6,10 @@ import { customAlphabet } from 'nanoid'
 
 
 
-
+/*
+TODO
+rename so you can do let tag = makeTag(); you're already fixing collisions
+*/
 
 const tagLength = 21
 

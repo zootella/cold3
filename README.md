@@ -59,11 +59,16 @@ Pushing to GitHub does not start Cloudflare deploy; they're separate and I like 
 ## Run locally and deploy to Cloudflare
 
 ```
+$ npm run local
+$ npm run deploy
+
+previously
 $ npm run dev
 $ npm run pages:dev
 $ npm run pages:deploy
 ```
 
+ * Vite is on another port, but Nuxt up top runs locally at 3000
  * Unlike Amplify, builds locally and pushes static assets, which is faster
  * `dev` runs Vite for Nuxt, while `pages:dev` and `pages:deploy` run Wrangler, which in turn runs Vite for Nuxt
  * `pages:dev` works great everywhere; in React-land, a problem between Wrangler and webpack breaks local development
@@ -188,6 +193,19 @@ Hydration in Universal Rendering means that a component's script can run on the 
 Configured as above, only the `public` token should be sent to the client.
 But, it's simpler to not configure or access these keys for use in a component, and just use them in API code which only runs on the server.
 
+## icarus, and library
+
+```
+$ cd icarus
+$ npm run icarus
+
+http://localhost:5173/
+```
+
+* And then see `log()` output and work on library functions; `Ctrl+S` closes the loop. Enjoy lightning-quick TDD red-green-refactor cycles and developer bliss.
+* `library0.js` requires no imports; `library1.js` needs the imports in package.json. Functions in here could be useful to other projects. Project-specific stuff goes in named `.js` files alongside.
+* Design guideline to keep components as short and empty as possible, and factor everything down as far as possible.
+
 ## Roster
 
 Stack
@@ -215,17 +233,34 @@ big areas still to explore, try out, and choose:
 ## (notes, drafts)
 
 ```
-library functions useful in other projects, including other js environments
-library0 require no imports, bare metal
-library1 need the imports of package.json
-a function in library1 can depend on library0, but not the other way around, of course
-factor every function potentially widely useful into these two files
+>security
 
-and now for the bike shed
-you want Ctrl+S to show a green or red emoji on a browser page off to the side
-as this closes the loop for developer bliss and flow
+best thinking you've found on security
+https://owasp.org/www-project-top-ten/
 
-when you get this working, add notes to this readme about two project development entry points
-one that runs nuxt and is slower but more complete
-the other that runs whatever makes the checkmark show
+nuxt module that does it for you
+https://nuxt.com/modules/security
+
+but csrf is off by default
+https://nuxt-security.vercel.app/documentation/middleware/csrf
+
+security related list of things to do
+make two example projects side by side to compare and test in a cleanroom
+at some point, you need to restart the project with current wranger and nuxt
+add the security module
+configure to turn on csrf protection
+measure how much this slows things down
+understand how you can still test apis running locally
+see that before you could hit an api directly in the browser, now you can't
+even better, simulate hitting an api from another domain
+
+>form validation
+
+https://ui.nuxt.com/components/form
+mentions Yup, Zod, Joi, or Valibot
+zod and joi look current and popular
+pick one for email; write your test about gmail periods and lowercase names
+
+it seems these don't do phone numbers, and this does
+https://www.npmjs.com/package/libphonenumber-js
 ```
