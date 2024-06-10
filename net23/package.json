@@ -1,21 +1,18 @@
 {
   "name": "net23",
-  "version": "1.0.0",
-  "description": "notes",
-  "main": "handler.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "version": "0.1.0",
+  "private": true,
+  "description": "File infrastructure on AWS",
+  "license": "GPL-3.0-only",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zootella/net23.git"
+    "url": "https://github.com/zootella/cold3.git"
   },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/zootella/net23/issues"
+  "scripts": {
+    "local": "serverless offline",
+    "deploy": "serverless deploy"
   },
-  "homepage": "https://github.com/zootella/net23#readme",
+  "type": "module",
   "dependencies": {
     "aws-sdk": "^2.1637.0"
   },

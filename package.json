@@ -1,7 +1,13 @@
 {
-  "name": "nuxt-app",
+  "name": "cold3",
+  "version": "0.1.0",
   "private": true,
-  "type": "module",
+  "description": "Nuxt site on Cloudflare",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zootella/cold3.git"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -13,6 +19,7 @@
     "local": "npm run pages:dev",
     "deploy": "npm run pages:deploy"
   },
+  "type": "module",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",
     "nanoid": "^5.0.6",
