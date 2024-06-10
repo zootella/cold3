@@ -23,5 +23,9 @@ logs
 .env.*
 !.env.example
 
-# Added this for cloudflare
+# Added for cloudflare
 .wrangler
+
+# Added for serverless framework in net23
+.serverless
+jspm_packages
