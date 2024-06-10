@@ -1,8 +1,7 @@
-# net23
 
-notes
+Network 23 ~ "Beta to the Max!"
 
-```
+some notes building the megamedia empire:
 
 == install aws cli
 
@@ -120,177 +119,36 @@ $ serverless deploy
 
 
 
-# Before running this script, do these steps manually:
-# At a third-party registrar, register your domain name, net23.cc
-# On the Route 53 dashboard, create a hosted zone for net23.cc
-# Back at the registrar, set nameservers to those provided by Route 53
-# In the AWS Certificate Manager, request an SSL certificate for www.net23.cc and net23.cc
-# Perform DNS validation by having the dashboard button add CNAME records
-# In the Route 53 hosted zone, create alias records for www and the root domain to point to the CloudFront distribution
-# Attach the validated SSL certificate to the CloudFront distribution
 
 
 
 
 
+== high level
 
-Request SSL Certificate: In AWS Certificate Manager (ACM), request a certificate for your domain (e.g., www.net23.cc and net23.cc).
-DNS Validation: Perform DNS validation by adding CNAME records through the ACM console to validate the SSL certificate.
-Alias Records: Create alias records in the Route 53 hosted zone for www.net23.cc and net23.cc to point to the CloudFront distribution.
-Attach SSL Certificate: Attach the validated SSL certificate to the CloudFront distribution.
+>milestone 1, done
 
+domain name
+ssl certificate
 
+www bucket
+www distribution
+www upload
 
+>milestone 2
 
+api functions
+only callable from https://cold3.cc
+that use imports
+and library code
+and survived webpack tree shaking
 
+>milestone 3
 
-
-
-
-
-
-
-
-
-once at the project start, create and validate the certificate
-aws should automatically replace it with a new certificate before expiration
-
-$ serverless deploy --config serverless-certificate.yml --stage prod
-
-script hangs forever
-in the cloudformation dashboard, the template update is in progress
-in the acm dashboard, there's a button, create records in route 53, you clicked it
-after that, the script finishes, 527s later, not sure if because of you clicking the button
-now on the dashboards, cloudformation says update complete, acm says issued, both green
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-== ssl certificate
-
-
-
-
-once at the start, create certificate
-
-== serverless commands
-
-$ serverless deploy
-$ serverless deploy --stage dev
-$ serverless deploy --stage prod
-
-blank is the same as stage dev
-dev and prod are parallel cloudformation templates, but don't duplicate buckets
-
-
-is how you run a separate script
-
-
-$ serverless deploy --stage prod
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-chose bucket names:
-www-net23-cc
-vhs-net23-cc
-
-
-
-
-
-
-configure domain name, manual
-
-make and configure s3 bucket and cloudfront distribution, template
-deploy static website, template
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-back in aws amplify
-all apps, cold1, domain management, add domain
-dropdown includes cold1.cc from creating the hosted zone, configure domain
-by default it looks like cold1.cc goes to main, www.cold1.cc also does, and there's a redirect from cold1.cc to www.cold1.cc
-you want the reverse, but are going to keep things this way for now
-save button, status about ssl creation, configuration, domain activiation
-message appears about needing to verify with the cname code, but then disappears as, if you remember correctly, one part of amazon does this automatically with the other part
-yes, took a few minutes, and linked to a box that had instructions for setting these manually:
-@      ANAME    d1i6xgg9kph0mt.cloudfront.net
-www    CNAME    d1i6xgg9kph0mt.cloudfront.net
-but then did it automatically, now saying wait 30min
-
-30min later, it's all working
-http or https, www or just cold1.cc, all redirect to https://www.cold1.cc
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```
-
+vhs bucket
+vhs distribution
+vhs lambda@edge un-get-round-able gatekeeper
+so also only callable from cold3
 
 
 
