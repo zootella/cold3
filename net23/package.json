@@ -1,0 +1,26 @@
+{
+  "name": "net23",
+  "version": "1.0.0",
+  "description": "notes",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zootella/net23.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zootella/net23/issues"
+  },
+  "homepage": "https://github.com/zootella/net23#readme",
+  "dependencies": {
+    "aws-sdk": "^2.1637.0"
+  },
+  "devDependencies": {
+    "serverless-s3-sync": "^3.3.0",
+    "serverless-webpack": "^5.14.0"
+  }
+}

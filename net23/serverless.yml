@@ -1,0 +1,123 @@
+service: net23
+
+useDotenv: true
+plugins:
+  - serverless-s3-sync # Use to upload static site files
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: us-east-1 # Lambda@Edge requires Virginia
+  stage: prod # Production by default, as this script is about resources rather than code
+
+resources:
+  Resources: # Yes, it's correct to have that twice and nested
+
+    # First, this section provisions resources for the static website www.net23.cc
+    # Static site files in a private bucket get served only by a CloudFront distribution
+    # Before running this script, perform manual steps to get the domain and SSL certificate
+    # And put the ARN of the certificate in the .env file, referenced below
+
+    WWWBucket: # Creates and configures a bucket
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: www-net23-cc # Globally unique name in AWS
+        AccessControl: Private # Private because a CloudFront distribution will serve files
+
+    S3BucketPolicy: # Defines a policy for a bucket to allow CloudFront access
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref WWWBucket # The bucket this policy is about
+        PolicyDocument: # A policy document with just one statement
+          Statement: # Allows the specified Principal, CloudFront OAI, to get objects from the bucket
+            - Action: 's3:GetObject'
+              Effect: Allow
+              Resource: !Sub 'arn:aws:s3:::www-net23-cc/*' # Reference to all objects in the bucket
+              Principal:
+                CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+    CloudFrontOriginAccessIdentity: # Creates an OAI, a special user, so CloudFront can access the bucket
+      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+      Properties:
+        CloudFrontOriginAccessIdentityConfig:
+          Comment: 'Grant CloudFront access to S3 bucket to serve www.net23.cc' # Comment saved in dashboard
+
+    CloudFrontDistribution: # Creates a CloudFront distribution which serves the static website files
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Origins:
+            - DomainName: !GetAtt WWWBucket.DomainName # Internal AWS domain name of the bucket
+              Id: S3Origin
+              S3OriginConfig:
+                OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+          DefaultCacheBehavior:
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https # Redirect HTTP to HTTPS
+            ForwardedValues: # Required parameter
+              QueryString: false # Do not forward a query string
+              Cookies:
+                Forward: none # Do not forward cookies
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            DefaultTTL: 86400 # 1 day in seconds, how long files stay in cache
+            MaxTTL: 31536000 # 1 year, maximum time in cache
+            MinTTL: 0 # No caching, minimum time in cache
+          Aliases:
+            - www.net23.cc
+            - net23.cc
+          ViewerCertificate:
+            AcmCertificateArn: ${env:ACCESS_CERTIFICATE_ARN} # Get ARN from .env file
+            SslSupportMethod: sni-only
+          Comment: 'Distribution for static site www.net23.cc'
+          DefaultRootObject: index.html
+
+    Route53RecordSetGroup: # Defines a group of DNS records in Route 53
+      Type: AWS::Route53::RecordSetGroup
+      Properties:
+        HostedZoneName: net23.cc. # Previously, we manually made this hosted zone
+        RecordSets:
+          - Name: net23.cc. # Ends with dot to indicate fully qualified
+            Type: A # DNS A records are for IPv4 addresses
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2 # AWS identifier for CloudFront
+          - Name: www.net23.cc.
+            Type: A
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
+          - Name: net23.cc.
+            Type: AAAA # DNS AAAA records are for IPv6 addresses
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
+          - Name: www.net23.cc.
+            Type: AAAA
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
+
+  Outputs: # Correctly within the outer resources section
+    # Values to store in the CloudFormation template Outputs tab, not logged out to the console
+    S3BucketName:
+      Description: Name of the S3 bucket
+      Value: !Ref WWWBucket
+    CloudFrontDistributionId:
+      Description: ID of the CloudFront distribution
+      Value: !Ref CloudFrontDistribution
+    CloudFrontDomainName:
+      Description: Domain name of the CloudFront distribution
+      Value: !GetAtt CloudFrontDistribution.DomainName
+
+custom:
+  s3Sync: # Upload files from the www folder to the bucket behind the distribution for www.net23.cc
+    - bucketName: www-net23-cc
+      localDir: www
+      deleteRemoved: true # Remove files in the bucket now missing from www folder
+      # This is working without explicitly invalidating the distribution, so nothing extra here
