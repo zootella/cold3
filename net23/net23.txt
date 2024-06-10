@@ -150,6 +150,11 @@ vhs distribution
 vhs lambda@edge un-get-round-able gatekeeper
 so also only callable from cold3
 
+>milestone 4
+
+send an email
+send a sms
+
 
 
 
