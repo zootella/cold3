@@ -129,7 +129,11 @@ exporty({SortedArray});
 
 
 
-
+/*
+TODO
+does this keep the position of the insertion point between insertions?
+it should, as this will make things really fast when you're loading in an already (from the database) sorted and largely or entirely duplicate list of records into the sorted list
+*/
 
 
 

@@ -16,6 +16,9 @@
   },
   "type": "module",
   "dependencies": {
+    "joi": "^17.13.1",
+    "libphonenumber-js": "^1.11.3",
+    "nanoid": "^5.0.7",
     "vue": "^3.4.21"
   },
   "devDependencies": {

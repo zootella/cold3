@@ -1,8 +1,10 @@
 
 //library1 can import modules saved in the nuxt project's package.json above
 import { noop, Time, test, ok, now, say, inspect, log, checkText, checkAlpha, randomBetween, sayWhenFeed, sayWhenPage } from './library0.js'
-import { customAlphabet } from 'nanoid'
 
+import { customAlphabet } from 'nanoid'
+import { parsePhoneNumberFromString } from 'libphonenumber-js'
+import Joi from 'joi'
 
 
 
@@ -57,6 +59,117 @@ test(() => {
 	ok(_hasTriple('bbbc'))
 	ok(_hasTriple('abbb'))
 })
+
+
+
+/*
+validating email addresses and phone numbers
+
+https://www.npmjs.com/package/libphonenumber-js
+5 million downloads
+only installed 1 package
+
+https://www.npmjs.com/package/zod
+https://zod.dev/
+9 million downloads
+all about typescript
+
+https://www.npmjs.com/package/joi
+https://joi.dev/
+9 million downloads
+not typescripty, maybe pick this one for that reason
+npm install joi only added 6 packages, which is great
+
+oh, joi also has credit card, you should use that, too
+
+
+
+*/
+
+
+const joiEmailSchema = Joi.string().email({ tlds: { allow: false } }).required()//no list of true TLDs
+const joiCardSchema = Joi.string().creditCard().required()
+
+export function validateEmail(email) {
+	let { error } = joiEmailSchema.validate(email)
+	if (error) {
+		console.error('Invalid email:', error.details[0].message);
+		return false;
+	} else {
+		console.log('Valid email:', email);
+		return true;
+	}
+}
+
+// Validate phone number function
+export function validatePhone(phone) {
+	let phoneNumber = parsePhoneNumberFromString(phone)
+	if (phoneNumber && phoneNumber.isValid()) {
+		console.log('Valid phone number:', phone)
+		return true
+	} else {
+		console.error('Invalid phone number:', phone)
+		return false
+	}
+}
+
+
+
+export function testBox(s) {
+	return 'hi from testbox, your length is ' + s.length
+}
+
+
+noop(() => {
+	log('hi')
+	ok(true)
+
+	log(typeof joiEmailSchema)
+	log(typeof joiCardSchema)
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

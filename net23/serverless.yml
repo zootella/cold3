@@ -8,7 +8,7 @@ provider:
   name: aws
   runtime: nodejs16.x
   region: us-east-1 # Lambda@Edge requires Virginia
-  stage: prod # Production by default, as this script is about resources rather than code
+  stage: prod # Production by default, as this script includes resources like buckets
 
 resources:
   Resources: # Yes, it's correct to have that twice and nested
