@@ -18,10 +18,11 @@ export default defineConfig({
 			}
 		}
 	],
-	optimizeDeps: {
+	optimizeDeps: {//you don't understand why, but you have to explicitly include your installed modules here
 		include: [
-			'libphonenumber-js',
-			'joi'
+			'joi',
+			'credit-card-type',
+			'libphonenumber-js'
 		]
 	}
 })

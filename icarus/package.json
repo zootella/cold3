@@ -16,6 +16,7 @@
   },
   "type": "module",
   "dependencies": {
+    "credit-card-type": "^10.0.0",
     "joi": "^17.13.1",
     "libphonenumber-js": "^1.11.3",
     "nanoid": "^5.0.7",

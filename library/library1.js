@@ -1,10 +1,23 @@
 
 //library1 can import modules saved in the nuxt project's package.json above
-import { noop, Time, test, ok, now, say, inspect, log, checkText, checkAlpha, randomBetween, sayWhenFeed, sayWhenPage } from './library0.js'
+import { noop, Time, test, ok, now, say, inspect, log, checkText, checkAlpha, randomBetween, sayWhenFeed, sayWhenPage, starts, cut, onlyNumerals } from './library0.js'
 
 import { customAlphabet } from 'nanoid'
-import { parsePhoneNumberFromString } from 'libphonenumber-js'
 import Joi from 'joi'
+import creditCardType from 'credit-card-type'
+import { parsePhoneNumberFromString } from 'libphonenumber-js'
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -12,6 +25,13 @@ import Joi from 'joi'
 TODO
 rename so you can do let tag = makeTag(); you're already fixing collisions
 */
+
+//  _              
+// | |_ __ _  __ _ 
+// | __/ _` |/ _` |
+// | || (_| | (_| |
+//  \__\__,_|\__, |
+//           |___/ 
 
 const tagLength = 21
 
@@ -62,86 +82,316 @@ test(() => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
-validating email addresses and phone numbers
+notes about validation
 
-https://www.npmjs.com/package/libphonenumber-js
-5 million downloads
-only installed 1 package
+modules you found:
+joi has 9 million downloads and installs 6 packages
+credit-card-type has half a million downloads and installs 1 package
+libphonenumber-js has 5 million downloads and installs 1 package
 
-https://www.npmjs.com/package/zod
-https://zod.dev/
-9 million downloads
-all about typescript
+current limitations in email:
+-joi has a built in TLD whitelist, but some error meant you turned off that check
 
-https://www.npmjs.com/package/joi
-https://joi.dev/
-9 million downloads
-not typescripty, maybe pick this one for that reason
-npm install joi only added 6 packages, which is great
+current limitations in phone:
+-you're assuming US rather than telling libphonenumber what country to fit to
 
-oh, joi also has credit card, you should use that, too
+current limitations in card:
+-joi validates the card, but can't group digits
+-credit-card-type groups digits, and detects type from what the user has typed so far
+TODO why are you using both joi and credit-card-type? maybe just use credit-card-type
 
+data forms:
+-raw, what the user put in the box
+-adjusted, improved to make validation more likely to work, like trimmed or only digits
+-presented, formatted for pretty human consumption, like grouping digits in a card number
+-normalized, boiled down all the way to store in the database, and notice a duplicate
 
+guaranteed data pathway:
+raw -> adjusted -> presented
+								-> normalized
 
+email example:
+raw: ' Bob.Frank@GMAIL.COM', what the user typed
+adjusted: 'Bob.Frank@GMAIL.COM', light changes to pass validation; give adjusted to APIs
+presented: 'Bob.Frank@gmail.com', heavier formatting, show the user presented on the page
+normalized: 'bobfrank@gmail.com', heaviest changes, use normalized to prevent a duplicate
+
+and so what do you pass to the email or credit card API?
+probably adjusted, in case the user's weird way of writing it actually matters
+the log of exactly what you told the api records adjusted
+
+keep adjusted and normalized in the database
+normalized to quickly detect a duplicate
+adjusted for a later repeat use with the api
+and when composing text for the page, do adjusted -> presented
+
+uniformly, these validation functions take raw
+and return an object like { raw, adjusted, presented, normalized, valid: true/false }
 */
 
+//             _ _     _       _       
+// __   ____ _| (_) __| | __ _| |_ ___ 
+// \ \ / / _` | | |/ _` |/ _` | __/ _ \
+//  \ V / (_| | | | (_| | (_| | ||  __/
+//   \_/ \__,_|_|_|\__,_|\__,_|\__\___|
+//                                     
 
-const joiEmailSchema = Joi.string().email({ tlds: { allow: false } }).required()//no list of true TLDs
-const joiCardSchema = Joi.string().creditCard().required()
+const _email = Joi.string().email({ tlds: { allow: false } }).required()//no list of true TLDs
+export function validateEmail(raw) {
 
-export function validateEmail(email) {
-	let { error } = joiEmailSchema.validate(email)
-	if (error) {
-		console.error('Invalid email:', error.details[0].message);
-		return false;
-	} else {
-		console.log('Valid email:', email);
-		return true;
+	/* (1) adjusted step for email
+	trim space before and after
+	don't touch space in the middle
+	*/
+	let adjusted = raw.trim()
+	let j1 = _email.validate(adjusted)
+	if (j1.error) return { j1, valid: false, raw, adjusted }
+
+	/* (2) presented step for email
+	leave the name the same, but lowercase the domain
+	BOBSMITH@SPINDEX.BIZ clearly has his caps lock on, but maybe his email only works if you shout at him
+	TomStoppard@SpeedOfArt.net is used to seeing his domain flattened
+	*/
+	let p = cut(adjusted, "@")
+	let presented = p.before + "@" + p.after.toLowerCase()
+	let j2 = _email.validate(presented)
+	if (j2.error) return { j2, valid: false, raw, adjusted, presented }
+
+	/* (3) normalized step for email
+	here, we want to prevent MrMorgan@example.com from creating a second account as mrmorgan@example.com
+	additionally, we want to notice that mr.morgan@gmail.com is the same guy as mrmorgan@gmail.com; this is gmail-specific
+	if we find others like this, we can add them here, but database data won't have gone through the latest validator
+	*/
+	let name = p.before.toLowerCase()
+	let domain = p.after.toLowerCase()
+	if (domain == "gmail.com") name = name.replace(/\./g, '')
+	let normalized = name + "@" + domain
+	let j3 = _email.validate(normalized)
+	if (j3.error) return { j3, valid: false, raw, adjusted, presented, normalized }
+
+	return { valid: true, raw, adjusted, presented, normalized }
+}
+test(() => {
+
+	//sanity check
+	ok(!validateEmail('').valid)
+	ok(validateEmail('name@example.com').valid)
+	ok(validateEmail(' First.Last@EXAMPLE.COM\r\n').valid)
+
+	//mistakes
+	ok(!validateEmail('name#example.com').valid)//spaces
+	ok(!validateEmail('first last@example.com').valid)//spaces
+	ok(!validateEmail('first.last@example com').valid)
+	ok(!validateEmail('first@last@example.com').valid)//two ats
+
+	//dots
+	ok(validateEmail('first.last@department.example.com').valid)//correct
+	ok(!validateEmail('first.last@example..com').valid)
+	ok(!validateEmail('first.last@.example.com').valid)
+	ok(!validateEmail('first.last@example.com.').valid)
+	ok(!validateEmail('first.last@example').valid)
+
+	//joi doesn't like edge dots in name, either. this one you weren't even sure about
+	ok(!validateEmail('.name@example.com').valid)
+	ok(!validateEmail('name.@example.com').valid)
+
+	//four forms when valid
+	function f(raw, adjusted, presented, normalized) {
+		let v = validateEmail(raw)
+		ok(v.valid)
+		ok(v.adjusted == adjusted)
+		ok(v.presented == presented)
+		ok(v.normalized == normalized)
 	}
-}
+	//lowercasing to keep working, make pretty, and detect a duplicate
+	f(' Name@Example.com ', 'Name@Example.com', 'Name@example.com', 'name@example.com')
+	f(' NAME@EXAMPLE.COM ', 'NAME@EXAMPLE.COM', 'NAME@example.com', 'name@example.com')
+	//preventing gmail users from making multiple accounts
+	f(' first.last@hotmail.com ', 'first.last@hotmail.com', 'first.last@hotmail.com', 'first.last@hotmail.com')
+	f(' first.last@gmail.com ', 'first.last@gmail.com', 'first.last@gmail.com', 'firstlast@gmail.com')
+})
 
-// Validate phone number function
-export function validatePhone(phone) {
-	let phoneNumber = parsePhoneNumberFromString(phone)
-	if (phoneNumber && phoneNumber.isValid()) {
-		console.log('Valid phone number:', phone)
-		return true
-	} else {
-		console.error('Invalid phone number:', phone)
-		return false
+export function validatePhone(raw) {
+
+	/* (1) the americentric kludge
+	libphonenumber-js works well when you tell it which country we think this phone number is in
+	to make it work for common US 5553334444 and 15553334444 fat-fingering, there's this:
+	*/
+	let numerals = onlyNumerals(raw)
+	let defaultRegion//leave undefined if not US
+	if (numerals.length == 10 ||//assume all 10 digit numbers are US
+		(numerals.length == 11 && starts(numerals, '1')))//or they also typed the 1 at the start
+		defaultRegion = 'US'
+
+	/* (2) adjusted and presented
+	phone numbers are crazy, so here, we're leaning heavily on Android's libphonenumber-js
+	we give it the raw text from the user, and make sure it returns something, which says valid
+	we format it into a standard international form, and make sure that there are some numbers there
+	but with regional codes, it could be different numbers, or a different number of numbers
+	*/
+	let phone = parsePhoneNumberFromString(raw, defaultRegion)
+	if (!phone || !phone.isValid()) return { phone, valid: false, raw }
+	let adjusted = phone.formatInternational()
+	let presented = adjusted
+
+	/* (3) normalized
+	just numbers from libphonenumber-js
+	*/
+	let normalized = onlyNumerals(adjusted)
+	if (!normalized.length) return { phone, valid: false, raw, adjusted }
+
+	/* valid forms
+	send adjusted to the SMS apis
+	show presented to the user
+	keep normalized in the database to guard against storing a duplicate
+	*/
+	return { phone, valid: true, raw, adjusted, presented, normalized }
+}
+test(() => {
+	ok(!validatePhone('').valid)//blank
+	ok(!validatePhone('5551234').valid)//local
+	ok(!validatePhone('pizza').valid)//nonsense
+
+	function f(country, normalized, raw, adjusted) {
+		let v = validatePhone(raw)
+		ok(v.valid)
+		ok(v.phone.country == country)
+		ok(v.adjusted == adjusted)
+		ok(v.normalized == normalized)
 	}
+
+	//common typing
+	f('US', '14155552671',   '4155552671', '+1 415 555 2671')
+	f('US', '14155552671',  '14155552671', '+1 415 555 2671')
+	f('US', '14155552671', '+14155552671', '+1 415 555 2671')
+
+	//extra characters, still valid
+	f('US', '14155552671',   '415 555 2671',     '+1 415 555 2671')
+	f('US', '14155552671',   '415.555.2671',     '+1 415 555 2671')
+	f('US', '14155552671',   '415-555-2671',     '+1 415 555 2671')
+	f('US', '14155552671', ' \t415 5552671\r\n', '+1 415 555 2671')
+
+	//around the world
+	f('US', '14155552671',   '+14155552671',    '+1 415 555 2671')// United States
+	f('GB', '442071838750',  '+442071838750',  '+44 20 7183 8750')// United Kingdom
+	f('CA', '14165555555',   '+14165555555',    '+1 416 555 5555')// Canada
+	f('AU', '61293744000',   '+61293744000',   '+61 2 9374 4000')// Australia
+	f('DE', '493012345678',  '+493012345678',  '+49 30 12345678')// Germany
+	f('FR', '33123456789',   '+33123456789',   '+33 1 23 45 67 89')// France
+	f('JP', '81312345678',   '+81312345678',   '+81 3 1234 5678')// Japan
+	f('IN', '911234567890',  '+911234567890',  '+91 1234 567 890')// India
+	f('CN', '8613812345678', '+8613812345678', '+86 138 1234 5678')// China
+	f('BR', '5511987654321', '+5511987654321', '+55 11 98765 4321')// Brazil
+})
+
+const _card = Joi.string().creditCard().required()
+export function validateCard(raw) {
+
+	/* (1) adjusted step for credit card number
+	just numerals, removing spaces, dots, dashes
+	/* (2) normalized is the same
+	*/
+	let adjusted = onlyNumerals(raw)
+	let normalized = adjusted
+
+	/* (3) intermediate step for a number the user hasn't finished typing yet
+	use braintree's credit-card-type module to get the type
+	this module also tells you how to group the numerals, start trying to do that
+	*/
+	let cardType = creditCardType(adjusted)//from npm credit-card-type
+	if (!cardType.length) return { cardType, valid: false, raw, adjusted, normalized, note: 'no type' }
+	let gaps = cardType[0].gaps//go with first identified type, but know that there can be several
+	let gap = 0//index in the array of gaps
+	let presented = ''
+	for (let i = 0; i < adjusted.length; i++) {//loop for each numeral
+		if (gap < gaps.length && i == gaps[gap]) {//weve reached a gap position
+			presented += ' '//add a gap
+			gap++//watch for the next gap
+		}
+		presented += adjusted[i]//bring in this numeral
+	}
+	if (onlyNumerals(presented) != adjusted) return { cardType, valid: false, raw, adjusted, presented, normalized, note: 'presented bad round trip' }
+
+	/* (4) use joi once to validate at the end
+	*/
+	let j1 = _card.validate(adjusted)
+	if (j1.error) return { cardType, j1, valid: false, raw, adjusted, presented, normalized }
+
+	return { cardType, valid: true, raw, adjusted, presented, normalized }//also return the detected type information
 }
+test(() => {
 
+	//chatgpt's list of valid international credit card numbers
+	ok(validateCard('4111 1111 1111 1111').valid) // Visa
+	ok(validateCard('5555 5555 5555 4444').valid) // MasterCard
+	ok(validateCard('3782 822463 10005').valid) // American Express (Amex)
+	ok(validateCard('6011 1111 1111 1117').valid) // Discover
+	ok(validateCard('3566 1111 1111 1113').valid) // JCB (Popular in Japan)
+	ok(validateCard('3056 9309 0259 04').valid) // Diners Club International
+	ok(validateCard('6759 6498 2643 8453').valid) // Maestro (Popular in Europe)
+	ok(validateCard('4000 0566 5566 5556').valid) // Carte Bancaire (Popular in France)
+	ok(validateCard('6304 0000 0000 0000').valid) // Laser (Previously popular in Ireland)
+	ok(validateCard('6071 7980 0000 0000').valid) // NPS Pridnestrovie (Popular in Transnistria)
 
+	//should be valid, and from the same list, but joi doesn't like them, which is fine, i guess
+	ok(!validateCard('6211 1111 1111 1111').valid) // China UnionPay (Popular in China)
+	ok(!validateCard('5067 9900 0000 0000 0009').valid) // Elo (Popular in Brazil)
+	ok(!validateCard('6062 8288 0000 0000').valid) // Hipercard (Popular in Brazil)
+	ok(!validateCard('6071 9811 0000 0000').valid) // RuPay (Popular in India)
+	ok(!validateCard('6370 0028 0000 0000').valid) // Interac (Popular in Canada)
+	ok(!validateCard('5019 5555 5555 5555').valid) // Dankort (Popular in Denmark)
+	ok(!validateCard('5610 0000 0000 0000').valid) // Bankcard (Popular in Australia)
+	ok(!validateCard('2200 0000 0000 0000').valid) // Mir (Popular in Russia)
+	ok(!validateCard('4779 9990 0000 0000').valid) // Zimswitch (Popular in Zimbabwe)
 
-export function testBox(s) {
-	return 'hi from testbox, your length is ' + s.length
-}
+	//get the type soon as the user is typing, even when it's not valid yet
+	function f(partial, type) {
+		let v = validateCard(partial)
+		ok(!v.valid)//not valid yet
+		ok(v.cardType[0].niceType == type)//name of first possible type identified
+	}
+	f('4111', 'Visa')
+	f('55', 'Mastercard')//braintree says not internally capitalized
+	f('3782 822', 'American Express')
 
-
-noop(() => {
-	log('hi')
-	ok(true)
-
-	log(typeof joiEmailSchema)
-	log(typeof joiCardSchema)
+	//four forms when valid
+	function f2(raw, adjusted, presented, normalized) {
+		let v = validateCard(raw)
+		ok(v.valid)
+		ok(v.adjusted == adjusted)
+		ok(v.presented == presented)
+		ok(v.normalized == normalized)
+	}
+	f2('4111 1111 1111 1111',     '4111111111111111', '4111 1111 1111 1111', '4111111111111111')
+	f2('4111111111111111',        '4111111111111111', '4111 1111 1111 1111', '4111111111111111')
+	f2('4111-1111-1111-1111',     '4111111111111111', '4111 1111 1111 1111', '4111111111111111')
+	f2('4111 1111 1111 1111\r\n', '4111111111111111', '4111 1111 1111 1111', '4111111111111111')
+	f2('3782 822463 10005',  '378282246310005', '3782 822463 10005', '378282246310005')
+	f2('3782 8224 6310 005', '378282246310005', '3782 822463 10005', '378282246310005')
 })
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+export function testBox(s) {
+//	return validatePhone(s)
+}
 
 
 
