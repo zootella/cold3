@@ -9,6 +9,8 @@
 
 
 
+
+
 //              _ _       
 //  _   _ _ __ (_) |_ ___ 
 // | | | | '_ \| | __/ __|
@@ -38,18 +40,12 @@ Object.freeze(Size)
 
 export const now = Date.now//just a shortcut
 
-
-
-
-
-
-
-//                                            
-//  _ __  _ __ ___   __ _ _ __ __ _ _ __ ___  
-// | '_ \| '__/ _ \ / _` | '__/ _` | '_ ` _ \ 
-// | |_) | | | (_) | (_| | | | (_| | | | | | |
-// | .__/|_|  \___/ \__, |_|  \__,_|_| |_| |_|
-// |_|              |___/                     
+//  _   _               _            _       
+// | |_(_)_ __  _   _  | |_ ___  ___| |_ ___ 
+// | __| | '_ \| | | | | __/ _ \/ __| __/ __|
+// | |_| | | | | |_| | | ||  __/\__ \ |_\__ \
+//  \__|_|_| |_|\__, |  \__\___||___/\__|___/
+//              |___/                        
 
 export const noop = (() => {})//no operation, a function that does nothing
 
@@ -93,18 +89,13 @@ export async function runTests() {
 		return m
 	}
 }
-/*
-TODO make this an object that fills up here
-but which is exported, and you can bring into a vue component
-and run tests there and see results
 
-also, get tests to await async tests etc correctly
-this should be pretty easy
-
-also, did you have mustThrow or something before? you need that again; right now you're just skipping writing tests of check* functions
-
-and have it return an object of stats and outcomes, one of which is the composed status line
-*/
+//  _                
+// | |_ ___  ___ ___ 
+// | __/ _ \/ __/ __|
+// | || (_) \__ \__ \
+//  \__\___/|___/___/
+//                   
 
 export function toss(note, watch) {//prepare your own watch object with named variables you'd like to see
 	let s = `toss ${sayTick(now())} ~ ${note} ${inspect(watch)}`
@@ -139,6 +130,13 @@ export function say(...a) {//turn anything into text, always know you're dealing
 	}
 	return s
 }
+
+//  _                           _   
+// (_)_ __  ___ _ __   ___  ___| |_ 
+// | | '_ \/ __| '_ \ / _ \/ __| __|
+// | | | | \__ \ |_) |  __/ (__| |_ 
+// |_|_| |_|___/ .__/ \___|\___|\__|
+//             |_|                  
 
 export function inspect(...a) {//inspect into things, including key name, type, and value
 	let s = ''
@@ -191,68 +189,61 @@ test(() => {
 	ok(inspect(5) == '5')
 	ok(inspect({}) == '{}')
 })
-/*
-TODO never add these additional features, because this bike shed is fancy enough:
--recurse, indenting two spaces, stopping if the text grows above 2kb
--deal with tabs and newlines in function definitions and the error stack trace
--show short arrays and objects on a single line; long ones on multiple indented lines
--say the length of a very long array, showing starting and ending items with an ellipsis in the middle
 
-short notes relevant to those never-do improvements
-stack trace lines start with four spaces, maybe just remove them
-spaces and tabs in function code come through, maybe trim them and separate with the pilcrow
-*/
-test(() => {
-	//early inspect practice
-	/*
-	let b = true
-	let s = 'hello'
-	let n = 721
-	let a = ["p", "q", "r"]
-	let o = {
-		name: 'apple',
-		quantity: 11,
-		f: (()=>{}),
-		below: {
-			block: 'bedrock'
+//                                           
+//   ___ ___  _ __ ___  _ __   __ _ _ __ ___ 
+//  / __/ _ \| '_ ` _ \| '_ \ / _` | '__/ _ \
+// | (_| (_) | | | | | | |_) | (_| | | |  __/
+//  \___\___/|_| |_| |_| .__/ \__,_|_|  \___|
+//                     |_|                   
+
+//compare two simple objects
+//same means same keys and values
+//uses triple equals, imagining strings and numbers
+//only goes one level deep
+export function sameObject(o1, o2) {
+	let keys1 = Object.keys(o1)
+	let keys2 = Object.keys(o2)
+	if (keys1.length != keys2.length) return false
+
+	for (let key of keys1) {
+		if (o1[key] !== o2[key]) {//matches missing key in one with undefined value in the other
+			return false
 		}
 	}
-	let e = (() => {
-		let o = {}
-		try {
-			o.notThere.andBeyond
-		} catch (e) {
-			return e
+	return true
+}
+//compare two arrays
+//same means same length and values
+//uses triple equals, imagining strings and numbers
+export function sameArray(a1, a2) {
+	if (a1.length != a2.length) return false
+
+	for (let i = 0; i < a1.length; i++) {
+		if (a1[i] !== a2[i]) {
+			return false
 		}
-	})()
-	log(inspect(b, s, n, a, o, e))
-	log(inspect(b, s, {n, a, o, e}))
-	*/
-})
+	}
+	return true
+}
 test(() => {
-	//more recent inspect practice
-	/*
-	log(inspect(true))//boolean
-	log(inspect(7))//number
-	log(inspect('hello'))//string
-	log(inspect(['a', 'b', 'c']))//array
-	log(inspect({key1: 'value1', key2: 'value2'}))//object
+	ok(sameObject({a:5, b:7}, {a:5, b:7}))
+	ok(!sameObject({a:5, b:7}, {a:5, b:8}))//different value
+	ok(!sameObject({a:5, b:7}, {a:5}))//missing key
 
-	let f1 = function namedFunction() {
-		let i = 7
-		return 'named function result'
-	}
-	let f2 = function() { return 'anonymous function result' }
-	log(inspect(f1))//function
-	log(inspect(f2))//function
+	ok(!sameObject({a:5, b:7}, {a:5, b:undefined}))
+	ok(!sameObject({a:5, b:undefined}, {a:5, b:7}))
 
-	try {
-		notDefined
-	} catch (e) {
-		log(inspect(e))//error with stack trace
-	}
-	*/
+	//ok, here's the corner case sameObject can't do, but to be really fast we're ok with that
+	ok(!sameObject({a:5, corner:9}, {a:5, b:undefined}))//correct
+	ok(sameObject({a:5, b:undefined}, {a:5, corner:9}))//incorrect, absent b in o2 matches undefined value in o1
+
+	ok(sameArray([2, 4, 6, 8], [2, 4, 6, 8]))
+	ok(!sameArray([2, 4, 6, 8], [2, 4, 7, 8]))//different value
+	ok(!sameArray([2, 4, 6, 8], [2, 4, 6]))//different length
 })
+
+
 
 
 
@@ -381,20 +372,6 @@ test(() => {
 	ok(textToInt('1') == 1)
 })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //  _            _   
 // | |_ _____  _| |_ 
 // | __/ _ \ \/ / __|
@@ -509,35 +486,12 @@ test(() => {
 	ok(p.after == ' added')
 })
 
-
-
-
-
-//TODO these throw if anything is out of bounds, maybe add startSoft, endSoft, beyondSoft that instead return shorter or blank
-//bookmark you added this really fast, go through the larger process of actually testing them, and them using them where you need them
-export function startSoft(s, n)  { return clipSoft(s, 0, n) }
-export function clipSoft(s, i, n) {
-	s = s+''//fix everything
-	if (!minInt(i)) i = 0
-	if (!minInt(n)) n = 0
-
-	if (i     > s.length) i = s.length
-	if (i + n > s.length) n = s.length - i
-
-	return clip(s, i, n)
-}
-test(function() {
-	ok(clipSoft('abc', 1, 0) == '')
-	ok(clipSoft('abc', 1, 1) == 'b')
-	ok(clipSoft('abc', 1, 2) == 'bc')
-	ok(clipSoft('abc', 1, 3) == 'bc')
-});
-
-
-
-
-
-
+//       _               _      _            _   
+//   ___| |__   ___  ___| | __ | |_ _____  _| |_ 
+//  / __| '_ \ / _ \/ __| |/ / | __/ _ \ \/ / __|
+// | (__| | | |  __/ (__|   <  | ||  __/>  <| |_ 
+//  \___|_| |_|\___|\___|_|\_\  \__\___/_/\_\\__|
+//                                               
 
 //toss if s is blank or has any characters that are not
 export function checkNumerals(s) { if(!(/^[0-9]+$/.test(s)))           toss('data', {s}) }
@@ -565,25 +519,6 @@ test(() => {
 	ok(onlyName(s) == '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-_yes')
 })
 
-
-/*
-TODO
-consider this pattern
-
-checkThing - throws if not
-isThing - false if not
-makeThing - shapes to bring into compliance and returns
-
-then you put all the tests around isThing
-and instead of *Soft here, you use isThing when you don't want an exception
-*/
-
-
-
-
-
-
-
 //make sure a birthdate is like '1990.2.14', for the database
 export function checkDate(s) {
 	checkText(s)
@@ -605,25 +540,12 @@ test(() => {
 	ok(d.day = 14)
 })
 
-//TODO all email parsing here, including interactive user input, database storage and retrieval, and sendgrid api
-export function formatEmail(s) {
-
-
-	return {
-		raw: '',//what the user entered and this function received
-		valid: false,//true if this function says it looks like a valid email address
-		clean: '',//cleaned to show the user and send email
-		normal: ''//normalized to detect and prevent duplicates, like lowercase and remove period in gmail names
-	}
-}
-
-
-
-
-
-
-
-
+//                                _ _       
+//  ___  __ _ _   _   _   _ _ __ (_) |_ ___ 
+// / __|/ _` | | | | | | | | '_ \| | __/ __|
+// \__ \ (_| | |_| | | |_| | | | | | |_\__ \
+// |___/\__,_|\__, |  \__,_|_| |_|_|\__|___/
+//            |___/                         
 
 // Describe big sizes and counts in four digits or less
 export function size4(n)   { return _number4(n, 1024, [' bytes', ' KB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB']) }
@@ -943,35 +865,6 @@ test(() => {
 
 
 
-/*
-function f() {
-
-	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-	let census = {}
-	for (let c of alphabet) census[c] = 0
-
-	let duration = 1*Time.second
-	let t = now()
-	let d, b
-	while (now() < t + duration) {
-		d = Data({random: randomBetween(1, 32)})
-		b = d.base62()
-		for (let c of b) census[c]++
-	}
-
-	let s = ''
-	for (let c of alphabet) s += `\r\n${c}\t${census[c]}`
-	log(s)
-
-
-}
-//f()
-
-test(() => {
-
-
-})
-*/
 
 
 
@@ -987,100 +880,12 @@ test(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-/*
-noop(() => {
-
-	//get some random bytes
-	let b16 = Data({random: 40}).base16()
-	//encode into base62
-	let b62 = arrayToBase62(Data({base16: b16}).array())
-	//and back again
-	let b16a = Data({array: base62ToArray(b62)}).base16()
-	//log to confirm looks good
-	log(b62, b16, b16a)
-
-
-})
-
-
-noop(() => {
-
-	let d = Data({random: 40})
-	let b62 = _arrayToBase62(d.array())
-	log(
-		b62,
-		d.base16(),
-		Data({array: _base62ToArray1(b62)}).base16(),
-		Data({array: _base62ToArray2(b62)}).base16()
-	)
-
-
-})
-
-
-/*
-async function f() {
-	let d, s
-	let size = 50
-	let duration = 4*Time.second
-
-
-	let r1 = 0
-	let t = now()
-	while (now() < t + duration) {
-		d = Data({random: size})
-		s = arrayToBase64(d.array())
-		base64ToArray(s)
-		r1++
-	}
-	log(r1+' base64')
-
-	let r2 = 0
-	t = now()
-	while (now() < t + duration) {
-		d = Data({random: size})
-		s = _arrayToBase62(d.array())
-		_base62ToArray1(s)
-		r2++
-	}
-	log(r2+' base62 to array method 1')
-
-	let r3 = 0
-	t = now()
-	while (now() < t + duration) {
-		d = Data({random: size})
-		s = _arrayToBase62(d.array())
-		_base62ToArray2(s)
-		r3++
-	}
-	log(r3+' base62 to array method 2')
-}
-f()
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//                      _                 
+//  _ __ __ _ _ __   __| | ___  _ __ ___  
+// | '__/ _` | '_ \ / _` |/ _ \| '_ ` _ \ 
+// | | | (_| | | | | (_| | (_) | | | | | |
+// |_|  \__,_|_| |_|\__,_|\___/|_| |_| |_|
+//                                        
 
 //return a random integer between and including the given minimum and maximum
 //pass 0 and 1 to flip a coin, 1 and 6 to roll a dice, and so on
@@ -1089,39 +894,36 @@ f()
 export function randomBetween(minimum, maximum) {
 	return Math.floor(Math.random() * (maximum - minimum + 1)) + minimum
 }
-//but this doesn't use the browser's crypto source of randomness of cryptographic quality! for that, chatGPT suggests
+//but this doesn't use the browser's crypto source of randomness of cryptographic quality! for that, ChatGPT suggests
 //for that, chatgpt suggests:
 export function cryptoRandomBetween(minimum, maximum) {
 	let a32 = new Uint32Array(1)//an array of one 32-bit unsigned integer
 	crypto.getRandomValues(a32)//fill it with cryptographically secure random bits
-	return Math.floor(a[0] / (0xffffffff + 1) * (maximum - minimum + 1)) + minimum//scale and shift
+	return Math.floor(a32[0] / (0xffffffff + 1) * (maximum - minimum + 1)) + minimum//scale and shift
 }
 test(() => {
-	//uncomment to try them out
-	/*
-	for (let i = 0; i < 50; i++) {
-		log(randomBetween(13, 19))
+	function roll(low, high) {//test to make sure the apis are there, and sanity check them
+		for (let i = 0; i < 100; i++) {
+			let r1 = randomBetween(low, high)
+			let r2 = cryptoRandomBetween(low, high)
+			if (r1 < low || r1 > high) return false
+			if (r2 < low || r2 > high) return false
+		}
+		return true
 	}
-	*/
+	ok(roll(0, 1))//coin
+	ok(roll(1, 6))//vegas
+	ok(roll(1, 20))//D20
+	ok(roll(13, 19))
+	ok(roll(0, 256))//byte
 })
 
-
-
-
-
-
-
-
-
-
-
-
-//                                   _   _             
-//   ___ _ __   ___ _ __ _   _ _ __ | |_(_) ___  _ __  
-//  / _ \ '_ \ / __| '__| | | | '_ \| __| |/ _ \| '_ \ 
-// |  __/ | | | (__| |  | |_| | |_) | |_| | (_) | | | |
-//  \___|_| |_|\___|_|   \__, | .__/ \__|_|\___/|_| |_|
-//                       |___/|_|                      
+//                                   _   
+//   ___ _ __   ___ _ __ _   _ _ __ | |_ 
+//  / _ \ '_ \ / __| '__| | | | '_ \| __|
+// |  __/ | | | (__| |  | |_| | |_) | |_ 
+//  \___|_| |_|\___|_|   \__, | .__/ \__|
+//                       |___/|_|        
 
 const _subtle = {
 
@@ -1145,28 +947,18 @@ const _subtle = {
 	vectorSize: 12, // 12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 }
 Object.freeze(_subtle)
-async function symmetricCreateKey() {
-	return await crypto.subtle.generateKey(
-		{ name: _subtle.symmetricName, length: _subtle.strength },
-		_subtle.extractable, _subtle.symmetricUse)
+export async function symmetricCreateKey() {
+	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.strength }, _subtle.extractable, _subtle.symmetricUse)
 }
-async function symmetricExportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
+export async function symmetricExportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
 	return Data({buffer: await crypto.subtle.exportKey(_subtle.symmetricFormat, key)})//key is an imported CryptoKey object
 }
-
-async function symmetricImportKey(keyData) {//do this once per script run, not every time a function that needs it is called!
-	return await crypto.subtle.importKey(
-		_subtle.format,
-		keyData.array(),
-		{ name: _subtle.symmetricName, length: _subtle.strength },
-		_subtle.extractable, _subtle.symmetricUse)
+export async function symmetricImportKey(keyData) {//do this once per script run, not every time a function that needs it is called!
+	return await crypto.subtle.importKey(_subtle.symmetricFormat, keyData.array(), { name: _subtle.symmetricName, length: _subtle.strength }, _subtle.extractable, _subtle.symmetricUse)
 }
 export async function symmetricEncrypt(plainText, key) {
 	let vector = Data({random: _subtle.vectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
-	let cipher = Data({buffer: await crypto.subtle.encrypt(
-		{ name: _subtle.symmetricName, iv: vector.array() },
-		key,
-		Data({text: plainText}).array())})
+	let cipher = Data({buffer: await crypto.subtle.encrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, Data({text: plainText}).array())})
 	let storeBin = Bin(vector.size() + cipher.size())
 	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
 	storeBin.add(cipher)
@@ -1175,282 +967,171 @@ export async function symmetricEncrypt(plainText, key) {
 export async function symmetricDecrypt(storeData, key) {//stored data that is initialization vector followed by cipher bytes
 	let vector = storeData.clip(0, _subtle.vectorSize)//unpack
 	let cipher = storeData.clip(_subtle.vectorSize, storeData.size() - _subtle.vectorSize)
-	return Data({buffer: await crypto.subtle.decrypt(
-		{ name: _subtle.symmetricName, iv: vector.array() },
-		key,
-		cipher.array())})
+	return Data({buffer: await crypto.subtle.decrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, cipher.array())})
 }
-noop(async () => {
+test(async () => {
 
-	let k = await symmetricCreateKey()
-	let b = await symmetricExportKey(k, _subtle.symmetricFormat)
-	log(b.base16(), b.size()+' bytes')
+	//create and export key for symmetric encryption
+	let key = await symmetricCreateKey()
+	let keyData = await symmetricExportKey(key)
+	ok(keyData.size() == 32)//symmetric keys are 32 bytes
 
-	let k2 = await symmetricImportKey(b)
-	console.log({k, k2})
+	//import it again, taking it through base62 text
+	let keyImported = await symmetricImportKey(Data({base62: keyData.base62()}))
+	ok(key instanceof CryptoKey)//both keys look good
+	ok(keyImported instanceof CryptoKey)
 
-	let p = 'a short message'
-	let c = await symmetricEncrypt(p, k)
-	console.log({p}, c.base62(), `${c.size()} bytes of ciphertext in ${c.base62().length} base62 characters'`)
+	//encrypt a short message
+	let p = 'a short message'//plaintext p, a string
+	let c = await symmetricEncrypt(p, keyImported)//ciphertext c, a Data
+	let d = await symmetricDecrypt(c, keyImported)//decrypted plaintext d, a Data
+	ok(p == d.text())//we got the same message back out again!
+})
+test(async () => {
 
-	let d = await symmetricDecrypt(c, k)
-	console.log(d.text())
+	//import a premade key
+	let key = await symmetricImportKey(Data({base62: 'EtVcrWWKwMRSkcOwI0GjztMltipZXlKieRXJygDiveLh'}))
+	ok(key instanceof CryptoKey)
+
+	//test it encrypting and decrypting
+	let p = "Another message, let's make this one a little bit longer. There's important stuff to keep safe in here, no doubt!"
+	let c = await symmetricEncrypt(p, key)
+	let d = await symmetricDecrypt(c, key)
+	ok(p == d.text())
+
+	//here's some premade ciphertext, let's decrypt it as well
+	let c2 = Data({base62: '9rvozTn89KacmVq0SNJB3DbRRdrJNARwr7I7szYrm17igrKdiav90UOlzTV1OgOcgnBzggjz4dzdMQ2UcwLiteSrmHWH1AHJrZH9XmRLJomhQQK33xzrRHuH9Gtbv7RIowaebie3rlxvh8Ucagz1K8Iz6r3lSI33bmlwmaqs0ANiGFZaFrAWLfxuSHlDEZ'})
+	let d2 = await symmetricDecrypt(c2, key)
+	ok(p == d2.text())
 })
 
+//  _               _     
+// | |__   __ _ ___| |__  
+// | '_ \ / _` / __| '_ \ 
+// | | | | (_| \__ \ | | |
+// |_| |_|\__,_|___/_| |_|
+//                        
 
 //compute the 32 byte SHA-256 hash value of data
-export async function hashDigest(data) {
+export async function subtleHash(data) {
 	return Data({buffer: await crypto.subtle.digest(_subtle.hashName, data.array())})
 }
-noop(async () => {
-	let d = Data({random: 256})
-	let h = await hashDigest(d)
-	log(h.size()+' byte hash value', h.base16(), h.base64(), `${h.base62()}, ${h.base62().length} base62 characters`)
-
-	/*
-	get good ol' fashioned sha1 in here, too, and compare speeds
-
-	run a bunch of times to see the distribution of numbers of base62 characters, you're seeing 42-45
-	while base64 is always 44 characters, you think
-	*/
+test(async () => {
+	let d = Data({random: 500})//hash 500 random bytes, different every time we run the test
+	let h = await subtleHash(d)
+	ok(h.size() == 32)//32 byte hash value, around 44 base62 characters
+	ok((await subtleHash(Data({text: 'hello'}))).base16() == '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')//hash the common string to the expected value
 })
 
+//      _             
+//  ___(_) __ _ _ __  
+// / __| |/ _` | '_ \ 
+// \__ \ | (_| | | | |
+// |___/_|\__, |_| |_|
+//        |___/       
 
-
-
-
-async function curveCreateKeys() {
+export async function curveCreateKeys() {
 	return await crypto.subtle.generateKey({ name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, _subtle.curveUse)
 }
-async function curveExportKey(key) {
+export async function curveExportKey(key) {
 	let o = await crypto.subtle.exportKey(_subtle.curveFormat, key)//o is a regular javascript object with format notes and values named d, x, and y
 	let s = JSON.stringify(o)//turn it into a string like '{"crv":"p-256","x":"00ff...'
 	return Data({text: s})//wrap that in a data, as you'll base62 it for storage as a secure secret on the server
 }
-async function curveImportKey(keyData) {
+export async function curveImportKey(keyData) {
 	let o = JSON.parse(keyData.text())
 	return await crypto.subtle.importKey(_subtle.curveFormat, o, { name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, o.key_ops)
 }
-
-async function curveSign(privateKey, plainText) {
+export async function curveSign(privateKey, plainText) {
 	return Data({buffer: await crypto.subtle.sign({ name: _subtle.curveName, hash: { name: _subtle.hashName } }, privateKey, Data({text: plainText}).array())})
 }
-async function curveVerify(publicKey, signatureData, plainText) {
+export async function curveVerify(publicKey, signatureData, plainText) {
 	return await crypto.subtle.verify({ name: _subtle.curveName, hash: { name: _subtle.hashName }, }, publicKey, signatureData.array(), Data({text: plainText}).array())
 }
-
 test(async () => {
 
-	//create
-	let keyPair = await curveCreateKeys()
+	//create a new different public and private key pair to sign messages
+	let keyPair = await curveCreateKeys()//returns a javascript object of two CryptoKey objects
 
-	//export
-	let privateExported = await curveExportKey(keyPair.privateKey)
-	let publicExported = await curveExportKey(keyPair.publicKey)
+	//export both keys
+	let privateKey = await curveExportKey(keyPair.privateKey)
+	let publicKey = await curveExportKey(keyPair.publicKey)
+	function hasAll(s, a) { a.every(t => ok(s.includes(t))) }
+	hasAll(privateKey.text(), ['"crv":"P-256"', '"key_ops":["sign"]',   '"x"', '"y"', '"d"'])
+	hasAll(publicKey.text(),  ['"crv":"P-256"', '"key_ops":["verify"]', '"x"', '"y"'])
+	//both have the same x and y, the private key additionally has d
 
-	//import
-	let importedPrivate = await curveImportKey(privateExported)
-	let importedPublic = await curveImportKey(publicExported)
-	console.log(importedPrivate)
-	console.log(importedPublic)
-	console.log('imported private and public ^')
+	//import them again, sending them all the way through base62
+	let importedPrivate = await curveImportKey(Data({base62: privateKey.base62()}))
+	let importedPublic = await curveImportKey(Data({base62: publicKey.base62()}))
+	ok(importedPrivate instanceof CryptoKey)
+	ok(importedPublic instanceof CryptoKey)
 
-	//sign
-	let plainText = 'hello'
-	let signatureData = await curveSign(importedPrivate, plainText)
-	log(sayData(signatureData))
-	let signatureBase62 = signatureData.base62()
+	//sign a message
+	let trueMessage = 'here is a plaintext message to sign. file 456789, please.'
+	let signatureData = await curveSign(importedPrivate, trueMessage)
+	ok(signatureData.size() == 64)//signature is 64 bytes, around 87 base62 characters
 
-	//verify
-	let verificationResult = await curveVerify(importedPublic, Data({base62: signatureBase62}), plainText)
-	log(verificationResult)
+	//check for a valid signature
+	let signatureDataRemade = Data({base62: signatureData.base62()})
+	ok(await curveVerify(importedPublic, signatureDataRemade, trueMessage))
 
+	//transplated signature
+	let wrongSignature = '701a04a33314603371b7833301191deea5cf1d70ce93ffb0707fdb8ca400e1132351ac2e11bb12472d2992e61d3d668e5442caa620d3aaf34db61d26aeffbad9'
+	ok(!(await curveVerify(importedPublic, Data({base16: wrongSignature}), trueMessage)))
 
-//bookmark
+	//message tampering
+	let wrongMessage = 'here is a plaintext message to sign. file 111222, please.'
+	ok(!(await curveVerify(importedPublic, signatureDataRemade, wrongMessage)))
+})
+test(async () => {
 
+	//import some premade keys, like those that will be rebuilt from a server secret
+	let privateKey = await curveImportKey(Data({base62: 'Up9YScOXEX9IBJ8sDX8h8bIXEX9KD75pCbP5JrkQINCtKtoQSMapTrW4BMkQU49ZNqLbMcebTtzpP6eQDa5u8XlXPNWr8YerScLaB29gPNaVRu0q8YeR8cDePtvXNHlXQuGw8YdXGKCXB29v8YdXUYaaDN1qJZ5JRKG8MbeQPtwxOa9bGLDrG3PpCrjpHNIoLN9KSJ9uGLP0Sp8h8cZXEX8uGb9pP4wwDbLeCLGoH3L4H6PmRNG2Jc5QIqLoHZoKPMwFSKGgKsLmMYag8cr'}))
+	let publicKey = await curveImportKey(Data({base62: 'Up9YScOXEX9IBJ8sDX8h8bLvT28xT79sPHlXQtLwNtiS7CXEahXTbLpQMPw8arh8bkrUH8x8ZL38XlXU28x8cdwPJLlCrw0Kts4H5efMbTmUb9HPZLJT4ItSYD8CZarCLLpL74pTrLMINCXB29w8YdXDrPXSbGEUJPaQJ5KSKjsG4WbRbsrIZwoMZCsSKeCL6LmJu54QsDLRadwQp9iI'}))
+	ok(privateKey instanceof CryptoKey)
+	ok(publicKey instanceof CryptoKey)
+
+	//these tests will also use:
+	let trueMessage = 'another plaintext message. file 852963, please.'
+	let wrongMessage = 'another plaintext message. file 333444, please.'
+	let premadeSignature = Data({base62: '5pinSlkiWpC73iszJtg5QUsFKcAfxP5lQaOnzEP6MeJUWiQ7ihLRNUpKzF6QiS5Zl6OhksO9Zz9jmoMSFRXlIcQI'})
+	let wrongSignature = Data({base62: 'ZLOrDBRVT4gf5FS53He0WFNqCKp4tI2rY9fVYf5bG7ZqGQyHFjM97YCHr660soNiVvxPUuU1KkZuhUtwAia3k8'})
+
+	//confirm the premade keys work to sign and verify, making a new signature
+	let liveSignature = await curveSign(privateKey, trueMessage)
+	ok(await curveVerify(publicKey, liveSignature, trueMessage))//valid
+	ok(!(await curveVerify(publicKey, wrongSignature, trueMessage)))//wrong signature
+	ok(!(await curveVerify(publicKey, liveSignature, wrongMessage)))//tampered message
+
+	//lastly, check valid and invalid with premade keys and signature, all from base62 text pasted above
+	ok(await curveVerify(publicKey, premadeSignature, trueMessage))
+	ok(!(await curveVerify(publicKey, wrongSignature, trueMessage)))
+	ok(!(await curveVerify(publicKey, premadeSignature, wrongMessage)))
 })
 
 
-/*
-write some tests so you can confirm this all works in a lambda
-[]hard-coded keys made earlier
-[]new random keys in a round trip
-[]confirm data lengths all look ok
-*/
 
 
 
-function sayData(d, alsoText) {
-return `${d.size()} bytes, ${d.base62().length} base62 characters:
-${d.base16()} ~ base16
-${d.base62()} ~ base62
-${alsoText ? (d.text()+' '+d.text().length+' text characters') : ''}
-`
-}
 
 
-/*
-//here's a bike shed--write a tight little deindent
 
 
-so you can
-{
-	{
-		s = `
-		first list
-		second line
-		third line
-		`
-	}
-}
 
-and what you get is
-`first line
-second line
-third line
-`
 
-so it removes the leading newline
-keeps the other newlines the same
-and removes whatever space is at the start of the first line
-from all the other lines
 
-maybe remove that number of things
-like that number of
 
-confirm you don't chop off any nonwhitespace doing this
 
 
-*/
 
 
-
-//[]update tiny tests to await async test functions
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-async function f2() {
-	let k = await symmetricCreateKey()
-	let b = await symmetricExportKey(k)
-	let k2 = await symmetricImportKey(b)
-	let p = 'a short message, like card info'
-	let c = await encrypt(p, k)
-	let d = await decrypt(c, k)
-	if (d != p) log('decryption mismatch')
-}
-async function f3() {
-	let k = await createKey_new()
-	let b = await exportKey_new(k)
-	let k2 = await importKey_new(b)
-	let p = 'a short message, like card info'
-	let c = await encrypt_new(p, k)
-	let d = await decrypt_new(c, k)
-	if (d.text() != p) log('decryption mismatch')
-}
-async function f() {
-	log('just in a function f')
-	let r1 = 0
-	let t = now()
-	while (now() < t + 4*Time.second) {
-		r1++
-	}
-	log(r1+' empty')
-	let r2 = 0
-	t = now()
-	while (now() < t + 4*Time.second) {
-		await f2()
-		r2++
-	}
-	log(r2+' direct')
-	let r3 = 0
-	t = now()
-	while (now() < t + 4*Time.second) {
-		await f3()
-		r3++
-	}
-	log(r3+' custom')
-}
-f()
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//  _   _                
-// | |_(_)_ __ ___   ___ 
-// | __| | '_ ` _ \ / _ \
-// | |_| | | | | | |  __/
-//  \__|_|_| |_| |_|\___|
-//                       
+//                    _   _                
+//  ___  __ _ _   _  | |_(_)_ __ ___   ___ 
+// / __|/ _` | | | | | __| | '_ ` _ \ / _ \
+// \__ \ (_| | |_| | | |_| | | | | | |  __/
+// |___/\__,_|\__, |  \__|_|_| |_| |_|\___|
+//            |___/                        
 
 //turn a tick count into text like 'Sat 15h 49m 55.384s', short but specific for logs and development bliss
 export function sayTick(t) {
@@ -1512,74 +1193,6 @@ test(() => {
 	ok(sayWhenFeed(t-(200*Time.day),    t) == '2023 Nov 2')//last year
 	*/
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//compare two simple objects
-//same means same keys and values
-//uses triple equals, imagining strings and numbers
-//only goes one level deep
-export function sameObject(o1, o2) {
-	let keys1 = Object.keys(o1)
-	let keys2 = Object.keys(o2)
-	if (keys1.length != keys2.length) return false
-
-	for (let key of keys1) {
-		if (o1[key] !== o2[key]) {//matches missing key in one with undefined value in the other
-			return false
-		}
-	}
-	return true
-}
-//compare two arrays
-//same means same length and values
-//uses triple equals, imagining strings and numbers
-export function sameArray(a1, a2) {
-	if (a1.length != a2.length) return false
-
-	for (let i = 0; i < a1.length; i++) {
-		if (a1[i] !== a2[i]) {
-			return false
-		}
-	}
-	return true
-}
-test(() => {
-	ok(sameObject({a:5, b:7}, {a:5, b:7}))
-	ok(!sameObject({a:5, b:7}, {a:5, b:8}))//different value
-	ok(!sameObject({a:5, b:7}, {a:5}))//missing key
-
-	ok(!sameObject({a:5, b:7}, {a:5, b:undefined}))
-	ok(!sameObject({a:5, b:undefined}, {a:5, b:7}))
-
-	//ok, here's the corner case sameObject can't do, but to be really fast we're ok with that
-	ok(!sameObject({a:5, corner:9}, {a:5, b:undefined}))//correct
-	ok(sameObject({a:5, b:undefined}, {a:5, corner:9}))//incorrect, absent b in o2 matches undefined value in o1
-
-	ok(sameArray([2, 4, 6, 8], [2, 4, 6, 8]))
-	ok(!sameArray([2, 4, 6, 8], [2, 4, 7, 8]))//different value
-	ok(!sameArray([2, 4, 6, 8], [2, 4, 6]))//different length
-})
-
-
-
-
-
-
-
-
-
 
 
 

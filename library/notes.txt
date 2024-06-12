@@ -39,8 +39,27 @@ not, at this time, the text checking for a user writing a comment
 
 
 
+once you've figured out pinia, you might code the sorted record thing
+allows immediate lookups by tag
+and also browsing in tick count order
+keeps sorted
+fast for adding already sorted input data
+doesn't readmit duplicates, which will be super common
+or maybe pinia already has something better
+or maybe this isn't the right way to do things
 
 
+
+/*
+TODO be able to manually run all the tests these places:
+[x]icarus, vite
+[]nuxt, local, client-side
+[]nuxt, local, server-side, emulated worker
+[]nuxt, deployed, client-side
+[]nuxt, deployed, server-side, deployed worker
+[]lambda, local, server-side, emulated lambda
+[]lambda, deployed, server-side, deployed lambda
+*/
 
 
 
@@ -497,11 +516,326 @@ a single backspace clears the whole field, maybe
 
 
 
+/*
+//here's a bike shed--write a tight little deindent
+
+
+so you can
+{
+	{
+		s = `
+		first list
+		second line
+		third line
+		`
+	}
+}
+
+and what you get is
+`first line
+second line
+third line
+`
+
+so it removes the leading newline
+keeps the other newlines the same
+and removes whatever space is at the start of the first line
+from all the other lines
+
+maybe remove that number of things
+like that number of
+
+confirm you don't chop off any nonwhitespace doing this
+
+
+*/
 
 
 
 
 
+
+/*
+function f() {
+
+	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+	let census = {}
+	for (let c of alphabet) census[c] = 0
+
+	let duration = 1*Time.second
+	let t = now()
+	let d, b
+	while (now() < t + duration) {
+		d = Data({random: randomBetween(1, 32)})
+		b = d.base62()
+		for (let c of b) census[c]++
+	}
+
+	let s = ''
+	for (let c of alphabet) s += `\r\n${c}\t${census[c]}`
+	log(s)
+
+
+}
+//f()
+
+test(() => {
+
+
+})
+*/
+
+
+
+
+
+
+
+/*
+noop(() => {
+
+	//get some random bytes
+	let b16 = Data({random: 40}).base16()
+	//encode into base62
+	let b62 = arrayToBase62(Data({base16: b16}).array())
+	//and back again
+	let b16a = Data({array: base62ToArray(b62)}).base16()
+	//log to confirm looks good
+	log(b62, b16, b16a)
+
+
+})
+
+
+noop(() => {
+
+	let d = Data({random: 40})
+	let b62 = _arrayToBase62(d.array())
+	log(
+		b62,
+		d.base16(),
+		Data({array: _base62ToArray1(b62)}).base16(),
+		Data({array: _base62ToArray2(b62)}).base16()
+	)
+
+
+})
+
+
+/*
+async function f() {
+	let d, s
+	let size = 50
+	let duration = 4*Time.second
+
+
+	let r1 = 0
+	let t = now()
+	while (now() < t + duration) {
+		d = Data({random: size})
+		s = arrayToBase64(d.array())
+		base64ToArray(s)
+		r1++
+	}
+	log(r1+' base64')
+
+	let r2 = 0
+	t = now()
+	while (now() < t + duration) {
+		d = Data({random: size})
+		s = _arrayToBase62(d.array())
+		_base62ToArray1(s)
+		r2++
+	}
+	log(r2+' base62 to array method 1')
+
+	let r3 = 0
+	t = now()
+	while (now() < t + duration) {
+		d = Data({random: size})
+		s = _arrayToBase62(d.array())
+		_base62ToArray2(s)
+		r3++
+	}
+	log(r3+' base62 to array method 2')
+}
+f()
+*/
+
+
+
+
+
+
+
+
+/*
+async function f2() {
+	let k = await symmetricCreateKey()
+	let b = await symmetricExportKey(k)
+	let k2 = await symmetricImportKey(b)
+	let p = 'a short message, like card info'
+	let c = await encrypt(p, k)
+	let d = await decrypt(c, k)
+	if (d != p) log('decryption mismatch')
+}
+async function f3() {
+	let k = await createKey_new()
+	let b = await exportKey_new(k)
+	let k2 = await importKey_new(b)
+	let p = 'a short message, like card info'
+	let c = await encrypt_new(p, k)
+	let d = await decrypt_new(c, k)
+	if (d.text() != p) log('decryption mismatch')
+}
+async function f() {
+	log('just in a function f')
+	let r1 = 0
+	let t = now()
+	while (now() < t + 4*Time.second) {
+		r1++
+	}
+	log(r1+' empty')
+	let r2 = 0
+	t = now()
+	while (now() < t + 4*Time.second) {
+		await f2()
+		r2++
+	}
+	log(r2+' direct')
+	let r3 = 0
+	t = now()
+	while (now() < t + 4*Time.second) {
+		await f3()
+		r3++
+	}
+	log(r3+' custom')
+}
+f()
+*/
+
+
+
+/*
+improve tiny tests
+
+TODO make this an object that fills up here
+but which is exported, and you can bring into a vue component
+and run tests there and see results
+
+also, get tests to await async tests etc correctly
+this should be pretty easy
+
+also, did you have mustThrow or something before? you need that again; right now you're just skipping writing tests of check* functions
+
+and have it return an object of stats and outcomes, one of which is the composed status line
+*/
+
+
+
+
+
+/*
+for inspect()
+TODO never add these additional features, because this bike shed is fancy enough:
+-recurse, indenting two spaces, stopping if the text grows above 2kb
+-deal with tabs and newlines in function definitions and the error stack trace
+-show short arrays and objects on a single line; long ones on multiple indented lines
+-say the length of a very long array, showing starting and ending items with an ellipsis in the middle
+
+short notes relevant to those never-do improvements
+stack trace lines start with four spaces, maybe just remove them
+spaces and tabs in function code come through, maybe trim them and separate with the pilcrow
+*/
+test(() => {
+	//early inspect practice
+	/*
+	let b = true
+	let s = 'hello'
+	let n = 721
+	let a = ["p", "q", "r"]
+	let o = {
+		name: 'apple',
+		quantity: 11,
+		f: (()=>{}),
+		below: {
+			block: 'bedrock'
+		}
+	}
+	let e = (() => {
+		let o = {}
+		try {
+			o.notThere.andBeyond
+		} catch (e) {
+			return e
+		}
+	})()
+	log(inspect(b, s, n, a, o, e))
+	log(inspect(b, s, {n, a, o, e}))
+	*/
+})
+test(() => {
+	//more recent inspect practice
+	/*
+	log(inspect(true))//boolean
+	log(inspect(7))//number
+	log(inspect('hello'))//string
+	log(inspect(['a', 'b', 'c']))//array
+	log(inspect({key1: 'value1', key2: 'value2'}))//object
+
+	let f1 = function namedFunction() {
+		let i = 7
+		return 'named function result'
+	}
+	let f2 = function() { return 'anonymous function result' }
+	log(inspect(f1))//function
+	log(inspect(f2))//function
+
+	try {
+		notDefined
+	} catch (e) {
+		log(inspect(e))//error with stack trace
+	}
+	*/
+})
+
+
+
+
+TODO do you need soft versions of the text functions?
+
+//TODO these throw if anything is out of bounds, maybe add startSoft, endSoft, beyondSoft that instead return shorter or blank
+//bookmark you added this really fast, go through the larger process of actually testing them, and them using them where you need them
+export function startSoft(s, n)  { return clipSoft(s, 0, n) }
+export function clipSoft(s, i, n) {
+	s = s+''//fix everything
+	if (!minInt(i)) i = 0
+	if (!minInt(n)) n = 0
+
+	if (i     > s.length) i = s.length
+	if (i + n > s.length) n = s.length - i
+
+	return clip(s, i, n)
+}
+test(function() {
+	ok(clipSoft('abc', 1, 0) == '')
+	ok(clipSoft('abc', 1, 1) == 'b')
+	ok(clipSoft('abc', 1, 2) == 'bc')
+	ok(clipSoft('abc', 1, 3) == 'bc')
+});
+
+
+/*
+TODO
+consider this pattern
+
+checkThing - throws if not
+isThing - false if not
+makeThing - shapes to bring into compliance and returns
+
+then you put all the tests around isThing
+and instead of *Soft here, you use isThing when you don't want an exception
+*/
 
 
 

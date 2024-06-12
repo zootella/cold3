@@ -17,9 +17,9 @@ onMounted(async () => {
 <template>
 
 <p class="class1">{{ testMessage }}</p>
-<p class="class2a"><input type="text" v-model="boxModel"  class="class2"/></p>
+<p class="class2a"><input type="text" v-model="boxModel" class="class2" id="box2"/></p>
 <p class="class3">{{ testBox(boxModel) }}</p>
-<textarea readOnly :value="getLogRecord()" class="class4"></textarea>
+<textarea readOnly :value="getLogRecord()" class="class4" id="box4"></textarea>
 
 </template>
 <style scoped>
