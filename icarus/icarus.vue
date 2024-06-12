@@ -1,17 +1,22 @@
 <script setup>
 
-import { ref } from 'vue' 
+import { ref, onMounted } from 'vue' 
 
 import { runTests, getLogRecord } from '../library/library0'
 import { testBox } from '../library/library1'
 import '../library/library2'
 
 const boxModel = ref('')
+const testMessage = ref('')
+
+onMounted(async () => {
+	testMessage.value = await runTests()
+})
 
 </script>
 <template>
 
-<p class="class1">{{ runTests() }}</p>
+<p class="class1">{{ testMessage }}</p>
 <p class="class2a"><input type="text" v-model="boxModel"  class="class2"/></p>
 <p class="class3">{{ testBox(boxModel) }}</p>
 <textarea readOnly :value="getLogRecord()" class="class4"></textarea>

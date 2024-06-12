@@ -68,14 +68,14 @@ export function ok(assertion) {
 		return m
 	}
 }
-export function runTests() {
+export async function runTests() {
 	assertionsPassed = 0
 	assertionsFailed = 0
 	testsThrew = 0
 	let tick1 = now()
 	for (let i = 0; i < tests.length; i++) {
 		try {
-			tests[i]()
+			await tests[i]()
 		} catch (e) {
 			testsThrew++
 			console.error(e)
@@ -1126,38 +1126,45 @@ test(() => {
 const _subtle = {
 
 	//our choices for symmetric encryption of sensitive user data
-	name: 'AES-GCM',
-	strength: 256, // 256-bit AES, only slightly slower than 128, and the strongest ever
-	vectorSize: 12, // 12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
-	use: ['encrypt', 'decrypt'],//create and import keys that can do these things
-	extractable: true,//say we want to be able to export the key
-	format: 'raw',//we want the raw bytes, please
+	symmetricName: 'AES-GCM',
+	symmetricUse: ['encrypt', 'decrypt'],//create and import keys that can do these things
+	symmetricFormat: 'raw',//export symmetric key as raw bytes
 
 	//and for one directional hashing of that data
-	hash256: 'SHA-256'
+	hashName: 'SHA-256',
+
+	//and for digital signatures
+	curveName: 'ECDSA',
+	curveType: 'P-256',
+	curveUse: ['sign', 'verify'],
+	curveFormat: 'jwk',//export sign keys as javascript objects
+
+	//general or multi-purpose settings
+	extractable: true,//say we want to be able to export the key
+	strength: 256, // 256-bit AES, only slightly slower than 128, and the strongest ever
+	vectorSize: 12, // 12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 }
 Object.freeze(_subtle)
-async function createKey() {
+async function symmetricCreateKey() {
 	return await crypto.subtle.generateKey(
-		{ name: _subtle.name, length: _subtle.strength },
-		_subtle.extractable, _subtle.use)
+		{ name: _subtle.symmetricName, length: _subtle.strength },
+		_subtle.extractable, _subtle.symmetricUse)
 }
-async function exportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
-	return Data({buffer: await crypto.subtle.exportKey(
-		_subtle.format,
-		key)})//key is an imported CryptoKey object
+async function symmetricExportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
+	return Data({buffer: await crypto.subtle.exportKey(_subtle.symmetricFormat, key)})//key is an imported CryptoKey object
 }
-async function importKey(keyData) {//do this once per script run, not every time a function that needs it is called!
+
+async function symmetricImportKey(keyData) {//do this once per script run, not every time a function that needs it is called!
 	return await crypto.subtle.importKey(
 		_subtle.format,
 		keyData.array(),
-		{ name: _subtle.name, length: _subtle.strength },
-		_subtle.extractable, _subtle.use)
+		{ name: _subtle.symmetricName, length: _subtle.strength },
+		_subtle.extractable, _subtle.symmetricUse)
 }
 export async function symmetricEncrypt(plainText, key) {
 	let vector = Data({random: _subtle.vectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
 	let cipher = Data({buffer: await crypto.subtle.encrypt(
-		{ name: _subtle.name, iv: vector.array() },
+		{ name: _subtle.symmetricName, iv: vector.array() },
 		key,
 		Data({text: plainText}).array())})
 	let storeBin = Bin(vector.size() + cipher.size())
@@ -1169,17 +1176,17 @@ export async function symmetricDecrypt(storeData, key) {//stored data that is in
 	let vector = storeData.clip(0, _subtle.vectorSize)//unpack
 	let cipher = storeData.clip(_subtle.vectorSize, storeData.size() - _subtle.vectorSize)
 	return Data({buffer: await crypto.subtle.decrypt(
-		{ name: _subtle.name, iv: vector.array() },
+		{ name: _subtle.symmetricName, iv: vector.array() },
 		key,
 		cipher.array())})
 }
 noop(async () => {
 
-	let k = await createKey()
-	let b = await exportKey(k)
+	let k = await symmetricCreateKey()
+	let b = await symmetricExportKey(k, _subtle.symmetricFormat)
 	log(b.base16(), b.size()+' bytes')
 
-	let k2 = await importKey(b)
+	let k2 = await symmetricImportKey(b)
 	console.log({k, k2})
 
 	let p = 'a short message'
@@ -1193,7 +1200,7 @@ noop(async () => {
 
 //compute the 32 byte SHA-256 hash value of data
 export async function hashDigest(data) {
-	return Data({buffer: await crypto.subtle.digest(_subtle.hash256, data.array())})
+	return Data({buffer: await crypto.subtle.digest(_subtle.hashName, data.array())})
 }
 noop(async () => {
 	let d = Data({random: 256})
@@ -1211,32 +1218,168 @@ noop(async () => {
 
 
 
-/*
-next one, hashing:
 
-async function hashData(data) {
-	const encoder = new TextEncoder();
-	const dataBuffer = encoder.encode(data);
-	const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-	const hashArray = Array.from(new Uint8Array(hashBuffer)); // Convert buffer to byte array
-	const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join(''); // Convert bytes to hex string
-	return hashHex;
+async function curveCreateKeys() {
+	return await crypto.subtle.generateKey({ name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, _subtle.curveUse)
+}
+async function curveExportKey(key) {
+	let o = await crypto.subtle.exportKey(_subtle.curveFormat, key)//o is a regular javascript object with format notes and values named d, x, and y
+	let s = JSON.stringify(o)//turn it into a string like '{"crv":"p-256","x":"00ff...'
+	return Data({text: s})//wrap that in a data, as you'll base62 it for storage as a secure secret on the server
+}
+async function curveImportKey(keyData) {
+	let o = JSON.parse(keyData.text())
+	return await crypto.subtle.importKey(_subtle.curveFormat, o, { name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, o.key_ops)
 }
 
-// Example usage
-hashData('Hello, World!').then(hash => console.log(hash));
+async function curveSign(privateKey, plainText) {
+	return Data({buffer: await crypto.subtle.sign({ name: _subtle.curveName, hash: { name: _subtle.hashName } }, privateKey, Data({text: plainText}).array())})
+}
+async function curveVerify(publicKey, signatureData, plainText) {
+	return await crypto.subtle.verify({ name: _subtle.curveName, hash: { name: _subtle.hashName }, }, publicKey, signatureData.array(), Data({text: plainText}).array())
+}
+
+test(async () => {
+
+	//create
+	let keyPair = await curveCreateKeys()
+
+	//export
+	let privateExported = await curveExportKey(keyPair.privateKey)
+	let publicExported = await curveExportKey(keyPair.publicKey)
+
+	//import
+	let importedPrivate = await curveImportKey(privateExported)
+	let importedPublic = await curveImportKey(publicExported)
+	console.log(importedPrivate)
+	console.log(importedPublic)
+	console.log('imported private and public ^')
+
+	//sign
+	let plainText = 'hello'
+	let signatureData = await curveSign(importedPrivate, plainText)
+	log(sayData(signatureData))
+	let signatureBase62 = signatureData.base62()
+
+	//verify
+	let verificationResult = await curveVerify(importedPublic, Data({base62: signatureBase62}), plainText)
+	log(verificationResult)
+
+
+//bookmark
+
+})
+
+
+/*
+write some tests so you can confirm this all works in a lambda
+[]hard-coded keys made earlier
+[]new random keys in a round trip
+[]confirm data lengths all look ok
+*/
+
+
+
+function sayData(d, alsoText) {
+return `${d.size()} bytes, ${d.base62().length} base62 characters:
+${d.base16()} ~ base16
+${d.base62()} ~ base62
+${alsoText ? (d.text()+' '+d.text().length+' text characters') : ''}
+`
+}
+
+
+/*
+//here's a bike shed--write a tight little deindent
+
+
+so you can
+{
+	{
+		s = `
+		first list
+		second line
+		third line
+		`
+	}
+}
+
+and what you get is
+`first line
+second line
+third line
+`
+
+so it removes the leading newline
+keeps the other newlines the same
+and removes whatever space is at the start of the first line
+from all the other lines
+
+maybe remove that number of things
+like that number of
+
+confirm you don't chop off any nonwhitespace doing this
 
 
 */
 
 
 
+//[]update tiny tests to await async test functions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 async function f2() {
-	let k = await createKey()
-	let b = await exportKey(k)
-	let k2 = await importKey(b)
+	let k = await symmetricCreateKey()
+	let b = await symmetricExportKey(k)
+	let k2 = await symmetricImportKey(b)
 	let p = 'a short message, like card info'
 	let c = await encrypt(p, k)
 	let d = await decrypt(c, k)

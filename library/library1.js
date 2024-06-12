@@ -152,6 +152,7 @@ and return an object like { raw, adjusted, presented, normalized, valid: true/fa
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|
 //                                     
 
+const periodIgnorers = ['gmail.com', 'googlemail.com', 'proton.me', 'protonmail.com', 'pm.me', 'protonmail.ch']//these providers, gmail and protonmail, deliver mail addressed to first.last@gmail.com to the user firstlast@gmail.com
 const _email = Joi.string().email({ tlds: { allow: false } }).required()//no list of true TLDs
 export function validateEmail(raw) {
 
@@ -180,7 +181,8 @@ export function validateEmail(raw) {
 	*/
 	let name = p.before.toLowerCase()
 	let domain = p.after.toLowerCase()
-	if (domain == "gmail.com") name = name.replace(/\./g, '')
+	name = cut(name, '+').before//name+spam@example.com is really name@example.com
+	if (periodIgnorers.includes(domain)) name = name.replace(/\./g, '')//first.last@gmail.com is really firstlast@gmail.com
 	let normalized = name + "@" + domain
 	let j3 = _email.validate(normalized)
 	if (j3.error) return { j3, valid: false, raw, adjusted, presented, normalized }
@@ -225,6 +227,11 @@ test(() => {
 	//preventing gmail users from making multiple accounts
 	f(' first.last@hotmail.com ', 'first.last@hotmail.com', 'first.last@hotmail.com', 'first.last@hotmail.com')
 	f(' first.last@gmail.com ', 'first.last@gmail.com', 'first.last@gmail.com', 'firstlast@gmail.com')
+	f('a.b.c@proton.me', 'a.b.c@proton.me', 'a.b.c@proton.me', 'abc@proton.me')
+	//outsmarting the +spam trick
+	f('bob+spam@yahoo.com', 'bob+spam@yahoo.com', 'bob+spam@yahoo.com', 'bob@yahoo.com')
+	f('bob+spam+note@yahoo.com', 'bob+spam+note@yahoo.com', 'bob+spam+note@yahoo.com', 'bob@yahoo.com')
+	f('a.b+spam@proton.me', 'a.b+spam@proton.me', 'a.b+spam@proton.me', 'ab@proton.me')
 })
 
 export function validatePhone(raw) {
