@@ -1,6 +1,6 @@
 
 //library1 can import modules saved in the nuxt project's package.json above
-import { noop, Time, test, ok, now, say, inspect, log, checkText, checkAlpha, randomBetween, sayWhenFeed, sayWhenPage, starts, cut, onlyNumerals } from './library0.js'
+import { noop, Time, test, ok, now, say, inspect, log, checkText, checkAlpha, randomBetween, sayWhenFeed, sayWhenPage, starts, cut, onlyNumerals, intToBase62 } from './library0.js'
 
 import { customAlphabet } from 'nanoid'
 import Joi from 'joi'
@@ -396,18 +396,6 @@ test(() => {
 
 
 
-export function testBox(s) {
-//	return validatePhone(s)
-}
-
-
-
-
-
-
-
-
-
 
 
 
@@ -536,6 +524,78 @@ for (let i = 0; i < chronology.length; i++) {
 	lookup[p.tag] = p
 }
 export const postDatabase = { lookup, chronology }
+
+
+
+
+
+
+
+export function testBox(s) {
+}
+
+//make Process and Fetch that work node or web worker, vue front or back end
+const Access = (typeof process != 'undefined' && process.env) ? process.env : import.meta.env
+const Fetch = (typeof fetch != 'undefined') ? fetch : (await import('node-fetch')).default
+
+
+test(() => {
+
+	log(Access.ACCESS_DATADOG_ENDPOINT)
+
+
+
+
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

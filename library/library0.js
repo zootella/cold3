@@ -121,6 +121,9 @@ export function log(...a) {
 	//append to the log record
 	logRecord += (logRecord.length ? newline : '') + display//don't start with a blank line
 	if (logRecord.length > logRecordLimit) logRecord = 'early logs too long to keep ~';
+
+	//TODO threw this in for cloud logging, you should really factor this differently
+	return display
 }
 
 export function say(...a) {//turn anything into text, always know you're dealing with a string
@@ -791,8 +794,8 @@ function _base62ToArray(s) {
 }
 
 //express integers the user may see, like a tick count in the location bar, in base62
-function base62ToInt(s) { return _base62ToInt(s, true) }//true to perform round-trip check
-function intToBase62(i) { return _intToBase62(i, true) }
+export function base62ToInt(s) { return _base62ToInt(s, true) }//true to perform round-trip check
+export function intToBase62(i) { return _intToBase62(i, true) }
 function _base62ToInt(s, trip) {
 	checkText(s)
 	let i = 0

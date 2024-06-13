@@ -39,6 +39,21 @@ not, at this time, the text checking for a user writing a comment
 
 
 
+/*
+you want to use tag and now as local variables in code
+but they're clashing with tag() and now() as short commonly imported functions
+
+you were thinking makeTag(), but tickNow() is not awesome
+maybe Tag() and Now()
+
+
+
+*/
+
+
+
+
+
 once you've figured out pinia, you might code the sorted record thing
 allows immediate lookups by tag
 and also browsing in tick count order
