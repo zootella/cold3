@@ -534,29 +534,10 @@ export const postDatabase = { lookup, chronology }
 export function testBox(s) {
 }
 
-//make Process and Fetch that work node or web worker, vue front or back end
-const Access = (typeof process != 'undefined' && process.env) ? process.env : import.meta.env
-const Fetch = (typeof fetch != 'undefined') ? fetch : (await import('node-fetch')).default
 
 
 test(() => {
-
-	log(Access.ACCESS_DATADOG_ENDPOINT)
-
-
-
-
-
 })
-
-
-
-
-
-
-
-
-
 
 
 

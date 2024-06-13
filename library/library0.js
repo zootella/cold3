@@ -60,7 +60,7 @@ export function ok(assertion) {
 	} else {
 		assertionsFailed++
 		let m = 'Test not ok, second line number expanded below:'
-		console.error(m)
+		logError(m)
 		return m
 	}
 }
@@ -74,18 +74,18 @@ export async function runTests() {
 			await tests[i]()
 		} catch (e) {
 			testsThrew++
-			console.error(e)
+			logError(e)
 			return e
 		}
 	}
 	let tick2 = now()
 	if (assertionsFailed || testsThrew) {
 		let m = `❌ Tests failed ❌`
-		console.error(m)
+		logError(m)
 		return m
 	} else {
 		let m = `✅ ${sayTick(tick2)} ~ ${assertionsPassed} assertions in ${tests.length} tests all passed in ${tick2 - tick1}ms ✅`
-		console.log(m)
+		log(m)
 		return m
 	}
 }
@@ -99,15 +99,30 @@ export async function runTests() {
 
 export function toss(note, watch) {//prepare your own watch object with named variables you'd like to see
 	let s = `toss ${sayTick(now())} ~ ${note} ${inspect(watch)}`
-	console.error(s)
-	if (watch) console.error(watch)
+	logError(s)
+	if (watch) logError(watch)
 	throw new Error(s)
 }
 
-let logRecord = ''//all the text log has logged
-const logRecordLimit = 256*Size.kb;//until its length reaches this limit
-export function getLogRecord() { return logRecord }
+//  _             
+// | | ___   __ _ 
+// | |/ _ \ / _` |
+// | | (_) | (_| |
+// |_|\___/ \__, |
+//          |___/ 
+
 export function log(...a) {
+	let s = composeLog(a)
+	recordLog(s)
+	logSinks.forEach(sink => { sink(s) })
+}
+export function logError(...a) {
+	let s = composeLog(a)
+	recordLog(s)
+	errorSinks.forEach(sink => { sink(s) })
+}
+
+export function composeLog(...a) {
 	let s = ''//compose some nice display text
 	if (a.length == 0) {//no arguments, just the timestamp
 	} else if (a.length == 1) {//timestamp and the one argument
@@ -115,16 +130,30 @@ export function log(...a) {
 	} else {//timestamp and newlines between multiple arguments
 		a.forEach(e => { s += newline + say(e) })
 	}
-	let display = sayTick(now()) + ' ~' + (s.length ? (' ' + s) : '')
-	console.log(display)
-
-	//append to the log record
-	logRecord += (logRecord.length ? newline : '') + display//don't start with a blank line
-	if (logRecord.length > logRecordLimit) logRecord = 'early logs too long to keep ~';
-
-	//TODO threw this in for cloud logging, you should really factor this differently
-	return display
+	return sayTick(now()) + ' ~' + (s.length ? (' ' + s) : '')
 }
+
+let logSinks   = [ console.log   ]
+let errorSinks = [ console.error ]
+export function setLogSinks(a) {
+	logSinks   = [ console.log,   ...a ]
+	errorSinks = [ console.error, ...a ]
+}
+
+export function recordLog(s) {
+	logRecord += (logRecord.length ? newline : '') + s//don't start with a blank line
+	if (logRecord.length > logRecordLimit) logRecord = 'early logs too long to keep ~';
+}
+let logRecord = ''//all the text log has logged
+const logRecordLimit = 256*Size.kb;//until its length reaches this limit
+export function getLogRecord() { return logRecord }
+
+//                  
+//  ___  __ _ _   _ 
+// / __|/ _` | | | |
+// \__ \ (_| | |_| |
+// |___/\__,_|\__, |
+//            |___/ 
 
 export function say(...a) {//turn anything into text, always know you're dealing with a string
 	let s = '';

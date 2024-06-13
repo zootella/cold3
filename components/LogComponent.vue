@@ -23,10 +23,7 @@ async function logToServer() {
 				message
 			}
 		})
-		log("if we're here, it was a 200 or otherwise ok")
-		console.log(response)
 	} catch (e) {
-		console.error("down here, it's an error", e)
 	}
 }
 
