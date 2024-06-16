@@ -26,7 +26,7 @@ export function logCloud(...a) {
 }
 export function setCloudLoggers() { setLogSinks([logToDatadog, logToLogflare])}
 export function logToDatadog(s) {
-	fetch(//intentionally and unusually calling fetch without await; we don't need the result or want to wait for it. hopefully the call will work, but we're already documenting an error or something
+	/*no await*/fetch(//intentionally and unusually calling fetch without await; we don't need the result or want to wait for it. hopefully the call will work, but we're already documenting an error or something
 		process.env.ACCESS_DATADOG_ENDPOINT,
 		{
 			method: 'POST',
@@ -43,7 +43,7 @@ export function logToDatadog(s) {
 	)
 }
 export function logToLogflare(s) {
-	fetch(
+	/*no await*/fetch(
 		process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
 		{
 			method: 'POST',
