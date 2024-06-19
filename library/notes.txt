@@ -862,6 +862,147 @@ const Fetch = (typeof fetch != 'undefined') ? fetch : (await import('node-fetch'
 
 
 
+== browser fingerprint
+
+the browser key in local stroage can keep the user signed in forever
+but, an attacker could coach a n00b through discord to share it with him
+so also use a browser fingerprint
+you're looking for something script can't affect, and which doesn't change
+even as the device moves geographically and goes through browser and os updates
+
+WebGL Renderer: NVIDIA GeForce GTX 1050 Ti/PCIe/SSE2
+WebGL Vendor: NVIDIA Corporation
+User Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36
+Screen Resolution: 1920x1080
+
+what if you did that, except for user agent, you remove all the numerals
+
+async function getBrowserFingerprint() {
+  // Get WebGL Renderer and Vendor
+  const getWebGLFingerprint = () => {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return null;
+
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    if (!debugInfo) return null;
+
+    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+
+    return {
+      renderer: renderer,
+      vendor: vendor
+    };
+  };
+
+  // Get User Agent
+  const userAgent = navigator.userAgent;
+
+  // Get Screen Resolution
+  const screenResolution = `${screen.width}x${screen.height}`;
+
+  // Combine all pieces of information
+  const webGLFingerprint = getWebGLFingerprint();
+  if (!webGLFingerprint) return "WebGL information not available";
+
+  const combinedFingerprint = `
+    WebGL Renderer: ${webGLFingerprint.renderer}
+    WebGL Vendor: ${webGLFingerprint.vendor}
+    User Agent: ${userAgent}
+    Screen Resolution: ${screenResolution}
+  `;
+
+  return combinedFingerprint.trim();
+}
+
+// Example usage
+getBrowserFingerprint().then(fingerprint => {
+  console.log(fingerprint);
+});
+
+
+
+
+
+
+
+
+
+
+
+== moar web security, CORS
+
+net23 apis will check the origin header right in the lambda node code
+you should also make cold3.cc/api apis only talk to cold3.cc and net23 on https
+you could check origin in code, but a more standard way is to implement the CORS preflight thing
+and a standard way to do that is:
+https://nuxt-security.vercel.app/documentation/middleware/cors-handler
+"Testing CORS configuration can be done by running one application with NuxtSecurity enabled and creating a second application (that is running on a different port) that will send a request to the first app. Then, a CORS error could be easily observed that proves that CORS is working as expected."
+
+if you've got things all CORS-ed up, can you still develop on localhost?
+
+
+
+
+
+
+== moar web security, CSP
+
+chatgpt suggests:
+
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'">
+</head>
+
+but not sure what this prevents. not injecting script directly into the page through inspector, but maybe a chrome extension running script?
+also not sure what adding this could break
+
+
+
+
+
+
+
+
+==
+
+for four years now you've been able to do faceid on the web!
+but you've never seen it anywhere!
+and, it's easy!
+
+https://developer.apple.com/videos/play/wwdc2020/10670/
+https://webkit.org/blog/11312/meet-face-id-and-touch-id-for-the-web/
+https://support.apple.com/en-us/HT213449
+
+const options = {
+    publicKey: {
+        rp: { name: "example.com" },
+        user: {
+            name: "john.appleseed@example.com",
+            id: userIdBuffer,
+            displayName: "John Appleseed"
+        },
+        pubKeyCredParams: [ { type: "public-key", alg: -7 } ],
+        challenge: challengeBuffer,
+        authenticatorSelection: { authenticatorAttachment: "platform" }
+    }
+};
+const publicKeyCredential = await navigator.credentials.create(options);
+
+Registration (Face ID Setup)
+-The user clicks the "Register Face ID" button.
+-A new credential is created using navigator.credentials.create().
+-The options include information about the relying party (your website), the user, and the desired credential parameters.
+-The public key credential is logged and should be sent to your server for storage.
+
+Authentication (Using Face ID)
+-The user clicks the "Authenticate with Face ID" button.
+-The user's Face ID is authenticated using navigator.credentials.get().
+-The options include a challenge and the allowed credentials (user's registered credential ID).
+-The assertion is logged and should be sent to your server for verification.
+
+
 
 
 
