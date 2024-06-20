@@ -7,11 +7,14 @@ interface between the application and the database
 keep it all here together for easy refactoring and auditing
 */
 
-import { toss } from './library0.js'
+import { log, toss } from './library0.js'
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY)
+
+
+let supabase;
+if (process.env.ACCESS_SUPABASE_URL) supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY)
 
 
 /*
@@ -144,7 +147,7 @@ export async function rowExists() {
 	// SQL equivalent: SELECT COUNT(key) FROM table_settings WHERE key = 'count_global'
 	let { data, error, count } = await supabase
 		.from('table_settings').select('key', { count: 'exact' }).eq('key', 'count_global')
-	if (error) throw error
+	if (error) toss('supabase', {error})
 	return count > 0
 }
 
@@ -153,7 +156,7 @@ export async function createRow() {
 	// SQL equivalent: INSERT INTO table_settings (key, value) VALUES ('count_global', '0')
 	let { data, error } = await supabase
 		.from('table_settings').insert([{ key: 'count_global', value: '0' }])
-	if (error) throw error
+	if (error) toss('supabase', {error})
 }
 
 // 3. Read the value
@@ -161,7 +164,7 @@ export async function readRow() {
 	// SQL equivalent: SELECT value FROM table_settings WHERE key = 'count_global'
 	let { data, error } = await supabase
 		.from('table_settings').select('value').eq('key', 'count_global')
-	if (error) throw error
+	if (error) toss('supabase', {error})
 	return data[0]?.value
 }
 
@@ -170,8 +173,8 @@ export async function writeRow(newValue) {
 	// SQL equivalent: UPDATE table_settings SET value = 'newValue' WHERE key = 'count_global' RETURNING *
 	let { data, error } = await supabase
 		.from('table_settings').update({ value: newValue }).eq('key', 'count_global').select()
-	if (error) throw error
-	if (!data.length) throw new Error('no error from update, but also no updated rows')
+	if (error) toss('supabase', {error})
+	if (!data.length) toss('no error from update, but also no updated rows')
 }
 
 
