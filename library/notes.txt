@@ -860,6 +860,66 @@ const Fetch = (typeof fetch != 'undefined') ? fetch : (await import('node-fetch'
 
 
 
+== base32
+
+https://www.npmjs.com/package/base32
+sha256 hash values
+base16 is double-clickable, always the same length, but quite long
+base64 isn't double-clickable, always the same length, short
+base62 is double-clickable, not always the same length, short
+base32 is double-clickable, always the same length, shorter
+you'll store hashes in the database
+to make lookups and filters no slower than necessary, use CHAR(30) or whatever
+you can add this quickly using the npm module and your existing pattern for the others
+
+
+
+/*
+exploration with base32 for hashes that can be compact and all the same length
+
+using
+https://www.npmjs.com/package/rfc4648
+1 million weekly downloads
+
+hmm, does this lift all of Data from library0 to library1?
+yeah, probably
+or write matching code that does it raw
+
+Sat 11h 33m 22.709s ~ 32 bytes
+0238078539448d35f06e7262ac3e4013798947bd6d5c91e44a35caa25f80224f ~ 64 base16 characters
+AI4APBJZISGTL4DOOJRKYPSACN4YSR55NVOJDZCKGXFKEX4AEJHQ ~ 52 base16 characters
+1Yj7WJa4YJNlRc9Xg3w14ub9GyskN97ZHYNAdaij29F ~ 43 base62 characters
+AjgHhTlEjTXwbnJirD5AE3mJR71tXJHkSjXKol+AIk8= ~ 44 base64 characters
+
+Sat 11h 33m 45.634s ~ 32 bytes
+a4508d240c5002106a07e935f3f023060bac03c5daa9e81f078c9eda23f70f3f ~ 64 base16 characters
+URII2JAMKABBA2QH5E27H4BDAYF2YA6F3KU6QHYHRSPNUI7XB47Q==== ~ 56 base16 characters
+e52D91oI1W0f0ieDVFl8lOBg1F5tfcd7lUCckdYiSFFl ~ 44 base62 characters
+pFCNJAxQAhBqB+k18/AjBgusA8XaqegfB4ye2iP3Dz8= ~ 44 base164characters
+
+ok, difficulties include:
+this would elevate data to library1, or require some complex injection pattern
+padding should be there, really, and is super long for 32 bytes
+even without, really not that much shorter than base16
+and base16 makes it look like a hash value
+so, don't add base32, and use base16 and CHAR(64) in the database for hash values
+*/
+import { base32 } from 'rfc4648'
+test(() => {
+	let d = Data({random: 32})//sha256 hash value
+	let b32 = base32.stringify(d.array(), {pad: true})
+
+log(`${d.size()} bytes
+${d.base16()} ~ ${d.base16().length} base16 characters
+${b32} ~ ${b32.length} base16 characters
+${d.base62()} ~ ${d.base62().length} base62 characters
+${d.base64()} ~ ${d.base64().length} base64 characters`)
+})
+
+
+
+
+
 
 
 == browser fingerprint
@@ -875,7 +935,28 @@ WebGL Vendor: NVIDIA Corporation
 User Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36
 Screen Resolution: 1920x1080
 
+don't do screen resolution because multiple monitors and turning your phone
+add window.location to get https://cold3.cc, make sure there's not a page afterwards
+and add the browser tag
+so you're hashing text like this:
+
+agent:Mozilla/. (Macintosh; Intel Mac OS X __) AppleWebKit/. (KHTML, like Gecko) Chrome/... Safari/.;renderer:NVIDIA GeForce GTX 1050 Ti/PCIe/SSE2;vendor:NVIDIA Corporation;tag:lYPvabMNWoWwlrgkguy0g;
+
+you make and save tag if it's not already there before doing this
+you never send tag over the wire, just the hash
+you never save that hash to disk, just the wire
+yeah, this is a great idea
+keep the user signed in forever, (unless he upgrades his video card)
+but also make it so a reddit coach can't get a n00b victim to look in local storage and share his browser tag
+
+maybe even call it
+account-access-tag-DO-NOT-SHARE
+
+current_session_password: account_access_code_DO_NOT_SHARE_lYPvabMNWoWwlrgkguy0g
+
 what if you did that, except for user agent, you remove all the numerals
+
+also, save it in a global variable so you only have to hash it once on page load, not every time you make a request
 
 async function getBrowserFingerprint() {
   // Get WebGL Renderer and Vendor
@@ -965,7 +1046,7 @@ also not sure what adding this could break
 
 
 
-==
+== iphone faceid for the web
 
 for four years now you've been able to do faceid on the web!
 but you've never seen it anywhere!
@@ -1001,6 +1082,182 @@ Authentication (Using Face ID)
 -The user's Face ID is authenticated using navigator.credentials.get().
 -The options include a challenge and the allowed credentials (user's registered credential ID).
 -The assertion is logged and should be sent to your server for verification.
+
+
+
+
+
+
+== four similar but distinct tasks
+
+1 logs for development (logflare)
+only use while coding
+console.log works great locally, but not pushed
+confirm that you're getting the same error both places
+doesn't need to be permanent
+needs to be absolutely reliable and instantaneous
+
+2 logs for production (datadog)
+use in production
+keep a permanent record of all the details that happened with every third party api
+do more analysis later, asking questions then you haven't though of now
+
+3 uptime checking (pingdom, datadog synthetics, checkly)
+know if cloudflare pages, workers, lambda, or supabase goes down or becomes slow
+be on pagerduty to confirm and complain
+if there's an outage in the middle of the night, know how long it lasted, and how frequently this happens
+
+4 round robin control, api performance, and fault alerting (kinesis, datadog, kafka)
+balance load between two equivalent third party apis, like for sending SMS, or charging credit cards
+immediately stop using a service that starts rejecting use, or no users can complete tasks on
+use for third party services that are easy to stack redundantly and likely to break or be unreliable
+see a dashboard of median response time and processing time of api calls and database queries
+
+and you started into kinesis by saying imagine you're sending it a stream of numbers, and want the hourly average
+
+https://docs.aws.amazon.com/msk/latest/developerguide/serverless.html
+is fast, serverless, and lets you query by timestamp range (kinesis just lets you look at the last 5mb or whatever)
+
+>next morning thinking
+
+[0] logs for development
+use logflare, it's simple and faster than datadog
+
+[1] downtime and pagerduty for pages, workers, and supabase
+a provider like pingdom is setup for sanity checking, is my site online
+for having their own dashboard put up a graph for, how fast is page load? hello world api? increment count api? testing cloudflare pages, workers, and supabase speeds
+sends you a pagerduty alert (can they do telegram?) if cloudflare pages, workers, or supabase are down
+but this doesn't test speeds as encountered by real users, and that's fine, you trust the providers to be good about that
+
+[2] redundant fragile apis like sms, email, credit cards. characteristics:
+these have the following properties:
+likely to be slow and unreliable
+likely to stop working for a day, or forever
+easy to place redundant ones in a list and use round-robin
+some also have user interaction steps, you only know a sms got through when the user types it in (and can only compare speeds when you've got really a lot of users doing this)
+
+[2b] needs
+here, the system needs a few things:
+(i) real time knowledge when one breaks, not to tell a human, rather to automatically steer around
+(ii) auditable record of everything we told the api, and everything it said back, to use later maybe
+
+[2c] datadog for audit logs
+datadog is for historic logs
+every api interaction, you dog() everything you told the api, and everything it said back
+you don't use this, but it's there for later, if you need it
+
+[2d] sql pattern for round robin visibility
+you make a pattern in supabase to track the minute to minute speed and reliability of fragile apis
+a table is really simple, just a tick count, a millisecond duration, and success or failure
+and then that table is named, like the name of one provider in one category, like aws email, or braintree cards
+these tables only hold the last hour or two of data
+if something is very rare, it also holds the last 1000 records or whatever
+you call it with a function like robin(name, duration, outcome) and it adds a row, finding the right table
+you query it with another function, and it tells you the average, median, fastest and slowest N events, and if there are a bunch of recent failures, like it's been broken for 20 minutes and counting, or something
+when a call comes in and sees that it's the first call in a short time period (one minute? 6 minutes?) it automatically performs the totalling step
+this step involves totalling up everything from the previous time period, storing the computed answers in another table, which has like one row per timeperiod, and then removing the rows about that time period from the granular table
+
+[2e] this is an opportunity to try out another provider alongside supabase, like Neon, to see what the developer experience is like, and maybe it's faster
+but, you code this for generic sql just like the regular database
+these tables are also different because they drop rows
+
+ok, based on all that, let's snapshot the design concept by looking at javascript function prototypes, and providers
+
+log() - fancied up and sent to console.log
+flare() - log to logflare, to see an error once pushed, and then remove it ~ uses logflare
+dog() - goes to datadog, to add a note to the audit trail for real data in production ~ uses datadog
+
+robinStart('email', 'amazon', tag) - we've asked aws to send a sms, and local code tracks the request with tag in a local variable
+robinBad('email', 'amazon', tag) - some time later, the api denied our request
+robinGood('email', 'amazon', tag) - the api and the user succeeded. oh here the tag local variable doesn't work anymore
+robinChoose('sms') - returns which one to use, like 'amazon' or 'sendgrid' based on flipping a coin and avoiding errors
+
+oh, there's a page at /staff that shows the performance of all of these
+and make it so that to add a new one, you just start talking about it, you don't have to do anything else
+because there are like two dozen tables named 001-012, and then an organizer table which holds the names
+this is a really cool idea, you can get what you need in just a few screenfuls of code
+~ uses supabase or neon/planetscale, one of the others
+
+real pages pingdom and users can go to
+/ping1 static page from cloudflare pages
+/ping2 page that depends on a hello world cloudflare worker
+/ping3 essentially your count button, page->worker->supabase settings table
+~ try pingdom, datadog synthetics, and checkly, and see what you like
+
+you're really happy with all of this
+notice how much you got done just in .txt, not .js
+this also completely avoids kinesis and kafka, which you might have dove into
+also, instead of making log() more complex, log(), flare() and dog() are separate and simple this way
+
+actually the robin interface is like this:
+
+robin1 - about to call the api
+robin2 - api returned reporting success
+robin3 - user completed task proving success
+robin4 - api returned refusal or failure
+
+14 - the api hates us now, duration not really important here, "red fourteens"
+123 - everything's working for the user, 13 duration is important "green onetwentythrees"
+10 - the api never got back to us, really broken "red one nothings"
+120 - the api says it worked, but the user never was able to do it or gave up "purple twelve nothings"
+
+current minute - add records
+previous minute - wait for users
+two minutes ago - total up, but keep around for the daily digest. these three do the real time intelligence
+
+current hour
+previous hour
+two hours ago - total up and move to archival table, which will grow one record per service per user, which is fine
+
+a single lastcycle tick in the control table notices new minutes and hours, and performs the necessary totaling
+
+more later:
+
+you can totally do this efficiently and easily without sets of tables for provider
+there are three tables
+robin_control - settings just for robin
+robin_hours - finished records of each service each hour, totaled and averaged for 1-2pm at the start of 3pm
+robin_minutes - individual recent records
+
+hours counts the 14s, 123s, 1nothing, and 12nothings
+the 123s duration is meaningfull, hours includes the mean, median, standard deviation, and specific outliers
+
+columns like:
+service
+provider
+tick1
+tick2
+tick3
+tick4
+and then you select to total and average
+and select to remove old rows only if there are too many rows
+
+the intelligence to pick a service for a task isn't baked into the robin api, rather it's all in the worker, using that api
+functions like robinRecent(service, provider) returns a js object with mean, median, failure rates, and so on
+and from those results the business logic in the worker
+
+maybe do to the minute, and then every 6 hour period, quarter day
+so the site can be up years and the records don't get very huge
+and an api that breaks can be detected really quickly and steered around
+
+all you need to do are: 10, 50, 90th percentile value, those three, 50 is median of course
+you don't need average, and you don't need slowest and fastest list
+
+
+
+
+
+
+== big divide
+
+some bike shed
+fraction([1, 2, 3], [4])
+always takes numerator and denomonator arrays, , [1] if you just want to multiply
+always takes js numbers, not strings, not bigints
+checks that they're all numbers and integers
+multiplies top and bottom and then does the division, that part uses bigint so it can go over
+throws if the answer is too big to fit as a regular js integer
+returns an object of answers which include answer and remainder
 
 
 

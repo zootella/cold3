@@ -621,7 +621,7 @@ function _number4(n, power, units) {
 //  \__,_|\__,_|\__\__,_|
 //                       
 
-function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds checks and format conversion
+export function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds checks and format conversion
 	checkInt(capacity, 1)//must request capacity of 1+ bytes
 
 	//private members hang out in this function the return object came from, and are still here later!
@@ -648,7 +648,7 @@ function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds checks and
 	return b
 }
 
-function Data(p) {//a Data wraps Uint8Array for type and bounds checks and format conversion conversion
+export function Data(p) {//a Data wraps Uint8Array for type and bounds checks and format conversion conversion
 	let _array, _text, _base16, _base62, _base64//private members
 
 	//constructor, a Data always contains an array, keeps the given form, and makes and keeps the others as requested
@@ -892,6 +892,11 @@ test(() => {
 		ok(intToBase62(i) == b62)
 	}
 })
+
+
+
+
+
 
 
 
