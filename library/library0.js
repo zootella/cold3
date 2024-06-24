@@ -357,12 +357,12 @@ export function minInt(i, m = 0) { // Note (0)
 		(3) Includes typeof i == 'number' and !isNaN(i) checks, according to MDN.
 		(4) At or above the given minimum.
 		(5) Small enough to stay an integer everywhere; biggest integers are:
-		    (2^53)-1 ==      9,007,199,254,740,991 in JavaScript;
-		    (2^63)-1 == 19,223,372,036,854,775,807 in a BIGINT PostgreSQL field, a signed 8 byte integer.
+				(2^53)-1 ==      9,007,199,254,740,991 in JavaScript;
+				(2^63)-1 == 19,223,372,036,854,775,807 in a BIGINT PostgreSQL field, a signed 8 byte integer.
 		(6) Plus blank for quick convert, then regular expression that:
-		    allows one optional minus sign at the start;
-		    blocks a leading zero;
-		    and ensures all numerals, blocking JavaScript numbers like 2.5 decimal and 5e-7 scientific notation. */
+				allows one optional minus sign at the start;
+				blocks a leading zero;
+				and ensures all numerals, blocking JavaScript numbers like 2.5 decimal and 5e-7 scientific notation. */
 	)
 }
 test(() => {
@@ -561,8 +561,8 @@ export function checkDate(s) {
 		day:   textToInt(p.after)
 	}
 	if (o.year  < 1869 || o.year  > 9999 ||
-	    o.month <    1 || o.month >   12 ||
-	    o.day   <    1 || o.day   >   31) toss('data', {s, o})//sanity check bounds for a current date of birth
+			o.month <    1 || o.month >   12 ||
+			o.day   <    1 || o.day   >   31) toss('data', {s, o})//sanity check bounds for a current date of birth
 	return o
 }
 test(() => {
@@ -649,13 +649,14 @@ export function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds che
 }
 
 export function Data(p) {//a Data wraps Uint8Array for type and bounds checks and format conversion conversion
-	let _array, _text, _base16, _base62, _base64//private members
+	let _array, _text, _base16, _base32, _base62, _base64//private members
 
 	//constructor, a Data always contains an array, keeps the given form, and makes and keeps the others as requested
 	if      (p.buffer instanceof ArrayBuffer) { _array = new Uint8Array(p.buffer) }//put a uint8 array view over the buffer
 	else if (p.array  instanceof Uint8Array)  { _array = p.array                  }//just save the given array
 	else if (p.text)   {                      _array = textToArray(p.text,     true); _text   = p.text   }//decode the text to make the array
 	else if (p.base16) { checkText(p.base16); _array = base16ToArray(p.base16, true); _base16 = p.base16 }
+	else if (p.base32) { checkText(p.base32); _array = base32ToArray(p.base32, true); _base32 = p.base32 }
 	else if (p.base62) { checkText(p.base62); _array = base62ToArray(p.base62, true); _base62 = p.base62 }
 	else if (p.base64) { checkText(p.base64); _array = base64ToArray(p.base64, true); _base64 = p.base64 }
 	else if (p.random) { checkInt(p.random, 1); _array = new Uint8Array(p.random); crypto.getRandomValues(_array) }//generate a random array
@@ -667,6 +668,7 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 	d.array  = function() { return _array        }
 	d.text   = function() { if (_text)   { return _text;  } else { _text   = arrayToText(_array,   true); return _text   } }
 	d.base16 = function() { if (_base16) { return _base16 } else { _base16 = arrayToBase16(_array, true); return _base16 } }
+	d.base32 = function() { if (_base32) { return _base32 } else { _base32 = arrayToBase32(_array, true); return _base32 } }
 	d.base62 = function() { if (_base62) { return _base62 } else { _base62 = arrayToBase62(_array, true); return _base62 } }
 	d.base64 = function() { if (_base64) { return _base64 } else { _base64 = arrayToBase64(_array, true); return _base64 } }
 	d.get    = function(i) {//get the byte at index i, returns a number 0x00 0 through 0xff 255
@@ -702,6 +704,17 @@ function base16ToArray(s, trip) {
 function arrayToBase16(a, trip) {
 	let s = Array.from(a, byte => byte.toString(16).padStart(2, '0')).join('')
 	if (trip) checkSameArray(a, base16ToArray(s, false))
+	return s
+}
+
+function base32ToArray(s, trip) {
+	let a = _base32ToArray(s)
+	if (trip) checkSame(s, arrayToBase32(a, false))
+	return a
+}
+function arrayToBase32(a, trip) {
+	let s = _arrayToBase32(a)
+	if (trip) checkSameArray(a, base32ToArray(s, false))
 	return s
 }
 
@@ -746,6 +759,56 @@ function checkSameArray(a1, a2) {
 	}
 }
 
+//  _                    _________  
+// | |__   __ _ ___  ___|___ /___ \ 
+// | '_ \ / _` / __|/ _ \ |_ \ __) |
+// | |_) | (_| \__ \  __/___) / __/ 
+// |_.__/ \__,_|___/\___|____/_____|
+//                                  
+
+//base32, for hash values in the database, so they can be short, but also always the same length
+const base32Alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+let base32Decoder // Lookup table for decoding, initialized once
+function _arrayToBase32(a) {
+	let s = '' // Encoded string output
+	let bits = 0 // Bit counter
+	let value = 0 // Holds the accumulated bits
+	for (let i = 0; i < a.length; i++) {
+		value = (value << 8) | a[i] // Shift value left by 8 bits and OR with current byte
+		bits += 8; // Increase bit counter by 8
+		while (bits >= 5) { // While there are enough bits for a Base32 character
+			s += base32Alphabet[(value >>> (bits - 5)) & 31] // Extract top 5 bits, convert to Base32 char
+			bits -= 5 // Decrease bit counter by 5
+		}
+	}
+	if (bits > 0) {
+		s += base32Alphabet[(value << (5 - bits)) & 31] // Handle remaining bits
+	}
+	return s;
+}
+function _base32ToArray(s) {
+	if (!base32Decoder) { // On first run, initialize lookup array
+		base32Decoder = new Uint8Array(256)
+		for (let i = 0; i < base32Alphabet.length; i++) {
+			base32Decoder[base32Alphabet.charCodeAt(i)] = i // Map Base32 chars to their indices
+		}
+	}
+	let bits = 0 // Bit counter
+	let value = 0 // Holds the accumulated bits
+	const a = [] // Decoded byte array output
+	for (let i = 0; i < s.length; i++) {
+		const c = s[i]
+		if (c == '=') continue // Ignore padding characters
+		value = (value << 5) | base32Decoder[c.charCodeAt(0)] // Shift value left by 5 bits and OR with char value
+		bits += 5 // Increase bit counter by 5
+		if (bits >= 8) { // While there are enough bits for a byte
+			a.push((value >>> (bits - 8)) & 255) // Extract top 8 bits, convert to byte
+			bits -= 8 // Decrease bit counter by 8
+		}
+	}
+	return new Uint8Array(a);
+}
+
 //  _                     __  ____  
 // | |__   __ _ ___  ___ / /_|___ \ 
 // | '_ \ / _` / __|/ _ \ '_ \ __) |
@@ -756,8 +819,8 @@ function checkSameArray(a1, a2) {
 const alphabet62Int    = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//ascii order, for integers, below
 const alphabet62Stream = '1023456789ABCDEFIGHJKLMNOPQRSTUVjWXYZabcdefghkmnlopqrstuvwxyzi'//narrow characters in popular spots, for data
 /*                        ^               ^               ^               ^            ^
-         moved character '1'             'I'             'j'             'l'          'i'
-                to index  0               16              32              48           61
+				 moved character '1'             'I'             'j'             'l'          'i'
+								to index  0               16              32              48           61
 
 Encoding random short data, some characters appear more frequently than others
 The last character, at index 61, is the most common
@@ -849,23 +912,52 @@ function _intToBase62(i, trip) {
 
 //turn this test back on when you're done messing with the base62 alphabet!
 test(() => {
-	c('6b', 'Ql', 'aw==')//make sure whatever platform we're running on uses special and padding characters as we expect
-	c('13', '4l', 'Ew==')
-	c('7015', 'S0K', 'cBU=')
-	c('da04ce', 'tjJE', '2gTO')
-	c('be2d76ceb8', 'nXstqgj', 'vi12zrg=')
-	c('887919a10433090c', 'X7ZPdIIq2Il', 'iHkZoQQzCQw=')
-	c('7d3d2bff5fefdd09145a49eadd', 'VJrgiiNinuIZKMZcfuI', 'fT0r/1/v3QkUWknq3Q==')
-	c('eff64d5ef4917f0569a2bfe7d39d6453d7c644689e', 'yitJLyrZNz5QQAiicrwsZKiNoZGdcj', '7/ZNXvSRfwVpor/n051kU9fGRGie')
-	c('77ea82e471d483aea44330a4f5fc231fcb46b760ee0f360544f6c7da464f01908ea8', 'TifjmGos8Eme4CleFNz8oiprQuOEvFDjL4iR7tZPF1P2Ef1', 'd+qC5HHUg66kQzCk9fwjH8tGt2DuDzYFRPbH2kZPAZCOqA==')
-	c('8cdd5d5c4bd850125ae4825f3bfb8e209600cfc8cb93383a821db3d9f783ffa3abb59e6b65343a16542598f4fe27ad85ba7e3d4ff4254b', 'YDsTN4nOK09Qw89VEiyYX2M1CipCmJE3f27RFPiU3iidxmscbkaD3dML2MOiJiXUkWReiYsFiIaHl', 'jN1dXEvYUBJa5IJfO/uOIJYAz8jLkzg6gh2z2feD/6OrtZ5rZTQ6FlQlmPT+J62Fun49T/QlSw==')
-	c('447c70a59147c304c5086551b151e57a3551512d7a2d9fa05f756a2fafd0b6e3f7f7deabc43a9ca2bcad57713ba63ab61b822775aea679a445d4a87c789119da07cd8bac08c728f3f888c5c41a25a7b1b3f600476694c82f2f', 'G7oleP57llJ526LGhL7aUYLGKHsxBPid5iTMdngiIkmFuiVUfzIxcAAzgLToExOxkWm29uMmecbZGTHdV7XG6Td7qOmh2CSdzivXCN46XMchRFt14TbaCjnBl', 'RHxwpZFHwwTFCGVRsVHlejVRUS16LZ+gX3VqL6/QtuP3996rxDqcorytV3E7pjq2G4Inda6meaRF1Kh8eJEZ2gfNi6wIxyjz+IjFxBolp7Gz9gBHZpTILy8=')
-	c('3e1f850c3146cda8cb0b4be4848c74538321229027eb3e40191c31484a6d198b5e4c9cd3c2917440e24676be4d7f45dde181202d6bd755854e78574d7a9bf8da7f28a6601821037527b21f1d26fc6779a77ee42e09e7573cdebb6096db693229ea030aec0d1258f82786b7e877ba79383c707ed8588fc171db4404517842120ff419ffb1aef47f990a5322e3744abaaa', 'FWiWIloGhtdplkBw8HCT5E38HAI9igFZ1P7358HbrPXswCcDF2ZNG1vZPtnZsirNTvO4jBMnNLOLEU5TDUenvtczdeb1O8IDs9y8V7HRzPubcVmIm2UTNFDxyO9RRQJ8exjCAy1rHMFjcWgVdTyewE3olVkWOYz5otrI4KNW24jiiIPiihQyrVwZAKpBYT4fxfj', 'Ph+FDDFGzajLC0vkhIx0U4MhIpAn6z5AGRwxSEptGYteTJzTwpF0QOJGdr5Nf0Xd4YEgLWvXVYVOeFdNepv42n8opmAYIQN1J7IfHSb8Z3mnfuQuCedXPN67YJbbaTIp6gMK7A0SWPgnhrfod7p5ODxwfthYj8Fx20QEUXhCEg/0Gf+xrvR/mQpTIuN0Srqq')
-	function c(base16, base62, base64) {
+	/*
+	why so many different encoding formats?
+	base16 is good because it's simple, standard, and you can see the bytes
+	base32 is shorter, double-clickable, and always the same length--good for storing hash values in the database
+	base62 is shorter and double-clickable--good for bytes in the query string of api calls and the location bar the user might see
+	base64 is about the same length, standard, but not double-clickable--included here for completeness but not used
+	*/
+	c('6b', 'NM', 'Ql', 'aw==')//make sure whatever platform we're running on uses special and padding characters as we expect
+	c('13', 'CM', '4l', 'Ew==')
+	c('7015', 'OAKQ', 'S0K', 'cBU=')
+	c('da04ce', '3ICM4', 'tjJE', '2gTO')
+	c('be2d76ceb8', 'XYWXNTVY', 'nXstqgj', 'vi12zrg=')
+	c('887919a10433090c', 'RB4RTIIEGMEQY', 'X7ZPdIIq2Il', 'iHkZoQQzCQw=')
+	c('7d3d2bff5fefdd09145a49eadd', 'PU6SX72757OQSFC2JHVN2', 'VJrgiiNinuIZKMZcfuI', 'fT0r/1/v3QkUWknq3Q==')
+
+	c('eff64d5ef4917f0569a2bfe7d39d6453d7c644689e',
+	'573E2XXUSF7QK2NCX7T5HHLEKPL4MRDITY',
+	'yitJLyrZNz5QQAiicrwsZKiNoZGdcj',
+	'7/ZNXvSRfwVpor/n051kU9fGRGie')
+
+	c('77ea82e471d483aea44330a4f5fc231fcb46b760ee0f360544f6c7da464f01908ea8',
+	'O7VIFZDR2SB25JCDGCSPL7BDD7FUNN3A5YHTMBKE63D5URSPAGII5KA',
+	'TifjmGos8Eme4CleFNz8oiprQuOEvFDjL4iR7tZPF1P2Ef1',
+	'd+qC5HHUg66kQzCk9fwjH8tGt2DuDzYFRPbH2kZPAZCOqA==')
+
+	c('8cdd5d5c4bd850125ae4825f3bfb8e209600cfc8cb93383a821db3d9f783ffa3abb59e6b65343a16542598f4fe27ad85ba7e3d4ff4254b',
+	'RTOV2XCL3BIBEWXEQJPTX64OECLABT6IZOJTQOUCDWZ5T54D76R2XNM6NNSTIOQWKQSZR5H6E6WYLOT6HVH7IJKL',
+	'YDsTN4nOK09Qw89VEiyYX2M1CipCmJE3f27RFPiU3iidxmscbkaD3dML2MOiJiXUkWReiYsFiIaHl',
+	'jN1dXEvYUBJa5IJfO/uOIJYAz8jLkzg6gh2z2feD/6OrtZ5rZTQ6FlQlmPT+J62Fun49T/QlSw==')
+
+	c('447c70a59147c304c5086551b151e57a3551512d7a2d9fa05f756a2fafd0b6e3f7f7deabc43a9ca2bcad57713ba63ab61b822775aea679a445d4a87c789119da07cd8bac08c728f3f888c5c41a25a7b1b3f600476694c82f2f',
+	'IR6HBJMRI7BQJRIIMVI3CUPFPI2VCUJNPIWZ7IC7OVVC7L6QW3R7P566VPCDVHFCXSWVO4J3UY5LMG4CE5225JTZURC5JKD4PCIRTWQHZWF2YCGHFDZ7RCGFYQNCLJ5RWP3AAR3GSTEC6LY',
+	'G7oleP57llJ526LGhL7aUYLGKHsxBPid5iTMdngiIkmFuiVUfzIxcAAzgLToExOxkWm29uMmecbZGTHdV7XG6Td7qOmh2CSdzivXCN46XMchRFt14TbaCjnBl',
+	'RHxwpZFHwwTFCGVRsVHlejVRUS16LZ+gX3VqL6/QtuP3996rxDqcorytV3E7pjq2G4Inda6meaRF1Kh8eJEZ2gfNi6wIxyjz+IjFxBolp7Gz9gBHZpTILy8=')
+
+	c('3e1f850c3146cda8cb0b4be4848c74538321229027eb3e40191c31484a6d198b5e4c9cd3c2917440e24676be4d7f45dde181202d6bd755854e78574d7a9bf8da7f28a6601821037527b21f1d26fc6779a77ee42e09e7573cdebb6096db693229ea030aec0d1258f82786b7e877ba79383c707ed8588fc171db4404517842120ff419ffb1aef47f990a5322e3744abaaa',
+	'HYPYKDBRI3G2RSYLJPSIJDDUKOBSCIUQE7VT4QAZDQYUQSTNDGFV4TE42PBJC5CA4JDHNPSNP5C53YMBEAWWXV2VQVHHQV2NPKN7RWT7FCTGAGBBAN2SPMQ7DUTPYZ3ZU57OILQJ45LTZXV3MCLNW2JSFHVAGCXMBUJFR6BHQ236Q552PE4DY4D63BMI7QLR3NCAIULYIIJA75AZ76Y255D7TEFFGIXDORFLVKQ',
+	'FWiWIloGhtdplkBw8HCT5E38HAI9igFZ1P7358HbrPXswCcDF2ZNG1vZPtnZsirNTvO4jBMnNLOLEU5TDUenvtczdeb1O8IDs9y8V7HRzPubcVmIm2UTNFDxyO9RRQJ8exjCAy1rHMFjcWgVdTyewE3olVkWOYz5otrI4KNW24jiiIPiihQyrVwZAKpBYT4fxfj',
+	'Ph+FDDFGzajLC0vkhIx0U4MhIpAn6z5AGRwxSEptGYteTJzTwpF0QOJGdr5Nf0Xd4YEgLWvXVYVOeFdNepv42n8opmAYIQN1J7IfHSb8Z3mnfuQuCedXPN67YJbbaTIp6gMK7A0SWPgnhrfod7p5ODxwfthYj8Fx20QEUXhCEg/0Gf+xrvR/mQpTIuN0Srqq')
+	function c(base16, base32, base62, base64) {
 		let data16 = Data({base16: base16}); ok(data16.base16() == base16)//there and back again
+		let data32 = Data({base32: base32}); ok(data32.base32() == base32)
 		let data62 = Data({base62: base62}); ok(data62.base62() == base62)
 		let data64 = Data({base64: base64}); ok(data64.base64() == base64)
-		ok(data62.base16() == base16)//all the same data
+		ok(data32.base16() == base16)//all the same data
+		ok(data62.base16() == base16)
 		ok(data64.base16() == base16)
 	}
 })
@@ -892,12 +984,6 @@ test(() => {
 		ok(intToBase62(i) == b62)
 	}
 })
-
-
-
-
-
-
 
 
 

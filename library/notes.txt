@@ -860,63 +860,6 @@ const Fetch = (typeof fetch != 'undefined') ? fetch : (await import('node-fetch'
 
 
 
-== base32
-
-https://www.npmjs.com/package/base32
-sha256 hash values
-base16 is double-clickable, always the same length, but quite long
-base64 isn't double-clickable, always the same length, short
-base62 is double-clickable, not always the same length, short
-base32 is double-clickable, always the same length, shorter
-you'll store hashes in the database
-to make lookups and filters no slower than necessary, use CHAR(30) or whatever
-you can add this quickly using the npm module and your existing pattern for the others
-
-
-
-/*
-exploration with base32 for hashes that can be compact and all the same length
-
-using
-https://www.npmjs.com/package/rfc4648
-1 million weekly downloads
-
-hmm, does this lift all of Data from library0 to library1?
-yeah, probably
-or write matching code that does it raw
-
-Sat 11h 33m 22.709s ~ 32 bytes
-0238078539448d35f06e7262ac3e4013798947bd6d5c91e44a35caa25f80224f ~ 64 base16 characters
-AI4APBJZISGTL4DOOJRKYPSACN4YSR55NVOJDZCKGXFKEX4AEJHQ ~ 52 base16 characters
-1Yj7WJa4YJNlRc9Xg3w14ub9GyskN97ZHYNAdaij29F ~ 43 base62 characters
-AjgHhTlEjTXwbnJirD5AE3mJR71tXJHkSjXKol+AIk8= ~ 44 base64 characters
-
-Sat 11h 33m 45.634s ~ 32 bytes
-a4508d240c5002106a07e935f3f023060bac03c5daa9e81f078c9eda23f70f3f ~ 64 base16 characters
-URII2JAMKABBA2QH5E27H4BDAYF2YA6F3KU6QHYHRSPNUI7XB47Q==== ~ 56 base16 characters
-e52D91oI1W0f0ieDVFl8lOBg1F5tfcd7lUCckdYiSFFl ~ 44 base62 characters
-pFCNJAxQAhBqB+k18/AjBgusA8XaqegfB4ye2iP3Dz8= ~ 44 base164characters
-
-ok, difficulties include:
-this would elevate data to library1, or require some complex injection pattern
-padding should be there, really, and is super long for 32 bytes
-even without, really not that much shorter than base16
-and base16 makes it look like a hash value
-so, don't add base32, and use base16 and CHAR(64) in the database for hash values
-*/
-import { base32 } from 'rfc4648'
-test(() => {
-	let d = Data({random: 32})//sha256 hash value
-	let b32 = base32.stringify(d.array(), {pad: true})
-
-log(`${d.size()} bytes
-${d.base16()} ~ ${d.base16().length} base16 characters
-${b32} ~ ${b32.length} base16 characters
-${d.base62()} ~ ${d.base62().length} base62 characters
-${d.base64()} ~ ${d.base64().length} base64 characters`)
-})
-
-
 
 
 

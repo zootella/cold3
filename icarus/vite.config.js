@@ -20,6 +20,7 @@ export default defineConfig({
 	],
 	optimizeDeps: {//you don't understand why, but you have to explicitly include your installed modules here
 		include: [
+			'rfc4648',
 			'joi',
 			'credit-card-type',
 			'libphonenumber-js'

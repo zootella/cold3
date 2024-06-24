@@ -536,12 +536,52 @@ export function testBox(s) {
 
 
 
-test(() => {
+
+
+/*
+base32
+to store sha256 hash values in the database in a column typed CHAR(52)
+you want something short, and double-clickable, and length independent of data
+AI4APBJZISGTL4DOOJRKYPSACN4YSR55NVOJDZCKGXFKEX4AEJHQ, for example
+
+https://www.npmjs.com/package/rfc4648
+~1 million weekly downloads
+installed into icarus, and not the nuxt project
+
+but Data is in library0
+using that module would require elevating Data to library1
+so you're bringing your own short functions
+and this fuzz tester confirms they work the same as the module
+
+using pad false and loose true
+but Data will do a round-trip check
+*/
+import { base32 } from 'rfc4648'
+function cycle32(size) {
+	let d = Data({random: size})
+	let s1 = base32.stringify(d.array(), {pad: false})
+	let s2 = d.base32()
+	ok(s1 == s2)
+	let d1 = Data({array: base32.parse(s1, {loose: true})})
+	let d2 = Data({base32: s2})
+	ok(d1.base16() == d2.base16())
+}
+function runFor(m, f) {
+	let n = now()
+	let cycles = 0
+	while (now() < n + m) { cycles++; f() }
+	return cycles
+}
+noop(() => {
+	function f1() { let size = 32;                     cycle32(size) }//size of hash value
+	function f2() { let size = randomBetween(1, 8);    cycle32(size) }//short
+	function f3() { let size = randomBetween(1, 1024); cycle32(size) }//longer
+
+	let cycles1 = runFor(1*Time.second, f1)
+	let cycles2 = runFor(1*Time.second, f2)
+	let cycles3 = runFor(1*Time.second, f3)
+	log(cycles1, cycles2, cycles3)
 })
-
-
-
-
 
 
 
