@@ -1330,6 +1330,50 @@ test(() => {
 
 
 
+//multiply and divde like fraction([top1, top2], [bottom1, bottom2]) with numerator and denominator arrays
+//given elements must all be 0+ integers of type number
+//takes and returns integers that are small enough to fit safely in number
+//but, uses BigInt internally in case the multiplication would cause an overflow
+function fraction(tops, bottoms) {
+
+	//starting BigInt numerator and denominator
+	let n = 1n
+	let d = 1n
+
+	//multiply
+	tops.forEach(   i => { checkInt(i); n *= _toBig(i) })
+	bottoms.forEach(i => { checkInt(i); d *= _toBig(i) })
+
+	//divide and return answer set
+	if (d == 0) toss('divide by zero', {tops, bottoms, d})//very important
+	let whole            = _toInt(n / d)//convert back to number, throwing bounds if too big
+	let remainder        = _toInt(n % d)
+	let decimal          = Number(n) / Number(d)
+	let decimalRemainder = decimal - Math.floor(decimal)
+	return {whole, remainder, decimal, decimalRemainder}
+}
+function _toBig(n) {
+	return typeof n == 'bigint' ? n : BigInt(n)
+}
+function _toInt(b) {
+	if (b < Number.MIN_SAFE_INTEGER || b > Number.MAX_SAFE_INTEGER) toss('bounds', {b})//unlike * and /, < and > work fine between b which is BigInt, and the max and min which are type number
+	return Number(b)
+}
+test(() => {
+
+	ok(typeof _toBig(5)  == 'bigint')//convert
+	ok(typeof _toBig(5n) == 'bigint')//pass through unchanged
+
+	let f = fraction([2, 5], [3])
+	ok(f.whole == 3 && f.remainder == 1)
+	
+	f = fraction([1, 0], [1])//multiply by zero is ok
+	ok(f.whole == 0 && f.remainder == 0)
+})
+
+
+
+
 
 
 
