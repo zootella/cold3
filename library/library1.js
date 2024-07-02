@@ -556,6 +556,7 @@ and this fuzz tester confirms they work the same as the module
 using pad false and loose true
 but Data will do a round-trip check
 */
+/*
 import { base32 } from 'rfc4648'
 function cycle32(size) {
 	let d = Data({random: size})
@@ -582,7 +583,7 @@ noop(() => {
 	let cycles3 = runFor(1*Time.second, f3)
 	log(cycles1, cycles2, cycles3)
 })
-
+*/
 
 
 

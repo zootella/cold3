@@ -111,16 +111,8 @@ export function toss(note, watch) {//prepare your own watch object with named va
 // |_|\___/ \__, |
 //          |___/ 
 
-export function log(...a) {
-	let s = composeLog(a)
-	recordLog(s)
-	logSinks.forEach(sink => { sink(s) })
-}
-export function logError(...a) {
-	let s = composeLog(a)
-	recordLog(s)
-	errorSinks.forEach(sink => { sink(s) })
-}
+export function log(...a)      { let s = composeLog(a); recordLog(s); console.log(s)   }
+export function logError(...a) { let s = composeLog(a); recordLog(s); console.error(s) }
 
 export function composeLog(...a) {
 	let s = ''//compose some nice display text
@@ -131,13 +123,6 @@ export function composeLog(...a) {
 		a.forEach(e => { s += newline + say(e) })
 	}
 	return sayTick(now()) + ' ~' + (s.length ? (' ' + s) : '')
-}
-
-let logSinks   = [ console.log   ]
-let errorSinks = [ console.error ]
-export function setLogSinks(a) {
-	logSinks   = [ console.log,   ...a ]
-	errorSinks = [ console.error, ...a ]
 }
 
 export function recordLog(s) {

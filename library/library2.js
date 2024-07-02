@@ -3,7 +3,7 @@
 //grow them here, then probably refactor them out into named files in this library folder
 //actually don't do this, it's library1.js and the named files
 
-import { test, ok, log, setLogSinks, composeLog, recordLog } from './library0.js'
+import { test, ok, log, composeLog } from './library0.js'
 
 
 
@@ -18,14 +18,9 @@ import { test, ok, log, setLogSinks, composeLog, recordLog } from './library0.js
 //  \___|_|\___/ \__,_|\__,_| |_|\___/ \__, |\__, |_|_| |_|\__, |
 //                                     |___/ |___/         |___/ 
 
-export function logCloud(...a) {
-	let s = composeLog(a)
-	recordLog(s)
-	let logSinks = [ console.log, logToDatadog, logToLogflare ]
-	logSinks.forEach(sink => { sink(s) })
-}
-export function setCloudLoggers() { setLogSinks([logToDatadog, logToLogflare])}
-export function logToDatadog(s) {
+export function dog(...a)   { let s = composeLog(a); logToDatadog(s);  log('logged to datadog:',  s) }
+export function flare(...a) { let s = composeLog(a); logToLogflare(s); log('logged to logflare:', s) }
+function logToDatadog(s) {
 	/*no await*/fetch(//intentionally and unusually calling fetch without await; we don't need the result or want to wait for it. hopefully the call will work, but we're already documenting an error or something
 		process.env.ACCESS_DATADOG_ENDPOINT,
 		{
@@ -42,7 +37,7 @@ export function logToDatadog(s) {
 		}
 	)
 }
-export function logToLogflare(s) {
+function logToLogflare(s) {
 	/*no await*/fetch(
 		process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
 		{

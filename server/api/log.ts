@@ -1,6 +1,6 @@
 
 import { log, inspect, toss } from '../../library/library0.js'
-import { logCloud } from '../../library/library2.js'
+import { dog, flare } from '../../library/library2.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}
@@ -10,7 +10,8 @@ export default defineEventHandler(async (event) => {
 		log('log api version 8')
 
 		let message = body.message
-		logCloud(message)
+		dog(message)
+		flare(message)
 
 		o.message = 'hi from api log'
 		o.mirroredBody = body
