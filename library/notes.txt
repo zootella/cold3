@@ -1186,12 +1186,49 @@ and an api that breaks can be detected really quickly and steered around
 all you need to do are: 10, 50, 90th percentile value, those three, 50 is median of course
 you don't need average, and you don't need slowest and fastest list
 
+more several days later:
+
+ok, but you also want to know how fast the site seems for users
+here's a separate, additional, and still pretty simple way to do that
+
+every api request is lumped together, those with no, small, and complex database interactions
+telemetry is entirely from the worker, so the durations are trusted
+
+the public system status page shows the 10/50/90 percentiles of response times in milliseconds
+this goes beyond just saying, "everything's fine" and a bunch of granular, but detail-free, green checkmarks
+
+chatgpt says i could make this with aws kinesis, but aws cloudwatch is a better fit
+the example code uses cloudwatch, dynamodb, and lambda to store and then summarize
+
+more later:
+
+cloudwatch and datadog are actually designed for this
+you like datadog in that it's separate and may be simpler
+datadog can compute percentiles on the server, you don't have to download all the datapoint and run them yourself
+
+// Define the query to get 10th, 50th, and 90th percentiles, count, sum, and last value
+const query = `percentile:my_service.my_duration{my_tag:my_value}.rollup(60, p10, p50, p90), 
+	count:my_service.my_duration{my_tag:my_value}.rollup(60),
+	sum:my_service.my_duration{my_tag:my_value}.rollup(60),
+	last:my_service.my_duration{my_tag:my_value}`
+const params = new URLSearchParams({
+	from: Math.floor(new Date(from).getTime() / 1000),
+	to: Math.floor(new Date(to).getTime() / 1000),
+	query: query})
+
+not sure on use of rollup(), as_count(), or nothing on the ends
+https://docs.datadoghq.com/dashboards/functions/rollup/#rollup-interval-enforced-vs-custom
+
+you'll want to scrutinize the slow ones
+you could do this by counting them, but also if it's slow, your robin() code logs them to a different tag or whatever of datadog, and the dashboard picks them up
+this is easier and better than trying to search for them later
 
 
 
 
 
-== big divide
+
+== big divide, done
 
 some bike shed
 fraction([1, 2, 3], [4])
