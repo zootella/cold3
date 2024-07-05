@@ -1,7 +1,33 @@
 
+ _   _      _                      _      ____  _____ 
+| \ | | ___| |___      _____  _ __| | __ |___ \|___ / 
+|  \| |/ _ \ __\ \ /\ / / _ \| '__| |/ /   __) | |_ \ 
+| |\  |  __/ |_ \ V  V / (_) | |  |   <   / __/ ___) |
+|_| \_|\___|\__| \_/\_/ \___/|_|  |_|\_\ |_____|____/ 
+                                                      
+
 Network 23 ~ "Beta to the Max!"
 
-some notes building the megamedia empire:
+ _________________________________
+/\                                \
+\_| --y'know what? There's only   |
+  | four things we do better than |
+  | anyone else:                  |
+  |                               |
+  |   music                       |
+  |   movies                      |
+  |   microcode (software)        |
+  |   high-speed pizza delivery   |
+  |   ____________________________|_
+   \_/______________________________/
+
+some notes building the megamultimedia empire:
+                     _                         _           _   
+  ___ _ __ ___  __ _| |_ ___   _ __  _ __ ___ (_) ___  ___| |_ 
+ / __| '__/ _ \/ _` | __/ _ \ | '_ \| '__/ _ \| |/ _ \/ __| __|
+| (__| | |  __/ (_| | ||  __/ | |_) | | | (_) | |  __/ (__| |_ 
+ \___|_|  \___|\__,_|\__\___| | .__/|_|  \___// |\___|\___|\__|
+                              |_|           |__/               
 
 == install aws cli
 
@@ -65,6 +91,12 @@ $ npm install -S aws-sdk
 amazon access is configured, but make .env to mirror non-amazon secrets the lambdas will use
 $ touch .env
 and make sure .gitignore lists it
+     _                       _                                    
+  __| | ___  _ __ ___   __ _(_)_ __    _ __   __ _ _ __ ___   ___ 
+ / _` |/ _ \| '_ ` _ \ / _` | | '_ \  | '_ \ / _` | '_ ` _ \ / _ \
+| (_| | (_) | | | | | | (_| | | | | | | | | | (_| | | | | | |  __/
+ \__,_|\___/|_| |_| |_|\__,_|_|_| |_| |_| |_|\__,_|_| |_| |_|\___|
+                                                                  
 
 == domain name
 
@@ -115,13 +147,20 @@ then put the ARN in .env and run the script:
 
 $ serverless deploy
 
+                      _ _ 
+  ___ _ __ ___   __ _(_) |
+ / _ \ '_ ` _ \ / _` | | |
+|  __/ | | | | | (_| | | |
+ \___|_| |_| |_|\__,_|_|_|
+                          
+
 == email
 
 goals and steps:
 [x]review how you setup email forwarding already in your personal cloudflare account
 [x]setup forwarding so support@cold3.cc forwards to another domain
 [x]configure noreply@cold3.cc to correctly bounce or kill email
-[~]configure DKIM and SPF for maximum security and correctness
+[x]configure DKIM and SPF for maximum security and correctness
 []get a lambda at api.net23.cc to send email from noreply@cold3.cc on surface and deep in headers
 
 cloudflare dashboard for previous example domain, where you setup pages and email forwarding
@@ -186,6 +225,13 @@ and considering all this, your goal:
 "a lambda at api.net23.cc can send an email from noreply@ef---.ll-"
 should be possible
 
+                      _ _     ____  
+  ___ _ __ ___   __ _(_) |   |___ \ 
+ / _ \ '_ ` _ \ / _` | | |     __) |
+|  __/ | | | | | (_| | | |_   / __/ 
+ \___|_| |_| |_|\__,_|_|_( ) |_____|
+                         |/         
+
 you started down the breadcrumbs with cold3.cc, but then read this on step 2:
 "By adding your domain to Amazon SES it also allows your recipients to know that the emails coming from you. For your initial domain, we recommend verifying a domain that loads a webpage with identifiable information about your organization."
 so, you need to use ef---.ll- not cold3.cc
@@ -234,20 +280,7 @@ there's a csv file to download with 3 CNAME, 2 TXT, and a MX record
 going to namecheap to add them
 already in namecheap are dns records for squarespace, and google workspace
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(notes)
 
 chatgpt suggested "mail" as the subdomain name
 and explained there are four things i should configure here:
@@ -257,6 +290,294 @@ DKIM (DomainKeys Identified Mail) Adds email authentication to prevent spoofing.
 DMARC (Domain-based Message Authentication, Reporting & Conformance) Helps manage and report on email authentication.
 MAIL FROM Domain. Aligns the MAIL FROM domain with your From address for DMARC compliance and improved deliverability.
 
+                      _ _     _____ 
+  ___ _ __ ___   __ _(_) |   |___ / 
+ / _ \ '_ ` _ \ / _` | | |     |_ \ 
+|  __/ | | | | | (_| | | |_   ___) |
+ \___|_| |_| |_|\__,_|_|_( ) |____/ 
+                         |/         
+
+2024jul3 going hard on dns for ef---.ll- to setup a net23 lambda that sends a message from ef---.ll-
+first, some dns settings that are true:
+
+amazon says, add these records to the dns for ef---.ll-:
+
+CNAME  lzbihthz6dhrqvobiijpla77a4zfd5mo._domainkey.ef---.ll-  lzbihthz6dhrqvobiijpla77a4zfd5mo.dkim.amazonses.com
+CNAME  ruhjtsmevec56krss4pvkw6b5kwalsmy._domainkey.ef---.ll-  ruhjtsmevec56krss4pvkw6b5kwalsmy.dkim.amazonses.com
+CNAME  xhea6vwl7aw62ocquwlrerepecsrl6da._domainkey.ef---.ll-  xhea6vwl7aw62ocquwlrerepecsrl6da.dkim.amazonses.com
+MX     mail.ef---.ll-                                         10 feedback-smtp.us-east-1.amazonses.com
+TXT    mail.ef---.ll-                                         "v=spf1 include:amazonses.com ~all"
+TXT    _dmarc.ef---.ll-                                       "v=DMARC1; p=none;"
+
+remember that at this point, ef---.ll- is a squarespace with email through google workspace
+namecheap says, these records are already current on ef---.ll-:
+
+A      @                     198.185.159.144
+A      @                     198.185.159.145
+A      @                     198.49.23.144
+A      @                     198.49.23.145
+CNAME  www                   ext-cust.squarespace.com.
+CNAME  3xwzwwzn2sx39xjmdp8w  verify.squarespace.com.
+
+and doesn't show you the gmail ones, those they provide automatically
+nslookup says, these are the current mx records for ef---.ll-:
+
+MX  ef---.ll-  preference = 10, mail exchanger = aspmx3.googlemail.com
+MX  ef---.ll-  preference = 5, mail exchanger = alt1.aspmx.l.google.com
+MX  ef---.ll-  preference = 5, mail exchanger = alt2.aspmx.l.google.com
+MX  ef---.ll-  preference = 1, mail exchanger = aspmx.l.google.com
+MX  ef---.ll-  preference = 10, mail exchanger = aspmx2.googlemail.com
+
+by the way, here are cloudflare's current dns records for cold3.cc:
+
+AAAA   www       100::
+CNAME  cold3.cc  cold3.pages.dev
+MX     cold3.cc  route3.mx.cloudflare.net
+MX     cold3.cc  route2.mx.cloudflare.net
+MX     cold3.cc  route1.mx.cloudflare.net
+TXT    cold3.cc  "v=spf1 include:_spf.mx.cloudflare.net ~all"
+
+options for how to get this all combined:
+(option 1) keep your dns at namecheap. less of a change, but more cowboy. website should stay up, but gmail could go down
+(option 2) move dns to cloudflare. closer to eventual finish, squarespace could go down, saves $7/month on gmail
+also, chatgpt says the mx records won't conflict because the amazon one is mail.ef---.ll- and the google ones are ef---.ll-
+you're also noticing a txt record about spf1, but hopefully the mail.ef---.ll- and ef---.ll- will keep those from conflicting, too
+
+you're picking option 2, if the squarespace goes down nobody's looking at it right now, less cowboy, closer to finish
+
+steps for option 2:
+[x]manually forward email you want from k----@ef---.ll- gmail to ef---ll-@gmail.com before you break squarespace google workspace
+[x]namecheap stays the registrar, but move DNS from namecheap to cloudflare, like you did for cold3.cc
+[x]get squarespace working again, first just put in the same records as before
+[x]setup email routing in cloudflare, follow steps you just followed for cold3.cc for k----@, support@, noreply@
+[x]add amazon records and complete domain verification on the ses dashboard
+[x]apply to be let out of the sandbox
+
+official steps above, some more notes within steps:
+web records that point to squarespace will hopefully stay the same
+intentonally break squarespace google workspace, unsignup to save $7/month, delete chrome profile
+setup email routing in cloudflare, everything goes to ef---ll-@gmail.com
+
+== 2024jul4 move ef---.ll- dns from namecheap to cloudflare
+
+manually forwarded email from k----@ef---.ll- to ef---ll-@gmail.com
+in squarespace, cancelled google workspace
+
+cloudflare ef---ll- dashboard
+websites, lists coldstart.cc, cold2.cc, cold3.cc
+big blue button, add a site
+
+link to documentation: https://developers.cloudflare.com/learning-paths/get-started
+"This process sets up your web traffic to proxy through Cloudflare. Proxying speeds up and protects websites and services served by this domain."
+https://developers.cloudflare.com/fundamentals/concepts/how-cloudflare-works
+"If the domain’s status is active and the queried DNS record is set to proxied, then Cloudflare responds with an anycast IP address, instead of the value defined in your DNS table. This effectively re-routes the HTTP/HTTPS requests to the Cloudflare network, instead of directly reaching the targeted the origin server.
+"In contrast, if the queried DNS record is set to DNS only, meaning the proxy is off, then Cloudflare responds with the value defined in your DNS table (that is, an IP address or CNAME record). This means HTTP/HTTPS requests route directly to the origin server and are not processed or protected by Cloudflare."
+cold3.cc dashboards show DNS setup: full, and Proxied on
+
+ef---.ll-, free plan
+cloudflare says it's bringing in existing dns records, and it found
+4 A, 1 CNAME, 5 MX
+shoulda found 2 cname, but whatever
+
+cloudflare says "Avoid DNS resolution issues caused by DNSSEC; Find the DNSSEC setting at your registrar (per-provider instructions). If it is on, you have two options: Turn DNSSEC off at least 24 hours before updating your nameservers. Most common; Migrate your existing DNS zone without turning off DNSSEC. More advanced; After your domain activates, we recommend turning DNSSEC on through Cloudflare."
+namecheap dashboard, dnssec is off
+is dnssec on for cold3.cc? no! you found the start of the flow in cloudflare, websites, cold3.cc, dns, settings, first box is dnssec
+https://developers.cloudflare.com/dns/dnssec/
+TODO add dnssec to cold3.cc as practice and then ever.fans as production, following steps in cloudflare and namecheap
+
+namecheap, ef---.ll-, before changes:
+nameservers is set to Namecheap BasicDNS
+advanced dns tab shows the records above, the 4 A records and CNAME
+dnssec is off
+mail settings is Gmail, text says Gmail automatically configured for ef---.ll-
+
+switching from Namecheap Basic DNS to Custom DNS
+entering the nameservers from cloudflare:
+
+carl.ns.cloudflare.com
+maya.ns.cloudflare.com
+
+2024jul4 1:13p finished flow on cloudflare, which says "Cloudflare is now checking the nameservers for ef---.ll-. Please wait a few hours for an update."
+1:23p "Great news! Cloudflare is now protecting your site; Data about your site's usage will be here once available."
+dnschecker.org also shows maya and carl for ef---.ll-, just like cold3.cc
+your website site is down, ssl mismatch
+
+cloudflare dashboard, quick start guide
+automatic https rewrites, yes
+always use https, yes
+
+cloudflare dns records
+4 A are correct
+only one CNAME, [x]add the second
+5 MX records all about gmail, [x]remove them, so now they again look like this:
+
+A      @                     198.185.159.144
+A      @                     198.185.159.145
+A      @                     198.49.23.144
+A      @                     198.49.23.145
+CNAME  www                   ext-cust.squarespace.com
+CNAME  3xwzwwzn2sx39xjmdp8w  verify.squarespace.com
+
+you pasted a trailing period when adding the verify cname, but cloudflare isn't showing it
+
+sqarespace dashboards, red text and boxes that says "DNS Error, We couldn't verify DNS settings with Namecheap."
+and then they have a table of right and wrong settings, but it changes every time you refresh
+cloudflare dashboard, ef---.ll-, dns records, turned proxy off on all records
+at squarespace, refresh still is crazy
+changed nothing, refreshed site, ef---.ll- is back online, ssl looks ok
+squarespace dashboard, settings, domains and email, domains managed by third-party, ef---.ll-, red message changed to green Connected
+
+interestingly(?) in firefox it's really easy to see who issued the certificate, and right now it shows
+net23.cc: Verified by: Amazon (makes sense, as this ssl came from AWS ACM)
+cold3.cc: Verified by: Google Trust Services (this is cloudflare pages and workers)
+ef---.ll-: Verified by: Let's Encrypt (this is cloudflare dns, squarespace hosting, no idea where the ssl came from)
+
+ok, on to setting up email forwarding
+cloudflare dashboard, ef---.ll-, email, email routing, get started
+destination already verified, so that step is faster
+
+k----@ef---.ll-   -> ef---ll-@gmail.com
+support@ef---.ll- -> ef---ll-@gmail.com
+noreply@ef---.ll- -> Drop
+
+all the tests worked, except nothere@ef---.ll- didn't bounce, but whatever
+
+now at last you go back to the amazon steps
+you configured aws at mail.ef---.ll-
+you think later you can configure twilio at mail2.ef---.ll-, TODO
+
+aws dashboard, ses
+yellow note saying im in the sandbox
+verify sending domain, get dns records, download record set, got a csv file:
+
+CNAME  lzbihthz6dhrqvobiijpla77a4zfd5mo._domainkey.ef---.ll-  lzbihthz6dhrqvobiijpla77a4zfd5mo.dkim.amazonses.com
+CNAME  ruhjtsmevec56krss4pvkw6b5kwalsmy._domainkey.ef---.ll-  ruhjtsmevec56krss4pvkw6b5kwalsmy.dkim.amazonses.com
+CNAME  xhea6vwl7aw62ocquwlrerepecsrl6da._domainkey.ef---.ll-  xhea6vwl7aw62ocquwlrerepecsrl6da.dkim.amazonses.com
+MX     mail.ef---.ll-                                         10 feedback-smtp.us-east-1.amazonses.com
+TXT    mail.ef---.ll-                                         "v=spf1 include:amazonses.com ~all"
+TXT    _dmarc.ef---.ll-                                       "v=DMARC1; p=none;"
+
+left proxying on entering the first cname, and got an error that says it can't be proxied
+
+entering the mx record, there's a box that says, Priority (required)
+you're going to enter just feedback-smtp.us-east-1.amazonses.com as the value, and separately dial in priority 10
+also, you entered the name "mail.ef---.ll-" but cloudflare is showing it as just "mail"
+
+for the txt record, cloudflare gives you a larger box, you're pasting in as above including the quotes
+it saves with the quotes
+
+ok, they're all in there, a mix of records about squarespace, about cloudflare email forwards, and about ses
+only some things are proxyable, but you've turned off proxying on all of them
+
+amazon doesn't have a check now button, rather it says
+"Identity status: Verification pending; Last checked: July 4, 2024 at 14:21 (UTC-04:00)" and it's 14:56
+you might have gotten the records with that button, and then not set them quick enough for the first check
+15:02 without refresh, looking back at the page, green checkmark Verified
+
+last of three boxes on ses page is to send test email, so let's see what's in there
+"Send test email Info; The Amazon SES mailbox simulator lets you test how your application handles different email sending scenarios."
+from is already set to support@ef---.ll-
+there's no to box, it looks like messages go to your choice of options like success@simulator.amazonses.com
+there is a cc box, so let's try that? ef---ll-@outlook.com
+doesn't like it because not a verified identity
+
+aws dashboards, ses, configuration, identities
+already there are two listed, both green verified:
+
+ef---.ll-, Domain
+support@ef---.ll-, Email address
+
+so you need to [x]turn noreply into a forward, [x]verify it, then [x]turn it back into a drop target
+this is easy to do you just edit the existing row
+verified that one, and also ef---ll-@outlook.com
+and sent a test email. now the box in the ses dashboard says green check test email sent, but you haven't gotten it in outlook yet, but whatever
+
+aws dashboard, ses, get set up
+box on the top, you're still in the sandbox (but now the boxes below are all green), button request production access
+
+== filled out the aws ses form to request production access
+
+To help us evaluate your request for production access, fill out the following form outlining how you plan to use Amazon SES to send email once your account has moved out of the sandbox; Production access means you can send email to any recipient, regardless of whether the recipient's address or domain is verified. However, you must still verify all identities that you use as "From", "Source", "Sender", or "Return-Path" addresses.
+https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html
+and they say approval takes just 24 hours, which is great
+
+Mail type; Choose the option that best represents the types of messages you plan on sending. A marketing email promotes your products and services, while a transactional email is an immediate, trigger-based communication.
+
+Transactional
+
+Website URL; Provide the URL for your website to help us better understand the kind of content you plan on sending.
+
+https://www.ef---.ll-/
+
+Use case description: Explain how you plan to use Amazon SES to send email. Specifically, tell us:
+-How do you plan to build or acquire your mailing list?
+-How do you plan to handle bounces and complaints?
+-How can recipients opt out of receiving email from you?
+
+next day, approved: "Thank you for submitting your request to increase your sending limits. Your new sending quota is 50,000 messages per day. Your maximum send rate is now 14 messages per second. We have also moved your account out of the Amazon SES sandbox." huzzah. with great power comes great responsibility. and Network 23 will use it wisely
+
+                      _ _     _  _   
+  ___ _ __ ___   __ _(_) |   | || |  
+ / _ \ '_ ` _ \ / _` | | |   | || |_ 
+|  __/ | | | | | (_| | | |_  |__   _|
+ \___|_| |_| |_|\__,_|_|_( )    |_|  
+                         |/          
+
+[]make a hello world lambda
+[]make lambdas that send sms and email
+[]secure them so only cold3.cc can call them
+
+
+
+
+
+
+
+
+
+                      _     _   _                  _             _   
+ _ __ ___ _ __   ___ | |_  | |_| |__   ___   _ __ | | __ _ _ __ | |_ 
+| '__/ _ \ '_ \ / _ \| __| | __| '_ \ / _ \ | '_ \| |/ _` | '_ \| __|
+| | |  __/ |_) | (_) | |_  | |_| | | |  __/ | |_) | | (_| | | | | |_ 
+|_|  \___| .__/ \___/ \__|  \__|_| |_|\___| | .__/|_|\__,_|_| |_|\__|
+         |_|                                |_|                      
+
+
+
+
+
+quick repot1
+
+$ npm create cloudflare@latest
+repot1
+website or web app
+nuxt
+yes git for version control
+yes deploy to cloudflare
+(quickly get the right chrome profile forward, and already signed in to cloudflare there!)
+yeah it's up at
+https://repot1.pages.dev/
+
+$ npx nuxi add mypage
+$ npx nuxi add mycomponent
+$ npx nuxi add myapi
+
+
+
+
+
+
+
+
+                                        _            
+ ___  ___ _ __ __ _ _ __    _ __   ___ | |_ ___  ___ 
+/ __|/ __| '__/ _` | '_ \  | '_ \ / _ \| __/ _ \/ __|
+\__ \ (__| | | (_| | |_) | | | | | (_) | ||  __/\__ \
+|___/\___|_|  \__,_| .__/  |_| |_|\___/ \__\___||___/
+                   |_|                               
+
+
+(This page intentionally left blank.)
 
 
 
@@ -270,21 +591,12 @@ MAIL FROM Domain. Aligns the MAIL FROM domain with your From address for DMARC c
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                     _                       
+ _ __ ___   __ _  __| |_ __ ___   __ _ _ __  
+| '__/ _ \ / _` |/ _` | '_ ` _ \ / _` | '_ \ 
+| | | (_) | (_| | (_| | | | | | | (_| | |_) |
+|_|  \___/ \__,_|\__,_|_| |_| |_|\__,_| .__/ 
+                                      |_|    
 
 == high level
 
