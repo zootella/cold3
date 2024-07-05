@@ -115,6 +115,168 @@ then put the ARN in .env and run the script:
 
 $ serverless deploy
 
+== email
+
+goals and steps:
+[x]review how you setup email forwarding already in your personal cloudflare account
+[x]setup forwarding so support@cold3.cc forwards to another domain
+[x]configure noreply@cold3.cc to correctly bounce or kill email
+[~]configure DKIM and SPF for maximum security and correctness
+[]get a lambda at api.net23.cc to send email from noreply@cold3.cc on surface and deep in headers
+
+cloudflare dashboard for previous example domain, where you setup pages and email forwarding
+websites, example.com
+back on the left, dns, records
+seeing these records as a result of setting up pages and email forwarding:
+
+AAAA   www          100::                                         Proxied
+CNAME  example.com  example-com.pages.dev                         Proxied
+MX     example.com  route3.mx.cloudflare.net                      DNS only
+MX     example.com  route2.mx.cloudflare.net                      DNS only
+MX     example.com  route1.mx.cloudflare.net                      DNS only
+TXT    example.com  "v=spf1 include:_spf.mx.cloudflare.net ~all"  DNS only
+
+back on the left, email
+configuration summary, custom addresses, 2 dns records, routing status enabled, email dns records configured
+
+cloudflare dashboard for cold3.cc, where so far you've setup pages and workers but no email yet
+websites, cold3.cc
+back on the left, dns, records
+there are only two:
+
+AAAA   www       100::            Proxied
+CNAME  cold3.cc  cold3.pages.dev  Proxied
+
+back on the left, email, just a link to this documentation:
+https://developers.cloudflare.com/email-routing/
+and a big blue get started button, clicking it
+
+breadcrumbs are
+1 Create a custom address
+2 Verify destination address
+3 Configure your DNS
+
+you're goign to set these two up now:
+
+k----@cold3.cc   -> ke---@efa--.ll-
+support@cold3.cc -> support@efa--.ll-
+
+on the first one, step 2 is they send you an email link
+and step 3 is they show you the extra dns records they'll add
+then to add the second forwarding address click
+email, email routing, routing rules, custom addresses, create address
+
+you see how you can create an alias that drops emails, and will set that up now, as well
+cloudflare dashboard, cold3.cc, email, email routing, routing rules, custom addresses, create address
+custom address, noreply@cold3.cc
+action, Drop
+
+now the routing rules tab has a table with the three custom addresses
+you can turn them on and off individually there, too
+also, going back to dns, records, you can see the original AAAA and CNAME records
+and the new MX and TXT ones that configuring email routing created
+
+(...next, you leave the cloudflare dashboard and head over to aws)
+
+remember, you have setup your domain ef---.ll- at namecheap and squarespace
+aws has never heard of it outside of the pinpoint verification you just completed
+you have working email forwarding like support@ef---.ll-
+the domain you've setup at aws, net23.cc, the user should never see, not even in headers
+and considering all this, your goal:
+"a lambda at api.net23.cc can send an email from noreply@ef---.ll-"
+should be possible
+
+you started down the breadcrumbs with cold3.cc, but then read this on step 2:
+"By adding your domain to Amazon SES it also allows your recipients to know that the emails coming from you. For your initial domain, we recommend verifying a domain that loads a webpage with identifiable information about your organization."
+so, you need to use ef---.ll- not cold3.cc
+
+aws dashboard labyrinth, ses homepage, get started button
+
+here are the breadcrumbs:
+Step 1 Add your email address
+Step 2 Add your sending domain
+Step 3 - optional Add MAIL FROM domain
+Step 4 Review and get started with SES
+
+Step 1
+
+Add your email address, To get started with Amazon SES you must provide an email address so that we can send you a verification link. This verification process shows us you're the owner of the email address., A verification email will be sent to you at this address.
+
+support@ef---.ll-
+
+Step 2
+
+Add your sending domain; A domain identity usually matches your website or business name. Amazon SES needs to be linked to your domain and verified in order to send emails to your recipients through SES. By adding your domain to Amazon SES it also allows your recipients to know that the emails coming from you. For your initial domain, we recommend verifying a domain that loads a webpage with identifiable information about your organization; To verify ownership of a domain, you must have access to its DNS settings to add the necessary records.
+
+ef---.ll-
+
+Step 3
+
+Add MAIL FROM domain - optional; Configuring a custom MAIL FROM domain for messages sent from this identity enables the MAIL FROM address to align with the From address. Domain alignment must be achieved in order to be DMARC compliant; The MAIL FROM domain refers to the domain that appears in the 'From' field of an email message and is recommended for better deliverability, reputation management, and branding purposes. The MAIL FROM domain must be a subdomain of the verified identity from which you’re sending.
+
+mail.ef---.ll-
+
+Behavior on MX failure; Choose which action Amazon SES should take if your MAIL FROM domain's MX (Mail Exchange) record is not set up correctly
+
+(x) Use default MAIL FROM domain; Will use a subdomain of amazonses.com instead of your custom MAIL FROM domain.
+( ) Reject message; Will automatically reject the message without sending it.
+
+Done
+
+You are in Sandbox; In a sandbox environment, you can use all of the features offered by Amazon SES; however, certain sending limits and restrictions apply. When you're ready to move out of the sandbox, submit a request for production access. Before you submit a request for production access you must complete the tasks below.
+[]Verify email address; To verify ownership of this email, check your inbox for a verification request email and click the link provided.
+[]Send test email (Optional but recommended); Amazon SES mailbox simulator lets you test how your application handles different email sending scenarios.
+[]Verify sending domain; Click on the button below and add the generated CNAME records to your domain's DNS provider.
+
+Get DNS Records
+
+there's a csv file to download with 3 CNAME, 2 TXT, and a MX record
+going to namecheap to add them
+already in namecheap are dns records for squarespace, and google workspace
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+chatgpt suggested "mail" as the subdomain name
+and explained there are four things i should configure here:
+chat suggested dns records, as well, all of which are covered by amazon's instructions
+SPF (Sender Policy Framework) Ensures AWS SES is authorized to send emails on behalf of your domain.
+DKIM (DomainKeys Identified Mail) Adds email authentication to prevent spoofing.
+DMARC (Domain-based Message Authentication, Reporting & Conformance) Helps manage and report on email authentication.
+MAIL FROM Domain. Aligns the MAIL FROM domain with your From address for DMARC compliance and improved deliverability.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
