@@ -1,6 +1,6 @@
 
 //library1 can import modules saved in the nuxt project's package.json above
-import { noop, Time, test, ok, now, say, inspect, log, checkText, checkAlpha, randomBetween, sayWhenFeed, sayWhenPage, starts, cut, onlyNumerals, intToBase62, Data } from './library0.js'
+import { noop, Time, test, ok, Now, say, inspect, log, checkText, checkAlpha, randomBetween, sayWhenFeed, sayWhenPage, starts, cut, onlyNumerals, intToBase62, Data } from './library0.js'
 
 import { customAlphabet } from 'nanoid'
 import Joi from 'joi'
@@ -21,10 +21,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js'
 
 
 
-/*
-TODO
-rename so you can do let tag = makeTag(); you're already fixing collisions
-*/
 
 //  _              
 // | |_ __ _  __ _ 
@@ -36,7 +32,7 @@ rename so you can do let tag = makeTag(); you're already fixing collisions
 const tagLength = 21
 
 //generate a new universally unique double-clickable tag of 21 letters and numbers
-export function tag() {
+export function Tag() {
 	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
 	return customAlphabet(alphabet, tagLength)()//same default nanoid length
 }
@@ -426,7 +422,7 @@ noop(() => {
 	let durationShort = 5*Time.minute
 	let durationLong = 5*Time.day
 
-	let n = now()
+	let n = Now()
 	let when = n
 	let earlier
 	let s = ''
@@ -445,7 +441,7 @@ export function generatePosts(quantity) {
 
 	let posts = []
 
-	let n = now()
+	let n = Now()
 	let when = n
 	let earlier
 	let s = ''
@@ -568,9 +564,9 @@ function cycle32(size) {
 	ok(d1.base16() == d2.base16())
 }
 function runFor(m, f) {
-	let n = now()
+	let n = Now()
 	let cycles = 0
-	while (now() < n + m) { cycles++; f() }
+	while (Now() < n + m) { cycles++; f() }
 	return cycles
 }
 noop(() => {

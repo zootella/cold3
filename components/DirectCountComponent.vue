@@ -1,7 +1,8 @@
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-import { log, inspect, now } from '~/library/library0'
+import { log, inspect, Now } from '~/library/library0'
+import { Tag } from '~/library/library1'
 
 
 
@@ -17,7 +18,7 @@ function queryStorage() {
 			if (b) {
 				browserTag.value = b
 			} else {
-				b = tag()
+				b = Tag()
 				browserTag.value = b
 				localStorage.setItem('browserTag', b)
 			}
@@ -48,7 +49,7 @@ let { data, fetching, error } = useFetch('/api/count', {
 async function incrementCount(increment1, increment2) {
 	try {
 
-		let tick1 = now()
+		let tick1 = Now()
 		let data2 = await $fetch('/api/count', {
 			method: 'POST',
 			body: {
@@ -57,7 +58,7 @@ async function incrementCount(increment1, increment2) {
 				message: 'later message'
 			}
 		})
-		let tick2 = now()
+		let tick2 = Now()
 		log(`fetch ran in ${tick2 - tick1}ms`)
 		console.log('data.value.countGlobal')
 		console.log(data.value.countGlobal)

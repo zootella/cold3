@@ -38,7 +38,7 @@ Size.tb = 1024*Size.gb//tebibyte
 Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
 
-export const now = Date.now//just a shortcut
+export const Now = Date.now//just a shortcut
 
 //  _   _               _            _       
 // | |_(_)_ __  _   _  | |_ ___  ___| |_ ___ 
@@ -68,7 +68,7 @@ export async function runTests() {
 	assertionsPassed = 0
 	assertionsFailed = 0
 	testsThrew = 0
-	let tick1 = now()
+	let tick1 = Now()
 	for (let i = 0; i < tests.length; i++) {
 		try {
 			await tests[i]()
@@ -78,7 +78,7 @@ export async function runTests() {
 			return e
 		}
 	}
-	let tick2 = now()
+	let tick2 = Now()
 	if (assertionsFailed || testsThrew) {
 		let m = `❌ Tests failed ❌`
 		logError(m)
@@ -98,7 +98,7 @@ export async function runTests() {
 //                   
 
 export function toss(note, watch) {//prepare your own watch object with named variables you'd like to see
-	let s = `toss ${sayTick(now())} ~ ${note} ${inspect(watch)}`
+	let s = `toss ${sayTick(Now())} ~ ${note} ${inspect(watch)}`
 	logError(s)
 	if (watch) logError(watch)
 	throw new Error(s)
@@ -122,7 +122,7 @@ export function composeLog(...a) {
 	} else {//timestamp and newlines between multiple arguments
 		a.forEach(e => { s += newline + say(e) })
 	}
-	return sayTick(now()) + ' ~' + (s.length ? (' ' + s) : '')
+	return sayTick(Now()) + ' ~' + (s.length ? (' ' + s) : '')
 }
 
 export function recordLog(s) {
@@ -1275,7 +1275,7 @@ export function sayWhenPage(t) {//like '2024 May 19 4:20 PM', always in that ord
 	return `${p.year} ${p.month} ${p.day} ${p.time}`
 }
 export function sayWhenFeed(t, n) {//takes a tick in the past, and the tick right now
-	if (!n) n = now()
+	if (!n) n = Now()
 	let age = n - t//how long ago t happened, based on the given n now
 	let t2 = _composeDate(t)
 	let n2 = _composeDate(n)

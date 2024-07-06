@@ -15,7 +15,7 @@
 </template>
 <script setup>
 
-import { log, inspect, now, Time, sameObject } from '~/library/library0'
+import { log, inspect, Now, Time, sameObject } from '~/library/library0'
 import { generatePosts } from '~/library/library1'
 
 //factory settings for infinite scroll
@@ -49,13 +49,13 @@ onUnmounted(() => {
 
 let onChangeTick, afterChangeTimer
 function onChange() {
-	onChangeTick = now()//keeps getting overwritten with the time when the most recent change happened
+	onChangeTick = Now()//keeps getting overwritten with the time when the most recent change happened
 	if (!afterChangeTimer) afterChangeTimer = setInterval(afterChange, _infinite.interval)//if not already running, make the timer to notice when things have cooled down
 
 	infiniteGrow()
 }
 function afterChange() {//called every 1/10th a second during and after a dense patch of changes
-	if (afterChangeTimer && (now() > (onChangeTick + _infinite.cooldown))) {//we've waited long enough
+	if (afterChangeTimer && (Now() > (onChangeTick + _infinite.cooldown))) {//we've waited long enough
 		clearInterval(afterChangeTimer); afterChangeTimer = null//put away for next time
 
 		infiniteShrink()

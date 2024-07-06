@@ -2,7 +2,7 @@
 
 //imports
 import { ref, reactive, onMounted } from "vue";
-import { log, inspect, now, sayTick } from '~/library/library0'
+import { log, inspect, Now, sayTick } from '~/library/library0'
 
 //ticks
 const t = reactive({
@@ -14,8 +14,8 @@ const t = reactive({
 	duration34: 0,//how long the fetch took
 	difference35: 0//differences between the clocks
 });
-t.tick1 = now();
-onMounted(() => { t.tick2 = now(); });
+t.tick1 = Now();
+onMounted(() => { t.tick2 = Now(); });
 
 //enter button and log box
 const textContents = ref("");
@@ -28,9 +28,9 @@ const logText = ref("");
 //fetch button and use fetch
 await doFetch();
 async function doFetch() {
-	t.tick3 = now();
+	t.tick3 = Now();
 	const r = await useFetch("/api/mirror");
-	t.tick4 = now();
+	t.tick4 = Now();
 	t.duration34 = t.tick4 - t.tick3;
 	logToBox(`fetched message "${r.data.value.message}", access length "${r.data.value.accessLength}", tag "${r.data.value.tag}", tick "${r.data.value.serverTick}"`);
 	t.tick5 = r.data.value.serverTick;
@@ -40,7 +40,7 @@ async function clickedFetch() { await doFetch(); }
 
 //library functions
 function logToBox(s) {
-	let s2 = `${sayTick(now())} '${s}'`;
+	let s2 = `${sayTick(Now())} '${s}'`;
 	log(s2);
 	logText.value += `\r\n${s2}`;
 }

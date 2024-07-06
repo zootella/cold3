@@ -1,6 +1,6 @@
 <script setup>
 
-import { Time, log, inspect, now } from '~/library/library0'
+import { Time, log, inspect, Now } from '~/library/library0'
 import { postDatabase } from '~/library/library1'
 
 //const instance = getCurrentInstance()
@@ -35,7 +35,7 @@ function measure() {
 		else countWithin++
 	}
 
-	let n = now()
+	let n = Now()
 	if (!lastMeasure) {//first measurement ever
 		lastMeasure = n
 	} else {
