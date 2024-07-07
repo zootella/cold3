@@ -109,7 +109,7 @@ function getBrowserTag() {//create set and get if not found
 }
 
 function getBrowserFingerprintAndTag() {
-	return getBrowserFingerprint() + getBrowserTag()
+	return `${getBrowserFingerprint()}tag:${getBrowserTag()};`
 }
 
 async function timeBrowserHash() {
@@ -117,6 +117,40 @@ async function timeBrowserHash() {
 	let h = (await subtleHash(Data({text: getBrowserFingerprintAndTag()}))).base32()
 	log(`hashed to ${h} in ${Now() - t}ms`)//ok, this takes 8ms, unfortunately
 }
+/*
+~ security note ~
+
+good security design is always a balance between security and usability
+
+the goal is to keep the user signed in without expiration
+and to keep that as secure as possible
+
+this is not the current experience of the web, a short timeout, any IP address change, or any use from another device leads to automatic sign-out
+and the poor user experience harms security, as users choose bad passwords, or discontinue using the site altogether
+
+the only place i've noticed signin without expiration is facebook
+i use facebook less than once a year, but whenever i go to facebook.com, im still signed in
+meta likely has metrics that link signing out a user with losing that user
+
+essentially, a browser is identified by a tag
+and if a signed-in browser reports the same tag to the server, it's still signed in
+but there are two security enhancements:
+
+(1) scary naming
+in local storage, the key and name look like this:
+current_session_password: account_access_code_DO_NOT_SHARE_hi1y5ICjnEQLVDKtawm0C
+imagine a n00b user is on a discord server or subreddit dedicated to power users of an instance of the platform, where a sophisticated attacker coaches users into compromising their accounts
+warning language to the n00b may give them pause
+
+(2) browser tag hashed, not sent
+the browser tag is never sent to the server
+the hash is never saved to the disk
+if the user's disk or system is compromised, a rudimentary scanner can recover the browser tag, but must compute the hash
+
+(3) hash is of tag and fingerprint
+rather than hashing the tag alone, details specific to the browser are included in the data hashed
+these details are designed to be specific to the user's device, but unlikely to change
+*/
 
 test(async () => {
 	log(getBrowserFingerprintAndTag())
@@ -125,9 +159,9 @@ test(async () => {
 /*
 examples:
 
-agent:Mozilla/. (Windows NT .; Win; x) AppleWebKit/. (KHTML, like Gecko) Chrome/... Safari/.;renderer:ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E92) Direct3D11 vs_5_0 ps_5_0, D3D11);vendor:Google Inc. (Intel);account_access_code_DO_NOT_SHARE_hi1y5ICjnEQLVDKtawm0C
+agent:Mozilla/. (Windows NT .; Win; x) AppleWebKit/. (KHTML, like Gecko) Chrome/... Safari/.;renderer:ANGLE (Intel, Intel(R) UHD Graphics 630 (0x00003E92) Direct3D11 vs_5_0 ps_5_0, D3D11);vendor:Google Inc. (Intel);tag:account_access_code_DO_NOT_SHARE_hi1y5ICjnEQLVDKtawm0C;
 
-SSFUSWZPQBDEVTOM5MERKXEXZSSHA7SZ6XJBECOKQ3CY3W6STS5A
+ZPTJJJP2OV5WNFEMXVLMI3IV3C6ZVQRVXNM4UXMWPQCZDDT4KP6Q
 
 7ms
 
