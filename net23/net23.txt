@@ -4,30 +4,30 @@
 |  \| |/ _ \ __\ \ /\ / / _ \| '__| |/ /   __) | |_ \ 
 | |\  |  __/ |_ \ V  V / (_) | |  |   <   / __/ ___) |
 |_| \_|\___|\__| \_/\_/ \___/|_|  |_|\_\ |_____|____/ 
-                                                      
+																											
 
 Network 23 ~ "Beta to the Max!"
 
  _________________________________
 /\                                \
 \_| --y'know what? There's only   |
-  | four things we do better than |
-  | anyone else:                  |
-  |                               |
-  |   music                       |
-  |   movies                      |
-  |   microcode (software)        |
-  |   high-speed pizza delivery   |
-  |   ____________________________|_
-   \_/______________________________/
+	| four things we do better than |
+	| anyone else:                  |
+	|                               |
+	|   music                       |
+	|   movies                      |
+	|   microcode (software)        |
+	|   high-speed pizza delivery   |
+	|   ____________________________|_
+	 \_/______________________________/
 
 some notes building the megamultimedia empire:
-                     _                         _           _   
-  ___ _ __ ___  __ _| |_ ___   _ __  _ __ ___ (_) ___  ___| |_ 
+										 _                         _           _   
+	___ _ __ ___  __ _| |_ ___   _ __  _ __ ___ (_) ___  ___| |_ 
  / __| '__/ _ \/ _` | __/ _ \ | '_ \| '__/ _ \| |/ _ \/ __| __|
 | (__| | |  __/ (_| | ||  __/ | |_) | | | (_) | |  __/ (__| |_ 
  \___|_|  \___|\__,_|\__\___| | .__/|_|  \___// |\___|\___|\__|
-                              |_|           |__/               
+															|_|           |__/               
 
 == install aws cli
 
@@ -91,12 +91,12 @@ $ npm install -S aws-sdk
 amazon access is configured, but make .env to mirror non-amazon secrets the lambdas will use
 $ touch .env
 and make sure .gitignore lists it
-     _                       _                                    
-  __| | ___  _ __ ___   __ _(_)_ __    _ __   __ _ _ __ ___   ___ 
+		 _                       _                                    
+	__| | ___  _ __ ___   __ _(_)_ __    _ __   __ _ _ __ ___   ___ 
  / _` |/ _ \| '_ ` _ \ / _` | | '_ \  | '_ \ / _` | '_ ` _ \ / _ \
 | (_| | (_) | | | | | | (_| | | | | | | | | | (_| | | | | | |  __/
  \__,_|\___/|_| |_| |_|\__,_|_|_| |_| |_| |_|\__,_|_| |_| |_|\___|
-                                                                  
+																																	
 
 == domain name
 
@@ -147,12 +147,12 @@ then put the ARN in .env and run the script:
 
 $ serverless deploy
 
-                      _ _ 
-  ___ _ __ ___   __ _(_) |
+											_ _ 
+	___ _ __ ___   __ _(_) |
  / _ \ '_ ` _ \ / _` | | |
 |  __/ | | | | | (_| | | |
  \___|_| |_| |_|\__,_|_|_|
-                          
+													
 
 == email
 
@@ -225,12 +225,12 @@ and considering all this, your goal:
 "a lambda at api.net23.cc can send an email from noreply@ef---.ll-"
 should be possible
 
-                      _ _     ____  
-  ___ _ __ ___   __ _(_) |   |___ \ 
+											_ _     ____  
+	___ _ __ ___   __ _(_) |   |___ \ 
  / _ \ '_ ` _ \ / _` | | |     __) |
 |  __/ | | | | | (_| | | |_   / __/ 
  \___|_| |_| |_|\__,_|_|_( ) |_____|
-                         |/         
+												 |/         
 
 you started down the breadcrumbs with cold3.cc, but then read this on step 2:
 "By adding your domain to Amazon SES it also allows your recipients to know that the emails coming from you. For your initial domain, we recommend verifying a domain that loads a webpage with identifiable information about your organization."
@@ -290,12 +290,12 @@ DKIM (DomainKeys Identified Mail) Adds email authentication to prevent spoofing.
 DMARC (Domain-based Message Authentication, Reporting & Conformance) Helps manage and report on email authentication.
 MAIL FROM Domain. Aligns the MAIL FROM domain with your From address for DMARC compliance and improved deliverability.
 
-                      _ _     _____ 
-  ___ _ __ ___   __ _(_) |   |___ / 
+											_ _     _____ 
+	___ _ __ ___   __ _(_) |   |___ / 
  / _ \ '_ ` _ \ / _` | | |     |_ \ 
 |  __/ | | | | | (_| | | |_   ___) |
  \___|_| |_| |_|\__,_|_|_( ) |____/ 
-                         |/         
+												 |/         
 
 2024jul3 going hard on dns for ef---.ll- to setup a net23 lambda that sends a message from ef---.ll-
 first, some dns settings that are true:
@@ -516,12 +516,12 @@ Use case description: Explain how you plan to use Amazon SES to send email. Spec
 
 next day, approved: "Thank you for submitting your request to increase your sending limits. Your new sending quota is 50,000 messages per day. Your maximum send rate is now 14 messages per second. We have also moved your account out of the Amazon SES sandbox." huzzah. with great power comes great responsibility. and Network 23 will use it wisely
 
-                      _ _     _  _   
-  ___ _ __ ___   __ _(_) |   | || |  
+											_ _     _  _   
+	___ _ __ ___   __ _(_) |   | || |  
  / _ \ '_ ` _ \ / _` | | |   | || |_ 
 |  __/ | | | | | (_| | | |_  |__   _|
  \___|_| |_| |_|\__,_|_|_( )    |_|  
-                         |/          
+												 |/          
 
 []make a hello world lambda
 []make lambdas that send sms and email
@@ -535,12 +535,103 @@ next day, approved: "Thank you for submitting your request to increase your send
 
 
 
-                      _     _   _                  _             _   
+
+
+
+
+
+
+	 _                          _                 
+	(_)___  __   _____ _ __ ___(_) ___  _ __  ___ 
+	| / __| \ \ / / _ \ '__/ __| |/ _ \| '_ \/ __|
+	| \__ \  \ V /  __/ |  \__ \ | (_) | | | \__ \
+ _/ |___/   \_/ \___|_|  |___/_|\___/|_| |_|___/
+|__/                                            
+
+coding with big int literals, nuxt freaked out
+it seems like it was building everything to es2019, and those are es2020
+also, soon you're going to start using library functions from lambdas, which are node
+so it's time to figure out what javascript version you want, and set it explicitly
+
+here's what amazon supports for lambda right now, 2024jul:
+https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
+Node.js 20, current
+Node.js 18, current
+Node.js 16, deprecation date 2024jun12
+so from that, picking Node 20
+
+you just updated node and npm on your development workstation:
+$ node --version, 20.15.0
+$ npm --version, 10.8.1
+so that matches well
+
+it seems there isn't a good way to match a node version to an esXXXX version
+because platform vendors, like google making v8, implement different features from the spec at different times
+this page is detailed, but useless:
+https://v8.dev/features
+
+so what version is cloudflare workers running?
+https://developers.cloudflare.com/workers/runtime-apis/web-standards/
+"The Workers runtime is updated at least once a week, to at least the version of V8 that is currently used by Google Chrome’s stable release. This means you can safely use the latest JavaScript features, with no need for transpilers."
+ok, so that means way more recent than 2019 or 2020
+
+$ nuxt build was the simplest command to hit the big int literal error:
+
+	Kevin@ncom3 MINGW64 /.../repot1 (main)
+	$ npm run build
+	> nuxt build
+	Nuxt 3.12.3 with Nitro 2.9.7
+	i Building client...
+
+	[nitro]  ERROR  Error: Transform failed with 2 errors:
+	C:\Documents\code\code21site\repot1\server\api\myapi.ts:12:8: ERROR: Big integer literals are not available in the configured target environment ("es2019")
+
+(as an aside: this doesn't really make sense because even if it is targeting es2019, shouldn't transplation correctly turn my big int literals into something that es2019 can understand? isn't that the whole point of transplilation?)
+this configuration addition fixes it, in /nuxt.config.txt
+
+	export default defineNuxtConfig({
+		compatibilityDate: '2024-04-03',
+		devtools: { enabled: true },
+		nitro: {
+			preset: "cloudflare-pages",
+			esbuild: { options: { target: 'esnext' } }// <-- new line that fixes big int literal error
+		},
+		modules: ["nitro-cloudflare-dev"],
+	})
+
+so that's cool. "es2020" also fixes it, but you're using "esnext", because:
+2020 was still four years ago,
+es2023 and es2024 might not be real yet, and
+esnext is also a good match for cloudflare's "what's our version? current!" thing
+
+
+
+
+(then add more here about versioning net23 lambdas with babel transpilation to node20)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+											_     _   _                  _             _   
  _ __ ___ _ __   ___ | |_  | |_| |__   ___   _ __ | | __ _ _ __ | |_ 
 | '__/ _ \ '_ \ / _ \| __| | __| '_ \ / _ \ | '_ \| |/ _` | '_ \| __|
 | | |  __/ |_) | (_) | |_  | |_| | | |  __/ | |_) | | (_| | | | | |_ 
 |_|  \___| .__/ \___/ \__|  \__|_| |_|\___| | .__/|_|\__,_|_| |_|\__|
-         |_|                                |_|                      
+				 |_|                                |_|                      
 
 
 
@@ -569,12 +660,12 @@ $ npx nuxi add myapi
 
 
 
-                                        _            
+																				_            
  ___  ___ _ __ __ _ _ __    _ __   ___ | |_ ___  ___ 
 / __|/ __| '__/ _` | '_ \  | '_ \ / _ \| __/ _ \/ __|
 \__ \ (__| | | (_| | |_) | | | | | (_) | ||  __/\__ \
 |___/\___|_|  \__,_| .__/  |_| |_|\___/ \__\___||___/
-                   |_|                               
+									 |_|                               
 
 
 (This page intentionally left blank.)
@@ -591,12 +682,12 @@ $ npx nuxi add myapi
 
 
 
-                     _                       
+										 _                       
  _ __ ___   __ _  __| |_ __ ___   __ _ _ __  
 | '__/ _ \ / _` |/ _` | '_ ` _ \ / _` | '_ \ 
 | | | (_) | (_| | (_| | | | | | | (_| | |_) |
 |_|  \___/ \__,_|\__,_|_| |_| |_|\__,_| .__/ 
-                                      |_|    
+																			|_|    
 
 == high level
 
