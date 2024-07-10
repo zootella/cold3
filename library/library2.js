@@ -232,6 +232,17 @@ https://nuxt.com/docs/api/components/client-only
 */
 
 
+/*
+sorta related is, is Nuxt running in development or production?
+you could run tiny tests on a CSS overlay, for instance, in development and not in production
+
+process.env.NODE_ENV == 'development' or 'production', apparently, but you haven't tried this
+
+
+
+*/
+
+
 
 export function deindent(s) {
 	return s
