@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 
 //imports
-import { ref, reactive, onMounted } from "vue";
-import { log, inspect, Now, sayTick } from '~/library/library0'
+import { ref, reactive, onMounted } from 'vue'
+import { log, inspect, Now, sayTick } from '../library/library0.js'
 
 //ticks
 const t = reactive({

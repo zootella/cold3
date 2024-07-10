@@ -1,7 +1,7 @@
 <script setup>
 
 import { ref, reactive, watch, onMounted } from 'vue'
-import { Tag } from '~/library/library1'
+import { Tag } from '../library/library1.js'
 
 let browserTag = ref('')
 let count = reactive({

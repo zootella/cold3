@@ -9,7 +9,7 @@
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-import { log, inspect, now } from '~/library/library0'
+import { log, inspect, Now } from '../library/library0.js'
 
 const inputText = ref('')
 

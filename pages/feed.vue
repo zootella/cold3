@@ -1,7 +1,7 @@
 <script setup>
 
-import { Time, log, inspect, Now } from '~/library/library0'
-import { postDatabase } from '~/library/library1'
+import { Time, log, inspect, Now } from '../library/library0.js'
+import { postDatabase } from '../library/library1.js'
 
 //const instance = getCurrentInstance()
 const posts = postDatabase.chronology

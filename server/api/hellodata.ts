@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+
+import { createClient } from '@supabase/supabase-js'
 
 export default defineEventHandler(async (event) => {
 

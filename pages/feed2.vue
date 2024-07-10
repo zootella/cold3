@@ -15,8 +15,8 @@
 </template>
 <script setup>
 
-import { log, inspect, Now, Time, sameObject } from '~/library/library0'
-import { generatePosts } from '~/library/library1'
+import { log, inspect, Now, Time, sameObject } from '../library/library0.js'
+import { generatePosts } from '../library/library1.js'
 
 //factory settings for infinite scroll
 const _infinite = {

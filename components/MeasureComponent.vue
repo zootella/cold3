@@ -1,7 +1,7 @@
 <script setup>
 
 import { ref } from 'vue'
-import { log, inspect, Time } from '~/library/library0'
+import { log, inspect, Time } from '../library/library0.js'
 
 const boundingBox = ref(null)//must be reactive, because vue changes it, even if we don't
 

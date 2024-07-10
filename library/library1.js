@@ -450,7 +450,7 @@ export function generatePosts(quantity) {
 		when -= earlier
 
 		posts.push({
-			tag: tag(),
+			tag: Tag(),
 			order: i,
 			quantity: quantity,
 			tick: when

@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref } from 'vue';
+import { ref } from 'vue'
 
 let dynamicValue = ref('dynamic value') // This makes dynamicValue a reactive reference
 let staticValue = 'static value' // This remains a non-reactive constant

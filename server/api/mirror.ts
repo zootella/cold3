@@ -1,6 +1,6 @@
 
 import { log, see, Now } from '../../library/library0.js'
-import { Tag } from '../../library/library1.js'//on the server, can't use ~ and must use .js
+import { Tag } from '../../library/library1.js'
 
 export default defineEventHandler((event) => {
 
