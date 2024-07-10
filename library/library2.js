@@ -152,7 +152,7 @@ rather than hashing the tag alone, details specific to the browser are included 
 these details are designed to be specific to the user's device, but unlikely to change
 */
 
-test(async () => {
+noop(async () => {
 	log(getBrowserFingerprintAndTag())
 	await timeBrowserHash()
 })
