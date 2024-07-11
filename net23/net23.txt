@@ -606,8 +606,8 @@ esnext is also a good match for cloudflare's "what's our version? current!" thin
 
 
 
-
-(then add more here about versioning net23 lambdas with babel transpilation to node20)
+(bookmark)
+then add more here about versioning net23 lambdas with babel transpilation to node20
 
 
 
@@ -651,13 +651,24 @@ $ npm install -D serverless-offline         519 thousand, 85 packages
 $ npm install -D serverless-domain-manager  220 thousand, 62 packages
 $ npm install -D serverless-s3-sync          32 thousand,  9 packages
 
+as an aside, "$ serverless deploy" works, but doesn't notice changed files in www
+you added a script to package.json so "$ npm run sync" force syncs everything
 
 
-[x]try installing thse modules in net23c
-[~]in cold3/net23, run serverless deploy with the current package.json: already broken because now, maybe with a new npm? serverless-s3-sync doesn't like bringing in serverless 4
-clear package.json and delete node_modules folder
-install modules in net23
-test serverless deploy again
+
+
+(bookmark)
+next three scopes:
+1 hello world lambda, no custom domain, no webpack
+2 lambdas as api.net23.cc
+3 webpack and babel
+try running local and deployed
+can you see the bundle size before and after?
+make an api endpoint to run tests, should be fine because local node 20 works great
+
+
+
+
 
 
 

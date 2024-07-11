@@ -6,7 +6,7 @@ plugins:
 
 provider:
   name: aws
-  runtime: nodejs16.x
+  runtime: nodejs20.x # As of 2024jul, Node 16 is deprecated, and 18 and 20 are current
   region: us-east-1 # Lambda@Edge requires Virginia
   stage: prod # Production by default, as this script includes resources like buckets
 
