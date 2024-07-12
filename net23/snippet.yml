@@ -1,4 +1,4 @@
-service: net23-addition
+service: hello-world
 
 provider:
   name: aws
@@ -21,7 +21,18 @@ functions:
           method: get
 
 plugins:
+  - serverless-domain-manager
   - serverless-offline
+
+custom:
+  customDomain:
+    domainName: api.net23.cc
+    basePath: ''
+    stage: ${opt:stage, self:provider.stage}
+    createRoute53Record: true
+    endpointType: 'regional'
+    securityPolicy: 'tls_1_2'
+    certificateArn: 'arn:aws:acm:us-east-1:YOUR_ACCOUNT_ID:certificate/YOUR_CERTIFICATE_ID'
 
 package:
   exclude:
@@ -29,9 +40,3 @@ package:
     - dist/**
     - .babelrc
     - webpack.config.js
-
-
-
-
-
-

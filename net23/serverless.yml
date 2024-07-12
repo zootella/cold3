@@ -4,6 +4,7 @@ useDotenv: true
 plugins:
   - serverless-s3-sync # Upload static site files from www with $ npm run sync
   - serverless-offline # Emulates Lambda and API Gateway for local development
+  - serverless-domain-manager # Use our domain for API Gateway and Lambda
 
 provider:
   name: aws
@@ -143,4 +144,11 @@ custom:
     - bucketName: www-net23-cc
       localDir: www
       deleteRemoved: true # Remove files in the bucket now missing from www folder
-      # This is working without explicitly invalidating the distribution, so nothing extra here
+  customDomain: # Settings for serverless-domain-manager to get Lambdas up at api.net23.cc
+    domainName: api.net23.cc
+    basePath: ''
+    stage: ${opt:stage, self:provider.stage}
+    createRoute53Record: true
+    endpointType: 'regional'
+    securityPolicy: 'tls_1_2'
+    certificateArn: ${env:ACCESS_CERTIFICATE_ARN}

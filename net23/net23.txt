@@ -652,7 +652,7 @@ $ npm install -D serverless-domain-manager  220 thousand, 62 packages
 $ npm install -D serverless-s3-sync          32 thousand,  9 packages
 
 as an aside, "$ serverless deploy" works, but doesn't notice changed files in www
-you added a script to package.json so "$ npm run sync" force syncs everything
+you added a script to package.json so "$ npm run www" force syncs everything
 
 
 
@@ -678,6 +678,8 @@ make an api endpoint to run tests, should be fine because local node 20 works gr
 |_| |_|\___|_|_|\___/  |_|\__,_|_| |_| |_|_.__/ \__,_|\__,_|
                                                             
 
+# lambda step 1: hello world and local development
+
 notes getting started with lambda
 $ npm run local
 runs serverless offline, which emulates AWS Lambda and API Gateway
@@ -689,17 +691,115 @@ live updates don't seem to work, but maybe that's not an intended feature
 $ npm run deploy
 first time, right now with two lambdas that aren't using a custom domain
 
+# lambda step 2: manual steps to get custom domain
 
-endpoints:
-  GET - https://jk6kcpheo3.execute-api.us-east-1.amazonaws.com/prod/hello1
-  GET - https://jk6kcpheo3.execute-api.us-east-1.amazonaws.com/prod/hello2
+serverless.yml should be able to create api.net23.cc, but you're getting this error:
+$ npm run deploy
+Deploying net23 to stage prod (us-east-1)
+Warning: V1 - 'api.net23.cc' does not exist.
+Error: V1 - Make sure the 'api.net23.cc' exists.
+
+aws dashboard, route 53, net23.cc, you see stuff for the root and www, but nothing yet for api.net23.cc
+aws dashboard, api gateway, apis, there is a listing named prod-net23, and clicking into it you do see hello1 and hello2
+
+ok, instead of trying to get this one-time configuration to be created by serverless.yml,
+you're going to document steps here to set it up manually:
+
+aws dashboard, api gateway, custom domain names
+api.net23.cc
+tls 1.2
+regional (not edge optimized)
+net23.cc, choose ACM certificate from drop down, only one there
+create domain name button, green success banner
+
+aws dashboard, api gateway, custom domain names, api.net23.cc
+configurations, endpoint configuration, api gateway domain name
+copy this as you'll paste it into route53 in a moment
+
+aws dashboard, api gateway, custom domain names, api.net23.cc
+api mappings, second tab
+configure api mappings, add new mapping
+api dropdown, one thing listed, what was created by serverless, prod-net23 (REST)
+prod, stage, only option
+path (optional), leave blank because you want root
+save
+
+aws dashboard, route53, hosted zones, net23.cc, create record
+api, record name
+A, record type, already set to this
+switch on Alias
+Route traffic to, dropdown with lots of options, Alias to API Gateway API
+us-east-1, N. Virginia, region
+choose endpoint, dropdown with one item, suggests the domain like blah.execute-api.us-east-1.amazonaws.com we just created
+simple routing policy, yes evaluate target heath, leaving these defaults
+create records
+
+back in route23 for net23.cc, all your dns records from before are there, along with the new one for api.net23.cc
+and it looks like it's directing to, and saying, the under-the-hood domain like:
+blahblah.execute-api.us-east-1.amazonaws.com
+
+# lambda step 3: turn off side door access
+
+(1) correct custom domain
+https://api.net23.cc/hello1
+works, which is great
+
+(2) domain early in setup, from api gateway
+https://blahblah1.execute-api.us-east-1.amazonaws.com/prod/hello1
+message forbidden, which is great
+
+(3) domain from later in setup with api gateway and route 53
+https://blahblah2.execute-api.us-east-1.amazonaws.com/prod/hello1
+this one still works! next we'll do additional steps to turn it off
+
+
+
+
+(bookmark)
+as always with aws, there are manual steps or you can try automatic
+manual steps involve pasting in code
+automatic steps involve a secret that includes your aws account number
+
+manual steps
+aws dashboard, api gateway, prod-net23
+halfway down on the left, resource policy
+starting out seeing policy details, no resource policy
+
+
+
+
+
+
+
+
+
+
+
+# lambda step 4: let in webpack and babel to reduce bundle size and use modules
+
+
+
+(bookmark)
+when you deploy, output is like this:
 functions:
   hello1: net23-prod-hello1 (7.1 MB)
   hello2: net23-prod-hello2 (7.1 MB)
-
-so that size is huge for hello world
-because it's taking all of the node_modules folder, essentially
+7mb for hello world!
+huge because it's taking all of the node_modules folder, essentially
 []watch it go down when you add webpack and babel
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

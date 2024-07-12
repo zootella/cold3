@@ -12,7 +12,7 @@
     "build": "webpack",
     "local": "serverless offline",
     "deploy": "serverless deploy",
-    "sync": "serverless s3sync"
+    "www": "serverless s3sync"
   },
   "type": "module",
   "dependencies": {
