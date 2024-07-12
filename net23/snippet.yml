@@ -1,0 +1,37 @@
+service: net23-addition
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+
+functions:
+  hello1:
+    handler: src/handlers/hello1.handler
+    events:
+      - http:
+          path: hello1
+          method: get
+
+  hello2:
+    handler: src/handlers/hello2.handler
+    events:
+      - http:
+          path: hello2
+          method: get
+
+plugins:
+  - serverless-offline
+
+package:
+  exclude:
+    - node_modules/**
+    - dist/**
+    - .babelrc
+    - webpack.config.js
+
+
+
+
+
+
