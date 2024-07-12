@@ -26,7 +26,6 @@ functions:
       - http:
           path: hello1
           method: get
-
   hello2:
     handler: src/handlers/hello2.handler
     events:
@@ -140,10 +139,10 @@ resources:
       Value: !GetAtt CloudFrontDistribution.DomainName
 
 custom:
-  s3Sync: # Upload files from the www folder to the bucket behind the distribution for www.net23.cc
+  s3Sync: # Settings for serverless-s3-sync so $ npm run www syncs the www folder up to the bucket behind the distribution for www.net23.cc
     - bucketName: www-net23-cc
       localDir: www
-      deleteRemoved: true # Remove files in the bucket now missing from www folder
+      deleteRemoved: true # Remove files in the bucket missing from the folder
   customDomain: # Settings for serverless-domain-manager to get Lambdas up at api.net23.cc
     domainName: api.net23.cc
     basePath: ''
