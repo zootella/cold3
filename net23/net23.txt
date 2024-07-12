@@ -671,7 +671,35 @@ make an api endpoint to run tests, should be fine because local node 20 works gr
 
 
 
+ _          _ _         _                 _         _       
+| |__   ___| | | ___   | | __ _ _ __ ___ | |__   __| | __ _ 
+| '_ \ / _ \ | |/ _ \  | |/ _` | '_ ` _ \| '_ \ / _` |/ _` |
+| | | |  __/ | | (_) | | | (_| | | | | | | |_) | (_| | (_| |
+|_| |_|\___|_|_|\___/  |_|\__,_|_| |_| |_|_.__/ \__,_|\__,_|
+                                                            
 
+notes getting started with lambda
+$ npm run local
+runs serverless offline, which emulates AWS Lambda and API Gateway
+then you can hit your APIs at urls like:
+http://localhost:3000/prod/hello1
+http://localhost:3000/prod/hello2
+live updates don't seem to work, but maybe that's not an intended feature
+
+$ npm run deploy
+first time, right now with two lambdas that aren't using a custom domain
+
+
+endpoints:
+  GET - https://jk6kcpheo3.execute-api.us-east-1.amazonaws.com/prod/hello1
+  GET - https://jk6kcpheo3.execute-api.us-east-1.amazonaws.com/prod/hello2
+functions:
+  hello1: net23-prod-hello1 (7.1 MB)
+  hello2: net23-prod-hello2 (7.1 MB)
+
+so that size is huge for hello world
+because it's taking all of the node_modules folder, essentially
+[]watch it go down when you add webpack and babel
 
 
 

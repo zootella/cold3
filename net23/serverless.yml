@@ -2,13 +2,36 @@ service: net23
 
 useDotenv: true
 plugins:
-  - serverless-s3-sync # Use to upload static site files
+  - serverless-s3-sync # Upload static site files from www with $ npm run sync
+  - serverless-offline # Emulates Lambda and API Gateway for local development
 
 provider:
   name: aws
   runtime: nodejs20.x # As of 2024jul, Node 16 is deprecated, and 18 and 20 are current
   region: us-east-1 # Lambda@Edge requires Virginia
   stage: prod # Production by default, as this script includes resources like buckets
+
+package: #soon, we'll be using babel and webpack, and this section goes away, pretty sure, TODO
+  exclude:
+    - node_modules/**
+    - dist/**
+    - .babelrc
+    - webpack.config.js
+
+functions:
+  hello1:
+    handler: src/handlers/hello1.handler
+    events:
+      - http:
+          path: hello1
+          method: get
+
+  hello2:
+    handler: src/handlers/hello2.handler
+    events:
+      - http:
+          path: hello2
+          method: get
 
 resources:
   Resources: # Yes, it's correct to have that twice and nested
