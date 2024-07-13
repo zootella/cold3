@@ -773,6 +773,35 @@ so that's way too much work and complexity for this that likely doesn't even mat
 
 
 
+
+ok, you put in webpack.config.js and .babelrc
+but haven't made any changes to serverless.yml yet
+you can still test them, maybe, with:
+
+$ npm run pack
+> net23@0.1.0 pack
+> webpack
+asset hello1.js 494 bytes [compared for emit] [minimized] (name: hello1)
+asset hello2.js 490 bytes [compared for emit] [minimized] (name: hello2)
+runtime modules 1.31 KiB 6 modules
+cacheable modules 310 bytes
+  ./src/handlers/hello1.js 157 bytes [built] [code generated]
+  ./src/handlers/hello2.js 153 bytes [built] [code generated]
+webpack 5.93.0 compiled successfully in 864 ms
+
+and it works! you've got dist/hello1.js and 2, and they're super compact
+this will also hopefully make the serverless deploy faster, as it's not bundling and uploading 14mb
+but that's for tomorrow
+
+
+
+
+
+
+
+
+
+
 (bookmark)
 when you deploy, output is like this:
 functions:
@@ -781,6 +810,8 @@ functions:
 7mb for hello world!
 huge because it's taking all of the node_modules folder, essentially
 []watch it go down when you add webpack and babel
+
+
 
 
 

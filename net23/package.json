@@ -9,7 +9,7 @@
     "url": "https://github.com/zootella/cold3.git"
   },
   "scripts": {
-    "build": "webpack",
+    "pack": "webpack",
     "local": "serverless offline",
     "deploy": "serverless deploy",
     "www": "serverless s3sync"
