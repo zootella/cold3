@@ -16,12 +16,12 @@ export default {
 	module: {
 		rules: [
 			{
-				test: /\.js$/, // Apply the rule to all .js files
-				exclude: /node_modules/, // Don't transpile files in the node_modules directory
+				test: /\.js$/, // Apply this rule to all .js files
+				exclude: /node_modules/, // Don't transpile files in the node_modules directory, they're already ready
 				use: {
 					loader: 'babel-loader', // Use Babel to transpile the files
 					options: {
-						presets: [ // Specify the Babel presets to use
+						presets: [ // Specify these Babel presets to use
 							['@babel/preset-env', {
 								targets: {
 									node: '20'
@@ -35,12 +35,9 @@ export default {
 		],
 	},
 	externals: {
-		'aws-sdk': 'aws-sdk', // Exclude AWS SDK from the bundle since it is available in the Lambda runtime
+		'aws-sdk': 'commonjs2 aws-sdk', // The AWS SDK is available in the Lambda runtime, so exclude it from the bundle, and treat it as an external dependency in CommonJS2 format
 	},
 	optimization: {
-		minimize: true,
-	},
-	resolve: {
-		extensions: ['.js'],
+		minimize: true, // Have Terser remove whitespace, comments, and newline characters, and shorten variable names; off by default
 	}
 }
