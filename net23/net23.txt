@@ -738,42 +738,36 @@ back in route23 for net23.cc, all your dns records from before are there, along 
 and it looks like it's directing to, and saying, the under-the-hood domain like:
 blahblah.execute-api.us-east-1.amazonaws.com
 
-# lambda step 3: turn off side door access
+# lambda step 3: turn off side door access, hard or impossible and gave up
 
-(1) correct custom domain
-https://api.net23.cc/hello1
-works, which is great
+related to the checks below, there's the www | root X http | https checks
+the api subdomain means we don't have to worry about www | root here, which is by design
+checking http, chrome takes a long time and then reports connection refused
+firefox takes a long time, and then redirects to https
+so all that looks ok for now
 
-(2) domain early in setup, from api gateway
-https://blahblah1.execute-api.us-east-1.amazonaws.com/prod/hello1
-message forbidden, which is great
+https://api.net23.cc/hello1 ~ works, correctly
+https://jkXXXXXXo3.execute-api.us-east-1.amazonaws.com/prod/hello1 ~ works, wrongly, id from api gateway
+https://d-1hXXXXXXyh.execute-api.us-east-1.amazonaws.com/prod/hello1 ~ blocked, correctly, value from route53
 
-(3) domain from later in setup with api gateway and route 53
-https://blahblah2.execute-api.us-east-1.amazonaws.com/prod/hello1
-this one still works! next we'll do additional steps to turn it off
-
-
-
-
-(bookmark)
 as always with aws, there are manual steps or you can try automatic
 manual steps involve pasting in code
 automatic steps involve a secret that includes your aws account number
 
-manual steps
+as both include blocks of json, trying infrastructure as code
+added ACCESS_API_GATEWAY_RESOURCE_ARN to .env and section that uses it to serverless.yml
+
+before running, checked the dashboard:
 aws dashboard, api gateway, prod-net23
 halfway down on the left, resource policy
 starting out seeing policy details, no resource policy
 
-
-
-
-
-
-
-
-
-
+ok, spent a few hours going in circles with chatgpt trying to turn off the side door
+chat repeatedly went to controlling who can call the function, not where the function is callable
+using the referer header, which of course can be spoofed anyway
+then got it to explain that aws doesn't have a way to turn off access at the amazonaws.com domain
+"Unfortunately, AWS does not provide a direct option to completely disable the default amazonaws.com endpoint for API Gateway. ... Although you cannot completely disable the default domain, you can create a Lambda@Edge function or use API Gateway’s HTTP integration to redirect any traffic from the default domain to your custom domain."
+so that's way too much work and complexity for this that likely doesn't even matter, giving up
 
 # lambda step 4: let in webpack and babel to reduce bundle size and use modules
 

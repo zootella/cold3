@@ -9,9 +9,10 @@ plugins:
 provider:
   name: aws
   runtime: nodejs20.x # As of 2024jul, Node 16 is deprecated, and 18 and 20 are current
-  region: us-east-1 # Lambda@Edge requires Virginia
+  region: us-east-1 # Lambda@Edge requires North Virginia
   stage: prod # Production by default, as this script includes resources like buckets
 
+# #### FOR API FUNCTIONS ####
 package: #soon, we'll be using babel and webpack, and this section goes away, pretty sure, TODO
   exclude:
     - node_modules/**
@@ -19,6 +20,7 @@ package: #soon, we'll be using babel and webpack, and this section goes away, pr
     - .babelrc
     - webpack.config.js
 
+# Resources for api.net23.cc lambdas
 functions:
   hello1:
     handler: src/handlers/hello1.handler
@@ -36,7 +38,7 @@ functions:
 resources:
   Resources: # Yes, it's correct to have that twice and nested
 
-    # First, this section provisions resources for the static website www.net23.cc
+    # #### FOR WWW STATIC SITE ####
     # Static site files in a private bucket get served only by a CloudFront distribution
     # Before running this script, perform manual steps to get the domain and SSL certificate
     # And put the ARN of the certificate in the .env file, referenced below
@@ -126,6 +128,7 @@ resources:
               DNSName: !GetAtt CloudFrontDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
 
+  # #### FOR WWW STATIC SITE ####
   Outputs: # Correctly within the outer resources section
     # Values to store in the CloudFormation template Outputs tab, not logged out to the console
     S3BucketName:
@@ -139,10 +142,14 @@ resources:
       Value: !GetAtt CloudFrontDistribution.DomainName
 
 custom:
+
+  # #### FOR WWW STATIC SITE ####
   s3Sync: # Settings for serverless-s3-sync so $ npm run www syncs the www folder up to the bucket behind the distribution for www.net23.cc
     - bucketName: www-net23-cc
       localDir: www
       deleteRemoved: true # Remove files in the bucket missing from the folder
+
+  # #### FOR API FUNCTIONS ####
   customDomain: # Settings for serverless-domain-manager to get Lambdas up at api.net23.cc
     domainName: api.net23.cc
     basePath: ''
