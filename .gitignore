@@ -30,3 +30,6 @@ logs
 # Added for serverless framework in net23
 .serverless
 jspm_packages
+
+# Added myself
+*.diff
