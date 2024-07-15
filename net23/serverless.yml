@@ -36,7 +36,7 @@ functions:
           method: get
 
 resources:
-  Resources: # Yes, it's correct to have that twice and nested
+  Resources: # Yes, it's correct to have resources twice and nested with different capitalization
 
     # #### FOR WWW STATIC SITE ####
     # Static site files in a private bucket get served only by a CloudFront distribution
