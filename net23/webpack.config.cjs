@@ -1,7 +1,7 @@
 
-import path from 'path'
+const path = require('path') // Yes, this is Node-style with .cjs extension, require, module.exports, and __dirname
 
-export default {
+module.exports = {
 	entry: {
 		hello1: './src/handlers/hello1.js',
 		hello2: './src/handlers/hello2.js'
@@ -10,7 +10,7 @@ export default {
 	mode: 'production',
 	output: {
 		libraryTarget: 'commonjs2',
-		path: path.resolve('dist'),
+		path: path.resolve(__dirname, 'dist'),
 		filename: '[name].js',
 	},
 	module: {
