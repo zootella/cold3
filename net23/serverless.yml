@@ -20,7 +20,7 @@ package: #soon, we'll be using babel and webpack, and this section goes away, pr
     - .babelrc
     - webpack.config.js
 
-# Resources for api.net23.cc lambdas
+# #### FOR API FUNCTIONS ####
 functions:
   hello1:
     handler: src/handlers/hello1.handler
