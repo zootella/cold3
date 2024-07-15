@@ -154,5 +154,5 @@ custom:
 
   # #### FOR API FUNCTIONS ####
   webpack: # Settings for serverless-webpack to bundle code for Lambda using webpack and babel
-    webpackConfig: './webpack.config.cjs' # .cjs because errors unless uses require all Node-style
+    webpackConfig: './webpack.config.cjs' # CommonJS with require because serverless-webpack wants its configuration old school
     includeModules: true

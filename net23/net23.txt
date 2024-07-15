@@ -779,7 +779,8 @@ deploy does that as part of the serverless framework upload to aws lambda
 before adding webpack, each hello was 7.1 MB; now serverless framework says it's 157 bytes
 on disk from pack its 494 bytes, though, but whatever
 
-also, deploy seems to delete the dist folder? it's there after pack, gone after deploy, at least
+also, deploy seems to delete the dist folder!
+it's there after pack, gone after deploy
 
 fought an error about ES6 module syntax or not in the webpack configuration
 generally, trying to pick ES6 module syntax everywhere because works in the browser and server, more recent and current, and helps tree shaking perform best
