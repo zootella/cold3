@@ -17,13 +17,13 @@ provider:
 # #### FOR API FUNCTIONS ####
 functions:
   hello1:
-    handler: dist/hello1.handler
+    handler: dist/service/hello1.handler
     events:
       - http:
           path: hello1
           method: get
   hello2:
-    handler: dist/hello2.handler
+    handler: dist/service/hello2.handler
     events:
       - http:
           path: hello2

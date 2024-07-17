@@ -806,11 +806,15 @@ shouldn't have to manually run webpack beforehand, but whatever
 you've got lambda saying hello
 and getting bundled with webpack
 next to do here:
-[]develop locally, using serverless framework's emulation of api gateway and lambda
+[skip]develop locally, using serverless framework's emulation of api gateway and lambda
 []use a node module, nanoid probably
 []use library code
 []run all the tests
 
+and no, local doesn't work, even though everything looks ok
+going to skip that and keep going
+curious if you can get it working in a totally empty clean new (no www) sample project, though
+and that project wouldn't even have to get deployed up to aws, so it's pretty easy to try out
 
 
 
