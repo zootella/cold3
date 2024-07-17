@@ -791,6 +791,11 @@ right now it's working with these choices:
 -insde webpack.config.cjs, require, module.exports, and __dirname are all legacy Node that matches CommonJS
 but also, there are two mentions of commonjs2, setting the output format, necessary for webpack to bundle for lambda's node environment
 
+getting errors related to dist getting deleted
+current workaround is
+$ npm run deploy
+which is "deploy": "webpack && serverless deploy",
+shouldn't have to manually run webpack beforehand, but whatever
 
 
 

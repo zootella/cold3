@@ -1,5 +1,6 @@
 
 const path = require('path') // Yes, this is Node-style with .cjs extension, require, module.exports, and __dirname, because serverless-webpack seems to require it that way
+const webpackNodeExternals = require('webpack-node-externals')
 
 module.exports = {
 	entry: {
@@ -8,6 +9,12 @@ module.exports = {
 	},
 	target: 'node20',
 	mode: 'production',
+	externals: [
+		{
+			'aws-sdk': 'commonjs2 aws-sdk', // The AWS SDK is available in the Lambda runtime, so exclude it from the bundle, and treat it as an external dependency in CommonJS2 (not ES6) format
+		},
+		webpackNodeExternals(), // Exclude all other node_modules, using the webpack-node-externals module
+	],
 	output: {
 		libraryTarget: 'commonjs2', // Output to CommonJS format (not ES6) is correct for target Node environment
 		path: path.resolve(__dirname, 'dist'),
@@ -33,9 +40,6 @@ module.exports = {
 				},
 			},
 		],
-	},
-	externals: {
-		'aws-sdk': 'commonjs2 aws-sdk', // The AWS SDK is available in the Lambda runtime, so exclude it from the bundle, and treat it as an external dependency in CommonJS2 (not ES6) format
 	},
 	optimization: {
 		minimize: true, // Have Terser remove whitespace, comments, and newline characters, and shorten variable names; off by default

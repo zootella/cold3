@@ -1,4 +1,5 @@
 service: net23
+frameworkVersion: '3' # Version 4 is out, but doesn't work with the plugins
 
 useDotenv: true
 plugins:

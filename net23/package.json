@@ -9,9 +9,11 @@
     "url": "https://github.com/zootella/cold3.git"
   },
   "scripts": {
-    "pack": "webpack",
+    "webpack": "webpack",
     "local": "serverless offline",
-    "deploy": "serverless deploy",
+    "package": "serverless package",
+    "serverless-deploy": "serverless deploy",
+    "deploy": "webpack && serverless deploy",
     "www": "serverless s3sync"
   },
   "type": "module",
@@ -28,6 +30,7 @@
     "serverless-s3-sync": "^3.3.0",
     "serverless-webpack": "^5.14.1",
     "webpack": "^5.93.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0"
   }
 }
