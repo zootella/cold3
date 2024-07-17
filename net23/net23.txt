@@ -791,11 +791,58 @@ right now it's working with these choices:
 -insde webpack.config.cjs, require, module.exports, and __dirname are all legacy Node that matches CommonJS
 but also, there are two mentions of commonjs2, setting the output format, necessary for webpack to bundle for lambda's node environment
 
-getting errors related to dist getting deleted
-current workaround is
-$ npm run deploy
-which is "deploy": "webpack && serverless deploy",
-shouldn't have to manually run webpack beforehand, but whatever
+# lambda step 5: three horrible hacky workarounds
+
+here are scripts in package.json:
+
+  "scripts": {
+(1) "www": "serverless s3sync"
+(2) "deploy": "webpack && serverless deploy"
+(3) "local": "serverless offline --config local.yml",
+
+(1) sync the www bucket
+serverless deploy should sync the www bucket
+except it doesn't
+so instead www calls s3sync directly
+
+(2) pack and upload lambda functions
+serverless deploy should run webpack and then upload the packed functions
+except it like deletes them and then can't find them or something
+so intead running webpack manually beforehand works
+and npm run deploy does this in a single command that bundles two steps
+
+(3) run lambda functions locally
+serverless-offline can emulate api gateway and lambda locally
+except somehow it can't find the named handler in the output bundle
+so this hack uses a separate yml config that points at the source files
+and that way, runs them fine
+
+here are some paths related to all this:
+
+on disk:
+./src/hello1.js ~ source code file
+./dist/hello1.js ~ bundled webpack output file
+
+in settings in local.yml:
+  handler: src/hello1.handler # Paths to src to run before webpack
+in settings in serverless.yml:
+  handler: dist/hello1.handler # Paths to dist to upload after webpack
+
+in code in ./src/hello1.js:
+  "... export const handler = async (event) => {..."
+in code in ./dist/hello1.js:
+  "...e.d(o,{handler:()=>t});const t=async..."
+
+on the web:
+  http://localhost:3000/prod/hello1 ~ path to function emulated locally
+  https://api.net23.cc/hello1 ~ path to function deployed  
+
+you've seen subfolders like src/handlers and dist/service appear, but for the moment at least, have managed to keep them away
+
+
+
+
+so, this is working, but hacky as f**k with three workarounds, and you haven't even tested using a module or library code yet, ugh
 
 
 
@@ -806,7 +853,7 @@ shouldn't have to manually run webpack beforehand, but whatever
 you've got lambda saying hello
 and getting bundled with webpack
 next to do here:
-[skip]develop locally, using serverless framework's emulation of api gateway and lambda
+[x]develop locally, using serverless framework's emulation of api gateway and lambda
 []use a node module, nanoid probably
 []use library code
 []run all the tests

@@ -3,12 +3,12 @@ const path = require('path') // Yes, this is Node-style with .cjs extension, req
 const webpackNodeExternals = require('webpack-node-externals')
 
 module.exports = {
-	entry: {
-		hello1: './src/handlers/hello1.js',
-		hello2: './src/handlers/hello2.js'
-	},
 	target: 'node20',
 	mode: 'production',
+	entry: {
+		hello1: './src/hello1.js',
+		hello2: './src/hello2.js'
+	},
 	externals: [
 		{
 			'aws-sdk': 'commonjs2 aws-sdk', // The AWS SDK is available in the Lambda runtime, so exclude it from the bundle, and treat it as an external dependency in CommonJS2 (not ES6) format
@@ -16,9 +16,12 @@ module.exports = {
 		webpackNodeExternals(), // Exclude all other node_modules, using the webpack-node-externals module
 	],
 	output: {
-		libraryTarget: 'commonjs2', // Output to CommonJS format (not ES6) is correct for target Node environment
 		path: path.resolve(__dirname, 'dist'),
 		filename: '[name].js',
+		libraryTarget: 'commonjs2' // Output to CommonJS format (not ES6) is correct for target Node environment
+	},
+	optimization: {
+		minimize: true, // Have Terser remove whitespace, comments, and newline characters, and shorten variable names; off by default
 	},
 	module: {
 		rules: [
@@ -40,8 +43,5 @@ module.exports = {
 				},
 			},
 		],
-	},
-	optimization: {
-		minimize: true, // Have Terser remove whitespace, comments, and newline characters, and shorten variable names; off by default
 	}
 }

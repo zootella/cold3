@@ -1,0 +1,26 @@
+
+service: net23-local
+frameworkVersion: '3'
+useDotenv: true
+plugins:
+  - serverless-offline # Emulates Lambda and API Gateway for local development
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  stage: prod
+
+functions:
+  hello1:
+    handler: src/hello1.handler # Paths to src to run before webpack
+    events:
+      - http:
+          path: hello1
+          method: get
+  hello2:
+    handler: src/hello2.handler
+    events:
+      - http:
+          path: hello2
+          method: get
