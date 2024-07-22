@@ -8,7 +8,7 @@ import path from 'path'
 import { defineConfig } from 'rollup' // Use Rollup, with the following plugins:
 import pluginNodeResolve from '@rollup/plugin-node-resolve' // Resolve Node.js modules
 import pluginCommonJs from '@rollup/plugin-commonjs' // Convert CommonJS modules to ES6
-import pluginJson from '@rollup/plugin-json'
+import pluginJson from '@rollup/plugin-json' // Convert .json files to ES6 modules
 import pluginTerser from '@rollup/plugin-terser' // Minify the output using Terser
 
 // List all .js files in the input directory
@@ -32,48 +32,3 @@ const configuration = files.map(file => ({
 }))
 
 export default defineConfig(configuration)
-
-
-/*
-notes
-
-serverless
-1 million
-8 days ago
-
-serverless-offline
-536k
-2 months ago
-
-rollup
-22 million
-10 days ago
-
-@rollup/plugin-commonjs
-3 million
-1 month ago
-
-@rollup/plugin-node-resolve
-6 million
-9 months ago
-
-@rollup/plugin-terser
-1 million
-9 months ago
-
-rollup-plugin-node-polyfills
-776k
-5 years ago, so in use, but not current; but seemingly no intended replacement yet
-
-
-
-
-*/
-
-
-
-
-
-
-
-
