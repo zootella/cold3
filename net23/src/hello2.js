@@ -23,29 +23,3 @@ export const handler = async (event) => {
 		}),
 	}
 }
-
-
-
-
-
-
-
-/*
-import nanoid
-import Tag
-big int literals
-run tests
-
-npm run pack
-npm run local
-
-
-
-*/
-
-
-
-
-
-
-
