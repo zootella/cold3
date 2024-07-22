@@ -6,9 +6,10 @@ import fs from 'fs'
 import path from 'path'
 
 import { defineConfig } from 'rollup' // Use Rollup, with the following plugins:
-import commonjs from '@rollup/plugin-commonjs' // Convert CommonJS modules to ES6
-import nodeResolve from '@rollup/plugin-node-resolve' // Resolve Node.js modules
-import terser from '@rollup/plugin-terser' // Minify the output using Terser
+import pluginNodeResolve from '@rollup/plugin-node-resolve' // Resolve Node.js modules
+import pluginCommonJs from '@rollup/plugin-commonjs' // Convert CommonJS modules to ES6
+import pluginJson from '@rollup/plugin-json'
+import pluginTerser from '@rollup/plugin-terser' // Minify the output using Terser
 
 // List all .js files in the input directory
 const files = fs.readdirSync(inputFolder).filter(file => file.endsWith('.js'))
@@ -17,14 +18,16 @@ const files = fs.readdirSync(inputFolder).filter(file => file.endsWith('.js'))
 const configuration = files.map(file => ({
 	input: path.join(inputFolder, file), // Input file path
 	output: {
-		file: path.join(outputFolder, file), // Output file path
+		dir: outputFolder, // Output directory path
 		format: 'esm', // Output format as ES modules, use import not require
+		inlineDynamicImports: true, // Build each function into a single file
 	},
 	external: ['aws-sdk'], // Don't include the AWS SDK in the bundle, it's already up there
 	plugins: [
-		nodeResolve(), // Resolve Node.js modules
-		commonjs(), // Convert CommonJS modules to ES6
-		terser() // Minify the output
+		pluginNodeResolve(), // Resolve Node.js modules
+		pluginCommonJs(), // Convert CommonJS modules to ES6
+		pluginJson(), // Deal with package.json files in imports and their imports
+		pluginTerser() // Minify the output
 	]
 }))
 

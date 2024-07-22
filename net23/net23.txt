@@ -839,10 +839,31 @@ on the web:
 
 you've seen subfolders like src/handlers and dist/service appear, but for the moment at least, have managed to keep them away
 
-
-
-
 so, this is working, but hacky as f**k with three workarounds, and you haven't even tested using a module or library code yet, ugh
+
+# lambda step 6: switched to rollup
+
+switched from webpack and babel to rollup, and everything works great
+$ npm run local   is "local": "rollup -c && serverless offline",
+$ npm run deploy  is "deploy": "rollup -c && serverless deploy",
+and the serverless-webpack module is replaced with nothing
+
+here is net23's package.json with rollup, looking at popularity and recency:
+
+serverless                 1 million      1month
+serverless-offline           536k         2months
+serverless-domain-manager    198k         5months
+serverless-s3-sync           31k          6months ~ a little too rare
+
+rollup                        22 million  1month
+@rollup/plugin-commonjs        3 million  1month
+@rollup/plugin-node-resolve    6 million  9months
+@rollup/plugin-terser          1 million  9months
+@rollup/plugin-json            2 million  7months
+rollup-plugin-node-polyfills     776k     5years ~ a little too old
+
+
+
 
 
 
@@ -851,17 +872,14 @@ so, this is working, but hacky as f**k with three workarounds, and you haven't e
 
 (bookmark)
 you've got lambda saying hello
-and getting bundled with webpack
+and getting bundled with rollup
 next to do here:
 [x]develop locally, using serverless framework's emulation of api gateway and lambda
-[]use a node module, nanoid probably
-[]use library code
-[]run all the tests
+[x]do some math big int style
+[x]use a node module directly, nanoid probably
+[x]import library code
+[x]run all the tests
 
-and no, local doesn't work, even though everything looks ok
-going to skip that and keep going
-curious if you can get it working in a totally empty clean new (no www) sample project, though
-and that project wouldn't even have to get deployed up to aws, so it's pretty easy to try out
 
 
 

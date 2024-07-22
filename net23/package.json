@@ -18,23 +18,24 @@
     "www": "serverless s3sync"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.8",
+    "aws-sdk": "^2.1659.0",
     "credit-card-type": "^10.0.0",
     "joi": "^17.13.1",
     "libphonenumber-js": "^1.11.3",
     "nanoid": "^5.0.7",
-    "rfc4648": "^1.5.3",
-    "aws-sdk": "^2.1659.0",
-    "@supabase/supabase-js": "^2.39.8"
+    "rfc4648": "^1.5.3"
   },
   "devDependencies": {
-    "serverless": "^3.39.0",
-    "serverless-domain-manager": "^7.3.8",
-    "serverless-offline": "^13.6.0",
-    "serverless-s3-sync": "^3.3.0",
     "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "rollup": "^4.18.1",
-    "rollup-plugin-node-polyfills": "^0.2.1"
+    "rollup-plugin-node-polyfills": "^0.2.1",
+    "serverless": "^3.39.0",
+    "serverless-domain-manager": "^7.3.8",
+    "serverless-offline": "^13.6.0",
+    "serverless-s3-sync": "^3.3.0"
   }
 }
