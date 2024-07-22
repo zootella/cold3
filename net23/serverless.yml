@@ -6,7 +6,7 @@ plugins:
   - serverless-s3-sync # Upload static site files from www with $ npm run sync
   - serverless-offline # Emulates Lambda and API Gateway for local development
   - serverless-domain-manager # Use our domain for API Gateway and Lambda
-  - serverless-webpack # Bundle code as small as possible for Lambda
+#  - serverless-webpack # Bundle code as small as possible for Lambda
 
 provider:
   name: aws

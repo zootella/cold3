@@ -1,9 +1,10 @@
 {
   "name": "icarus",
-  "version": "0.1.0",
-  "private": true,
   "description": "TDD runner for library functions",
   "license": "GPL-3.0-only",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/zootella/cold3.git"
@@ -14,7 +15,6 @@
     "preview": "vite preview",
     "icarus": "vite"
   },
-  "type": "module",
   "dependencies": {
     "credit-card-type": "^10.0.0",
     "joi": "^17.13.1",
