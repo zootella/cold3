@@ -6,7 +6,6 @@ plugins:
   - serverless-s3-sync # Upload static site files from www with $ npm run sync
   - serverless-offline # Emulates Lambda and API Gateway for local development
   - serverless-domain-manager # Use our domain for API Gateway and Lambda
-#  - serverless-webpack # Bundle code as small as possible for Lambda
 
 provider:
   name: aws
@@ -17,7 +16,7 @@ provider:
 # #### FOR API FUNCTIONS ####
 functions:
   hello1:
-    handler: dist/hello1.handler # Paths to dist to upload after webpack
+    handler: dist/hello1.handler # Paths to distribution for upload after rollup
     events:
       - http:
           path: hello1
@@ -152,8 +151,3 @@ custom:
     endpointType: 'regional'
     securityPolicy: 'tls_1_2'
     certificateArn: ${env:ACCESS_CERTIFICATE_ARN}
-
-  # #### FOR API FUNCTIONS ####
-  webpack: # Settings for serverless-webpack to bundle code for Lambda using webpack and babel
-    webpackConfig: './webpack.config.cjs' # CommonJS with require because serverless-webpack wants its configuration old school
-    includeModules: true

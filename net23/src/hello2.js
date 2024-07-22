@@ -9,7 +9,7 @@ export const handler = async (event) => {
 	return {
 		statusCode: 200,
 		body: JSON.stringify({
-			message: 'and hello from hello2!, v3',
+			message: 'hello2, version 2024jul22e',
       answer: `${answer}`,
 			tag: nanoid()
 		}),
