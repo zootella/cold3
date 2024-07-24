@@ -862,39 +862,56 @@ rollup                        22 million  1month
 @rollup/plugin-json            2 million  7months
 rollup-plugin-node-polyfills     776k     5years ~ a little too old
 
+# lambda step 7: great success
 
-
-
-
-
-
-
-
-(bookmark)
-you've got lambda saying hello
-and getting bundled with rollup
-next to do here:
+here's what we finished:
+[x]hello lambda
 [x]develop locally, using serverless framework's emulation of api gateway and lambda
 [x]do some math big int style
 [x]use a node module directly, nanoid probably
 [x]import library code
 [x]run all the tests
 
+                                             _      
+  __ _  ___ ___ ___  ___ ___    ___ ___   __| | ___ 
+ / _` |/ __/ __/ _ \/ __/ __|  / __/ _ \ / _` |/ _ \
+| (_| | (_| (_|  __/\__ \__ \ | (_| (_) | (_| |  __/
+ \__,_|\___\___\___||___/___/  \___\___/ \__,_|\___|
+                                                    
+
+only cold3.cc should be able to call network 23 apis
+in addition to cors and checking the origin header and so on,
+the simplest way this is secured is with an api access key
+this is just like how we access supabase and other third party apis
+except here, we're coding both sides
+here's an example:
 
 
+when cold3 makes a request to net23, it includes this access key
+cold3 gets the key from cloudflare secrets
+net23 checks the key from lambda environment variables or aws secret manager or whatever
 
+you need to store this secret a lot of places:
+-env files for local development, both cold3 and net23
+-cloudflare secrets
+-lambda's equivalent of cloudflare secrets
 
+.env:
+ACCESS_NETWORK_23=VeryLongSecretCodeLikeDsqmB9YxbtseDuUHwyJnjDsqmB9YxbtseDuUHwyJnjAndSoOn
 
+cloudflare:
+cloudflare dashboard, workers and pages, cold3, settings tab, environment variables
 
+serverless.yml:
+provider:
+  environment: # Name variables in .env file here so they are on process.env for the Lambda code
+    ACCESS_NETWORK_23: ${env:ACCESS_NETWORK_23}
 
+and then in lambda code like hello2.js:
+	let access = 'not found'
+	if (typeof process.env.ACCESS_NETWORK_23 == 'string') access = process.env.ACCESS_NETWORK_23.length
 
-
-
-
-
-
-
-
+you don't have to mess with the aws dashboard, which is great
 
 											_     _   _                  _             _   
  _ __ ___ _ __   ___ | |_  | |_| |__   ___   _ __ | | __ _ _ __ | |_ 
