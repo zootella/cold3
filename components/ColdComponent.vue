@@ -50,7 +50,7 @@ function logToBox(s) {
 <div>
 
 <p>
-	This is cold3.cc, Nuxt on Cloudflare, version 2024jun1a.
+	This is cold3.cc, Nuxt on Cloudflare.
 </p>
 
 <DirectCountComponent />

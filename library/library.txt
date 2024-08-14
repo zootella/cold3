@@ -12,7 +12,6 @@
 
 
 
-
 /*
 trail notes
 you've been doing a great job of making each of these a one screen show!
@@ -1243,6 +1242,9 @@ returns an object of answers which include answer and remainder
 
 
 
+== nuxt public
+
+[]in the nuxt project, get rid of public/favicon.ico
 
 
 

@@ -5,7 +5,7 @@ import { Tag } from '../../library/library1.js'
 export default defineEventHandler((event) => {
 
 	let o = {}
-	o.message = 'hello from cold3 api mirror, version 2024jul6a'
+	o.message = 'hello from cold3 api mirror, version 2024aug14a'
 	o.serverTick = Now()
 	o.headers = event.req.headers
 	o.accessLength = (process.env.ACCESS_TOKEN_2) ? process.env.ACCESS_TOKEN_2.length : 0
