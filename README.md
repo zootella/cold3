@@ -7,6 +7,8 @@ tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
 
 This is 🍺 [cold3.cc](https://cold3.cc/) on [Cloudflare](https://developers.cloudflare.com/) using [Nuxt](https://nuxt.com/).
 
+Notes:
+
 ```
 ./ is the Nuxt site for Cloudflare
 $ npm run local
@@ -22,8 +24,6 @@ $ npm run icarus
 ./library is a Node project with common functions used everywhere
 $ node test
 ```
-
-Notes:
 
 ## Make a new site on Cloudflare
 

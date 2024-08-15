@@ -8,6 +8,7 @@ defineProps({note: String})
 <div>
 	<p>
 		<NuxtLink to="/">index</NuxtLink>{{' - '}}
+		<NuxtLink to="/account">account</NuxtLink>{{' '}}
 		<NuxtLink to="/chat">chat</NuxtLink>{{' '}}
 		<NuxtLink to="/count">count</NuxtLink>{{' '}}
 		<NuxtLink to="/page1">page1</NuxtLink>{{' '}}

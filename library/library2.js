@@ -79,7 +79,7 @@ test(() => {
 })
 
 function getBrowserFingerprint() {
-	let agent = removeNumerals(navigator.userAgent)//remove numerals so frequent automatic browser updates don't change the fingerprint
+	let agent = navigator.userAgent
 
 	let renderer = '', vendor = ''
 	let c = document.createElement('canvas')
@@ -93,7 +93,7 @@ function getBrowserFingerprint() {
 	}
 	//what about screen resolution? multiple desktop monitors, and the user turning their phone, make this not a good choice
 
-	return `agent:${agent};renderer:${renderer};vendor:${vendor};`
+	return removeNumerals(`agent:${agent};renderer:${renderer};vendor:${vendor};`)//remove numerals so frequent automatic browser updates don't change the fingerprint
 }
 
 function getBrowserTag() {//create set and get if not found
@@ -108,7 +108,7 @@ function getBrowserTag() {//create set and get if not found
 	return value
 }
 
-function getBrowserFingerprintAndTag() {
+export function getBrowserFingerprintAndTag() {
 	return `${getBrowserFingerprint()}tag:${getBrowserTag()};`
 }
 
@@ -180,7 +180,18 @@ you need to only await for it on the very first API call, not at the start of th
 
 
 
+let _browserHash
+export async function browserHash() {
+	if (!_browserHash) _browserHash = (await subtleHash(Data({text: getBrowserFingerprintAndTag()}))).base32()
+	return _browserHash
+}
+noop(async () => {
 
+	log(await browserHash())//here's how you get the browser hash
+
+
+
+})
 
 
 
@@ -237,7 +248,10 @@ sorta related is, is Nuxt running in development or production?
 you could run tiny tests on a CSS overlay, for instance, in development and not in production
 
 process.env.NODE_ENV == 'development' or 'production', apparently, but you haven't tried this
+*/
 
+/*
+you also want to find the best way to detect serverless framework lambda development versus production
 
 
 */

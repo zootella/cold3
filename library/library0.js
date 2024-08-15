@@ -1368,3 +1368,79 @@ test(() => {
 
 
 
+
+
+
+//moar to organize later
+
+
+
+
+export function deindent(s) {
+	s = s.trim()//remove spaces, tabs, and \r and \n characters from the start and end
+	let a = splitLines(s)//split into an array of lines
+	a = a.map(line => line.trim())//trim each line
+	return a.join(newline)//combine back into a string with each line ending \r\n for windows or unix
+}
+/*
+function trimNewlineCharacters(s) {
+	return s.replace(/^[\r\n]+|[\r\n]+$/g, '')//remove any and all \r and \n from the start and end of s
+}
+*/
+function splitLines(s) {
+	return s.split(/\r\n|\n/)
+}
+/*
+test(() => {
+	ok(trimNewlineCharacters('AB') == 'AB')
+	ok(trimNewlineCharacters('A\r\nB') == 'A\r\nB')//windows uses \r\n
+	ok(trimNewlineCharacters('A\nB') == 'A\nB')//the rest of the modern world uses just \n
+	ok(trimNewlineCharacters('\r\nA\r\nB\r\n\r\n') == 'A\r\nB')
+	ok(trimNewlineCharacters('\nA\nB\n\n') == 'A\nB')
+})
+*/
+test(() => {
+	ok(splitLines('')+'' == '')
+	ok(splitLines('A\nB')+'' == 'A,B')
+	ok(splitLines('A\n\nB')+'' == 'A,,B')
+})
+/*
+here's one-hour deindent
+the fancier feature you thought of that this doesn't do is
+remove the whitespace from the first line from all the other lines
+this flattens every line against the margin
+but that's probably all you need
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

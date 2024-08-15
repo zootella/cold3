@@ -1249,3 +1249,107 @@ returns an object of answers which include answer and remainder
 
 
 
+
+
+== all the ways code can run
+
+>all the ways code can run:
+
+icarus libarary tests (vite, local, client)
+node library tests (node, local, server)
+
+nuxt server side api code (nuxt, local|deployed, server)
+nuxt client side code running on the server as part of the hydration step (nuxt, local|deployed, server)
+nuxt client side code running on the client (nuxt, local|deployed, client)
+
+serverless framework lambda code running on the server (serverless, local|deployed, server)
+
+(all those x these additional possibilities)
+
+nuxt local development
+nuxt deployed to cloudflare
+
+serverless framework local lambda emulation
+serverless framework deployed to aws lambda
+
+>design
+
+we're in the bike shed with this one, but wouldn't it be cool to have
+
+a function you query that tells you where you are
+
+the floppy disk ascii where you set
+name and version, which are available to code everywhere
+
+and then every time you git commit or upload push, a prerun task computes and writes
+####s showing how much code you've written, on the disk
+sha256 hash of all the code you've written, filled in each time
+from the date and hash a simple version slug like v2024aug14h00FF00FF
+
+ ____________________
+| |cold3           | |
+|.|________________|H|
+| |________________| |
+| |________________| |
+| |________________| |
+| |________________| |
+| |________________| |
+|                    |
+|    ____________    |
+|   |   |  _     |   |
+|   |   | | |    |   |
+|   |   | |_|    | V |
+|___|___|________|___|
+
+stamp task looks at all the files except .gitignore and diskette* to generate stamp1.js:
+
+export stamp1 = {
+	name: 'cold3',//set by user
+	tick: 456789456789456,//from developtment system
+	files: 456,//from disk
+	bytes: 456789456123,//totaled from disk
+	hash1: 'DSJCBGLG2G5FLB6NFFUM4DQUPQBI7B4ZNWSYUOGC3YKE7UGMCNHQ'//computed from disk
+}
+
+and then looks at stamp1.js to generate disk2.js:
+
+export stamp2 = {
+	(add in the stuff from stamp1, also),
+	hash2: 'QUPQBI7B4DSJCBGLG2G5FLB6NFFUM4DZNWS3YKE7UGMCNHQYUOGC',//computed from stamp1.js
+	seal: '2024aug14_QUPQBI7B'//composed from stamp1.tick and stamp2.hash, like a wax seal over the whole thing
+}
+
+and then code everywhere in all three projects references and shows stamp2.stamp
+
+this is called stamp, as in
+$ npm run stamp
+it doesn't happen automatically, you manually do stamp, deploy, push
+so now you can match a git version on github with what the server shows in cold3.cc/about
+
+this is a pretty cool idea
+
+there are two files so you can put things back, but at a later time, and confirm you get the same stamp1.hash1
+
+simple way to do this
+$ npm run stamp
+does node stamp
+stamp.js loads the library itself
+this is just a regular old fashioned node script
+meant only to run on the development workstation
+
+actually generate a stamp1.txt with hashes, sizes, and paths like:
+DSJCBGLG2G5FLB6NFFUM4DQUPQBI7B4ZNWSYUOGC3YKE7UGMCNHQ 123456 folder/file.js
+DSJCBGLG2G5FLB6NFFUM4DQUPQBI7B4ZNWSYUOGC3YKE7UGMCNHQ 123456 folder/file2.js
+
+so the files in order are:
+stamp1.txt, made from disk
+stamp2.js, made from stamp1
+stamp3.js, made from stamp2
+
+
+
+
+
+
+
+
