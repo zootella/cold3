@@ -64,14 +64,14 @@ a nuxt component calling down to a nuxt api handler should use $fetch
 a nuxt api handler can use $fetch
 code that fetches that might be called by nuxt or serverless must use fetch
 
-
-
-
-
-
-
-
+so then there's useFetch and $fetch
+only use useFetch when you want hydration
+which for 1.0 might be never!
+after that may be just for info graph cards and then search engine optimization
+useFetch is complicated because it returns already reactive variables
 */
+
+
 
 
 

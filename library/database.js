@@ -7,7 +7,8 @@ interface between the application and the database
 keep it all here together for easy refactoring and auditing
 */
 
-import { log, toss } from './library0.js'
+import { log, toss, Now } from './library0.js'
+import { Tag } from './library1.js'
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -31,13 +32,16 @@ CREATE TABLE table_counts (
 	count BIGINT DEFAULT 0 NOT NULL
 );
 
+-- table that records browsers signed in and out
 CREATE TABLE table_access (
-	row_number BIGSERIAL PRIMARY KEY,
-	tick BIGINT NOT NULL,
-	tag CHAR(21) UNIQUE NOT NULL,
-	browser_hash CHAR(52) NOT NULL,
-	signed_in BIGINT NOT NULL
+	tag CHAR(21) PRIMARY KEY NOT NULL, -- globally unique tag identifies row
+	tick BIGINT NOT NULL,              -- tick count when inserted
+	browser_hash CHAR(52) NOT NULL,    -- browser identifying hash
+	signed_in BIGINT NOT NULL          -- 0 signed out or 1 signed in
 );
+
+-- composite index so the common query that filters by browser hash and sorts by tick is fast
+CREATE INDEX index_access_browser_tick ON table_access (browser_hash, tick);
 
 using the supabase dashboard, there's no CHAR(21) type
 to enter these commands:
@@ -288,7 +292,41 @@ it's standard to set this as the primary key, even if tag is also globally uniqu
 there doesn't seem to be a way to get Date.now() easily in postgres, so we'll do that in the worker
 */
 
+/*
+next day
+having some problems in supabase with the automatic row numbers
+so, abandoning that
+in excel and on a piece of paper, the rows have an order, but this isn't the case in postgres
 
+picking tag as the primary key
+it's guaranteed to be unique in the table and everywhere because it's a tag
+you'll never sort or lookup by tag, and postgres will be ready to make that fast if you ever did, but that's ok
+
+tick is when, according to the worker, the new row was inserted
+you're thinking all your tables will start tag and tick like this
+
+the common query is to filter by browser hash, and look at results sorted by tick
+the index below makes this fast
+postgres won't create this index automatically, but will use it automatically, looking at your query
+
+CREATE TABLE table_access (
+	tag CHAR(21) PRIMARY KEY NOT NULL, -- row identifier, globally unique, primary key
+	tick BIGINT NOT NULL,              -- tick when record inserted
+	browser_hash CHAR(52) NOT NULL,  -- Browser identifier used for filtering
+	signed_in BIGINT NOT NULL  -- Boolean-like integer indicating signed-in status (e.g., 0 or 1)
+);
+
+CREATE INDEX idx_browser_hash_tick ON table_access (browser_hash, tick);
+
+Ok to name the index index_browser_tick? Do these names need to be unique across my whole database, or are they specific to the table they're on?
+OK, but then imagine I've got another table which also needs an index that filters by browser and sorts by tick. Shouldn't I include that table name in the index name if they must all be unique?
+
+index_access_browser_tick
+
+
+
+
+*/
 
 //insert a new row into table_access with the given row tag, browser hash, and signed in status
 export async function accessInsert(browser_hash, signed_in) {
@@ -302,13 +340,11 @@ export async function accessQuery(browser_hash) {
 	let { data, error } = await supabase
 		.from('table_access')
 		.select('*')
-		.eq('browser_hash', browser_hash);
+		.eq('browser_hash', browser_hash)
+		.order('tick', { ascending: false })//most recent row first
 	if (error) toss('supabase', {error})
 	return data
 }
-
-
-
 
 
 

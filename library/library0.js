@@ -330,8 +330,8 @@ test(() => {
 export function checkInt(i, m) { if (!minInt(i, m)) toss('bounds', {i, m}) }
 export function minInt(i, m = 0) { // Note (0)
 	return (
-		i === 0 &&                               // Note (1)
-		i >= m                                   /* Note (2)
+		i === 0 &&                     // Note (1)
+		i >= m                         /* Note (2)
 		Default minimum m 0 in arguments (Note 0); Negative works fine, but must specify allowed negative minimum.
 		Frequently, i will be zero (1); check value and type (1), and bounds (2) quickly. */
 	) || (
@@ -1428,6 +1428,28 @@ but that's probably all you need
 
 
 
+
+
+//you need this because you're storing booleans in the database as numbers like 0 false, 1 true
+function intToBoolean(i, minimum) {//if we've overloaded this database cell to hold enumerations like -1, pass minimum -1, otherwise defaults to 0
+	checkInt(i, minimum)
+	if      (i == 1) return true
+	else if (i == 0) return false
+	else toss('data', {i, minimum})
+}
+function booleanToInt(b) {
+	if (typeof b != 'boolean') toss('type', {b})
+	return b ? 1 : 0
+}
+test(() => {
+	let n = 0//first, just to confirm how javascript works
+	let b = false
+	ok(typeof n == 'number')
+	ok(typeof b == 'boolean')
+
+	ok(intToBoolean(0) === false && booleanToInt(false) === 0)
+	ok(intToBoolean(1) === true  && booleanToInt(true)  === 1)
+})
 
 
 
