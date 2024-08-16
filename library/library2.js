@@ -55,7 +55,23 @@ function logToLogflare(s) {
 }
 
 
+/*
+summary note about Nuxt/Serverless, and useFetch(), $fetch(), and fetch()
+here, because we're deep in the library, you're using fetch instead of Nuxt's $fetch
+and thus need to add content type header and stringify the body
 
+a nuxt component calling down to a nuxt api handler should use $fetch
+a nuxt api handler can use $fetch
+code that fetches that might be called by nuxt or serverless must use fetch
+
+
+
+
+
+
+
+
+*/
 
 
 

@@ -22,14 +22,37 @@ SQL statements fed into Supabase to create the database tables.
 Here in text notes; it would be better if they were tracked in git some other way!
 
 CREATE TABLE table_settings (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL
+	key TEXT PRIMARY KEY,
+	value TEXT NOT NULL
 );
 
 CREATE TABLE table_counts (
-  browser_tag CHAR(21) PRIMARY KEY,
-  count BIGINT DEFAULT 0 NOT NULL
+	browser_tag CHAR(21) PRIMARY KEY,
+	count BIGINT DEFAULT 0 NOT NULL
 );
+
+CREATE TABLE table_access (
+	row_number BIGSERIAL PRIMARY KEY,
+	tick BIGINT NOT NULL,
+	tag CHAR(21) UNIQUE NOT NULL,
+	browser_hash CHAR(52) NOT NULL,
+	signed_in BIGINT NOT NULL
+);
+
+using the supabase dashboard, there's no CHAR(21) type
+to enter these commands:
+supabase dashboard
+left bar, sql editor
+paste in create command
+green run button
+success, no rows returned
+go back to table editor and it's there
+
+
+
+
+
+
 */
 
 
@@ -37,6 +60,7 @@ CREATE TABLE table_counts (
 notes about the complete subset of types you'll use:
 
 CHAR(21) for tags, using this means it's a tag, even, which is great
+CHAR(52) for hashes, using this means it's a hash
 TEXT for all other text, email, username, posts, comments, base62 encoded encrypted text
 BIGINT for boolean 0,1; enum -1,0,1,2; tick counts; any actual numbers
 
@@ -194,6 +218,94 @@ let nonsense = '♦✎  𝓕𝔢βᖇǗ𝔞𝐑𝕪  🐸♔'
 
 
 
+
+//global password account access design notes
+/*
+
+browsers are identified by their browser hash
+that hash can be signed in or not
+
+the table should always grow: rows are added, not edited
+in addition to use specific information, rows generally always include a
+row number, what you get from supabase or postgres by default
+tag for unique identification
+tick when the row was made
+
+maybe this is all you need:
+
+rownumber | tag      | tick   | browserhash | sign in or sign out
+						CHAR(21)   BIGINT   CHAR(52)      BIGINT
+
+
+making in the supabase dashboard
+table_access, name
+turned off row level security
+two fields are already in there:
+id, int8, maybe this is rownumber
+created_at, timestamptz, now(), looks like an automatic tick stamp but not sure format or granularity
+leaving those in and adding your own, even if there's some duplication
+
+and talking to chat as you go
+turning off rls is fine, and common when server code has exclusive access to the database
+supabase's int8 is postgres BIGINT
+checking primary key tells PostgreSQL that this column will uniquely identify each row in the table
+PostgreSQL automatically creates an index on the primary key to ensure that lookups are fast.
+
+Type: "timestamptz" (timestamp with time zone)
+
+ok, chatting more here's the consensus:
+-totally fine to keep RLS off, despite supabase warnings
+-a table can only have one primary key, which has to be unique (advanced thing called composite key is the exception to this rule)
+-postgres will build an index for that primary key, making lookups fast
+-advanced thing called indexes like CREATE INDEX idx_user_id ON posts (user_id)
+-also "While PostgreSQL’s query planner is quite sophisticated and can optimize queries using existing indexes, it won’t create new indexes on its own based on query usage."
+
+so, use this as an excuse to at this early stage, make things simpler
+rownumber is in there, and it's the primary key, but you ignore it
+tag and tick get sent together from the worker, ignore timestampz and supabase's clock
+
+rownumber | tag      | tick   | browserhash | sign in or sign out
+						CHAR(21)   BIGINT   CHAR(52)      BIGINT
+
+
+-row number: an automatically incrementing number that the database handles itself
+-tag: CHAR(21), globally unique, set by my code
+-tick: BIGINT, set by my code
+-browser hash: CHAR(52), set by my code
+-signed in: BIGINT, ill store 0 or 1 here to use that as a boolean
+
+
+CREATE TABLE table_access (
+	row_number BIGSERIAL PRIMARY KEY,
+	tick BIGINT NOT NULL,
+	tag CHAR(21) UNIQUE NOT NULL,
+	browser_hash CHAR(52) NOT NULL,
+	signed_in BIGINT NOT NULL
+);
+
+BIGSERIAL is 8 byte, and auto incrementing
+it's standard to set this as the primary key, even if tag is also globally unique, picking that for now
+there doesn't seem to be a way to get Date.now() easily in postgres, so we'll do that in the worker
+*/
+
+
+
+//insert a new row into table_access with the given row tag, browser hash, and signed in status
+export async function accessInsert(browser_hash, signed_in) {
+	let { data, error } = await supabase
+		.from('table_access')
+		.insert([{ tick: Now(), tag: Tag(), browser_hash, signed_in }])
+	if (error) toss('supabase', {error})
+}
+//query table_access to get all the rows with a matching browser_hash
+export async function accessQuery(browser_hash) {
+	let { data, error } = await supabase
+		.from('table_access')
+		.select('*')
+		.eq('browser_hash', browser_hash);
+	if (error) toss('supabase', {error})
+	return data
+}
 
 
 

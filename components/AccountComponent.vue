@@ -4,35 +4,50 @@ import { ref, onMounted } from 'vue'
 import { log, inspect, Now, sayTick, newline, deindent, Data } from '../library/library0.js'
 import { getBrowserFingerprintAndTag, browserHash } from '../library/library2.js'
 
-onMounted(async () => {
-	let t = Now(); let b = await browserHash(); t = Now() - t
+onMounted(async () => {//doesn't run on server, even when hydrating
+	let t = Now(); browserHashRef.value = await browserHash(); t = Now() - t
 	stick(deindent(`
-		${b} hashed in ${t}ms from:
+		${browserHashRef.value} hashed in ${t}ms from:
 		${getBrowserFingerprintAndTag()}
 	`))
 })
 
 const passwordModel = ref('')
-function signIn() {
-	stick('clicked sign in')
+const browserHashRef = ref('')
+
+async function signIn() {
+	let response = await callAccount('action in')
+
 }
-function signOut() {
-	stick('clicked sign out')
+async function signOut() {
+	let response = await callAccount('action out')
+
+}
+async function signCheck() {
+	let response = await callAccount('action check')
+
 }
 
 
-async function snippet() {
+async function callAccount(action) {
 	try {
 		let response = await $fetch('/api/account', {
 			method: 'POST',
 			body: {
-				password: passwordModel.value
+				browserHash: browserHashRef.value,
+				password: passwordModel.value,
+				action
 			}
 		})
 		log('success', inspect(response))
+		return response
 	} catch (e) {
 		log('caught', e)
 	}
+}
+
+async function snippet() {
+	log('hi from snippet')
 }
 
 
@@ -44,13 +59,10 @@ function stick(s) { stickText.value += s + newline }
 <template>
 
 <div>
-	<p>this is the account component</p>
-</div>
-
-<div>
 	<input v-model="passwordModel" type="text" placeholder="password" />
 	<button @click="signIn">Sign In</button>
 	<button @click="signOut">Sign Out</button>
+	<button @click="signCheck">Sign Check</button>
 	<button @click="snippet">Snippet</button>
 </div>
 

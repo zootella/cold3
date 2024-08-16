@@ -29,7 +29,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js'
 //  \__\__,_|\__, |
 //           |___/ 
 
-const tagLength = 21
+export const tagLength = 21//we're choosing 21, long enough to be unique, short enough to be reasonable
 
 //generate a new universally unique double-clickable tag of 21 letters and numbers
 export function Tag() {

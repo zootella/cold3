@@ -1121,6 +1121,7 @@ test(async () => {
 //                        
 
 //compute the 32 byte SHA-256 hash value of data
+export const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
 export async function subtleHash(data) {
 	return Data({buffer: await crypto.subtle.digest(_subtle.hashName, data.array())})
 }
@@ -1128,8 +1129,17 @@ test(async () => {
 	let d = Data({random: 500})//hash 500 random bytes, different every time we run the test
 	let h = await subtleHash(d)
 	ok(h.size() == 32)//32 byte hash value, around 44 base62 characters
-	ok((await subtleHash(Data({text: 'hello'}))).base16() == '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')//hash the common string to the expected value
+	let d2 = await subtleHash(Data({text: 'hello'}))
+	ok(d2.base16() == '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')//found on the web
+	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
+	ok(d2.base32().length == hashLength)
 })
+//make sure s looks like a hash value in base 32, for the database
+export function checkHash(s) {
+	checkText(s); checkAlpha(s)
+	if (s.length != hashLength) toss('data', {s})
+	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
+}
 
 //      _             
 //  ___(_) __ _ _ __  
