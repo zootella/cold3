@@ -1007,7 +1007,12 @@ lambda serverless framework is local/deployed--run in those two environments
 
 
 
-
+beyond aws services, another nice thing about net23 is that
+if you do run into some node module or third party service
+that you cannot get working in a cloudflare worker
+then you just call out to a lambda at net23 which does it there
+and you've got that capability at easy reach
+without making every page load slow and expensive
 
 
 

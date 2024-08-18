@@ -211,6 +211,43 @@ noop(async () => {
 
 
 
+/*
+on day 2 you watched the fingerprint change on your fold!
+so, this doesn't work at all
+
+yesterday:
+agent:Mozilla/. (Linux; Android ; K) AppleWebKit/. (KHTML, like Gecko) Chrome/... Safari/.;
+renderer:ANGLE (Qualcomm, Adreno (TM) , OpenGL ES .);
+vendor:Google Inc. (Qualcomm);
+
+today:
+agent:Mozilla/. (Linux; Android ; K) AppleWebKit/. (KHTML, like Gecko) Chrome/... Safari/.;
+renderer:Adreno (TM) ;
+vendor:Qualcomm;
+
+so probably remove the fingerprint and the hashing
+and keep the account_access_code_DO_NOT_SHARE_ prefix
+and just send the browsser tag
+so the table looks like this:
+
+-- table that records browsers signed in and out
+CREATE TABLE access_table (
+	row_tag CHAR(21) PRIMARY KEY NOT NULL, -- row tag
+	row_tick BIGINT NOT NULL,              -- when inserted
+	browser_tag CHAR(21) NOT NULL,         -- browser tag
+	signed_in BIGINT NOT NULL              -- 0 signed out or 1 signed in
+);
+
+-- composite index so the common query that filters by browser tag and sorts by tick is fast
+CREATE INDEX access_index_on_browser_tick ON table_access (browser_tag, row_tick);
+
+
+
+
+
+
+*/
+
 
 
 
