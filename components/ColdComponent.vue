@@ -53,7 +53,7 @@ function logToBox(s) {
 	This is cold3.cc, Nuxt on Cloudflare.
 </p>
 
-<DirectCountComponent />
+<CountComponent2 />
 
 <p>
 	tick1 {{ sayTick(t.tick1) }}, script start<br/>

@@ -3,7 +3,7 @@
 
 <NavigationComponent note="on count" />
 
-<DirectCountComponent />
+<CountComponent2 />
 
 </div>
 </template>
