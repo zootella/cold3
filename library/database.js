@@ -7,8 +7,8 @@ interface between the application and the database
 keep it all here together for easy refactoring and auditing
 */
 
-import { log, toss, Now } from './library0.js'
-import { Tag } from './library1.js'
+import { log, toss, Now, checkInt } from './library0.js'
+import { Tag, checkTag } from './library1.js'
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -18,30 +18,87 @@ let supabase;
 if (process.env.ACCESS_SUPABASE_URL) supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY)
 
 
+
+/*
+the database keeps booleans as the BIGINT numbers 0 and 1
+this lets you use fewer different types overall
+and also later on overload these booleans into enums with 2 and -1 and whatever
+
+this means when storing booleans, you have to call booleanToInt() below
+
+when reading booleans, just read the numbers
+it's totally find if they float up through the stack
+this is why there's no corresponding function intToBoolean()
+*/
+export function booleanToInt(b) { return b ? 1 : 0 }
+//when getting booleans out of the database, it's fine if numbers 0 and 1 float upwards
+//so, there's no intToBoolean
+//this is also necessary
+
+
+
+//previous failed design:
+/*
+//you need this because you're storing booleans in the database as numbers like 0 false, 1 true
+export function intToBoolean(i, minimum) {//if we've overloaded this database cell to hold enumerations like -1, pass minimum -1, otherwise defaults to 0
+	checkInt(i, minimum)
+	if      (i == 1) return true
+	else if (i == 0) return false
+	else toss('data', {i, minimum})
+}
+export function booleanToInt(b) {
+	if (typeof b != 'boolean') toss('type', {b})
+	return b ? 1 : 0
+}
+test(() => {
+	let n = 0//first, just to confirm how javascript works
+	let b = false
+	ok(typeof n == 'number')
+	ok(typeof b == 'boolean')
+
+	ok(intToBoolean(0) === false && booleanToInt(false) === 0)
+	ok(intToBoolean(1) === true  && booleanToInt(true)  === 1)
+})
+*/
+
+
+
+
+
+
+
+
+
+
+
 /*
 SQL statements fed into Supabase to create the database tables.
 Here in text notes; it would be better if they were tracked in git some other way!
 
-CREATE TABLE table_settings (
-	key TEXT PRIMARY KEY,
-	value TEXT NOT NULL
+-- settings for the whole application
+CREATE TABLE settings_table (
+	key_text    TEXT  PRIMARY KEY  NOT NULL, -- name of the setting
+	value_text  TEXT                         -- value, text or numerals
 );
 
-CREATE TABLE table_counts (
-	browser_tag CHAR(21) PRIMARY KEY,
-	count BIGINT DEFAULT 0 NOT NULL
+-- counts for each browser, works without being signed in
+CREATE TABLE counts_table (
+	browser_tag  CHAR(21)  PRIMARY KEY  NOT NULL, -- browser tag
+	count        BIGINT                 NOT NULL
 );
 
--- table that records browsers signed in and out
-CREATE TABLE table_access (
-	tag CHAR(21) PRIMARY KEY NOT NULL, -- globally unique tag identifies row
-	tick BIGINT NOT NULL,              -- tick count when inserted
-	browser_hash CHAR(52) NOT NULL,    -- browser identifying hash
-	signed_in BIGINT NOT NULL          -- 0 signed out or 1 signed in
+-- records of browsers signing in with password and signing out
+CREATE TABLE access_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL, -- row tag
+	row_tick     BIGINT                 NOT NULL, -- when inserted
+	browser_tag  CHAR(21)               NOT NULL, -- browser tag
+	signed_in    BIGINT                 NOT NULL  -- 0 signed out or 1 signed in
 );
+-- composite index to make a filtering by browser tag and sorting by tick fast
+CREATE INDEX access_index_on_browser_tick ON access_table (browser_tag, row_tick);
 
--- composite index so the common query that filters by browser hash and sorts by tick is fast
-CREATE INDEX index_access_browser_tick ON table_access (browser_hash, tick);
+finding your convention for names in the database, which is sausage_case
+and types are at the end, so access_table and row_tick names tell you that's a table, and a tick
 
 using the supabase dashboard, there's no CHAR(21) type
 to enter these commands:
@@ -56,6 +113,23 @@ go back to table editor and it's there
 
 
 
+
+*/
+
+
+/*
+previous ones:
+
+
+CREATE TABLE table_settings (
+	key TEXT PRIMARY KEY,
+	value TEXT NOT NULL
+);
+
+CREATE TABLE table_counts (
+	browser_tag CHAR(21) PRIMARY KEY,
+	count BIGINT DEFAULT 0 NOT NULL
+);
 
 */
 
@@ -329,19 +403,21 @@ index_access_browser_tick
 */
 
 //insert a new row into table_access with the given row tag, browser hash, and signed in status
-export async function accessInsert(browser_hash, signed_in) {
+export async function accessInsert(browser_tag, signed_in) {
+	checkTag(browser_tag)//put type checks here, you think, to be sure only good data gets inserted
+	checkInt(signed_in)
 	let { data, error } = await supabase
-		.from('table_access')
-		.insert([{ tick: Now(), tag: Tag(), browser_hash, signed_in }])
+		.from('access_table')
+		.insert([{ row_tick: Now(), row_tag: Tag(), browser_tag, signed_in }])
 	if (error) toss('supabase', {error})
 }
-//query table_access to get all the rows with a matching browser_hash
-export async function accessQuery(browser_hash) {
+//query table_access to get all the rows with a matching browser_tag
+export async function accessQuery(browser_tag) {
 	let { data, error } = await supabase
-		.from('table_access')
+		.from('access_table')
 		.select('*')
-		.eq('browser_hash', browser_hash)
-		.order('tick', { ascending: false })//most recent row first
+		.eq('browser_tag', browser_tag)
+		.order('row_tick', { ascending: false })//most recent row first
 	if (error) toss('supabase', {error})
 	return data
 }

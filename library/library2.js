@@ -3,8 +3,8 @@
 //grow them here, then probably refactor them out into named files in this library folder
 //actually don't do this, it's library1.js and the named files
 
-import { noop, test, ok, log, composeLog, Now, subtleHash, Data } from './library0.js'
-import { Tag } from './library1.js'
+import { noop, test, ok, log, composeLog, Now, end, subtleHash, Data } from './library0.js'
+import { Tag, tagLength, checkTag } from './library1.js'
 
 
 
@@ -112,7 +112,12 @@ function getBrowserFingerprint() {
 	return removeNumerals(`agent:${agent};renderer:${renderer};vendor:${vendor};`)//remove numerals so frequent automatic browser updates don't change the fingerprint
 }
 
-function getBrowserTag() {//create set and get if not found
+export function getBrowserTag() {
+	let s = end(getBrowserTagWithPrefix(), tagLength)
+	checkTag(s)
+	return s
+}
+function getBrowserTagWithPrefix() {//create set and get if not found
 	const browserTagKey = 'current_session_password'
 	const browserTagValuePrefix = 'account_access_code_DO_NOT_SHARE_'//named these to discourage sharing, even if a n00b user is being coached by a hacker on reddit or discord to dig around the inspector
 
@@ -125,7 +130,7 @@ function getBrowserTag() {//create set and get if not found
 }
 
 export function getBrowserFingerprintAndTag() {
-	return `${getBrowserFingerprint()}tag:${getBrowserTag()};`
+	return `${getBrowserFingerprint()}tag:${getBrowserTagWithPrefix()};`
 }
 
 async function timeBrowserHash() {
@@ -224,27 +229,6 @@ today:
 agent:Mozilla/. (Linux; Android ; K) AppleWebKit/. (KHTML, like Gecko) Chrome/... Safari/.;
 renderer:Adreno (TM) ;
 vendor:Qualcomm;
-
-so probably remove the fingerprint and the hashing
-and keep the account_access_code_DO_NOT_SHARE_ prefix
-and just send the browsser tag
-so the table looks like this:
-
--- table that records browsers signed in and out
-CREATE TABLE access_table (
-	row_tag CHAR(21) PRIMARY KEY NOT NULL, -- row tag
-	row_tick BIGINT NOT NULL,              -- when inserted
-	browser_tag CHAR(21) NOT NULL,         -- browser tag
-	signed_in BIGINT NOT NULL              -- 0 signed out or 1 signed in
-);
-
--- composite index so the common query that filters by browser tag and sorts by tick is fast
-CREATE INDEX access_index_on_browser_tick ON table_access (browser_tag, row_tick);
-
-
-
-
-
 
 */
 

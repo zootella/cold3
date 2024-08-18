@@ -1430,28 +1430,6 @@ but that's probably all you need
 
 
 
-//you need this because you're storing booleans in the database as numbers like 0 false, 1 true
-function intToBoolean(i, minimum) {//if we've overloaded this database cell to hold enumerations like -1, pass minimum -1, otherwise defaults to 0
-	checkInt(i, minimum)
-	if      (i == 1) return true
-	else if (i == 0) return false
-	else toss('data', {i, minimum})
-}
-function booleanToInt(b) {
-	if (typeof b != 'boolean') toss('type', {b})
-	return b ? 1 : 0
-}
-test(() => {
-	let n = 0//first, just to confirm how javascript works
-	let b = false
-	ok(typeof n == 'number')
-	ok(typeof b == 'boolean')
-
-	ok(intToBoolean(0) === false && booleanToInt(false) === 0)
-	ok(intToBoolean(1) === true  && booleanToInt(true)  === 1)
-})
-
-
 
 
 

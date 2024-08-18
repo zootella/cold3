@@ -1,5 +1,5 @@
 
-import { log, inspect, checkHash, checkText, hasText } from '../../library/library0.js'
+import { log, inspect, checkText, hasText } from '../../library/library0.js'
 import { checkTag } from '../../library/library1.js'
 import { accessInsert, accessQuery } from '../../library/database.js'
 
@@ -11,18 +11,17 @@ export default defineEventHandler(async (event) => {
 		o.note = 'none'
 
 		//first, validate what the untrusted client told us
-		checkHash(body.browserHash)
+		checkTag(body.browserTag)
 
 		//validate the password, only needed to sign in
-		let passwordValid = hasText(body.password) && body.password == process.env.ACCESS_PASSWORD
-		o.passwordValid = passwordValid
+		o.passwordValid = hasText(body.password) && body.password == process.env.ACCESS_PASSWORD
 
 		//is this browser already signed in?
-		let rows = await accessQuery(body.browserHash)//get all the rows
+		let rows = await accessQuery(body.browserTag)//get all the rows
 		let signedIn1 = false
-		if (rows.length && rows[0].signed_in) signedIn1 = true
-		o.signedIn1 = signedIn1//whether the browser is signed in before this request changes anything
-		o.signedIn2 = signedIn1//and after this request has perhaps changed things
+		if (rows.length && rows[0].signed_in) signedIn1 = true//most recent row sorted first
+		o.signedIn1 = signedIn1//state before this request runs
+		o.signedIn2 = signedIn1//state after, different if changed anything
 
 		o.requestedAction = body.action
 		if (body.action == 'action check') {//nothing more to do actually
@@ -30,7 +29,7 @@ export default defineEventHandler(async (event) => {
 			if (!signedIn1) {
 				o.note = 'already signed out'
 			} else {
-				await accessInsert(body.browserHash, 0)//insert a row to sign out
+				await accessInsert(body.browserTag, 0)//insert a row to sign out
 				o.signedIn2 = false
 				o.note = 'signed out'
 			}
@@ -38,8 +37,8 @@ export default defineEventHandler(async (event) => {
 			if (signedIn1) {
 				o.note = 'already signed in'
 			} else {
-				if (passwordValid) {//if password valid
-					await accessInsert(body.browserHash, 1)//insert a row to sign in
+				if (o.passwordValid) {//if password valid
+					await accessInsert(body.browserTag, 1)//insert a row to sign in
 					o.signedIn2 = true
 					o.note = 'signed in'
 				} else {
@@ -49,7 +48,7 @@ export default defineEventHandler(async (event) => {
 		} else { toss('invalid action', {event, body, action: body.action}) }
 
 	} catch (e) {
-		log('api account caught: ', e)
+		log('api account caught: ', inspect(e))
 		//TODO maybe return 400 bad request or 500 internal error or something?
 		//and also log this to datadog or something
 	}

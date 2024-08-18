@@ -2,41 +2,23 @@
 
 import { ref, reactive, onMounted } from 'vue'
 import { log, inspect, Now, sayTick, newline, deindent, Data } from '../library/library0.js'
-import { getBrowserFingerprintAndTag, browserHash } from '../library/library2.js'
+import { getBrowserTag } from '../library/library2.js'
 
 onMounted(async () => {//doesn't run on server, even when hydrating
-	let t = Now(); browserHashRef.value = await browserHash(); t = Now() - t
-	stick(deindent(`
-		${browserHashRef.value} hashed in ${t}ms from:
-		${getBrowserFingerprintAndTag()}
-	`))
+	stick(`${getBrowserTag()} is this browser's tag`)
 	await signCheck()
 })
 
-const passwordModel = ref('')
-const browserHashRef = ref('')
-
-async function signIn() {
-	let response = await callAccount('action in')
-
-}
-async function signOut() {
-	let response = await callAccount('action out')
-
-}
-async function signCheck() {
-	let response = await callAccount('action check')
-
-}
-
-
+async function signIn()    { await callAccount('action in')    }
+async function signOut()   { await callAccount('action out')   }
+async function signCheck() { await callAccount('action check') }
 async function callAccount(action) {
 	try {
 		let t = Now()
 		let response = await $fetch('/api/account', {
 			method: 'POST',
 			body: {
-				browserHash: browserHashRef.value,
+				browserTag: getBrowserTag(),
 				password: passwordModel.value,
 				action
 			}
@@ -55,23 +37,7 @@ async function snippet() {
 	log('hi from snippet')
 }
 
-
-let status = reactive({
-	composedText: '(no status yet)'
-})
-
-/*
-This browser is 🟢 signed in. Fetch: 12ms. Note:  
-This browser is 🔴 signed out.
-
-
-signedIn2
-note
-
-*/
-
-
-
+let passwordModel = ref('')
 let statusText = ref('(no status yet)')
 let stickText = ref('')
 function stick(s) { stickText.value += s + newline + newline }
