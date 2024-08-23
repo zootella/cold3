@@ -12,25 +12,6 @@ import { Tag, checkTag } from './library1.js'
 
 import { createClient } from '@supabase/supabase-js'
 
-/*
-import knexImported from 'knex'
-const knex = knexImported({ client: 'pg' })//pg for postgres, which is what supabase uses
-*/
-
-import sqlString from 'sqlstring'//ok, you can actually load this one, but it's for mysql, not postgres
-// Helper function to escape text values
-/*
-function postgresEscape(value) {
-  // Use the pg module's escapeLiteral method for text escaping
-  const client = new Client(); // Create a new Client instance just for this escape
-  return client.escapeLiteral(value);
-}
-*/
-test(() => {
-  log(typeof sqlString.escape)
-})
-
-
 let supabase;
 if (defined(typeof process) && hasText(process?.env?.ACCESS_SUPABASE_URL)) supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY)
 
@@ -488,80 +469,11 @@ you think essentially you just have to validate the inserts really well
 and your own functions are doing this
 
 but additionally, get protection from using knex, continued below
+(that didn't work because they all assume api or node, rerouting)
 
 also, batch raw inserts like this also will likely be faster,
 as each trip to supabase is taking ~150ms
 */
-
-/*
-first_table and second_table have the same schema:
-
-myTick is a JavaScript number -> row_tick is a PostgreSQL BIGINT
-myTag  is a JavaScript string -> row_tag  is a PostgreSQL CHAR(21)
-myHash is a JavaScript string -> row_hash is a PostgreSQL CHAR(52)
-myEnum is a JavaScript number -> row_enum is a PostgreSQL BIGINT
-myNote is a JavaScript string -> row_note is a PostgreSQL TEXT
-
-//example 1 builds the query without knex, and this is bad and unsafe:
-async function myInsert1(myTick, myTag, myHash, myEnum, myNote) {
-	let raw = `
-		BEGIN;
-		INSERT INTO first_table (row_tick, row_tag, row_hash, row_enum, row_note) VALUES (${myTick}, '${myTag}', '${myHash}', ${myEnum}, '${myNote}');
-		INSERT INTO second_table (row_tick, row_tag, row_hash, row_enum, row_note) VALUES (${myTick}, '${myTag}', '${myHash}', ${myEnum}, '${myNote}');
-		COMMIT;
-	`
-	let { error } = await supabase.rpc('execute_transaction', { sql: raw })
-	if (error) throw error
-}
-
-//example 2 builds the same raw sql statement group, but safely, with knex:
-import knexBuilder from 'knex'
-const knex = knexBuilder({ client: 'pg' })
-async function myInsert2(myTick, myTag, myHash, myEnum, myNote) {
-	let insert1 = knex('first_table').insert({ row_tick: myTick, row_tag: myTag, row_hash: myHash, row_enum: myEnum, row_note: myNote }).toString()
-	let insert2 = knex('second_table').insert({ row_tick: myTick, row_tag: myTag, row_hash: myHash, row_enum: myEnum, row_note: myNote }).toString()
-	let raw = `BEGIN; ${insert1}; ${insert2}; COMMIT;`
-	let { error } = await supabase.rpc('execute_transaction', { sql: raw })
-	if (error) throw error
-}
-
-But I'm having trouble importing knex in my web worker ES6 project.
-So, I need to use pg instead:
-https://www.npmjs.com/package/pg
-*/
-
-
-test(() => {
-
-	function f(s) { return sqlString.escape(s) }
-	log(f(7))
-	log(f("hi"))
-
-
-
-
-
-})
-
-
-/*
-here's a crazy idea
-if it's freeform text, like anything that isn't short and alphanumeric
-user name is simple text, post description, comments are free form
-so here freeform you want to be able to let the user type all kinds of puncutation
-along with their emojis, non english language characters, all that
-
-have a table that is only that
-you insert a new row into it, identified by tag
-and then reference the text by tag
-
-that single row insert is atomic
-and then you can use your own functions to safely escape
-
-
-that is something of a kludge
-*/
-
 
 
 

@@ -304,18 +304,143 @@ you also want to find the best way to detect serverless framework lambda develop
 
 
 
+/*
+
+//    ___              _       
+//   / _ \ _   _  ___ | |_ ___ 
+//  | | | | | | |/ _ \| __/ _ \
+//  | |_| | |_| | (_) | ||  __/
+//   \__\_\\__,_|\___/ \__\___|
+//                             
+
+// Turn data into text using base 16, and put text characters in quotes
+// 'The quote " character\r\n' becomes '"The quote "22" character"0d0a'
+function toquote(d) {
+	if (!quoteMore(d))    // The given data is mostly data bytes, like random data
+		return d.base16();  // Present it as a single block of base 16 without quoting out the text it may contain
+
+	var c = d.clip();     // Clip around d to remove what we've encoded
+	var t = "";
+	while (c.hasData()) { // Loop until c is empty
+		if (quoteIs(c.data().first()))
+			t += '"' + c.remove(quoteCount(c.data(), true)).text() + '"'; // Surround bytes that are text characters with quotes
+		else
+			t += c.remove(quoteCount(c.data(), false)).base16(); // Encode other bytes into base 16 outside the quotes
+	}
+	return t;
+}
+
+// Turn quoted text back into the data it was made from
+function unquote(s) {
+	var bay = Bay(); // Make a new empty Bay if the caller didn't pass us one
+	while (s.length) {     // Loop until we're out of source text
+
+		var q1 = s.cut('"'); // Split on the first opening quote to look for bytes before text
+
+		var c = q1.before.cut("#");         // Look for a comment outside the quotes
+		if (c.found) {                      // Found a comment
+			bay.add(base16(c.before.trim())); // Only bytes and spaces can be before the comment
+			break;                            // Hitting a comment means we're done with the line
+		}
+
+		bay.add(base16(q1.before)); // Only bytes can be before the opening quote
+		if (!q1.found) break;       // No opening quote, so we got it all
+
+		var q2 = q1.after.cut('"');  // Split on the closing quote
+		if (!q2.found) toss("data"); // Must have closing quote
+
+		bay.add(q2.before); // Copy the quoted text across, using UTF8 encoding
+		s = q2.after;       // The remaining text is after the closing quote
+	}
+	return bay.data(); // If you passed us a Bay, ignore the Data we return
+}
+
+// Count how many bytes at the start of d are quotable text characters, or false to count data bytes
+function quoteCount(d, quotable) {
+	var i = 0;
+	while (i < d.size()) {
+		var y = d.get(i);
+		if (quotable ? !quoteIs(y) : quoteIs(y)) break;
+		i++; // Count this character and check the next one
+	}
+	return i;
+}
+
+// True if d has more text than data bytes
+function quoteMore(d) {
+	var text = 0; // The number bytes in d we could encode as text or data
+	var data = 0; // The number bytes in d we have to encode as data
+	for (var i = 0; i < d.size(); i++) {
+		var y = d.get(i);
+		if (quoteIs(y)) text++; // 94 of 255 bytes can be encoded as text, that's 37%
+		else            data++;
+	}
+	return text > data; // Picks true for a single byte of text, false for random bytes of data
+}
+
+// True if byte y is a text character " " through "~" but not the double quote character
+function quoteIs(y) {
+	return (y >= ' '.code() && y <= '~'.code()) && y != '"'.code(); // Otherwise we'll have to encode y as data
+}
+
+expose.core({quote:toquote, unquote, quoteCount, quoteMore, quoteIs}); // Rename to quote()
+*/
+
+/*
+`
+sql guaranteed safe:
+0123456789
+abcdefghijklmnopqrstuvwxyz
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+ -_.,?!@#
+
+our special:
+[]
+
+possibly dangerous:
+\/'":;()<>%=*|~{}&+ and everything else
+`
+*/
+
+/*
+
+
+another idea
+what about your own readable encoding like quote encoding
+that way you can kee pit in the database, read it in the table
+and later switch to a different database without revalidating everything
+the encodig happens in the worker, so it's deterministic each way
+
+an upside is you don't have to see weird characters in the supabase table editor, also
+
+"in PostgreSQL and MySQL, square brackets do not have any special meaning in standard SQL syntax."
 
 
 
 
 
+*/
 
 
+export function squareEncode(s) {
+	return s
+}
+export function squareDecode(s) {
+	return s
+}
 
 
+test(() => {
+	log('and after all that, the path led back to the bike shed')
+})
+
+/*
+loop character by character, not byte by byte
+here's where you test all the crazy instagram names
+and also non english language characters
 
 
-
+*/
 
 
 

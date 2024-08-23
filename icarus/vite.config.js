@@ -23,8 +23,7 @@ export default defineConfig({
 			'rfc4648',
 			'joi',
 			'credit-card-type',
-			'libphonenumber-js',
-			'sqlstring'
+			'libphonenumber-js'
 		]
 	}
 })
