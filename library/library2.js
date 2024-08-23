@@ -295,23 +295,21 @@ you also want to find the best way to detect serverless framework lambda develop
 
 
 
-export function deindent(s) {
-	return s
-}
-/*
-and now you remember you'd like deindent
 
-maybe it does this:
--deal with incoming \r\n and just \n
--removes first line if blank
--replaces all tabs with two spaces
--counts the number of spaces leading the new first line
--removes that number of spaces from all the remaining lines
--adds a newline at the end
 
-[]and look for where, you think, you started writing this already
 
-*/
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1428,6 +1428,53 @@ but that's probably all you need
 
 
 
+//use always with typeof, like "defined(typeof x)"
+export function defined(t) { return t != 'undefined' }
+test(() => {
+	/*
+	let's say you're dealing with a in your code
+	but there are some environments where a won't be defined
+	to do this safely, use:
+	*/
+	ok(!defined(typeof n1))//n1 is never mentioned, not defined
+	/*
+	there isn't a way to make this just defined(n1)
+	because the function call will try to read n1
+	and the system will throw you a ReferenceError
+	*/
+	let n2
+	ok(!defined(typeof n2))//n2 is letted but not set, not defined
+
+	let n3 = null
+	ok(defined(typeof n3))//n3 is set to null, falsey but yes, defined
+
+	let n4 = undefined
+	ok(!defined(typeof n4))//here's how you return a reference to undefined
+
+	/*
+	great, now let's say that you need to look deep somewhere
+	the first part and later parts may or may not be defined
+
+	o1 is not mentioned
+	o2 is mentioned and empty
+	*/
+	let o2 = {}
+//o1//throws 'ReferenceError: o1 is not defined'
+	o2//reference ok
+	o2.d1//go down into something that doesn't exist is ok
+	ok(!o2.d1)//and what you get is falsey
+	//now let's try to go down twice
+//o2.d1.d2//throws 'TypeError: cannot read properties of undefined'
+
+	/*
+	more real example where we're trying to get value v1 from deep somewhere
+	*/
+	let v1
+//v1 = o1?.d1?.d2//throws because o1 isn't defined
+//v1 = o2.d1.d2//throws, obviously
+	v1 = o2?.d1?.d2//works fine, but only if you are sure o2 is defined
+	if (defined(typeof o1)) v1 = o1?.d1?.d2//runs fine, this is the proper use
+})
 
 
 
