@@ -1492,8 +1492,154 @@ test(() => {
 
 
 
-export function textToBase16(s) { return arrayToBase16(textToArray(s)) }//no round trip checks in here
-export function base16ToText(s) { return arrayToText(base16ToArray(s)) }
+
+//                                                            _ _             
+//  ___  __ _ _   _  __ _ _ __ ___    ___ _ __   ___ ___   __| (_)_ __   __ _ 
+// / __|/ _` | | | |/ _` | '__/ _ \  / _ \ '_ \ / __/ _ \ / _` | | '_ \ / _` |
+// \__ \ (_| | |_| | (_| | | |  __/ |  __/ | | | (_| (_) | (_| | | | | | (_| |
+// |___/\__, |\__,_|\__,_|_|  \___|  \___|_| |_|\___\___/ \__,_|_|_| |_|\__, |
+//         |_|                                                          |___/ 
+
+/*
+PostgreSQL and MySQL don't have the same requirements for escaping string values,
+nor the same list of dangerous characters, even.
+
+npm modules that can escape text or assemble queries either:
+-want to connect to a real database to send the query, or
+-expect to be server side on node and don't work with es6 modules
+or both!
+
+Supabase doesn't support grouping statements into a transaction.
+And so, the road has led us here--to assembling raw SQL. Katy, bar the door!
+
+A very short list of acceptable characters, letters, numerals, -_,.?!@# and space,
+allow emails and common page text to be unaffected.
+Everything else gets turned into base 16 bytes using JavaScript's universal and default UTF-8
+These byte blocks appear in square braces, like end of line[0d0a]
+"In PostgreSQL and MySQL, square brackets do not have any special meaning in standard SQL syntax." ChatGPT assures me.
+
+SQL injection attacks are scary, and 𐌊𐌉𐌃𐌔 Ꝋ𐌍 𐌉𐌍𐌔𐌕𐌀Ᏽ𐌐𐌀𐌌 are weird!
+But fear not: from the back of the bike shed, square encoding will protect us.
+*/
+
+export function squareEncode(s) { let e = _squareEncode(s); checkSame(s, _squareDecode(e)); return e }
+export function squareDecode(s) { let d = _squareDecode(s); checkSame(s, _squareEncode(d)); return d }
+test(() => {
+	ok(squareEncode('') == '')//round trip testing is built in
+	ok(squareEncode('x') == 'x')
+	ok(squareEncode(':') == '[3a]')
+	ok(squareEncode('x:') == 'x[3a]')
+	ok(squareEncode(':x') == '[3a]x')
+	ok(squareEncode('x:x') == 'x[3a]x')
+	ok(squareEncode(':x:') == '[3a]x[3a]')
+	ok(squareEncode('a:b:c') == 'a[3a]b[3a]c')
+
+	ok(squareEncode("Question? Exclimation! Colon: semi; then pi|pe. Comma, we'll \"quote\" name@example.com <tag> (parenthesis) {curl} [square] slash/back\\ `tick` 1+1=2, 2*2=4 til~de hy-phen under_score #hashtag $cashtag 100% carrot^ you&me") == 'Question? Exclimation! Colon[3a] semi[3b] then pi[7c]pe. Comma, we[27]ll [22]quote[22] name@example.com [3c]tag[3e] [28]parenthesis[29] [7b]curl[7d] [5b]square[5d] slash[2f]back[5c] [60]tick[60] 1[2b]1[3d]2, 2[2a]2[3d]4 til[7e]de hy-phen under_score #hashtag [24]cashtag 100[25] carrot[5e] you[26]me')
+	ok(squareEncode('Hello is cześć in Polish, 你好 in Chinese, 안녕하세요 in Korean, こんにちは in Japanese, and مرحبا in Arabic') == 'Hello is cze[c59bc487] in Polish, [e4bda0e5a5bd] in Chinese, [ec9588eb8595ed9598ec84b8ec9a94] in Korean, [e38193e38293e381abe381a1e381af] in Japanese, and [d985d8b1d8add8a8d8a7] in Arabic')
+	ok(squareEncode('💘🍓 𝓗єŁ𝓁𝕆 ⛵😾') == '[f09f9298f09f8d93] [f09d9397d194c581f09d9381f09d9586] [e29bb5f09f98be]')	
+
+	ok(squareEncode('\ttab and\r\nnext line') == '[09]tab and[0d0a]next line')
+	ok(squareEncode('[[[][][][]]][][[]') == '[5b5b5b5d5b5d5b5d5b5d5d5d5b5d5b5b5d]')
+})
+
+//exported functions above include round trip tests; helper functions below do not
+function textToBase16(s) { return arrayToBase16(textToArray(s)) }
+function base16ToText(s) { return arrayToText(base16ToArray(s)) }
+
+function _squareEncode(s) {
+	let encoded = ''
+	let outside = true//start outside a stretch of unsafe characters
+	for (let c of s) {//if you do let i and s.length surrogate pair characters get separated; see below
+		let safe = squareSafe(c)
+		if (outside) {//we've encountered this new character c from a safe area
+			if (safe) {//and it's safe
+				encoded += c//add it and keep going
+			} else {//but it's unsafe!
+				encoded += '[' + textToBase16(c)//start the box and put c in it
+				outside = false//move into the square braces
+			}
+		} else {//we've encountered this new character c from inside an unsafe area
+			if (safe) {//but now this one is safe!
+				encoded += ']' + c//end the box and put c after it
+				outside = true
+			} else {//and this new character is also unsafe
+				encoded += textToBase16(c)
+			}
+		}
+	}
+	if (!outside) encoded += ']'//close the box if we ended outside it
+	return encoded
+}
+function _squareDecode(s) {
+	let a = s.split(/[\[\]]/)//split on [ or ]
+	if (a.length % 2 == 0) toss('data', {s, e, a})//make sure any braces are closed
+
+	let b = ''//we're going to turn the whole thing into base 16
+	for (let i = 0; i < a.length; i++) {//encoded text is boring so it's ok to loop the old fashioned way
+		let p = a[i]//get this part
+		let inside = i % 2//parts alternate already in base16 or not
+		if (inside) {
+			b += p//just add this part
+		} else {
+			b += textToBase16(p)//turn this part into base 16 and add it
+		}
+	}
+	let decoded = base16ToText(b)//now that it's all base 16, convert it back to text all at once
+	return decoded
+}
+
+const _squareAlphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -_,.?!@#'
+let _squareAlphabetSet
+function squareSafe(c) {
+	if (!_squareAlphabetSet) _squareAlphabetSet = new Set(_squareAlphabet)//make once
+	return _squareAlphabetSet.has(c)//very fast lookup
+}
+test(() => {
+	ok(squareSafe('a'))
+	ok(squareSafe(' '))
+	ok(squareSafe('@'))
+
+	ok(!squareSafe('\t'))//tab
+	ok(!squareSafe('牛'))//cow
+	ok(!squareSafe('😄'))//smiley emoji
+	ok(!squareSafe('𝓗'))//instagram nonsense which also happens to be a surrogate pair
+
+	ok(!squareSafe('ab'))//giving it two characters
+	ok(!squareSafe(''))//and blank
+})
+
+//coding all this, you found out that s.length and s[i] don't work on all text!
+//instead, use arrays below for length, and loop as above with "for (let c of s) {..."
+export function correctLength(s) {
+	return Array.from(s).length
+}
+test(() => {
+	ok('H'.length == 1)
+	ok(correctLength('') == 0)
+	ok(correctLength('H') == 1)
+	ok(correctLength('He') == 2)
+
+	ok('𝓗'.length == 2)//length is wrong because this charcter gets represented as a surrogate pair
+	ok(correctLength('𝓗') == 1)//our function measures it correctly
+	ok(correctLength('A 𝓗𝓮𝓵𝓵𝓸 is Hello') == 16)
+})
+
+export function testBox(s) {
+	/*
+	let encoded = squareEncode(s)
+	let decoded = squareDecode(encoded)
+	let valid = (s == decoded) && (s.length == decoded.length)
+let report = `${correctLength(s)} characters round trip ${valid ? 'success' : '🚨 FAILURE 🚨'}
+${s}
+${encoded}`
+	log(report)
+	return encoded
+	*/
+}
+
+
+
+
 
 
 
