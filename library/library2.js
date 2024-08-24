@@ -305,104 +305,10 @@ you also want to find the best way to detect serverless framework lambda develop
 
 
 
-//    ___              _       
-//   / _ \ _   _  ___ | |_ ___ 
-//  | | | | | | |/ _ \| __/ _ \
-//  | |_| | |_| | (_) | ||  __/
-//   \__\_\\__,_|\___/ \__\___|
-//                             
 
-// Turn data into text using base 16, and put text characters in quotes
-// 'The quote " character\r\n' becomes '"The quote "22" character"0d0a'
-function toquote(d) {
-	if (!quoteMore(d))    // The given data is mostly data bytes, like random data
-		return d.base16();  // Present it as a single block of base 16 without quoting out the text it may contain
 
-	var c = d.clip();     // Clip around d to remove what we've encoded
-	var t = "";
-	while (c.hasData()) { // Loop until c is empty
-		if (quoteIs(c.data().first()))
-			t += '"' + c.remove(quoteCount(c.data(), true)).text() + '"'; // Surround bytes that are text characters with quotes
-		else
-			t += c.remove(quoteCount(c.data(), false)).base16(); // Encode other bytes into base 16 outside the quotes
-	}
-	return t;
-}
-
-// Turn quoted text back into the data it was made from
-function unquote(s) {
-	var bay = Bay(); // Make a new empty Bay if the caller didn't pass us one
-	while (s.length) {     // Loop until we're out of source text
-
-		var q1 = s.cut('"'); // Split on the first opening quote to look for bytes before text
-
-		var c = q1.before.cut("#");         // Look for a comment outside the quotes
-		if (c.found) {                      // Found a comment
-			bay.add(base16(c.before.trim())); // Only bytes and spaces can be before the comment
-			break;                            // Hitting a comment means we're done with the line
-		}
-
-		bay.add(base16(q1.before)); // Only bytes can be before the opening quote
-		if (!q1.found) break;       // No opening quote, so we got it all
-
-		var q2 = q1.after.cut('"');  // Split on the closing quote
-		if (!q2.found) toss("data"); // Must have closing quote
-
-		bay.add(q2.before); // Copy the quoted text across, using UTF8 encoding
-		s = q2.after;       // The remaining text is after the closing quote
-	}
-	return bay.data(); // If you passed us a Bay, ignore the Data we return
-}
-
-// Count how many bytes at the start of d are quotable text characters, or false to count data bytes
-function quoteCount(d, quotable) {
-	var i = 0;
-	while (i < d.size()) {
-		var y = d.get(i);
-		if (quotable ? !quoteIs(y) : quoteIs(y)) break;
-		i++; // Count this character and check the next one
-	}
-	return i;
-}
-
-// True if d has more text than data bytes
-function quoteMore(d) {
-	var text = 0; // The number bytes in d we could encode as text or data
-	var data = 0; // The number bytes in d we have to encode as data
-	for (var i = 0; i < d.size(); i++) {
-		var y = d.get(i);
-		if (quoteIs(y)) text++; // 94 of 255 bytes can be encoded as text, that's 37%
-		else            data++;
-	}
-	return text > data; // Picks true for a single byte of text, false for random bytes of data
-}
-
-// True if byte y is a text character " " through "~" but not the double quote character
-function quoteIs(y) {
-	return (y >= ' '.code() && y <= '~'.code()) && y != '"'.code(); // Otherwise we'll have to encode y as data
-}
-
-//expose.core({quote:toquote, unquote, quoteCount, quoteMore, quoteIs}); // Rename to quote()
 
 /*
-`
-sql guaranteed safe:
-0123456789
-abcdefghijklmnopqrstuvwxyz
-ABCDEFGHIJKLMNOPQRSTUVWXYZ
- -_.,?!@#
-
-our special:
-[]
-
-possibly dangerous:
-\/'":;()<>%=*|~{}&+ and everything else
-`
-*/
-
-/*
-
-
 another idea
 what about your own readable encoding like quote encoding
 that way you can kee pit in the database, read it in the table
@@ -412,45 +318,30 @@ the encodig happens in the worker, so it's deterministic each way
 an upside is you don't have to see weird characters in the supabase table editor, also
 
 "in PostgreSQL and MySQL, square brackets do not have any special meaning in standard SQL syntax."
-
-
-
-
-
-
-
-
 */
 
-
-export function squareEncode(s) {
-	/*
-	me algorithm!
-
-	start out outside
-	loop character by character
-	outside:
-		c allowed: add it
-		c illegal: add [, add the base16 of the character, switch inside
-	inside:
-		c allowed: add ], add the character, switch outside
-		c illegal: add the base16 of the character
-	next character
-	still inside, add ]
-
-	and then to decode, probably take everything to base16, and then read as data for a string
+//already in library0, which is where this is headed
+function checkSame(o1, o2) {
+	if (o1 !== o2) toss('round trip mismatch', {o1, o2})
+}
 
 
-	if c is allowed, add it
-	if c is illegal, switch to inside
-		add a [
 
+export function squareEncode(s, trip) {
+	let e = _squareEncode(s)
+	if (trip) checkSame(s, _squareDecode(e))
+	return e
+}
+export function squareDecode(s, trip) {
+	let d = _squareDecode(s)
+	if (trip) checkSame(s, _squareEncode(d))
+	return d
+}
 
-	*/
+function _squareEncode(s) {
 	let encoded = ''
 	let outside = true//start outside a stretch of unsafe characters
-	for (let i = 0; i < s.length; i++) {
-		let c = s[i]
+	for (let c of s) {//if you do let i and s.length surrogate pair characters get separated
 		let safe = squareCharacterSafe(c)
 		if (outside) {//we've encountered this new character c from a safe area
 			if (safe) {//and it's safe
@@ -471,7 +362,7 @@ export function squareEncode(s) {
 	if (!outside) encoded += ']'//close the box if we ended outside it
 	return encoded
 }
-export function squareDecode(s) {
+function _squareDecode(s) {
 	let a = s.split(/[\[\]]/)//split on [ or ]
 	if (a.length % 2 == 0) toss('data', {s, e, a})//make sure any braces are closed
 
@@ -486,16 +377,10 @@ export function squareDecode(s) {
 			b += textToBase16(p)//turn this part into base 16 and add it
 		}
 	}
-
 	let decoded = base16ToText(b)
-
 	return decoded
 }
 
-function demo(s) {
-	let e = squareEncode(s)
-	squareDecode(e)
-}
 test(() => {
 
 
@@ -508,28 +393,19 @@ test(() => {
 	demo('a:a') // 2:  'a'  '3a]a'
 	demo(':a:') // 3:  ''   '3a]a'  '3a]'
 	*/
-	/*
-	now, for each part
-	if it has a ], split on ] and base16ize what's after
-
-	the first part is outside, encode it
-	the second part may have a ]
-	if it does, the part before is already base16, the part after you must make base16
-	*/
 
 
 
 })
 
-/*
-here are the safe characters
-0123456789
-abcdefghijklmnopqrstuvwxyz
-ABCDEFGHIJKLMNOPQRSTUVWXYZ
- -_.,?!@#
-*/
 const _squareSafeCharacters = new Set('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -_,.?!@#')
 function squareCharacterSafe(c) { return _squareSafeCharacters.has(c) }
+
+
+
+
+
+
 test(() => {
 	ok(squareCharacterSafe('a'))
 	ok(squareCharacterSafe(' '))
@@ -541,8 +417,6 @@ test(() => {
 
 	ok(!squareCharacterSafe('ab'))//giving it two characters
 })
-
-
 test(() => {
 	ok(textToBase16(' ') == '20')
 	ok(textToBase16('@') == '40')
@@ -581,16 +455,31 @@ test(() => {
 })
 
 
+test(() => {
+	ok(squareEncode('') == '')//round trip testing is built in
+	ok(squareEncode('x') == 'x')
+	ok(squareEncode(':') == '[3a]')
+	ok(squareEncode('x:') == 'x[3a]')
+	ok(squareEncode(':x') == '[3a]x')
+	ok(squareEncode('x:x') == 'x[3a]x')
+	ok(squareEncode(':x:') == '[3a]x[3a]')
+	ok(squareEncode('a:b:c') == 'a[3a]b[3a]c')
+
+	ok(squareEncode("Question? Exclimation! Colon: semi; then pi|pe. Comma, we'll \"quote\" name@example.com <tag> (parenthesis) {curl} [square] slash/back\\ `tick` 1+1=2, 2*2=4 til~de hy-phen under_score #hashtag $cashtag 100% carrot^ you&me") == 'Question? Exclimation! Colon[3a] semi[3b] then pi[7c]pe. Comma, we[27]ll [22]quote[22] name@example.com [3c]tag[3e] [28]parenthesis[29] [7b]curl[7d] [5b]square[5d] slash[2f]back[5c] [60]tick[60] 1[2b]1[3d]2, 2[2a]2[3d]4 til[7e]de hy-phen under_score #hashtag [24]cashtag 100[25] carrot[5e] you[26]me')
+	ok(squareEncode('Hello is cześć in Polish, 你好 in Chinese, 안녕하세요 in Korean, こんにちは in Japanese, and مرحبا in Arabic') == 'Hello is cze[c59bc487] in Polish, [e4bda0e5a5bd] in Chinese, [ec9588eb8595ed9598ec84b8ec9a94] in Korean, [e38193e38293e381abe381a1e381af] in Japanese, and [d985d8b1d8add8a8d8a7] in Arabic')
+	ok(squareEncode('💘🍓 𝓗єŁ𝓁𝕆 ⛵😾') == '[f09f9298f09f8d93] [f09d9397d194c581f09d9381f09d9586] [e29bb5f09f98be]')	
+
+	ok(squareEncode('\ttab and\r\nnext line') == '[09]tab and[0d0a]next line')
+	ok(squareEncode('[[[][][][]]][][[]') == '[5b5b5b5d5b5d5b5d5b5d5d5d5b5d5b5b5d]')
+})
+
+
 
 export function testBox(s) {
-	return testBoxRoundTrip(s)
-//	return s.length
-}
-function testBoxRoundTrip(s) {
 	let encoded = squareEncode(s)
 	let decoded = squareDecode(encoded)
 	let valid = (s == decoded) && (s.length == decoded.length)
-let report = `${s.length} characters round trip ${valid ? 'success' : 'FAILURE'}
+let report = `${correctLength(s)} characters round trip ${valid ? 'success' : '🚨 FAILURE 🚨'}
 ${s}
 ${encoded}`
 	log(report)
@@ -599,17 +488,18 @@ ${encoded}`
 
 
 
+export function correctLength(s) {
+	return Array.from(s).length
+}
 test(() => {
-	log('and after all that, the path led back to the bike shed, 2, and more')
+	ok('H'.length == 1)
+	ok(correctLength('') == 0)
+	ok(correctLength('H') == 1)
+	ok(correctLength('He') == 2)
+
+	ok('𝓗'.length == 2)//length is wrong because this charcter gets represented as a surrogate pair
+	ok(correctLength('𝓗') == 1)//our function measures it correctly
+	ok(correctLength('A 𝓗𝓮𝓵𝓵𝓸 is Hello') == 16)
 })
-
-/*
-loop character by character, not byte by byte
-here's where you test all the crazy instagram names
-and also non english language characters
-
-
-*/
-
 
 
