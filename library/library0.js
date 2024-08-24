@@ -668,13 +668,16 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 }
 
 //private helper functions, use methods in Data which call down here
+let _textEncoder, _textDecoder//make once and use many times, saves no state between uses
 function textToArray(s, trip) {//true to check conversion in a round trip
-	let a = (new TextEncoder()).encode(s)//returns a Uint8Array
+	if (!_textEncoder) _textEncoder = new TextEncoder()
+	let a = _textEncoder.encode(s)//returns a Uint8Array
 	if (trip) checkSame(s, arrayToText(a, false))//false to not check infinitely!
 	return a
 }
 function arrayToText(a, trip) {
-	let s = (new TextDecoder()).decode(a)//can take a Uint8Array or an ArrayBuffer
+	if (!_textDecoder) _textDecoder = new TextDecoder()
+	let s = _textDecoder.decode(a)//can take a Uint8Array or an ArrayBuffer
 	if (trip) checkSameArray(a, textToArray(s, false))
 	return s
 }
@@ -1475,6 +1478,24 @@ test(() => {
 	v1 = o2?.d1?.d2//works fine, but only if you are sure o2 is defined
 	if (defined(typeof o1)) v1 = o1?.d1?.d2//runs fine, this is the proper use
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function textToBase16(s) { return arrayToBase16(textToArray(s)) }//no round trip checks in here
+export function base16ToText(s) { return arrayToText(base16ToArray(s)) }
+
+
 
 
 

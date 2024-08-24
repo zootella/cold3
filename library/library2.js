@@ -3,7 +3,7 @@
 //grow them here, then probably refactor them out into named files in this library folder
 //actually don't do this, it's library1.js and the named files
 
-import { noop, test, ok, log, composeLog, Now, end, subtleHash, Data } from './library0.js'
+import { noop, test, ok, log, composeLog, Now, end, subtleHash, Data, textToBase16, base16ToText } from './library0.js'
 import { Tag, tagLength, checkTag } from './library1.js'
 
 
@@ -304,7 +304,6 @@ you also want to find the best way to detect serverless framework lambda develop
 
 
 
-/*
 
 //    ___              _       
 //   / _ \ _   _  ___ | |_ ___ 
@@ -383,8 +382,7 @@ function quoteIs(y) {
 	return (y >= ' '.code() && y <= '~'.code()) && y != '"'.code(); // Otherwise we'll have to encode y as data
 }
 
-expose.core({quote:toquote, unquote, quoteCount, quoteMore, quoteIs}); // Rename to quote()
-*/
+//expose.core({quote:toquote, unquote, quoteCount, quoteMore, quoteIs}); // Rename to quote()
 
 /*
 `
@@ -419,19 +417,190 @@ an upside is you don't have to see weird characters in the supabase table editor
 
 
 
+
+
+
 */
 
 
 export function squareEncode(s) {
-	return s
+	/*
+	me algorithm!
+
+	start out outside
+	loop character by character
+	outside:
+		c allowed: add it
+		c illegal: add [, add the base16 of the character, switch inside
+	inside:
+		c allowed: add ], add the character, switch outside
+		c illegal: add the base16 of the character
+	next character
+	still inside, add ]
+
+	and then to decode, probably take everything to base16, and then read as data for a string
+
+
+	if c is allowed, add it
+	if c is illegal, switch to inside
+		add a [
+
+
+	*/
+	let encoded = ''
+	let outside = true//start outside a stretch of unsafe characters
+	for (let i = 0; i < s.length; i++) {
+		let c = s[i]
+		let safe = squareCharacterSafe(c)
+		if (outside) {//we've encountered this new character c from a safe area
+			if (safe) {//and it's safe
+				encoded += c//add it and keep going
+			} else {//but it's unsafe!
+				encoded += '[' + textToBase16(c)//start the box and put c in it
+				outside = false//move into the square braces
+			}
+		} else {//we've encountered this new character c from inside an unsafe area
+			if (safe) {//but now this one is safe!
+				encoded += ']' + c//end the box and put c after it
+				outside = true
+			} else {//and this new character is also unsafe
+				encoded += textToBase16(c)
+			}
+		}
+	}
+	if (!outside) encoded += ']'//close the box if we ended outside it
+	return encoded
 }
 export function squareDecode(s) {
-	return s
+	let a = s.split(/[\[\]]/)//split on [ or ]
+	if (a.length % 2 == 0) toss('data', {s, e, a})//make sure any braces are closed
+
+	let b = ''//we'll fill with bytes of text in base 16
+	for (let i = 0; i < a.length; i++) {
+		let p = a[i]//get this part
+		let alreadyBase16 = i % 2//parts alternate already in base16 or not
+
+		if (alreadyBase16) {
+			b += p//just add this part
+		} else {
+			b += textToBase16(p)//turn this part into base 16 and add it
+		}
+	}
+
+	let decoded = base16ToText(b)
+
+	return decoded
 }
+
+function demo(s) {
+	let e = squareEncode(s)
+	squareDecode(e)
+}
+test(() => {
+
+
+/*
+	demo('')    // 1:  ''
+	demo('a')   // 1:  'a'                outside, must encode
+	demo(':')   // 2:  ''   '3a]'
+	demo('a:')  // 2:  'a'  '3a]'
+	demo(':a')  // 2:  ''   '3a]a'
+	demo('a:a') // 2:  'a'  '3a]a'
+	demo(':a:') // 3:  ''   '3a]a'  '3a]'
+	*/
+	/*
+	now, for each part
+	if it has a ], split on ] and base16ize what's after
+
+	the first part is outside, encode it
+	the second part may have a ]
+	if it does, the part before is already base16, the part after you must make base16
+	*/
+
+
+
+})
+
+/*
+here are the safe characters
+0123456789
+abcdefghijklmnopqrstuvwxyz
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+ -_.,?!@#
+*/
+const _squareSafeCharacters = new Set('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -_,.?!@#')
+function squareCharacterSafe(c) { return _squareSafeCharacters.has(c) }
+test(() => {
+	ok(squareCharacterSafe('a'))
+	ok(squareCharacterSafe(' '))
+	ok(squareCharacterSafe('@'))
+
+	ok(!squareCharacterSafe('\t'))//tab
+	ok(!squareCharacterSafe('牛'))//cow
+	ok(!squareCharacterSafe('😄'))//smiley emoji
+
+	ok(!squareCharacterSafe('ab'))//giving it two characters
+})
 
 
 test(() => {
-	log('and after all that, the path led back to the bike shed')
+	ok(textToBase16(' ') == '20')
+	ok(textToBase16('@') == '40')
+	ok(textToBase16('A') == '41')
+
+	// European characters
+	ok(textToBase16('é') == 'c3a9'); // E-Acute
+	ok(textToBase16('ñ') == 'c3b1'); // Spanish
+	ok(textToBase16('ß') == 'c39f'); // German
+
+	// Asian characters
+	ok(textToBase16('あ') == 'e38182'); // Japanese Hiragana
+	ok(textToBase16('你') == 'e4bda0'); // Chinese character
+	ok(textToBase16('한') == 'ed959c'); // Korean Hangul
+
+	// Middle Eastern characters
+	ok(textToBase16('א') == 'd790'); // Hebrew
+	ok(textToBase16('ب') == 'd8a8'); // Arabic
+
+	// Unicode drawing characters
+	ok(textToBase16('─') == 'e29480'); // Box drawing light horizontal
+	ok(textToBase16('■') == 'e296a0'); // Black square
+
+	// Mathematical symbols
+	ok(textToBase16('∑') == 'e28891'); // Summation symbol
+	ok(textToBase16('∞') == 'e2889e'); // Infinity symbol
+
+	// Emoji
+	ok(textToBase16('😀') == 'f09f9880'); // Grinning face
+	ok(textToBase16('🌍') == 'f09f8c8d'); // Earth globe Europe-Africa
+	ok(textToBase16('❤️') == 'e29da4efb88f'); // Red heart
+	ok(textToBase16('⚽') == 'e29abd'); // Soccer ball
+	ok(textToBase16('♻️') == 'e299bbefb88f'); // Recycling symbol
+
+
+})
+
+
+
+export function testBox(s) {
+	return testBoxRoundTrip(s)
+//	return s.length
+}
+function testBoxRoundTrip(s) {
+	let encoded = squareEncode(s)
+	let decoded = squareDecode(encoded)
+	let valid = (s == decoded) && (s.length == decoded.length)
+let report = `${s.length} characters round trip ${valid ? 'success' : 'FAILURE'}
+${s}
+${encoded}`
+	log(report)
+	return encoded
+}
+
+
+
+test(() => {
+	log('and after all that, the path led back to the bike shed, 2, and more')
 })
 
 /*

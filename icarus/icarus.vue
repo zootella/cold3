@@ -3,8 +3,8 @@
 import { ref, onMounted } from 'vue' 
 
 import { runTests, getLogRecord } from '../library/library0.js'
-import { testBox } from '../library/library1.js'
-import '../library/library2.js'
+import '../library/library1.js'
+import { testBox } from '../library/library2.js'
 import '../library/database.js'
 
 const boxModel = ref('')
