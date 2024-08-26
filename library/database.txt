@@ -361,3 +361,63 @@ yeah, how does that work in this fully finished time of async await
 
 
 
+
+
+
+//more recent notes and thinking and previous designs
+
+
+
+
+
+
+/*
+function saveInt(i, m) { checkInt(i, m); return i }//minimum m like -1 or 0+ default
+function readInt(i, m) { checkInt(i, m); return i }
+
+function saveBooleanAsInt(b) { return b ? 1    : 0     }//we save booleans in the database as bignum 1 and 0
+function readBooleanAsInt(i) { return i ? true : false }
+
+function saveIntAsText(i) { return intToText(i) }//the settings tables saves everything as text, so convert with these
+function readIntAsText(s) { return textToInt(s) }//checkInt is built into these conversion functions
+
+function saveTag(s) { checkTag(s); return s }
+function readTag(s) { checkTag(s); return s }
+
+function saveTick(t) { checkInt(t); return t }
+function readTick(t) { checkInt(t); return t }
+
+function saveHash(h) { checkHash(h); return h }
+function readHash(h) { checkHash(h); return h }
+
+function saveText(s) { if (s === '') return s; checkText(s); return squareEncode(s) }//blank text allowed
+function readText(s) { if (s === '') return s; checkText(s); return squareDecode(s) }
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

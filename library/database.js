@@ -21,56 +21,38 @@ if (defined(typeof process) && hasText(process?.env?.ACCESS_SUPABASE_URL)) supab
 // |   < (_| | |_| |_| |_  | |_) | (_| | |    | |_| | | |  __/ | (_| | (_) | (_) | |   
 // |_|\_\__,_|\__|\__, ( ) |_.__/ \__,_|_|     \__|_| |_|\___|  \__,_|\___/ \___/|_|   
 //                |___/|/                                                              
-/*
-our defense against writing malformed data into the database
-check and convert data between the application and the database
-
-here are the postgres types we're using are:
-BIGNUM    boolean 0 1, enumeration like -1 0 1 2, integer, tick
-CHAR(21)  tag
-CHAR(52)  hash
-TEXT      variable length text, square brace encoding
-*/
 
 /*
-function saveInt(i, m) { checkInt(i, m); return i }//minimum m like -1 or 0+ default
-function readInt(i, m) { checkInt(i, m); return i }
+our tables do everthing with just a small handful of postgres types,
+and our conventions for table and column names identify what kind of data columns have:
 
-function saveBooleanAsInt(b) { return b ? 1    : 0     }//we save booleans in the database as bignum 1 and 0
-function readBooleanAsInt(i) { return i ? true : false }
+some_table              table names must end _table
 
-function saveIntAsText(i) { return intToText(i) }//the settings tables saves everything as text, so convert with these
-function readIntAsText(s) { return textToInt(s) }//checkInt is built into these conversion functions
+column_enum   BIGNUM    boolean 0 or 1 which could grow in the future into an enumeration
+column_tick   BIGNUM    tick count since the start of 1970
+column_int    BIGNUM    number value counting something
 
-function saveTag(s) { checkTag(s); return s }
-function readTag(s) { checkTag(s); return s }
+column_tag    CHAR(21)  21 letters and numbers of a universally unique tag
+column_hash   CHAR(52)  52 characters of a sha256 hash value encoded to base32
+column_text   TEXT      text which can be blank or long, and is square encoded
 
-function saveTick(t) { checkInt(t); return t }
-function readTick(t) { checkInt(t); return t }
+you must use squareEncode() and squareDecode() in a layer above this one!
 
-function saveHash(h) { checkHash(h); return h }
-function readHash(h) { checkHash(h); return h }
-
-function saveText(s) { if (s === '') return s; checkText(s); return squareEncode(s) }//blank text allowed
-function readText(s) { if (s === '') return s; checkText(s); return squareDecode(s) }
+katy's functions, below, are our defense against saving or reading malformed data
+they use the column name convention to check the data is correct for the stated type
 */
 
-
-
-/*
-//ok, katy finds another position at the door
-//these are all pass-through without transformation, throw on sings of trouble
-//you could use them read and save
-//they're wired to validate every cell of a whole bunch of returned rows, which may be slow and unecessary
-//but start with this and optimize later
-*/
+function katyTable(tableName) {//just a table name, this one is silly
+	if (_type(tableName) != 'table') toss('data', {tableName})
+}
+function katyColumn(columnName){//just a column name
+	_type(columnName)//throws if there isn't 
+}
 function katyRows(rows) {//here's an array of rows, are you really going to check every cell? you need to see how many ms this adds on larger queries. you technically don't have to do this, imagining bad data is never added to the database
 	rows.forEach(katyRow)
-	return rows
 }
 function katyRow(row) {//object of column names: cell contents
 	for (let [column, value] of Object.entries(row)) katyCell(column, value)//won't pick up properties that are non-enumerable or from the prototype chain
-	return row
 }
 function katyCell(column, value){//column name and cell value
 	let type = _type(column)
@@ -81,50 +63,38 @@ function katyCell(column, value){//column name and cell value
 	else if (type == 'hash') { checkHash(value)           }//a sha256 hash value encoded to base32, 52 characters
 	else if (type == 'text') { checkSquare(value) }//text, can be blank, square encoded in the database 
 	else { toss('data', {column, value}) }
-	return value
 }
-function katyColumn(columnName){//just a column name
-	_type(columnName)//throws if there isn't 
-	return columnName
-}
-function katyTable(tableName) {//just a table name, this one is silly
-	if (_type(tableName) != 'table') toss('data', {tableName})
-}
+
 function _type(s) {//from a column name like 'name_type', clip out 'type'
-	checkText(s)
+	checkSquare(s)//ensure table and column names don't contain puncutation potentially useful to inject sql
 	let i = s.lastIndexOf('_')
 	if ((i < 1) || (s.length < i + 2)) toss('data', {s})//shortest possible valid column name is 'a_b'
 	return s.substring(s.lastIndexOf('_') + 1)
 }
 
-
-//layer 0.5
 /*
+katy checks, she doesn't transform
+so here are the functions you need in layer1 to do necessary data transformations
 
-hmmm...
-rested brain thinking on getting katy into level 0
-what if, as a design requrement, every column title has to end with the type
+for instance, database schema and conventions keep a boolean like true false
+as the values 1 or 0 in a BIGINT column with a name like something_enum
 
-name_enum - boolean which could grow in the future into an enumeration
-name_tick - number which is a tick count, could grow to include negative
-name_int
-name_tag
-name_hash
-name_text - text which must be encoded in square braces
+while no names or text can contain characters that won't be in square encoded text,
+all text in TEXT columns (names ending _text) is saved safely square encoded
+use saveText() and readText() in layer1 below to do this encoding there exactly once each way
 
-then in layer0, everything going in and out is checked for type by these keys
+and in some instances, like the settings table,
+a TEXT column has some values that the application knows to interpret as ints
+use saveIntAsText() and readIntAsText() for these cells
 */
+function saveBoolean(b) { return b ? 1    : 0     }
+function readBoolean(i) { return i ? true : false }
 
+function saveText(s) { return squareEncode(s) }
+function readText(s) { return squareDecode(s) }
 
-/*
-maybe you don't square encode here--that's in a layer above
-but you do make sure that all text is square encoded
-that means that text can be blank or have a legal for square encoding
-*/
-
-
-
-
+function saveIntAsText(i) { return intToText(i) }
+function readIntAsText(s) { return textToInt(i) }
 
 //  _                          ___  
 // | | __ _ _   _  ___ _ __   / _ \ 
@@ -132,10 +102,11 @@ that means that text can be blank or have a legal for square encoding
 // | | (_| | |_| |  __/ |    | |_| |
 // |_|\__,_|\__, |\___|_|     \___/ 
 //          |___/                   
+
 /*
-functions that call the supabase api
+all the functions that call the supbase api have to be here, and are not exported, either!
 they work on whatever table you tell them to
-you have to get the column names and data types right yourself
+and katy checks the column names and data types going in both directions
 */
 
 //in table, look at column1, and count how many rows have value1
@@ -197,6 +168,7 @@ async function database_getRows(table, column1, value1, columnSort) {
 }
 
 /*
+notes:
 what's more at this level?
 joins, maybe, where you're returning rows based on how they match up with other tables
 */
@@ -207,127 +179,103 @@ joins, maybe, where you're returning rows based on how they match up with other 
 // | | (_| | |_| |  __/ |    | |
 // |_|\__,_|\__, |\___|_|    |_|
 //          |___/               
+
 /*
-functions that are specific to not tables, but kinds of data and how the application uses them
+in this higher layer, functions are specific to the application's use of the database
+only starting here can functions be exported
+
+this is also where you use saveText() and readText() to square encode and decode
+this way, you only have to do that here
+and you know that in each direction, you're only doing it one time
+
+katy will make sure no characters that won't appear in square encoded text get anywhere near the database
+but she only checks, she doesn't transform, so here is where you do square encoding
+similarly, this is also where you convert a truthy javascript variable into the number 1
+for a BIGINT column named something_enum
+and where you keep numeric settings as text in the settings table
+
+as well as other application-specific data transformations in the future, they'll be here
+keeping katy simple and strong above
 */
 
 //settings
-export async function settingsGetText(name) {
+export async function settings_getText(name) {
 	return readText((await database_getRow('settings_table', 'key_text', name)).value_text)
 }
-export async function settingsGetNumber(name) {
-	return readNumberAsText((await database_getRow('settings_table', 'key_text', name)).value_text)
+export async function settings_getNumber(name) {
+	return readIntAsText((await database_getRow('settings_table', 'key_text', name)).value_text)
 }
-export async function settingsSetText(name, value) {
+export async function settings_setText(name, value) {
 	await database_updateCell('settings_table', 'key_text', name, 'value_text', saveText(value))
 }
-export async function settingsSetNumber(name, value) {
-	await database_updateCell('settings_table', 'key_text', name, 'value_text', saveNumberAsText(value))
+export async function settings_setNumber(name, value) {
+	await database_updateCell('settings_table', 'key_text', name, 'value_text', saveIntAsText(value))
 }
 
 //global count
-export async function countsGetGlobalCount() {
+export async function counts_getGlobalCount() {
 	let row = await database_getRow('settings_table', 'key_text', browserTag)
 	if (row) {
-		return readInt(row.count)
+		return row.count
 	} else {
-		await database_addRow('settings_table', {'key_text': saveTag(browserTag), 'count': saveInt(0)})
+		await database_addRow('settings_table', {'key_text': browserTag, 'count_int': 0})
 		return 0
 	}
 }
-export async function countsSetGlobalCount(count) {
+export async function counts_setGlobalCount(count) {
 	let row = await database_getRow('settings_table', 'key_text', browserTag)
 	if (row) {
-		await database_updateCell('settings_table', 'key_text', saveTag(browserTag), 'count', saveInt(count))
+		await database_updateCell('settings_table', 'key_text', browserTag, 'count_int', count)
 	} else {
-		await database_addRow('settings_table', {'key_text': saveTag(browserTag), 'count': saveInt(count)})
+		await database_addRow('settings_table', {'key_text': browserTag, 'count_int': count})
 	}
 }
 
 //browser counts
-export async function countsGetBrowserCount(browserTag) {
+export async function counts_getBrowserCount(browserTag) {
 	let row = await database_getRow('counts_table', 'browser_tag', browserTag)
 	if (row) {
 		return readInt(row.count)
 	} else {
-		await database_addRow('counts_table', {'browser_tag': saveTag(browserTag), 'count': saveInt(0)})
+		await database_addRow('counts_table', {'browser_tag': browserTag, 'count_int': 0})
 		return 0
 	}
 }
-export async function countsSetBrowserCount(browserTag, count) {
+export async function counts_setBrowserCount(browserTag, count) {
 	let row = await database_getRow('counts_table', 'browser_tag', browserTag)
 	if (row) {
-		await database_updateCell('counts_table', 'browser_tag', saveTag(browserTag), 'count', saveInt(count))
+		await database_updateCell('counts_table', 'browser_tag', browserTag, 'count_int', count)
 	} else {
-		await database_addRow('counts_table', {'browser_tag': saveTag(browserTag), 'count': saveInt(count)})
+		await database_addRow('counts_table', {'browser_tag': browserTag, 'count_int': count})
 	}
 }
 
-
-/*
-hmmm
-rested brain ideas to get katy into level 0
-what if, as a design requirement, every column name has to end with a type, like
-
-name_text
-name_tag
-name_tick
-name_
-
-
-
-*/
-
-
-
-/*
-get the count will always be first
-
-set the count may not have a row yet
-*/
-
-
-/*hide
-
-export async function countsGetCount(browserTag) {
-	let rowCount = 
-
-}
-export async function countsSetCount(browserTag) {
-
-}
-
-async function countsCheckRow(browserTag) {
-	if (!await database_countRows('counts_table', 'browser_tag', browserTag)) {//now row yet
-
-	}
-}
-
-
-
-
-
-	return readInt((await database_getRow('counts_table', 'browser_tag', browserTag)).count)
-}
-export async function countsTable_setCount(browserTag, count) {
-	await database_updateCell('counts_table', 'browser_tag', browserTag, 'count', saveInt(count))
-}
-
-
-
-export async function accessTable_insert(browserTag, signedIn) {
+//browser sign in status records
+export async function access_addRecord(browserTag, signedIn) {
 	await database_addRow('access_table', {
 		row_tick: Now(),
 		row_tag: Tag(),
-		browser_tag: saveTag(browserTag),
-		signed_in: saveBooleanAsInt(signedIn)
+		browser_tag: browserTag,
+		signed_in_enum: saveBoolean(signedIn)
 	})
 }
-export async function accessTable_query(browserTag) {
+export async function access_getRecords(browserTag) {
 	return await database_getRows('access_table', 'browser_tag', browserTag, 'row_tick')
 }
 
+/*
+TODO change the schema in Supabase! :(0)
+
+can you rename signed_in to signed_in_enum?
+you need to make this change in supabase
+
+also in counts_table, you need to rename count to count_int
+
 */
+
+
+
+
 
 
 
@@ -354,30 +302,7 @@ update the global count setting row to this new value
 */
 //at this level, make it not about the table, but rather about the application use case
 
-/*hide
 
-async function browserCount_hasRecord(browserTag)
-async function browserCount_startRecord(browserTag)
-async function browserCount_getRecord(browserTag)
-async function browserCount_setRecord(browserTag, count)
-
-async function globalCount_hasRecord() {
-	return await database_countRows('settings_table', 'key_text', 'count') > 0
-}
-async function globalCount_startRecord() (
-	database_addRow('settings_table', {
-		'key_text': 'count',
-		'value_text': '0'
-	})
-}
-async function globalCount_get() {
-	return await database_getRow('settings_table', 'key_text', 'count').value_text
-}
-async function globalCount_set(count) {
-	//here's where you have to check and convert count!!!!!!!!!
-	await database_updateCell('settings_table', 'key_text', 'count', 'value_text', count)
-}
-*/
 
 /*
 you may be overdoing the naming, settings_table should have the columns name and value, how about
