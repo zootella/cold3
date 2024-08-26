@@ -1,0 +1,363 @@
+
+
+
+
+
+
+
+SQL statements fed into Supabase to create the database tables.
+naming convention is smake_case with the type, like table, index, tag, tick, text, at the end
+
+
+
+high level possible issues you've found
+it only takes 100ms to call to the database
+but look at checking a count
+-call to see if the row is there, and get its number
+...
+
+
+
+
+
+
+
+//previous failed design:
+/*
+//you need this because you're storing booleans in the database as numbers like 0 false, 1 true
+export function intToBoolean(i, minimum) {//if we've overloaded this database cell to hold enumerations like -1, pass minimum -1, otherwise defaults to 0
+	checkInt(i, minimum)
+	if      (i == 1) return true
+	else if (i == 0) return false
+	else toss('data', {i, minimum})
+}
+export function booleanToInt(b) {
+	if (typeof b != 'boolean') toss('type', {b})
+	return b ? 1 : 0
+}
+test(() => {
+	let n = 0//first, just to confirm how javascript works
+	let b = false
+	ok(typeof n == 'number')
+	ok(typeof b == 'boolean')
+
+	ok(intToBoolean(0) === false && booleanToInt(false) === 0)
+	ok(intToBoolean(1) === true  && booleanToInt(true)  === 1)
+})
+*/
+
+
+
+
+
+
+
+
+
+
+
+/*
+previous ones:
+
+
+CREATE TABLE table_settings (
+	key TEXT PRIMARY KEY,
+	value TEXT NOT NULL
+);
+
+CREATE TABLE table_counts (
+	browser_tag CHAR(21) PRIMARY KEY,
+	count BIGINT DEFAULT 0 NOT NULL
+);
+
+*/
+
+
+/*
+notes about the complete subset of types you'll use:
+
+CHAR(21) for tags, using this means it's a tag, even, which is great
+CHAR(52) for hashes, using this means it's a hash
+TEXT for all other text, email, username, posts, comments, base62 encoded encrypted text
+BIGINT for boolean 0,1; enum -1,0,1,2; tick counts; any actual numbers
+
+(and that might be all!)
+and then your existing checkTag(), checkText(), checkInt() are good for script and the database
+all you have to do is add under max to checkInt
+
+chatting about types generally:
+
+sounds like TEXT is postgres-specific, use for everything
+except when you know the exact length, like a CHAR(21) tag
+
+Type: INTEGER, BIGINT
+INTEGER: A 4-byte integer that supports values from -
+BIGINT: An 8-byte integer that supports values from -
+so use BIGINT for everything
+these have to be integers, and can be negative
+
+there is a BOOLEAN type
+but instead just use BIGINT 0 or 1 to enable you to do a 2 later, maybe
+
+taht might be it
+you're intentionally avoiding date, duration, and uuid types
+ARRAY and JSON are common; maybe you'll use those, or maybe you'll instead accomplish array-like data with simple tables with multiple rows
+
+
+
+*/
+
+
+
+
+
+
+
+/*
+do a little section in tests and library about number ranges
+javascript has max integer, and then BigInt
+postgres has BIGINT, huge but much smaller you think that max int
+in here for fun also show how big tick counts are these days, capacity of a hard drive, and so on
+
+[~]probably bake into checkInt that it's an integer that fits in 8 bytes (which is still huge)
+or make a separate one you use when thinking about integers that will go into the postgres database
+
+[~]add Size.bits = 8 to document math you do with that
+
+maybe []add check in checkInt to make sure in safe range, so at or under javascript's maximum
+
+--nevermind! postgres bigint is bigger than js max safe integer
+postgres bigint is -(2^63) through (2^63)-1; -9223372036854775808 to +9223372036854775807 says web documentation
+javascript number is -(2^53) through (2^53)-1; The safe integers consist of all integers from -(253 - 1) to 253 - 1, inclusive (±9,007,199,254,740,991) says web documentation
+
+export function checkInt8(i, minimum) {
+	checkInt(i, minimum)//make sure it's an integer
+
+}
+
+
+
+* Checks if a given number fits within the PostgreSQL BIGINT range.
+*
+* @param {number} num - The number to check.
+* @returns {boolean} - True if the number fits within the PostgreSQL BIGINT range, otherwise false.
+function isSafeBigInt(num) {
+// BIGINT is an 8-byte signed integer
+const BYTE_SIZE = 8;
+const BITS_PER_BYTE = 8;
+const TOTAL_BITS = BYTE_SIZE * BITS_PER_BYTE;
+
+// Calculate the range for a signed 8-byte integer
+const BIGINT_MIN = -(2 ** (TOTAL_BITS - 1));
+const BIGINT_MAX = (2 ** (TOTAL_BITS - 1)) - 1;
+
+// Check if the number is an integer
+if (!Number.isInteger(num)) {
+return false;
+}
+
+// Check if the number fits within the BIGINT range
+return num >= BIGINT_MIN && num <= BIGINT_MAX;
+}
+
+// Example usage:
+console.log(isSafeBigInt(123456789012345)); // true
+console.log(isSafeBigInt(-123456789012345)); // true
+console.log(isSafeBigInt(9223372036854775807)); // true
+console.log(isSafeBigInt(9223372036854775808)); // false
+console.log(isSafeBigInt(-9223372036854775809)); // false
+console.log(isSafeBigInt(123.456)); // false
+console.log(isSafeBigInt('123456789012345')); // false, not a number
+
+*/
+
+
+/*
+make sure postgresql has the default utf-8 character encoding with a sql statement like this:
+
+SELECT pg_encoding_to_char(encoding) AS encoding
+FROM pg_database
+WHERE datname = current_database()
+
+ran this in supabase's sql editor, and the result is "UTF8"
+*/
+
+
+
+//global password account access design notes
+/*
+
+browsers are identified by their browser hash
+that hash can be signed in or not
+
+the table should always grow: rows are added, not edited
+in addition to use specific information, rows generally always include a
+row number, what you get from supabase or postgres by default
+tag for unique identification
+tick when the row was made
+
+maybe this is all you need:
+
+rownumber | tag      | tick   | browserhash | sign in or sign out
+						CHAR(21)   BIGINT   CHAR(52)      BIGINT
+
+
+making in the supabase dashboard
+table_access, name
+turned off row level security
+two fields are already in there:
+id, int8, maybe this is rownumber
+created_at, timestamptz, now(), looks like an automatic tick stamp but not sure format or granularity
+leaving those in and adding your own, even if there's some duplication
+
+and talking to chat as you go
+turning off rls is fine, and common when server code has exclusive access to the database
+supabase's int8 is postgres BIGINT
+checking primary key tells PostgreSQL that this column will uniquely identify each row in the table
+PostgreSQL automatically creates an index on the primary key to ensure that lookups are fast.
+
+Type: "timestamptz" (timestamp with time zone)
+
+ok, chatting more here's the consensus:
+-totally fine to keep RLS off, despite supabase warnings
+-a table can only have one primary key, which has to be unique (advanced thing called composite key is the exception to this rule)
+-postgres will build an index for that primary key, making lookups fast
+-advanced thing called indexes like CREATE INDEX idx_user_id ON posts (user_id)
+-also "While PostgreSQL’s query planner is quite sophisticated and can optimize queries using existing indexes, it won’t create new indexes on its own based on query usage."
+
+so, use this as an excuse to at this early stage, make things simpler
+rownumber is in there, and it's the primary key, but you ignore it
+tag and tick get sent together from the worker, ignore timestampz and supabase's clock
+
+rownumber | tag      | tick   | browserhash | sign in or sign out
+						CHAR(21)   BIGINT   CHAR(52)      BIGINT
+
+
+-row number: an automatically incrementing number that the database handles itself
+-tag: CHAR(21), globally unique, set by my code
+-tick: BIGINT, set by my code
+-browser hash: CHAR(52), set by my code
+-signed in: BIGINT, ill store 0 or 1 here to use that as a boolean
+
+
+CREATE TABLE table_access (
+	row_number BIGSERIAL PRIMARY KEY,
+	tick BIGINT NOT NULL,
+	tag CHAR(21) UNIQUE NOT NULL,
+	browser_hash CHAR(52) NOT NULL,
+	signed_in BIGINT NOT NULL
+);
+
+BIGSERIAL is 8 byte, and auto incrementing
+it's standard to set this as the primary key, even if tag is also globally unique, picking that for now
+there doesn't seem to be a way to get Date.now() easily in postgres, so we'll do that in the worker
+*/
+
+/*
+next day
+having some problems in supabase with the automatic row numbers
+so, abandoning that
+in excel and on a piece of paper, the rows have an order, but this isn't the case in postgres
+
+picking tag as the primary key
+it's guaranteed to be unique in the table and everywhere because it's a tag
+you'll never sort or lookup by tag, and postgres will be ready to make that fast if you ever did, but that's ok
+
+tick is when, according to the worker, the new row was inserted
+you're thinking all your tables will start tag and tick like this
+
+the common query is to filter by browser hash, and look at results sorted by tick
+the index below makes this fast
+postgres won't create this index automatically, but will use it automatically, looking at your query
+
+CREATE TABLE table_access (
+	tag CHAR(21) PRIMARY KEY NOT NULL, -- row identifier, globally unique, primary key
+	tick BIGINT NOT NULL,              -- tick when record inserted
+	browser_hash CHAR(52) NOT NULL,  -- Browser identifier used for filtering
+	signed_in BIGINT NOT NULL  -- Boolean-like integer indicating signed-in status (e.g., 0 or 1)
+);
+
+CREATE INDEX idx_browser_hash_tick ON table_access (browser_hash, tick);
+
+Ok to name the index index_browser_tick? Do these names need to be unique across my whole database, or are they specific to the table they're on?
+OK, but then imagine I've got another table which also needs an index that filters by browser and sorts by tick. Shouldn't I include that table name in the index name if they must all be unique?
+
+index_access_browser_tick
+
+
+
+
+*/
+
+
+
+
+
+/*
+long chat about transactions that ended up with this
+
+const sql = `
+	BEGIN;
+	INSERT INTO first_table (column) VALUES (quote_literal(${val1}));
+	INSERT INTO second_table (column) VALUES (quote_literal(${val2}));
+	COMMIT;
+`
+const { data, error } = await supabase.rpc('execute_sql', { sql })
+
+imagine the database only makes sense when both, or neither of these rows are added
+if one row is added, and the other one not there, the database isn't in a consistent state
+
+also, imagine the first row inserts fine, but then
+a valid error correctly prevents the second row from being inserted
+there could be a uniqueness conflict on the second row, for instance
+
+using the supabase api, each insert is a separate statement
+js code will have to notice the error on the second insert
+and then go back and try to remove the first
+
+but this problem was solved in databases decades ago!
+with somethign called the transaction
+the begin and commit lines above group the two inserts into a single transaction
+and, sure enough, if there's a problem anywhere in there, none of it sticks
+and all of this is automatic
+
+so you want to be able to use transactions
+the problem is, the supabase api doesn't include them
+there isn't a way to do two inserts in a single call to the supabase api, either
+even with all the method chaining
+
+so the plan is to
+use the supabase api for reads
+and individual writes
+but when you need to insert multiple rows all at once
+to drop down to raw sql and execute a block like above
+
+but now you need to worry about the infamous sql injection attack
+but maybe it's not too hard
+you think essentially you just have to validate the inserts really well
+and your own functions are doing this
+
+but additionally, get protection from using knex, continued below
+(that didn't work because they all assume api or node, rerouting)
+
+also, batch raw inserts like this also will likely be faster,
+as each trip to supabase is taking ~150ms
+*/
+
+
+
+
+here's a crazy idea
+your database design means that you're, at the start, going to have to get all the rows for a browser tag from maybe a half dozen different tables
+then, with all those rows in the worker, you'll synthesize and decide what to do next
+rather than most databases, which have requirements and a single users table, for instance
+
+ok, so let's say that even the most trivial supabase call takes 100ms
+so if you do 10 of them, that's a full second!
+which is not acceptable, of course
+
+but then you just realized, do multiple async calls in parallel in this case
+yeah, how does that work in this fully finished time of async await
+
+
+

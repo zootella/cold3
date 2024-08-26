@@ -756,7 +756,8 @@ function checkSameArray(a1, a2) {
 
 //base32, for hash values in the database, so they can be short, but also always the same length
 const base32Alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
-let base32Decoder // Lookup table for decoding, initialized once
+let base32Decoder // Lookup table for decoding, make once on first use
+let base32Set //Set for checking that text that is supposed to be a hash value in base32 looks ok
 function _arrayToBase32(a) {
 	let s = '' // Encoded string output
 	let bits = 0 // Bit counter
@@ -796,6 +797,24 @@ function _base32ToArray(s) {
 	}
 	return new Uint8Array(a);
 }
+
+//make sure s looks like a hash value in base 32, to help katy, baring the door to the database
+export function checkHash(s) {
+	checkText(s); if (s.length != hashLength) toss('data', {s})
+	if (!base32Set) base32Set = new Set(base32Alphabet)
+	for (let i = 0; i < s.length; i++) {//olde fashioned loop is faster because no es6 iterator
+		if (!base32Set.has(s[i])) toss('data', {s, i})
+	}
+}
+export function checkHashThoroughly(s) {//slower, does round trip check
+	checkText(s); if (s.length != hashLength) toss('data', {s})
+	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
+}
+test(() => {
+	function f(s) { checkHash(s); checkHashThoroughly(s) }
+	f('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//fine
+	//also tried blank, bad character, too short, too long
+})
 
 //  _                     __  ____  
 // | |__   __ _ ___  ___ / /_|___ \ 
@@ -1137,12 +1156,6 @@ test(async () => {
 	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
 	ok(d2.base32().length == hashLength)
 })
-//make sure s looks like a hash value in base 32, for the database
-export function checkHash(s) {
-	checkText(s); checkAlpha(s)
-	if (s.length != hashLength) toss('data', {s})
-	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
-}
 
 //      _             
 //  ___(_) __ _ _ __  
@@ -1550,7 +1563,7 @@ function _squareEncode(s) {
 	let encoded = ''
 	let outside = true//start outside a stretch of unsafe characters
 	for (let c of s) {//if you do let i and s.length surrogate pair characters get separated; see below
-		let safe = squareSafe(c)
+		let safe = squareSafe1(c)
 		if (outside) {//we've encountered this new character c from a safe area
 			if (safe) {//and it's safe
 				encoded += c//add it and keep going
@@ -1571,6 +1584,7 @@ function _squareEncode(s) {
 	return encoded
 }
 function _squareDecode(s) {
+	checkSquare(s)
 	let a = s.split(/[\[\]]/)//split on [ or ]
 	if (a.length % 2 == 0) toss('data', {s, e, a})//make sure any braces are closed
 
@@ -1588,24 +1602,45 @@ function _squareDecode(s) {
 	return decoded
 }
 
-const _squareAlphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -_,.?!@#'
-let _squareAlphabetSet
-function squareSafe(c) {
-	if (!_squareAlphabetSet) _squareAlphabetSet = new Set(_squareAlphabet)//make once
-	return _squareAlphabetSet.has(c)//very fast lookup
+export function checkSquare(s) { return squareSafe2(s) }//quickly check that s looks like properly square encoded text
+/*
+alphabet1 is characters that do not need to be square encoded, safe to let pass through
+alphabet2 is characters that can appear in propertly square encoded text, safe to try to decode
+
+squareSafe1(character) is for raw text, and returns true if we don't need to encode this character
+squareSafe2(string) is for encoded text, and returns true if there are only the characters that should be there
+*/
+const squareAlphabet1 =   '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -_,.?!@#'
+const squareAlphabet2  = '[]0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -_,.?!@#'
+let squareSet1, squareSet2//make once on first use
+function squareSafe1(c) {
+	if (!squareSet1) squareSet1 = new Set(squareAlphabet1)
+	return squareSet1.has(c)//very fast lookup
+}
+function squareSafe2(s) {
+	if (typeof s != 'string') toss('data', {s})//instead of checkText, which doesn't allow blank
+	if (!squareSet2) squareSet2 = new Set(squareAlphabet2)
+	for (let i = 0; i < s.length; i++) {//olde fashioned loop is faster because no es6 iterator
+		if (!squareSet2.has(s[i])) toss('data', {s, i})
+	}
 }
 test(() => {
-	ok(squareSafe('a'))
-	ok(squareSafe(' '))
-	ok(squareSafe('@'))
+	ok(squareSafe1('a'))
+	ok(squareSafe1(' '))
+	ok(squareSafe1('@'))
 
-	ok(!squareSafe('\t'))//tab
-	ok(!squareSafe('牛'))//cow
-	ok(!squareSafe('😄'))//smiley emoji
-	ok(!squareSafe('𝓗'))//instagram nonsense which also happens to be a surrogate pair
+	ok(!squareSafe1('\t'))//tab
+	ok(!squareSafe1('牛'))//cow
+	ok(!squareSafe1('😄'))//smiley emoji
+	ok(!squareSafe1('𝓗'))//instagram nonsense which also happens to be a surrogate pair
 
-	ok(!squareSafe('ab'))//giving it two characters
-	ok(!squareSafe(''))//and blank
+	ok(!squareSafe1('ab'))//giving it two characters
+	ok(!squareSafe1(''))//and blank
+})
+test(() => {
+	squareSafe2('')//valid square encoded text can be blank
+	squareSafe2('hello')
+	squareSafe2('key[3a] value')
 })
 
 //coding all this, you found out that s.length and s[i] don't work on all text!

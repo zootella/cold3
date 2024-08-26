@@ -36,7 +36,7 @@ let tick = reactive({
 })
 
 // useFetch with POST method to manage count data
-let { data, fetching, error } = useFetch('/api/count', {
+let { data, fetching, error } = useFetch('/api/count2', {
 	method: 'POST',
 	body: {
 		countGlobal: 0,
@@ -50,7 +50,7 @@ async function incrementCount(increment1, increment2) {
 	try {
 
 		let tick1 = Now()
-		let data2 = await $fetch('/api/count', {
+		let data2 = await $fetch('/api/count2', {
 			method: 'POST',
 			body: {
 				countGlobal: increment1,
@@ -84,7 +84,7 @@ watch(data, (newData, oldData) => {//data contains reactive members, newData and
 		<!-- Only display the count details if the data is available -->
 		<p v-if="data">
 
-			Counts
+			Count2
 			<button @click="incrementCount(1, 0)">{{ data.countGlobal }} global</button>
 			updated in {{ tick.durationGlobal }}ms, and
 			<button @click="incrementCount(0, 1)">{{ data.countBrowser }} browser</button>

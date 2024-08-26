@@ -1,12 +1,39 @@
 <script setup>
 
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { log, inspect, Now } from '../library/library0.js'
 import { Tag } from '../library/library1.js'
 import { getBrowserTag } from '../library/library2.js'
 
+onMounted(async () => {//doesn't run on server, even when hydrating
+	await getCounts()
+})
 
 
+const delay = ref(-1)
+
+async function incrementGlobal()  { await callCount(1, 0) }
+async function incrementBrowser() { await callCount(0, 1) }
+async function getCounts()        { await callCount(0, 0) }
+async function callCount(incrementGlobal, incrementBrowser) {
+	try {
+		let t = Now()
+		let response = await $fetch('/api/count3', {
+			method: 'POST',
+			body: {
+				browserTag: getBrowserTag(),
+				incrementGlobal,
+				incrementBrowser
+			}
+		})
+		delay.value = Now() - t
+		log('success', inspect(response))
+//		statusText.value = `This browser is ${response.signedIn2 ? 'signed in. 🟢' : 'signed out. ❌'} Fetch: ${t}ms. Note: ${response.note}`
+		return response
+	} catch (e) {
+		log('caught', e)
+	}
+}
 
 
 let browserTag = ref('')
@@ -36,7 +63,7 @@ let tick = reactive({
 })
 
 // useFetch with POST method to manage count data
-let { data, fetching, error } = useFetch('/api/count', {
+let { data, fetching, error } = useFetch('/api/count3', {
 	method: 'POST',
 	body: {
 		countGlobal: 0,
@@ -50,7 +77,7 @@ async function incrementCount(increment1, increment2) {
 	try {
 
 		let tick1 = Now()
-		let data2 = await $fetch('/api/count', {
+		let data2 = await $fetch('/api/count3', {
 			method: 'POST',
 			body: {
 				countGlobal: increment1,
@@ -59,6 +86,7 @@ async function incrementCount(increment1, increment2) {
 			}
 		})
 		let tick2 = Now()
+		delay.value = tick2 - tick1
 		log(`fetch ran in ${tick2 - tick1}ms`)
 		console.log('data.value.countGlobal')
 		console.log(data.value.countGlobal)
@@ -71,10 +99,6 @@ async function incrementCount(increment1, increment2) {
 	}
 }
 
-// Watch for changes to the data object and log the message
-watch(data, (newData, oldData) => {//data contains reactive members, newData and oldData are unwrapped
-//	log('watch data', inspect(oldData), inspect(newData))
-})
 
 </script>
 
@@ -84,11 +108,10 @@ watch(data, (newData, oldData) => {//data contains reactive members, newData and
 		<!-- Only display the count details if the data is available -->
 		<p v-if="data">
 
-			Counts
-			<button @click="incrementCount(1, 0)">{{ data.countGlobal }} global</button>
-			updated in {{ tick.durationGlobal }}ms, and
+			Count3
+			<button @click="incrementCount(1, 0)">{{ data.countGlobal }} global</button>,
 			<button @click="incrementCount(0, 1)">{{ data.countBrowser }} browser</button>
-			updated in {{ tick.durationBrowser }}ms for this browser tagged <i>{{ browserTag }}</i>.
+			updated in {{ delay }}ms for this browser tagged <i>{{ getBrowserTag() }}</i>.
 
 		</p>
 		<!-- Display a loading message while the data is being fetched -->

@@ -1,7 +1,7 @@
 
 import { log, inspect, checkText, hasText } from '../../library/library0.js'
 import { checkTag } from '../../library/library1.js'
-import { accessInsert, accessQuery } from '../../library/database.js'
+import { accessTableInsert, accessTableQuery } from '../../library/database.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 		o.passwordValid = hasText(body.password) && body.password == process.env.ACCESS_PASSWORD
 
 		//is this browser already signed in?
-		let rows = await accessQuery(body.browserTag)//get all the rows
+		let rows = await accessTableQuery(body.browserTag)//get all the rows
 		let signedIn1 = false
 		if (rows.length && rows[0].signed_in) signedIn1 = true//most recent row sorted first
 		o.signedIn1 = signedIn1//state before this request runs
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
 			if (!signedIn1) {
 				o.note = 'already signed out'
 			} else {
-				await accessInsert(body.browserTag, 0)//insert a row to sign out
+				await accessTableInsert(body.browserTag, 0)//insert a row to sign out
 				o.signedIn2 = false
 				o.note = 'signed out'
 			}
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
 				o.note = 'already signed in'
 			} else {
 				if (o.passwordValid) {//if password valid
-					await accessInsert(body.browserTag, 1)//insert a row to sign in
+					await accessTableInsert(body.browserTag, 1)//insert a row to sign in
 					o.signedIn2 = true
 					o.note = 'signed in'
 				} else {

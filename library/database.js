@@ -7,7 +7,7 @@ interface between the application and the database
 keep it all here together for easy refactoring and auditing
 */
 
-import { log, toss, Now, checkInt, hasText, defined, test, ok } from './library0.js'
+import { log, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 
 import { createClient } from '@supabase/supabase-js'
@@ -15,52 +15,392 @@ import { createClient } from '@supabase/supabase-js'
 let supabase;
 if (defined(typeof process) && hasText(process?.env?.ACCESS_SUPABASE_URL)) supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY)
 
-
-
+//  _         _             _                  _   _                _                  
+// | | ____ _| |_ _   _    | |__   __ _ _ __  | |_| |__   ___    __| | ___   ___  _ __ 
+// | |/ / _` | __| | | |   | '_ \ / _` | '__| | __| '_ \ / _ \  / _` |/ _ \ / _ \| '__|
+// |   < (_| | |_| |_| |_  | |_) | (_| | |    | |_| | | |  __/ | (_| | (_) | (_) | |   
+// |_|\_\__,_|\__|\__, ( ) |_.__/ \__,_|_|     \__|_| |_|\___|  \__,_|\___/ \___/|_|   
+//                |___/|/                                                              
 /*
-the database keeps booleans as the BIGINT numbers 0 and 1
-this lets you use fewer different types overall
-and also later on overload these booleans into enums with 2 and -1 and whatever
+our defense against writing malformed data into the database
+check and convert data between the application and the database
 
-this means when storing booleans, you have to call booleanToInt() below
-
-when reading booleans, just read the numbers
-it's totally find if they float up through the stack
-this is why there's no corresponding function intToBoolean()
+here are the postgres types we're using are:
+BIGNUM    boolean 0 1, enumeration like -1 0 1 2, integer, tick
+CHAR(21)  tag
+CHAR(52)  hash
+TEXT      variable length text, square brace encoding
 */
-export function booleanToInt(b) { return b ? 1 : 0 }
-//when getting booleans out of the database, it's fine if numbers 0 and 1 float upwards
-//so, there's no intToBoolean
-//this is also necessary
 
-
-
-//previous failed design:
 /*
-//you need this because you're storing booleans in the database as numbers like 0 false, 1 true
-export function intToBoolean(i, minimum) {//if we've overloaded this database cell to hold enumerations like -1, pass minimum -1, otherwise defaults to 0
-	checkInt(i, minimum)
-	if      (i == 1) return true
-	else if (i == 0) return false
-	else toss('data', {i, minimum})
-}
-export function booleanToInt(b) {
-	if (typeof b != 'boolean') toss('type', {b})
-	return b ? 1 : 0
-}
-test(() => {
-	let n = 0//first, just to confirm how javascript works
-	let b = false
-	ok(typeof n == 'number')
-	ok(typeof b == 'boolean')
+function saveInt(i, m) { checkInt(i, m); return i }//minimum m like -1 or 0+ default
+function readInt(i, m) { checkInt(i, m); return i }
 
-	ok(intToBoolean(0) === false && booleanToInt(false) === 0)
-	ok(intToBoolean(1) === true  && booleanToInt(true)  === 1)
-})
+function saveBooleanAsInt(b) { return b ? 1    : 0     }//we save booleans in the database as bignum 1 and 0
+function readBooleanAsInt(i) { return i ? true : false }
+
+function saveIntAsText(i) { return intToText(i) }//the settings tables saves everything as text, so convert with these
+function readIntAsText(s) { return textToInt(s) }//checkInt is built into these conversion functions
+
+function saveTag(s) { checkTag(s); return s }
+function readTag(s) { checkTag(s); return s }
+
+function saveTick(t) { checkInt(t); return t }
+function readTick(t) { checkInt(t); return t }
+
+function saveHash(h) { checkHash(h); return h }
+function readHash(h) { checkHash(h); return h }
+
+function saveText(s) { if (s === '') return s; checkText(s); return squareEncode(s) }//blank text allowed
+function readText(s) { if (s === '') return s; checkText(s); return squareDecode(s) }
 */
 
 
 
+/*
+//ok, katy finds another position at the door
+//these are all pass-through without transformation, throw on sings of trouble
+//you could use them read and save
+//they're wired to validate every cell of a whole bunch of returned rows, which may be slow and unecessary
+//but start with this and optimize later
+*/
+function katyRows(rows) {//here's an array of rows, are you really going to check every cell? you need to see how many ms this adds on larger queries. you technically don't have to do this, imagining bad data is never added to the database
+	rows.forEach(katyRow)
+	return rows
+}
+function katyRow(row) {//object of column names: cell contents
+	for (let [column, value] of Object.entries(row)) katyCell(column, value)//won't pick up properties that are non-enumerable or from the prototype chain
+	return row
+}
+function katyCell(column, value){//column name and cell value
+	let type = _type(column)
+	if      (type == 'enum') { checkInt(value)            }//a boolean saved as the int 0 or 1 which could become an enum
+	else if (type == 'tick') { checkInt(value)            }//a tick count of an actual time something happened
+	else if (type == 'int')  { checkInt(value)            }//integer
+	else if (type == 'tag')  { checkTag(value)            }//a tag, 21 letters and numbers
+	else if (type == 'hash') { checkHash(value)           }//a sha256 hash value encoded to base32, 52 characters
+	else if (type == 'text') { checkSquare(value) }//text, can be blank, square encoded in the database 
+	else { toss('data', {column, value}) }
+	return value
+}
+function katyColumn(columnName){//just a column name
+	_type(columnName)//throws if there isn't 
+	return columnName
+}
+function katyTable(tableName) {//just a table name, this one is silly
+	if (_type(tableName) != 'table') toss('data', {tableName})
+}
+function _type(s) {//from a column name like 'name_type', clip out 'type'
+	checkText(s)
+	let i = s.lastIndexOf('_')
+	if ((i < 1) || (s.length < i + 2)) toss('data', {s})//shortest possible valid column name is 'a_b'
+	return s.substring(s.lastIndexOf('_') + 1)
+}
+
+
+//layer 0.5
+/*
+
+hmmm...
+rested brain thinking on getting katy into level 0
+what if, as a design requrement, every column title has to end with the type
+
+name_enum - boolean which could grow in the future into an enumeration
+name_tick - number which is a tick count, could grow to include negative
+name_int
+name_tag
+name_hash
+name_text - text which must be encoded in square braces
+
+then in layer0, everything going in and out is checked for type by these keys
+*/
+
+
+/*
+maybe you don't square encode here--that's in a layer above
+but you do make sure that all text is square encoded
+that means that text can be blank or have a legal for square encoding
+*/
+
+
+
+
+
+//  _                          ___  
+// | | __ _ _   _  ___ _ __   / _ \ 
+// | |/ _` | | | |/ _ \ '__| | | | |
+// | | (_| | |_| |  __/ |    | |_| |
+// |_|\__,_|\__, |\___|_|     \___/ 
+//          |___/                   
+/*
+functions that call the supabase api
+they work on whatever table you tell them to
+you have to get the column names and data types right yourself
+*/
+
+//in table, look at column1, and count how many rows have value1
+async function database_countRows(table, column1, value1) {
+	katyTable(table); katyCell(column1, value1)
+	let { count, error } = await supabase
+		.from(table)
+		.select(column1, { count: 'exact' })//count exact matches based on column1
+		.eq(column1, value1)//filter rows to those with value1
+	if (error) toss('supabase', {error})
+	return count
+}
+
+//add a new row to table, with values like { column1_name: cell1_value, column2_name... }
+async function database_addRow(table, values) {
+	katyTable(table); katyRow(values)
+	let { data, error } = await supabase
+		.from(table)
+		.insert([values])//make a new row with all the given values
+	if (error) toss('supabase', { error })
+	//no return
+}
+
+//in table, look at column1 to find one row with value1, then go right to column2, and write value2 there
+async function database_updateCell(table, column1, value1, column2, value2) {
+	katyTable(table); katyCell(column1, value1); katyCell(column2, value2)
+	let { data, error } = await supabase
+		.from(table)
+		.update({ [column2]: value2 })//write value2 in column2
+		.eq(column1, value1)//in the row where column1 equals value1
+	if (error) toss('supabase', {error})
+	//no return
+}
+
+//in table, look at column1 to find one row with value1, and get the whole row
+async function database_getRow(table, column1, value1) {
+	katyTable(table); katyCell(column1, value1)
+	let { data, error } = await supabase
+		.from(table)
+		.select('*')//select all columns to get the whole row
+		.eq(column1, value1)//find the row where column1 equals value1
+		.single()//if no rows match returns data as null, if 2+ rows match returns error
+	if (error) toss('supabase', {error})
+	katyRow(data)
+	return data//data is the whole row
+}
+
+//in table, look at column1 to get all the rows with value1, and get them biggest to smallest based on their values in columnSort
+async function database_getRows(table, column1, value1, columnSort) {
+	katyTable(table); katyCell(column1, value1); katyColumn(columnSort)
+	let { data, error } = await supabase
+		.from(table)
+		.select('*')//select all columns to retrieve entire rows
+		.eq(column1, value1)//filter to get rows where column1 equals value1
+		.order(columnSort, { ascending: false })//sort rows by column2 in descending order
+	if (error) toss('supabase', {error})
+	katyRows(data)//if this is slow, it's not necessary
+	return data//data is an array of rows
+}
+
+/*
+what's more at this level?
+joins, maybe, where you're returning rows based on how they match up with other tables
+*/
+
+//  _                         _ 
+// | | __ _ _   _  ___ _ __  / |
+// | |/ _` | | | |/ _ \ '__| | |
+// | | (_| | |_| |  __/ |    | |
+// |_|\__,_|\__, |\___|_|    |_|
+//          |___/               
+/*
+functions that are specific to not tables, but kinds of data and how the application uses them
+*/
+
+//settings
+export async function settingsGetText(name) {
+	return readText((await database_getRow('settings_table', 'key_text', name)).value_text)
+}
+export async function settingsGetNumber(name) {
+	return readNumberAsText((await database_getRow('settings_table', 'key_text', name)).value_text)
+}
+export async function settingsSetText(name, value) {
+	await database_updateCell('settings_table', 'key_text', name, 'value_text', saveText(value))
+}
+export async function settingsSetNumber(name, value) {
+	await database_updateCell('settings_table', 'key_text', name, 'value_text', saveNumberAsText(value))
+}
+
+//global count
+export async function countsGetGlobalCount() {
+	let row = await database_getRow('settings_table', 'key_text', browserTag)
+	if (row) {
+		return readInt(row.count)
+	} else {
+		await database_addRow('settings_table', {'key_text': saveTag(browserTag), 'count': saveInt(0)})
+		return 0
+	}
+}
+export async function countsSetGlobalCount(count) {
+	let row = await database_getRow('settings_table', 'key_text', browserTag)
+	if (row) {
+		await database_updateCell('settings_table', 'key_text', saveTag(browserTag), 'count', saveInt(count))
+	} else {
+		await database_addRow('settings_table', {'key_text': saveTag(browserTag), 'count': saveInt(count)})
+	}
+}
+
+//browser counts
+export async function countsGetBrowserCount(browserTag) {
+	let row = await database_getRow('counts_table', 'browser_tag', browserTag)
+	if (row) {
+		return readInt(row.count)
+	} else {
+		await database_addRow('counts_table', {'browser_tag': saveTag(browserTag), 'count': saveInt(0)})
+		return 0
+	}
+}
+export async function countsSetBrowserCount(browserTag, count) {
+	let row = await database_getRow('counts_table', 'browser_tag', browserTag)
+	if (row) {
+		await database_updateCell('counts_table', 'browser_tag', saveTag(browserTag), 'count', saveInt(count))
+	} else {
+		await database_addRow('counts_table', {'browser_tag': saveTag(browserTag), 'count': saveInt(count)})
+	}
+}
+
+
+/*
+hmmm
+rested brain ideas to get katy into level 0
+what if, as a design requirement, every column name has to end with a type, like
+
+name_text
+name_tag
+name_tick
+name_
+
+
+
+*/
+
+
+
+/*
+get the count will always be first
+
+set the count may not have a row yet
+*/
+
+
+/*hide
+
+export async function countsGetCount(browserTag) {
+	let rowCount = 
+
+}
+export async function countsSetCount(browserTag) {
+
+}
+
+async function countsCheckRow(browserTag) {
+	if (!await database_countRows('counts_table', 'browser_tag', browserTag)) {//now row yet
+
+	}
+}
+
+
+
+
+
+	return readInt((await database_getRow('counts_table', 'browser_tag', browserTag)).count)
+}
+export async function countsTable_setCount(browserTag, count) {
+	await database_updateCell('counts_table', 'browser_tag', browserTag, 'count', saveInt(count))
+}
+
+
+
+export async function accessTable_insert(browserTag, signedIn) {
+	await database_addRow('access_table', {
+		row_tick: Now(),
+		row_tag: Tag(),
+		browser_tag: saveTag(browserTag),
+		signed_in: saveBooleanAsInt(signedIn)
+	})
+}
+export async function accessTable_query(browserTag) {
+	return await database_getRows('access_table', 'browser_tag', browserTag, 'row_tick')
+}
+
+*/
+
+
+
+
+
+
+
+/*
+account needs:
+make a row for a sign in record
+get all the rows for a browser of all its sign in records, sorted newest first
+
+browser count needs:
+is there already a row for this browser?
+what is this browser's count?
+update this browser's count to the new value
+
+global count needs:
+is there already a row for this global count setting?
+make that row with starting count 0
+update the global count setting row to this new value
+
+
+*/
+//at this level, make it not about the table, but rather about the application use case
+
+/*hide
+
+async function browserCount_hasRecord(browserTag)
+async function browserCount_startRecord(browserTag)
+async function browserCount_getRecord(browserTag)
+async function browserCount_setRecord(browserTag, count)
+
+async function globalCount_hasRecord() {
+	return await database_countRows('settings_table', 'key_text', 'count') > 0
+}
+async function globalCount_startRecord() (
+	database_addRow('settings_table', {
+		'key_text': 'count',
+		'value_text': '0'
+	})
+}
+async function globalCount_get() {
+	return await database_getRow('settings_table', 'key_text', 'count').value_text
+}
+async function globalCount_set(count) {
+	//here's where you have to check and convert count!!!!!!!!!
+	await database_updateCell('settings_table', 'key_text', 'count', 'value_text', count)
+}
+*/
+
+/*
+you may be overdoing the naming, settings_table should have the columns name and value, how about
+*/
+
+
+
+
+
+
+
+/*
+there's a generalized layer
+which has all the calls to supabase
+you tell it which table to use, and have to get the cells and values right yourself
+
+then there's a layer above that
+functions specific to a table and the operations on that table
+this is where you can do last checks and transformations of the data
+
+
+*/
+
 
 
 
@@ -70,21 +410,40 @@ test(() => {
 
 
 /*
-SQL statements fed into Supabase to create the database tables.
-Here in text notes; it would be better if they were tracked in git some other way!
-
 -- settings for the whole application
 CREATE TABLE settings_table (
 	key_text    TEXT  PRIMARY KEY  NOT NULL, -- name of the setting
 	value_text  TEXT                         -- value, text or numerals
 );
+*/
 
+function settingsTable_readRow(key) {}
+function settingsTable_createRow(key, value) {}
+function settingsTable_writeRow(key, value) {}
+
+/*
 -- counts for each browser, works without being signed in
 CREATE TABLE counts_table (
 	browser_tag  CHAR(21)  PRIMARY KEY  NOT NULL, -- browser tag
 	count        BIGINT                 NOT NULL
 );
+*/
+function countsTable_readRow(browserTag) {}
+function countsTable_createRow(browserTag, count) {}
+function countsTable_writeRow(browserTag, count) {}
 
+
+
+
+//                _     _         
+//           ___ | | __| |        
+//  _____   / _ \| |/ _` |  _____ 
+// |_____| | (_) | | (_| | |_____|
+//          \___/|_|\__,_|        
+//                                
+
+
+/*
 -- records of browsers signing in with password and signing out
 CREATE TABLE access_table (
 	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL, -- row tag
@@ -94,154 +453,32 @@ CREATE TABLE access_table (
 );
 -- composite index to make a filtering by browser tag and sorting by tick fast
 CREATE INDEX access_index_on_browser_tick ON access_table (browser_tag, row_tick);
-
-finding your convention for names in the database, which is sausage_case
-and types are at the end, so access_table and row_tick names tell you that's a table, and a tick
-
-using the supabase dashboard, there's no CHAR(21) type
-to enter these commands:
-supabase dashboard
-left bar, sql editor
-paste in create command
-green run button
-success, no rows returned
-go back to table editor and it's there
-
-
-
-
-
-
 */
 
-
-/*
-previous ones:
-
-
-CREATE TABLE table_settings (
-	key TEXT PRIMARY KEY,
-	value TEXT NOT NULL
-);
-
-CREATE TABLE table_counts (
-	browser_tag CHAR(21) PRIMARY KEY,
-	count BIGINT DEFAULT 0 NOT NULL
-);
-
-*/
-
-
-/*
-notes about the complete subset of types you'll use:
-
-CHAR(21) for tags, using this means it's a tag, even, which is great
-CHAR(52) for hashes, using this means it's a hash
-TEXT for all other text, email, username, posts, comments, base62 encoded encrypted text
-BIGINT for boolean 0,1; enum -1,0,1,2; tick counts; any actual numbers
-
-(and that might be all!)
-and then your existing checkTag(), checkText(), checkInt() are good for script and the database
-all you have to do is add under max to checkInt
-
-chatting about types generally:
-
-sounds like TEXT is postgres-specific, use for everything
-except when you know the exact length, like a CHAR(21) tag
-
-Type: INTEGER, BIGINT
-INTEGER: A 4-byte integer that supports values from -
-BIGINT: An 8-byte integer that supports values from -
-so use BIGINT for everything
-these have to be integers, and can be negative
-
-there is a BOOLEAN type
-but instead just use BIGINT 0 or 1 to enable you to do a 2 later, maybe
-
-taht might be it
-you're intentionally avoiding date, duration, and uuid types
-ARRAY and JSON are common; maybe you'll use those, or maybe you'll instead accomplish array-like data with simple tables with multiple rows
-
-
-
-*/
-
-
-/*
-do a little section in tests and library about number ranges
-javascript has max integer, and then BigInt
-postgres has BIGINT, huge but much smaller you think that max int
-in here for fun also show how big tick counts are these days, capacity of a hard drive, and so on
-
-[~]probably bake into checkInt that it's an integer that fits in 8 bytes (which is still huge)
-or make a separate one you use when thinking about integers that will go into the postgres database
-
-[~]add Size.bits = 8 to document math you do with that
-
-maybe []add check in checkInt to make sure in safe range, so at or under javascript's maximum
-
---nevermind! postgres bigint is bigger than js max safe integer
-postgres bigint is -(2^63) through (2^63)-1; -9223372036854775808 to +9223372036854775807 says web documentation
-javascript number is -(2^53) through (2^53)-1; The safe integers consist of all integers from -(253 - 1) to 253 - 1, inclusive (±9,007,199,254,740,991) says web documentation
-
-export function checkInt8(i, minimum) {
-	checkInt(i, minimum)//make sure it's an integer
-
+//insert a new row into table_access with the given row tag, browser hash, and signed in status
+export async function accessTableInsert(browser_tag, signed_in) {
+	checkTag(browser_tag)//put type checks here, you think, to be sure only good data gets inserted
+	checkInt(signed_in)
+	let { data, error } = await supabase
+		.from('access_table')
+		.insert([{ row_tick: Now(), row_tag: Tag(), browser_tag, signed_in }])
+	if (error) toss('supabase', {error})
 }
-
-
-
-* Checks if a given number fits within the PostgreSQL BIGINT range.
-*
-* @param {number} num - The number to check.
-* @returns {boolean} - True if the number fits within the PostgreSQL BIGINT range, otherwise false.
-function isSafeBigInt(num) {
-// BIGINT is an 8-byte signed integer
-const BYTE_SIZE = 8;
-const BITS_PER_BYTE = 8;
-const TOTAL_BITS = BYTE_SIZE * BITS_PER_BYTE;
-
-// Calculate the range for a signed 8-byte integer
-const BIGINT_MIN = -(2 ** (TOTAL_BITS - 1));
-const BIGINT_MAX = (2 ** (TOTAL_BITS - 1)) - 1;
-
-// Check if the number is an integer
-if (!Number.isInteger(num)) {
-return false;
+//query table_access to get all the rows with a matching browser_tag
+export async function accessTableQuery(browser_tag) {
+	let { data, error } = await supabase
+		.from('access_table')
+		.select('*')
+		.eq('browser_tag', browser_tag)
+		.order('row_tick', { ascending: false })//most recent row first
+	if (error) toss('supabase', {error})
+	return data
 }
-
-// Check if the number fits within the BIGINT range
-return num >= BIGINT_MIN && num <= BIGINT_MAX;
-}
-
-// Example usage:
-console.log(isSafeBigInt(123456789012345)); // true
-console.log(isSafeBigInt(-123456789012345)); // true
-console.log(isSafeBigInt(9223372036854775807)); // true
-console.log(isSafeBigInt(9223372036854775808)); // false
-console.log(isSafeBigInt(-9223372036854775809)); // false
-console.log(isSafeBigInt(123.456)); // false
-console.log(isSafeBigInt('123456789012345')); // false, not a number
-
-*/
-
-
-/*
-make sure postgresql has the default utf-8 character encoding with a sql statement like this:
-
-SELECT pg_encoding_to_char(encoding) AS encoding
-FROM pg_database
-WHERE datname = current_database()
-
-ran this in supabase's sql editor, and the result is "UTF8"
-*/
-
 
 
 
 
 // Four functions for the row 'count_global' in table 'table_settings'
-
 // 1. Determine if the row exists
 export async function rowExists() {
 	// SQL equivalent: SELECT COUNT(key) FROM table_settings WHERE key = 'count_global'
@@ -250,7 +487,6 @@ export async function rowExists() {
 	if (error) toss('supabase', {error})
 	return count > 0
 }
-
 // 2. Create the row with starting value zero
 export async function createRow() {
 	// SQL equivalent: INSERT INTO table_settings (key, value) VALUES ('count_global', '0')
@@ -258,7 +494,6 @@ export async function createRow() {
 		.from('table_settings').insert([{ key: 'count_global', value: '0' }])
 	if (error) toss('supabase', {error})
 }
-
 // 3. Read the value
 export async function readRow() {
 	// SQL equivalent: SELECT value FROM table_settings WHERE key = 'count_global'
@@ -267,7 +502,6 @@ export async function readRow() {
 	if (error) toss('supabase', {error})
 	return data[0]?.value
 }
-
 // 4. Write a new value
 export async function writeRow(newValue) {
 	// SQL equivalent: UPDATE table_settings SET value = 'newValue' WHERE key = 'count_global' RETURNING *
@@ -282,198 +516,10 @@ export async function writeRow(newValue) {
 
 
 
-/*
-confirm that crazy unicode text like from instagram:
-♦✎  𝓕𝔢βᖇǗ𝔞𝐑𝕪  🐸♔
-can make it way all the way into the database and back up again
-just code the user's note box that's stored in the database
-*/
-
-let nonsense = '♦✎  𝓕𝔢βᖇǗ𝔞𝐑𝕪  🐸♔'
 
 
 
 
-
-//global password account access design notes
-/*
-
-browsers are identified by their browser hash
-that hash can be signed in or not
-
-the table should always grow: rows are added, not edited
-in addition to use specific information, rows generally always include a
-row number, what you get from supabase or postgres by default
-tag for unique identification
-tick when the row was made
-
-maybe this is all you need:
-
-rownumber | tag      | tick   | browserhash | sign in or sign out
-						CHAR(21)   BIGINT   CHAR(52)      BIGINT
-
-
-making in the supabase dashboard
-table_access, name
-turned off row level security
-two fields are already in there:
-id, int8, maybe this is rownumber
-created_at, timestamptz, now(), looks like an automatic tick stamp but not sure format or granularity
-leaving those in and adding your own, even if there's some duplication
-
-and talking to chat as you go
-turning off rls is fine, and common when server code has exclusive access to the database
-supabase's int8 is postgres BIGINT
-checking primary key tells PostgreSQL that this column will uniquely identify each row in the table
-PostgreSQL automatically creates an index on the primary key to ensure that lookups are fast.
-
-Type: "timestamptz" (timestamp with time zone)
-
-ok, chatting more here's the consensus:
--totally fine to keep RLS off, despite supabase warnings
--a table can only have one primary key, which has to be unique (advanced thing called composite key is the exception to this rule)
--postgres will build an index for that primary key, making lookups fast
--advanced thing called indexes like CREATE INDEX idx_user_id ON posts (user_id)
--also "While PostgreSQL’s query planner is quite sophisticated and can optimize queries using existing indexes, it won’t create new indexes on its own based on query usage."
-
-so, use this as an excuse to at this early stage, make things simpler
-rownumber is in there, and it's the primary key, but you ignore it
-tag and tick get sent together from the worker, ignore timestampz and supabase's clock
-
-rownumber | tag      | tick   | browserhash | sign in or sign out
-						CHAR(21)   BIGINT   CHAR(52)      BIGINT
-
-
--row number: an automatically incrementing number that the database handles itself
--tag: CHAR(21), globally unique, set by my code
--tick: BIGINT, set by my code
--browser hash: CHAR(52), set by my code
--signed in: BIGINT, ill store 0 or 1 here to use that as a boolean
-
-
-CREATE TABLE table_access (
-	row_number BIGSERIAL PRIMARY KEY,
-	tick BIGINT NOT NULL,
-	tag CHAR(21) UNIQUE NOT NULL,
-	browser_hash CHAR(52) NOT NULL,
-	signed_in BIGINT NOT NULL
-);
-
-BIGSERIAL is 8 byte, and auto incrementing
-it's standard to set this as the primary key, even if tag is also globally unique, picking that for now
-there doesn't seem to be a way to get Date.now() easily in postgres, so we'll do that in the worker
-*/
-
-/*
-next day
-having some problems in supabase with the automatic row numbers
-so, abandoning that
-in excel and on a piece of paper, the rows have an order, but this isn't the case in postgres
-
-picking tag as the primary key
-it's guaranteed to be unique in the table and everywhere because it's a tag
-you'll never sort or lookup by tag, and postgres will be ready to make that fast if you ever did, but that's ok
-
-tick is when, according to the worker, the new row was inserted
-you're thinking all your tables will start tag and tick like this
-
-the common query is to filter by browser hash, and look at results sorted by tick
-the index below makes this fast
-postgres won't create this index automatically, but will use it automatically, looking at your query
-
-CREATE TABLE table_access (
-	tag CHAR(21) PRIMARY KEY NOT NULL, -- row identifier, globally unique, primary key
-	tick BIGINT NOT NULL,              -- tick when record inserted
-	browser_hash CHAR(52) NOT NULL,  -- Browser identifier used for filtering
-	signed_in BIGINT NOT NULL  -- Boolean-like integer indicating signed-in status (e.g., 0 or 1)
-);
-
-CREATE INDEX idx_browser_hash_tick ON table_access (browser_hash, tick);
-
-Ok to name the index index_browser_tick? Do these names need to be unique across my whole database, or are they specific to the table they're on?
-OK, but then imagine I've got another table which also needs an index that filters by browser and sorts by tick. Shouldn't I include that table name in the index name if they must all be unique?
-
-index_access_browser_tick
-
-
-
-
-*/
-
-//insert a new row into table_access with the given row tag, browser hash, and signed in status
-export async function accessInsert(browser_tag, signed_in) {
-	checkTag(browser_tag)//put type checks here, you think, to be sure only good data gets inserted
-	checkInt(signed_in)
-	let { data, error } = await supabase
-		.from('access_table')
-		.insert([{ row_tick: Now(), row_tag: Tag(), browser_tag, signed_in }])
-	if (error) toss('supabase', {error})
-}
-//query table_access to get all the rows with a matching browser_tag
-export async function accessQuery(browser_tag) {
-	let { data, error } = await supabase
-		.from('access_table')
-		.select('*')
-		.eq('browser_tag', browser_tag)
-		.order('row_tick', { ascending: false })//most recent row first
-	if (error) toss('supabase', {error})
-	return data
-}
-
-
-
-
-
-/*
-long chat about transactions that ended up with this
-
-const sql = `
-	BEGIN;
-	INSERT INTO first_table (column) VALUES (quote_literal(${val1}));
-	INSERT INTO second_table (column) VALUES (quote_literal(${val2}));
-	COMMIT;
-`
-const { data, error } = await supabase.rpc('execute_sql', { sql })
-
-imagine the database only makes sense when both, or neither of these rows are added
-if one row is added, and the other one not there, the database isn't in a consistent state
-
-also, imagine the first row inserts fine, but then
-a valid error correctly prevents the second row from being inserted
-there could be a uniqueness conflict on the second row, for instance
-
-using the supabase api, each insert is a separate statement
-js code will have to notice the error on the second insert
-and then go back and try to remove the first
-
-but this problem was solved in databases decades ago!
-with somethign called the transaction
-the begin and commit lines above group the two inserts into a single transaction
-and, sure enough, if there's a problem anywhere in there, none of it sticks
-and all of this is automatic
-
-so you want to be able to use transactions
-the problem is, the supabase api doesn't include them
-there isn't a way to do two inserts in a single call to the supabase api, either
-even with all the method chaining
-
-so the plan is to
-use the supabase api for reads
-and individual writes
-but when you need to insert multiple rows all at once
-to drop down to raw sql and execute a block like above
-
-but now you need to worry about the infamous sql injection attack
-but maybe it's not too hard
-you think essentially you just have to validate the inserts really well
-and your own functions are doing this
-
-but additionally, get protection from using knex, continued below
-(that didn't work because they all assume api or node, rerouting)
-
-also, batch raw inserts like this also will likely be faster,
-as each trip to supabase is taking ~150ms
-*/
 
 
 
