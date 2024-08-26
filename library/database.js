@@ -56,11 +56,11 @@ function katyRow(row) {//object of column names: cell contents
 }
 function katyCell(column, value){//column name and cell value
 	let type = _type(column)
-	if      (type == 'enum') { checkInt(value)            }//a boolean saved as the int 0 or 1 which could become an enum
-	else if (type == 'tick') { checkInt(value)            }//a tick count of an actual time something happened
-	else if (type == 'int')  { checkInt(value)            }//integer
-	else if (type == 'tag')  { checkTag(value)            }//a tag, 21 letters and numbers
-	else if (type == 'hash') { checkHash(value)           }//a sha256 hash value encoded to base32, 52 characters
+	if      (type == 'enum') { checkInt(value)    }//a boolean saved as the int 0 or 1 which could become an enum
+	else if (type == 'tick') { checkInt(value)    }//a tick count of an actual time something happened
+	else if (type == 'int')  { checkInt(value)    }//integer
+	else if (type == 'tag')  { checkTag(value)    }//a tag, 21 letters and numbers
+	else if (type == 'hash') { checkHash(value)   }//a sha256 hash value encoded to base32, 52 characters
 	else if (type == 'text') { checkSquare(value) }//text, can be blank, square encoded in the database 
 	else { toss('data', {column, value}) }
 }
@@ -272,10 +272,6 @@ you need to make this change in supabase
 also in counts_table, you need to rename count to count_int
 
 */
-
-
-
-
 
 
 
