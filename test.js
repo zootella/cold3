@@ -6,29 +6,33 @@ v20.15.0
 $ aws sts get-caller-identity
 (will print out UserID, Account, and Arn)
 
-$ node library/test
+$ node test
 Wed 13h 20m 48.044s ~ ✅ Wed 13h 20m 48.044s ~ 381 assertions in 29 tests all passed in 42ms ✅
 */
 
+//access secrets
 import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also deploy
 dotenv.config()
-import { card } from './env.js'//and additional private info just for local development
+import card from './env.js'//and additional private info just for local development
 
+//import library files
 import { runTests, log, inspect } from './library/library0.js'
 import './library/library1.js'
 import './library/library2.js'
 import './library/database.js'
 import './library/cloud.js'
-import { snippet } './library/amazon.js'
+import { snippet } from './library/amazon.js'
 
+//snippet runner
 async function runSnippet() {
 	try {
 		snippet(card)
 	} catch (e) {
-		log('caught exception from snippet', inspect(e))
+		log('caught uncaught exception from snippet!', inspect(e))
 	}
 }
 
+//run tests followed by snippet
 await runTests()
 await runSnippet()
 
