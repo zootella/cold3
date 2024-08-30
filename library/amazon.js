@@ -1,15 +1,23 @@
 
-import { log, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
+import { log, inspect, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 
-const aws = (typeof require != 'undefined') ? require('aws-sdk') : null//this lets a worker call into a function here, but hopefully also doesn't confuse rollup's tree shaking
 
-let _ses, _sns//load once and only when needed
-function ses() { if (!_ses) _ses = new aws.SES(); return _ses }
-function sns() { if (!_sns) _sns = new aws.SES(); return _sns }
+
+let _aws, _ses, _sns//load once and only when needed
+async function loadAmazon() {
+	if (!_aws) {
+		_aws = (await import('aws-sdk')).default;//this is the await import pattern because in es6 you can't require()
+		_aws.config.update({ region: 'us-east-1' })
+	}
+	return _aws
+}
+async function loadAmazonEmail() { if (!_ses) _ses = new (await loadAmazon()).SES(); return _ses }
+async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SNS(); return _sns }
 
 //(1 amazon, email) helper function that will be called from a us-east-1 Lambda function in Node 20
-async function sendEmailUsingAmazon(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {//todo, validate these and put them into the object below, current hard coded values are just for demonstration purposes
+export async function sendEmailUsingAmazon(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {//todo, validate these and put them into the object below, current hard coded values are just for demonstration purposes
+	let ses = await loadAmazonEmail()
 	let p = {
 		Source: `${fromName} <${fromEmail}>`,//must be verified email or domain
 		Destination: { ToAddresses: [toEmail] },
@@ -23,20 +31,21 @@ async function sendEmailUsingAmazon(fromName, fromEmail, toEmail, subjectText, b
 	}
 	let result, error
 	try {
-		result = await ses().sendEmail(p).promise()
+		result = await ses.sendEmail(p).promise()
 	} catch (e) { error = e }
 	return {result, error}
 }
 
 //(3 amazon, text) send a sms text message using amazon
-async function sendTextUsingAmazon(toPhone, subjectText) {
+export async function sendTextUsingAmazon(toPhone, subjectText) {
+	let sns = await loadAmazonTexts()
 	let p = {
 		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
 		Message: subjectText,//must be 160 characters or less
 	}
 	let result, error
 	try {
-		result = await sns().publish(p).promise()
+		result = await sns.publish(p).promise()
 	} catch (e) {
 		error = e
 	}
@@ -44,7 +53,7 @@ async function sendTextUsingAmazon(toPhone, subjectText) {
 }
 
 //(2 rest, email) alternative that works in a cloudflare worker calling sendgrid's rest api
-async function sendEmailUsingSendGrid(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {
+export async function sendEmailUsingSendGrid(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {
 	let url = process.env.ACCESS_SENDGRID_URL
 	let key = process.env.ACCESS_SENDGRID_KEY
 	let options = {
@@ -83,7 +92,7 @@ async function sendEmailUsingSendGrid(fromName, fromEmail, toEmail, subjectText,
 }
 
 //(4 rest, text) alternative that works in a cloudflare worker calling twilio's rest api
-async function sendTextUsingTwilio(toPhone, messageText) {
+export async function sendTextUsingTwilio(toPhone, messageText) {
 	let urlBase   = process.env.ACCESS_TWILIO_URL
 	let sid       = process.env.ACCESS_TWILIO_SID
 	let auth      = process.env.ACCESS_TWILIO_AUTH

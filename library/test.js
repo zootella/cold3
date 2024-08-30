@@ -21,7 +21,6 @@ import './amazon.js'
 import './fetchum.js'
 import { snippet } from './test2.js'
 
-await runTests()
 
 
 
@@ -33,6 +32,8 @@ async function runSnippet() {
 		log('caught exception from snippet', inspect(e))
 	}
 }
+
+await runTests()
 await runSnippet()
 
 

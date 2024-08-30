@@ -21,18 +21,19 @@
     "deploy": "npm run pages:deploy"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.8",
     "credit-card-type": "^10.0.0",
     "joi": "^17.13.1",
     "libphonenumber-js": "^1.11.3",
     "nanoid": "^5.0.7",
-    "rfc4648": "^1.5.3",
-    "@supabase/supabase-js": "^2.39.8",
     "nuxt": "^3.10.2",
+    "rfc4648": "^1.5.3",
     "vue": "^3.4.19",
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240208.0",
+    "aws-sdk": "^2.1686.0",
     "wrangler": "^3.28.2"
   }
 }

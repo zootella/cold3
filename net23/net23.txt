@@ -1017,6 +1017,18 @@ without making every page load slow and expensive
 
 
 
+2024aug30 turn off default email tracking pixel in sendgrid
+https://app.sendgrid.com/settings/tracking
+dashboard, settings, tracking
+-Enabled; Open Tracking; An invisible image is being appended to HTML emails to track if they have been opened.
+-Enabled; Click Tracking; Every link is being overwritten to track every click in emails.
+-Disabled; Subscription Tracking; Allows every link to be overwritten to track every Subscription in emails.
+-Disabled; Google Analytics Tracking; Allows tracking of your conversion rates and ROI with Google Analytics.
+turned them all off
+
+
+
+
 
 
 
