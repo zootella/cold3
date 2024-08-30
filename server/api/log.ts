@@ -1,6 +1,6 @@
 
 import { log, inspect, toss } from '../../library/library0.js'
-import { dog, flare } from '../../library/library2.js'
+import { dog, flare } from '../../library/fetchum.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}

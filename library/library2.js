@@ -12,68 +12,6 @@ import { Tag, tagLength, checkTag } from './library1.js'
 
 
 
-//       _                 _   _                   _             
-//   ___| | ___  _   _  __| | | | ___   __ _  __ _(_)_ __   __ _ 
-//  / __| |/ _ \| | | |/ _` | | |/ _ \ / _` |/ _` | | '_ \ / _` |
-// | (__| | (_) | |_| | (_| | | | (_) | (_| | (_| | | | | | (_| |
-//  \___|_|\___/ \__,_|\__,_| |_|\___/ \__, |\__, |_|_| |_|\__, |
-//                                     |___/ |___/         |___/ 
-
-export function dog(...a)   { let s = composeLog(a); logToDatadog(s);  log('logged to datadog:',  s) }
-export function flare(...a) { let s = composeLog(a); logToLogflare(s); log('logged to logflare:', s) }
-function logToDatadog(s) {
-	/*no await*/fetch(//intentionally and unusually calling fetch without await; we don't need the result or want to wait for it. hopefully the call will work, but we're already documenting an error or something
-		process.env.ACCESS_DATADOG_ENDPOINT,
-		{
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY
-			},
-			body: JSON.stringify({
-				message: s,
-				ddsource: 'log-source',
-				ddtags: 'env:production'
-			})
-		}
-	)
-}
-function logToLogflare(s) {
-	/*no await*/fetch(
-		process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
-		{
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-API-KEY': process.env.ACCESS_LOGFLARE_API_KEY
-			},
-			body: JSON.stringify({
-				message: s
-			})
-		}
-	)
-}
-
-
-/*
-summary note about Nuxt/Serverless, and useFetch(), $fetch(), and fetch()
-here, because we're deep in the library, you're using fetch instead of Nuxt's $fetch
-and thus need to add content type header and stringify the body
-
-a nuxt component calling down to a nuxt api handler should use $fetch
-a nuxt api handler can use $fetch
-code that fetches that might be called by nuxt or serverless must use fetch
-
-so then there's useFetch and $fetch
-only use useFetch when you want hydration
-which for 1.0 might be never!
-after that may be just for info graph cards and then search engine optimization
-useFetch is complicated because it returns already reactive variables
-*/
-
-
-
-
 
 
 

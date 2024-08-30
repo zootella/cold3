@@ -2,6 +2,7 @@
 
 import { ref, reactive, onMounted } from 'vue'
 import { log, inspect, Now, sayTick, newline, deindent, Data } from '../library/library0.js'
+import { Tag } from '../library/library1.js'
 import { getBrowserTag } from '../library/library2.js'
 
 onMounted(async () => {//doesn't run on server, even when hydrating
@@ -35,12 +36,40 @@ async function callAccount(action) {
 
 async function snippet() {
 	log('hi from snippet')
+	try {
+		let response = await $fetch('/api/snippet', {
+			method: 'POST',
+			body: {
+				browserTag: getBrowserTag(),
+				now: Now(),
+				tag: Tag()
+			}
+		})
+		log('success', inspect(response))
+		return response
+	} catch (e) {
+		log('caught', e)
+	}
 }
 
 let passwordModel = ref('')
 let statusText = ref('(no status yet)')
 let stickText = ref('')
 function stick(s) { stickText.value += s + newline + newline }
+
+/*
+bookmark
+to this, you want to add
+if you're signed in, messaging controls appear below
+()amazon ()twilio
+to[]
+message[]
+[send]
+you can type an email or phone number into to
+and a short single line note
+it outputs the timestamp it put on it, like
+amazon calls cold3<>net23, also
+*/
 
 </script>
 <template>
