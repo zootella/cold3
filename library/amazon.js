@@ -2,8 +2,6 @@
 import { log, inspect, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 
-
-
 let _aws, _ses, _sns//load once and only when needed
 async function loadAmazon() {
 	if (!_aws) {
@@ -72,23 +70,23 @@ export async function sendEmailUsingSendGrid(fromName, fromEmail, toEmail, subje
 			]
 		})
 	}
-	let response, body, bodyText2, errorFromFetch, errorFromParse
+	let response, body, responseBodyText, errorFromFetch, errorFromParse
 
 	try {
-		response = await fetch(url, options)
-		bodyText2 = await response.text()
+		response         = await fetch(url, options)
+		responseBodyText = await response.text()
 	} catch (e1) { errorFromFetch = e1 }
 
 	try {
-		if (response && response.ok && hasText(bodyText2)) {
+		if (response && response.ok && hasText(responseBodyText)) {
 			let contentType = response.headers.get('Content-Type')
 			if (contentType && contentType.includes('application/json')) {	
-				body = JSON.parse(bodyText2)//can throw, and then it's the api's fault, not your code here
+				body = JSON.parse(responseBodyText)//can throw, and then it's the api's fault, not your code here
 			}
 		}
 	} catch (e2) { errorFromParse = e2 }
 
-	return {response, body, bodyText: bodyText2, errorFromFetch, errorFromParse}//and then the caller looks at response.ok, response.status, and so on
+	return {response, body, bodyText: responseBodyText, errorFromFetch, errorFromParse}//and then the caller looks at response.ok, response.status, and so on
 }
 
 //(4 rest, text) alternative that works in a cloudflare worker calling twilio's rest api
@@ -129,6 +127,102 @@ export async function sendTextUsingTwilio(toPhone, messageText) {
 
 	return {response, body, bodyText, errorFromFetch, errorFromParse}//and then the caller looks at response.ok, response.status, and so on
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//let's test this stuff with node on the command line
+
+
+
+
+
+
+
+
+
+
+export async function snippet(card) {
+	log('got the card', inspect(card))
+
+	let message = 'v2024aug30b.1'
+//	let r = await emailSendgrid(card, message)
+
+	log('end of snippet which may have actually sent something')
+}
+
+
+
+async function testEmailAmazon(card, message) {//live
+	let r = await sendEmailUsingAmazon(
+		card.fromName,
+		card.fromEmail,
+		card.toEmail1,
+		message,
+		'body text',
+		'<b>body html</b>')
+	log(inspect(r))
+}
+async function testEmailSendgrid(card, message) {//live
+	let result = await sendEmailUsingSendGrid(
+		card.fromName,
+		card.fromEmail,
+		card.toEmail1,
+		message,
+		'body text',
+		'<b>body html</b>')
+	log(inspect(result))
+}
+async function testTextAmazon(card, message) {//live
+	let result = await sendTextUsingAmazon(card.toPhone1, message)
+	log(inspect(result))
+}
+async function testTextTwilio(card, message) {//not approved yet
+	let result = await sendTextUsingTwilio(card.toPhone1, message)
+	log(inspect(result))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

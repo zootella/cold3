@@ -10,24 +10,20 @@ $ node library/test
 Wed 13h 20m 48.044s ~ ✅ Wed 13h 20m 48.044s ~ 381 assertions in 29 tests all passed in 42ms ✅
 */
 
-import dotenv from 'dotenv'
-dotenv.config({ path: './.env' })//explicitly load .env from the project root
+import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also deploy
+dotenv.config()
+import { card } from './env.js'//and additional private info just for local development
 
-import { runTests, log, inspect } from './library0.js'
-import './library1.js'
-import './library2.js'
-import './database.js'
-import './amazon.js'
-import './fetchum.js'
-import { snippet } from './test2.js'
-
-
-
-
+import { runTests, log, inspect } from './library/library0.js'
+import './library/library1.js'
+import './library/library2.js'
+import './library/database.js'
+import './library/cloud.js'
+import { snippet } './library/amazon.js'
 
 async function runSnippet() {
 	try {
-		snippet()
+		snippet(card)
 	} catch (e) {
 		log('caught exception from snippet', inspect(e))
 	}
