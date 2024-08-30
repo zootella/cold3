@@ -1,5 +1,5 @@
 
-import { log, inspect, checkText, hasText } from '../../library/library0.js'
+import { log, inspect, hasText } from '../../library/library0.js'
 import { checkTag } from '../../library/library1.js'
 import { accessTableInsert, accessTableQuery } from '../../library/database.js'
 

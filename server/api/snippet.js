@@ -1,7 +1,7 @@
 
-import { log, inspect, checkText, hasText } from '../../library/library0.js'
+import { log, inspect, hasText } from '../../library/library0.js'
 import { checkTag } from '../../library/library1.js'
-import { dog, flare } from '../../library/fetchum.js'
+import { dog, flare } from '../../library/cloud.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}

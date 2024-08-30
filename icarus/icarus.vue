@@ -5,9 +5,9 @@ import { ref, onMounted } from 'vue'
 import { runTests, getLogRecord, testBox } from '../library/library0.js'
 import '../library/library1.js'
 import '../library/library2.js'
-import '../library/fetchum.js'
 import '../library/database.js'
-import '../library/amazon.js'//probably won't work, will have to remove later, but start out trying to keep it here
+import '../library/cloud.js'
+import '../library/cloud2.js'
 
 const boxModel = ref('')
 const testMessage = ref('')

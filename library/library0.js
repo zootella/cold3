@@ -1700,6 +1700,147 @@ ${encoded}`
 
 
 
+//maybe making a pass at inspect
+//it would be useful now that you're getting cloud api responses
+
+
+
+
+
+
+
+
+
+export function respect(...a) {//inspect into things, including key name, type, and value
+	let s = ''
+	for (let i = 0; i < a.length; i++) {
+		s += (a.length > 1 ? newline : '') + _respect2(a[i])//put multiple arguments on separate lines
+	}
+	return s
+}
+function _respect2(o) {
+	let s = ''
+	if (o instanceof Error) {
+		s = o.stack//errors have their information here
+	} else if (o instanceof ArrayBuffer) {
+		s = `ArrayBuffer size ${o.byteLength}`
+	} else if (o instanceof Uint8Array) {
+		s = `Uint8Array size ${o.length}`
+	} else if (Array.isArray(o)) {
+		s = `[${o}]`
+	} else if (typeof o == 'function') {
+		s = o.toString()
+	} else if (typeof o == 'object') {
+		s += '{'
+		let first = true
+		for (let k in o) {
+			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
+			s += `${k}: ${_respect3(o[k])}`
+		}
+		s += '}'
+	} else {//boolean like true, number like 7, string like "hello"
+		s = _respect3(o)
+	}
+	return s
+}
+function _respect3(o) {
+	try {
+		return JSON.stringify(o, null)//single line
+	} catch (e) { return '(circular reference)' }//watch out for circular references
+}
+test(() => {
+	ok(respect() == '')
+	ok(respect("a") == '"a"')
+	ok(respect(5) == '5')
+	ok(respect({}) == '{}')
+
+
+
+	log('hi in respect')
+})
+
+
+
+/*
+first, understand the behavior, features, and limitations of javascript's common solutions for client and server code
+JSON.stringify, in the browser on the client
+util.inspect, in node on the server
+
+
+*/
+
+
+test(() => {
+
+
+
+	log('icarus can use json stringify, can it use node util inspect?')
+})
+
+
+
+
+
+
+
+
+
+
+/*
+
+2014may17 hopefully good thinking on finishing off this bike shed
+
+inspect
+if you want to inspect an object directly, and y ou know you're in the browser inspector, just use console.log directly
+your function inspect() is new, replaces lots of old stuff, and works like this
+doesn't log anything, always returns a string
+string is always indented, never tries to be single line
+doesn't return a tick count, obviously
+better than json stringify and node util inspect, actually gets the functions and stuff those miss
+always indents by two spaces
+goes deep, stopping at 2k of text output
+uses 7 number, true boolean, "string", [array], {object}, function()
+if you want to see the name of an object, you have to wrap like inspect({object})
+test with exception objects
+you're going to use inspect to see what third party rest apis are telling your worker
+
+log
+starts with timestamp and tilde
+logs to record and console.log
+turns everything into text, always, using say
+keeps everything on one line, always
+doesn't call inspect, ever--you have to call that manually
+
+say
+turns directly into text, succicently--inspect is the verbose and deep one
+
+
+oh, you also want to detect other 'special' js objects, like instanceof Uint8, CryptoKeys, those
+they're like Error
+
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

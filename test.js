@@ -21,7 +21,7 @@ import './library/library1.js'
 import './library/library2.js'
 import './library/database.js'
 import './library/cloud.js'
-import { snippet } from './library/amazon.js'
+import { snippet } from './library/cloud2.js'
 
 //snippet runner
 async function runSnippet() {
