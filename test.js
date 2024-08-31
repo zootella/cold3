@@ -26,7 +26,7 @@ import { snippet } from './library/cloud2.js'
 //snippet runner
 async function runSnippet() {
 	try {
-		snippet(card)
+//		snippet(card)
 	} catch (e) {
 		log('caught uncaught exception from snippet!', inspect(e))
 	}

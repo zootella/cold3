@@ -1687,8 +1687,134 @@ ${encoded}`
 
 
 
+//  _             _    
+// | | ___   ___ | | __
+// | |/ _ \ / _ \| |/ /
+// | | (_) | (_) |   < 
+// |_|\___/ \___/|_|\_\
+                    
+
+/*
+2024aug31, look how much time i spent in the bike shed! :'(
+*/
 
 
+
+
+function lookForType(q) {
+	let r     = look10Null(q)
+	if (!r) r = look20Primitive(q)
+	if (!r) r = look30Instance(q)
+	if (!r) r = look40Data(q)
+	if (!r) r = look50ArrayAndObject(q)
+
+	//at this point, r will always be set
+}
+
+function look10Null(q) {
+	if (q === null) return { type: 'null' }//triple equals for type and value
+	else return null//these functions return null so the next one continues the search
+}
+test(() => {
+	ok(look10Null(null))//detects null and only null, not
+	ok(!look10Null())//empty parameter
+	ok(!look10Null({}))//empty object
+	ok(!look10Null([]))//and array
+	ok(!look10Null(''))//blank string
+	ok(!look10Null(0))//zero number
+	ok(!look10Null(false))//false boolean
+})
+function look20Primitive(q) {
+	let t = typeof q//if javascript were well designed, this would work for everything
+	switch (t) {
+		case 'undefined': return {type: t}
+		case 'boolean':   return {type: t}
+		case 'number':    return {type: t}
+		case 'bigint':    return {type: t}//lowercase
+		case 'string':    return {type: t, n: q.length}//also report the string's length
+		case 'function':  return {type: t, n: q.toString().length}//how long the code is for this function
+		default:          return null//keep looking
+	}
+}
+test(() => {
+	ok(look20Primitive().type == 'undefined')
+	let notDefined//named here, not defined
+	ok(look20Primitive(notDefined).type == 'undefined')
+	ok(look20Primitive(false).type == 'boolean')
+	ok(look20Primitive(5).type == 'number')
+	ok(look20Primitive(5n).type == 'bigint')
+	ok(look20Primitive('').type == 'string')
+	ok(look20Primitive(checkText).type == 'function')
+})
+function look30Instance(q) {
+	if      (q instanceof RegExp)  return {type: 'RegExp'}//after those, we have to use instanceof
+	else if (q instanceof Error)   return {type: 'Error'}
+	else if (q instanceof Promise) return {type: 'Promise'}
+	else if (q instanceof Map)     return {type: 'Map', n: q.size}//you can get the number of items in these
+	else if (q instanceof Set)     return {type: 'Set', n: q.size}
+	else if (q instanceof WeakMap) return {type: 'WeakMap'}//but can't get the size of the weak ones
+	else if (q instanceof WeakSet) return {type: 'WeakSet'}
+	else return null
+}
+test(() => {
+	ok(look30Instance(/abc/).type == 'RegExp')
+	ok(look30Instance(new Error('Test error')).type == 'Error')
+	ok(look30Instance(new Promise((resolve, reject) => resolve('done'))).type == 'Promise')
+
+	let map = new Map(); map.set('k', 120)//add one item
+	let r = look30Instance(map); ok(r.type == 'Map' && r.n == 1)
+
+	let set = new Set(); set.add('pink')
+	r = look30Instance(set); ok(r.type == 'Set' && r.n == 1)
+
+	ok(look30Instance(new WeakMap()).type == 'WeakMap')
+	ok(look30Instance(new WeakSet()).type == 'WeakSet')
+})
+function look40Data(q) {
+	let t
+	if      (q instanceof ArrayBuffer) t = 'ArrayBuffer'
+	else if (q instanceof DataView)    t = 'DataView'
+	else if (q instanceof Int8Array)  t = 'Int8Array'
+	else if (q instanceof Uint8Array) t = 'Uint8Array'
+	else if (q instanceof Int16Array)  t = 'Int16Array'
+	else if (q instanceof Uint16Array) t = 'Uint16Array'
+	else if (q instanceof Int32Array)  t = 'Int32Array'
+	else if (q instanceof Uint32Array) t = 'Uint32Array'
+	else if (q instanceof Float32Array) t = 'Float32Array'
+	else if (q instanceof Float64Array) t = 'Float64Array'
+	else if (q instanceof BigInt64Array)  t = 'BigInt64Array'
+	else if (q instanceof BigUint64Array) t = 'BigUint64Array'//not doing Uint8ClampedArray and SharedArrayBuffer
+	else t = null//we couldn't identify it here, either
+
+	if (t) return { type: t, n: q.byteLength }//all of these express their size this way
+	else return null
+}
+test(() => {
+	let r
+	let b = new ArrayBuffer(16)
+	r = look40Data(b); ok(r.type == 'ArrayBuffer' && r.n == 16)
+	r = look40Data(new DataView(b)); ok(r.type == 'DataView' && r.n == 16)
+	r = look40Data(new Int8Array(8)); ok(r.type == 'Int8Array' && r.n == 8)
+	r = look40Data(new Int8Array(8)); ok(r.type == 'Int8Array' && r.n == 8)
+	r = look40Data(new Uint8Array(8)); ok(r.type == 'Uint8Array' && r.n == 8)
+	r = look40Data(new Int16Array(4)); ok(r.type == 'Int16Array' && r.n == 8)
+	r = look40Data(new Uint16Array(4)); ok(r.type == 'Uint16Array' && r.n == 8)
+	r = look40Data(new Int32Array(4)); ok(r.type == 'Int32Array' && r.n == 16)
+	r = look40Data(new Uint32Array(4)); ok(r.type == 'Uint32Array' && r.n == 16)
+	r = look40Data(new Float32Array(4)); ok(r.type == 'Float32Array' && r.n == 16)
+	r = look40Data(new Float64Array(2)); ok(r.type == 'Float64Array' && r.n == 16)
+	r = look40Data(new BigInt64Array(2)); ok(r.type == 'BigInt64Array' && r.n == 16)
+	r = look40Data(new BigUint64Array(2)); ok(r.type == 'BigUint64Array' && r.n == 16)
+})
+function look50ArrayAndObject(q) {
+	if (Array.isArray(q)) return {type: 'array',  n: q.length}
+	else                  return {type: 'object', n: Object.keys(q).length}
+}
+test(() => {
+  let r
+  r = look50ArrayAndObject([1, 2, 3]);    ok(r.type == 'array'  && r.n == 3)
+  r = look50ArrayAndObject({a: 1, b: 2}); ok(r.type == 'object' && r.n == 2)
+})
 
 
 
@@ -1753,10 +1879,6 @@ test(() => {
 	ok(respect("a") == '"a"')
 	ok(respect(5) == '5')
 	ok(respect({}) == '{}')
-
-
-
-	log('hi in respect')
 })
 
 
@@ -1770,20 +1892,328 @@ util.inspect, in node on the server
 */
 
 
-test(() => {
+//import util from 'util'//since this only works in node, you'll code the new inspect there
+noop(() => {
+
+	let caughtError
+	try {
+		notDefined
+	} catch (e) {
+		caughtError = e
+	}
+
+	function myFunction(a, b) {
+		return a + b
+	}
+
+	let o = {
+		s: 'hello',
+		b: true,
+		n: null,
+		i: 721,
+		o: {a:1, b:2, c:3},
+		a: [1, 2, 3],
+		f: myFunction,
+		e: caughtError
+	}
+
+	console.log('\r\n    ~ console.log')//ooh, it's colorful
+	console.log(o)
+
+	console.log('\r\n    ~ util.inspect')
+	console.log(util.inspect(o))
+
+	console.log('\r\n    ~ JSON.stringify')
+	console.log(JSON.stringify(o, null, 2))//no replacer function, indent with 2 spaces
+
+	console.log('\r\n    ~ bikeshed inspect()')
+	console.log(inspect(o))
+
+	console.log('\r\n    ~ your new splay()')
+	console.log(splay(o))
+
+	console.log('\r\n')
+})
+
+function splay(o) {
+	return 'todo'
+}
+
+
+noop(() => {
+
+
+	//let name = Object.keys(o)[0]//this is how you should probably loop through the properties
+
+	let caughtError
+	try {
+		notDefined
+	} catch (e) {
+		caughtError = e
+	}
+
+	let f = Data
+	let a = [1, 2, 3]
+	let o = {a:1, b:2, c:3}
+
+	log(lookArray(a))
+	log(lookObject(o))
+
+
+	let n = null
+	let u = undefined
+	log(typeof n)//null is an object
+	log(typeof u)//undefined has type undefined
 
 
 
-	log('icarus can use json stringify, can it use node util inspect?')
+//	log(splayError(caughtError))
 })
 
 
+//log('‹256›')maybe generalize this so it shows a type and a number
+
+
+
+const lookLimit = 200//bigger than 200 characters, splay uses multiple lines or truncates
+//it's fine if stuff wraps in the outline, you'll be able to find your place back in the outline
+//maybe actually nothing is indented except the object depth! so errors are flush with the margin
+//yeah, that's easier and better
+
+function lookString(s) {
+	let m = s.replace(/\t/g, '→').replace(/[\r\n]+/g, '¶')//modified for display
+	let c//composed text we will return, for all of these, can be one or several lines
+	if (m.length < lookLimit) {
+		c = `"${m}"`
+		if (s.length > 4) c += ' -len'+s.length
+	} else {
+		c = `"${m.slice(0, lookLimit)}... -len${s.length}`
+	}
+	return c
+}
+function lookBoolean(b) {
+	return b+''
+}
+function lookNumber(n) {
+	return n+''//works fine with int, float, NaN, Infinity
+}
+function lookBigInt(b) {
+	return b+'n'//n on the end to make it look like a BigInt literal
+}
+function lookFunction(f) {
+	let s = f.toString()
+	let m = s.split('\n').map(line => line.trim()).join(' ¶ ').replace(/\s+/g, ' ').trim()
+	let c
+	if (m.length < lookLimit) {
+		c = `${m} -len${s.length}`
+	} else {
+		c = `${m.slice(0, lookLimit)}... -len${s.length}`
+	}
+	return c
+}
+function lookError(e) {//returns multiple lines, all but first start "at" and can start on margin
+	return e.stack.split('\n').map(line => line.trim()).join(newline)
+}
+function splayPromise(p) {
+	//absolutely know if you're dealing with a promise!
+	// if (o instanceof Promise)
+	//also, instanceof Thing, Thing is a constructor function
+}
+
+function splayArrayData(a) {
+	//here, you want the data in base16, and -size64 at the end, no matter what
+	//and no quotes, but ... if truncated
+}
+
+
+function lookObject(o) {
+	let depth = 1
+
+	let k = Object.keys(o)//reveals function and null value properties, misses inherited, non-enumerable, and symbol properties. i think this is the right strength of property lister among javascript's many options
+	//and then dereference with
+
+	let c = '{ -len' + k.length + newline
+	for (let i = 0; i < k.length; i++) {
+		c += '  '.repeat(depth)+k[i]+': '+o[k[i]]+newline
+	}
+	c += '}' + newline
+	return c
+
+
+}
+function lookArray(a) {
+	let depth = 1
+	let c = '[ -len' + a.length + newline
+	for (let i = 0; i < a.length; i++) {
+		c += '  '.repeat(depth)+a[i]+newline
+	}
+	c += ']' + newline
+	return c
+}
+
+
+function lookIndent(n) {
+	const tab = '  '
+}
+
+
+function lookForData(r) {//reference to we don't know what yet
+	let type
+	if      (r instanceof ArrayBuffer) type = 'ArrayBuffer'
+	else if (r instanceof DataView)    type = 'DataView'
+	else if (r instanceof Int8Array)  type = 'Int8Array'
+	else if (r instanceof Uint8Array) type = 'Uint8Array'
+	else if (r instanceof Int16Array)  type = 'Int16Array'
+	else if (r instanceof Uint16Array) type = 'Uint16Array'
+	else if (r instanceof Int32Array)  type = 'Int32Array'
+	else if (r instanceof Uint32Array) type = 'Uint32Array'
+	else if (r instanceof Float32Array) type = 'Float32Array'
+	else if (r instanceof Float64Array) type = 'Float64Array'
+	else if (r instanceof BigInt64Array)  type = 'BigInt64Array'
+	else if (r instanceof BigUint64Array) type = 'BigUint64Array'
+	else if (r instanceof Uint8ClampedArray) type = 'Uint8ClampedArray'//for pixels in color graphics
+	else if (r instanceof SharedArrayBuffer) type = 'SharedArrayBuffer'//for sharing memory between web workers
+	else type = null
+
+	if (type) return { type, size: r.byteLength }//all of these express their size this way
+	else return null
+}
+test(() => {
+	let result = lookForData(new ArrayBuffer(16))
+	ok(result.type == 'ArrayBuffer' && result.size == 16)
+	result = lookForData(new Int32Array(4))
+	ok(result.type == 'Int32Array' && result.size == 16)//4 elements * 4 bytes each
+	result = lookForData(new DataView(new ArrayBuffer(32)));
+	ok(result.type == 'DataView' && result.size == 32)
+	result = lookForData(new Uint8ClampedArray(10))
+	ok(result.type == 'Uint8ClampedArray' && result.size == 10)//10 elements * 1 byte each
+})
+
+
+/*
+maybe this is called look() to be distinct from inspect()
+first draft, for simplicity:                      then, later, need to
+-goes forever deep                                limit by depth or size of output
+-always suffixes length                           omit on really short things
+-doesn't truncate, well, that's easy              easy
+-arrays and objects are always on multiple lines  short ones are on one wrapped line
+-and don't do the ... before the end thing
+
+
+
+
+*/
 
 
 
 
 
 
+
+
+
+
+
+/*
+now these are hard because should they be one line or several lines?
+and, do they call the other functions to splay their members? (yeah, they need to)
+if it's an array of numbers 1-500, does it show the first few, the last one, and the length 100
+
+
+*/
+
+
+
+
+/*
+what if you just hard-code in sensible defaults
+and put in a pattern of suffixing 'len256' at the end
+strings longer than 4 have the length suffix
+
+
+try to write an object or an array as a single line
+if that line is too long
+or if any members need to go multiline
+then switch to the multiline method
+
+and when you do, have the length, the number of members
+
+
+s: "blah blah blah
+blah blah blah
+blah blah blah
+blah blah blah
+blah blah blah" -len500
+
+o1: { a: "apple", n: 7, b: true }
+conditions for single line are:
+-nothing goes deeper
+-small number of properties, like <8
+-resulting string isn't too long, like <4 lines worth of text
+
+o: { -keys50
+	p1:                     keys and value names
+	p2:
+	p3:
+	...
+	p500: 
+}
+
+a: [1, 2, 3]
+a2: [ -len500
+	1                       just values, shown the same way
+	2
+	"three"
+	...
+	500
+]
+
+
+also, inspect isn't about outputting strings
+it's about identifying strings and getting their stats
+if you want to otuptu one, then dereference down to it directly
+so string likewise should probably be pilcrowed and shortened
+	
+
+function code gets automatically truncated to 
+
+
+
+
+*/
+
+
+/*
+divide and conquor
+-expressing different types as text
+-determining the type
+-composing into multiline
+*/
+
+/*
+splay, random notes
+
+make it so that while this won't do everything, you improve it rather than rewriting it when you discover something it should also be doing (unlike all previous attempts, lol)
+
+what about NaN and Infinity
+
+short objects and arrays on one line, long stuff on multiple lines, really long stuff shows first few, last few, number of contents
+
+be able to hand it anything, like global, window, and have it not choke
+
+make sure you can't trick it into going on forever by giving it a circular instance
+this is why you need a depth limit, essentially
+
+no, you can return just strings, some one line, some several lines, and have a function at a higher level still indent
+it just looks for \n in the text, and indents each line if it finds it
+
+
+*/
+
+
+
+
+//maybe keep using newline but set to just \n, because f windows and you don't need it
 
 
 /*
