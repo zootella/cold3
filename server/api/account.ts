@@ -1,5 +1,5 @@
 
-import { log, inspect, hasText } from '../../library/library0.js'
+import { log, look, hasText } from '../../library/library0.js'
 import { checkTag } from '../../library/library1.js'
 import { accessTableInsert, accessTableQuery } from '../../library/database.js'
 
@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
 		} else { toss('invalid action', {event, body, action: body.action}) }
 
 	} catch (e) {
-		log('api account caught: ', inspect(e))
+		log('api account caught: ', look(e))
 		//TODO maybe return 400 bad request or 500 internal error or something?
 		//and also log this to datadog or something
 	}

@@ -1,6 +1,6 @@
 <script setup>
 
-import { log, inspect, cutLast, sayWhenPage, sayWhenFeed } from '../library/library0.js'
+import { log, look, cutLast, sayWhenPage, sayWhenFeed } from '../library/library0.js'
 import { postDatabase } from '../library/library1.js'
 
 let props = defineProps(['post', 'isStandalone', 'postAbove', 'postBelow'])

@@ -1,5 +1,5 @@
 
-import { log, inspect } from '../../library/library0.js'
+import { log, look } from '../../library/library0.js'
 import { rowExists, createRow, readRow, writeRow } from '../../library/database.js'
 
 
@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
 
 
 		let body = await readBody(event)
-		log('body is:', inspect(body))
+		log('body is:', look(body))
 
 		o.message = 'hi from api count'
 		o.mirroredBody = body

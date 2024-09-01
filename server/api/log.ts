@@ -1,5 +1,5 @@
 
-import { log, inspect, toss } from '../../library/library0.js'
+import { log, look, toss } from '../../library/library0.js'
 import { dog, flare } from '../../library/cloud.js'
 
 export default defineEventHandler(async (event) => {

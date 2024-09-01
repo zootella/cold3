@@ -1,7 +1,7 @@
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-import { log, inspect, Now } from '../library/library0.js'
+import { log, look, Now } from '../library/library0.js'
 import { Tag } from '../library/library1.js'
 
 
@@ -73,7 +73,7 @@ async function incrementCount(increment1, increment2) {
 
 // Watch for changes to the data object and log the message
 watch(data, (newData, oldData) => {//data contains reactive members, newData and oldData are unwrapped
-//	log('watch data', inspect(oldData), inspect(newData))
+//	log('watch data', look(oldData), look(newData))
 })
 
 </script>

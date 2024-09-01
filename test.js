@@ -16,7 +16,7 @@ dotenv.config()
 import card from './env.js'//and additional private info just for local development
 
 //import library files
-import { runTests, log, inspect } from './library/library0.js'
+import { runTests, log, look } from './library/library0.js'
 import './library/library1.js'
 import './library/library2.js'
 import './library/database.js'
@@ -28,7 +28,7 @@ async function runSnippet() {
 	try {
 //		snippet(card)
 	} catch (e) {
-		log('caught uncaught exception from snippet!', inspect(e))
+		log('caught uncaught exception from snippet!', look(e))
 	}
 }
 

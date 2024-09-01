@@ -1,7 +1,7 @@
 <script setup>
 
 import { ref, reactive, onMounted } from 'vue'
-import { log, inspect, Now, sayTick, newline, deindent, Data } from '../library/library0.js'
+import { log, look, Now, sayTick, newline, deindent, Data } from '../library/library0.js'
 import { Tag } from '../library/library1.js'
 import { getBrowserTag } from '../library/library2.js'
 
@@ -25,8 +25,8 @@ async function callAccount(action) {
 			}
 		})
 		t = Now() - t
-		log('success', inspect(response))
-		stick(inspect(response))
+		log('success', look(response))
+		stick(look(response))
 		statusText.value = `This browser is ${response.signedIn2 ? 'signed in. 🟢' : 'signed out. ❌'} Fetch: ${t}ms. Note: ${response.note}`
 		return response
 	} catch (e) {
@@ -45,7 +45,7 @@ async function snippet() {
 				tag: Tag()
 			}
 		})
-		log('success', inspect(response))
+		log('success', look(response))
 		return response
 	} catch (e) {
 		log('caught', e)

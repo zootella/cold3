@@ -1,7 +1,7 @@
 <script setup>
 
 import { ref, reactive, watch, onMounted } from 'vue'
-import { log, inspect, Now } from '../library/library0.js'
+import { log, look, Now } from '../library/library0.js'
 import { Tag } from '../library/library1.js'
 import { getBrowserTag } from '../library/library2.js'
 
@@ -27,7 +27,7 @@ async function callCount(incrementGlobal, incrementBrowser) {
 			}
 		})
 		delay.value = Now() - t
-		log('success', inspect(response))
+		log('success', look(response))
 //		statusText.value = `This browser is ${response.signedIn2 ? 'signed in. 🟢' : 'signed out. ❌'} Fetch: ${t}ms. Note: ${response.note}`
 		return response
 	} catch (e) {

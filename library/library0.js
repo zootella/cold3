@@ -201,10 +201,10 @@ test(() => {
 	ok(say(o.notThere) == 'undefined')
 })
 test(() => {
-	ok(inspect() == '')
-	ok(inspect("a") == '"a"')
-	ok(inspect(5) == '5')
-	ok(inspect({}) == '{}')
+	ok(look() == 'undefined')
+	ok(look('a') == '"a" ‹1›')
+	ok(look(5) == '5')
+	ok(look({}) == `{ ‹0›${newline}}`)
 })
 
 //                                           
@@ -1699,7 +1699,13 @@ const lookKeysOptions = {
 	includePrototypeOf:   false
 }//even with all these options off, look still finds null and function members, which json stringify does not
 
-export function look(o) { let c = lookDeep(o, 0); return c.trimEnd() }
+export function look(...a) {//group multiple arguments like look(1, 2, 3) into an array
+	let c
+	if      (a.length == 0) c = lookDeep(undefined, 0)//so look() is still undefined
+	else if (a.length == 1) c = lookDeep(a[0], 0)//unwrap a single argument, this is the most common use
+	else                    c = lookDeep(a, 0)//treat multiple arguments as though we passed them in an array
+	return c.trimEnd()
+}
 function lookDeep(o, depth) {//call with the depth of o, the object you're giving it
 	let r = lookForType(o)
 	let c = ''
@@ -1720,7 +1726,7 @@ function lookDeep(o, depth) {//call with the depth of o, the object you're givin
 	} else {//3 not a container
 		c += '  '.repeat(depth)+(r.show ? r.show : r.type)+(r.n >= 0 ? ` ‹${r.n}›` : '')
 	}
-	return c.split('\n').map(line => line.trimEnd()).filter(line => line.length > 0).join('\n')+newline//remove blank lines and get one newline at the end
+	return c.split('\n').map(line => line.trimEnd()).filter(line => line.length > 0).join(newline)+newline//remove blank lines and get one newline at the end
 }
 
 function lookKeys(o, options) {
@@ -1903,13 +1909,15 @@ function lookSayError(e) {//returns multiple lines, all but first start "at" and
 
 
 
-
-
-
-
-
 /*
-maybe this is called look() to be distinct from inspect()
+scraps of look still to clean up:
+-use in toss and actually delete inspect
+-clean up notes below
+-clean up notes in library.txt
+-restore logCompose to use → and ↓ and put log(a, b) on three lines
+*/
+/*
+maybe this is called look()
 
 first draft, for simplicity:                      then, later, need to
 -goes forever deep                                limit by depth or size of output
@@ -1931,53 +1939,36 @@ this is why you need a depth limit, essentially
 /*
 2024may17 hopefully good thinking on finishing off this bike shed
 
-inspect
-if you want to inspect an object directly, and y ou know you're in the browser inspector, just use console.log directly
-your function inspect() is new, replaces lots of old stuff, and works like this
+look
+if you want to look an object directly, and y ou know you're in the browser inspector, just use console.log directly
+your function look() is new, replaces lots of old stuff, and works like this
 doesn't log anything, always returns a string
 string is always indented, never tries to be single line
 doesn't return a tick count, obviously
-better than json stringify and node util inspect, actually gets the functions and stuff those miss
+better than json stringify and node util look, actually gets the functions and stuff those miss
 always indents by two spaces
 goes deep, stopping at 2k of text output
 uses 7 number, true boolean, "string", [array], {object}, function()
-if you want to see the name of an object, you have to wrap like inspect({object})
+if you want to see the name of an object, you have to wrap like look({object})
 test with exception objects
-you're going to use inspect to see what third party rest apis are telling your worker
+you're going to use look to see what third party rest apis are telling your worker
 
 log
 starts with timestamp and tilde
 logs to record and console.log
 turns everything into text, always, using say
 keeps everything on one line, always
-doesn't call inspect, ever--you have to call that manually
+doesn't call look, ever--you have to call that manually
 
 say
-turns directly into text, succicently--inspect is the verbose and deep one
+turns directly into text, succicently--look is the verbose and deep one
 
 oh, you also want to detect other 'special' js objects, like instanceof Uint8, CryptoKeys, those
 they're like Error
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*
+log('→ and ↓ and ‹256›')//while you're doing look, restore the multiline logCompose, you miss that
 */
-test(() => {
-//	log('→ and ↓ and ‹256›')//while you're doing look, restore the multiline logCompose, you miss that
-
-	//Sun12h30m40.922s
-})
 
 
 

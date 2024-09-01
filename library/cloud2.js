@@ -1,5 +1,5 @@
 
-import { log, inspect, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
+import { log, look, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 
 let _aws, _ses, _sns//load once and only when needed
@@ -157,7 +157,7 @@ export async function sendTextUsingTwilio(toPhone, messageText) {
 
 
 export async function snippet(card) {
-	log('got the card', inspect(card))
+	log('got the card', look(card))
 
 	let message = 'v2024aug30b.1'
 //	let r = await emailSendgrid(card, message)
@@ -175,7 +175,7 @@ async function testEmailAmazon(card, message) {//live
 		message,
 		'body text',
 		'<b>body html</b>')
-	log(inspect(r))
+	log(look(r))
 }
 async function testEmailSendgrid(card, message) {//live
 	let result = await sendEmailUsingSendGrid(
@@ -185,15 +185,15 @@ async function testEmailSendgrid(card, message) {//live
 		message,
 		'body text',
 		'<b>body html</b>')
-	log(inspect(result))
+	log(look(result))
 }
 async function testTextAmazon(card, message) {//live
 	let result = await sendTextUsingAmazon(card.toPhone1, message)
-	log(inspect(result))
+	log(look(result))
 }
 async function testTextTwilio(card, message) {//not approved yet
 	let result = await sendTextUsingTwilio(card.toPhone1, message)
-	log(inspect(result))
+	log(look(result))
 }
 
 

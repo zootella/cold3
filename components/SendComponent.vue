@@ -38,9 +38,9 @@ async function clickEmail() {
 			log('response not ok')
 		}
 		let result = await response.json()
-		log('fetch result:', inspect(result))
+		log('fetch result:', look(result))
 	} catch (e) {
-		log('fetch error:', inspect(e))
+		log('fetch error:', look(e))
 	}
 }
 async function clickPhone() {
