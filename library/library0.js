@@ -1682,15 +1682,6 @@ ${encoded}`
 
 
 
-/*
-*/
-test(() => {
-	log('→ and ↓ and ‹256›')//while you're doing look, restore the multiline logCompose, you miss that
-
-	//Sun12h30m40.922s
-})
-
-
 
 
 //  _             _    
@@ -1698,127 +1689,41 @@ test(() => {
 // | |/ _ \ / _ \| |/ /
 // | | (_) | (_) |   < 
 // |_|\___/ \___/|_|\_\
-										
+//                     
 
-/*
-2024aug31, look how much time i spent in the bike shed! :'(
-*/
+const lookDepthLimit = 4
+const lookLineLengthLimit = 200
+const lookKeysOptions = {
+	includeInherited:     false,
+	includeNonEnumerable: false,
+	includePrototypeOf:   false
+}//even with all these options off, look still finds null and function members, which json stringify does not
 
-
-
-
-
-/*
-
-I'm looking for a simple, best-practices example to traverse the width and depth of an object. Consider an object o. inside are any number of properties, which can be either short strings or additonal objects. Inside those objects, it's the same story: strings and objects.
-
-I'm looking for a simple recursive function which, given o, returns text like this:
-
-o {
-	p1: "hi1"
-	p2: {
-		q1: "note"
-		q2: {
-		}
-	}
-	p3: "hi3"
-}
-
-In this example, p and q are the object property names.
-
-
-*/
-
-
-
-/*
-figure out with depth limit at the end
--off by one errors
--at the limit, show [ too deep! ] <5> and { too deep! } <5> rather than going down in
-*/
-
-
-
-/*
-	if (depth < lookDepthLimit) {
-		let c = `{${newline}`
-		for (let k of lookKeys(o)) {//k is a property name in o
-			let v = o[k]//v is the value of that property
-			let r = lookForType(v)//r is our analysis of that property, it's type and value
-			if (r.container) {//found a contained container
-				c += `${'  '.repeat(depth+1)}${k}: ${spelunk(v, r, depth+1)}`//recurses!
-			} else {
-				c += `${'  '.repeat(depth+1)}${k}: "${v}"${newline}`
-			}
-		}
-		c += `${'  '.repeat(depth)}}${newline}`
-		return c
-	} else {
-		return `too deep${newline}`
-	}
-*/
-
-const lookDepthLimit = 2//deeper than that, look won't go
-function spelunk(o, depth = 0) {//call with the depth of o, the object you're giving it
+export function look(o) { let c = lookDeep(o, 0); return c.trimEnd() }
+function lookDeep(o, depth) {//call with the depth of o, the object you're giving it
 	let r = lookForType(o)
 	let c = ''
 	if (r.container) {
 		if (depth < lookDepthLimit) {//1 container, dive in
-			c += `${'  '.repeat(depth)}${r.container[0]} <${r.n}>${newline}`
-			for (let k of lookKeys(o)) { let v = o[k]//k is a property name in o, and v is its value
-
-				/*
-				if o is an array, we don't do property names
-				also if the type is a function, then it's (): monkey
-				*/
-
+			c += `${'  '.repeat(depth)}${r.container[0]} ‹${r.n}›${newline}`
+			for (let k of lookKeys(o, lookKeysOptions)) { let v = o[k]//k is a property name in o, and v is its value
 				let margin         = '  '.repeat(depth+1)
 				let functionPrefix = (lookForType(v).type == 'function') ? '()' : ''
 				let parameterName  = (r.container == '{}') ? `${k}${functionPrefix}: ` : ''
-				let value          = spelunk(v, depth+1).trimStart()//recurses!
-
+				let value          = lookDeep(v, depth+1).trimStart()//recurses!
 				c += margin + parameterName + value
-
-
-
-//				c += ((`${'  '.repeat(depth+1)}`)+(r.container == '{}' ? `${k}: ` : '')+(`${spelunk(v, depth+1).trimStart()}`))
 			}
 			c += `${'  '.repeat(depth)}${r.container[1]}${newline}`
 		} else {//2 container but we're at depth limit
-			c += `${r.container[0]} at depth limit! ${r.container[1]} <${r.n}>`
+			c += `${r.container[0]} at depth limit! ${r.container[1]} ‹${r.n}›`
 		}
 	} else {//3 not a container
-		c += '  '.repeat(depth)+(r.show ? r.show : r.type)+(r.n >= 0 ? ` <${r.n}>` : '')
+		c += '  '.repeat(depth)+(r.show ? r.show : r.type)+(r.n >= 0 ? ` ‹${r.n}›` : '')
 	}
-	return c+newline
-
-
-
-
+	return c.split('\n').map(line => line.trimEnd()).filter(line => line.length > 0).join('\n')+newline//remove blank lines and get one newline at the end
 }
-test(() => {
-	let a = ['a', 'bbb', 'c']
-	let o = {p1:5, p2:10, p3:{a:'apple'}, favorite2: Data, p4:{}, a1:[], favorite1: checkText}
-	log(spelunk(a))
-	log(spelunk(o))
 
-
-	//remove blank lines, they'll be in the middle and one at the end, probably
-
-
-
-
-})
-
-
-
-
-//takes o, and object or an array
-//two settings, false by default, to include inherited properties (enumerable ones), and include non enumerable properties (on o itself, not inherited)
-//returns an array of property names, so, an array of strings
-
-function lookKeys(o) { return lookKeysOptions(o, {includeInherited: false, includeNonEnumerable: false, includePrototypeOf: false})}
-function lookKeysOptions(o, options) {
+function lookKeys(o, options) {
 	let keys = options.includeNonEnumerable ? Object.getOwnPropertyNames(o) : Object.keys(o)
 	if (options.includeInherited) {
 		for (let key in o) {
@@ -1826,7 +1731,7 @@ function lookKeysOptions(o, options) {
 		}
 	}
 	if (options.includePrototypeOf) {
-		let prototypeKeys = lookKeysOptions(Object.getPrototypeOf(o), {
+		let prototypeKeys = lookKeys(Object.getPrototypeOf(o), {
 			includeInherited:     options.includeInherited,//same options as we were called with
 			includeNonEnumerable: options.includeNonEnumerable,
 			includePrototypeOf:   false})//but false to not loop forever
@@ -1837,55 +1742,16 @@ function lookKeysOptions(o, options) {
 test(() => {
 	let supreme = {includeInherited: true, includeNonEnumerable: true, includePrototypeOf: true}
 	let pepperoni = {includeInherited: true, includeNonEnumerable: true, includePrototypeOf: false}
-	let cheese = {includeInherited: false, includeNonEnumerable: false, includePrototypeOf: false}//still finds null and function members, which json stringify does not
+	let cheese = {includeInherited: false, includeNonEnumerable: false, includePrototypeOf: false}
 
 	let o = {k1:5, k2:7}
-	ok(lookKeysOptions(o, cheese)+'' == 'k1,k2')
+	ok(lookKeys(o, cheese)+'' == 'k1,k2')
 
 	let a = ['a', 'b', 'c']
-	ok(lookKeysOptions(a, cheese)+'' == '0,1,2')
-	ok(lookKeysOptions(a, pepperoni)+'' == '0,1,2,length')
-	ok(lookKeysOptions(a, supreme).length > 40)//here's where you get the methods like slice, sort, splice, includes, indexOf, and more
+	ok(lookKeys(a, cheese)+'' == '0,1,2')
+	ok(lookKeys(a, pepperoni)+'' == '0,1,2,length')
+	ok(lookKeys(a, supreme).length > 40)//here's where you get the methods like slice, sort, splice, includes, indexOf, and more
 })
-
-
-
-
-function lookSay(r) {//given a look result object, compose it into text for the developer
-	/*
-	the whole thing will be like
-
-	propertyName(): blahblah <52>
-
-	this just does the part after the property name
-	also, this doesn't do containers
-
-
-
-	Type
-	"value"
-
-	propertyName: Type
-	propertyName: "value"
-
-	functionPropertyName(): "value" <n>
-
-
-	*/
-	let c = (r.show ? r.show : r.type)
-	if (r.n >= 0) c += ` <${r.n}>`
-
-
-	return c
-
-}
-test(() => {
-	let o = { n:0 }
-	if (o.n >= 0) log('correctly found n set to zero')//if 1+ value or defined as zero
-	if (o.notThere >= 0) log('incorrectly seeing not there as zero')//if 1+ value or defined as zero
-})
-
-
 
 function lookForType(q) {
 	let r     = look10Null(q)
@@ -2006,27 +1872,13 @@ test(() => {
 	r = look50ArrayAndObject({a: 1, b: 2}); ok(r.type == 'object' && r.n == 2)
 })
 
-/*
-r.suffix is just for function, to compose propertyName(): function
-because the others have their type clues in the value on the right
-*/
-
-
-
-
-
-
-const lookSayLimit = 200//bigger than 200 characters, splay uses multiple lines or truncates
-//it's fine if stuff wraps in the outline, you'll be able to find your place back in the outline
-//maybe actually nothing is indented except the object depth! so errors are flush with the margin
-//yeah, that's easier and better
 function lookSayString(s) {
 	let m = s.replace(/\t/g, '→').replace(/[\r\n]+/g, '¶')//modified for display
 	let c//composed text we will return, for all of these, can be one or several lines
-	if (m.length < lookSayLimit) {
+	if (m.length < lookLineLengthLimit) {
 		c = `"${m}"`
 	} else {
-		c = `"${m.slice(0, lookSayLimit)}...`
+		c = `"${m.slice(0, lookLineLengthLimit)}...`
 	}
 	return c
 }
@@ -2034,10 +1886,10 @@ function lookSayFunction(f) {
 	let s = f.toString()
 	let m = s.split('\n').map(line => line.trim()).join(' ¶ ').replace(/\s+/g, ' ').trim()
 	let c
-	if (m.length < lookSayLimit) {
+	if (m.length < lookLineLengthLimit) {
 		c = `${m}`
 	} else {
-		c = `${m.slice(0, lookSayLimit)}...`
+		c = `${m.slice(0, lookLineLengthLimit)}...`
 	}
 	return c
 }
@@ -2050,103 +1902,8 @@ function lookSayError(e) {//returns multiple lines, all but first start "at" and
 
 
 
-//import util from 'util'//since this only works in node, you'll code the new inspect there
-noop(() => {
-
-	let caughtError
-	try {
-		notDefined
-	} catch (e) {
-		caughtError = e
-	}
-
-	function myFunction(a, b) {
-		return a + b
-	}
-
-	let o = {
-		s: 'hello',
-		b: true,
-		n: null,
-		i: 721,
-		o: {a:1, b:2, c:3},
-		a: [1, 2, 3],
-		f: myFunction,
-		e: caughtError
-	}
-
-	console.log('\r\n    ~ console.log')//ooh, it's colorful
-	console.log(o)
-
-	console.log('\r\n    ~ util.inspect')
-	console.log(util.inspect(o))
-
-	console.log('\r\n    ~ JSON.stringify')
-	console.log(JSON.stringify(o, null, 2))//no replacer function, indent with 2 spaces
-
-	console.log('\r\n    ~ bikeshed inspect()')
-	console.log(inspect(o))
-
-	console.log('\r\n    ~ your new splay()')
-	console.log(splay(o))
-
-	console.log('\r\n')
-})
-
-noop(() => {
-	//let name = Object.keys(o)[0]//this is how you should probably loop through the properties
-
-	let caughtError
-	try {
-		notDefined
-	} catch (e) {
-		caughtError = e
-	}
-
-	let f = Data
-	let a = [1, 2, 3]
-	let o = {a:1, b:2, c:3}
-
-	log(lookArray(a))
-	log(lookObject(o))
 
 
-	let n = null
-	let u = undefined
-	log(typeof n)//null is an object
-	log(typeof u)//undefined has type undefined
-
-//	log(splayError(caughtError))
-})
-
-
-
-
-
-function lookObject(o) {
-	let depth = 1
-
-	let k = Object.keys(o)//reveals function and null value properties, misses inherited, non-enumerable, and symbol properties. i think this is the right strength of property lister among javascript's many options
-	//and then dereference with
-
-	let c = '{ -len' + k.length + newline
-	for (let i = 0; i < k.length; i++) {
-		c += '  '.repeat(depth)+k[i]+': '+o[k[i]]+newline
-	}
-	c += '}' + newline
-	return c
-
-
-}
-function lookArray(a) {
-	let depth = 1
-	let c = '[ -len' + a.length + newline
-	for (let i = 0; i < a.length; i++) {
-		c += '  '.repeat(depth)+a[i]+newline
-	}
-	c += ']' + newline
-	return c
-}
 
 
 
@@ -2212,6 +1969,15 @@ they're like Error
 
 
 
+
+
+/*
+*/
+test(() => {
+//	log('→ and ↓ and ‹256›')//while you're doing look, restore the multiline logCompose, you miss that
+
+	//Sun12h30m40.922s
+})
 
 
 
