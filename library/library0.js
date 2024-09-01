@@ -1682,7 +1682,13 @@ ${encoded}`
 
 
 
+/*
+*/
+test(() => {
+	log('→ and ↓ and ‹256›')//while you're doing look, restore the multiline logCompose, you miss that
 
+	//Sun12h30m40.922s
+})
 
 
 
@@ -1692,7 +1698,7 @@ ${encoded}`
 // | |/ _ \ / _ \| |/ /
 // | | (_) | (_) |   < 
 // |_|\___/ \___/|_|\_\
-                    
+										
 
 /*
 2024aug31, look how much time i spent in the bike shed! :'(
@@ -1701,16 +1707,194 @@ ${encoded}`
 
 
 
+
+/*
+
+I'm looking for a simple, best-practices example to traverse the width and depth of an object. Consider an object o. inside are any number of properties, which can be either short strings or additonal objects. Inside those objects, it's the same story: strings and objects.
+
+I'm looking for a simple recursive function which, given o, returns text like this:
+
+o {
+	p1: "hi1"
+	p2: {
+		q1: "note"
+		q2: {
+		}
+	}
+	p3: "hi3"
+}
+
+In this example, p and q are the object property names.
+
+
+*/
+
+
+
+/*
+figure out with depth limit at the end
+-off by one errors
+-at the limit, show [ too deep! ] <5> and { too deep! } <5> rather than going down in
+*/
+
+
+
+/*
+	if (depth < lookDepthLimit) {
+		let c = `{${newline}`
+		for (let k of lookKeys(o)) {//k is a property name in o
+			let v = o[k]//v is the value of that property
+			let r = lookForType(v)//r is our analysis of that property, it's type and value
+			if (r.container) {//found a contained container
+				c += `${'  '.repeat(depth+1)}${k}: ${spelunk(v, r, depth+1)}`//recurses!
+			} else {
+				c += `${'  '.repeat(depth+1)}${k}: "${v}"${newline}`
+			}
+		}
+		c += `${'  '.repeat(depth)}}${newline}`
+		return c
+	} else {
+		return `too deep${newline}`
+	}
+*/
+
+const lookDepthLimit = 2//deeper than that, look won't go
+function spelunk(o, depth = 0) {//call with the depth of o, the object you're giving it
+	let r = lookForType(o)
+	let c = ''
+	if (r.container) {
+		if (depth < lookDepthLimit) {//1 container, dive in
+			c += `${'  '.repeat(depth)}${r.container[0]} <${r.n}>${newline}`
+			for (let k of lookKeys(o)) { let v = o[k]//k is a property name in o, and v is its value
+
+				/*
+				if o is an array, we don't do property names
+				also if the type is a function, then it's (): monkey
+				*/
+
+				let margin         = '  '.repeat(depth+1)
+				let functionPrefix = (lookForType(v).type == 'function') ? '()' : ''
+				let parameterName  = (r.container == '{}') ? `${k}${functionPrefix}: ` : ''
+				let value          = spelunk(v, depth+1).trimStart()//recurses!
+
+				c += margin + parameterName + value
+
+
+
+//				c += ((`${'  '.repeat(depth+1)}`)+(r.container == '{}' ? `${k}: ` : '')+(`${spelunk(v, depth+1).trimStart()}`))
+			}
+			c += `${'  '.repeat(depth)}${r.container[1]}${newline}`
+		} else {//2 container but we're at depth limit
+			c += `${r.container[0]} at depth limit! ${r.container[1]} <${r.n}>`
+		}
+	} else {//3 not a container
+		c += '  '.repeat(depth)+(r.show ? r.show : r.type)+(r.n >= 0 ? ` <${r.n}>` : '')
+	}
+	return c+newline
+
+
+
+
+}
+test(() => {
+	let a = ['a', 'bbb', 'c']
+	let o = {p1:5, p2:10, p3:{a:'apple'}, favorite2: Data, p4:{}, a1:[], favorite1: checkText}
+	log(spelunk(a))
+	log(spelunk(o))
+
+
+	//remove blank lines, they'll be in the middle and one at the end, probably
+
+
+
+
+})
+
+
+
+
+//takes o, and object or an array
+//two settings, false by default, to include inherited properties (enumerable ones), and include non enumerable properties (on o itself, not inherited)
+//returns an array of property names, so, an array of strings
+
+function lookKeys(o) { return lookKeysOptions(o, {includeInherited: false, includeNonEnumerable: false, includePrototypeOf: false})}
+function lookKeysOptions(o, options) {
+	let keys = options.includeNonEnumerable ? Object.getOwnPropertyNames(o) : Object.keys(o)
+	if (options.includeInherited) {
+		for (let key in o) {
+			if (!keys.includes(key)) { keys.push(key) }//avoid duplicates
+		}
+	}
+	if (options.includePrototypeOf) {
+		let prototypeKeys = lookKeysOptions(Object.getPrototypeOf(o), {
+			includeInherited:     options.includeInherited,//same options as we were called with
+			includeNonEnumerable: options.includeNonEnumerable,
+			includePrototypeOf:   false})//but false to not loop forever
+		prototypeKeys.forEach(key => { if (!keys.includes(key)) keys.push(key) })
+	}
+	return keys
+}
+test(() => {
+	let supreme = {includeInherited: true, includeNonEnumerable: true, includePrototypeOf: true}
+	let pepperoni = {includeInherited: true, includeNonEnumerable: true, includePrototypeOf: false}
+	let cheese = {includeInherited: false, includeNonEnumerable: false, includePrototypeOf: false}//still finds null and function members, which json stringify does not
+
+	let o = {k1:5, k2:7}
+	ok(lookKeysOptions(o, cheese)+'' == 'k1,k2')
+
+	let a = ['a', 'b', 'c']
+	ok(lookKeysOptions(a, cheese)+'' == '0,1,2')
+	ok(lookKeysOptions(a, pepperoni)+'' == '0,1,2,length')
+	ok(lookKeysOptions(a, supreme).length > 40)//here's where you get the methods like slice, sort, splice, includes, indexOf, and more
+})
+
+
+
+
+function lookSay(r) {//given a look result object, compose it into text for the developer
+	/*
+	the whole thing will be like
+
+	propertyName(): blahblah <52>
+
+	this just does the part after the property name
+	also, this doesn't do containers
+
+
+
+	Type
+	"value"
+
+	propertyName: Type
+	propertyName: "value"
+
+	functionPropertyName(): "value" <n>
+
+
+	*/
+	let c = (r.show ? r.show : r.type)
+	if (r.n >= 0) c += ` <${r.n}>`
+
+
+	return c
+
+}
+test(() => {
+	let o = { n:0 }
+	if (o.n >= 0) log('correctly found n set to zero')//if 1+ value or defined as zero
+	if (o.notThere >= 0) log('incorrectly seeing not there as zero')//if 1+ value or defined as zero
+})
+
+
+
 function lookForType(q) {
 	let r     = look10Null(q)
 	if (!r) r = look20Primitive(q)
 	if (!r) r = look30Instance(q)
 	if (!r) r = look40Data(q)
-	if (!r) r = look50ArrayAndObject(q)
-
-	//at this point, r will always be set
+	if (!r) r = look50ArrayAndObject(q)//if q survives this gauntlet, we treat it as an object
+	return r//so at this point, r will always be set
 }
-
 function look10Null(q) {
 	if (q === null) return { type: 'null' }//triple equals for type and value
 	else return null//these functions return null so the next one continues the search
@@ -1728,11 +1912,11 @@ function look20Primitive(q) {
 	let t = typeof q//if javascript were well designed, this would work for everything
 	switch (t) {
 		case 'undefined': return {type: t}
-		case 'boolean':   return {type: t}
-		case 'number':    return {type: t}
-		case 'bigint':    return {type: t}//lowercase
-		case 'string':    return {type: t, n: q.length}//also report the string's length
-		case 'function':  return {type: t, n: q.toString().length}//how long the code is for this function
+		case 'boolean':   return {type: t, show: q+''}//show type and value as 'true' or 'false'
+		case 'number':    return {type: t, show: q+''}//works fine with int, float, NaN, Infinity
+		case 'bigint':    return {type: t, show: q+'n'}//show with trailing n like a BigInt literal
+		case 'string':    return {type: t, show: lookSayString(q),   n: q.length}//also report the string's length
+		case 'function':  return {type: t, show: lookSayFunction(q), n: q.toString().length, suffix: '()'}//n shows code length, suffix is for display to be like 'propertyName(): functionCode() {...'
 		default:          return null//keep looking
 	}
 }
@@ -1747,28 +1931,34 @@ test(() => {
 	ok(look20Primitive(checkText).type == 'function')
 })
 function look30Instance(q) {
-	if      (q instanceof RegExp)  return {type: 'RegExp'}//after those, we have to use instanceof
-	else if (q instanceof Error)   return {type: 'Error'}
-	else if (q instanceof Promise) return {type: 'Promise'}
-	else if (q instanceof Map)     return {type: 'Map', n: q.size}//you can get the number of items in these
-	else if (q instanceof Set)     return {type: 'Set', n: q.size}
-	else if (q instanceof WeakMap) return {type: 'WeakMap'}//but can't get the size of the weak ones
-	else if (q instanceof WeakSet) return {type: 'WeakSet'}
+	if      (q instanceof RegExp)    return {type: 'RegExp'}//after those, we have to use instanceof
+	else if (q instanceof Error)     return {type: 'Error', show: lookSayError(q)}
+	else if (q instanceof Date)      return {type: 'Date',  show: q.toISOString()}
+	else if (q instanceof Promise)   return {type: 'Promise'}
+	else if (q instanceof Map)       return {type: 'Map', n: q.size}//you can get the number of items in these
+	else if (q instanceof Set)       return {type: 'Set', n: q.size}
+	else if (q instanceof WeakMap)   return {type: 'WeakMap'}//but can't get the size of the weak ones
+	else if (q instanceof WeakSet)   return {type: 'WeakSet'}
+	else if (q instanceof CryptoKey) return {type: 'CryptoKey'}
 	else return null
 }
-test(() => {
+test(async () => {
 	ok(look30Instance(/abc/).type == 'RegExp')
 	ok(look30Instance(new Error('Test error')).type == 'Error')
 	ok(look30Instance(new Promise((resolve, reject) => resolve('done'))).type == 'Promise')
+	ok(look30Instance(symmetricCreateKey()).type == 'Promise')//forgot await
+	ok(look30Instance(await symmetricCreateKey()).type == 'CryptoKey')//there it is
 
+	let d = look30Instance(new Date(15*Time.minute))
+	ok(d.type == 'Date' && d.show == '1970-01-01T00:15:00.000Z')
 	let map = new Map(); map.set('k', 120)//add one item
 	let r = look30Instance(map); ok(r.type == 'Map' && r.n == 1)
-
 	let set = new Set(); set.add('pink')
 	r = look30Instance(set); ok(r.type == 'Set' && r.n == 1)
 
 	ok(look30Instance(new WeakMap()).type == 'WeakMap')
 	ok(look30Instance(new WeakSet()).type == 'WeakSet')
+
 })
 function look40Data(q) {
 	let t
@@ -1807,89 +1997,57 @@ test(() => {
 	r = look40Data(new BigUint64Array(2)); ok(r.type == 'BigUint64Array' && r.n == 16)
 })
 function look50ArrayAndObject(q) {
-	if (Array.isArray(q)) return {type: 'array',  n: q.length}
-	else                  return {type: 'object', n: Object.keys(q).length}
+	if (Array.isArray(q)) return {type: 'array',  n: q.length,              container: '[]'}
+	else                  return {type: 'object', n: Object.keys(q).length, container: '{}'}//treat whatever else we're looking at as just a generic javascript object
 }
 test(() => {
-  let r
-  r = look50ArrayAndObject([1, 2, 3]);    ok(r.type == 'array'  && r.n == 3)
-  r = look50ArrayAndObject({a: 1, b: 2}); ok(r.type == 'object' && r.n == 2)
+	let r
+	r = look50ArrayAndObject([1, 2, 3]);    ok(r.type == 'array'  && r.n == 3)
+	r = look50ArrayAndObject({a: 1, b: 2}); ok(r.type == 'object' && r.n == 2)
 })
-
-
-
-
-
-
-
-
-
-
-
-//maybe making a pass at inspect
-//it would be useful now that you're getting cloud api responses
-
-
-
-
-
-
-
-
-
-export function respect(...a) {//inspect into things, including key name, type, and value
-	let s = ''
-	for (let i = 0; i < a.length; i++) {
-		s += (a.length > 1 ? newline : '') + _respect2(a[i])//put multiple arguments on separate lines
-	}
-	return s
-}
-function _respect2(o) {
-	let s = ''
-	if (o instanceof Error) {
-		s = o.stack//errors have their information here
-	} else if (o instanceof ArrayBuffer) {
-		s = `ArrayBuffer size ${o.byteLength}`
-	} else if (o instanceof Uint8Array) {
-		s = `Uint8Array size ${o.length}`
-	} else if (Array.isArray(o)) {
-		s = `[${o}]`
-	} else if (typeof o == 'function') {
-		s = o.toString()
-	} else if (typeof o == 'object') {
-		s += '{'
-		let first = true
-		for (let k in o) {
-			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
-			s += `${k}: ${_respect3(o[k])}`
-		}
-		s += '}'
-	} else {//boolean like true, number like 7, string like "hello"
-		s = _respect3(o)
-	}
-	return s
-}
-function _respect3(o) {
-	try {
-		return JSON.stringify(o, null)//single line
-	} catch (e) { return '(circular reference)' }//watch out for circular references
-}
-test(() => {
-	ok(respect() == '')
-	ok(respect("a") == '"a"')
-	ok(respect(5) == '5')
-	ok(respect({}) == '{}')
-})
-
-
 
 /*
-first, understand the behavior, features, and limitations of javascript's common solutions for client and server code
-JSON.stringify, in the browser on the client
-util.inspect, in node on the server
-
-
+r.suffix is just for function, to compose propertyName(): function
+because the others have their type clues in the value on the right
 */
+
+
+
+
+
+
+const lookSayLimit = 200//bigger than 200 characters, splay uses multiple lines or truncates
+//it's fine if stuff wraps in the outline, you'll be able to find your place back in the outline
+//maybe actually nothing is indented except the object depth! so errors are flush with the margin
+//yeah, that's easier and better
+function lookSayString(s) {
+	let m = s.replace(/\t/g, '→').replace(/[\r\n]+/g, '¶')//modified for display
+	let c//composed text we will return, for all of these, can be one or several lines
+	if (m.length < lookSayLimit) {
+		c = `"${m}"`
+	} else {
+		c = `"${m.slice(0, lookSayLimit)}...`
+	}
+	return c
+}
+function lookSayFunction(f) {
+	let s = f.toString()
+	let m = s.split('\n').map(line => line.trim()).join(' ¶ ').replace(/\s+/g, ' ').trim()
+	let c
+	if (m.length < lookSayLimit) {
+		c = `${m}`
+	} else {
+		c = `${m.slice(0, lookSayLimit)}...`
+	}
+	return c
+}
+function lookSayError(e) {//returns multiple lines, all but first start "at" and can start on margin
+	return e.stack.split('\n').map(line => line.trim()).join(newline)
+}
+
+
+
+
 
 
 //import util from 'util'//since this only works in node, you'll code the new inspect there
@@ -1935,14 +2093,7 @@ noop(() => {
 	console.log('\r\n')
 })
 
-function splay(o) {
-	return 'todo'
-}
-
-
 noop(() => {
-
-
 	//let name = Object.keys(o)[0]//this is how you should probably loop through the properties
 
 	let caughtError
@@ -1965,65 +2116,11 @@ noop(() => {
 	log(typeof n)//null is an object
 	log(typeof u)//undefined has type undefined
 
-
-
 //	log(splayError(caughtError))
 })
 
 
-//log('‹256›')maybe generalize this so it shows a type and a number
 
-
-
-const lookLimit = 200//bigger than 200 characters, splay uses multiple lines or truncates
-//it's fine if stuff wraps in the outline, you'll be able to find your place back in the outline
-//maybe actually nothing is indented except the object depth! so errors are flush with the margin
-//yeah, that's easier and better
-
-function lookString(s) {
-	let m = s.replace(/\t/g, '→').replace(/[\r\n]+/g, '¶')//modified for display
-	let c//composed text we will return, for all of these, can be one or several lines
-	if (m.length < lookLimit) {
-		c = `"${m}"`
-		if (s.length > 4) c += ' -len'+s.length
-	} else {
-		c = `"${m.slice(0, lookLimit)}... -len${s.length}`
-	}
-	return c
-}
-function lookBoolean(b) {
-	return b+''
-}
-function lookNumber(n) {
-	return n+''//works fine with int, float, NaN, Infinity
-}
-function lookBigInt(b) {
-	return b+'n'//n on the end to make it look like a BigInt literal
-}
-function lookFunction(f) {
-	let s = f.toString()
-	let m = s.split('\n').map(line => line.trim()).join(' ¶ ').replace(/\s+/g, ' ').trim()
-	let c
-	if (m.length < lookLimit) {
-		c = `${m} -len${s.length}`
-	} else {
-		c = `${m.slice(0, lookLimit)}... -len${s.length}`
-	}
-	return c
-}
-function lookError(e) {//returns multiple lines, all but first start "at" and can start on margin
-	return e.stack.split('\n').map(line => line.trim()).join(newline)
-}
-function splayPromise(p) {
-	//absolutely know if you're dealing with a promise!
-	// if (o instanceof Promise)
-	//also, instanceof Thing, Thing is a constructor function
-}
-
-function splayArrayData(a) {
-	//here, you want the data in base16, and -size64 at the end, no matter what
-	//and no quotes, but ... if truncated
-}
 
 
 function lookObject(o) {
@@ -2052,173 +2149,30 @@ function lookArray(a) {
 }
 
 
-function lookIndent(n) {
-	const tab = '  '
-}
-
-
-function lookForData(r) {//reference to we don't know what yet
-	let type
-	if      (r instanceof ArrayBuffer) type = 'ArrayBuffer'
-	else if (r instanceof DataView)    type = 'DataView'
-	else if (r instanceof Int8Array)  type = 'Int8Array'
-	else if (r instanceof Uint8Array) type = 'Uint8Array'
-	else if (r instanceof Int16Array)  type = 'Int16Array'
-	else if (r instanceof Uint16Array) type = 'Uint16Array'
-	else if (r instanceof Int32Array)  type = 'Int32Array'
-	else if (r instanceof Uint32Array) type = 'Uint32Array'
-	else if (r instanceof Float32Array) type = 'Float32Array'
-	else if (r instanceof Float64Array) type = 'Float64Array'
-	else if (r instanceof BigInt64Array)  type = 'BigInt64Array'
-	else if (r instanceof BigUint64Array) type = 'BigUint64Array'
-	else if (r instanceof Uint8ClampedArray) type = 'Uint8ClampedArray'//for pixels in color graphics
-	else if (r instanceof SharedArrayBuffer) type = 'SharedArrayBuffer'//for sharing memory between web workers
-	else type = null
-
-	if (type) return { type, size: r.byteLength }//all of these express their size this way
-	else return null
-}
-test(() => {
-	let result = lookForData(new ArrayBuffer(16))
-	ok(result.type == 'ArrayBuffer' && result.size == 16)
-	result = lookForData(new Int32Array(4))
-	ok(result.type == 'Int32Array' && result.size == 16)//4 elements * 4 bytes each
-	result = lookForData(new DataView(new ArrayBuffer(32)));
-	ok(result.type == 'DataView' && result.size == 32)
-	result = lookForData(new Uint8ClampedArray(10))
-	ok(result.type == 'Uint8ClampedArray' && result.size == 10)//10 elements * 1 byte each
-})
 
 
 /*
 maybe this is called look() to be distinct from inspect()
+
 first draft, for simplicity:                      then, later, need to
 -goes forever deep                                limit by depth or size of output
 -always suffixes length                           omit on really short things
--doesn't truncate, well, that's easy              easy
 -arrays and objects are always on multiple lines  short ones are on one wrapped line
--and don't do the ... before the end thing
+-arrays and objects show all items                really big ones have ... in the middle
 
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-/*
-now these are hard because should they be one line or several lines?
-and, do they call the other functions to splay their members? (yeah, they need to)
-if it's an array of numbers 1-500, does it show the first few, the last one, and the length 100
-
-
-*/
-
-
-
-
-/*
-what if you just hard-code in sensible defaults
-and put in a pattern of suffixing 'len256' at the end
-strings longer than 4 have the length suffix
-
-
-try to write an object or an array as a single line
-if that line is too long
-or if any members need to go multiline
-then switch to the multiline method
-
-and when you do, have the length, the number of members
-
-
-s: "blah blah blah
-blah blah blah
-blah blah blah
-blah blah blah
-blah blah blah" -len500
-
-o1: { a: "apple", n: 7, b: true }
 conditions for single line are:
 -nothing goes deeper
--small number of properties, like <8
--resulting string isn't too long, like <4 lines worth of text
-
-o: { -keys50
-	p1:                     keys and value names
-	p2:
-	p3:
-	...
-	p500: 
-}
-
-a: [1, 2, 3]
-a2: [ -len500
-	1                       just values, shown the same way
-	2
-	"three"
-	...
-	500
-]
-
-
-also, inspect isn't about outputting strings
-it's about identifying strings and getting their stats
-if you want to otuptu one, then dereference down to it directly
-so string likewise should probably be pilcrowed and shortened
-	
-
-function code gets automatically truncated to 
-
-
-
-
-*/
-
-
-/*
-divide and conquor
--expressing different types as text
--determining the type
--composing into multiline
-*/
-
-/*
-splay, random notes
+-resulting said string is under lookSayLimit
 
 make it so that while this won't do everything, you improve it rather than rewriting it when you discover something it should also be doing (unlike all previous attempts, lol)
-
-what about NaN and Infinity
-
-short objects and arrays on one line, long stuff on multiple lines, really long stuff shows first few, last few, number of contents
 
 be able to hand it anything, like global, window, and have it not choke
 
 make sure you can't trick it into going on forever by giving it a circular instance
 this is why you need a depth limit, essentially
-
-no, you can return just strings, some one line, some several lines, and have a function at a higher level still indent
-it just looks for \n in the text, and indents each line if it finds it
-
-
 */
-
-
-
-
-//maybe keep using newline but set to just \n, because f windows and you don't need it
-
-
 /*
-
-2014may17 hopefully good thinking on finishing off this bike shed
+2024may17 hopefully good thinking on finishing off this bike shed
 
 inspect
 if you want to inspect an object directly, and y ou know you're in the browser inspector, just use console.log directly
@@ -2244,13 +2198,8 @@ doesn't call inspect, ever--you have to call that manually
 say
 turns directly into text, succicently--inspect is the verbose and deep one
 
-
 oh, you also want to detect other 'special' js objects, like instanceof Uint8, CryptoKeys, those
 they're like Error
-
-
-
-
 */
 
 
