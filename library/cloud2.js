@@ -15,7 +15,7 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 //(1 amazon, email) helper function that will be called from a us-east-1 Lambda function in Node 20
 export async function sendEmailUsingAmazon(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {//todo, validate these and put them into the object below, current hard coded values are just for demonstration purposes
-	let ses = await loadAmazonEmail()
+	const ses = await loadAmazonEmail()
 	let p = {
 		Source: `${fromName} <${fromEmail}>`,//must be verified email or domain
 		Destination: { ToAddresses: [toEmail] },
@@ -36,7 +36,7 @@ export async function sendEmailUsingAmazon(fromName, fromEmail, toEmail, subject
 
 //(3 amazon, text) send a sms text message using amazon
 export async function sendTextUsingAmazon(toPhone, subjectText) {
-	let sns = await loadAmazonTexts()
+	const sns = await loadAmazonTexts()
 	let p = {
 		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
 		Message: subjectText,//must be 160 characters or less
@@ -52,8 +52,8 @@ export async function sendTextUsingAmazon(toPhone, subjectText) {
 
 //(2 rest, email) alternative that works in a cloudflare worker calling sendgrid's rest api
 export async function sendEmailUsingSendGrid(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {
-	let url = process.env.ACCESS_SENDGRID_URL
-	let key = process.env.ACCESS_SENDGRID_KEY
+	const url = process.env.ACCESS_SENDGRID_URL
+	const key = process.env.ACCESS_SENDGRID_KEY
 	let options = {
 		method: 'POST',
 		headers: {
@@ -91,10 +91,10 @@ export async function sendEmailUsingSendGrid(fromName, fromEmail, toEmail, subje
 
 //(4 rest, text) alternative that works in a cloudflare worker calling twilio's rest api
 export async function sendTextUsingTwilio(toPhone, messageText) {
-	let urlBase   = process.env.ACCESS_TWILIO_URL
-	let sid       = process.env.ACCESS_TWILIO_SID
-	let auth      = process.env.ACCESS_TWILIO_AUTH
-	let fromPhone = process.env.ACCESS_TWILIO_PHONE
+	const urlBase   = process.env.ACCESS_TWILIO_URL
+	const sid       = process.env.ACCESS_TWILIO_SID
+	const auth      = process.env.ACCESS_TWILIO_AUTH
+	const fromPhone = process.env.ACCESS_TWILIO_PHONE
 
 	let url = `${urlBase}/2010-04-01/Accounts/${sid}/Messages.json`
 	let options = {
