@@ -111,8 +111,8 @@ export function toss(note, watch) {//prepare your own watch object with named va
 // |_|\___/ \__, |
 //          |___/ 
 
-export function log(...a)      { let s = composeLog(a); recordLog(s); console.log(s)   }
-export function logError(...a) { let s = composeLog(a); recordLog(s); console.error(s) }
+export function log(...a)      { let s = composeLog(...a); recordLog(s); console.log(s)   }
+export function logError(...a) { let s = composeLog(...a); recordLog(s); console.error(s) }
 
 export function composeLog(...a) {
 	let s = ''//compose some nice display text
@@ -124,6 +124,17 @@ export function composeLog(...a) {
 	}
 	return sayTick(Now()) + ' ~' + (s.length ? (' ' + s) : '')
 }
+
+
+test(() => {
+	log('log1', 'log2')
+
+	log(composeLog('compose1', 'compose2'))
+	//bookmark
+	/*
+	'→ and ↓ and ‹256›'
+	*/
+})
 
 export function recordLog(s) {
 	logRecord += (logRecord.length ? newline : '') + s//don't start with a blank line
@@ -1900,7 +1911,7 @@ function lookSayFunction(f) {
 	return c
 }
 function lookSayError(e) {//returns multiple lines, all but first start "at" and can start on margin
-	return e.stack.split('\n').map(line => line.trim()).join(newline)
+	return '⚠ '+e.stack.split('\n').map(line => line.trim()).join(newline)//and start with warning emoji to make it more visible
 }
 
 

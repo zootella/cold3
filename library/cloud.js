@@ -94,7 +94,6 @@ sgMail
 		console.log('Email sent')
 	})
 	.catch((error) => {
-		console.error(error)
 	})
 */
 //and here is their example for curl:
@@ -381,7 +380,6 @@ sendSmsWithTwilio(
 ).then(() => {
   console.log('SMS sent successfully!');
 }).catch(error => {
-  console.error('Error sending SMS:', error);
 });
 */
 
