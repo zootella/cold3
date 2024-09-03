@@ -9,7 +9,7 @@ let assignedElement = ref()
 
 function myFunction(e) {
 	assignedElement.value = e//save the dom element reference for later, not sure if we have to save it in a reactive variable or not
-//	console.log(e.getBoundingClientRect())//use it to find out where we are on the page
+//	log(e.getBoundingClientRect())//use it to find out where we are on the page
 }
 
 </script>

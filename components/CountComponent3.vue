@@ -88,8 +88,8 @@ async function incrementCount(increment1, increment2) {
 		let tick2 = Now()
 		delay.value = tick2 - tick1
 		log(`fetch ran in ${tick2 - tick1}ms`)
-		console.log('data.value.countGlobal')
-		console.log(data.value.countGlobal)
+		log('data.value.countGlobal')
+		log(data.value.countGlobal)
 
 		data.value.countGlobal = data2.countGlobal
 		tick.durationGlobal = tick2 - tick1

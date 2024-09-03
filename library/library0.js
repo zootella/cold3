@@ -90,24 +90,15 @@ export async function runTests() {
 //                   
 
 export function toss(message, watch) {//prepare your own watch object with named variables you'd like to see
-	let t = Now()
-	let context =	{//assemble an object with complete information about what happened and how we got here
-		tick: t,
-		time: sayTick(t),
-		icon: '⚽',//soccer ball for toss
-		message: message,//short title like a message, error type, or note
-		watch: watch,//variables to watch
-		stack: new Error('toss stack'),//make an error just to get the call stack, we don't throw this error
-	}
-	console.error(context)//send to standard out, in case we can get to it that way, and code above doesn't
-	throw new TossError(message, context)//include complete information in a custom error and throw it upwards
+	throw new TossError(message, watch)
 }
 class TossError extends Error {//custom error to identify it's one of ours, and include watch variables
-  constructor(message, context) {
-    super(message)
-    this.name = 'TossError'
-    this.context = context//you can get to the watch variables at e.context.watch.someVariable
-  }
+	constructor(message, watch) {
+		super(message)
+		this.name = 'TossError'
+		if (watch) this.tossWatch = watch//tossWatch and tossTime are our custom additions here
+		this.tossTime = sayTime(Now())
+	}
 }
 
 //  _             
@@ -129,39 +120,6 @@ export function composeLog(...a) {
 	let arrow = s.trimEnd().includes('\n') ? ' ↓' : ' →'//point arrow down if multiple lines below
 	return sayTick(Now()) + arrow + (s.length ? (' ' + s) : '')
 }
-
-
-test(() => {
-
-	ok(true)
-
-	let a = ['a', 'b', 'c']
-	let i = 7
-
-	try {
-		toss('potato', {a, i})
-	} catch (e) {
-
-		log(look(e))
-//		log(look(e))
-	}
-
-
-	//bookmark
-	/*
-	it's pretty simple your goal here
-	be able to make a stupid error in your code anywhere
-	and then have that code run in any of your environments
-
-	so, 1 local: node/serverless framework/icarus/nuxt
-	x 2 nuxt client/hydration/server
-	x 3 running local/deployed cloudflare/amazon
-	and be able to see and save all the error information you want
-
-	'→ and ↓ and ‹256›'
-	*/
-})
-
 export function recordLog(s) {
 	logRecord += (logRecord.length ? newline : '') + s//don't start with a blank line
 	if (logRecord.length > logRecordLimit) logRecord = 'early logs too long to keep ~';
@@ -169,80 +127,6 @@ export function recordLog(s) {
 let logRecord = ''//all the text log has logged
 const logRecordLimit = 256*Size.kb;//until its length reaches this limit
 export function getLogRecord() { return logRecord }
-
-//                  
-//  ___  __ _ _   _ 
-// / __|/ _` | | | |
-// \__ \ (_| | |_| |
-// |___/\__,_|\__, |
-//            |___/ 
-
-export function say(...a) {//turn anything into text, always know you're dealing with a string
-	let s = '';
-	for (let i = 0; i < a.length; i++) {
-		s += (i ? ' ' : '') + (a[i]+'')//spaces between, not at the start
-	}
-	return s
-}
-
-//  _                           _   
-// (_)_ __  ___ _ __   ___  ___| |_ 
-// | | '_ \/ __| '_ \ / _ \/ __| __|
-// | | | | \__ \ |_) |  __/ (__| |_ 
-// |_|_| |_|___/ .__/ \___|\___|\__|
-//             |_|                  
-
-export function inspect(...a) {//inspect into things, including key name, type, and value
-	let s = ''
-	for (let i = 0; i < a.length; i++) {
-		s += (a.length > 1 ? newline : '') + _inspect2(a[i])//put multiple arguments on separate lines
-	}
-	return s
-}
-function _inspect2(o) {
-	let s = ''
-	if (o instanceof Error) {
-		s = o.stack//errors have their information here
-	} else if (o instanceof ArrayBuffer) {
-		s = `ArrayBuffer size ${o.byteLength}`
-	} else if (o instanceof Uint8Array) {
-		s = `Uint8Array size ${o.length}`
-	} else if (Array.isArray(o)) {
-		s = `[${o}]`
-	} else if (typeof o == 'function') {
-		s = o.toString()
-	} else if (typeof o == 'object') {
-		s += '{'
-		let first = true
-		for (let k in o) {
-			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
-			s += `${k}: ${_inspect3(o[k])}`
-		}
-		s += '}'
-	} else {//boolean like true, number like 7, string like "hello"
-		s = _inspect3(o)
-	}
-	return s
-}
-function _inspect3(o) {
-	try {
-		return JSON.stringify(o, null)//single line
-	} catch (e) { return '(circular reference)' }//watch out for circular references
-}
-test(() => {
-	ok(say() == '')
-	ok(say('a') == 'a')
-	ok(say('a', 'b') == 'a b')
-	ok(say(7) == '7')
-	let o = {};
-	ok(say(o.notThere) == 'undefined')
-})
-test(() => {
-	ok(look() == 'undefined')
-	ok(look('a') == '"a" ‹1›')
-	ok(look(5) == '5')
-	ok(look({}) == `{ ‹0›${newline}}`)
-})
 
 //                                           
 //   ___ ___  _ __ ___  _ __   __ _ _ __ ___ 
@@ -1315,6 +1199,7 @@ export function sayTick(t) {
 	let milliseconds = d.getMilliseconds().toString().padStart(3, '0')
 	return `${weekday} ${hours}h ${minutes}m ${seconds}.${milliseconds}s`
 }
+export function sayTime(t) { return `${sayTick(t)} (${t})` }//also include the tick count as a big number
 
 const _formatDate = {//make formatters once, outside the function
 	y: new Intl.DateTimeFormat('default', { year: 'numeric' }),//default locale is the user's browser, or the edge node's locale
@@ -1721,6 +1606,31 @@ ${encoded}`
 
 
 
+
+
+//                  
+//  ___  __ _ _   _ 
+// / __|/ _` | | | |
+// \__ \ (_| | |_| |
+// |___/\__,_|\__, |
+//            |___/ 
+
+export function say(...a) {//turn anything into text, always know you're dealing with a string
+	let s = '';
+	for (let i = 0; i < a.length; i++) {
+		s += (i ? ' ' : '') + (a[i]+'')//spaces between, not at the start
+	}
+	return s
+}
+test(() => {
+	ok(say() == '')
+	ok(say('a') == 'a')
+	ok(say('a', 'b') == 'a b')
+	ok(say(7) == '7')
+	let o = {};
+	ok(say(o.notThere) == 'undefined')
+})
+
 //  _             _    
 // | | ___   ___ | | __
 // | |/ _ \ / _ \| |/ /
@@ -1729,7 +1639,7 @@ ${encoded}`
 //                     
 
 const lookDepthLimit = 6//this many tabs indented, arrays and objects will be "[ at depth limit! ] ‹12›"
-const lookLineLengthLimit = 256//shorten lines of composed text with ... beyond this length
+const lookLineLengthLimit = 1024//shorten lines of composed text with ... beyond this length
 const lookKeysOptions = {
 	includeInherited:     false,
 	includeNonEnumerable: false,
@@ -1738,47 +1648,57 @@ const lookKeysOptions = {
 
 export function look(...a) {//group multiple arguments like look(1, 2, 3) into an array
 	let c
-	if      (a.length == 0) c = lookDeep(undefined, 0)//so look() is still undefined
-	else if (a.length == 1) c = lookDeep(a[0], 0)//unwrap a single argument, this is the most common use
-	else                    c = lookDeep(a, 0)//treat multiple arguments as though we passed them in an array
+	if      (a.length == 0) c = lookDeep(undefined, 0, lookDepthLimit)//so look() is still undefined
+	else if (a.length == 1) c = lookDeep(a[0],      0, lookDepthLimit)//unwrap a single argument, this is the most common use
+	else                    c = lookDeep(a,         0, lookDepthLimit)//treat multiple arguments as though we passed them in an array
 	return c.trimEnd()
 }
-function lookDeep(o, depth) {//call with the depth of o, the object you're giving it
+function lookDeep(o, depth, depthLimit) {//depth is the depth of o, 0 on the margin at the start
 	let r = lookForType(o)
 	let c = ''
 	if (r.container) {
-		if (depth < lookDepthLimit) {//1 container, dive in
-			c += `${'  '.repeat(depth)}${r.container[0]} ‹${r.n}›${newline}`
+		if (depth < depthLimit) {//1 container, dive deeper because we're not yet at our depth limit
+			c += '  '.repeat(depth) + r.container[0] + lookSayLength(r.n) + newline
 			for (let k of lookKeys(o, lookKeysOptions)) { let v = o[k]//k is a property name in o, and v is its value
 				let margin         = '  '.repeat(depth+1)
 				let functionPrefix = (lookForType(v).type == 'function') ? '()' : ''
-				let parameterName  = (r.container == '{}') ? `${k}${functionPrefix}: ` : ''
-				let value          = lookDeep(v, depth+1).trimStart()//recurses!
+				let parameterName  = (r.container != '[]') ? `${k}${functionPrefix}: ` : ''
+				let value          = lookDeep(v, depth+1, depthLimit).trimStart()//recurses!
 				c += margin + parameterName + value
 			}
 			c += `${'  '.repeat(depth)}${r.container[1]}${newline}`
 		} else {//2 container but we're at depth limit
-			c += `${r.container[0]} at depth limit! ${r.container[1]} ‹${r.n}›`
+			c += `${r.container[0]} at depth limit! ${r.container[1]}${lookSayLength(r.n)}`
 		}
 	} else {//3 not a container
-		c += '  '.repeat(depth)+(r.show ? r.show : r.type)+(r.n >= 0 ? ` ‹${r.n}›` : '')
+		c += '  '.repeat(depth) + (r.show ? r.show : r.type) + lookSayLength(r.n)
 	}
 	return c.split('\n').map(line => line.trimEnd()).filter(line => line.length > 0).join(newline)+newline//remove blank lines and get one newline at the end
 }
+function lookSayLength(n) { return n > 9 ? ` ‹${n}›` : '' }//9 and smaller count them yourself!
 
 function lookKeys(o, options) {
-	let keys = options.includeNonEnumerable ? Object.getOwnPropertyNames(o) : Object.keys(o)
-	if (options.includeInherited) {
-		for (let key in o) {
-			if (!keys.includes(key)) { keys.push(key) }//avoid duplicates
+	let keys = []
+	if (o instanceof Error) {//error is a container, but we handle it here as a special case
+		['name', 'message', 'tossWatch', 'tossTime', 'stack', 'cause'].forEach(possibleKey => {//with this white list of key names, watch and time are custom for toss
+			if (possibleKey in o) {
+				keys.push(possibleKey)
+			}
+		})
+	} else {//array or object
+		keys = options.includeNonEnumerable ? Object.getOwnPropertyNames(o) : Object.keys(o)
+		if (options.includeInherited) {
+			for (let key in o) {
+				if (!keys.includes(key)) { keys.push(key) }//avoid duplicates
+			}
 		}
-	}
-	if (options.includePrototypeOf) {
-		let prototypeKeys = lookKeys(Object.getPrototypeOf(o), {
-			includeInherited:     options.includeInherited,//same options as we were called with
-			includeNonEnumerable: options.includeNonEnumerable,
-			includePrototypeOf:   false})//but false to not loop forever
-		prototypeKeys.forEach(key => { if (!keys.includes(key)) keys.push(key) })
+		if (options.includePrototypeOf) {
+			let prototypeKeys = lookKeys(Object.getPrototypeOf(o), {
+				includeInherited:     options.includeInherited,//same options as we were called with
+				includeNonEnumerable: options.includeNonEnumerable,
+				includePrototypeOf:   false})//but false to not loop forever
+			prototypeKeys.forEach(key => { if (!keys.includes(key)) keys.push(key) })
+		}
 	}
 	return keys
 }
@@ -1801,7 +1721,7 @@ function lookForType(q) {
 	if (!r) r = look20Primitive(q)
 	if (!r) r = look30Instance(q)
 	if (!r) r = look40Data(q)
-	if (!r) r = look50ArrayAndObject(q)//if q survives this gauntlet, we treat it as an object
+	if (!r) r = look50Containers(q)//if q survives this gauntlet, we treat it as an object
 	return r//so at this point, r will always be set
 }
 function look10Null(q) {
@@ -1841,7 +1761,6 @@ test(() => {
 })
 function look30Instance(q) {
 	if      (q instanceof RegExp)    return {type: 'RegExp'}//after those, we have to use instanceof
-	else if (q instanceof Error)     return {type: 'Error', show: lookSayError(q)}
 	else if (q instanceof Date)      return {type: 'Date',  show: q.toISOString()}
 	else if (q instanceof Promise)   return {type: 'Promise'}
 	else if (q instanceof Map)       return {type: 'Map', n: q.size}//you can get the number of items in these
@@ -1853,7 +1772,6 @@ function look30Instance(q) {
 }
 test(async () => {
 	ok(look30Instance(/abc/).type == 'RegExp')
-	ok(look30Instance(new Error('Test error')).type == 'Error')
 	ok(look30Instance(new Promise((resolve, reject) => resolve('done'))).type == 'Promise')
 	ok(look30Instance(symmetricCreateKey()).type == 'Promise')//forgot await
 	ok(look30Instance(await symmetricCreateKey()).type == 'CryptoKey')//there it is
@@ -1867,7 +1785,6 @@ test(async () => {
 
 	ok(look30Instance(new WeakMap()).type == 'WeakMap')
 	ok(look30Instance(new WeakSet()).type == 'WeakSet')
-
 })
 function look40Data(q) {
 	let t
@@ -1905,23 +1822,29 @@ test(() => {
 	r = look40Data(new BigInt64Array(2)); ok(r.type == 'BigInt64Array' && r.n == 16)
 	r = look40Data(new BigUint64Array(2)); ok(r.type == 'BigUint64Array' && r.n == 16)
 })
-function look50ArrayAndObject(q) {
-	if (Array.isArray(q)) return {type: 'array',  n: q.length,              container: '[]'}
-	else                  return {type: 'object', n: Object.keys(q).length, container: '{}'}//treat whatever else we're looking at as just a generic javascript object
+function look50Containers(q) {
+	if (q instanceof Error)    return {type: 'Error',  container: '∈∋'}//use element of and contains as member characters
+	else if (Array.isArray(q)) return {type: 'array',  container: '[]', n: q.length}
+	else                       return {type: 'object', container: '{}', n: Object.keys(q).length}//treat whatever else we're looking at as just a generic javascript object
 }
 test(() => {
 	let r
-	r = look50ArrayAndObject([1, 2, 3]);    ok(r.type == 'array'  && r.n == 3)
-	r = look50ArrayAndObject({a: 1, b: 2}); ok(r.type == 'object' && r.n == 2)
+	r = look50Containers([1, 2, 3]);    ok(r.type == 'array'  && r.n == 3)
+	r = look50Containers({a: 1, b: 2}); ok(r.type == 'object' && r.n == 2)
 })
 
 function lookSayString(s) {
-	let m = s.replace(/\t/g, '→').replace(/[\r\n]+/g, '¶')//modified for display
-	let c//composed text we will return, for all of these, can be one or several lines
-	if (m.length < lookLineLengthLimit) {
+	let c, m//s given text, m modified, c composed to return
+	if (s.includes('Error:')) {//again, we have to special case error, ugh
+		m = s.split('\n').map(line => line.trim()).join(newline)//unindent
 		c = `"${m}"`
 	} else {
-		c = `"${m.slice(0, lookLineLengthLimit)}...`
+		m = s.replace(/\t/g, '→').replace(/[\r\n]+/g, '¶')//modified for display
+		if (m.length < lookLineLengthLimit) {
+			c = `"${m}"`
+		} else {
+			c = `"${m.slice(0, lookLineLengthLimit)}...`
+		}
 	}
 	return c
 }
@@ -1936,27 +1859,16 @@ function lookSayFunction(f) {
 	}
 	return c
 }
-function lookSayError(e) {//returns multiple lines, all but first start "at" and can start on margin
-	return '🔺 '+e.stack.split('\n').map(line => line.trim()).join(newline)//and start with warning emoji to make it more visible
-}
-/*
-notes coding look
--design this well enough that you improve upon it, rather than replacing it, in the future
--be able to hand it anything, global, window, and it doesn't choke
-
-moar feature ideas for look
--<0-9> lengths don't show
--single depth and short composed {} and [] stay on one line
--very long arrays have ... in the middle
-*/
 
 
 
-/*
-scraps of look still to clean up:
--use in toss and actually delete inspect
--clean up notes in library.txt
-*/
+
+
+
+
+
+
+
 
 
 

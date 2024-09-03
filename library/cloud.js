@@ -91,7 +91,7 @@ const msg = {
 sgMail
 	.send(msg)
 	.then(() => {
-		console.log('Email sent')
+		log('Email sent')
 	})
 	.catch((error) => {
 	})
@@ -378,7 +378,7 @@ sendSmsWithTwilio(
   '+0987654321', // From number (Twilio number)
   'Hello from serverless!'
 ).then(() => {
-  console.log('SMS sent successfully!');
+  log('SMS sent successfully!');
 }).catch(error => {
 });
 */
@@ -392,7 +392,7 @@ sendSmsWithTwilio(
 /*
 
 
-console.log('script ~ start')
+log('script ~ start')
 
 const twilio = require('twilio')
 const sendgrid = require('@sendgrid/mail')
@@ -400,32 +400,32 @@ const sendgrid = require('@sendgrid/mail')
 async function f() {
 
 	const twilioClient = twilio(twilioTestSid, twilioTestAuth);
-	console.log('twilio is a ' + typeof twilio)
-	console.log('twilio client is a ' + typeof twilioClient)
+	log('twilio is a ' + typeof twilio)
+	log('twilio client is a ' + typeof twilioClient)
 
 	if (sendSms) {
-		console.log('twilio send ~ before')
+		log('twilio send ~ before')
 		try {
 			let message = await twilioClient.messages.create(messageText)
-			console.log('twilio send ~ after')
-			console.log(message)
+			log('twilio send ~ after')
+			log(message)
 		} catch (e) {
-			console.log('twilio send ~ threw')
-			console.log(e)
+			log('twilio send ~ threw')
+			log(e)
 		}
 	}
 
-	console.log('sendgrid is a ' + typeof sendgrid)
+	log('sendgrid is a ' + typeof sendgrid)
 	if (sendEmail) {
 
 		sendgrid.setApiKey(ACCESS_SENDGRID_API_KEY)
 		try {
-			console.log('sendgrid send ~ before')
+			log('sendgrid send ~ before')
 			await sendgrid.send(messageEmail)
-			console.log('sendgrid send ~ after')
+			log('sendgrid send ~ after')
 		} catch (e) {
-			console.log('sendgrid send ~ threw')
-			console.log(e)
+			log('sendgrid send ~ threw')
+			log(e)
 		}
 	}
 

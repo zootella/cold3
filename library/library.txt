@@ -761,7 +761,7 @@ async function getBrowserFingerprint() {
 
 // Example usage
 getBrowserFingerprint().then(fingerprint => {
-  console.log(fingerprint);
+  log(fingerprint);
 });
 
 

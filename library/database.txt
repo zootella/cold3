@@ -161,13 +161,13 @@ return num >= BIGINT_MIN && num <= BIGINT_MAX;
 }
 
 // Example usage:
-console.log(isSafeBigInt(123456789012345)); // true
-console.log(isSafeBigInt(-123456789012345)); // true
-console.log(isSafeBigInt(9223372036854775807)); // true
-console.log(isSafeBigInt(9223372036854775808)); // false
-console.log(isSafeBigInt(-9223372036854775809)); // false
-console.log(isSafeBigInt(123.456)); // false
-console.log(isSafeBigInt('123456789012345')); // false, not a number
+log(isSafeBigInt(123456789012345)); // true
+log(isSafeBigInt(-123456789012345)); // true
+log(isSafeBigInt(9223372036854775807)); // true
+log(isSafeBigInt(9223372036854775808)); // false
+log(isSafeBigInt(-9223372036854775809)); // false
+log(isSafeBigInt(123.456)); // false
+log(isSafeBigInt('123456789012345')); // false, not a number
 
 */
 
