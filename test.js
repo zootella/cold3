@@ -33,7 +33,9 @@ async function runSnippet() {
 }
 
 //run tests followed by snippet
-await runTests()
+let results = await runTests()
+console.log(results.message)
+
 await runSnippet()
 
 

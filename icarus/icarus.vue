@@ -13,7 +13,7 @@ const boxModel = ref('')
 const testMessage = ref('')
 
 onMounted(async () => {
-	testMessage.value = await runTests()
+	testMessage.value = (await runTests()).message
 })
 
 </script>

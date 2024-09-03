@@ -270,92 +270,10 @@ i guess refactor it so you don't have log destinations anymore
 
 
 
-/*
-TODO
-see is too confusing; your planned replacement will be called inspect
-so then the core functions are log, say, and inspect
-*/
-/*
-export function see(...a) {//see into things, including key name, type, and value
-	let s = ''
-	for (let i = 0; i < a.length; i++) {
-		s += (a.length > 1 ? newline : '') + _see2(a[i])//put multiple arguments on separate lines
-	}
-	return s
-}
-function _see2(o) {
-	let s = ''
-	if (o instanceof Error) {
-		s = '(error) ' + o.stack//errors have their information here
-	} else if (Array.isArray(o)) {
-		s = `(array) [${o}]`
-	} else if (typeof o == 'object') {
-		s += '(object) {'
-		let first = true
-		for (let k in o) {
-			if (!first) { s += ', ' } else { first = false }//separate with commas, but not first
-			s += `${k} (${typeof o[k]}) ${_see3(o[k])}`
-		}
-		s += '}'
-	} else {
-		s = `(${typeof o}) ${_see3(o)}`
-	}
-	return s
-}
-function _see3(o) {
-	try {
-		return JSON.stringify(o, null)//single line
-	} catch (e) { return '(circular reference)' }//watch out for circular references
-}
-*/
 
 
 
 
-/*
-todo, javascript is so wonky it's hard to make a see that lets you easily look inside
-here are some possible improvements
-get things on multiple lines and indent them 2 spaces
-there's lots of:
-
-ok (boolean) true
-n (number) 7
-responseText (string) ""
-clone (function) undefined
-o (object) {message (string) "hello"...}
-a (array) [1,2,3]
-
-shorten this so it's just:
-
-ok: true,
-n: 7,
-responseText: "",
-clone(),
-o {
-	message: "hello"
-	...
-},
-a [1,2,3]
-
-because json stringify skips functions, you'll probably have to write your own recursive walker and indenter
-and that's fine, go three levels deep by default
-
-moar notes for your return to this bike shed:
-
-remove look(o), instead you have to call log(see(o))
-
-remove the multiple loggers feature
-you want icarus, but will do that later as a separate system
-that system will have auto refresh
-in-place traffic lights
-and an in-place log that is maybe icarus()
-
-you just remembered that log shouldn't turn everything into a string
-doing so breaks the inspector's > arrow
-this may also be why earlier log didn't tickstamp
-if log gets a single string, do it all on one line
-if log gets a single non-string, or multiple anything, call console.log multiple times for multiple lines
-*/
 
 
 
@@ -420,7 +338,7 @@ server logs
 dog() and log() goes to datadog
 or, figure out your pattern for an api function
 with a total covereage try catch
-and then maybe if there's an error, inspect it into text and send it back to the browser
+and then maybe if there's an error, look it into text and send it back to the browser
 and even use status codes, maybe--ask chatgpt
 first just see if you can get a stack trace from a worker
 but then you have to make sure this isn't an attack vector, you have to know if you're built for production or not
@@ -714,69 +632,6 @@ and have it return an object of stats and outcomes, one of which is the composed
 
 
 
-/*
-for inspect()
-TODO never add these additional features, because this bike shed is fancy enough:
--recurse, indenting two spaces, stopping if the text grows above 2kb
--deal with tabs and newlines in function definitions and the error stack trace
--show short arrays and objects on a single line; long ones on multiple indented lines
--say the length of a very long array, showing starting and ending items with an ellipsis in the middle
-
-short notes relevant to those never-do improvements
-stack trace lines start with four spaces, maybe just remove them
-spaces and tabs in function code come through, maybe trim them and separate with the pilcrow
-*/
-test(() => {
-	//early inspect practice
-	/*
-	let b = true
-	let s = 'hello'
-	let n = 721
-	let a = ["p", "q", "r"]
-	let o = {
-		name: 'apple',
-		quantity: 11,
-		f: (()=>{}),
-		below: {
-			block: 'bedrock'
-		}
-	}
-	let e = (() => {
-		let o = {}
-		try {
-			o.notThere.andBeyond
-		} catch (e) {
-			return e
-		}
-	})()
-	log(inspect(b, s, n, a, o, e))
-	log(inspect(b, s, {n, a, o, e}))
-	*/
-})
-test(() => {
-	//more recent inspect practice
-	/*
-	log(inspect(true))//boolean
-	log(inspect(7))//number
-	log(inspect('hello'))//string
-	log(inspect(['a', 'b', 'c']))//array
-	log(inspect({key1: 'value1', key2: 'value2'}))//object
-
-	let f1 = function namedFunction() {
-		let i = 7
-		return 'named function result'
-	}
-	let f2 = function() { return 'anonymous function result' }
-	log(inspect(f1))//function
-	log(inspect(f2))//function
-
-	try {
-		notDefined
-	} catch (e) {
-		log(inspect(e))//error with stack trace
-	}
-	*/
-})
 
 
 

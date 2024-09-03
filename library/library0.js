@@ -39,6 +39,7 @@ Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
 
 export const Now = Date.now//just a shortcut
+export const noop = (() => {})//no operation, a function that does nothing
 
 //  _   _               _            _       
 // | |_(_)_ __  _   _  | |_ ___  ___| |_ ___ 
@@ -47,46 +48,37 @@ export const Now = Date.now//just a shortcut
 //  \__|_|_| |_|\__, |  \__\___||___/\__|___/
 //              |___/                        
 
-export const noop = (() => {})//no operation, a function that does nothing
-
-const tests = []//it's tiny tests, all you need for blissful tdd, and less than a screenful of code!
-let assertionsPassed, assertionsFailed, testsThrew
-export function test(f) {
-	tests.push(f)
-}
+let _passes
+const _tests = []//presenting, tiny tests! all you need for blissful TDD, and in half a screenful of code
+export function test(f) { _tests.push(f) }
 export function ok(assertion) {
-	if (assertion) {
-		assertionsPassed++
-	} else {
-		assertionsFailed++
-		let m = 'Test not ok, second line number expanded below:'
-		logError(m)
-		return m
-	}
+	if (assertion) _passes++
+	else throw new Error('Test not ok, second line number below:')
 }
 export async function runTests() {
-	assertionsPassed = 0
-	assertionsFailed = 0
-	testsThrew = 0
-	let tick1 = Now()
-	for (let i = 0; i < tests.length; i++) {
+	_passes = 0
+	let results = {}
+	let t = Now()
+
+	let failure
+	for (let i = 0; i < _tests.length; i++) {
 		try {
-			await tests[i]()
+			await _tests[i]()
 		} catch (e) {
-			testsThrew++
-			logError(e)
-			return e
+			return {
+				time:    t,
+				error:   e,
+				message: `${look(e)}${newline}on ${sayTick(t)}` 
+			}
 		}
 	}
-	let tick2 = Now()
-	if (assertionsFailed || testsThrew) {
-		let m = `❌ Tests failed ❌`
-		logError(m)
-		return m
-	} else {
-		let m = `✅ ${sayTick(tick2)} ~ ${assertionsPassed} assertions in ${tests.length} tests all passed in ${tick2 - tick1}ms ✅`
-		log(m)
-		return m
+	let duration = Now() - t
+	return {
+		time:     t,
+		passes:   _passes,
+		tests:    _tests.length,
+		duration: duration,
+		message:  `✅ ${_passes} assertions in ${_tests.length} tests all passed in ${duration}ms on ${sayTick(t)}`
 	}
 }
 
@@ -97,11 +89,25 @@ export async function runTests() {
 //  \__\___/|___/___/
 //                   
 
-export function toss(note, watch) {//prepare your own watch object with named variables you'd like to see
-	let s = `toss ${sayTick(Now())} ~ ${note} ${inspect(watch)}`
-	logError(s)
-	if (watch) logError(watch)
-	throw new Error(s)
+export function toss(message, watch) {//prepare your own watch object with named variables you'd like to see
+	let t = Now()
+	let context =	{//assemble an object with complete information about what happened and how we got here
+		tick: t,
+		time: sayTick(t),
+		icon: '⚽',//soccer ball for toss
+		message: message,//short title like a message, error type, or note
+		watch: watch,//variables to watch
+		stack: new Error('toss stack'),//make an error just to get the call stack, we don't throw this error
+	}
+	console.error(context)//send to standard out, in case we can get to it that way, and code above doesn't
+	throw new TossError(message, context)//include complete information in a custom error and throw it upwards
+}
+class TossError extends Error {//custom error to identify it's one of ours, and include watch variables
+  constructor(message, context) {
+    super(message)
+    this.name = 'TossError'
+    this.context = context//you can get to the watch variables at e.context.watch.someVariable
+  }
 }
 
 //  _             
@@ -111,9 +117,7 @@ export function toss(note, watch) {//prepare your own watch object with named va
 // |_|\___/ \__, |
 //          |___/ 
 
-export function log(...a)      { let s = composeLog(...a); recordLog(s); console.log(s)   }
-export function logError(...a) { let s = composeLog(...a); recordLog(s); console.error(s) }
-
+export function log(...a) { let s = composeLog(...a); recordLog(s); console.log(s) }
 export function composeLog(...a) {
 	let s = ''//compose some nice display text
 	if (a.length == 0) {//no arguments, just the timestamp
@@ -122,16 +126,38 @@ export function composeLog(...a) {
 	} else {//timestamp and newlines between multiple arguments
 		a.forEach(e => { s += newline + say(e) })
 	}
-	return sayTick(Now()) + ' ~' + (s.length ? (' ' + s) : '')
+	let arrow = s.trimEnd().includes('\n') ? ' ↓' : ' →'//point arrow down if multiple lines below
+	return sayTick(Now()) + arrow + (s.length ? (' ' + s) : '')
 }
 
 
 test(() => {
-	log('log1', 'log2')
 
-	log(composeLog('compose1', 'compose2'))
+	ok(true)
+
+	let a = ['a', 'b', 'c']
+	let i = 7
+
+	try {
+		toss('potato', {a, i})
+	} catch (e) {
+
+		log(look(e))
+//		log(look(e))
+	}
+
+
 	//bookmark
 	/*
+	it's pretty simple your goal here
+	be able to make a stupid error in your code anywhere
+	and then have that code run in any of your environments
+
+	so, 1 local: node/serverless framework/icarus/nuxt
+	x 2 nuxt client/hydration/server
+	x 3 running local/deployed cloudflare/amazon
+	and be able to see and save all the error information you want
+
 	'→ and ↓ and ‹256›'
 	*/
 })
@@ -1702,8 +1728,8 @@ ${encoded}`
 // |_|\___/ \___/|_|\_\
 //                     
 
-const lookDepthLimit = 4
-const lookLineLengthLimit = 200
+const lookDepthLimit = 6//this many tabs indented, arrays and objects will be "[ at depth limit! ] ‹12›"
+const lookLineLengthLimit = 256//shorten lines of composed text with ... beyond this length
 const lookKeysOptions = {
 	includeInherited:     false,
 	includeNonEnumerable: false,
@@ -1911,76 +1937,26 @@ function lookSayFunction(f) {
 	return c
 }
 function lookSayError(e) {//returns multiple lines, all but first start "at" and can start on margin
-	return '⚠ '+e.stack.split('\n').map(line => line.trim()).join(newline)//and start with warning emoji to make it more visible
+	return '🔺 '+e.stack.split('\n').map(line => line.trim()).join(newline)//and start with warning emoji to make it more visible
 }
+/*
+notes coding look
+-design this well enough that you improve upon it, rather than replacing it, in the future
+-be able to hand it anything, global, window, and it doesn't choke
 
-
-
-
+moar feature ideas for look
+-<0-9> lengths don't show
+-single depth and short composed {} and [] stay on one line
+-very long arrays have ... in the middle
+*/
 
 
 
 /*
 scraps of look still to clean up:
 -use in toss and actually delete inspect
--clean up notes below
 -clean up notes in library.txt
--restore logCompose to use → and ↓ and put log(a, b) on three lines
 */
-/*
-maybe this is called look()
-
-first draft, for simplicity:                      then, later, need to
--goes forever deep                                limit by depth or size of output
--always suffixes length                           omit on really short things
--arrays and objects are always on multiple lines  short ones are on one wrapped line
--arrays and objects show all items                really big ones have ... in the middle
-
-conditions for single line are:
--nothing goes deeper
--resulting said string is under lookSayLimit
-
-make it so that while this won't do everything, you improve it rather than rewriting it when you discover something it should also be doing (unlike all previous attempts, lol)
-
-be able to hand it anything, like global, window, and have it not choke
-
-make sure you can't trick it into going on forever by giving it a circular instance
-this is why you need a depth limit, essentially
-*/
-/*
-2024may17 hopefully good thinking on finishing off this bike shed
-
-look
-if you want to look an object directly, and y ou know you're in the browser inspector, just use console.log directly
-your function look() is new, replaces lots of old stuff, and works like this
-doesn't log anything, always returns a string
-string is always indented, never tries to be single line
-doesn't return a tick count, obviously
-better than json stringify and node util look, actually gets the functions and stuff those miss
-always indents by two spaces
-goes deep, stopping at 2k of text output
-uses 7 number, true boolean, "string", [array], {object}, function()
-if you want to see the name of an object, you have to wrap like look({object})
-test with exception objects
-you're going to use look to see what third party rest apis are telling your worker
-
-log
-starts with timestamp and tilde
-logs to record and console.log
-turns everything into text, always, using say
-keeps everything on one line, always
-doesn't call look, ever--you have to call that manually
-
-say
-turns directly into text, succicently--look is the verbose and deep one
-
-oh, you also want to detect other 'special' js objects, like instanceof Uint8, CryptoKeys, those
-they're like Error
-*/
-/*
-log('→ and ↓ and ‹256›')//while you're doing look, restore the multiline logCompose, you miss that
-*/
-
 
 
 
