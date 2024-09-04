@@ -7,7 +7,7 @@ $ aws sts get-caller-identity
 (will print out UserID, Account, and Arn)
 
 $ node test
-Wed 13h 20m 48.044s ~ ✅ Wed 13h 20m 48.044s ~ 381 assertions in 29 tests all passed in 42ms ✅
+✅ 459 assertions in 42 tests all passed in 48ms on Wed 1h 52m 35.293s
 */
 
 //access secrets

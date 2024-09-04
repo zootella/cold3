@@ -13,121 +13,120 @@ async function loadAmazon() {
 async function loadAmazonEmail() { if (!_ses) _ses = new (await loadAmazon()).SES(); return _ses }
 async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SNS(); return _sns }
 
-//(1 amazon, email) helper function that will be called from a us-east-1 Lambda function in Node 20
-export async function sendEmailUsingAmazon(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {//todo, validate these and put them into the object below, current hard coded values are just for demonstration purposes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export async function sendAmazonEmail(c) {//c.fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml
 	const ses = await loadAmazonEmail()
-	let p = {
-		Source: `${fromName} <${fromEmail}>`,//must be verified email or domain
-		Destination: { ToAddresses: [toEmail] },
+	let q = {
+		Source: `${c.fromName} <${c.fromEmail}>`,//must be verified email or domain
+		Destination: { ToAddresses: [c.toEmail] },
 		Message: {
-			Subject: { Data: subjectText },
+			Subject: { Data: c.subjectText },
 			Body: {//both plain text and html for multipart/alternative email format
-				Text: { Data: bodyText },
-				Html: { Data: bodyHtml }
+				Text: { Data: c.bodyText },
+				Html: { Data: c.bodyHtml }
 			}
 		}
 	}
-	let result, error
-	try {
-		result = await ses.sendEmail(p).promise()
-	} catch (e) { error = e }
-	return {result, error}
-}
+	let result, error, success = true
+	q.tick = Now()
 
-//(3 amazon, text) send a sms text message using amazon
-export async function sendTextUsingAmazon(toPhone, subjectText) {
-	const sns = await loadAmazonTexts()
-	let p = {
-		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
-		Message: subjectText,//must be 160 characters or less
-	}
-	let result, error
 	try {
-		result = await sns.publish(p).promise()
-	} catch (e) {
-		error = e
-	}
-	return {result, error}
-}
+		result = await ses.sendEmail(q).promise()
+		//sanity check to set success false
+	} catch (e) { error = e; success = false }
 
-//(2 rest, email) alternative that works in a cloudflare worker calling sendgrid's rest api
-export async function sendEmailUsingSendGrid(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {
-	const url = process.env.ACCESS_SENDGRID_URL
-	const key = process.env.ACCESS_SENDGRID_KEY
-	let options = {
+	let t = Now()
+	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
+}
+async function sendSendgridEmail1(c) {
+	let q = {
+		resource: process.env.ACCESS_SENDGRID_URL,
 		method: 'POST',
 		headers: {
-			Authorization: `Bearer ${key}`,
-			'Content-Type': 'application/json'//javascript property name in quotes because it contains a hyphen
+			'Content-Type': 'application/json',
+			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY
 		},
-		body: JSON.stringify({//this could throw on bigint or circular, but then it's your code's fault, not whatever is happening on the far end with the api!
-			from: { name: fromName, email: fromEmail },//together these are like "From Name <from.email@example.com>"
-			personalizations: [{ to: [{ email: toEmail }] }],
-			subject: subjectText,
+		body: JSON.stringify({
+			from: { name: c.fromName, email: c.fromEmail },
+			personalizations: [{ to: [{ email: c.toEmail }] }],
+			subject: c.subjectText,
 			content: [
-				{ type: 'text/plain', value: bodyText },
-				{ type: 'text/html',  value: bodyHtml },
+				{ type: 'text/plain', value: c.bodyText },
+				{ type: 'text/html',  value: c.bodyHtml },
 			]
 		})
 	}
-	let response, body, responseBodyText, errorFromFetch, errorFromParse
-
-	try {
-		response         = await fetch(url, options)
-		responseBodyText = await response.text()
-	} catch (e1) { errorFromFetch = e1 }
-
-	try {
-		if (response && response.ok && hasText(responseBodyText)) {
-			let contentType = response.headers.get('Content-Type')
-			if (contentType && contentType.includes('application/json')) {	
-				body = JSON.parse(responseBodyText)//can throw, and then it's the api's fault, not your code here
-			}
-		}
-	} catch (e2) { errorFromParse = e2 }
-
-	return {response, body, bodyText: responseBodyText, errorFromFetch, errorFromParse}//and then the caller looks at response.ok, response.status, and so on
-
-	//add response.success so the caller can easily tell if it worked
+	return await ashFetchum(c, q)
 }
 
-//(4 rest, text) alternative that works in a cloudflare worker calling twilio's rest api
-export async function sendTextUsingTwilio(toPhone, messageText) {
-	const base   = process.env.ACCESS_TWILIO_URL
-	const sid    = process.env.ACCESS_TWILIO_SID
-	const auth   = process.env.ACCESS_TWILIO_AUTH
-	const sender = process.env.ACCESS_TWILIO_PHONE
 
-	let url = `${base}/Accounts/${sid}/Messages.json`
-	let options = {
+
+
+
+
+
+
+
+
+export async function sendAmazonText(c) {//c.toPhone, messageText
+	const sns = await loadAmazonTexts()
+	let p = {
+		PhoneNumber: c.toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
+		Message: c.messageText,//must be 160 characters or less
+	}
+	let result, error, success = true
+	q.tick = Now()
+
+	try {
+		result = await sns.publish(p).promise()
+		//sanity check to set success false
+	} catch (e) { error = e; success = false }
+
+	let t = Now()
+	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
+}
+async function sendTwilioText(c) {
+	let q = {
+		resource: process.env.ACCESS_TWILIO_URL+'/Accounts/'+process.env.ACCESS_TWILIO_SID+'/Messages.json',
 		method: 'POST',
 		headers: {
-			'Authorization': 'Basic ' + btoa(sid + ':' + auth),//btoa converts an ascii string to base64
-			'Content-Type': 'application/x-www-form-urlencoded'
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH)
 		},
 		body: new URLSearchParams({
-			From: sender,//the phone number twilio rents to us to send texts from
-			To:   toPhone,//recipient phone number in E.164 format
-			Body: messageText
+			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from
+			To:   c.toPhone,//recipient phone number in E.164 format
+			Body: c.messageText
 		})
 	}
-	let response, body, bodyText, errorFromFetch, errorFromParse
-
-	try {
-		response = await fetch(url, options)
-		bodyText = await response.text()
-	} catch (e1) { errorFromFetch = e1 }
-
-	try {
-		if (response && response.ok && hasText(bodyText)) {
-			let contentType = response.headers.get('Content-Type')
-			if (contentType && contentType.includes('application/json')) {	
-				body = JSON.parse(bodyText)//can throw, and then it's the api's fault, not your code here
-			}
-		}
-	} catch (e2) { errorFromParse = e2 }
-
-	return {response, body, bodyText, errorFromFetch, errorFromParse}//and then the caller looks at response.ok, response.status, and so on
+	return await ashFetchum(c, q)//call my wrapped fetch
 }
 
 
@@ -142,7 +141,7 @@ export async function sendTextUsingTwilio(toPhone, messageText) {
 
 
 
-async function mistyLogflare(s) {
+async function sendLogflareLog(c) {//c.s
 	let q = {
 		skipResponse: true,
 		resource: process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
@@ -152,12 +151,12 @@ async function mistyLogflare(s) {
 			'X-API-KEY': process.env.ACCESS_LOGFLARE_API_KEY
 		},
 		body: JSON.stringify({
-			message: s
+			message: c.s
 		})
 	}
-	return await ashFetchum(q)
+	return await ashFetchum(c, q)
 }
-async function mistyDatadog(s) {
+async function sendDatadogLog(c) {
 	let q = {
 		skipResponse: true,
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
@@ -169,58 +168,28 @@ async function mistyDatadog(s) {
 		body: JSON.stringify({
 			ddsource: 'log-source',
 			ddtags: 'env:production',
-			message: s
+			message: c.s
 		})
 	}
-	return await ashFetchum(q)
+	return await ashFetchum(c, q)
 }
-async function mistySendgrid(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {
-	let q = {
-		resource: process.env.ACCESS_SENDGRID_URL,
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY
-		},
-		body: JSON.stringify({
-			from: { name: fromName, email: fromEmail },
-			personalizations: [{ to: [{ email: toEmail }] }],
-			subject: subjectText,
-			content: [
-				{ type: 'text/plain', value: bodyText },
-				{ type: 'text/html',  value: bodyHtml },
-			]
-		})
-	}
-	return await ashFetchum(q)//call my wrapped fetch
-}
-async function mistyTwilio(toPhone, messageText) {
-	let q = {
-		resource: `${process.env.ACCESS_TWILIO_URL}/Accounts/${process.env.ACCESS_TWILIO_SID}/Messages.json`,
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH)
-		},
-		body: new URLSearchParams({
-			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from
-			To:   toPhone,//recipient phone number in E.164 format
-			Body: messageText
-		})
-	}
-	return await ashFetchum(q)//call my wrapped fetch
-}
+
+
+
+
+
+
 
 //my wrapped fetch
 const defaultFetchTimeLimit = 5*Time.second
-async function ashFetchum(q) {//takes q an object of instructions to make the request
+async function ashFetchum(c, q) {//takes c earlier called parameters and q an object of instructions to make the request
 	if (!q.timeLimit) q.timeLimit = defaultFetchTimeLimit
 	let response, bodyText, body, error, success = true//success until found otherwise
 
 	let a = new AbortController()
 	let t = setTimeout(() => a.abort(), q.timeLimit)//after the time limit, signal the fetch to abort
 	let o = {method: q.method, headers: q.headers, body: q.body, signal: a.signal}
-	q.tick = Now()
+	q.tick = Now()//fetch duration from q.tick to p.tick
 
 	try {
 		if (q.skipResponse) {
@@ -240,7 +209,8 @@ async function ashFetchum(q) {//takes q an object of instructions to make the re
 		}
 	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
 
-	return {q, p: {success, response, bodyText, body, error, tick: Now()}}//returns p an object of details about the response, alongside q all the details of the request
+	let t = Now()
+	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
 }
 
 
@@ -266,11 +236,31 @@ test(() => {
 export async function snippet(card) {
 	log('got the card', look(card))
 
-	let message = 'v2024aug30b.1'
+	let message = 'v2024sep4a.1'
 //	let r = await emailSendgrid(card, message)
 
 	log('end of snippet which may have actually sent something')
 }
+
+async function actualLogflareLog(s) {
+
+}
+async function actualDatadogLog(s) {
+
+}
+async function actualSendgridEmail(card, message) {
+
+}
+async function actualTwilioText(card, message) {
+
+}
+async function actualAmazonEmail(card, message) {
+
+}
+async function actualAmazonText(card, message) {
+
+}
+
 
 
 

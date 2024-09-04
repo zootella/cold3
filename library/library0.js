@@ -98,7 +98,9 @@ class TossError extends Error {//custom error to identify it's one of ours, and 
 
 		//and now add some custom stuff
 		if (watch) this.tossWatch = watch//the object of named watch variables
-		this.tossTime = sayTime(Now())//when this happened
+		let t = Now()
+		this.tossWhen = sayTick(t)//when this happened
+		this.tossTick = t//same tick as a number
 	}
 }
 
@@ -1200,7 +1202,6 @@ export function sayTick(t) {
 	let milliseconds = d.getMilliseconds().toString().padStart(3, '0')
 	return `${weekday} ${hours}h ${minutes}m ${seconds}.${milliseconds}s`
 }
-export function sayTime(t) { return `${sayTick(t)} (${t})` }//also include the tick count as a big number
 
 const _formatDate = {//make formatters once, outside the function
 	y: new Intl.DateTimeFormat('default', { year: 'numeric' }),//default locale is the user's browser, or the edge node's locale
@@ -1681,7 +1682,7 @@ function lookSayLength(n) { return n > 9 ? ` ‹${n}›` : '' }//9 and smaller c
 function lookKeys(o, options) {
 	let keys = []
 	if (o instanceof Error) {//error is a container, but we handle it here as a special case
-		['name', 'message', 'tossWatch', 'tossTime', 'stack', 'cause'].forEach(possibleKey => {//with this white list of key names, watch and time are custom for toss
+		['name', 'message', 'tossWatch', 'tossWhen', 'tossTick', 'stack', 'cause'].forEach(possibleKey => {//with this white list of key names, watch and time are custom for toss
 			if (possibleKey in o) {
 				keys.push(possibleKey)
 			}

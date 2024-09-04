@@ -88,6 +88,24 @@ TODO be able to manually run all the tests these places:
 
 
 
+/*
+2024sep4 notes coding look
+-design this well enough that you improve upon it, rather than replacing it, in the future
+-be able to hand it anything, global, window, and it doesn't choke
+
+moar feature ideas for look
+-single depth and short composed {} and [] stay on one line
+-very long arrays have ... in the middle
+*/
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1041,6 +1059,71 @@ https://docs.datadoghq.com/dashboards/functions/rollup/#rollup-interval-enforced
 you'll want to scrutinize the slow ones
 you could do this by counting them, but also if it's slow, your robin() code logs them to a different tag or whatever of datadog, and the dashboard picks them up
 this is easier and better than trying to search for them later
+
+moar moar than a month later:
+
+i want to use datadog for a variety of purposes. for instance, here are three:
+
+(1: round robin) high frequency performance analysis: logs of different named attempts, their duration, and success, failure, or timeout. there could be a lot of these (many per second). also, the app will need to query them, to find out what's working quickly and reliably, and get percentiles over recent time periods
+
+(2: api record) verbose documentation of third party api performance: here, the logs will be longer, and contain json of objects that go perhaps several references deep. with this use case, there's no querying--this is for archival, only. later on, if an api is misbehaving, developers may go into datadog to look at this record to try to determine the cause
+
+(3: exceptional alert) important and immediate information for developers: let's say a truly exceptional exception occurs, like code that we wrote that's part of our app throws, in a way that should be impossible. this third category of logs (top level uncaught exceptions) needs to be extremely verbose, separate from the other two types, and immediately for the attention of the development team
+
+(4: daily development) current development in deployed environment: when coding, a developer might use console.log to see some variables they're watching in code as it runs. then, when deployed, it can be useful to also see those kinds of logs. on the next push, these log statements might be removed. and, these logs are meant to be throwaway--they won't be saved, and they won't be consistent
+
+before we dive into using datadog, are these use cases known and common practice? are there names for these? are there some others im not thinking of?
+
+your goal is to do it all to datadog
+so it's all fetch skipping the response
+and it's super simple
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
