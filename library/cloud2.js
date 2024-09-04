@@ -1,6 +1,8 @@
 
-import { log, look, toss, Time, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
+import { log, look, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
+
+let _fs; async function loadFs() { if (!_fs) _fs = (await import('fs')).default.promises; return _fs }
 
 let _aws, _ses, _sns//load amazon stuff once and only when needed
 async function loadAmazon() {
@@ -41,16 +43,17 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 
 
-export async function sendAmazonEmail(c) {//c.fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml
+export async function sendAmazonEmail(c) {
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
 	const ses = await loadAmazonEmail()
 	let q = {
-		Source: `${c.fromName} <${c.fromEmail}>`,//must be verified email or domain
-		Destination: { ToAddresses: [c.toEmail] },
+		Source: `${fromName} <${fromEmail}>`,//must be verified email or domain
+		Destination: { ToAddresses: [toEmail] },
 		Message: {
-			Subject: { Data: c.subjectText },
+			Subject: { Data: subjectText },
 			Body: {//both plain text and html for multipart/alternative email format
-				Text: { Data: c.bodyText },
-				Html: { Data: c.bodyHtml }
+				Text: { Data: bodyText },
+				Html: { Data: bodyHtml }
 			}
 		}
 	}
@@ -66,6 +69,7 @@ export async function sendAmazonEmail(c) {//c.fromName, fromEmail, toEmail, subj
 	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
 }
 async function sendSendgridEmail1(c) {
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
 	let q = {
 		resource: process.env.ACCESS_SENDGRID_URL,
 		method: 'POST',
@@ -74,12 +78,12 @@ async function sendSendgridEmail1(c) {
 			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY
 		},
 		body: JSON.stringify({
-			from: { name: c.fromName, email: c.fromEmail },
-			personalizations: [{ to: [{ email: c.toEmail }] }],
-			subject: c.subjectText,
+			from: { name: fromName, email: fromEmail },
+			personalizations: [{ to: [{ email: toEmail }] }],
+			subject: subjectText,
 			content: [
-				{ type: 'text/plain', value: c.bodyText },
-				{ type: 'text/html',  value: c.bodyHtml },
+				{ type: 'text/plain', value: bodyText },
+				{ type: 'text/html',  value: bodyHtml },
 			]
 		})
 	}
@@ -95,11 +99,12 @@ async function sendSendgridEmail1(c) {
 
 
 
-export async function sendAmazonText(c) {//c.toPhone, messageText
+export async function sendAmazonText(c) {
+	let {toPhone, messageText} = c
 	const sns = await loadAmazonTexts()
 	let p = {
-		PhoneNumber: c.toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
-		Message: c.messageText,//must be 160 characters or less
+		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
+		Message: messageText,//must be 160 characters or less
 	}
 	let result, error, success = true
 	q.tick = Now()
@@ -113,6 +118,7 @@ export async function sendAmazonText(c) {//c.toPhone, messageText
 	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
 }
 async function sendTwilioText(c) {
+	let {toPhone, messageText} = c
 	let q = {
 		resource: process.env.ACCESS_TWILIO_URL+'/Accounts/'+process.env.ACCESS_TWILIO_SID+'/Messages.json',
 		method: 'POST',
@@ -122,8 +128,8 @@ async function sendTwilioText(c) {
 		},
 		body: new URLSearchParams({
 			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from
-			To:   c.toPhone,//recipient phone number in E.164 format
-			Body: c.messageText
+			To:   toPhone,//recipient phone number in E.164 format
+			Body: messageText
 		})
 	}
 	return await ashFetchum(c, q)//call my wrapped fetch
@@ -141,7 +147,8 @@ async function sendTwilioText(c) {
 
 
 
-async function sendLogflareLog(c) {//c.s
+async function sendLogflareLog(c) {
+	let {s} = c
 	let q = {
 		skipResponse: true,
 		resource: process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
@@ -151,12 +158,13 @@ async function sendLogflareLog(c) {//c.s
 			'X-API-KEY': process.env.ACCESS_LOGFLARE_API_KEY
 		},
 		body: JSON.stringify({
-			message: c.s
+			message: s
 		})
 	}
 	return await ashFetchum(c, q)
 }
 async function sendDatadogLog(c) {
+	let {s} = c
 	let q = {
 		skipResponse: true,
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
@@ -168,7 +176,7 @@ async function sendDatadogLog(c) {
 		body: JSON.stringify({
 			ddsource: 'log-source',
 			ddtags: 'env:production',
-			message: c.s
+			message: s
 		})
 	}
 	return await ashFetchum(c, q)
@@ -187,15 +195,15 @@ async function ashFetchum(c, q) {//takes c earlier called parameters and q an ob
 	let response, bodyText, body, error, success = true//success until found otherwise
 
 	let a = new AbortController()
-	let t = setTimeout(() => a.abort(), q.timeLimit)//after the time limit, signal the fetch to abort
+	let m = setTimeout(() => a.abort(), q.timeLimit)//after the time limit, signal the fetch to abort
 	let o = {method: q.method, headers: q.headers, body: q.body, signal: a.signal}
 	q.tick = Now()//fetch duration from q.tick to p.tick
 
 	try {
 		if (q.skipResponse) {
-			/* no await */   fetch(q.resource, o); clearTimeout(t)
+			/* no await */   fetch(q.resource, o); clearTimeout(m)
 		} else {
-			response = await fetch(q.resource, o); clearTimeout(t)//fetch was fast enough so cancel the abort
+			response = await fetch(q.resource, o); clearTimeout(m)//fetch was fast enough so cancel the abort
 			if (!q.skipBody) {
 				bodyText = await response.text()
 				if (response?.ok) {
@@ -226,24 +234,41 @@ async function ashFetchum(c, q) {//takes c earlier called parameters and q an ob
 
 
 test(() => {
-	log('hi2')
-	ok(true)
 })
 
 
 
 //let's test this stuff with node on the command line
 export async function snippet(card) {
-	log('got the card', look(card))
 
-	let message = 'v2024sep4a.1'
-//	let r = await emailSendgrid(card, message)
+	let s = sayTick(Now())+' v2024sep4a.4'
+	let r = await actualLogflareLog(s)
 
-	log('end of snippet which may have actually sent something')
+	let l = look(r)
+	logToFile(l)
+	log(l)
 }
 
-async function actualLogflareLog(s) {
 
+
+
+
+
+
+
+
+
+
+export async function logToFile(...a) {
+	let fs = await loadFs()
+	let s = composeLog(a)
+	await fs.appendFile('cloud.log', s+newline)
+}
+
+
+
+async function actualLogflareLog(s) {
+	return await sendLogflareLog({s})
 }
 async function actualDatadogLog(s) {
 
