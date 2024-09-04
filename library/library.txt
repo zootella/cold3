@@ -854,7 +854,7 @@ Authentication (Using Face ID)
 
 1 logs for development (logflare)
 only use while coding
-console.log works great locally, but not pushed
+console dot log works great locally, but not pushed
 confirm that you're getting the same error both places
 doesn't need to be permanent
 needs to be absolutely reliable and instantaneous
@@ -925,7 +925,7 @@ these tables are also different because they drop rows
 
 ok, based on all that, let's snapshot the design concept by looking at javascript function prototypes, and providers
 
-log() - fancied up and sent to console.log
+log() - fancied up and sent to console dot log
 flare() - log to logflare, to see an error once pushed, and then remove it ~ uses logflare
 dog() - goes to datadog, to add a note to the audit trail for real data in production ~ uses datadog
 

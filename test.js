@@ -26,7 +26,7 @@ import { snippet } from './library/cloud2.js'
 //snippet runner
 async function runSnippet() {
 	try {
-//		snippet(card)
+		snippet(card)
 	} catch (e) {
 		log('caught uncaught exception from snippet!', look(e))
 	}
@@ -34,7 +34,7 @@ async function runSnippet() {
 
 //run tests followed by snippet
 let results = await runTests()
-console.log(results.message)
+console.log(results.message)//log out node test results without the tick prefix
 
 await runSnippet()
 

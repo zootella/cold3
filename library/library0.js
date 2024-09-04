@@ -52,8 +52,8 @@ let _passes
 const _tests = []//presenting, tiny tests! all you need for blissful TDD, and in half a screenful of code
 export function test(f) { _tests.push(f) }
 export function ok(assertion) {
-	if (assertion) _passes++
-	else throw new Error('Test not ok, second line number below:')
+	if (assertion) _passes++//count another passed assertion
+	else toss('test')//the assertion is false! throw an exception to get the line number and stop the tests
 }
 export async function runTests() {
 	_passes = 0
@@ -63,8 +63,9 @@ export async function runTests() {
 	let failure
 	for (let i = 0; i < _tests.length; i++) {
 		try {
-			await _tests[i]()
+			await _tests[i]()//run this test to see if it throws, or any call to ok got false
 		} catch (e) {
+			console.error(e)//also send a red message to the browser inspector
 			return {
 				time:    t,
 				error:   e,
@@ -89,15 +90,15 @@ export async function runTests() {
 //  \__\___/|___/___/
 //                   
 
-export function toss(message, watch) {//prepare your own watch object with named variables you'd like to see
-	throw new TossError(message, watch)
-}
+export function toss(message, watch) { throw new TossError(message, watch) }//use like toss('title', {watch1, watch2}) with watch variables for context
 class TossError extends Error {//custom error to identify it's one of ours, and include watch variables
 	constructor(message, watch) {
 		super(message)
 		this.name = 'TossError'
-		if (watch) this.tossWatch = watch//tossWatch and tossTime are our custom additions here
-		this.tossTime = sayTime(Now())
+
+		//and now add some custom stuff
+		if (watch) this.tossWatch = watch//the object of named watch variables
+		this.tossTime = sayTime(Now())//when this happened
 	}
 }
 

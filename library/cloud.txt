@@ -1,0 +1,167 @@
+
+
+/*
+bridges from the library, maybe:
+
+cloud.js - all calls to fetch from our server code to third party apis
+database.js - everything supabase, these two should work both places
+amazon.js - everything that uses the node amazon modules
+
+and so icarus probably can't cover tests that call amazon
+but that's what $ node test.js is for?
+*/
+
+
+
+
+
+
+
+
+
+/*
+summary note about Nuxt/Serverless, and useFetch(), $fetch(), and fetch()
+here, because we're deep in the library, you're using fetch instead of Nuxt's $fetch
+and thus need to add content type header and stringify the body
+
+a nuxt component calling down to a nuxt api handler should use $fetch
+a nuxt api handler can use $fetch
+code that fetches that might be called by nuxt or serverless must use fetch
+
+so then there's useFetch and $fetch
+only use useFetch when you want hydration
+which for 1.0 might be never!
+after that may be just for info graph cards and then search engine optimization
+useFetch is complicated because it returns already reactive variables
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+//here also is where you deal with, what if the api takes forever
+//you need to return a toolong
+//and then much later if it does come back, log that you gave up, but the api did do something
+//it's cool that you've figured out this design for fetch.js to be the place wehre you handle all of this
+//also, there should be like a datadog endpoing which is just a critical and emergency report to developers
+//and that's where all this stuff goes--not api failure, but our own code failure
+//and very slow apis that meant the code here imagined the other side never got back to us, but then did!
+
+//also, let's say it just never never gets back--does cloudflare stop the worker at some point?
+
+
+/*
+A note on fetch, exceptions, catch and throw, JSON parsing and stringification, and controlling what we can.
+
+Exceptions from errors in our own code propagate upwards to be caught and logged at a higher level.
+For example, JSON.stringify throws if it encounters a circular reference or a BigInt property.
+But this is (1) highly unlikely and (2) indicates a serious error in our code.
+So these exceptions are thrown up to be logged for us to fix.
+
+Conversely, these functions are designed so that no matter how external APIs behave, they *cannot* throw up.
+All issues related to API behavior and response are caught and returned as part of the result object, allowing the caller to handle them appropriately.
+Unlike the coding errors mentioned earlier, these API-related issues are both (1) quite likely and (2) completely beyond our control.
+The calling code will detect these issues, log them, and can implement round-robin failover to avoid relying on an API which was working great for weeks, and suddenly becomes problematic.
+
+God, grant me the serenity to accept the things I cannot change,
+Courage to change the things I can,
+And wisdom to know the difference.
+*/
+
+
+
+test(() => {
+//	log('hi2')
+
+
+	//you just realized that icarus itself could probably send an email
+	//not sure if you should do it that way, though
+})
+
+
+
+
+//sendEmail();
+
+
+/*
+what if you don't want to wait for the body
+what if you dont' want to wait at all--ignore any response, and return as quickly as possible
+what if the server takes forever, you give up, and then it reports having done something
+what if the response isn't in json--there's probably a response header and you should only parse after checking it!
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+/*
+this low level server function just
+-uses the api
+-calls fetch
+-never throws an exception, no matter what the api says or does
+-returns an object of results for the caller to look through
+*/
+
+
+	/*
+	url
+	boolean dontWaitForResponse, dontWaitForBody
+	*/
+
+
+
+
+
+function scratch5() {
+
+	//maybe expose your api like this, one big options object
+	ashFetchum({
+		resource: 'https://example.com/api/endpoint',
+		dontWaitForResponse: true,
+		dontWaitForBody: true,
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${key}`,
+			'Content-Type': 'application/json'
+		},
+		bodyToStringify: {
+			personalizations: [
+				{
+					to: [{ email: 'test@example.com' }] // Change to your recipient
+				}
+			],
+			from: { email: 'test@example.com' }, // Change to your verified sender
+			subject: 'Sending with SendGrid is Fun',
+			content: [
+				{
+					type: 'text/plain',
+					value: 'and easy to do anywhere, even with fetch'
+				}
+			]
+		}
+	})
+
+}
+
+
+
+
+
+
+

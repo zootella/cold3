@@ -1,12 +1,12 @@
 
-import { log, look, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
+import { log, look, toss, Time, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 
-let _aws, _ses, _sns//load once and only when needed
+let _aws, _ses, _sns//load amazon stuff once and only when needed
 async function loadAmazon() {
 	if (!_aws) {
-		_aws = (await import('aws-sdk')).default;//this is the await import pattern because in es6 you can't require()
-		_aws.config.update({ region: 'us-east-1' })
+		_aws = (await import('aws-sdk')).default;//use the await import pattern because in es6 you can't require()
+		_aws.config.update({ region: process.env.ACCESS_AMAZON_REGION })//amazon's main location of us-east-1
 	}
 	return _aws
 }
@@ -87,24 +87,26 @@ export async function sendEmailUsingSendGrid(fromName, fromEmail, toEmail, subje
 	} catch (e2) { errorFromParse = e2 }
 
 	return {response, body, bodyText: responseBodyText, errorFromFetch, errorFromParse}//and then the caller looks at response.ok, response.status, and so on
+
+	//add response.success so the caller can easily tell if it worked
 }
 
 //(4 rest, text) alternative that works in a cloudflare worker calling twilio's rest api
 export async function sendTextUsingTwilio(toPhone, messageText) {
-	const urlBase   = process.env.ACCESS_TWILIO_URL
-	const sid       = process.env.ACCESS_TWILIO_SID
-	const auth      = process.env.ACCESS_TWILIO_AUTH
-	const fromPhone = process.env.ACCESS_TWILIO_PHONE
+	const base   = process.env.ACCESS_TWILIO_URL
+	const sid    = process.env.ACCESS_TWILIO_SID
+	const auth   = process.env.ACCESS_TWILIO_AUTH
+	const sender = process.env.ACCESS_TWILIO_PHONE
 
-	let url = `${urlBase}/2010-04-01/Accounts/${sid}/Messages.json`
+	let url = `${base}/Accounts/${sid}/Messages.json`
 	let options = {
 		method: 'POST',
 		headers: {
-			'Authorization': 'Basic ' + btoa(`${sid}:${auth}`),//btoa converts an ascii string to base64
+			'Authorization': 'Basic ' + btoa(sid + ':' + auth),//btoa converts an ascii string to base64
 			'Content-Type': 'application/x-www-form-urlencoded'
 		},
 		body: new URLSearchParams({
-			From: fromPhone,//the phone number twilio rents to us to send texts from
+			From: sender,//the phone number twilio rents to us to send texts from
 			To:   toPhone,//recipient phone number in E.164 format
 			Body: messageText
 		})
@@ -140,22 +142,127 @@ export async function sendTextUsingTwilio(toPhone, messageText) {
 
 
 
+async function mistyLogflare(s) {
+	let q = {
+		skipResponse: true,
+		resource: process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'X-API-KEY': process.env.ACCESS_LOGFLARE_API_KEY
+		},
+		body: JSON.stringify({
+			message: s
+		})
+	}
+	return await ashFetchum(q)
+}
+async function mistyDatadog(s) {
+	let q = {
+		skipResponse: true,
+		resource: process.env.ACCESS_DATADOG_ENDPOINT,
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY
+		},
+		body: JSON.stringify({
+			ddsource: 'log-source',
+			ddtags: 'env:production',
+			message: s
+		})
+	}
+	return await ashFetchum(q)
+}
+async function mistySendgrid(fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml) {
+	let q = {
+		resource: process.env.ACCESS_SENDGRID_URL,
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY
+		},
+		body: JSON.stringify({
+			from: { name: fromName, email: fromEmail },
+			personalizations: [{ to: [{ email: toEmail }] }],
+			subject: subjectText,
+			content: [
+				{ type: 'text/plain', value: bodyText },
+				{ type: 'text/html',  value: bodyHtml },
+			]
+		})
+	}
+	return await ashFetchum(q)//call my wrapped fetch
+}
+async function mistyTwilio(toPhone, messageText) {
+	let q = {
+		resource: `${process.env.ACCESS_TWILIO_URL}/Accounts/${process.env.ACCESS_TWILIO_SID}/Messages.json`,
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH)
+		},
+		body: new URLSearchParams({
+			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from
+			To:   toPhone,//recipient phone number in E.164 format
+			Body: messageText
+		})
+	}
+	return await ashFetchum(q)//call my wrapped fetch
+}
+
+//my wrapped fetch
+const defaultFetchTimeLimit = 5*Time.second
+async function ashFetchum(q) {//takes q an object of instructions to make the request
+	if (!q.timeLimit) q.timeLimit = defaultFetchTimeLimit
+	let response, bodyText, body, error, success = true//success until found otherwise
+
+	let a = new AbortController()
+	let t = setTimeout(() => a.abort(), q.timeLimit)//after the time limit, signal the fetch to abort
+	let o = {method: q.method, headers: q.headers, body: q.body, signal: a.signal}
+	q.tick = Now()
+
+	try {
+		if (q.skipResponse) {
+			/* no await */   fetch(q.resource, o); clearTimeout(t)
+		} else {
+			response = await fetch(q.resource, o); clearTimeout(t)//fetch was fast enough so cancel the abort
+			if (!q.skipBody) {
+				bodyText = await response.text()
+				if (response?.ok) {
+					if (response.headers.get('Content-Type')?.includes('application/json')) {
+						body = JSON.parse(bodyText)//can throw, and then it's the api's fault, not your code here
+					}
+				} else {
+					success = false//no success because response not ok
+				}
+			}
+		}
+	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
+
+	return {q, p: {success, response, bodyText, body, error, tick: Now()}}//returns p an object of details about the response, alongside q all the details of the request
+}
 
 
+
+
+
+
+
+
+
+
+
+
+
+test(() => {
+	log('hi2')
+	ok(true)
+})
 
 
 
 //let's test this stuff with node on the command line
-
-
-
-
-
-
-
-
-
-
 export async function snippet(card) {
 	log('got the card', look(card))
 
