@@ -1825,7 +1825,7 @@ test(() => {
 	r = look40Data(new BigUint64Array(2)); ok(r.type == 'BigUint64Array' && r.n == 16)
 })
 function look50Containers(q) {
-	if (q instanceof Error)    return {type: 'Error',  container: '∈∋'}//use element of and contains as member characters
+	if (q instanceof Error)    return {type: 'Error',  container: '⁅⁆'}//square brackets with quills to be like E for error
 	else if (Array.isArray(q)) return {type: 'array',  container: '[]', n: q.length}
 	else                       return {type: 'object', container: '{}', n: Object.keys(q).length}//treat whatever else we're looking at as just a generic javascript object
 }
@@ -1841,7 +1841,7 @@ function lookSayString(s) {
 		m = s.split('\n').map(line => line.trim()).join(newline)//unindent
 		c = `"${m}"`
 	} else {
-		m = s.replace(/\t/g, '→').replace(/[\r\n]+/g, '¶')//modified for display
+		m = s.replace(/\t/g, '»').replace(/[\r\n]+/g, '¶')//modified for display
 		if (m.length < lookLineLengthLimit) {
 			c = `"${m}"`
 		} else {
@@ -1867,6 +1867,67 @@ function lookSayFunction(f) {
 
 
 
+function lookSayString2(s) {
+
+	/*
+	if the first word in the string ends Error, treat s as the call stack from an exception
+	leave newlines in place
+	fix newlines so just \n is \r\n
+	lines start four spaces, replace those with »
+
+	otherwise, treat s as a string
+	replace tabs with »
+	replace newlines, any stretch, with ¶
+	if there are any tabs or newlines, or there are both double and single quotes, bound with `angle`
+	otherwise bound with "double" or 'single', the one that's unique
+	if it's too long, end ... instead of the closing quote
+	*/
+
+
+
+}
+
+
+test(() => {
+
+	let s = 'some text input'
+	//let's write some regular expressions, r, to look at string s and return edited versions
+
+	//TODO 1 parse out the first word in the string. words could be surrounded by whitespace, the edges of the string, or punctuation characters
+	//TODO 2 once we've got the first word w, determine if it ends with the text "Error"
+
+	//TODO 3 break s into lines of text. in the string, lines may be \n unix or \r\n windows
+	//TODO 4 lines may start with four spaces exactly, "    " for those that do, replace those four spaces with »
+	//TODO 5 put the string back together, formatting all newlines as windows \r\n
+
+	//TODO 6 does s contain any line break characters, \r or \n?
+	//TODO 7 does s contain any \t tab characters? get a boolean true false for these two
+
+	//TODO 8 s may contain line breaks, which could be represented by any continuous stretch of the characters \r and \n. for instance, a stretch might be \n or \r\n\r\n or \n\n. replace each of these stretches with the pilcrow character ¶
+	//TODO 9 replace any tabs in s with »
+
+	//TODO 10 true if s contains (any tab or newline character) OR (both one or many single and double quote characters). so this means we're looking for one or more \t or \r or \n, or if none of those, then we're looking for both " and ' to be present in the string
+
+
+
+})
+
+test(() => {
+	let s = '', b
+
+	b = (s.trim().split(/[\s:]+/))[0].endsWith('Error')//determine if the first word in s ends Error
+
+	//split s into lines, filter out blank lines, replace 4 spaces at the start with a double arrow, and reassemble
+	let s2 = s.split(/[\r\n]+/).filter(line => line.trim() != '').map(line => line.replace(/^ {4}/, '»')).join(newline)
+
+	s = `ABC`
+	b = /[\t\r\n]/.test(s)//true if s contains any tabs or newlines
+	let s3 = s.replace(/\t/g, '»').replace(/[\r\n]+/g, '¶')//show them
+
+	//true if s has tab or newlines, or both single and double quotes
+	b = (s.includes('\t') || s.includes('\r') || s.includes('\n')) || (s.includes(`"`) && s.includes(`'`))
+
+})
 
 
 

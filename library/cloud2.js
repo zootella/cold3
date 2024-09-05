@@ -7,7 +7,7 @@ let _fs; async function loadFs() { if (!_fs) _fs = (await import('fs')).default.
 let _aws, _ses, _sns//load amazon stuff once and only when needed
 async function loadAmazon() {
 	if (!_aws) {
-		_aws = (await import('aws-sdk')).default;//use the await import pattern because in es6 you can't require()
+		_aws = (await import('aws-sdk')).default//use the await import pattern because in es6 you can't require()
 		_aws.config.update({ region: process.env.ACCESS_AMAZON_REGION })//amazon's main location of us-east-1
 	}
 	return _aws
