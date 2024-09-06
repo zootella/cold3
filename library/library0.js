@@ -1835,19 +1835,28 @@ test(() => {
 	r = look50Containers({a: 1, b: 2}); ok(r.type == 'object' && r.n == 2)
 })
 
-function lookSayString(s) {
-	let c, m//s given text, m modified, c composed to return
-	if (s.includes('Error:')) {//again, we have to special case error, ugh
-		m = s.split('\n').map(line => line.trim()).join(newline)//unindent
-		c = `"${m}"`
-	} else {
-		m = s.replace(/\t/g, '»').replace(/[\r\n]+/g, '¶')//modified for display
-		if (m.length < lookLineLengthLimit) {
-			c = `"${m}"`
-		} else {
-			c = `"${m.slice(0, lookLineLengthLimit)}...`
-		}
-	}
+function lookSayString(s) {//s is given text
+
+	//true if s looks like it's a stack trace from an exception e.stack
+	let stack = s.includes('Error') && s.includes('\n    ')
+
+	//display the string like "text", choosing single or angle quotes to look good around it
+	let quotes
+	if      (stack)                                                    quotes = '``'//stack trace,
+	else if (s.includes('\t') || s.includes('\r') || s.includes('\n')) quotes = '``'//any tab or line manipulation,
+	else if (s.includes(`"`) && s.includes(`'`))                       quotes = '``'//single and double quotes, use ``
+	else if (s.includes(`"`))                                          quotes = `''`//only double quotes, use ''
+	else                                                               quotes = `""`//most of the time, use ""
+
+	let m//m is modified for display
+	if (stack) m = s.split(/[\r\n]+/).filter(line => line.trim() != '').map(line => line.replace(/^ {4}/, '»')).join(newline)//to prepare a stack trace for display, split s into lines, filter out blank lines, replace 4 spaces at the start with a double arrow, and reassemble
+	else m = s.replace(/\t/g, '»').replace(/[\r\n]+/g, '¶')//otherwise, show tabs and newlines
+
+	//compose the display text c like "short" or "long... that ends ellipsis instead of closing quote
+	let c//c is composed to return
+	if (stack)                               c = quotes[0] + m                               + quotes[1]//stack trace
+	else if (m.length < lookLineLengthLimit) c = quotes[0] + m                               + quotes[1]//short enough
+	else                                     c = quotes[0] + m.slice(0, lookLineLengthLimit) + '...'//too long
 	return c
 }
 function lookSayFunction(f) {
@@ -1867,67 +1876,7 @@ function lookSayFunction(f) {
 
 
 
-function lookSayString2(s) {
 
-	/*
-	if the first word in the string ends Error, treat s as the call stack from an exception
-	leave newlines in place
-	fix newlines so just \n is \r\n
-	lines start four spaces, replace those with »
-
-	otherwise, treat s as a string
-	replace tabs with »
-	replace newlines, any stretch, with ¶
-	if there are any tabs or newlines, or there are both double and single quotes, bound with `angle`
-	otherwise bound with "double" or 'single', the one that's unique
-	if it's too long, end ... instead of the closing quote
-	*/
-
-
-
-}
-
-
-test(() => {
-
-	let s = 'some text input'
-	//let's write some regular expressions, r, to look at string s and return edited versions
-
-	//TODO 1 parse out the first word in the string. words could be surrounded by whitespace, the edges of the string, or punctuation characters
-	//TODO 2 once we've got the first word w, determine if it ends with the text "Error"
-
-	//TODO 3 break s into lines of text. in the string, lines may be \n unix or \r\n windows
-	//TODO 4 lines may start with four spaces exactly, "    " for those that do, replace those four spaces with »
-	//TODO 5 put the string back together, formatting all newlines as windows \r\n
-
-	//TODO 6 does s contain any line break characters, \r or \n?
-	//TODO 7 does s contain any \t tab characters? get a boolean true false for these two
-
-	//TODO 8 s may contain line breaks, which could be represented by any continuous stretch of the characters \r and \n. for instance, a stretch might be \n or \r\n\r\n or \n\n. replace each of these stretches with the pilcrow character ¶
-	//TODO 9 replace any tabs in s with »
-
-	//TODO 10 true if s contains (any tab or newline character) OR (both one or many single and double quote characters). so this means we're looking for one or more \t or \r or \n, or if none of those, then we're looking for both " and ' to be present in the string
-
-
-
-})
-
-test(() => {
-	let s = '', b
-
-	b = (s.trim().split(/[\s:]+/))[0].endsWith('Error')//determine if the first word in s ends Error
-
-	//split s into lines, filter out blank lines, replace 4 spaces at the start with a double arrow, and reassemble
-	let s2 = s.split(/[\r\n]+/).filter(line => line.trim() != '').map(line => line.replace(/^ {4}/, '»')).join(newline)
-
-	s = `ABC`
-	b = /[\t\r\n]/.test(s)//true if s contains any tabs or newlines
-	let s3 = s.replace(/\t/g, '»').replace(/[\r\n]+/g, '¶')//show them
-
-	//true if s has tab or newlines, or both single and double quotes
-	b = (s.includes('\t') || s.includes('\r') || s.includes('\n')) || (s.includes(`"`) && s.includes(`'`))
-
-})
 
 
 
