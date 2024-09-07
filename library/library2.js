@@ -238,6 +238,32 @@ you also want to find the best way to detect serverless framework lambda develop
 
 
 
+//2024sep7 took another attempt at this:
+export function getExecutionFingerprint() {
+
+	let z = (new Date()).getTimezoneOffset()+''//works everywhere, clue as to time zone computer is running in
+	let v = typeof process != 'undefined' && process?.versions?.v8//works in local node and lambda
+	let n = typeof process != 'undefined' && process?.versions?.node//also only node and lambda
+	let a = typeof navigator != 'undefined' && navigator?.userAgent//works on desktop and mobile browsers
+
+	//nothing really to detect or fingerpint cloudflare workers from here, but the request has .cf wiht all kinds of stuff
+
+	let o = {}
+	if (z) o.z = z
+	if (v) o.v = v
+	if (n) o.n = n
+	if (a) o.a = a
+	let s = JSON.stringify(o)
+	return s
+}
+
+
+
+
+
+
+
+
 
 
 

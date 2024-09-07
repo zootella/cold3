@@ -332,21 +332,3 @@ async function testTextTwilio(card, message) {//not approved yet
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
