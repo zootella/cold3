@@ -94,7 +94,7 @@ function saveText(s) { return squareEncode(s) }
 function readText(s) { return squareDecode(s) }
 
 function saveIntAsText(i) { return intToText(i) }
-function readIntAsText(s) { return textToInt(i) }
+function readIntAsText(s) { return textToInt(s) }
 
 //  _                          ___  
 // | | __ _ _   _  ___ _ __   / _ \ 
@@ -434,7 +434,11 @@ export async function writeRow(newValue) {
 
 
 
-
+//for the ping system, obviously refactor
+export async function database_pingCount() {
+	log('here we are')
+	return readIntAsText(await readRow())//currently hardcoded into one cell of one table
+}
 
 
 

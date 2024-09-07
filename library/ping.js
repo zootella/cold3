@@ -16,7 +16,7 @@ ping5 worker to amazon, lambda time                                     /api/pin
 //just to share around the ping pages and apis
 
 
-export function pingVersion() { return 'v2024sep7g' }
+export function pingVersion() { return 'v2024sep7h' }
 
 
 export function pingTime() {
