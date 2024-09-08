@@ -2,13 +2,13 @@
 
 import { pingTime, pingEnvironment, pingVersion } from '../../library/ping.js'
 
-let message = `${pingTime()}, ${pingEnvironment()}, ${pingVersion()}, ping2done`
+let note = `page ${pingTime()}, ${pingEnvironment()}, ${pingVersion()}, ping2done`
 
 </script>
 <template>
 
 <div>
-<p>ping2: {{ message }}</p>
+<p>ping2: script setup says: {{ note }}</p>
 </div>
 
 </template>

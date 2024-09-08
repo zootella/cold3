@@ -1,7 +1,7 @@
 <template>
 
 <div>
-<p>ping1: ping1done</p>
+<p>ping1: template says: ping1done</p>
 </div>
 
 </template>

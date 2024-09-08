@@ -10,8 +10,8 @@ export default defineEventHandler((event) => {
 
 
 
-		note = `${pingTime()}, ${pingEnvironment()}, ${pingVersion()}, ping3done`
+		note = `worker ${pingTime()}, ${pingEnvironment()}, ${pingVersion()}, ping3done`
 
-	} catch (e) { note = 'ping4error: '+e.stack }
+	} catch (e) { note = 'ping3 worker error: '+e.stack }
 	return {note}
 })

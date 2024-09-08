@@ -1,37 +1,17 @@
 
-import { pingTime, pingEnvironment, pingVersion } from '@/library/ping.js'
+
+
 
 export default defineEventHandler(async (event) => {
 	let note = ''
 	try {
 
-		let amazonTick = 6
-
 		let t = Date.now()
-		if (true) {
-			let response = await $fetch('https://api.net23.cc/ping5', {method: 'POST'})
-			amazonTick = response.tick
-		}
+		let lambdaNote = (await $fetch('https://api.net23.cc/ping5')).note
 		let duration = Date.now() - t
 
-		note = `${pingTime()}, ${pingEnvironment()}, ${pingVersion()}, amazon tick ${amazonTick} in ${duration}ms, ping5done`
+		note = `lambda took ${duration}ms to say: ${lambdaNote}`
 
-	} catch (e) { note = 'ping5error: '+e.stack }
+	} catch (e) { note = 'ping5 worker error: '+e.stack }
 	return {note}
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

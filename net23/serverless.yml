@@ -29,6 +29,12 @@ functions:
       - http:
           path: hello2
           method: get
+  ping5:
+    handler: dist/ping5.handler
+    events:
+      - http:
+          path: ping5
+          method: get
 
 resources:
   Resources: # Yes, it's correct to have resources twice and nested with different capitalization

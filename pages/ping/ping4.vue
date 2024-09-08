@@ -8,7 +8,7 @@ let duration = Date.now() - t
 <template>
 
 <div>
-<p>ping4: {{ data.note }}, page in {{ duration }}ms</p>
+<p>ping4: fetch to worker to database took {{ duration }}ms to say: {{ data.note }}</p>
 </div>
 
 </template>
