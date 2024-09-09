@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
 		let count = await database_pingCount()
 		let duration = Date.now() - t
 
-		note = `worker ${pingEnvironment()}, database took ${duration}ms to get count ${count}, ping4done`
+		note = `worker says: database took ${duration}ms to get count ${count}, ${pingEnvironment()}, ping4done`
 
 	} catch (e) { note = 'ping4 worker error: '+e.stack }
 	return {note}

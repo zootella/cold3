@@ -1,20 +1,5 @@
 
-import { pingTime, pingEnvironment, pingVersion } from '../../library/ping.js'
-
-
-
-
-import { log } from '../../library/library0.js'
-import { Tag } from '../../library/library1.js'
-import { senseEnvironment } from '../../library/library2.js'
-import { actualLogflareLog } from '../../library/cloud2.js'
-
-
-
-
-
-
-
+import { pingEnvironment } from '../../library/ping.js'
 
 
 export const handler = async (event) => {
@@ -25,11 +10,7 @@ export const handler = async (event) => {
 
 
 
-		note = `lambda ${pingTime()}, ${pingEnvironment()}, ${pingVersion()}, ping5done`
-
-
-note += ` ${senseEnvironment()}`
-console.log(note)
+		note = `lambda says: ${pingEnvironment()}, ping5done`
 
 	} catch (e) { note = 'ping5 lambda error: '+e.stack }
 	return { statusCode: 200, body: JSON.stringify({note}) }
