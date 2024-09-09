@@ -1,9 +1,9 @@
 
 import { log, look, toss, Now } from '@/library/library0.js'
-import { dog, flare, snippet2, setCloudflareEvent } from '@/library/cloud2.js'
+import { dog, flare, snippet2, saveCloudEvent } from '@/library/cloud2.js'
 
 export default defineEventHandler(async (event) => {
-	setCloudflareEvent(event)
+	saveCloudEvent(event)
 	let o = {}
 	try {
 

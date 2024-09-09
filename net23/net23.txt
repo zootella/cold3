@@ -913,6 +913,67 @@ and then in lambda code like hello2.js:
 
 you don't have to mess with the aws dashboard, which is great
 
+       _             
+ _ __ (_)_ __   __ _ 
+| '_ \| | '_ \ / _` |
+| |_) | | | | | (_| |
+| .__/|_|_| |_|\__, |
+|_|            |___/ 
+
+2024sep setup ping pages and got service providers to hit them and generate nice graphs
+
+cold3.cc/ping/ping1                                            -a nuxt page with no script tag
+cold3.cc/ping/ping2                                            -a nuxt page with a trivial script tag
+cold3.cc/ping/ping3 > cold3.cc/api/ping3                       -a nuxt page that fetches to a trivial nuxt api
+cold3.cc/ping/ping4 > cold3.cc/api/ping4 > Supabase            -all that, but the server api code queries the global count from supabase
+cold3.cc/ping/ping5 > cold3.cc/api/ping5 > api.net23.cc/ping5  -instead of calling supabase, fetches to our own trivial lambda
+
+example output, deployed to cloud, curl and browser:
+
+ping1: template says: ping1done (curl)
+ping1: template says: ping1done (browser)
+
+ping2: script setup says: CloudPageServer:Envi.Proc.Scri.Self.Serv.Zulu,           1725904851660, v2024sep8b, ping2done (curl)
+ping2: script setup says: CloudPageClient:Achr.Asaf.Awin.Docu.Doma.Self.Stor.Wind, 1725904716570, v2024sep8b, ping2done (browser)
+
+ping3: fetch to worker took 0ms to say: worker says: CloudNuxtServer:Aclo.Envi.Proc.Scri.Self.Zulu, 1725904908685, v2024sep8b, ping3done (curl)
+ping3: fetch to worker took 2ms to say: worker says: CloudNuxtServer:Aclo.Envi.Proc.Scri.Self.Zulu, 1725904728918, v2024sep8b, ping3done (browser)
+
+ping4: fetch to worker to database took 494ms to say: worker says: database took 494ms to get count 569, CloudNuxtServer:Aclo.Envi.Proc.Scri.Self.Zulu, 1725904949932, v2024sep8b, ping4done (curl)
+ping4: fetch to worker to database took   2ms to say: worker says: database took 217ms to get count 569, CloudNuxtServer:Aclo.Envi.Proc.Scri.Self.Zulu, 1725904740498, v2024sep8b, ping4done (browser)
+
+ping5: fetch to worker to lambda took 354ms to say: worker says: lambda took  354ms to say: lambda says: CloudLambda:Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1725904979928, v2024sep8b, ping5done (curl)
+ping5: fetch to worker to lambda took   2ms to say: worker says: lambda took 1277ms to say: lambda says: CloudLambda:Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1725904754597, v2024sep8b, ping5done (browser)
+
+notes making sense of these results
+ping2, curl is from server rendering, so zulu time, and browser replaces that with client rendering, which has a window object
+ping3, server render adds 0ms because it's all happening at once; senseEnvironment the same because it's always from a fetch to the nuxt api
+ping4 and ping5, real times are on curl page, when re-rendered on the client it must cache or skip or something so you get 2ms instead of nearly half a second
+and while supabase takes a half second, lambda frequently takes over a second
+
+looked for service providers with these capabilities:
+-simple request, don't emulate a rendering, code-running browser
+-try from all over the world, randomly
+-look for text in the page that you get
+-say and show how long it took, average and higher percentile
+
+trying out:
+-pingdom.com - västerås now owned by solarwinds in austin, $33/month, strange duplication of uptime and speed, graphs good
+-checklyhq.com - berlin, $0 hobby plan, graphs great, nicely formatted html result view
+-uptime.com - nyc, $20/month, graphs ok
+so you'll probably just go with checkly
+they talk about complex stuff with playwright, but you found their simple thing
+
+for each of their dashboards, you found and set:
+-name
+-url
+-look for text like "ping5done" in page
+-frequency, 1hr
+-round robin or lots of random global locations
+
+it'll be interesting to see if this affects your cloudflare and amazon bills :0
+and this was a good trail, other than senseEnvironment() being a messy day in the bike shed
+
 											_     _   _                  _             _   
  _ __ ___ _ __   ___ | |_  | |_| |__   ___   _ __ | | __ _ _ __ | |_ 
 | '__/ _ \ '_ \ / _ \| __| | __| '_ \ / _ \ | '_ \| |/ _` | '_ \| __|

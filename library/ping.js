@@ -1,10 +1,6 @@
 
 //no imports, ping's library is lean to be fast as possible
 
-
-
-
-
 //                                            _                                      _   
 //  ___  ___ _ __  ___  ___    ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
 // / __|/ _ \ '_ \/ __|/ _ \  / _ \ '_ \ \ / / | '__/ _ \| '_ \| '_ ` _ \ / _ \ '_ \| __|
@@ -12,8 +8,10 @@
 // |___/\___|_| |_|___/\___|  \___|_| |_|\_/ |_|_|  \___/|_| |_|_| |_| |_|\___|_| |_|\__|
 //                                                                                       
 
-export function pingEnvironment() { return `${senseEnvironment()}, ${Date.now()}, v2024sep8b` }
-//the insanity that follows is you trying to be able to sense what part of this full stack javascript is running this call
+//sense the environment and report fingerprint details like:
+//"CloudLambda:Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1725904754597, vYYYYmmmDl"
+export function pingEnvironment() { return `${senseEnvironment()}, ${Date.now()}, v2024sep9a` }//version for just this file
+//the insanity that follows is you trying to be able to sense what and where is running us
 const _senseEnvironment = `
                Aclo Clie Docu Doma Loca                Lamb Node Proc Regi Requ Scri Self Serv Stor      Zulu >Determining
                                         Eigh Envi Glob      Node Proc                                         >LocalNode
@@ -31,7 +29,7 @@ export function senseEnvironment() {
 	function type(t) { return t != 'undefined' }
 	function text(o) { return typeof o == 'string' && o != '' }
 	let a = []
-	if ((new Date()).getTimezoneOffset() === 0) a.push('Zulu')//deployed environments are in utc
+	if ((new Date()).getTimezoneOffset() === 0)  a.push('Zulu')//deployed environments are in utc
 	if (type(typeof process)) {                  a.push('Proc')//has process object iself
 		if (text(process?.versions?.v8))           a.push('Eigh')//v8 version
 		if (text(process?.versions?.node))         a.push('Node')//node version
@@ -41,8 +39,8 @@ export function senseEnvironment() {
 		if (process?.client)                       a.push('Clie')//nuxt client
 		if (process?.server)                       a.push('Serv')//nuxt server
 	}
-	if (type(typeof navigator) && text(navigator?.userAgent)) {
-		if (navigator.userAgent.includes('Android'))    a.push('Aand')//only user agent tags start with A
+	if (type(typeof navigator) && text(navigator?.userAgent)) {//start tags from the user agent with A
+		if (navigator.userAgent.includes('Android'))    a.push('Aand')
 		if (navigator.userAgent.includes('iOS'))        a.push('Aios')
 		if (navigator.userAgent.includes('iPhone'))     a.push('Aiph')
 		if (navigator.userAgent.includes('iPad'))       a.push('Aipa')
@@ -56,7 +54,7 @@ export function senseEnvironment() {
 	}
 	if (type(typeof location) && text(location?.hostname)) {
 		if (location.hostname.includes('localhost')) a.push('Loca')
-		if (location.hostname.includes('.'))         a.push('Doma')//domain name
+		if (location.hostname.includes('.'))         a.push('Doma')//dot indicates deployed domain name
 	}
 	if (type(typeof global))        a.push('Glob')
 	if (type(typeof require))       a.push('Requ')
@@ -91,53 +89,6 @@ export function senseEnvironment() {
 	return winningTitle+':'+s
 }
 
-
-
-
-
-
-
-
-
-/*
-ping1 cloudflare pages, nuxt page without script at all
-ping2 cloudflare workers, server time with useState, server function
-
-ping3 cloudflare workers, server time with useFetch, server true        /api/ping/ping3
-ping4 worker to supabase, database query                                /api/ping/ping4
-ping5 worker to amazon, lambda time                                     /api/ping/ping5
-
-
-example output deployed below, using curl to save html pages without running script on them
-running locally there's more variety as wrangler, nitro and serverless framework emulate things
-these are ready to go, now you just hand them to pingdom
-
-ping1:
-  template says:
-    ping1done
-
-ping2:
-  script setup says:
-    page 9/7/2024, 11:47:50 PM Coordinated Universal Time, 1725752870604, {z:0}, v2024sep7k, ping2done
-
-ping3:
-  fetch to worker took 0ms to say:
-    worker 9/7/2024, 11:47:54 PM Coordinated Universal Time, 1725752874218, {z:0,a:Cloudflare-Workers}, v2024sep7k, ping3done
-
-ping4:
-  fetch to worker to database took 358ms to say:
-    worker 9/7/2024, 11:47:58 PM Coordinated Universal Time, 1725752878179, {z:0,a:Cloudflare-Workers}, v2024sep7k, database took 358ms to get count 553, ping4done
-
-ping5:
-  fetch to worker to lambda took 217ms to say:
-    lambda took 217ms to say:
-      lambda 9/7/2024, 11:48:02 PM Coordinated Universal Time, 1725752882270, {z:0,v:11.3.244.8-node.23,n:20.16.0}, v2024sep7k, ping5done
-
-*/
-
-
-//here's the ping library, which loads without loading everything else
-//just to share around the ping pages and apis
 
 
 
