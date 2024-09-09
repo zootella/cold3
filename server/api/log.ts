@@ -1,19 +1,24 @@
 
-import { log, look, toss } from '@/library/library0.js'
-import { dog, flare, actualLogflareLog, actualDatadogLog } from '@/library/cloud2.js'
+import { log, look, toss, Now } from '@/library/library0.js'
+import { dog, flare, snippet2, setCloudflareEvent } from '@/library/cloud2.js'
 
 export default defineEventHandler(async (event) => {
+	setCloudflareEvent(event)
 	let o = {}
 	try {
 
 		let body = await readBody(event)
 
 		let message = body.message
+		let t = Now()
 		await dog(message)
-		await flare(message)
+		let duration = Now() - t
+
+		snippet2()
 
 		o.message = 'hi from api log'
 		o.mirroredBody = body
+		o.duration = duration//how long it took to await for datadog
 		setResponseStatus(event, 200)
 	} catch (e) {
 		log('count caught: ', e)

@@ -14,7 +14,8 @@ async function clickedEnter() {
 	await logToServer(message)
 }
 async function logToServer(message) {
-	await $fetch('/api/log', {method: 'POST', body: {message}})
+	let r = await $fetch('/api/log', {method: 'POST', body: {message}})
+	console.log(r)
 }
 
 

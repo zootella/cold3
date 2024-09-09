@@ -1,10 +1,13 @@
 
+//import modules
 import { log, look, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 import { senseEnvironment } from './ping.js'
 
+//node-style imports
 let _fs; async function loadFs() { if (!_fs) _fs = (await import('fs')).default.promises; return _fs }
 
+//modules that are demand, and may be lambda-only
 let _aws, _ses, _sns//load amazon stuff once and only when needed
 async function loadAmazon() {
 	if (!_aws) {
@@ -16,24 +19,18 @@ async function loadAmazon() {
 async function loadAmazonEmail() { if (!_ses) _ses = new (await loadAmazon()).SES(); return _ses }
 async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SNS(); return _sns }
 
+//global references to use throughout this invocation we find ourselves in for this request
+let _event = null//the event or request object cloudflare workers or lambda hand us at the start of running for this request
+export function saveCloudEvent(e) { _event = e }//call at the start of both lambda and worker request handlers
+export function getCloudEvent() { return _event }//now you can get it when you need it, rather than passing it everywhere
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+let _promise = null//a glomed together promise we need to lambda to wait for
+function awaitKeepAlive(p) {//not awaiting a promise doesn't mean our worker or lambda will, thus, you must call awaitKeepAlive!
+	if (_event?.waitUntil) _event.waitUntil(p)//we're in cloudflare, use their nice api
+	else if (_promise === null) _promise = p//we're like in a website barnes and noble or something, save the promise manually
+	else _promise = Promise.all([_promise, p])//or glom it together with one we already saved
+}
+function returnKeepAlive() { return _promise }//only in lambda, return the promise we should keep running for
 
 
 
@@ -141,6 +138,14 @@ async function sendTwilioText(c) {
 
 
 
+export async function snippet2() {
+	/*
+	await dog('hi in snippet2')
+	await dog(typeof getCloudflareEvent())
+	*/
+}
+
+
 
 
 
@@ -167,7 +172,6 @@ function logToLogflare(s) {
 
 
 
-
 async function sendLogflareLog(c) {
 	let {s} = c
 	let q = {
@@ -187,7 +191,7 @@ async function sendLogflareLog(c) {
 async function sendDatadogLog(c) {
 	let {s} = c
 	let q = {
-		skipResponse: false,//clever, but doesn't work well on cloudflare
+		skipResponse: false,//clever, but doesn't work well on cloudflare, much safer and easier to await everything
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
 		method: 'POST',
 		headers: {
@@ -224,7 +228,7 @@ function logToDatadog(s) {
 */
 
 
-
+//simplify, convert the time limit and event.waitUntil into notes
 
 
 //my wrapped fetch
@@ -240,7 +244,15 @@ async function ashFetchum(c, q) {//takes c earlier called parameters and q an ob
 
 	try {
 		if (q.skipResponse) {
-			/* no await */   fetch(q.resource, o); clearTimeout(m)
+
+
+			let p = fetch(q.resource, o)//get the promise instead of awaiting here for it to resolve
+			if (event?.waitUntil) event.waitUntil(p)//tell cloudflare to not tear down the worker until p resolves
+			p.then(() => { clearTimeout(m) })
+//			clearTimeout(m)//should we have even set a timeout here to begin with?
+
+
+
 		} else {
 			response = await fetch(q.resource, o); clearTimeout(m)//fetch was fast enough so cancel the abort
 			if (!q.skipBody) {
