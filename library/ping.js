@@ -12,7 +12,7 @@
 // |___/\___|_| |_|___/\___|  \___|_| |_|\_/ |_|_|  \___/|_| |_|_| |_| |_|\___|_| |_|\__|
 //                                                                                       
 
-export function pingEnvironment() { return `${senseEnvironment()}, ${Date.now()}, v2024sep8a` }
+export function pingEnvironment() { return `${senseEnvironment()}, ${Date.now()}, v2024sep8b` }
 //the insanity that follows is you trying to be able to sense what part of this full stack javascript is running this call
 const _senseEnvironment = `
                Aclo Clie Docu Doma Loca                Lamb Node Proc Regi Requ Scri Self Serv Stor      Zulu >Determining
