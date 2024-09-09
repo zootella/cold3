@@ -145,27 +145,11 @@ async function sendTwilioText(c) {
 
 
 //older versions
-export function dog(...a)   { let s = composeLog(...a); logToDatadog(s);  log('logged to datadog:',  s) }
-export function flare(...a) { let s = composeLog(...a); logToLogflare(s); log('logged to logflare:', s) }
-function logToDatadog(s) {
-	/*no await*/fetch(//intentionally and unusually calling fetch without await; we don't need the result or want to wait for it. hopefully the call will work, but we're already documenting an error or something
-		process.env.ACCESS_DATADOG_ENDPOINT,
-		{
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY
-			},
-			body: JSON.stringify({
-				message: s,
-				ddsource: 'log-source',
-				ddtags: 'env:production'
-			})
-		}
-	)
-}
+export async function dog(s)   { s = composeLog(s); await sendDatadogLog({s});  log('logged to datadog:',  s) }
+export async function flare(s) { s = composeLog(s); await sendLogflareLog({s}); log('logged to logflare:', s) }
+/*
 function logToLogflare(s) {
-	/*no await*/fetch(
+	fetch(
 		process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
 		{
 			method: 'POST',
@@ -179,14 +163,7 @@ function logToLogflare(s) {
 		}
 	)
 }
-
-
-
-
-
-
-
-
+*/
 
 
 
@@ -194,7 +171,7 @@ function logToLogflare(s) {
 async function sendLogflareLog(c) {
 	let {s} = c
 	let q = {
-		skipResponse: true,
+		skipResponse: false,//clever, but doesn't work well on cloudflare
 		resource: process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
 		method: 'POST',
 		headers: {
@@ -210,7 +187,7 @@ async function sendLogflareLog(c) {
 async function sendDatadogLog(c) {
 	let {s} = c
 	let q = {
-		skipResponse: true,
+		skipResponse: false,//clever, but doesn't work well on cloudflare
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
 		method: 'POST',
 		headers: {
@@ -226,7 +203,25 @@ async function sendDatadogLog(c) {
 	return await ashFetchum(c, q)
 }
 
-
+/*
+function logToDatadog(s) {
+	fetch(
+		process.env.ACCESS_DATADOG_ENDPOINT,
+		{
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY
+			},
+			body: JSON.stringify({
+				message: s,
+				ddsource: 'log-source',
+				ddtags: 'env:production'
+			})
+		}
+	)
+}
+*/
 
 
 
