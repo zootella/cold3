@@ -3,7 +3,7 @@
 //looks like this isn't used anywhere, actually. CountComponent1
 
 import { ref, reactive, watch, onMounted } from 'vue'
-import { Tag } from '../library/library1.js'
+import { Tag } from '@/library/library1.js'
 
 let browserTag = ref('')
 let count = reactive({

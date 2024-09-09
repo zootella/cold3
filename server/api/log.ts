@@ -1,17 +1,17 @@
 
-import { log, look, toss } from '../../library/library0.js'
-import { dog, flare } from '../../library/cloud.js'
+import { log, look, toss } from '@/library/library0.js'
+import { dog, flare } from '@/library/cloud.js'
+import { actualLogflareLog, actualDatadogLog } from '@/library/cloud2.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}
 	try {
 
 		let body = await readBody(event)
-		log('log api version 8')
 
 		let message = body.message
-		dog(message)
-		flare(message)
+		await actualLogflareLog(message)
+		await actualDatadogLog(message)
 
 		o.message = 'hi from api log'
 		o.mirroredBody = body

@@ -1,5 +1,5 @@
 
-import { log, see, look } from '../../library/library0.js'
+import { log, see, look } from '@/library/library0.js'
 
 export default defineEventHandler(async (event) => {
 	var r = {}//the response object this server function will fill and send back to the page

@@ -1,5 +1,5 @@
 
-import { log, see } from '../../library/library0.js'
+import { log, see } from '@/library/library0.js'
 
 
 export default defineEventHandler(async (event) => {

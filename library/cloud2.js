@@ -1,6 +1,7 @@
 
 import { log, look, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
+import { senseEnvironment } from './library2.js'
 
 let _fs; async function loadFs() { if (!_fs) _fs = (await import('fs')).default.promises; return _fs }
 
@@ -240,13 +241,16 @@ test(() => {
 
 //let's test this stuff with node on the command line
 export async function snippet(card) {
+	log(senseEnvironment())
 
+/*
 	let s = sayTick(Now())+' v2024sep4a.4'
 	let r = await actualLogflareLog(s)
 
 	let l = look(r)
 	logToFile(l)
 	log(l)
+	*/
 }
 
 
@@ -267,11 +271,11 @@ export async function logToFile(...a) {
 
 
 
-async function actualLogflareLog(s) {
+export async function actualLogflareLog(s) {
 	return await sendLogflareLog({s})
 }
-async function actualDatadogLog(s) {
-
+export async function actualDatadogLog(s) {
+	return await sendDatadogLog({s})
 }
 async function actualSendgridEmail(card, message) {
 

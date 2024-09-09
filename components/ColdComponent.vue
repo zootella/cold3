@@ -2,7 +2,7 @@
 
 //imports
 import { ref, reactive, onMounted } from 'vue'
-import { log, look, Now, sayTick } from '../library/library0.js'
+import { log, look, Now, sayTick } from '@/library/library0.js'
 
 //ticks
 const t = reactive({
@@ -32,7 +32,7 @@ async function doFetch() {
 	const r = await useFetch("/api/mirror");
 	t.tick4 = Now();
 	t.duration34 = t.tick4 - t.tick3;
-	logToBox(`fetched message "${r.data.value.message}", access length "${r.data.value.accessLength}", tag "${r.data.value.tag}", tick "${r.data.value.serverTick}"`);
+	logToBox(`fetched message "${r.data.value.message}", access length "${r.data.value.accessLength}", tag "${r.data.value.tag}", tick "${r.data.value.serverTick}", say environment "${r.data.value.sayEnvironment}"`);
 	t.tick5 = r.data.value.serverTick;
 	t.difference35 = t.tick5 - t.tick3;
 }

@@ -1,8 +1,8 @@
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-import { log, look, Now } from '../library/library0.js'
-import { Tag } from '../library/library1.js'
+import { log, look, Now } from '@/library/library0.js'
+import { Tag } from '@/library/library1.js'
 
 
 

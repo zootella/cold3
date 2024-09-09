@@ -1,8 +1,8 @@
 <script setup>
 
 import { useRoute } from 'vue-router'
-import { log, cutLast } from '../../library/library0.js'
-import { checkTag, postDatabase } from '../../library/library1.js'
+import { log, cutLast } from '@/library/library0.js'
+import { checkTag, postDatabase } from '@/library/library1.js'
 
 const route = useRoute()
 let c = cutLast(route.params.more, '-')

@@ -1,33 +1,43 @@
-<template>
-
-<form @submit.prevent="logToServer">
-	<input v-model="inputText" type="text" placeholder="Enter text" />
-	<button type="submit">Enter</button>
-</form>
-
-</template>
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-import { log, look, Now } from '../library/library0.js'
+import { log, look, Now } from '@/library/library0.js'
+import { Tag } from '@/library/library1.js'
+import { senseEnvironment } from '@/library/library2.js'
 
 const inputText = ref('')
+const environmentText = ref('')
 
-async function logToServer() {
+
+async function clickedEnter() {
 	let message = inputText.value
-	try {
-		log('logging to server: '+message)
-		let response = await $fetch('/api/log', {
-			method: 'POST',
-			body: {
-				message
-			}
-		})
-	} catch (e) {
-	}
+	await logToServer(message)
+}
+async function logToServer(message) {
+	await $fetch('/api/log', {method: 'POST', body: {message}})
 }
 
+
+
+let s = senseEnvironment()
+if (process.server) s += ', PDS'
+if (process.client) s += ', PDC'
+s += ', v2024sep8d'
+console.log(s)
+await logToServer(s)
+environmentText.value = s
+
+
 </script>
+<template>
+
+<form @submit.prevent="clickedEnter">
+	<input v-model="inputText" type="text" placeholder="Enter text" />
+	<button type="submit">Enter</button>
+	<p>{{ environmentText }}</p>
+</form>
+
+</template>
 <style scoped>
 
 input {

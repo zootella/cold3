@@ -1,9 +1,9 @@
 <script setup>
 
 import { ref, reactive, onMounted } from 'vue'
-import { log, look, Now, sayTick, newline, deindent, Data } from '../library/library0.js'
-import { Tag } from '../library/library1.js'
-import { getBrowserTag } from '../library/library2.js'
+import { log, look, Now, sayTick, newline, deindent, Data } from '@/library/library0.js'
+import { Tag } from '@/library/library1.js'
+import { getBrowserTag } from '@/library/library2.js'
 
 onMounted(async () => {//doesn't run on server, even when hydrating
 	stick(`${getBrowserTag()} is this browser's tag`)
