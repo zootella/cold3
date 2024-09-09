@@ -1,5 +1,5 @@
 
-import { pingTime, pingEnvironment, pingVersion } from '@/library/ping.js'
+import { pingEnvironment } from '@/library/ping.js'
 
 
 export default defineEventHandler((event) => {
@@ -10,7 +10,7 @@ export default defineEventHandler((event) => {
 
 
 
-		note = `worker ${pingTime()}, ${pingEnvironment()}, ${pingVersion()}, ping3done`
+		note = `worker ${pingEnvironment()}, ping3done`
 
 	} catch (e) { note = 'ping3 worker error: '+e.stack }
 	return {note}

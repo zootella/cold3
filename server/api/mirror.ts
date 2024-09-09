@@ -1,7 +1,7 @@
 
 import { log, see, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
-import { senseEnvironment } from '@/library/library2.js'
+import { senseEnvironment } from '@/library/ping.js'
 
 export default defineEventHandler((event) => {
 

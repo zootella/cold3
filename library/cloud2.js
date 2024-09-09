@@ -1,7 +1,7 @@
 
 import { log, look, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
-import { senseEnvironment } from './library2.js'
+import { senseEnvironment } from './ping.js'
 
 let _fs; async function loadFs() { if (!_fs) _fs = (await import('fs')).default.promises; return _fs }
 
