@@ -868,6 +868,27 @@ Authentication (Using Face ID)
 
 
 
+
+
+
+
+
+
+
+
+       _                 _               
+ _ __ (_)_ __   __ _    | | ___   __ _   
+| '_ \| | '_ \ / _` |   | |/ _ \ / _` |  
+| |_) | | | | | (_| |_  | | (_) | (_| |_ 
+| .__/|_|_| |_|\__, ( ) |_|\___/ \__, ( )
+|_|            |___/|/           |___/|/ 
+                 _             _     _       
+  __ _ _ __   __| |  _ __ ___ | |__ (_)_ __  
+ / _` | '_ \ / _` | | '__/ _ \| '_ \| | '_ \ 
+| (_| | | | | (_| | | | | (_) | |_) | | | | |
+ \__,_|_| |_|\__,_| |_|  \___/|_.__/|_|_| |_|
+                                             
+
 == four similar but distinct tasks
 
 1 logs for development (logflare)
@@ -1078,25 +1099,113 @@ your goal is to do it all to datadog
 so it's all fetch skipping the response
 and it's super simple
 
+(and now moar 2024sep9)
 
+=======================================================
 
+2024sep7 the whole horizon of logging, pre and post 1.0
 
+[I.] Services
 
+datadog is good at logs
+you send them js objects of your own structure and taxonomy
+and later can save and sort and alert based on them
+you can send several logs at once, just by sending an array, to have a summary one and a detailed one
 
+datadog has a separate product called RUM, real user monitoring
+their js on your page measures how long pages fetch, and take to finish, for real users
 
+pingdom and equivalent are good at uptime
+they have graphs that show median
+and you can configure their pinger to look for a tag on a page to confirm it really got it
 
+postgres is good at analysis
+right in sql, you can filter rows and then compute averages and percentiles
 
+local development is good at seeing console.log output
+and for durable output, you can write to log.txt
 
+[II.] Needs, you've found six
 
+current needs, before v1:
+PING: service availability and speed (pingdom) the site was down for 6 hours last night, but it's back up again. lots of the time, lambda has a cold start of over 2 seconds
+LOOK: debug logging during development (datadog, maybe logflare) i can log out this note while coding, and want to see the same note in production. once it's working, ill comment it out
+ALERT: uncaught exception (datadog) a mistake in our own code caused an exception caught by the last resort try block--wake up the developers!
+AUDIT: api auditing (datadog) that one time that that one service failed, what exactly did we send it? recently, the information twilio is sending us back has changed
 
+eventual needs, after v1:
+ROBIN: round robin analysis (postgres) twilio refused our request, immediately switch to amazon! users type in codes faster when we email them through sendgrid, use that more often! these two services perform equally well, but one is half the cost, use that one more frequently!
+RUM: experience for real users (datadog rum) all the little parts are fast, but the average user signed in still has to wait 1200ms for their feed to load. ok, after that last update, we got it down to 400ms
 
+[III.] Construction
 
+PING (pingdom) (roadmap v0.5)
+make pages on the site that, unlike the others, have code on the page rather than factoring into components
+and are coded so that SSR always happens (ask chat) nuxt is doing this by default
+cold3.cc/ping1 - static
+cold3.cc/ping2 - script renders
+cold3.cc/ping3 - fetch to api
+cold3.cc/ping4 - call supabase
+cold3.cc/ping5 - call lambda at net23
+it'll be interesting to see the average times, if things are slower in europe or asia compared to the us, and also if there are slow cold starts for ping4, and not the others
+it's great that the simple deployed cors restrictions are all in place, even while ping4 reaches over to net23
 
+(datadog generally) send objects in this form, below. type is required. tag and tick are there, but likely redundant or unnecessary. log and load are one or the other or both
+{
+  type: 'alert',//high level category to sort later on, like ALERT, AUDIT, LOOK
 
+  tag: 'kmo3cWhe27B5pgmM2RnGV'//tag for this datadog log
+  tick: 1725723263168,//tick when we logged it
 
+  log: 'text, one line, meant to fit on a screen and be read by a human',
+  load: {},//payload object, all the details, including more ticks and tags
+}
 
+LOOK (datadog)
+{
+  type: 'debug'
+  tag, tick,
+  log, load//here's where we, the developers, can see something that we just pushed to confirm deployed behavior matches local behavior
+}
 
+ALERT (datadog) (roadmap v0.1)
+{
+  type: 'alert'
+  tag, tick,
+  log, load//here's where we, the developers, can find out about uncaught exceptions
+}
+here's where you probably want information about the environment, lambda, nuxt ssr, csr, otherwise you'll be looking at one of these scratching your head not knowing even what computer where ran into it
 
+AUDIT (datadog) (roadmap v0.1)
+{
+  type: 'audit'
+  tag, tick,
+  load: {}//here's the object with all the details about the fetch we did and what happened
+}
+
+ROBIN (postgres)
+there are two postgres tables, one for quick current records, another for historical summary records
+naming services and providers, like "amazon.email" and "sinch.sms" is free-form, you just send a new name, you don't have to change schema to do this
+a record in the table records what happened and how long it took, like this sms service refused to send for us, immediately returning an error, or this user successfully entered a otp code 2 minutes after we emailed it to them through sendgrid
+there aren't more details about the thing that happened, but tags referenced here means we can find it in datadog or elsewhere in the database
+it's fast and easy to query the current table to see the last 10 results from a particular service, or the average success time over the last day or hour
+some results are known in the same worker invocation, like if amazon sent an email in 150ms. other results are noticed between worker invocations, like if the user typed in the code successfully 5 minutes later. those are represented by two rows in the quick table that have a matching tag, or by finding the first row and adding to blank columns, yeah, that's probably better
+when the system gets a request and checks the time and notices that there are some older records in the recent table, it performs an additional step to clear out older records, condensing them into summaries, and moving them into the historical table
+this keeps both tables short, even with thousands of users and years of history
+services that are used rarely don't get archived this way--to get archived, a row needs to be older than a week, let's say, and also not the most recent 100 records about that service
+on the history table, there's a row summarizing each service and provider's performance for each 6 hour period
+these rows include:
+-number of records, mean and median
+-how many succeeded, failed
+-1st, 5th, 10th, 90th, 95th, 99th percentiles of success durations
+-tags of a random capped handful of failed requests
+
+RUM (datadog rum) (roadmap v1.5)
+use datadog's rum feature as intended
+and check out the nice charts and graphs and maps on the dashboard
+will this mean there are cookies now, though?
+
+==
 
 
 

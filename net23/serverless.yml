@@ -98,7 +98,7 @@ resources:
             - www.net23.cc
             - net23.cc
           ViewerCertificate:
-            AcmCertificateArn: ${env:ACCESS_CERTIFICATE_ARN} # Get ARN from .env file
+            AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE} # Get ARN from .env file
             SslSupportMethod: sni-only
           Comment: 'Distribution for static site www.net23.cc'
           DefaultRootObject: index.html

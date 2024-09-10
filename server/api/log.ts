@@ -1,6 +1,6 @@
 
 import { log, look, toss, Now } from '@/library/library0.js'
-import { dog, flare, snippet2, saveCloudEvent } from '@/library/cloud2.js'
+import { dog, snippet2, saveCloudEvent } from '@/library/cloud2.js'
 
 export default defineEventHandler(async (event) => {
 	saveCloudEvent(event)
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
 		await dog(message)
 		let duration = Now() - t
 
-		snippet2()
+//		snippet2()
 
 		o.message = 'hi from api log'
 		o.mirroredBody = body

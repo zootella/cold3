@@ -9,7 +9,8 @@ export default defineEventHandler((event) => {
 	o.message = 'hello from cold3 api mirror, version 2024sep8a'
 	o.serverTick = Now()
 	o.headers = event.req.headers
-	o.accessLength = (process.env.ACCESS_TOKEN_2) ? process.env.ACCESS_TOKEN_2.length : 0
+	//use defined() and hasText() below
+	o.accessLength = (typeof process != 'undefined' && typeof process.env?.ACCESS_PASSWORD == 'string') ? process.env.ACCESS_PASSWORD.length : 0
 	o.tag = Tag()
 	o.sayEnvironment = senseEnvironment()
 

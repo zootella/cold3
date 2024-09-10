@@ -16,6 +16,21 @@ import { Tag, tagLength, checkTag } from './library1.js'
 
 
 
+
+
+
+/*
+so, browser tag below didn't work as a fingerprint
+
+but you'll still need stuff like this to verbosely fingerprint:
+the user's browser, as client code sees it, with stuff like the user agent string
+an incoming client request, as a nuxt api handler sees it, with the supposed query string, ip address
+
+totally make the page where the user sees their query string and ip address of their current and previous sessions
+and you can include their webgl nvidia stuff there, also
+*/
+
+
 //  _                                       _              
 // | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _ 
 // | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |

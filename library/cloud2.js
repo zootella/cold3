@@ -139,10 +139,8 @@ async function sendTwilioText(c) {
 
 
 export async function snippet2() {
-	/*
-	await dog('hi in snippet2')
-	await dog(typeof getCloudflareEvent())
-	*/
+
+
 }
 
 
@@ -151,43 +149,9 @@ export async function snippet2() {
 
 //older versions
 export async function dog(s)   { s = composeLog(s); await sendDatadogLog({s});  log('logged to datadog:',  s) }
-export async function flare(s) { s = composeLog(s); await sendLogflareLog({s}); log('logged to logflare:', s) }
-/*
-function logToLogflare(s) {
-	fetch(
-		process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
-		{
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-API-KEY': process.env.ACCESS_LOGFLARE_API_KEY
-			},
-			body: JSON.stringify({
-				message: s
-			})
-		}
-	)
-}
-*/
 
 
 
-async function sendLogflareLog(c) {
-	let {s} = c
-	let q = {
-		skipResponse: false,//clever, but doesn't work well on cloudflare
-		resource: process.env.ACCESS_LOGFLARE_ENDPOINT+'?source='+process.env.ACCESS_LOGFLARE_SOURCE_ID,
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-API-KEY': process.env.ACCESS_LOGFLARE_API_KEY
-		},
-		body: JSON.stringify({
-			message: s
-		})
-	}
-	return await ashFetchum(c, q)
-}
 async function sendDatadogLog(c) {
 	let {s} = c
 	let q = {
@@ -207,28 +171,8 @@ async function sendDatadogLog(c) {
 	return await ashFetchum(c, q)
 }
 
-/*
-function logToDatadog(s) {
-	fetch(
-		process.env.ACCESS_DATADOG_ENDPOINT,
-		{
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY
-			},
-			body: JSON.stringify({
-				message: s,
-				ddsource: 'log-source',
-				ddtags: 'env:production'
-			})
-		}
-	)
-}
-*/
 
 
-//simplify, convert the time limit and event.waitUntil into notes
 
 
 //my wrapped fetch
@@ -282,25 +226,9 @@ async function ashFetchum(c, q) {//takes c earlier called parameters and q an ob
 
 
 
-
-
-test(() => {
-})
-
-
-
 //let's test this stuff with node on the command line
 export async function snippet(card) {
-	log(senseEnvironment())
 
-/*
-	let s = sayTick(Now())+' v2024sep4a.4'
-	let r = await actualLogflareLog(s)
-
-	let l = look(r)
-	logToFile(l)
-	log(l)
-	*/
 }
 
 
@@ -321,9 +249,6 @@ export async function logToFile(...a) {
 
 
 
-export async function actualLogflareLog(s) {
-	return await sendLogflareLog({s})
-}
 export async function actualDatadogLog(s) {
 	return await sendDatadogLog({s})
 }
