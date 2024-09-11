@@ -188,15 +188,9 @@ async function ashFetchum(c, q) {//takes c earlier called parameters and q an ob
 
 	try {
 		if (q.skipResponse) {
-
-
 			let p = fetch(q.resource, o)//get the promise instead of awaiting here for it to resolve
 			if (event?.waitUntil) event.waitUntil(p)//tell cloudflare to not tear down the worker until p resolves
 			p.then(() => { clearTimeout(m) })
-//			clearTimeout(m)//should we have even set a timeout here to begin with?
-
-
-
 		} else {
 			response = await fetch(q.resource, o); clearTimeout(m)//fetch was fast enough so cancel the abort
 			if (!q.skipBody) {

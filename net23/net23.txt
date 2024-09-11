@@ -616,12 +616,12 @@ then add more here about versioning net23 lambdas with babel transpilation to no
 
 
 
-                     _       _           
+										 _       _           
  _ __ ___   ___   __| |_   _| | ___  ___ 
 | '_ ` _ \ / _ \ / _` | | | | |/ _ \/ __|
 | | | | | | (_) | (_| | |_| | |  __/\__ \
 |_| |_| |_|\___/ \__,_|\__,_|_|\___||___/
-                                         
+																				 
 
 first, you want wrangler and serverless installed locally, not globally
 commands to install, version, and uninstall globally:
@@ -676,7 +676,7 @@ make an api endpoint to run tests, should be fine because local node 20 works gr
 | '_ \ / _ \ | |/ _ \  | |/ _` | '_ ` _ \| '_ \ / _` |/ _` |
 | | | |  __/ | | (_) | | | (_| | | | | | | |_) | (_| | (_| |
 |_| |_|\___|_|_|\___/  |_|\__,_|_| |_| |_|_.__/ \__,_|\__,_|
-                                                            
+																														
 
 # lambda step 1: hello world and local development
 
@@ -795,7 +795,7 @@ but also, there are two mentions of commonjs2, setting the output format, necess
 
 here are scripts in package.json:
 
-  "scripts": {
+	"scripts": {
 (1) "www": "serverless s3sync"
 (2) "deploy": "webpack && serverless deploy"
 (3) "local": "serverless offline --config local.yml",
@@ -824,18 +824,18 @@ on disk:
 ./dist/hello1.js ~ bundled webpack output file
 
 in settings in local.yml:
-  handler: src/hello1.handler # Paths to src to run before webpack
+	handler: src/hello1.handler # Paths to src to run before webpack
 in settings in serverless.yml:
-  handler: dist/hello1.handler # Paths to dist to upload after webpack
+	handler: dist/hello1.handler # Paths to dist to upload after webpack
 
 in code in ./src/hello1.js:
-  "... export const handler = async (event) => {..."
+	"... export const handler = async (event) => {..."
 in code in ./dist/hello1.js:
-  "...e.d(o,{handler:()=>t});const t=async..."
+	"...e.d(o,{handler:()=>t});const t=async..."
 
 on the web:
-  http://localhost:3000/prod/hello1 ~ path to function emulated locally
-  https://api.net23.cc/hello1 ~ path to function deployed  
+	http://localhost:3000/prod/hello1 ~ path to function emulated locally
+	https://api.net23.cc/hello1 ~ path to function deployed  
 
 you've seen subfolders like src/handlers and dist/service appear, but for the moment at least, have managed to keep them away
 
@@ -872,12 +872,12 @@ here's what we finished:
 [x]import library code
 [x]run all the tests
 
-                                             _      
-  __ _  ___ ___ ___  ___ ___    ___ ___   __| | ___ 
+																						 _      
+	__ _  ___ ___ ___  ___ ___    ___ ___   __| | ___ 
  / _` |/ __/ __/ _ \/ __/ __|  / __/ _ \ / _` |/ _ \
 | (_| | (_| (_|  __/\__ \__ \ | (_| (_) | (_| |  __/
  \__,_|\___\___\___||___/___/  \___\___/ \__,_|\___|
-                                                    
+																										
 
 only cold3.cc should be able to call network 23 apis
 in addition to cors and checking the origin header and so on,
@@ -904,8 +904,8 @@ cloudflare dashboard, workers and pages, cold3, settings tab, environment variab
 
 serverless.yml:
 provider:
-  environment: # Name variables in .env file here so they are on process.env for the Lambda code
-    ACCESS_NETWORK_23: ${env:ACCESS_NETWORK_23}
+	environment: # Name variables in .env file here so they are on process.env for the Lambda code
+		ACCESS_NETWORK_23: ${env:ACCESS_NETWORK_23}
 
 and then in lambda code like hello2.js:
 	let access = 'not found'
@@ -913,7 +913,7 @@ and then in lambda code like hello2.js:
 
 you don't have to mess with the aws dashboard, which is great
 
-       _             
+			 _             
  _ __ (_)_ __   __ _ 
 | '_ \| | '_ \ / _` |
 | |_) | | | | | (_| |
@@ -974,6 +974,153 @@ for each of their dashboards, you found and set:
 it'll be interesting to see if this affects your cloudflare and amazon bills :0
 and this was a good trail, other than senseEnvironment() being a messy day in the bike shed
 
+      _                 _    __                  _   _             
+  ___| | ___  _   _  __| |  / _|_   _ _ __   ___| |_(_) ___  _ __  
+ / __| |/ _ \| | | |/ _` | | |_| | | | '_ \ / __| __| |/ _ \| '_ \ 
+| (__| | (_) | |_| | (_| | |  _| |_| | | | | (__| |_| | (_) | | | |
+ \___|_|\___/ \__,_|\__,_| |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|
+                                                                   
+                       _ _      _ _          _   _                                       
+ _ __   __ _ _ __ __ _| | | ___| (_)______ _| |_(_) ___  _ __   __      _____   ___  ___ 
+| '_ \ / _` | '__/ _` | | |/ _ \ | |_  / _` | __| |/ _ \| '_ \  \ \ /\ / / _ \ / _ \/ __|
+| |_) | (_| | | | (_| | | |  __/ | |/ / (_| | |_| | (_) | | | |  \ V  V / (_) |  __/\__ \
+| .__/ \__,_|_|  \__,_|_|_|\___|_|_/___\__,_|\__|_|\___/|_| |_|   \_/\_/ \___/ \___||___/
+|_|                                                                                      
+
+in the eternal triangular tug of war between simplicity, reliability, and speed
+you've decided for initial launch to keep cloud functions synchronous
+what follows is a discussion of fancier things you tried, and why they were difficult, worrysome, or didn't work at all
+
+[I.] you can fetch in parallel in your own code while handling an api request
+
+these will run one after the other:
+
+await fetch('https://datadog.com/api/log', ...)
+await fetch('https://datacat.com/api/log', ...)
+
+and these will run both at the same time:
+
+let promiseDog = fetch('https://datadog.com/api/log', ...)
+let promiseCat = fetch('https://datacat.com/api/log', ...)
+await Promise.all([promiseDog, promiseCat])
+
+and that code is fine in workers and lambda
+the difficulty comes in when you have everything you need to get back to the client,
+and want to do that right away, with cleanup tasks like logging happening in parallel or afterwards
+it doesn't work because cloudflare and lambda see the request sent, think we're done here, and tear down the environment
+
+[II.] performing tasks in a worker after responding to the client is possible but more complicated
+
+cloudflare pins a method to the event object:
+
+event.waitUntil(p)
+
+you can pass it a promise, and then the worker will delay teardown,
+even after you've responded to the client and returned from everything
+so that's great. there is no lambda equivalent you can find
+
+[III.] performing tasks in a lambda after responding to the client is either not possible or so rare you can't find it
+
+the return from a lambda handler is the response back up to the client
+you can't find a way to talk to the client before returning
+
+the common pattern for lambda functions starts like this:
+	exports.handler = async (event, context) => {
+
+and an alternative documented form that looked promising (get it?) is this:
+	exports.handler = (event, context, callback) => {
+
+but to do what you want, you'd have to combine them,
+which either won't work or is so weird no one else has thought of it:
+exports.handler = async (event, context, callback) => {
+
+	//first, we process the request, using steps that we do have to await
+	let messageForClient = await processRequest({event, context})
+
+	//second, we get back to the client quickly
+	const response = {
+		statusCode: 200,
+		body: JSON.stringify({ message: 'OK', messageForClient }),
+	}
+	callback(null, response)
+
+	//third, perform tasks like logging. the response has been sent, but the lambda must keep running!
+	let p = performLoggingTasks()
+	return p//by returning this promise, we're telling lambda to not tear down until it resolves!
+}
+
+looking more shed even more doubt on this--the returned promise p needs to resolve into the response body
+at which point we're all the way back where we started
+
+chat says lambda doesn't even support streaming a response back to a client
+the whole thing, headers and complete body, needs to go out once at the end
+
+and there's also something called context.succeed() as an alternative to callback
+but it seems like that's an older api that has been replaced by the callback parameter
+not a different thing that could help you here
+
+so, you found a lot of complexity and very little certainty in this exploration, and are backing out
+
+[IV.] so here are some features you're removing
+
+const defaultFetchTimeLimit = 5*Time.second
+async function ashFetchum(c, q) {//early nickname to wrapped fetch; gotta fetch 'em all
+	if (!q.timeLimit) q.timeLimit = defaultFetchTimeLimit
+	let response, bodyText, body, error, success = true
+
+	let a = new AbortController()//js way of telling fetch to give up after a time limit
+	let m = setTimeout(() => a.abort(), q.timeLimit)
+	let o = {method: q.method, headers: q.headers, body: q.body, signal: a.signal}
+	q.tick = Now()
+
+	try {
+		if (q.skipResponse) {
+			let p = fetch(q.resource, o)             //get the promise instead of awaiting here for it to resolve
+			if (event?.waitUntil) event.waitUntil(p) //tell cloudflare to not tear down the worker until p resolves
+			p.then(() => { clearTimeout(m) })
+		} else {
+			response = await fetch(q.resource, o); clearTimeout(m)
+
+in your wrapped server side fetch, there used to be
+-a fire and forget option to skip waiting for the response entirely; the call isn't even async anymore
+-an option to skip reading the body
+-an upper time limit imposed by an abort controller
+
+to provide the fire and forget feature, you'd have to save the promise and
+on cloudflare, feed it to event.waitUntil()
+on lambda, manually await it before returning
+this is possible, but far less simple and likely less reliable,
+either because you make a coding error due to the more complex flow
+or because it causes cloudflare or amazon to act in an unusual way
+also there's no benefit on lambda, only cloudflare
+
+you could do the option to not read the body, but
+the body is probably short,
+has probably already arrived,
+and you probably always want to log it to have a full audit of api behavior
+
+abort controller is is a feature of fetch, and interesting, but
+workers have a not configurable 30 second maximum lifetime, and
+you've set your lambdas to match, from a default of 3 seconds and upper limit of 15 minutes
+
+[V.] the big surrounding picture here
+
+you're picking servlerless offerings like cloudflare workers, lambda, and supabase for simplicity, reliability, and scalability
+you don't have to maintain a server, and if things get popular overnight, nothing should break
+
+but this also means that every read, write, and log is another ~150ms
+many user interactions will involve a handful of these, back to back
+and that means the experience isn't fast anymore
+
+a traditional architecture--with web server, database, and log file all on the same virtual instance--avoids this problem
+also on a regular server, you can absolutely stream a response piece by piece back up to a client
+and you can finish a response, and stay alive to perform some clean up tasks afterwards
+
+your hope is that the site still seems remarkable to users even with some steps causing second-long pauses
+the first navigation will still happen in like 35ms
+clicking around will be instantaneous because vue is just showing and hiding components that already have cached data
+and when the user is changing their email or uploading a file, it makes sense that those tasks would take seconds
+
 											_     _   _                  _             _   
  _ __ ___ _ __   ___ | |_  | |_| |__   ___   _ __ | | __ _ _ __ | |_ 
 | '__/ _ \ '_ \ / _ \| __| | __| '_ \ / _ \ | '_ \| |/ _` | '_ \| __|
@@ -1010,12 +1157,12 @@ $ npx nuxi add myapi
 
 
 
-                    _            _       
+										_            _       
  _ __ _   _ _ __   | |_ ___  ___| |_ ___ 
 | '__| | | | '_ \  | __/ _ \/ __| __/ __|
 | |  | |_| | | | | | ||  __/\__ \ |_\__ \
 |_|   \__,_|_| |_|  \__\___||___/\__|___/
-                                         
+																				 
 
 tiny tests, in library0.js, exports test(), ok(), and runTests()
 all calls to test() are in the library
