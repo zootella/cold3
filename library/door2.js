@@ -11,14 +11,6 @@
 
 
 
-
-
-
-
-
-
-
-
 let cycleStart, cyclePerform, cycleStop
 async function cloudRequestHandler(event) {
 	let cycle, response, error
@@ -33,7 +25,7 @@ async function cloudRequestHandler(event) {
 		await cycleStop(event, cycle, response, error)//logs the error
 		if (response && !error) return { statusCode: 200, headers: {'Content-Type': 'application/json'}, body: response.bodyStringified }
 
-	} catch (){}//catch and discard, we can't log an exception if logging the last one is what threw now, can we!
+	} catch (d){}//catch and discard, we can't log an exception if logging the last one is what threw now, can we!
 	return 500
 }
 /*
@@ -180,7 +172,7 @@ request doesn't work, as both involve a request and response
 
 
 
-
+/*
 //[A] worker
 
 //first example, success, reply with a body of information
@@ -238,6 +230,7 @@ exports.handler = async (event) => {
 	}
 	return response
 }
+*/
 
 
 
@@ -249,6 +242,39 @@ exports.handler = async (event) => {
 
 
 
+
+
+
+/*
+//worker, send response
+export default defineEventHandler((event) => {
+
+	//worker ok
+	return { name: 'Tom', age: 42 }//200 by default
+
+	//worker bad
+	setResponseStatus(event, 500)//puts status code and reason phrase in the status line which begins the http headers
+	return null
+})
+
+//lambda, send respose
+exports.handler = async (event) => {
+
+	//lambda ok
+	return {
+		statusCode: 200,
+		headers: { 'Content-Type': 'application/json' },
+		body: response.alreadyStringifiedBody//already stringified so can't possibly throw
+	}
+
+	//lambda bad
+	return {
+		statusCode: 500,
+		headers: { 'Content-Type': 'application/json' },
+		body: null
+	}
+}
+*/
 
 
 
