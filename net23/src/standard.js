@@ -1,11 +1,45 @@
-/*
-in my Serverless Framework project deploying to AWS Lambda, this is the file at:
-./src/standard.js
 
-in which i want to code a standard pattern for an api endpoint
-as always, choosing simple code that is complete, secure, and follows best practices
+import { Now } from '../../library/library0.js'
+import { Tag } from '../../library/library1.js'
+import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
 
-*/
+exports.handler = async (lambdaEvent, lambdaContext) => {
+	let door, response, error
+	try {
+
+		door = doorLambdaOpen(lambdaEvent)
+		response = await doorProcessBelow(lambdaEvent, lambdaContext, door)
+
+	} catch (e) { error = e }
+	try {
+
+		await doorLambdaShut(lambdaEvent, door, response, error)
+		if (response && !error) return { statusCode: 200, headers: {'Content-Type': 'application/json'}, body: response.bodyStringified }
+
+	} catch (d) { console.error(`discarded ${Now()} ${Tag()}`, d) }
+	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
+}
+//^our copypasta to safely man the front door
+
+async function doorProcessBelow(lambdaEvent, lambdaContext, door) {
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -117,45 +151,6 @@ and maybe this is all in request.js, not cloud.js
 
 
 
-
-
-
-
-//worker
-export default defineEventHandler(async (event) => {
-
-	//confirmed by cloudflare
-	let tlsVersion = event.req.cf?.tlsVersion//like "TLSv1.3" or undefined if http rather than https
-	let clientIp = event.req.headers['cf-connecting-ip']//like "192.168.1.1" or "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-
-	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
-	let origin = event.req.headers['origin']//nuxt makes this lowercase
-	let referer = event.req.headers['referer']//and web standards can't correct this spelling!
-
-	//script and extensions can spoof these, or they are simply set by the user and his script or extensions
-	let url = event.req.url//like "route/subroute?key=value"
-	let method = getMethod(event)//like "GET" or "POST"
-	let userAgent = event.req.headers['user-agent']//like "Mozilla/5.0 (iPhone; CPU iPhone OS..."
-
-//lambda
-exports.handler = async (event, context) => {
-
-	//confirmed by amazon
-	let isHttps = event.headers['x-forwarded-proto'] == 'https'//set by api gateway
-	let clientIp = event.requestContext?.identity?.sourceIp
-
-	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
-	let origin = event.headers['origin']
-	let referer = event.headers['referer']
-
-	//script and extensions can spoof these, or they are simply set by the user and his script or extensions
-	let method = event.httpMethod
-	let urlPath = event.path
-	let urlQueryStringParameters = event.queryStringParameters
-	let userAgent = event.headers['User-Agent']
-
-	context.awsRequestId//A unique identifier for the request (useful for tracing and debugging).
-}
 
 
 
