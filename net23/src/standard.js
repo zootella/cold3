@@ -121,6 +121,42 @@ and maybe this is all in request.js, not cloud.js
 
 
 
+//worker
+export default defineEventHandler(async (event) => {
+
+	//confirmed by cloudflare
+	let tlsVersion = event.req.cf?.tlsVersion//like "TLSv1.3" or undefined if http rather than https
+	let clientIp = event.req.headers['cf-connecting-ip']//like "192.168.1.1" or "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+
+	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
+	let origin = event.req.headers['origin']//nuxt makes this lowercase
+	let referer = event.req.headers['referer']//and web standards can't correct this spelling!
+
+	//script and extensions can spoof these, or they are simply set by the user and his script or extensions
+	let url = event.req.url//like "route/subroute?key=value"
+	let method = getMethod(event)//like "GET" or "POST"
+	let userAgent = event.req.headers['user-agent']//like "Mozilla/5.0 (iPhone; CPU iPhone OS..."
+
+//lambda
+exports.handler = async (event, context) => {
+
+	//confirmed by amazon
+	let isHttps = event.headers['x-forwarded-proto'] == 'https'//set by api gateway
+	let clientIp = event.requestContext?.identity?.sourceIp
+
+	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
+	let origin = event.headers['origin']
+	let referer = event.headers['referer']
+
+	//script and extensions can spoof these, or they are simply set by the user and his script or extensions
+	let method = event.httpMethod
+	let urlPath = event.path
+	let urlQueryStringParameters = event.queryStringParameters
+	let userAgent = event.headers['User-Agent']
+
+	context.awsRequestId//A unique identifier for the request (useful for tracing and debugging).
+}
+
 
 
 

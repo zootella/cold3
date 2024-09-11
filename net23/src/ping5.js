@@ -13,5 +13,5 @@ export const handler = async (event) => {
 		note = `lambda says: ${pingEnvironment()}, ping5done`
 
 	} catch (e) { note = 'ping5 lambda error: '+e.stack }
-	return { statusCode: 200, body: JSON.stringify({note}) }
+	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }
 }

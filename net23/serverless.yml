@@ -19,7 +19,7 @@ provider:
 functions:
   hello1:
     handler: dist/hello1.handler # Paths to distribution for upload after rollup
-    timeout: 30 # Raise time limit from default 3 seconds to make it 30 seconds
+    timeout: 30 # Let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
           path: hello1

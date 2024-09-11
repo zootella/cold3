@@ -24,13 +24,6 @@ let _event = null//the event or request object cloudflare workers or lambda hand
 export function saveCloudEvent(e) { _event = e }//call at the start of both lambda and worker request handlers
 export function getCloudEvent() { return _event }//now you can get it when you need it, rather than passing it everywhere
 
-let _promise = null//a glomed together promise we need to lambda to wait for
-function awaitKeepAlive(p) {//not awaiting a promise doesn't mean our worker or lambda will, thus, you must call awaitKeepAlive!
-	if (_event?.waitUntil) _event.waitUntil(p)//we're in cloudflare, use their nice api
-	else if (_promise === null) _promise = p//we're like in a website barnes and noble or something, save the promise manually
-	else _promise = Promise.all([_promise, p])//or glom it together with one we already saved
-}
-function returnKeepAlive() { return _promise }//only in lambda, return the promise we should keep running for
 
 
 
@@ -155,7 +148,6 @@ export async function dog(s)   { s = composeLog(s); await sendDatadogLog({s});  
 async function sendDatadogLog(c) {
 	let {s} = c
 	let q = {
-		skipResponse: false,//clever, but doesn't work well on cloudflare, much safer and easier to await everything
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
 		method: 'POST',
 		headers: {
@@ -175,38 +167,23 @@ async function sendDatadogLog(c) {
 
 
 
-//my wrapped fetch
-const defaultFetchTimeLimit = 5*Time.second
 async function ashFetchum(c, q) {//takes c earlier called parameters and q an object of instructions to make the request
-	if (!q.timeLimit) q.timeLimit = defaultFetchTimeLimit
-	let response, bodyText, body, error, success = true//success until found otherwise
+	let o = {method: q.method, headers: q.headers, body: q.body}
 
-	let a = new AbortController()
-	let m = setTimeout(() => a.abort(), q.timeLimit)//after the time limit, signal the fetch to abort
-	let o = {method: q.method, headers: q.headers, body: q.body, signal: a.signal}
-	q.tick = Now()//fetch duration from q.tick to p.tick
-
+	q.tick = Now()//record when this happened and how long it takes
+	let response, bodyText, body, error, success
 	try {
-		if (q.skipResponse) {
-			let p = fetch(q.resource, o)//get the promise instead of awaiting here for it to resolve
-			if (event?.waitUntil) event.waitUntil(p)//tell cloudflare to not tear down the worker until p resolves
-			p.then(() => { clearTimeout(m) })
-		} else {
-			response = await fetch(q.resource, o); clearTimeout(m)//fetch was fast enough so cancel the abort
-			if (!q.skipBody) {
-				bodyText = await response.text()
-				if (response?.ok) {
-					if (response.headers.get('Content-Type')?.includes('application/json')) {
-						body = JSON.parse(bodyText)//can throw, and then it's the api's fault, not your code here
-					}
-				} else {
-					success = false//no success because response not ok
-				}
+		response = await fetch(q.resource, o); clearTimeout(m)//fetch was fast enough so cancel the abort
+		bodyText = await response.text()
+		if (response.ok) {
+			success = true
+			if (response.headers?.get('Content-Type')?.includes('application/json')) {
+				body = JSON.parse(bodyText)//can throw, and then it's the api's fault, not your code here
 			}
 		}
 	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
-
 	let t = Now()
+
 	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
 }
 
