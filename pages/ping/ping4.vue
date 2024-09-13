@@ -6,9 +6,17 @@ let duration = Date.now() - t
 
 </script>
 <template>
-
 <div>
-<p>ping4: fetch to worker to database took {{ duration }}ms to say: {{ data.note }}</p>
-</div>
+<code>
+<a href="ping3">&lt;Prev</a> <a href="ping5">Next&gt;</a>
 
+ping4: fetch to worker to database took {{ duration }}ms to say: {{ data.note }}
+
+</code>
+</div>
 </template>
+<style scoped>
+
+code, a { color: Gray }
+
+</style>
