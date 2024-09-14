@@ -2,6 +2,12 @@
 
 import { ref, onMounted } from 'vue' 
 
+/* tiny tests run four places:
+-- ./pages/ping/test.vue  nuxt
+-- ./net23/src/test.js    lambda
+-> ./icarus/icarus.vue    vite
+-- ./test.js              node
+*/
 import { runTests, getLogRecord, testBox } from '../library/library0.js'
 import '../library/library1.js'
 import '../library/library2.js'

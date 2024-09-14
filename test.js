@@ -15,7 +15,12 @@ import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also de
 dotenv.config()
 import card from './env.js'//and additional private info just for local development
 
-//import library files
+/* tiny tests run four places:
+-- ./pages/ping/test.vue  nuxt
+-- ./net23/src/test.js    lambda
+-- ./icarus/icarus.vue    vite
+-> ./test.js              node
+*/
 import { runTests, log, look } from './library/library0.js'
 import './library/library1.js'
 import './library/library2.js'
