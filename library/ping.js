@@ -88,7 +88,11 @@ export function senseEnvironment() {
 
 	return winningTitle+':'+s
 }
-
+/*
+todo, more of these you're hearing about later
+and after all that, you find out (but have not yet confirmed) that you can look for
+process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'production'
+*/
 
 
 

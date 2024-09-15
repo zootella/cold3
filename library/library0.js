@@ -1880,8 +1880,24 @@ function lookSayFunction(f) {
 
 
 
+/*
+you're back here to use subtle to also hash passwords
 
 
+
+*/
+
+test(() => {
+
+	log('hi')
+
+	let d = Data({random: 16})
+	log(d.base16(), d.base32(), d.base32().length)
+
+
+
+
+})
 
 
 

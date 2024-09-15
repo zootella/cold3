@@ -18,6 +18,18 @@ import '../library/cloud.js'
 import '../library/cloud2.js'
 
 let note = `script setup says: ${(await runTests()).message}, ${pingEnvironment()}`
+/*
+TODO
+so tiny tests run four places, but really the nuxt one should be expanded to three:
+page server rendered, page client rendered, and server api
+and you could do this pretty easily,
+except the only decent way you've found to see page server rendered is curl > saved.html
+because hybrid rendering is all about not letting you see or save the first part
+
+also, does including tiny tests in nuxt mean the whole bundle, even in production, is unnecessarily larger?
+you may want to comment this out at the end
+there's also process.env.NODE_ENV != 'production'
+*/
 
 </script>
 <template>

@@ -9,6 +9,7 @@ defineProps({note: String})
 	<p>
 		<NuxtLink to="/">index</NuxtLink>{{' - '}}
 		<NuxtLink to="/account">account</NuxtLink>{{' '}}
+		<NuxtLink to="/password">password</NuxtLink>{{' '}}
 		<NuxtLink to="/chat">chat</NuxtLink>{{' '}}
 		<NuxtLink to="/count">count</NuxtLink>{{' '}}
 		<NuxtLink to="/page1">page1</NuxtLink>{{' '}}
@@ -19,7 +20,7 @@ defineProps({note: String})
 		<NuxtLink to="/post/Fouv7hYGoytFMpU8JF0Fp">post</NuxtLink>{{' '}}
 		<NuxtLink to="/post/NR0vIdQZAwnEjhCZWe1ca">first</NuxtLink>{{' - '}}
 		<NuxtLink to="/log">log</NuxtLink>{{' '}}
-		<i>{{ note }}, v2024aug14a</i>
+		<i>{{ note }}, v2024sep15a</i>
 	</p>
 </div>
 
