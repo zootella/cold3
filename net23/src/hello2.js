@@ -1,11 +1,6 @@
 
 import { nanoid } from 'nanoid'
 
-import { runTests, log } from '../../library/library0.js'
-import '../../library/library1.js'
-import '../../library/library2.js'
-import '../../library/database.js'
-
 export const handler = async (event) => {
 
 	//try some big ints
@@ -21,7 +16,6 @@ export const handler = async (event) => {
 			message: 'hello2, version 2024aug14a',
 			answer: `${answer}`,
 			tag: nanoid(),
-			test: await runTests(),
 			access: access
 		})
 	}

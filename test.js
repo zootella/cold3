@@ -15,17 +15,15 @@ import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also de
 dotenv.config()
 import card from './env.js'//and additional private info just for local development
 
-/* tiny tests run four places:
--- ./pages/ping/test.vue  nuxt
--- ./net23/src/test.js    lambda
--- ./icarus/icarus.vue    vite
--> ./test.js              node
+/* tiny tests run six places:
+-- ./pages/ping/test.vue      nuxt page, server and client rendered
+-- ./server/api/ping/test.js  nuxt api
+-- ./net23/src/test.js        lambda
+-- ./icarus/icarus.vue        vite
+-> ./test.js                  node
 */
-import { runTests, log, look } from './library/library0.js'
-import './library/library1.js'
-import './library/library2.js'
-import './library/database.js'
-import './library/cloud.js'
+import { runTests } from './library/test.js'
+import { log, look } from './library/library0.js'
 import { snippet } from './library/cloud2.js'
 
 //snippet runner

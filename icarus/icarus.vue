@@ -2,20 +2,15 @@
 
 import { ref, onMounted } from 'vue' 
 
-/* tiny tests run four places:
--- ./pages/ping/test.vue  nuxt
--- ./net23/src/test.js    lambda
--> ./icarus/icarus.vue    vite
--- ./test.js              node
+/* tiny tests run six places:
+-- ./pages/ping/test.vue      nuxt page, server and client rendered
+-- ./server/api/ping/test.js  nuxt api
+-- ./net23/src/test.js        lambda
+-> ./icarus/icarus.vue        vite
+-- ./test.js                  node
 */
-import { runTests, getLogRecord, testBox } from '../library/library0.js'
-import '../library/library1.js'
-import '../library/library2.js'
-import '../library/door.js'
-import '../library/door2.js'
-import '../library/database.js'
-import '../library/cloud.js'
-import '../library/cloud2.js'
+import { runTests } from '../library/test.js'
+import { getLogRecord, testBox } from '../library/library0.js'
 
 const boxModel = ref('')
 const testMessage = ref('')

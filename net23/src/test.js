@@ -1,34 +1,21 @@
 
-import { nanoid } from 'nanoid'
+import { pingEnvironment } from '../../library/ping.js'
 
-/* tiny tests run four places:
--- ./pages/ping/test.vue  nuxt
--> ./net23/src/test.js    lambda
--- ./icarus/icarus.vue    vite
--- ./test.js              node
+/* tiny tests run six places:
+-- ./pages/ping/test.vue      nuxt page, server and client rendered
+-- ./server/api/ping/test.js  nuxt api
+-> ./net23/src/test.js        lambda
+-- ./icarus/icarus.vue        vite
+-- ./test.js                  node
 */
-import { runTests, log } from '../../library/library0.js'
-import '../../library/library1.js'
-import '../../library/library2.js'
-import '../../library/database.js'
+import { runTests } from '../../library/test.js'
 
 export const handler = async (event) => {
+	let note = ''
+	try {
 
-	//try some big ints
-	let answer = BigInt(Date.now()) * 2n
+		note = `lambda says: ${(await runTests()).message}, ${pingEnvironment()}`
 
-	//confirm we can get to environment variables and cloud secrets
-	let access = 'not found'
-	if (typeof process.env.ACCESS_NETWORK_23 == 'string') access = process.env.ACCESS_NETWORK_23.length
-
-	return {
-		statusCode: 200,
-		body: JSON.stringify({
-			message: 'hello2, version 2024aug14a',
-			answer: `${answer}`,
-			tag: nanoid(),
-			test: await runTests(),
-			access: access
-		})
-	}
+	} catch (e) { note = 'ping test lambda error: '+e.stack }
+	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }
 }
