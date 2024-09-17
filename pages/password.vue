@@ -1,5 +1,9 @@
 <script setup>
 
+const thousand = 1000
+const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
+const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1 = 100*thousand
+
 import { ref } from 'vue';
 
 // Define reactive variables
@@ -109,6 +113,30 @@ oh, also, you need to do the eyelid control
 it'll be interesting to see what that is, and how you get it inside the text box
 
 */
+
+/*
+instead of failing or warning on caps lock on, why not try it boht ways?
+*/
+
+
+
+/*
+note about how, to begin, these are public constants
+and that's very strong and totall fine
+but in the future, it won't be hard to change to more iterations
+or even a separate salt for each password set
+*/
+/*
+let's say the attacker knows a user's password is 6 letters and numbers
+and he's got fast computers, which can do 100k loops for a password in 10ms
+how much processor time will it take him to crack it?
+
+26 + 26 + 10 = 62 possible digits
+62 ^ 6 = 56800235584 possible passwords
+56800235584 * 10 = 568002355840 milliseconds compute time to hash them all
+568002355840 / Time.year = 17.9989 years!
+*/
+
 
 
 </script>

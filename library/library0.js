@@ -997,8 +997,14 @@ const _subtle = {
 
 	//general or multi-purpose settings
 	extractable: true,//say we want to be able to export the key
-	strength: 256, // 256-bit AES, only slightly slower than 128, and the strongest ever
-	vectorSize: 12, // 12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
+	strength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
+	vectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
+
+	//hash password using the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
+	passwordAlgorithmKeyDerivation: 'PBKDF2',
+	passwordAlgorithmEncryption:    'AES-GCM',
+	passwordAlgorithmHashFunction:  'SHA-256',
+	passwordKeyLength: 256//256 bit derived key length
 }
 Object.freeze(_subtle)
 export async function symmetricCreateKey() {
@@ -1168,6 +1174,50 @@ test(async () => {
 	ok(!(await curveVerify(publicKey, premadeSignature, wrongMessage)))
 })
 
+//                                            _ 
+//  _ __   __ _ ___ _____      _____  _ __ __| |
+// | '_ \ / _` / __/ __\ \ /\ / / _ \| '__/ _` |
+// | |_) | (_| \__ \__ \\ V  V / (_) | | | (_| |
+// | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_|
+// |_|                                          
+
+export async function hashPassword(iterations, saltData, passwordText) {
+
+	//first, format the password text as key material for PBKDF2
+	let materia = await crypto.subtle.importKey(
+		'raw',
+		Data({text: passwordText}).array(),
+		{name: _subtle.passwordAlgorithmKeyDerivation},
+		false,//not extractable
+		['deriveBits', 'deriveKey'])
+
+	//second, derive the key using PBKDF2 with the given salt and number of iterations
+	let derived = await crypto.subtle.deriveKey(
+		{name: _subtle.passwordAlgorithmKeyDerivation, salt: saltData.array(), iterations: iterations, hash: _subtle.passwordAlgorithmHashFunction},
+		materia,
+		{name: _subtle.passwordAlgorithmEncryption, length: _subtle.passwordKeyLength},
+		true,//extractable
+		['encrypt', 'decrypt'])//we use the key to securely store the password, but it also works for encryption and decryption!
+
+	return Data({array: new Uint8Array(await crypto.subtle.exportKey('raw', derived))})//export the derived key as raw bytes
+}
+noop(async () => {//this is twice as slow as all your other tests, combined!
+
+	let howToMakeASalt = Data({random: 16}).base32()//here's how you make a salt
+	const salt = '774GOUNJC2OSI3X76LCZLPTPZQ'//and the one we'll use below
+
+	const iterations = 100000//one hundred thousand
+	let password = '12345'//this is not a great password
+
+	let t = Now()
+	let h = await hashPassword(
+		iterations,
+		Data({base32: salt}),
+		password)
+	let duration = Now() - t
+	log(`hashed to ${h.base32()} in ${duration}ms`)
+	ok(h.base32() == 'SCCKII6QJFZMORWW5BWIGAPNYM42SXYIT2KJ3VMHBFHZQPOSANNQ')
+})
 
 
 
@@ -1875,90 +1925,6 @@ function lookSayFunction(f) {
 
 
 
-
-
-
-
-
-/*
-you're back here to use subtle to also hash passwords
-
-
-
-*/
-
-test(async () => {
-
-
-	let d = Data({random: 16})
-//	log(d.base16(), d.base32(), d.base32().length)
-
-	const thousand = 1000
-
-	const ACCESS_SALT_1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
-	const iterations = 100*thousand
-	let salt = Data({base32: ACCESS_SALT_1})
-
-	let password = '12345'//luggage
-
-	let t = Now()
-	let slowlyHashedPassword = Data({array: await setPassword(iterations, salt.array(), password)})
-	let duration = Now() - t
-	log(`hashed to ${slowlyHashedPassword.base32()} in ${duration}ms`)
-
-	//this is twice as slow as all your other tests combined! but, that's the point. but still, we'll only test one of these, and maybe turn it off
-
-	ok(slowlyHashedPassword.base32() == 'OXHVSIPK25K6HF7XZXMIXJIB6YYWOYHAC2DSIMGREUZM7BSHSXEA')
-
-	/*
-	let's say the attacker knows a user's password is 6 letters and numbers
-	and he's got fast computers, which can do 100k loops for a password in 10ms
-	how much processor time will it take him to crack it?
-
-	26 + 26 + 10 = 62 possible digits
-	62 ^ 6 = 56800235584 possible passwords
-	56800235584 * 10 = 568002355840 milliseconds compute time to hash them all
-	568002355840 / Time.year = 17.9989 years!
-	*/
-
-
-
-
-})
-
-
-
-// PBKDF2 parameters
-const passwordName = 'PBKDF2'//Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
-const passwordIterations = 100000  // Number of iterations (adjustable)
-const passwordKeyLength = 256       // Length of the derived key (256 bits)
-const passwordHashAlgorithm = 'SHA-256' // Hash function
-
-async function setPassword(iterations, salt, passwordText) {
-	const encoder = new TextEncoder()
-	
-	const keyMaterial = await crypto.subtle.importKey(// Import the password as key material for PBKDF2
-		'raw',                          // Import the password as raw key material
-		encoder.encode(passwordText),    // Encode the password as Uint8Array
-		{ name: passwordName },              // Algorithm name
-		false,                           // Not extractable
-		['deriveBits', 'deriveKey']      // Usages
-	)
-	const key = await crypto.subtle.deriveKey(// Derive the key using PBKDF2 with the provided salt and iterations
-		{
-			name: passwordName,
-			salt: salt,                    // Salt provided as Uint8Array
-			iterations: iterations,        // Number of iterations (work factor)
-			hash: passwordHashAlgorithm            // Hashing algorithm
-		},
-		keyMaterial,
-		{ name: 'AES-GCM', length: passwordKeyLength }, // Derive a 256-bit key
-		true,                          // Extractable
-		["encrypt", "decrypt"]          // Usages
-	)
-
-	return new Uint8Array(await crypto.subtle.exportKey('raw', key))// Export the derived key as raw bytes (Uint8Array)
-}
 
 
 
