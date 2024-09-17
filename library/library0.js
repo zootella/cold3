@@ -1889,13 +1889,14 @@ you're back here to use subtle to also hash passwords
 
 test(async () => {
 
-	log('hi')
 
 	let d = Data({random: 16})
-	log(d.base16(), d.base32(), d.base32().length)
+//	log(d.base16(), d.base32(), d.base32().length)
+
+	const thousand = 1000
 
 	const ACCESS_SALT_1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
-	const iterations = 100000//100k
+	const iterations = 100*thousand
 	let salt = Data({base32: ACCESS_SALT_1})
 
 	let password = '12345'//luggage
@@ -1903,11 +1904,22 @@ test(async () => {
 	let t = Now()
 	let slowlyHashedPassword = Data({array: await setPassword(iterations, salt.array(), password)})
 	let duration = Now() - t
-	log(duration, slowlyHashedPassword.base32())
+	log(`hashed to ${slowlyHashedPassword.base32()} in ${duration}ms`)
 
 	//this is twice as slow as all your other tests combined! but, that's the point. but still, we'll only test one of these, and maybe turn it off
 
 	ok(slowlyHashedPassword.base32() == 'OXHVSIPK25K6HF7XZXMIXJIB6YYWOYHAC2DSIMGREUZM7BSHSXEA')
+
+	/*
+	let's say the attacker knows a user's password is 6 letters and numbers
+	and he's got fast computers, which can do 100k loops for a password in 10ms
+	how much processor time will it take him to crack it?
+
+	26 + 26 + 10 = 62 possible digits
+	62 ^ 6 = 56800235584 possible passwords
+	56800235584 * 10 = 568002355840 milliseconds compute time to hash them all
+	568002355840 / Time.year = 17.9989 years!
+	*/
 
 
 
@@ -1917,7 +1929,7 @@ test(async () => {
 
 
 // PBKDF2 parameters
-const passwordName = 'PBKDF2'
+const passwordName = 'PBKDF2'//Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
 const passwordIterations = 100000  // Number of iterations (adjustable)
 const passwordKeyLength = 256       // Length of the derived key (256 bits)
 const passwordHashAlgorithm = 'SHA-256' // Hash function
