@@ -1887,12 +1887,27 @@ you're back here to use subtle to also hash passwords
 
 */
 
-test(() => {
+test(async () => {
 
 	log('hi')
 
 	let d = Data({random: 16})
 	log(d.base16(), d.base32(), d.base32().length)
+
+	const ACCESS_SALT_1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
+	const iterations = 100000//100k
+	let salt = Data({base32: ACCESS_SALT_1})
+
+	let password = '12345'//luggage
+
+	let t = Now()
+	let slowlyHashedPassword = Data({array: await setPassword(iterations, salt.array(), password)})
+	let duration = Now() - t
+	log(duration, slowlyHashedPassword.base32())
+
+	//this is twice as slow as all your other tests combined! but, that's the point. but still, we'll only test one of these, and maybe turn it off
+
+	ok(slowlyHashedPassword.base32() == 'OXHVSIPK25K6HF7XZXMIXJIB6YYWOYHAC2DSIMGREUZM7BSHSXEA')
 
 
 
@@ -1900,6 +1915,38 @@ test(() => {
 })
 
 
+
+// PBKDF2 parameters
+const passwordName = 'PBKDF2'
+const passwordIterations = 100000  // Number of iterations (adjustable)
+const passwordKeyLength = 256       // Length of the derived key (256 bits)
+const passwordHashAlgorithm = 'SHA-256' // Hash function
+
+async function setPassword(iterations, salt, passwordText) {
+	const encoder = new TextEncoder()
+	
+	const keyMaterial = await crypto.subtle.importKey(// Import the password as key material for PBKDF2
+		'raw',                          // Import the password as raw key material
+		encoder.encode(passwordText),    // Encode the password as Uint8Array
+		{ name: passwordName },              // Algorithm name
+		false,                           // Not extractable
+		['deriveBits', 'deriveKey']      // Usages
+	)
+	const key = await crypto.subtle.deriveKey(// Derive the key using PBKDF2 with the provided salt and iterations
+		{
+			name: passwordName,
+			salt: salt,                    // Salt provided as Uint8Array
+			iterations: iterations,        // Number of iterations (work factor)
+			hash: passwordHashAlgorithm            // Hashing algorithm
+		},
+		keyMaterial,
+		{ name: 'AES-GCM', length: passwordKeyLength }, // Derive a 256-bit key
+		true,                          // Extractable
+		["encrypt", "decrypt"]          // Usages
+	)
+
+	return new Uint8Array(await crypto.subtle.exportKey('raw', key))// Export the derived key as raw bytes (Uint8Array)
+}
 
 
 

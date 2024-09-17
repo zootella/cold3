@@ -42,8 +42,8 @@ hashing on the client, the user's password never leaves the client
 
 
 
-
-const salt1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
+//yes, this is a factory preset, correctly in the page, which gets sent to the client, where the user can see it
+const ACCESS_SALT_1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
 
 //most of this will be in library0:
 
@@ -104,6 +104,9 @@ oh, you have that really crappy android tablet, try it there, too
 no form tag below
 button works, but enter doesn't press button
 what are different ways to make enter also work? or is the best way the form tag
+
+oh, also, you need to do the eyelid control
+it'll be interesting to see what that is, and how you get it inside the text box
 
 */
 
