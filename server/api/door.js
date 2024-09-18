@@ -23,6 +23,8 @@ export default defineEventHandler(async (workerEvent) => {
 
 async function doorProcessBelow(workerEvevnt, door) {
 
+
+	return {body: {message: 'door v2024sep18a'}}
 }
 
 

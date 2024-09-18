@@ -1,57 +1,22 @@
+
+//      _                  
+//   __| | ___   ___  _ __ 
+//  / _` |/ _ \ / _ \| '__|
+// | (_| | (_) | (_) | |   
+//  \__,_|\___/ \___/|_|   
+//                        
+
 /*
-	oh, there's a knock at our front door!
-	cloudflare has invoked a worker and sent an event for us to respond to a request using nuxt
-	or, amazon has invoked a lambda and sent an event and context for us to respond
+oh, there's a knock at our front door!
+cloudflare has invoked a worker and sent an event for us to respond to a request using nuxt
+or, amazon has invoked a lambda and sent an event and context for us to respond
 
-	~~~~ first, the copypasta for a nuxt server api endpoint deployed to cloudflare pages and workers:
+to make your own, copy the pasta at:
+./server/api/door.js  ~ for a new worker endpoint
+./net23/src/door.js   ~ for a new lambda endpoint
 
-	import { Now } from '@/library/library0.js'
-	import { Tag } from '@/library/library1.js'
-	import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
-
-	export default defineEventHandler(async (workerEvent) => {
-		let door, response, error
-		try {
-
-			door = doorWorkerOpen(workerEvent)
-			response = await doorProcessBelow(workerEvent, door)
-
-		} catch (e) { error = e }
-		try {
-
-			await doorWorkerShut(workerEvent, door, response, error)
-			if (response && !error) return response.body
-
-		} catch (d) { console.error(`discarded ${Now()} ${Tag()}`, d) }
-		setResponseStatus(workerEvent, 500); return null
-	})
-	//^our copypasta to safely man the door
-
-	~~~~ and second, the corresponding copypasta for amazon lambda:
-
-	import { Now } from '../../library/library0.js'
-	import { Tag } from '../../library/library1.js'
-	import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
-
-	exports.handler = async (lambdaEvent, lambdaContext) => {
-		let door, response, error
-		try {
-
-			door = doorLambdaOpen(lambdaEvent)
-			response = await doorProcessBelow(lambdaEvent, lambdaContext, door)
-
-		} catch (e) { error = e }
-		try {
-
-			await doorLambdaShut(lambdaEvent, door, response, error)
-			if (response && !error) return { statusCode: 200, headers: {'Content-Type': 'application/json'}, body: response.bodyStringified }
-
-		} catch (d) { console.error(`discarded ${Now()} ${Tag()}`, d) }
-		return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
-	}
-	//^our copypasta to safely man the front door
-
-	~~~~ the rest is factored as functions below, with worker and lambda concerns handled here together
+then write your code in doorProcessBelow() beneath
+the copypasta calls common helper functions, implemented once here
 */
 
 export function doorWorkerOpen(workerEvent) {}

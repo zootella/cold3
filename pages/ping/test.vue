@@ -10,19 +10,18 @@ import { pingEnvironment } from '@/library/ping.js'
 -- ./test.js                  node
 */
 import { runTests } from '../library/test.js'
-
-//run tests for page, will run on server and then client as part of hybrid rendering
-let note = `script setup says: ${(await runTests()).message}, ${pingEnvironment()}`
-
-//run tests a third time, by fetching a server api endpoint, will run on server
-let {data, error} = await useFetch('/api/ping/test')
-
 /*
 TODO note to remove tests from production
 does including tiny tests in nuxt mean the whole bundle, even in production, is unnecessarily larger?
 you may want to comment this out at the end
 there's also process.env.NODE_ENV != 'production'
 */
+
+//run tests for page, will run on server and then client as part of hybrid rendering
+let note = `script setup says: ${(await runTests()).message}, ${pingEnvironment()}`
+
+//run tests a third time, by fetching a server api endpoint, will run on server
+let {data, error} = await useFetch('/api/ping/test')
 
 </script>
 <template>

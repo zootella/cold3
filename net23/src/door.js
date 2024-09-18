@@ -3,7 +3,7 @@ import { Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
 
-exports.handler = async (lambdaEvent, lambdaContext) => {
+export const handler = async (lambdaEvent, lambdaContext) => {
 	let door, response, error
 	try {
 
@@ -23,27 +23,16 @@ exports.handler = async (lambdaEvent, lambdaContext) => {
 
 async function doorProcessBelow(lambdaEvent, lambdaContext, door) {
 
+
+	return {bodyStringified: JSON.stringify({message: 'door lambda v2024sep18b'})}
 }
 
 
+//keep these as hello handlers, that demonstrate just proper use of the front door
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*
 
 
 

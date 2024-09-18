@@ -17,19 +17,12 @@ provider:
 
 # #### FOR API FUNCTIONS ####
 functions:
-  hello1:
-    handler: dist/hello1.handler # Paths to distribution for upload after rollup
+  door:
+    handler: dist/door.handler # Paths to distribution for upload after rollup
     timeout: 30 # Let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
-          path: hello1
-          method: get
-  hello2:
-    handler: dist/hello2.handler
-    timeout: 30
-    events:
-      - http:
-          path: hello2
+          path: door
           method: get
   ping5:
     handler: dist/ping5.handler
@@ -44,6 +37,20 @@ functions:
     events:
       - http:
           path: test
+          method: get
+  hello1:
+    handler: dist/hello1.handler
+    timeout: 30
+    events:
+      - http:
+          path: hello1
+          method: get
+  hello2:
+    handler: dist/hello2.handler
+    timeout: 30
+    events:
+      - http:
+          path: hello2
           method: get
 
 resources:

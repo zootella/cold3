@@ -10,19 +10,19 @@
 
 
 
-
-let cycleStart, cyclePerform, cycleStop
+/*
+let doorStart, doorPerform, doorStop
 async function cloudRequestHandler(event) {
 	let cycle, response, error
 	try {
 
-		cycle = cycleStart(event)
-		response = await cyclePerform(event, cycle)
+		cycle = doorStart(event)
+		response = await doorPerform(event, cycle)
 
 	} catch (e) { error = e }//or processing could just throw, save it and log below
 	try {
 
-		await cycleStop(event, cycle, response, error)//logs the error
+		await doorStop(event, cycle, response, error)//logs the error
 		if (response && !error) return { statusCode: 200, headers: {'Content-Type': 'application/json'}, body: response.bodyStringified }
 
 	} catch (d){}//catch and discard, we can't log an exception if logging the last one is what threw now, can we!
@@ -34,18 +34,18 @@ cycle - our little safe object with cycle tag and tick counts
 response - null if failure, or on success the body to send back up to the client
 error - an unintended exception that gets thrown somehow
 
-cycleStart - assigns a tag and sets the start time
-cyclePerform - lots of work examining and performing the request and assembling a response
+doorStart - assigns a tag and sets the start time
+doorPerform - lots of work examining and performing the request and assembling a response
 	shouldn't throw unless something truly unexpected causes it to throw
 	instead, if we should deny this request, returns null
 	maybe has already logged both success and failure of intermediate steps, too
-cycleStop - sets the end time and duration, logs more maybe
+doorStop - sets the end time and duration, logs more maybe
 makeResponse - platform function to bundle and send
 
-cycleStart shouldn't do anything that could possibly throw
-cyclePerform can throw, but if you encounter a known problem return null, still let exceptions be exceptional
-cycleStop will try to log to datadog
-only if cycleStop doesn't throw, there's a response, and no error, respond 200 to client
+doorStart shouldn't do anything that could possibly throw
+doorPerform can throw, but if you encounter a known problem return null, still let exceptions be exceptional
+doorStop will try to log to datadog
+only if doorStop doesn't throw, there's a response, and no error, respond 200 to client
 
 code the second block so you can't imagine how it could throw
 if it does, still catch, but just discard

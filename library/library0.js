@@ -1181,7 +1181,7 @@ test(async () => {
 // | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_|
 // |_|                                          
 
-export async function hashPassword(iterations, saltData, passwordText) {
+export async function hashPassword(thousandsOfIterations, saltData, passwordText) {
 
 	//first, format the password text as key material for PBKDF2
 	let materia = await crypto.subtle.importKey(
@@ -1193,7 +1193,7 @@ export async function hashPassword(iterations, saltData, passwordText) {
 
 	//second, derive the key using PBKDF2 with the given salt and number of iterations
 	let derived = await crypto.subtle.deriveKey(
-		{name: _subtle.passwordAlgorithmKeyDerivation, salt: saltData.array(), iterations: iterations, hash: _subtle.passwordAlgorithmHashFunction},
+		{name: _subtle.passwordAlgorithmKeyDerivation, salt: saltData.array(), iterations: thousandsOfIterations*1000, hash: _subtle.passwordAlgorithmHashFunction},
 		materia,
 		{name: _subtle.passwordAlgorithmEncryption, length: _subtle.passwordKeyLength},
 		true,//extractable
@@ -1206,12 +1206,12 @@ noop(async () => {//this is twice as slow as all your other tests, combined!
 	let howToMakeASalt = Data({random: 16}).base32()//here's how you make a salt
 	const salt = '774GOUNJC2OSI3X76LCZLPTPZQ'//and the one we'll use below
 
-	const iterations = 100000//one hundred thousand
+	const thousandsOfIterations = 100//one hundred thousand, should take 10ms or more
 	let password = '12345'//this is not a great password
 
 	let t = Now()
 	let h = await hashPassword(
-		iterations,
+		thousandsOfIterations,
 		Data({base32: salt}),
 		password)
 	let duration = Now() - t
@@ -1417,6 +1417,22 @@ but that's probably all you need
 
 
 
+
+
+
+
+
+
+
+
+
+
+//      _       __ _                _   _                           __ 
+//   __| | ___ / _(_)_ __   ___  __| | | |_ _   _ _ __   ___  ___  / _|
+//  / _` |/ _ \ |_| | '_ \ / _ \/ _` | | __| | | | '_ \ / _ \/ _ \| |_ 
+// | (_| |  __/  _| | | | |  __/ (_| | | |_| |_| | |_) |  __/ (_) |  _|
+//  \__,_|\___|_| |_|_| |_|\___|\__,_|  \__|\__, | .__/ \___|\___/|_|  
+//                                          |___/|_|                   
 
 //use always with typeof, like "defined(typeof x)"
 export function defined(t) { return t != 'undefined' }
