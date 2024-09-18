@@ -17,41 +17,27 @@ provider:
 
 # #### FOR API FUNCTIONS ####
 functions:
-  door:
-    handler: dist/door.handler # Paths to distribution for upload after rollup
+  ping5:
+    handler: dist/ping5.handler # Paths to distribution for upload after rollup
     timeout: 30 # Let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
-          path: door
-          method: get
-  ping5:
-    handler: dist/ping5.handler
-    timeout: 30
-    events:
-      - http:
           path: ping5
-          method: get
+          method: get # GET so you can check it with a regular browser; api calls are POST
   test:
     handler: dist/test.handler
     timeout: 30
     events:
       - http:
           path: test
-          method: get
-  hello1:
-    handler: dist/hello1.handler
+          method: get # GET so you can check it with a regular browser; api calls are POST
+  door:
+    handler: dist/door.handler
     timeout: 30
     events:
       - http:
-          path: hello1
-          method: get
-  hello2:
-    handler: dist/hello2.handler
-    timeout: 30
-    events:
-      - http:
-          path: hello2
-          method: get
+          path: door
+          method: post
 
 resources:
   Resources: # Yes, it's correct to have resources twice and nested with different capitalization

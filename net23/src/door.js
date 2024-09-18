@@ -7,24 +7,29 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	let door, response, error
 	try {
 
-		door = doorLambdaOpen(lambdaEvent)
-		response = await doorProcessBelow(lambdaEvent, lambdaContext, door)
+		door = doorLambdaOpen(lambdaEvent, lambdaContext)
+		response = await doorProcessBelow(door)
 
 	} catch (e) { error = e }
 	try {
 
-		await doorLambdaShut(lambdaEvent, door, response, error)
-		if (response && !error) return { statusCode: 200, headers: {'Content-Type': 'application/json'}, body: response.bodyStringified }
+		let lambdaReturn = await doorLambdaShut(door, response, error)
+		if (response && !error) return lambdaReturn
 
 	} catch (d) { console.error(`discarded ${Now()} ${Tag()}`, d) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }
 //^our copypasta to safely man the front door
 
-async function doorProcessBelow(lambdaEvent, lambdaContext, door) {
+async function doorProcessBelow(door) {
+	let response = {}
 
+	//prove you got the body by including in message
+	let message = `hello ${door.body.name} age ${door.body.age} from door v2024sep18b`
 
-	return {bodyStringified: JSON.stringify({message: 'door lambda v2024sep18b'})}
+	response.message = message
+	response.when = Now()
+	return response
 }
 
 
@@ -33,6 +38,8 @@ async function doorProcessBelow(lambdaEvent, lambdaContext, door) {
 
 
 /*
+
+curl -i -X POST http://localhost:3000/prod/door -H "Content-Type: application/json" -d '{"name": "bob", "age": 52}'
 
 
 

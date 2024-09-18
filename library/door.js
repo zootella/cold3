@@ -1,4 +1,9 @@
 
+import { readBody } from 'h3'
+
+import { log, look, Now } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
+import { Tag } from './library1.js'
+
 //      _                  
 //   __| | ___   ___  _ __ 
 //  / _` |/ _ \ / _ \| '__|
@@ -12,17 +17,74 @@ cloudflare has invoked a worker and sent an event for us to respond to a request
 or, amazon has invoked a lambda and sent an event and context for us to respond
 
 to make your own, copy the pasta at:
-./server/api/door.js  ~ for a new worker endpoint
 ./net23/src/door.js   ~ for a new lambda endpoint
+./server/api/door.js  ~ for a new worker endpoint
 
 then write your code in doorProcessBelow() beneath
 the copypasta calls common helper functions, implemented once here
 */
 
-export function doorWorkerOpen(workerEvent) {}
-export function doorLambdaOpen(lambdaEvent) {}
-export async function doorWorkerShut(workerEvent, door, response, error) {}
-export async function doorLambdaShut(lambdaEvent, door, response, error) {}
+export function doorLambdaOpen(lambdaEvent, lambdaContext) {
+	let door = {}//our object that bundles together everything about this incoming request
+	door.startTick = Now()//when we got it
+	door.tag = Tag()//our tag for it
+	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
+	door.lambdaContext = lambdaContext
+
+	let bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
+	let body = JSON.parse(bodyText)
+	door.bodyText = bodyText
+	door.body = body
+
+	return door
+}
+export async function doorWorkerOpen(workerEvent) {
+	let door = {}//make door object to bundle everything together about this request we're doing
+	door.startTick = Now()//record when we got the request
+	door.tag = Tag()//tag the request for our own records
+	door.workerEvent = workerEvent//save everything they gave us about the request
+
+	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and nuxt parses it for us
+	log('door worker open', look(body))
+	door.body = body
+
+	return door
+}
+
+export async function doorLambdaShut(door, response, error) {
+	door.stopTick = Now()//time
+	door.duration = door.stopTick - door.startTick
+	door.response = response//bundle
+	door.error = error
+
+	//turn this into logAlert that goes to console and datadog
+	if (error) log('door lambda shut error', look(error))
+
+
+	let lambdaReturn = { statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response) }//by comparison, amazon wants it raw
+	return lambdaReturn
+}
+export async function doorWorkerShut(door, response, error) {
+	door.stopTick = Now()//time
+	door.duration = door.stopTick - door.startTick
+	door.response = response//bundle
+	door.error = error
+
+	//turn this into logAlert that goes to console and datadog
+	if (error) log('door worker shut error', look(error))
+
+
+	let workerReturn = response//nuxt will stringify and add status code and headers
+	return workerReturn
+}
+
+/*
+add to door
+send in request name text and and age number
+send in response message text and tick number
+
+
+*/
 
 
 

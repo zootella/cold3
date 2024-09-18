@@ -13,16 +13,16 @@
 /*
 let doorStart, doorPerform, doorStop
 async function cloudRequestHandler(event) {
-	let cycle, response, error
+	let door, response, error
 	try {
 
-		cycle = doorStart(event)
-		response = await doorPerform(event, cycle)
+		door = doorStart(event)
+		response = await doorPerform(event, door)
 
 	} catch (e) { error = e }//or processing could just throw, save it and log below
 	try {
 
-		await doorStop(event, cycle, response, error)//logs the error
+		await doorStop(event, door, response, error)//logs the error
 		if (response && !error) return { statusCode: 200, headers: {'Content-Type': 'application/json'}, body: response.bodyStringified }
 
 	} catch (d){}//catch and discard, we can't log an exception if logging the last one is what threw now, can we!
@@ -30,7 +30,7 @@ async function cloudRequestHandler(event) {
 }
 /*
 event - object from platform with details about the request
-cycle - our little safe object with cycle tag and tick counts
+door - our little safe object with door tag and tick counts
 response - null if failure, or on success the body to send back up to the client
 error - an unintended exception that gets thrown somehow
 
