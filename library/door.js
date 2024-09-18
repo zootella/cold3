@@ -44,7 +44,7 @@ export async function doorWorkerOpen(workerEvent) {
 	door.tag = Tag()//tag the request for our own records
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
-	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and nuxt parses it for us
+	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and we have to import readBody from h3 to parse it
 	log('door worker open', look(body))
 	door.body = body
 
