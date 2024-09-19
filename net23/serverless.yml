@@ -40,7 +40,9 @@ functions:
           path: door
           method: post # POST because now this is a real api call
           cors: # and switching to post means that now, by default, amazon will do cors
-            origin: https://cold3.cc # Only allow this domain
+            origin: # give it these acceptable domains
+              - http://localhost # local development, or evil attacker, except even without this curl sends no origin header, and amazon lets it in, so not really a new vector here
+              - ${env:ACCESS_ORIGIN} # let script on pages from the deployed domain call the lambda
             headers: # let the poster use these headers
               - Content-Type # to say the body will be in json, which it will
               - Authorization # to talk about api tokens and jwt, even though we're not using those

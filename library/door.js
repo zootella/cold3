@@ -57,7 +57,7 @@ export async function doorLambdaShut(door, response, error) {
 	door.error = error
 
 	//turn this into logAlert that goes to console and datadog
-	console.log('DOOR LAMBDA SHUT, v19i')
+	console.log('DOOR LAMBDA SHUT, v19j')
 	console.log('stringified: '+JSON.stringify(response))
 	if (error) {
 		console.log('DOOR LAMBDA SHUT ERROR:')
