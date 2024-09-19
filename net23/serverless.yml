@@ -13,6 +13,7 @@ provider:
   region: us-east-1 # Lambda@Edge requires North Virginia
   stage: prod # Production by default, as this script includes resources like buckets
   environment: # Name variables in .env file here so they are on process.env for the Lambda code
+    ACCESS_ORIGIN: ${env:ACCESS_ORIGIN}
     ACCESS_NETWORK_23: ${env:ACCESS_NETWORK_23}
 
 # #### FOR API FUNCTIONS ####

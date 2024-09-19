@@ -57,7 +57,7 @@ export async function doorLambdaShut(door, response, error) {
 	door.error = error
 
 	//turn this into logAlert that goes to console and datadog
-	console.log('DOOR LAMBDA SHUT, v19g')
+	console.log('DOOR LAMBDA SHUT, v19i')
 	console.log('stringified: '+JSON.stringify(response))
 	if (error) {
 		console.log('DOOR LAMBDA SHUT ERROR:')
@@ -65,9 +65,10 @@ export async function doorLambdaShut(door, response, error) {
 	}
 
 	console.log('looking at headers:', look(door.lambdaEvent.headers))
+	console.log('length of access origin is '+process?.env?.ACCESS_ORIGIN?.length)
 
 	const origin = door.lambdaEvent.headers.origin
-	const allowedOrigins = ['https://cold3.cc', 'http://localhost']
+	const allowedOrigins = [process.env.ACCESS_ORIGIN, 'http://localhost']
 	if (!allowedOrigins.includes(origin)) return {statusCode: 501}//change to toss
 
 	let lambdaReturn = {
