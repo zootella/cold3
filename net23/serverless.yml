@@ -23,21 +23,28 @@ functions:
     events:
       - http:
           path: ping5
-          method: get # GET so you can check it with a regular browser; api calls are POST
+          method: get # GET so you can check it with a regular browser
   test:
     handler: dist/test.handler
     timeout: 30
     events:
       - http:
           path: test
-          method: get # GET so you can check it with a regular browser; api calls are POST
+          method: get # GET so you can check it with a regular browser
   door:
     handler: dist/door.handler
     timeout: 30
     events:
       - http:
           path: door
-          method: post
+          method: post # POST because now this is a real api call
+          cors: # and switching to post means that now, by default, amazon will do cors
+            origin: https://cold3.cc # Only allow this domain
+            headers: # let the poster use these headers
+              - Content-Type # to say the body will be in json, which it will
+              - Authorization # to talk about api tokens and jwt, even though we're not using those
+              - X-Requested-With # a throwback to the jquery days that chat says to add, too
+            allowCredentials: false # do not send cookies or http authentication headers, we're not using them
 
 resources:
   Resources: # Yes, it's correct to have resources twice and nested with different capitalization

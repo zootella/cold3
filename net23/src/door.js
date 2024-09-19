@@ -4,7 +4,7 @@ import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	let door, response, error
+	let door = {}, response, error
 	try {
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)

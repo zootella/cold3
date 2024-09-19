@@ -45,7 +45,6 @@ export async function doorWorkerOpen(workerEvent) {
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
 	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and we have to import readBody from h3 to parse it
-	log('door worker open', look(body))
 	door.body = body
 
 	return door
@@ -58,12 +57,48 @@ export async function doorLambdaShut(door, response, error) {
 	door.error = error
 
 	//turn this into logAlert that goes to console and datadog
-	if (error) log('door lambda shut error', look(error))
+	console.log('DOOR LAMBDA SHUT, v19g')
+	console.log('stringified: '+JSON.stringify(response))
+	if (error) {
+		console.log('DOOR LAMBDA SHUT ERROR:')
+		console.log(look(error))
+	}
 
+	console.log('looking at headers:', look(door.lambdaEvent.headers))
 
-	let lambdaReturn = { statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response) }//by comparison, amazon wants it raw
+	const origin = door.lambdaEvent.headers.origin
+	const allowedOrigins = ['https://cold3.cc', 'http://localhost']
+	if (!allowedOrigins.includes(origin)) return {statusCode: 501}//change to toss
+
+	let lambdaReturn = {
+		statusCode: 200,
+		headers: {
+			'Content-Type': 'application/json',
+			'Access-Control-Allow-Origin': origin,  // Include CORS header
+			'Access-Control-Allow-Methods': 'POST, OPTIONS',    // Include allowed methods
+			'Access-Control-Allow-Headers': 'Content-Type, Authorization'  // Include allowed headers
+		},
+		body: JSON.stringify(response)
+	}//by comparison, amazon wants it raw
 	return lambdaReturn
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export async function doorWorkerShut(door, response, error) {
 	door.stopTick = Now()//time
 	door.duration = door.stopTick - door.startTick
@@ -71,7 +106,7 @@ export async function doorWorkerShut(door, response, error) {
 	door.error = error
 
 	//turn this into logAlert that goes to console and datadog
-	if (error) log('door worker shut error', look(error))
+	if (error) console.log('door worker shut error', look(error))
 
 
 	let workerReturn = response//nuxt will stringify and add status code and headers
