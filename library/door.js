@@ -92,7 +92,7 @@ export async function doorLambdaShut(door, response, error) {
 
 
 
-const useLocalLambda = true
+const useLocalLambda = false
 export async function fetchLambda(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
 	let host = useLocalLambda ? 'http://localhost:4000/prod' : 'https://api.net23.cc'
@@ -137,7 +137,7 @@ function workerGotInformationEarlier() {
 	let body
 	try {
 		startRequestStopwatch()
-		saveCloudEvent(event)//(1) example of application function to store information about the request that invoked us
+		//saveCloudEvent(event)//(1) example of application function to store information about the request that invoked us
 
 		//up top, let's get information about the request, event, and client talking to us
 		let tlsVersion = event.req.cf?.tlsVersion//like "TLSv1.3" or undefined if http rather than https

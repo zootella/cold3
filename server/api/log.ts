@@ -1,9 +1,9 @@
 
 import { log, look, toss, Now } from '@/library/library0.js'
-import { dog, snippet2, saveCloudEvent } from '@/library/cloud2.js'
+import { /*dog*/ } from '@/library/cloud2.js'
 
 export default defineEventHandler(async (event) => {
-	saveCloudEvent(event)
+	//saveCloudEvent(event)
 	let o = {}
 	try {
 
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
 
 		let message = body.message
 		let t = Now()
-		await dog(message)
+//		await dog(message)
 		let duration = Now() - t
 
 //		snippet2()

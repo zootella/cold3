@@ -1,7 +1,7 @@
 
 import { log, look, hasText } from '@/library/library0.js'
 import { checkTag } from '@/library/library1.js'
-import { dog } from '@/library/cloud2.js'
+import { /*dog*/ } from '@/library/cloud2.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
 
 		let v = '2024aug29 A1'
 		log('log ' + v)
-		dog('dog ' + v)
+		//dog('dog ' + v)
 		o.note = 'note ' + v
 
 	} catch (e) {

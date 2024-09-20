@@ -1,23 +1,6 @@
 
-//import modules
-import { log, look, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
+import { log, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
 import { Tag, checkTag } from './library1.js'
-import { senseEnvironment } from './ping.js'
-
-//node-style imports
-let _fs; async function loadFs() { if (!_fs) _fs = (await import('fs')).default.promises; return _fs }
-
-//modules that are demand, and may be lambda-only
-let _aws, _ses, _sns//load amazon stuff once and only when needed
-async function loadAmazon() {
-	if (!_aws) {
-		_aws = (await import('aws-sdk')).default//use the await import pattern because in es6 you can't require()
-		_aws.config.update({ region: process.env.ACCESS_AMAZON_REGION })//amazon's main location of us-east-1
-	}
-	return _aws
-}
-async function loadAmazonEmail() { if (!_ses) _ses = new (await loadAmazon()).SES(); return _ses }
-async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SNS(); return _sns }
 
 
 
@@ -30,68 +13,95 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 
 
-//let's test this stuff with node on the command line
-export async function snippet(card) {
-	log('here is the snippet, where you will do logs, email, sms in node first and soon!')
-	log(look(card))
-
-}
 
 
 
 
-async function sendLog_useDatadog(c) {
-	let {s} = c
+
+async function sendEmail_useAmazon(c) {
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
+	const ses = await loadAmazonEmail()
 	let q = {
-		resource: process.env.ACCESS_DATADOG_ENDPOINT,
+		Source: `${fromName} <${fromEmail}>`,//must be verified email or domain
+		Destination: { ToAddresses: [toEmail] },
+		Message: {
+			Subject: { Data: subjectText },
+			Body: {//both plain text and html for multipart/alternative email format
+				Text: { Data: bodyText },
+				Html: { Data: bodyHtml }
+			}
+		}
+	}
+	let result, error, success = true
+	q.tick = Now()
+
+	try {
+		result = await ses.sendEmail(q).promise()
+		//sanity check to set success false
+	} catch (e) { error = e; success = false }
+
+	let t = Now()
+	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
+}
+
+async function sendEmail_useSendgrid(c) {
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
+	let q = {
+		resource: process.env.ACCESS_SENDGRID_URL,
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY
+			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY
 		},
 		body: JSON.stringify({
-			ddsource: 'log-source',
-			ddtags: 'env:production',
-			message: s
+			from: { name: fromName, email: fromEmail },
+			personalizations: [{ to: [{ email: toEmail }] }],
+			subject: subjectText,
+			content: [
+				{ type: 'text/plain', value: bodyText },
+				{ type: 'text/html',  value: bodyHtml },
+			]
 		})
 	}
 	return await ashFetchum(c, q)
 }
 
-async function ashFetchum(c, q) {//takes c earlier called parameters and q an object of instructions to make the request
-	let o = {method: q.method, headers: q.headers, body: q.body}
+async function sendText_useAmazon(c) {
+	let {toPhone, messageText} = c
+	const sns = await loadAmazonTexts()
+	let p = {
+		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
+		Message: messageText,//must be 160 characters or less
+	}
+	let result, error, success = true
+	q.tick = Now()
 
-	q.tick = Now()//record when this happened and how long it takes
-	let response, bodyText, body, error, success
 	try {
-		response = await fetch(q.resource, o); clearTimeout(m)//fetch was fast enough so cancel the abort
-		bodyText = await response.text()
-		if (response.ok) {
-			success = true
-			if (response.headers?.get('Content-Type')?.includes('application/json')) {
-				body = JSON.parse(bodyText)//can throw, and then it's the api's fault, not your code here
-			}
-		}
-	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
-	let t = Now()
+		result = await sns.publish(p).promise()
+		//sanity check to set success false
+	} catch (e) { error = e; success = false }
 
-	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
+	let t = Now()
+	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+async function sendText_useTwilio(c) {
+	let {toPhone, messageText} = c
+	let q = {
+		resource: process.env.ACCESS_TWILIO_URL+'/Accounts/'+process.env.ACCESS_TWILIO_SID+'/Messages.json',
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH)
+		},
+		body: new URLSearchParams({
+			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from
+			To:   toPhone,//recipient phone number in E.164 format
+			Body: messageText
+		})
+	}
+	return await ashFetchum(c, q)//call my wrapped fetch
+}
 
 
 

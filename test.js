@@ -24,7 +24,7 @@ import card from './env.js'//and additional private info just for local developm
 */
 import { runTests } from './library/test.js'
 import { log, look } from './library/library0.js'
-import { snippet } from './library/cloud2.js'
+import { snippet } from './library/cloud.js'
 
 //snippet runner
 async function runSnippet() {
