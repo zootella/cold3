@@ -1,7 +1,7 @@
 
 import { readBody } from 'h3'
 
-import { log, look, Now, hasTextSame, toss } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
+import { log, look, Now, hasTextSame, toss, test, ok } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
 
 //      _                  
@@ -47,15 +47,34 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	door.bodyText = bodyText
 	door.body = body
 
-	//ok, here's where you check
 	//(1) the connection is secure
+	if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
+
 	//(2) there is no origin header at all; this is not from any browser
+	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
+
 	//(3) the network 23 access code is valid
-	if (!hasTextSame(process.env.ACCESS_NETWORK_23, body.ACCESS_NETWORK_23)) toss('net23 access denied', {door})
+	if (!hasTextSame(process.env.ACCESS_NETWORK_23, body.ACCESS_NETWORK_23)) toss('bad access code', {door})
 
 
 	return door
 }
+
+test(() => {
+
+	log('hi, now lets lowercase some headers')
+
+	let o = {
+		key1: 'value1',
+		Key2: 2,
+		KEY3: 'three'
+	}
+	let a = Object.keys(o)
+	let s = (a.join(';')+';').toLowerCase()
+	let b = s.includes('')
+
+	log(s, b)
+})
 
 export async function doorWorkerShut(door, response, error) {
 	door.stopTick = Now()//time

@@ -42,6 +42,46 @@ async function doorProcessBelow(door) {
 	return response
 }
 
+/*
+
+local lambda:
+
+lambdaEvent.headers:
+{
+  host: "localhost:4000" ‹14›
+  connection: "keep-alive" ‹10›
+  accept: "application/json" ‹16›
+  content-type: "application/json" ‹16›
+  accept-language: "*"
+  sec-fetch-mode: "cors"
+  user-agent: "node"
+  accept-encoding: "gzip, deflate" ‹13›
+  content-length: "88"
+}
+
+
+
+
+
+cloud lambda:
+
+lambdaEvent.headers:
+{ ‹11›
+  accept: "application/json" ‹16›
+  accept-encoding: "br, gzip, deflate" ‹17›
+  accept-language: "*"
+  content-type: "application/json" ‹16›
+  Host: "api.net23.cc" ‹12›
+  sec-fetch-mode: "cors"
+  User-Agent: "node"
+  X-Amzn-Trace-Id: "Root=1-66edc318-1ba20cca01e008b9627d1394" ‹40›
+  X-Forwarded-For: "149.106.98.24" ‹13›
+  X-Forwarded-Port: "443"
+  X-Forwarded-Proto: "https"
+}
+
+*/
+
 
 
 
