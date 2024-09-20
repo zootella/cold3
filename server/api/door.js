@@ -10,6 +10,8 @@ export default defineEventHandler(async (workerEvent) => {
 		door = await doorWorkerOpen(workerEvent)
 		response = await doorProcessBelow(door)
 
+		log('hi, going to check a function here')
+
 	} catch (e) { error = e }
 	try {
 

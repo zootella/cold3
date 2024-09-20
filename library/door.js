@@ -1,7 +1,7 @@
 
 import { readBody } from 'h3'
 
-import { log, look, Now, hasTextSame, toss, test, ok } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
+import { log, look, Now, checkText, hasTextSame, toss, test, ok } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
 
 //      _                  
@@ -94,7 +94,8 @@ export async function doorLambdaShut(door, response, error) {
 
 const useLocalLambda = true
 export async function fetchLambda(path, body) {
-	let host = useLocalLambda ? 'http://localhost:4000/prod/' : 'https://api.net23.cc/'
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
+	let host = useLocalLambda ? 'http://localhost:4000/prod' : 'https://api.net23.cc'
 	body.ACCESS_NETWORK_23 = process.env.ACCESS_NETWORK_23//don't forget keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }
