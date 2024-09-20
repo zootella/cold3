@@ -24,6 +24,17 @@ then write your code in doorProcessBelow() beneath
 the copypasta calls common helper functions, implemented once here
 */
 
+export async function doorWorkerOpen(workerEvent) {
+	let door = {}//make door object to bundle everything together about this request we're doing
+	door.startTick = Now()//record when we got the request
+	door.tag = Tag()//tag the request for our own records
+	door.workerEvent = workerEvent//save everything they gave us about the request
+
+	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and we have to import readBody from h3 to parse it
+	door.body = body
+
+	return door
+}
 export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	let door = {}//our object that bundles together everything about this incoming request
 	door.startTick = Now()//when we got it
@@ -36,20 +47,28 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	door.bodyText = bodyText
 	door.body = body
 
-	return door
-}
-export async function doorWorkerOpen(workerEvent) {
-	let door = {}//make door object to bundle everything together about this request we're doing
-	door.startTick = Now()//record when we got the request
-	door.tag = Tag()//tag the request for our own records
-	door.workerEvent = workerEvent//save everything they gave us about the request
+	//ok, here's where you check
+	//(1) the connection is secure
+	//(2) there is no origin header at all; this is not from any browser
+	//(3) the network 23 access code is valid
 
-	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and we have to import readBody from h3 to parse it
-	door.body = body
 
 	return door
 }
 
+export async function doorWorkerShut(door, response, error) {
+	door.stopTick = Now()//time
+	door.duration = door.stopTick - door.startTick
+	door.response = response//bundle
+	door.error = error
+
+	//turn this into logAlert that goes to console and datadog
+	if (error) console.log('door worker shut error', look(error))
+
+
+	let workerReturn = response//nuxt will stringify and add status code and headers
+	return workerReturn
+}
 export async function doorLambdaShut(door, response, error) {
 	door.stopTick = Now()//time
 	door.duration = door.stopTick - door.startTick
@@ -57,16 +76,13 @@ export async function doorLambdaShut(door, response, error) {
 	door.error = error
 
 	//turn this into logAlert that goes to console and datadog
-	console.log('DOOR LAMBDA SHUT, v19k')
-	console.log('stringified: '+JSON.stringify(response))
+	console.log('DOOR LAMBDA SHUT, v20a')
 	if (error) {
 		console.log('DOOR LAMBDA SHUT ERROR:')
 		console.log(look(error))
 	}
-
 	console.log('looking at headers:', look(door.lambdaEvent.headers))
 	console.log('length of access net23 is '+process?.env?.ACCESS_NETWORK_23?.length)
-
 	const origin = door.lambdaEvent.headers.origin
 	console.log('origin is: '+look(origin))
 
@@ -90,19 +106,6 @@ export async function doorLambdaShut(door, response, error) {
 
 
 
-export async function doorWorkerShut(door, response, error) {
-	door.stopTick = Now()//time
-	door.duration = door.stopTick - door.startTick
-	door.response = response//bundle
-	door.error = error
-
-	//turn this into logAlert that goes to console and datadog
-	if (error) console.log('door worker shut error', look(error))
-
-
-	let workerReturn = response//nuxt will stringify and add status code and headers
-	return workerReturn
-}
 
 /*
 add to door

@@ -1,4 +1,5 @@
 
+import { pingEnvironment } from '../../library/ping.js'
 import { Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
@@ -25,7 +26,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//prove you got the body by including in message
-	let message = `hello ${door.body.name} age ${door.body.age} from door v2024sep18k`
+	let message = `hello ${door.body.name} age ${door.body.age} from ${pingEnvironment()} v2024sep20b`
 
 	response.message = message
 	response.when = Now()

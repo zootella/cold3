@@ -25,7 +25,8 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//prove you got the body by including in message
-	let message = `hello ${door.body.name} age ${door.body.age} from door v2024sep18c`
+	let message = `hello ${door.body.name} age ${door.body.age} from door v2024sep20a`
+
 
 	response.message = message
 	response.when = Now()

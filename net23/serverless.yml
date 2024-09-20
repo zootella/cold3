@@ -154,6 +154,8 @@ custom:
       deleteRemoved: true # Remove files in the bucket missing from the folder
 
   # #### FOR API FUNCTIONS ####
+  serverless-offline:
+    httpPort: 4000 # Run locally on port 4000 instead of the default 3000
   customDomain: # Settings for serverless-domain-manager to get Lambdas up at api.net23.cc
     domainName: api.net23.cc
     basePath: ''
