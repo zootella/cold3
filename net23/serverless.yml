@@ -13,7 +13,6 @@ provider:
   region: us-east-1 # Lambda@Edge requires North Virginia
   stage: prod # Production by default, as this script includes resources like buckets
   environment: # Name variables in .env file here so they are on process.env for the Lambda code
-    ACCESS_ORIGIN: ${env:ACCESS_ORIGIN}
     ACCESS_NETWORK_23: ${env:ACCESS_NETWORK_23}
 
 # #### FOR API FUNCTIONS ####
@@ -39,15 +38,6 @@ functions:
       - http:
           path: door
           method: post # POST because now this is a real api call
-          cors: # and switching to post means that now, by default, amazon will do cors
-            origin: # give it these acceptable domains
-              - http://localhost # local development, or evil attacker, except even without this curl sends no origin header, and amazon lets it in, so not really a new vector here
-              - ${env:ACCESS_ORIGIN} # let script on pages from the deployed domain call the lambda
-            headers: # let the poster use these headers
-              - Content-Type # to say the body will be in json, which it will
-              - Authorization # to talk about api tokens and jwt, even though we're not using those
-              - X-Requested-With # a throwback to the jquery days that chat says to add, too
-            allowCredentials: false # do not send cookies or http authentication headers, we're not using them
 
 resources:
   Resources: # Yes, it's correct to have resources twice and nested with different capitalization

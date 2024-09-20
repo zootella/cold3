@@ -57,7 +57,7 @@ export async function doorLambdaShut(door, response, error) {
 	door.error = error
 
 	//turn this into logAlert that goes to console and datadog
-	console.log('DOOR LAMBDA SHUT, v19j')
+	console.log('DOOR LAMBDA SHUT, v19k')
 	console.log('stringified: '+JSON.stringify(response))
 	if (error) {
 		console.log('DOOR LAMBDA SHUT ERROR:')
@@ -65,22 +65,12 @@ export async function doorLambdaShut(door, response, error) {
 	}
 
 	console.log('looking at headers:', look(door.lambdaEvent.headers))
-	console.log('length of access origin is '+process?.env?.ACCESS_ORIGIN?.length)
+	console.log('length of access net23 is '+process?.env?.ACCESS_NETWORK_23?.length)
 
 	const origin = door.lambdaEvent.headers.origin
-	const allowedOrigins = [process.env.ACCESS_ORIGIN, 'http://localhost']
-	if (!allowedOrigins.includes(origin)) return {statusCode: 501}//change to toss
+	console.log('origin is: '+look(origin))
 
-	let lambdaReturn = {
-		statusCode: 200,
-		headers: {
-			'Content-Type': 'application/json',
-			'Access-Control-Allow-Origin': origin,  // Include CORS header
-			'Access-Control-Allow-Methods': 'POST, OPTIONS',    // Include allowed methods
-			'Access-Control-Allow-Headers': 'Content-Type, Authorization'  // Include allowed headers
-		},
-		body: JSON.stringify(response)
-	}//by comparison, amazon wants it raw
+	let lambdaReturn = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	return lambdaReturn
 }
 
