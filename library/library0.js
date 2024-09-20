@@ -231,7 +231,7 @@ test(() => {
 /*   \ \ `. \        |   */  // Make sure s is a string that has some text,
 /*    \ \  `.`.      |   */  // meaning it's not blank, and not just space
 /*     \ \   `.`.    |   */  export function checkText(s) {
-/*      \ \    `.`.  |   */    if (!hasText(s)) toss('no text', {s})
+/*      \ \    `.`.  |   */    if (!hasText(s)) toss('type', {s})
 /*       \ \     `.`.|   */  }
 /*        \ \      `.`.  */  export function hasText(s) {
 /*         \ \     ,^-'  */    return (
@@ -311,6 +311,31 @@ test(() => {
 	ok(textToInt('-1', -1) == -1)
 	ok(textToInt('0') == 0)
 	ok(textToInt('1') == 1)
+})
+
+//todo, up here at the near goodwin level, trying out four more to go with checkText and hasText above:
+export function checkTextSame(s1, s2) { if (!hasTextSame(s)) toss('same', {s1, s2}) }
+export function hasTextSame(s1, s2) { return hasText(s1) && hasText(s2) && (s1 === s2) }
+export function checkTextOrBlank(s) { if (!hasTextOrBlank(s)) toss('type', {s}) }
+export function hasTextOrBlank(s) { return typeof s == 'string' }
+test(() => {
+
+	ok(!hasText())
+	ok(!hasText(5))
+	ok(!hasText(''))
+	ok(!hasText(' '))//hasText and checkText want a string that's not blank and not trimmable to blank
+	ok(hasText('a'))
+
+	ok(!hasTextOrBlank())
+	ok(!hasTextOrBlank(5))
+	ok(hasTextOrBlank(''))//hasTextOrBlank requires a string, but blank is ok
+	ok(hasTextOrBlank(' '))
+	ok(hasTextOrBlank('a'))
+
+	//use hasTextSame for validating api keys--both need to be no whitespace string charcters, and the same
+	ok(!hasTextSame('', ''))
+	ok(hasTextSame('a', 'a'))
+	ok(!hasTextSame('a', 'b'))
 })
 
 //  _            _   

@@ -25,9 +25,15 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 
-	let useNet23Cloud = true ? 'https://api.net23.cc/door' : 'http://localhost:4000/prod/door'
+	let useNet23Cloud = false ? 'https://api.net23.cc/door' : 'http://localhost:4000/prod/door'
 
-	let lambdaResult = await $fetch(useNet23Cloud, {method: 'POST', body: {name: 'bob', age: 42}})
+	let lambdaResult = await $fetch(useNet23Cloud, {
+		method: 'POST',
+		body: {
+			ACCESS_NETWORK_23: process.env.ACCESS_NETWORK_23,
+			name: 'bob',
+			age: 42
+		}})
 	log(look(lambdaResult))
 	let message = lambdaResult.message
 

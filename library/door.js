@@ -1,7 +1,7 @@
 
 import { readBody } from 'h3'
 
-import { log, look, Now } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
+import { log, look, Now, hasTextSame, toss } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
 
 //      _                  
@@ -51,6 +51,7 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	//(1) the connection is secure
 	//(2) there is no origin header at all; this is not from any browser
 	//(3) the network 23 access code is valid
+	if (!hasTextSame(process.env.ACCESS_NETWORK_23, body.ACCESS_NETWORK_23)) toss('net23 access denied', {door})
 
 
 	return door
@@ -63,7 +64,10 @@ export async function doorWorkerShut(door, response, error) {
 	door.error = error
 
 	//turn this into logAlert that goes to console and datadog
-	if (error) console.log('door worker shut error', look(error))
+	if (error) {
+		log('door worker shut error', look(error))
+		return null
+	}
 
 
 	let workerReturn = response//nuxt will stringify and add status code and headers
@@ -75,16 +79,11 @@ export async function doorLambdaShut(door, response, error) {
 	door.response = response//bundle
 	door.error = error
 
-	//turn this into logAlert that goes to console and datadog
-	console.log('DOOR LAMBDA SHUT, v20a')
-	if (error) {
-		console.log('DOOR LAMBDA SHUT ERROR:')
-		console.log(look(error))
+	if (error) {//processing this request caused an error
+		log('door lambda shut error', look(error))//tell staff about it
+		return null//return no response
 	}
-	console.log('looking at headers:', look(door.lambdaEvent.headers))
-	console.log('length of access net23 is '+process?.env?.ACCESS_NETWORK_23?.length)
-	const origin = door.lambdaEvent.headers.origin
-	console.log('origin is: '+look(origin))
+
 
 	let lambdaReturn = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	return lambdaReturn
