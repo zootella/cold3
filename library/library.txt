@@ -1125,6 +1125,11 @@ right in sql, you can filter rows and then compute averages and percentiles
 local development is good at seeing console.log output
 and for durable output, you can write to log.txt
 
+console.log in a lambda automatically goes to amazon cloudwatch
+and this is more reliable than datadog
+cloudflare's logging isn't on by default, but also uses the standard streams out
+so it makes sense to call these as a backup to datadog, also
+
 [II.] Needs, you've found six
 
 current needs, before v1:
@@ -1174,7 +1179,8 @@ ALERT (datadog) (roadmap v0.1)
   tag, tick,
   log, load//here's where we, the developers, can find out about uncaught exceptions
 }
-here's where you probably want information about the environment, lambda, nuxt ssr, csr, otherwise you'll be looking at one of these scratching your head not knowing even what computer where ran into it
+here's where you probably want information about the environment, lambda, nuxt ssr, csr, otherwise you'll be looking at one of these scratching your head not knowing even what computer w
+here ran into it
 
 AUDIT (datadog) (roadmap v0.1)
 {

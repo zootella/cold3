@@ -1,11 +1,17 @@
 
 //import modules
-import { log, look, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
-import { Tag, checkTag } from './library1.js'
 import { senseEnvironment } from './ping.js'
+import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
+import { Tag, checkTag } from './library1.js'
 
 //node-style imports
-let _fs; async function loadFs() { if (!_fs) _fs = (await import('fs')).default.promises; return _fs }
+let _fs;
+async function loadFs() {
+	if (!_fs && senseEnvironment().includes('LocalNode')) {
+		_fs = (await import('fs')).default.promises
+	}
+	return _fs
+}
 
 //modules that are demand, and may be lambda-only
 let _aws, _ses, _sns//load amazon stuff once and only when needed
@@ -22,66 +28,224 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 
 
-/*
-very brief notes about logging:
-
-do use console.log and console.error, they go to local terminal, amazon cloudwatch, and maybe later cloudflare, too
-
-sinks include:
--browser inspector
--bash command line
--amazon dashboard
--node write file
--datadog
-
-types of logs include:
--temporary for development, DEBUG, log()
--unusual to investigate, ALERT, logAlert()
--record of transaction, AUDIT, logAudit()
-
-parts of a complete log:
--type, like DEBUG, ALERT, AUDIT
--tag, so you know if it's a different log or the same log twice
--tick, so you know when it happened, machine and human readable here also, please
--note, one to three words
--longer message, composed message that describes easily
--human readable watch, like from look()
--machine complete watch, like from JSON.stringify()
--size of all that before you send it to datadog, so you know if this is going to impact your bill
-
-log exceptions at the top, not at the bottom
-so, not in toss(), but rather around door
-
-[]get rid of stray logs cluttering things from months ago
-[]get rid of the log record, only icarus is using it and doesn't need it
-
-general checks
--everywhere you call console log and console error directly, shouldn't they go through this system?
-
-general questions
--what do you do with a caught exception after logging to datadog has failed?
-*/
 
 
 
 
 
+
+
+
+
+
+
+
+test(() => {
+	log('hi, icarus! '+senseEnvironment())
+})
 
 
 //let's test this stuff with node on the command line
 export async function snippet(card) {
-	log('here is the snippet, where you will do logs, email, sms in node first and soon!')
-	log(look(card))
+	log('hi, node! '+senseEnvironment())
+
+
+	await dog('putting it away for tonight')
 
 }
 
 
 
 
-async function sendLog_useFile(...a) {
+
+
+
+
+//       _                 _   _                   _             
+//   ___| | ___  _   _  __| | | | ___   __ _  __ _(_)_ __   __ _ 
+//  / __| |/ _ \| | | |/ _` | | |/ _ \ / _` |/ _` | | '_ \ / _` |
+// | (__| | (_) | |_| | (_| | | | (_) | (_| | (_| | | | | | (_| |
+//  \___|_|\___/ \__,_|\__,_| |_|\___/ \__, |\__, |_|_| |_|\__, |
+//                                     |___/ |___/         |___/ 
+
+//dog
+//use dog(a, b) just like you do log(), except you have to await dog()
+//from code running local or deployed, dog always sends logs up to datadog
+export async function dog(...a) {
+	let t = Now()
+	let w = senseEnvironment()
+	let o = {
+		when: sayTick(t),
+		message: composeLogArguments(...a),
+		watch: a,
+
+		tick: t,
+		tag: Tag(),
+		tags: [`type:debug`, `where:${w}`],
+		level: 'debug'//level is a property datadog wants, with a value like info, debug, warn, error, or critical
+	}
+	let s = `${sayTick(t)} DEBUG ↓ ${w} ${o.tick} ${o.tag} ${newline}${o.message}`
+
+	console.log(s)
+	sendLog_useIcarus(s)
+	await sendLog_useFile(s)
+	await sendLog_useDatadog({o})
+}
+
+//logAudit
+//we did something with a third-party api, like send a text or run a credit card
+//and so we must keep a permanent record of, whether the code that did it was running local or cloud
+export async function logAudit(message, watch) {
+	let t = Now()
+	let w = senseEnvironment()
+	let o = {
+		when: sayTick(t),
+		message: message,
+		watch: watch,
+
+		tick: t,
+		tag: Tag(),
+		tags: [`type:audit`, `where:${w}`],
+		level: 'info'
+	}
+	let s = 'AUDIT '+look(o)+newline+JSON.stringify(o)
+
+	console.log(s)
+	sendLog_useIcarus(s)
+	await sendLog_useFile(s)
+	await sendLog_useDatadog({o})//make a record of every real use of the real api, even when it's just local development!
+}
+
+//logAlert
+//an exception we didn't expect rose to the top of the event handler
+//log to datadog to investigate later
+export async function logAlert(message, watch) {
+	let t = Now()
+	let w = senseEnvironment()
+	let o = {
+		when: sayTick(t),
+		message: message,
+		watch: watch,
+
+		tick: t,
+		tag: Tag(),
+		tags: [`type:alert`, `where:${w}`],
+		level: 'error'
+	}
+	let s = 'ALERT '+look(o)+newline+JSON.stringify(o)
+
+	console.error(s)
+	sendLog_useIcarus(s)
+	await sendLog_useFile(s)//really only works in $ node test, but sure, try it
+	if (isCloud()) await sendLog_useDatadog({o})//if local, don't send to datadog, as code changes all the time while we're working on it
+}
+
+//logDiscard
+//while trying to deal with an alert, another exception happened
+//we may not be able to log it, but try anyway
+export async function logFragile(message, watch) {
+	let t = Now()
+	let w = senseEnvironment()
+	let o = {
+		when: sayTick(t),
+		message: message,
+		watch: watch,
+
+		tick: t,
+		tag: Tag(),
+		tags: [`type:fragile`, `where:${w}`],
+		level: 'critical'
+	}
+	let s = 'FRAGILE '+look(o)+newline+JSON.stringify(o)
+
+	console.error(s)
+	sendLog_useIcarus(s)
+	await sendLog_useFile(s)
+	if (isCloud()) await sendLog_useDatadog({o})
+}
+
+
+
+
+//not proud of these two:
+export function isLocal() { return senseEnvironment().includes('Local') }
+export function isCloud() { return senseEnvironment().includes('Cloud') }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function composeLogArguments(...a) {
+	let s = ''//compose some nice display text
+	if (a.length == 0) {//no arguments, just the timestamp
+	} else if (a.length == 1) {//timestamp and the one argument
+		s = say(a[0])
+	} else {//timestamp and newlines between multiple arguments
+		a.forEach(e => { s += newline + say(e) })
+	}
+	return s.trimStart()
+}
+
+
+
+
+
+
+
+function sendLog_useIcarus(s) {/*TODO*/}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+async function sendLog_useFile(s) {//this only works for $ node test, but it sure is useful there
 	let fs = await loadFs()
-	let s = composeLog(a)
-	await fs.appendFile('cloud.log', s+newline)
+	if (fs) await fs.appendFile('cloud.log', s.trimEnd()+newline)
 }
 
 
@@ -89,7 +253,8 @@ async function sendLog_useFile(...a) {
 
 
 async function sendLog_useDatadog(c) {
-	let {s} = c
+	let {o} = c
+	log(look(o))
 	let q = {
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
 		method: 'POST',
@@ -100,7 +265,7 @@ async function sendLog_useDatadog(c) {
 		body: JSON.stringify({
 			ddsource: 'log-source',
 			ddtags: 'env:production',
-			message: s
+			message: o
 		})
 	}
 	return await ashFetchum(c, q)
