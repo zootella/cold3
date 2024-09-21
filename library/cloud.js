@@ -144,6 +144,7 @@ export async function logAlert(message, watch) {
 //while trying to deal with an alert, another exception happened
 //we may not be able to log it, but try anyway
 export async function logFragile(message, watch) {
+	console.error('FRAGILE!^')//to get here, there was an exception logging an exception--probably an import is missing, or maybe somehow a circular reference got to json stringify. it's possible that the code that follows will throw, too, so shout for help first, before trying to log full details next
 	let t = Now()
 	let w = senseEnvironment()
 	let o = {

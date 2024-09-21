@@ -22,7 +22,7 @@ defineProps({note: String})
 		<NuxtLink to="/post/Fouv7hYGoytFMpU8JF0Fp">post</NuxtLink>{{' '}}
 		<NuxtLink to="/post/NR0vIdQZAwnEjhCZWe1ca">first</NuxtLink>{{' - '}}
 		<NuxtLink to="/log">log</NuxtLink>{{' '}}
-		<i>{{ note }}, v2024sep21f</i>
+		<i>{{ note }}, v2024sep21g</i>
 	</p>
 </div>
 
