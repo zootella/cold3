@@ -30,9 +30,7 @@ import { snippet, logAlert } from './library/cloud.js'
 async function runSnippet() {
 	try {
 		snippet(card)
-	} catch (e) {
-		logAlert('node test snippet', {e})
-	}
+	} catch (e) { logAlert('node test snippet uncaught', {e}) }
 }
 
 //run tests followed by snippet

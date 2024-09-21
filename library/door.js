@@ -88,11 +88,11 @@ export async function doorLambdaShut(door, response, error) {
 
 
 
-const useLocalLambda = true
+const useLocalLambda = false
 export async function fetchLambda(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
 	let host = useLocalLambda ? 'http://localhost:4000/prod' : 'https://api.net23.cc'
-	body.ACCESS_NETWORK_23 = process.env.ACCESS_NETWORK_23//don't forget keycard
+	body.ACCESS_NETWORK_23 = process.env.ACCESS_NETWORK_23//don't forget your keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }
 

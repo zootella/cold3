@@ -10,7 +10,7 @@ export default defineEventHandler(async (workerEvent) => {
 	try {
 
 		//BLOWUP 1
-//		await dog('blowup 1 '+senseEnvironment())
+		await dog('blowup 1')
 
 		door = await doorWorkerOpen(workerEvent)
 		response = await doorProcessBelow(door)
@@ -19,7 +19,7 @@ export default defineEventHandler(async (workerEvent) => {
 	try {
 
 		//BLOWUP 2
-//		await dog('blowup 2 '+senseEnvironment())
+		await dog('blowup 2')
 
 		let workerReturn = await doorWorkerShut(door, response, error)
 		if (response && !error) return workerReturn
@@ -33,7 +33,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//BLOWUP 3
-//	await dog('blowup 3 '+senseEnvironment())
+	await dog('blowup 3')
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from door v2024sep20a`

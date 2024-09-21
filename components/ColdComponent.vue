@@ -41,7 +41,7 @@ async function clickedFetch() { await doFetch(); }
 //library functions
 function logToBox(s) {
 	let s2 = `${sayTick(Now())} '${s}'`;
-	log(s2);
+	//log(s2);
 	logText.value += `\r\n${s2}`;
 }
 

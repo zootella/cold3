@@ -431,7 +431,7 @@ noop(() => {
 		when -= earlier
 		s += `\r\n{tag: '${tag()}', post: ${i}, quantity: ${quantity}, tick: ${when} },`
 	}
-	log(s)
+	//log(s)
 })
 
 
@@ -575,7 +575,7 @@ noop(() => {
 	let cycles1 = runFor(1*Time.second, f1)
 	let cycles2 = runFor(1*Time.second, f2)
 	let cycles3 = runFor(1*Time.second, f3)
-	log(cycles1, cycles2, cycles3)
+	//log(cycles1, cycles2, cycles3)
 })
 */
 

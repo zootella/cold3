@@ -1,7 +1,7 @@
 
 //import modules
 import { senseEnvironment } from './ping.js'
-import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog } from './library0.js'
+import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 
 //node-style imports
@@ -113,7 +113,7 @@ export async function logAudit(message, watch) {
 	console.log(s)//use in logAudit()
 	sendLog_useIcarus(s)
 	await sendLog_useFile(s)
-	await sendLog_useDatadog({o})//make a record of every real use of the real api, even when it's just local development!
+	return await sendLog_useDatadog({o})//make a record of every real use of the real api, even when it's just local development!
 }
 
 //logAlert
@@ -137,7 +137,7 @@ export async function logAlert(message, watch) {
 	console.error(s)//use in logAlert()
 	sendLog_useIcarus(s)
 	await sendLog_useFile(s)//really only works in $ node test, but sure, try it
-	if (isCloud()) await sendLog_useDatadog({o})//if local, don't send to datadog, as code changes all the time while we're working on it
+	let r; if (isCloud()) { r = await sendLog_useDatadog({o}) }; return r//if local, don't send to datadog, as code changes all the time while we're working on it
 }
 
 //logDiscard
@@ -161,123 +161,36 @@ export async function logFragile(message, watch) {
 	console.error(s)//use in logFragile()
 	sendLog_useIcarus(s)
 	await sendLog_useFile(s)
-	if (isCloud()) await sendLog_useDatadog({o})
+	let r; if (isCloud()) { r = await sendLog_useDatadog({o}) }; return r
 }
-
-
-
 
 //not proud of these two:
 export function isLocal() { return senseEnvironment().includes('Local') }
 export function isCloud() { return senseEnvironment().includes('Cloud') }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function composeLogArguments(...a) {
-	let s = ''//compose some nice display text
-	if (a.length == 0) {//no arguments, just the timestamp
-	} else if (a.length == 1) {//timestamp and the one argument
-		s = say(a[0])
-	} else {//timestamp and newlines between multiple arguments
-		a.forEach(e => { s += newline + say(e) })
-	}
-	return s.trimStart()
-}
-
-
-//say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
-function sayTickLocal(t) {
-
-	//in this unusual instance, we want to say the time local to the person reading the logs, not the computer running the script
-	let zone = Intl.DateTimeFormat().resolvedOptions().timeZone//works everywhere, but will be utc on cloud worker and lambda
-	if (defined(typeof process) && hasText(process.env?.ACCESS_TIME_ZONE)) zone = process.env.ACCESS_TIME_ZONE//use what we set in the .env file. page script won't have access to .env, but worker and lambda, local and deployed will
-
-	let d = new Date(t)
-	let f = new Intl.DateTimeFormat('en', {timeZone: zone, weekday: 'short', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit'})
-	let parts = f.formatToParts(d)
-
-	let weekday = parts.find(p => p.type == 'weekday').value
-	let hour = parts.find(p => p.type == 'hour').value
-	let minute = parts.find(p => p.type == 'minute').value
-	let second = d.getSeconds().toString().padStart(2, '0')
-	let millisecond = d.getMilliseconds().toString().padStart(3, '0')
-	let ap = parts.find(p => p.type == 'dayPeriod').value == 'AM' ? 'a' : 'p'
-
-	return `${weekday}${hour}:${minute}${ap}${second}.${millisecond}s`
-}
-test(() => {
-
-	let t = Now()
-	log(sayTickLocal(t))
-
-	log(Intl.DateTimeFormat().resolvedOptions().timeZone)
-
-
-})
-
-
-
-
-
-
-
+//and this one is todo:
 function sendLog_useIcarus(s) {/*TODO*/}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-async function sendLog_useFile(s) {//this only works for $ node test, but it sure is useful there
+//this only works for $ node test, but it sure is useful there
+async function sendLog_useFile(s) {
 	let fs = await loadFs()
-	if (fs) await fs.appendFile('cloud.log', s.trimEnd()+newline)
+	if (fs) await fs.appendFile('cloud.log', s.trimEnd()+newline)//becomes a quick no-op places we can't load fs
 }
+
+
+
+/*
+should message end with look(watch)? to make it easier to read things in datadog, and because message will often just be one to three words
+
+
+*/
+
+
+
+
+
+
+
 
 
 
@@ -285,7 +198,6 @@ async function sendLog_useFile(s) {//this only works for $ node test, but it sur
 
 async function sendLog_useDatadog(c) {
 	let {o} = c
-	log(look(o))
 	let q = {
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
 		method: 'POST',
@@ -302,6 +214,14 @@ async function sendLog_useDatadog(c) {
 	return await ashFetchum(c, q)
 }
 
+
+
+
+
+
+
+
+//fetch(), $fetch(), and useFetch() are already taken, so you could call yours Fetch(), but instead, why not:
 async function ashFetchum(c, q) {//takes c earlier called parameters and q an object of instructions to make the request
 	let o = {method: q.method, headers: q.headers, body: q.body}
 

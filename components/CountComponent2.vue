@@ -59,9 +59,9 @@ async function incrementCount(increment1, increment2) {
 			}
 		})
 		let tick2 = Now()
-		log(`fetch ran in ${tick2 - tick1}ms`)
-		log('data.value.countGlobal')
-		log(data.value.countGlobal)
+		//log(`fetch ran in ${tick2 - tick1}ms`)
+		//log('data.value.countGlobal')
+		//log(data.value.countGlobal)
 
 		data.value.countGlobal = data2.countGlobal
 		tick.durationGlobal = tick2 - tick1

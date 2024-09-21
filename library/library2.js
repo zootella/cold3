@@ -88,7 +88,7 @@ export function getBrowserFingerprintAndTag() {
 async function timeBrowserHash() {
 	let t = Now()
 	let h = (await subtleHash(Data({text: getBrowserFingerprintAndTag()}))).base32()
-	log(`hashed to ${h} in ${Now() - t}ms`)//ok, this takes 8ms, unfortunately
+	//log(`hashed to ${h} in ${Now() - t}ms`)//ok, this takes 8ms, unfortunately
 }
 /*
 ~ security note ~
@@ -126,7 +126,7 @@ these details are designed to be specific to the user's device, but unlikely to 
 */
 
 noop(async () => {
-	log(getBrowserFingerprintAndTag())
+	//log(getBrowserFingerprintAndTag())
 	await timeBrowserHash()
 })
 /*
@@ -160,7 +160,7 @@ export async function browserHash() {
 }
 noop(async () => {
 
-	log(await browserHash())//here's how you get the browser hash
+	//log(await browserHash())//here's how you get the browser hash
 
 
 

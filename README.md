@@ -187,7 +187,7 @@ TOKEN_SECRET_2=secret_value_2
 Running locally in development mode, API code can access them the same way, at `process.env.TOKEN_SECRET_1`.
 
 To get them in a component, you have to do more.
-Add a section to *nuxt.config.tx*:
+Add a section to *nuxt.config.ts*:
 
 ```
   runtimeConfig: {

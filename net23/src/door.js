@@ -10,7 +10,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 4
-//		await dog('blowup 4 '+senseEnvironment())
+		await dog('blowup 4')
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -19,7 +19,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 5
-//		await dog('blowup 5 '+senseEnvironment())
+		await dog('blowup 5')
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
@@ -33,15 +33,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//BLOWUP 6
-//	await dog('blowup 6 '+senseEnvironment())
-
-
-	/*
-	you haven't seen lambda log to datadog successfully let
-	let's take a closer look
-	*/
-	let d = await dog('hello from lambda 21a')//needs to get to datadog
-	log(look(d))//will go to cloudwatch
+	await dog('blowup 6')
 
 
 
