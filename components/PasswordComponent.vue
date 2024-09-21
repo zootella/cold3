@@ -1,25 +1,5 @@
 <script setup>
 
-//yes, this is a factory preset, correctly in the page, which gets sent to the client, where the user can see it
-const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
-const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1 = 100//100 thousand
-
-import { ref } from 'vue';
-
-// Define reactive variables
-const inputValue = ref('');
-const outputText = ref('');
-
-// Called with every character typed
-function myFunction1() {
-	//console log('Text changed:', inputValue.value);
-}
-
-// Called when the submit button is clicked
-function myFunction2() {
-	outputText.value = `You typed: ${inputValue.value}`;
-}
-
 /*
 draft password design:
 
@@ -100,18 +80,66 @@ how much processor time will it take him to crack it?
 */
 
 
+/*
+this is also where you should make a component that is your visible log box
+like, make it reusable, and use it here and future places
+currently you have a few bespoke versions scattered about
+*/
+
+
+//yes, this is a factory preset, correctly in the page, which gets sent to the client, where the user can see it
+const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
+const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1 = 100//100 thousand
+
+import { ref } from 'vue'
+import { log, look, Time } from '@/library/library0.js'
+
+// Define reactive variables
+const inputValue = ref('')
+const outputText = ref('')
+
+// Called with every character typed
+function myFunction1() {
+	log('Text changed:', inputValue.value)
+}
+
+// Called when the submit button is clicked
+function myFunction2() {
+	outputText.value = `You typed: ${inputValue.value}`
+}
+
+
+
+
 </script>
 <template>
 
-
-<div>
+<form @submit.prevent="myFunction2">
 	<input type="text" v-model="inputValue" @input="myFunction1" placeholder="Type something..." />
-	<button @click="myFunction2">Submit</button>
+	<button type="submit">Submit</button>
 	<p>{{ outputText }}</p>
-</div>
+</form>
 
 </template>
-<style scoped>
 
 
-</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

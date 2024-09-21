@@ -178,9 +178,48 @@ async function sendLog_useFile(s) {
 }
 
 
+/*
+copying here, an essay you wrote about loggin'
+
+i want to use datadog for a variety of purposes. for instance, here are four:
+(1 "robin") high frequency performance analysis: logs of different named attempts, their duration, and success, failure, or timeout. there could be a lot of these (many per second). also, the app will need to query them, to find out what's working quickly and reliably, and get percentiles over recent time periods
+(2 "audit") verbose documentation of third party api performance: here, the logs will be longer, and contain json of objects that go perhaps several references deep. with this use case, there's no querying--this is for archival, only. later on, if an api is misbehaving, developers may go into datadog to look at this record to try to determine the cause
+(3 "alert") important and immediate information for developers: let's say a truly exceptional exception occurs, like code that we wrote that's part of our app throws, in a way that should be impossible. this third category of logs (top level uncaught exceptions) needs to be extremely verbose, separate from the other two types, and immediately for the attention of the development team
+(4 "debug") current development in deployed environment: when coding, a developer might use console.log to see some variables they're watching in code as it runs. then, when deployed, it can be useful to also see those kinds of logs. on the next push, these log statements might be removed. and, these logs are meant to be throwaway--they won't be saved, and they won't be consistent
+
+*/
+
+
 
 /*
 should message end with look(watch)? to make it easier to read things in datadog, and because message will often just be one to three words
+
+cosmetic chat
+imagine message is only for you, the human, looking at datadog
+anything that code will parse or sort is going to be elsewhere, not message
+
+logFragile(title, watch) <- so pass in the title like 'short title'
+and you keep that as title in the object you're logging, also
+but then compose a verbose just for humans message like this:
+
+Sat12:46p45.651s CloudLambda ALERT "short title" E6jj5g69BNWeqYebqRSxZ
+{
+	e: blah blah from look
+	watch2: 17
+}
+
+here's where you say the type in all caps, like DEBUG
+there's no arrow because its always on two lines
+
+so taht covers
+tick, environment, type, title, tag
+watch
+
+and maybe this consistant format is what goes to the other sinks, too
+you already sorta did this for the node test log file
+
+
+
 
 
 */
