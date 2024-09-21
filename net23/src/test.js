@@ -8,13 +8,14 @@ import { pingEnvironment } from '../../library/ping.js'
 -- ./icarus/icarus.vue        vite
 -- ./test.js                  node
 */
-import { runTests } from '../../library/test.js'
+//import { runTests } from '../../library/test.js'
 
 export const handler = async (event) => {
 	let note = ''
 	try {
 
-		note = `lambda says: ${(await runTests()).message}, ${pingEnvironment()}`
+		//note = `lambda says: ${(await runTests()).message}, ${pingEnvironment()}`
+		note = `lambda says: *tests commented out for local speed*, ${pingEnvironment()}`
 
 	} catch (e) { note = 'ping test lambda error: '+e.stack }
 	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }

@@ -1,128 +1,142 @@
 
 service: net23
-frameworkVersion: '3' # Version 4 is out, but doesn't work with the plugins
+frameworkVersion: '3' #version 4 is out, but doesn't work with the plugins
 useDotenv: true
 plugins:
-  - serverless-s3-sync # Upload static site files from www with $ npm run sync
-  - serverless-offline # Emulates Lambda and API Gateway for local development
-  - serverless-domain-manager # Use our domain for API Gateway and Lambda
+  - serverless-s3-sync #upload static site files from www with $ npm run sync
+  - serverless-offline #emulates Lambda and API Gateway for local development
+  - serverless-domain-manager #use our domain for API Gateway and Lambda
 
 provider:
   name: aws
-  runtime: nodejs20.x # As of 2024jul, Node 16 is deprecated, and 18 and 20 are current
-  region: us-east-1 # Lambda@Edge requires North Virginia
-  stage: prod # Production by default, as this script includes resources like buckets
-  environment: # Name variables in .env file here so they are on process.env for the Lambda code
-    ACCESS_NETWORK_23: ${env:ACCESS_NETWORK_23}
+  runtime: nodejs20.x #as of 2024jul, Node 16 is deprecated, and 18 and 20 are current
+  region: us-east-1 #Lambda@Edge requires North Virginia
+  stage: prod #set production by default, as this script includes resources like buckets
+  environment: #name variables in .env file here so they are on process.env for the Lambda code
+    ACCESS_TIME_ZONE: ${env:ACCESS_TIME_ZONE} #just for development, writes tick counts in logs in this time zone
+    ACCESS_PASSWORD: ${env:ACCESS_PASSWORD} #informal password for temporary tests and experiments
+    ACCESS_NETWORK_23: ${env:ACCESS_NETWORK_23} #private access to the full suite of Network 23 services
+    ACCESS_AMAZON_REGION: ${env:ACCESS_AMAZON_REGION} #it's us-east-1 but still it's bad to hard code that in code
+    ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE} #promises not to change through automatic renewals
+    ACCESS_SUPABASE_URL: ${env:ACCESS_SUPABASE_URL} #database
+    ACCESS_SUPABASE_KEY: ${env:ACCESS_SUPABASE_KEY}
+    ACCESS_DATADOG_ENDPOINT: ${env:ACCESS_DATADOG_ENDPOINT} #logging
+    ACCESS_DATADOG_API_KEY: ${env:ACCESS_DATADOG_API_KEY}
+    ACCESS_SENDGRID_URL: ${env:ACCESS_SENDGRID_URL} #email
+    ACCESS_SENDGRID_KEY: ${env:ACCESS_SENDGRID_KEY}
+    ACCESS_TWILIO_URL: ${env:ACCESS_TWILIO_URL} #sms
+    ACCESS_TWILIO_SID: ${env:ACCESS_TWILIO_SID}
+    ACCESS_TWILIO_AUTH: ${env:ACCESS_TWILIO_AUTH}
+    ACCESS_TWILIO_PHONE: ${env:ACCESS_TWILIO_PHONE}
 
 # #### FOR API FUNCTIONS ####
 functions:
   ping5:
-    handler: dist/ping5.handler # Paths to distribution for upload after rollup
-    timeout: 30 # Let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
+    handler: dist/ping5.handler #paths to distribution for upload after rollup
+    timeout: 30 #let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
           path: ping5
-          method: get # GET so you can check it with a regular browser
+          method: get #GET so you can check it with a regular browser
   test:
     handler: dist/test.handler
     timeout: 30
     events:
       - http:
           path: test
-          method: get # GET so you can check it with a regular browser
+          method: get
   door:
     handler: dist/door.handler
     timeout: 30
     events:
       - http:
           path: door
-          method: post # POST because now this is a real api call
+          method: post #POST because now this is a real api call
 
 resources:
-  Resources: # Yes, it's correct to have resources twice and nested with different capitalization
+  Resources: #yes, it's correct to have resources twice and nested with different capitalization
 
     # #### FOR WWW STATIC SITE ####
-    # Static site files in a private bucket get served only by a CloudFront distribution
-    # Before running this script, perform manual steps to get the domain and SSL certificate
+    # Static site files in a private bucket get served only by a cloudfront distribution
+    # Before running this script, perform manual steps to get the domain and ssl certificate
     # And put the ARN of the certificate in the .env file, referenced below
 
-    WWWBucket: # Creates and configures a bucket
+    WWWBucket: #create and configure a bucket
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: www-net23-cc # Globally unique name in AWS
-        AccessControl: Private # Private because a CloudFront distribution will serve files
+        BucketName: www-net23-cc #globally unique name in aws
+        AccessControl: Private #private because a cloudfront distribution will serve files
 
-    S3BucketPolicy: # Defines a policy for a bucket to allow CloudFront access
+    S3BucketPolicy: #define a policy for a bucket to allow cloudfront access
       Type: AWS::S3::BucketPolicy
       Properties:
-        Bucket: !Ref WWWBucket # The bucket this policy is about
-        PolicyDocument: # A policy document with just one statement
-          Statement: # Allows the specified Principal, CloudFront OAI, to get objects from the bucket
+        Bucket: !Ref WWWBucket #the bucket this policy is about
+        PolicyDocument: #a policy document with just one statement
+          Statement: #allows the specified Principal, cloudfront OAI, to get objects from the bucket
             - Action: 's3:GetObject'
               Effect: Allow
-              Resource: !Sub 'arn:aws:s3:::www-net23-cc/*' # Reference to all objects in the bucket
+              Resource: !Sub 'arn:aws:s3:::www-net23-cc/*' #reference to all objects in the bucket
               Principal:
                 CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
 
-    CloudFrontOriginAccessIdentity: # Creates an OAI, a special user, so CloudFront can access the bucket
+    CloudFrontOriginAccessIdentity: #create an OAI, a special user, so cloudfront can access the bucket
       Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
       Properties:
         CloudFrontOriginAccessIdentityConfig:
-          Comment: 'Grant CloudFront access to S3 bucket to serve www.net23.cc' # Comment saved in dashboard
+          Comment: 'Grant CloudFront access to S3 bucket to serve www.net23.cc' #comment saved in dashboard
 
-    CloudFrontDistribution: # Creates a CloudFront distribution which serves the static website files
+    CloudFrontDistribution: #create a cloudfront distribution which serves the static website files
       Type: AWS::CloudFront::Distribution
       Properties:
         DistributionConfig:
           Enabled: true
           Origins:
-            - DomainName: !GetAtt WWWBucket.DomainName # Internal AWS domain name of the bucket
+            - DomainName: !GetAtt WWWBucket.DomainName #internal aws domain name of the bucket
               Id: S3Origin
               S3OriginConfig:
                 OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
           DefaultCacheBehavior:
             TargetOriginId: S3Origin
             ViewerProtocolPolicy: redirect-to-https # Redirect HTTP to HTTPS
-            ForwardedValues: # Required parameter
-              QueryString: false # Do not forward a query string
+            ForwardedValues: #required parameter
+              QueryString: false #do not forward a query string
               Cookies:
-                Forward: none # Do not forward cookies
+                Forward: none #do not forward cookies
             AllowedMethods:
               - GET
               - HEAD
             CachedMethods:
               - GET
               - HEAD
-            DefaultTTL: 86400 # 1 day in seconds, how long files stay in cache
-            MaxTTL: 31536000 # 1 year, maximum time in cache
-            MinTTL: 0 # No caching, minimum time in cache
+            DefaultTTL: 86400 #1 day in seconds, how long files stay in cache
+            MaxTTL: 31536000 #1 year, maximum time in cache
+            MinTTL: 0 #no caching, minimum time in cache
           Aliases:
             - www.net23.cc
             - net23.cc
           ViewerCertificate:
-            AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE} # Get ARN from .env file
+            AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE} #get arm from .env file
             SslSupportMethod: sni-only
           Comment: 'Distribution for static site www.net23.cc'
           DefaultRootObject: index.html
 
-    Route53RecordSetGroup: # Defines a group of DNS records in Route 53
+    Route53RecordSetGroup: #define a group of dns records in route 53
       Type: AWS::Route53::RecordSetGroup
       Properties:
-        HostedZoneName: net23.cc. # Previously, we manually made this hosted zone
+        HostedZoneName: net23.cc. #we manually made this hosted zone before mentioning it here
         RecordSets:
-          - Name: net23.cc. # Ends with dot to indicate fully qualified
-            Type: A # DNS A records are for IPv4 addresses
+          - Name: net23.cc. #ends with dot to indicate fully qualified
+            Type: A #dns A records are for ipv4 addresses
             AliasTarget:
               DNSName: !GetAtt CloudFrontDistribution.DomainName
-              HostedZoneId: Z2FDTNDATAQYW2 # AWS identifier for CloudFront
+              HostedZoneId: Z2FDTNDATAQYW2 #aws identifier for cloudfront
           - Name: www.net23.cc.
             Type: A
             AliasTarget:
               DNSName: !GetAtt CloudFrontDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
           - Name: net23.cc.
-            Type: AAAA # DNS AAAA records are for IPv6 addresses
+            Type: AAAA #dns AAAA records are for ipv6 addresses
             AliasTarget:
               DNSName: !GetAtt CloudFrontDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
@@ -133,8 +147,8 @@ resources:
               HostedZoneId: Z2FDTNDATAQYW2
 
   # #### FOR WWW STATIC SITE ####
-  Outputs: # Correctly within the outer resources section
-    # Values to store in the CloudFormation template Outputs tab, not logged out to the console
+  Outputs: #correctly within the outer resources section
+    #values to store in the cloudformation template Outputs tab, not logged out to the console
     S3BucketName:
       Description: Name of the S3 bucket
       Value: !Ref WWWBucket
@@ -148,15 +162,15 @@ resources:
 custom:
 
   # #### FOR WWW STATIC SITE ####
-  s3Sync: # Settings for serverless-s3-sync so $ npm run www syncs the www folder up to the bucket behind the distribution for www.net23.cc
+  s3Sync: #settings for serverless-s3-sync so $ npm run www syncs the www folder up to the bucket behind the distribution for www.net23.cc
     - bucketName: www-net23-cc
       localDir: www
-      deleteRemoved: true # Remove files in the bucket missing from the folder
+      deleteRemoved: true #remove files in the bucket missing from the folder
 
   # #### FOR API FUNCTIONS ####
   serverless-offline:
-    httpPort: 4000 # Run locally on port 4000 instead of the default 3000
-  customDomain: # Settings for serverless-domain-manager to get Lambdas up at api.net23.cc
+    httpPort: 4000 #run locally on port 4000 instead of the default 3000 when we do $ npm run local, nuxt wants 3000
+  customDomain: #settings for serverless-domain-manager to get lambdas up at api.net23.cc
     domainName: api.net23.cc
     basePath: ''
     stage: ${opt:stage, self:provider.stage}

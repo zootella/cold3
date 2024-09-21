@@ -1,16 +1,16 @@
 
 import { pingEnvironment, senseEnvironment } from '../../library/ping.js'
-import { log, Now } from '../../library/library0.js'
+import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
-import { logFragile } from '../../library/cloud.js'
+import { dog, logFragile } from '../../library/cloud.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let door = {}, response, error
 	try {
 
 		//BLOWUP 4
-		log('blowup 4 '+senseEnvironment())
+//		await dog('blowup 4 '+senseEnvironment())
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -19,7 +19,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 5
-		log('blowup 5 '+senseEnvironment())
+//		await dog('blowup 5 '+senseEnvironment())
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
@@ -33,7 +33,18 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//BLOWUP 6
-	log('blowup 6 '+senseEnvironment())
+//	await dog('blowup 6 '+senseEnvironment())
+
+
+	/*
+	you haven't seen lambda log to datadog successfully let
+	let's take a closer look
+	*/
+	let d = await dog('hello from lambda 21a')//needs to get to datadog
+	log(look(d))//will go to cloudwatch
+
+
+
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from ${pingEnvironment()} v2024sep20b`

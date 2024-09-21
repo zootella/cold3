@@ -89,7 +89,7 @@ export async function dog(...a) {
 	console.log(s)//use in dog()
 	sendLog_useIcarus(s)
 	await sendLog_useFile(s)
-	await sendLog_useDatadog({o})
+	return await sendLog_useDatadog({o})
 }
 
 //logAudit
@@ -201,6 +201,37 @@ function composeLogArguments(...a) {
 }
 
 
+//say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
+function sayTickLocal(t) {
+
+	//in this unusual instance, we want to say the time local to the person reading the logs, not the computer running the script
+	let zone = Intl.DateTimeFormat().resolvedOptions().timeZone//works everywhere, but will be utc on cloud worker and lambda
+	if (defined(typeof process) && hasText(process.env?.ACCESS_TIME_ZONE)) zone = process.env.ACCESS_TIME_ZONE//use what we set in the .env file. page script won't have access to .env, but worker and lambda, local and deployed will
+
+	let d = new Date(t)
+	let f = new Intl.DateTimeFormat('en', {timeZone: zone, weekday: 'short', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit'})
+	let parts = f.formatToParts(d)
+
+	let weekday = parts.find(p => p.type == 'weekday').value
+	let hour = parts.find(p => p.type == 'hour').value
+	let minute = parts.find(p => p.type == 'minute').value
+	let second = d.getSeconds().toString().padStart(2, '0')
+	let millisecond = d.getMilliseconds().toString().padStart(3, '0')
+	let ap = parts.find(p => p.type == 'dayPeriod').value == 'AM' ? 'a' : 'p'
+
+	return `${weekday}${hour}:${minute}${ap}${second}.${millisecond}s`
+}
+test(() => {
+
+	let t = Now()
+	log(sayTickLocal(t))
+
+	log(Intl.DateTimeFormat().resolvedOptions().timeZone)
+
+
+})
+
+
 
 
 
@@ -277,7 +308,7 @@ async function ashFetchum(c, q) {//takes c earlier called parameters and q an ob
 	q.tick = Now()//record when this happened and how long it takes
 	let response, bodyText, body, error, success
 	try {
-		response = await fetch(q.resource, o); clearTimeout(m)//fetch was fast enough so cancel the abort
+		response = await fetch(q.resource, o)
 		bodyText = await response.text()
 		if (response.ok) {
 			success = true
