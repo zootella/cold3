@@ -1116,7 +1116,7 @@ datadog has a separate product called RUM, real user monitoring
 their js on your page measures how long pages fetch, and take to finish, for real users
 
 pingdom and equivalent are good at uptime
-they have graphs that show median
+they have graphs that show median and 95th percentile
 and you can configure their pinger to look for a tag on a page to confirm it really got it
 
 postgres is good at analysis
@@ -1126,7 +1126,7 @@ local development is good at seeing console.log output
 and for durable output, you can write to log.txt
 
 console.log in a lambda automatically goes to amazon cloudwatch
-and this is more reliable than datadog
+and this is more reliable than datadog, as it's first party, you didn't turn it on, you can't forget to do it
 cloudflare's logging isn't on by default, but also uses the standard streams out
 so it makes sense to call these as a backup to datadog, also
 
@@ -1134,7 +1134,7 @@ so it makes sense to call these as a backup to datadog, also
 
 current needs, before v1:
 PING: service availability and speed (pingdom) the site was down for 6 hours last night, but it's back up again. lots of the time, lambda has a cold start of over 2 seconds
-LOOK: debug logging during development (datadog, maybe logflare) i can log out this note while coding, and want to see the same note in production. once it's working, ill comment it out
+DEBUG: debug logging during development (datadog, maybe logflare) i can log out this note while coding, and want to see the same note in production. once it's working, ill comment it out
 ALERT: uncaught exception (datadog) a mistake in our own code caused an exception caught by the last resort try block--wake up the developers!
 AUDIT: api auditing (datadog) that one time that that one service failed, what exactly did we send it? recently, the information twilio is sending us back has changed
 
@@ -1155,38 +1155,41 @@ cold3.cc/ping5 - call lambda at net23
 it'll be interesting to see the average times, if things are slower in europe or asia compared to the us, and also if there are slow cold starts for ping4, and not the others
 it's great that the simple deployed cors restrictions are all in place, even while ping4 reaches over to net23
 
-(datadog generally) send objects in this form, below. type is required. tag and tick are there, but likely redundant or unnecessary. log and load are one or the other or both
+(datadog generally) send objects in this form, below. type is required. tag and tick are there, but likely redundant or unnecessary. message and watch are one or the other or both
 {
-  type: 'alert',//high level category to sort later on, like ALERT, AUDIT, LOOK
-
+  type: 'alert',//high level category to sort later on, like ALERT, AUDIT, DEBUG
   tag: 'kmo3cWhe27B5pgmM2RnGV'//tag for this datadog log
   tick: 1725723263168,//tick when we logged it
-
-  log: 'text, one line, meant to fit on a screen and be read by a human',
-  load: {},//payload object, all the details, including more ticks and tags
+  message: 'text, one line, meant to fit on a screen and be read by a human',
+  watch: {},//payload object, all the details, including more ticks and tags
 }
 
-LOOK (datadog)
+DEBUG (datadog)
 {
   type: 'debug'
-  tag, tick,
-  log, load//here's where we, the developers, can see something that we just pushed to confirm deployed behavior matches local behavior
+  tag,
+  tick,
+  message,
+  watch//here's where we, the developers, can see something that we just pushed to confirm deployed behavior matches local behavior
 }
 
 ALERT (datadog) (roadmap v0.1)
 {
   type: 'alert'
-  tag, tick,
-  log, load//here's where we, the developers, can find out about uncaught exceptions
+  tag,
+  tick,
+  message,
+  watch//here's where we, the developers, can find out about uncaught exceptions
 }
-here's where you probably want information about the environment, lambda, nuxt ssr, csr, otherwise you'll be looking at one of these scratching your head not knowing even what computer w
-here ran into it
+here's where you probably want information about the environment, lambda, nuxt ssr, csr, otherwise you'll be looking at one of these scratching your head not knowing even what computer where ran into it
 
 AUDIT (datadog) (roadmap v0.1)
 {
   type: 'audit'
-  tag, tick,
-  load: {}//here's the object with all the details about the fetch we did and what happened
+  tag,
+  tick,
+  (no message on this one?)
+  watch: {}//here's the object with all the details about the fetch we did and what happened
 }
 
 ROBIN (postgres)

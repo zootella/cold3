@@ -191,45 +191,6 @@ export function sayTickLocal(t) {
 
 
 
-/*
-{
-type: 'alert',//high level category to sort later on, like ALERT, AUDIT, LOOK
-
-tag: 'kmo3cWhe27B5pgmM2RnGV'//tag for this datadog log
-tick: 1725723263168,//tick when we logged it
-
-log: 'text, one line, meant to fit on a screen and be read by a human',
-load: {},//payload object, all the details, including more ticks and tags
-}
-
-
-DEBUG
-{
-type: 'debug'
-tag, tick,
-log, load//here's where we, the developers, can see something that we just pushed to confirm deployed behavior matches local behavior
-}
-
-ALERT
-{
-type: 'alert'
-tag, tick,
-log, load//here's where we, the developers, can find out about uncaught exceptions
-}
-here's where you probably want information about the environment, lambda, nuxt ssr, csr, otherwise you'll be looking at one of these scratching your head not knowing even what computer w
-here ran into it
-
-AUDIT
-{
-type: 'audit'
-tag, tick,
-load: {}//here's the object with all the details about the fetch we did and what happened
-}
-*/
-
-
-
-
 
 
 
