@@ -11,7 +11,7 @@ import { Tag, checkTag } from './library1.js'
 /*
 very brief notes about logging:
 
-do use console.log and console.error, they go to local terminal, amazon cloudwatch, and maybe later cloudflare, too
+do use console log and console error, they go to local terminal, amazon cloudwatch, and maybe later cloudflare, too
 
 sinks include:
 -icarus textarea
@@ -64,8 +64,8 @@ candidate design; map of functions and sinks:
 	these are async
 
   meaning, we did something consequential with a third party service, like send a text, or get denied sending a text
-logAudit local: console.log, file, dog, AUDIT
-logAudit cloud: console.log,       dog, AUDIT
+logAudit local: console log, file, dog, AUDIT
+logAudit cloud: console log,       dog, AUDIT
   these are the same local and cloud, because the third party service didn't know the difference, we're sending real emails and texts here, and if we fuck it up, the real service provider will deplatform us
   these are async
 */

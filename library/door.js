@@ -3,6 +3,7 @@ import { readBody } from 'h3'
 
 import { log, look, Now, checkText, hasTextSame, toss, test, ok } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
+import { logAlert } from './cloud.js'
 
 //      _                  
 //   __| | ___   ___  _ __ 
@@ -63,15 +64,12 @@ export async function doorWorkerShut(door, response, error) {
 	door.response = response//bundle
 	door.error = error
 
-	//turn this into logAlert that goes to console and datadog
-	if (error) {
-		log('door worker shut error', look(error))
-		return null
+	if (error) {//processing this request caused an error
+		logAlert('door worker shut error', {door})//tell staff about it
+		return null//return no response
+	} else {
+		return response//nuxt will stringify and add status code and headers
 	}
-
-
-	let workerReturn = response//nuxt will stringify and add status code and headers
-	return workerReturn
 }
 export async function doorLambdaShut(door, response, error) {
 	door.stopTick = Now()//time
@@ -79,20 +77,18 @@ export async function doorLambdaShut(door, response, error) {
 	door.response = response//bundle
 	door.error = error
 
-	if (error) {//processing this request caused an error
-		log('door lambda shut error', look(error))//tell staff about it
-		return null//return no response
+	if (error) {
+		logAlert('door lambda shut error', {door})
+		return null
+	} else {
+		return {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	}
-
-
-	let lambdaReturn = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
-	return lambdaReturn
 }
 
 
 
 
-const useLocalLambda = false
+const useLocalLambda = true
 export async function fetchLambda(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
 	let host = useLocalLambda ? 'http://localhost:4000/prod' : 'https://api.net23.cc'

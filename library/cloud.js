@@ -50,7 +50,7 @@ export async function snippet(card) {
 	log('hi, node! '+senseEnvironment())
 
 
-	await dog('putting it away for tonight')
+//	await dog('putting it away for tonight')
 
 }
 
@@ -81,12 +81,12 @@ export async function dog(...a) {
 
 		tick: t,
 		tag: Tag(),
-		tags: [`type:debug`, `where:${w}`],
+		tags: ['type:debug', `where:${w}`],
 		level: 'debug'//level is a property datadog wants, with a value like info, debug, warn, error, or critical
 	}
 	let s = `${sayTick(t)} DEBUG ↓ ${w} ${o.tick} ${o.tag} ${newline}${o.message}`
 
-	console.log(s)
+	console.log(s)//use in dog()
 	sendLog_useIcarus(s)
 	await sendLog_useFile(s)
 	await sendLog_useDatadog({o})
@@ -105,12 +105,12 @@ export async function logAudit(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: [`type:audit`, `where:${w}`],
+		tags: ['type:audit', `where:${w}`],
 		level: 'info'
 	}
 	let s = 'AUDIT '+look(o)+newline+JSON.stringify(o)
 
-	console.log(s)
+	console.log(s)//use in logAudit()
 	sendLog_useIcarus(s)
 	await sendLog_useFile(s)
 	await sendLog_useDatadog({o})//make a record of every real use of the real api, even when it's just local development!
@@ -129,12 +129,12 @@ export async function logAlert(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: [`type:alert`, `where:${w}`],
+		tags: ['type:alert', `where:${w}`],
 		level: 'error'
 	}
 	let s = 'ALERT '+look(o)+newline+JSON.stringify(o)
 
-	console.error(s)
+	console.error(s)//use in logAlert()
 	sendLog_useIcarus(s)
 	await sendLog_useFile(s)//really only works in $ node test, but sure, try it
 	if (isCloud()) await sendLog_useDatadog({o})//if local, don't send to datadog, as code changes all the time while we're working on it
@@ -153,12 +153,12 @@ export async function logFragile(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: [`type:fragile`, `where:${w}`],
+		tags: ['type:fragile', `where:${w}`],
 		level: 'critical'
 	}
 	let s = 'FRAGILE '+look(o)+newline+JSON.stringify(o)
 
-	console.error(s)
+	console.error(s)//use in logFragile()
 	sendLog_useIcarus(s)
 	await sendLog_useFile(s)
 	if (isCloud()) await sendLog_useDatadog({o})

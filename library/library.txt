@@ -1091,7 +1091,7 @@ i want to use datadog for a variety of purposes. for instance, here are three:
 
 (3: exceptional alert) important and immediate information for developers: let's say a truly exceptional exception occurs, like code that we wrote that's part of our app throws, in a way that should be impossible. this third category of logs (top level uncaught exceptions) needs to be extremely verbose, separate from the other two types, and immediately for the attention of the development team
 
-(4: daily development) current development in deployed environment: when coding, a developer might use console.log to see some variables they're watching in code as it runs. then, when deployed, it can be useful to also see those kinds of logs. on the next push, these log statements might be removed. and, these logs are meant to be throwaway--they won't be saved, and they won't be consistent
+(4: daily development) current development in deployed environment: when coding, a developer might use console log to see some variables they're watching in code as it runs. then, when deployed, it can be useful to also see those kinds of logs. on the next push, these log statements might be removed. and, these logs are meant to be throwaway--they won't be saved, and they won't be consistent
 
 before we dive into using datadog, are these use cases known and common practice? are there names for these? are there some others im not thinking of?
 
@@ -1122,10 +1122,10 @@ and you can configure their pinger to look for a tag on a page to confirm it rea
 postgres is good at analysis
 right in sql, you can filter rows and then compute averages and percentiles
 
-local development is good at seeing console.log output
+local development is good at seeing console log output
 and for durable output, you can write to log.txt
 
-console.log in a lambda automatically goes to amazon cloudwatch
+console log in a lambda automatically goes to amazon cloudwatch
 and this is more reliable than datadog, as it's first party, you didn't turn it on, you can't forget to do it
 cloudflare's logging isn't on by default, but also uses the standard streams out
 so it makes sense to call these as a backup to datadog, also

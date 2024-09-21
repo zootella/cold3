@@ -1,12 +1,16 @@
 
-import { pingEnvironment } from '../../library/ping.js'
-import { Now } from '../../library/library0.js'
+import { pingEnvironment, senseEnvironment } from '../../library/ping.js'
+import { log, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
+import { logFragile } from '../../library/cloud.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let door = {}, response, error
 	try {
+
+		//BLOWUP 4
+		log('blowup 4 '+senseEnvironment())
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -14,16 +18,22 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	} catch (e) { error = e }
 	try {
 
+		//BLOWUP 5
+		log('blowup 5 '+senseEnvironment())
+
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
 
-	} catch (d) { console.error(`discarded ${Now()} ${Tag()}`, d) }
+	} catch (d) { logFragile('door', {d, door, response, error}) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }
 //^our copypasta to safely man the front door
 
 async function doorProcessBelow(door) {
 	let response = {}
+
+	//BLOWUP 6
+	log('blowup 6 '+senseEnvironment())
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from ${pingEnvironment()} v2024sep20b`

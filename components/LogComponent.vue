@@ -15,7 +15,7 @@ async function clickedEnter() {
 }
 async function logToServer(message) {
 	let r = await $fetch('/api/log', {method: 'POST', body: {message}})
-	console.log(r)
+	//console log(r)
 }
 
 
@@ -24,7 +24,7 @@ let s = senseEnvironment()
 if (process.server) s += ', PDS'
 if (process.client) s += ', PDC'
 s += ', v2024sep8d'
-console.log(s)
+//console log(s)
 await logToServer(s)
 environmentText.value = s
 

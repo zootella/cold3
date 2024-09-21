@@ -12,7 +12,7 @@ const outputText = ref('');
 
 // Called with every character typed
 function myFunction1() {
-	console.log('Text changed:', inputValue.value);
+	//console log('Text changed:', inputValue.value);
 }
 
 // Called when the submit button is clicked
