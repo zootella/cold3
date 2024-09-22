@@ -1238,22 +1238,15 @@ export async function hashPassword(thousandsOfIterations, saltData, passwordText
 
 	return Data({array: new Uint8Array(await crypto.subtle.exportKey('raw', derived))})//export the derived key as raw bytes
 }
-noop(async () => {//this is twice as slow as all your other tests, combined!
+test(async () => {//this is twice as slow as all your other tests, combined!
 
 	let howToMakeASalt = Data({random: 16}).base32()//here's how you make a salt
+
 	const salt = '774GOUNJC2OSI3X76LCZLPTPZQ'//and the one we'll use below
-
-	const thousandsOfIterations = 100//one hundred thousand, should take 10ms or more
+	const thousandsOfIterations = 2//100+ for production, this is for a quick test
 	let password = '12345'//this is not a great password
-
-	let t = Now()
-	let h = await hashPassword(
-		thousandsOfIterations,
-		Data({base32: salt}),
-		password)
-	let duration = Now() - t
-	log(`hashed to ${h.base32()} in ${duration}ms`)
-	ok(h.base32() == 'SCCKII6QJFZMORWW5BWIGAPNYM42SXYIT2KJ3VMHBFHZQPOSANNQ')
+	let h = await hashPassword(thousandsOfIterations, Data({base32: salt}), password)
+	ok(h.base32() == 'J7SRY4JEKVNQF3DSFFDP2J6ECKJBOFEIBIMCZ7RVQNIJL5THSATA')
 })
 
 

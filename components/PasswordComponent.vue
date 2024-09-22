@@ -88,8 +88,8 @@ currently you have a few bespoke versions scattered about
 
 /*
 password page backlog
-[]enter shows hash and time
-[]try on devices fast and slow
+[x]enter shows hash and time
+[x]try on devices fast and slow (XXms rtx, 160ms main box, 450ms cheap tablet)
 []hidden password with dots
 []eyelid control to show
 []strength-o-meter
