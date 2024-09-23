@@ -41,7 +41,7 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 
 test(() => {
-	log('hi, icarus! '+senseEnvironment())
+	log('hi, test! '+senseEnvironment())
 })
 
 
@@ -49,10 +49,165 @@ test(() => {
 export async function snippet(card) {
 	log('hi, node! '+senseEnvironment())
 
+	log(look(card))
 
-//	await dog('putting it away for tonight')
+
+//	await dog('getting ready to send emails and texts')
+
+/*
+try out now
+node test: []email sendgrid, []sms twilio, []email amazon, []sms amazon
+worker local: []email sendgrid, []sms twilio
+worker deployed: []email sendgrid, []sms twilio
+lambda local: []email sendgrid, []sms twilio, []email amazon, []sms amazon
+lambda deployed: []email sendgrid, []sms twilio, []email amazon, []sms amazon
+*/
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+//                       _ _                   _                     
+//   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___ 
+//  / _ \ '_ ` _ \ / _` | | |  / _` | '_ \ / _` | / __| '_ ` _ \/ __|
+// |  __/ | | | | | (_| | | | | (_| | | | | (_| | \__ \ | | | | \__ \
+//  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
+//                                                                   
+
+async function sendEmail_useAmazon(c) {
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
+	const ses = await loadAmazonEmail()
+	let q = {
+		Source: `${fromName} <${fromEmail}>`,//must be verified email or domain
+		Destination: { ToAddresses: [toEmail] },
+		Message: {
+			Subject: { Data: subjectText },
+			Body: {//both plain text and html for multipart/alternative email format
+				Text: { Data: bodyText },
+				Html: { Data: bodyHtml }
+			}
+		}
+	}
+	let result, error, success = true
+	q.tick = Now()
+
+	try {
+		result = await ses.sendEmail(q).promise()
+		//sanity check to set success false
+	} catch (e) { error = e; success = false }
+
+	let t = Now()
+	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
+}
+
+async function sendEmail_useSendgrid(c) {
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
+	let q = {
+		resource: process.env.ACCESS_SENDGRID_URL,
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY
+		},
+		body: JSON.stringify({
+			from: { name: fromName, email: fromEmail },
+			personalizations: [{ to: [{ email: toEmail }] }],
+			subject: subjectText,
+			content: [
+				{ type: 'text/plain', value: bodyText },
+				{ type: 'text/html',  value: bodyHtml },
+			]
+		})
+	}
+	return await ashFetchum(c, q)
+}
+
+async function sendText_useAmazon(c) {
+	let {toPhone, messageText} = c
+	const sns = await loadAmazonTexts()
+	let p = {
+		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
+		Message: messageText,//must be 160 characters or less
+	}
+	let result, error, success = true
+	q.tick = Now()
+
+	try {
+		result = await sns.publish(p).promise()
+		//sanity check to set success false
+	} catch (e) { error = e; success = false }
+
+	let t = Now()
+	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
+}
+
+async function sendText_useTwilio(c) {
+	let {toPhone, messageText} = c
+	let q = {
+		resource: process.env.ACCESS_TWILIO_URL+'/Accounts/'+process.env.ACCESS_TWILIO_SID+'/Messages.json',
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH)
+		},
+		body: new URLSearchParams({
+			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from
+			To:   toPhone,//recipient phone number in E.164 format
+			Body: messageText
+		})
+	}
+	return await ashFetchum(c, q)//call my wrapped fetch
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -203,8 +358,8 @@ logFragile(title, watch) <- so pass in the title like 'short title'
 and you keep that as title in the object you're logging, also
 but then compose a verbose just for humans message like this:
 
-Sat12:46p45.651s CloudLambda ALERT "short title" E6jj5g69BNWeqYebqRSxZ
-{
+Sat12:46p45.651s CloudLambda [ALERT] "short title" E6jj5g69BNWeqYebqRSxZ
+{ <22>
 	e: blah blah from look
 	watch2: 17
 }
@@ -218,6 +373,8 @@ watch
 
 and maybe this consistant format is what goes to the other sinks, too
 you already sorta did this for the node test log file
+
+maybe instead of arrows, which would always be down, put the type in all caps and braces, like [DEBUG]
 
 
 
@@ -253,13 +410,6 @@ async function sendLog_useDatadog(c) {
 	}
 	return await ashFetchum(c, q)
 }
-
-
-
-
-
-
-
 
 //fetch(), $fetch(), and useFetch() are already taken, so you could call yours Fetch(), but instead, why not:
 async function ashFetchum(c, q) {//takes c earlier called parameters and q an object of instructions to make the request
