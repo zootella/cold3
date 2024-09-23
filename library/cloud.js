@@ -1,5 +1,6 @@
 
 //import modules
+import { shrinkwrapSeal } from '../seal.js'
 import { senseEnvironment } from './ping.js'
 import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments } from './library0.js'
 import { Tag, checkTag } from './library1.js'
@@ -214,9 +215,8 @@ async function sendText_useTwilio(c) {
 
 
 
-
-
-
+//todo, clean this up, obviously
+let seal = shrinkwrapSeal.hash.substring(0, 7)
 
 
 
@@ -241,7 +241,7 @@ export async function dog(...a) {
 
 		tick: t,
 		tag: Tag(),
-		tags: ['type:debug', `where:${w}`],
+		tags: ['type:debug', 'where:'+w, 'what:'+seal],
 		level: 'debug'//level is a property datadog wants, with a value like info, debug, warn, error, or critical
 	}
 	let s = `${sayTick(t)} DEBUG ↓ ${w} ${o.tick} ${o.tag} ${newline}${o.message}`
@@ -265,7 +265,7 @@ export async function logAudit(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: ['type:audit', `where:${w}`],
+		tags: ['type:audit', 'where:'+w, 'what:'+seal],
 		level: 'info'
 	}
 	let s = 'AUDIT '+look(o)+newline+JSON.stringify(o)
@@ -289,7 +289,7 @@ export async function logAlert(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: ['type:alert', `where:${w}`],
+		tags: ['type:alert', 'where:'+w, 'what:'+seal],
 		level: 'error'
 	}
 	let s = 'ALERT '+look(o)+newline+JSON.stringify(o)
@@ -314,7 +314,7 @@ export async function logFragile(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: ['type:fragile', `where:${w}`],
+		tags: ['type:fragile', 'where:'+w, 'what:'+seal],
 		level: 'critical'
 	}
 	let s = 'FRAGILE '+look(o)+newline+JSON.stringify(o)

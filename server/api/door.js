@@ -11,6 +11,7 @@ export default defineEventHandler(async (workerEvent) => {
 
 		//BLOWUP 1
 		await dog('checkpoint 1')
+		function1()
 
 		door = await doorWorkerOpen(workerEvent)
 		response = await doorProcessBelow(door)

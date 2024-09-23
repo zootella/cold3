@@ -14,7 +14,7 @@
     "offline": "serverless offline",
     "package": "serverless package",
     "local": "rollup -c && serverless offline",
-    "deploy": "rollup -c && serverless deploy",
+    "deploy": "rollup -c && serverless deploy --force",
     "www": "serverless s3sync"
   },
   "dependencies": {

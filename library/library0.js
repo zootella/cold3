@@ -1995,6 +1995,80 @@ function lookSayFunction(f) {
 
 
 
+/*
+back in the library for three tasks
+1[]stringify
+2[]make seal with details and composed forms
+3[]start redact, first just turning the net23 access code into REDACTED, more caps lock there, you realize
+*/
+
+
+export function seal() {
+
+}
+/*
+can you write this one function to return everything about where and what is running
+in both parts and composed
+calls into ping to get parts there, even
+*/
+
+
+
+
+export function stringify(o) {
+
+
+
+
+}
+
+/*
+stringify errors
+notice
+
+ errors and catch all exceptions to return '{"message":"stringify threw"}'
+*/
+
+
+test(() => {
+
+	let o = {
+		s: 'hi',
+		n: 7,
+		e: new Error('message')
+	}
+	ok(JSON.stringify(o) == '{"s":"hi","n":7,"e":{}}')//json stringify makes all errors {} which is useless when we're trying to see what threw in logs!
+
+
+
+
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

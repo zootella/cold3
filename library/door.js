@@ -59,6 +59,9 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 }
 
 export async function doorWorkerShut(door, response, error) {
+
+	log('hello from door worker shut to see why youre not getting error')
+
 	door.stopTick = Now()//time
 	door.duration = door.stopTick - door.startTick
 	door.response = response//bundle
@@ -96,10 +99,43 @@ export async function fetchLambda(path, body) {
 	return await $fetch(host+path, {method: 'POST', body})
 }
 
+/*
+could you hook this up so if deployed, it always uses cloud lambda
+and if local, it always uses local lambda, essentially
 
 
 
+*/
 
+
+/*
+so i can't fing believe it, but JSON.stringify(e) returns {}
+chat reccomends a custom replacer, like this:
+
+function replacer(key, value) {
+	if (value instanceof Error) {
+		return {
+			name: value.name,
+			message: value.message,
+			stack: value.stack,
+		};
+	}
+	return value;
+}
+
+const obj = {
+	normalProp: 'some value',
+	errorProp: new Error('Something went wrong!'),
+	anotherProp: null,
+};
+
+console.log(JSON.stringify(obj, replacer, 2));
+
+for now you're just going to do the look in message thing, i guess
+
+
+
+*/
 
 
 
