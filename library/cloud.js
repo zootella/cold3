@@ -55,6 +55,11 @@ export async function snippet(card) {
 //	await dog('getting ready to send emails and texts')
 
 /*
+first, test tossing those 6 places
+local, then cloud
+
+
+
 try out now
 node test: []email sendgrid, []sms twilio, []email amazon, []sms amazon
 worker local: []email sendgrid, []sms twilio

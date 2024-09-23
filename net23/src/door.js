@@ -10,7 +10,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 4
-		await dog('blowup 4')
+		await dog('checkpoint 4')
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -19,7 +19,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 5
-		await dog('blowup 5')
+		await dog('checkpoint 6')
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
@@ -33,7 +33,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//BLOWUP 6
-	await dog('blowup 6')
+	await dog('checkpoint 5')
 
 
 
@@ -45,6 +45,22 @@ async function doorProcessBelow(door) {
 	response.when = Now()
 	return response
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //keep these as hello handlers, that demonstrate just proper use of the front door

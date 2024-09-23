@@ -33,7 +33,7 @@ async function doorProcessBelow(door) {
 
 
 
-	let lambdaResult = await fetchLambda('/door', {name: 'bob', age: 21})
+	let lambdaResult = await fetchLambda('/door', {name: door.body.name, age: door.body.age})
 	//log(look(lambdaResult))
 	let message = lambdaResult.message
 

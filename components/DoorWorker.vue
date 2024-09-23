@@ -3,7 +3,7 @@
 import { ref, reactive, watch } from 'vue'
 import { log, look, Now } from '@/library/library0.js'
 
-const {data, refresh} = useFetch('/api/door', {method: 'POST', body: {name: 'bob', age: 42}})
+const {data, refresh} = useFetch('/api/door', {method: 'POST', body: {name: 'Wendy', age: 31}})
 
 </script>
 <template>

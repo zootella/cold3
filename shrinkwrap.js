@@ -108,13 +108,36 @@ async function affixSeal(properties, manifest) {
 
 	//output a summary to the shrinkwrapper
 	log('',
-		`${codeFiles} files and ${codeSize} bytes code`,
+		`${codeFiles} files and ${codeSize} bytes code; your 3.5" floppy disk is filled ${Math.round(codeSize*100/1474560)}%`,
 		`${totalFiles} files and ${totalSize} bytes total`,
 		'',
 		`${hash.base32()} shrinkwrap hash`)
 }
 
 
+
+/*
+
+
+yeah, right in here actually compose
+	name: 'cold3',
+	tick: 1727070618821,
+	hash: 'VQFO2KNLUTPQ5TPAXUX4DPDB5H4XX2NQLPOSIUUEGBHCQH6XLPLA',
+into seal: like 'cold3.2024sep23.VQFO2KN'
+also  have when: '2024sep23' in case you just want that
+
+function formatDateUTC(t) {
+	let date = new Date(t)
+	let year = date.getUTCFullYear()
+	let month = date.toLocaleString('en', { month: 'short', timeZone: 'UTC' }).toLowerCase()
+	let day = String(date.getUTCDate()).padStart(2, '0')
+	return year+month+day
+}
+
+
+
+
+*/
 
 /*
 notes, ttd
@@ -140,6 +163,9 @@ this is also where you can show how much of this disk has filled:
    84,837 bytes is library0, just for context
   468,982 bytes total code (avoided package-lock.json, gif, png) so you're nearly a third full already!
 1,474,560 bytes floppy disk
+
+
+A 3.5" floppy disk is 31% full
 
  ____________________
 | |cold3           | |
