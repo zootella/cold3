@@ -9,7 +9,7 @@ const {data, refresh} = useFetch('/api/door-lambda', {method: 'POST', body: {nam
 <template>
 
 <div>
-	<p>door worker to lambda: data is {{data?.message}} and {{data?.when}} <button @click="refresh">Refresh</button></p>
+	<p>door worker to lambda: data is {{data?.message}} <button @click="refresh">Refresh</button></p>
 </div>
 
 </template>

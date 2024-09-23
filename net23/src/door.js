@@ -1,5 +1,5 @@
 
-import { pingEnvironment, senseEnvironment } from '../../library/ping.js'
+import { seal } from '../../library/ping.js'
 import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
@@ -10,7 +10,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 4
-		await dog('checkpoint 4')
+		//await dog('checkpoint 4')
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -19,7 +19,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 5
-		await dog('checkpoint 6')
+		//await dog('checkpoint 6')
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
@@ -33,13 +33,13 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//BLOWUP 6
-	await dog('checkpoint 5')
+	//await dog('checkpoint 5')
 
 
 
 
 	//prove you got the body by including in message
-	let message = `hello ${door.body.name} age ${door.body.age} from ${pingEnvironment()} v2024sep20b`
+	let message = `hello ${door.body.name} age ${door.body.age} from ${seal().w3}`
 
 	response.message = message
 	response.when = Now()

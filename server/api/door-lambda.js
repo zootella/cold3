@@ -107,7 +107,7 @@ ping 5 lambda:
 
 
 
-import { pingEnvironment } from '../../library/ping.js'
+import { seal } from '../../library/ping.js'
 
 
 export const handler = async (event) => {
@@ -118,7 +118,7 @@ export const handler = async (event) => {
 
 
 
-		note = `lambda says: ${pingEnvironment()}, ping5done`
+		note = `lambda says: ${seal().w3}, ping5done`
 
 	} catch (e) { note = 'ping5 lambda error: '+e.stack }
 	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }

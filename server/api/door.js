@@ -1,5 +1,5 @@
 
-//import { senseEnvironment } from '../../library/ping.js'
+import { seal } from '../../library/ping.js'
 import { log, look, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
 import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
@@ -10,8 +10,8 @@ export default defineEventHandler(async (workerEvent) => {
 	try {
 
 		//BLOWUP 1
-		await dog('checkpoint 1')
-		function1()
+		//await dog('checkpoint 1')
+//		function1()
 
 		door = await doorWorkerOpen(workerEvent)
 		response = await doorProcessBelow(door)
@@ -20,7 +20,7 @@ export default defineEventHandler(async (workerEvent) => {
 	try {
 
 		//BLOWUP 2
-		await dog('checkpoint 3')
+		//await dog('checkpoint 3')
 
 		let workerReturn = await doorWorkerShut(door, response, error)
 		if (response && !error) return workerReturn
@@ -34,10 +34,10 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//BLOWUP 3
-	await dog('checkpoint 2')
+	//await dog('checkpoint 2')
 
 	//prove you got the body by including in message
-	let message = `hello ${door.body.name} age ${door.body.age} from door v2024sep20a`
+	let message = `hello ${door.body.name} age ${door.body.age} from door ${seal().w3}`
 
 
 	response.message = message

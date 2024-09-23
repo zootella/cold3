@@ -4,12 +4,71 @@
 
 
 
+import { shrinkwrapSeal } from '../seal.js'
+
+
+
+/*
+export function senseEnvironment() {
+	return seal().longWhere
+}
+export function pingEnvironment() { return `${senseEnvironment()}, ${Date.now()}, ${_senseEnvironmentVersion}` }//version for just this file
+*/
+
+
+/*
+seal().stamp       "2024sep23.5HFZL2V"
+seal().where       "LocalVite"
+seal().environment "LocalVite.Achr.Asaf.Awin.Docu.Loca.Self.Stor.Wind.v1.t1727127531446" previously pingEnvironment()
+seal().longWhere   "LocalVite.Achr.Asaf.Awin.Docu.Loca.Self.Stor.Wind"                   previously senseEnvironment()
+
+seal().whereStamp  "LocalVite.2024sep23.5HFZL2V"
+seal().w3 "LocalVite.2024sep23.5HFZL2V"
+*/
+
+
+const diskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
+export function seal() {
+	//return both parts, and composed combinations
+
+
+	let o = shrinkwrapSeal
+
+	o.hashBeginning = o.hash.substring(0, 7)
+	o.tickDate = sayDate(o.tick)
+	o.diskPercentFull = Math.round(o.codeSize*100/diskCapacity)//percent
+	o.stamp = o.tickDate+'.'+o.hashBeginning
+	o.longStamp = o.name+'.'+o.tickDate+'.'+o.hashBeginning
+
+	let p = senseEnvironmentParts()
+	o.environmentParts = p
+	o.where = p.title
+	o.longWhere = p.title+'.'+p.tags
+
+	o.now = Date.now()//when called, not when sealed
+
+	o.environment = o.longWhere+'.v'+_senseEnvironmentVersion+'.t'+o.now
+
+	o.whereStamp = o.where+'.'+o.stamp
+	o.w3 = o.whereStamp+'.'+sayTick(o.now)//where this ran, what code was running, and when this was called
+
+	o.isLocal = o.where.includes('Local')
+	o.isCloud = o.where.includes('Cloud')
 
 
 
 
+	return o
+}
 
 
+function sayDate(t) {
+	let d = new Date(t)
+	return (
+		d.getUTCFullYear()//year
+		+d.toLocaleString('en', {month: 'short', timeZone: 'UTC'}).toLowerCase()//month
+		+(d.getUTCDate()+'').padStart(2, '0'))//day
+}
 
 
 
@@ -25,8 +84,8 @@
 
 //sense the environment and report fingerprint details like:
 //"CloudLambda:Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1725904754597, vYYYYmmmDl"
-export function pingEnvironment() { return `${senseEnvironment()}, ${Date.now()}, v2024sep9a` }//version for just this file
 //the insanity that follows is you trying to be able to sense what and where is running us
+const _senseEnvironmentVersion = 1//first version, if you change how this works at all, increment!
 const _senseEnvironment = `
                Aclo Clie Docu Doma Loca                Lamb Node Proc Regi Requ Scri Self Serv Stor      Zulu >Determining
                                         Eigh Envi Glob      Node Proc                                         >LocalNode
@@ -40,7 +99,7 @@ Achr Asaf Awin           Docu      Loca                                         
 Achr Asaf Awin      Clie Docu      Loca                          Proc                Self      Stor Wind      >LocalPageClient
 Achr Asaf Awin           Docu Doma                                                   Self      Stor Wind      >CloudPageClient
 `
-export function senseEnvironment() {
+function senseEnvironmentParts() {
 	function type(t) { return t != 'undefined' }
 	function text(o) { return typeof o == 'string' && o != '' }
 	let a = []
@@ -101,7 +160,13 @@ export function senseEnvironment() {
 		if (v > winningScore) { winningScore = v; winningTitle = k }
 	}
 
-	return winningTitle+':'+s
+
+
+	return {
+		title: winningTitle,
+		tagsArray: a,
+		tags: s
+	}
 }
 /*
 todo, more of these you're hearing about later
@@ -110,8 +175,56 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 */
 
 
+function defined(t) { return t != 'undefined' }
 
 
+
+
+/*        \ \      `.`.  */  function hasText(s) {
+/*         \ \     ,^-'  */    return (
+/*          \ \    |     */      typeof s == 'string' &&
+/*           `.`.  |     */      s.length &&
+/*              .`.|     */      s.trim() != ''
+/*               `._>    */    )
+/*                       */  }
+
+
+//TODO move this here, now
+//say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
+function sayTick(t) {
+
+	//in this unusual instance, we want to say the time local to the person reading the logs, not the computer running the script
+	let zone = Intl.DateTimeFormat().resolvedOptions().timeZone//works everywhere, but will be utc on cloud worker and lambda
+	if (defined(typeof process) && hasText(process.env?.ACCESS_TIME_ZONE)) zone = process.env.ACCESS_TIME_ZONE//use what we set in the .env file. page script won't have access to .env, but worker and lambda, local and deployed will
+
+	let d = new Date(t)
+	let f = new Intl.DateTimeFormat('en', {timeZone: zone, weekday: 'short', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit'})
+	let parts = f.formatToParts(d)
+
+	let weekday = parts.find(p => p.type == 'weekday').value
+	let hour = parts.find(p => p.type == 'hour').value
+	let minute = parts.find(p => p.type == 'minute').value
+	let second = d.getSeconds().toString().padStart(2, '0')
+	let millisecond = d.getMilliseconds().toString().padStart(3, '0')
+	let ap = parts.find(p => p.type == 'dayPeriod').value == 'AM' ? 'a' : 'p'
+
+	return `${weekday}${hour}:${minute}${ap}${second}.${millisecond}s`
+}
+
+
+
+
+
+
+
+//also, this is the new library0, bump the numbers forward
+/*
+library0 - no imports, small, fast, for ping and seal
+library1 - no imports
+library2 - imports
+
+
+*/
 
 
 

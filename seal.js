@@ -1,9 +1,9 @@
 export const shrinkwrapSeal = {
 	name: 'cold3',
-	tick: 1727115092604,
-	hash: '5HFZL2VVRUJHFLM6ICGP5ZBYCITRYMJAVGZ3JJHH6773NVWEHGVA',
+	tick: 1727133528737,
+	hash: 'GXQ6YRNZBA3S72XRZ7YERRAMK2DEKY5EEOKPJMRWUR65ZSFOX7KQ',
 	codeFiles: 105,
-	codeSize: 461245,
+	codeSize: 466135,
 	totalFiles: 110,
-	totalSize: 8676277
+	totalSize: 8681167
 }

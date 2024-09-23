@@ -1,8 +1,8 @@
 <script setup>
 
-import { pingEnvironment } from '@/library/ping.js'
+import { seal } from '@/library/ping.js'
 
-let note = `script setup says: ${pingEnvironment()}, ping2done`
+let note = `script setup says: ${seal().w3}, ping2done`
 
 </script>
 <template>

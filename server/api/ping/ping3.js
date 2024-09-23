@@ -1,5 +1,5 @@
 
-import { pingEnvironment } from '@/library/ping.js'
+import { seal } from '@/library/ping.js'
 
 
 export default defineEventHandler((event) => {
@@ -10,7 +10,7 @@ export default defineEventHandler((event) => {
 
 
 
-		note = `worker says: ${pingEnvironment()}, ping3done`
+		note = `worker says: ${seal().w3}, ping3done`
 
 	} catch (e) { note = 'ping3 worker error: '+e.stack }
 	return {note}

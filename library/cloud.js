@@ -1,14 +1,14 @@
 
 //import modules
 import { shrinkwrapSeal } from '../seal.js'
-import { senseEnvironment } from './ping.js'
+import { seal } from './ping.js'
 import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 
 //node-style imports
 let _fs;
 async function loadFs() {
-	if (!_fs && senseEnvironment().includes('LocalNode')) {
+	if (!_fs && seal().where == 'LocalNode') {
 		_fs = (await import('fs')).default.promises
 	}
 	return _fs
@@ -42,13 +42,13 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 
 test(() => {
-	log('hi, test! '+senseEnvironment())
+	log('hi, test! '+seal().w3)
 })
 
 
 //let's test this stuff with node on the command line
 export async function snippet(card) {
-	log('hi, node! '+senseEnvironment())
+	log('hi, node! '+seal().w3)
 
 	log(look(card))
 
@@ -215,8 +215,6 @@ async function sendText_useTwilio(c) {
 
 
 
-//todo, clean this up, obviously
-let seal = shrinkwrapSeal.hash.substring(0, 7)
 
 
 
@@ -233,7 +231,7 @@ let seal = shrinkwrapSeal.hash.substring(0, 7)
 //from code running local or deployed, dog always sends logs up to datadog
 export async function dog(...a) {
 	let t = Now()
-	let w = senseEnvironment()
+	let w = seal().w3
 	let o = {
 		when: sayTick(t),
 		message: composeLogArguments(...a),
@@ -241,7 +239,7 @@ export async function dog(...a) {
 
 		tick: t,
 		tag: Tag(),
-		tags: ['type:debug', 'where:'+w, 'what:'+seal],
+		tags: ['type:debug', 'where:'+w, 'what:'+seal().stamp],
 		level: 'debug'//level is a property datadog wants, with a value like info, debug, warn, error, or critical
 	}
 	let s = `${sayTick(t)} DEBUG ↓ ${w} ${o.tick} ${o.tag} ${newline}${o.message}`
@@ -257,7 +255,7 @@ export async function dog(...a) {
 //and so we must keep a permanent record of, whether the code that did it was running local or cloud
 export async function logAudit(message, watch) {
 	let t = Now()
-	let w = senseEnvironment()
+	let w = seal().w3
 	let o = {
 		when: sayTick(t),
 		message: message,
@@ -265,7 +263,7 @@ export async function logAudit(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: ['type:audit', 'where:'+w, 'what:'+seal],
+		tags: ['type:audit', 'where:'+w, 'what:'+seal().stamp],
 		level: 'info'
 	}
 	let s = 'AUDIT '+look(o)+newline+JSON.stringify(o)
@@ -281,7 +279,7 @@ export async function logAudit(message, watch) {
 //log to datadog to investigate later
 export async function logAlert(message, watch) {
 	let t = Now()
-	let w = senseEnvironment()
+	let w = seal().w3
 	let o = {
 		when: sayTick(t),
 		message: message,
@@ -289,7 +287,7 @@ export async function logAlert(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: ['type:alert', 'where:'+w, 'what:'+seal],
+		tags: ['type:alert', 'where:'+w, 'what:'+seal().stamp],
 		level: 'error'
 	}
 	let s = 'ALERT '+look(o)+newline+JSON.stringify(o)
@@ -306,7 +304,7 @@ export async function logAlert(message, watch) {
 export async function logFragile(message, watch) {
 	console.error('FRAGILE!^')//to get here, there was an exception logging an exception--probably an import is missing, or maybe somehow a circular reference got to json stringify. it's possible that the code that follows will throw, too, so shout for help first, before trying to log full details next
 	let t = Now()
-	let w = senseEnvironment()
+	let w = seal().w3
 	let o = {
 		when: sayTick(t),
 		message: message,
@@ -314,7 +312,7 @@ export async function logFragile(message, watch) {
 
 		tick: t,
 		tag: Tag(),
-		tags: ['type:fragile', 'where:'+w, 'what:'+seal],
+		tags: ['type:fragile', 'where:'+w, 'what:'+seal().stamp],
 		level: 'critical'
 	}
 	let s = 'FRAGILE '+look(o)+newline+JSON.stringify(o)
@@ -326,8 +324,8 @@ export async function logFragile(message, watch) {
 }
 
 //not proud of these two:
-export function isLocal() { return senseEnvironment().includes('Local') }
-export function isCloud() { return senseEnvironment().includes('Cloud') }
+export function isLocal() { return seal().w3.includes('Local') }
+export function isCloud() { return seal().w3.includes('Cloud') }
 
 //and this one is todo:
 function sendLog_useIcarus(s) {/*TODO*/}

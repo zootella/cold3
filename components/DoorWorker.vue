@@ -9,7 +9,7 @@ const {data, refresh} = useFetch('/api/door', {method: 'POST', body: {name: 'Wen
 <template>
 
 <div>
-	<p>door worker: data is {{data?.message}} and {{data?.when}} <button @click="refresh">Refresh</button></p>
+	<p>door worker: data is {{data?.message}} <button @click="refresh">Refresh</button></p>
 </div>
 
 </template>

@@ -2009,7 +2009,7 @@ export function seal() {
 /*
 can you write this one function to return everything about where and what is running
 in both parts and composed
-calls into ping to get parts there, even
+calls into ping to get parts there, evenf
 */
 
 
