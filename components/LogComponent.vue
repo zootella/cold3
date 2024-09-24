@@ -3,7 +3,7 @@
 import { ref, reactive, watch } from 'vue'
 import { log, look, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
-import { seal } from '@/library/ping.js'
+import { sticker } from '@/library/sticker.js'
 
 const inputText = ref('')
 const environmentText = ref('')
@@ -20,7 +20,7 @@ async function logToServer(message) {
 
 
 
-let s = seal().w3
+let s = sticker().all
 if (process.server) s += ', PDS'
 if (process.client) s += ', PDC'
 s += ', v2024sep8d'

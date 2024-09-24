@@ -1,8 +1,8 @@
 <script setup>
 
-import { seal } from '@/library/ping.js'
+import { sticker } from '@/library/sticker.js'
 
-let note = `script setup says: ${seal().w3}, ping2done`
+let note = `script setup says: ${sticker().all}, ping2done`
 
 </script>
 <template>

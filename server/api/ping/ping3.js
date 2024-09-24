@@ -1,5 +1,5 @@
 
-import { seal } from '@/library/ping.js'
+import { sticker } from '@/library/sticker.js'
 
 
 export default defineEventHandler((event) => {
@@ -10,7 +10,7 @@ export default defineEventHandler((event) => {
 
 
 
-		note = `worker says: ${seal().w3}, ping3done`
+		note = `worker says: ${sticker().all}, ping3done`
 
 	} catch (e) { note = 'ping3 worker error: '+e.stack }
 	return {note}

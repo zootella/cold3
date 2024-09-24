@@ -1,14 +1,13 @@
 
 //import modules
-import { shrinkwrapSeal } from '../seal.js'
-import { seal } from './ping.js'
+import { sticker } from './sticker.js'
 import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments } from './library0.js'
 import { Tag, checkTag } from './library1.js'
 
 //node-style imports
 let _fs;
 async function loadFs() {
-	if (!_fs && seal().where == 'LocalNode') {
+	if (!_fs && sticker().where == 'LocalNode') {
 		_fs = (await import('fs')).default.promises
 	}
 	return _fs
@@ -43,14 +42,14 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 
 test(() => {
-	log('checking out seal')
-	log(look(seal()))
+	log('checking out sticker')
+	log(look(sticker()))
 })
 
 
 //let's test this stuff with node on the command line
 export async function snippet(card) {
-	log('hi, node! '+seal().w3)
+	log('hi, node! '+sticker().all)
 
 	log(look(card))
 
@@ -213,21 +212,27 @@ async function sendText_useTwilio(c) {
 
 
 function prepareLog() {
-	let t = Now()
-	let wax = seal()
+	let k = sticker()
 	let o = {
+		when: k.nowText,
 		tag: Tag(),
-		tick: t,
-		when: sayTick(t),
-		tags: ['where:'+w.where, 'what:'+w.stamp]
+		tags: ['where:'+k.where, 'what:'+k.what],
+		sticker: k
 	}
-	return {t, wax, o}
+	return {k, o}
 }
 /*
 refactor to call this first
 and then add properties from there
 
 */
+
+
+
+
+
+
+//throw the sticker as an object into datadog, too; get the whole hash in there
 
 
 
@@ -247,15 +252,15 @@ and then add properties from there
 //use dog(a, b) just like you do log(), except you have to await dog()
 //from code running local or deployed, dog always sends logs up to datadog
 export async function dog(...a) {
-	let w = seal()//get information from the wax seal, w.t is Now()
+	let k = sticker()//get information from the sticker on the shrinkwrap
 	let o = {
-		when: sayTick(w.t),
+		when: k.nowText,
 		message: composeLogArguments(...a),
 		watch: a,
 
-		tick: w.t,
+		tick: k.nowTick,
 		tag: Tag(),
-		tags: ['type:debug', 'where:'+w.where, 'what:'+w.stamp],
+		tags: ['type:debug', 'where:'+k.where, 'what:'+k.what],
 		level: 'debug'//level is a property datadog wants, with a value like info, debug, warn, error, or critical
 	}
 	let s = `${sayTick(w.t)} DEBUG ${w.w3} ${o.tick} ${o.tag} ${newline}${o.message}`
@@ -270,15 +275,15 @@ export async function dog(...a) {
 //we did something with a third-party api, like send a text or run a credit card
 //and so we must keep a permanent record of, whether the code that did it was running local or cloud
 export async function logAudit(message, watch) {
-	let w = seal()
+	let k = sticker()
 	let o = {
-		when: sayTick(w.t),
+		when: k.nowText,
 		message: message,
 		watch: watch,
 
-		tick: w.t,
+		tick: k.nowTick,
 		tag: Tag(),
-		tags: ['type:audit', 'where:'+w.where, 'what:'+w.stamp],
+		tags: ['type:audit', 'where:'+k.where, 'what:'+k.what],
 		level: 'info'
 	}
 	let s = 'AUDIT '+look(o)+newline+JSON.stringify(o)
@@ -293,15 +298,15 @@ export async function logAudit(message, watch) {
 //an exception we didn't expect rose to the top of the event handler
 //log to datadog to investigate later
 export async function logAlert(message, watch) {
-	let w = seal()
+	let k = sticker()
 	let o = {
-		when: sayTick(w.t),
+		when: k.nowText,
 		message: message,
 		watch: watch,
 
-		tick: w.t,
+		tick: k.nowTick,
 		tag: Tag(),
-		tags: ['type:alert', 'where:'+w.where, 'what:'+w.stamp],
+		tags: ['type:alert', 'where:'+k.where, 'what:'+k.what],
 		level: 'error'
 	}
 	let s = 'ALERT '+look(o)+newline+JSON.stringify(o)
@@ -317,15 +322,15 @@ export async function logAlert(message, watch) {
 //we may not be able to log it, but try anyway
 export async function logFragile(message, watch) {
 	console.error('FRAGILE!^')//to get here, there was an exception logging an exception--probably an import is missing, or maybe somehow a circular reference got to json stringify. it's possible that the code that follows will throw, too, so shout for help first, before trying to log full details next
-	let w = seal()
+	let k = sticker()
 	let o = {
-		when: sayTick(w.t),
+		when: k.nowText,
 		message: message,
 		watch: watch,
 
-		tick: w.t,
+		tick: k.nowTick,
 		tag: Tag(),
-		tags: ['type:fragile', 'where:'+w.where, 'what:'+w.stamp],
+		tags: ['type:fragile', 'where:'+k.where, 'what:'+k.what],
 		level: 'critical'
 	}
 	let s = 'FRAGILE '+look(o)+newline+JSON.stringify(o)
@@ -335,10 +340,6 @@ export async function logFragile(message, watch) {
 	await sendLog_useFile(s)
 	let r; if (isCloud()) { r = await sendLog_useDatadog({o}) }; return r
 }
-
-//not proud of these two:
-export function isLocal() { return seal().w3.includes('Local') }
-export function isCloud() { return seal().w3.includes('Cloud') }
 
 //and this one is todo:
 function sendLog_useIcarus(s) {/*TODO*/}

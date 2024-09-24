@@ -1,5 +1,5 @@
 
-import { seal } from '@/library/ping.js'
+import { sticker } from '@/library/sticker.js'
 import { database_pingCount } from '@/library/database.js'
 
 export default defineEventHandler(async (event) => {
@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
 		let count = await database_pingCount()
 		let duration = Date.now() - t
 
-		note = `worker says: database took ${duration}ms to get count ${count}, ${seal().w3}, ping4done`
+		note = `worker says: database took ${duration}ms to get count ${count}, ${sticker().all}, ping4done`
 
 	} catch (e) { note = 'ping4 worker error: '+e.stack }
 	return {note}

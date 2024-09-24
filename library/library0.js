@@ -1998,14 +1998,11 @@ function lookSayFunction(f) {
 /*
 back in the library for three tasks
 1[]stringify
-2[]make seal with details and composed forms
+2[x]make sticker with details and composed forms
 3[]start redact, first just turning the net23 access code into REDACTED, more caps lock there, you realize
 */
 
 
-export function seal() {
-
-}
 /*
 can you write this one function to return everything about where and what is running
 in both parts and composed

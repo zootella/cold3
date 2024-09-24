@@ -1,6 +1,6 @@
 <script setup>
 
-import { seal } from '@/library/ping.js'
+import { sticker } from '@/library/sticker.js'
 
 /* tiny tests run six places:
 -> ./pages/ping/test.vue      nuxt page, server and client rendered
@@ -18,7 +18,7 @@ there's also process.env.NODE_ENV != 'production'
 */
 
 //run tests for page, will run on server and then client as part of hybrid rendering
-let note = `script setup says: ${(await runTests()).message}, ${seal().w3}`
+let note = `script setup says: ${(await runTests()).message}, ${sticker().all}`
 
 //run tests a third time, by fetching a server api endpoint, will run on server
 let {data, error} = await useFetch('/api/ping/test')

@@ -5,7 +5,7 @@ import crypto from 'crypto'
 
 import glob from 'fast-glob'
 
-import { shrinkwrapSeal } from './seal.js'//load the previous one to repeat the name
+import { plastic } from './plastic.js'//load the previous one to repeat the name
 import { log, look, newline, Data, Now } from './library/library0.js'
 
 /*
@@ -49,7 +49,7 @@ async function listFiles() {
 
 			//also leave out the two that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
 			'shrinkwrap.txt',
-			'seal.js'
+			'plastic.js'
 		]
 	})
 	return paths.sort()//alphebetize, unfortunately does not keep folders grouped together like they look in File Manager
@@ -89,11 +89,11 @@ async function affixSeal(properties, manifest) {
 	//compute the shrinkwrap hash of this version snapshot right now, which is the hash of shrinkwrap.txt
 	let hash = Data({array: crypto.createHash('sha256').update(manifest).digest()})
 
-	//compose contents for the new seal.js
+	//compose contents for the new plastic.js
 	const tab = '\t'
-	let seal = (
-		`export const shrinkwrapSeal = {`      +newline
-		+tab+`name: '${shrinkwrapSeal.name}',` +newline
+	let sheet = (
+		`export const plastic = {`      +newline
+		+tab+`name: '${plastic.name}',` +newline
 		+tab+`tick: ${Now()},`                 +newline
 		+tab+`hash: '${hash.base32()}',`       +newline
 		+tab+`codeFiles: ${codeFiles},`        +newline
@@ -103,8 +103,8 @@ async function affixSeal(properties, manifest) {
 		+`}`                                   +newline
 	)
 
-	//overwrite seal.js, which the rest of the code imports to show the version information like name, date, and hash
-	await fs.writeFile('seal.js', seal)
+	//overwrite plastic.js, which the rest of the code imports to show the version information like name, date, and hash
+	await fs.writeFile('plastic.js', sheet)
 
 	//output a summary to the shrinkwrapper
 	log('',
@@ -123,7 +123,7 @@ yeah, right in here actually compose
 	name: 'cold3',
 	tick: 1727070618821,
 	hash: 'VQFO2KNLUTPQ5TPAXUX4DPDB5H4XX2NQLPOSIUUEGBHCQH6XLPLA',
-into seal: like 'cold3.2024sep23.VQFO2KN'
+into sticker: like 'cold3.2024sep23.VQFO2KN'
 also  have when: '2024sep23' in case you just want that
 
 function formatDateUTC(t) {
@@ -145,13 +145,13 @@ notes, ttd
 $ node shrinkwrap
 shrinkwrap.js, this file runs, generating
 shrinkwrap.txt, this file of hashes, paths, and sizes, which gets hashed to
-seal.js, which contains the date and hash that seals the package
-code in the app includes seal.js to show version numbers
+sticker.js, which contains the date and hash that seals the package
+code in the app includes sticker.js to show version numbers
 
 
 
-library0 includes seal.js, which gets it in code everywhere else
-and library0 has a function which formats the seal into text like
+library0 includes sticker.js, which gets it in code everywhere else
+and library0 has a function which formats the sticker into text like
 
 library0 has function shrinkwrapVersion which turns name, tick, hash into text for the user like
 "cold3.2024sep5.OJW3O2W"

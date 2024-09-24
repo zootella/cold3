@@ -1,5 +1,5 @@
 
-import { seal } from '../../library/ping.js'
+import { sticker } from '../../library/sticker.js'
 import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
@@ -39,7 +39,7 @@ async function doorProcessBelow(door) {
 
 
 	//prove you got the body by including in message
-	let message = `hello ${door.body.name} age ${door.body.age} from ${seal().w3}`
+	let message = `hello ${door.body.name} age ${door.body.age} from ${sticker().all}`
 
 	response.message = message
 	response.when = Now()

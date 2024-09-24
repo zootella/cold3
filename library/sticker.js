@@ -14,76 +14,6 @@ import { plastic } from '../plastic.js'
 
 
 
-//throw the sticker as an object into datadog, too; get the whole hash in there
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-seal().stamp       "2024sep23.5HFZL2V"
-seal().where       "LocalVite"
-seal().environment "LocalVite.Achr.Asaf.Awin.Docu.Loca.Self.Stor.Wind.v1.t1727127531446" previously pingEnvironment()
-seal().longWhere   "LocalVite.Achr.Asaf.Awin.Docu.Loca.Self.Stor.Wind"                   previously senseEnvironment()
-
-seal().whereStamp  "LocalVite.2024sep23.5HFZL2V"
-seal().w3 "LocalVite.2024sep23.5HFZL2V"
-*/
-
-
-/*
-call seal() from anywhere to find out what we are and where we are running
-you get a big object of details
-
-{
-	name: "cold3"
-	tick: 1727133528737
-	hash: "GXQ6YRNZBA3S72XRZ7YERRAMK2DEKY5EEOKPJMRWUR65ZSFOX7KQ"
-
-	first, these come from shrinkwrap, telling the name
-
-	totalFiles: 110
-	totalSize: 8681167
-	codeFiles: 105
-	codeSize: 466135
-	sayDisk: 32
-
-	t:                                       1727136557741
-
-	sayDate:              "2024sep23"
-	sayHash:                        "GXQ6YRN"
-
-	stamp:                "2024sep23.GXQ6YRN"
-	nameStamp:      "cold3.2024sep23.GXQ6YRN"
-
-
-	where:      "LocalVite"
-	whereStamp: "LocalVite.2024sep23.GXQ6YRN"
-	w3:         "LocalVite.2024sep23.GXQ6YRN.Mon06:09p17.741s"
-
-	isLocal: true
-	isCloud: false
-	whereTags: ["Achr", "Asaf", "Awin", "Docu", "Loca", "Self", "Stor", "Wind"]
-}
-*/
-
-
-
-
 
 
 
@@ -144,9 +74,11 @@ details related to how we sense the local running environment
 where is the detected environment, and whereTags show the detected tags that led us to that guess
 isLocal and isCloud are from sortinng the different where locations
 
-	all: "LocalVite.2024sep23.GXQ6YRN.Mon06:09p17.741s"
+	where: "LocalVite"
+	what:            "2024sep23.GXQ6YRN"
+	all:   "LocalVite.2024sep23.GXQ6YRN.Mon06:09p17.741s"
 
-where, what, and when is running, all together in one pretty short string of text
+where, what, and when this code is running, all together in one pretty short string of text
 }
 */
 const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
@@ -156,8 +88,8 @@ export function sticker() {
 	k.nowTick = Date.now()
 	k.nowText = sayTick(k.nowTick)
 
-	k.sealedHash = o.hash.substring(0, 7)
-	k.sealedWhen = sayDate(o.tick)
+	k.sealedHash = k.hash.substring(0, 7)
+	k.sealedWhen = sayDate(k.tick)
 
 	k.codeSizeDiskPercent = Math.round((k.codeSize * 100) / floppyDiskCapacity)
 
@@ -167,9 +99,9 @@ export function sticker() {
 	k.isLocal = k.where.includes('Local')
 	k.isCloud = k.where.includes('Cloud')
 
-	k.all = k.where+'.'+k.sealedWhen++k.sealedHash++k.nowText
-
-	return o
+	k.what =             k.sealedWhen+'.'+k.sealedHash
+	k.all  = k.where+'.'+k.sealedWhen+'.'+k.sealedHash+'.'+k.nowText
+	return k
 }
 
 //                                            _                                      _   

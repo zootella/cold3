@@ -1,5 +1,5 @@
 
-import { seal } from '../../library/ping.js'
+import { sticker } from '../../library/sticker.js'
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered
@@ -14,8 +14,8 @@ export const handler = async (event) => {
 	let note = ''
 	try {
 
-		note = `lambda says: ${(await runTests()).message}, ${seal().w3}`
-		//note = `lambda says: *tests commented out for local speed*, ${seal().w3}`
+		note = `lambda says: ${(await runTests()).message}, ${sticker().all}`
+		//note = `lambda says: *tests commented out for local speed*, ${sticker().all}`
 
 	} catch (e) { note = 'ping test lambda error: '+e.stack }
 	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }
