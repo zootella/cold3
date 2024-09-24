@@ -21,6 +21,37 @@ $ git commit
 $ npm run deploy
 
 
+
+
+todo, rename
+the whole thing is the shrinkwrap system
+seal is the verb, $ node seal, same length as test
+plastic is what gets overwritten for each seal
+sticker is the information on the sticker on the plastic seal
+
+shrinkwrap.js  -> seal.js
+shrinkwrap.txt -> wrapper.txt
+plastic.js     -> wrapper.js
+/library/sticker.js               same name
+
+so then seal is the verb
+wrapper is the outside wrapper which gets generated each time
+and sticker is the information on and about the wrapper
+
+and then capitilize the function so you can do
+let sticker = Sticker()
+
+
+
+
+
+
+
+
+
+
+
+
 */
 async function shrinkwrap() {
 

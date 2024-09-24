@@ -1366,8 +1366,12 @@ test(() => {
 
 
 
-
-
+//  _     _          __                _   _                 
+// | |__ (_) __ _   / _|_ __ __ _  ___| |_(_) ___  _ __  ___ 
+// | '_ \| |/ _` | | |_| '__/ _` |/ __| __| |/ _ \| '_ \/ __|
+// | |_) | | (_| | |  _| | | (_| | (__| |_| | (_) | | | \__ \
+// |_.__/|_|\__, | |_| |_|  \__,_|\___|\__|_|\___/|_| |_|___/
+//          |___/                                            
 
 //multiply and divde like fraction([top1, top2], [bottom1, bottom2]) with numerator and denominator arrays
 //given elements must all be 0+ integers of type number
@@ -1799,10 +1803,11 @@ function lookDeep(o, depth, depthLimit) {//depth is the depth of o, 0 on the mar
 }
 function lookSayLength(n) { return n > 9 ? ` ‹${n}›` : '' }//9 and smaller count them yourself!
 
+const _customErrorKeys = ['name', 'message', 'tossWatch', 'tossWhen', 'tossTick', 'stack', 'cause']
 function lookKeys(o, options) {
 	let keys = []
 	if (o instanceof Error) {//error is a container, but we handle it here as a special case
-		['name', 'message', 'tossWatch', 'tossWhen', 'tossTick', 'stack', 'cause'].forEach(possibleKey => {//with this white list of key names, watch and time are custom for toss
+		_customErrorKeys.forEach(possibleKey => {//with this white list of key names, watch and time are custom for toss
 			if (possibleKey in o) {
 				keys.push(possibleKey)
 			}
@@ -1991,13 +1996,152 @@ function lookSayFunction(f) {
 	return c
 }
 
+//      _        _             _  __       
+//  ___| |_ _ __(_)_ __   __ _(_)/ _|_   _ 
+// / __| __| '__| | '_ \ / _` | | |_| | | |
+// \__ \ |_| |  | | | | | (_| | |  _| |_| |
+// |___/\__|_|  |_|_| |_|\__, |_|_|  \__, |
+//                       |___/       |___/ 
+
+//call our wrapped stringify() instead of JSON.stringify() to see into errors, and not worry about exceptions
+export function stringify(o) {
+	try {
+
+		return JSON.stringify(o, (k, v) => {//use json stringify with this custom replacer function, which gets each key value pair
+			if (v instanceof Error) {//special for errors
+				let m = {}//create a modified object with information from the error to give to json stringify instead of the actual error object which it would see nothing inside
+				_customErrorKeys.forEach(errorKey => {//look for a set list of error properties, both javascript ones like "stack" and ones toss adds like "tossWatch"
+					if (errorKey in v) {
+						m[errorKey] = v[errorKey]
+					}
+				})
+				return m//give json stringify our custom object with error information that it can deal with
+			} else {
+				return v//non errors just pass through
+			}
+		})
+
+	} catch (e) { return '{"message":"stringify threw"}' }//never throws, just reports inability
+}
+test(() => {
+	ok(JSON.stringify() == undefined)
+	ok(stringify() == undefined)//notice it's not the string "undefined"
+
+	ok(stringify(5) == '5')
+	ok(stringify('hi') == '"hi"')//adds double quotes
+	ok(stringify(['hi', 5]) == '["hi",5]')
+	ok(stringify({key1: 'value1', key2: 7}) == '{"key1":"value1","key2":7}')//we'll almost always give stringify an object
+})
+noop(() => {//leave off because errors are slow, this is just a demonstration
+	function includesAll(s, a) { a.forEach(tag => ok(s.includes(tag))) }
+
+	//and now for why we're here, stringifying errors
+	try {
+		let o = {}
+		o.notHere.andBeyond
+	} catch (e) {
+		let d = {}//also wrap the caught error into a larger object d, and stringify that
+		d.note1 = 'note one'
+		d.note2 = 17
+		d.caughtError = e//pin the caught error within our big picture object
+
+		let s = stringify(d)
+		includesAll(s, ['note one', '17', 'TypeError', 'andBeyond'])
+		//log(look(s))
+	}
+
+	//make sure it works with toss()
+	try {
+		let a = 'apple'
+		let b = 200
+		let c = ['carrot', 'car', 'carpentry']
+		toss('custom1', {a, b, c})
+	} catch (e) {
+		let s = stringify(e)
+		includesAll(s, ['apple', '200', 'TossError', 'carpentry', 'tossWatch', 'tossTick', 'tossWhen'])
+		//log(look(s))
+	}
+
+	//third demonstration, an error pinned to an error the way javascript does it
+	let examine
+	try {
+		let d3 = neverDefined3//will throw ReferenceError
+	} catch (e3) {
+		try {
+			let a = new Array(-1)
+		} catch (e4) {
+			ok(!e4.cause)//we don't do this, but javascript could attach one error to another using the property named "cause"
+			e4.cause = e3//confirmed we're not overwriting anything, pin it ourselves
+			examine = e4
+		}
+	}
+	let mustHave = ['RangeError', 'Invalid array length', 'ReferenceError', 'neverDefined3 is not defined']
+	let s1 = look(examine)//first, look with your look(), pride of the bike shed, verbose, complete, custom, but not reversible
+	//log(s1)
+	includesAll(s1, mustHave)
+	let s2 = stringify(examine)//next, with your wrapped stringify()
+	//log(s2)
+	includesAll(s1, mustHave)
+	//so yeah, your wrapped stringify() can look into errors pinned to errors
+	//this still isn't a test of getting one from the system where .cause is already in use, but surely it's equivalent?
+})
+/*
+i didn't go to the bike shed, JSON.stringify *drove* me to the bike shed
+because today i learned it turns error objects into {} which is pretty useless in logs
+there are other corner cases to round out, like throwing on BigInt and circular references
+first, a test to demonstrate those limitations:
+*/
+noop(() => {//exceptions are slow, so just switch this on when you're using it
+
+	//demonstration 1: not showing errors
+	let o = {
+		s: 'hi',
+		n: 7,
+		e: new Error('message')
+	}
+	ok(JSON.stringify(o) == '{"s":"hi","n":7,"e":{}}')//useless empty object which datadog will even omit!
+	//log(stringify(o))//see the error details
+
+	//demonstration 2: throwing on BigInt
+	try {
+		let o2 = {
+			big2: BigInt(5)
+		}
+		//log(stringify(o2))//just says stringify threw, importantly without actually throwing
+		JSON.stringify(o2)//throws
+		ok(false)//won't get here
+	} catch (e) {
+		//log(look(e))//the message is "Do not know how to serialize a BigInt"
+	}
+
+	// demonstration 3: throwing on a circular reference
+	try {
+		let o3 = {}
+		o3.circular3 = o3
+		//log(stringify(o3))//here also, just says stringify threw, importantly without actually throwing
+		JSON.stringify(o3)
+		ok(false)
+	} catch (e) {
+		//log(look(e))//cool message like "Converting circular structure to JSON ... property 'circular3' closes the circle"
+	}
+})
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 /*
 back in the library for three tasks
-1[]stringify
+1[x]stringify
 2[x]make sticker with details and composed forms
 3[]start redact, first just turning the net23 access code into REDACTED, more caps lock there, you realize
 */
@@ -2012,35 +2156,15 @@ calls into ping to get parts there, evenf
 
 
 
-export function stringify(o) {
-
-
-
-
-}
 
 /*
 stringify errors
 notice
 
- errors and catch all exceptions to return '{"message":"stringify threw"}'
+ errors and catch all exceptions to return 
 */
 
 
-test(() => {
-
-	let o = {
-		s: 'hi',
-		n: 7,
-		e: new Error('message')
-	}
-	ok(JSON.stringify(o) == '{"s":"hi","n":7,"e":{}}')//json stringify makes all errors {} which is useless when we're trying to see what threw in logs!
-
-
-
-
-
-})
 
 
 

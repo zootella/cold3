@@ -10,17 +10,6 @@ import { plastic } from '../plastic.js'
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 //      _          _       _                                    _   _      _             
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 
 // / __| '_ \| '__| | '_ \| |/ /\ \ /\ / / '__/ _` | '_ \  / __| __| |/ __| |/ / _ \ '__|
@@ -29,10 +18,14 @@ import { plastic } from '../plastic.js'
 //                                                 |_|                                   
 
 /*
-shrinkwrap.js       $ node shrinkwrap to generate the next two
-shrinkwrap.txt      a file manifest
-plastic.js          hash and date of the manifest, covering the whole thing
-library/sticker.js  sticker imports plastic, adding helpful functions to detect environment and compose text
+[I.] files and flow:
+
+shrinkwrap.js       $ node shrinkwrap to generate the next two files:
+shrinkwrap.txt      first, a file manifest
+plastic.js          from that, hash and date of the manifest, covering the whole thing
+library/sticker.js  sticker.js imports plastic.js, adding environment detection and friendly text
+
+[II.] use and properties:
 
 let k = sticker()
 k: {
@@ -93,7 +86,7 @@ export function sticker() {
 
 	k.codeSizeDiskPercent = Math.round((k.codeSize * 100) / floppyDiskCapacity)
 
-	let environment = senseEnvironmentParts()
+	let environment = senseEnvironment()
 	k.where = environment.title
 	k.whereTags = environment.tagsArray
 	k.isLocal = k.where.includes('Local')
@@ -128,7 +121,7 @@ Achr Asaf Awin           Docu      Loca                                         
 Achr Asaf Awin      Clie Docu      Loca                          Proc                Self      Stor Wind      >LocalPageClient
 Achr Asaf Awin           Docu Doma                                                   Self      Stor Wind      >CloudPageClient
 `
-function senseEnvironmentParts() {
+function senseEnvironment() {
 	function type(t) { return t != 'undefined' }
 	function text(o) { return typeof o == 'string' && o != '' }
 	let a = []
@@ -188,14 +181,7 @@ function senseEnvironmentParts() {
 	for (const [k, v] of Object.entries(scores)) {
 		if (v > winningScore) { winningScore = v; winningTitle = k }
 	}
-
-
-
-	return {
-		title: winningTitle,
-		tagsArray: a,
-		tags: s
-	}
+	return {senseEnvironmentVersion: _senseEnvironmentVersion, tagsArray: a, tags: s, title: winningTitle }
 }
 /*
 todo, more of these you're hearing about later
@@ -207,6 +193,12 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 
 
 
+
+
+
+
+//helper functions, this one's special for sticker:
+
 //say the tick count t as a date like "2024sep09"
 function sayDate(t) {
 	let d = new Date(t)
@@ -216,8 +208,7 @@ function sayDate(t) {
 		+(d.getUTCDate()+'').padStart(2, '0'))//day
 }
 
-
-//copied from library0 for now
+//and these next three are copied from library0 for now, because that would be a messy refactor:
 
 //say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
 function sayTick(t) {
@@ -245,7 +236,14 @@ function hasText(s) { return (typeof s == 'string' && s.length && s.trim() != ''
 
 
 
+//another way to do these is they're in library0 as pass-through
+/*
 
+export { sayDate, sayTick, defined, hasText } from './sticker.js'
+
+//this pass-through export is also an import!
+
+*/
 
 
 
