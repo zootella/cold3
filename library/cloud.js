@@ -41,8 +41,10 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 
 
+
 test(() => {
-	log('hi, test! '+seal().w3)
+	log('checking out seal')
+	log(look(seal()))
 })
 
 
@@ -210,7 +212,22 @@ async function sendText_useTwilio(c) {
 
 
 
+function prepareLog() {
+	let t = Now()
+	let wax = seal()
+	let o = {
+		tag: Tag(),
+		tick: t,
+		when: sayTick(t),
+		tags: ['where:'+w.where, 'what:'+w.stamp]
+	}
+	return {t, wax, o}
+}
+/*
+refactor to call this first
+and then add properties from there
 
+*/
 
 
 
@@ -230,19 +247,18 @@ async function sendText_useTwilio(c) {
 //use dog(a, b) just like you do log(), except you have to await dog()
 //from code running local or deployed, dog always sends logs up to datadog
 export async function dog(...a) {
-	let t = Now()
-	let w = seal().w3
+	let w = seal()//get information from the wax seal, w.t is Now()
 	let o = {
-		when: sayTick(t),
+		when: sayTick(w.t),
 		message: composeLogArguments(...a),
 		watch: a,
 
-		tick: t,
+		tick: w.t,
 		tag: Tag(),
-		tags: ['type:debug', 'where:'+w, 'what:'+seal().stamp],
+		tags: ['type:debug', 'where:'+w.where, 'what:'+w.stamp],
 		level: 'debug'//level is a property datadog wants, with a value like info, debug, warn, error, or critical
 	}
-	let s = `${sayTick(t)} DEBUG ↓ ${w} ${o.tick} ${o.tag} ${newline}${o.message}`
+	let s = `${sayTick(w.t)} DEBUG ${w.w3} ${o.tick} ${o.tag} ${newline}${o.message}`
 
 	console.log(s)//use in dog()
 	sendLog_useIcarus(s)
@@ -254,16 +270,15 @@ export async function dog(...a) {
 //we did something with a third-party api, like send a text or run a credit card
 //and so we must keep a permanent record of, whether the code that did it was running local or cloud
 export async function logAudit(message, watch) {
-	let t = Now()
-	let w = seal().w3
+	let w = seal()
 	let o = {
-		when: sayTick(t),
+		when: sayTick(w.t),
 		message: message,
 		watch: watch,
 
-		tick: t,
+		tick: w.t,
 		tag: Tag(),
-		tags: ['type:audit', 'where:'+w, 'what:'+seal().stamp],
+		tags: ['type:audit', 'where:'+w.where, 'what:'+w.stamp],
 		level: 'info'
 	}
 	let s = 'AUDIT '+look(o)+newline+JSON.stringify(o)
@@ -278,16 +293,15 @@ export async function logAudit(message, watch) {
 //an exception we didn't expect rose to the top of the event handler
 //log to datadog to investigate later
 export async function logAlert(message, watch) {
-	let t = Now()
-	let w = seal().w3
+	let w = seal()
 	let o = {
-		when: sayTick(t),
+		when: sayTick(w.t),
 		message: message,
 		watch: watch,
 
-		tick: t,
+		tick: w.t,
 		tag: Tag(),
-		tags: ['type:alert', 'where:'+w, 'what:'+seal().stamp],
+		tags: ['type:alert', 'where:'+w.where, 'what:'+w.stamp],
 		level: 'error'
 	}
 	let s = 'ALERT '+look(o)+newline+JSON.stringify(o)
@@ -303,16 +317,15 @@ export async function logAlert(message, watch) {
 //we may not be able to log it, but try anyway
 export async function logFragile(message, watch) {
 	console.error('FRAGILE!^')//to get here, there was an exception logging an exception--probably an import is missing, or maybe somehow a circular reference got to json stringify. it's possible that the code that follows will throw, too, so shout for help first, before trying to log full details next
-	let t = Now()
-	let w = seal().w3
+	let w = seal()
 	let o = {
-		when: sayTick(t),
+		when: sayTick(w.t),
 		message: message,
 		watch: watch,
 
-		tick: t,
+		tick: w.t,
 		tag: Tag(),
-		tags: ['type:fragile', 'where:'+w, 'what:'+seal().stamp],
+		tags: ['type:fragile', 'where:'+w.where, 'what:'+w.stamp],
 		level: 'critical'
 	}
 	let s = 'FRAGILE '+look(o)+newline+JSON.stringify(o)

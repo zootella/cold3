@@ -91,6 +91,8 @@ export async function doorLambdaShut(door, response, error) {
 
 
 
+
+
 const useLocalLambda = false
 export async function fetchLambda(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'

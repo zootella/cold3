@@ -1,19 +1,37 @@
 
 //no imports, ping's library is lean to be fast as possible
+import { plastic } from '../plastic.js'
 
 
 
 
-import { shrinkwrapSeal } from '../seal.js'
 
 
 
-/*
-export function senseEnvironment() {
-	return seal().longWhere
-}
-export function pingEnvironment() { return `${senseEnvironment()}, ${Date.now()}, ${_senseEnvironmentVersion}` }//version for just this file
-*/
+
+
+
+
+
+
+//throw the sticker as an object into datadog, too; get the whole hash in there
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*
@@ -27,53 +45,132 @@ seal().w3 "LocalVite.2024sep23.5HFZL2V"
 */
 
 
-const diskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
-export function seal() {
-	//return both parts, and composed combinations
+/*
+call seal() from anywhere to find out what we are and where we are running
+you get a big object of details
+
+{
+	name: "cold3"
+	tick: 1727133528737
+	hash: "GXQ6YRNZBA3S72XRZ7YERRAMK2DEKY5EEOKPJMRWUR65ZSFOX7KQ"
+
+	first, these come from shrinkwrap, telling the name
+
+	totalFiles: 110
+	totalSize: 8681167
+	codeFiles: 105
+	codeSize: 466135
+	sayDisk: 32
+
+	t:                                       1727136557741
+
+	sayDate:              "2024sep23"
+	sayHash:                        "GXQ6YRN"
+
+	stamp:                "2024sep23.GXQ6YRN"
+	nameStamp:      "cold3.2024sep23.GXQ6YRN"
 
 
-	let o = shrinkwrapSeal
+	where:      "LocalVite"
+	whereStamp: "LocalVite.2024sep23.GXQ6YRN"
+	w3:         "LocalVite.2024sep23.GXQ6YRN.Mon06:09p17.741s"
 
-	o.hashBeginning = o.hash.substring(0, 7)
-	o.tickDate = sayDate(o.tick)
-	o.diskPercentFull = Math.round(o.codeSize*100/diskCapacity)//percent
-	o.stamp = o.tickDate+'.'+o.hashBeginning
-	o.longStamp = o.name+'.'+o.tickDate+'.'+o.hashBeginning
-
-	let p = senseEnvironmentParts()
-	o.environmentParts = p
-	o.where = p.title
-	o.longWhere = p.title+'.'+p.tags
-
-	o.now = Date.now()//when called, not when sealed
-
-	o.environment = o.longWhere+'.v'+_senseEnvironmentVersion+'.t'+o.now
-
-	o.whereStamp = o.where+'.'+o.stamp
-	o.w3 = o.whereStamp+'.'+sayTick(o.now)//where this ran, what code was running, and when this was called
-
-	o.isLocal = o.where.includes('Local')
-	o.isCloud = o.where.includes('Cloud')
+	isLocal: true
+	isCloud: false
+	whereTags: ["Achr", "Asaf", "Awin", "Docu", "Loca", "Self", "Stor", "Wind"]
+}
+*/
 
 
 
+
+
+
+
+
+
+
+
+//      _          _       _                                    _   _      _             
+//  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 
+// / __| '_ \| '__| | '_ \| |/ /\ \ /\ / / '__/ _` | '_ \  / __| __| |/ __| |/ / _ \ '__|
+// \__ \ | | | |  | | | | |   <  \ V  V /| | | (_| | |_) | \__ \ |_| | (__|   <  __/ |   
+// |___/_| |_|_|  |_|_| |_|_|\_\  \_/\_/ |_|  \__,_| .__/  |___/\__|_|\___|_|\_\___|_|   
+//                                                 |_|                                   
+
+/*
+shrinkwrap.js       $ node shrinkwrap to generate the next two
+shrinkwrap.txt      a file manifest
+plastic.js          hash and date of the manifest, covering the whole thing
+library/sticker.js  sticker imports plastic, adding helpful functions to detect environment and compose text
+
+let k = sticker()
+k: {
+
+	name: "cold3"
+	tick: 1727133528737
+	hash: "GXQ6YRNZBA3S72XRZ7YERRAMK2DEKY5EEOKPJMRWUR65ZSFOX7KQ"
+
+these three come from plastic and were set during shrinkwrap
+
+	sealedHash: "GXQ6YRN"
+	sealedWhen: "2024sep23"
+
+composed here, sealedHash is just the prefix
+and sealedWhen is tick as a readable date, the day the shrinkwrap was sealed
+
+	nowTick: 1727140381335
+	nowText: "Mon07:13p01.335s"
+
+these are when you called sticker(), not when the shrinkwrap was sealed
+so, this is not a part of the identity of the version of code that's running
+it's convenient for callers of sticker() to get a single Now() tick count
+
+	totalFiles: 110
+	totalSize: 8681167
+	codeFiles: 105
+	codeSize: 466135
+	codeSizeDiskPercent: 32
+
+some statistics about the code contents
+the first four are from plastic; disk percent is computed here
+
+	where: "LocalVite"
+	whereTags: ["Achr", "Asaf", "Awin", "Docu", "Loca", "Self", "Stor", "Wind"]
+	isLocal: true
+	isCloud: false
+
+details related to how we sense the local running environment
+where is the detected environment, and whereTags show the detected tags that led us to that guess
+isLocal and isCloud are from sortinng the different where locations
+
+	all: "LocalVite.2024sep23.GXQ6YRN.Mon06:09p17.741s"
+
+where, what, and when is running, all together in one pretty short string of text
+}
+*/
+const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
+export function sticker() {
+
+	let k = plastic
+	k.nowTick = Date.now()
+	k.nowText = sayTick(k.nowTick)
+
+	k.sealedHash = o.hash.substring(0, 7)
+	k.sealedWhen = sayDate(o.tick)
+
+	k.codeSizeDiskPercent = Math.round((k.codeSize * 100) / floppyDiskCapacity)
+
+	let environment = senseEnvironmentParts()
+	k.where = environment.title
+	k.whereTags = environment.tagsArray
+	k.isLocal = k.where.includes('Local')
+	k.isCloud = k.where.includes('Cloud')
+
+	k.all = k.where+'.'+k.sealedWhen++k.sealedHash++k.nowText
 
 	return o
 }
-
-
-function sayDate(t) {
-	let d = new Date(t)
-	return (
-		d.getUTCFullYear()//year
-		+d.toLocaleString('en', {month: 'short', timeZone: 'UTC'}).toLowerCase()//month
-		+(d.getUTCDate()+'').padStart(2, '0'))//day
-}
-
-
-
-
-
 
 //                                            _                                      _   
 //  ___  ___ _ __  ___  ___    ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
@@ -175,21 +272,21 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 */
 
 
-function defined(t) { return t != 'undefined' }
 
 
 
+//say the tick count t as a date like "2024sep09"
+function sayDate(t) {
+	let d = new Date(t)
+	return (
+		d.getUTCFullYear()//year
+		+d.toLocaleString('en', {month: 'short', timeZone: 'UTC'}).toLowerCase()//month
+		+(d.getUTCDate()+'').padStart(2, '0'))//day
+}
 
-/*        \ \      `.`.  */  function hasText(s) {
-/*         \ \     ,^-'  */    return (
-/*          \ \    |     */      typeof s == 'string' &&
-/*           `.`.  |     */      s.length &&
-/*              .`.|     */      s.trim() != ''
-/*               `._>    */    )
-/*                       */  }
 
+//copied from library0 for now
 
-//TODO move this here, now
 //say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
 function sayTick(t) {
 
@@ -210,21 +307,13 @@ function sayTick(t) {
 
 	return `${weekday}${hour}:${minute}${ap}${second}.${millisecond}s`
 }
+function defined(t) { return t != 'undefined' }
+function hasText(s) { return (typeof s == 'string' && s.length && s.trim() != '') }
 
 
 
 
 
-
-
-//also, this is the new library0, bump the numbers forward
-/*
-library0 - no imports, small, fast, for ping and seal
-library1 - no imports
-library2 - imports
-
-
-*/
 
 
 
