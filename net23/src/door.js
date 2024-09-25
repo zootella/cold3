@@ -1,5 +1,5 @@
 
-import { sticker } from '../../library/sticker.js'
+import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'

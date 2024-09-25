@@ -1,10 +1,9 @@
 
+
+
 //no imports, ping's library is lean to be fast as possible
-import { plastic } from '../plastic.js'
-
-
-
-
+import { customAlphabet } from 'nanoid'//well, except this small module
+import { plastic } from '../plastic.js'//and the shrinkwrap plastic
 
 
 
@@ -75,8 +74,9 @@ where, what, and when this code is running, all together in one pretty short str
 }
 */
 const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
-export function sticker() {
+export function Sticker() {
 
+/*
 	let k = plastic
 	k.nowTick = Date.now()
 	k.nowText = sayTick(k.nowTick)
@@ -95,6 +95,61 @@ export function sticker() {
 	k.what =             k.sealedWhen+'.'+k.sealedHash
 	k.all  = k.where+'.'+k.sealedWhen+'.'+k.sealedHash+'.'+k.nowText
 	return k
+*/
+
+	//gather information for the sticker we're making
+	let now = Now()
+	let tag = Tag()
+	let environment = senseEnvironment()
+
+	//prepare the sticker object we will return
+	let sticker = {}
+
+	//shrinkwrap
+	sticker.plastic = plastic
+
+	//tick and tag for this call right now
+	sticker.now = now
+	sticker.tag = tag
+
+	//core information to log or parse later
+	sticker.core = {}
+	//about this call to get the sticker right now
+	sticker.core.callTick = now
+	sticker.core.callTag  = tag
+	//about what's running
+	sticker.core.sealedHash = plastic.hash
+	sticker.core.sealedWhen = plastic.tick
+	//about where we're running
+	sticker.core.where = environment.title
+	sticker.core.whereTags = environment.tagsArray
+	sticker.core.isCloud = environment.title.includes('Cloud')//true if deployed, false if running locally
+
+	//composed for easy reading
+	let saySealedHash = plastic.hash.substring(0, 7)
+	let saySealedWhen = sayDate(plastic.tick)
+	sticker.where = environment.title
+	sticker.what  =                       saySealedWhen+'.'+saySealedHash
+	sticker.all   = environment.title+'.'+saySealedWhen+'.'+saySealedHash+'.'+sayTick(now)
+
+	return sticker
+
+
+/*
+what if sticker returned
+
+what
+all - those two useful strings
+call - now and tag
+core - just the facts, ma'am
+
+verbose - everything
+essential - what you want to log, parse it later
+invocation
+*/
+
+
+
 }
 
 //                                            _                                      _   
@@ -195,7 +250,7 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 
 
 
-
+export const Now = Date.now//just a shortcut
 
 //helper functions, this one's special for sticker:
 
@@ -232,6 +287,17 @@ function sayTick(t) {
 }
 function defined(t) { return t != 'undefined' }
 function hasText(s) { return (typeof s == 'string' && s.length && s.trim() != '') }
+
+//and, copied from library1.js, and bringing in nanoid:
+
+export const tagLength = 21//we're choosing 21, long enough to be unique, short enough to be reasonable
+
+//generate a new universally unique double-clickable tag of 21 letters and numbers
+export function Tag() {
+	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
+	return customAlphabet(alphabet, tagLength)()//same default nanoid length
+}
+
 
 
 

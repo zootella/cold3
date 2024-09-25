@@ -1,7 +1,7 @@
 
 import { readBody } from 'h3'
 
-import { sticker } from './sticker.js'
+import { Sticker } from './sticker.js'
 import { log, look, Now, checkText, hasTextSame, toss, test, ok } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
 import { logAlert } from './cloud.js'
@@ -97,7 +97,7 @@ export async function doorLambdaShut(door, response, error) {
 const forceCloudLambda = false//when nuxt is local, will still reach up to cloud lambda
 export async function fetchLambda(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
-	let host = (forceCloudLambda || sticker().isCloud) ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
+	let host = (forceCloudLambda || Sticker().core.isCloud) ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
 	body.ACCESS_NETWORK_23 = process.env.ACCESS_NETWORK_23//don't forget your keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }
