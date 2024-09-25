@@ -55,12 +55,6 @@ export async function snippet(card) {
 
 
 
-
-
-
-
-
-
 //       _                 _   _                   _             
 //   ___| | ___  _   _  __| | | | ___   __ _  __ _(_)_ __   __ _ 
 //  / __| |/ _ \| | | |/ _` | | |/ _ \ / _` |/ _` | | '_ \ / _` |
@@ -172,6 +166,7 @@ function prepareLog2(c, label, headline, watch) {
 
 }
 function prepareLog3(c) {
+	//here's where you prune, react, and search to confirm clean of secrets
 
 
 }
@@ -193,9 +188,9 @@ test(() => {
 	try {
 		let a = 'apple'
 		let b = 2
-		toss('title', {a, b})
+		toss('my toss note', {a, b})
 	} catch (e) {
-		logAlert('caught e', {e, context})
+		logAlert('my alert title', {e, context})
 	}
 */
 })
