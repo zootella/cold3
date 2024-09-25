@@ -230,6 +230,9 @@ and then add properties from there
 //throw the sticker as an object into datadog, too; get the whole hash in there
 
 
+//at the end of the first line say the byte size of the whole thing, like ‹2048›
+
+
 
 /*
 ok, the design here is there's a headline
