@@ -69,9 +69,9 @@ and once things are working that way, they'll very likely work no problem beyond
 maybe split out
 $ node test
 $ node snippet
-$ node shrinkwrap
+$ node seal
 
-and also get them into package.json so it's npm run test, npm run snippet, npm run shrinkwrap
+and also get them into package.json so it's npm run test, npm run snippet, npm run seal
 snippet probably also runs tests, maybe
 
 i guess the other fancy wiring you could do is make it so deploy shrinkwraps and commits, or checks that you did

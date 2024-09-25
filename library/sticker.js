@@ -3,7 +3,7 @@
 
 //no imports, ping's library is lean to be fast as possible
 import { customAlphabet } from 'nanoid'//well, except this small module
-import { plastic } from '../plastic.js'//and the shrinkwrap plastic
+import { wrapper } from '../wrapper.js'//and the shrinkwrap wrapper
 
 
 
@@ -19,10 +19,10 @@ import { plastic } from '../plastic.js'//and the shrinkwrap plastic
 /*
 [I.] files and flow:
 
-shrinkwrap.js       $ node shrinkwrap to generate the next two files:
-shrinkwrap.txt      first, a file manifest
-plastic.js          from that, hash and date of the manifest, covering the whole thing
-library/sticker.js  sticker.js imports plastic.js, adding environment detection and friendly text
+./seal.js             $ npm run seal to generate the next two files:
+./wrapper.txt         first, a file manifest
+./wrapper.js          from that, hash and date of the manifest, covering the whole thing
+./library/sticker.js  sticker.js imports wrapper.js, adding environment detection and friendly text
 
 [II.] use and properties:
 
@@ -33,7 +33,7 @@ k: {
 	tick: 1727133528737
 	hash: "GXQ6YRNZBA3S72XRZ7YERRAMK2DEKY5EEOKPJMRWUR65ZSFOX7KQ"
 
-these three come from plastic and were set during shrinkwrap
+these three come from wrapper and were set during seal
 
 	sealedHash: "GXQ6YRN"
 	sealedWhen: "2024sep23"
@@ -55,7 +55,7 @@ it's convenient for callers of sticker() to get a single Now() tick count
 	codeSizeDiskPercent: 32
 
 some statistics about the code contents
-the first four are from plastic; disk percent is computed here
+the first four are from wrapper; disk percent is computed here
 
 	where: "LocalVite"
 	whereTags: ["Achr", "Asaf", "Awin", "Docu", "Loca", "Self", "Stor", "Wind"]
@@ -77,7 +77,7 @@ const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
 export function Sticker() {
 
 /*
-	let k = plastic
+	let k = wrapper
 	k.nowTick = Date.now()
 	k.nowText = sayTick(k.nowTick)
 
@@ -105,8 +105,8 @@ export function Sticker() {
 	//prepare the sticker object we will return
 	let sticker = {}
 
-	//shrinkwrap
-	sticker.plastic = plastic
+	//wrapper
+	sticker.wrapper = wrapper
 
 	//tick and tag for this call right now
 	sticker.now = now
@@ -118,16 +118,16 @@ export function Sticker() {
 	sticker.core.callTick = now
 	sticker.core.callTag  = tag
 	//about what's running
-	sticker.core.sealedHash = plastic.hash
-	sticker.core.sealedWhen = plastic.tick
+	sticker.core.sealedHash = wrapper.hash
+	sticker.core.sealedWhen = wrapper.tick
 	//about where we're running
 	sticker.core.where = environment.title
 	sticker.core.whereTags = environment.tagsArray
 	sticker.core.isCloud = environment.title.includes('Cloud')//true if deployed, false if running locally
 
 	//composed for easy reading
-	let saySealedHash = plastic.hash.substring(0, 7)
-	let saySealedWhen = sayDate(plastic.tick)
+	let saySealedHash = wrapper.hash.substring(0, 7)
+	let saySealedWhen = sayDate(wrapper.tick)
 	sticker.where = environment.title
 	sticker.what  =                       saySealedWhen+'.'+saySealedHash
 	sticker.all   = environment.title+'.'+saySealedWhen+'.'+saySealedHash+'.'+sayTick(now)

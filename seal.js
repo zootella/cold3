@@ -5,7 +5,7 @@ import crypto from 'crypto'
 
 import glob from 'fast-glob'
 
-import { plastic } from './plastic.js'//load the previous one to repeat the name
+import { wrapper } from './wrapper.js'//load the previous one to repeat the name
 import { log, look, newline, Data, Now } from './library/library0.js'
 
 /*
@@ -16,7 +16,7 @@ import { log, look, newline, Data, Now } from './library/library0.js'
 |___/_| |_|_|  |_|_| |_|_|\_\  \_/\_/ |_|  \__,_| .__/ 
                                                 |_|    
 
-$ node shrinkwrap
+$ npm run seal
 $ git commit
 $ npm run deploy
 
@@ -26,13 +26,13 @@ $ npm run deploy
 todo, rename
 the whole thing is the shrinkwrap system
 seal is the verb, $ node seal, same length as test
-plastic is what gets overwritten for each seal
-sticker is the information on the sticker on the plastic seal
+wrapper is what gets overwritten for each seal
+sticker is the information on the sticker on the wrapper seal
 
-shrinkwrap.js  -> seal.js
-shrinkwrap.txt -> wrapper.txt
-plastic.js     -> wrapper.js
-/library/sticker.js               same name
+./seal.js
+./wrapper.txt
+./wrapper.js
+./library/sticker.js
 
 so then seal is the verb
 wrapper is the outside wrapper which gets generated each time
@@ -53,14 +53,14 @@ let sticker = Sticker()
 
 
 */
-async function shrinkwrap() {
+async function seal() {
 
 	let list = await listFiles()
 	let properties = await hashFiles(list)
 	let manifest = await composeManifest(properties)
 	await affixSeal(properties, manifest)
 }
-shrinkwrap()
+seal()
 
 async function listFiles() {
 
@@ -79,8 +79,8 @@ async function listFiles() {
 			'**/node_modules',
 
 			//also leave out the two that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
-			'shrinkwrap.txt',
-			'plastic.js'
+			'wrapper.txt',
+			'wrapper.js'
 		]
 	})
 	return paths.sort()//alphebetize, unfortunately does not keep folders grouped together like they look in File Manager
@@ -101,10 +101,10 @@ async function hashFiles(paths) {
 
 async function composeManifest(properties) {
 
-	//compose the contents of the manifest file, shrinkwrap.txt, a listing of hashes, paths, and sizes
+	//compose the contents of the manifest file, wrapper.txt, a listing of hashes, paths, and sizes
 	const lines = properties.map(p => `${p.hash.base32()} ${p.path}:${p.size}`)//put size after : because it can't be part of a filename on windows or mac
 	const manifest = lines.join(newline)+newline
-	await fs.writeFile('shrinkwrap.txt', manifest)//write the file to disk
+	await fs.writeFile('wrapper.txt', manifest)//write the file to disk
 	return manifest//also return the file contents as we'll hash them next
 }
 
@@ -117,14 +117,14 @@ async function affixSeal(properties, manifest) {
 		if (!f.path.endsWith('package-lock.json') && !f.path.endsWith('.gif') && !f.path.endsWith('.png')) { codeFiles++; codeSize += f.size }
 	}
 
-	//compute the shrinkwrap hash of this version snapshot right now, which is the hash of shrinkwrap.txt
+	//compute the shrinkwrap hash of this version snapshot right now, which is the hash of wrapper.txt
 	let hash = Data({array: crypto.createHash('sha256').update(manifest).digest()})
 
-	//compose contents for the new plastic.js
+	//compose contents for the new wrapper.js
 	const tab = '\t'
 	let sheet = (
-		`export const plastic = {`      +newline
-		+tab+`name: '${plastic.name}',` +newline
+		`export const wrapper = {`      +newline
+		+tab+`name: '${wrapper.name}',` +newline
 		+tab+`tick: ${Now()},`                 +newline
 		+tab+`hash: '${hash.base32()}',`       +newline
 		+tab+`codeFiles: ${codeFiles},`        +newline
@@ -134,8 +134,8 @@ async function affixSeal(properties, manifest) {
 		+`}`                                   +newline
 	)
 
-	//overwrite plastic.js, which the rest of the code imports to show the version information like name, date, and hash
-	await fs.writeFile('plastic.js', sheet)
+	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
+	await fs.writeFile('wrapper.js', sheet)
 
 	//output a summary to the shrinkwrapper
 	log('',
@@ -173,10 +173,10 @@ function formatDateUTC(t) {
 /*
 notes, ttd
 
-$ node shrinkwrap
-shrinkwrap.js, this file runs, generating
-shrinkwrap.txt, this file of hashes, paths, and sizes, which gets hashed to
-sticker.js, which contains the date and hash that seals the package
+$ npm run seal
+seal.js, this file runs, generating
+wrapper.txt, this file of hashes, paths, and sizes, which gets hashed to
+wrapper.js, which contains the date and hash that seals the package
 code in the app includes sticker.js to show version numbers
 
 

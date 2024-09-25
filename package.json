@@ -17,6 +17,8 @@
     "postinstall": "nuxt prepare",
     "pages:dev": "wrangler pages dev --compatibility-date=2024-02-08 --proxy 3000 -- npm run dev",
     "pages:deploy": "npm run build && wrangler pages deploy ./dist --project-name cold3",
+    "test": "node test",
+    "seal": "node seal",
     "local": "npm run pages:dev",
     "deploy": "npm run pages:deploy"
   },
