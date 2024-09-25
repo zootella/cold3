@@ -1,9 +1,9 @@
 export const plastic = {
 	name: 'cold3',
-	tick: 1727207602447,
-	hash: 'TXEHJ6KYA2EANZE72UVM73YSVR75WSCTIB57DU6F4J7BJTZUUKQA',
+	tick: 1727297001017,
+	hash: 'EHZAL25C5KT6A4MSYI24HX2PFD6NP2TLKYCS3IQQ4V4OM4LDTABQ',
 	codeFiles: 105,
-	codeSize: 480969,
+	codeSize: 484077,
 	totalFiles: 110,
-	totalSize: 8696001
+	totalSize: 8699109
 }

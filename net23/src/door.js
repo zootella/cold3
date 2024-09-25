@@ -39,7 +39,7 @@ async function doorProcessBelow(door) {
 
 
 	//prove you got the body by including in message
-	let message = `hello ${door.body.name} age ${door.body.age} from ${sticker().all}`
+	let message = `hello ${door.body.name} age ${door.body.age} from ${Sticker().all}`
 
 	response.message = message
 	response.when = Now()

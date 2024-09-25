@@ -1,5 +1,5 @@
 
-import { sticker } from '@/library/sticker.js'
+import { Sticker } from '@/library/sticker.js'
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
 
 		let workerNote = (await runTests()).message
 		let lambdaNote = (await $fetch('https://api.net23.cc/test')).note
-		note = `worker says: ${workerNote}, ${sticker().all}; ${lambdaNote}`
+		note = `worker says: ${workerNote}, ${Sticker().all}; ${lambdaNote}`
 
 	} catch (e) { note = 'ping test worker error: '+e.stack }
 	return {note}

@@ -33,7 +33,7 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 //let's test this stuff with node on the command line
 export async function snippet(card) {
-	log('hi, node! '+sticker().all)
+	log('hi, node! '+Sticker().all)
 
 	log(look(card))
 
@@ -187,6 +187,7 @@ test(() => {
 
 //	dog('hello')
 
+/*
 	let context = 17
 
 	try {
@@ -196,7 +197,7 @@ test(() => {
 	} catch (e) {
 		logAlert('caught e', {e, context})
 	}
-
+*/
 })
 
 

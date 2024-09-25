@@ -1,5 +1,5 @@
 
-import { sticker } from '../../library/sticker.js'
+import { Sticker } from '../../library/sticker.js'
 
 
 export const handler = async (event) => {
@@ -10,7 +10,7 @@ export const handler = async (event) => {
 
 
 
-		note = `lambda says: ${sticker().all}, ping5done`
+		note = `lambda says: ${Sticker().all}, ping5done`
 
 	} catch (e) { note = 'ping5 lambda error: '+e.stack }
 	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }

@@ -1,8 +1,8 @@
 <script setup>
 
-import { sticker } from '@/library/sticker.js'
+import { Sticker } from '@/library/sticker.js'
 
-let note = `script setup says: ${sticker().all}, ping2done`
+let note = `script setup says: ${Sticker().all}, ping2done`
 
 </script>
 <template>

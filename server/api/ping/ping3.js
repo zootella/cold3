@@ -1,5 +1,5 @@
 
-import { sticker } from '@/library/sticker.js'
+import { Sticker } from '@/library/sticker.js'
 
 
 export default defineEventHandler((event) => {
@@ -10,7 +10,7 @@ export default defineEventHandler((event) => {
 
 
 
-		note = `worker says: ${sticker().all}, ping3done`
+		note = `worker says: ${Sticker().all}, ping3done`
 
 	} catch (e) { note = 'ping3 worker error: '+e.stack }
 	return {note}

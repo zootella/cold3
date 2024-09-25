@@ -1,7 +1,7 @@
 
 import { log, see, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
-import { sticker } from '@/library/sticker.js'
+import { Sticker } from '@/library/sticker.js'
 
 export default defineEventHandler((event) => {
 
@@ -12,7 +12,7 @@ export default defineEventHandler((event) => {
 	//use defined() and hasText() below
 	o.accessLength = (typeof process != 'undefined' && typeof process.env?.ACCESS_PASSWORD == 'string') ? process.env.ACCESS_PASSWORD.length : 0
 	o.tag = Tag()
-	o.sayEnvironment = sticker().all
+	o.sayEnvironment = Sticker().all
 
 	return o;
 });
