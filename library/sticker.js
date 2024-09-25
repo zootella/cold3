@@ -1,13 +1,7 @@
 
-
-
 //no imports, ping's library is lean to be fast as possible
 import { customAlphabet } from 'nanoid'//well, except this small module
 import { wrapper } from '../wrapper.js'//and the shrinkwrap wrapper
-
-
-
-
 
 //      _          _       _                                    _   _      _             
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 
@@ -16,86 +10,7 @@ import { wrapper } from '../wrapper.js'//and the shrinkwrap wrapper
 // |___/_| |_|_|  |_|_| |_|_|\_\  \_/\_/ |_|  \__,_| .__/  |___/\__|_|\___|_|\_\___|_|   
 //                                                 |_|                                   
 
-/*
-[I.] files and flow:
-
-./seal.js             $ npm run seal to generate the next two files:
-./wrapper.txt         first, a file manifest
-./wrapper.js          from that, hash and date of the manifest, covering the whole thing
-./library/sticker.js  sticker.js imports wrapper.js, adding environment detection and friendly text
-
-[II.] use and properties:
-
-let k = sticker()
-k: {
-
-	name: "cold3"
-	tick: 1727133528737
-	hash: "GXQ6YRNZBA3S72XRZ7YERRAMK2DEKY5EEOKPJMRWUR65ZSFOX7KQ"
-
-these three come from wrapper and were set during seal
-
-	sealedHash: "GXQ6YRN"
-	sealedWhen: "2024sep23"
-
-composed here, sealedHash is just the prefix
-and sealedWhen is tick as a readable date, the day the shrinkwrap was sealed
-
-	nowTick: 1727140381335
-	nowText: "Mon07:13p01.335s"
-
-these are when you called sticker(), not when the shrinkwrap was sealed
-so, this is not a part of the identity of the version of code that's running
-it's convenient for callers of sticker() to get a single Now() tick count
-
-	totalFiles: 110
-	totalSize: 8681167
-	codeFiles: 105
-	codeSize: 466135
-	codeSizeDiskPercent: 32
-
-some statistics about the code contents
-the first four are from wrapper; disk percent is computed here
-
-	where: "LocalVite"
-	whereTags: ["Achr", "Asaf", "Awin", "Docu", "Loca", "Self", "Stor", "Wind"]
-	isLocal: true
-	isCloud: false
-
-details related to how we sense the local running environment
-where is the detected environment, and whereTags show the detected tags that led us to that guess
-isLocal and isCloud are from sortinng the different where locations
-
-	where: "LocalVite"
-	what:            "2024sep23.GXQ6YRN"
-	all:   "LocalVite.2024sep23.GXQ6YRN.Mon06:09p17.741s"
-
-where, what, and when this code is running, all together in one pretty short string of text
-}
-*/
-const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
 export function Sticker() {
-
-/*
-	let k = wrapper
-	k.nowTick = Date.now()
-	k.nowText = sayTick(k.nowTick)
-
-	k.sealedHash = k.hash.substring(0, 7)
-	k.sealedWhen = sayDate(k.tick)
-
-	k.codeSizeDiskPercent = Math.round((k.codeSize * 100) / floppyDiskCapacity)
-
-	let environment = senseEnvironment()
-	k.where = environment.title
-	k.whereTags = environment.tagsArray
-	k.isLocal = k.where.includes('Local')
-	k.isCloud = k.where.includes('Cloud')
-
-	k.what =             k.sealedWhen+'.'+k.sealedHash
-	k.all  = k.where+'.'+k.sealedWhen+'.'+k.sealedHash+'.'+k.nowText
-	return k
-*/
 
 	//gather information for the sticker we're making
 	let now = Now()
@@ -105,27 +20,27 @@ export function Sticker() {
 	//prepare the sticker object we will return
 	let sticker = {}
 
-	//wrapper
+	//include the wrapper
 	sticker.wrapper = wrapper
 
-	//tick and tag for this call right now
+	//include the tick now, and a tag to uniquely identify this call to Sticker() right now
 	sticker.now = now
 	sticker.tag = tag
 
-	//core information to log or parse later
+	//include core information to log or parse later
 	sticker.core = {}
-	//about this call to get the sticker right now
-	sticker.core.callTick = now
+
+	sticker.core.callTick = now//about this call to get the sticker right now
 	sticker.core.callTag  = tag
-	//about what's running
-	sticker.core.sealedHash = wrapper.hash
+
+	sticker.core.sealedHash = wrapper.hash//about what's running
 	sticker.core.sealedWhen = wrapper.tick
-	//about where we're running
-	sticker.core.where = environment.title
+
+	sticker.core.where = environment.title//about where we're running
 	sticker.core.whereTags = environment.tagsArray
 	sticker.core.isCloud = environment.title.includes('Cloud')//true if deployed, false if running locally
 
-	//composed for easy reading
+	//based on that information we've already included, compose some text for easy reading
 	let saySealedHash = wrapper.hash.substring(0, 7)
 	let saySealedWhen = sayDate(wrapper.tick)
 	sticker.where = environment.title
@@ -133,23 +48,6 @@ export function Sticker() {
 	sticker.all   = environment.title+'.'+saySealedWhen+'.'+saySealedHash+'.'+sayTick(now)
 
 	return sticker
-
-
-/*
-what if sticker returned
-
-what
-all - those two useful strings
-call - now and tag
-core - just the facts, ma'am
-
-verbose - everything
-essential - what you want to log, parse it later
-invocation
-*/
-
-
-
 }
 
 //                                            _                                      _   
@@ -250,8 +148,6 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 
 
 
-export const Now = Date.now//just a shortcut
-
 //helper functions, this one's special for sticker:
 
 //say the tick count t as a date like "2024sep09"
@@ -263,7 +159,9 @@ function sayDate(t) {
 		+(d.getUTCDate()+'').padStart(2, '0'))//day
 }
 
-//and these next three are copied from library0 for now, because that would be a messy refactor:
+//and these are copied from library0 for now, because that would be a messy refactor:
+
+const Now = Date.now//just a shortcut
 
 //say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
 function sayTick(t) {
@@ -288,7 +186,7 @@ function sayTick(t) {
 function defined(t) { return t != 'undefined' }
 function hasText(s) { return (typeof s == 'string' && s.length && s.trim() != '') }
 
-//and, copied from library1.js, and bringing in nanoid:
+//and these are copied from library1.js, and use nanoid:
 
 export const tagLength = 21//we're choosing 21, long enough to be unique, short enough to be reasonable
 
@@ -298,18 +196,6 @@ export function Tag() {
 	return customAlphabet(alphabet, tagLength)()//same default nanoid length
 }
 
-
-
-
-
-//another way to do these is they're in library0 as pass-through
-/*
-
-export { sayDate, sayTick, defined, hasText } from './sticker.js'
-
-//this pass-through export is also an import!
-
-*/
 
 
 
