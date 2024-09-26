@@ -33,7 +33,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//BLOWUP 6
-	await dog('checkpoint 6', {door})
+	//await dog('checkpoint 6', {door})
 
 
 

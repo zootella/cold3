@@ -13,7 +13,7 @@ import { Tag, checkTag } from './library1.js'
 import { createClient } from '@supabase/supabase-js'
 
 let supabase;
-if (defined(typeof process) && hasText(process?.env?.ACCESS_SUPABASE_URL)) supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY)
+if (defined(typeof process) && hasText(process?.env?.ACCESS_SUPABASE_URL)) supabase = createClient(process.env.ACCESS_SUPABASE_URL, process.env.ACCESS_SUPABASE_KEY_SECRET)
 
 //  _         _             _                  _   _                _                  
 // | | ____ _| |_ _   _    | |__   __ _ _ __  | |_| |__   ___    __| | ___   ___  _ __ 

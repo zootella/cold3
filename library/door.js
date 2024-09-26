@@ -54,7 +54,7 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	//(2) the request is not from any browser, anywhere; there is no origin header at all
 	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
 	//(3) the network 23 access code is valid
-	if (!hasTextSame(process.env.ACCESS_NETWORK_23, body.ACCESS_NETWORK_23)) toss('bad access code', {door})
+	if (!hasTextSame(process.env.ACCESS_NETWORK_23_SECRET, body.ACCESS_NETWORK_23_SECRET)) toss('bad access code', {door})
 
 	return door
 }
@@ -98,7 +98,7 @@ const forceCloudLambda = false//when nuxt is local, will still reach up to cloud
 export async function fetchLambda(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
 	let host = (forceCloudLambda || Sticker().core.isCloud) ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
-	body.ACCESS_NETWORK_23 = process.env.ACCESS_NETWORK_23//don't forget your keycard
+	body.ACCESS_NETWORK_23_SECRET = process.env.ACCESS_NETWORK_23_SECRET//don't forget your keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }
 

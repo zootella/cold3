@@ -80,13 +80,13 @@ function senseEnvironment() {
 	let a = []
 	if ((new Date()).getTimezoneOffset() === 0)  a.push('Zulu')//deployed environments are in utc
 	if (type(typeof process)) {                  a.push('Proc')//has process object iself
-		if (text(process?.versions?.v8))           a.push('Eigh')//v8 version
-		if (text(process?.versions?.node))         a.push('Node')//node version
-		if (text(process?.env?.ACCESS_NETWORK_23)) a.push('Envi')//environment variables
-		if (text(process?.env?.AWS_EXECUTION_ENV)) a.push('Lamb')//amazon
-		if (text(process?.env?.AWS_REGION))        a.push('Regi')
-		if (process?.client)                       a.push('Clie')//nuxt client
-		if (process?.server)                       a.push('Serv')//nuxt server
+		if (text(process?.versions?.v8))                  a.push('Eigh')//v8 version
+		if (text(process?.versions?.node))                a.push('Node')//node version
+		if (text(process?.env?.ACCESS_NETWORK_23_SECRET)) a.push('Envi')//environment variables
+		if (text(process?.env?.AWS_EXECUTION_ENV))        a.push('Lamb')//amazon
+		if (text(process?.env?.AWS_REGION))               a.push('Regi')
+		if (process?.client)                              a.push('Clie')//nuxt client
+		if (process?.server)                              a.push('Serv')//nuxt server
 	}
 	if (type(typeof navigator) && text(navigator?.userAgent)) {//start tags from the user agent with A
 		if (navigator.userAgent.includes('Android'))    a.push('Aand')

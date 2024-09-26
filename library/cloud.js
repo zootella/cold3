@@ -197,7 +197,7 @@ function prepareLog4(c) {
 
 
 test(() => {
-	log('composing dog fetch in simulation mode')
+//	log('composing dog fetch in simulation mode')
 
 //	dog('hello')
 
@@ -251,7 +251,7 @@ async function sendLog_useDatadog(c) {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY
+			'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY_SECRET
 		},
 		body: c.bodyText
 	}
@@ -333,57 +333,102 @@ noop(() => {
 })
 
 
-const _prefix = 'ACCESS_'
-function redact(o) {
-	for (let k in o) {//yeah, you need look's property lister, so that an error doesn't contain it or something. well, now that's your excuse to generalize that out for multiuse
-		// Check if the key starts with "ACCESS_"
-		if (k.startsWith(_prefix)) {
-			o[k] = "##REDACTED##"
+
+
+noop(() => {
+	log('looking for secrets:')
+	let secrets = []
+	if (defined(typeof process)) {
+		for (let k in process.env) {
+			if (k.endsWith("_SECRET")) {
+				let v = process.env[k]
+				log(`found "${k}" with value "${v}"`)
+				secrets.push(v)
+			}
 		}
-		
-		// If the property is an object or array, recursively search inside it
-		if (typeof o[k] == "object" && o[k] !== null) {
-			redact(o[k])
-		}
+	} else {
+		log('process not defined')
 	}
-}
-
-test(() => {
-
-	log(redactText('hi'))
-
-
-
-
+	log(look(secrets))
 })
 
-const _marker = '##REDACTED##'
-
-function redactText(s) {
-	/*
-	like black marker, you want same length except
-
-	if s is shorter than or same length as marker, then you put in marker but that length
-	longer, you let two at start and two at end peek out
-	
-	*/
-
-	let c = s
-
-	/*
-
-	*/
-
-
-	return c
-}
 
 /*
+oh, here also is where you want to replace REPLACE_BODY_SIZE with the size
+so much all caps these days!
+*/
+
+
+/*
+you've checked your current set of secret values, and they contain letters, numbers, period, underscore, and hyphen
+none of these get escaped by json stringify, so it works to search and replace secret strings of text in the stringified version
+
 
 
 
 
 */
+
+
+
+
+
+
+
+
+//     _    ____ ____ _____ ____ ____                        _        ____  _____ ____ ____  _____ _____ 
+//    / \  / ___/ ___| ____/ ___/ ___|        __ _ _ __   __| |      / ___|| ____/ ___|  _ \| ____|_   _|
+//   / _ \| |  | |   |  _| \___ \___ \       / _` | '_ \ / _` |      \___ \|  _|| |   | |_) |  _|   | |  
+//  / ___ \ |__| |___| |___ ___) |__) |     | (_| | | | | (_| |       ___) | |__| |___|  _ <| |___  | |  
+// /_/   \_\____\____|_____|____/____/____   \__,_|_| |_|\__,_|  ____|____/|_____\____|_| \_\_____| |_|  
+//                                  |_____|                     |_____|                                  
+
+/*
+a note about secrets and environment variables
+
+locally, they're at:
+./.env        for nuxt and cloudflare
+./net23/.env  for serverless framework and amazon lambda
+./env.js      for node snippet, mostly
+
+all three of those are ignored by git, but haashed by shrinkwrap
+env.js contains personal info used in testing, like email addresses and phone numbers, rather than, like, api keys
+
+serverless framework automatically deploys net23's .env to amazon lambda
+but to use individual ones in lambda code, you have to mention them in serverless.yml
+
+cloudflare keeps them in the dashboard, and you keep them in sync manually
+
+ACCESS_ is the prefix for all of them
+those that should be redacted have the suffix _SECRET
+nuxt has a way to expose some to page code, but for those, we're instead just using const in .vue files
+those are allowed to be known, and have the suffix _PUBLIC
+
+in worker and lambda code, you can reach them at process.env.ACCESS_(whatever)
+but always do if (defined(typeof process)) before checking them, as page code doesn't have process at all!
+*/
+const _redactLabel = '##REDACTED##'
+const _redactMargin = 2
+function redactText(s) {
+	let c = ''//redacted string we will compose and return
+	let both = _redactMargin*2//length of both leading and trailing margins
+	if (s.length < _redactLabel.length + both) {//short, run the black marker over the whole thing
+		c = '#'.repeat(s.length)
+	} else {//long enough to show label and let margins show through
+		let extraBlackMarker = '#'.repeat(s.length - both - _redactLabel.length)
+		c = s.slice(0, _redactMargin)+'##REDACTED##'+extraBlackMarker+s.slice(-_redactMargin)
+	}
+	return c
+}
+test(() => {
+	ok(redactText('') == '')
+	ok(redactText('abc') == '###')//short becomes all pound, always the same length
+	ok(redactText(
+		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
+		'ab##REDACTED############yz')
+})
+
+
 
 
 /*

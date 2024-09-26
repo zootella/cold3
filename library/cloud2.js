@@ -461,7 +461,7 @@ async function sendEmail_useSendgrid(c) {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY
+			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY_SECRET
 		},
 		body: JSON.stringify({
 			from: { name: fromName, email: fromEmail },
@@ -502,7 +502,7 @@ async function sendText_useTwilio(c) {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
-			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH)
+			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH_SECRET)
 		},
 		body: new URLSearchParams({
 			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from

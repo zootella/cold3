@@ -10,7 +10,7 @@ export default defineEventHandler((event) => {
 	o.serverTick = Now()
 	o.headers = event.req.headers
 	//use defined() and hasText() below
-	o.accessLength = (typeof process != 'undefined' && typeof process.env?.ACCESS_PASSWORD == 'string') ? process.env.ACCESS_PASSWORD.length : 0
+	o.accessLength = (typeof process != 'undefined' && typeof process.env?.ACCESS_PASSWORD_SECRET == 'string') ? process.env.ACCESS_PASSWORD_SECRET.length : 0
 	o.tag = Tag()
 	o.sayEnvironment = Sticker().all
 

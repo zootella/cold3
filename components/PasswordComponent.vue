@@ -98,8 +98,8 @@ password page backlog
 
 
 //yes, this is a factory preset, correctly in the page, which gets sent to the client, where the user can see it
-const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1 = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
-const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1 = 420//thousands, OWASP recommends 100-500
+const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
+const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC = 420//thousands, OWASP recommends 100-500
 
 import { ref } from 'vue'
 import { log, look, Time, hashPassword, Data, Now, sayTick } from '@/library/library0.js'
@@ -118,10 +118,10 @@ function myFunction1() {
 async function myFunction2() {
 
 	let t = Now()
-	let h = await hashPassword(ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1, Data({base32: ACCESS_PASSWORD_HASHING_SALT_CHOICE_1}), inputValue.value)
+	let h = await hashPassword(ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC, Data({base32: ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC}), inputValue.value)
 	let duration = Now() - t
 
-	outputText.value = `${h.base32()} hashed from ${ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1} thousand iterations in ${duration}ms on ${sayTick(t)}`
+	outputText.value = `${h.base32()} hashed from ${ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC} thousand iterations in ${duration}ms on ${sayTick(t)}`
 }
 
 
