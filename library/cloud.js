@@ -165,6 +165,25 @@ function prepareLog2(c, label, headline, watch) {
 
 
 }
+
+/*
+this function performs these steps:
+-hash or encrypt user secrets, like credit card numbers and email addresses
+-redact application secrets, like api keys, so they don't get compromised in logs
+-remove redundant clutter from common objects
+-measure the byte size of the payload we're logging to datadog, which leads to monetary cost
+
+methods used include:
+-knowing paths to secrets and properties to remove
+-searching for key names across the whole tree
+-searching through resulting text to blank out potentiall problem areas
+
+changes and return
+-edits d in place
+-returns
+*/
+
+
 function prepareLog3(c) {
 	//here's where you prune, react, and search to confirm clean of secrets
 
@@ -289,6 +308,87 @@ async function sendLog_useFile(s) {
 
 
 
+
+
+noop(() => {
+	log('will work on redacted here')
+
+
+	let o = {
+		a: 'apple',
+		b: 2,
+		c: {
+			ACCESS_SOMETHING: 'super secret value'
+		}
+	
+	}
+	log(look(o))
+
+	redact(o)
+	log(look(o))
+
+
+
+
+})
+
+
+const _prefix = 'ACCESS_'
+function redact(o) {
+	for (let k in o) {//yeah, you need look's property lister, so that an error doesn't contain it or something. well, now that's your excuse to generalize that out for multiuse
+		// Check if the key starts with "ACCESS_"
+		if (k.startsWith(_prefix)) {
+			o[k] = "##REDACTED##"
+		}
+		
+		// If the property is an object or array, recursively search inside it
+		if (typeof o[k] == "object" && o[k] !== null) {
+			redact(o[k])
+		}
+	}
+}
+
+test(() => {
+
+	log(redactText('hi'))
+
+
+
+
+})
+
+const _marker = '##REDACTED##'
+
+function redactText(s) {
+	/*
+	like black marker, you want same length except
+
+	if s is shorter than or same length as marker, then you put in marker but that length
+	longer, you let two at start and two at end peek out
+	
+	*/
+
+	let c = s
+
+	/*
+
+	*/
+
+
+	return c
+}
+
+/*
+
+
+
+
+*/
+
+
+/*
+swap access to redacted
+*/
 
 
 

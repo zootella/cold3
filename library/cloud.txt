@@ -165,3 +165,98 @@ function scratch5() {
 
 
 
+
+
+
+
+
+/*
+this function performs these steps:
+-hash or encrypt user secrets, like credit card numbers and email addresses
+-redact application secrets, like api keys, so they don't get compromised in logs
+-remove redundant clutter from common objects
+-measure the byte size of the payload we're logging to datadog, which leads to monetary cost
+
+methods used include:
+-knowing paths to secrets and properties to remove
+-searching for key names across the whole tree
+-searching through resulting text to blank out potentiall problem areas
+
+changes and return
+-edits d in place
+-returns
+*/
+
+
+more thinking about redact
+it's a difficult problem
+you can't actually prune the tree, because those are the real objects! you need to use them, still!
+if you blank out an api key, well, you did it in the real copy
+
+ok, so you could stringify, then parse to make a copy, redact that, then stringify again
+this probably works? but then there's the look version, ugh
+
+so the look version can't be parsed
+even if you could parse it, the type information would be lost--json stringify, parse turns everything into a regular object, there's no instanceof anymore
+
+also, some of what you're trying to redace you know exactly what the value is
+other stuff that you're trying to redact you know what the property name is
+
+if you affect the whole
+
+so this is what you came up with, but absolutely table this for far later, probably after v1
+deal with the body text
+you're going to redact it
+but have to be careful, because it still needs to be json parsed by datadog
+
+sort characters as follows:
+letters, numbers, +.@, those are word charcters
+everything else, those are format characters
+you're not splitting, exactly, rather you're dividing into alternating strings of word/format/word/format
+and then you scan through teh whole thing
+
+
+well, this  may actually not be too hard, and may actually work
+ask chat how json stringify works
+oh no it's not going to work because of escaped characters, ugh
+ok, yeah, it's hard
+
+two different strategies
+(1) for the look string
+split into lines
+for each line, parse out the key and the value
+redact values based on value
+redact values based on key
+form back into lines, keeping the indent and last part
+
+(2) for the stringified body
+unstringify the body, copying it, eliminating types, undoing escaping
+go through all the key-value pairs, looking at keys and redacting values
+and looking just at values and redacting them
+restringify the redacted copy
+
+third design
+you bake this feature into look and stringify
+you already have both custom wrapped
+and that way, you never have to parse anything
+keys are always text, and you only need to scrutinize 
+stringify already has key and value
+you'll have to add that to look
+
+this also gets ahead of the "too long <999> thing in look
+weren't you going to put an ellipsis on there, actually?
+[]like do ellipsis character, actually
+
+
+
+
+
+
+
+
+
+
+
+
+
+

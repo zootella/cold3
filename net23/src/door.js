@@ -19,7 +19,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 5
-		//await dog('checkpoint 6')
+		//await dog('checkpoint 5')
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
@@ -33,7 +33,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//BLOWUP 6
-	//await dog('checkpoint 5')
+	await dog('checkpoint 6', {door})
 
 
 
