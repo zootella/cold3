@@ -74,7 +74,7 @@ Achr Asaf Awin           Docu      Loca                                         
 Achr Asaf Awin      Clie Docu      Loca                          Proc                Self      Stor Wind      >LocalPageClient
 Achr Asaf Awin           Docu Doma                                                   Self      Stor Wind      >CloudPageClient
 `
-function senseEnvironment() {
+export function senseEnvironment() {
 	function type(t) { return t != 'undefined' }
 	function text(o) { return typeof o == 'string' && o != '' }
 	let a = []
@@ -151,7 +151,7 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 //helper functions, this one's special for sticker:
 
 //say the tick count t as a date like "2024sep09"
-function sayDate(t) {
+export function sayDate(t) {
 	let d = new Date(t)
 	return (
 		d.getUTCFullYear()//year
@@ -161,10 +161,10 @@ function sayDate(t) {
 
 //and these are copied from library0 for now, because that would be a messy refactor:
 
-const Now = Date.now//just a shortcut
+export const Now = Date.now//just a shortcut
 
 //say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
-function sayTick(t) {
+export function sayTick(t) {
 
 	//in this unusual instance, we want to say the time local to the person reading the logs, not the computer running the script
 	let zone = Intl.DateTimeFormat().resolvedOptions().timeZone//works everywhere, but will be utc on cloud worker and lambda
@@ -183,8 +183,8 @@ function sayTick(t) {
 
 	return `${weekday}${hour}:${minute}${ap}${second}.${millisecond}s`
 }
-function defined(t) { return t != 'undefined' }
-function hasText(s) { return (typeof s == 'string' && s.length && s.trim() != '') }
+export function defined(t) { return t != 'undefined' }
+export function hasText(s) { return (typeof s == 'string' && s.length && s.trim() != '') }
 
 //and these are copied from library1.js, and use nanoid:
 
@@ -195,6 +195,22 @@ export function Tag() {
 	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
 	return customAlphabet(alphabet, tagLength)()//same default nanoid length
 }
+
+
+
+/*
+ok, without renaming sticker.js to library-1, essentially
+you are exporting some of these fundamentals
+so feel free to import them from here as you code onwards
+and then later, and maybe, actually remove them from library0, and refactor everyone to get them from here, instead
+
+library0 can still be no imports
+it's just that now you get Tag from sticker, not library1!
+
+
+
+
+*/
 
 
 

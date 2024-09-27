@@ -259,6 +259,23 @@ for right now it's pretty easy
 
 
 
+/*
+this function performs these steps:
+-hash or encrypt user secrets, like credit card numbers and email addresses
+-redact application secrets, like api keys, so they don't get compromised in logs
+-remove redundant clutter from common objects
+-measure the byte size of the payload we're logging to datadog, which leads to monetary cost
+
+methods used include:
+-knowing paths to secrets and properties to remove
+-searching for key names across the whole tree
+-searching through resulting text to blank out potentiall problem areas
+
+changes and return
+-edits d in place
+-returns
+*/
+
 
 
 

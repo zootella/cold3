@@ -3,7 +3,8 @@
 //grow them here, then probably refactor them out into named files in this library folder
 //actually don't do this, it's library1.js and the named files
 
-import { noop, test, ok, log, look, composeLog, Now, end, subtleHash, Data } from './library0.js'
+import { defined } from './sticker.js'
+import { noop, test, ok, log, look, composeLog, Now, end, subtleHash, Data, checkText } from './library0.js'
 import { Tag, tagLength, checkTag } from './library1.js'
 
 
@@ -13,6 +14,179 @@ import { Tag, tagLength, checkTag } from './library1.js'
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+//     _    ____ ____ _____ ____ ____                        _        ____  _____ ____ ____  _____ _____ 
+//    / \  / ___/ ___| ____/ ___/ ___|        __ _ _ __   __| |      / ___|| ____/ ___|  _ \| ____|_   _|
+//   / _ \| |  | |   |  _| \___ \___ \       / _` | '_ \ / _` |      \___ \|  _|| |   | |_) |  _|   | |  
+//  / ___ \ |__| |___| |___ ___) |__) |     | (_| | | | | (_| |       ___) | |__| |___|  _ <| |___  | |  
+// /_/   \_\____\____|_____|____/____/____   \__,_|_| |_|\__,_|  ____|____/|_____\____|_| \_\_____| |_|  
+//                                  |_____|                     |_____|                                  
+
+/*
+a note about secrets and environment variables
+
+locally, they're at:
+./.env        for nuxt and cloudflare
+./net23/.env  for serverless framework and amazon lambda
+./env.js      for node snippet, mostly
+
+all three of those are ignored by git, but haashed by shrinkwrap
+env.js contains personal info used in testing, like email addresses and phone numbers, rather than, like, api keys
+
+serverless framework automatically deploys net23's .env to amazon lambda
+but to use individual ones in lambda code, you have to mention them in serverless.yml
+
+cloudflare keeps them in the dashboard, and you keep them in sync manually
+
+ACCESS_ is the prefix for all of them
+those that should be redacted have the suffix _SECRET
+nuxt has a way to expose some to page code, but for those, we're instead just using const in .vue files
+those are allowed to be known, and have the suffix _PUBLIC
+an example is the first password hashing salt in the password component .vue file
+
+in worker and lambda code, you can reach them at process.env.ACCESS_(whatever)
+but always do if (defined(typeof process)) before checking them, as page code doesn't have process at all!
+*/
+//cover secret values with thick black marker
+export function redact(s) {
+	redact_getSecretValues().forEach(v => {//three helper functions, split out below to be tested independently
+		let r = redact_composeReplacement(v)
+		s = redact_replaceAll(s, v, r)
+	})
+	return s
+}
+function redact_getSecretValues() {//collect all values market secret from the environment we're running in
+	let secrets = []
+	if (defined(typeof process)) {
+		for (let k in process.env) {
+			if (k.endsWith("_SECRET")) {
+				let v = process.env[k]
+				secrets.push(v)
+			}
+		}
+	}
+	return secrets
+}
+test(() => {
+	if (defined(typeof process)) ok(redact_getSecretValues().length > 4)//there are 6 as of this writing; make sure you get at least 4
+})
+const _redactLabel = '##REDACTED##'//what the black marker looks like
+const _redactMargin = 2//but we mark messily, letting tips this big stick out on either end
+function redact_composeReplacement(s) {//given a secret value like "some secret value", return "so##REDACTED###ue"
+	let c = ''//redacted string we will compose and return
+	let both = _redactMargin*2//length of both leading and trailing margins
+	if (s.length < _redactLabel.length + both) {//short, run the black marker over the whole thing
+		c = '#'.repeat(s.length)
+	} else {//long enough to show label and let margins show through
+		let extraBlackMarker = '#'.repeat(s.length - both - _redactLabel.length)
+		c = s.slice(0, _redactMargin)+'##REDACTED##'+extraBlackMarker+s.slice(-_redactMargin)
+	}
+	return c
+}
+test(() => {
+	ok(redact_composeReplacement('') == '')
+	ok(redact_composeReplacement('abc') == '###')//short becomes all pound, always the same length
+	ok(redact_composeReplacement(
+		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
+		'ab##REDACTED############yz')
+})
+export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
+	checkText(tag1); checkText(tag2)
+	return s.split(tag1).join(tag2)
+}
+export function replaceOne(s, tag1, tag2) {//this time, only replace the first one
+	checkText(tag1); checkText(tag2)//replace's behavior only works this way if tag1 is a string!
+	return s.replace(tag1, tag2)
+}
+test(() => {
+	ok(replaceAll('abc', 'd', 'e') == 'abc')//make sure not found doesn't change the string
+	ok(replaceOne('abc', 'd', 'e') == 'abc')
+
+	let s1 = 'ABABthis sentence ABcontains text and tagsAB to find and replaceAB'
+	let s2 = 'CCthis sentence Ccontains text and tagsC to find and replaceC'
+	ok(replaceAll(s1, 'AB', 'C') == s2)
+
+	let size = 6789
+	ok(replaceOne(
+		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
+		'first ‹6789› and second ‹SIZE› later')
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//            _     _       
+//  _ __ ___ | |__ (_)_ __  
+// | '__/ _ \| '_ \| | '_ \ 
+// | | | (_) | |_) | | | | |
+// |_|  \___/|_.__/|_|_| |_|
+//                         
+
+/*
+robin will do two pretty cool things:
+(1) if an external api breaks, even silently, robin will notice and immediately stop using it
+(2) while several comparable apis are working, robin will know which one lets users complete tasks the fastest
+and it does this not on simulated use, but rather watching real users' real interactions
+
+the design is simple:
+-the table schema is generalized so code can track a new resource and provider just by mentioning it
+-p50 and p95 are calculated by postgres directly, so server code doesn't need to do that
+-short term and full history tables allow for both moment to moment awareness, and a full historical record
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//webgl render info didn't work for a hashed browser tag, but still include it as a query string
+//show it to the user on their page of where you're signed in and have signed in
 
 
 

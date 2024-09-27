@@ -1981,7 +1981,7 @@ function lookSayString(s) {//s is given text
 	let c//c is composed to return
 	if (stack)                               c = quotes[0] + m                               + quotes[1]//stack trace
 	else if (m.length < lookLineLengthLimit) c = quotes[0] + m                               + quotes[1]//short enough
-	else                                     c = quotes[0] + m.slice(0, lookLineLengthLimit) + '...'//too long
+	else                                     c = quotes[0] + m.slice(0, lookLineLengthLimit) + '…'//too long
 	return c
 }
 function lookSayFunction(f) {

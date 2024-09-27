@@ -1,8 +1,9 @@
 
 //import modules
-import { Sticker } from './sticker.js'
+import { Tag, Sticker } from './sticker.js'
 import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, noop, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments, stringify } from './library0.js'
-import { Tag, checkTag } from './library1.js'
+import { checkTag } from './library1.js'
+import { redact, replaceOne } from './library2.js'
 
 //node-style imports
 let _fs;
@@ -128,13 +129,14 @@ function prepareLog(status, type, label, headline, watch) {
 	let c = {}//make the object that contains complete information about our call to fetch to datadog
 	c.sticker = Sticker()//check the sticker, includes k.nowTick for when we're logging this right now
 
-	prepareLog1(c, status, type)//start with core datadog properties
+	prepareLog1(c, status, type, label, headline, watch)//start with core datadog properties
 	prepareLog2(c, label, headline, watch)//the meat of the log, what happened and all the details, human readable and machine parsable
 	prepareLog3(c)//redact to make smaller and keep secrets private from the log
 	prepareLog4(c)//stringify and prepare to send to datadog
 	return c
 }
-function prepareLog1(c, status, type) {//from the caller, get status like "error" and type like "type:audit"
+function prepareLog1(c, status, type, label, headline, watch) {//from the caller, get status like "error" and type like "type:audit"
+
 	c.body = {//start the object we'll log to datadog
 
 		//datadog required
@@ -153,67 +155,67 @@ function prepareLog1(c, status, type) {//from the caller, get status like "error
 		sticker: c.sticker.core,//put not the whole sticker in here, which includes the complete code hash, the tags we found to sense what environment this is, and the tick count now as we're preparing the log object
 		watch: {}//message (datadog required) and watch (our custom property) are the two important ones we fill in below
 	}
+
+
+
+
+
+
+
 	return c
 }
 function prepareLog2(c, label, headline, watch) {
 	if (headline != '↓') headline = `"${headline}"`//put quotes around a headline
 
-	let size = stringify(watch).length
-
 	c.body.watch = watch
 	c.body.message = (
-		`${sayTick(c.sticker.now)} [${label}] ${headline} ${c.sticker.where}.${c.sticker.what} ${c.sticker.tag} ‹${size}›`+newline
+		`${sayTick(c.sticker.now)} [${label}] ${headline} ${c.sticker.where}.${c.sticker.what} ${c.sticker.tag} ‹SIZE›`+newline
 		+look(watch))
+
+	//actually replace the first tag "‹SIZE›" with the size like "‹6789›" to see what datadog is actually going to charge you for these
 
 
 }
 
-/*
-this function performs these steps:
--hash or encrypt user secrets, like credit card numbers and email addresses
--redact application secrets, like api keys, so they don't get compromised in logs
--remove redundant clutter from common objects
--measure the byte size of the payload we're logging to datadog, which leads to monetary cost
-
-methods used include:
--knowing paths to secrets and properties to remove
--searching for key names across the whole tree
--searching through resulting text to blank out potentiall problem areas
-
-changes and return
--edits d in place
--returns
-*/
-
 
 function prepareLog3(c) {
 	//here's where you prune, react, and search to confirm clean of secrets
+	//well, this design doesn't work well for pruning
+
+
 
 
 }
 function prepareLog4(c) {
 
 
-	c.bodyText = stringify([c.body])//nest single element in array for datadog
+	let b = stringify([c.body])//nest single element in array for datadog
+	b = redact(b)//won't change the length, won't mess up the stringified format for datadog's parse
+
+	let size = b.length
+
+	b = replaceOne(b, '‹SIZE›', `‹${size}›`)//replaces only the first instance
+
+	c.bodyText = b
+
 }
+
 
 
 test(() => {
 //	log('composing dog fetch in simulation mode')
 
-//	dog('hello')
+	dog('hello1', 'hello2')
 
-/*
 	let context = 17
-
 	try {
 		let a = 'apple'
 		let b = 2
 		toss('my toss note', {a, b})
 	} catch (e) {
-		logAlert('my alert title', {e, context})
+		logFragile('my title', {e, context})
 	}
-*/
+
 })
 
 
@@ -339,104 +341,6 @@ none of these get escaped by json stringify, so it works to search and replace s
 
 
 */
-
-
-
-
-
-
-
-
-//     _    ____ ____ _____ ____ ____                        _        ____  _____ ____ ____  _____ _____ 
-//    / \  / ___/ ___| ____/ ___/ ___|        __ _ _ __   __| |      / ___|| ____/ ___|  _ \| ____|_   _|
-//   / _ \| |  | |   |  _| \___ \___ \       / _` | '_ \ / _` |      \___ \|  _|| |   | |_) |  _|   | |  
-//  / ___ \ |__| |___| |___ ___) |__) |     | (_| | | | | (_| |       ___) | |__| |___|  _ <| |___  | |  
-// /_/   \_\____\____|_____|____/____/____   \__,_|_| |_|\__,_|  ____|____/|_____\____|_| \_\_____| |_|  
-//                                  |_____|                     |_____|                                  
-
-/*
-a note about secrets and environment variables
-
-locally, they're at:
-./.env        for nuxt and cloudflare
-./net23/.env  for serverless framework and amazon lambda
-./env.js      for node snippet, mostly
-
-all three of those are ignored by git, but haashed by shrinkwrap
-env.js contains personal info used in testing, like email addresses and phone numbers, rather than, like, api keys
-
-serverless framework automatically deploys net23's .env to amazon lambda
-but to use individual ones in lambda code, you have to mention them in serverless.yml
-
-cloudflare keeps them in the dashboard, and you keep them in sync manually
-
-ACCESS_ is the prefix for all of them
-those that should be redacted have the suffix _SECRET
-nuxt has a way to expose some to page code, but for those, we're instead just using const in .vue files
-those are allowed to be known, and have the suffix _PUBLIC
-an example is the first password hashing salt in the password component .vue file
-
-in worker and lambda code, you can reach them at process.env.ACCESS_(whatever)
-but always do if (defined(typeof process)) before checking them, as page code doesn't have process at all!
-*/
-//cover secret values with thick black marker
-function redact(s) {
-	redact_getSecretValues().forEach(v => {//three helper functions, split out below to be tested independently
-		let r = redact_composeReplacement(v)
-		s = redact_replaceAll(s, v, r)
-	})
-	return s
-}
-function redact_getSecretValues() {//collect all values market secret from the environment we're running in
-	let secrets = []
-	if (defined(typeof process)) {
-		for (let k in process.env) {
-			if (k.endsWith("_SECRET")) {
-				let v = process.env[k]
-				secrets.push(v)
-			}
-		}
-	}
-	return secrets
-}
-test(() => {
-	if (defined(typeof process)) ok(redact_getSecretValues().length > 4)//there are 6 as of this writing; make sure you get at least 4
-})
-const _redactLabel = '##REDACTED##'//what the black marker looks like
-const _redactMargin = 2//but we mark messily, letting tips this big stick out on either end
-function redact_composeReplacement(s) {//given a secret value like "some secret value", return "so##REDACTED###ue"
-	let c = ''//redacted string we will compose and return
-	let both = _redactMargin*2//length of both leading and trailing margins
-	if (s.length < _redactLabel.length + both) {//short, run the black marker over the whole thing
-		c = '#'.repeat(s.length)
-	} else {//long enough to show label and let margins show through
-		let extraBlackMarker = '#'.repeat(s.length - both - _redactLabel.length)
-		c = s.slice(0, _redactMargin)+'##REDACTED##'+extraBlackMarker+s.slice(-_redactMargin)
-	}
-	return c
-}
-test(() => {
-	ok(redact_composeReplacement('') == '')
-	ok(redact_composeReplacement('abc') == '###')//short becomes all pound, always the same length
-	ok(redact_composeReplacement(
-		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
-		'ab##REDACTED############yz')
-})
-function redact_replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
-	return s.split(tag1).join(tag2)
-}
-test(() => {
-	let s1 = 'ABABthis sentence ABcontains text and tagsAB to find and replaceAB'
-	let s2 = 'CCthis sentence Ccontains text and tagsC to find and replaceC'
-	ok(redact_replaceAll(s1, 'AB', 'C') == s2)
-})
-
-
-
-
-
-
-
 
 
 
