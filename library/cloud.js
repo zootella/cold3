@@ -33,9 +33,11 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 //let's test this stuff with node on the command line
 export async function snippet(card) {
+	/*
 	log('hi, node! '+Sticker().all)
 
 	log(look(card))
+	*/
 
 
 }
@@ -310,22 +312,8 @@ async function sendLog_useFile(s) {
 
 
 
-noop(() => {
-	log('will work on redacted here')
+test(() => {
 
-
-	let o = {
-		a: 'apple',
-		b: 2,
-		c: {
-			ACCESS_SOMETHING: 'super secret value'
-		}
-	
-	}
-	log(look(o))
-
-	redact(o)
-	log(look(o))
 
 
 
@@ -334,23 +322,6 @@ noop(() => {
 
 
 
-
-noop(() => {
-	log('looking for secrets:')
-	let secrets = []
-	if (defined(typeof process)) {
-		for (let k in process.env) {
-			if (k.endsWith("_SECRET")) {
-				let v = process.env[k]
-				log(`found "${k}" with value "${v}"`)
-				secrets.push(v)
-			}
-		}
-	} else {
-		log('process not defined')
-	}
-	log(look(secrets))
-})
 
 
 /*
@@ -403,13 +374,37 @@ ACCESS_ is the prefix for all of them
 those that should be redacted have the suffix _SECRET
 nuxt has a way to expose some to page code, but for those, we're instead just using const in .vue files
 those are allowed to be known, and have the suffix _PUBLIC
+an example is the first password hashing salt in the password component .vue file
 
 in worker and lambda code, you can reach them at process.env.ACCESS_(whatever)
 but always do if (defined(typeof process)) before checking them, as page code doesn't have process at all!
 */
-const _redactLabel = '##REDACTED##'
-const _redactMargin = 2
-function redactText(s) {
+//cover secret values with thick black marker
+function redact(s) {
+	redact_getSecretValues().forEach(v => {//three helper functions, split out below to be tested independently
+		let r = redact_composeReplacement(v)
+		s = redact_replaceAll(s, v, r)
+	})
+	return s
+}
+function redact_getSecretValues() {//collect all values market secret from the environment we're running in
+	let secrets = []
+	if (defined(typeof process)) {
+		for (let k in process.env) {
+			if (k.endsWith("_SECRET")) {
+				let v = process.env[k]
+				secrets.push(v)
+			}
+		}
+	}
+	return secrets
+}
+test(() => {
+	if (defined(typeof process)) ok(redact_getSecretValues().length > 4)//there are 6 as of this writing; make sure you get at least 4
+})
+const _redactLabel = '##REDACTED##'//what the black marker looks like
+const _redactMargin = 2//but we mark messily, letting tips this big stick out on either end
+function redact_composeReplacement(s) {//given a secret value like "some secret value", return "so##REDACTED###ue"
 	let c = ''//redacted string we will compose and return
 	let both = _redactMargin*2//length of both leading and trailing margins
 	if (s.length < _redactLabel.length + both) {//short, run the black marker over the whole thing
@@ -421,19 +416,30 @@ function redactText(s) {
 	return c
 }
 test(() => {
-	ok(redactText('') == '')
-	ok(redactText('abc') == '###')//short becomes all pound, always the same length
-	ok(redactText(
+	ok(redact_composeReplacement('') == '')
+	ok(redact_composeReplacement('abc') == '###')//short becomes all pound, always the same length
+	ok(redact_composeReplacement(
 		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
 		'ab##REDACTED############yz')
+})
+function redact_replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
+	return s.split(tag1).join(tag2)
+}
+test(() => {
+	let s1 = 'ABABthis sentence ABcontains text and tagsAB to find and replaceAB'
+	let s2 = 'CCthis sentence Ccontains text and tagsC to find and replaceC'
+	ok(redact_replaceAll(s1, 'AB', 'C') == s2)
 })
 
 
 
 
-/*
-swap access to redacted
-*/
+
+
+
+
+
+
 
 
 
