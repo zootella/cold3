@@ -97,7 +97,7 @@ export async function doorLambdaShut(door, response, error) {
 const forceCloudLambda = false//when nuxt is local, will still reach up to cloud lambda
 export async function fetchLambda(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
-	let host = (forceCloudLambda || Sticker().core.isCloud) ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
+	let host = (forceCloudLambda || Sticker().isCloud) ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
 	body.ACCESS_NETWORK_23_SECRET = process.env.ACCESS_NETWORK_23_SECRET//don't forget your keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }

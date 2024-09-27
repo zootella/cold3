@@ -61,7 +61,7 @@ but always do if (defined(typeof process)) before checking them, as page code do
 export function redact(s) {
 	redact_getSecretValues().forEach(v => {//three helper functions, split out below to be tested independently
 		let r = redact_composeReplacement(v)
-		s = redact_replaceAll(s, v, r)
+		s = replaceAll(s, v, r)
 	})
 	return s
 }

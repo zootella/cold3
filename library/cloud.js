@@ -32,18 +32,103 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SN
 
 
 
-//let's test this stuff with node on the command line
-export async function snippet(card) {
-	/*
-	log('hi, node! '+Sticker().all)
-
-	log(look(card))
-	*/
 
 
+
+
+
+
+//                       _ _                   _                     
+//   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___ 
+//  / _ \ '_ ` _ \ / _` | | |  / _` | '_ \ / _` | / __| '_ ` _ \/ __|
+// |  __/ | | | | | (_| | | | | (_| | | | | (_| | \__ \ | | | | \__ \
+//  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
+//                                                                   
+
+async function sendEmail_useAmazon(c) {
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
+	const ses = await loadAmazonEmail()
+	let q = {
+		Source: `${fromName} <${fromEmail}>`,//must be verified email or domain
+		Destination: { ToAddresses: [toEmail] },
+		Message: {
+			Subject: { Data: subjectText },
+			Body: {//both plain text and html for multipart/alternative email format
+				Text: { Data: bodyText },
+				Html: { Data: bodyHtml }
+			}
+		}
+	}
+	let result, error, success = true
+	q.tick = Now()
+
+	try {
+		result = await ses.sendEmail(q).promise()
+		//sanity check to set success false
+	} catch (e) { error = e; success = false }
+
+	let t = Now()
+	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
 }
 
+async function sendEmail_useSendgrid(c) {
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
+	let q = {
+		resource: process.env.ACCESS_SENDGRID_URL,
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY_SECRET
+		},
+		body: JSON.stringify({
+			from: { name: fromName, email: fromEmail },
+			personalizations: [{ to: [{ email: toEmail }] }],
+			subject: subjectText,
+			content: [
+				{ type: 'text/plain', value: bodyText },
+				{ type: 'text/html',  value: bodyHtml },
+			]
+		})
+	}
+	return await ashFetchum(c, q)
+}
 
+async function sendText_useAmazon(c) {
+	let {toPhone, messageText} = c
+	const sns = await loadAmazonTexts()
+	let p = {
+		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
+		Message: messageText,//must be 160 characters or less
+	}
+	let result, error, success = true
+	q.tick = Now()
+
+	try {
+		result = await sns.publish(p).promise()
+		//sanity check to set success false
+	} catch (e) { error = e; success = false }
+
+	let t = Now()
+	return {c, q, p: {success, result, error, tick: t, duration: t - q.tick}}
+}
+
+async function sendText_useTwilio(c) {
+	let {toPhone, messageText} = c
+	let q = {
+		resource: process.env.ACCESS_TWILIO_URL+'/Accounts/'+process.env.ACCESS_TWILIO_SID+'/Messages.json',
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH_SECRET)
+		},
+		body: new URLSearchParams({
+			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from
+			To:   toPhone,//recipient phone number in E.164 format
+			Body: messageText
+		})
+	}
+	return await ashFetchum(c, q)//call my wrapped fetch
+}
 
 
 
@@ -64,67 +149,86 @@ export async function snippet(card) {
 // | (__| | (_) | |_| | (_| | | | (_) | (_| | (_| | | | | | (_| |
 //  \___|_|\___/ \__,_|\__,_| |_|\___/ \__, |\__, |_|_| |_|\__, |
 //                                     |___/ |___/         |___/ 
-
-//dog
-//use dog(a, b) just like you do log(), except you have to await dog()
-//from code running local or deployed, dog always sends logs up to datadog
+/*
+... to begin, a brief essay about logs and logging. ahem... .....
+.................................................................
+......... log('note', s1, o2) ...................................
+.................................................................
+log is our wrapper on console.log, which adds the time and works with icarus
+use with look() to see into objects with types, values, and structure
+when you're done with code, log calls should already be removed
+.................................................................
+... await dog('note', s1, o2) ..................... [DEBUG] .....
+.................................................................
+dog is like log, but it goes to datadog, too
+also just for development, this is if you want to see what code is doing that's deployed
+in datadog, dog logs are tagged debug
+.................................................................
+... await logAudit('title',           {w1, w2}) ... [AUDIT] .....
+.................................................................
+we want to keep an audit trail of every use of every third-party api
+for instance, did we try to send this email? charge this credit card? how did the api respond?
+audit logs get saved in datadog both from local and cloud deployed code, because the use of the api was real
+.................................................................
+... await logAlert('title',   {e,      w1, w2}) ... [ALERT] .....
+.................................................................
+in every entrypoint where your code starts running, have a try block that catches and sends to alert
+this means that a mistake you didn't intend, a truly exceptional circumstance, has otherwise gone uncaught
+in deployed cloud code only, alert logs to to datadog; from there they should wake up the fellow on pager duty!
+.................................................................
+... await logFragile('title', {e1, e2, w1, w2}) ... [FRAGILE] ...
+.................................................................
+if you're already handling an exception and code throws again, that's what fragile is for
+fragile gets processed and delivered like alert, but also shouts to console.error, first thing
+this automatically goes to cloudwatch in lambda, and you should hook things up similarily in cloudflare
+a mistake in code that causes fragile to happen means the log probably won't make it up to datadog
+.................................................................
+......... ROBIN .................................................
+.................................................................
+not here but related is the round robin system of api use
+functions will record duration and success of higher level user tasks, like entering a code in a text message
+robin won't use datadog, but rather two tables in postgres
+.................................................................
+......... RUM ...................................................
+.................................................................
+so all that's great, but is the real experience of real users on the site fast?
+for that, we'll incorporate real user monitoring, probably datadog's product, which is separate from logs
+the run script on client side pages communicates with their back end, and makes nice charts for us to review
+.................................................................
+......... the end ...............................................
+*/
 export async function dog(...a) {
 	let c = prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
-examine(c); return
 
-	console.log(c.body[0].message)//use in dog()
-	sendLog_useIcarus(c.body[0].message)
-	await sendLog_useFile(c.body[0].message)
+	console.log(c.body[0].message)
+	sendLog_useIcarus(c.body[0].message)//running locally in icarus, append to the text box on the page
+	await sendLog_useFile(c.body[0].message)//running locally in node, append to a file named "cloud.log"
 	return await sendLog_useDatadog(c)
 }
-
-//logAudit
-//we did something with a third-party api, like send a text or run a credit card
-//and so we must keep a permanent record of, whether the code that did it was running local or cloud
 export async function logAudit(headline, watch) {
 	let c = prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
-examine(c); return
 
-	console.log(c.body[0].message)//use in logAudit()
+	console.log(c.body[0].message)
 	sendLog_useIcarus(c.body[0].message)
 	await sendLog_useFile(c.body[0].message)
-	return await sendLog_useDatadog(c)//make a record of every real use of the real api, even from local development!
+	return await sendLog_useDatadog(c)//keep an audit trail of every use of third party apis, running both cloud *and* local
 }
-
-//logAlert
-//an exception we didn't expect rose to the top of the event handler
-//log to datadog to investigate later
 export async function logAlert(headline, watch) {
 	let c = prepareLog('error', 'type:alert', 'ALERT', headline, watch)
-examine(c); return
 
-	console.error(c.body[0].message)//use in logAlert()
-	sendLog_useIcarus(c.body[0].message)
-	await sendLog_useFile(c.body[0].message)//really only works in $ node test, but sure, try it
-	let r; if (isCloud()) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
-}
-
-//logDiscard
-//while trying to deal with an alert, another exception happened
-//we may not be able to log it, but try anyway
-export async function logFragile(headline, watch) { console.error('FRAGILE!^')//<-- extra call for help
-	let c = prepareLog('critical', 'type:fragile', 'FRAGILE', headline, watch)
-examine(c); return
-
-	console.error(c.body[0].message)//use in logFragile()
+	console.error(c.body[0].message)
 	sendLog_useIcarus(c.body[0].message)
 	await sendLog_useFile(c.body[0].message)
-	let r; if (isCloud()) { r = await sendLog_useDatadog(c) }; return r
+	let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
 }
+export async function logFragile(headline, watch) { console.error('FRAGILE!^')//call for help before calling the thing that's throwing again!
+	let c = prepareLog('critical', 'type:fragile', 'FRAGILE', headline, watch)
 
-
-
-
-
-
-
-
-
+	console.error(c.body[0].message)
+	sendLog_useIcarus(c.body[0].message)
+	await sendLog_useFile(c.body[0].message)
+	let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r
+}
 function prepareLog(status, type, label, headline, watch) {
 	let sticker = Sticker()//find out what, where, and when we're running, also makes a tag for this sticker check right now
 	let d = {//this is the object we'll log to datadog
@@ -164,60 +268,18 @@ function prepareLog(status, type, label, headline, watch) {
 	return c
 }
 
-
-
-test(() => {
-//	log('composing dog fetch in simulation mode')
-
-//	dog('a')
-	let a = 'apple'
-	let b = 2
-	let c = [4, 5, 6]
-
-	logAudit('title', {a, b, c})
-/*
-	let context = 17
-	try {
-		let a = 'apple'
-		let b = 2
-		toss('my toss note', {a, b})
-	} catch (e) {
-		logAlert('my title', {e, context})
-	}
-*/
-})
-
-
-
-
-
-
-
-
-function examine(c) {
-
-	//temporarily in test mode to make sure everything works and looks right!
-	log(
-		'',
-		'(1) message:',
-		'',
-		c.body[0].message,
-		'',
-		'(2) body:',
-		'',
-		look(c.body),
-		'',
-		'(3) body text for fetch:',
-		'',
-		c.bodyText)
-
+//log to the icarus page so you don't have to look at the browser inspector
+function sendLog_useIcarus(s) {
+	//TODO
 }
 
+//log to the file "cloud.log"; only works for $ node test, but is very useful there
+async function sendLog_useFile(s) {
+	let fs = await loadFs()
+	if (fs) await fs.appendFile('cloud.log', s.trimEnd()+newline)//becomes a quick no-op running in places we can't load fs
+}
 
-
-
-
-
+//log to datadog, fetching to their api
 async function sendLog_useDatadog(c) {
 	let q = {
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
@@ -231,8 +293,66 @@ async function sendLog_useDatadog(c) {
 	return await ashFetchum(c, q)
 }
 
-//fetch(), $fetch(), and useFetch() are already taken, so you could call yours Fetch(), but instead, why not:
-async function ashFetchum(c, q) {//takes c earlier called parameters and q an object of instructions to make the request
+
+
+
+
+
+
+
+
+
+
+
+
+//     _        _       _____    _       _                     
+//    / \   ___| |__   |  ___|__| |_ ___| |__  _   _ _ __ ___  
+//   / _ \ / __| '_ \  | |_ / _ \ __/ __| '_ \| | | | '_ ` _ \ 
+//  / ___ \\__ \ | | | |  _|  __/ || (__| | | | |_| | | | | | |
+// /_/   \_\___/_| |_| |_|  \___|\__\___|_| |_|\__,_|_| |_| |_|
+//                                                            
+/* ...gotta fetch 'em all!
+
+fetch() is from the browser, plain vanilla and what all the rest ultimately call down to
+$fetch() is from nuxt, use in page and api code, server and client, but not lambda, obeys middleware and parses for you
+useFetch() is from nuxt, use in page code, does hybrid rendering
+ashFetchum() is your own, parses, measures duration, and catches errors
+axios keeps coming up in stack overflow and chatgpt, but you're not using it here
+
+fetch and axios have features to give up after a timeout, but that's fancy and harder
+and workers and lambdas die after 30 seconds anyway, so we're leaving that out of scope for v1
+
+let r = ashFetchum(  takes...
+	c,  [c]all parameters, everything you used to prepare the request
+	q)  re[q]uest details, what ash will use to call fetch
+r: {                 ...and returns c and q unchanged other than filling in q.tick, and:
+	c,
+	q,
+	p   res[p]onse details, everything that happened as a result of the request
+}
+
+[c]all:
+c might have details like c.name, c.email, c.phoneNumber which you prepared into q.body
+
+re[q]uest:
+q.resource is the url like https://example.com
+q.method is GET or POST
+q.headers is an object of keys and values for fetch
+q.body is already stringified body text, raw and ready for fetch
+
+time:
+q.tick is when we made the request
+p.tick is when we finished reading the response
+p.duration is how long that took
+
+res[p]onse:
+p.success is true if everything looks good as far as ash can tell
+p.response is what fetch returned
+p.bodyText is raw from the wire
+p.body is what we tried to parse that into
+p.error is an exception if thrown
+*/
+async function ashFetchum(c, q) {
 	let o = {method: q.method, headers: q.headers, body: q.body}
 
 	q.tick = Now()//record when this happened and how long it takes
@@ -266,21 +386,16 @@ async function ashFetchum(c, q) {//takes c earlier called parameters and q an ob
 
 
 
-//and this one is todo:
-function sendLog_useIcarus(s) {/*TODO*/}
 
-//this only works for $ node test, but it sure is useful there
-async function sendLog_useFile(s) {
-	let fs = await loadFs()
-	if (fs) await fs.appendFile('cloud.log', s.trimEnd()+newline)//becomes a quick no-op places we can't load fs
+
+
+//let's test this stuff with node on the command line
+export async function snippet(card) {
+	log('hi from snippet')
+
+
+
 }
-
-
-
-
-
-
-
 
 
 test(() => {
@@ -291,25 +406,6 @@ test(() => {
 
 })
 
-
-
-
-
-/*
-oh, here also is where you want to replace REPLACE_BODY_SIZE with the size
-so much all caps these days!
-*/
-
-
-/*
-you've checked your current set of secret values, and they contain letters, numbers, period, underscore, and hyphen
-none of these get escaped by json stringify, so it works to search and replace secret strings of text in the stringified version
-
-
-
-
-
-*/
 
 
 
