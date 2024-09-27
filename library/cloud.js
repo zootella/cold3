@@ -72,9 +72,9 @@ export async function dog(...a) {
 	let c = prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
 examine(c); return
 
-	console.log(c.body.message)//use in dog()
-	sendLog_useIcarus(c.body.message)
-	await sendLog_useFile(c.body.message)
+	console.log(c.body[0].message)//use in dog()
+	sendLog_useIcarus(c.body[0].message)
+	await sendLog_useFile(c.body[0].message)
 	return await sendLog_useDatadog(c)
 }
 
@@ -85,9 +85,9 @@ export async function logAudit(headline, watch) {
 	let c = prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
 examine(c); return
 
-	console.log(c.body.message)//use in logAudit()
-	sendLog_useIcarus(c.body.message)
-	await sendLog_useFile(c.body.message)
+	console.log(c.body[0].message)//use in logAudit()
+	sendLog_useIcarus(c.body[0].message)
+	await sendLog_useFile(c.body[0].message)
 	return await sendLog_useDatadog(c)//make a record of every real use of the real api, even from local development!
 }
 
@@ -98,9 +98,9 @@ export async function logAlert(headline, watch) {
 	let c = prepareLog('error', 'type:alert', 'ALERT', headline, watch)
 examine(c); return
 
-	console.error(c.body.message)//use in logAlert()
-	sendLog_useIcarus(c.body.message)
-	await sendLog_useFile(c.body.message)//really only works in $ node test, but sure, try it
+	console.error(c.body[0].message)//use in logAlert()
+	sendLog_useIcarus(c.body[0].message)
+	await sendLog_useFile(c.body[0].message)//really only works in $ node test, but sure, try it
 	let r; if (isCloud()) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
 }
 
@@ -111,9 +111,9 @@ export async function logFragile(headline, watch) { console.error('FRAGILE!^')//
 	let c = prepareLog('critical', 'type:fragile', 'FRAGILE', headline, watch)
 examine(c); return
 
-	console.error(c.body.message)//use in logFragile()
-	sendLog_useIcarus(c.body.message)
-	await sendLog_useFile(c.body.message)
+	console.error(c.body[0].message)//use in logFragile()
+	sendLog_useIcarus(c.body[0].message)
+	await sendLog_useFile(c.body[0].message)
 	let r; if (isCloud()) { r = await sendLog_useDatadog(c) }; return r
 }
 
@@ -126,78 +126,42 @@ examine(c); return
 
 
 function prepareLog(status, type, label, headline, watch) {
-	let c = {}//make the object that contains complete information about our call to fetch to datadog
-	c.sticker = Sticker()//check the sticker, includes k.nowTick for when we're logging this right now
-
-	prepareLog1(c, status, type, label, headline, watch)//start with core datadog properties
-	prepareLog2(c, label, headline, watch)//the meat of the log, what happened and all the details, human readable and machine parsable
-	prepareLog3(c)//redact to make smaller and keep secrets private from the log
-	prepareLog4(c)//stringify and prepare to send to datadog
-	return c
-}
-function prepareLog1(c, status, type, label, headline, watch) {//from the caller, get status like "error" and type like "type:audit"
-
-	c.body = {//start the object we'll log to datadog
+	let sticker = Sticker()//find out what, where, and when we're running, also makes a tag for this sticker check right now
+	let d = {//this is the object we'll log to datadog
 
 		//datadog required
-		ddsource: c.sticker.where,//the source of the log
-		service: c.sticker.where,//the name of the service that created the log, setting the same but this field is required
+		ddsource: sticker.where,//the source of the log
+		service: sticker.where,//the name of the service that created the log, setting the same but this field is required
 		message: '',//description of what happened; very visible in dashboard; required, we'll fill in below
 
 		//datadog reccomended
 		//not sending: hostname: k.where,//hostname where the log came from; not required and additionally redundant
 		status: status,//the severity level of what happened, like "debug", "info", "warn", "error", "critical"
-		tags: [type, 'where:'+c.sticker.core.where, 'what:'+c.sticker.what],//set tags to categorize and filter logs, array of "key:value" strings
+		tags: [type, 'where:'+sticker.core.where, 'what:'+sticker.what],//set tags to categorize and filter logs, array of "key:value" strings
 
-		//our custom additions
-		tag: c.sticker.tag,//tag this log entry so if you see it two places you know it's the same one, not a second identical one
-		when: sayTick(c.sticker.now),//human readable time local to reader, not computer; the tick number is also logged, in sticker.nowTick
-		sticker: c.sticker.core,//put not the whole sticker in here, which includes the complete code hash, the tags we found to sense what environment this is, and the tick count now as we're preparing the log object
+		//and then add our custom stuff
+		tag: sticker.tag,//tag this log entry so if you see it two places you know it's the same one, not a second identical one
+		when: sayTick(sticker.now),//human readable time local to reader, not computer; the tick number is also logged, in sticker.nowTick
+		sticker: sticker.core,//put not the whole sticker in here, which includes the complete code hash, the tags we found to sense what environment this is, and the tick count now as we're preparing the log object
 		watch: {}//message (datadog required) and watch (our custom property) are the two important ones we fill in below
 	}
 
-
-
-
-
-
-
-	return c
-}
-function prepareLog2(c, label, headline, watch) {
+	//set the watch object, and compose the message
 	if (headline != '↓') headline = `"${headline}"`//put quotes around a headline
+	d.watch = watch//machine parsable; human readable is later lines of message using look() below
+	d.message = `${sayTick(sticker.now)} [${label}] ${headline} ${sticker.where}.${sticker.what} ${sticker.tag} ‹SIZE›${newline}${look(watch)}`
 
-	c.body.watch = watch
-	c.body.message = (
-		`${sayTick(c.sticker.now)} [${label}] ${headline} ${c.sticker.where}.${c.sticker.what} ${c.sticker.tag} ‹SIZE›`+newline
-		+look(watch))
+	//prepare the body
+	let b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
+	let s = stringify(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
+	s = redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
+	let size = s.length//byte size of body, this is how datadog bills us
+	s = replaceOne(s, '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
 
-	//actually replace the first tag "‹SIZE›" with the size like "‹6789›" to see what datadog is actually going to charge you for these
-
-
-}
-
-
-function prepareLog3(c) {
-	//here's where you prune, react, and search to confirm clean of secrets
-	//well, this design doesn't work well for pruning
-
-
-
-
-}
-function prepareLog4(c) {
-
-
-	let b = stringify([c.body])//nest single element in array for datadog
-	b = redact(b)//won't change the length, won't mess up the stringified format for datadog's parse
-
-	let size = b.length
-
-	b = replaceOne(b, '‹SIZE›', `‹${size}›`)//replaces only the first instance
-
-	c.bodyText = b
-
+	let c = {}//c is our call with complete information about our fetch to datadog
+	c.body = b//c.body is the http request body, as an object, for our own information
+	c.bodyText = s//c.bodyText is the stringified body of the http request our call to fetch will use
+	return c
 }
 
 
@@ -205,17 +169,22 @@ function prepareLog4(c) {
 test(() => {
 //	log('composing dog fetch in simulation mode')
 
-	dog('hello1', 'hello2')
+//	dog('a')
+	let a = 'apple'
+	let b = 2
+	let c = [4, 5, 6]
 
+	logAudit('title', {a, b, c})
+/*
 	let context = 17
 	try {
 		let a = 'apple'
 		let b = 2
 		toss('my toss note', {a, b})
 	} catch (e) {
-		logFragile('my title', {e, context})
+		logAlert('my title', {e, context})
 	}
-
+*/
 })
 
 
@@ -232,7 +201,7 @@ function examine(c) {
 		'',
 		'(1) message:',
 		'',
-		c.body.message,
+		c.body[0].message,
 		'',
 		'(2) body:',
 		'',
