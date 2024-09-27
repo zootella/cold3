@@ -61,7 +61,7 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 
 export async function doorWorkerShut(door, response, error) {
 
-	log('hello from door worker shut to see why youre not getting error')
+	//log('hello from door worker shut to see why youre not getting error')
 
 	door.stopTick = Now()//time
 	door.duration = door.stopTick - door.startTick

@@ -47,6 +47,10 @@ export function Sticker() {
 	sticker.what  =                       saySealedWhen+'.'+saySealedHash
 	sticker.all   = environment.title+'.'+saySealedWhen+'.'+saySealedHash+'.'+sayTick(now)
 
+	//and for easy checking
+	sticker.isCloud = environment.title.includes('Cloud')
+	sticker.isLocal = environment.title.includes('Local')
+
 	return sticker
 }
 

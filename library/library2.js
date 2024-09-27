@@ -3,7 +3,7 @@
 //grow them here, then probably refactor them out into named files in this library folder
 //actually don't do this, it's library1.js and the named files
 
-import { defined } from './sticker.js'
+import { defined, Sticker } from './sticker.js'
 import { noop, test, ok, log, look, composeLog, Now, end, subtleHash, Data, checkText } from './library0.js'
 import { Tag, tagLength, checkTag } from './library1.js'
 
@@ -78,7 +78,11 @@ function redact_getSecretValues() {//collect all values market secret from the e
 	return secrets
 }
 test(() => {
-	if (defined(typeof process)) ok(redact_getSecretValues().length > 4)//there are 6 as of this writing; make sure you get at least 4
+	let where = Sticker().where
+	if (where == 'LocalVite' || where.includes('Page')) {
+	} else {//if this test is running from code that is not rendering a page
+		ok(redact_getSecretValues().length > 4)//then it should have secrets, probably 6+, but make sure there are at least 4
+	}
 })
 const _redactLabel = '##REDACTED##'//what the black marker looks like
 const _redactMargin = 2//but we mark messily, letting tips this big stick out on either end
