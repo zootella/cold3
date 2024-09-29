@@ -8,7 +8,7 @@ import { redact, replaceOne } from './library2.js'
 //node-style imports
 let _fs;
 async function loadFs() {
-	if (!_fs && sticker().where == 'LocalNode') {
+	if (!_fs && Sticker().where == 'LocalNode') {
 		_fs = (await import('fs')).default.promises
 	}
 	return _fs
@@ -199,35 +199,39 @@ the run script on client side pages communicates with their back end, and makes 
 */
 export async function dog(...a) {
 	let c = prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
-
-	console.log(c.body[0].message)
-	sendLog_useIcarus(c.body[0].message)//running locally in icarus, append to the text box on the page
-	await sendLog_useFile(c.body[0].message)//running locally in node, append to a file named "cloud.log"
-	return await sendLog_useDatadog(c)
+	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
+		console.log(c.body[0].message)
+		sendLog_useIcarus(c.body[0].message)//running locally in icarus, append to the text box on the page
+		await sendLog_useFile(c.body[0].message)//running locally in node, append to a file named "cloud.log"
+		return await sendLog_useDatadog(c)
+	}
 }
 export async function logAudit(headline, watch) {
 	let c = prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
-
-	console.log(c.body[0].message)
-	sendLog_useIcarus(c.body[0].message)
-	await sendLog_useFile(c.body[0].message)
-	return await sendLog_useDatadog(c)//keep an audit trail of every use of third party apis, running both cloud *and* local
+	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
+		console.log(c.body[0].message)
+		sendLog_useIcarus(c.body[0].message)
+		await sendLog_useFile(c.body[0].message)
+		return await sendLog_useDatadog(c)//keep an audit trail of every use of third party apis, running both cloud *and* local
+	}
 }
 export async function logAlert(headline, watch) {
 	let c = prepareLog('error', 'type:alert', 'ALERT', headline, watch)
-
-	console.error(c.body[0].message)
-	sendLog_useIcarus(c.body[0].message)
-	await sendLog_useFile(c.body[0].message)
-	let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
+	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
+		console.error(c.body[0].message)
+		sendLog_useIcarus(c.body[0].message)
+		await sendLog_useFile(c.body[0].message)
+		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
+	}
 }
 export async function logFragile(headline, watch) { console.error('FRAGILE!^')//call for help before calling the thing that's throwing again!
 	let c = prepareLog('critical', 'type:fragile', 'FRAGILE', headline, watch)
-
-	console.error(c.body[0].message)
-	sendLog_useIcarus(c.body[0].message)
-	await sendLog_useFile(c.body[0].message)
-	let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r
+	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
+		console.error(c.body[0].message)
+		sendLog_useIcarus(c.body[0].message)
+		await sendLog_useFile(c.body[0].message)
+		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r
+	}
 }
 function prepareLog(status, type, label, headline, watch) {
 	let sticker = Sticker()//find out what, where, and when we're running, also makes a tag for this sticker check right now
@@ -293,6 +297,64 @@ async function sendLog_useDatadog(c) {
 	return await ashFetchum(c, q)
 }
 
+//if you change anything that could cause these functions and those they use to even possibly throw, check with simulation mode--but be sure to not call a real API in here, as there won't be an AUDIT saved!
+const cloudLogSimulationMode = false
+test(() => { if (cloudLogSimulationMode) log('WARNING: cloud logging is set to simulation mode, do not deploy like this!') })
+function cloudLogSimulation(c) {
+	log(
+		'', '(1) message for text box in datadog:',                       '', c.body[0].message,
+		'', '(2) body, correctly before size and redactions:',            '', look(c.body),
+		'', '(3) body stringified, this is what fetch sends to datadog:', '', c.bodyText)
+}
+test(() => { if (!cloudLogSimulationMode) return//only run these in simulation mode
+
+	let a = 'apple'
+	let b = 2
+	let e1, e2
+	try { let o = {}; o.notThere.andBeyond } catch (e) { e1 = e }
+	try { toss('toss note', {a, b, e1})    } catch (e) { e2 = e }
+
+	if (false) dog('hi', 7)
+	if (false) logAudit('audit title',         {a, b})
+	if (false) logAlert('alert title',     {e1, a, b})
+	if (false) logFragile('fragile title', {e2, a, b})
+})
+
+
+
+
+
+
+
+
+//let's test this stuff with node on the command line
+export async function snippet(card) {
+	log('hi from snippet')
+
+
+
+}
+
+
+test(() => {
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -317,10 +379,6 @@ fetch() is from the browser, plain vanilla and what all the rest ultimately call
 $fetch() is from nuxt, use in page and api code, server and client, but not lambda, obeys middleware and parses for you
 useFetch() is from nuxt, use in page code, does hybrid rendering
 ashFetchum() is your own, parses, measures duration, and catches errors
-axios keeps coming up in stack overflow and chatgpt, but you're not using it here
-
-fetch and axios have features to give up after a timeout, but that's fancy and harder
-and workers and lambdas die after 30 seconds anyway, so we're leaving that out of scope for v1
 
 let r = ashFetchum(  takes...
 	c,  [c]all parameters, everything you used to prepare the request
@@ -371,6 +429,20 @@ async function ashFetchum(c, q) {
 
 	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
 }
+/*
+additional fancy features ash can't do yet, but you could add later:
+(1) use axios, which keeps coming up in stackoverflow and chatgpt, and can do timeouts
+fetch is working just fine, but can 52 million weekly npm downloads all be wrong? "¯\_(ツ)_/¯"
+(2) set a give up timeout, using AbortController, setTimeout, and clearTimeout, or just axios
+adding this and setting to like 4 seconds will keep a misbehaving API frm making the user wait
+but also, workers only live 30 seconds max, and you've set lambda to the same, so that should also govern here
+(3) have a fire and forget option, to not wait for the body to arrive, or not wait at all
+you tried this and immediately logs were unreliable because cloudflare and amazon were tearing down early
+the way to do this in a worker is event.waitUntil(p), which looks well designed
+you don't think there's a way to do this in lambda, so instead you Promise.all() to delay sending the response
+with that, workers are faster, lambdas the same, well maybe faster because now the fetches can run in parallel
+but there's a code benefit: you could call dog() and logAudit() without having to await them
+*/
 
 
 
@@ -382,29 +454,6 @@ async function ashFetchum(c, q) {
 
 
 
-
-
-
-
-
-
-
-//let's test this stuff with node on the command line
-export async function snippet(card) {
-	log('hi from snippet')
-
-
-
-}
-
-
-test(() => {
-
-
-
-
-
-})
 
 
 
