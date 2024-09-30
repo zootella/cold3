@@ -10,7 +10,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//BLOWUP 4
-		//await dog('checkpoint 4')
+		await dog('checkpoint 4')
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -18,8 +18,8 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	} catch (e) { error = e }
 	try {
 
-		//BLOWUP 5
-		//await dog('checkpoint 5')
+		//BLOWUP 6
+		await dog('checkpoint 6')
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
@@ -32,8 +32,8 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 async function doorProcessBelow(door) {
 	let response = {}
 
-	//BLOWUP 6
-	//await dog('checkpoint 6', {door})
+	//BLOWUP 5
+	await dog('checkpoint 5', {door})
 
 
 

@@ -322,7 +322,15 @@ test(() => { if (!cloudLogSimulationMode) return//only run these in simulation m
 
 
 
+/*
+next to do now
+[]deployed, get the six dogs from the two doors, all at once
+[]deployed, toss each place, one at a time
+[]local node, send the four messages
+[]deployed, send the four messages
 
+and check datadog, amazon, and twilio dashboards throughout!
+*/
 
 
 
@@ -330,14 +338,13 @@ test(() => { if (!cloudLogSimulationMode) return//only run these in simulation m
 //let's test this stuff with node on the command line
 export async function snippet(card) {
 	log('hi from snippet')
+	
 
 
 
 }
 
 
-test(() => {
-})
 
 
 
