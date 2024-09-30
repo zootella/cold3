@@ -8,15 +8,11 @@ export default defineEventHandler(async (workerEvent) => {
 	let door = {}, response, error
 	try {
 
-
-
 		door = await doorWorkerOpen(workerEvent)
 		response = await doorProcessBelow(door)
 
 	} catch (e) { error = e }
 	try {
-
-
 
 		let workerReturn = await doorWorkerShut(door, response, error)
 		if (response && !error) return workerReturn

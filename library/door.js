@@ -69,8 +69,7 @@ export async function doorWorkerShut(door, response, error) {
 	door.error = error
 
 	if (error) {//processing this request caused an error
-		let p = logAlert('door worker shut error', {door})//tell staff about it
-		await doorPromise(door, p)
+		await logAlert('door worker shut error', {door})//tell staff about it
 		return null//return no response
 	} else {
 		return response//nuxt will stringify and add status code and headers
@@ -83,71 +82,30 @@ export async function doorLambdaShut(door, response, error) {
 	door.error = error
 
 	if (error) {
-		let p = logAlert('door lambda shut error', {door})
-		await doorPromise(door, p)
+		await logAlert('door lambda shut error', {door})
 		return null
 	} else {
 		return {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	}
 }
 
-export async function doorPromise(door, p) {
-
-	if (door.workerEvent) door.workerEvent.waitUntil(p)//we're in a cloudflare worker, tell cloudflare to keep running until p resolves, and return from this function without delay
-		else await p//we're in a lambda or running locally, await the promise here because we don't have that feature
-}
 
 
 
 
 
-
-const forceCloudLambda = false//when nuxt is local, will still reach up to cloud lambda
+/*
+forceCloudLambda false means local worker -> local lambda; cloud worker -> cloud lambda
+forceCloudLambda true  means local worker -> cloud lambda; cloud worker -> cloud lambda
+either way a cloud worker always calls to a cloud lambda, because callign down wouldn't work at all
+*/
+const forceCloudLambda = false
 export async function fetchLambda(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
 	let host = (forceCloudLambda || Sticker().isCloud) ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
 	body.ACCESS_NETWORK_23_SECRET = process.env.ACCESS_NETWORK_23_SECRET//don't forget your keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }
-
-/*
-could you hook this up so if deployed, it always uses cloud lambda
-and if local, it always uses local lambda, essentially
-
-
-
-*/
-
-
-/*
-so i can't fing believe it, but JSON.stringify(e) returns {}
-chat reccomends a custom replacer, like this:
-
-function replacer(key, value) {
-	if (value instanceof Error) {
-		return {
-			name: value.name,
-			message: value.message,
-			stack: value.stack,
-		};
-	}
-	return value;
-}
-
-const obj = {
-	normalProp: 'some value',
-	errorProp: new Error('Something went wrong!'),
-	anotherProp: null,
-};
-
-console.log(JSON.stringify(obj, replacer, 2));
-
-for now you're just going to do the look in message thing, i guess
-
-
-
-*/
-
 
 
 
