@@ -2,15 +2,15 @@
 import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
-import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
-import { dog, logFragile } from '../../library/cloud.js'
+import { doorLambdaOpen, doorLambdaShut, doorPromise } from '../../library/door.js'
+import { dog, logAudit, logAlert, logFragile } from '../../library/cloud.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let door = {}, response, error
 	try {
 
-		//BLOWUP 4
-		await dog('checkpoint 4')
+		//CHECKPOINT 4
+		//await dog('checkpoint 4')
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -18,13 +18,13 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	} catch (e) { error = e }
 	try {
 
-		//BLOWUP 6
-		await dog('checkpoint 6')
+		//CHECKPOINT 6
+		//await dog('checkpoint 6')
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
 
-	} catch (d) { logFragile('door', {d, door, response, error}) }
+	} catch (d) { await logFragile('door', {d, door, response, error}) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }
 //^our copypasta to safely man the front door
@@ -32,14 +32,16 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 async function doorProcessBelow(door) {
 	let response = {}
 
-	//BLOWUP 5
-	await dog('checkpoint 5', {door})
-
-
-
+	//CHECKPOINT 5
+	//await dog('checkpoint 5', {door})
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from ${Sticker().all}`
+
+
+	let p = logAudit('audit at checkpoint 5, lambda', {v:1})
+	await doorPromise(door, p)
+
 
 	response.message = message
 	response.when = Now()

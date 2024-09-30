@@ -306,7 +306,7 @@ function cloudLogSimulation(c) {
 		'', '(2) body, correctly before size and redactions:',            '', look(c.body),
 		'', '(3) body stringified, this is what fetch sends to datadog:', '', c.bodyText)
 }
-test(() => { if (!cloudLogSimulationMode) return//only run these in simulation mode
+test(async () => { if (!cloudLogSimulationMode) return//only run these in simulation mode
 
 	let a = 'apple'
 	let b = 2
@@ -314,10 +314,10 @@ test(() => { if (!cloudLogSimulationMode) return//only run these in simulation m
 	try { let o = {}; o.notThere.andBeyond } catch (e) { e1 = e }
 	try { toss('toss note', {a, b, e1})    } catch (e) { e2 = e }
 
-	if (false) dog('hi', 7)
-	if (false) logAudit('audit title',         {a, b})
-	if (false) logAlert('alert title',     {e1, a, b})
-	if (false) logFragile('fragile title', {e2, a, b})
+	if (false) await dog('hi', 7)
+	if (false) await logAudit('audit title',         {a, b})
+	if (false) await logAlert('alert title',     {e1, a, b})
+	if (false) await logFragile('fragile title', {e2, a, b})
 })
 
 

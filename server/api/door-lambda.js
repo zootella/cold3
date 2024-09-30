@@ -21,7 +21,7 @@ export default defineEventHandler(async (workerEvent) => {
 		let workerReturn = await doorWorkerShut(door, response, error)
 		if (response && !error) return workerReturn
 
-	} catch (d) { logFragile('door', {d, door, response, error}) }
+	} catch (d) { await logFragile('door', {d, door, response, error}) }
 	setResponseStatus(workerEvent, 500); return null
 })
 //^our copypasta to safely man the front door
