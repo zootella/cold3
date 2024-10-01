@@ -10,7 +10,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//CHECKPOINT 4
-		await dog('checkpoint 4')
+		//await dog('checkpoint 4')
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -19,7 +19,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//CHECKPOINT 6
-		await dog('checkpoint 6')
+		//await dog('checkpoint 6')
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
@@ -33,7 +33,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//CHECKPOINT 5
-	await dog('checkpoint 5')
+	//await dog('checkpoint 5')
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from ${Sticker().all}`

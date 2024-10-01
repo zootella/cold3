@@ -17,10 +17,11 @@
     "postinstall": "nuxt prepare",
     "pages:dev": "wrangler pages dev --compatibility-date=2024-02-08 --proxy 3000 -- npm run dev",
     "pages:deploy": "npm run build && wrangler pages deploy ./dist --project-name cold3",
+    "pages:clean": "rimraf ./.wrangler/tmp",
     "test": "node test",
     "seal": "node seal",
     "local": "npm run pages:dev",
-    "deploy": "npm run pages:deploy"
+    "deploy": "npm run pages:clean && npm run pages:deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",
@@ -37,6 +38,7 @@
     "@cloudflare/workers-types": "^4.20240208.0",
     "aws-sdk": "^2.1686.0",
     "fast-glob": "^3.3.2",
+    "rimraf": "^6.0.1",
     "wrangler": "^3.28.2"
   }
 }
