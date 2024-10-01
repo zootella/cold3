@@ -2,7 +2,7 @@
 import { log, look, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
 import { doorWorkerOpen, doorWorkerShut, fetchLambda } from '@/library/door.js'
-import { logFragile } from '@/library/cloud.js'
+import { awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from '@/library/cloud.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let door = {}, response, error
@@ -17,7 +17,7 @@ export default defineEventHandler(async (workerEvent) => {
 		let workerReturn = await doorWorkerShut(door, response, error)
 		if (response && !error) return workerReturn
 
-	} catch (d) { await logFragile('door', {d, door, response, error}) }
+	} catch (d) { await awaitLogFragile('door', {d, door, response, error}) }
 	setResponseStatus(workerEvent, 500); return null
 })
 //^our copypasta to safely man the front door

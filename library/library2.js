@@ -6,7 +6,6 @@
 import { defined, Sticker } from './sticker.js'
 import { noop, test, ok, log, look, composeLog, Now, end, subtleHash, Data, checkText } from './library0.js'
 import { Tag, tagLength, checkTag } from './library1.js'
-import { dog } from './cloud.js'
 import { getWorkerEvent } from './door.js'
 
 

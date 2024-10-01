@@ -4,7 +4,7 @@ import { readBody } from 'h3'
 import { Sticker } from './sticker.js'
 import { log, look, Now, checkText, hasTextSame, toss, test, ok } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
-import { dog, logAudit, logAlert, logFragile } from './cloud.js'
+import { awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from './cloud.js'
 
 //      _                  
 //   __| | ___   ___  _ __ 
@@ -96,7 +96,7 @@ export async function doorWorkerShut(door, response, error) {
 	door.error = error
 
 	if (error) {//processing this request caused an error
-		await logAlert('door worker shut error', {door})//tell staff about it
+		await awaitLogAlert('door worker shut error', {door})//tell staff about it
 		return null//return no response
 	} else {
 		return response//nuxt will stringify and add status code and headers
@@ -109,7 +109,7 @@ export async function doorLambdaShut(door, response, error) {
 	door.error = error
 
 	if (error) {
-		await logAlert('door lambda shut error', {door})
+		await awaitLogAlert('door lambda shut error', {door})
 		return null
 	} else {
 		return {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
