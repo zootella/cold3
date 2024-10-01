@@ -6,6 +6,8 @@
 import { defined, Sticker } from './sticker.js'
 import { noop, test, ok, log, look, composeLog, Now, end, subtleHash, Data, checkText } from './library0.js'
 import { Tag, tagLength, checkTag } from './library1.js'
+import { dog } from './cloud.js'
+import { getWorkerEvent } from './door.js'
 
 
 
@@ -57,6 +59,7 @@ an example is the first password hashing salt in the password component .vue fil
 in worker and lambda code, you can reach them at process.env.ACCESS_(whatever)
 but always do if (defined(typeof process)) before checking them, as page code doesn't have process at all!
 */
+
 //cover secret values with thick black marker
 export function redact(s) {
 	redact_getSecretValues().forEach(v => {//three helper functions, split out below to be tested independently
@@ -66,16 +69,26 @@ export function redact(s) {
 	return s
 }
 function redact_getSecretValues() {//collect all values market secret from the environment we're running in
-	let secrets = []
-	if (defined(typeof process)) {
-		for (let k in process.env) {
-			if (k.endsWith("_SECRET")) {
-				let v = process.env[k]
-				secrets.push(v)
-			}
+	let secrets = new Set()//a set will ignore duplicates we add
+
+	//collect secrets from node and lambda environments
+	if (defined(typeof process)) redact_getSecretValues_from(secrets, process.env)
+
+	//collect secrets from a cloudflare worker environment
+	let workerEnvironmentVariables = getWorkerEvent().context?.cloudflare?.env
+	if (workerEnvironmentVariables) redact_getSecretValues_from(secrets, workerEnvironmentVariables)
+	//in a cloudflare worker, you can look up process.env.something, but you can't list or loop through process.env
+	//but also, cloudflare pins all of them to workerEvent.context.cloudflare.env, so we get the list that way
+
+	return Array.from(secrets)//we used a set to prevent duplicates, but now it's easier if it's just an array
+}
+function redact_getSecretValues_from(destinationSet, sourceObject) {
+	for (let k in sourceObject) {//loop through each key k
+		if (k.endsWith('_SECRET')) {//this key name ends with secret, indicating it's something we should redact
+			let v = sourceObject[k]//get the secret value v
+			destinationSet.add(v)//add it, if it's a unique new one, to the given destination set
 		}
 	}
-	return secrets
 }
 test(() => {
 	let where = Sticker().where

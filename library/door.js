@@ -26,7 +26,15 @@ then write your code in doorProcessBelow() beneath
 the copypasta calls common helper functions, implemented once here
 */
 
+let _workerEvent
+export function setWorkerEvent(workerEvent) { _workerEvent = workerEvent }
+export function getWorkerEvent() { return _workerEvent }
+//cloudflare guarantees a fresh executin environment for each request; amazon does not. so we save the workerEvent, but not the lambdaEvent or lambdaContext
+
 export async function doorWorkerOpen(workerEvent) {
+
+	setWorkerEvent(workerEvent)//save the cloudflare worker event in the above module-scoped variable so code deep in the call stack can get it. we use this to call .waitUntil(p) and also get the environment variables to redact them
+
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.startTick = Now()//record when we got the request
 	door.tag = Tag()//tag the request for our own records
@@ -38,6 +46,9 @@ export async function doorWorkerOpen(workerEvent) {
 	return door
 }
 export function doorLambdaOpen(lambdaEvent, lambdaContext) {
+
+	lambdaContext.callbackWaitsForEmptyEventLoop = true//true is already the default, but this documents that we want this lambda to run until the event loop is empty, not stop as soon as we return the response
+
 	let door = {}//our object that bundles together everything about this incoming request
 	door.startTick = Now()//when we got it
 	door.tag = Tag()//our tag for it

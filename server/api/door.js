@@ -2,7 +2,7 @@
 import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
-import { doorWorkerOpen, doorWorkerShut, doorPromise } from '@/library/door.js'
+import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
 import { dog, logAudit, logAlert, logFragile } from '@/library/cloud.js'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -34,6 +34,7 @@ async function doorProcessBelow(door) {
 
 	//CHECKPOINT 2
 	await dog('checkpoint 2')
+	//logAlert('alert 2', {door})
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from door ${Sticker().all}`

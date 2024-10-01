@@ -2,7 +2,7 @@
 import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
-import { doorLambdaOpen, doorLambdaShut, doorPromise } from '../../library/door.js'
+import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
 import { dog, logAudit, logAlert, logFragile } from '../../library/cloud.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
@@ -33,7 +33,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//CHECKPOINT 5
-	await dog('checkpoint 5', {door})
+	await dog('checkpoint 5')
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from ${Sticker().all}`
