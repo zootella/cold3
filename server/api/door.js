@@ -3,14 +3,14 @@ import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
 import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
-import { dog, cowboyDog, logAudit, logAlert, logFragile } from '@/library/cloud.js'
+import { awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from '@/library/cloud.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let door = {}, response, error
 	try {
 
 		//CHECKPOINT 1
-		cowboyDog('checkpoint 1')
+		await awaitDog('checkpoint 1')
 
 		door = await doorWorkerOpen(workerEvent)
 		response = await doorProcessBelow(door)
@@ -19,12 +19,12 @@ export default defineEventHandler(async (workerEvent) => {
 	try {
 
 		//CHECKPOINT 3
-		cowboyDog('checkpoint 3')
+		await awaitDog('checkpoint 3')
 
 		let workerReturn = await doorWorkerShut(door, response, error)
 		if (response && !error) return workerReturn
 
-	} catch (f) { await logFragile('door', {f, door, response, error}) }
+	} catch (f) { await awaitLogFragile('door', {f, door, response, error}) }
 	setResponseStatus(workerEvent, 500); return null
 })
 //^our copypasta to safely man the front door
@@ -33,7 +33,8 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//CHECKPOINT 2
-	cowboyDog('checkpoint 2')
+	await awaitDog('checkpoint 2 dog')
+	await awaitLogAudit('checkpoint 2 audit', {door})
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from door ${Sticker().all}`

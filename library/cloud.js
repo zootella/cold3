@@ -198,7 +198,7 @@ the run script on client side pages communicates with their back end, and makes 
 .................................................................
 ......... the end ...............................................
 */
-export async function dog(...a) {
+export async function awaitDog(...a) {
 	let c = prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		console.log(c.body[0].message)
@@ -207,7 +207,7 @@ export async function dog(...a) {
 		return await sendLog_useDatadog(c)
 	}
 }
-export async function logAudit(headline, watch) {
+export async function awaitLogAudit(headline, watch) {
 	let c = prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		console.log(c.body[0].message)
@@ -216,7 +216,7 @@ export async function logAudit(headline, watch) {
 		return await sendLog_useDatadog(c)//keep an audit trail of every use of third party apis, running both cloud *and* local
 	}
 }
-export async function logAlert(headline, watch) {
+export async function awaitLogAlert(headline, watch) {
 	let c = prepareLog('error', 'type:alert', 'ALERT', headline, watch)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		console.error(c.body[0].message)
@@ -225,7 +225,7 @@ export async function logAlert(headline, watch) {
 		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
 	}
 }
-export async function logFragile(headline, watch) { console.error('FRAGILE!^')//call for help before calling the thing that's throwing again!
+export async function awaitLogFragile(headline, watch) { console.error('FRAGILE!^')//call for help before calling the thing that's throwing again!
 	let c = prepareLog('critical', 'type:fragile', 'FRAGILE', headline, watch)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		console.error(c.body[0].message)
@@ -315,10 +315,10 @@ test(async () => { if (!cloudLogSimulationMode) return//only run these in simula
 	try { let o = {}; o.notThere.andBeyond } catch (e) { e1 = e }
 	try { toss('toss note', {a, b, e1})    } catch (e) { e2 = e }
 
-	if (false) await dog('hi', 7)
-	if (false) await logAudit('audit title',         {a, b})
-	if (false) await logAlert('alert title',     {e1, a, b})
-	if (false) await logFragile('fragile title', {e2, a, b})
+	if (false) await awaitDog('hi', 7)
+	if (false) await awaitLogAudit('audit title',         {a, b})
+	if (false) await awaitLogAlert('alert title',     {e1, a, b})
+	if (false) await awaitLogFragile('fragile title', {e2, a, b})
 })
 
 
