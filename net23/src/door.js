@@ -20,11 +20,12 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 
 		//CHECKPOINT 6
 		//await dog('checkpoint 6')
+//function1()
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
 
-	} catch (d) { await logFragile('door', {d, door, response, error}) }
+	} catch (f) { await logFragile('door', {f, door, response, error}) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }
 //^our copypasta to safely man the front door
@@ -45,6 +46,23 @@ async function doorProcessBelow(door) {
 
 
 
+
+
+
+
+function function1() {
+	function2()
+
+}
+function function2() {
+	function3()
+	
+}
+function function3() {
+	let o = {}
+	o.notHere.beyondThat
+	
+}
 
 
 

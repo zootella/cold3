@@ -24,7 +24,7 @@ export default defineEventHandler(async (workerEvent) => {
 		let workerReturn = await doorWorkerShut(door, response, error)
 		if (response && !error) return workerReturn
 
-	} catch (d) { await logFragile('door', {d, door, response, error}) }
+	} catch (f) { await logFragile('door', {f, door, response, error}) }
 	setResponseStatus(workerEvent, 500); return null
 })
 //^our copypasta to safely man the front door
@@ -34,7 +34,6 @@ async function doorProcessBelow(door) {
 
 	//CHECKPOINT 2
 	//await dog('checkpoint 2')
-function1()
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from door ${Sticker().all}`
@@ -44,23 +43,6 @@ function1()
 	return response
 }
 
-
-
-
-
-function function1() {
-	function2()
-
-}
-function function2() {
-	function3()
-	
-}
-function function3() {
-	let o = {}
-	o.notHere.beyondThat
-	
-}
 
 
 
