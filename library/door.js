@@ -26,13 +26,30 @@ then write your code in doorProcessBelow() beneath
 the copypasta calls common helper functions, implemented once here
 */
 
+//here's a simple, but controversial, block of code related to sending logs in parallel, but without the execution environment getting torn down:
 let _workerEvent
-export function setWorkerEvent(workerEvent) { _workerEvent = workerEvent }
+function setWorkerEvent(workerEvent) { _workerEvent = workerEvent }
 export function getWorkerEvent() { return _workerEvent }
 //cloudflare guarantees a fresh executin environment for each request; amazon does not. so we save the workerEvent, but not the lambdaEvent or lambdaContext
+export function cloudPromise(p) {
+	if (getWorkerEvent()) getWorkerEvent().waitUntil(p)//tell the cloudflare worker running us to keep going until p resolves, even if that's after we've returned the response. otherwise, cloudflare will tear down the environment quickly!
+	//otherwise, we're in lambda, which should, by default with callbackWaitsForEmptyEventLoop true, do this anyway
+	//but, because await logAlert() and await logAudit() must be reliable, we only use this to be able to use dog() in a non-async function
+}
+
+
+
+let _doorPromise//an all glomed-together fire and forget promise we still need to wait on before returning
+let _doorPromiseTick//when the first promise was added, so we can tell if it was too long ago
+/*
+no actually, just do when resolved the glomed together one, or 4seconds, whichever happens first
+and separately, detect double doors
+*/
+
+
+//maybe rename logFragile to logCritical
 
 export async function doorWorkerOpen(workerEvent) {
-
 	setWorkerEvent(workerEvent)//save the cloudflare worker event in the above module-scoped variable so code deep in the call stack can get it. we use this to call .waitUntil(p) and also get the environment variables to redact them
 
 	let door = {}//make door object to bundle everything together about this request we're doing
@@ -46,7 +63,6 @@ export async function doorWorkerOpen(workerEvent) {
 	return door
 }
 export function doorLambdaOpen(lambdaEvent, lambdaContext) {
-
 	lambdaContext.callbackWaitsForEmptyEventLoop = true//true is already the default, but this documents that we want this lambda to run until the event loop is empty, not stop as soon as we return the response
 
 	let door = {}//our object that bundles together everything about this incoming request
@@ -99,6 +115,13 @@ export async function doorLambdaShut(door, response, error) {
 		return {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	}
 }
+
+
+
+
+
+
+
 
 
 

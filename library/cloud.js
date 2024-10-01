@@ -4,6 +4,7 @@ import { Tag, Sticker } from './sticker.js'
 import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, noop, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments, stringify } from './library0.js'
 import { checkTag } from './library1.js'
 import { redact, replaceOne } from './library2.js'
+import { cloudPromise } from './door.js'
 
 //node-style imports
 let _fs;
@@ -348,8 +349,17 @@ export async function snippet(card) {
 
 
 
+//instead of await dog() you can just cowboyDog(), maybe. assuming this works and is reliable
+export function cowboyDog(...a) {
+	let p = dog(...a)//instead of awaiting the returned promise, save it and keep going!
+	cloudPromise(p)//tell cloudflare to keep running until p resolves
 
 
+
+}
+export async function awaitDog(...a) {
+	return await dog(...a)
+}
 
 
 

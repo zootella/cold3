@@ -1147,6 +1147,63 @@ specifically designed for logging and https://developers.cloudflare.com/queues/ 
 also, you can call console.log and console.error in both
 in lambda, they automatically go into a cloudwatch log you can see in the dashboard
 
+[VII.] the next month, reports from the field
+
+
+with lambda, it never works
+with cloudflare, it works most of the time, but there are missing logs
+so, for reliability you also get simplicity, and never touch this
+
+
+to eliminate setWorkerEvent entirely, also load the secrets explicitly
+just load their names, from process.env
+this also works on worker and lambda same code
+because both can dereference them
+even if cloudflare can't list them
+
+
+simplicity and reliabi
+
+no, here's the plan
+simple, isomorphic, reliable
+
+instead of listing secrets from process or worker event
+parse what you need to redact into words, look for words that end _SECRET, then dereference them from process
+
+and here's how you make dog and all logs reliable but not await async
+implement your own promise wait until
+and then wait on it before returning the result from the handler
+
+reliability should be unaffected
+things are slightly faster because fire and forget events can proceed in parallel
+although the response is still delayed by the longest one, it's not delayed by the sum duration of all of them
+
+thre is that theoretical problem that this keeps lambdas, called quickly, from ever returning
+so maybe build in a tick of first addition, and if that's too old, just return--like four seconds too old
+and also put in the alert for detected overlapping lambda or worker, put that in, too
+
+cloudPromise(p)
+
+dog
+awaitDog
+logAlert
+awaitLogAlert
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                       _     _   _                  _             _   
  _ __ ___ _ __   ___ | |_  | |_| |__   ___   _ __ | | __ _ _ __ | |_ 
 | '__/ _ \ '_ \ / _ \| __| | __| '_ \ / _ \ | '_ \| |/ _` | '_ \| __|

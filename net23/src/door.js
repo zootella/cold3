@@ -3,14 +3,14 @@ import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
-import { dog, logAudit, logAlert, logFragile } from '../../library/cloud.js'
+import { dog, cowboyDog, logAudit, logAlert, logFragile } from '../../library/cloud.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let door = {}, response, error
 	try {
 
 		//CHECKPOINT 4
-		//await dog('checkpoint 4')
+		cowboyDog('checkpoint 4')
 
 		door = doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
@@ -19,8 +19,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 
 		//CHECKPOINT 6
-		//await dog('checkpoint 6')
-//function1()
+		cowboyDog('checkpoint 6')
 
 		let lambdaReturn = await doorLambdaShut(door, response, error)
 		if (response && !error) return lambdaReturn
@@ -34,7 +33,7 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//CHECKPOINT 5
-	//await dog('checkpoint 5')
+	cowboyDog('checkpoint 5')
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from ${Sticker().all}`
@@ -45,24 +44,6 @@ async function doorProcessBelow(door) {
 }
 
 
-
-
-
-
-
-function function1() {
-	function2()
-
-}
-function function2() {
-	function3()
-	
-}
-function function3() {
-	let o = {}
-	o.notHere.beyondThat
-	
-}
 
 
 

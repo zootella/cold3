@@ -4,7 +4,7 @@ import path from 'path'
 import crypto from 'crypto'
 import glob from 'fast-glob'
 
-import { wrapper } from './wrapper.js'//load the previous one to repeat the name--but then, where did the name come from?!
+import { wrapper as prevousWrapper } from './wrapper.js'//load the previous one to repeat the name--but then, where did the name come from?!
 import { log, look, newline, Data, Now } from './library/library0.js'
 
 //      _          _       _                                               _ 
@@ -90,15 +90,15 @@ async function affixSeal(properties, wrapper) {
 	//compose contents for the new wrapper.js
 	const tab = '\t'
 	let s = (
-		`export const wrapper = {`        +newline
-		+tab+`name: '${wrapper.name}',`   +newline
-		+tab+`tick: ${Now()},`            +newline
-		+tab+`hash: '${hash.base32()}',`  +newline
-		+tab+`codeFiles: ${codeFiles},`   +newline
-		+tab+`codeSize: ${codeSize},`     +newline
-		+tab+`totalFiles: ${totalFiles},` +newline
-		+tab+`totalSize: ${totalSize}`    +newline
-		+`}`                              +newline
+		`export const wrapper = {`             +newline
+		+tab+`name: '${prevousWrapper.name}',` +newline//but then, where did the name come from originally??!!1?!
+		+tab+`tick: ${Now()},`                 +newline
+		+tab+`hash: '${hash.base32()}',`       +newline
+		+tab+`codeFiles: ${codeFiles},`        +newline
+		+tab+`codeSize: ${codeSize},`          +newline
+		+tab+`totalFiles: ${totalFiles},`      +newline
+		+tab+`totalSize: ${totalSize}`         +newline
+		+`}`                                   +newline
 	)
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
