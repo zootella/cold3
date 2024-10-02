@@ -59,7 +59,7 @@ in worker and lambda code, you can reach them at process.env.ACCESS_(whatever)
 but always do if (defined(typeof process)) before checking them, as page code doesn't have process at all!
 */
 
-export function redact(s) {
+export function redact2(s) {
 	//new design, look for key names in s, then get values from process.env, then mark them out
 	//because cloudflare won't let you iterate process.env
 
@@ -82,9 +82,79 @@ export function redact(s) {
 		s = replaceAll(s, v, r)
 	})
 	return s
+
+	/*
+	third design, which doesn't rely on process at all
+	go entirely by indices
+	processed
+	remaining
+
+	find in remaining index of
+	_SECRET
+	beyond that the next two quotes
+
+
+
+
+
+
+
+	*/
+}
+
+const secretSuffix = '_SECRET'
+export function redact(s) {
+	let remaining = s
+	let processed = ''
+	let i1, i2, i3
+
+	while (remaining.length) {
+
+		i1 = i2 = i3 = -1
+		i1 = remaining.indexOf(secretSuffix)
+		if (i1 >= 0) {
+			i2 = remaining.indexOf('"', i1 + secretSuffix.length)
+			if (i2 >= 0) {
+				i3 = remaining.indexOf('"', i2+1)
+			}
+		}
+
+		if (i1 >=0 && i2 >=0 && i3 >= 0) {
+			processed += remaining.slice(0, i2+1) + redact_composeReplacement(remaining.slice(i2+1, i3)) + '"'
+			remaining = remaining.slice(i3+1)
+
+		} else {
+			processed += remaining
+			remaining = ''
+		}
+	}
+
+
+
+	return processed
+}
+const _redactLabel = '##REDACTED##'//what the black marker looks like
+const _redactMargin = 2//but we mark messily, letting tips this big stick out on either end
+function redact_composeReplacement(s) {//given a secret value like "some secret value", return "so##REDACTED###ue"
+	let c = ''//redacted string we will compose and return
+	let both = _redactMargin*2//length of both leading and trailing margins
+	if (s.length < _redactLabel.length + both) {//short, run the black marker over the whole thing
+		c = '#'.repeat(s.length)
+	} else {//long enough to show label and let margins show through
+		let extraBlackMarker = '#'.repeat(s.length - both - _redactLabel.length)
+		c = s.slice(0, _redactMargin)+'##REDACTED##'+extraBlackMarker+s.slice(-_redactMargin)
+	}
+	return c
 }
 test(() => {
-	log(redact('hi'))
+	ok(redact_composeReplacement('') == '')
+	ok(redact_composeReplacement('abc') == '###')//short becomes all pound, always the same length
+	ok(redact_composeReplacement(
+		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
+		'ab##REDACTED############yz')
+})
+test(() => {
+	log(redact('before SOME_SECRET:"secret value" middle SECOND_SECRET: "private value which is longer" after'))
 
 
 })
@@ -125,26 +195,6 @@ noop(() => {
 	} else {//if this test is running from code that is not rendering a page
 		ok(redact_getSecretValues().length > 4)//then it should have secrets, probably 6+, but make sure there are at least 4
 	}
-})
-const _redactLabel = '##REDACTED##'//what the black marker looks like
-const _redactMargin = 2//but we mark messily, letting tips this big stick out on either end
-function redact_composeReplacement(s) {//given a secret value like "some secret value", return "so##REDACTED###ue"
-	let c = ''//redacted string we will compose and return
-	let both = _redactMargin*2//length of both leading and trailing margins
-	if (s.length < _redactLabel.length + both) {//short, run the black marker over the whole thing
-		c = '#'.repeat(s.length)
-	} else {//long enough to show label and let margins show through
-		let extraBlackMarker = '#'.repeat(s.length - both - _redactLabel.length)
-		c = s.slice(0, _redactMargin)+'##REDACTED##'+extraBlackMarker+s.slice(-_redactMargin)
-	}
-	return c
-}
-test(() => {
-	ok(redact_composeReplacement('') == '')
-	ok(redact_composeReplacement('abc') == '###')//short becomes all pound, always the same length
-	ok(redact_composeReplacement(
-		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
-		'ab##REDACTED############yz')
 })
 export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
 	checkText(tag1); checkText(tag2)
