@@ -10,7 +10,7 @@ export default defineEventHandler(async (workerEvent) => {
 	try {
 
 		//CHECKPOINT 1
-		await awaitDog('checkpoint 1')
+		//await awaitDog('checkpoint 1')
 
 		door = await doorWorkerOpen(workerEvent)
 		response = await doorProcessBelow(door)
@@ -19,7 +19,7 @@ export default defineEventHandler(async (workerEvent) => {
 	try {
 
 		//CHECKPOINT 3
-		await awaitDog('checkpoint 3')
+		//await awaitDog('checkpoint 3')
 
 		let workerReturn = await doorWorkerShut(door, response, error)
 		if (response && !error) return workerReturn
@@ -33,8 +33,8 @@ async function doorProcessBelow(door) {
 	let response = {}
 
 	//CHECKPOINT 2
-	await awaitDog('checkpoint 2 dog')
-	await awaitLogAudit('checkpoint 2 audit', {door})
+	//await awaitDog('checkpoint 2')
+	let o = {}; o.notHere.beyondThat
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from door ${Sticker().all}`
