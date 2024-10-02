@@ -54,84 +54,25 @@ those that should be redacted have the suffix _SECRET
 nuxt has a way to expose some to page code, but for those, we're instead just using const in .vue files
 those are allowed to be known, and have the suffix _PUBLIC
 an example is the first password hashing salt in the password component .vue file
-
-in worker and lambda code, you can reach them at process.env.ACCESS_(whatever)
-but always do if (defined(typeof process)) before checking them, as page code doesn't have process at all!
 */
-
-export function redact2(s) {
-	//new design, look for key names in s, then get values from process.env, then mark them out
-	//because cloudflare won't let you iterate process.env
-
-
-
+const _secretSuffix = '_SECRET'
+export function redact(s) {
 	let words = s.match(/\w+/g)
-
 	let secretNamesSet = new Set()
-	words.forEach(word => { if (word.endsWith('_SECRET')) secretNamesSet.add(word) })
-
+	words.forEach(word => { if (word.endsWith(_secretSuffix)) secretNamesSet.add(word) })
 	let secretNames = Array.from(secretNamesSet)
-	log(look(secretNames))
-
 	let secretValues = []
-	secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })
-	log(look(secretValues))
-
-	secretValues.forEach(v => {//three helper functions, split out below to be tested independently
-		let r = redact_composeReplacement(v)
-		s = replaceAll(s, v, r)
+	if (defined(typeof process)) secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })
+	secretValues.forEach(secretValue => {
+		let redactedValue = redact_composeReplacement(secretValue)
+		s = replaceAll(s, secretValue, redactedValue)
 	})
 	return s
-
 	/*
-	third design, which doesn't rely on process at all
-	go entirely by indices
-	processed
-	remaining
-
-	find in remaining index of
-	_SECRET
-	beyond that the next two quotes
-
-
-
-
-
-
-
+	two notes on choosing this design, which gets secret names from s, then secret values from process.env:
+	-why not just look in process.env for property names that end _SECRET? lambda let's us do this, but cloudflare does not
+	-why not avoid process entirely, and parse s like "SOME_SECRET":"secret value"? combinations of stringify and look mean that secret values are bound by " or \" or potentially other terminators!
 	*/
-}
-
-const secretSuffix = '_SECRET'
-export function redact(s) {
-	let remaining = s
-	let processed = ''
-	let i1, i2, i3
-
-	while (remaining.length) {
-
-		i1 = i2 = i3 = -1
-		i1 = remaining.indexOf(secretSuffix)
-		if (i1 >= 0) {
-			i2 = remaining.indexOf('"', i1 + secretSuffix.length)
-			if (i2 >= 0) {
-				i3 = remaining.indexOf('"', i2+1)
-			}
-		}
-
-		if (i1 >=0 && i2 >=0 && i3 >= 0) {
-			processed += remaining.slice(0, i2+1) + redact_composeReplacement(remaining.slice(i2+1, i3)) + '"'
-			remaining = remaining.slice(i3+1)
-
-		} else {
-			processed += remaining
-			remaining = ''
-		}
-	}
-
-
-
-	return processed
 }
 const _redactLabel = '##REDACTED##'//what the black marker looks like
 const _redactMargin = 2//but we mark messily, letting tips this big stick out on either end
@@ -152,49 +93,6 @@ test(() => {
 	ok(redact_composeReplacement(
 		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
 		'ab##REDACTED############yz')
-})
-test(() => {
-	log(redact('before SOME_SECRET:"secret value" middle SECOND_SECRET: "private value which is longer" after'))
-
-
-})
-
-//cover secret values with thick black marker
-export function redact_previousDesign(s) {
-	redact_getSecretValues().forEach(v => {//three helper functions, split out below to be tested independently
-		let r = redact_composeReplacement(v)
-		s = replaceAll(s, v, r)
-	})
-	return s
-}
-function redact_getSecretValues() {//collect all values market secret from the environment we're running in
-	let secrets = new Set()//a set will ignore duplicates we add
-
-	//collect secrets from node and lambda environments
-	if (defined(typeof process)) redact_getSecretValues_from(secrets, process.env)
-
-	//collect secrets from a cloudflare worker environment
-	let workerEnvironmentVariables = getWorkerEvent().context?.cloudflare?.env
-	if (workerEnvironmentVariables) redact_getSecretValues_from(secrets, workerEnvironmentVariables)
-	//in a cloudflare worker, you can look up process.env.something, but you can't list or loop through process.env
-	//but also, cloudflare pins all of them to workerEvent.context.cloudflare.env, so we get the list that way
-
-	return Array.from(secrets)//we used a set to prevent duplicates, but now it's easier if it's just an array
-}
-function redact_getSecretValues_from(destinationSet, sourceObject) {
-	for (let k in sourceObject) {//loop through each key k
-		if (k.endsWith('_SECRET')) {//this key name ends with secret, indicating it's something we should redact
-			let v = sourceObject[k]//get the secret value v
-			destinationSet.add(v)//add it, if it's a unique new one, to the given destination set
-		}
-	}
-}
-noop(() => {
-	let where = Sticker().where
-	if (where == 'LocalVite' || where.includes('Page')) {
-	} else {//if this test is running from code that is not rendering a page
-		ok(redact_getSecretValues().length > 4)//then it should have secrets, probably 6+, but make sure there are at least 4
-	}
 })
 export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
 	checkText(tag1); checkText(tag2)
@@ -218,19 +116,6 @@ test(() => {
 		'first ‹6789› and second ‹SIZE› later')
 })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 //            _     _       
 //  _ __ ___ | |__ (_)_ __  
 // | '__/ _ \| '_ \| | '_ \ 
@@ -251,17 +136,6 @@ the design is simple:
 
 
 */
-
-
-
-
-
-
-
-
-
-
-
 
 
 

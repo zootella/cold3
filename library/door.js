@@ -48,6 +48,7 @@ and separately, detect double doors
 
 
 //maybe rename logFragile to logCritical
+//maybe combine them and always log error beforehand or something
 
 export async function doorWorkerOpen(workerEvent) {
 	setWorkerEvent(workerEvent)//save the cloudflare worker event in the above module-scoped variable so code deep in the call stack can get it. we use this to call .waitUntil(p) and also get the environment variables to redact them

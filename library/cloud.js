@@ -286,6 +286,11 @@ async function sendLog_useFile(s) {
 
 //log to datadog, fetching to their api
 async function sendLog_useDatadog(c) {
+
+	//TODO added to see if datadog likes this better
+	c.bodyText = c.bodyText.replace(/\r/g, '')//convert newlines from windows to unix
+	c.bodyText = c.bodyText.replace(/\n+/g, '\n')//and remove blank lines
+
 	let q = {
 		resource: process.env.ACCESS_DATADOG_ENDPOINT,
 		method: 'POST',

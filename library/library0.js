@@ -1764,7 +1764,7 @@ test(() => {
 // |_|\___/ \___/|_|\_\
 //                     
 
-const lookDepthLimit = 6//this many tabs indented, arrays and objects will be "[ at depth limit! ] ‹12›"
+const lookDepthLimit = 6//this many tabs indented, arrays and objects will be "[⭳⭳⭳] ‹12›"
 const lookLineLengthLimit = 1024//shorten lines of composed text with ... beyond this length
 const lookKeysOptions = {
 	includeInherited:     false,
@@ -1794,7 +1794,7 @@ function lookDeep(o, depth, depthLimit) {//depth is the depth of o, 0 on the mar
 			}
 			c += `${'  '.repeat(depth)}${r.container[1]}${newline}`
 		} else {//2 container but we're at depth limit
-			c += `${r.container[0]} at depth limit! ${r.container[1]}${lookSayLength(r.n)}`
+			c += `${r.container[0]}⭳⭳⭳${r.container[1]}${lookSayLength(r.n)}`
 		}
 	} else {//3 not a container
 		c += '  '.repeat(depth) + (r.show ? r.show : r.type) + lookSayLength(r.n)
