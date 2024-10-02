@@ -59,8 +59,38 @@ in worker and lambda code, you can reach them at process.env.ACCESS_(whatever)
 but always do if (defined(typeof process)) before checking them, as page code doesn't have process at all!
 */
 
-//cover secret values with thick black marker
 export function redact(s) {
+	//new design, look for key names in s, then get values from process.env, then mark them out
+	//because cloudflare won't let you iterate process.env
+
+
+
+	let words = s.match(/\w+/g)
+
+	let secretNamesSet = new Set()
+	words.forEach(word => { if (word.endsWith('_SECRET')) secretNamesSet.add(word) })
+
+	let secretNames = Array.from(secretNamesSet)
+	log(look(secretNames))
+
+	let secretValues = []
+	secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })
+	log(look(secretValues))
+
+	secretValues.forEach(v => {//three helper functions, split out below to be tested independently
+		let r = redact_composeReplacement(v)
+		s = replaceAll(s, v, r)
+	})
+	return s
+}
+test(() => {
+	log(redact('hi'))
+
+
+})
+
+//cover secret values with thick black marker
+export function redact_previousDesign(s) {
 	redact_getSecretValues().forEach(v => {//three helper functions, split out below to be tested independently
 		let r = redact_composeReplacement(v)
 		s = replaceAll(s, v, r)
@@ -89,7 +119,7 @@ function redact_getSecretValues_from(destinationSet, sourceObject) {
 		}
 	}
 }
-test(() => {
+noop(() => {
 	let where = Sticker().where
 	if (where == 'LocalVite' || where.includes('Page')) {
 	} else {//if this test is running from code that is not rendering a page

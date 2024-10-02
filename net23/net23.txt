@@ -6,7 +6,7 @@
 |_| \_|\___|\__| \_/\_/ \___/|_|  |_|\_\ |_____|____/ 
 																											
 
-Network 23 ~ "Beta to the Max!"
+Network 23 ~ "Beta to the Max!" -ChatGPT
 
  _________________________________
 /\                                \
@@ -22,6 +22,95 @@ Network 23 ~ "Beta to the Max!"
 	 \_/______________________________/
 
 some notes building the megamultimedia empire:
+       _      _                   
+__   _(_)_ __| |_ _   _  ___  ___ 
+\ \ / / | '__| __| | | |/ _ \/ __|
+ \ V /| | |  | |_| |_| |  __/\__ \
+  \_/ |_|_|   \__|\__,_|\___||___/
+                                  
+start out up here with design document
+the requirements i set, the choices i made, and the reasoning behind them
+TODO, but notes follow
+
+values, requirements
+
+in order, they are
+1 reliable: never down, not for five minutes or five users
+2 simple: written at boot camp level, all the code fits on a floppy disk
+3 fast: most user tasks complete in the blink of an eye
+
+serverless, because a server would mean you have to
+restart it when it goes down
+update it
+secure it, know when it's been compromised, and recover from such an attack
+pay too much when it's too big (cinderella's problem)
+change configuration and software when it's too small (evil stepsisters' problem)
+
+code, best to worst
+pure javascript
+npm modules with millions of weekly downloads
+npm modules with hundreds of thousands of weekly downloads
+
+
+factored downwards
+biggest: .js files in the library
+smallest: .vue files
+
+100% isomorphic
+the exact same function checkEmail() corrects user input on the page,
+and keeps malformed data from being written to the database
+execution from ten different environments could call into any file
+local/deployed x
+node/nuxt/serverless framework/vite tdd runner icarus
+cloudflare workers/amazon lambda
+page/server api
+page code pre-rendering on server/page code rendering on client
+
+
+
+
+we love vue. we hate react
+jsx lets you mix everything, invalidating the wonderous code separation of the web stack
+react wins when it's complex enough professionals base their careers around it
+we win when it's simple enough we're focused on features and users, not platform patterns and what's new this year
+
+
+configuration as code
+do as much configuration in computer-readable as possible
+where that's not possible, configuration is in english, step by step, in configuration.txt
+and be wary of very difficult configuration code being replacable by a pretty simple and one time step by step
+
+
+
+and the requirements list you presented to rf goes here, too
+and before that, the slides for sp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 										 _                         _           _   
 	___ _ __ ___  __ _| |_ ___   _ __  _ __ ___ (_) ___  ___| |_ 
  / __| '__/ _ \/ _` | __/ _ \ | '_ \| '__/ _ \| |/ _ \/ __| __|

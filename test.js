@@ -24,13 +24,13 @@ import card from './env.js'//and additional private info just for local developm
 */
 import { runTests } from './library/test.js'
 import { log, look } from './library/library0.js'
-import { snippet, logAlert } from './library/cloud.js'
+import { snippet, awaitLogAlert } from './library/cloud.js'
 
 //snippet runner
 async function runSnippet() {
 	try {
 		snippet(card)
-	} catch (e) { await logAlert('node test snippet uncaught', {e}) }
+	} catch (e) { await awaitLogAlert('node test snippet uncaught', {e}) }
 }
 
 //run tests followed by snippet
