@@ -149,6 +149,14 @@ export function logAlert(headline, watch)   { doorPromise(awaitLogAlert(headline
 export function logFragile(headline, watch) { doorPromise(awaitLogFragile(headline, watch)) }
 /*
 as fragile is, well, fragile, probably don't offer a fire and forget form, and always await awaitLogFragile()
+
+you're thinking
+have logAlert do the shout to console.error thing, with headline
+get rid of fragile entirely, now it's great that you have just two of them, really
+
+
+
+
 */
 
 

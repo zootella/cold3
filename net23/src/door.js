@@ -24,7 +24,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 		let r = await doorLambdaShut(door, response, error)
 		if (response && !error) return r
 
-	} catch (f) { await awaitLogFragile('door', {f, door, response, error}) }
+	} catch (f) { await awaitLogFragile('door shut', {f, door, response, error}) }//change to awaitLogAlert
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }
 //^our copypasta to safely man the front door

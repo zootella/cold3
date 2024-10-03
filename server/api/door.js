@@ -24,7 +24,7 @@ export default defineEventHandler(async (workerEvent) => {
 		let r = await doorWorkerShut(door, response, error)
 		if (response && !error) return r
 
-	} catch (f) { await awaitLogFragile('door', {f, door, response, error}) }
+	} catch (f) { await awaitLogFragile('door shut', {f, door, response, error}) }//change to awaitLogAlert
 	setResponseStatus(workerEvent, 500); return null
 })
 //^our copypasta to safely man the front door

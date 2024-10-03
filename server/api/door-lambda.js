@@ -1,12 +1,16 @@
 
+import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
 import { doorWorkerOpen, doorWorkerShut, fetchLambda } from '@/library/door.js'
-import { awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from '@/library/cloud.js'
+import { dog, logAudit, logAlert, logFragile, awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from '@/library/cloud.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let door = {}, response, error
 	try {
+
+
+
 
 		door = await doorWorkerOpen(workerEvent)
 		response = await doorProcessBelow(door)
@@ -14,10 +18,13 @@ export default defineEventHandler(async (workerEvent) => {
 	} catch (e) { error = e }
 	try {
 
-		let workerReturn = await doorWorkerShut(door, response, error)
-		if (response && !error) return workerReturn
 
-	} catch (d) { await awaitLogFragile('door', {d, door, response, error}) }
+
+
+		let r = await doorWorkerShut(door, response, error)
+		if (response && !error) return r
+
+	} catch (f) { await awaitLogFragile('door shut', {f, door, response, error}) }//change to awaitLogAlert
 	setResponseStatus(workerEvent, 500); return null
 })
 //^our copypasta to safely man the front door
@@ -28,9 +35,7 @@ async function doorProcessBelow(door) {
 
 
 
-
 	let lambdaResult = await fetchLambda('/door', {name: door.body.name, age: door.body.age})
-	//log(look(lambdaResult))
 	let message = lambdaResult.message
 
 	response.message = message

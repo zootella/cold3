@@ -4,7 +4,7 @@ import { readBody } from 'h3'
 import { Sticker } from './sticker.js'
 import { Time, log, look, Now, checkText, hasTextSame, toss, test, ok, noop } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
-import { awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from './cloud.js'
+import { dog, logAudit, logAlert, logFragile, awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from './cloud.js'
 
 //      _                  
 //   __| | ___   ___  _ __ 
@@ -152,26 +152,12 @@ noop(() => {//first, a demonstration of a promise race
 	})
 })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//maybe rename logFragile to logCritical
-//maybe combine them and always log error beforehand or something
+//      _                                                             _       _           _   
+//   __| | ___   ___  _ __    ___  _ __   ___ _ __     __ _ _ __   __| |  ___| |__  _   _| |_ 
+//  / _` |/ _ \ / _ \| '__|  / _ \| '_ \ / _ \ '_ \   / _` | '_ \ / _` | / __| '_ \| | | | __|
+// | (_| | (_) | (_) | |    | (_) | |_) |  __/ | | | | (_| | | | | (_| | \__ \ | | | |_| | |_ 
+//  \__,_|\___/ \___/|_|     \___/| .__/ \___|_| |_|  \__,_|_| |_|\__,_| |___/_| |_|\__,_|\__|
+//                                |_|                                                         
 
 export async function doorWorkerOpen(workerEvent) {
 	let door = {}//make door object to bundle everything together about this request we're doing
@@ -238,6 +224,14 @@ export async function doorLambdaShut(door, response, error) {
 	await awaitDoorPromises()
 	return r
 }
+
+
+
+
+
+
+
+
 
 
 
