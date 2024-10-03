@@ -3,7 +3,7 @@ import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
-import { dog, awaitLogAlert, awaitLogFragile } from '../../library/cloud.js'
+import { dog, awaitLogAlert } from '../../library/cloud.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let door = {}, response, error
@@ -24,7 +24,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 		let r = await doorLambdaShut(door, response, error)
 		if (response && !error) return r
 
-	} catch (f) { await awaitLogFragile('door shut', {f, door, response, error}) }//change to awaitLogAlert
+	} catch (f) { await awaitLogAlert('door shut', {f, door, response, error}) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }
 //^our copypasta to safely man the front door
@@ -34,6 +34,7 @@ async function doorProcessBelow(door) {
 
 	//CHECKPOINT 5
 	dog('checkpoint 5')
+//	blowup1()
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from ${Sticker().all}`
@@ -47,6 +48,17 @@ async function doorProcessBelow(door) {
 
 
 
+
+function blowup1() {
+	blowup2()
+}
+function blowup2() {
+	blowup3()
+}
+function blowup3() {
+	let o = {}
+	o.notHere.blowupBeyond
+}
 
 
 

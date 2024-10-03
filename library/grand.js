@@ -46,11 +46,9 @@ and actually only import things you're using, which is cleaner, and also elimina
 dog
 logAudit
 logAlert
-logFragile
 awaitDog
 awaitLogAudit
 awaitLogAlert
-awaitLogFragile
 snippet
 
 //database.js

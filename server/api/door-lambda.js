@@ -3,7 +3,7 @@ import { Sticker } from '../../library/sticker.js'
 import { log, look, Now, checkText } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
 import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
-import { awaitLogAlert, awaitLogFragile } from '@/library/cloud.js'
+import { awaitLogAlert } from '@/library/cloud.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let door = {}, response, error
@@ -24,13 +24,14 @@ export default defineEventHandler(async (workerEvent) => {
 		let r = await doorWorkerShut(door, response, error)
 		if (response && !error) return r
 
-	} catch (f) { await awaitLogFragile('door shut', {f, door, response, error}) }//change to awaitLogAlert
+	} catch (f) { await awaitLogAlert('door shut', {f, door, response, error}) }
 	setResponseStatus(workerEvent, 500); return null
 })
 //^our copypasta to safely man the front door
 
 async function doorProcessBelow(door) {
 	let response = {}
+
 
 
 

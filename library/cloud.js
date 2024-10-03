@@ -143,21 +143,6 @@ async function sendText_useTwilio(c) {
 
 
 
-export function dog(...a)                   { doorPromise(awaitDog(...a))                   }
-export function logAudit(headline, watch)   { doorPromise(awaitLogAudit(headline, watch))   }
-export function logAlert(headline, watch)   { doorPromise(awaitLogAlert(headline, watch))   }
-export function logFragile(headline, watch) { doorPromise(awaitLogFragile(headline, watch)) }
-/*
-as fragile is, well, fragile, probably don't offer a fire and forget form, and always await awaitLogFragile()
-
-you're thinking
-have logAlert do the shout to console.error thing, with headline
-get rid of fragile entirely, now it's great that you have just two of them, really
-
-
-
-
-*/
 
 
 
@@ -180,52 +165,48 @@ get rid of fragile entirely, now it's great that you have just two of them, real
 /*
 ... to begin, a brief essay about logs and logging. ahem... .....
 .................................................................
-......... log('note', s1, o2) ...................................
+... log('note', s1, o2) .........................................
 .................................................................
 log is our wrapper on console.log, which adds the time and works with icarus
 use with look() to see into objects with types, values, and structure
 when you're done with code, log calls should already be removed
 .................................................................
-... await dog('note', s1, o2) ..................... [DEBUG] .....
+... dog('note', s1, o2) ........................... [DEBUG] .....
 .................................................................
 dog is like log, but it goes to datadog, too
 also just for development, this is if you want to see what code is doing that's deployed
 in datadog, dog logs are tagged debug
 .................................................................
-... await logAudit('title',           {w1, w2}) ... [AUDIT] .....
+... logAudit('title', {w1, w2}) ................... [AUDIT] .....
 .................................................................
 we want to keep an audit trail of every use of every third-party api
 for instance, did we try to send this email? charge this credit card? how did the api respond?
 audit logs get saved in datadog both from local and cloud deployed code, because the use of the api was real
 .................................................................
-... await logAlert('title',   {e,      w1, w2}) ... [ALERT] .....
+... logAlert('title', {e, w1, w2}) ................ [ALERT] .....
 .................................................................
 in every entrypoint where your code starts running, have a try block that catches and sends to alert
 this means that a mistake you didn't intend, a truly exceptional circumstance, has otherwise gone uncaught
 in deployed cloud code only, alert logs to to datadog; from there they should wake up the fellow on pager duty!
 .................................................................
-... await logFragile('title', {e1, e2, w1, w2}) ... [FRAGILE] ...
-.................................................................
-if you're already handling an exception and code throws again, that's what fragile is for
-fragile gets processed and delivered like alert, but also shouts to console.error, first thing
-this automatically goes to cloudwatch in lambda, and you should hook things up similarily in cloudflare
-a mistake in code that causes fragile to happen means the log probably won't make it up to datadog
-.................................................................
-......... ROBIN .................................................
+... ROBIN .......................................................
 .................................................................
 not here but related is the round robin system of api use
 functions will record duration and success of higher level user tasks, like entering a code in a text message
 robin won't use datadog, but rather two tables in postgres
 .................................................................
-......... RUM ...................................................
+... RUM .........................................................
 .................................................................
 so all that's great, but is the real experience of real users on the site fast?
 for that, we'll incorporate real user monitoring, probably datadog's product, which is separate from logs
 the run script on client side pages communicates with their back end, and makes nice charts for us to review
 .................................................................
-......... the end ...............................................
+... the end .....................................................
 */
-export async function awaitDog(...a) {
+export function dog(...a)                 { doorPromise(awaitDog(...a))                 }//fire and forget forms
+export function logAudit(headline, watch) { doorPromise(awaitLogAudit(headline, watch)) }
+export function logAlert(headline, watch) { doorPromise(awaitLogAlert(headline, watch)) }
+export async function awaitDog(...a) {//await async forms
 	let c = prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		console.log(c.body[0].message)
@@ -250,15 +231,6 @@ export async function awaitLogAlert(headline, watch) {
 		sendLog_useIcarus(c.body[0].message)
 		await sendLog_useFile(c.body[0].message)
 		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
-	}
-}
-export async function awaitLogFragile(headline, watch) { console.error('FRAGILE!^')//call for help before calling the thing that's throwing again!
-	let c = prepareLog('critical', 'type:fragile', 'FRAGILE', headline, watch)
-	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
-		console.error(c.body[0].message)
-		sendLog_useIcarus(c.body[0].message)
-		await sendLog_useFile(c.body[0].message)
-		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r
 	}
 }
 function prepareLog(status, type, label, headline, watch) {
@@ -343,16 +315,15 @@ test(async () => { if (!cloudLogSimulationMode) return//only run these in simula
 	try { toss('toss note', {a, b, e1})    } catch (e) { e2 = e }
 
 	if (false) await awaitDog('hi', 7)
-	if (false) await awaitLogAudit('audit title',         {a, b})
-	if (false) await awaitLogAlert('alert title',     {e1, a, b})
-	if (false) await awaitLogFragile('fragile title', {e2, a, b})
+	if (false) await awaitLogAudit('audit title',     {a, b})
+	if (false) await awaitLogAlert('alert title', {e1, a, b})
 })
 
 
 
 /*
 next to do now
-[]deployed, get the six dogs from the two doors, all at once
+[x]deployed, get the six dogs from the two doors, all at once
 []deployed, toss each place, one at a time
 []local node, send the four messages
 []deployed, send the four messages

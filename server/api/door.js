@@ -3,7 +3,7 @@ import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
 import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
-import { dog, awaitLogAlert, awaitLogFragile } from '@/library/cloud.js'
+import { dog, awaitLogAlert } from '@/library/cloud.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let door = {}, response, error
@@ -24,7 +24,7 @@ export default defineEventHandler(async (workerEvent) => {
 		let r = await doorWorkerShut(door, response, error)
 		if (response && !error) return r
 
-	} catch (f) { await awaitLogFragile('door shut', {f, door, response, error}) }//change to awaitLogAlert
+	} catch (f) { await awaitLogAlert('door shut', {f, door, response, error}) }
 	setResponseStatus(workerEvent, 500); return null
 })
 //^our copypasta to safely man the front door
@@ -34,6 +34,7 @@ async function doorProcessBelow(door) {
 
 	//CHECKPOINT 2
 	dog('checkpoint 2')
+//	blowup1()
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from door ${Sticker().all}`
@@ -45,8 +46,16 @@ async function doorProcessBelow(door) {
 
 
 
-
-
+function blowup1() {
+	blowup2()
+}
+function blowup2() {
+	blowup3()
+}
+function blowup3() {
+	let o = {}
+	o.notHere.blowupBeyond
+}
 
 
 
