@@ -4,7 +4,7 @@ import { readBody } from 'h3'
 import { Sticker } from './sticker.js'
 import { Time, log, look, Now, checkText, hasTextSame, toss, test, ok, noop } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
-import { dog, logAudit, logAlert, logFragile, awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from './cloud.js'
+import { awaitDog, awaitLogAlert } from './cloud.js'
 
 //      _                  
 //   __| | ___   ___  _ __ 
@@ -238,25 +238,6 @@ export async function doorLambdaShut(door, response, error) {
 
 
 
-
-
-
-
-
-
-
-/*
-forceCloudLambda false means local worker -> local lambda; cloud worker -> cloud lambda
-forceCloudLambda true  means local worker -> cloud lambda; cloud worker -> cloud lambda
-either way a cloud worker always calls to a cloud lambda, because callign down wouldn't work at all
-*/
-const forceCloudLambda = false
-export async function fetchLambda(path, body) {
-	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
-	let host = (forceCloudLambda || Sticker().isCloud) ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
-	body.ACCESS_NETWORK_23_SECRET = process.env.ACCESS_NETWORK_23_SECRET//don't forget your keycard
-	return await $fetch(host+path, {method: 'POST', body})
-}
 
 
 
