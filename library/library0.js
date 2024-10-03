@@ -1377,7 +1377,7 @@ test(() => {
 //given elements must all be 0+ integers of type number
 //takes and returns integers that are small enough to fit safely in number
 //but, uses BigInt internally in case the multiplication would cause an overflow
-function fraction(tops, bottoms) {
+export function fraction(tops, bottoms) {
 
 	//starting BigInt numerator and denominator
 	let n = 1n
