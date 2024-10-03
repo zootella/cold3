@@ -2,7 +2,7 @@
 import { readBody } from 'h3'
 
 import { Sticker } from './sticker.js'
-import { log, look, Now, checkText, hasTextSame, toss, test, ok } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
+import { Time, log, look, Now, checkText, hasTextSame, toss, test, ok, noop } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
 import { awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from './cloud.js'
 
@@ -26,33 +26,150 @@ then write your code in doorProcessBelow() beneath
 the copypasta calls common helper functions, implemented once here
 */
 
-//here's a simple, but controversial, block of code related to sending logs in parallel, but without the execution environment getting torn down:
-let _workerEvent
-function setWorkerEvent(workerEvent) { _workerEvent = workerEvent }
-export function getWorkerEvent() { return _workerEvent }
-//cloudflare guarantees a fresh executin environment for each request; amazon does not. so we save the workerEvent, but not the lambdaEvent or lambdaContext
-export function cloudPromise(p) {
-	if (getWorkerEvent()) getWorkerEvent().waitUntil(p)//tell the cloudflare worker running us to keep going until p resolves, even if that's after we've returned the response. otherwise, cloudflare will tear down the environment quickly!
-	//otherwise, we're in lambda, which should, by default with callbackWaitsForEmptyEventLoop true, do this anyway
-	//but, because await logAlert() and await logAudit() must be reliable, we only use this to be able to use dog() in a non-async function
-}
+//      _                        _                 _   _                 
+//   __| | ___   ___  _ __    __| |_   _ _ __ __ _| |_(_) ___  _ __  ___ 
+//  / _` |/ _ \ / _ \| '__|  / _` | | | | '__/ _` | __| |/ _ \| '_ \/ __|
+// | (_| | (_) | (_) | |    | (_| | |_| | | | (_| | |_| | (_) | | | \__ \
+//  \__,_|\___/ \___/|_|     \__,_|\__,_|_|  \__,_|\__|_|\___/|_| |_|___/
+//                                                                      
 
+export const durationEnvironment = 30*Time.second//cloudflare workers only run 30 seconds, and we've configured lambdas to be the same
+export const durationFetch = 20*Time.second//have axios give up on a fetch after 20 seconds
+export const durationWait = 4*Time.second//only wait 4 seconds for parallel promises to finish before returning the web response, which can cause cloudflare and amazon to tear down the execution environment
 
-
-let _doorPromise//an all glomed-together fire and forget promise we still need to wait on before returning
-let _doorPromiseTick//when the first promise was added, so we can tell if it was too long ago
+//      _                                              _               
+//   __| | ___   ___  _ __   _ __  _ __ ___  _ __ ___ (_)___  ___  ___ 
+//  / _` |/ _ \ / _ \| '__| | '_ \| '__/ _ \| '_ ` _ \| / __|/ _ \/ __|
+// | (_| | (_) | (_) | |    | |_) | | | (_) | | | | | | \__ \  __/\__ \
+//  \__,_|\___/ \___/|_|    | .__/|_|  \___/|_| |_| |_|_|___/\___||___/
+//                          |_|                                        
 /*
-no actually, just do when resolved the glomed together one, or 4seconds, whichever happens first
-and separately, detect double doors
+_doorPromises, below, is a module scoped variable
+cloudflare guarantees a fresh execution environment for every request, but lambda does not
+if a lambda gets busy, multiple requests may come into the same running environment,
+and this array will fill up with promises from different requests
+but, this is ok, because individual promises will still finish if they can,
+and the 4s timeout means no request will get stuck for longer than that
+
+_doorPromises contains promises, like fetching to datadog to store a log, that run in parallel while we handle the request
+we won't need the results, but do need to wait for them all to finish before returning the web result
+also, if one fails, we want to know about that
 */
+let _doorPromises = []
+export function doorPromise(p) {//instead of awaiting p, add it here to keep going in parallel, and wait for it at the end
+	_doorPromises.push(p
+		.then(result => ({success: true, result}))
+		.catch(error => ({success: false, error})))//wrap the promise so we can get its result or error, and to prevent it from throwing
+}
+async function awaitDoorPromises(door) {//takes door just to log it
+	let results = []
+	if (_doorPromises.length) {//we've got some promises to wait for
+
+		//all the added door promises have been running in parallel, combine them now to wait for them all to finish
+		let all = Promise.all(_doorPromises); _doorPromises = []//move the promises from the array to all
+
+		//make a time limit promise to make sure we don't wait too long
+		let limit = new Promise((resolve) => {
+			setTimeout(() => { resolve([{success: false, timeout: true, error: 'gave up waiting'}]) }, durationWait)
+		})
+
+		//race the slowest door promise against the time limit
+		results = await Promise.race([all, limit])
+		/*
+		note that this can't throw
+		we've wrapped each door promise above with a .catch()
+		and the time limit promise calls resolve() with success false, not reject()
+		*/
+
+		//if a door promise failed, or we hit the timeout, log it as an alert
+		if (results.some(result => !result.success)) await awaitLogAlert('door promises rejected or timed out', {door, results})
+		//but, don't toss; we still return a successful web response back up to the client
+	}
+	return results
+}
+noop(async () => {//a demonstration of waiting for door promises, success and fail, fast and slow
+
+	//change between 1 and 10 seconds, and with and without failing door promises, to see different behaviors working
+	const durationSlow = 1*Time.second
+	const addFailures = true//for instance, 10 seconds and false failures shows the time limit working
+
+	const durationFast = 200
+	function bad(s) { return s.push('!') }//pass in a string to have it throw a type error
+
+	//make a full variety of promises
+	let p1 = Promise.resolve('already succeeded')
+	let p2 = Promise.reject('already failed')
+	let p3 = new Promise((resolve, reject) => { resolve('immediate success') })
+	let p4 = new Promise((resolve, reject) => { bad('immediate failure'); resolve('resolution4') })
+	let p5 = new Promise((resolve, reject) => { setTimeout(() => { resolve('quick success') }, durationFast) })
+	let p6 = new Promise((resolve, reject) => { setTimeout(() => {
+		//bad('quick failure'); resolve('resolution6')
+		reject(new Error('quick failure'))
+		/*
+		you want to call bad to have it throw
+		this works fine in p4 above
+		but here, something about set timeout, javascript, or your stack catches it too early
+		super weird but moving on
+		*/
+	}, durationFast)})
+	let p7 = new Promise((resolve, reject) => { setTimeout(() => { resolve('slow success')       }, durationSlow) })
+
+	//they're all already started and running in parallel; add them to the door promises array
+	doorPromise(p1)//successes
+	if (addFailures) doorPromise(p2)
+	doorPromise(p3)
+	if (addFailures) doorPromise(p4)
+	doorPromise(p5)
+	if (addFailures) doorPromise(p6)
+	doorPromise(p7)
+
+	//returning the web response can cause amazon and cloudflare to tear down the execution environment immediately!
+	//so, before we return from the request handler, we await all the promises we added
+	//but in case there's a really slow one, we also give up after 4 seconds
+	log('start time')
+	let results = await awaitDoorPromises()//returns when all are done, or the timeout happened first
+	log(look(results))
+})
+noop(() => {//first, a demonstration of a promise race
+	let p1 = new Promise((resolve, reject) => { setTimeout(() => { resolve('quick success')  }, 1*Time.second) })
+	let p2 = new Promise((resolve, reject) => { setTimeout(() => { reject('gave up waiting') }, 2*Time.second) })
+	let p3 = new Promise((resolve, reject) => { setTimeout(() => { resolve('slow success')   }, 3*Time.second) })
+
+	log("and, they're off!")//logs below won't show up in icarus; look at console in the browser
+	Promise.race([p1, p2]).then((result) => {
+		log('1 versus 2 race result:', look(result))//hits here, quick success, after 1 (not 2) seconds
+	}).catch((error) => {
+		log('1 versus 2 race error:', look(error))
+	})
+	Promise.race([p3, p2]).then((result) => {
+		log('3 versus 2 race result:', look(result))
+	}).catch((error) => {
+		log('3 versus 2 race error:', look(error))//hits here, gave up waiting, after 2 (not 3) seconds
+	})
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //maybe rename logFragile to logCritical
 //maybe combine them and always log error beforehand or something
 
 export async function doorWorkerOpen(workerEvent) {
-	setWorkerEvent(workerEvent)//save the cloudflare worker event in the above module-scoped variable so code deep in the call stack can get it. we use this to call .waitUntil(p) and also get the environment variables to redact them
-
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.startTick = Now()//record when we got the request
 	door.tag = Tag()//tag the request for our own records
@@ -64,8 +181,6 @@ export async function doorWorkerOpen(workerEvent) {
 	return door
 }
 export function doorLambdaOpen(lambdaEvent, lambdaContext) {
-	lambdaContext.callbackWaitsForEmptyEventLoop = true//true is already the default, but this documents that we want this lambda to run until the event loop is empty, not stop as soon as we return the response
-
 	let door = {}//our object that bundles together everything about this incoming request
 	door.startTick = Now()//when we got it
 	door.tag = Tag()//our tag for it
@@ -88,20 +203,20 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 }
 
 export async function doorWorkerShut(door, response, error) {
-
-	//log('hello from door worker shut to see why youre not getting error')
-
 	door.stopTick = Now()//time
 	door.duration = door.stopTick - door.startTick
 	door.response = response//bundle
 	door.error = error
 
+	let r
 	if (error) {//processing this request caused an error
 		await awaitLogAlert('door worker shut error', {door})//tell staff about it
-		return null//return no response
+		r = null//return no response
 	} else {
-		return response//nuxt will stringify and add status code and headers
+		r = response//nuxt will stringify and add status code and headers
 	}
+	await awaitDoorPromises()
+	return r
 }
 export async function doorLambdaShut(door, response, error) {
 	door.stopTick = Now()//time
@@ -109,12 +224,15 @@ export async function doorLambdaShut(door, response, error) {
 	door.response = response//bundle
 	door.error = error
 
+	let r
 	if (error) {
 		await awaitLogAlert('door lambda shut error', {door})
-		return null
+		r = null
 	} else {
-		return {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	}
+	await awaitDoorPromises()
+	return r
 }
 
 

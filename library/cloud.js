@@ -4,7 +4,7 @@ import { Tag, Sticker } from './sticker.js'
 import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, noop, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments, stringify } from './library0.js'
 import { checkTag } from './library1.js'
 import { redact, replaceOne } from './library2.js'
-import { cloudPromise } from './door.js'
+import { doorPromise } from './door.js'
 
 //node-style imports
 let _fs;
@@ -131,6 +131,25 @@ async function sendText_useTwilio(c) {
 	return await ashFetchum(c, q)//call my wrapped fetch
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+export function dog(...a)                   { doorPromise(awaitDog(...a))                   }
+export function logAudit(headline, watch)   { doorPromise(awaitLogAudit(headline, watch))   }
+export function logAlert(headline, watch)   { doorPromise(awaitLogAlert(headline, watch))   }
+export function logFragile(headline, watch) { doorPromise(awaitLogFragile(headline, watch)) }
+/*
+as fragile is, well, fragile, probably don't offer a fire and forget form, and always await awaitLogFragile()
+*/
 
 
 

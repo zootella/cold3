@@ -3,7 +3,7 @@ import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '../../library/library0.js'
 import { Tag } from '../../library/library1.js'
 import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
-import { awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from '../../library/cloud.js'
+import { dog, logAudit, logAlert, logFragile, awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from '../../library/cloud.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let door = {}, response, error
@@ -21,8 +21,8 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 		//CHECKPOINT 6
 		await awaitDog('checkpoint 6')
 
-		let lambdaReturn = await doorLambdaShut(door, response, error)
-		if (response && !error) return lambdaReturn
+		let r = await doorLambdaShut(door, response, error)
+		if (response && !error) return r
 
 	} catch (f) { await awaitLogFragile('door', {f, door, response, error}) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }

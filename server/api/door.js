@@ -3,7 +3,7 @@ import { Sticker } from '../../library/sticker.js'
 import { log, look, Now } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
 import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
-import { awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from '@/library/cloud.js'
+import { dog, logAudit, logAlert, logFragile, awaitDog, awaitLogAudit, awaitLogAlert, awaitLogFragile } from '@/library/cloud.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let door = {}, response, error
@@ -21,8 +21,8 @@ export default defineEventHandler(async (workerEvent) => {
 		//CHECKPOINT 3
 		await awaitDog('checkpoint 3')
 
-		let workerReturn = await doorWorkerShut(door, response, error)
-		if (response && !error) return workerReturn
+		let r = await doorWorkerShut(door, response, error)
+		if (response && !error) return r
 
 	} catch (f) { await awaitLogFragile('door', {f, door, response, error}) }
 	setResponseStatus(workerEvent, 500); return null
