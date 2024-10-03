@@ -64,6 +64,7 @@ export function doorPromise(p) {//instead of awaiting p, add it here to keep goi
 async function awaitDoorPromises(door) {//takes door just to log it
 	let results = []
 	if (_doorPromises.length) {//we've got some promises to wait for
+		let note1 = _doorPromises.length
 
 		//all the added door promises have been running in parallel, combine them now to wait for them all to finish
 		let all = Promise.all(_doorPromises); _doorPromises = []//move the promises from the array to all
@@ -74,7 +75,10 @@ async function awaitDoorPromises(door) {//takes door just to log it
 		})
 
 		//race the slowest door promise against the time limit
+		let start = Now()
 		results = await Promise.race([all, limit])
+		let note2 = Now() - start
+		await awaitDog(`raced ${note1} door promises for ${note2}ms`)
 		/*
 		note that this can't throw
 		we've wrapped each door promise above with a .catch()
