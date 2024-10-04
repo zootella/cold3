@@ -1,6 +1,49 @@
 
 
 
+
+//grand like grand central station
+//or maybe instead nexus like star trek or plexus like chakras?
+
+
+/*
+thsi is also where you can document package.json
+
+
+
+where do you install a module taht will be used only by lambda?
+needs to be available to
+
+library - yes
+net23 - yes
+site - no
+
+
+
+needs to be
+
+
+
+
+
+
+
+*/
+
+/*
+a note about yarn
+
+have these environments:
+
+/ root nuxt for cloudflare, or maybe put that in a subfolder, too?
+/library, this is where you do $ node test, not in the root, so that there can be node test library-only modules
+/icarus
+/net23
+
+so you'll have four, not three
+
+*/
+
 /*
 this will be the pass through imports library
 so you can move a function from library1 to library2 without changing a bunch of imports in code files
@@ -14,7 +57,15 @@ but ping files still import sticker.js by itself to be really lean
 
 */
 
+/*
+oh, this is also where you document what each file is for, and what code goes in each file
+which is better than doing that at the top of each file, because this one place can see the whole map
 
+*/
+
+/*
+an early fun thing you'll unwind here is which functions from library0 get brought up to sticker
+*/
 
 
 /*

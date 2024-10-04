@@ -342,7 +342,7 @@ export async function snippet(card) {
 	log('hi from snippet')
 	log(look(card))
 
-
+	/*
 	function style(text) {
 		return `<html><body><p style="font-size: 18px; color: gray; font-family: 'SF Pro Rounded', 'Noto Sans Rounded', sans-serif;">${text}</p></body></html>`
 	}
@@ -358,6 +358,7 @@ export async function snippet(card) {
 		bodyHtml: style(text)
 	})
 	await awaitLogAudit('snippet sent sendgrid email', {result})
+	*/
 
 
 
