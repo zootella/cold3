@@ -6,7 +6,7 @@ import { Sticker } from '@/library/sticker.js'
 export default defineEventHandler((event) => {
 
 	let o = {}
-	o.message = 'hello from cold3 api mirror, version 2024sep8a'
+	o.message = 'hello from cold3 api mirror, version 2024oct6b'
 	o.serverTick = Now()
 	o.headers = event.req.headers
 	//use defined() and hasText() below

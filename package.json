@@ -13,14 +13,13 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
-    "preview": "nuxt preview",
+    "preview": "npm run build && wrangler pages dev",
     "postinstall": "nuxt prepare",
-    "pages:dev": "wrangler pages dev --compatibility-date=2024-02-08 --proxy 3000 -- npm run dev",
-    "pages:deploy": "npm run build && wrangler pages deploy ./dist --project-name cold3",
     "test": "node test",
     "seal": "node seal",
-    "local": "npm run pages:dev",
-    "deploy": "npm run pages:deploy"
+    "local": "nuxt dev",
+    "deploy": "npm run build && wrangler pages deploy",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",
@@ -28,15 +27,16 @@
     "joi": "^17.13.1",
     "libphonenumber-js": "^1.11.3",
     "nanoid": "^5.0.7",
-    "nuxt": "^3.10.2",
+    "nuxt": "^3.13.0",
     "rfc4648": "^1.5.3",
-    "vue": "^3.4.19",
-    "vue-router": "^4.2.5"
+    "vue": "latest",
+    "vue-router": "latest"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240208.0",
+    "@cloudflare/workers-types": "^4.20241004.0",
     "aws-sdk": "^2.1686.0",
     "fast-glob": "^3.3.2",
-    "wrangler": "^3.28.2"
+    "nitro-cloudflare-dev": "^0.1.6",
+    "wrangler": "^3.80.0"
   }
 }
