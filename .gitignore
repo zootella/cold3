@@ -26,6 +26,9 @@ logs
 *.env
 env.js
 
+# Added for cloudflare secrets
+*.vars
+
 # Added for cloudflare
 .wrangler
 

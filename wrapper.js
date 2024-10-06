@@ -1,9 +1,9 @@
 export const wrapper = {
 	name: 'cold3',
-	tick: 1728238887219,
-	hash: 'NMERO2V6VZJ3NZ4GLIUVBMOJ273RKMHNMMAOFDEC3SJXVCYBTWLQ',
-	codeFiles: 110,
-	codeSize: 522549,
-	totalFiles: 115,
-	totalSize: 8381035
+	tick: 1728240379778,
+	hash: '5NTC72HKW35GLVCZFK7SIYCEERJCEIC7SDOTZZD5ROEJ2NSVRXBQ',
+	codeFiles: 109,
+	codeSize: 517976,
+	totalFiles: 114,
+	totalSize: 8376462
 }
