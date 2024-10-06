@@ -41,6 +41,7 @@ async function listFiles() {
 			'**/.serverless',
 			'**/*.log',
 			'**/*.diff',
+			'**/diff*.txt',
 			'**/dist',
 			'**/node_modules',
 
