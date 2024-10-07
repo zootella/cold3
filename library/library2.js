@@ -34,6 +34,7 @@ what if door, on cloudflare, just fills Access with variables from useRuntimeCon
 
 
 export function Access(name) {
+	checkText(name)
 	let v
 	if (getUseRuntimeConfigFunction()) {//we're running in nuxt, so we have to get cloudflare secrets through nuxt's function that we saved a reference to in the request handler
 		v = getUseRuntimeConfigFunction()()[name]//get the function, call the function, dereference name on the return, yeah
@@ -140,7 +141,7 @@ export function redact(s) {
 	words.forEach(word => { if (word.endsWith(_secretSuffix)) secretNamesSet.add(word) })
 	let secretNames = Array.from(secretNamesSet)
 	let secretValues = []
-	if (defined(typeof process)) secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })
+	if (defined(typeof process)) secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })//todo this will change when you're reading Access('ACCESS_SECRET_LIST') to get the names to redact
 	secretValues.forEach(secretValue => {
 		let redactedValue = redact_composeReplacement(secretValue)
 		s = replaceAll(s, secretValue, redactedValue)

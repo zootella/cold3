@@ -3,7 +3,7 @@
 import { Tag, Sticker } from './sticker.js'
 import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, noop, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments, stringify } from './library0.js'
 import { checkTag } from './library1.js'
-import { redact, replaceOne } from './library2.js'
+import { redact, replaceOne, Access } from './library2.js'
 import { doorPromise } from './door.js'
 
 //node-style imports
@@ -20,7 +20,7 @@ let _aws, _ses, _sns//load amazon stuff once and only when needed
 async function loadAmazon() {
 	if (!_aws) {
 		_aws = (await import('aws-sdk')).default//use the await import pattern because in es6 you can't require()
-		_aws.config.update({ region: process.env.ACCESS_AMAZON_REGION })//amazon's main location of us-east-1
+		_aws.config.update({region: Access('ACCESS_AMAZON_REGION')})//amazon's main location of us-east-1
 	}
 	return _aws
 }
@@ -76,11 +76,11 @@ async function sendEmail_useAmazon(c) {
 async function sendEmail_useSendgrid(c) {
 	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
 	let q = {
-		resource: process.env.ACCESS_SENDGRID_URL,
+		resource: Access('ACCESS_SENDGRID_URL'),
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'Authorization': 'Bearer '+process.env.ACCESS_SENDGRID_KEY_SECRET
+			'Authorization': 'Bearer '+Access('ACCESS_SENDGRID_KEY_SECRET')
 		},
 		body: JSON.stringify({
 			from: { name: fromName, email: fromEmail },
@@ -118,14 +118,14 @@ async function sendText_useAmazon(c) {
 async function sendText_useTwilio(c) {
 	let {toPhone, messageText} = c
 	let q = {
-		resource: process.env.ACCESS_TWILIO_URL+'/Accounts/'+process.env.ACCESS_TWILIO_SID+'/Messages.json',
+		resource: Access('ACCESS_TWILIO_URL')+'/Accounts/'+Access('ACCESS_TWILIO_SID')+'/Messages.json',
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
-			'Authorization': 'Basic '+btoa(process.env.ACCESS_TWILIO_SID+':'+process.env.ACCESS_TWILIO_AUTH_SECRET)
+			'Authorization': 'Basic '+btoa(Access('ACCESS_TWILIO_SID')+':'+Access('ACCESS_TWILIO_AUTH_SECRET'))
 		},
 		body: new URLSearchParams({
-			From: process.env.ACCESS_TWILIO_PHONE,//the phone number twilio rents to us to send texts from
+			From: Access('ACCESS_TWILIO_PHONE'),//the phone number twilio rents to us to send texts from
 			To:   toPhone,//recipient phone number in E.164 format
 			Body: messageText
 		})
@@ -289,11 +289,11 @@ async function sendLog_useFile(s) {
 //log to datadog, fetching to their api
 async function sendLog_useDatadog(c) {
 	let q = {
-		resource: process.env.ACCESS_DATADOG_ENDPOINT,
+		resource: Access('ACCESS_DATADOG_ENDPOINT'),
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'DD-API-KEY': process.env.ACCESS_DATADOG_API_KEY_SECRET
+			'DD-API-KEY': Access('ACCESS_DATADOG_API_KEY_SECRET')
 		},
 		body: c.bodyText
 	}

@@ -2,6 +2,7 @@
 import { Sticker } from '@/library/sticker.js'
 import { log, look, Now, checkText } from '@/library/library0.js'
 import { Tag } from '@/library/library1.js'
+import { Access } from '@/library/library2.js'
 import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
 import { awaitLogAlert } from '@/library/cloud.js'
 
@@ -72,7 +73,7 @@ const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivit
 async function bridge(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
 	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
-	body.ACCESS_NETWORK_23_SECRET = process.env.ACCESS_NETWORK_23_SECRET//don't forget your keycard
+	body.ACCESS_NETWORK_23_SECRET = Access('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }
 

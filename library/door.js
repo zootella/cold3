@@ -4,6 +4,7 @@ import { readBody } from 'h3'
 import { Sticker } from './sticker.js'
 import { Time, log, look, Now, checkText, hasTextSame, toss, test, ok, noop } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
 import { Tag } from './library1.js'
+import { Access } from './library2.js'
 import { awaitDog, logAlert, awaitLogAlert } from './cloud.js'
 
 //      _                  
@@ -163,7 +164,7 @@ here's the kludge where we save a reference to nuxt's useRuntimeConfig in a modu
 this is the best way for Access to use it instead of process.env to get secrets in cloudflare
 */
 let _useRuntimeConfigFunction
-export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }//todo change to not export
+function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
 export function getUseRuntimeConfigFunction() { return _useRuntimeConfigFunction }
 
 //      _                                                             _       _           _   
@@ -203,7 +204,7 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	//(2) the request is not from any browser, anywhere; there is no origin header at all
 	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
 	//(3) the network 23 access code is valid
-	if (!hasTextSame(process.env.ACCESS_NETWORK_23_SECRET, body.ACCESS_NETWORK_23_SECRET)) toss('bad access code', {door})
+	if (body.ACCESS_NETWORK_23_SECRET != Access('ACCESS_NETWORK_23_SECRET')) toss('bad access code', {door})
 
 	return door
 }

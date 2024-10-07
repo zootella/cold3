@@ -1,5 +1,6 @@
 
 import { log, see, look } from '@/library/library0.js'
+import { Access } from '@/library/library2.js'
 
 export default defineEventHandler(async (event) => {
 	var r = {}//the response object this server function will fill and send back to the page
@@ -8,7 +9,7 @@ export default defineEventHandler(async (event) => {
 
 		//set and bring in constants about the test email to send
 		const sendgridUrl = 'https://api.sendgrid.com/v3/mail/send'
-		const sendgridApiKey = process.env.ACCESS_SENDGRID_KEY_SECRET//works in dev and deployed
+		const sendgridApiKey = Access('ACCESS_SENDGRID_KEY_SECRET')//works in dev and deployed
 
 		const emailFromName = 'Cold Three'
 		const emailFromAddress = 'noreply@cold3.cc'//only works if you change to approved sender
@@ -67,7 +68,7 @@ export default defineEventHandler(async (event) => {
 		//confirm the password from the page form, and the api key from the environment variables look ok
 		//and send the email if both are ok
 		const body = await readBody(event)
-		r.passwordCorrect = (body.password == process.env.ACCESS_PASSWORD_SECRET)
+		r.passwordCorrect = (body.password == Access('ACCESS_PASSWORD_SECRET'))
 		r.sendgridApiKeyLength = sendgridApiKey.length
 		if (r.passwordCorrect && r.sendgridApiKeyLength) {
 			r.sendNote = 'api key and password ok, will send'

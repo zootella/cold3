@@ -11,7 +11,7 @@ $ node test
 */
 
 //access secrets
-import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also deploy
+import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also deploy; ok but now you should use library2's Access() here, instead, actually
 dotenv.config()
 import card from './env.js'//and additional private info just for local development
 

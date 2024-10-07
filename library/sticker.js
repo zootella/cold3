@@ -3,6 +3,10 @@
 import { customAlphabet } from 'nanoid'//well, except this small module
 import { wrapper } from '../wrapper.js'//and the shrinkwrap wrapper
 
+//import { Access } from './library2.js'//todo you have to get rid of this because it'll bring in the whole library. you realize now this means access will go here into sticker, and that's probably fine? or, put the time zone in wrapper, you guess. although here in sticker is fine probably because sticker is the library that is small and absolutely fundamental, with tick and tag and environment detection and shrinkwrap information, so environment variables and secrets make sense here
+//^todo didn't work at all, just commented out the custom time zone feature for now
+
+
 //      _          _       _                                    _   _      _             
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 
 // / __| '_ \| '__| | '_ \| |/ /\ \ /\ / / '__/ _` | '_ \  / __| __| |/ __| |/ / _ \ '__|
@@ -172,7 +176,8 @@ export function sayTick(t) {
 
 	//in this unusual instance, we want to say the time local to the person reading the logs, not the computer running the script
 	let zone = Intl.DateTimeFormat().resolvedOptions().timeZone//works everywhere, but will be utc on cloud worker and lambda
-	if (defined(typeof process) && hasText(process.env?.ACCESS_TIME_ZONE)) zone = process.env.ACCESS_TIME_ZONE//use what we set in the .env file. page script won't have access to .env, but worker and lambda, local and deployed will
+//	zone = Access('ACCESS_TIME_ZONE')//use what we set in the .env file. page script won't have access to .env, but worker and lambda, local and deployed will
+//^todo yeah that didn't work at all, you need to rethink time zones now that getting to secrets is hard
 
 	let d = new Date(t)
 	let f = new Intl.DateTimeFormat('en', {timeZone: zone, weekday: 'short', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit'})

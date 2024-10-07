@@ -1,6 +1,7 @@
 
 import { log, look, hasText } from '@/library/library0.js'
 import { checkTag } from '@/library/library1.js'
+import { Access } from '@/library/library2.js'
 import { accessTableInsert, accessTableQuery } from '@/library/database.js'
 
 export default defineEventHandler(async (event) => {
@@ -14,7 +15,7 @@ export default defineEventHandler(async (event) => {
 		checkTag(body.browserTag)
 
 		//validate the password, only needed to sign in
-		o.passwordValid = hasText(body.password) && body.password == process.env.ACCESS_PASSWORD_SECRET
+		o.passwordValid = hasText(body.password) && body.password == Access('ACCESS_PASSWORD_SECRET')
 
 		//is this browser already signed in?
 		let rows = await accessTableQuery(body.browserTag)//get all the rows
