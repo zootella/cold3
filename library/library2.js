@@ -31,7 +31,14 @@ you like the Access(name) thing below, how it gets them from different sources, 
 what if door, on cloudflare, just fills Access with variables from useRuntimeConfig()
 */
 
-
+export function hasAccess() {//true if we can get to secrets
+	let b = false
+	try {
+		Access('ACCESS_PASSWORD_SECRET')
+		b = true
+	} catch (e) {}//todo, refactor these so there's no exception, obviously
+	return b
+}
 
 export function Access(name) {
 	checkText(name)

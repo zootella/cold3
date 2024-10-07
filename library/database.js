@@ -9,14 +9,12 @@ keep it all here together for easy refactoring and auditing
 
 import { log, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare } from './library0.js'
 import { Tag, checkTag } from './library1.js'
-import { Access } from './library2.js'
+import { Access, hasAccess } from './library2.js'
 
 //todo get both the import and createClient in a conditional load pattern
 import { createClient } from '@supabase/supabase-js'
 let supabase
-try {
-	if (defined(typeof process)) supabase = createClient(Access('ACCESS_SUPABASE_URL'), Access('ACCESS_SUPABASE_KEY_SECRET'))
-} catch (ignore){}//todo need some environment detection here, if server
+if (hasAccess()) supabase = createClient(Access('ACCESS_SUPABASE_URL'), Access('ACCESS_SUPABASE_KEY_SECRET'))
 
 //  _         _             _                  _   _                _                  
 // | | ____ _| |_ _   _    | |__   __ _ _ __  | |_| |__   ___    __| | ___   ___  _ __ 
