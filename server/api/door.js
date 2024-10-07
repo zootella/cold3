@@ -12,7 +12,7 @@ export default defineEventHandler(async (workerEvent) => {
 		//CHECKPOINT 1
 		dog('checkpoint 1')
 
-		door = await doorWorkerOpen(workerEvent)
+		door = await doorWorkerOpen(workerEvent, useRuntimeConfig)
 		response = await doorProcessBelow(door)
 
 	} catch (e) { error = e }

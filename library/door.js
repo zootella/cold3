@@ -152,6 +152,20 @@ noop(() => {//first, a demonstration of a promise race
 	})
 })
 
+
+
+
+
+
+//another module scoped variable, ugh
+/*
+here's the kludge where we save a reference to nuxt's useRuntimeConfig in a module variable
+this is the best way for Access to use it instead of process.env to get secrets in cloudflare
+*/
+let _useRuntimeConfigFunction
+export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }//todo change to not export
+export function getUseRuntimeConfigFunction() { return _useRuntimeConfigFunction }
+
 //      _                                                             _       _           _   
 //   __| | ___   ___  _ __    ___  _ __   ___ _ __     __ _ _ __   __| |  ___| |__  _   _| |_ 
 //  / _` |/ _ \ / _ \| '__|  / _ \| '_ \ / _ \ '_ \   / _` | '_ \ / _` | / __| '_ \| | | | __|
@@ -159,7 +173,9 @@ noop(() => {//first, a demonstration of a promise race
 //  \__,_|\___/ \___/|_|     \___/| .__/ \___|_| |_|  \__,_|_| |_|\__,_| |___/_| |_|\__,_|\__|
 //                                |_|                                                         
 
-export async function doorWorkerOpen(workerEvent) {
+export async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//get a reference to useRuntimeConfig, which nuxt imports into api handler files
+	saveUseRuntimeConfigFunction(useRuntimeConfigFunction)
+
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.startTick = Now()//record when we got the request
 	door.tag = Tag()//tag the request for our own records
