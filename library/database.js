@@ -8,12 +8,17 @@ keep it all here together for easy refactoring and auditing
 */
 
 import { createClient } from '@supabase/supabase-js'
-
-import { log, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare } from './library0.js'
-import { Tag, checkTag } from './library1.js'
-import { Sticker } from './sticker.js'
-import { Access, hasAccess } from './library2.js'
-import { dog, logAlert } from './cloud.js'
+import {
+log, toss, Now,
+checkInt, hasText, checkText,
+defined, test, ok,
+squareEncode, squareDecode,
+intToText, textToInt,
+checkHash, checkSquare,
+Tag, checkTag,
+Sticker,
+Access
+} from './grand.js'
 
 
 //todo get both the import and createClient in a conditional load pattern

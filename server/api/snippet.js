@@ -1,11 +1,11 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-import { log, look, hasText } from '@/library/library0.js'
-import { Access, hasAccess } from '@/library/library2.js'
-import { snippetGetCount } from '@/library/database.js'
-import { dog, logAlert } from '@/library/cloud.js'
-import { saveUseRuntimeConfigFunction, awaitDoorPromises } from '@/library/door.js'
+import {
+log, look,
+snippetGetCount,
+saveUseRuntimeConfigFunction, awaitDoorPromises
+} from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}
@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
 	} catch (e) {
 		log('snippet caught', look(e))
 	}
+	await awaitDoorPromises()
 	return o
 })
 

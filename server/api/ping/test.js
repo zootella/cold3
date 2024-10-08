@@ -8,7 +8,7 @@ import { Sticker } from '@/library/sticker.js'
 -- ./icarus/icarus.vue        vite
 -- ./test.js                  node
 */
-import { runTests } from '@/library/test.js'
+import { runTests } from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
 	let note = ''

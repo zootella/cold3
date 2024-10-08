@@ -1,8 +1,8 @@
 
-import { log, look, hasText } from '@/library/library0.js'
-import { checkTag } from '@/library/library1.js'
-import { Access } from '@/library/library2.js'
-import { accessTableInsert, accessTableQuery } from '@/library/database.js'
+import {
+log, look, hasText, checkTag, Access,
+accessTableInsert, accessTableQuery
+} from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}

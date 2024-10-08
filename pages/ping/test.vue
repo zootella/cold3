@@ -9,7 +9,7 @@ import { Sticker } from '@/library/sticker.js'
 -- ./icarus/icarus.vue        vite
 -- ./test.js                  node
 */
-import { runTests } from '../library/test.js'
+import { runTests } from '../library/grand.js'
 /*
 TODO note to remove tests from production
 does including tiny tests in nuxt mean the whole bundle, even in production, is unnecessarily larger?

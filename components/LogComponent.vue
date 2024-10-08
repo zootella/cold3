@@ -1,9 +1,10 @@
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-import { log, look, Now } from '@/library/library0.js'
-import { Tag } from '@/library/library1.js'
-import { Sticker } from '@/library/sticker.js'
+import {
+Sticker,
+log, look
+} from '@/library/grand.js'
 
 const inputText = ref('')
 const environmentText = ref('')

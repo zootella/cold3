@@ -1,6 +1,6 @@
 
 import { Sticker } from '@/library/sticker.js'
-import { database_pingCount } from '@/library/database.js'
+import { database_pingCount } from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
 	let note = ''

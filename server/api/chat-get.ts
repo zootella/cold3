@@ -1,5 +1,7 @@
 
-import { log, see } from '@/library/library0.js'
+import {
+log, see
+} from '@/library/grand.js'
 
 
 export default defineEventHandler(async (event) => {
@@ -14,8 +16,8 @@ export default defineEventHandler(async (event) => {
 	} catch (e) {
 		log('chat api caught: ', e)
 	}
-	return o;
-});
+	return o
+})
 
 
 

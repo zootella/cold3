@@ -88,7 +88,7 @@ counts_getGlobalCount, counts_setGlobalCount, counts_getBrowserCount, counts_set
 access_addRecord, access_getRecords, accessTableInsert, accessTableQuery,
 rowExists, createRow, readRow, writeRow,
 rowExistsBetter, createRowBetter, readRowBetter, writeRowBetter,
-database_pingCount,
+snippetGetCount, database_pingCount,
 
 } from './database.js'
 export {

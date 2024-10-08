@@ -1,8 +1,9 @@
 
-import { log, see, Now, look } from '@/library/library0.js'
-import { Tag } from '@/library/library1.js'
-import { Sticker } from '@/library/sticker.js'
-import { dog } from '@/library/cloud.js'
+import {
+log, see, Now, look,
+Tag,
+Sticker
+} from '@/library/grand.js'
 
 export default defineEventHandler((event) => {
 	let o = {}

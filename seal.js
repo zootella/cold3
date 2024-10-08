@@ -5,7 +5,9 @@ import crypto from 'crypto'
 import glob from 'fast-glob'
 
 import { wrapper as prevousWrapper } from './wrapper.js'//load the previous one to repeat the name--but then, where did the name come from?!
-import { log, look, newline, Data, Now } from './library/library0.js'
+import {
+log, look, newline, Data, Now
+} from './library/grand.js'
 
 //      _          _       _                                               _ 
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___  ___  __ _| |

@@ -1,11 +1,10 @@
 
 import { readBody } from 'h3'
-
-import { Sticker } from './sticker.js'
-import { Time, log, look, Now, checkText, hasTextSame, toss, test, ok, noop } from './library0.js'//lambdas call in here, too, so we can't use nuxt's @ shorthand
-import { Tag } from './library1.js'
-import { Access } from './library2.js'
-import { awaitDog, logAlert, awaitLogAlert } from './cloud.js'
+import {
+Time, log, look, Now, toss, test, ok, noop, Tag, Access,
+awaitDog, logAlert, awaitLogAlert
+} from './grand.js'
+//lambdas call in here, too, so we can't use nuxt's @ shorthand
 
 //      _                  
 //   __| | ___   ___  _ __ 

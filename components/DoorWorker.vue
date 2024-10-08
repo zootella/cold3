@@ -1,7 +1,9 @@
 <script setup>
 
 import { ref, reactive, watch } from 'vue'
-import { log, look, Now } from '@/library/library0.js'
+import {
+log, look
+} from '@/library/grand.js'
 
 const {data, refresh} = useFetch('/api/door', {method: 'POST', body: {name: 'Wendy', age: 31}})
 

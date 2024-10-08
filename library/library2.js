@@ -3,11 +3,12 @@
 //grow them here, then probably refactor them out into named files in this library folder
 //actually don't do this, it's library1.js and the named files
 
-import { defined, Sticker } from './sticker.js'
-import { toss, noop, test, ok, log, look, composeLog, Now, end, subtleHash, Data, checkText } from './library0.js'
-import { Tag, tagLength, checkTag } from './library1.js'
-import { getUseRuntimeConfigFunction } from './door.js'
-import { dog } from './cloud.js'
+import {
+defined,
+toss, noop, test, ok, log, look, Now, end, subtleHash, Data, checkText,
+Tag, tagLength, checkTag,
+getUseRuntimeConfigFunction,
+} from './grand.js'
 
 
 //hello tuesday

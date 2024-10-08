@@ -1,10 +1,13 @@
 
 //import modules
-import { Tag, Sticker } from './sticker.js'
-import { log, look, say, toss, newline, Time, Now, sayTick, checkInt, hasText, checkText, defined, noop, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare, composeLog, composeLogArguments, stringify } from './library0.js'
-import { checkTag } from './library1.js'
-import { redact, replaceOne, Access } from './library2.js'
-import { doorPromise } from './door.js'
+import {
+Tag, Sticker,
+log, look, say, toss, newline, Time, Now, sayTick,
+defined, noop, test, ok,
+stringify,
+redact, replaceOne, Access,
+doorPromise
+} from './grand.js'
 
 //node-style imports
 let _fs;

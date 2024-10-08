@@ -1,6 +1,8 @@
 
-import { log, see, look } from '@/library/library0.js'
-import { Access } from '@/library/library2.js'
+import {
+log, see, look,
+Access
+} from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
 	var r = {}//the response object this server function will fill and send back to the page

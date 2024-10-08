@@ -1,9 +1,10 @@
 
-import { Sticker } from '../../library/sticker.js'
-import { log, look, Now } from '../../library/library0.js'
-import { Tag } from '../../library/library1.js'
-import { doorLambdaOpen, doorLambdaShut } from '../../library/door.js'
-import { dog, awaitLogAlert } from '../../library/cloud.js'
+import {
+Sticker,
+log, look, Now, Tag,
+doorLambdaOpen, doorLambdaShut,
+dog, awaitLogAlert
+} from '../../library/grand.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let door = {}, response, error

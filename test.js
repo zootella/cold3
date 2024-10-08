@@ -22,9 +22,11 @@ import card from './env.js'//and additional private info just for local developm
 -- ./icarus/icarus.vue        vite
 -> ./test.js                  node
 */
-import { runTests } from './library/test.js'
-import { log, look } from './library/library0.js'
-import { snippet, awaitLogAlert } from './library/cloud.js'
+import {
+runTests,
+log, look,
+snippet, awaitLogAlert
+} from './library/grand.js'
 
 //snippet runner
 async function runSnippet() {

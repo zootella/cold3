@@ -9,8 +9,9 @@ import { ref, onMounted } from 'vue'
 -> ./icarus/icarus.vue        vite
 -- ./test.js                  node
 */
-import { runTests } from '../library/test.js'
-import { getLogRecord, testBox } from '../library/library0.js'
+import {
+runTests, getLogRecord, testBox
+} from '../library/grand.js'
 
 const boxModel = ref('')
 const testMessage = ref('')

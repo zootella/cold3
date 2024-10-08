@@ -1,14 +1,10 @@
 
 import { createClient } from '@supabase/supabase-js'
-
 import {
-
-log, look, hasText,
-Access, hasAccess,
+log, look,
 rowExistsBetter, createRowBetter, readRowBetter, writeRowBetter,
 dog, logAlert,
 saveUseRuntimeConfigFunction, awaitDoorPromises
-
 } from '@/library/grand.js'
 
 

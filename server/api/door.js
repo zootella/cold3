@@ -1,9 +1,9 @@
 
-import { Sticker } from '@/library/sticker.js'
-import { log, look, Now } from '@/library/library0.js'
-import { Tag } from '@/library/library1.js'
-import { doorWorkerOpen, doorWorkerShut } from '@/library/door.js'
-import { dog, awaitLogAlert } from '@/library/cloud.js'
+import {
+Sticker, log, look, Now, Tag,
+doorWorkerOpen, doorWorkerShut,
+dog, awaitLogAlert
+} from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let door = {}, response, error
