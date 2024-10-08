@@ -4,9 +4,10 @@
 //actually don't do this, it's library1.js and the named files
 
 import { defined, Sticker } from './sticker.js'
-import { noop, test, ok, log, look, composeLog, Now, end, subtleHash, Data, checkText } from './library0.js'
+import { toss, noop, test, ok, log, look, composeLog, Now, end, subtleHash, Data, checkText } from './library0.js'
 import { Tag, tagLength, checkTag } from './library1.js'
 import { getUseRuntimeConfigFunction } from './door.js'
+import { dog } from './cloud.js'
 
 
 /*
@@ -32,12 +33,7 @@ what if door, on cloudflare, just fills Access with variables from useRuntimeCon
 */
 
 export function hasAccess() {//true if we can get to secrets
-	let b = false
-	try {
-		Access('ACCESS_PASSWORD_SECRET')
-		b = true
-	} catch (e) {}//todo, refactor these so there's no exception, obviously
-	return b
+	return getUseRuntimeConfigFunction() || (defined(typeof process) && process.env)
 }
 
 export function Access(name) {
@@ -50,6 +46,8 @@ export function Access(name) {
 	} else {
 		toss("can't access nuxt runtime config nor process.env", {name})
 	}
+	console.log(`Access ${name} got ${v.length} length`)
+
 	checkText(v)//throws on non-string or blank string--makes sure v is a string that has text!
 	return v
 }

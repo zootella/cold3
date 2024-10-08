@@ -7,14 +7,55 @@ interface between the application and the database
 keep it all here together for easy refactoring and auditing
 */
 
+import { createClient } from '@supabase/supabase-js'
+
 import { log, toss, Now, checkInt, hasText, checkText, defined, test, ok, squareEncode, squareDecode, intToText, textToInt, checkHash, checkSquare } from './library0.js'
 import { Tag, checkTag } from './library1.js'
+import { Sticker } from './sticker.js'
 import { Access, hasAccess } from './library2.js'
+import { dog, logAlert } from './cloud.js'
+
 
 //todo get both the import and createClient in a conditional load pattern
-import { createClient } from '@supabase/supabase-js'
 let supabase
-if (hasAccess()) supabase = createClient(Access('ACCESS_SUPABASE_URL'), Access('ACCESS_SUPABASE_KEY_SECRET'))
+try {
+	if (Sticker().where.includes('Server')) {
+		supabase = createClient(Access('ACCESS_SUPABASE_URL'), Access('ACCESS_SUPABASE_KEY_SECRET'))
+	}
+} catch (e2) { console.error('top of database', e2) }
+
+
+
+
+export async function snippetGetCount() {
+	let s = 'snippet get count; '
+
+	let secret1 = Access('ACCESS_SUPABASE_URL')
+	let secret2 = Access('ACCESS_SUPABASE_KEY_SECRET')
+	s += `accessed lengths of ${secret1?.length} and ${secret2?.length}; `
+
+	let b = createClient(secret1, secret2)
+	if (b) {
+		let { data, error } = await b.from('table_settings').select('value').eq('key', 'count_global')
+		if (error) s += `error from ${error.stack}; `
+		else s += `got count of ${data[0]?.value}; `
+	} else {
+		s += `couldn't create client; `
+	}
+	return s
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 //  _         _             _                  _   _                _                  
 // | | ____ _| |_ _   _    | |__   __ _ _ __  | |_| |__   ___    __| | ___   ___  _ __ 
@@ -435,10 +476,41 @@ export async function writeRow(newValue) {
 
 
 
+
+let _clientBetter
+function createClientBetter() {
+	if (!_clientBetter) {
+		_clientBetter = createClient(Access('ACCESS_SUPABASE_URL'), Access('ACCESS_SUPABASE_KEY_SECRET'))
+	}
+	return _clientBetter
+}
+export async function rowExistsBetter() {
+	let { data, error, count } = await createClientBetter().from('table_settings').select('key', { count: 'exact' }).eq('key', 'count_global')
+	if (error) toss('supabase', {error})
+	return count > 0
+}
+export async function createRowBetter() {
+	let { data, error } = await createClientBetter().from('table_settings').insert([{ key: 'count_global', value: '0' }])
+	if (error) toss('supabase', {error})
+}
+export async function readRowBetter() {
+	let { data, error } = await createClientBetter().from('table_settings').select('value').eq('key', 'count_global')
+	if (error) toss('supabase', {error})
+	return data[0]?.value
+}
+export async function writeRowBetter(newValue) {
+	let { data, error } = await createClientBetter().from('table_settings').update({ value: newValue }).eq('key', 'count_global').select()
+	if (error) toss('supabase', {error})
+	if (!data.length) toss('no error from update, but also no updated rows')
+}
+
+
+
+
 //for the ping system, obviously refactor
 export async function database_pingCount() {
 	log('here we are')
-	return readIntAsText(await readRow())//currently hardcoded into one cell of one table
+	return readIntAsText(await readRowBetter())//currently hardcoded into one cell of one table
 }
 
 

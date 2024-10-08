@@ -1,14 +1,17 @@
 
-import { log, look } from '@/library/library0.js'
-import { rowExists, createRow, readRow, writeRow } from '@/library/database.js'
+import { createClient } from '@supabase/supabase-js'
+
+import { log, look, hasText } from '@/library/library0.js'
+import { Access, hasAccess } from '@/library/library2.js'
+import { rowExistsBetter, createRowBetter, readRowBetter, writeRowBetter } from '@/library/database.js'
+import { dog, logAlert } from '@/library/cloud.js'
+import { saveUseRuntimeConfigFunction, awaitDoorPromises } from '@/library/door.js'
 
 
 export default defineEventHandler(async (event) => {
 	let o = {}
 	try {
-
-		//no, you have to import stuff manually for the api
-		//log('compostable on server? ' + typeof utility1)
+		saveUseRuntimeConfigFunction(useRuntimeConfig)
 
 
 		let body = await readBody(event)
@@ -20,10 +23,11 @@ export default defineEventHandler(async (event) => {
 
 
 		//create the row if it doesn't exist
-		if (!(await rowExists())) {
-			await createRow()
+		if (!(await rowExistsBetter())) {
+			await createRowBetter()
 			log("row didn't exist, created it")
 		}
+
 
 
 		//increment
@@ -31,15 +35,15 @@ export default defineEventHandler(async (event) => {
 		if (body.countGlobal > 0) {
 			log('need to increment the count')
 
-			countGlobal = +(await readRow())//read, convert string to int afterards
+			countGlobal = +(await readRowBetter())//read, convert string to int afterards
 			countGlobal += body.countGlobal//increment with requested value
-			await writeRow(countGlobal+'')//write, convert int to string beforehand
+			await writeRowBetter(countGlobal+'')//write, convert int to string beforehand
 
 			log('incremented to ' + countGlobal)
 		}
 
 		//read
-		countGlobal = +(await readRow())//read or read again to check, convert string to int afterards
+		countGlobal = +(await readRowBetter())//read or read again to check, convert string to int afterards
 
 
 		o.countGlobal = countGlobal
@@ -50,10 +54,11 @@ export default defineEventHandler(async (event) => {
 
 
 	} catch (e) {
-		log('count caught: ', e)
+		logAlert('count2 caught', {e})
 	}
-	return o;
-});
+	await awaitDoorPromises()
+	return o
+})
 
 
 

@@ -6,3 +6,6 @@ pages_build_output_dir = "./dist"
 
 [placement]
 mode = "smart"
+
+[observability]
+enabled = true

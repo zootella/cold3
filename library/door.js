@@ -62,7 +62,8 @@ export function doorPromise(p) {//instead of awaiting p, add it here to keep goi
 		.then(result => ({success: true, result}))
 		.catch(error => ({success: false, error})))//wrap the promise so we can get its result or error, and to prevent it from throwing
 }
-async function awaitDoorPromises(door) {//takes door just to log it
+//v TODO remove export when count2 is using door properly
+export async function awaitDoorPromises(door) {//takes door just to log it
 	let results = []
 	if (_doorPromises.length) {//we've got some promises to wait for
 		let note1 = _doorPromises.length
@@ -164,7 +165,7 @@ here's the kludge where we save a reference to nuxt's useRuntimeConfig in a modu
 this is the best way for Access to use it instead of process.env to get secrets in cloudflare
 */
 let _useRuntimeConfigFunction
-function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
+export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
 export function getUseRuntimeConfigFunction() { return _useRuntimeConfigFunction }
 
 //      _                                                             _       _           _   
