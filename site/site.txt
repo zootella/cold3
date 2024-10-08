@@ -1,1 +1,0 @@
-idea to move the nuxt project here in the switch to yarn

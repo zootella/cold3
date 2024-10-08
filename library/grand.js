@@ -1,4 +1,129 @@
 
+export {
+
+Sticker, senseEnvironment,
+sayDate,
+
+/*
+uncomment this section when you actually move some of these into sticker officially
+
+//and these are copied from library0 for now, because that would be a messy refactor:
+Now,
+sayTick,
+defined,
+hasText,
+
+//and these are copied from library1.js, and use nanoid:
+tagLength,
+Tag,
+*/
+
+} from './sticker.js'
+export {
+
+Time, Size, Now,
+noop, test, ok, runTests,
+toss,
+log, composeLog, recordLog, getLogRecord, composeLogArguments,
+sameObject, sameArray,
+
+checkText, hasText, checkInt, minInt, intToText, textToInt, checkTextSame, hasTextSame, checkTextOrBlank, hasTextOrBlank,
+newline, middleDot, thinSpace,
+start, end, beyond, chop, clip, has, starts, ends, cut, cutLast, findFirst, findLast, swap, parse,
+checkNumerals, checkBase16, checkAlpha, checkName, onlyNumerals, onlyBase16, onlyAlpha, onlyName,
+checkDate,
+size4, number4,
+
+Bin, Data,
+checkHash, checkHashThoroughly,
+base62ToInt, intToBase62,
+randomBetween, cryptoRandomBetween,
+symmetricCreateKey, symmetricExportKey, symmetricImportKey, symmetricEncrypt, symmetricDecrypt,
+hashLength, subtleHash,
+curveCreateKeys, curveExportKey, curveImportKey, curveSign, curveVerify,
+hashPassword,
+
+sayTick, sayTick_previousVersion,
+sayWhenPage, sayWhenFeed,
+fraction,
+deindent,
+defined,
+squareEncode, squareDecode, checkSquare,
+correctLength,
+testBox,
+say, look, stringify,
+
+} from './library0.js'
+export {
+
+tagLength, Tag, checkTag,
+uniqueCode4, uniqueCode6,
+validateEmail, validatePhone, validateCard,
+generatePosts, postDatabase,
+
+} from './library1.js'
+export {
+
+Access, hasAccess,
+redact, replaceAll, replaceOne,
+getBrowserTag, getBrowserFingerprintAndTag, browserHash,
+
+} from './library2.js'
+export {
+
+durationEnvironment, durationFetch, durationWait,
+saveUseRuntimeConfigFunction, getUseRuntimeConfigFunction,
+doorPromise, awaitDoorPromises,
+doorWorkerOpen, doorLambdaOpen,
+doorWorkerShut, doorLambdaShut,
+
+} from './door.js'
+export {
+
+} from './door2.js'
+export {
+
+settings_getText, settings_getNumber, settings_setText, settings_setNumber,
+counts_getGlobalCount, counts_setGlobalCount, counts_getBrowserCount, counts_setBrowserCount,
+access_addRecord, access_getRecords, accessTableInsert, accessTableQuery,
+rowExists, createRow, readRow, writeRow,
+rowExistsBetter, createRowBetter, readRowBetter, writeRowBetter,
+database_pingCount,
+
+} from './database.js'
+export {
+
+dog, logAudit, logAlert,
+awaitDog, awaitLogAudit, awaitLogAlert,
+snippet,
+
+} from './cloud.js'
+export {
+
+} from './cloud2.js'
+
+
+
+
+
+//also this replaces test.js
+/*
+
+//this script just bundles together all the library files that have tiny tests
+import { runTests } from './library0.js'
+import './library1.js'
+import './library2.js'
+import './door.js'
+import './door2.js'
+import './database.js'
+import './cloud.js'
+import './cloud2.js'
+
+//so you can import just one thing from here
+export { runTests }//curly braces as part of named export system in javascript
+*/
+
+
 
 
 
@@ -91,195 +216,6 @@ and actually only import things you're using, which is cleaner, and also elimina
 
 
 */
-
-/*
-//cloud.js
-dog
-logAudit
-logAlert
-awaitDog
-awaitLogAudit
-awaitLogAlert
-snippet
-
-//database.js
-settings_getText
-settings_getNumber
-settings_setText
-settings_setNumber
-counts_getGlobalCount
-counts_setGlobalCount
-counts_getBrowserCount
-counts_setBrowserCount
-access_addRecord
-access_getRecords
-accessTableInsert
-accessTableQuery
-rowExists
-createRow
-readRow
-writeRow
-database_pingCount
-
-//door.js
-durationEnvironment
-durationFetch
-durationWait
-doorPromise
-doorWorkerOpen
-doorLambdaOpen
-doorWorkerShut
-doorLambdaShut
-fetchLambda
-
-//library0
-Time
-Size
-Now
-noop
-test
-ok
-runTests
-toss
-log
-composeLog
-recordLog
-getLogRecord
-composeLogArguments
-sameObject
-sameArray
-checkText
-hasText
-checkInt
-minInt
-intToText
-textToInt
-checkTextSame
-hasTextSame
-checkTextOrBlank
-hasTextOrBlank
-newline
-middleDot
-thinSpace
-start
-end
-beyond
-chop
-clip
-has
-starts
-ends
-
-cut
-cutLast
-findFirst
-findLast
-swap
-parse
-checkNumerals
-checkBase16
-checkAlpha
-checkName
-onlyNumerals
-onlyBase16
-onlyAlpha
-onlyName
-checkDate
-size4
-number4
-Bin
-Data
-checkHash
-checkHashThoroughly
-base62ToInt
-intToBase62
-randomBetween
-cryptoRandomBetween
-symmetricCreateKey
-symmetricExportKey
-symmetricImportKey
-symmetricEncrypt
-symmetricDecrypt
-hashLength
-subtleHash
-curveCreateKeys
-curveExportKey
-curveImportKey
-curveSign
-curveVerify
-hashPassword
-sayTick
-sayTick_previousVersion
-sayWhenPage
-sayWhenFeed
-fraction
-deindent
-defined
-squareEncode
-squareDecode
-checkSquare
-correctLength
-testBox
-say
-look
-stringify
-
-//library1.js
-tagLength
-Tag
-checkTag
-uniqueCode4
-uniqueCode6
-validateEmail
-validatePhone
-validateCard
-generatePosts
-postDatabase
-
-//library2.js
-redact
-replaceAll
-replaceOne
-getBrowserTag
-getBrowserFingerprintAndTag
-browserHash
-
-//sticker.js
-Sticker
-senseEnvironment
-sayDate
-//and these are copied from library0 for now, because that would be a messy refactor:
-Now
-sayTick
-defined
-hasText
-//and these are copied from library1.js, and use nanoid:
-tagLength
-Tag
-*/
-
-
-
-
-//also this replaces test.js
-/*
-
-//this script just bundles together all the library files that have tiny tests
-import { runTests } from './library0.js'
-import './library1.js'
-import './library2.js'
-import './door.js'
-import './door2.js'
-import './database.js'
-import './cloud.js'
-import './cloud2.js'
-
-//so you can import just one thing from here
-export { runTests }//curly braces as part of named export system in javascript
-*/
-
-
-
 
 
 
