@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
 
 		let body = await readBody(event)
-		log('body is:', look(body))
+		//log('body is:', look(body))
 
 		o.message = 'hi from api count'
 		o.mirroredBody = body
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
 		//create the row if it doesn't exist
 		if (!(await rowExists())) {
 			await createRow()
-			log("row didn't exist, created it")
+			//log("row didn't exist, created it")
 		}
 
 
@@ -33,13 +33,13 @@ export default defineEventHandler(async (event) => {
 		//increment
 		let countGlobal = 0
 		if (body.countGlobal > 0) {
-			log('need to increment the count')
+			//log('need to increment the count')
 
 			countGlobal = +(await readRow())//read, convert string to int afterards
 			countGlobal += body.countGlobal//increment with requested value
 			await writeRow(countGlobal+'')//write, convert int to string beforehand
 
-			log('incremented to ' + countGlobal)
+			//log('incremented to ' + countGlobal)
 		}
 
 		//read

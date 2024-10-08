@@ -1,4 +1,14 @@
-# Nuxt dev/build outputs
+#node
+node_modules
+
+#serverless framework
+.serverless
+jspm_packages
+
+#cloudflare
+.wrangler
+
+#nuxt
 .output
 .data
 .nuxt
@@ -7,35 +17,26 @@
 dist
 distribution
 
-# Node dependencies
-node_modules
-
-# Logs
-logs
-*.log
-
-# Misc
-.DS_Store
-.fleet
-.idea
-
-# Local env files
+#secrets
 .env
 .env.*
 !.env.example
 *.env
 env.js
-
-# Added for cloudflare secrets
+#secrets, added for nuxt
 *.vars
+#secrets, custom
+secret*.txt
 
-# Added for cloudflare
-.wrangler
+#logs
+logs
+*.log
 
-# Added for serverless framework in net23
-.serverless
-jspm_packages
-
-# Added myself
+#custom
 *.diff
 diff*.txt
+
+#miscellaneous
+.DS_Store
+.fleet
+.idea

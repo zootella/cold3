@@ -1,36 +1,20 @@
 
-import { createClient } from '@supabase/supabase-js'
-
 import {
 log, look,
-database_pingCount,
-saveUseRuntimeConfigFunction, awaitDoorPromises
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}
 	try {
-		saveUseRuntimeConfigFunction(useRuntimeConfig)
-		o.message = 'snippet v2027oct7d: ' + await database_pingCount()
+		o.message = 'snippet 2024oct8a'
 
 
 	} catch (e) {
 		log('snippet caught', look(e))
+		o.error = e.stack
 	}
-	await awaitDoorPromises()
 	return o
 })
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -79,7 +79,7 @@ export async function awaitDoorPromises(door) {//takes door just to log it
 		let start = Now()
 		results = await Promise.race([all, limit])
 		let note2 = Now() - start
-		await awaitDog(`raced ${note1} door promises for ${note2}ms`)
+		//await awaitDog(`raced ${note1} door promises for ${note2}ms`)
 		/*
 		note that this can't throw
 		we've wrapped each door promise above with a .catch()

@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 		checkTag(body.browserTag)
 
 		//validate the password, only needed to sign in
-		o.passwordValid = hasText(body.password) && body.password == Access('ACCESS_PASSWORD_SECRET')
+		o.passwordValid = (body.password == Access('ACCESS_PASSWORD_SECRET'))
 
 		//is this browser already signed in?
 		let rows = await accessTableQuery(body.browserTag)//get all the rows

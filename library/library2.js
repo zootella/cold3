@@ -11,7 +11,7 @@ getUseRuntimeConfigFunction,
 } from './grand.js'
 
 
-//hello tuesday
+//october
 /*
 //new draft pattern for importing very environment-specific stuff in a library file that gets called from dispirate environments
 let useRuntimeConfig//the nuxt api, or left undefined if nitro isn't running us
@@ -48,8 +48,6 @@ export function Access(name) {
 	} else {
 		toss("can't access nuxt runtime config nor process.env", {name})
 	}
-	console.log(`Access ${name} got ${v.length} length`)
-
 	checkText(v)//throws on non-string or blank string--makes sure v is a string that has text!
 	return v
 }
@@ -148,7 +146,7 @@ export function redact(s) {
 	words.forEach(word => { if (word.endsWith(_secretSuffix)) secretNamesSet.add(word) })
 	let secretNames = Array.from(secretNamesSet)
 	let secretValues = []
-	if (defined(typeof process)) secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })//todo this will change when you're reading Access('ACCESS_SECRET_LIST') to get the names to redact
+	if (defined(typeof process)) secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })//october this will change when you're reading Access('ACCESS_SECRET_LIST') to get the names to redact
 	secretValues.forEach(secretValue => {
 		let redactedValue = redact_composeReplacement(secretValue)
 		s = replaceAll(s, secretValue, redactedValue)
