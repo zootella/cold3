@@ -1387,6 +1387,25 @@ lambda serverless framework is local/deployed--run in those two environments
 
 
 
+
+2024oct8
+after updating wrangler, you got supabase working again
+in the cloudflare dashboard
+cloudflare dashboard, workers and pages, cold3
+there's an Integrations tab, on it are a bunch of third party services in boxes, including Supabase
+you went through this flow
+you let cloudflare oauth into your supabase account
+at the end, it had made two new cloudflare secrets
+and all of that was unnecessary--you can just copy and paste the endpoint url and api key from supabase yourself
+you deleted the integration, and supabase still works fine
+so this note is for, in the future, if you're fixing supabase again, the integrations tab probably won't help
+
+
+
+
+
+
+
 beyond aws services, another nice thing about net23 is that
 if you do run into some node module or third party service
 that you cannot get working in a cloudflare worker
