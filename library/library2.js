@@ -10,6 +10,7 @@ import { getUseRuntimeConfigFunction } from './door.js'
 import { dog } from './cloud.js'
 
 
+//hello tuesday
 /*
 //new draft pattern for importing very environment-specific stuff in a library file that gets called from dispirate environments
 let useRuntimeConfig//the nuxt api, or left undefined if nitro isn't running us
