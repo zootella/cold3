@@ -422,13 +422,6 @@ export async function rowExists() {
 	if (error) toss('supabase', {error})
 	return count > 0
 }
-export async function rowExistsBetter() {
-	// SQL equivalent: SELECT COUNT(key) FROM table_settings WHERE key = 'count_global'
-	let { data, error, count } = (await client()
-		.from('table_settings').select('key', { count: 'exact' }).eq('key', 'count_global'))
-	if (error) toss('supabase', {error})
-	return count > 0
-}
 // 2. Create the row with starting value zero
 export async function createRow() {
 	// SQL equivalent: INSERT INTO table_settings (key, value) VALUES ('count_global', '0')
@@ -436,21 +429,8 @@ export async function createRow() {
 		.from('table_settings').insert([{ key: 'count_global', value: '0' }]))
 	if (error) toss('supabase', {error})
 }
-export async function createRowBetter() {
-	// SQL equivalent: INSERT INTO table_settings (key, value) VALUES ('count_global', '0')
-	let { data, error } = (await client()
-		.from('table_settings').insert([{ key: 'count_global', value: '0' }]))
-	if (error) toss('supabase', {error})
-}
 // 3. Read the value
 export async function readRow() {
-	// SQL equivalent: SELECT value FROM table_settings WHERE key = 'count_global'
-	let { data, error } = (await client()
-		.from('table_settings').select('value').eq('key', 'count_global'))
-	if (error) toss('supabase', {error})
-	return data[0]?.value
-}
-export async function readRowBetter() {
 	// SQL equivalent: SELECT value FROM table_settings WHERE key = 'count_global'
 	let { data, error } = (await client()
 		.from('table_settings').select('value').eq('key', 'count_global'))
@@ -465,13 +445,6 @@ export async function writeRow(newValue) {
 	if (error) toss('supabase', {error})
 	if (!data.length) toss('no error from update, but also no updated rows')
 }
-export async function writeRowBetter(newValue) {
-	// SQL equivalent: UPDATE table_settings SET value = 'newValue' WHERE key = 'count_global' RETURNING *
-	let { data, error } = (await client(
-		).from('table_settings').update({ value: newValue }).eq('key', 'count_global').select())
-	if (error) toss('supabase', {error})
-	if (!data.length) toss('no error from update, but also no updated rows')
-}
 
 
 
@@ -480,45 +453,12 @@ export async function writeRowBetter(newValue) {
 //for the ping system, obviously refactor
 export async function database_pingCount() {
 	log('here we are')
-	return readIntAsText(await readRowBetter())//currently hardcoded into one cell of one table
+	return readIntAsText(await readRow())//currently hardcoded into one cell of one table
 }
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export async function snippetGetCount() {
-	let s = 'snippet get count; '
-
-	let secret1 = Access('ACCESS_SUPABASE_URL')
-	let secret2 = Access('ACCESS_SUPABASE_KEY_SECRET')
-	s += `accessed lengths of ${secret1?.length} and ${secret2?.length}; `
-
-	let b = createClient(secret1, secret2)
-	if (b) {
-		let { data, error } = await b.from('table_settings').select('value').eq('key', 'count_global')
-		if (error) s += `error from ${error.stack}; `
-		else s += `got count of ${data[0]?.value}; `
-	} else {
-		s += `couldn't create client; `
-	}
-	return s
-}
 
 
 

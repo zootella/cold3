@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js'
 import {
 log, look,
-rowExistsBetter, createRowBetter, readRowBetter, writeRowBetter,
+rowExists, createRow, readRow, writeRow,
 dog, logAlert,
 saveUseRuntimeConfigFunction, awaitDoorPromises
 } from '@/library/grand.js'
@@ -23,8 +23,8 @@ export default defineEventHandler(async (event) => {
 
 
 		//create the row if it doesn't exist
-		if (!(await rowExistsBetter())) {
-			await createRowBetter()
+		if (!(await rowExists())) {
+			await createRow()
 			log("row didn't exist, created it")
 		}
 
@@ -35,15 +35,15 @@ export default defineEventHandler(async (event) => {
 		if (body.countGlobal > 0) {
 			log('need to increment the count')
 
-			countGlobal = +(await readRowBetter())//read, convert string to int afterards
+			countGlobal = +(await readRow())//read, convert string to int afterards
 			countGlobal += body.countGlobal//increment with requested value
-			await writeRowBetter(countGlobal+'')//write, convert int to string beforehand
+			await writeRow(countGlobal+'')//write, convert int to string beforehand
 
 			log('incremented to ' + countGlobal)
 		}
 
 		//read
-		countGlobal = +(await readRowBetter())//read or read again to check, convert string to int afterards
+		countGlobal = +(await readRow())//read or read again to check, convert string to int afterards
 
 
 		o.countGlobal = countGlobal
