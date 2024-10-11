@@ -57,6 +57,37 @@ where's the public key? this doesn't need to be in git
 (keep this separate, or add this as a feature to shrinkwrap)
 
 
+october draft design of encrypted secrets
+maybe the flow is like this
+./.env is set once at the start by hand, where you set the private key, which you also put in the cloudflare dashboard
+the developer changes .env once at the start of this system
+./.env.secret has the public key, comments, and secrets like ACCESS_SOME_SECRET=blah blah blah
+seal encrypts that into a string, which it puts in
+the developer changes .env.secret each time they want to edit or change secrets
+./wrapper.js
+node shrink sets the ciphertext in wrapper js each time it runs
+the contents of wrapper.js get built into the public deployed code for all environments
+Access gets the private key from ./env in development, wherever serverless framework put it for lambda, and the cloudflare dashboard
+
+.env and .env.secret are dot hidden, git ignored, but also shrinkwrap hashed
+wrapper.js is not shrinkwrap hashed
+
+wrapper.js also has another property for local time zone, in minutes
+so Sticker calling sayTick can use it without needing to get secrets or use encryption
+
+
+all in all
+very secure
+you can change back to hidden secrets later
+lets you do this
+-set the secrets one place, not five places
+-know you got all the secrets, because otherwise you'd get none of them
+-lets you loop through the secrets
+all avoiding vendor-specific code
+
+
+
+
 
 
 

@@ -1140,6 +1140,50 @@ but there are already used in async call stacks
 so maybe go forward with this whole crazy plan!?
 */
 
+/*
+refactor both rsa and sign for actual use, now they're more generalized
+
+if you do async Access, you have to
+redact both the _SECRET values, and the private key itself
+guard against portions of a secret getting logged--break each secret into parts and redact the parts, probably
+only if a certain length, and a trailing tip isn't too short
+*/
+
+/*
+additional thoughts about Access
+do it like this
+const access = await asyncGetAccess()
+access.get('ACCESS_SOME_SECRET')
+this way it can blow up if not found at the top, and only the top needs to be awaited
+also, things only get parsed once, and redaction is a method now, because it knows all the secrets
+access.redact(s)
+
+ok, here's teh dealbreaker that will kill encryping secrets as an idea
+are you easily able to call await redact()?
+like, not in dog()!
+so then the way to do it is to have door open produce this side effect that Access works
+or, dog doesn't redact?!
+
+
+
+instead of decrypting, you could also just bundle up base64 and have one giant blob secret
+benefits
+-no compelling thing for hackerz to try to decrypt
+-faster and cheaper on the server
+-get access without an await
+drawbacks
+-if you change or add a secret, you have to go into the files and dashboards
+but for production, this is probably the right plan
+either way, you have to be careful to redact both the long key (private key, or blob of encoded secrets) AND the individual secret values, because either can expose all the secrets
+
+*/
+
+/*
+october
+what if your naming convention for exported async functions that return promises is start with underscore
+a little weird because collides with start with underscore meaning private helper or do not touch
+*/
+
 
 test(async () => {
 

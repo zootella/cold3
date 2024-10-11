@@ -167,6 +167,62 @@ let _useRuntimeConfigFunction
 export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
 export function getUseRuntimeConfigFunction() { return _useRuntimeConfigFunction }
 
+
+
+
+
+//october DUH new one line design
+export async function new_design_doorWorker(workerEvent, useRuntimeConfig, doorProcessBelow) {
+	try {
+
+		let door = {}, response, error
+		try {
+
+			//CHECKPOINT 1
+			//dog('checkpoint 1')
+
+			door = await doorWorkerOpen(workerEvent, useRuntimeConfig)
+			response = await doorProcessBelow(door)
+
+		} catch (e) { error = e }
+		try {
+
+			//CHECKPOINT 3
+			//dog('checkpoint 3')
+
+			let r = await doorWorkerShut(door, response, error)
+			if (response && !error) return r
+
+		} catch (f) { await awaitLogAlert('door shut', {f, door, response, error}) }//if await log alert itself
+
+	} catch (g) { console.error('[OUTER]', g)	}//last resort catch calls and does nothing
+	setResponseStatus(workerEvent, 500); return null//this must not be able to throw, either
+}
+/*
+note how exceptions are caught
+e is likely to happen, on bad user input or a coding error
+f should not happen, but could on a a coding error
+g happens when the mistake is so severe, awaitLogAlert throws
+so at that point, we do not call into any of our own code anymore, instead using console.error, setResponseStatus, and so on
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //      _                                                             _       _           _   
 //   __| | ___   ___  _ __    ___  _ __   ___ _ __     __ _ _ __   __| |  ___| |__  _   _| |_ 
 //  / _` |/ _ \ / _ \| '__|  / _ \| '_ \ / _ \ '_ \   / _` | '_ \ / _` | / __| '_ \| | | | __|

@@ -16,6 +16,19 @@ export default defineEventHandler(async (event) => {
 	return o
 })
 
+/*
+october. you still want to know
+if you jsut console.log here, can you see it in the cloudflare dashboard?
+if not, why not? what does it mean that they made logging better?
+https://blog.cloudflare.com/builder-day-2024-announcements/#logs-for-every-worker
+
+october
+can you use the door system here in this GET snippet?
+probably not, as its going to try to read a body, but you want to
+
+
+*/
+
 
 
 /*
