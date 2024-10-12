@@ -1024,341 +1024,42 @@ const _subtle = {
 	symmetricUse: ['encrypt', 'decrypt'],//create and import keys that can do these things
 	symmetricFormat: 'raw',//export symmetric key as raw bytes
 
-	//and for one directional hashing of that data
-	hashName: 'SHA-256',
-
-	//and for digital signatures
-	curveName: 'ECDSA',
-	curveType: 'P-256',
-	curveUse: ['sign', 'verify'],
-	curveFormat: 'jwk',//export sign keys as javascript objects
-
-	//general or multi-purpose settings
-	extractable: true,//say we want to be able to export the key
-	strength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
-	vectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
-
-	//hash password using the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
-	passwordAlgorithmKeyDerivation: 'PBKDF2',
-	passwordAlgorithmEncryption:    'AES-GCM',
-	passwordAlgorithmHashFunction:  'SHA-256',
-	passwordKeyLength: 256,//256 bit derived key length
-
-
-
-	//new stuff here for rsa:
+	//public and private key pair encryption
 	rsaName: 'RSA-OAEP',//rsa encryption scheme with Optimal Asymmetric Encryption Padding
 	rsaLength: 2048,//modulus length in bits
 	rsaPublicExponent: new Uint8Array([1, 0, 1]),//standard public exponent 65537 or 0x10001
 	rsaHashFunction: 'SHA-256',//hash function for OAEP padding process
 	rsaUse: ['encrypt', 'decrypt'],//we'll use rsa keys to encrypt and decrypt
 	rsaFormat: 'jwk',//we'll export and import keys in json web key format
+
+	//one-directional hashing of that data
+	hashName: 'SHA-256',
+
+	//digital signatures
+	curveName: 'ECDSA',
+	curveType: 'P-256',
+	curveUse: ['sign', 'verify'],
+	curveFormat: 'jwk',//export sign keys as javascript objects
+
+	//user password hashing
+	passwordAlgorithmKeyDerivation: 'PBKDF2',//the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
+	passwordAlgorithmEncryption:    'AES-GCM',
+	passwordAlgorithmHashFunction:  'SHA-256',
+	passwordKeyLength: 256,//256 bit derived key length
+
+	//and general or multi-purpose settings
+	extractable: true,//say we want to be able to export the key
+	strength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
+	vectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 }
 Object.freeze(_subtle)
 
-
-
-/*
-the design that's forming is this:
-there's a higher level of functions which is the api you want to call; it uses base62 everywhere
-there's a lower level, it uses the native javascript types like array and buffer
-*/
-
-
-function objectToBase62(o) { return Data({text: JSON.stringify(o)}).base62() }
-function base62ToObject(s) { return JSON.parse(Data({base62: s}).text()) }
-
-async function rsa_makeKeys() {//returns public and private keys in base62
-	let keys = await rsa_makeKeys_create()
-	return {
-		keyPublicBase62: objectToBase62(await rsa_makeKeys_export(keys.publicKey)),
-		keyPrivateBase62: objectToBase62(await rsa_makeKeys_export(keys.privateKey))
-	}
-}
-async function rsa_makeKeys_create() {
-	return await crypto.subtle.generateKey({name: _subtle.rsaName, modulusLength: _subtle.rsaLength, publicExponent: _subtle.rsaPublicExponent, hash: {name: _subtle.rsaHashFunction}}, _subtle.extractable, _subtle.rsaUse)
-}
-async function rsa_makeKeys_export(key) {
-	return await crypto.subtle.exportKey(_subtle.rsaFormat, key)
-}
-
-async function rsa_encrypt(keyPublicBase62, plainText) {
-	let keyPublicImported = await rsaImportKey(base62ToObject(keyPublicBase62), true)//make thesee 'encrypt'
-	let d = await rsaEncrypt(keyPublicImported, plainText)
-	return d.base62()
-}
-export async function rsaEncrypt(publicKey, plainText) {
-	return Data({buffer: await crypto.subtle.encrypt({name: _subtle.rsaName}, publicKey, Data({text: plainText}).array())})
-}
-
-async function rsa_decrypt(keyPrivateBase62, cipherBase62) {
-	let keyPrivateImported = await rsaImportKey(base62ToObject(keyPrivateBase62), false)//and 'decrypt', that would be more clear
-	let d = await rsaDecrypt(keyPrivateImported, Data({base62: cipherBase62}))
-	return d.text()
-}
-export async function rsaDecrypt(privateKey, cipherData) {
-	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.rsaName}, privateKey, cipherData.array())})
-}
-
-noop(async () => {
-	let t = Now()
-	let keys = await rsa_makeKeys()
-	let encrypted = await rsa_encrypt(keys.keyPublicBase62, 'hello2')
-	let decrypted = await rsa_decrypt(keys.keyPrivateBase62, encrypted)
-	let duration = Now() - t//ok, but how long does it take when the subtle system isn't already warm from key generation and encryption?
-	log(look({duration, decrypted, encrypted, keys}))
-	log(keys.keyPrivateBase62)
-})
-//oh, this also means you have to await Access(); not sure about that, actually
-//see how slow it is, too
-/*
-await loadAccess()//do that once at the top of every function that needs them?
-
-await awaitLoadAccess()
-you have to call that at the top of any function that uses access
-no, that's a crazy side effect that's worse than await Access() everywhere
-
-or
-let access = await awaitLoadAccess()
-then you use access.ACCESS_SOME_SECRET
-but you don't like that, because if that object got logged, wow
-
-
-the other idea is you have one secret everywhere, which is base62 of text of file that Access() parses and  returns details from
-here, it's fast and synchronous
-and there's no ciphertext that looks compelling to try to crack
-downsides are
-you might run into a length limit at some point with a provider
-you can't change keys locally, you have to go into the cloudflare dashboard whenever you want to change them
-
-looking at code, having Access async doesn't look that bad
-it'll asyncize:
-door open
-supabase client creation
-but there are already used in async call stacks
-
-so maybe go forward with this whole crazy plan!?
-*/
-
-/*
-refactor both rsa and sign for actual use, now they're more generalized
-
-if you do async Access, you have to
-redact both the _SECRET values, and the private key itself
-guard against portions of a secret getting logged--break each secret into parts and redact the parts, probably
-only if a certain length, and a trailing tip isn't too short
-*/
-
-/*
-additional thoughts about Access
-do it like this
-const access = await asyncGetAccess()
-access.get('ACCESS_SOME_SECRET')
-this way it can blow up if not found at the top, and only the top needs to be awaited
-also, things only get parsed once, and redaction is a method now, because it knows all the secrets
-access.redact(s)
-
-ok, here's teh dealbreaker that will kill encryping secrets as an idea
-are you easily able to call await redact()?
-like, not in dog()!
-so then the way to do it is to have door open produce this side effect that Access works
-or, dog doesn't redact?!
-
-
-
-instead of decrypting, you could also just bundle up base64 and have one giant blob secret
-benefits
--no compelling thing for hackerz to try to decrypt
--faster and cheaper on the server
--get access without an await
-drawbacks
--if you change or add a secret, you have to go into the files and dashboards
-but for production, this is probably the right plan
-either way, you have to be careful to redact both the long key (private key, or blob of encoded secrets) AND the individual secret values, because either can expose all the secrets
-
-*/
-
-/*
-october
-what if your naming convention for exported async functions that return promises is start with underscore
-a little weird because collides with start with underscore meaning private helper or do not touch
-*/
-
-
-test(async () => {
-
-	let examplePrivateKey = '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'
-	let exampleCipherBase62 = 'FQiNaGgbWAH9pEza3Rymx98MvHQIpYgawGZBTZPLGgMm6OuzqF4x5LtT2DylkvUQ572OreS4Qj7X4GFhgatPp3ouBxPhSFPMenvPqI4dvdOY5iMuzmtnST33iTiHWbEwip869UpkmBBiwickCgHzwo8zsgU4eeZiLfPE0YPKbBhPHFxEMY5Ar31uNikm0liXLdYeS1M69l1XsKE3xWpX5Ot1HvBGf8UQMYXiiJqTI1ng2iz584GwtB03CNudzL065nbDbuNsoevtEHqyet5WZFs1dXUOcTD0HWhXhCwyuty1fROipfnP0iSQb2HR4MCmKgTt5wdpG1AAkvQf0kxSiZYVrDr'
-
-	let t = Now()
-	let message = await rsa_decrypt(examplePrivateKey, exampleCipherBase62)
-	let duration = Now() - t//you're getting 4-9ms, so it's fast enough
-	log(look({duration, message}))
-
-
-
-
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-there might be a natural prefix to look for, "Up9WR6SXEX9HK", for redact to confirm the private key is not leaking
-*/
-
-//above is how you wrap stringify for crypto; use here and probably in higher level functions for sign and verify below, also
-
-
-//so maybe down here these use array, buffer, directly; all the Data is in the simplified ones above
-
-export async function rsaImportKey(key, isPublicToEncrypt) {//true, or false to import private key to decrypt
-	return await crypto.subtle.importKey(_subtle.rsaFormat, key, {name: _subtle.rsaName, hash: { name: _subtle.rsaHashFunction }}, _subtle.extractable, isPublicToEncrypt ? ['encrypt'] : ['decrypt'])
-}
-noop(async () => {
-	log("let's do some RSA")
-
-	let keys = await rsa_makeKeys()
-	await rsa_encrypt(keys.keyPublicBase62, 'hello')
-
-
-	log(look({keys}))
-
-	
-
-
-
-/*
-	let keys = await rsaCreateKeys()
-	let keyPublicStringified = await rsaExportKey(keys.publicKey)
-	let keyPrivateStringified = await rsaExportKey(keys.privateKey)
-
-	//let's package up the keys further
-	let keyPublicBase62 = Data({text: keyPublicStringified}).base62()
-	let keyPrivateBase62 = Data({text: keyPrivateStringified}).base62()
-
-	let keyPublicImported = await rsaImportKey(Data({base62: keyPublicBase62}).text(), true)
-	let keyPrivateImported = await rsaImportKey(Data({base62: keyPrivateBase62}).text(), false)
-
-	//next, let's encrypt a message with the imported public key
-	let message = "Hello, RSA encryption!"
-	let cipherData = await rsaEncrypt(keyPublicImported, message)
-	//log(cipherData.base62())
-
-	let decryptedMessage = await rsaDecrypt(keyPrivateImported, cipherData)
-	log(decryptedMessage.text())
-
-
-	//and decrypt it with the imported private key
-
-	// Step 5: Encrypt a message using the public key
-/*
-	// Step 6: Decrypt the message using the private key
-	let decryptedMessage = await rsaDecrypt(keyPrivateImported, Data({buffer: encryptedMessage}))
-	log("Decrypted message:", Data({buffer: decryptedMessage}).text())
-
-	// Verify the decrypted message matches the original
-	ok(message === Data({buffer: decryptedMessage}).text())
-	log("RSA encryption and decryption were successful!")
-*/
-
-})
-
-
-/*
-export async function rsaEncrypt(publicKey, plainText) {
-	let encoded = new TextEncoder().encode(plainText); // Convert text to Uint8Array
-	let encrypted = await crypto.subtle.encrypt(
-		{
-			name: 'RSA-OAEP',
-		},
-		publicKey,
-		encoded
-	);
-	return Data({ buffer: encrypted }); // Encrypted data returned as Data object
-}
-export async function rsaDecrypt(privateKey, cipherData) {
-	let decrypted = await crypto.subtle.decrypt(
-		{
-			name: 'RSA-OAEP',
-		},
-		privateKey,
-		cipherData.array()
-	);
-	return Data({ text: new TextDecoder().decode(decrypted) }); // Convert Uint8Array back to text
-}
-test(async () => {
-	// Step 1: Create a key pair
-	let keyPair = await rsaCreateKeys();
-
-	// Step 2: Export the public and private keys
-	let publicKeyData = await rsaExportKey(keyPair.publicKey);
-	let privateKeyData = await rsaExportKey(keyPair.privateKey);
-
-	// Step 3: Import the keys
-	let importedPublicKey = await rsaImportKey(publicKeyData, 'public');
-	let importedPrivateKey = await rsaImportKey(privateKeyData, 'private');
-
-	ok(importedPublicKey instanceof CryptoKey);
-	ok(importedPrivateKey instanceof CryptoKey);
-
-	// Step 4: Encrypt a message using the public key
-	let message = 'Hello, this is a secret message!';
-	let encryptedMessage = await rsaEncrypt(importedPublicKey, message);
-
-	// Step 5: Decrypt the message using the private key
-	let decryptedMessage = await rsaDecrypt(importedPrivateKey, encryptedMessage);
-
-	ok(message === decryptedMessage.text()); // Ensure the decrypted message matches the original
-});
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//^new area for classic two key encryption
-
+//                                     _        _      
+//  ___ _   _ _ __ ___  _ __ ___   ___| |_ _ __(_) ___ 
+// / __| | | | '_ ` _ \| '_ ` _ \ / _ \ __| '__| |/ __|
+// \__ \ |_| | | | | | | | | | | |  __/ |_| |  | | (__ 
+// |___/\__, |_| |_| |_|_| |_| |_|\___|\__|_|  |_|\___|
+//      |___/                                          
 
 export async function symmetricCreateKey() {
 	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.strength }, _subtle.extractable, _subtle.symmetricUse)
@@ -1416,6 +1117,48 @@ test(async () => {
 	let c2 = Data({base62: '9rvozTn89KacmVq0SNJB3DbRRdrJNARwr7I7szYrm17igrKdiav90UOlzTV1OgOcgnBzggjz4dzdMQ2UcwLiteSrmHWH1AHJrZH9XmRLJomhQQK33xzrRHuH9Gtbv7RIowaebie3rlxvh8Ucagz1K8Iz6r3lSI33bmlwmaqs0ANiGFZaFrAWLfxuSHlDEZ'})
 	let d2 = await symmetricDecrypt(c2, key)
 	ok(p == d2.text())
+})
+
+//  ____  ____    _    
+// |  _ \/ ___|  / \   
+// | |_) \___ \ / _ \  
+// |  _ < ___) / ___ \ 
+// |_| \_\____/_/   \_\
+//                    
+
+async function rsaMakeKeys() {//returns public and private keys in base62
+	let keys = await crypto.subtle.generateKey({name: _subtle.rsaName, modulusLength: _subtle.rsaLength, publicExponent: _subtle.rsaPublicExponent, hash: {name: _subtle.rsaHashFunction}}, _subtle.extractable, _subtle.rsaUse)
+	return {
+		keyPublicBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.publicKey)),
+		keyPrivateBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.privateKey))
+	}
+}
+async function rsaEncrypt(keyPublicBase62, plainText) {
+	let keyPublicImported = await _rsaImportKey(base62ToObject(keyPublicBase62), 'encrypt')
+	return Data({buffer: await crypto.subtle.encrypt({name: _subtle.rsaName}, keyPublicImported, Data({text: plainText}).array())}).base62()
+}
+async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
+	let keyPrivateImported = await _rsaImportKey(base62ToObject(keyPrivateBase62), 'decrypt')
+	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.rsaName}, keyPrivateImported, Data({base62: cipherBase62}).array())}).text()
+}
+export async function _rsaImportKey(key, use) {//true, or false to import private key to decrypt
+	return await crypto.subtle.importKey(_subtle.rsaFormat, key, {name: _subtle.rsaName, hash: { name: _subtle.rsaHashFunction }}, _subtle.extractable, [use])
+}
+function objectToBase62(o) { return Data({text: JSON.stringify(o)}).base62() }
+function base62ToObject(s) { return JSON.parse(Data({base62: s}).text()) }
+noop(async () => {//making keys and encrypting is pretty slow, like ~100ms
+	let keys = await rsaMakeKeys()
+	let encrypted = await rsaEncrypt(keys.keyPublicBase62, 'hello1')
+	let decrypted = await rsaDecrypt(keys.keyPrivateBase62, encrypted)
+	ok(decrypted == 'hello1')
+})
+test(async () => {//the task the server will frequently do is import an existing private key, and use it to decrypt some cipher text, like this:
+	let examplePrivateKey = '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'
+	let exampleCipherBase62 = 'FQiNaGgbWAH9pEza3Rymx98MvHQIpYgawGZBTZPLGgMm6OuzqF4x5LtT2DylkvUQ572OreS4Qj7X4GFhgatPp3ouBxPhSFPMenvPqI4dvdOY5iMuzmtnST33iTiHWbEwip869UpkmBBiwickCgHzwo8zsgU4eeZiLfPE0YPKbBhPHFxEMY5Ar31uNikm0liXLdYeS1M69l1XsKE3xWpX5Ot1HvBGf8UQMYXiiJqTI1ng2iz584GwtB03CNudzL065nbDbuNsoevtEHqyet5WZFs1dXUOcTD0HWhXhCwyuty1fROipfnP0iSQb2HR4MCmKgTt5wdpG1AAkvQf0kxSiZYVrDr'
+	let t = Now()
+	let decrypted = await rsaDecrypt(examplePrivateKey, exampleCipherBase62)
+	let duration = Now() - t//this takes 4-9ms, so it's fast enough
+	ok(decrypted == 'hello2')
 })
 
 //  _               _     
