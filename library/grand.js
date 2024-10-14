@@ -39,6 +39,7 @@ checkHash, checkHashThoroughly,
 base62ToInt, intToBase62,
 randomBetween, cryptoRandomBetween,
 symmetricCreateKey, symmetricExportKey, symmetricImportKey, symmetricEncrypt, symmetricDecrypt,
+rsaEncrypt, rsaDecrypt,
 hashLength, subtleHash,
 curveCreateKeys, curveExportKey, curveImportKey, curveSign, curveVerify,
 hashPassword,
@@ -52,6 +53,9 @@ squareEncode, squareDecode, checkSquare,
 correctLength,
 testBox,
 say, look, stringify,
+
+//more you'll probably rename
+accessEncrypt, accessDecrypt,
 
 } from './library0.js'
 export {
@@ -104,7 +108,7 @@ export {
 
 
 export {
-
+	secretSnippet2
 } from './access.js'//just for coding access, get rid of later, october
 
 

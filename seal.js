@@ -4,10 +4,28 @@ import path from 'path'
 import crypto from 'crypto'
 import glob from 'fast-glob'
 
-import { wrapper as prevousWrapper } from './wrapper.js'//load the previous one to repeat the name--but then, where did the name come from?!
+import { wrapper as previousWrapper } from './wrapper.js'//load the previous one to repeat the name--but then, where did the name come from?!
 import {
-log, look, newline, Data, Now
+log, look, newline, Data, Now,
+secretSnippet2
 } from './library/grand.js'
+
+
+
+
+
+//access secrets
+import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also deploy; ok but now you should use library2's Access() here, instead, actually
+dotenv.config()
+
+
+
+
+
+
+
+
+
 
 //      _          _       _                                               _ 
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___  ___  __ _| |
@@ -23,12 +41,37 @@ log, look, newline, Data, Now
 	./library/sticker.js  sticker.js imports wrapper.js, adding environment detection, a tick and tag, and friendly text
 */
 async function seal() {
+	await secretSnippet1()
+
 	let list = await listFiles()
 	let properties = await hashFiles(list)
 	let manifest = await composeWrapper(properties)
 	await affixSeal(properties, manifest)
 }
 seal()
+
+
+const secretFileName = '.env.secret'
+
+async function secretSnippet1() {
+	log('hi from secret snippet 1')
+//	log(look(previousWrapper))
+
+	/*
+	here we want to
+	-read the previous secret hash from wrapper
+	-compute the has of the secret file on disk
+	-pass the contents of the file and those hashes to a helper function in access, for now
+	*/
+
+	const secretFileContents = await fs.readFile('.env.secret', 'utf8')//specify utf8 to get a string
+	let previousSecretHash = previousWrapper.secretHash
+	let currentSecretHash = Data({array: crypto.createHash('sha256').update(secretFileContents).digest()}).base32()
+
+
+	await secretSnippet2(previousSecretHash, currentSecretHash, secretFileContents)
+
+}
 
 async function listFiles() {
 
@@ -93,15 +136,15 @@ async function affixSeal(properties, wrapper) {
 	//compose contents for the new wrapper.js
 	const tab = '\t'
 	let s = (
-		`export const wrapper = {`             +newline
-		+tab+`name: '${prevousWrapper.name}',` +newline//but then, where did the name come from originally??!!1?!
-		+tab+`tick: ${Now()},`                 +newline
-		+tab+`hash: '${hash.base32()}',`       +newline
-		+tab+`codeFiles: ${codeFiles},`        +newline
-		+tab+`codeSize: ${codeSize},`          +newline
-		+tab+`totalFiles: ${totalFiles},`      +newline
-		+tab+`totalSize: ${totalSize}`         +newline
-		+`}`                                   +newline
+		`export const wrapper = {`              +newline
+		+tab+`name: '${previousWrapper.name}',` +newline//but then, where did the name come from originally??!!1?!
+		+tab+`tick: ${Now()},`                  +newline
+		+tab+`hash: '${hash.base32()}',`        +newline
+		+tab+`codeFiles: ${codeFiles},`         +newline
+		+tab+`codeSize: ${codeSize},`           +newline
+		+tab+`totalFiles: ${totalFiles},`       +newline
+		+tab+`totalSize: ${totalSize}`          +newline
+		+`}`                                    +newline
 	)
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash

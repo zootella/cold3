@@ -2,7 +2,89 @@
 //gather all the secrets, access, and redact stuff here before moving it to the library
 
 
-import { log, test, ok, noop, Now, Tag, look, checkText } from './grand.js'
+import {
+log, test, ok, noop, Now, Tag, look,
+checkText, newline,
+Data, rsaEncrypt, rsaDecrypt, symmetricCreateKey, symmetricExportKey, symmetricImportKey, symmetricEncrypt, symmetricDecrypt,
+
+accessEncrypt, accessDecrypt,
+} from './grand.js'
+
+
+/*
+use symmetric encryption
+the private key is these places:
+.dev.vars
+.env
+it doesn't need to be in .env.secret
+*/
+
+
+
+//[]october, redact needs to redact all secret values, and access key secret we used to decrypt them, as well
+
+
+test(async () => {
+
+
+
+
+})
+
+noop(async () => {
+
+	//create and export key for symmetric encryption
+	let key = await symmetricCreateKey()
+	let keyData = await symmetricExportKey(key)
+	log(keyData.size(), keyData.base16(), keyData.base32(), keyData.base62())//32 bytes, we're going to use base16 for access key secret
+
+	//maybe make a wrapper for symmetric encrypt that imports and decrypts as a single step
+
+	//import it again, taking it through base62 text
+	let keyImported = await symmetricImportKey(Data({base62: keyData.base62()}))
+	ok(key instanceof CryptoKey)//both keys look good
+	ok(keyImported instanceof CryptoKey)
+
+	//encrypt a short message
+	let p = 'a short message'//plaintext p, a string
+	let c = await symmetricEncrypt(p, keyImported)//ciphertext c, a Data
+	let d = await symmetricDecrypt(c, keyImported)//decrypted plaintext d, a Data
+	ok(p == d.text())//we got the same message back out again!
+})
+
+
+/*
+in the seal step, we must:
+-get the previous secret file hash from wrapper.js
+-compute the current secret file hash
+compare them, if they're different:
+-store the new secret file hash
+-encrypt just the secrets
+
+
+
+
+
+in the run step, we must:
+-get the private key from a local development file or a cloud secret
+-get the encrypted secrets from wrapper.js
+-decrypt the secrets in an enclosed module scope variable behind Access()
+
+
+*/
+
+
+
+
+
+
+export async function secretSnippet2(previousSecretHash, currentSecretHash, secretFileContents) {
+	log('hi from secret snippet 2')
+
+	if (currentSecretHash != previousSecretHash) {
+
+		let cipherText = await accessEncrypt(process.env.ACCESS_KEY_SECRET, secretFileContents)
+		log(cipherText)
 
 
 
@@ -11,6 +93,55 @@ import { log, test, ok, noop, Now, Tag, look, checkText } from './grand.js'
 
 
 
+	}
+}
+
+
+
+function composeJsStyleFile(o) {
+
+}
+function parseJsStyleFile(s) {
+	//actually, you don't use this, you import it and javascript parses it for you
+}
+function composeEnvStyleFile(o) {
+	let s = ''
+	Object.entries(o).forEach(([k, v]) => {
+		s += k+'='+v+newline
+	})
+	return s
+}
+function parseEnvStyleFile(s) {
+	let lines = s.split(/\r?\n/)
+	let o = {}
+	lines.forEach(line => {
+		line = line.trimStart()
+		if (line.length && !line.startsWith('#')) {//skip blank and comment lines
+			let e = line.indexOf('=')//e is index of first equals sign
+			if (e != -1) {//only do lines that have key=value
+				let k = line.slice(0, e).trim()//key is trimmed text before equals
+				let v = line.slice(e+1)//value is everything on the line after the first equals
+				if (k.length) {//key name must exist
+					o[k] = v
+				}
+			}
+		}
+	})
+	return o
+}
+noop(() => {
+let s = `
+k1=v1
+k2=v2=v2b 
+`
+log(look(parseEnvStyleFile(s)))
+})
+/*
+above, you can parse and compose a env-style file
+next, you need to do that for wrapper.js, so you can parse it with extra stuff that stays the same
+
+and maybe even have nested objects, and Object.freeze, too
+*/
 
 
 

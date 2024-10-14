@@ -8,9 +8,9 @@ export default defineNuxtConfig({
 	modules: ['nitro-cloudflare-dev'],
 	devtools: { enabled: true },
 	runtimeConfig: {//nuxt promises these will be available on the server side, and never exposed to a client
+		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
 
-		ACCESS_SECRET_LIST: process.env.ACCESS_SECRET_LIST,
-
+		//october, these go away with unified secrets
 		ACCESS_TIME_ZONE: process.env.ACCESS_TIME_ZONE,
 		ACCESS_PASSWORD_SECRET: process.env.ACCESS_PASSWORD_SECRET,
 		ACCESS_NETWORK_23_SECRET: process.env.ACCESS_NETWORK_23_SECRET,
@@ -32,6 +32,7 @@ export default defineNuxtConfig({
 		ACCESS_TWILIO_AUTH_SECRET: process.env.ACCESS_TWILIO_AUTH_SECRET,
 		ACCESS_TWILIO_PHONE: process.env.ACCESS_TWILIO_PHONE,
 
+		//october, these go away because naming them ACCESS_..._PUBLIC is great, but just put them in a .vue file
 		public: {//and these are intentionally public, used by code that runs on the page
 
 			ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC: process.env.ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC,
