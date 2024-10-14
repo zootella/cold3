@@ -1137,7 +1137,7 @@ async function rsaEncrypt(keyPublicBase62, plainText) {
 	let keyPublicImported = await _rsaImportKey(base62ToObject(keyPublicBase62), 'encrypt')
 	return Data({buffer: await crypto.subtle.encrypt({name: _subtle.rsaName}, keyPublicImported, Data({text: plainText}).array())}).base62()
 }
-async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
+export async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
 	let keyPrivateImported = await _rsaImportKey(base62ToObject(keyPrivateBase62), 'decrypt')
 	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.rsaName}, keyPrivateImported, Data({base62: cipherBase62}).array())}).text()
 }

@@ -1,0 +1,34 @@
+
+
+
+
+important feature:
+if a secret value has a character that json stringify escapes
+then redacting it by finding the value won't work
+so have a scanner throw if a value named _SECRET isn't found after a little sample stringification
+and write a test to show true positives and negatives for this working
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
