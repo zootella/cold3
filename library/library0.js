@@ -1049,6 +1049,8 @@ const _subtle = {
 
 	//and general or multi-purpose settings
 	extractable: true,//say we want to be able to export the key
+
+	//october, you should move these two up into symmetric above, you think
 	strength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
 	vectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 }

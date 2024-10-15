@@ -17,6 +17,21 @@ the private key is these places:
 .dev.vars
 .env
 it doesn't need to be in .env.secret
+
+
+
+
+oh, also, the random initialization vector means that you can just encrypt every $ node shrink
+you don't need to detect a change in the secret file and only do it then
+this is a lot simpler
+
+
+
+
+
+
+
+
 */
 
 
