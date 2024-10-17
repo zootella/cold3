@@ -117,10 +117,11 @@ async function affixSeal(properties, manifest) {
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
 	o.secrets = cipherData.base62()
-	let wrapperJsContents = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})${newline}`
+	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`
+	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
-	await fs.writeFile('wrapper.js', wrapperJsContents)
+	await fs.writeFile('wrapper.js', s)
 
 	//output a summary to the shrinkwrapper
 	let codeSizeDiskPercent = Math.round(codeSize*100/floppyDiskCapacity)
