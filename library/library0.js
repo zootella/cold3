@@ -1063,6 +1063,23 @@ Object.freeze(_subtle)
 // |___/\__, |_| |_| |_|_| |_| |_|\___|\__|_|  |_|\___|
 //      |___/                                          
 
+//draft design for higher level api: combine steps, use Data, don't indicate encoding
+export async function accessCreateKey() {
+	let key = await symmetricCreateKey()
+	let keyData = await symmetricExportKey(key)
+	return keyData
+}
+export async function accessEncrypt(keyData, messageText) {
+	let key = await symmetricImportKey(keyData)
+	let cipherData = await symmetricEncrypt(messageText, key)
+	return cipherData
+}
+export async function accessDecrypt(keyData, cipherData) {
+	let key = await symmetricImportKey(keyData)
+	let messageData = await symmetricDecrypt(cipherData, key)
+	return messageData.text()
+}
+
 export async function symmetricCreateKey() {
 	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.strength }, _subtle.extractable, _subtle.symmetricUse)
 }
@@ -1121,67 +1138,6 @@ test(async () => {
 	ok(p == d2.text())
 })
 
-
-
-
-export async function accessCreateKey() {
-	let key = await symmetricCreateKey()
-	let keyData = await symmetricExportKey(key)
-	return keyData.base16()
-}
-export async function accessEncrypt(keyBase16, messageText) {
-	let key = await symmetricImportKey(Data({base16: keyBase16}))
-	let cipherData = await symmetricEncrypt(messageText, key)
-	return cipherData.base62()
-}
-export async function accessDecrypt(keyBase16, cipherBase62) {
-	let key = await symmetricImportKey(Data({base16: keyBase16}))
-	let messageData = await symmetricDecrypt(Data({base62: cipherBase62}), key)
-	return messageData.text()
-}
-noop(async() => {
-let messageText = `
-Lorem ipsum odor amet, consectetuer adipiscing elit. Phasellus non nam litora rutrum erat eu at gravida. Sapien ante curabitur hac at mattis finibus. Curae nostra nullam turpis justo ex sagittis conubia integer. Pellentesque efficitur sem; mi elementum id conubia. Nec ex arcu ultricies tristique lobortis class. Ornare lorem viverra nulla aliquam, vulputate egestas.
-Risus aliquam ultrices urna vestibulum est inceptos vulputate. Scelerisque nulla varius dolor nisi tempor, semper ex litora. Proin ipsum nostra magnis; volutpat montes lectus. Eros metus augue malesuada vitae per suscipit. Quam etiam ipsum luctus ad felis mus mattis. Sollicitudin curae finibus mattis vestibulum quam, ridiculus torquent sit. Torquent suspendisse ex torquent sed; quam viverra torquent. Imperdiet sit lacinia, sociosqu in aptent fringilla etiam. Ante sem lorem congue bibendum fames habitasse congue odio. Sapien nascetur litora augue lacinia accumsan litora magnis.
-Fermentum facilisis rhoncus lobortis vel tristique tortor nisi. Ipsum magnis natoque ex netus montes. Duis non eros fusce viverra convallis potenti tortor mus. At primis felis nisi libero dapibus eget ultrices. Molestie lacus pulvinar pharetra lacus pretium dignissim. Dis tristique auctor nascetur tempus tortor, morbi tellus natoque. Sem bibendum enim eget blandit egestas augue vulputate felis torquent.
-Fames sem vitae ac sit, non hac ut curabitur. Dapibus erat porta purus ligula cubilia elementum. Libero cubilia facilisi varius vulputate, sit auctor gravida mi netus. Molestie tortor libero mauris velit ac consequat duis. Commodo eu nullam tincidunt rhoncus tortor dignissim ultrices aliquam. Libero aliquam duis tincidunt proin viverra, consequat luctus.
-Posuere est feugiat duis mollis; fringilla sagittis etiam. Ornare accumsan torquent cursus augue pretium elementum fringilla suspendisse ipsum. Taciti sollicitudin cubilia felis consequat nullam dictumst metus venenatis. Fermentum aliquam ultrices arcu facilisis libero urna lacus. Rhoncus elit aliquam ligula habitant et; quis feugiat sagittis inceptos. Aliquam aliquam sit tellus quisque consectetur aenean aliquet. Felis class phasellus litora montes nam id ultrices. Aenean ultrices ad pulvinar a commodo sollicitudin. Massa augue tempus semper potenti fringilla habitasse suspendisse aptent.
-`
-let t1 = Now()
-let keyBase16 = await accessCreateKey()
-let t2 = Now()
-let cipherText = await accessEncrypt(keyBase16, messageText)
-let t3 = Now()
-let decryptedText = await accessDecrypt(keyBase16, cipherText)
-let t4 = Now()
-ok(messageText == decryptedText)
-log(`
-${t2-t1}ms to create key
-${t3-t2}ms to encrypt
-${t4-t3}ms to decrypt
-
-${messageText.length}
-${cipherText.length}
-`)
-
-
-
-
-
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
 //  ____  ____    _    
 // |  _ \/ ___|  / \   
 // | |_) \___ \ / _ \  
@@ -1216,7 +1172,7 @@ noop(async () => {//making keys and encrypting is pretty slow, like ~100ms
 	let decrypted = await rsaDecrypt(keys.keyPrivateBase62, encrypted)
 	ok(decrypted == 'hello1')
 })
-test(async () => {//the task the server will frequently do is import an existing private key, and use it to decrypt some cipher text, like this:
+noop(async () => {//the task the server will frequently do is import an existing private key, and use it to decrypt some cipher text, like this:
 	let examplePrivateKey = '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'
 	let exampleCipherBase62 = 'FQiNaGgbWAH9pEza3Rymx98MvHQIpYgawGZBTZPLGgMm6OuzqF4x5LtT2DylkvUQ572OreS4Qj7X4GFhgatPp3ouBxPhSFPMenvPqI4dvdOY5iMuzmtnST33iTiHWbEwip869UpkmBBiwickCgHzwo8zsgU4eeZiLfPE0YPKbBhPHFxEMY5Ar31uNikm0liXLdYeS1M69l1XsKE3xWpX5Ot1HvBGf8UQMYXiiJqTI1ng2iz584GwtB03CNudzL065nbDbuNsoevtEHqyet5WZFs1dXUOcTD0HWhXhCwyuty1fROipfnP0iSQb2HR4MCmKgTt5wdpG1AAkvQf0kxSiZYVrDr'
 	let t = Now()

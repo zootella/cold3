@@ -1,4 +1,8 @@
 
+
+export {
+wrapper
+} from '../wrapper.js'
 export {
 
 Sticker, senseEnvironment,

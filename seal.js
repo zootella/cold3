@@ -4,28 +4,11 @@ import path from 'path'
 import crypto from 'crypto'
 import glob from 'fast-glob'
 
-import { wrapper as previousWrapper } from './wrapper.js'//load the previous one to repeat the name--but then, where did the name come from?!
 import {
+wrapper,
 log, look, newline, Data, Now,
-secretSnippet2
+accessEncrypt
 } from './library/grand.js'
-
-
-
-
-
-//access secrets
-import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also deploy; ok but now you should use library2's Access() here, instead, actually
-dotenv.config()
-
-
-
-
-
-
-
-
-
 
 //      _          _       _                                               _ 
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___  ___  __ _| |
@@ -35,14 +18,23 @@ dotenv.config()
 //                                                 |_|                       
 
 /*
+	a summary of how this script encrypts secrets and generates the shrinkwrap seal wrapper
+
+	./.env.secret         add and edit application defined secrets the one place
+
+	./.env                store secret symmetric encryption key here for node
+	./.dev.vars           and also here for local nuxt and nitro
+	./net23/.env          and also here for lambda and serverless framework
+	                      and also set it in the cloudflare dashboard
+	                      vite and icarus are front-end and correctly can't reach it
+
 	./seal.js             $ npm run seal to generate the next two files:
 	./wrapper.txt         first, a file manifest
 	./wrapper.js          from that, hash and date of the manifest, versioning the code
+	                      and including the contents of .env.secret encrypted with the key in .env and other secret places
 	./library/sticker.js  sticker.js imports wrapper.js, adding environment detection, a tick and tag, and friendly text
 */
 async function seal() {
-	await secretSnippet1()
-
 	let list = await listFiles()
 	let properties = await hashFiles(list)
 	let manifest = await composeWrapper(properties)
@@ -50,33 +42,10 @@ async function seal() {
 }
 seal()
 
-
-const secretFileName = '.env.secret'
-
-async function secretSnippet1() {
-	log('hi from secret snippet 1')
-//	log(look(previousWrapper))
-
-	/*
-	here we want to
-	-read the previous secret hash from wrapper
-	-compute the has of the secret file on disk
-	-pass the contents of the file and those hashes to a helper function in access, for now
-	*/
-
-	const secretFileContents = await fs.readFile('.env.secret', 'utf8')//specify utf8 to get a string
-	let previousSecretHash = previousWrapper.secretHash
-	let currentSecretHash = Data({array: crypto.createHash('sha256').update(secretFileContents).digest()}).base32()
-
-
-	await secretSnippet2(previousSecretHash, currentSecretHash, secretFileContents)
-
-}
-
 async function listFiles() {
 
 	//list all the files that are a part of this project in its current form; configuration, code, and notes
-	const paths = await glob('**/*', {
+	let paths = await glob('**/*', {
 		dot: true,//include unix-style hidden files like .hidden
 		ignore: [//ignore these paths, notice we're intentionally including some things, like .env, that git ignores
 			'**/.DS_Store',//ignore this bothersome apple computer nonsense from the 1990s
@@ -101,10 +70,10 @@ async function listFiles() {
 async function hashFiles(paths) {
 
 	//given the array of paths, make an array of properties with each file sized and hashed
-	const properties = []
-	for (const path of paths) {
-		const contents = await fs.readFile(path)
-		const size = contents.length
+	let properties = []
+	for (let path of paths) {
+		let contents = await fs.readFile(path)
+		let size = contents.length
 		let hash = Data({array: crypto.createHash('sha256').update(contents).digest()})
 		properties.push({path, size, hash})
 	}
@@ -114,14 +83,16 @@ async function hashFiles(paths) {
 async function composeWrapper(properties) {
 
 	//compose the contents of wrapper.txt, a listing of hashes, paths, and sizes
-	const lines = properties.map(p => `${p.hash.base32()} ${p.path}:${p.size}`)//put size after : because it can't be part of a filename on windows or mac
-	const wrapper = lines.join(newline)+newline
-	await fs.writeFile('wrapper.txt', wrapper)//write the file to disk
-	return wrapper//also return the file contents as we'll hash them next
+	let lines = properties.map(p => `${p.hash.base32()} ${p.path}:${p.size}`)//put size after : because it can't be part of a filename on windows or mac
+	let manifest = lines.join(newline)+newline
+	await fs.writeFile('wrapper.txt', manifest)//write the file to disk
+	return manifest//also return the file contents as we'll hash them next
 }
 
-export const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
-async function affixSeal(properties, wrapper) {
+import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
+const envSecretFileName = '.env.secret'//our file of secrets to encrypt
+const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
+async function affixSeal(properties, manifest) {
 
 	//total up the files, counting those that are something we wrote or created, versus everything
 	let codeFiles = 0, codeSize = 0, totalFiles = 0, totalSize = 0
@@ -131,24 +102,25 @@ async function affixSeal(properties, wrapper) {
 	}
 
 	//compute the shrinkwrap hash of this version snapshot right now, which is the hash of wrapper.txt
-	let hash = Data({array: crypto.createHash('sha256').update(wrapper).digest()})
+	let hash = Data({array: crypto.createHash('sha256').update(manifest).digest()})
+
+	//encrypt the secrets in .env.secret
+	let envSecretContents = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
+	let cipherData = await accessEncrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), envSecretContents)
 
 	//compose contents for the new wrapper.js
-	const tab = '\t'
-	let s = (
-		`export const wrapper = {`              +newline
-		+tab+`name: '${previousWrapper.name}',` +newline//but then, where did the name come from originally??!!1?!
-		+tab+`tick: ${Now()},`                  +newline
-		+tab+`hash: '${hash.base32()}',`        +newline
-		+tab+`codeFiles: ${codeFiles},`         +newline
-		+tab+`codeSize: ${codeSize},`           +newline
-		+tab+`totalFiles: ${totalFiles},`       +newline
-		+tab+`totalSize: ${totalSize}`          +newline
-		+`}`                                    +newline
-	)
+	let o = {...wrapper}//copy all the properties into a new object
+	o.tick = Now()//update individual properties in the new object
+	o.hash = hash.base32()
+	o.codeFiles = codeFiles
+	o.codeSize = codeSize
+	o.totalFiles = totalFiles
+	o.totalSize = totalSize
+	o.secrets = cipherData.base62()
+	let wrapperJsContents = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})${newline}`
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
-	await fs.writeFile('wrapper.js', s)
+	await fs.writeFile('wrapper.js', wrapperJsContents)
 
 	//output a summary to the shrinkwrapper
 	let codeSizeDiskPercent = Math.round(codeSize*100/floppyDiskCapacity)

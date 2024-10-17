@@ -19,6 +19,110 @@ and write a test to show true positives and negatives for this working
 
 
 
+async function secretSnippet1() {
+	log('hi from secret snippet 1')
+//	log(look(previousWrapper))
+
+	/*
+	here we want to
+	-read the previous secret hash from wrapper
+	-compute the has of the secret file on disk
+	-pass the contents of the file and those hashes to a helper function in access, for now
+	*/
+
+
+
+
+}
+
+
+
+noop(async () => {
+let messageText = `
+Lorem ipsum odor amet, consectetuer adipiscing elit. Phasellus non nam litora rutrum erat eu at gravida. Sapien ante curabitur hac at mattis finibus. Curae nostra nullam turpis justo ex sagittis conubia integer. Pellentesque efficitur sem; mi elementum id conubia. Nec ex arcu ultricies tristique lobortis class. Ornare lorem viverra nulla aliquam, vulputate egestas.
+Risus aliquam ultrices urna vestibulum est inceptos vulputate. Scelerisque nulla varius dolor nisi tempor, semper ex litora. Proin ipsum nostra magnis; volutpat montes lectus. Eros metus augue malesuada vitae per suscipit. Quam etiam ipsum luctus ad felis mus mattis. Sollicitudin curae finibus mattis vestibulum quam, ridiculus torquent sit. Torquent suspendisse ex torquent sed; quam viverra torquent. Imperdiet sit lacinia, sociosqu in aptent fringilla etiam. Ante sem lorem congue bibendum fames habitasse congue odio. Sapien nascetur litora augue lacinia accumsan litora magnis.
+Fermentum facilisis rhoncus lobortis vel tristique tortor nisi. Ipsum magnis natoque ex netus montes. Duis non eros fusce viverra convallis potenti tortor mus. At primis felis nisi libero dapibus eget ultrices. Molestie lacus pulvinar pharetra lacus pretium dignissim. Dis tristique auctor nascetur tempus tortor, morbi tellus natoque. Sem bibendum enim eget blandit egestas augue vulputate felis torquent.
+Fames sem vitae ac sit, non hac ut curabitur. Dapibus erat porta purus ligula cubilia elementum. Libero cubilia facilisi varius vulputate, sit auctor gravida mi netus. Molestie tortor libero mauris velit ac consequat duis. Commodo eu nullam tincidunt rhoncus tortor dignissim ultrices aliquam. Libero aliquam duis tincidunt proin viverra, consequat luctus.
+Posuere est feugiat duis mollis; fringilla sagittis etiam. Ornare accumsan torquent cursus augue pretium elementum fringilla suspendisse ipsum. Taciti sollicitudin cubilia felis consequat nullam dictumst metus venenatis. Fermentum aliquam ultrices arcu facilisis libero urna lacus. Rhoncus elit aliquam ligula habitant et; quis feugiat sagittis inceptos. Aliquam aliquam sit tellus quisque consectetur aenean aliquet. Felis class phasellus litora montes nam id ultrices. Aenean ultrices ad pulvinar a commodo sollicitudin. Massa augue tempus semper potenti fringilla habitasse suspendisse aptent.
+`
+let t1 = Now()
+let keyData = await accessCreateKey()
+let t2 = Now()
+let cipherData = await accessEncrypt(keyData, messageText)
+let t3 = Now()
+let decryptedText = await accessDecrypt(keyData, cipherData)
+let t4 = Now()
+ok(messageText == decryptedText)
+log(`
+${t2-t1}ms to create key
+${t3-t2}ms to encrypt
+${t4-t3}ms to decrypt
+
+${messageText.length}
+${cipherData.base62().length}
+`)
+
+
+
+
+
+})
+
+
+
+
+
+
+/*
+test(() => {
+
+	log(look(wrapper))
+
+
+log(codeString)
+
+
+})
+*/
+
+/*
+instead of manually writing javascript in a string above, chat suggests this:
+
+import fs from 'fs/promises';
+import { wrapper as previousWrapper } from './wrapper.js';
+import util from 'util';
+
+const Now = () => Date.now();
+const hash = { base32: () => 'newHashValue' }; // Replace with your hash function
+const codeFiles = 120; // Example value
+const codeSize = 600000; // Example value
+const totalFiles = 125; // Example value
+const totalSize = 9000000; // Example value
+
+// Update properties
+const updatedWrapper = {
+...previousWrapper,
+tick: Now(),
+hash: hash.base32(),
+codeFiles,
+codeSize,
+totalFiles,
+totalSize,
+};
+
+// Serialize to code string
+const objectToCode = (obj) => util.inspect(obj, { depth: null, maxArrayLength: null });
+const codeString = `export const wrapper = Object.freeze(${objectToCode(updatedWrapper)});\n`;
+
+// Write to 'wrapper.js'
+await fs.writeFile('wrapper.js', codeString);
+
+
+
+*/
+
+
+
 
 
 

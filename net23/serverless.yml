@@ -13,7 +13,8 @@ provider:
   region: us-east-1 #Lambda@Edge requires North Virginia
   stage: prod #set production by default, as this script includes resources like buckets
   environment: #name variables in .env file here so they are on process.env for the Lambda code
-    ACCESS_KEY_SECRET:       ${env:ACCESS_KEY_SECRET}
+    ACCESS_KEY_SECRET: ${env:ACCESS_KEY_SECRET}
+
     ACCESS_TIME_ZONE:         ${env:ACCESS_TIME_ZONE} #just for development, writes tick counts in logs in this time zone
     ACCESS_PASSWORD_SECRET:   ${env:ACCESS_PASSWORD_SECRET} #informal password for temporary tests and experiments
     ACCESS_NETWORK_23_SECRET: ${env:ACCESS_NETWORK_23_SECRET} #private access to the full suite of Network 23 services

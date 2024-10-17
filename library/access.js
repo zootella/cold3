@@ -3,6 +3,7 @@
 
 
 import {
+wrapper,
 log, test, ok, noop, Now, Tag, look,
 checkText, newline,
 Data, rsaEncrypt, rsaDecrypt, symmetricCreateKey, symmetricExportKey, symmetricImportKey, symmetricEncrypt, symmetricDecrypt,
@@ -39,12 +40,6 @@ this is a lot simpler
 //[]october, redact needs to redact all secret values, and access key secret we used to decrypt them, as well
 
 
-test(async () => {
-
-
-
-
-})
 
 noop(async () => {
 
@@ -89,26 +84,47 @@ in the run step, we must:
 */
 
 
+test(() => {
+
+/*
+// Update properties
+const s = {
+...previousWrapper,
+tick: Now(),
+hash: hash.base32(),
+codeFiles,
+codeSize,
+totalFiles,
+totalSize,
+};
+
+// Serialize to code string
+const objectToCode = (obj) => util.inspect(obj, { depth: null, maxArrayLength: null });
+const codeString = `export const wrapper = Object.freeze(${objectToCode(s)});\n`;
+
+
+const codeString = `export const wrapper = Object.freeze(${JSON.stringify(updatedWrapper, null, 2)});\n`;
+
+
+
+*/
+
+
+})
+
+
+
+export async function secretSnippet2(keyBase62, secretFileContents) {
+
+	let cipherData = await accessEncrypt(Data({base62: keyBase62}), secretFileContents)
+	log(cipherData.base62(), cipherData.base62().length)
 
 
 
 
-export async function secretSnippet2(previousSecretHash, currentSecretHash, secretFileContents) {
-	log('hi from secret snippet 2')
-
-	if (currentSecretHash != previousSecretHash) {
-
-		let cipherText = await accessEncrypt(process.env.ACCESS_KEY_SECRET, secretFileContents)
-		log(cipherText)
 
 
 
-
-
-
-
-
-	}
 }
 
 
