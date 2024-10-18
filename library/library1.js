@@ -12,7 +12,7 @@ say, look, log,
 checkText, checkAlpha,
 randomBetween,
 starts, cut,
-onlyNumerals
+onlyNumerals, newline,
 } from './grand.js'
 
 
@@ -27,104 +27,6 @@ onlyNumerals
 
 
 
-
-
-//  _              
-// | |_ __ _  __ _ 
-// | __/ _` |/ _` |
-// | || (_| | (_| |
-//  \__\__,_|\__, |
-//           |___/ 
-
-//make sure a tag is exactly 21 letters and numbers, for the database
-export function checkTag(s) {
-	checkText(s); checkAlpha(s)
-	if (s.length != tagLength) toss('data', {s})
-}
-test(() => {
-	checkTag('qqdTuhRdZwJwo7KKeaegs')
-})
-
-//generate a short code of 6 numbers to confirm the user's email or sms
-export function uniqueCode4() {
-	return uniqueCode6();
-	//TODO, just take the first four of a six
-}
-export function uniqueCode6() {
-	while (true) {
-		let s = customAlphabet('0123456789', 6)()
-		if (s[0] == '0' || _hasTriple(s)) {//can't start with zero, or contain three in a row, as these are a little harder for users to deal with
-		} else {
-			return s;
-		}
-	}
-}
-function _hasTriple(s) {
-	for (let i = 0; i < s.length - 2; i++) {
-		if (s[i] == s[i + 1] && s[i] == s[i + 2]) {
-			return true
-		}
-	}
-	return false
-}
-test(() => {
-	ok(!_hasTriple('abbc'))
-	ok(_hasTriple('abbbc'))
-	ok(_hasTriple('bbbc'))
-	ok(_hasTriple('abbb'))
-})
-/*
-todo, have options for 4, 6, or 8
-name not unique as these are not guids!
-maybe switch to a building model from a tossing out model
-
-*/
-
-/*
-function _randomDigit() {
-const array = new Uint32Array(1);
-window.crypto.getRandomValues(array);
-return array[0] % 10;
-}
-console.log(getRandomDigit());
-
-
-function _randomDigitExcept(exclude) {
-const acceptableDigits = [];
-for (let i = 0; i < 10; i++) {
-if (i !== exclude) acceptableDigits.push(i);
-}
-
-const array = new Uint32Array(1);
-window.crypto.getRandomValues(array);
-const randomIndex = array[0] % 9;
-
-return acceptableDigits[randomIndex];
-}
-
-function checkDuplicateEndDigit(n) {
-    if (n < 10) return null; // Too short to have a duplicate at the end
-
-    const lastDigit = n % 10;
-    const secondLastDigit = Math.floor((n % 100) / 10);
-
-    if (lastDigit === secondLastDigit) {
-        return lastDigit;
-    } else {
-        return null;
-    }
-}
-
-// Test examples:
-console.log(checkDuplicateEndDigit(5));     // Output: null
-console.log(checkDuplicateEndDigit(66));    // Output: 6
-console.log(checkDuplicateEndDigit(789));   // Output: null
-console.log(checkDuplicateEndDigit(55899)); // Output: 9
-
-
-// Test example:
-console.log(randomDigitExcept(0)); // Should return a random digit from 1-9
-*/
 
 
 

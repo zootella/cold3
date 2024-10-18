@@ -36,6 +36,7 @@ hashLength, subtleHash,
 curveCreateKeys, curveExportKey, curveImportKey, curveSign, curveVerify,
 hashPassword,
 
+checkTag, randomCode,
 sayWhenPage, sayWhenFeed,
 fraction,
 deindent,
@@ -51,8 +52,6 @@ accessEncrypt, accessDecrypt,
 } from './library0.js'
 export {
 
-checkTag,
-uniqueCode4, uniqueCode6,
 validateEmail, validatePhone, validateCard,
 generatePosts, postDatabase,
 

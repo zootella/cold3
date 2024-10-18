@@ -3,9 +3,9 @@
 
 
 import {
-Now, sayTick
+Now, sayTick, tagLength
 } from './sticker.js'
-
+//well, this brings in sticker, which brings in nanoid, but both of those are small
 
 
 
@@ -1346,7 +1346,48 @@ test(async () => {//this is twice as slow as all your other tests, combined!
 
 
 
+//  _              
+// | |_ __ _  __ _ 
+// | __/ _` |/ _` |
+// | || (_| | (_| |
+//  \__\__,_|\__, |
+//           |___/ 
 
+//make sure a tag is exactly 21 letters and numbers, for the database
+export function checkTag(s) {
+	checkText(s); checkAlpha(s)
+	if (s.length != tagLength) toss('data', {s})
+}
+test(() => {
+	checkTag('qqdTuhRdZwJwo7KKeaegs')
+})
+
+//                _      
+//   ___ ___   __| | ___ 
+//  / __/ _ \ / _` |/ _ \
+// | (_| (_) | (_| |  __/
+//  \___\___/ \__,_|\___|
+//                       
+
+export function randomCode(length) {//generate a random numeric code avoiding starting 0 and any three in a row
+	let s = ''+_randomDigitExcept(0)
+	while (s.length < length) s += _randomDigitExcept(_duplicateEndDigit(s))
+	return s
+}
+function _randomDigitExcept(avoid) {
+	let a = []//alphabet of digits we'll randomly select one from
+	for (let i = 0; i < 10; i++) { if (avoid == -1 || avoid != i) a.push(i) }
+	return a[((crypto.getRandomValues(new Uint32Array(1)))[0]) % a.length]
+}
+function _duplicateEndDigit(s) {
+	if (s.length < 2) return -1//too short to have a duplicate
+	if (s[s.length-2] == s[s.length-1]) { return Number(s[s.length-1]) } else { return -1 }
+}
+noop(() => {//this might be slow, actually, but should be ok for individual one time codes
+	let s = newline
+	for (let i = 0; i < 250; i++) s += randomCode(6) + ', '//try it out with 4, 6, and 10
+	log(s)
+})
 
 //                    _   _                
 //  ___  __ _ _   _  | |_(_)_ __ ___   ___ 
