@@ -1,31 +1,19 @@
 
-
 export {
+
 wrapper
+
 } from '../wrapper.js'
 export {
 
 Sticker, senseEnvironment,
-sayDate,
-
-/*
-uncomment this section when you actually move some of these into sticker officially
-
-//and these are copied from library0 for now, because that would be a messy refactor:
-Now,
-sayTick,
-defined,
-hasText,
-
-//and these are copied from library1.js, and use nanoid:
-tagLength,
-Tag,
-*/
+Now, Tag, tagLength,
+sayDate, sayTick,
 
 } from './sticker.js'
 export {
 
-Time, Size, Now,
+Time, Size,
 noop, test, ok, runTests,
 toss,
 log, composeLog, recordLog, getLogRecord, composeLogArguments,
@@ -48,7 +36,6 @@ hashLength, subtleHash,
 curveCreateKeys, curveExportKey, curveImportKey, curveSign, curveVerify,
 hashPassword,
 
-sayTick, sayTick_previousVersion,
 sayWhenPage, sayWhenFeed,
 fraction,
 deindent,
@@ -64,7 +51,7 @@ accessEncrypt, accessDecrypt,
 } from './library0.js'
 export {
 
-tagLength, Tag, checkTag,
+checkTag,
 uniqueCode4, uniqueCode6,
 validateEmail, validatePhone, validateCard,
 generatePosts, postDatabase,

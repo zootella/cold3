@@ -4,7 +4,7 @@
 //actually don't do this, it's library1.js and the named files
 
 import {
-defined,
+defined, sayDate, sayTick,
 toss, noop, test, ok, log, look, Now, end, subtleHash, Data, checkText,
 Tag, tagLength, checkTag,
 getUseRuntimeConfigFunction,
@@ -609,15 +609,6 @@ renderer:Adreno (TM) ;
 vendor:Qualcomm;
 
 */
-
-
-
-
-
-
-
-
-
 
 
 

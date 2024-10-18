@@ -2,106 +2,7 @@
 //no imports, ping's library is lean to be fast as possible
 import { customAlphabet } from 'nanoid'//well, except this small module
 import { wrapper } from '../wrapper.js'//and the shrinkwrap wrapper
-
-//import { Access } from './library2.js'//october you have to get rid of this because it'll bring in the whole library. you realize now this means access will go here into sticker, and that's probably fine? or, put the time zone in wrapper, you guess. although here in sticker is fine probably because sticker is the library that is small and absolutely fundamental, with tick and tag and environment detection and shrinkwrap information, so environment variables and secrets make sense here
-//^october didn't work at all, just commented out the custom time zone feature for now
-
-
-/*
-TODO october []resolve this and other todo tags tagged as october
-you've tagged "october" elsewhere in the code related to this, take care of them all soon!
-
-october notes are in:
-PasswordComponent.vue
-library0.js
-library2.js
-sticker.js, here
-test.js
-
-updating wrangler meant you had to get secrets through nuxt
-so you wrote Access,
-and have to call saveUseRuntimeConfigFunction(useRuntimeConfig) for it to work
-
-you're using ACCESS_ for three things
-1 actual api keys
-2 the local time zone
-3 public factory presets
-4 there are also those personal email addresses and phone numbers in env.js
-
-the issue with 2 is you want sticker to be fast and reliable
-so maybe move local time zone to wrapper
-
-for 3, return to just putting them in the .vue file, this was fine
-
-for 4, soon those can go away because you'll just type them into a box on a page
-thinking academically, are they compromised even if not in source code, like do they get built into the compiled front end?
-you could put 2 in here, if you keep this around. really, though, you should just make 2 a minute number in wrapper.js so it's quick and easy for sticker to get
-
-for 1, it's working, but it's a cumbersome mess
-so here's a cowboy bike shed idea:
-there's only one secret, the private key which decrypts them all
-this is in .env files, .dev.vars, lambda, cloudflare, nuxt, all those places
-the details are encrypted and encoded base62 in wrapper.js or a separate file
-
-benefits:
-you can see and set your secrets locally, in one place not five
-you can iterate through all of them, assuredly, you don't need a list of them as another one
-you have them all, or none of them, so you won't run into just one is different or broken
-no worry of formatting or encoding differences all the different environments
-
-design:
-secret.txt - git ignores it but shrinkwrap hashes it
-secret.js - $ node secret packages it up
-(more)
-where's the public key? this doesn't need to be in git
-(keep this separate, or add this as a feature to shrinkwrap)
-
-
-october draft design of encrypted secrets
-maybe the flow is like this
-./.env is set once at the start by hand, where you set the private key, which you also put in the cloudflare dashboard
-the developer changes .env once at the start of this system
-./.env.secret has the public key, comments, and secrets like ACCESS_SOME_SECRET=blah blah blah
-seal encrypts that into a string, which it puts in
-the developer changes .env.secret each time they want to edit or change secrets
-./wrapper.js
-node shrink sets the ciphertext in wrapper js each time it runs
-the contents of wrapper.js get built into the public deployed code for all environments
-Access gets the private key from ./env in development, wherever serverless framework put it for lambda, and the cloudflare dashboard
-
-.env and .env.secret are dot hidden, git ignored, but also shrinkwrap hashed
-wrapper.js is not shrinkwrap hashed
-
-wrapper.js also has another property for local time zone, in minutes
-so Sticker calling sayTick can use it without needing to get secrets or use encryption
-
-
-all in all
-very secure
-you can change back to hidden secrets later
-lets you do this
--set the secrets one place, not five places
--know you got all the secrets, because otherwise you'd get none of them
--lets you loop through the secrets
-all avoiding vendor-specific code
-
-
-
-
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
+import { test, ok, noop } from './grand.js'
 
 //      _          _       _                                    _   _      _             
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 
@@ -246,78 +147,47 @@ and after all that, you find out (but have not yet confirmed) that you can look 
 process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'production'
 */
 
-
-
-
-
-
-
-//helper functions, this one's special for sticker:
-
-//say the tick count t as a date like "2024sep09"
-export function sayDate(t) {
-	let d = new Date(t)
-	return (
-		d.getUTCFullYear()//year
-		+d.toLocaleString('en', {month: 'short', timeZone: 'UTC'}).toLowerCase()//month
-		+(d.getUTCDate()+'').padStart(2, '0'))//day
-}
-
-//and these are copied from library0 for now, because that would be a messy refactor:
-
-export const Now = Date.now//just a shortcut
-
-//october resolve this current thing where you've got sayTick in sticker and library0; have it use wrapper local minute number, have it be only in sticker, grand means importers don't care where it's from
-//say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
-export function sayTick(t) {
-
-	//in this unusual instance, we want to say the time local to the person reading the logs, not the computer running the script
-	let zone = Intl.DateTimeFormat().resolvedOptions().timeZone//works everywhere, but will be utc on cloud worker and lambda
-//	zone = Access('ACCESS_TIME_ZONE')//use what we set in the .env file. page script won't have access to .env, but worker and lambda, local and deployed will
-//^october yeah that didn't work at all, you need to rethink time zones now that getting to secrets is hard
-
-	let d = new Date(t)
-	let f = new Intl.DateTimeFormat('en', {timeZone: zone, weekday: 'short', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit'})
-	let parts = f.formatToParts(d)
-
-	let weekday = parts.find(p => p.type == 'weekday').value
-	let hour = parts.find(p => p.type == 'hour').value
-	let minute = parts.find(p => p.type == 'minute').value
-	let second = d.getSeconds().toString().padStart(2, '0')
-	let millisecond = d.getMilliseconds().toString().padStart(3, '0')
-	let ap = parts.find(p => p.type == 'dayPeriod').value == 'AM' ? 'a' : 'p'
-
-	return `${weekday}${hour}:${minute}${ap}${second}.${millisecond}s`
-}
-export function defined(t) { return t != 'undefined' }
-export function hasText(s) { return (typeof s == 'string' && s.length && s.trim() != '') }
-
-//and these are copied from library1.js, and use nanoid:
-
-export const tagLength = 21//we're choosing 21, long enough to be unique, short enough to be reasonable
+//  _              
+// | |_ __ _  __ _ 
+// | __/ _` |/ _` |
+// | || (_| | (_| |
+//  \__\__,_|\__, |
+//           |___/ 
 
 //generate a new universally unique double-clickable tag of 21 letters and numbers
+export const tagLength = 21//we're choosing 21, long enough to be unique, short enough to be reasonable
 export function Tag() {
 	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
 	return customAlphabet(alphabet, tagLength)()//same default nanoid length
 }
 
+//                    _   _                
+//  ___  __ _ _   _  | |_(_)_ __ ___   ___ 
+// / __|/ _` | | | | | __| | '_ ` _ \ / _ \
+// \__ \ (_| | |_| | | |_| | | | | | |  __/
+// |___/\__,_|\__, |  \__|_|_| |_| |_|\___|
+//            |___/                        
 
+export const Now = Date.now//just a shortcut
 
-/*
-ok, without renaming sticker.js to library-1, essentially
-you are exporting some of these fundamentals
-so feel free to import them from here as you code onwards
-and then later, and maybe, actually remove them from library0, and refactor everyone to get them from here, instead
+//say a tick count like "2024sep09" in UTC
+export function sayDate(t) {
+	let d = new Date(t)
+	let year = d.getUTCFullYear()
+	let month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][d.getUTCMonth()]
+	let day = d.getUTCDate().toString().padStart(2, '0')
+	return `${year}${month}${day}`
+}
 
-library0 can still be no imports
-it's just that now you get Tag from sticker, not library1!
-
-
-
-
-*/
-
-
-
-
+//say a tick count like "Fri04:09p39.470s" using the local offset in the wrapper
+export function sayTick(t) {
+	if (!t) return '(not yet)'//don't render 1970jan1 as a time something actually happened
+	let d = new Date(t + (wrapper.local * 3600000))//offset manually, then we'll use UTC methods below
+	let weekday = d.toUTCString().slice(0, 3)
+	let hours = (d.getUTCHours() % 12 || 12).toString().padStart(2, '0')//convert hours 0-23 to 1-12
+	let meridiem = d.getUTCHours() < 12 ? 'a' : 'p'
+	let minutes = d.getUTCMinutes().toString().padStart(2, '0')
+	let seconds = d.getUTCSeconds().toString().padStart(2, '0')
+	let milliseconds = d.getUTCMilliseconds().toString().padStart(3, '0')
+	return `${weekday}${hours}:${minutes}${meridiem}${seconds}.${milliseconds}s`
+}

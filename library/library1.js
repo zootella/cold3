@@ -6,6 +6,7 @@ import Joi from 'joi'
 import creditCardType from 'credit-card-type'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
 import {
+tagLength, Tag,
 noop, Time, test, ok, Now,
 say, look, log,
 checkText, checkAlpha,
@@ -35,14 +36,6 @@ onlyNumerals
 //  \__\__,_|\__, |
 //           |___/ 
 
-export const tagLength = 21//we're choosing 21, long enough to be unique, short enough to be reasonable
-
-//generate a new universally unique double-clickable tag of 21 letters and numbers
-export function Tag() {
-	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-	return customAlphabet(alphabet, tagLength)()//same default nanoid length
-}
-
 //make sure a tag is exactly 21 letters and numbers, for the database
 export function checkTag(s) {
 	checkText(s); checkAlpha(s)
@@ -51,7 +44,6 @@ export function checkTag(s) {
 test(() => {
 	checkTag('qqdTuhRdZwJwo7KKeaegs')
 })
-
 
 //generate a short code of 6 numbers to confirm the user's email or sms
 export function uniqueCode4() {
@@ -81,9 +73,58 @@ test(() => {
 	ok(_hasTriple('bbbc'))
 	ok(_hasTriple('abbb'))
 })
+/*
+todo, have options for 4, 6, or 8
+name not unique as these are not guids!
+maybe switch to a building model from a tossing out model
+
+*/
+
+/*
+function _randomDigit() {
+const array = new Uint32Array(1);
+window.crypto.getRandomValues(array);
+return array[0] % 10;
+}
+console.log(getRandomDigit());
 
 
+function _randomDigitExcept(exclude) {
+const acceptableDigits = [];
+for (let i = 0; i < 10; i++) {
+if (i !== exclude) acceptableDigits.push(i);
+}
 
+const array = new Uint32Array(1);
+window.crypto.getRandomValues(array);
+const randomIndex = array[0] % 9;
+
+return acceptableDigits[randomIndex];
+}
+
+function checkDuplicateEndDigit(n) {
+    if (n < 10) return null; // Too short to have a duplicate at the end
+
+    const lastDigit = n % 10;
+    const secondLastDigit = Math.floor((n % 100) / 10);
+
+    if (lastDigit === secondLastDigit) {
+        return lastDigit;
+    } else {
+        return null;
+    }
+}
+
+// Test examples:
+console.log(checkDuplicateEndDigit(5));     // Output: null
+console.log(checkDuplicateEndDigit(66));    // Output: 6
+console.log(checkDuplicateEndDigit(789));   // Output: null
+console.log(checkDuplicateEndDigit(55899)); // Output: 9
+
+
+// Test example:
+console.log(randomDigitExcept(0)); // Should return a random digit from 1-9
+*/
 
 
 

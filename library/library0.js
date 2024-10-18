@@ -2,7 +2,9 @@
 //no imports allowed in library0! if you need one, go to library1
 
 
-
+import {
+Now, sayTick
+} from './sticker.js'
 
 
 
@@ -39,7 +41,6 @@ Size.tb = 1024*Size.gb//tebibyte
 Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
 
-export const Now = Date.now//just a shortcut
 export const noop = (() => {})//no operation, a function that does nothing
 
 //  _   _               _            _       
@@ -1353,41 +1354,6 @@ test(async () => {//this is twice as slow as all your other tests, combined!
 // \__ \ (_| | |_| | | |_| | | | | | |  __/
 // |___/\__,_|\__, |  \__|_|_| |_| |_|\___|
 //            |___/                        
-
-//october, oh look, now that process.env is replaced with Access, sayTick needs an import, and so can no longer by in library0! take care of this in the grand refactor. sticker is small but allows imports, library0 is huge with no imports, library1+ can be big or small and can have imports
-//say a tick count t like "Sat11:29a04.702s" in the local time zone that I, reading logs, am in now
-export function sayTick(t) {
-
-	//in this unusual instance, we want to say the time local to the person reading the logs, not the computer running the script
-	let zone = Intl.DateTimeFormat().resolvedOptions().timeZone//works everywhere, but will be utc on cloud worker and lambda
-//	zone = Access('ACCESS_TIME_ZONE')//use what we set in the .env file. page script won't have access to .env, but worker and lambda, local and deployed will
-	//october so actually here you need a light access that doesn't throw
-	//october restore the local time zone feature, probably moving it from access to wrapper
-
-	let d = new Date(t)
-	let f = new Intl.DateTimeFormat('en', {timeZone: zone, weekday: 'short', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit'})
-	let parts = f.formatToParts(d)
-
-	let weekday = parts.find(p => p.type == 'weekday').value
-	let hour = parts.find(p => p.type == 'hour').value
-	let minute = parts.find(p => p.type == 'minute').value
-	let second = d.getSeconds().toString().padStart(2, '0')
-	let millisecond = d.getMilliseconds().toString().padStart(3, '0')
-	let ap = parts.find(p => p.type == 'dayPeriod').value == 'AM' ? 'a' : 'p'
-
-	return `${weekday}${hour}:${minute}${ap}${second}.${millisecond}s`
-}
-//turn a tick count into text like 'Sat 15h 49m 55.384s', short but specific for logs and development bliss
-export function sayTick_previousVersion(t) {
-	if (!t) return '(not yet)'//don't render 1970jan1 as a time something actually happened
-	let d = new Date(t)//create a date object using the given tick count
-	let weekday = d.toLocaleDateString('default', { weekday: 'short' })//get text like 'Mon'
-	let hours = d.getHours()//extract hours, minutes, seconds, and milliseconds
-	let minutes = d.getMinutes()
-	let seconds = d.getSeconds()
-	let milliseconds = d.getMilliseconds().toString().padStart(3, '0')
-	return `${weekday} ${hours}h ${minutes}m ${seconds}.${milliseconds}s`
-}
 
 const _formatDate = {//make formatters once, outside the function
 	y: new Intl.DateTimeFormat('default', { year: 'numeric' }),//default locale is the user's browser, or the edge node's locale
