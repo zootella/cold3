@@ -13,31 +13,8 @@ provider:
   region: us-east-1 #Lambda@Edge requires North Virginia
   stage: prod #set production by default, as this script includes resources like buckets
   environment: #name variables in .env file here so they are on process.env for the Lambda code
-    ACCESS_KEY_SECRET: ${env:ACCESS_KEY_SECRET}
-
-    ACCESS_TIME_ZONE:         ${env:ACCESS_TIME_ZONE} #just for development, writes tick counts in logs in this time zone
-    ACCESS_PASSWORD_SECRET:   ${env:ACCESS_PASSWORD_SECRET} #informal password for temporary tests and experiments
-    ACCESS_NETWORK_23_SECRET: ${env:ACCESS_NETWORK_23_SECRET} #private access to the full suite of Network 23 services
-
-    ACCESS_AMAZON_REGION:      ${env:ACCESS_AMAZON_REGION} #it's us-east-1 but still it's bad to hard code that in code
+    ACCESS_KEY_SECRET:         ${env:ACCESS_KEY_SECRET}
     ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE} #promises not to change through automatic renewals
-
-    ACCESS_SUPABASE_URL:        ${env:ACCESS_SUPABASE_URL} #database
-    ACCESS_SUPABASE_KEY_SECRET: ${env:ACCESS_SUPABASE_KEY_SECRET}
-
-    ACCESS_DATADOG_ENDPOINT:       ${env:ACCESS_DATADOG_ENDPOINT} #logging
-    ACCESS_DATADOG_API_KEY_SECRET: ${env:ACCESS_DATADOG_API_KEY_SECRET}
-
-    ACCESS_SENDGRID_URL:        ${env:ACCESS_SENDGRID_URL} #email
-    ACCESS_SENDGRID_KEY_SECRET: ${env:ACCESS_SENDGRID_KEY_SECRET}
-
-    ACCESS_TWILIO_URL:         ${env:ACCESS_TWILIO_URL} #sms
-    ACCESS_TWILIO_SID:         ${env:ACCESS_TWILIO_SID}
-    ACCESS_TWILIO_AUTH_SECRET: ${env:ACCESS_TWILIO_AUTH_SECRET}
-    ACCESS_TWILIO_PHONE:       ${env:ACCESS_TWILIO_PHONE}
-
-    ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC:       ${env:ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC} #client-side password hashing
-    ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC: ${env:ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC}
 
 # #### FOR API FUNCTIONS ####
 functions:

@@ -66,17 +66,17 @@ export function Sticker() {
 //the insanity that follows is you trying to be able to sense what and where is running us
 const _senseEnvironmentVersion = 1//first version, if you change how this works at all, increment!
 const _senseEnvironment = `
-               Aclo Clie Docu Doma Loca                Lamb Node Proc Regi Requ Scri Self Serv Stor      Zulu >Determining
-                                        Eigh Envi Glob      Node Proc                                         >LocalNode
-Achr Asaf Awin           Docu      Loca                                              Self      Stor Wind      >LocalVite
-                                        Eigh Envi Glob      Node Proc Regi                                    >LocalLambda
-                                        Eigh Envi Glob Lamb Node Proc Regi                               Zulu >CloudLambda
-                                        Eigh Envi Glob      Node Proc                     Serv                >LocalNuxtServer
-               Aclo                          Envi                Proc           Scri Self                Zulu >CloudNuxtServer
-                                        Eigh Envi Glob      Node Proc      Requ           Serv                >LocalPageServer
-                                             Envi                Proc           Scri Self Serv           Zulu >CloudPageServer
-Achr Asaf Awin      Clie Docu      Loca                          Proc                Self      Stor Wind      >LocalPageClient
-Achr Asaf Awin           Docu Doma                                                   Self      Stor Wind      >CloudPageClient
+               Aclo Clie Docu Doma Loca           Lamb Node Proc Regi Requ Scri Self Serv Stor      Zulu >Determining
+                                        Eigh Glob      Node Proc                                         >LocalNode
+Achr Asaf Awin           Docu      Loca                                         Self      Stor Wind      >LocalVite
+                                        Eigh Glob      Node Proc Regi                                    >LocalLambda
+                                        Eigh Glob Lamb Node Proc Regi                               Zulu >CloudLambda
+                                        Eigh Glob      Node Proc                     Serv                >LocalNuxtServer
+               Aclo                                         Proc           Scri Self                Zulu >CloudNuxtServer
+                                        Eigh Glob      Node Proc      Requ           Serv                >LocalPageServer
+                                                            Proc           Scri Self Serv           Zulu >CloudPageServer
+Achr Asaf Awin      Clie Docu      Loca                     Proc                Self      Stor Wind      >LocalPageClient
+Achr Asaf Awin           Docu Doma                                              Self      Stor Wind      >CloudPageClient
 `
 export function senseEnvironment() {
 	function type(t) { return t != 'undefined' }
@@ -86,7 +86,6 @@ export function senseEnvironment() {
 	if (type(typeof process)) {                  a.push('Proc')//has process object iself
 		if (text(process?.versions?.v8))                  a.push('Eigh')//v8 version
 		if (text(process?.versions?.node))                a.push('Node')//node version
-		if (text(process?.env?.ACCESS_NETWORK_23_SECRET)) a.push('Envi')//environment variables
 		if (text(process?.env?.AWS_EXECUTION_ENV))        a.push('Lamb')//amazon
 		if (text(process?.env?.AWS_REGION))               a.push('Regi')
 		if (process?.client)                              a.push('Clie')//nuxt client

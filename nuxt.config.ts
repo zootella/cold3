@@ -1,11 +1,11 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-	compatibilityDate: '2024-04-03',//added to remove warning
+	compatibilityDate: '2024-04-03',
 	nitro: {
 		preset: 'cloudflare-pages',
 		esbuild: {
 			options: {
-				target: 'esnext'//added to solve error on $ npm run build about es2019 not including bigint literals
+				target: 'esnext'//added to solve error on npm run build about es2019 not including bigint literals
 			}
 		}
 	},
