@@ -3,6 +3,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import glob from 'fast-glob'
+import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
 
 import {
 wrapper,
@@ -20,19 +21,19 @@ accessEncrypt
 /*
 	a summary of how this script encrypts secrets and generates the shrinkwrap seal wrapper
 
-	./.env.secret         add and edit application defined secrets the one place
+	./.env.local          add and edit application defined secrets the one place
 
 	./.env                store secret symmetric encryption key here for node
-	./.dev.vars           and also here for local nuxt and nitro
-	./net23/.env          and also here for lambda and serverless framework
+	./.dev.vars           and also here for cloudflare wrangler to make available to nitro in nuxt
+	./net23/.env          and also here for serverless framework to use locally and deploy to lambda
 	                      and also set it in the cloudflare dashboard
-	                      vite and icarus are front-end and correctly can't reach it
+	                      icarus using vite is front-end and correctly can't reach it
 
 	./seal.js             $ npm run seal to generate the next two files:
 	./wrapper.txt         first, a file manifest
 	./wrapper.js          from that, hash and date of the manifest, versioning the code
-	                      and including the contents of .env.secret encrypted with the key in .env and other secret places
-	./library/sticker.js  sticker.js imports wrapper.js, adding environment detection, a tick and tag, and friendly text
+	                      and including the contents of .env.local encrypted with the secret symmetric key
+	./library/sticker.js  sticker.js imports wrapper.js, adding environment detection, a tick and tag
 */
 async function seal() {
 	let list = await listFiles()
@@ -89,8 +90,7 @@ async function composeWrapper(properties) {
 	return manifest//also return the file contents as we'll hash them next
 }
 
-import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
-const envSecretFileName = '.env.secret'//our file of secrets to encrypt
+const envSecretFileName = '.env.local'//our file of secrets to encrypt
 const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
 async function affixSeal(properties, manifest) {
 
@@ -104,7 +104,7 @@ async function affixSeal(properties, manifest) {
 	//compute the shrinkwrap hash of this version snapshot right now, which is the hash of wrapper.txt
 	let hash = Data({array: crypto.createHash('sha256').update(manifest).digest()})
 
-	//encrypt the secrets in .env.secret
+	//encrypt the secrets in .env.local
 	let envSecretContents = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
 	let cipherData = await accessEncrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), envSecretContents)
 
