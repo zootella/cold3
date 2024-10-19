@@ -1,6 +1,6 @@
 
 import {
-Sticker, log, look, Now, Tag, Access,
+Sticker, log, look, Now, Tag, getAccess,
 checkText,
 doorWorkerOpen, doorWorkerShut,
 awaitLogAlert
@@ -72,8 +72,9 @@ const resourceLocalNetwork23 = 'http://localhost:4000/prod'//check your local Ne
 const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivity via satellite
 async function bridge(path, body) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
+	let access = await getAccess()
 	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
-	body.ACCESS_NETWORK_23_SECRET = Access('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }
 

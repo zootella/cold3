@@ -1,9 +1,65 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+
+const customChunks = {
+	sticker: [//sticker is small to be fast for ping, but does import wrapper and npm module nanoid
+		'library/sticker.js',
+		'wrapper.js',
+	],
+	zero: [//library0 imports only sticker
+		'library/library0.js',
+	],
+	grand: [//the rest of the library centralizes imports through grand, which imports sticker and library0
+		'library/grand.js',
+		'library/access.js',
+		'library/cloud.js',
+		'library/cloud2.js',
+		'library/database.js',
+		'library/door.js',
+		'library/door2.js',
+		'library/library1.js',
+		'library/library2.js',
+	]
+}
+
+/*
+can you still bundle forward without creating a loop?
+
+		'wrapper.js',
+		'library/sticker.js',
+		'library/library0.js',
+
+		'library/grand1.js',
+
+		'library/access.js',
+		'library/cloud.js',
+		'library/cloud2.js',
+		'library/database.js',
+		'library/door.js',
+		'library/door2.js',
+		'library/library1.js',
+		'library/library2.js',
+
+		'library/grand2.js',
+
+hmmm, that doesn't seem easy
+still it's a benefit for api and page code to not have to change
+so they still import everything from grand
+but library files at this level can't import grand, they have to import from each other
+
+*/
+
 export default defineNuxtConfig({
 	compatibilityDate: '2024-04-03',//added to remove warning
 	nitro: {
 		preset: 'cloudflare-pages',
 		esbuild: { options: { target: 'esnext' } },//added to solve error on $ npm run build about es2019 not including bigint literals
+		bundler: 'rollup',
+		rollupConfig: {
+			output: {
+				inlineDynamicImports: false,
+				manualChunks: customChunks//specify manual chunks for building server-side code
+			}
+		}
 	},
 	modules: ['nitro-cloudflare-dev'],
 	devtools: { enabled: true },
@@ -37,6 +93,15 @@ export default defineNuxtConfig({
 
 			ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC: process.env.ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC,
 			ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC: process.env.ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC
+		}
+	},
+	vite: {
+		build: {
+			rollupOptions: {
+				output: {
+					manualChunks: customChunks//specify manual chunks for building client-side code
+				}
+			}
 		}
 	}
 })

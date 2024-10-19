@@ -1,12 +1,13 @@
 
 import {
-log, look, hasText, checkTag, Access,
+log, look, hasText, checkTag, getAccess,
 accessTableInsert, accessTableQuery
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
 	let o = {}
 	try {
+		let access = await getAccess()
 		let body = await readBody(event)
 		o.message = 'api account, version 2024aug16c'
 		o.note = 'none'
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
 		checkTag(body.browserTag)
 
 		//validate the password, only needed to sign in
-		o.passwordValid = (body.password == Access('ACCESS_PASSWORD_SECRET'))
+		o.passwordValid = (body.password == access.get('ACCESS_PASSWORD_SECRET'))
 
 		//is this browser already signed in?
 		let rows = await accessTableQuery(body.browserTag)//get all the rows

@@ -11,12 +11,8 @@ $ node test
 */
 
 //access secrets
-import dotenv from 'dotenv'//load process.env.ACCESS_ properties that we also deploy; ok but now you should use library2's Access() here, instead, actually
-dotenv.config()
+import dotenv from 'dotenv'; dotenv.config()//load .env to be able to access secrets
 import card from './env.js'//and additional private info just for local development
-/*
-october, now that wrangler and nuxt have forced us to write Access(), how do node snippet and test get secrets?
-*/
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered

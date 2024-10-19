@@ -17,14 +17,15 @@ intToText, textToInt,
 checkHash, checkSquare,
 Tag, checkTag,
 Sticker,
-Access
+getAccess
 } from './grand.js'
 
 //get a client connection to supabase
 let _client
-function client() {//does this on first use, not on first import
+async function client() {//does this on first use, not on first import
 	if (!_client) {//does this once on first use, not every time we need it
-		_client = createClient(Access('ACCESS_SUPABASE_URL'), Access('ACCESS_SUPABASE_KEY_SECRET'))
+		let access = await getAccess()
+		_client = createClient(access.get('ACCESS_SUPABASE_URL'), access.get('ACCESS_SUPABASE_KEY_SECRET'))
 	}
 	return _client
 }
@@ -126,7 +127,7 @@ and katy checks the column names and data types going in both directions
 //in table, look at column1, and count how many rows have value1
 async function database_countRows(table, column1, value1) {
 	katyTable(table); katyCell(column1, value1)
-	let { count, error } = (await client()
+	let { count, error } = (await (await client())
 		.from(table)
 		.select(column1, { count: 'exact' })//count exact matches based on column1
 		.eq(column1, value1))//filter rows to those with value1
@@ -137,7 +138,7 @@ async function database_countRows(table, column1, value1) {
 //add a new row to table, with values like { column1_name: cell1_value, column2_name... }
 async function database_addRow(table, values) {
 	katyTable(table); katyRow(values)
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from(table)
 		.insert([values]))//make a new row with all the given values
 	if (error) toss('supabase', { error })
@@ -147,7 +148,7 @@ async function database_addRow(table, values) {
 //in table, look at column1 to find one row with value1, then go right to column2, and write value2 there
 async function database_updateCell(table, column1, value1, column2, value2) {
 	katyTable(table); katyCell(column1, value1); katyCell(column2, value2)
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from(table)
 		.update({ [column2]: value2 })//write value2 in column2
 		.eq(column1, value1))//in the row where column1 equals value1
@@ -158,7 +159,7 @@ async function database_updateCell(table, column1, value1, column2, value2) {
 //in table, look at column1 to find one row with value1, and get the whole row
 async function database_getRow(table, column1, value1) {
 	katyTable(table); katyCell(column1, value1)
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from(table)
 		.select('*')//select all columns to get the whole row
 		.eq(column1, value1)//find the row where column1 equals value1
@@ -171,7 +172,7 @@ async function database_getRow(table, column1, value1) {
 //in table, look at column1 to get all the rows with value1, and get them biggest to smallest based on their values in columnSort
 async function database_getRows(table, column1, value1, columnSort) {
 	katyTable(table); katyCell(column1, value1); katyColumn(columnSort)
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from(table)
 		.select('*')//select all columns to retrieve entire rows
 		.eq(column1, value1)//filter to get rows where column1 equals value1
@@ -394,14 +395,14 @@ CREATE INDEX access_index_on_browser_tick ON access_table (browser_tag, row_tick
 export async function accessTableInsert(browser_tag, signed_in) {
 	checkTag(browser_tag)//put type checks here, you think, to be sure only good data gets inserted
 	checkInt(signed_in)
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from('access_table')
 		.insert([{ row_tick: Now(), row_tag: Tag(), browser_tag, signed_in }]))
 	if (error) toss('supabase', {error})
 }
 //query table_access to get all the rows with a matching browser_tag
 export async function accessTableQuery(browser_tag) {
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from('access_table')
 		.select('*')
 		.eq('browser_tag', browser_tag)
@@ -417,7 +418,7 @@ export async function accessTableQuery(browser_tag) {
 // 1. Determine if the row exists
 export async function rowExists() {
 	// SQL equivalent: SELECT COUNT(key) FROM table_settings WHERE key = 'count_global'
-	let { data, error, count } = (await client()
+	let { data, error, count } = (await (await client())
 		.from('table_settings').select('key', { count: 'exact' }).eq('key', 'count_global'))
 	if (error) toss('supabase', {error})
 	return count > 0
@@ -425,14 +426,14 @@ export async function rowExists() {
 // 2. Create the row with starting value zero
 export async function createRow() {
 	// SQL equivalent: INSERT INTO table_settings (key, value) VALUES ('count_global', '0')
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from('table_settings').insert([{ key: 'count_global', value: '0' }]))
 	if (error) toss('supabase', {error})
 }
 // 3. Read the value
 export async function readRow() {
 	// SQL equivalent: SELECT value FROM table_settings WHERE key = 'count_global'
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from('table_settings').select('value').eq('key', 'count_global'))
 	if (error) toss('supabase', {error})
 	return data[0]?.value
@@ -440,7 +441,7 @@ export async function readRow() {
 // 4. Write a new value
 export async function writeRow(newValue) {
 	// SQL equivalent: UPDATE table_settings SET value = 'newValue' WHERE key = 'count_global' RETURNING *
-	let { data, error } = (await client()
+	let { data, error } = (await (await client())
 		.from('table_settings').update({ value: newValue }).eq('key', 'count_global').select())
 	if (error) toss('supabase', {error})
 	if (!data.length) toss('no error from update, but also no updated rows')

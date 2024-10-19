@@ -58,8 +58,6 @@ generatePosts, postDatabase,
 } from './library1.js'
 export {
 
-Access, hasAccess,
-redact, replaceAll, replaceOne,
 getBrowserTag, getBrowserFingerprintAndTag, browserHash,
 
 } from './library2.js'
@@ -88,7 +86,6 @@ export {
 
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
-snippet,
 
 } from './cloud.js'
 export {
@@ -98,7 +95,11 @@ export {
 
 
 export {
-	secretSnippet2
+
+getAccess,
+redact, replaceAll, replaceOne,
+snippet,
+
 } from './access.js'//just for coding access, get rid of later, october
 
 

@@ -2,7 +2,6 @@
 //no imports, ping's library is lean to be fast as possible
 import { customAlphabet } from 'nanoid'//well, except this small module
 import { wrapper } from '../wrapper.js'//and the shrinkwrap wrapper
-import { test, ok, noop } from './grand.js'
 
 //      _          _       _                                    _   _      _             
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 

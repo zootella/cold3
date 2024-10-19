@@ -1,17 +1,18 @@
 
 import {
 log, see, look,
-Access
+getAccess
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
 	var r = {}//the response object this server function will fill and send back to the page
 	r.message = 'hello, function send email, version 2024mar5'//hello and version no matter what
 	try {//protect the server from all your code, even seemingly safe code, with a big try block
+		let access = await getAccess()
 
 		//set and bring in constants about the test email to send
 		const sendgridUrl = 'https://api.sendgrid.com/v3/mail/send'
-		const sendgridApiKey = Access('ACCESS_SENDGRID_KEY_SECRET')//works in dev and deployed
+		const sendgridApiKey = access.get('ACCESS_SENDGRID_KEY_SECRET')//works in dev and deployed
 
 		const emailFromName = 'Cold Three'
 		const emailFromAddress = 'noreply@cold3.cc'//only works if you change to approved sender
@@ -70,7 +71,7 @@ export default defineEventHandler(async (event) => {
 		//confirm the password from the page form, and the api key from the environment variables look ok
 		//and send the email if both are ok
 		const body = await readBody(event)
-		r.passwordCorrect = (body.password == Access('ACCESS_PASSWORD_SECRET'))
+		r.passwordCorrect = (body.password == access.get('ACCESS_PASSWORD_SECRET'))
 		r.sendgridApiKeyLength = sendgridApiKey.length
 		if (r.passwordCorrect && r.sendgridApiKeyLength) {
 			r.sendNote = 'api key and password ok, will send'

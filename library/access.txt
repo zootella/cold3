@@ -5,6 +5,32 @@
 
 
 
+//october
+/*
+//new draft pattern for importing very environment-specific stuff in a library file that gets called from dispirate environments
+let useRuntimeConfig//the nuxt api, or left undefined if nitro isn't running us
+(async () => {//conditional import is await, so function that calls it must be async
+	try {
+		let name = 'imports'
+		if (typeof globalThis !== 'undefined' && globalThis.NITRO_ENV) {//avoid the overhead of creating an exception each time non-nitro environments run this. looking for a check here that can have false positives (leading to exceptions) but never false negatives (leading to not importing something that could be imported)
+			(//parenthesis so javascript doesn't see the object dereference as the start of a code block
+				{ useRuntimeConfig } = (await new Function(`return import('#${name}')`)())//safer than eval, but similar, and prevents vite from not being able to deal with the code containing an import statement to something it can't find
+			)
+		}
+	} catch () {}//catch and discard the type error from importing something that isn't there
+})()
+
+ok, that^ didn't work
+it's basically impossible to dynamically import a named something that isn't there
+
+you like the Access(name) thing below, how it gets them from different sources, how it tosses so you don't need to check for blank
+
+what if door, on cloudflare, just fills Access with variables from useRuntimeConfig()
+*/
+
+
+
+
 
 /*
 ok, without renaming sticker.js to library-1, essentially
@@ -349,6 +375,403 @@ test(() => {
 
 
 
+
+
+/*
+currently, a secret is like process.env.ACCESS_PASSWORD_SECRET
+and code that tries to use it is like
+
+let v
+if (defined(process) && hasText(process.env?.ACCESS_PASSWORD_SECRET)) {
+	v = process.env?.ACCESS_PASSWORD_SECRET
+}
+
+so that's clumsy, if standard
+but now that cloudflare is doing secrets away from process.env
+you have both an excuse and requirement to code your own system
+
+all of your environment variables are called ACCESS_, so your function is Access()
+
+how about
+let v = Access('ACCESS_PASSWORD_SECRET')
+and it never returns blank--if not defined, it tosses
+
+yeah, this might simplify code
+
+
+*/
+
+
+
+
+
+
+
+//oh, this also means you have to await Access(); not sure about that, actually
+//see how slow it is, too
+/*
+await loadAccess()//do that once at the top of every function that needs them?
+
+await awaitLoadAccess()
+you have to call that at the top of any function that uses access
+no, that's a crazy side effect that's worse than await Access() everywhere
+
+or
+let access = await awaitLoadAccess()
+then you use access.ACCESS_SOME_SECRET
+but you don't like that, because if that object got logged, wow
+
+
+the other idea is you have one secret everywhere, which is base62 of text of file that Access() parses and  returns details from
+here, it's fast and synchronous
+and there's no ciphertext that looks compelling to try to crack
+downsides are
+you might run into a length limit at some point with a provider
+you can't change keys locally, you have to go into the cloudflare dashboard whenever you want to change them
+
+looking at code, having Access async doesn't look that bad
+it'll asyncize:
+door open
+supabase client creation
+but there are already used in async call stacks
+
+so maybe go forward with this whole crazy plan!?
+*/
+
+/*
+refactor both rsa and sign for actual use, now they're more generalized
+
+if you do async Access, you have to
+redact both the _SECRET values, and the private key itself
+guard against portions of a secret getting logged--break each secret into parts and redact the parts, probably
+only if a certain length, and a trailing tip isn't too short
+*/
+
+/*
+additional thoughts about Access
+do it like this
+const access = await asyncGetAccess()
+access.get('ACCESS_SOME_SECRET')
+this way it can blow up if not found at the top, and only the top needs to be awaited
+also, things only get parsed once, and redaction is a method now, because it knows all the secrets
+access.redact(s)
+
+ok, here's teh dealbreaker that will kill encryping secrets as an idea
+are you easily able to call await redact()?
+like, not in dog()!
+so then the way to do it is to have door open produce this side effect that Access works
+or, dog doesn't redact?!
+
+
+
+instead of decrypting, you could also just bundle up base64 and have one giant blob secret
+benefits
+-no compelling thing for hackerz to try to decrypt
+-faster and cheaper on the server
+-get access without an await
+drawbacks
+-if you change or add a secret, you have to go into the files and dashboards
+but for production, this is probably the right plan
+either way, you have to be careful to redact both the long key (private key, or blob of encoded secrets) AND the individual secret values, because either can expose all the secrets
+
+*/
+
+/*
+october
+what if your naming convention for exported async functions that return promises is start with underscore
+a little weird because collides with start with underscore meaning private helper or do not touch
+*/
+
+
+
+/*
+there might be a natural prefix to look for, "Up9WR6SXEX9HK", for redact to confirm the private key is not leaking
+*/
+
+//above is how you wrap stringify for crypto; use here and probably in higher level functions for sign and verify below, also
+
+
+//so maybe down here these use array, buffer, directly; all the Data is in the simplified ones above
+
+
+
+/*
+	let keys = await rsaCreateKeys()
+	let keyPublicStringified = await rsaExportKey(keys.publicKey)
+	let keyPrivateStringified = await rsaExportKey(keys.privateKey)
+
+	//let's package up the keys further
+	let keyPublicBase62 = Data({text: keyPublicStringified}).base62()
+	let keyPrivateBase62 = Data({text: keyPrivateStringified}).base62()
+
+	let keyPublicImported = await rsaImportKey(Data({base62: keyPublicBase62}).text(), true)
+	let keyPrivateImported = await rsaImportKey(Data({base62: keyPrivateBase62}).text(), false)
+
+	//next, let's encrypt a message with the imported public key
+	let message = "Hello, RSA encryption!"
+	let cipherData = await rsaEncrypt(keyPublicImported, message)
+	//log(cipherData.base62())
+
+	let decryptedMessage = await rsaDecrypt(keyPrivateImported, cipherData)
+	log(decryptedMessage.text())
+
+
+	//and decrypt it with the imported private key
+
+	// Step 5: Encrypt a message using the public key
+/*
+	// Step 6: Decrypt the message using the private key
+	let decryptedMessage = await rsaDecrypt(keyPrivateImported, Data({buffer: encryptedMessage}))
+	log("Decrypted message:", Data({buffer: decryptedMessage}).text())
+
+	// Verify the decrypted message matches the original
+	ok(message === Data({buffer: decryptedMessage}).text())
+	log("RSA encryption and decryption were successful!")
+*/
+/*
+export async function rsaEncrypt(publicKey, plainText) {
+	let encoded = new TextEncoder().encode(plainText); // Convert text to Uint8Array
+	let encrypted = await crypto.subtle.encrypt(
+		{
+			name: 'RSA-OAEP',
+		},
+		publicKey,
+		encoded
+	);
+	return Data({ buffer: encrypted }); // Encrypted data returned as Data object
+}
+export async function rsaDecrypt(privateKey, cipherData) {
+	let decrypted = await crypto.subtle.decrypt(
+		{
+			name: 'RSA-OAEP',
+		},
+		privateKey,
+		cipherData.array()
+	);
+	return Data({ text: new TextDecoder().decode(decrypted) }); // Convert Uint8Array back to text
+}
+test(async () => {
+	// Step 1: Create a key pair
+	let keyPair = await rsaCreateKeys();
+
+	// Step 2: Export the public and private keys
+	let publicKeyData = await rsaExportKey(keyPair.publicKey);
+	let privateKeyData = await rsaExportKey(keyPair.privateKey);
+
+	// Step 3: Import the keys
+	let importedPublicKey = await rsaImportKey(publicKeyData, 'public');
+	let importedPrivateKey = await rsaImportKey(privateKeyData, 'private');
+
+	ok(importedPublicKey instanceof CryptoKey);
+	ok(importedPrivateKey instanceof CryptoKey);
+
+	// Step 4: Encrypt a message using the public key
+	let message = 'Hello, this is a secret message!';
+	let encryptedMessage = await rsaEncrypt(importedPublicKey, message);
+
+	// Step 5: Decrypt the message using the private key
+	let decryptedMessage = await rsaDecrypt(importedPrivateKey, encryptedMessage);
+
+	ok(message === decryptedMessage.text()); // Ensure the decrypted message matches the original
+});
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+cloudflare and nuxt do secrets separate from process.env
+so here you want to write Access(), callable from anywhere
+which lists them, and has them already redacted, and so on
+
+rather than trying to pin them to process.env before code reads it
+*/
+
+
+
+/*
+ok, so it's the isomorphic and lazy loading problem again
+what if you just eat the exceptions, who cares, how long do they take, really?
+so at the top of the file, you try to load each block, saying, this is only going to work on amazon, this is only goign to work on cloudflare, etc
+because the alternative is hairy:
+-environment detection before trying, which is imprecise
+-lazy loading has to be async, so then you can't call from a regular function
+*/
+
+
+
+
+
+
+
+
+/*
+use symmetric encryption
+the private key is these places:
+.dev.vars
+.env
+it doesn't need to be in .env.secret
+
+
+
+
+oh, also, the random initialization vector means that you can just encrypt every $ node shrink
+you don't need to detect a change in the secret file and only do it then
+this is a lot simpler
+
+
+
+
+
+
+
+
+*/
+
+
+/*
+in the seal step, we must:
+-get the previous secret file hash from wrapper.js
+-compute the current secret file hash
+compare them, if they're different:
+-store the new secret file hash
+-encrypt just the secrets
+
+
+
+
+
+in the run step, we must:
+-get the private key from a local development file or a cloud secret
+-get the encrypted secrets from wrapper.js
+-decrypt the secrets in an enclosed module scope variable behind Access()
+
+
+*/
+
+
+test(() => {
+
+/*
+// Update properties
+const s = {
+...previousWrapper,
+tick: Now(),
+hash: hash.base32(),
+codeFiles,
+codeSize,
+totalFiles,
+totalSize,
+};
+
+// Serialize to code string
+const objectToCode = (obj) => util.inspect(obj, { depth: null, maxArrayLength: null });
+const codeString = `export const wrapper = Object.freeze(${objectToCode(s)});\n`;
+
+
+const codeString = `export const wrapper = Object.freeze(${JSON.stringify(updatedWrapper, null, 2)});\n`;
+
+
+
+*/
+
+
+})
+
+
+
+
+
+
+
+/*
+export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
+	checkText(tag1); checkText(tag2)
+	return s.split(tag1).join(tag2)
+}
+export function replaceOne(s, tag1, tag2) {//this time, only replace the first one
+	checkText(tag1); checkText(tag2)//replace's behavior only works this way if tag1 is a string!
+	return s.replace(tag1, tag2)
+}
+test(() => {
+	ok(replaceAll('abc', 'd', 'e') == 'abc')//make sure not found doesn't change the string
+	ok(replaceOne('abc', 'd', 'e') == 'abc')
+
+	let s1 = 'ABABthis sentence ABcontains text and tagsAB to find and replaceAB'
+	let s2 = 'CCthis sentence Ccontains text and tagsC to find and replaceC'
+	ok(replaceAll(s1, 'AB', 'C') == s2)
+
+	let size = 6789
+	ok(replaceOne(
+		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
+		'first ‹6789› and second ‹SIZE› later')
+})
+*/
+
+
+
+
+
+noop(async () => {
+
+	//create and export key for symmetric encryption
+	let key = await symmetricCreateKey()
+	let keyData = await symmetricExportKey(key)
+	log(keyData.size(), keyData.base16(), keyData.base32(), keyData.base62())//32 bytes, we're going to use base16 for access key secret
+
+	//maybe make a wrapper for symmetric encrypt that imports and decrypts as a single step
+
+	//import it again, taking it through base62 text
+	let keyImported = await symmetricImportKey(Data({base62: keyData.base62()}))
+	ok(key instanceof CryptoKey)//both keys look good
+	ok(keyImported instanceof CryptoKey)
+
+	//encrypt a short message
+	let p = 'a short message'//plaintext p, a string
+	let c = await symmetricEncrypt(p, keyImported)//ciphertext c, a Data
+	let d = await symmetricDecrypt(c, keyImported)//decrypted plaintext d, a Data
+	ok(p == d.text())//we got the same message back out again!
+})
+
+
+export async function secretSnippet2(keyBase62, secretFileContents) {
+
+	let cipherData = await accessEncrypt(Data({base62: keyBase62}), secretFileContents)
+	log(cipherData.base62(), cipherData.base62().length)
+
+
+
+
+
+
+
+}
+
+
+
+export function hasAccess() {//true if we can get to secrets
+	return getUseRuntimeConfigFunction() || (defined(typeof process) && process.env)
+}
+//^ 
+pretty sure you don't need this, but here it is in case you go diggign for it, for now
 
 
 

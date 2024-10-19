@@ -1,7 +1,7 @@
 
 import { readBody } from 'h3'
 import {
-Time, log, look, Now, toss, test, ok, noop, Tag, Access,
+Time, log, look, Now, toss, test, ok, noop, Tag, getAccess,
 awaitDog, logAlert, awaitLogAlert
 } from './grand.js'
 //lambdas call in here, too, so we can't use nuxt's @ shorthand
@@ -161,7 +161,7 @@ noop(() => {//first, a demonstration of a promise race
 //another module scoped variable, ugh
 /*
 here's the kludge where we save a reference to nuxt's useRuntimeConfig in a module variable
-this is the best way for Access to use it instead of process.env to get secrets in cloudflare
+this is the best way for access to use it instead of process.env to get secrets in cloudflare
 */
 let _useRuntimeConfigFunction
 export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
@@ -243,7 +243,7 @@ export async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//g
 
 	return door
 }
-export function doorLambdaOpen(lambdaEvent, lambdaContext) {
+export async function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	let door = {}//our object that bundles together everything about this incoming request
 	door.startTick = Now()//when we got it
 	door.tag = Tag()//our tag for it
@@ -260,7 +260,8 @@ export function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	//(2) the request is not from any browser, anywhere; there is no origin header at all
 	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
 	//(3) the network 23 access code is valid
-	if (body.ACCESS_NETWORK_23_SECRET != Access('ACCESS_NETWORK_23_SECRET')) toss('bad access code', {door})
+	let access = await getAccess()
+	if (body.ACCESS_NETWORK_23_SECRET != access.get('ACCESS_NETWORK_23_SECRET')) toss('bad access code', {door})
 
 	return door
 }

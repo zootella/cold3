@@ -5,7 +5,7 @@ Tag, Sticker,
 log, look, say, toss, newline, Time, Now, sayTick,
 defined, noop, test, ok,
 stringify,
-redact, replaceOne, Access,
+redact, replaceOne, getAccess,
 doorPromise
 } from './grand.js'
 
@@ -23,7 +23,8 @@ let _aws, _ses, _sns//load amazon stuff once and only when needed
 async function loadAmazon() {
 	if (!_aws) {
 		_aws = (await import('aws-sdk')).default//use the await import pattern because in es6 you can't require()
-		_aws.config.update({region: Access('ACCESS_AMAZON_REGION')})//amazon's main location of us-east-1
+		let access = await getAccess()
+		_aws.config.update({region: access.get('ACCESS_AMAZON_REGION')})//amazon's main location of us-east-1
 	}
 	return _aws
 }
@@ -77,13 +78,14 @@ async function sendEmail_useAmazon(c) {
 }
 
 async function sendEmail_useSendgrid(c) {
+	let access = await getAccess()
 	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
 	let q = {
-		resource: Access('ACCESS_SENDGRID_URL'),
+		resource: access.get('ACCESS_SENDGRID_URL'),
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'Authorization': 'Bearer '+Access('ACCESS_SENDGRID_KEY_SECRET')
+			'Authorization': 'Bearer '+access.get('ACCESS_SENDGRID_KEY_SECRET')
 		},
 		body: JSON.stringify({
 			from: { name: fromName, email: fromEmail },
@@ -119,16 +121,17 @@ async function sendText_useAmazon(c) {
 }
 
 async function sendText_useTwilio(c) {
+	let access = await getAccess()
 	let {toPhone, messageText} = c
 	let q = {
-		resource: Access('ACCESS_TWILIO_URL')+'/Accounts/'+Access('ACCESS_TWILIO_SID')+'/Messages.json',
+		resource: access.get('ACCESS_TWILIO_URL')+'/Accounts/'+access.get('ACCESS_TWILIO_SID')+'/Messages.json',
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
-			'Authorization': 'Basic '+btoa(Access('ACCESS_TWILIO_SID')+':'+Access('ACCESS_TWILIO_AUTH_SECRET'))
+			'Authorization': 'Basic '+btoa(access.get('ACCESS_TWILIO_SID')+':'+access.get('ACCESS_TWILIO_AUTH_SECRET'))
 		},
 		body: new URLSearchParams({
-			From: Access('ACCESS_TWILIO_PHONE'),//the phone number twilio rents to us to send texts from
+			From: access.get('ACCESS_TWILIO_PHONE'),//the phone number twilio rents to us to send texts from
 			To:   toPhone,//recipient phone number in E.164 format
 			Body: messageText
 		})
@@ -291,12 +294,13 @@ async function sendLog_useFile(s) {
 
 //log to datadog, fetching to their api
 async function sendLog_useDatadog(c) {
+	let access = await getAccess()
 	let q = {
-		resource: Access('ACCESS_DATADOG_ENDPOINT'),
+		resource: access.get('ACCESS_DATADOG_ENDPOINT'),
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'DD-API-KEY': Access('ACCESS_DATADOG_API_KEY_SECRET')
+			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
 		},
 		body: c.bodyText
 	}

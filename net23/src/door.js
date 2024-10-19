@@ -12,7 +12,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 		//CHECKPOINT 4
 		//dog('checkpoint 4')
 
-		door = doorLambdaOpen(lambdaEvent, lambdaContext)
+		door = await doorLambdaOpen(lambdaEvent, lambdaContext)
 		response = await doorProcessBelow(door)
 
 	} catch (e) { error = e }
