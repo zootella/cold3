@@ -12,7 +12,7 @@ $ node test
 
 //access secrets
 import dotenv from 'dotenv'; dotenv.config()//load .env to be able to access secrets
-import card from './env.js'//and additional private info just for local development
+import card from './card.js'//and additional private info just for local development
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered

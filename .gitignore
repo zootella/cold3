@@ -7,6 +7,7 @@ jspm_packages
 
 #cloudflare
 .wrangler
+.dev.vars
 
 #nuxt
 .output
@@ -15,28 +16,20 @@ jspm_packages
 .nitro
 .cache
 dist
-distribution
 
 #secrets
 .env
 .env.*
-!.env.example
 *.env
-env.js
-#secrets, added for nuxt
 *.vars
-#secrets, custom
-secret*.txt
+env.js
+card.js
 
-#logs
+#logs and diffs
 logs
 *.log
-
-#custom
 *.diff
 diff*.txt
 
 #miscellaneous
 .DS_Store
-.fleet
-.idea

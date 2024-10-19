@@ -114,10 +114,10 @@ a note about secrets and environment variables
 locally, they're at:
 ./.env        for nuxt and cloudflare
 ./net23/.env  for serverless framework and amazon lambda
-./env.js      for node snippet, mostly
+./card.js     for node snippet, mostly
 
 all three of those are ignored by git, but haashed by shrinkwrap
-env.js contains personal info used in testing, like email addresses and phone numbers, rather than, like, api keys
+card.js contains personal info used in testing, like email addresses and phone numbers, rather than, like, api keys
 
 serverless framework automatically deploys net23's .env to amazon lambda
 but to use individual ones in lambda code, you have to mention them in serverless.yml
