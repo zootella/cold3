@@ -464,7 +464,6 @@ export async function writeRow(newValue) {
 
 //for the ping system, obviously refactor
 export async function database_pingCount() {
-	log('here we are')
 	return readIntAsText(await readRow())//currently hardcoded into one cell of one table
 }
 
