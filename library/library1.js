@@ -7,34 +7,18 @@ import creditCardType from 'credit-card-type'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
 import {
 tagLength, Tag,
-noop, Time, test, ok, Now,
-say, look, log,
+Now,
+} from './sticker.js'
+import {
+Time,
+noop, test, ok, toss,
+log,
+say, look,
 checkText, checkAlpha,
 randomBetween,
 starts, cut,
-onlyNumerals, newline,
-} from './grand.js'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+onlyNumerals,
+} from './library0.js'
 
 
 

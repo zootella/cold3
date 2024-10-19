@@ -4,13 +4,15 @@
 //actually don't do this, it's library1.js and the named files
 
 import {
-defined, sayDate, sayTick,
-toss, noop, test, ok, log, look, Now, end, subtleHash, Data, checkText,
-Tag, tagLength, checkTag,
-getUseRuntimeConfigFunction,
-} from './grand.js'
-
-
+Now, Tag, tagLength,
+} from './sticker.js'
+import {
+noop, test, ok,
+log, look,
+end,
+Data, subtleHash,
+checkTag,
+} from './library0.js'
 
 
 

@@ -29,10 +29,12 @@ export default defineEventHandler(async (workerEvent) => {
 })
 //^our copypasta to safely man the front door
 
-/*export default*/ new_design_defineEventHandler(async (workerEvent) => {
+/*
+export default new_design_defineEventHandler(async (workerEvent) => {
 	return doorWorker(workerEvent, useRuntimeConfig, doorProcessBelow)
 })
 //^october DUH DUH DUH this is all it needs to be, DUH
+*/
 
 async function doorProcessBelow(door) {
 	let response = {}

@@ -1,15 +1,23 @@
 
-//when this is done, []eliminate notes in access.txt, and []move tight packages to the library
-
 import {
 wrapper,
-defined, log, test, ok, noop, Now, Tag, look,
-Data,
+} from '../wrapper.js'
+import {
+Now, Tag,
+} from './sticker.js'
+import {
+log, look, defined, noop, test, ok, 
 checkText, newline,
-accessEncrypt, accessDecrypt,
+Data, accessEncrypt, accessDecrypt,
+} from './library0.js'
+import {
 getUseRuntimeConfigFunction,
-} from './grand.js'
+} from './door.js'
 
+
+
+
+//when this is done, []eliminate notes in access.txt, and []move tight packages to the library
 
 
 
@@ -53,7 +61,7 @@ async function loadSecretStore() {
 		},
 		get(name) {
 			checkText(name)
-			let value = _seccrets[name]
+			let value = _secrets[name]
 			checkText(value)//callers can trust that any returned value is text that isn't blank
 			return value
 		},

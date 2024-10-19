@@ -1,10 +1,10 @@
 
-//no imports allowed in library0! if you need one, go to library1
-
-
 import {
-Now, sayTick, tagLength
+Now,
+sayDate, sayTick,
+tagLength,
 } from './sticker.js'
+//no imports allowed in library0! if you need one, go to library1
 //well, this brings in sticker, which brings in nanoid, but both of those are small
 
 
@@ -1161,7 +1161,7 @@ export async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
 	let keyPrivateImported = await _rsaImportKey(base62ToObject(keyPrivateBase62), 'decrypt')
 	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.rsaName}, keyPrivateImported, Data({base62: cipherBase62}).array())}).text()
 }
-export async function _rsaImportKey(key, use) {//true, or false to import private key to decrypt
+async function _rsaImportKey(key, use) {//true, or false to import private key to decrypt
 	return await crypto.subtle.importKey(_subtle.rsaFormat, key, {name: _subtle.rsaName, hash: { name: _subtle.rsaHashFunction }}, _subtle.extractable, [use])
 }
 function objectToBase62(o) { return Data({text: JSON.stringify(o)}).base62() }

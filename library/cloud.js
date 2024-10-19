@@ -1,13 +1,17 @@
 
-//import modules
 import {
-Tag, Sticker,
-log, look, say, toss, newline, Time, Now, sayTick,
-defined, noop, test, ok,
+Now, Sticker, sayTick,
+} from './sticker.js'
+import {
+log, look, say, toss, newline, test, ok,
 stringify,
-redact, replaceOne, getAccess,
+} from './library0.js'
+import {
+getAccess, redact, replaceOne
+} from './access.js'
+import {
 doorPromise
-} from './grand.js'
+} from './door.js'
 
 //node-style imports
 let _fs;

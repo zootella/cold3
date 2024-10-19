@@ -9,16 +9,27 @@ keep it all here together for easy refactoring and auditing
 
 import { createClient } from '@supabase/supabase-js'
 import {
-log, toss, Now,
-checkInt, hasText, checkText,
-defined, test, ok,
-squareEncode, squareDecode,
+Now, Tag
+} from './sticker.js'
+import {
+log, toss,
+checkInt,
 intToText, textToInt,
 checkHash, checkSquare,
-Tag, checkTag,
-Sticker,
-getAccess
-} from './grand.js'
+checkTag,
+} from './library0.js'
+import {
+getAccess,
+} from './access.js'
+
+
+
+
+
+
+
+
+
 
 //get a client connection to supabase
 let _client

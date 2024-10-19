@@ -1,7 +1,6 @@
 
 import {
-log, test, ok, noop
-} from './grand.js'
+} from './library0.js'
 
 /*
 expeditionary notes
