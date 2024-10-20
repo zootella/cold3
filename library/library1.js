@@ -1,10 +1,9 @@
 
-//library1 can import modules saved in the nuxt project's package.json above
-
 import { customAlphabet } from 'nanoid'
 import Joi from 'joi'
 import creditCardType from 'credit-card-type'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
+
 import {
 tagLength, Tag,
 Now,

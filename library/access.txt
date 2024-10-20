@@ -896,6 +896,191 @@ and actually only import things you're using, which is cleaner, and also elimina
 
 
 
+function composeJsStyleFile(o) {
+
+}
+function parseJsStyleFile(s) {
+	//actually, you don't use this, you import it and javascript parses it for you
+}
+function composeEnvStyleFile(o) {
+	let s = ''
+	Object.entries(o).forEach(([k, v]) => {
+		s += k+'='+v+newline
+	})
+	return s
+}
+
+
+/*
+above, you can parse and compose a env-style file
+next, you need to do that for wrapper.js, so you can parse it with extra stuff that stays the same
+
+and maybe even have nested objects, and Object.freeze, too
+*/
+
+
+
+
+
+
+
+
+
+
+//     _    ____ ____ _____ ____ ____                        _        ____  _____ ____ ____  _____ _____ 
+//    / \  / ___/ ___| ____/ ___/ ___|        __ _ _ __   __| |      / ___|| ____/ ___|  _ \| ____|_   _|
+//   / _ \| |  | |   |  _| \___ \___ \       / _` | '_ \ / _` |      \___ \|  _|| |   | |_) |  _|   | |  
+//  / ___ \ |__| |___| |___ ___) |__) |     | (_| | | | | (_| |       ___) | |__| |___|  _ <| |___  | |  
+// /_/   \_\____\____|_____|____/____/____   \__,_|_| |_|\__,_|  ____|____/|_____\____|_| \_\_____| |_|  
+//                                  |_____|                     |_____|                                  
+
+/*
+a note about secrets and environment variables
+
+locally, they're at:
+./.env        for nuxt and cloudflare
+./net23/.env  for serverless framework and amazon lambda
+./card.js     for node snippet, mostly
+
+all three of those are ignored by git, but haashed by shrinkwrap
+card.js contains personal info used in testing, like email addresses and phone numbers, rather than, like, api keys
+
+serverless framework automatically deploys net23's .env to amazon lambda
+but to use individual ones in lambda code, you have to mention them in serverless.yml
+
+cloudflare keeps them in the dashboard, and you keep them in sync manually
+
+ACCESS_ is the prefix for all of them
+those that should be redacted have the suffix _SECRET
+nuxt has a way to expose some to page code, but for those, we're instead just using const in .vue files
+those are allowed to be known, and have the suffix _PUBLIC
+an example is the first password hashing salt in the password component .vue file
+*/
+const _secretSuffix = '_SECRET'
+export function redact(s) {
+	let words = s.match(/\w+/g)
+	let secretNamesSet = new Set()
+	words.forEach(word => { if (word.endsWith(_secretSuffix)) secretNamesSet.add(word) })
+	let secretNames = Array.from(secretNamesSet)
+	let secretValues = []
+	if (defined(typeof process)) secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })//october this will change when you're reading Access('ACCESS_SECRET_LIST') to get the names to redact
+	secretValues.forEach(secretValue => {
+		let redactedValue = redact_composeReplacement(secretValue)
+		s = replaceAll(s, secretValue, redactedValue)
+	})
+	return s
+	/*
+	two notes on choosing this design, which gets secret names from s, then secret values from process.env:
+	-why not just look in process.env for property names that end _SECRET? lambda let's us do this, but cloudflare does not
+	-why not avoid process entirely, and parse s like "SOME_SECRET":"secret value"? combinations of stringify and look mean that secret values are bound by " or \" or potentially other terminators!
+	*/
+}
+const _redactLabel = '##REDACTED##'//what the black marker looks like
+const _redactMargin = 2//but we mark messily, letting tips this big stick out on either end
+function redact_composeReplacement(s) {//given a secret value like "some secret value", return "so##REDACTED###ue"
+	let c = ''//redacted string we will compose and return
+	let both = _redactMargin*2//length of both leading and trailing margins
+	if (s.length < _redactLabel.length + both) {//short, run the black marker over the whole thing
+		c = '#'.repeat(s.length)
+	} else {//long enough to show label and let margins show through
+		let extraBlackMarker = '#'.repeat(s.length - both - _redactLabel.length)
+		c = s.slice(0, _redactMargin)+'##REDACTED##'+extraBlackMarker+s.slice(-_redactMargin)
+	}
+	return c
+}
+test(() => {
+	ok(redact_composeReplacement('') == '')
+	ok(redact_composeReplacement('abc') == '###')//short becomes all pound, always the same length
+	ok(redact_composeReplacement(
+		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
+		'ab##REDACTED############yz')
+})
+
+
+
+
+export function redact(s) {
+	let words = s.match(/\w+/g)
+	let secretNamesSet = new Set()
+	words.forEach(word => { if (word.endsWith(_secretSuffix)) secretNamesSet.add(word) })
+	let secretNames = Array.from(secretNamesSet)
+	let secretValues = []
+	if (defined(typeof process)) secretNames.forEach(secretName => { secretValues.push(process.env[secretName]) })//october this will change when you're reading Access('ACCESS_SECRET_LIST') to get the names to redact
+	secretValues.forEach(secretValue => {
+		let redactedValue = redact_composeReplacement(secretValue)
+		s = replaceAll(s, secretValue, redactedValue)
+	})
+	return s
+}
+
+
+
+
+
+
+
+
+
+function redact_composeReplacement(s) {//given a secret value like "some secret value", return "so##REDACTED###ue"
+	let c = ''//redacted string we will compose and return
+	let both = _redactMargin*2//length of both leading and trailing margins
+	if (s.length < _redactLabel.length + both) {//short, run the black marker over the whole thing
+		c = '#'.repeat(s.length)
+	} else {//long enough to show label and let margins show through
+		let extraBlackMarker = '#'.repeat(s.length - both - _redactLabel.length)
+		c = s.slice(0, _redactMargin)+_redactLabel+extraBlackMarker+s.slice(-_redactMargin)
+	}
+	return c
+}
+test(() => {
+	ok(redact_composeReplacement('') == '')
+	ok(redact_composeReplacement('abc') == '###')//short becomes all pound, always the same length
+	ok(redact_composeReplacement(
+		'abcdefghijklmnopqrstuvwxyz') ==//long says redacted, and lets tips show through
+		'ab##REDACTED############yz')
+})
+
+
+
+
+/*
+
+you could combine sticker and library0
+by pass-through importing all of sticker's exports at the top of library0
+and then importing them from library0 elsewhere
+yeah, do this
+
+
+
+
+
+
+
+
+
+*/
+
+
+//library2 is for library functions more specific to this project than general-purpose
+//grow them here, then probably refactor them out into named files in this library folder
+//actually don't do this, it's library1.js and the named files
+
+
+
+//no imports allowed in library0! if you need one, go to library1
+//well, this brings in sticker, which brings in nanoid, but both of those are small
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

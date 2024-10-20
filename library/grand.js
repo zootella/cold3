@@ -3,7 +3,7 @@ export {
 
 wrapper
 
-} from '../wrapper.js'
+} from '../wrapper.js'//details of this shrinkwrapped version of the code
 export {
 
 Sticker,
@@ -12,7 +12,7 @@ tagLength, Tag,
 Now,
 sayDate, sayTick,
 
-} from './sticker.js'
+} from './sticker.js'//small to not slow down ping
 export {
 
 Time, Size, noop,
@@ -60,18 +60,26 @@ correctLength,
 testBox,
 say, look, stringify,
 
-} from './library0.js'
+replaceAll, replaceOne,
+parseEnvStyleFileContents,
+
+} from './library0.js'//helpful javascript functions with no module imports
 export {
 
 validateEmail, validatePhone, validateCard,
 generatePosts, postDatabase,
 
-} from './library1.js'
+} from './library1.js'//functions that use module imports
 export {
 
 getBrowserTag, getBrowserFingerprintAndTag, browserHash,
 
-} from './library2.js'
+} from './library2.js'//functions that use parts of the larger application and environment
+
+/*
+beyond that structure are temporary files named by the area they're working on
+once done, move groups of functions into library0,1,2 above
+*/
 export {
 
 durationEnvironment, durationFetch, durationWait,
@@ -105,28 +113,7 @@ export {
 } from './cloud2.js'
 export {
 
-snippet,
+redact_snippet,
 getAccess,
-redact,
-replaceAll, replaceOne,
 
 } from './access.js'//just for coding access, get rid of later, october
-
-
-/*
-
-you could combine sticker and library0
-by pass-through importing all of sticker's exports at the top of library0
-and then importing them from library0 elsewhere
-yeah, do this
-
-
-
-
-
-
-
-
-
-*/
-

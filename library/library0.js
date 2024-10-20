@@ -4,15 +4,6 @@ Now,
 sayDate, sayTick,
 tagLength,
 } from './sticker.js'
-//no imports allowed in library0! if you need one, go to library1
-//well, this brings in sticker, which brings in nanoid, but both of those are small
-
-
-
-
-
-
-
 
 //              _ _       
 //  _   _ _ __ (_) |_ ___ 
@@ -2226,10 +2217,83 @@ noop(() => {//exceptions are slow, so just switch this on when you're using it
 
 
 
+export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
+	checkText(tag1); checkText(tag2)
+	return s.split(tag1).join(tag2)
+}
+export function replaceOne(s, tag1, tag2) {//this time, only replace the first one
+	checkText(tag1); checkText(tag2)//replace's behavior only works this way if tag1 is a string!
+	return s.replace(tag1, tag2)
+}
+test(() => {
+	ok(replaceAll('abc', 'd', 'e') == 'abc')//make sure not found doesn't change the string
+	ok(replaceOne('abc', 'd', 'e') == 'abc')
+
+	let s1 = 'ABABthis sentence ABcontains text and tagsAB to find and replaceAB'
+	let s2 = 'CCthis sentence Ccontains text and tagsC to find and replaceC'
+	ok(replaceAll(s1, 'AB', 'C') == s2)
+
+	let size = 6789
+	ok(replaceOne(
+		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
+		'first ‹6789› and second ‹SIZE› later')
+})
+
+
+
+
+export function parseEnvStyleFileContents(s) {
+	let lines = s.split(/\r?\n/)
+	let o = {}
+	lines.forEach(line => {
+		line = line.trimStart()
+		if (line.length && !line.startsWith('#')) {//skip blank and comment lines
+			let e = line.indexOf('=')//e is index of first equals sign
+			if (e != -1) {//only do lines that have key=value
+				let k = line.slice(0, e).trim()//key is trimmed text before equals
+				let v = line.slice(e+1)//value is everything on the line after the first equals
+				if (k.length) {//key name must exist
+					o[k] = v
+				}``
+			}
+		}
+	})
+	return o
+}
+test(() => {
+let s = `
+key1=value1
+
+#blank line above, commented line here, and below is equals in a value
+TRUE_MATH=2+2=4
+`
+let o = parseEnvStyleFileContents(s)
+ok(o.key1 == 'value1')
+ok(o['TRUE_MATH'] == '2+2=4')
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*
-back in the library for three tasks
+back in the library for three tasks, look at here now in october
 1[x]stringify
 2[x]make sticker with details and composed forms
 3[]start redact, first just turning the net23 access code into REDACTED, more caps lock there, you realize

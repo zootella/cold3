@@ -4,10 +4,10 @@ Now, Sticker, sayTick,
 } from './sticker.js'
 import {
 log, look, say, toss, newline, test, ok,
-stringify,
+stringify, replaceOne,
 } from './library0.js'
 import {
-getAccess, redact, replaceOne
+getAccess
 } from './access.js'
 import {
 doorPromise
@@ -219,7 +219,7 @@ export function dog(...a)                 { doorPromise(awaitDog(...a))         
 export function logAudit(headline, watch) { doorPromise(awaitLogAudit(headline, watch)) }
 export function logAlert(headline, watch) { doorPromise(awaitLogAlert(headline, watch)) }
 export async function awaitDog(...a) {//await async forms
-	let c = prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
+	let c = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		console.log(c.body[0].message)
 		sendLog_useIcarus(c.body[0].message)//running locally in icarus, append to the text box on the page
@@ -228,7 +228,7 @@ export async function awaitDog(...a) {//await async forms
 	}
 }
 export async function awaitLogAudit(headline, watch) {
-	let c = prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
+	let c = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		console.log(c.body[0].message)
 		sendLog_useIcarus(c.body[0].message)
@@ -237,7 +237,7 @@ export async function awaitLogAudit(headline, watch) {
 	}
 }
 export async function awaitLogAlert(headline, watch) {
-	let c = prepareLog('error', 'type:alert', 'ALERT', headline, watch)
+	let c = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		console.error(c.body[0].message)
 		sendLog_useIcarus(c.body[0].message)
@@ -245,8 +245,9 @@ export async function awaitLogAlert(headline, watch) {
 		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
 	}
 }
-function prepareLog(status, type, label, headline, watch) {
+async function prepareLog(status, type, label, headline, watch) {
 	let sticker = Sticker()//find out what, where, and when we're running, also makes a tag for this sticker check right now
+	let access = await getAccess()//access secrets to be able to redact them
 	let d = {//this is the object we'll log to datadog
 
 		//datadog required
@@ -274,7 +275,7 @@ function prepareLog(status, type, label, headline, watch) {
 	//prepare the body
 	let b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
 	let s = stringify(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
-	s = redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
+	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
 	let size = s.length//byte size of body, this is how datadog bills us
 	s         = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
 	d.message = replaceOne(d.message, '‹SIZE›', `‹${size}›`)//also get that into the message text for the other sinks

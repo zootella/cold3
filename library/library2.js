@@ -1,18 +1,46 @@
 
-//library2 is for library functions more specific to this project than general-purpose
-//grow them here, then probably refactor them out into named files in this library folder
-//actually don't do this, it's library1.js and the named files
-
+import {
+wrapper,
+} from '../wrapper.js'
 import {
 Now, Tag, tagLength,
 } from './sticker.js'
 import {
-noop, test, ok,
-log, look,
-end,
-Data, subtleHash,
-checkTag,
+log, look, defined, noop, test, ok, toss,
+checkText, newline, end, checkTag,
+Data, accessEncrypt, accessDecrypt, subtleHash,
+replaceAll, replaceOne,
+parseEnvStyleFileContents,
 } from './library0.js'
+import {
+getUseRuntimeConfigFunction,
+} from './door.js'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

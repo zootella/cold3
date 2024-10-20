@@ -24,13 +24,13 @@ import card from './card.js'//and additional private info just for local develop
 import {
 runTests,
 log, look,
-snippet, awaitLogAlert
+redact_snippet, awaitLogAlert
 } from './library/grand.js'
 
 //snippet runner
 async function runSnippet() {
 	try {
-		snippet(card)
+		redact_snippet(card)
 	} catch (e) { await awaitLogAlert('node test snippet uncaught', {e}) }
 }
 
