@@ -73,6 +73,7 @@ generatePosts, postDatabase,
 export {
 
 getBrowserTag, getBrowserFingerprintAndTag, browserHash,
+//^actually these should be in library0 as they do not need modules nor the application to work!
 
 } from './library2.js'//functions that use parts of the larger application and environment
 

@@ -2296,7 +2296,7 @@ ok(o['TRUE_MATH'] == '2+2=4')
 back in the library for three tasks, look at here now in october
 1[x]stringify
 2[x]make sticker with details and composed forms
-3[]start redact, first just turning the net23 access code into REDACTED, more caps lock there, you realize
+3[x]start redact, first just turning the net23 access code into REDACTED, more caps lock there, you realize
 */
 
 

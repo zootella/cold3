@@ -78,8 +78,30 @@ A 3.5" floppy disk is 31% full
 |___|___|________|___|
 
 
+
  ____________________
-| |cold3           | |
+| |cold3 ~ FURSRVO | |
+|.|________________|H|
+| |2024oct20_______| |
+| |109_files_______| |
+| |524121_bytes____| |
+| |disk_filled_36%_| |
+| |________________| |
+|                    |
+|    ____________    |
+|   |   |  _     |   |
+|   |   | | |    |   |
+|   |   | |_|    | V |
+|___|___|________|___|
+
+
+
+i guess you could write that into readme.md
+except then this breaks the hash, of course
+
+
+ ____________________
+| |cold3~FURSRVO   | |
 |.|XXXXXXXXXXXXXXXX|H|
 | |XXXXXXXXXXXXXXXX| |
 | |XXXXXXXXXXXX____| |

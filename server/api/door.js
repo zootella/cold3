@@ -33,7 +33,7 @@ export default defineEventHandler(async (workerEvent) => {
 export default new_design_defineEventHandler(async (workerEvent) => {
 	return doorWorker(workerEvent, useRuntimeConfig, doorProcessBelow)
 })
-//^october DUH DUH DUH this is all it needs to be, DUH
+//^october DUH DUH DUH this is all it needs to be, DUH (new design for door with three line boilerplate)
 */
 
 async function doorProcessBelow(door) {

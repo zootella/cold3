@@ -19,11 +19,11 @@ getUseRuntimeConfigFunction,
 
 
 
-//when this is done, []eliminate notes in access.txt, and []move tight packages to the library
-//[]october, redact needs to redact all secret values, and access key secret we used to decrypt them, as well
-
-
+//when this is done, [x]eliminate notes in access.txt, and []move tight packages to the library
 //move all this into library2, as getUseRuntimeConfigFunction means it's tied to the application
+//[x]october, redact needs to redact all secret values, and access key secret we used to decrypt them, as well
+
+
 
 
 

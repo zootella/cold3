@@ -1377,6 +1377,28 @@ stamp3.js, made from stamp2
 
 
 
+refactor the subtle crypto in library0 so that
+[]key import and export are handled for you (a user doesn't have to first import a key)
+[]functions take and return Data (and are not specific to one form of encoding or another)
+right now you think you'll end up using
+-symmetric encryption for getAccess
+-signed messages for net23 media access permission
+-rsa for nothing
+but you still want them all factored properly
+
+
+
+
+
+
+you could combine sticker and library0
+by pass-through importing all of sticker's exports at the top of library0
+and then importing them from library0 elsewhere
+this note after you defanged circular dependencies from grand
+
+
+
+
 
 
 

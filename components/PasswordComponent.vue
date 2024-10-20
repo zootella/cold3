@@ -100,13 +100,12 @@ password page backlog
 //yes, this is a factory preset, correctly in the page, which gets sent to the client, where the user can see it
 const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
 const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC = 420//thousands, OWASP recommends 100-500
-//october get these from nuxt runtime config; this is also a good place to confirm you can't get the private ones!
 
 
 import { ref } from 'vue'
 import {
 log, look, Time, hashPassword, Data, Now, sayTick,
-} from '@/library/grand.js'//october use here in the front end, too, but only try this after the back end is working
+} from '@/library/grand.js'
 
 // Define reactive variables
 const inputValue = ref('')
