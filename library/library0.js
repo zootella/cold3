@@ -1002,6 +1002,33 @@ test(() => {
 	ok(roll(0, 256))//byte
 })
 
+//                _      
+//   ___ ___   __| | ___ 
+//  / __/ _ \ / _` |/ _ \
+// | (_| (_) | (_| |  __/
+//  \___\___/ \__,_|\___|
+//                       
+
+export function randomCode(length) {//generate a random numeric code avoiding starting 0 and any three in a row
+	let s = ''+_randomDigitExcept(0)
+	while (s.length < length) s += _randomDigitExcept(_duplicateEndDigit(s))
+	return s
+}
+function _randomDigitExcept(avoid) {
+	let a = []//alphabet of digits we'll randomly select one from
+	for (let i = 0; i < 10; i++) { if (avoid == -1 || avoid != i) a.push(i) }
+	return a[((crypto.getRandomValues(new Uint32Array(1)))[0]) % a.length]
+}
+function _duplicateEndDigit(s) {
+	if (s.length < 2) return -1//too short to have a duplicate
+	if (s[s.length-2] == s[s.length-1]) { return Number(s[s.length-1]) } else { return -1 }
+}
+noop(() => {//this might be slow, actually, but should be ok for individual one time codes
+	let s = newline
+	for (let i = 0; i < 250; i++) s += randomCode(6) + ', '//try it out with 4, 6, and 10
+	log(s)
+})
+
 //                                   _   
 //   ___ _ __   ___ _ __ _   _ _ __ | |_ 
 //  / _ \ '_ \ / __| '__| | | | '_ \| __|
@@ -1043,8 +1070,8 @@ const _subtle = {
 	extractable: true,//say we want to be able to export the key
 
 	//october, you should move these two up into symmetric above, you think
-	strength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
-	vectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
+	symmetricStrength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
+	symmetricVectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 }
 Object.freeze(_subtle)
 
@@ -1073,16 +1100,16 @@ export async function accessDecrypt(keyData, cipherData) {
 }
 
 export async function symmetricCreateKey() {
-	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.strength }, _subtle.extractable, _subtle.symmetricUse)
+	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
 }
 export async function symmetricExportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
 	return Data({buffer: await crypto.subtle.exportKey(_subtle.symmetricFormat, key)})//key is an imported CryptoKey object
 }
 export async function symmetricImportKey(keyData) {//do this once per script run, not every time a function that needs it is called!
-	return await crypto.subtle.importKey(_subtle.symmetricFormat, keyData.array(), { name: _subtle.symmetricName, length: _subtle.strength }, _subtle.extractable, _subtle.symmetricUse)
+	return await crypto.subtle.importKey(_subtle.symmetricFormat, keyData.array(), { name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
 }
 export async function symmetricEncrypt(plainText, key) {
-	let vector = Data({random: _subtle.vectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
+	let vector = Data({random: _subtle.symmetricVectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
 	let cipher = Data({buffer: await crypto.subtle.encrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, Data({text: plainText}).array())})
 	let storeBin = Bin(vector.size() + cipher.size())
 	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
@@ -1090,8 +1117,8 @@ export async function symmetricEncrypt(plainText, key) {
 	return storeBin.data()
 }
 export async function symmetricDecrypt(storeData, key) {//stored data that is initialization vector followed by cipher bytes
-	let vector = storeData.clip(0, _subtle.vectorSize)//unpack
-	let cipher = storeData.clip(_subtle.vectorSize, storeData.size() - _subtle.vectorSize)
+	let vector = storeData.clip(0, _subtle.symmetricVectorSize)//unpack
+	let cipher = storeData.clip(_subtle.symmetricVectorSize, storeData.size() - _subtle.symmetricVectorSize)
 	return Data({buffer: await crypto.subtle.decrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, cipher.array())})
 }
 test(async () => {
@@ -1351,33 +1378,6 @@ export function checkTag(s) {
 }
 test(() => {
 	checkTag('qqdTuhRdZwJwo7KKeaegs')
-})
-
-//                _      
-//   ___ ___   __| | ___ 
-//  / __/ _ \ / _` |/ _ \
-// | (_| (_) | (_| |  __/
-//  \___\___/ \__,_|\___|
-//                       
-
-export function randomCode(length) {//generate a random numeric code avoiding starting 0 and any three in a row
-	let s = ''+_randomDigitExcept(0)
-	while (s.length < length) s += _randomDigitExcept(_duplicateEndDigit(s))
-	return s
-}
-function _randomDigitExcept(avoid) {
-	let a = []//alphabet of digits we'll randomly select one from
-	for (let i = 0; i < 10; i++) { if (avoid == -1 || avoid != i) a.push(i) }
-	return a[((crypto.getRandomValues(new Uint32Array(1)))[0]) % a.length]
-}
-function _duplicateEndDigit(s) {
-	if (s.length < 2) return -1//too short to have a duplicate
-	if (s[s.length-2] == s[s.length-1]) { return Number(s[s.length-1]) } else { return -1 }
-}
-noop(() => {//this might be slow, actually, but should be ok for individual one time codes
-	let s = newline
-	for (let i = 0; i < 250; i++) s += randomCode(6) + ', '//try it out with 4, 6, and 10
-	log(s)
 })
 
 //                    _   _                
@@ -2279,6 +2279,25 @@ ok(o['TRUE_MATH'] == '2+2=4')
 
 
 
+export function getBrowserAgentRendererAndVendor() {
+	let agent, renderer, vendor
+	if (defined(typeof navigator)) agent = navigator.userAgent
+	if (defined(typeof document)) {
+		let e = document.createElement('canvas')//make a HTML5 <canvas> tag element; doesn't append it to the DOM
+		let c = e.getContext('webgl') || e.getContext('experimental-webgl')
+		if (c) {
+			let x = c.getExtension('WEBGL_debug_renderer_info')
+			if (x) {
+				renderer = c.getParameter(x.UNMASKED_RENDERER_WEBGL)
+				vendor   = c.getParameter(x.UNMASKED_VENDOR_WEBGL)
+			}
+		}
+	}
+	return {agent, renderer, vendor}
+}
+noop(() => {
+	log(look(getBrowserAgentRendererAndVendor()))
+})
 
 
 

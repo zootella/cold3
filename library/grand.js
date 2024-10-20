@@ -62,6 +62,7 @@ say, look, stringify,
 
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
+getBrowserAgentRendererAndVendor,
 
 } from './library0.js'//helpful javascript functions with no module imports
 export {
@@ -73,9 +74,6 @@ generatePosts, postDatabase,
 export {
 
 getAccess, redact_snippet,
-
-getBrowserTag, getBrowserFingerprintAndTag, browserHash,
-//^october, actually these should be in library0 as they do not need modules nor the application to work!
 
 } from './library2.js'//functions that use parts of the larger application and environment
 
