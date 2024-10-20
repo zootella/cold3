@@ -36,21 +36,18 @@ checkNumerals, checkBase16, checkAlpha, checkName,
 onlyNumerals, onlyBase16, onlyAlpha, onlyName,
 checkDate,
 size4, number4,
-
 Bin, Data,
-checkHash, checkHashThoroughly,
 base62ToInt, intToBase62,
-
-randomBetween, cryptoRandomBetween,
-accessCreateKey, accessEncrypt, accessDecrypt,
-symmetricCreateKey, symmetricExportKey, symmetricImportKey, symmetricEncrypt, symmetricDecrypt,
-rsaEncrypt, rsaDecrypt,
-hashLength, subtleHash,
-curveCreateKeys, curveExportKey, curveImportKey, curveSign, curveVerify,
-hashPassword,
-
 checkTag,
-randomCode,
+
+randomBetweenLight, randomBetween, randomCode,
+hashLength, subtleHash, checkHashLight, checkHash,
+hashPassword,
+encrypt, decrypt,
+rsaEncrypt, rsaDecrypt,
+objectToBase62, base62ToObject,
+curveSign, curveVerify,
+
 sayWhenPage, sayWhenFeed,
 fraction,
 deindent,
@@ -74,6 +71,7 @@ generatePosts, postDatabase,
 export {
 
 getAccess, redact_snippet,
+getBrowserTag,
 
 } from './library2.js'//functions that use parts of the larger application and environment
 

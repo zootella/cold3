@@ -752,24 +752,6 @@ function _base32ToArray(s) {
 	return new Uint8Array(a);
 }
 
-//make sure s looks like a hash value in base 32, to help katy, baring the door to the database
-export function checkHash(s) {
-	checkText(s); if (s.length != hashLength) toss('data', {s})
-	if (!base32Set) base32Set = new Set(base32Alphabet)
-	for (let i = 0; i < s.length; i++) {//olde fashioned loop is faster because no es6 iterator
-		if (!base32Set.has(s[i])) toss('data', {s, i})
-	}
-}
-export function checkHashThoroughly(s) {//slower, does round trip check
-	checkText(s); if (s.length != hashLength) toss('data', {s})
-	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
-}
-test(() => {
-	function f(s) { checkHash(s); checkHashThoroughly(s) }
-	f('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//fine
-	//also tried blank, bad character, too short, too long
-})
-
 //  _                     __  ____  
 // | |__   __ _ ___  ___ / /_|___ \ 
 // | '_ \ / _` / __|/ _ \ '_ \ __) |
@@ -975,12 +957,12 @@ test(() => {
 //pass 0 and 1 to flip a coin, 1 and 6 to roll a dice, and so on
 //https://stackoverflow.com/questions/1527803/generating-random-whole-numbers-in-javascript-in-a-specific-range
 //and then chatGPT produced an indentical result in a chat starting with excel's randbetween
-export function randomBetween(minimum, maximum) {
+export function randomBetweenLight(minimum, maximum) {
 	return Math.floor(Math.random() * (maximum - minimum + 1)) + minimum
 }
 //but this doesn't use the browser's crypto source of randomness of cryptographic quality! for that, ChatGPT suggests
 //for that, chatgpt suggests:
-export function cryptoRandomBetween(minimum, maximum) {
+export function randomBetween(minimum, maximum) {
 	let a32 = new Uint32Array(1)//an array of one 32-bit unsigned integer
 	crypto.getRandomValues(a32)//fill it with cryptographically secure random bits
 	return Math.floor(a32[0] / (0xffffffff + 1) * (maximum - minimum + 1)) + minimum//scale and shift
@@ -988,8 +970,8 @@ export function cryptoRandomBetween(minimum, maximum) {
 test(() => {
 	function roll(low, high) {//test to make sure the apis are there, and sanity check them
 		for (let i = 0; i < 100; i++) {
-			let r1 = randomBetween(low, high)
-			let r2 = cryptoRandomBetween(low, high)
+			let r1 = randomBetweenLight(low, high)
+			let r2 = randomBetween(low, high)
 			if (r1 < low || r1 > high) return false
 			if (r2 < low || r2 > high) return false
 		}
@@ -1038,8 +1020,19 @@ noop(() => {//this might be slow, actually, but should be ok for individual one 
 
 const _subtle = {
 
-	//our choices for symmetric encryption of sensitive user data
+	//our choices for one-directional hashing
+	hashName: 'SHA-256',
+
+	//password hashing
+	passwordAlgorithmKeyDerivation: 'PBKDF2',//the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
+	passwordAlgorithmEncryption:    'AES-GCM',
+	passwordAlgorithmHashFunction:  'SHA-256',
+	passwordKeyLength: 256,//256 bit derived key length
+
+	//symmetric encryption
 	symmetricName: 'AES-GCM',
+	symmetricStrength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
+	symmetricVectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 	symmetricUse: ['encrypt', 'decrypt'],//create and import keys that can do these things
 	symmetricFormat: 'raw',//export symmetric key as raw bytes
 
@@ -1051,154 +1044,16 @@ const _subtle = {
 	rsaUse: ['encrypt', 'decrypt'],//we'll use rsa keys to encrypt and decrypt
 	rsaFormat: 'jwk',//we'll export and import keys in json web key format
 
-	//one-directional hashing of that data
-	hashName: 'SHA-256',
-
-	//digital signatures
+	//and digital signatures
 	curveName: 'ECDSA',
 	curveType: 'P-256',
 	curveUse: ['sign', 'verify'],
 	curveFormat: 'jwk',//export sign keys as javascript objects
 
-	//user password hashing
-	passwordAlgorithmKeyDerivation: 'PBKDF2',//the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
-	passwordAlgorithmEncryption:    'AES-GCM',
-	passwordAlgorithmHashFunction:  'SHA-256',
-	passwordKeyLength: 256,//256 bit derived key length
-
 	//and general or multi-purpose settings
 	extractable: true,//say we want to be able to export the key
-
-	//october, you should move these two up into symmetric above, you think
-	symmetricStrength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
-	symmetricVectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 }
 Object.freeze(_subtle)
-
-//                                     _        _      
-//  ___ _   _ _ __ ___  _ __ ___   ___| |_ _ __(_) ___ 
-// / __| | | | '_ ` _ \| '_ ` _ \ / _ \ __| '__| |/ __|
-// \__ \ |_| | | | | | | | | | | |  __/ |_| |  | | (__ 
-// |___/\__, |_| |_| |_|_| |_| |_|\___|\__|_|  |_|\___|
-//      |___/                                          
-
-//draft design for higher level api: combine steps, use Data, don't indicate encoding
-export async function accessCreateKey() {
-	let key = await symmetricCreateKey()
-	let keyData = await symmetricExportKey(key)
-	return keyData
-}
-export async function accessEncrypt(keyData, messageText) {
-	let key = await symmetricImportKey(keyData)
-	let cipherData = await symmetricEncrypt(messageText, key)
-	return cipherData
-}
-export async function accessDecrypt(keyData, cipherData) {
-	let key = await symmetricImportKey(keyData)
-	let messageData = await symmetricDecrypt(cipherData, key)
-	return messageData.text()
-}
-
-export async function symmetricCreateKey() {
-	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
-}
-export async function symmetricExportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
-	return Data({buffer: await crypto.subtle.exportKey(_subtle.symmetricFormat, key)})//key is an imported CryptoKey object
-}
-export async function symmetricImportKey(keyData) {//do this once per script run, not every time a function that needs it is called!
-	return await crypto.subtle.importKey(_subtle.symmetricFormat, keyData.array(), { name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
-}
-export async function symmetricEncrypt(plainText, key) {
-	let vector = Data({random: _subtle.symmetricVectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
-	let cipher = Data({buffer: await crypto.subtle.encrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, Data({text: plainText}).array())})
-	let storeBin = Bin(vector.size() + cipher.size())
-	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
-	storeBin.add(cipher)
-	return storeBin.data()
-}
-export async function symmetricDecrypt(storeData, key) {//stored data that is initialization vector followed by cipher bytes
-	let vector = storeData.clip(0, _subtle.symmetricVectorSize)//unpack
-	let cipher = storeData.clip(_subtle.symmetricVectorSize, storeData.size() - _subtle.symmetricVectorSize)
-	return Data({buffer: await crypto.subtle.decrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, cipher.array())})
-}
-test(async () => {
-
-	//create and export key for symmetric encryption
-	let key = await symmetricCreateKey()
-	let keyData = await symmetricExportKey(key)
-	ok(keyData.size() == 32)//symmetric keys are 32 bytes
-
-	//import it again, taking it through base62 text
-	let keyImported = await symmetricImportKey(Data({base62: keyData.base62()}))
-	ok(key instanceof CryptoKey)//both keys look good
-	ok(keyImported instanceof CryptoKey)
-
-	//encrypt a short message
-	let p = 'a short message'//plaintext p, a string
-	let c = await symmetricEncrypt(p, keyImported)//ciphertext c, a Data
-	let d = await symmetricDecrypt(c, keyImported)//decrypted plaintext d, a Data
-	ok(p == d.text())//we got the same message back out again!
-})
-test(async () => {
-
-	//import a premade key
-	let key = await symmetricImportKey(Data({base62: 'EtVcrWWKwMRSkcOwI0GjztMltipZXlKieRXJygDiveLh'}))
-	ok(key instanceof CryptoKey)
-
-	//test it encrypting and decrypting
-	let p = "Another message, let's make this one a little bit longer. There's important stuff to keep safe in here, no doubt!"
-	let c = await symmetricEncrypt(p, key)
-	let d = await symmetricDecrypt(c, key)
-	ok(p == d.text())
-
-	//here's some premade ciphertext, let's decrypt it as well
-	let c2 = Data({base62: '9rvozTn89KacmVq0SNJB3DbRRdrJNARwr7I7szYrm17igrKdiav90UOlzTV1OgOcgnBzggjz4dzdMQ2UcwLiteSrmHWH1AHJrZH9XmRLJomhQQK33xzrRHuH9Gtbv7RIowaebie3rlxvh8Ucagz1K8Iz6r3lSI33bmlwmaqs0ANiGFZaFrAWLfxuSHlDEZ'})
-	let d2 = await symmetricDecrypt(c2, key)
-	ok(p == d2.text())
-})
-
-//  ____  ____    _    
-// |  _ \/ ___|  / \   
-// | |_) \___ \ / _ \  
-// |  _ < ___) / ___ \ 
-// |_| \_\____/_/   \_\
-//                    
-
-async function rsaMakeKeys() {//returns public and private keys in base62
-	let keys = await crypto.subtle.generateKey({name: _subtle.rsaName, modulusLength: _subtle.rsaLength, publicExponent: _subtle.rsaPublicExponent, hash: {name: _subtle.rsaHashFunction}}, _subtle.extractable, _subtle.rsaUse)
-	return {
-		keyPublicBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.publicKey)),
-		keyPrivateBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.privateKey))
-	}
-}
-export async function rsaEncrypt(keyPublicBase62, plainText) {
-	let keyPublicImported = await _rsaImportKey(base62ToObject(keyPublicBase62), 'encrypt')
-	return Data({buffer: await crypto.subtle.encrypt({name: _subtle.rsaName}, keyPublicImported, Data({text: plainText}).array())}).base62()
-}
-export async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
-	let keyPrivateImported = await _rsaImportKey(base62ToObject(keyPrivateBase62), 'decrypt')
-	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.rsaName}, keyPrivateImported, Data({base62: cipherBase62}).array())}).text()
-}
-async function _rsaImportKey(key, use) {//true, or false to import private key to decrypt
-	return await crypto.subtle.importKey(_subtle.rsaFormat, key, {name: _subtle.rsaName, hash: { name: _subtle.rsaHashFunction }}, _subtle.extractable, [use])
-}
-function objectToBase62(o) { return Data({text: JSON.stringify(o)}).base62() }
-function base62ToObject(s) { return JSON.parse(Data({base62: s}).text()) }
-noop(async () => {//making keys and encrypting is pretty slow, like ~100ms
-	let keys = await rsaMakeKeys()
-	log('keyPublicBase62', keys.keyPublicBase62, 'keyPrivateBase62', keys.keyPrivateBase62)//run this to generate the key pair to actually use
-	let encrypted = await rsaEncrypt(keys.keyPublicBase62, 'hello1')
-	let decrypted = await rsaDecrypt(keys.keyPrivateBase62, encrypted)
-	ok(decrypted == 'hello1')
-})
-noop(async () => {//the task the server will frequently do is import an existing private key, and use it to decrypt some cipher text, like this:
-	let examplePrivateKey = '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'
-	let exampleCipherBase62 = 'FQiNaGgbWAH9pEza3Rymx98MvHQIpYgawGZBTZPLGgMm6OuzqF4x5LtT2DylkvUQ572OreS4Qj7X4GFhgatPp3ouBxPhSFPMenvPqI4dvdOY5iMuzmtnST33iTiHWbEwip869UpkmBBiwickCgHzwo8zsgU4eeZiLfPE0YPKbBhPHFxEMY5Ar31uNikm0liXLdYeS1M69l1XsKE3xWpX5Ot1HvBGf8UQMYXiiJqTI1ng2iz584GwtB03CNudzL065nbDbuNsoevtEHqyet5WZFs1dXUOcTD0HWhXhCwyuty1fROipfnP0iSQb2HR4MCmKgTt5wdpG1AAkvQf0kxSiZYVrDr'
-	let t = Now()
-	let decrypted = await rsaDecrypt(examplePrivateKey, exampleCipherBase62)
-	let duration = Now() - t//this takes 4-9ms, so it's fast enough
-	ok(decrypted == 'hello2')
-})
 
 //  _               _     
 // | |__   __ _ ___| |__  
@@ -1222,91 +1077,22 @@ test(async () => {
 	ok(d2.base32().length == hashLength)
 })
 
-//      _             
-//  ___(_) __ _ _ __  
-// / __| |/ _` | '_ \ 
-// \__ \ | (_| | | | |
-// |___/_|\__, |_| |_|
-//        |___/       
-
-export async function curveCreateKeys() {
-	return await crypto.subtle.generateKey({ name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, _subtle.curveUse)
+//make sure s looks like a hash value in base 32, to help katy, baring the door to the database
+export function checkHashLight(s) {
+	checkText(s); if (s.length != hashLength) toss('data', {s})
+	if (!base32Set) base32Set = new Set(base32Alphabet)
+	for (let i = 0; i < s.length; i++) {//olde fashioned loop is faster because no es6 iterator
+		if (!base32Set.has(s[i])) toss('data', {s, i})
+	}
 }
-export async function curveExportKey(key) {
-	let o = await crypto.subtle.exportKey(_subtle.curveFormat, key)//o is a regular javascript object with format notes and values named d, x, and y
-	let s = JSON.stringify(o)//turn it into a string like '{"crv":"p-256","x":"00ff...'
-	return Data({text: s})//wrap that in a data, as you'll base62 it for storage as a secure secret on the server
+export function checkHash(s) {//slower, does round trip check
+	checkText(s); if (s.length != hashLength) toss('data', {s})
+	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
 }
-export async function curveImportKey(keyData) {
-	let o = JSON.parse(keyData.text())
-	return await crypto.subtle.importKey(_subtle.curveFormat, o, { name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, o.key_ops)
-}
-export async function curveSign(privateKey, plainText) {
-	return Data({buffer: await crypto.subtle.sign({ name: _subtle.curveName, hash: { name: _subtle.hashName } }, privateKey, Data({text: plainText}).array())})
-}
-export async function curveVerify(publicKey, signatureData, plainText) {
-	return await crypto.subtle.verify({ name: _subtle.curveName, hash: { name: _subtle.hashName }, }, publicKey, signatureData.array(), Data({text: plainText}).array())
-}
-test(async () => {
-
-	//create a new different public and private key pair to sign messages
-	let keyPair = await curveCreateKeys()//returns a javascript object of two CryptoKey objects
-
-	//export both keys
-	let privateKey = await curveExportKey(keyPair.privateKey)
-	let publicKey = await curveExportKey(keyPair.publicKey)
-	function hasAll(s, a) { a.every(t => ok(s.includes(t))) }
-	hasAll(privateKey.text(), ['"crv":"P-256"', '"key_ops":["sign"]',   '"x"', '"y"', '"d"'])
-	hasAll(publicKey.text(),  ['"crv":"P-256"', '"key_ops":["verify"]', '"x"', '"y"'])
-	//both have the same x and y, the private key additionally has d
-
-	//import them again, sending them all the way through base62
-	let importedPrivate = await curveImportKey(Data({base62: privateKey.base62()}))
-	let importedPublic = await curveImportKey(Data({base62: publicKey.base62()}))
-	ok(importedPrivate instanceof CryptoKey)
-	ok(importedPublic instanceof CryptoKey)
-
-	//sign a message
-	let trueMessage = 'here is a plaintext message to sign. file 456789, please.'
-	let signatureData = await curveSign(importedPrivate, trueMessage)
-	ok(signatureData.size() == 64)//signature is 64 bytes, around 87 base62 characters
-
-	//check for a valid signature
-	let signatureDataRemade = Data({base62: signatureData.base62()})
-	ok(await curveVerify(importedPublic, signatureDataRemade, trueMessage))
-
-	//transplated signature
-	let wrongSignature = '701a04a33314603371b7833301191deea5cf1d70ce93ffb0707fdb8ca400e1132351ac2e11bb12472d2992e61d3d668e5442caa620d3aaf34db61d26aeffbad9'
-	ok(!(await curveVerify(importedPublic, Data({base16: wrongSignature}), trueMessage)))
-
-	//message tampering
-	let wrongMessage = 'here is a plaintext message to sign. file 111222, please.'
-	ok(!(await curveVerify(importedPublic, signatureDataRemade, wrongMessage)))
-})
-test(async () => {
-
-	//import some premade keys, like those that will be rebuilt from a server secret
-	let privateKey = await curveImportKey(Data({base62: 'Up9YScOXEX9IBJ8sDX8h8bIXEX9KD75pCbP5JrkQINCtKtoQSMapTrW4BMkQU49ZNqLbMcebTtzpP6eQDa5u8XlXPNWr8YerScLaB29gPNaVRu0q8YeR8cDePtvXNHlXQuGw8YdXGKCXB29v8YdXUYaaDN1qJZ5JRKG8MbeQPtwxOa9bGLDrG3PpCrjpHNIoLN9KSJ9uGLP0Sp8h8cZXEX8uGb9pP4wwDbLeCLGoH3L4H6PmRNG2Jc5QIqLoHZoKPMwFSKGgKsLmMYag8cr'}))
-	let publicKey = await curveImportKey(Data({base62: 'Up9YScOXEX9IBJ8sDX8h8bLvT28xT79sPHlXQtLwNtiS7CXEahXTbLpQMPw8arh8bkrUH8x8ZL38XlXU28x8cdwPJLlCrw0Kts4H5efMbTmUb9HPZLJT4ItSYD8CZarCLLpL74pTrLMINCXB29w8YdXDrPXSbGEUJPaQJ5KSKjsG4WbRbsrIZwoMZCsSKeCL6LmJu54QsDLRadwQp9iI'}))
-	ok(privateKey instanceof CryptoKey)
-	ok(publicKey instanceof CryptoKey)
-
-	//these tests will also use:
-	let trueMessage = 'another plaintext message. file 852963, please.'
-	let wrongMessage = 'another plaintext message. file 333444, please.'
-	let premadeSignature = Data({base62: '5pinSlkiWpC73iszJtg5QUsFKcAfxP5lQaOnzEP6MeJUWiQ7ihLRNUpKzF6QiS5Zl6OhksO9Zz9jmoMSFRXlIcQI'})
-	let wrongSignature = Data({base62: 'ZLOrDBRVT4gf5FS53He0WFNqCKp4tI2rY9fVYf5bG7ZqGQyHFjM97YCHr660soNiVvxPUuU1KkZuhUtwAia3k8'})
-
-	//confirm the premade keys work to sign and verify, making a new signature
-	let liveSignature = await curveSign(privateKey, trueMessage)
-	ok(await curveVerify(publicKey, liveSignature, trueMessage))//valid
-	ok(!(await curveVerify(publicKey, wrongSignature, trueMessage)))//wrong signature
-	ok(!(await curveVerify(publicKey, liveSignature, wrongMessage)))//tampered message
-
-	//lastly, check valid and invalid with premade keys and signature, all from base62 text pasted above
-	ok(await curveVerify(publicKey, premadeSignature, trueMessage))
-	ok(!(await curveVerify(publicKey, wrongSignature, trueMessage)))
-	ok(!(await curveVerify(publicKey, premadeSignature, wrongMessage)))
+test(() => {
+	function f(s) { checkHashLight(s); checkHash(s) }
+	f('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//fine
+	//also tried blank, bad character, too short, too long
 })
 
 //                                            _ 
@@ -1346,6 +1132,239 @@ test(async () => {//this is twice as slow as all your other tests, combined!
 	let h = await hashPassword(thousandsOfIterations, Data({base32: salt}), password)
 	ok(h.base32() == 'J7SRY4JEKVNQF3DSFFDP2J6ECKJBOFEIBIMCZ7RVQNIJL5THSATA')
 })
+
+//                                     _        _      
+//  ___ _   _ _ __ ___  _ __ ___   ___| |_ _ __(_) ___ 
+// / __| | | | '_ ` _ \| '_ ` _ \ / _ \ __| '__| |/ __|
+// \__ \ |_| | | | | | | | | | | |  __/ |_| |  | | (__ 
+// |___/\__, |_| |_| |_|_| |_| |_|\___|\__|_|  |_|\___|
+//      |___/                                          
+
+async function createKey() {
+	let key = await symmetric_createKey()
+	let keyData = await symmetric_exportKey(key)
+	return keyData
+}
+export async function encrypt(keyData, plainText) {
+	let key = await symmetric_importKey(keyData)
+	let cipherData = await symmetric_encrypt(key, plainText)
+	return cipherData
+}
+export async function decrypt(keyData, cipherData) {
+	let key = await symmetric_importKey(keyData)
+	let plainData = await symmetric_decrypt(key, cipherData)
+	return plainData.text()
+}
+noop(async () => {//here's how you make new keys to store one in .env and cloudflare secrets
+	let s = ''
+	for (let i = 0; i < 100; i++) s += newline+(await createKey()).base62()
+	log(s)
+})
+test(async () => {
+	let plainText = 'hello, this is a short message'
+	let keyData = await createKey()
+	let cipherData = await encrypt(keyData, plainText)
+	let decryptedText = await decrypt(keyData, cipherData)
+	ok(decryptedText == plainText)
+})
+
+async function symmetric_createKey() {
+	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
+}
+async function symmetric_exportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
+	return Data({buffer: await crypto.subtle.exportKey(_subtle.symmetricFormat, key)})//key is an imported CryptoKey object
+}
+async function symmetric_importKey(keyData) {//do this once per script run, not every time a function that needs it is called!
+	return await crypto.subtle.importKey(_subtle.symmetricFormat, keyData.array(), { name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
+}
+async function symmetric_encrypt(key, plainText) {
+	let vector = Data({random: _subtle.symmetricVectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
+	let cipher = Data({buffer: await crypto.subtle.encrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, Data({text: plainText}).array())})
+	let storeBin = Bin(vector.size() + cipher.size())
+	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
+	storeBin.add(cipher)
+	return storeBin.data()
+}
+async function symmetric_decrypt(key, storeData) {//stored data that is initialization vector followed by cipher bytes
+	let vector = storeData.clip(0, _subtle.symmetricVectorSize)//unpack
+	let cipher = storeData.clip(_subtle.symmetricVectorSize, storeData.size() - _subtle.symmetricVectorSize)
+	return Data({buffer: await crypto.subtle.decrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, cipher.array())})
+}
+test(async () => {
+
+	//create and export key for symmetric encryption
+	let key = await symmetric_createKey()
+	let keyData = await symmetric_exportKey(key)
+	ok(keyData.size() == 32)//symmetric keys are 32 bytes
+
+	//import it again, taking it through base62 text
+	let keyImported = await symmetric_importKey(Data({base62: keyData.base62()}))
+	ok(key instanceof CryptoKey)//both keys look good
+	ok(keyImported instanceof CryptoKey)
+
+	//encrypt a short message
+	let p = 'a short message'//plaintext p, a string
+	let c = await symmetric_encrypt(keyImported, p)//ciphertext c, a Data
+	let d = await symmetric_decrypt(keyImported, c)//decrypted plaintext d, a Data
+	ok(p == d.text())//we got the same message back out again!
+})
+test(async () => {
+
+	//import a premade key
+	let key = await symmetric_importKey(Data({base62: 'EtVcrWWKwMRSkcOwI0GjztMltipZXlKieRXJygDiveLh'}))
+	ok(key instanceof CryptoKey)
+
+	//test it encrypting and decrypting
+	let p = "Another message, let's make this one a little bit longer. There's important stuff to keep safe in here, no doubt!"
+	let c = await symmetric_encrypt(key, p)
+	let d = await symmetric_decrypt(key, c)
+	ok(p == d.text())
+
+	//here's some premade ciphertext, let's decrypt it as well
+	let c2 = Data({base62: '9rvozTn89KacmVq0SNJB3DbRRdrJNARwr7I7szYrm17igrKdiav90UOlzTV1OgOcgnBzggjz4dzdMQ2UcwLiteSrmHWH1AHJrZH9XmRLJomhQQK33xzrRHuH9Gtbv7RIowaebie3rlxvh8Ucagz1K8Iz6r3lSI33bmlwmaqs0ANiGFZaFrAWLfxuSHlDEZ'})
+	let d2 = await symmetric_decrypt(key, c2)
+	ok(p == d2.text())
+})
+
+//  ____  ____    _    
+// |  _ \/ ___|  / \   
+// | |_) \___ \ / _ \  
+// |  _ < ___) / ___ \ 
+// |_| \_\____/_/   \_\
+//                    
+
+async function rsaMakeKeys() {//returns public and private keys in base62
+	let keys = await crypto.subtle.generateKey({name: _subtle.rsaName, modulusLength: _subtle.rsaLength, publicExponent: _subtle.rsaPublicExponent, hash: {name: _subtle.rsaHashFunction}}, _subtle.extractable, _subtle.rsaUse)
+	return {
+		keyPublicBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.publicKey)),
+		keyPrivateBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.privateKey))
+	}
+}
+export async function rsaEncrypt(keyPublicBase62, plainText) {
+	let keyPublicImported = await rsa_importKey(base62ToObject(keyPublicBase62), 'encrypt')
+	return Data({buffer: await crypto.subtle.encrypt({name: _subtle.rsaName}, keyPublicImported, Data({text: plainText}).array())}).base62()
+}
+export async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
+	let keyPrivateImported = await rsa_importKey(base62ToObject(keyPrivateBase62), 'decrypt')
+	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.rsaName}, keyPrivateImported, Data({base62: cipherBase62}).array())}).text()
+}
+async function rsa_importKey(key, use) {
+	return await crypto.subtle.importKey(_subtle.rsaFormat, key, {name: _subtle.rsaName, hash: { name: _subtle.rsaHashFunction }}, _subtle.extractable, [use])
+}
+export function objectToBase62(o) { return Data({text: JSON.stringify(o)}).base62() }
+export function base62ToObject(s) { return JSON.parse(Data({base62: s}).text()) }
+noop(async () => {
+	let plainText = (await createKey()).base62()//recall that public and private key encryption is for encrypting symmetric keys, not long messages
+	let t1 = Now()
+	let keys = await rsaMakeKeys()
+	let encrypted = await rsaEncrypt(keys.keyPublicBase62, plainText)
+	let t2 = Now()
+	let decrypted = await rsaDecrypt(keys.keyPrivateBase62, encrypted)
+	let t3 = Now()
+	ok(decrypted == plainText)
+	log(
+		'', `${t2-t1}ms to make a key and encrypt; ${t3-t2}ms to decrypt`,//50-150ms, and 1-2ms
+		'', 'plainText:',        plainText,
+		'', 'keyPublicBase62:',  keys.keyPublicBase62,
+		'', 'keyPrivateBase62:', keys.keyPrivateBase62,
+		'', 'encrypted:', encrypted,
+		'', 'decrypted:', decrypted)
+})
+
+//      _             
+//  ___(_) __ _ _ __  
+// / __| |/ _` | '_ \ 
+// \__ \ | (_| | | | |
+// |___/_|\__, |_| |_|
+//        |___/       
+
+async function curveCreateKeys() {
+	let keys = await curve_createKeys()
+	return {
+		keyPublicBase62: objectToBase62(await curve_exportKey(keys.publicKey)),
+		keyPrivateBase62: objectToBase62(await curve_exportKey(keys.privateKey))
+	}
+}
+noop(async () => {//use to make a new keypair for the worker and lambda
+	log(look(await curveCreateKeys()))
+})
+export async function curveSign(keyPrivateBase62, plainText) {
+	let privateKeyObject = base62ToObject(keyPrivateBase62)
+	let privateKey = await curve_importKey(privateKeyObject)
+	return await curve_sign(privateKey, plainText)
+}
+export async function curveVerify(keyPublicBase62, signatureData, plainText) {
+	let publicKeyObject = base62ToObject(keyPublicBase62)
+	let publicKey = await curve_importKey(publicKeyObject)
+	return await curve_verify(publicKey, signatureData, plainText)
+}
+test(async () => {//this test makes a new key pair each time it runs
+
+	//sign a message
+	let keys = await curveCreateKeys()
+	let trueMessage = 'here is a plaintext message to sign. file 456789, please.'
+	let signatureData = await curveSign(keys.keyPrivateBase62, trueMessage)
+	ok(signatureData.size() == 64)//signature is 64 bytes, around 87 base62 characters
+	let signatureDataRemade = Data({base62: signatureData.base62()})//go through text like we sent it over the wire
+
+	//check for a valid signature
+	ok(await curveVerify(keys.keyPublicBase62, signatureDataRemade, trueMessage))
+
+	//reject transplated signature
+	let signatureDataWrong = Data({base16: '701a04a33314603371b7833301191deea5cf1d70ce93ffb0707fdb8ca400e1132351ac2e11bb12472d2992e61d3d668e5442caa620d3aaf34db61d26aeffbad9'})
+	ok(!(await curveVerify(keys.keyPublicBase62, signatureDataWrong, trueMessage)))
+
+	//reject message tampering
+	let wrongMessage = 'here is a plaintext message to sign. file 111222, please.'
+	ok(!(await curveVerify(keys.keyPublicBase62, signatureDataRemade, wrongMessage)))
+})
+test(async () => {//this test imports premade keys, as they will come from access secrets
+
+	const privateKeyBase62 = 'Up9YScOXEX9IBJ8sDX8h8bIXEX9KD75pCbP5JrkQINCtKtoQSMapTrW4BMkQU49ZNqLbMcebTtzpP6eQDa5u8XlXPNWr8YerScLaB29gPNaVRu0q8YeR8cDePtvXNHlXQuGw8YdXGKCXB29v8YdXUYaaDN1qJZ5JRKG8MbeQPtwxOa9bGLDrG3PpCrjpHNIoLN9KSJ9uGLP0Sp8h8cZXEX8uGb9pP4wwDbLeCLGoH3L4H6PmRNG2Jc5QIqLoHZoKPMwFSKGgKsLmMYag8cr'
+	const publicKeyBase62 = 'Up9YScOXEX9IBJ8sDX8h8bLvT28xT79sPHlXQtLwNtiS7CXEahXTbLpQMPw8arh8bkrUH8x8ZL38XlXU28x8cdwPJLlCrw0Kts4H5efMbTmUb9HPZLJT4ItSYD8CZarCLLpL74pTrLMINCXB29w8YdXDrPXSbGEUJPaQJ5KSKjsG4WbRbsrIZwoMZCsSKeCL6LmJu54QsDLRadwQp9iI'
+
+	let trueMessage = 'another plaintext message. file 852963, please.'
+	let wrongMessage = 'another plaintext message. file 333444, please.'
+
+	let premadeSignatureData = Data(
+		{base62: '5pinSlkiWpC73iszJtg5QUsFKcAfxP5lQaOnzEP6MeJUWiQ7ihLRNUpKzF6QiS5Zl6OhksO9Zz9jmoMSFRXlIcQI'})
+	let wrongSignatureData = Data(
+		{base62: 'ZLOrDBRVT4gf5FS53He0WFNqCKp4tI2rY9fVYf5bG7ZqGQyHFjM97YCHr660soNiVvxPUuU1KkZuhUtwAia3k8'})
+
+	//confirm the premade keys work to sign and verify, making a new signature
+	let liveSignatureData = await curveSign(privateKeyBase62, trueMessage)
+	ok(await curveVerify(publicKeyBase62, liveSignatureData, trueMessage))//valid
+	ok(!(await curveVerify(publicKeyBase62, wrongSignatureData, trueMessage)))//wrong signature
+	ok(!(await curveVerify(publicKeyBase62, liveSignatureData, wrongMessage)))//tampered message
+
+	//lastly, check valid and invalid with premade keys and signature, all from base62 text pasted above
+	ok(await curveVerify(publicKeyBase62, premadeSignatureData, trueMessage))
+	ok(!(await curveVerify(publicKeyBase62, wrongSignatureData, trueMessage)))
+	ok(!(await curveVerify(publicKeyBase62, premadeSignatureData, wrongMessage)))
+})
+
+async function curve_createKeys() {//returns { publicKey: CryptoKey, privateKey: CryptoKey }
+	return await crypto.subtle.generateKey({ name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, _subtle.curveUse)
+}
+async function curve_exportKey(key) {//returns an object with format notes and values named d, x, and y
+	return await crypto.subtle.exportKey(_subtle.curveFormat, key)
+}
+async function curve_importKey(keyObject) {
+	return await crypto.subtle.importKey(_subtle.curveFormat, keyObject, { name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, keyObject.key_ops)
+}
+async function curve_sign(privateKey, plainText) {
+	return Data({buffer: await crypto.subtle.sign({ name: _subtle.curveName, hash: { name: _subtle.hashName } }, privateKey, Data({text: plainText}).array())})
+}
+async function curve_verify(publicKey, signatureData, plainText) {
+	return await crypto.subtle.verify({ name: _subtle.curveName, hash: { name: _subtle.hashName }, }, publicKey, signatureData.array(), Data({text: plainText}).array())
+}
+noop(async () => {//see what these objects look like before we stringify and base62 them
+	let keys = await curve_createKeys()
+	let exportedPublicKey = await curve_exportKey(keys.publicKey)
+	let exportedPrivateKey = await curve_exportKey(keys.privateKey)
+	log(look({keys, exportedPublicKey, exportedPrivateKey}))
+})
+
 
 
 
@@ -1980,8 +1999,8 @@ function look30Instance(q) {
 test(async () => {
 	ok(look30Instance(/abc/).type == 'RegExp')
 	ok(look30Instance(new Promise((resolve, reject) => resolve('done'))).type == 'Promise')
-	ok(look30Instance(symmetricCreateKey()).type == 'Promise')//forgot await
-	ok(look30Instance(await symmetricCreateKey()).type == 'CryptoKey')//there it is
+	ok(look30Instance(symmetric_createKey()).type == 'Promise')//forgot await
+	ok(look30Instance(await symmetric_createKey()).type == 'CryptoKey')//there it is
 
 	let d = look30Instance(new Date(15*Time.minute))
 	ok(d.type == 'Date' && d.show == '1970-01-01T00:15:00.000Z')

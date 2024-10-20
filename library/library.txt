@@ -1465,3 +1465,24 @@ and you can include their webgl nvidia stuff there, also
 
 
 
+so your plan is to use ECDSA P-256 cryptographic signatures to sign and validate client requests into net23
+but you could also just symmetric encrypt the messages, which would be simpler, you now realize
+because, is it true that in the signature plan, both public and private keys are never revealed?
+the private key, which signs, is kept secret on the worker
+the public key, which verifies, is  kept secret on the lambda
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -7,8 +7,8 @@ Now, Tag, tagLength,
 } from './sticker.js'
 import {
 log, look, defined, noop, test, ok, toss,
-checkText, newline, end, checkTag,
-Data, accessEncrypt, accessDecrypt, subtleHash,
+hasText, checkText, newline, checkTag,
+Data, decrypt, subtleHash,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
 } from './library0.js'
@@ -30,7 +30,7 @@ export async function getAccess() {
 }
 async function access_load() {
 	let key = access_key(); checkText(key)
-	let decrypted = await accessDecrypt(Data({base62: key}), Data({base62: wrapper.secrets}))
+	let decrypted = await decrypt(Data({base62: key}), Data({base62: wrapper.secrets}))
 	let secrets = parseEnvStyleFileContents(decrypted)
 	let redactions//parts of secrets to look for and replacements to redact them with
 	return {
@@ -165,6 +165,52 @@ test(() => {
 
 
 
+
+
+
+
+
+
+
+
+//  _                                       _              
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| |
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |
+//                                                   |___/ 
+/*
+to keep the user signed in without expiration,
+and to identify a user even before they've signed up,
+we save a tag in the browser's local storage
+
+to prevent a user from revealing their tag,
+even if a n00b user is being coached by a hacker on reddit or discard to dig around the inspector,
+we use a frighteningly worded key name and value prefix
+
+getBrowserTag() creates and sets if not found, as though it was already there
+if something is malforming the tag or preventing it from being saved, getBrowserTag() returns a new tag every time
+if there's no localStorage, getBrowserTag() will throw an exception
+*/
+const browserTagName = 'current_session_password'
+const browserTagValuePrefix = 'account_access_code_DO_NOT_SHARE_'
+export function getBrowserTag() {
+	let v = localStorage.getItem(browserTagName)
+	if (
+		hasText(v) &&
+		v.length == browserTagValuePrefix.length+tagLength &&
+		v.startsWith(browserTagValuePrefix)) {//read and return
+
+		return v.slice(-tagLength)
+
+	} else {//make and return
+
+		let tag = Tag()
+		v = browserTagValuePrefix + tag
+		localStorage.setItem(browserTagName, v)
+		return tag
+	}
+}
 
 
 

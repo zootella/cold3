@@ -8,7 +8,7 @@ import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
 import {
 wrapper,
 log, look, newline, Data, Now,
-accessEncrypt
+encrypt
 } from './library/grand.js'
 
 //      _          _       _                                               _ 
@@ -106,7 +106,7 @@ async function affixSeal(properties, manifest) {
 
 	//encrypt the secrets in .env.local
 	let envSecretContents = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
-	let cipherData = await accessEncrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), envSecretContents)
+	let cipherData = await encrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), envSecretContents)
 
 	//compose contents for the new wrapper.js
 	let o = {...wrapper}//copy all the properties into a new object
