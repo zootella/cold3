@@ -3,7 +3,7 @@ import {
 wrapper,
 } from '../wrapper.js'
 import {
-Now, Tag, tagLength,
+Now, Tag, tagLength, sayDate,
 } from './sticker.js'
 import {
 log, look, defined, noop, test, ok, toss,
@@ -206,8 +206,7 @@ export function getBrowserTag() {
 	} else {//make and return
 
 		let tag = Tag()
-		v = browserTagValuePrefix + tag
-		localStorage.setItem(browserTagName, v)
+		localStorage.setItem(browserTagName, browserTagValuePrefix+tag)
 		return tag
 	}
 }
@@ -250,6 +249,80 @@ the design is simple:
 
 
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//ok, total vanity, but here's the ascii disk in a readme.md for github
+//exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
+
+const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
+const labelWidth = 16
+test(() => {
+
+	let codeSizeDiskPercent = Math.round(wrapper.codeSize*100/floppyDiskCapacity)
+
+	let date = sayDate(wrapper.tick)
+	let year = date.slice(0, 4)
+
+	let line1 = extend(`${wrapper.name} ~ ${wrapper.hash.slice(0, 7)}`, ' ')
+	let line2 = extend(`${sayDate(wrapper.tick)}`, '_')
+	let line3 = extend(`${wrapper.codeFiles}_files`, '_')
+	let line4 = extend(`${wrapper.codeSize}_bytes`, '_')
+	let line5 = extend(`disk_filled_${codeSizeDiskPercent}%`, '_')
+	function extend(line, padding) { return line.padEnd(labelWidth, padding).slice(0, labelWidth) }
+
+	let markdownBody = `
+${'```'}
+ ____________________
+| |${line1        }| |
+|.|________________|H|
+| |${line2        }| |
+| |${line3        }| |
+| |${line4        }| |
+| |${line5        }| |
+| |________________| |
+|                    |
+|    ____________    |
+|   |   |  _     |   |
+|   |   | | |    |   |
+|   |   | |_|    | V |
+|___|___|________|___|
+
+${'```'}
+
+How quick, simple, and cheap can the web2 stack be in ${year}?
+[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
+exploring pouring and curing a
+tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
+`
+	log(markdownBody)
+})
+
+
+
+
+
+
+
+
+
+
 
 
 

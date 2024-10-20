@@ -41,7 +41,7 @@ export function Sticker() {
 	sticker.core.isCloud = environment.title.includes('Cloud')//true if deployed, false if running locally
 
 	//based on that information we've already included, compose some text for easy reading
-	let saySealedHash = wrapper.hash.substring(0, 7)
+	let saySealedHash = wrapper.hash.substring(0, 7)//todo, substring or slice?
 	let saySealedWhen = sayDate(wrapper.tick)
 	sticker.where = environment.title
 	sticker.what  =                       saySealedWhen+'.'+saySealedHash
