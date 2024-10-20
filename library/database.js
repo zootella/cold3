@@ -1,15 +1,7 @@
 
-/*
-database.js
-database schema, sql statements to create the tables
-database utility functions
-interface between the application and the database
-keep it all here together for easy refactoring and auditing
-*/
-
 import { createClient } from '@supabase/supabase-js'
 import {
-Now, Tag
+Now, Tag,
 } from './sticker.js'
 import {
 log, toss,
@@ -20,9 +12,17 @@ checkTag,
 } from './library0.js'
 import {
 getAccess,
-} from './access.js'
+} from './library2.js'
 
 
+/*
+database.js
+database schema, sql statements to create the tables
+database utility functions
+interface between the application and the database
+keep it all here together for easy refactoring and auditing
+*/
+//no, actually, organize into tight sections and move into library2
 
 
 

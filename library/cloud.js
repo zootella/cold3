@@ -8,7 +8,7 @@ stringify, replaceOne,
 } from './library0.js'
 import {
 getAccess
-} from './access.js'
+} from './library2.js'
 import {
 doorPromise
 } from './door.js'

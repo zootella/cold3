@@ -72,8 +72,10 @@ generatePosts, postDatabase,
 } from './library1.js'//functions that use module imports
 export {
 
+getAccess, redact_snippet,
+
 getBrowserTag, getBrowserFingerprintAndTag, browserHash,
-//^actually these should be in library0 as they do not need modules nor the application to work!
+//^october, actually these should be in library0 as they do not need modules nor the application to work!
 
 } from './library2.js'//functions that use parts of the larger application and environment
 
@@ -92,9 +94,6 @@ doorWorkerShut, doorLambdaShut,
 } from './door.js'
 export {
 
-} from './door2.js'
-export {
-
 settings_getText, settings_getNumber, settings_setText, settings_setNumber,
 counts_getGlobalCount, counts_setGlobalCount, counts_getBrowserCount, counts_setBrowserCount,
 access_addRecord, access_getRecords,
@@ -109,12 +108,3 @@ dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 
 } from './cloud.js'
-export {
-
-} from './cloud2.js'
-export {
-
-redact_snippet,
-getAccess,
-
-} from './access.js'//just for coding access, get rid of later, october

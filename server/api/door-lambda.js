@@ -1,7 +1,6 @@
 
 import {
-Sticker, log, look, Now, Tag, getAccess,
-checkText,
+Sticker, log, look, Now, Tag, getAccess, checkText,
 doorWorkerOpen, doorWorkerShut,
 awaitLogAlert
 } from '@/library/grand.js'

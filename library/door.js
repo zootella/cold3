@@ -8,7 +8,7 @@ Time, log, look, toss, test, ok, noop,
 } from './library0.js'
 import {
 getAccess,
-} from './access.js'
+} from './library2.js'
 import {
 logAlert, awaitLogAlert
 } from './cloud.js'
