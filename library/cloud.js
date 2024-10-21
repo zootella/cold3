@@ -7,35 +7,51 @@ log, look, say, toss, newline, test, ok,
 stringify, replaceOne,
 } from './library0.js'
 import {
-getAccess
+canGetAccess, getAccess,
 } from './library2.js'
 import {
-doorPromise
+doorPromise,
 } from './door.js'
 
-//node-style imports
+//load core node modules with code that also builds, even if it doesn't function, for front-end and web worker environments
 let _fs;
 async function loadFs() {
-	if (!_fs && Sticker().where == 'LocalNode') {
+	if (!_fs && Sticker().where == 'LocalNode') {//october, change to Sticker().isLocalNode; look at isCloud and isLocal, too
 		_fs = (await import('fs')).default.promises
 	}
 	return _fs
 }
 
-//modules that are demand, and may be lambda-only
-let _aws, _ses, _sns//load amazon stuff once and only when needed
-async function loadAmazon() {
-	if (!_aws) {
-		_aws = (await import('aws-sdk')).default//use the await import pattern because in es6 you can't require()
+//load npm modules on-demand and once on first call; use the await import pattern because in es6 you can't require()
+let _twilio, _sendgrid
+async function loadTwilio()   { if (!_twilio   && canGetAccess()) _twilio   = await import('twilio');         return _twilio   }
+async function loadSendgrid() { if (!_sendgrid && canGetAccess()) _sendgrid = await import('@sendgrid/mail'); return _sendgrid }
+
+//load amazon, only works in a lambda but needs to build for everywhere
+let _aws, _ses, _sns
+async function _loadAmazon() {
+	if (!_aws && canGetAccess()) {
 		let access = await getAccess()
+		_aws = (await import('aws-sdk')).default//use the await import pattern because in es6 you can't require()
 		_aws.config.update({region: access.get('ACCESS_AMAZON_REGION')})//amazon's main location of us-east-1
 	}
 	return _aws
 }
-async function loadAmazonEmail() { if (!_ses) _ses = new (await loadAmazon()).SES(); return _ses }
-async function loadAmazonTexts() { if (!_sns) _sns = new (await loadAmazon()).SNS(); return _sns }
+async function loadAmazonEmail() { if (!_ses) _ses = new (await _loadAmazon()).SES(); return _ses }
+async function loadAmazonTexts() { if (!_sns) _sns = new (await _loadAmazon()).SNS(); return _sns }
 
 
+
+
+
+
+export async function snippet() {
+	let twilio = await loadTwilio()
+	let sendgrid = await loadSendgrid()
+	let s = look({twilio, sendgrid})
+	log("hello from cloud snippet, here's twilio and sendgrid:", s)
+	return s
+}
 
 
 
@@ -350,7 +366,7 @@ and check datadog, amazon, and twilio dashboards throughout!
 
 
 //let's test this stuff with node on the command line
-export async function snippet(card) {
+export async function snippet2(card) {
 	log('hi from snippet')
 	log(look(card))
 

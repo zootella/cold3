@@ -70,7 +70,7 @@ generatePosts, postDatabase,
 } from './library1.js'//functions that use module imports
 export {
 
-getAccess, redact_snippet,
+canGetAccess, getAccess,
 getBrowserTag,
 
 } from './library2.js'//functions that use parts of the larger application and environment
@@ -103,4 +103,9 @@ export {
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 
+snippet,
+
 } from './cloud.js'
+export {
+
+} from './cloud2.js'

@@ -23,6 +23,11 @@ getUseRuntimeConfigFunction,
 //  \__,_|\___\___\___||___/___/
 //                              
 
+export function canGetAccess() {//true if we are server-side code running and can get access to secrets
+	let key = access_key()
+	return hasText(key)
+}
+
 let _access//single module instance
 export async function getAccess() {
 	if (!_access) _access = await access_load()//create once on first call here
