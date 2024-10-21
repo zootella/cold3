@@ -2330,61 +2330,6 @@ noop(() => {
 
 
 
-/*
-back in the library for three tasks, look at here now in october
-1[x]stringify
-2[x]make sticker with details and composed forms
-3[x]start redact, first just turning the net23 access code into REDACTED, more caps lock there, you realize
-*/
-
-
-/*
-can you write this one function to return everything about where and what is running
-in both parts and composed
-calls into ping to get parts there, evenf
-*/
-
-
-
-
-
-/*
-stringify errors
-notice
-
- errors and catch all exceptions to return 
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

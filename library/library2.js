@@ -280,12 +280,12 @@ test(() => {
 	let date = sayDate(wrapper.tick)
 	let year = date.slice(0, 4)
 
-	let line1 = extend(`${wrapper.name} ~ ${wrapper.hash.slice(0, 7)}`, ' ')
-	let line2 = extend(`${sayDate(wrapper.tick)}`, '_')
-	let line3 = extend(`${wrapper.codeFiles}_files`, '_')
-	let line4 = extend(`${wrapper.codeSize}_bytes`, '_')
-	let line5 = extend(`disk_filled_${codeSizeDiskPercent}%`, '_')
-	function extend(line, padding) { return line.padEnd(labelWidth, padding).slice(0, labelWidth) }
+	let line1 = extend(' ', `${wrapper.name} ~ ${wrapper.hash.slice(0, 7)}`)
+	let line2 = extend('_', `${sayDate(wrapper.tick)}`)
+	let line3 = extend('_', `${wrapper.codeFiles}_files`)
+	let line4 = extend('_', `${wrapper.codeSize}_bytes`)
+	let line5 = extend('_', `disk_filled_${codeSizeDiskPercent}%`)
+	function extend(padding, line) { return line.padEnd(labelWidth, padding).slice(0, labelWidth) }
 
 	let markdownBody = `
 ${'```'}
@@ -316,7 +316,14 @@ tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
 
 
 
+//you could also log this out
+//and put it at the top of index.html for view source?
 
+
+/*
+here's a good first pinia task, maybe
+have log output that shows in /log, and any page, as you click around, can add to
+*/
 
 
 
