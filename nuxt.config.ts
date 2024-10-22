@@ -1,3 +1,7 @@
+
+//added for visualization
+import { visualizer } from 'rollup-plugin-visualizer'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
 	compatibilityDate: '2024-04-03',
@@ -17,5 +21,19 @@ export default defineNuxtConfig({
 	},
 	runtimeConfig: {//nuxt promises these will be available on the server side, and never exposed to a client
 		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET
+	},
+
+	//added for visualization
+	build: {
+		sourcemap: true,
+	},
+	vite: {
+		plugins: [
+			visualizer({
+				filename: './stats.html',
+				template: 'treemap',//sunburst, treemap, network, raw-data, or list
+				brotliSize: true
+			})
+		]
 	}
 })

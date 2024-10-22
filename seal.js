@@ -59,6 +59,7 @@ async function listFiles() {
 			'**/diff*.txt',
 			'**/dist',
 			'**/node_modules',
+			'**/stats.html',
 
 			//also leave out the two that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
 			'wrapper.txt',
