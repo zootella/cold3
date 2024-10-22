@@ -1,8 +1,6 @@
 
 import {
 log, look, Now, Tag,
-doorLambdaOpen, doorLambdaShut,
-dog, awaitLogAlert,
 Sticker, snippet,
 } from '../../library/grand.js'
 
