@@ -1432,6 +1432,76 @@ turned them all off
 
 
 
+your stupid goal of total isomorphicism
+like, every environment can include and call into every library file
+you accomplished this by doing two things:
+
+(1) lazy and on demand loading, following this pattern
+
+let _twilio,
+async function loadTwilio() {
+	if (!_twilio) _twilio = await import('twilio')
+	return _twilio
+}
+
+and then the idea is that only code that should be able to use twilio calls down in here
+and if code erroneously does, then you just get a run time exception
+this alone should be enough, but it's not
+nitro sees the mention, and freaks out with a build time error
+
+chat suggested nuxt.config.ts vite.build.rollupOptions.external
+but this is for hiding nuxt server only modules from nuxt client
+not hiding not for nuxt at all modules
+
+you previously somehow accidentally had aws-sdk as a cloud3 development module
+and this is a working solution:
+
+(2) install as a development dependency
+here are your root nuxt package.json, and serverless framework lambda net23/package.json
+
+./package.json
+	"dependencies": {
+		"@supabase/supabase-js": "^2.39.8",
+	},
+	"devDependencies": {
+		"@sendgrid/mail": "^8.1.4",
+		"aws-sdk": "^2.1691.0",
+		"twilio": "^5.3.4",
+	}
+
+./net23/package.json
+	"dependencies": {
+		"@supabase/supabase-js": "^2.39.8",
+		"@sendgrid/mail": "^8.1.4",
+		"aws-sdk": "^2.1659.0",
+		"twilio": "^5.3.4"
+	},
+
+both actually use supabase
+amazon, twilio, and sendgrid have to be listed in both
+but you hide these three in devDependencies just to calm nuxt down
+
+and your hope is that it won't get bundled, but you're not sure about this
+chat suggets 
+$ npm install -D rollup-plugin-visualizer
+$ npm install -D source-map-explorer
+as tools to do this
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 										 _                       
  _ __ ___   __ _  __| |_ __ ___   __ _ _ __  
 | '__/ _ \ / _` |/ _` | '_ ` _ \ / _` | '_ \ 
