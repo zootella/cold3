@@ -1,8 +1,8 @@
 
 import {
-Sticker, log, look, Now, Tag,
+Sticker, log, look, Now, Tag, getAccess, checkText,
 doorWorkerOpen, doorWorkerShut,
-dog, awaitLogAlert
+dog, awaitLogAlert,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {

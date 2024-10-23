@@ -87,7 +87,13 @@ and before that, the slides for sp
 
 
 
-
+Requirements
+1. Simple, full-stack JavaScript
+2. Really fast: <200ms
+3. Really cheap: <$5/month
+4. Minimal vendor-specific code
+5. Ready for millions of users overnight
+6. Secure even from sophisticated attacks
 
 
 
@@ -1432,7 +1438,7 @@ turned them all off
 
 
 
-your stupid goal of total isomorphicism
+your stupid goal of total isomorphism
 like, every environment can include and call into every library file
 you accomplished this by doing two things:
 
@@ -1473,7 +1479,7 @@ here are your root nuxt package.json, and serverless framework lambda net23/pack
 	"dependencies": {
 		"@supabase/supabase-js": "^2.39.8",
 		"@sendgrid/mail": "^8.1.4",
-		"aws-sdk": "^2.1659.0",
+		"aws-sdk": "^2.1691.0",
 		"twilio": "^5.3.4"
 	},
 
@@ -1487,11 +1493,23 @@ $ npm install -D rollup-plugin-visualizer
 $ npm install -D source-map-explorer
 as tools to do this
 
+(3) if that hadn't worked
+you considered, and probably still should, make a separate library file:
+./library/lambda.js
+not imported by grand; not imported by nuxt
+and then the nuxt package.json doesn't install amazon, twilio, sendgrid modules at all
+imported directly by the lambda endpoints, alongside their imports of library stuff through grand
+it's possible this will make the nuxt build faster
+if you run into problems in this area again, quickly switch to this more straightforward design
 
+note also this doesn't mean you make a library file called worker.js alongside lambda.js
+lambda.js is by itself because it's where you can install and use any node module
 
-
-
-
+oh, the note entrypoint might mean that you separate the 
+when looking at real monorepo options, you tried moving the nuxt project into ./site/
+but cloudflare didn't know what to do with it
+so instead you could keep nuxt as the root, and move the pure node tasks into ./library
+so then there's a new ./library/package.json
 
 
 
