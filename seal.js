@@ -59,7 +59,6 @@ async function listFiles() {
 			'**/diff*.txt',
 			'**/dist',
 			'**/node_modules',
-			'**/stats.html',
 
 			//also leave out the two that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
 			'wrapper.txt',
@@ -99,7 +98,13 @@ async function affixSeal(properties, manifest) {
 	let codeFiles = 0, codeSize = 0, totalFiles = 0, totalSize = 0
 	for (let f of properties) {
 		totalFiles++; totalSize += f.size
-		if (!f.path.endsWith('package-lock.json') && !f.path.endsWith('.gif') && !f.path.endsWith('.png')) { codeFiles++; codeSize += f.size }
+		if (
+			!f.path.endsWith('package-lock.json') &&
+			!f.path.endsWith('.gif') &&
+			!f.path.endsWith('.png') &&
+			!(f.path.startsWith('stats') && f.path.endsWith('.html'))) {
+			codeFiles++; codeSize += f.size
+		}
 	}
 
 	//compute the shrinkwrap hash of this version snapshot right now, which is the hash of wrapper.txt

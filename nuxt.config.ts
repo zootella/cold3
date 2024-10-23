@@ -1,5 +1,5 @@
 
-import { visualizer } from 'rollup-plugin-visualizer'
+import { visualizer } from 'rollup-plugin-visualizer'//npm run build generates stats.html, but npm run local does not
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -11,38 +11,6 @@ export default defineNuxtConfig({
 				target: 'esnext'//added to solve error on npm run build about es2019 not including bigint literals
 			}
 		},
-
-		//starting point to visualize nuxt server code, if you want to try that
-		/*
-		nitro: {
-			hooks: {
-				'compiled': async () => {
-					const { visualizer } = await import('rollup-plugin-visualizer')
-					const fs = await import('fs')
-					const path = './.output/server/server.mjs'// Path to Nitro's server-side output
-
-					const statsServer = visualizer({
-						filename: './stats-server-api.html',  // Server-side stats output file
-						template: 'treemap',                 // Visualization type
-						brotliSize: true,                    // Show brotli size
-					})
-
-					// Apply the plugin to the server bundle
-					const rollup = await import('rollup')
-					const bundle = await rollup.rollup({
-						input: path,
-						plugins: [statsServer],
-					})
-
-					// Write the bundle
-					await bundle.write({
-						file: path,
-						format: 'es'  // Output format for ESM
-					})
-				}
-			}
-		}
-		*/
 	},
 	modules: [
 		'nitro-cloudflare-dev'
@@ -60,7 +28,7 @@ export default defineNuxtConfig({
 		plugins: [
 			visualizer({
 				filename: './stats.html',
-				template: 'treemap',//sunburst, treemap, network, raw-data, or list
+				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
 				brotliSize: true
 			})
 		]

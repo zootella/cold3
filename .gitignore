@@ -16,7 +16,7 @@ jspm_packages
 .nitro
 .cache
 dist
-stats.html
+stats*.html
 
 #secrets
 .env
