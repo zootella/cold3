@@ -11,10 +11,10 @@
   },
   "scripts": {
     "build": "rollup -c",
+    "deploy": "rollup -c && serverless deploy --force",
+    "local": "rollup -c && serverless offline",
     "offline": "serverless offline",
     "package": "serverless package",
-    "local": "rollup -c && serverless offline",
-    "deploy": "rollup -c && serverless deploy --force",
     "www": "serverless s3sync"
   },
   "dependencies": {

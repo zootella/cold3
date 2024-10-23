@@ -11,14 +11,14 @@
   },
   "scripts": {
     "build": "nuxt build",
+    "deploy": "nuxt build && wrangler pages deploy",
+    "local": "nuxt dev",
+    "test": "node test",
+    "seal": "node seal",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "npm run build && wrangler pages dev",
     "postinstall": "nuxt prepare",
-    "test": "node test",
-    "seal": "node seal",
-    "local": "nuxt dev",
-    "deploy": "npm run build && wrangler pages deploy",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
