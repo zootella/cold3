@@ -1,163 +1,111 @@
 
+                  _                       _                 
+ _ __   __ _  ___| | ____ _  __ _  ___   (_)___  ___  _ __  
+| '_ \ / _` |/ __| |/ / _` |/ _` |/ _ \  | / __|/ _ \| '_ \ 
+| |_) | (_| | (__|   < (_| | (_| |  __/_ | \__ \ (_) | | | |
+| .__/ \__,_|\___|_|\_\__,_|\__, |\___(_)/ |___/\___/|_| |_|
+|_|                         |___/      |__/                 
 
+notes about the three package.json files in this jerry-rigged monorepo
+updated in 2024oct, getting wrangler 80 and current nuxt
+but other modules are from before that
 
-./package.json
+package.json (root nuxt project for cloudflare pages)
+{
+	"name": "cold3",
+	"description": "Nuxt site on Cloudflare",
+	"dependencies": {
 
-  "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "pages:dev": "wrangler pages dev --compatibility-date=2024-02-08 --proxy 3000 -- npm run dev",
-    "pages:deploy": "npm run build && wrangler pages deploy ./dist --project-name cold3",
-    "local": "npm run pages:dev",
-    "deploy": "npm run pages:deploy"
-  },
-  "dependencies": {
+		//utility
+		"credit-card-type": "^10.0.0",  //these five utility modules are dependencies all three places
+		"joi": "^17.13.1",
+		"libphonenumber-js": "^1.11.3",
+		"nanoid": "^5.0.7",
+		"rfc4648": "^1.5.3",
 
-    //utility
-    "credit-card-type": "^10.0.0",
-    "joi": "^17.13.1",
-    "libphonenumber-js": "^1.11.3",
-    "nanoid": "^5.0.7",
-    "rfc4648": "^1.5.3",
+		//service
+		"@supabase/supabase-js": "^2.39.8",  //the worker and lambda use supabase's module
 
-    //cloud, supabase
-    "@supabase/supabase-js": "^2.39.8",
+		//framework
+		"h3": "^1.13.0",    //brought in by nuxt, but must be added here
+		"nuxt": "^3.13.0",  //nuxt framework on cloudflare
+		"vue": "latest",
+		"vue-router": "latest"
+	},
+	"devDependencies": {
 
-    //vue
-    "nuxt": "^3.10.2",
-    "vue": "^3.4.19",
-    "vue-router": "^4.2.5"
+		//service
+		"@sendgrid/mail": "^8.1.4",  //the nuxt project must have the amazon and twilio modules to build, but cannot use them
+		"aws-sdk": "^2.1691.0",
+		"twilio": "^5.3.4",
 
-  },
-  "devDependencies": {
+		//framework
+		"wrangler": "^3.80.0"                   //these three are for nuxt and nitro on cloudflare
+		"@cloudflare/workers-types": "^4.20241004.0",
+		"nitro-cloudflare-dev": "^0.1.6",
+		"rollup-plugin-visualizer": "^5.12.0",  //installed so nuxt build generates stats.html tree view
+		"fast-glob": "^3.3.2",                  //installed for node seal to use
+	}
+}
 
-    //cloud
-    "@cloudflare/workers-types": "^4.20240208.0",
-    "wrangler": "^3.28.2"
+net23/package.json (serverless framework project including lambda functions)
+{
+	"name": "net23",
+	"description": "Network 23",
+	"dependencies": {
 
-  }
+		//utility
+		"credit-card-type": "^10.0.0",
+		"joi": "^17.13.1",
+		"libphonenumber-js": "^1.11.3",
+		"nanoid": "^5.0.7",
+		"rfc4648": "^1.5.3",
 
+		//service
+		"@sendgrid/mail": "^8.1.4",  //lambda can use all the node modules: amazon, supabase, and twilio
+		"@supabase/supabase-js": "^2.39.8",
+		"aws-sdk": "^2.1691.0",
+		"twilio": "^5.3.4"
 
-./icarus/package.json
+		//framework
+		"h3": "^1.13.0",  //brought in by nuxt, but must be installed here
+	},
+	"devDependencies": {
 
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "icarus": "vite"
-  },
-  "dependencies": {
+		//framework
+		"@rollup/plugin-commonjs": "^26.0.1",      //you chose rollup to package your code for lambda
+		"@rollup/plugin-json": "^6.1.0",
+		"@rollup/plugin-node-resolve": "^15.2.3",
+		"@rollup/plugin-terser": "^0.4.4",
+		"rollup": "^4.18.1",
+		"rollup-plugin-node-polyfills": "^0.2.1",
+		"serverless": "^3.39.0",                   //serverless framework
+		"serverless-domain-manager": "^7.3.8",
+		"serverless-offline": "^13.6.0",
+		"serverless-s3-sync": "^3.3.0"
+	}
+}
 
-    //utility
-    "credit-card-type": "^10.0.0",
-    "joi": "^17.13.1",
-    "libphonenumber-js": "^1.11.3",
-    "nanoid": "^5.0.7",
-    "rfc4648": "^1.5.3",
+icarus/package.json (vite runner for test driven development)
+{
+	"name": "icarus",
+	"description": "TDD runner for library functions",
+	"dependencies": {
 
-    //vue, icarus
-    "vue": "^3.4.21",
+		//utility
+		"credit-card-type": "^10.0.0",
+		"joi": "^17.13.1",
+		"libphonenumber-js": "^1.11.3",
+		"nanoid": "^5.0.7",
+		"rfc4648": "^1.5.3",
 
-  },
-  "devDependencies": {
+		//framework
+		"vue": "^3.4.21"  //icarus uses vite and vue
+	},
+	"devDependencies": {
 
-    //vue, icarus
-    "@vitejs/plugin-vue": "^5.0.4",
-    "vite": "^5.2.0",
-
-  }
-
-
-
-
-./net23/package.json
-
-
-
-
-
-  "scripts": {
-
-    //tools
-    "roll": "rollup -c",
-    "pack": "webpack",
-    "www": "serverless s3sync",
-
-    //serverless
-    "offline": "serverless offline",
-    "package": "serverless package",
-    "deploy": "serverless deploy",
-
-    //compound
-    "local": "serverless offline --config local.yml",
-    "pack-deploy": "webpack && serverless deploy",
-
-  },
-  "dependencies": {
-
-    //utility
-    "credit-card-type": "^10.0.0",
-    "joi": "^17.13.1",
-    "libphonenumber-js": "^1.11.3",
-    "nanoid": "^5.0.7",
-    "rfc4648": "^1.5.3",
-
-    //cloud, aws and supabase
-    "aws-sdk": "^2.1659.0",
-    "@supabase/supabase-js": "^2.39.8",
-
-  },
-  "devDependencies": {
-
-    //serverless, net23
-    "serverless": "^3.39.0",
-    "serverless-domain-manager": "^7.3.8",
-    "serverless-offline": "^13.6.0",
-    "serverless-s3-sync": "^3.3.0",
-    "serverless-webpack": "^5.14.1",
-
-    //rollup, net23
-    "@rollup/plugin-commonjs": "^26.0.1",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.18.1",
-    "rollup-plugin-node-polyfills": "^0.2.1",
-
-    //webpack, net23
-    "@babel/core": "^7.24.8",
-    "@babel/preset-env": "^7.24.8",
-    "babel-loader": "^9.1.3",
-    "webpack": "^5.93.0",
-    "webpack-cli": "^5.1.4",
-    "webpack-node-externals": "^3.0.0",
-
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		//framework
+		"@vitejs/plugin-vue": "^5.0.4",
+		"vite": "^5.2.0"
+	}
+}
