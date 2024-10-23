@@ -1,34 +1,13 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText,
-doorLambdaOpen, doorLambdaShut,
+doorLambda,
 dog, awaitLogAlert
 } from '../../library/grand.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	let door = {}, response, error
-	try {
-
-		//CHECKPOINT 4
-		//dog('checkpoint 4')
-
-		door = await doorLambdaOpen(lambdaEvent, lambdaContext)
-		response = await doorProcessBelow(door)
-
-	} catch (e) { error = e }
-	try {
-
-		//CHECKPOINT 6
-		//dog('checkpoint 6')
-
-		let r = await doorLambdaShut(door, response, error)
-		if (response && !error) return r
-
-	} catch (f) { await awaitLogAlert('door shut', {f, door, response, error}) }
-	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
+	return doorLambda(lambdaEvent, lambdaContext, doorProcessBelow)
 }
-//^our copypasta to safely man the front door
-
 async function doorProcessBelow(door) {
 	let response = {}
 

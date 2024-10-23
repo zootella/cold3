@@ -1,5 +1,4 @@
 
-import { readBody } from 'h3'
 import {
 Now, Tag,
 } from './sticker.js'
@@ -13,15 +12,7 @@ import {
 logAlert, awaitLogAlert
 } from './cloud.js'
 
-
-
-
-
-
-
-
-
-//lambdas call in here, too, so we can't use nuxt's @ shorthand
+import { readBody } from 'h3'
 
 //      _                  
 //   __| | ___   ___  _ __ 
@@ -35,13 +26,153 @@ oh, there's a knock at our front door!
 cloudflare has invoked a worker and sent an event for us to respond to a request using nuxt
 or, amazon has invoked a lambda and sent an event and context for us to respond
 
-to make your own, copy the pasta at:
-./net23/src/door.js   ~ for a new lambda endpoint
-./server/api/door.js  ~ for a new worker endpoint
+//copypasta for a worker api endpoint:
+export default defineEventHandler(async (workerEvent) => {
+	return doorWorker(workerEvent, useRuntimeConfig, doorProcessBelow)
+})
+
+//copypasta for a lambda api endpoint:
+export const handler = async (lambdaEvent, lambdaContext) => {
+	return doorLambda(lambdaEvent, lambdaContext, doorProcessBelow)
+}
 
 then write your code in doorProcessBelow() beneath
-the copypasta calls common helper functions, implemented once here
 */
+
+export async function doorWorker(workerEvent, useRuntimeConfig, doorProcessBelow) {
+	try {
+		let door = {}, response, error
+		try {
+
+			door = await doorWorkerOpen(workerEvent, useRuntimeConfig)
+			response = await doorProcessBelow(door)
+
+		} catch (e1) { error = e1 }
+		try {
+
+			let r = await doorWorkerShut(door, response, error)
+			if (response && !error) return r
+
+		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }
+	} catch (e3) { console.error('[OUTER]', e3) }
+	setResponseStatus(workerEvent, 500); return null
+}
+export async function doorLambda(lambdaEvent, lambdaContext, doorProcessBelow) {
+	try {
+		let door = {}, response, error
+		try {
+
+			door = await doorLambdaOpen(lambdaEvent, lambdaContext)
+			response = await doorProcessBelow(door)
+
+		} catch (e) { error = e }
+		try {
+
+			let r = await doorLambdaShut(door, response, error)
+			if (response && !error) return r
+
+		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }
+	} catch (e3) { console.error('[OUTER]', e3) }
+	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
+}
+/*
+note on this design catching exceptions
+e1 is likely, on bad user input
+e2 shouldn't happen, if it does it means there's an error in code, probably missing an import
+e3 means awaytLogAlert threw, we can't trust any of our own code anymore
+so, we use console.error, which won't show up in datadog,
+but should still be findable in the amazon or cloudflare dashboard
+*/
+
+async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//get a reference to useRuntimeConfig, which nuxt imports into api handler files
+	saveUseRuntimeConfigFunction(useRuntimeConfigFunction)
+	/*
+	october, it may also be possible to not call this nuxt thing and get workerEvent.context.env.ACCESS_KEY_SECRET
+	*/
+
+	let door = {}//make door object to bundle everything together about this request we're doing
+	door.startTick = Now()//record when we got the request
+	door.tag = Tag()//tag the request for our own records
+	door.workerEvent = workerEvent//save everything they gave us about the request
+
+	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and we have to import readBody from h3 to parse it
+	door.body = body
+
+	return door
+}
+async function doorLambdaOpen(lambdaEvent, lambdaContext) {
+	let door = {}//our object that bundles together everything about this incoming request
+	door.startTick = Now()//when we got it
+	door.tag = Tag()//our tag for it
+	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
+	door.lambdaContext = lambdaContext
+
+	let bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
+	let body = JSON.parse(bodyText)
+	door.bodyText = bodyText
+	door.body = body
+
+	//confirm (1) the connection is secure
+	if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
+	//(2) the request is not from any browser, anywhere; there is no origin header at all
+	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
+	//(3) the network 23 access code is valid
+	let access = await getAccess()
+	if (body.ACCESS_NETWORK_23_SECRET != access.get('ACCESS_NETWORK_23_SECRET')) toss('bad access code', {door})
+
+	return door
+}
+
+async function doorWorkerShut(door, response, error) {
+	door.stopTick = Now()//time
+	door.duration = door.stopTick - door.startTick
+	door.response = response//bundle
+	door.error = error
+
+	let r
+	if (error) {//processing this request caused an error
+		logAlert('door worker shut', {error, door})//tell staff about it
+		r = null//return no response
+	} else {
+		r = response//nuxt will stringify and add status code and headers
+	}
+	await awaitDoorPromises()
+	return r
+}
+async function doorLambdaShut(door, response, error) {
+	door.stopTick = Now()//time
+	door.duration = door.stopTick - door.startTick
+	door.response = response//bundle
+	door.error = error
+
+	let r
+	if (error) {
+		logAlert('door lambda shut', {error, door})
+		r = null
+	} else {
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
+	}
+	await awaitDoorPromises()
+	return r
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //      _                        _                 _   _                 
 //   __| | ___   ___  _ __    __| |_   _ _ __ __ _| |_(_) ___  _ __  ___ 
@@ -50,9 +181,9 @@ the copypasta calls common helper functions, implemented once here
 //  \__,_|\___/ \___/|_|     \__,_|\__,_|_|  \__,_|\__|_|\___/|_| |_|___/
 //                                                                      
 
-export const durationEnvironment = 30*Time.second//cloudflare workers only run 30 seconds, and we've configured lambdas to be the same
-export const durationFetch = 20*Time.second//have axios give up on a fetch after 20 seconds
-export const durationWait = 4*Time.second//only wait 4 seconds for parallel promises to finish before returning the web response, which can cause cloudflare and amazon to tear down the execution environment
+const durationEnvironment = 30*Time.second//cloudflare workers only run 30 seconds, and we've configured lambdas to be the same
+const durationFetch = 20*Time.second//have axios give up on a fetch after 20 seconds
+const durationWait = 4*Time.second//only wait 4 seconds for parallel promises to finish before returning the web response, which can cause cloudflare and amazon to tear down the execution environment
 
 //      _                                              _               
 //   __| | ___   ___  _ __   _ __  _ __ ___  _ __ ___ (_)___  ___  ___ 
@@ -173,6 +304,12 @@ noop(() => {//first, a demonstration of a promise race
 
 
 
+//                   _                    ____              _   _                 ____             __ _       
+//  _ __  _   ___  _| |_   _   _ ___  ___|  _ \ _   _ _ __ | |_(_)_ __ ___   ___ / ___|___  _ __  / _(_) __ _ 
+// | '_ \| | | \ \/ / __| | | | / __|/ _ \ |_) | | | | '_ \| __| | '_ ` _ \ / _ \ |   / _ \| '_ \| |_| |/ _` |
+// | | | | |_| |>  <| |_  | |_| \__ \  __/  _ <| |_| | | | | |_| | | | | | |  __/ |__| (_) | | | |  _| | (_| |
+// |_| |_|\__,_/_/\_\\__|  \__,_|___/\___|_| \_\\__,_|_| |_|\__|_|_| |_| |_|\___|\____\___/|_| |_|_| |_|\__, |
+//                                                                                                      |___/ 
 
 
 //another module scoped variable, ugh
@@ -183,44 +320,7 @@ this is the best way for access to use it instead of process.env to get secrets 
 let _useRuntimeConfigFunction
 export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
 export function getUseRuntimeConfigFunction() { return _useRuntimeConfigFunction }
-
-
-
-
-
-//october DUH new one line design
-export async function new_design_doorWorker(workerEvent, useRuntimeConfig, doorProcessBelow) {
-	try {
-
-		let door = {}, response, error
-		try {
-
-			//CHECKPOINT 1
-			//dog('checkpoint 1')
-
-			door = await doorWorkerOpen(workerEvent, useRuntimeConfig)
-			response = await doorProcessBelow(door)
-
-		} catch (e) { error = e }
-		try {
-
-			//CHECKPOINT 3
-			//dog('checkpoint 3')
-
-			let r = await doorWorkerShut(door, response, error)
-			if (response && !error) return r
-
-		} catch (f) { await awaitLogAlert('door shut', {f, door, response, error}) }//if await log alert itself
-
-	} catch (g) { console.error('[OUTER]', g)	}//last resort catch calls and does nothing
-	setResponseStatus(workerEvent, 500); return null//this must not be able to throw, either
-}
 /*
-note how exceptions are caught
-e is likely to happen, on bad user input or a coding error
-f should not happen, but could on a a coding error
-g happens when the mistake is so severe, awaitLogAlert throws
-so at that point, we do not call into any of our own code anymore, instead using console.error, setResponseStatus, and so on
 */
 
 
@@ -240,81 +340,7 @@ so at that point, we do not call into any of our own code anymore, instead using
 
 
 
-//      _                                                             _       _           _   
-//   __| | ___   ___  _ __    ___  _ __   ___ _ __     __ _ _ __   __| |  ___| |__  _   _| |_ 
-//  / _` |/ _ \ / _ \| '__|  / _ \| '_ \ / _ \ '_ \   / _` | '_ \ / _` | / __| '_ \| | | | __|
-// | (_| | (_) | (_) | |    | (_) | |_) |  __/ | | | | (_| | | | | (_| | \__ \ | | | |_| | |_ 
-//  \__,_|\___/ \___/|_|     \___/| .__/ \___|_| |_|  \__,_|_| |_|\__,_| |___/_| |_|\__,_|\__|
-//                                |_|                                                         
 
-export async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//get a reference to useRuntimeConfig, which nuxt imports into api handler files
-	saveUseRuntimeConfigFunction(useRuntimeConfigFunction)
-
-	let door = {}//make door object to bundle everything together about this request we're doing
-	door.startTick = Now()//record when we got the request
-	door.tag = Tag()//tag the request for our own records
-	door.workerEvent = workerEvent//save everything they gave us about the request
-
-	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and we have to import readBody from h3 to parse it
-	door.body = body
-
-	return door
-}
-export async function doorLambdaOpen(lambdaEvent, lambdaContext) {
-	let door = {}//our object that bundles together everything about this incoming request
-	door.startTick = Now()//when we got it
-	door.tag = Tag()//our tag for it
-	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
-	door.lambdaContext = lambdaContext
-
-	let bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
-	let body = JSON.parse(bodyText)
-	door.bodyText = bodyText
-	door.body = body
-
-	//confirm (1) the connection is secure
-	if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
-	//(2) the request is not from any browser, anywhere; there is no origin header at all
-	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
-	//(3) the network 23 access code is valid
-	let access = await getAccess()
-	if (body.ACCESS_NETWORK_23_SECRET != access.get('ACCESS_NETWORK_23_SECRET')) toss('bad access code', {door})
-
-	return door
-}
-
-export async function doorWorkerShut(door, response, error) {
-	door.stopTick = Now()//time
-	door.duration = door.stopTick - door.startTick
-	door.response = response//bundle
-	door.error = error
-
-	let r
-	if (error) {//processing this request caused an error
-		logAlert('door worker shut', {error, door})//tell staff about it
-		r = null//return no response
-	} else {
-		r = response//nuxt will stringify and add status code and headers
-	}
-	await awaitDoorPromises()
-	return r
-}
-export async function doorLambdaShut(door, response, error) {
-	door.stopTick = Now()//time
-	door.duration = door.stopTick - door.startTick
-	door.response = response//bundle
-	door.error = error
-
-	let r
-	if (error) {
-		logAlert('door lambda shut', {error, door})
-		r = null
-	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
-	}
-	await awaitDoorPromises()
-	return r
-}
 
 
 

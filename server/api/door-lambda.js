@@ -1,34 +1,13 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText,
-doorWorkerOpen, doorWorkerShut,
+doorWorker,
 dog, awaitLogAlert,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
-	let door = {}, response, error
-	try {
-
-
-
-
-		door = await doorWorkerOpen(workerEvent, useRuntimeConfig)
-		response = await doorProcessBelow(door)
-
-	} catch (e) { error = e }
-	try {
-
-
-
-
-		let r = await doorWorkerShut(door, response, error)
-		if (response && !error) return r
-
-	} catch (f) { await awaitLogAlert('door shut', {f, door, response, error}) }
-	setResponseStatus(workerEvent, 500); return null
+	return doorWorker(workerEvent, useRuntimeConfig, doorProcessBelow)
 })
-//^our copypasta to safely man the front door
-
 async function doorProcessBelow(door) {
 	let response = {}
 
@@ -43,9 +22,6 @@ async function doorProcessBelow(door) {
 	response.when = Now()
 	return response
 }
-
-
-
 
 
 

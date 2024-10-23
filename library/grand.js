@@ -81,11 +81,9 @@ once done, move groups of functions into library0,1,2 above
 */
 export {
 
-durationEnvironment, durationFetch, durationWait,
+doorWorker, doorLambda,
 doorPromise, awaitDoorPromises,
 saveUseRuntimeConfigFunction, getUseRuntimeConfigFunction,
-doorWorkerOpen, doorLambdaOpen,
-doorWorkerShut, doorLambdaShut,
 
 } from './door.js'
 export {

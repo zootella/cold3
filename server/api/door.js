@@ -1,41 +1,13 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText,
-doorWorkerOpen, doorWorkerShut,
+doorWorker,
 dog, awaitLogAlert,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
-	let door = {}, response, error
-	try {
-
-		//CHECKPOINT 1
-		//dog('checkpoint 1')
-
-		door = await doorWorkerOpen(workerEvent, useRuntimeConfig)
-		response = await doorProcessBelow(door)
-
-	} catch (e) { error = e }
-	try {
-
-		//CHECKPOINT 3
-		//dog('checkpoint 3')
-
-		let r = await doorWorkerShut(door, response, error)
-		if (response && !error) return r
-
-	} catch (f) { await awaitLogAlert('door shut', {f, door, response, error}) }
-	setResponseStatus(workerEvent, 500); return null
-})
-//^our copypasta to safely man the front door
-
-/*
-export default new_design_defineEventHandler(async (workerEvent) => {
 	return doorWorker(workerEvent, useRuntimeConfig, doorProcessBelow)
 })
-//^october DUH DUH DUH this is all it needs to be, DUH (new design for door with three line boilerplate)
-*/
-
 async function doorProcessBelow(door) {
 	let response = {}
 
