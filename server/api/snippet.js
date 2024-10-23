@@ -1,7 +1,7 @@
 
 import {
 log, look, Now, Tag,
-doorWorkerOpen, doorWorkerShut, saveUseRuntimeConfigFunction,
+doorWorker, saveUseRuntimeConfigFunction,
 dog, awaitLogAlert,
 Sticker, snippet,
 } from '@/library/grand.js'
