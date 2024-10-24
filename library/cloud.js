@@ -8,10 +8,8 @@ stringify, replaceOne,
 } from './library0.js'
 import {
 canGetAccess, getAccess,
-} from './library2.js'
-import {
 doorPromise,
-} from './door.js'
+} from './library2.js'
 
 //load core node modules with code that also builds, even if it doesn't function, for front-end and web worker environments
 let _fs;

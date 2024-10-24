@@ -71,6 +71,7 @@ generatePosts, postDatabase,
 export {
 
 canGetAccess, accessWorker, getAccess,
+doorWorker, doorLambda, doorPromise, awaitDoorPromises,
 getBrowserTag,
 
 } from './library2.js'//functions that use parts of the larger application and environment
@@ -79,12 +80,6 @@ getBrowserTag,
 beyond that structure are temporary files named by the area they're working on
 once done, move groups of functions into library0,1,2 above
 */
-export {
-
-doorWorker, doorLambda,
-doorPromise, awaitDoorPromises,
-
-} from './door.js'
 export {
 
 settings_getText, settings_getNumber, settings_setText, settings_setNumber,

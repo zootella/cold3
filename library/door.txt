@@ -1,0 +1,59 @@
+
+
+
+
+
+
+
+
+
+
+
+function workerGotInformation(workerEvent) {
+
+	//confirmed by cloudflare
+	let tlsVersion = workerEvent.req.cf?.tlsVersion//like "TLSv1.3" or undefined if http rather than https
+	let clientIp = workerEvent.req.headers['cf-connecting-ip']//like "192.168.1.1" or "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+	//^ this information comes from cloudflare, so the client cannot fake it
+
+	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
+	let origin = workerEvent.req.headers['origin']//nuxt makes this lowercase
+	let referer = workerEvent.req.headers['referer']//and web standards can't correct this spelling!
+	//^ these come from the client browser, so script alone cannot fake it, but curl or postman can
+
+	//and now the rest are set by the client, and can be changed by script or browser extensions
+	let userAgent = workerEvent.req.headers['user-agent']//like "Mozilla/5.0 (iPhone; CPU iPhone OS..."
+	let method = getMethod(workerEvent)//like "GET" or "POST"
+	let url = workerEvent.req.url//like "route/subroute?key=value"
+}
+
+function lambdaGotInformation(lambdaEvent, lambdaContext) {
+
+	//confirmed by amazon
+	let isHttps = lambdaEvent.headers['x-forwarded-proto'] == 'https'//set by api gateway
+	let clientIp = lambdaEvent.requestContext?.identity?.sourceIp
+
+	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
+	let origin = lambdaEvent.headers['origin']
+	let referer = lambdaEvent.headers['referer']
+
+	//script and extensions can spoof these, or they are simply set by the user and his script or extensions
+	let method = lambdaEvent.httpMethod
+	let urlPath = lambdaEvent.path
+	let urlQueryStringParameters = lambdaEvent.queryStringParameters
+	let userAgent = lambdaEvent.headers['User-Agent']
+
+	lambdaContext.awsRequestId//A unique identifier for the request (useful for tracing and debugging).
+}
+
+
+
+
+
+
+
+
+
+
+
+
