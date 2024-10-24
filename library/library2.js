@@ -17,7 +17,7 @@ import {
 dog, logAlert, awaitLogAlert,
 } from './cloud.js'
 
-import { readBody } from 'h3'
+import { getQuery, readBody } from 'h3'
 
 
 
@@ -288,8 +288,12 @@ async function doorWorkerOpen(workerEvent, useRuntimeConfig) {
 	door.tag = Tag()//tag the request for our own records
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
-	let body = await readBody(workerEvent)//with cloudflare, worker, and nuxt, we get here while the body may still be arriving, and we have to import readBody from h3 to parse it
-	door.body = body
+  door.method = workerEvent.req.method
+  if (door.method == 'POST') {
+    door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
+  } else if (door.method == 'GET') {
+    door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
+  }
 
 	return door
 }

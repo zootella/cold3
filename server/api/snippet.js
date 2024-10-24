@@ -1,22 +1,20 @@
 
 import {
 log, look, Now, Tag,
-accessWorker, awaitDoorPromises,
+doorWorker, accessWorker, awaitDoorPromises,
 dog,
 Sticker, snippet,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
-	accessWorker({workerEvent, useRuntimeConfig})
-	let o = {}
-	try {
-		o.note = `worker snippet says: ${Sticker().all}, v2024oct21c`
-		o.look = await snippet()
-
-	} catch (e) { o.error = 'snippet worker error: '+e.stack }
-	await awaitDoorPromises()
-	return o
+	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
+async function doorProcessBelow(door) {
+	let o = {}
+	o.note = `worker snippet says: ${Sticker().all}, v2024oct24a`
+
+	return o
+}
 
 /*
 october. you still want to know if console.log goes to teh cloudflare dashboard
