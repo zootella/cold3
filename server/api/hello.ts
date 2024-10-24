@@ -1,4 +1,4 @@
-export default defineEventHandler((event) => {
+export default defineEventHandler((workerEvent) => {
 	return {
 		message: "hello, function cold3!"
 	}

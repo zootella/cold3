@@ -1,13 +1,14 @@
 
 import {
 log, see, look,
-getAccess
+accessWorkerEvent, getAccess,
 } from '@/library/grand.js'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (workerEvent) => {
 	var r = {}//the response object this server function will fill and send back to the page
 	r.message = 'hello, function send email, version 2024mar5'//hello and version no matter what
 	try {//protect the server from all your code, even seemingly safe code, with a big try block
+		accessWorkerEvent(workerEvent)
 		let access = await getAccess()
 
 		//set and bring in constants about the test email to send
@@ -70,7 +71,7 @@ export default defineEventHandler(async (event) => {
 
 		//confirm the password from the page form, and the api key from the environment variables look ok
 		//and send the email if both are ok
-		const body = await readBody(event)
+		const body = await readBody(workerEvent)
 		r.passwordCorrect = (body.password == access.get('ACCESS_PASSWORD_SECRET'))
 		r.sendgridApiKeyLength = sendgridApiKey.length
 		if (r.passwordCorrect && r.sendgridApiKeyLength) {

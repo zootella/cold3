@@ -2,7 +2,7 @@
 import { Sticker } from '../../library/sticker.js'
 
 
-export const handler = async (event) => {
+export const handler = async (lambdaEvent, lambdaContext) => {
 	let note = ''
 	try {
 

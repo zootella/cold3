@@ -1,14 +1,16 @@
 
 import {
-log, look, hasText, checkTag, getAccess,
-accessTableInsert, accessTableQuery
+log, look, hasText, checkTag,
+accessWorkerEvent, getAccess,
+accessTableInsert, accessTableQuery,
 } from '@/library/grand.js'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
+		accessWorkerEvent(workerEvent)
 		let access = await getAccess()
-		let body = await readBody(event)
+		let body = await readBody(workerEvent)
 		o.message = 'api account, version 2024aug16c'
 		o.note = 'none'
 
@@ -47,7 +49,7 @@ export default defineEventHandler(async (event) => {
 					o.note = 'wrong password'
 				}
 			}
-		} else { toss('invalid action', {event, body, action: body.action}) }
+		} else { toss('invalid action', {workerEvent, body, action: body.action}) }
 
 	} catch (e) {
 		log('api account caught: ', look(e))

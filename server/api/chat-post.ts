@@ -1,12 +1,14 @@
 
 import {
-log, see
+log, see,
+accessWorkerEvent,
 } from '@/library/grand.js'
 
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
+		accessWorkerEvent(workerEvent)
 
 
 		log('hi from the chat api')

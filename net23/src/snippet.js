@@ -4,7 +4,7 @@ log, look, Now, Tag,
 Sticker, snippet,
 } from '../../library/grand.js'
 
-export const handler = async (event) => {
+export const handler = async (lambdaEvent, lambdaContext) => {
 	let o = {}
 	try {
 

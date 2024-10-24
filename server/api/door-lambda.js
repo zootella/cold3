@@ -24,7 +24,7 @@ async function doorProcessBelow(door) {
 }
 
 
-
+//october maybe rename this bridge entirely. no, it goes away--trusted code in cloudflare will call lambda functions as needed; this is a bridge directly from untrusted client code through a worker to lambda, which is great for demonstration and testing, but is not a part of the evenutal design!
 
 
 
@@ -60,102 +60,6 @@ async function bridge(path, body) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-local lambda:
-
-lambdaEvent.headers:
-{
-  host: "localhost:4000" ‹14›
-  connection: "keep-alive" ‹10›
-  accept: "application/json" ‹16›
-  content-type: "application/json" ‹16›
-  accept-language: "*"
-  sec-fetch-mode: "cors"
-  user-agent: "node"
-  accept-encoding: "gzip, deflate" ‹13›
-  content-length: "88"
-}
-
-
-
-
-
-cloud lambda:
-
-lambdaEvent.headers:
-{ ‹11›
-  accept: "application/json" ‹16›
-  accept-encoding: "br, gzip, deflate" ‹17›
-  accept-language: "*"
-  content-type: "application/json" ‹16›
-  Host: "api.net23.cc" ‹12›
-  sec-fetch-mode: "cors"
-  User-Agent: "node"
-  X-Amzn-Trace-Id: "Root=1-66edc318-1ba20cca01e008b9627d1394" ‹40›
-  X-Forwarded-For: "149.106.98.24" ‹13›
-  X-Forwarded-Port: "443"
-  X-Forwarded-Proto: "https"
-}
-
-*/
-
-
-
-
-/*
-
-ping 5 worker to lambda:
-
-export default defineEventHandler(async (event) => {
-	let note = ''
-	try {
-
-		let t = Date.now()
-		let lambdaNote = (await $fetch('https://api.net23.cc/ping5')).note
-		let duration = Date.now() - t
-
-		note = `worker says: lambda took ${duration}ms to say: ${lambdaNote}`
-
-	} catch (e) { note = 'ping5 worker error: '+e.stack }
-	return {note}
-})
-
-ping 5 lambda:
-
-
-
-import { Sticker } from '../../library/sticker.js'
-
-
-export const handler = async (event) => {
-	let note = ''
-	try {
-
-
-
-
-
-		note = `lambda says: ${Sticker().all}, ping5done`
-
-	} catch (e) { note = 'ping5 lambda error: '+e.stack }
-	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }
-}
-
-
-*/
 
 
 

@@ -1,14 +1,14 @@
 
 import {
-log, look, toss, Now
+log, look, toss, Now, accessWorkerEvent,
 } from '@/library/grand.js'
 
-export default defineEventHandler(async (event) => {
-	//saveCloudEvent(event)
+export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
+		accessWorkerEvent(workerEvent)
 
-		let body = await readBody(event)
+		let body = await readBody(workerEvent)
 
 		let message = body.message
 		let t = Now()
@@ -20,10 +20,10 @@ export default defineEventHandler(async (event) => {
 		o.message = 'hi from api log'
 		o.mirroredBody = body
 		o.duration = duration//how long it took to await for datadog
-		setResponseStatus(event, 200)
+		setResponseStatus(workerEvent, 200)
 	} catch (e) {
 		log('count caught: ', e)
-		setResponseStatus(event, 500)
+		setResponseStatus(workerEvent, 500)
 	}
 	return o
 })

@@ -1,10 +1,11 @@
 
-import { createClient } from '@supabase/supabase-js'
 import {
-getAccess
+getAccess,
 } from '@/library/grand.js'
 
-export default defineEventHandler(async (event) => {
+import { createClient } from '@supabase/supabase-js'
+
+export default defineEventHandler(async (workerEvent) => {
 	let access = await getAccess()
 
   const supabase = createClient(access.get('ACCESS_SUPABASE_URL'), access.get('ACCESS_SUPABASE_KEY_SECRET'))

@@ -2,7 +2,7 @@
 import { Sticker } from '@/library/sticker.js'
 
 
-export default defineEventHandler((event) => {
+export default defineEventHandler((workerEvent) => {
 	let note = ''
 	try {
 

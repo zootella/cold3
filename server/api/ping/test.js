@@ -10,7 +10,7 @@ import { Sticker } from '@/library/sticker.js'
 */
 import { runTests } from '@/library/grand.js'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (workerEvent) => {
 	let note = ''
 	try {
 

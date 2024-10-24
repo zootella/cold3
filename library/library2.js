@@ -25,12 +25,14 @@ dog,
 //  \__,_|\___\___\___||___/___/
 //                              
 
-export function canGetAccess() {//true if we are server-side code running and can get access to secrets
-	let key = access_key()
-	return hasText(key)
+let _workerEvent
+export function accessWorkerEvent(workerEvent) {//cloudflare puts secrets in the worker event, not on process.env
+	if (!_workerEvent && workerEvent) _workerEvent = workerEvent
 }
 
-
+export function canGetAccess() {//true if we are server-side code running and can get access to secrets
+	return hasText(access_key())//say if we have the key to decrypt all the secrets
+}
 
 function access_key() {
 	let key
@@ -44,23 +46,13 @@ function access_key() {
 	return key
 }
 
-
-
-let _workerEvent
-export function accessWorkerEvent(w) {
-	if (!_workerEvent && w) _workerEvent = w
-}
-
-
-
-
 let _access//single module instance
 export async function getAccess() {
 	if (!_access) _access = await access_load()//create once on first call here
 	return _access
 }
 async function access_load() {
-	let key = access_key(); checkText(key)
+	let key = access_key(); checkText(key)//throw if we don't have the key to decrypt all the secrets
 	let decrypted = await decrypt(Data({base62: key}), Data({base62: wrapper.secrets}))
 	let secrets = parseEnvStyleFileContents(decrypted)
 	let redactions//parts of secrets to look for and replacements to redact them with

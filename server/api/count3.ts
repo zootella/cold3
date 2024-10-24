@@ -1,19 +1,21 @@
 
 import {
 log, look,
-rowExists, createRow, readRow, writeRow
+accessWorkerEvent,
+rowExists, createRow, readRow, writeRow,
 } from '@/library/grand.js'
 
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
+		accessWorkerEvent(workerEvent)
 
 		//no, you have to import stuff manually for the api
 		//log('compostable on server? ' + typeof utility1)
 
 
-		let body = await readBody(event)
+		let body = await readBody(workerEvent)
 		//log('body is:', look(body))
 
 		o.message = 'hi from api count'

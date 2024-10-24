@@ -10,7 +10,7 @@ import { Sticker } from '../../library/sticker.js'
 */
 import { runTests } from '../../library/grand.js'
 
-export const handler = async (event) => {
+export const handler = async (lambdaEvent, lambdaContext) => {
 	let note = ''
 	try {
 
