@@ -83,7 +83,6 @@ export {
 
 doorWorker, doorLambda,
 doorPromise, awaitDoorPromises,
-//saveUseRuntimeConfigFunction, getUseRuntimeConfigFunction,
 
 } from './door.js'
 export {

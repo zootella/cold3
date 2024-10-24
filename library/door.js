@@ -3,7 +3,7 @@ import {
 Now, Tag,
 } from './sticker.js'
 import {
-Time, log, look, toss, test, ok, noop,
+Time, log, look, toss, test, ok, noop, defined,
 } from './library0.js'
 import {
 canGetAccess, accessWorkerEvent, getAccess,
@@ -54,6 +54,56 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 then write your code in doorProcessBelow() beneath
 */
 
+
+
+
+/*
+october maybe wrap paramaters in an object so a later edit doesn't get the order wrong or something
+also youre ironically not using useRuntimeConfig, but maybe you'll need it later or something, or something else
+
+	let {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow} = c
+
+*/
+
+
+/*
+october
+and after all that you sorta are curious where these three have the key
+
+process.env.ACCESS_KEY_SECRET
+workerEvent.context.cloudflare.env.ACCESS_KEY_SECRET
+useRuntimeConfig().ACCESS_KEY_SECRET
+
+
+
+
+without modifying the current working solution, go in and write a has it doesn' thave it
+
+
+*/
+
+function secretScan(call) {
+	let {workerEvent, useRuntimeConfigFunction} = call
+
+	let a = 0, b = 0, c = 0
+	if (defined(typeof process)) a = process?.env?.ACCESS_KEY_SECRET?.length
+	if (workerEvent) b = workerEvent?.context?.cloudflare?.env?.ACCESS_KEY_SECRET?.length
+	if (typeof useRuntimeConfigFunction == 'function') c = useRuntimeConfigFunction().ACCESS_KEY_SECRET?.length
+
+	let s = `secret scan a${a}, b${b}, c${c};`
+	dog(s)
+	return s
+}
+/*
+ok, on LocalNuxtServer, all three work
+whileon CloudNuxtServer, only b and c work
+
+so what you could do is update access again to also useRuntimeConfig
+
+
+*/
+
+
 export async function doorWorker(workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow) {
 	try {
 		let door = {}, response, error
@@ -101,6 +151,8 @@ but should still be findable in the amazon or cloudflare dashboard
 
 async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//october, if this works you won't be using the runtime configuration any longer
 	accessWorkerEvent(workerEvent)
+	secretScan({workerEvent, useRuntimeConfigFunction})
+
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.startTick = Now()//record when we got the request
@@ -312,42 +364,6 @@ noop(() => {//first, a demonstration of a promise race
 		log('3 versus 2 race error:', look(error))//hits here, gave up waiting, after 2 (not 3) seconds
 	})
 })
-
-
-
-
-//                   _                    ____              _   _                 ____             __ _       
-//  _ __  _   ___  _| |_   _   _ ___  ___|  _ \ _   _ _ __ | |_(_)_ __ ___   ___ / ___|___  _ __  / _(_) __ _ 
-// | '_ \| | | \ \/ / __| | | | / __|/ _ \ |_) | | | | '_ \| __| | '_ ` _ \ / _ \ |   / _ \| '_ \| |_| |/ _` |
-// | | | | |_| |>  <| |_  | |_| \__ \  __/  _ <| |_| | | | | |_| | | | | | |  __/ |__| (_) | | | |  _| | (_| |
-// |_| |_|\__,_/_/\_\\__|  \__,_|___/\___|_| \_\\__,_|_| |_|\__|_|_| |_| |_|\___|\____\___/|_| |_|_| |_|\__, |
-//                                                                                                      |___/ 
-
-
-//another module scoped variable, ugh
-/*
-here's the kludge where we save a reference to nuxt's useRuntimeConfig in a module variable
-this is the best way for access to use it instead of process.env to get secrets in cloudflare
-*/
-//let _useRuntimeConfigFunction
-//export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
-//export function getUseRuntimeConfigFunction() { return _useRuntimeConfigFunction }
-/*
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
