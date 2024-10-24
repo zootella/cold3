@@ -37,7 +37,7 @@ let tick = reactive({
 })
 
 // useFetch with POST method to manage count data
-let { data, fetching, error } = useFetch('/api/count2', {
+let { data, fetching, error } = useFetch('/api/count2d', {
 	method: 'POST',
 	body: {
 		countGlobal: 0,
@@ -51,7 +51,7 @@ async function incrementCount(increment1, increment2) {
 	try {
 
 		let tick1 = Now()
-		let data2 = await $fetch('/api/count2', {
+		let data2 = await $fetch('/api/count2d', {
 			method: 'POST',
 			body: {
 				countGlobal: increment1,
