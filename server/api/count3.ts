@@ -1,7 +1,7 @@
 
 import {
 log, look,
-accessWorkerEvent,
+accessWorker,
 rowExists, createRow, readRow, writeRow,
 } from '@/library/grand.js'
 
@@ -9,7 +9,7 @@ rowExists, createRow, readRow, writeRow,
 export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
-		accessWorkerEvent(workerEvent)
+		accessWorker({workerEvent, useRuntimeConfig})
 
 		//no, you have to import stuff manually for the api
 		//log('compostable on server? ' + typeof utility1)

@@ -4,14 +4,14 @@ import {
 log, look,
 rowExists, createRow, readRow, writeRow,
 dog, logAlert,
-accessWorkerEvent, awaitDoorPromises,
+accessWorker, awaitDoorPromises,
 } from '@/library/grand.js'
 
 
 export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
-		accessWorkerEvent(workerEvent)
+		accessWorker({workerEvent, useRuntimeConfig})
 
 
 		let body = await readBody(workerEvent)

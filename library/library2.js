@@ -25,9 +25,10 @@ dog,
 //  \__,_|\___\___\___||___/___/
 //                              
 
-let _workerEvent
-export function accessWorkerEvent(workerEvent) {//cloudflare puts secrets in the worker event, not on process.env
+let _workerEvent, _useRuntimeConfig
+export function accessWorker({workerEvent, useRuntimeConfig}) {//cloudflare puts secrets in the worker event, not on process.env, and nuxt imports this function useRuntimeConfig into api handlers; save them to look for secrets there later
 	if (!_workerEvent && workerEvent) _workerEvent = workerEvent
+	if (!_useRuntimeConfig && useRuntimeConfig) _useRuntimeConfig = useRuntimeConfig
 }
 
 export function canGetAccess() {//true if we are server-side code running and can get access to secrets
@@ -35,13 +36,18 @@ export function canGetAccess() {//true if we are server-side code running and ca
 }
 
 function access_key() {
-	let key
-	if (_workerEvent) {
-		let keyFromWorkerEvent = _workerEvent.context?.cloudflare?.env?.ACCESS_KEY_SECRET
-		if (hasText(keyFromWorkerEvent)) key = keyFromWorkerEvent
-	} else if (defined(typeof process)) {
-		let keyFromProcessEnv = process.env?.ACCESS_KEY_SECRET
-		if (hasText(keyFromProcessEnv)) key = keyFromProcessEnv
+	let key, k
+	if (!hasText(key) && defined(typeof process)) {
+		k = process?.env?.ACCESS_KEY_SECRET
+		if (hasText(k)) key = k
+	}
+	if (!hasText(key) && _workerEvent) {
+		k = _workerEvent?.context?.cloudflare?.env?.ACCESS_KEY_SECRET
+		if (hasText(k)) key = k
+	}
+	if (!hasText(key) && typeof _useRuntimeConfig == 'function') {
+		k = _useRuntimeConfig().ACCESS_KEY_SECRET
+		if (hasText(k)) key = k
 	}
 	return key
 }

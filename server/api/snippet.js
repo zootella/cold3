@@ -1,14 +1,13 @@
 
 import {
 log, look, Now, Tag,
-doorWorker,
-accessWorkerEvent, awaitDoorPromises,
+accessWorker, awaitDoorPromises,
 dog, awaitLogAlert,
 Sticker, snippet,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
-	accessWorkerEvent(workerEvent)
+	accessWorker({workerEvent, useRuntimeConfig})
 	let o = {}
 	try {
 		o.note = `worker snippet says: ${Sticker().all}, v2024oct21c`

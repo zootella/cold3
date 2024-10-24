@@ -1,14 +1,14 @@
 
 import {
 log, see, look,
-accessWorkerEvent, getAccess,
+accessWorker, getAccess,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	var r = {}//the response object this server function will fill and send back to the page
 	r.message = 'hello, function send email, version 2024mar5'//hello and version no matter what
 	try {//protect the server from all your code, even seemingly safe code, with a big try block
-		accessWorkerEvent(workerEvent)
+		accessWorker({workerEvent, useRuntimeConfig})
 		let access = await getAccess()
 
 		//set and bring in constants about the test email to send

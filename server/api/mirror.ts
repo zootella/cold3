@@ -1,11 +1,11 @@
 
 import {
 log, see, Now, look, Tag, Sticker,
-accessWorkerEvent, getAccess, awaitDoorPromises,
+accessWorker, getAccess, awaitDoorPromises,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
-	accessWorkerEvent(workerEvent)
+	accessWorker({workerEvent, useRuntimeConfig})
 	let access = await getAccess()
 
 	let o = {}

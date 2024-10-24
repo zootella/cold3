@@ -6,7 +6,7 @@ dog, awaitLogAlert
 } from '../../library/grand.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda(lambdaEvent, lambdaContext, doorProcessBelow)
+	return doorLambda({lambdaEvent, lambdaContext, doorProcessBelow})
 }
 async function doorProcessBelow(door) {
 	let response = {}

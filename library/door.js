@@ -6,7 +6,7 @@ import {
 Time, log, look, toss, test, ok, noop, defined,
 } from './library0.js'
 import {
-canGetAccess, accessWorkerEvent, getAccess,
+canGetAccess, accessWorker, getAccess,
 } from './library2.js'
 import {
 dog, logAlert, awaitLogAlert,
@@ -83,14 +83,14 @@ without modifying the current working solution, go in and write a has it doesn' 
 */
 
 function secretScan(call) {
-	let {workerEvent, useRuntimeConfigFunction} = call
+	let {workerEvent, useRuntimeConfig} = call
 
 	let a = 0, b = 0, c = 0
 	if (defined(typeof process)) a = process?.env?.ACCESS_KEY_SECRET?.length
 	if (workerEvent) b = workerEvent?.context?.cloudflare?.env?.ACCESS_KEY_SECRET?.length
-	if (typeof useRuntimeConfigFunction == 'function') c = useRuntimeConfigFunction().ACCESS_KEY_SECRET?.length
+	if (typeof useRuntimeConfig == 'function') c = useRuntimeConfig().ACCESS_KEY_SECRET?.length
 
-	let s = `secret scan a${a}, b${b}, c${c};`
+	let s = `secret scan a ${a}, b ${b}, c ${c};`
 	dog(s)
 	return s
 }
@@ -104,7 +104,7 @@ so what you could do is update access again to also useRuntimeConfig
 */
 
 
-export async function doorWorker(workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow) {
+export async function doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow}) {
 	try {
 		let door = {}, response, error
 		try {
@@ -122,7 +122,7 @@ export async function doorWorker(workerEvent, useRuntimeConfig, setResponseStatu
 	} catch (e3) { console.error('[OUTER]', e3) }
 	setResponseStatus(workerEvent, 500); return null
 }
-export async function doorLambda(lambdaEvent, lambdaContext, doorProcessBelow) {
+export async function doorLambda({lambdaEvent, lambdaContext, doorProcessBelow}) {
 	try {
 		let door = {}, response, error
 		try {
@@ -149,10 +149,8 @@ so, we use console.error, which won't show up in datadog,
 but should still be findable in the amazon or cloudflare dashboard
 */
 
-async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//october, if this works you won't be using the runtime configuration any longer
-	accessWorkerEvent(workerEvent)
-	secretScan({workerEvent, useRuntimeConfigFunction})
-
+async function doorWorkerOpen(workerEvent, useRuntimeConfig) {
+	accessWorker({workerEvent, useRuntimeConfig})
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.startTick = Now()//record when we got the request

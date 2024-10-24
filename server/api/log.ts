@@ -1,12 +1,12 @@
 
 import {
-log, look, toss, Now, accessWorkerEvent,
+log, look, toss, Now, accessWorker,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
-		accessWorkerEvent(workerEvent)
+		accessWorker({workerEvent, useRuntimeConfig})
 
 		let body = await readBody(workerEvent)
 

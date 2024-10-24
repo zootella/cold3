@@ -70,7 +70,7 @@ generatePosts, postDatabase,
 } from './library1.js'//functions that use module imports
 export {
 
-canGetAccess, accessWorkerEvent, getAccess,
+canGetAccess, accessWorker, getAccess,
 getBrowserTag,
 
 } from './library2.js'//functions that use parts of the larger application and environment

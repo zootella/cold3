@@ -1,14 +1,14 @@
 
 import {
 log, look, hasText, checkTag,
-accessWorkerEvent, getAccess,
+accessWorker, getAccess,
 accessTableInsert, accessTableQuery,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
-		accessWorkerEvent(workerEvent)
+		accessWorker({workerEvent, useRuntimeConfig})
 		let access = await getAccess()
 		let body = await readBody(workerEvent)
 		o.message = 'api account, version 2024aug16c'

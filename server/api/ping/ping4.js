@@ -1,13 +1,13 @@
 
 import { Sticker } from '@/library/sticker.js'
-import { accessWorkerEvent, database_pingCount } from '@/library/grand.js'
+import { accessWorker, database_pingCount } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
 	let note = ''
 	try {
 
 		let t = Date.now()
-		accessWorkerEvent(workerEvent)
+		accessWorker({workerEvent, useRuntimeConfig})
 		let count = await database_pingCount()
 		let duration = Date.now() - t
 

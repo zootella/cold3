@@ -6,7 +6,7 @@ dog, awaitLogAlert,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker(workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow)
+	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let response = {}
