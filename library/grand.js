@@ -70,7 +70,7 @@ generatePosts, postDatabase,
 } from './library1.js'//functions that use module imports
 export {
 
-canGetAccess, getAccess,
+canGetAccess, addAccessSource, getAccess,
 getBrowserTag,
 
 } from './library2.js'//functions that use parts of the larger application and environment
@@ -83,7 +83,7 @@ export {
 
 doorWorker, doorLambda,
 doorPromise, awaitDoorPromises,
-saveUseRuntimeConfigFunction, getUseRuntimeConfigFunction,
+//saveUseRuntimeConfigFunction, getUseRuntimeConfigFunction,
 
 } from './door.js'
 export {

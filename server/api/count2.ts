@@ -4,14 +4,14 @@ import {
 log, look,
 rowExists, createRow, readRow, writeRow,
 dog, logAlert,
-saveUseRuntimeConfigFunction, awaitDoorPromises
+addAccessSource, awaitDoorPromises,
 } from '@/library/grand.js'
 
 
 export default defineEventHandler(async (event) => {
 	let o = {}
 	try {
-		saveUseRuntimeConfigFunction(useRuntimeConfig)
+		addAccessSource('nuxt', useRuntimeConfig())
 
 
 		let body = await readBody(event)

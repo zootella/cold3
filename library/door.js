@@ -6,13 +6,28 @@ import {
 Time, log, look, toss, test, ok, noop,
 } from './library0.js'
 import {
-getAccess,
+canGetAccess, addAccessSource, getAccess,
 } from './library2.js'
 import {
 dog, logAlert, awaitLogAlert,
 } from './cloud.js'
 
 import { readBody } from 'h3'
+
+
+
+
+
+//october, when door is done, move it into library2
+
+
+
+
+
+
+
+
+
 
 //      _                  
 //   __| | ___   ___  _ __ 
@@ -85,12 +100,16 @@ but should still be findable in the amazon or cloudflare dashboard
 */
 
 async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//get a reference to useRuntimeConfig, which nuxt imports into api handler files
-	saveUseRuntimeConfigFunction(useRuntimeConfigFunction)
+	//saveUseRuntimeConfigFunction(useRuntimeConfigFunction)
 	/*
 	october, it may also be possible to not call this nuxt thing and get workerEvent.context.env.ACCESS_KEY_SECRET
 	*/
 	dog("in doorWorkerOpen, here's workerEvent.context.cloudflare.env:",
 		look(workerEvent.context.cloudflare.env))
+
+	addAccessSource('event', workerEvent.context?.cloudflare?.env)
+	addAccessSource('nuxt',  useRuntimeConfigFunction())
+
 
 
 
@@ -321,9 +340,9 @@ noop(() => {//first, a demonstration of a promise race
 here's the kludge where we save a reference to nuxt's useRuntimeConfig in a module variable
 this is the best way for access to use it instead of process.env to get secrets in cloudflare
 */
-let _useRuntimeConfigFunction
-export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
-export function getUseRuntimeConfigFunction() { return _useRuntimeConfigFunction }
+//let _useRuntimeConfigFunction
+//export function saveUseRuntimeConfigFunction(f) { _useRuntimeConfigFunction = f }
+//export function getUseRuntimeConfigFunction() { return _useRuntimeConfigFunction }
 /*
 */
 

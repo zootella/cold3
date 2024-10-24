@@ -1,11 +1,11 @@
 
 import {
 log, see, Now, look, Tag, Sticker,
-saveUseRuntimeConfigFunction, getAccess,
+addAccessSource, getAccess, awaitDoorPromises,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
-	saveUseRuntimeConfigFunction(useRuntimeConfig)//nuxt already imported here; save it where access can reach it; necessary for access to work
+	addAccessSource('nuxt', useRuntimeConfig())
 	let access = await getAccess()
 
 	let o = {}
@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
 	o.accessLength = access.get('ACCESS_PASSWORD_SECRET').length
 	o.tag = Tag()
 	o.sayEnvironment = Sticker().all
+	await awaitDoorPromises()
 	return o
 })
 

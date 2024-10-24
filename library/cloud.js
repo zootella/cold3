@@ -48,7 +48,7 @@ async function loadAmazonTexts() { if (!_sns) _sns = new (await _loadAmazon()).S
 export async function snippet() {
 	let twilio = await loadTwilio()
 	let sendgrid = await loadSendgrid()
-	let s = look({twilio, sendgrid})
+	let s = look({canGetAccess: canGetAccess(), twilio, sendgrid})
 	log("hello from cloud snippet, here's twilio and sendgrid:", s)
 	return s
 }

@@ -1,19 +1,21 @@
 
 import {
 log, look, Now, Tag,
-doorWorker, saveUseRuntimeConfigFunction,
+doorWorker,
+addAccessSource, awaitDoorPromises,
 dog, awaitLogAlert,
 Sticker, snippet,
 } from '@/library/grand.js'
 
 export default defineEventHandler(async (event) => {
-	saveUseRuntimeConfigFunction(useRuntimeConfig)//nuxt already imported here; save it where access can reach it
+	addAccessSource('nuxt', useRuntimeConfig())
 	let o = {}
 	try {
 		o.note = `worker snippet says: ${Sticker().all}, v2024oct21c`
 		o.look = await snippet()
 
 	} catch (e) { o.error = 'snippet worker error: '+e.stack }
+	await awaitDoorPromises()
 	return o
 })
 

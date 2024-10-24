@@ -13,8 +13,10 @@ replaceAll, replaceOne,
 parseEnvStyleFileContents,
 } from './library0.js'
 import {
-getUseRuntimeConfigFunction,
 } from './door.js'
+import {
+dog,
+} from './cloud.js'
 
 //                              
 //   __ _  ___ ___ ___  ___ ___ 
@@ -26,6 +28,22 @@ getUseRuntimeConfigFunction,
 export function canGetAccess() {//true if we are server-side code running and can get access to secrets
 	let key = access_key()
 	return hasText(key)
+}
+
+let _accessSources = {}
+export function addAccessSource(sourceName, sourceEnv) {
+	if (hasText(sourceName) && sourceEnv && !_accessSources[sourceName]) _accessSources[sourceName] = sourceEnv
+}
+function access_key() {
+	if (defined(typeof process)) addAccessSource('process', process.env)
+	let key
+	Object.keys(_accessSources).forEach(sourceName => {
+		if (!hasText(key)) {//stop looking after we've found it
+			let k = _accessSources[sourceName].ACCESS_KEY_SECRET
+			if (hasText(k)) key = k//return here doesn't work because we're in a nested function, the arrow function
+		}
+	})
+	return key
 }
 
 let _access//single module instance
@@ -52,15 +70,6 @@ async function access_load() {
 			if (!redactions) redactions = redact_prepare(key, secrets)//build the redaction table on first call to redact
 			return redact_perform(s, redactions)
 		}
-	}
-}
-function access_key() {
-	if (getUseRuntimeConfigFunction()) {//we're running in nuxt, so we have to get cloudflare secrets through nuxt's function that we saved a reference to in the request handler
-		return getUseRuntimeConfigFunction()()['ACCESS_KEY_SECRET']//get the function, call the function, dereference name on the return, yeah
-	} else if (defined(typeof process) && process.env) {//we're running in node or lambda, so secrets are on process.env the old fashioned way
-		return process.env['ACCESS_KEY_SECRET']
-	} else {
-		toss('cannot access nuxt runtime config function nor process.env')
 	}
 }
 function redact_perform(s, redactions) {
