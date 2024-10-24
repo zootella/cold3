@@ -4,17 +4,17 @@ import {
 log, look,
 rowExists, createRow, readRow, writeRow,
 dog, logAlert,
-addAccessSource, awaitDoorPromises,
+accessWorkerEvent, awaitDoorPromises,
 } from '@/library/grand.js'
 
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (workerEvent) => {
 	let o = {}
 	try {
-		addAccessSource('nuxt', useRuntimeConfig())
+		accessWorkerEvent(workerEvent)
 
 
-		let body = await readBody(event)
+		let body = await readBody(workerEvent)
 		//log('body is:', look(body))
 
 		o.message = 'hi from api count'

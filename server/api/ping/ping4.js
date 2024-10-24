@@ -1,13 +1,13 @@
 
 import { Sticker } from '@/library/sticker.js'
-import { addAccessSource, database_pingCount } from '@/library/grand.js'
+import { accessWorkerEvent, database_pingCount } from '@/library/grand.js'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (workerEvent) => {
 	let note = ''
 	try {
 
 		let t = Date.now()
-		addAccessSource('nuxt', useRuntimeConfig())
+		accessWorkerEvent(workerEvent)
 		let count = await database_pingCount()
 		let duration = Date.now() - t
 

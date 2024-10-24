@@ -2,13 +2,13 @@
 import {
 log, look, Now, Tag,
 doorWorker,
-addAccessSource, awaitDoorPromises,
+accessWorkerEvent, awaitDoorPromises,
 dog, awaitLogAlert,
 Sticker, snippet,
 } from '@/library/grand.js'
 
-export default defineEventHandler(async (event) => {
-	addAccessSource('nuxt', useRuntimeConfig())
+export default defineEventHandler(async (workerEvent) => {
+	accessWorkerEvent(workerEvent)
 	let o = {}
 	try {
 		o.note = `worker snippet says: ${Sticker().all}, v2024oct21c`

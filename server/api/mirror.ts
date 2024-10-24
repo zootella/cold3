@@ -1,17 +1,17 @@
 
 import {
 log, see, Now, look, Tag, Sticker,
-addAccessSource, getAccess, awaitDoorPromises,
+accessWorkerEvent, getAccess, awaitDoorPromises,
 } from '@/library/grand.js'
 
-export default defineEventHandler(async (event) => {
-	addAccessSource('nuxt', useRuntimeConfig())
+export default defineEventHandler(async (workerEvent) => {
+	accessWorkerEvent(workerEvent)
 	let access = await getAccess()
 
 	let o = {}
 	o.message = 'hello from cold3 api mirror, version 2024oct8b'
 	o.serverTick = Now()
-	o.headers = event.req.headers
+	o.headers = workerEvent.req.headers
 	o.accessLength = access.get('ACCESS_PASSWORD_SECRET').length
 	o.tag = Tag()
 	o.sayEnvironment = Sticker().all

@@ -30,21 +30,29 @@ export function canGetAccess() {//true if we are server-side code running and ca
 	return hasText(key)
 }
 
-let _accessSources = {}
-export function addAccessSource(sourceName, sourceEnv) {
-	if (hasText(sourceName) && sourceEnv && !_accessSources[sourceName]) _accessSources[sourceName] = sourceEnv
-}
+
+
 function access_key() {
-	if (defined(typeof process)) addAccessSource('process', process.env)
 	let key
-	Object.keys(_accessSources).forEach(sourceName => {
-		if (!hasText(key)) {//stop looking after we've found it
-			let k = _accessSources[sourceName].ACCESS_KEY_SECRET
-			if (hasText(k)) key = k//return here doesn't work because we're in a nested function, the arrow function
-		}
-	})
+	if (_workerEvent) {
+		let keyFromWorkerEvent = _workerEvent.context?.cloudflare?.env?.ACCESS_KEY_SECRET
+		if (hasText(keyFromWorkerEvent)) key = keyFromWorkerEvent
+	} else if (defined(typeof process)) {
+		let keyFromProcessEnv = process.env?.ACCESS_KEY_SECRET
+		if (hasText(keyFromProcessEnv)) key = keyFromProcessEnv
+	}
 	return key
 }
+
+
+
+let _workerEvent
+export function accessWorkerEvent(w) {
+	if (!_workerEvent && w) _workerEvent = w
+}
+
+
+
 
 let _access//single module instance
 export async function getAccess() {

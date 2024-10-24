@@ -6,7 +6,7 @@ import {
 Time, log, look, toss, test, ok, noop,
 } from './library0.js'
 import {
-canGetAccess, addAccessSource, getAccess,
+canGetAccess, accessWorkerEvent, getAccess,
 } from './library2.js'
 import {
 dog, logAlert, awaitLogAlert,
@@ -99,19 +99,8 @@ so, we use console.error, which won't show up in datadog,
 but should still be findable in the amazon or cloudflare dashboard
 */
 
-async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//get a reference to useRuntimeConfig, which nuxt imports into api handler files
-	//saveUseRuntimeConfigFunction(useRuntimeConfigFunction)
-	/*
-	october, it may also be possible to not call this nuxt thing and get workerEvent.context.env.ACCESS_KEY_SECRET
-	*/
-	dog("in doorWorkerOpen, here's workerEvent.context.cloudflare.env:",
-		look(workerEvent.context.cloudflare.env))
-
-	addAccessSource('event', workerEvent.context?.cloudflare?.env)
-	addAccessSource('nuxt',  useRuntimeConfigFunction())
-
-
-
+async function doorWorkerOpen(workerEvent, useRuntimeConfigFunction) {//october, if this works you won't be using the runtime configuration any longer
+	accessWorkerEvent(workerEvent)
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.startTick = Now()//record when we got the request
