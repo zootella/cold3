@@ -3,7 +3,7 @@ import {
 Sticker,
 log, look, Now, Tag, getAccess, checkText,
 doorWorker,
-dog, logAlert, awaitLogAlert,
+dog,
 rowExists, createRow, readRow, writeRow,
 } from '@/library/grand.js'
 
@@ -15,7 +15,7 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorProcessBelow(door) {
 	let o = {}
 
-	o.message = 'hi from api count2d!'
+	o.message = 'hi from api count'
 	o.mirroredBody = door.body
 
 	//create the row if it doesn't exist

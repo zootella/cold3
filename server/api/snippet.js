@@ -2,7 +2,7 @@
 import {
 log, look, Now, Tag,
 accessWorker, awaitDoorPromises,
-dog, awaitLogAlert,
+dog,
 Sticker, snippet,
 } from '@/library/grand.js'
 

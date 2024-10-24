@@ -2,7 +2,7 @@
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText,
 doorLambda,
-dog, awaitLogAlert
+dog,
 } from '../../library/grand.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {

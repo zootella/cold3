@@ -30,7 +30,7 @@ const logText = ref("");
 await doFetch();
 async function doFetch() {
 	t.tick3 = Now();
-	const r = await useFetch("/api/mirror2d",	{method: 'POST'});
+	const r = await useFetch("/api/mirror",	{method: 'POST'});
 	t.tick4 = Now();
 	t.duration34 = t.tick4 - t.tick3;
 	logToBox(`fetched message "${r.data.value.message}", access length "${r.data.value.accessLength}", tag "${r.data.value.tag}", tick "${r.data.value.serverTick}", say environment "${r.data.value.sayEnvironment}"`);
