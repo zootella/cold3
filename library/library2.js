@@ -47,22 +47,22 @@ export function accessWorker({workerEvent, useRuntimeConfig}) {//cloudflare puts
 }
 
 export function canGetAccess() {//true if we are server-side code running and can get access to secrets
-	return hasText(access_key())//say if we have the key to decrypt all the secrets
+	return hasText(access_key())//use access_key() and say if we have the key to decrypt all the secrets
 }
 
 function access_key() {
-	let key, k
+	let key, v
 	if (!hasText(key) && defined(typeof process)) {
-		k = process?.env?.ACCESS_KEY_SECRET
-		if (hasText(k)) key = k
+		v = process?.env?.ACCESS_KEY_SECRET
+		if (hasText(v)) key = v
 	}
 	if (!hasText(key) && _workerEvent) {
-		k = _workerEvent?.context?.cloudflare?.env?.ACCESS_KEY_SECRET
-		if (hasText(k)) key = k
+		v = _workerEvent?.context?.cloudflare?.env?.ACCESS_KEY_SECRET
+		if (hasText(v)) key = v
 	}
 	if (!hasText(key) && typeof _useRuntimeConfig == 'function') {
-		k = _useRuntimeConfig().ACCESS_KEY_SECRET
-		if (hasText(k)) key = k
+		v = _useRuntimeConfig().ACCESS_KEY_SECRET
+		if (hasText(v)) key = v
 	}
 	return key
 }
@@ -73,7 +73,7 @@ export async function getAccess() {
 	return _access
 }
 async function access_load() {
-	let key = access_key(); checkText(key)//throw if we don't have the key to decrypt all the secrets
+	let key = access_key(); checkText(key)//use access_key() and throw if we don't have the key to decrypt all the secrets
 	let decrypted = await decrypt(Data({base62: key}), Data({base62: wrapper.secrets}))
 	let secrets = parseEnvStyleFileContents(decrypted)
 	let redactions//parts of secrets to look for and replacements to redact them with

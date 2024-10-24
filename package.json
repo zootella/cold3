@@ -15,9 +15,8 @@
     "local": "nuxt dev",
     "test": "node test",
     "seal": "node seal",
-    "dev": "nuxt dev",
     "generate": "nuxt generate",
-    "preview": "npm run build && wrangler pages dev",
+    "preview": "nuxt build && wrangler pages dev",
     "postinstall": "nuxt prepare",
     "cf-typegen": "wrangler types"
   },

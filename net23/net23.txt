@@ -1520,6 +1520,48 @@ so then there's a new ./library/package.json
 
 
 
+
+
+
+2024oct24
+
+you've given up trying to get node modules like twilio working in a worker
+none of these node modules were written imagining a web worker future
+and their service providers don't mention web workers at all
+even if you got one to work, it might be less reliable in a worker
+
+also, even though javascript is full stack, there are big differences between client and server modules, tools and patterns
+client js is all about es6, include, tree shaking, and small modules with few dependencies
+server js is all about commonjs, require, node, and big modules with hundreds of dependencies
+building server modules for the client is a neat demo for a meetup, but not a fruitful practice for a workday
+
+so, you'll just try the lambda first now, instead of last
+thank the bezos lambda exists--otherwise you'd be securing a virtual instance with chatgpt right now!
+
+and even with this hybrid model, cloudflare is still great at:
+-loading really fast, including as a cold start to make a good first impression to a brand new prospective user
+-running trusted code that can't be tampered with
+-using supabase, with their module, and datadog, with fetch
+don't try to get it to do more than that
+
+this hybrid model still keeps all the application logic in the worker
+the lambda code is just "send this email" or "upload this file"--individual atomic commands,
+and notes in database tables as to what happened afterwards
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 										 _                       
  _ __ ___   __ _  __| |_ __ ___   __ _ _ __  
 | '__/ _ \ / _` |/ _` | '_ ` _ \ / _` | '_ \ 

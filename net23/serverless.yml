@@ -46,6 +46,18 @@ functions:
       - http:
           path: door
           method: post #POST because now this is a real api call
+package:
+  exclude:
+    - ./src/**            #we don't need to send the source code as rollup packaged it into the dist folder, which is included
+    - ./www/**            #static site files have nothing to do with lambda functions
+    - ./package-lock.json #note that excluding package.json causes internal server error!
+    - ./rollup.config.js
+    - ./*.txt
+    - ./scratch.*
+    # notes on this package section:
+    # in package.json, you moved aws-sdk from -S to -D, and that was all that was necessary to keep it out of the zip
+    # chat was sure that the root package.json should be excluded, but this breaks the deployment!
+    # and, alongside exclude you can have individually: true, but have not tested that or tried it out to see if it's better
 
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization
