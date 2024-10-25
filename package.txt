@@ -61,16 +61,17 @@ net23/package.json (serverless framework project including lambda functions)
 		"nanoid": "^5.0.7",
 		"rfc4648": "^1.5.3",
 
-		//service
 		"@sendgrid/mail": "^8.1.4",  //lambda can use all the node modules: amazon, supabase, and twilio
 		"@supabase/supabase-js": "^2.39.8",
-		"aws-sdk": "^2.1691.0",
 		"twilio": "^5.3.4"
 
 		//framework
 		"h3": "^1.13.0",  //brought in by nuxt, but must be installed here
 	},
 	"devDependencies": {
+
+		//service
+		"aws-sdk": "^2.1691.0",  //moved down here to keep from uploading it in the zip of every deploy
 
 		//framework
 		"@rollup/plugin-commonjs": "^26.0.1",      //you chose rollup to package your code for lambda

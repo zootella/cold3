@@ -1806,19 +1806,6 @@ test(() => {
 	ok(correctLength('A 𝓗𝓮𝓵𝓵𝓸 is Hello') == 16)
 })
 
-export function testBox(s) {
-	/*
-	let encoded = squareEncode(s)
-	let decoded = squareDecode(encoded)
-	let valid = (s == decoded) && (s.length == decoded.length)
-let report = `${correctLength(s)} characters round trip ${valid ? 'success' : '🚨 FAILURE 🚨'}
-${s}
-${encoded}`
-	//log(report)
-	return encoded
-	*/
-}
-
 
 
 

@@ -54,7 +54,6 @@ deindent,
 defined,
 squareEncode, squareDecode, checkSquare,
 correctLength,
-testBox,
 say, look, stringify,
 
 replaceAll, replaceOne,
@@ -66,6 +65,8 @@ export {
 
 validateEmail, validatePhone, validateCard,
 generatePosts, postDatabase,
+
+testBox,
 
 } from './library1.js'//functions that use module imports
 export {

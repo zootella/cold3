@@ -586,67 +586,6 @@ the design is simple:
 
 
 
-//ok, total vanity, but here's the ascii disk in a readme.md for github
-//exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
-
-const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
-const labelWidth = 16
-test(() => {
-
-	let codeSizeDiskPercent = Math.round(wrapper.codeSize*100/floppyDiskCapacity)
-
-	let date = sayDate(wrapper.tick)
-	let year = date.slice(0, 4)
-
-	let line1 = extend(' ', `${wrapper.name} ~ ${wrapper.hash.slice(0, 7)}`)
-	let line2 = extend('_', `${sayDate(wrapper.tick)}`)
-	let line3 = extend('_', `${wrapper.codeFiles}_files`)
-	let line4 = extend('_', `${wrapper.codeSize}_bytes`)
-	let line5 = extend('_', `disk_filled_${codeSizeDiskPercent}%`)
-	function extend(padding, line) { return line.padEnd(labelWidth, padding).slice(0, labelWidth) }
-
-	let markdownBody = `
-${'```'}
- ____________________
-| |${line1        }| |
-|.|________________|H|
-| |${line2        }| |
-| |${line3        }| |
-| |${line4        }| |
-| |${line5        }| |
-| |________________| |
-|                    |
-|    ____________    |
-|   |   |  _     |   |
-|   |   | | |    |   |
-|   |   | |_|    | V |
-|___|___|________|___|
-
-${'```'}
-
-How quick, simple, and cheap can the web2 stack be in ${year}?
-[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
-exploring pouring and curing a
-tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
-`
-	log(markdownBody)
-})
-
-
-
-//you could also log this out
-//and put it at the top of index.html for view source?
-
-
-/*
-here's a good first pinia task, maybe
-have log output that shows in /log, and any page, as you click around, can add to
-*/
-
-
-
-
-
 
 
 
