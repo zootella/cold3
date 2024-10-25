@@ -10,10 +10,9 @@
     "url": "https://github.com/zootella/cold3.git"
   },
   "scripts": {
-    "dev": "vite",
+    "icarus": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "icarus": "vite"
+    "preview": "vite preview"
   },
   "dependencies": {
     "credit-card-type": "^10.0.0",

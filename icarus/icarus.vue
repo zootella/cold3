@@ -25,7 +25,7 @@ onMounted(async () => {
 
 <p class="class1">{{ testMessage }}</p>
 <p class="class2a"><input type="text" v-model="boxModel" class="class2" id="box2"/></p>
-<p class="class3">{{ testBox(boxModel) }}</p>
+<pre class="class3">{{ testBox(boxModel) }}</pre>
 <textarea readOnly :value="getLogRecord()" class="class4" id="box4"></textarea>
 
 </template>

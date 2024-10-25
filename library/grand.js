@@ -49,7 +49,7 @@ objectToBase62, base62ToObject,
 curveSign, curveVerify,
 
 sayWhenPage, sayWhenFeed,
-fraction,
+fraction, exponent, int, big,
 deindent,
 defined,
 squareEncode, squareDecode, checkSquare,

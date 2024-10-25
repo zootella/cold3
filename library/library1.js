@@ -20,6 +20,7 @@ checkText, checkAlpha,
 randomBetween,
 starts, cut,
 onlyNumerals,
+fraction, exponent, int, big, thinSpace,
 } from './library0.js'
 
 
@@ -523,6 +524,19 @@ noop(() => {
 
 
 
+/*
+first, just get
+import { visualizer } from 'rollup-plugin-visualizer'
+from nuxt.congif.ts into vite.config.js, should be easier than before
+
+[]have git and seal correctly include, count, exclude, hash, skip, icarus' stats.html
+actually looks like that's already going to be git ignored, yes hashed, not counted as code
+
+
+
+*/
+
+
 
 
 
@@ -547,21 +561,172 @@ this also is your return to these:
 		"libphonenumber-js": "^1.11.3",
 do you really need them all? how big are they compared to what you're bringing in for passwords?
 
+ok nevermind, the only good password module is the one from dropbox and it's huge so server side only
 
+
+password strength: weak, okay, strong, very strong
+x long enough (6+)
+x mixed case
+x numbers
+x special characters
+three of those
+
+
+out of the box
+compute and tell the user a crack time
+18 years: strong
+and record this in the database so you can see
+only show after weak
+
+have tips, like:
+make longer
+use upper and lower case
+use numbers
+use special characters
+
+and for weak, ok, strong, very storng, choose based on years
+
+ok, what's the math
+
+(variety ^ length) * 10ms / year
+are you going to need bignum for that? you've got fraction()
+
+
+Strong: 250 years to guess; make it longer!
+use letters and numbers!
+mix upper and lower case!
+add some special characters!
+Very strong: 26 000 000 years to guess
+
+so its rating, time, and suggestion
+yeah, that's cool
+
+length^exponent *10ms /msinyear /2 for 50% odds
+and see how long you can make one before you get near js max int in years, essentially
+
+1234 thousand years to guess
+
+write a function that takes c and says if it's lower, upper, numeral, or other
+
+
+
+
+password is 6 characters long
+characters are letters and numbers, only, so an alphabet of 62
+62^6 = 568002355840 permutations
+
+a guess takes 10 milliseconds
+so guessing them all will take 568002355840*10 = 5680023558400ms
+there are                                          31557600000ms in a year
 
 */
 
 
 
 
+
 export function testBox(s) {
-	return s.length+' characters'
+	return look(measurePasswordStrength(s))
+}
+
+
+/*
+*/
+function measurePasswordStrength(s) {
+	let o = {}
+	o.length = s.length
+	o.hasUpper = /[A-Z]/.test(s)
+	o.hasLower = /[a-z]/.test(s)
+	o.hasDigit = /\d/.test(s)
+	o.hasOther = /[^a-zA-Z\d]/.test(s)
+
+	o.alphabet = 0//how many different characters could be in this password based on the variety of characters we've seen
+	if (o.hasUpper) o.alphabet += 26//if it has one uppercase letter, imagine there could be any uppercase letter
+	if (o.hasLower) o.alphabet += 26
+	if (o.hasDigit) o.alphabet += 10
+	if (o.hasOther) o.alphabet += 32//while we allow any characters in passwords, OWASP lists 32 special characters, and most users will probably choose passwords with special characters from that list
+	o.permutations = exponent(o.alphabet, o.length)//how many possible passwords exist of this length and variety
+	o.guessYears = fraction([o.permutations, 10], [Time.year, 2]).quotient//how many years it might take to crack this password, assuming a fast computer that can hash a guess in 10 milliseconds, and a successful guess after trying one half (2) of permutations
+
+	if      (o.guessYears <    1) o.sayStrength = 'Weak'
+	else if (o.guessYears <   10) o.sayStrength = 'Okay'
+	else if (o.guessYears < 1000) o.sayStrength = 'Strong'
+	else                          o.sayStrength = 'Very Strong'
+
+	o.acceptable = !(o.guessYears < 1)//allow passwords above weak
+	o.sayEndurance = sayHugeInteger(o.guessYears)
+
+	if      (o.length < 6)                             o.sayImprovement = 'Add more characters, please'
+	else if (o.hasUpper != o.hasLower)                 o.sayImprovement = 'Mix upper and lower case'
+	else if (o.hasDigit != (o.hasUpper || o.hasLower)) o.sayImprovement = 'Use letters and numbers'
+	else                                               o.sayImprovement = 'Add a special character'
+
+	if (o.sayStrength == 'Weak') {
+		o.sayStatus = `Strength: ${o.sayStrength}. ${o.sayImprovement}.`
+	} else if (o.sayStrength == 'Okay') {
+		o.sayStatus = `Strength: ${o.sayStrength}. ${o.sayEndurance} to guess. ${o.sayImprovement}.`
+	} else if (o.sayStrength == 'Strong') {
+		o.sayStatus = `${o.sayStrength}. ${o.sayEndurance} to guess. ${o.sayImprovement}.`
+	} else if (o.sayStrength == 'Very Strong') {
+		o.sayStatus = `${o.sayStrength}. ${o.sayEndurance} to guess.`
+	}
+	return o
+}
+
+
+function sayHugeInteger(i) {
+	let b = big(i)
+	const units = ['', ' thousand', ' million', ' billion', ' trillion', ' quadrillion', ' quintillion', ' sextillion', ' septillion', ' octillion', ' nonillion', ' decillion']
+	let u = 0
+	while (b >= 1000n && u < units.length - 1) {
+		b /= 1000n
+		u++
+	}
+	return `${sayGroupDigits(b+'')}${units[u]} year${sayPlural(i)}`
+}
+
+export function sayPlural(i) {
+	return i == 1 ? '' : 's'
+}
+test(() => {
+	ok(sayPlural(0) == 's')//like "0 carrots"
+	ok(sayPlural(1) == '') //like "1 carrot"
+	ok(sayPlural(2) == 's')//like "2 carrots"
+})
+
+
+
+export function sayGroupDigits(s, thousandsSeparator) {
+	if (!thousandsSeparator) thousandsSeparator = thinSpace
+	let minus = ''
+	if (s.startsWith('-')) { minus = '-'; s = s.slice(1) }//deal with negative numbers
+	if (s.length > 4) {//let a group of four through
+		s = s.split('').reverse().join('')//reversed
+		s = s.match(/.{1,3}/g).join(thousandsSeparator)//grouped reverse
+		s = s.split('').reverse().join('')//forward again
+	}
+	return minus+s
 }
 
 
 
 
+/*
+export function disk(wrapper) {//make an ASCII picture of a floppy disc, all vaporwave-style
 
+
+	return {
+		disk:''//the picture
+		hash:'',//the first seven digits of the hash
+		year:2024,//the year
+		full:36//the percent full
+
+	}
+}
+
+/*
+$ node disk, just shows it, rather than seal which makes it
+*/
 
 
 

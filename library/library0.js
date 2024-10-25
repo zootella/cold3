@@ -1476,7 +1476,7 @@ test(() => {
 //given elements must all be 0+ integers of type number
 //takes and returns integers that are small enough to fit safely in number
 //but, uses BigInt internally in case the multiplication would cause an overflow
-export function fraction(tops, bottoms) {
+export function fraction_old_design(tops, bottoms) {
 
 	//starting BigInt numerator and denominator
 	let n = 1n
@@ -1507,11 +1507,147 @@ test(() => {
 	ok(typeof _toBig(5n) == 'bigint')//pass through unchanged
 
 	let f = fraction([2, 5], [3])
-	ok(f.whole == 3 && f.remainder == 1)
+	ok(f.quotient == 3 && f.remainder == 1)
 	
 	f = fraction([1, 0], [1])//multiply by zero is ok
-	ok(f.whole == 0 && f.remainder == 0)
+	ok(f.quotient == 0 && f.remainder == 0)
 })
+
+
+
+
+
+
+
+
+
+
+
+
+//multiply and divide like fraction([top1, top2], [bottom3])
+//takes integer values in numbers, strings, or bignums, and returns answer object of bignums
+export function fraction(tops, bottoms) {
+	let o = {numerator: 1n, denominator: 1n}
+	tops.forEach(   i => { o.numerator   *= big(i) })
+	bottoms.forEach(i => { o.denominator *= big(i) })
+	if (o.denominator != 0) {
+		o.success = true
+		o.quotient  = o.numerator / o.denominator
+		o.remainder = o.numerator % o.denominator
+	}
+	return o
+}
+//compute base^exponent
+//takes integer values in numbers, strings, or bignums, and returns bignum
+export function exponent(base, exponent) {
+	return big(base) ** big(exponent)
+}
+
+//given an integer value in a String, Number, or BigInt, convert it into a Number
+//checks that value is a whole integer in the safe range
+export function int(o) {
+	let type = typeof(o)
+	if (type == 'number') {
+		let n = o                                                     //given a number
+		if (!Number.isInteger(n))     toss('number not integer',  {n})//check integer value
+		if (!integerIsInSafeRange(n)) toss('number out of range', {n})//check safe range
+		let s = n+''                                                  //convert to string
+		if (!textLooksLikeInteger(s)) toss('number not digits',   {n})//to check string digits
+		return n                                                      //no conversion necessary
+	} else if (type == 'string') {
+		let s = o                                                     //given a string
+		if (!textLooksLikeInteger(s)) toss('string not digits',   {s})//check string digits
+		let b = BigInt(s)                                             //convert to bigint
+		if (!integerIsInSafeRange(b)) toss('string out of range', {s})//to check safe range
+		let n = Number(b)                                             //convert string to bigint to number
+		return n
+	} else if (type == 'bigint') {
+		let b = o                                                     //given a bigint
+		if (!integerIsInSafeRange(b)) toss('bigint out of range', {b})//check safe range
+		let n = Number(b)                                             //convert to number
+		return n
+	} else {
+		toss('type', {o})
+	}
+}
+//given an integer value in a String, Number, or BigInt, convert it into a BigInt
+//checks that value is a whole integer; allows beyond safe range in strings and bigints
+export function big(o) {
+	let type = typeof(o)
+	if (type == 'number') {
+		let n = o                                                     //given a number
+		if (!Number.isInteger(n))     toss('number not integer',  {n})//check integer value
+		if (!integerIsInSafeRange(n)) toss('number out of range', {n})//check safe range
+		let s = n+''                                                  //convert to string
+		if (!textLooksLikeInteger(s)) toss('number not digits',   {n})//to check string digits
+		let b = BigInt(n)                                             //convert to bigint
+		return b
+	} else if (type == 'string') {
+		let s = o                                                     //given a string
+		if (!textLooksLikeInteger(s)) toss('string not digits',   {s})//check string digits
+		let b = BigInt(s)                                             //convert to bigint
+		return b
+	} else if (type == 'bigint') {
+		let b = o                                                     //given a bigint
+		return b                                                      //no checks or conversion necessary
+	} else {
+		toss('type', {o})
+	}
+}
+test(() => {
+	ok(int(0)   === 0)//zero as number, string, and bigint
+	ok(int('0') === 0)
+	ok(int(0n)  === 0)
+	ok(int(-1) === -1)//numbers
+	ok(int(5)  === 5)
+	ok(int('789') === 789)//strings
+	ok(int('-50') === -50)
+	ok(int(3000n) === 3000)//bigint
+
+	ok(big(0)   === 0n)//zero as number, string, and bigint
+	ok(big('0') === 0n)
+	ok(big(0n)  === 0n)
+	ok(big(-1) === -1n)//numbers
+	ok(big(5)  === 5n)
+	ok(big('789') === 789n)//strings
+	ok(big('-50') === -50n)
+	ok(big(3000n) === 3000n)//bigint
+})
+
+function integerIsInSafeRange(i) {
+	return i >= Number.MIN_SAFE_INTEGER && i <= Number.MAX_SAFE_INTEGER
+}
+function textLooksLikeInteger(s) {
+	return s === '0' || /^-?[1-9]\d*$/.test(s)
+}
+test(() => {
+	ok(textLooksLikeInteger('0'))
+	ok(textLooksLikeInteger('5'))
+	ok(textLooksLikeInteger('10'))
+	ok(textLooksLikeInteger('-1'))
+	ok(textLooksLikeInteger('-721'))
+
+	ok(!textLooksLikeInteger(''))
+	ok(!textLooksLikeInteger(' '))
+	ok(!textLooksLikeInteger('01'))//leading zeroes not allowed
+	ok(!textLooksLikeInteger('00'))
+	ok(!textLooksLikeInteger('--5'))
+	ok(!textLooksLikeInteger('--'))
+	ok(!textLooksLikeInteger('5.0'))//non digit characters other than one leading minus not allowed
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
