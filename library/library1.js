@@ -17,10 +17,10 @@ noop, test, ok, toss,
 log,
 say, look,
 checkText, checkAlpha,
-randomBetween,
+Data, randomBetween,
 starts, cut,
 onlyNumerals,
-fraction, exponent, int, big, thinSpace,
+fraction, exponent, int, big, thinSpace, deindent, newline,
 } from './library0.js'
 
 
@@ -341,6 +341,80 @@ test(() => {
 
 
 
+//                                            _ 
+//  _ __   __ _ ___ _____      _____  _ __ __| |
+// | '_ \ / _` / __/ __\ \ /\ / / _ \| '__/ _` |
+// | |_) | (_| \__ \__ \\ V  V / (_) | | | (_| |
+// | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_|
+// |_|                                          
+
+export function measurePasswordStrength(s) {
+	let o = {}
+	o.length = s.length
+	o.hasUpper = /[A-Z]/.test(s)
+	o.hasLower = /[a-z]/.test(s)
+	o.hasDigit = /\d/.test(s)
+	o.hasOther = /[^a-zA-Z\d]/.test(s)
+
+	o.alphabet = 0//how many different characters could be in this password based on the variety of characters we've seen
+	if (o.hasUpper) o.alphabet += 26//if it has one uppercase letter, imagine there could be any uppercase letter
+	if (o.hasLower) o.alphabet += 26
+	if (o.hasDigit) o.alphabet += 10
+	if (o.hasOther) o.alphabet += 32//while we allow any characters in passwords, OWASP lists 32 special characters, and most users will probably choose passwords with special characters from that list
+	o.permutations = exponent(o.alphabet, o.length)//how many possible passwords exist of this length and variety
+	o.permutationsPlaces = (o.permutations+'').length//essentially log10(permutations) that can't overflow
+	o.guessYears = fraction([o.permutations, 10], [Time.year, 2]).quotient//how many years it might take to crack this password, assuming a fast computer that can hash a guess in 10 milliseconds, and a successful guess after trying one half (2) of permutations
+
+	if      (o.guessYears <    1) o.sayStrength = 'Weak'
+	else if (o.guessYears <   10) o.sayStrength = 'Okay'
+	else if (o.guessYears < 1000) o.sayStrength = 'Strong'
+	else                          o.sayStrength = 'Very strong'
+
+	o.acceptable = !(o.guessYears < 1)//allow passwords above weak
+	o.sayEndurance = sayHugeInteger(o.guessYears)
+
+	if      (o.length < 6)                             o.sayImprovement = 'Make longer'
+	else if (o.hasUpper != o.hasLower)                 o.sayImprovement = 'Mix upper and lower case'
+	else if (o.hasDigit != (o.hasUpper || o.hasLower)) o.sayImprovement = 'Use letters and numbers'
+	else if (!o.hasOther)                              o.sayImprovement = 'Add a special character'
+	else                                               o.sayImprovement = 'Make longer'
+
+	if (o.sayStrength == 'Weak') {
+		o.sayStatus = `Strength: ${o.sayStrength}. ${o.sayImprovement} for more strength.`
+	} else if (o.sayStrength == 'Okay') {
+		o.sayStatus = `Strength: ${o.sayStrength}. ${o.sayEndurance} to guess. ${o.sayImprovement} for more strength.`
+	} else if (o.sayStrength == 'Strong') {
+		o.sayStatus = `${o.sayStrength}. ${o.sayEndurance} to guess. ${o.sayImprovement} for more strength.`
+	} else if (o.sayStrength == 'Very strong') {
+		o.sayStatus = `${o.sayStrength}. ${o.sayEndurance} to guess.`
+	}
+	return o
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -468,6 +542,17 @@ export const postDatabase = { lookup, chronology }
 
 
 
+
+
+
+
+
+//  _                    _________    ____  _____ ____ _  _    __   _  _    ___  
+// | |__   __ _ ___  ___|___ /___ \  |  _ \|  ___/ ___| || |  / /_ | || |  ( _ ) 
+// | '_ \ / _` / __|/ _ \ |_ \ __) | | |_) | |_ | |   | || |_| '_ \| || |_ / _ \ 
+// | |_) | (_| \__ \  __/___) / __/  |  _ <|  _|| |___|__   _| (_) |__   _| (_) |
+// |_.__/ \__,_|___/\___|____/_____| |_| \_\_|   \____|  |_|  \___/   |_|  \___/ 
+//                                                                               
 /*
 base32
 to store sha256 hash values in the database in a column typed CHAR(52)
@@ -486,9 +571,8 @@ and this fuzz tester confirms they work the same as the module
 using pad false and loose true
 but Data will do a round-trip check
 */
-/*
-import { base32 } from 'rfc4648'
-function cycle32(size) {
+//import { base32 } from 'rfc4648'//only available in icarus
+function cycle4648(size) {
 	let d = Data({random: size})
 	let s1 = base32.stringify(d.array(), {pad: false})
 	let s2 = d.base32()
@@ -504,16 +588,15 @@ function runFor(m, f) {
 	return cycles
 }
 noop(() => {
-	function f1() { let size = 32;                     cycle32(size) }//size of hash value
-	function f2() { let size = randomBetween(1, 8);    cycle32(size) }//short
-	function f3() { let size = randomBetween(1, 1024); cycle32(size) }//longer
+	function f1() { let size = 32;                     cycle4648(size) }//size of hash value
+	function f2() { let size = randomBetween(1, 8);    cycle4648(size) }//short
+	function f3() { let size = randomBetween(1, 1024); cycle4648(size) }//longer
 
 	let cycles1 = runFor(1*Time.second, f1)
 	let cycles2 = runFor(1*Time.second, f2)
 	let cycles3 = runFor(1*Time.second, f3)
-	//log(cycles1, cycles2, cycles3)
+	log(look({cycles1, cycles2, cycles3}))
 })
-*/
 
 
 
@@ -522,19 +605,6 @@ noop(() => {
 
 
 
-
-
-/*
-first, just get
-import { visualizer } from 'rollup-plugin-visualizer'
-from nuxt.congif.ts into vite.config.js, should be easier than before
-
-[]have git and seal correctly include, count, exclude, hash, skip, icarus' stats.html
-actually looks like that's already going to be git ignored, yes hashed, not counted as code
-
-
-
-*/
 
 
 
@@ -550,141 +620,50 @@ email
 phone
 email or phone, the combination of those two
 password
-
-try out a bunch of modules in icarus
-see their bundle size cost in the tree view page
-then pick one, install it in cold3, remove the others in icarus
-
-this also is your return to these:
-		"credit-card-type": "^10.0.0",  //these five utility modules are dependencies all three places
-		"joi": "^17.13.1",
-		"libphonenumber-js": "^1.11.3",
-do you really need them all? how big are they compared to what you're bringing in for passwords?
-
-ok nevermind, the only good password module is the one from dropbox and it's huge so server side only
-
-
-password strength: weak, okay, strong, very strong
-x long enough (6+)
-x mixed case
-x numbers
-x special characters
-three of those
-
-
-out of the box
-compute and tell the user a crack time
-18 years: strong
-and record this in the database so you can see
-only show after weak
-
-have tips, like:
-make longer
-use upper and lower case
-use numbers
-use special characters
-
-and for weak, ok, strong, very storng, choose based on years
-
-ok, what's the math
-
-(variety ^ length) * 10ms / year
-are you going to need bignum for that? you've got fraction()
-
-
-Strong: 250 years to guess; make it longer!
-use letters and numbers!
-mix upper and lower case!
-add some special characters!
-Very strong: 26 000 000 years to guess
-
-so its rating, time, and suggestion
-yeah, that's cool
-
-length^exponent *10ms /msinyear /2 for 50% odds
-and see how long you can make one before you get near js max int in years, essentially
-
-1234 thousand years to guess
-
-write a function that takes c and says if it's lower, upper, numeral, or other
-
-
-
-
-password is 6 characters long
-characters are letters and numbers, only, so an alphabet of 62
-62^6 = 568002355840 permutations
-
-a guess takes 10 milliseconds
-so guessing them all will take 568002355840*10 = 5680023558400ms
-there are                                          31557600000ms in a year
-
 */
-
-
-
-
-
 export function testBox(s) {
 	return look(measurePasswordStrength(s))
 }
 
 
-/*
-*/
-function measurePasswordStrength(s) {
-	let o = {}
-	o.length = s.length
-	o.hasUpper = /[A-Z]/.test(s)
-	o.hasLower = /[a-z]/.test(s)
-	o.hasDigit = /\d/.test(s)
-	o.hasOther = /[^a-zA-Z\d]/.test(s)
-
-	o.alphabet = 0//how many different characters could be in this password based on the variety of characters we've seen
-	if (o.hasUpper) o.alphabet += 26//if it has one uppercase letter, imagine there could be any uppercase letter
-	if (o.hasLower) o.alphabet += 26
-	if (o.hasDigit) o.alphabet += 10
-	if (o.hasOther) o.alphabet += 32//while we allow any characters in passwords, OWASP lists 32 special characters, and most users will probably choose passwords with special characters from that list
-	o.permutations = exponent(o.alphabet, o.length)//how many possible passwords exist of this length and variety
-	o.guessYears = fraction([o.permutations, 10], [Time.year, 2]).quotient//how many years it might take to crack this password, assuming a fast computer that can hash a guess in 10 milliseconds, and a successful guess after trying one half (2) of permutations
-
-	if      (o.guessYears <    1) o.sayStrength = 'Weak'
-	else if (o.guessYears <   10) o.sayStrength = 'Okay'
-	else if (o.guessYears < 1000) o.sayStrength = 'Strong'
-	else                          o.sayStrength = 'Very Strong'
-
-	o.acceptable = !(o.guessYears < 1)//allow passwords above weak
-	o.sayEndurance = sayHugeInteger(o.guessYears)
-
-	if      (o.length < 6)                             o.sayImprovement = 'Add more characters, please'
-	else if (o.hasUpper != o.hasLower)                 o.sayImprovement = 'Mix upper and lower case'
-	else if (o.hasDigit != (o.hasUpper || o.hasLower)) o.sayImprovement = 'Use letters and numbers'
-	else                                               o.sayImprovement = 'Add a special character'
-
-	if (o.sayStrength == 'Weak') {
-		o.sayStatus = `Strength: ${o.sayStrength}. ${o.sayImprovement}.`
-	} else if (o.sayStrength == 'Okay') {
-		o.sayStatus = `Strength: ${o.sayStrength}. ${o.sayEndurance} to guess. ${o.sayImprovement}.`
-	} else if (o.sayStrength == 'Strong') {
-		o.sayStatus = `${o.sayStrength}. ${o.sayEndurance} to guess. ${o.sayImprovement}.`
-	} else if (o.sayStrength == 'Very Strong') {
-		o.sayStatus = `${o.sayStrength}. ${o.sayEndurance} to guess.`
-	}
-	return o
-}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//move these new say functions to library0, as they are general use and import nothing
+//move thinSpace into this section, also
+
+//say a huge integer like "802 billion"
+const _magnitudes = ['', ' thousand', ' million', ' billion', ' trillion', ' quadrillion', ' quintillion', ' sextillion', ' septillion', ' octillion', ' nonillion', ' decillion']
 function sayHugeInteger(i) {
 	let b = big(i)
-	const units = ['', ' thousand', ' million', ' billion', ' trillion', ' quadrillion', ' quintillion', ' sextillion', ' septillion', ' octillion', ' nonillion', ' decillion']
 	let u = 0
-	while (b >= 1000n && u < units.length - 1) {
+	while (b >= 1000n && u < _magnitudes.length - 1) {
 		b /= 1000n
 		u++
 	}
-	return `${sayGroupDigits(b+'')}${units[u]} year${sayPlural(i)}`
+	return `${sayGroupDigits(b+'')}${_magnitudes[u]} year${sayPlural(i)}`
 }
 
+//use to say "5 things" like `${n} thing${sayPlural(n)}`
 export function sayPlural(i) {
 	return i == 1 ? '' : 's'
 }
@@ -694,9 +673,8 @@ test(() => {
 	ok(sayPlural(2) == 's')//like "2 carrots"
 })
 
-
-
-export function sayGroupDigits(s, thousandsSeparator) {
+//group digits like "12,345"
+export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
 	if (!thousandsSeparator) thousandsSeparator = thinSpace
 	let minus = ''
 	if (s.startsWith('-')) { minus = '-'; s = s.slice(1) }//deal with negative numbers
@@ -711,75 +689,99 @@ export function sayGroupDigits(s, thousandsSeparator) {
 
 
 
-/*
-export function disk(wrapper) {//make an ASCII picture of a floppy disc, all vaporwave-style
 
+
+
+
+
+
+//move floppy disk to library2, as it's specific to this application
+
+const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
+const floppyDiskLabelWidth = 16
+export function sayFloppyDisk(wrapper) {
+	let date = sayDate(wrapper.tick)
+	let year = date.slice(0, 4)
+	let hash = wrapper.hash.slice(0, 7)
+	let full = Math.round(wrapper.codeSize*100/floppyDiskCapacity)
+
+	let line1 = extend(' ', `${wrapper.name} ~ ${hash}`)
+	let line2 = extend('_', `${sayDate(wrapper.tick)}`)
+	let line3 = extend('_', `${wrapper.codeFiles}_files`)
+	let line4 = extend('_', `${wrapper.codeSize}_bytes`)
+	let line5 = extend('_', `disk_filled_${full}%`)
+	function extend(padding, line) { return line.padEnd(floppyDiskLabelWidth, padding).slice(0, floppyDiskLabelWidth) }
 
 	return {
-		disk:''//the picture
-		hash:'',//the first seven digits of the hash
-		year:2024,//the year
-		full:36//the percent full
-
+		disk: deindent(`
+			 ____________________
+			| |${line1        }| |
+			|.|________________|H|
+			| |${line2        }| |
+			| |${line3        }| |
+			| |${line4        }| |
+			| |${line5        }| |
+			| |________________| |
+			|                    |
+			|    ____________    |
+			|   |   |  _     |   |
+			|   |   | | |    |   |
+			|   |   | |_|    | V |
+			|___|___|________|___|
+		`),
+		hash, year, full
 	}
 }
+
+
+
+noop(() => {
+	let disk = sayFloppyDisk(wrapper)
+	let markdown = deindent(`
+		${'```'}
+		${disk.disk}
+		${'```'}
+
+		How quick, simple, and cheap can the web2 stack be in ${disk.year}?
+		[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
+		exploring pouring and curing a
+		tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
+	`)
+	log(markdown)
+})
+
 
 /*
 $ node disk, just shows it, rather than seal which makes it
 */
-
-
-
 //ok, total vanity, but here's the ascii disk in a readme.md for github
 //exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
 
-const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
-const labelWidth = 16
-noop(() => {
-
-	let codeSizeDiskPercent = Math.round(wrapper.codeSize*100/floppyDiskCapacity)
-
-	let date = sayDate(wrapper.tick)
-	let year = date.slice(0, 4)
-
-	let line1 = extend(' ', `${wrapper.name} ~ ${wrapper.hash.slice(0, 7)}`)
-	let line2 = extend('_', `${sayDate(wrapper.tick)}`)
-	let line3 = extend('_', `${wrapper.codeFiles}_files`)
-	let line4 = extend('_', `${wrapper.codeSize}_bytes`)
-	let line5 = extend('_', `disk_filled_${codeSizeDiskPercent}%`)
-	function extend(padding, line) { return line.padEnd(labelWidth, padding).slice(0, labelWidth) }
-
-	let markdownBody = `
-${'```'}
- ____________________
-| |${line1        }| |
-|.|________________|H|
-| |${line2        }| |
-| |${line3        }| |
-| |${line4        }| |
-| |${line5        }| |
-| |________________| |
-|                    |
-|    ____________    |
-|   |   |  _     |   |
-|   |   | | |    |   |
-|   |   | |_|    | V |
-|___|___|________|___|
-
-${'```'}
-
-How quick, simple, and cheap can the web2 stack be in ${year}?
-[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
-exploring pouring and curing a
-tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
-`
-	log(markdownBody)
-})
 
 
 
-//you could also log this out
-//and put it at the top of index.html for view source?
+/*
+deindent
+the first line will be blank
+the second line, the whitespace that starts it, must be removed from later lines
+actually just remove tabs, spaces after tabs stay, spaces stay
+later lines, that number of spaces, remove them
+the last line will be just whitespace, omit it
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*

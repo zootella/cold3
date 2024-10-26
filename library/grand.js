@@ -64,6 +64,7 @@ getBrowserAgentRendererAndVendor,
 export {
 
 validateEmail, validatePhone, validateCard,
+measurePasswordStrength,
 generatePosts, postDatabase,
 
 testBox,
