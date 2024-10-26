@@ -288,12 +288,12 @@ async function doorWorkerOpen(workerEvent, useRuntimeConfig) {
 	door.tag = Tag()//tag the request for our own records
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
-  door.method = workerEvent.req.method
-  if (door.method == 'POST') {
-    door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
-  } else if (door.method == 'GET') {
-    door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
-  }
+	door.method = workerEvent.req.method
+	if (door.method == 'POST') {
+		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
+	} else if (door.method == 'GET') {
+		door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
+	} else { toss('method not supported', {door}) }
 
 	return door
 }
@@ -304,10 +304,13 @@ async function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
 	door.lambdaContext = lambdaContext
 
-	let bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
-	let body = JSON.parse(bodyText)
-	door.bodyText = bodyText
-	door.body = body
+	door.method = lambdaEvent.httpMethod
+	if (door.method == 'POST') {
+		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
+		door.body = JSON.parse(door.bodyText)
+	} else if (door.method == 'GET') {
+		door.body = lambdaEvent.queryStringParameters
+	} else { toss('method not supported', {door}) }
 
 	//confirm (1) the connection is secure
 	if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
@@ -315,7 +318,7 @@ async function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
 	//(3) the network 23 access code is valid
 	let access = await getAccess()
-	if (body.ACCESS_NETWORK_23_SECRET != access.get('ACCESS_NETWORK_23_SECRET')) toss('bad access code', {door})
+	if (door.body.ACCESS_NETWORK_23_SECRET != access.get('ACCESS_NETWORK_23_SECRET')) toss('bad access code', {door})
 
 	return door
 }

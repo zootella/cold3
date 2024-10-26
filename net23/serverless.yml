@@ -39,6 +39,13 @@ functions:
       - http:
           path: snippet
           method: get
+  snippet2:
+    handler: dist/snippet2.handler
+    timeout: 30
+    events:
+      - http:
+          path: snippet2
+          method: get
   door:
     handler: dist/door.handler
     timeout: 30
