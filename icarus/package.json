@@ -19,10 +19,10 @@
     "joi": "^17.13.1",
     "libphonenumber-js": "^1.11.3",
     "nanoid": "^5.0.7",
-    "rfc4648": "^1.5.3",
     "vue": "^3.4.21"
   },
   "devDependencies": {
+    "rfc4648": "^1.5.3",
     "@vitejs/plugin-vue": "^5.0.4",
     "vite": "^5.2.0"
   }

@@ -21,7 +21,6 @@ package.json (root nuxt project for cloudflare pages)
 		"joi": "^17.13.1",
 		"libphonenumber-js": "^1.11.3",
 		"nanoid": "^5.0.7",
-		"rfc4648": "^1.5.3",
 
 		//service
 		"@supabase/supabase-js": "^2.39.8",  //the worker and lambda use supabase's module
@@ -59,7 +58,6 @@ net23/package.json (serverless framework project including lambda functions)
 		"joi": "^17.13.1",
 		"libphonenumber-js": "^1.11.3",
 		"nanoid": "^5.0.7",
-		"rfc4648": "^1.5.3",
 
 		"@sendgrid/mail": "^8.1.4",  //lambda can use all the node modules: amazon, supabase, and twilio
 		"@supabase/supabase-js": "^2.39.8",
@@ -98,12 +96,14 @@ icarus/package.json (vite runner for test driven development)
 		"joi": "^17.13.1",
 		"libphonenumber-js": "^1.11.3",
 		"nanoid": "^5.0.7",
-		"rfc4648": "^1.5.3",
 
 		//framework
 		"vue": "^3.4.21"  //icarus uses vite and vue
 	},
 	"devDependencies": {
+
+		//utility
+		"rfc4648": "^1.5.3",  //just for a fuzz test
 
 		//framework
 		"@vitejs/plugin-vue": "^5.0.4",
