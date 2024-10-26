@@ -7,8 +7,6 @@ dog,
 rowExists, createRow, readRow, writeRow,
 } from '@/library/grand.js'
 
-import { createClient } from '@supabase/supabase-js'
-
 export default defineEventHandler(async (workerEvent) => {
 	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })

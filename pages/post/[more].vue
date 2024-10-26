@@ -1,10 +1,11 @@
 <script setup>
 
-import { useRoute } from 'vue-router'
 import {
 log, cutLast,
-checkTag, postDatabase
+checkTag, postDatabase,
 } from '@/library/grand.js'
+
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
 let c = cutLast(route.params.more, '-')

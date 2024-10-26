@@ -1,6 +1,14 @@
 <script setup>
 
+import {
+log, look,
+} from '@/library/grand.js'
+
 import { useRoute } from 'vue-router'
+
+const route = useRoute()
+let more = route.params.more
+
 
 
 /*
@@ -19,6 +27,6 @@ and a database that includes a hide column so you can invalidate them, just stop
 
 <NavigationComponent note="on card" />
 
-<p>this is card/[more]</p>
+<p>this is card/{{ more }}</p>
 
 </template>
