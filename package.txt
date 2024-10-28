@@ -17,7 +17,7 @@ package.json (root nuxt project for cloudflare pages)
 	"dependencies": {
 
 		//utility
-		"credit-card-type": "^10.0.0",  //these five utility modules are dependencies all three places
+		"credit-card-type": "^10.0.0",  //these utility modules are dependencies all three places
 		"joi": "^17.13.1",
 		"libphonenumber-js": "^1.11.3",
 		"nanoid": "^5.0.7",
@@ -59,6 +59,7 @@ net23/package.json (serverless framework project including lambda functions)
 		"libphonenumber-js": "^1.11.3",
 		"nanoid": "^5.0.7",
 
+		//service
 		"@sendgrid/mail": "^8.1.4",  //lambda can use all the node modules: amazon, supabase, and twilio
 		"@supabase/supabase-js": "^2.39.8",
 		"twilio": "^5.3.4"
