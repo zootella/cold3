@@ -16,10 +16,11 @@
     "www": "serverless s3sync"
   },
   "dependencies": {
-    "icarus": "*",
-    "@supabase/supabase-js": "^2.39.8"
+    "@supabase/supabase-js": "^2.39.8",
+    "icarus": "*"
   },
   "devDependencies": {
+    "@aws-sdk/client-ses": "^3.682.0",
     "serverless": "^3.39.0",
     "serverless-domain-manager": "^7.3.8",
     "serverless-offline": "^13.6.0",

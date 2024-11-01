@@ -18,7 +18,12 @@ async function requireModules() {
 	let o = {}
 	try {
 		o.intro = "now let's try some modules"
-		o.note = 'amazon, sendgrid, jimp, sharp, and twilio all commented out for now'
+
+		const { SESClient } = require('@aws-sdk/client-ses')
+		const sesClient = new SESClient({region: 'us-east-1'})
+		o.amazonEmail = look(sesClient.config).slice(0, cut)
+
+		o.note = 'sendgrid, jimp, sharp, and twilio all commented out for now'
 		/*
 		const amazon = require('aws-sdk')
 		o.amazon = look(amazon).slice(0, cut)
@@ -34,3 +39,11 @@ async function requireModules() {
 }
 
 module.exports = { loadGrand, requireModules }
+
+
+
+
+
+
+
+
