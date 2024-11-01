@@ -12,7 +12,7 @@
   "scripts": {
     "local": "nuxt dev",
     "build": "nuxt build",
-    "deploy": "nuxt build && wrangler pages deploy",
+    "deploy": "nuxt build && wrangler pages deploy --branch main",
     "generate": "nuxt generate",
     "preview": "nuxt build && wrangler pages dev",
     "manual:postinstall": "nuxt prepare",
