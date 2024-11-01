@@ -587,16 +587,6 @@ export function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds che
 	return b
 }
 
-function randomFillArray(a) {
-	if (defined(typeof crypto)) { crypto.getRandomValues(a) }//in node20 and browsers, crypto is already loaded for synchronous use
-	else {//in node18, we would have to await import crypto, so instead do this synchronously
-		for (let i = 0; i < a.length; i++) {
-			a[i] = Math.floor(Math.random()*256)//set a byte with the random value 0 through 255
-		}
-	}
-}
-//^october todo, this isn't acceptable long term, but you threw it in for the node18 lambda test
-
 export function Data(p) {//a Data wraps Uint8Array for type and bounds checks and format conversion conversion
 	let _array, _text, _base16, _base32, _base62, _base64//private members
 
@@ -608,7 +598,7 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 	else if (p.base32) { checkText(p.base32); _array = base32ToArray(p.base32, true); _base32 = p.base32 }
 	else if (p.base62) { checkText(p.base62); _array = base62ToArray(p.base62, true); _base62 = p.base62 }
 	else if (p.base64) { checkText(p.base64); _array = base64ToArray(p.base64, true); _base64 = p.base64 }
-	else if (p.random) { checkInt(p.random, 1); _array = new Uint8Array(p.random); randomFillArray(_array) }//generate a random array
+	else if (p.random) { checkInt(p.random, 1); _array = new Uint8Array(p.random); crypto.getRandomValues(_array) }//generate a random array
 	else { toss('type', {p}) }
 
 	//methods
@@ -973,13 +963,9 @@ export function randomBetweenLight(minimum, maximum) {
 //but this doesn't use the browser's crypto source of randomness of cryptographic quality! for that, ChatGPT suggests
 //for that, chatgpt suggests:
 export function randomBetween(minimum, maximum) {
-	if (defined(typeof crypto)) {
-		let a32 = new Uint32Array(1)//an array of one 32-bit unsigned integer
-		crypto.getRandomValues(a32)//fill it with cryptographically secure random bits
-		return Math.floor(a32[0] / (0xffffffff + 1) * (maximum - minimum + 1)) + minimum//scale and shift
-	} else {
-		return randomBetweenLight(minimum, maximum)//todo october, this is probably fine, but means node18 lambdas will use math random rather than something cryptographically secure. the better way to do this means you have to await subtle() and randomBetween becomes async
-	}
+	let a32 = new Uint32Array(1)//an array of one 32-bit unsigned integer
+	crypto.getRandomValues(a32)//fill it with cryptographically secure random bits
+	return Math.floor(a32[0] / (0xffffffff + 1) * (maximum - minimum + 1)) + minimum//scale and shift
 }
 test(() => {
 	function roll(low, high) {//test to make sure the apis are there, and sanity check them
@@ -1013,13 +999,7 @@ export function randomCode(length) {//generate a random numeric code avoiding st
 function _randomDigitExcept(avoid) {
 	let a = []//alphabet of digits we'll randomly select one from
 	for (let i = 0; i < 10; i++) { if (avoid == -1 || avoid != i) a.push(i) }
-	let index
-	if (defined(typeof crypto)) {//october ttd, look for defined typeof crypto to find all these quick edits for the node18 test, which are a mess
-		index = ((crypto.getRandomValues(new Uint32Array(1)))[0]) % a.length
-	} else {
-		index = Math.floor(Math.random() * a.length)
-	}
-	return a[index]
+	return a[((crypto.getRandomValues(new Uint32Array(1)))[0]) % a.length]
 }
 function _duplicateEndDigit(s) {
 	if (s.length < 2) return -1//too short to have a duplicate
@@ -1030,7 +1010,6 @@ noop(() => {//this might be slow, actually, but should be ok for individual one 
 	for (let i = 0; i < 250; i++) s += randomCode(6) + ', '//try it out with 4, 6, and 10
 	log(s)
 })
-//october ttd, you should do an automated test for randomCode that confirms no leading zero, no three digits in a row, and that you're hitting all the different digits. a quick edit here made you wonder if maybe there are no 0s or 9s at all, for instance
 
 //                                   _   
 //   ___ _ __   ___ _ __ _   _ _ __ | |_ 
@@ -1076,23 +1055,6 @@ const _subtle = {
 }
 Object.freeze(_subtle)
 
-//in node18, the path to subtle is longer, and CryptoKey is not globally defined
-let _cryptoSubtle
-async function subtle() {
-	if (defined(typeof crypto)) return crypto.subtle//node20 and recent browsers have it ready
-	if (!_cryptoSubtle) {
-		let c = await import('crypto')//node18 we have to await a dynamic import
-		_cryptoSubtle = c.webcrypto.subtle//and then dereference it here
-	}
-	return _cryptoSubtle
-}
-function isCryptoKey(o) {//possible false negatives if subtle() above hasn't run yet
-	let r = defined(typeof CryptoKey) ? CryptoKey : _cryptoSubtle?.CryptoKey
-	return r && o instanceof r
-}
-//^october todo, and now this is a dealbreaker because an async isCryptoKey will make look async. if node18 fixes everything, and you can never get isCryptoKey working, remember that cryto itself is working, so maybe just remove detecting it entirely. other options, like  having it work some times, or making look async, aren't worth it, of course
-//october todo. also, let's say random array must be async--remove random as a feature from Data, and switch to a pattern like let d = Data({array: await randomArray(size)}) with an exported helper function you await on
-
 //  _               _     
 // | |__   __ _ ___| |__  
 // | '_ \ / _` / __| '_ \ 
@@ -1103,7 +1065,7 @@ function isCryptoKey(o) {//possible false negatives if subtle() above hasn't run
 //compute the 32 byte SHA-256 hash value of data
 export const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
 export async function subtleHash(data) {
-	return Data({buffer: await (await subtle()).digest(_subtle.hashName, data.array())})
+	return Data({buffer: await crypto.subtle.digest(_subtle.hashName, data.array())})
 }
 test(async () => {
 	let d = Data({random: 500})//hash 500 random bytes, different every time we run the test
@@ -1143,7 +1105,7 @@ test(() => {
 export async function hashPassword(thousandsOfIterations, saltData, passwordText) {
 
 	//first, format the password text as key material for PBKDF2
-	let materia = await (await subtle()).importKey(
+	let materia = await crypto.subtle.importKey(
 		'raw',
 		Data({text: passwordText}).array(),
 		{name: _subtle.passwordAlgorithmKeyDerivation},
@@ -1151,14 +1113,14 @@ export async function hashPassword(thousandsOfIterations, saltData, passwordText
 		['deriveBits', 'deriveKey'])
 
 	//second, derive the key using PBKDF2 with the given salt and number of iterations
-	let derived = await (await subtle()).deriveKey(
+	let derived = await crypto.subtle.deriveKey(
 		{name: _subtle.passwordAlgorithmKeyDerivation, salt: saltData.array(), iterations: thousandsOfIterations*1000, hash: _subtle.passwordAlgorithmHashFunction},
 		materia,
 		{name: _subtle.passwordAlgorithmEncryption, length: _subtle.passwordKeyLength},
 		true,//extractable
 		['encrypt', 'decrypt'])//we use the key to securely store the password, but it also works for encryption and decryption!
 
-	return Data({array: new Uint8Array(await (await subtle()).exportKey('raw', derived))})//export the derived key as raw bytes
+	return Data({array: new Uint8Array(await crypto.subtle.exportKey('raw', derived))})//export the derived key as raw bytes
 }
 test(async () => {//this is twice as slow as all your other tests, combined!
 
@@ -1207,17 +1169,17 @@ test(async () => {
 })
 
 async function symmetric_createKey() {
-	return await (await subtle()).generateKey({ name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
+	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
 }
 async function symmetric_exportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
-	return Data({buffer: await (await subtle()).exportKey(_subtle.symmetricFormat, key)})//key is an imported CryptoKey object
+	return Data({buffer: await crypto.subtle.exportKey(_subtle.symmetricFormat, key)})//key is an imported CryptoKey object
 }
 async function symmetric_importKey(keyData) {//do this once per script run, not every time a function that needs it is called!
-	return await (await subtle()).importKey(_subtle.symmetricFormat, keyData.array(), { name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
+	return await crypto.subtle.importKey(_subtle.symmetricFormat, keyData.array(), { name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
 }
 async function symmetric_encrypt(key, plainText) {
 	let vector = Data({random: _subtle.symmetricVectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
-	let cipher = Data({buffer: await (await subtle()).encrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, Data({text: plainText}).array())})
+	let cipher = Data({buffer: await crypto.subtle.encrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, Data({text: plainText}).array())})
 	let storeBin = Bin(vector.size() + cipher.size())
 	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
 	storeBin.add(cipher)
@@ -1226,7 +1188,7 @@ async function symmetric_encrypt(key, plainText) {
 async function symmetric_decrypt(key, storeData) {//stored data that is initialization vector followed by cipher bytes
 	let vector = storeData.clip(0, _subtle.symmetricVectorSize)//unpack
 	let cipher = storeData.clip(_subtle.symmetricVectorSize, storeData.size() - _subtle.symmetricVectorSize)
-	return Data({buffer: await (await subtle()).decrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, cipher.array())})
+	return Data({buffer: await crypto.subtle.decrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, cipher.array())})
 }
 test(async () => {
 
@@ -1237,12 +1199,8 @@ test(async () => {
 
 	//import it again, taking it through base62 text
 	let keyImported = await symmetric_importKey(Data({base62: keyData.base62()}))
-	await subtle()//october ttd, this is horrible
-	/*
-	ttd october isCryptoKey doesn't work yet in node18
-	ok(isCryptoKey(key))//both keys look good
-	ok(isCryptoKey(keyImported))
-	*/
+	ok(key instanceof CryptoKey)//both keys look good
+	ok(keyImported instanceof CryptoKey)
 
 	//encrypt a short message
 	let p = 'a short message'//plaintext p, a string
@@ -1254,10 +1212,7 @@ test(async () => {
 
 	//import a premade key
 	let key = await symmetric_importKey(Data({base62: 'EtVcrWWKwMRSkcOwI0GjztMltipZXlKieRXJygDiveLh'}))
-	/*
-	ttd october isCryptoKey doesn't work yet in node18
-	ok(isCryptoKey(key))
-	*/
+	ok(key instanceof CryptoKey)
 
 	//test it encrypting and decrypting
 	let p = "Another message, let's make this one a little bit longer. There's important stuff to keep safe in here, no doubt!"
@@ -1279,22 +1234,22 @@ test(async () => {
 //                    
 
 async function rsaMakeKeys() {//returns public and private keys in base62
-	let keys = await (await subtle()).generateKey({name: _subtle.rsaName, modulusLength: _subtle.rsaLength, publicExponent: _subtle.rsaPublicExponent, hash: {name: _subtle.rsaHashFunction}}, _subtle.extractable, _subtle.rsaUse)
+	let keys = await crypto.subtle.generateKey({name: _subtle.rsaName, modulusLength: _subtle.rsaLength, publicExponent: _subtle.rsaPublicExponent, hash: {name: _subtle.rsaHashFunction}}, _subtle.extractable, _subtle.rsaUse)
 	return {
-		keyPublicBase62: objectToBase62(await (await subtle()).exportKey(_subtle.rsaFormat, keys.publicKey)),
-		keyPrivateBase62: objectToBase62(await (await subtle()).exportKey(_subtle.rsaFormat, keys.privateKey))
+		keyPublicBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.publicKey)),
+		keyPrivateBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.privateKey))
 	}
 }
 export async function rsaEncrypt(keyPublicBase62, plainText) {
 	let keyPublicImported = await rsa_importKey(base62ToObject(keyPublicBase62), 'encrypt')
-	return Data({buffer: await (await subtle()).encrypt({name: _subtle.rsaName}, keyPublicImported, Data({text: plainText}).array())}).base62()
+	return Data({buffer: await crypto.subtle.encrypt({name: _subtle.rsaName}, keyPublicImported, Data({text: plainText}).array())}).base62()
 }
 export async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
 	let keyPrivateImported = await rsa_importKey(base62ToObject(keyPrivateBase62), 'decrypt')
-	return Data({buffer: await (await subtle()).decrypt({name: _subtle.rsaName}, keyPrivateImported, Data({base62: cipherBase62}).array())}).text()
+	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.rsaName}, keyPrivateImported, Data({base62: cipherBase62}).array())}).text()
 }
 async function rsa_importKey(key, use) {
-	return await (await subtle()).importKey(_subtle.rsaFormat, key, {name: _subtle.rsaName, hash: { name: _subtle.rsaHashFunction }}, _subtle.extractable, [use])
+	return await crypto.subtle.importKey(_subtle.rsaFormat, key, {name: _subtle.rsaName, hash: { name: _subtle.rsaHashFunction }}, _subtle.extractable, [use])
 }
 export function objectToBase62(o) { return Data({text: JSON.stringify(o)}).base62() }
 export function base62ToObject(s) { return JSON.parse(Data({base62: s}).text()) }
@@ -1389,19 +1344,19 @@ test(async () => {//this test imports premade keys, as they will come from acces
 })
 
 async function curve_createKeys() {//returns { publicKey: CryptoKey, privateKey: CryptoKey }
-	return await (await subtle()).generateKey({ name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, _subtle.curveUse)
+	return await crypto.subtle.generateKey({ name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, _subtle.curveUse)
 }
 async function curve_exportKey(key) {//returns an object with format notes and values named d, x, and y
-	return await (await subtle()).exportKey(_subtle.curveFormat, key)
+	return await crypto.subtle.exportKey(_subtle.curveFormat, key)
 }
 async function curve_importKey(keyObject) {
-	return await (await subtle()).importKey(_subtle.curveFormat, keyObject, { name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, keyObject.key_ops)
+	return await crypto.subtle.importKey(_subtle.curveFormat, keyObject, { name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, keyObject.key_ops)
 }
 async function curve_sign(privateKey, plainText) {
-	return Data({buffer: await (await subtle()).sign({ name: _subtle.curveName, hash: { name: _subtle.hashName } }, privateKey, Data({text: plainText}).array())})
+	return Data({buffer: await crypto.subtle.sign({ name: _subtle.curveName, hash: { name: _subtle.hashName } }, privateKey, Data({text: plainText}).array())})
 }
 async function curve_verify(publicKey, signatureData, plainText) {
-	return await (await subtle()).verify({ name: _subtle.curveName, hash: { name: _subtle.hashName }, }, publicKey, signatureData.array(), Data({text: plainText}).array())
+	return await crypto.subtle.verify({ name: _subtle.curveName, hash: { name: _subtle.hashName }, }, publicKey, signatureData.array(), Data({text: plainText}).array())
 }
 noop(async () => {//see what these objects look like before we stringify and base62 them
 	let keys = await curve_createKeys()
@@ -2123,8 +2078,7 @@ test(() => {
 	let a = ['a', 'b', 'c']
 	ok(lookKeys(a, cheese)+'' == '0,1,2')
 	ok(lookKeys(a, pepperoni)+'' == '0,1,2,length')
-	//ok(lookKeys(a, supreme).length > 40)//here's where you get the methods like slice, sort, splice, includes, indexOf, and more
-	//^october, no idea why this assertion fails in node18, but it does, both local node and deployed lambda
+	ok(lookKeys(a, supreme).length > 40)//here's where you get the methods like slice, sort, splice, includes, indexOf, and more
 })
 
 function lookForType(q) {
@@ -2178,17 +2132,14 @@ function look30Instance(q) {
 	else if (q instanceof Set)       return {type: 'Set', n: q.size}
 	else if (q instanceof WeakMap)   return {type: 'WeakMap'}//but can't get the size of the weak ones
 	else if (q instanceof WeakSet)   return {type: 'WeakSet'}
-	else if (isCryptoKey(q))         return {type: 'CryptoKey'}//can't use instanceof in node18
+	else if (q instanceof CryptoKey) return {type: 'CryptoKey'}
 	else return null
 }
 test(async () => {
 	ok(look30Instance(/abc/).type == 'RegExp')
 	ok(look30Instance(new Promise((resolve, reject) => resolve('done'))).type == 'Promise')
 	ok(look30Instance(symmetric_createKey()).type == 'Promise')//forgot await
-	/*
-	october ttd isCryptoKey above doesn't work yet in node18
 	ok(look30Instance(await symmetric_createKey()).type == 'CryptoKey')//there it is
-	*/
 
 	let d = look30Instance(new Date(15*Time.minute))
 	ok(d.type == 'Date' && d.show == '1970-01-01T00:15:00.000Z')
