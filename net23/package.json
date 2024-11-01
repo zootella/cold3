@@ -16,8 +16,8 @@
     "www": "serverless s3sync"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.8",
-    "icarus": "*"
+    "icarus": "*",
+    "@supabase/supabase-js": "^2.39.8"
   },
   "devDependencies": {
     "serverless": "^3.39.0",

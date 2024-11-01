@@ -1,5 +1,8 @@
 
 
+
+(1)
+
 //call this notes.json in the root, and noboby reads it so you get syntax highlightin in json after all!
 
 //root, the monorepo root and some node scripts
@@ -61,6 +64,91 @@
   "serverless-offline": "^13.6.0",
   "serverless-s3-sync": "^3.3.0",
 }
+
+
+
+
+
+
+(2) another take at in on mac now in the yarn1 branch
+
+root
+  "dependencies": {
+    library
+    "icarus": "*"
+  },
+  "devDependencies": {
+    utility
+    "fast-glob": "^3.3.2",
+    "rimraf": "^6.0.1"
+  }
+
+icarus
+  "dependencies": {
+    utility
+    "credit-card-type": "^10.0.0",
+    "joi": "^17.13.1",
+    "libphonenumber-js": "^1.11.3",
+    "nanoid": "^5.0.7",
+    service
+    "@supabase/supabase-js": "^2.39.8",
+    framework
+    "h3": "^1.13.0",
+  },
+  "devDependencies": {
+    utility
+    "rfc4648": "^1.5.3",
+    framework
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.2.0",
+    "vue": "^3.5.12",
+    "vue-router": "^4.4.5",
+  }
+
+net23
+  "dependencies": {
+    library
+    "icarus": "*",
+    framework
+    "@supabase/supabase-js": "^2.39.8",
+  },
+  "devDependencies": {
+    framework
+    "serverless": "^3.39.0",
+    "serverless-domain-manager": "^7.3.8",
+    "serverless-offline": "^13.6.0",
+    "serverless-s3-sync": "^3.3.0",
+  }
+
+site
+  "dependencies": {
+    library
+    "icarus": "*",
+    framework
+    "nuxt": "^3.13.0",
+    "vue": "^3.5.12",
+    "vue-router": "^4.4.5",
+  },
+  "devDependencies": {
+    utility
+    "rollup-plugin-visualizer": "^5.12.0",
+    service
+    "wrangler": "^3.80.0",
+    framework
+    "@cloudflare/workers-types": "^4.20241004.0",
+    "nitro-cloudflare-dev": "^0.1.6",
+  },
+
+
+
+
+
+
+
+
+
+
+
 
 
 
