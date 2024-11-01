@@ -25,7 +25,7 @@ import {
 log, look, runTests,
 awaitLogAlert,
 snippet
-} from './library/grand.js'
+} from 'icarus'
 
 //snippet runner
 async function runSnippet() {

@@ -1,5 +1,19 @@
 
-import { Sticker } from '../../library/sticker.js'
+const { loadGrand } = require('../persephone/persephone.js');
+
+exports.handler = async (lambdaEvent, lambdaContext) => {
+	let note = ''
+	try {
+		let { Sticker, runTests } = await loadGrand()
+
+		note = `lambda says: ${(await runTests()).message}, ${Sticker().all}`
+
+	} catch (e) { note = 'ping test lambda error: '+e.stack }
+	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }
+}
+
+
+
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered
@@ -8,15 +22,4 @@ import { Sticker } from '../../library/sticker.js'
 -- ./icarus/icarus.vue        vite
 -- ./test.js                  node
 */
-import { runTests } from '../../library/grand.js'
 
-export const handler = async (lambdaEvent, lambdaContext) => {
-	let note = ''
-	try {
-
-		note = `lambda says: ${(await runTests()).message}, ${Sticker().all}`
-		//note = `lambda says: *tests commented out for local speed*, ${Sticker().all}`
-
-	} catch (e) { note = 'ping test lambda error: '+e.stack }
-	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }
-}

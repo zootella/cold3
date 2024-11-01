@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
 	plugins: [
 		vue(),
+		//added this so Ctrl+S in a library file resets the on page log output, rather than growing it
 		{
 			name: 'force-full-reload',
 			handleHotUpdate({ file, server }) {
@@ -13,17 +14,9 @@ export default defineConfig({
 						type: 'full-reload',
 						path: '*'
 					});
-					return []; // Prevents any other HMR handling for this update
+					return []//prevent any other hot module replacement handling for this update
 				}
 			}
 		}
-	],
-	optimizeDeps: {//you don't understand why, but you have to explicitly include your installed modules here
-		include: [
-			'rfc4648',
-			'joi',
-			'credit-card-type',
-			'libphonenumber-js'
-		]
-	}
+	]
 })

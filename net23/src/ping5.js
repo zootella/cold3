@@ -1,14 +1,10 @@
 
-import { Sticker } from '../../library/sticker.js'
+const { loadGrand } = require('../persephone/persephone.js');
 
-
-export const handler = async (lambdaEvent, lambdaContext) => {
+exports.handler = async (lambdaEvent, lambdaContext) => {
 	let note = ''
 	try {
-
-
-
-
+		let { Sticker } = await loadGrand()
 
 		note = `lambda says: ${Sticker().all}, ping5done`
 

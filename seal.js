@@ -9,7 +9,7 @@ import {
 wrapper,
 log, look, newline, Data, Now,
 encrypt
-} from './library/grand.js'
+} from 'icarus'
 
 //      _          _       _                                               _ 
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___  ___  __ _| |
@@ -31,10 +31,12 @@ encrypt
 
 	./seal.js             $ npm run seal to generate the next two files:
 	./wrapper.txt         first, a file manifest
-	./wrapper.js          from that, hash and date of the manifest, versioning the code
+	./icarus/wrapper.js   from that, hash and date of the manifest, versioning the code
 	                      and including the contents of .env.local encrypted with the secret symmetric key
-	./library/sticker.js  sticker.js imports wrapper.js, adding environment detection, a tick and tag
+	./icarus/sticker.js   sticker.js imports wrapper.js, adding environment detection, a tick and tag
 */
+const pathWrapperTxt = 'wrapper.txt'
+const pathWrapperJs  = 'icarus/wrapper.js'
 async function seal() {
 	let list = await listFiles()
 	let properties = await hashFiles(list)
@@ -61,8 +63,8 @@ async function listFiles() {
 			'**/node_modules',
 
 			//also leave out the two that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
-			'wrapper.txt',
-			'wrapper.js'
+			pathWrapperTxt,
+			pathWrapperJs
 		]
 	})
 	return paths.sort()//alphebetize, unfortunately does not keep folders grouped together like they look in File Manager
@@ -86,7 +88,7 @@ async function composeWrapper(properties) {
 	//compose the contents of wrapper.txt, a listing of hashes, paths, and sizes
 	let lines = properties.map(p => `${p.hash.base32()} ${p.path}:${p.size}`)//put size after : because it can't be part of a filename on windows or mac
 	let manifest = lines.join(newline)+newline
-	await fs.writeFile('wrapper.txt', manifest)//write the file to disk
+	await fs.writeFile(pathWrapperTxt, manifest)//write the file to disk
 	return manifest//also return the file contents as we'll hash them next
 }
 
@@ -100,6 +102,7 @@ async function affixSeal(properties, manifest) {
 		totalFiles++; totalSize += f.size
 		if (
 			!f.path.endsWith('package-lock.json') &&
+			!f.path.endsWith('yarn.lock') &&
 			!f.path.endsWith('.gif') &&
 			!f.path.endsWith('.png') &&
 			!(f.path.startsWith('stats') && f.path.endsWith('.html'))) {
@@ -127,7 +130,7 @@ async function affixSeal(properties, manifest) {
 	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
-	await fs.writeFile('wrapper.js', s)
+	await fs.writeFile(pathWrapperJs, s)
 
 	//output a summary to the shrinkwrapper
 	let codeSizeDiskPercent = Math.round(codeSize*100/floppyDiskCapacity)

@@ -1,6 +1,6 @@
 {
-  "name": "cold3",
-  "description": "Nuxt site on Cloudflare",
+  "name": "w5",
+  "description": "Serverless library, lambdas and workers",
   "license": "GPL-3.0-only",
   "version": "0.1.0",
   "type": "module",
@@ -9,36 +9,27 @@
     "type": "git",
     "url": "https://github.com/zootella/cold3.git"
   },
+  "workspaces": {
+    "packages": [
+      "icarus",
+      "net23",
+      "site"
+    ],
+    "nohoist": [
+      "net23/**",
+      "net23/**/**"
+    ]
+  },
   "scripts": {
-    "build": "nuxt build",
-    "deploy": "nuxt build && wrangler pages deploy",
-    "local": "nuxt dev",
     "test": "node test",
     "seal": "node seal",
-    "generate": "nuxt generate",
-    "preview": "nuxt build && wrangler pages dev",
-    "postinstall": "nuxt prepare",
-    "cf-typegen": "wrangler types"
+    "powerwash": "rimraf node_modules yarn.lock icarus/node_modules net23/.serverless net23/node_modules site/.nuxt site/.wrangler site/dist site/node_modules"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.8",
-    "credit-card-type": "^10.0.0",
-    "h3": "^1.13.0",
-    "joi": "^17.13.1",
-    "libphonenumber-js": "^1.11.3",
-    "nanoid": "^5.0.7",
-    "nuxt": "^3.13.0",
-    "vue": "latest",
-    "vue-router": "latest"
+    "icarus": "*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241004.0",
-    "@sendgrid/mail": "^8.1.4",
-    "aws-sdk": "^2.1691.0",
     "fast-glob": "^3.3.2",
-    "nitro-cloudflare-dev": "^0.1.6",
-    "rollup-plugin-visualizer": "^5.12.0",
-    "twilio": "^5.3.4",
-    "wrangler": "^3.80.0"
+    "rimraf": "^6.0.1"
   }
 }

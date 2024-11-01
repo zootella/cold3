@@ -11,7 +11,7 @@ import { ref, onMounted } from 'vue'
 */
 import {
 runTests, getLogRecord, testBox
-} from '../library/grand.js'
+} from './grand.js'
 
 const boxModel = ref('')
 const testMessage = ref('')

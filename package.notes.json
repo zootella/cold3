@@ -1,0 +1,80 @@
+
+
+//call this notes.json in the root, and noboby reads it so you get syntax highlightin in json after all!
+
+//root, the monorepo root and some node scripts
+"dependencies": {
+  "icarus": "*",//icarus is a local dependency used everywhere but itself
+},
+"devDependencies": {
+	"fast-glob": "^3.3.2",//once, powers node seal
+}
+
+//icarus, the vue and vite test driven development test runner
+"dependencies": {
+  "nanoid": "^5.0.7",//information processing utilities that work everywhere
+  "credit-card-type": "^10.0.0",
+  "joi": "^17.13.1",
+  "libphonenumber-js": "^1.11.3",
+
+  "h3": "^1.13.0",//brought in by nuxt, but used directly in library door
+	"@supabase/supabase-js": "^2.39.8",
+  "vue": "latest",
+  "vue-router": "latest",
+},
+"devDependencies": {
+  "rfc4648": "^1.5.3",//for a noop fuzz confirmation
+
+  "@vitejs/plugin-vue": "^5.0.4",//framework
+  "vite": "^5.2.0",
+}
+
+//site, the nuxt and nitro site on cloudflare pages and workers
+"dependencies": {
+  "icarus": "*",//library
+
+  "nuxt": "^3.13.0",//framework
+  "vue": "latest",
+  "vue-router": "latest",
+},
+"devDependencies": {
+  "@cloudflare/workers-types": "^4.20241004.0",//framework
+  "nitro-cloudflare-dev": "^0.1.6",
+  "rollup-plugin-visualizer": "^5.12.0",
+  "wrangler": "^3.80.0",
+}
+
+//net23, the serverless framework project that deploys lambda functions
+"dependencies": {
+  "icarus": "*",//library
+
+	"jimp": "^1.6.0",//node modules designed to run on a server
+	"sharp": "^0.33.5",
+	"@sendgrid/mail": "^8.1.4",
+	"twilio": "^5.3.4",
+},
+"devDependencies": {
+  "aws-sdk": "^2.1659.0",//amazon framework we do not need to deploy
+
+  "serverless": "^3.39.0",//framework
+  "serverless-domain-manager": "^7.3.8",
+  "serverless-offline": "^13.6.0",
+  "serverless-s3-sync": "^3.3.0",
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

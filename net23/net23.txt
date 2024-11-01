@@ -134,6 +134,8 @@ amazon docs say for windows install that msi
 $ aws --version
 aws-cli/2.16.4 Python/3.11.8 Windows/10 exe/AMD64
 
+(note on mac, you're trying $ brew install awscli)
+
 == give aws cli access to your aws account
 
 $ aws configure
@@ -1599,12 +1601,3 @@ so also only callable from cold3
 
 send an email
 send a sms
-
-
-
-
-
-
-
-
-

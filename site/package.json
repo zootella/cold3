@@ -1,0 +1,34 @@
+{
+  "name": "cold3",
+  "description": "Nuxt site on Cloudflare",
+  "license": "GPL-3.0-only",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zootella/cold3.git"
+  },
+  "scripts": {
+    "local": "nuxt dev",
+    "build": "nuxt build",
+    "deploy": "nuxt build && wrangler pages deploy",
+    "generate": "nuxt generate",
+    "preview": "nuxt build && wrangler pages dev",
+    "manual:postinstall": "nuxt prepare",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "icarus": "*",
+    "nuxt": "^3.13.0",
+    "vue": "latest",
+    "vue-router": "latest"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241004.0",
+    "nitro-cloudflare-dev": "^0.1.6",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "wrangler": "^3.80.0"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

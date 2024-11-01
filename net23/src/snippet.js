@@ -1,12 +1,10 @@
 
-import {
-log, look, Now, Tag,
-Sticker, snippet,
-} from '../../library/grand.js'
+const { loadGrand } = require('../persephone/persephone.js');
 
-export const handler = async (lambdaEvent, lambdaContext) => {
+exports.handler = async (lambdaEvent, lambdaContext) => {
 	let o = {}
 	try {
+		let { Sticker, snippet } = await loadGrand()
 
 		o.note = `lambda snippet says: ${Sticker().all}, v2024oct21c`
 		o.look = await snippet()
