@@ -3,7 +3,7 @@ import { visualizer } from 'rollup-plugin-visualizer'//npm run build generates s
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2024-04-03',
+	compatibilityDate: '2024-04-03',
 	nitro: {
 		preset: 'cloudflare-pages',
 		esbuild: {
