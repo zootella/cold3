@@ -19,9 +19,15 @@ async function requireModules() {
 	try {
 		o.intro = "now let's try some modules"
 
-		const { SESClient } = require('@aws-sdk/client-ses')
-		const sesClient = new SESClient({region: 'us-east-1'})
-		o.amazonEmail = look(sesClient.config).slice(0, cut)
+		const { SESClient, GetSendQuotaCommand } = require('@aws-sdk/client-ses')
+		const mailClient = new SESClient({region: 'us-east-1'})
+		o.amazonMail = look(mailClient.config).slice(0, cut)
+		let quota = await mailClient.send(new GetSendQuotaCommand({}))
+		o.amazonMailQuota = quota
+
+		const { SNSClient } = require('@aws-sdk/client-sns')
+		const textClient = new SNSClient({region: 'us-east-1'})
+		o.amazonText = look(textClient.config).slice(0, cut)
 
 		o.note = 'sendgrid, jimp, sharp, and twilio all commented out for now'
 		/*
