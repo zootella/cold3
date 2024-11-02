@@ -16,8 +16,10 @@
     "www": "serverless s3sync"
   },
   "dependencies": {
+    "icarus": "*",
     "@supabase/supabase-js": "^2.39.8",
-    "icarus": "*"
+    "@sendgrid/mail": "^8.1.4",
+    "twilio": "^5.3.5"
   },
   "devDependencies": {
     "@aws-sdk/client-ses": "^3.682.0",

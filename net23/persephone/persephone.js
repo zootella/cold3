@@ -12,32 +12,49 @@ async function loadGrand() {
 
 async function requireModules() {
 	let grand = await loadGrand()
-	let { Sticker, log, look, Size } = grand
+	let { Sticker, getAccess, log, look, Size } = grand
 
 	let cut = Size.kb
 	let o = {}
 	try {
 		o.intro = "now let's try some modules"
+		let access = await getAccess()
+
+		//amazon
 
 		const { SESClient, GetSendQuotaCommand } = require('@aws-sdk/client-ses')
 		const mailClient = new SESClient({region: 'us-east-1'})
 		o.amazonMail = look(mailClient.config).slice(0, cut)
-		let quota = await mailClient.send(new GetSendQuotaCommand({}))
-		o.amazonMailQuota = quota
+		try {
+			let quota = await mailClient.send(new GetSendQuotaCommand({}))
+			o.amazonMailQuota = quota
+		} catch (e2) {//permissions error deployed, but chat is explaining iam roles to define in serverless.yml
+			o.amazonMailQuotaError = e2.stack
+		}
 
 		const { SNSClient } = require('@aws-sdk/client-sns')
 		const textClient = new SNSClient({region: 'us-east-1'})
 		o.amazonText = look(textClient.config).slice(0, cut)
 
-		o.note = 'sendgrid, jimp, sharp, and twilio all commented out for now'
-		/*
-		const amazon = require('aws-sdk')
-		o.amazon = look(amazon).slice(0, cut)
+		//twilio and sendgrid
 
-		const sendgridMail = require('@sendgrid/mail');
-		const Jimp = require('jimp');
-		const sharp = require('sharp');
-		const twilio = require('twilio');
+		const _twilio = require('twilio')
+		const _sendgrid = require('@sendgrid/mail')
+
+		o.twilioRequired = look(_twilio).slice(0, cut)
+		o.sendgridRequired = look(_sendgrid).slice(0, cut)
+
+		let twilioClient = _twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
+		o.twilioClient = look(twilioClient).slice(0, cut)
+		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
+
+		o.note = 'made it to the ones that are commented out for now'
+		/*
+		const sendgridMail = require('@sendgrid/mail')
+		const twilio = require('twilio')
+
+		const Jimp = require('jimp')
+		const sharp = require('sharp')
 		*/
 
 	} catch (e) { o.error = e.stack }
@@ -45,6 +62,9 @@ async function requireModules() {
 }
 
 module.exports = { loadGrand, requireModules }
+
+
+
 
 
 
