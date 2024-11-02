@@ -48,14 +48,13 @@ async function requireModules() {
 		o.twilioClient = look(twilioClient).slice(0, cut)
 		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
 
-		o.note = 'made it to the ones that are commented out for now'
-		/*
-		const sendgridMail = require('@sendgrid/mail')
-		const twilio = require('twilio')
-
+		//TODO jimp and sharp
 		const Jimp = require('jimp')
+		o.jimpRequired = look(Jimp).slice(0, cut)
 		const sharp = require('sharp')
-		*/
+		o.sharpRequired = look(sharp).slice(0, cut)
+
+		o.note = 'successfully finished! 🎉'
 
 	} catch (e) { o.error = e.stack }
 	return o
@@ -63,6 +62,36 @@ async function requireModules() {
 
 module.exports = { loadGrand, requireModules }
 
+
+
+/*
+	// Confirm Jimp is loaded and working
+	try {
+		const image = new Jimp(256, 256, 0xFFFFFFFF)
+		o.jimpTest = `Jimp is working: Created an image with dimensions ${image.bitmap.width} x ${image.bitmap.height}`
+	} catch (error) {
+		o.jimpError = error.stack
+	}
+
+	// Confirm sharp is loaded and working
+	try {
+		const image = sharp({
+			create: {
+				width: 256,
+				height: 256,
+				channels: 3,
+				background: { r: 255, g: 255, b: 255 }
+			}
+		})
+		const metadata = await image.metadata()
+		o.sharpTest = `Sharp is working: Image metadata ${JSON.stringify(metadata).slice(0, cut)}`
+	} catch (error) {
+		o.sharpError = error.stack
+	}
+
+	// ... existing code ...
+}
+*/
 
 
 
