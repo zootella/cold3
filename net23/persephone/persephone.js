@@ -14,10 +14,11 @@ async function requireModules() {
 	let grand = await loadGrand()
 	let { Sticker, getAccess, log, look, Size } = grand
 
-	let cut = Size.kb
+	let cut = 512
 	let o = {}
 	try {
 		o.intro = "now let's try some modules"
+
 		let access = await getAccess()
 
 		//amazon
@@ -48,11 +49,32 @@ async function requireModules() {
 		o.twilioClient = look(twilioClient).slice(0, cut)
 		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
 
-		//TODO jimp and sharp
-		const Jimp = require('jimp')
-		o.jimpRequired = look(Jimp).slice(0, cut)
-		const sharp = require('sharp')
-		o.sharpRequired = look(sharp).slice(0, cut)
+		//jimp and sharp
+
+		const { Jimp } = await import('jimp')//matches documentation for jimp v1, careful as chat only knows about jimp v0
+		const image = new Jimp({width: 120, height: 120})
+		let b = await image.getBase64('image/png')
+		o.jimpBase64 = b
+
+		//here, i'd like to convert this image to PNG, and get the bytes of the png file as base64
+
+		/*
+		o.jimpRequired = look(_jimp).slice(0, cut)
+		const _sharp = require('sharp')
+		o.sharpRequired = look(_sharp).slice(0, cut)
+
+		let jimpImage = _jimp.create(256, 256, 0xFFFFFFFF)
+		o.jimpImage = jimpImage
+		let sharpImage = _sharp({
+			create: {
+				width: 256,
+				height: 256,
+				channels: 3,
+				background: { r: 255, g: 255, b: 255 }
+			}
+		})
+		o.sharpImage = await sharpImage.metadata()
+		*/
 
 		o.note = 'successfully finished! 🎉'
 
@@ -64,34 +86,32 @@ module.exports = { loadGrand, requireModules }
 
 
 
-/*
-	// Confirm Jimp is loaded and working
-	try {
-		const image = new Jimp(256, 256, 0xFFFFFFFF)
-		o.jimpTest = `Jimp is working: Created an image with dimensions ${image.bitmap.width} x ${image.bitmap.height}`
-	} catch (error) {
-		o.jimpError = error.stack
-	}
 
-	// Confirm sharp is loaded and working
-	try {
-		const image = sharp({
-			create: {
-				width: 256,
-				height: 256,
-				channels: 3,
-				background: { r: 255, g: 255, b: 255 }
-			}
-		})
-		const metadata = await image.metadata()
-		o.sharpTest = `Sharp is working: Image metadata ${JSON.stringify(metadata).slice(0, cut)}`
-	} catch (error) {
-		o.sharpError = error.stack
-	}
 
-	// ... existing code ...
-}
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
