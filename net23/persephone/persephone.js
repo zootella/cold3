@@ -33,7 +33,7 @@ async function requireModules() {
 		const textClient = new SNSClient({region: 'us-east-1'})
 		o.amazonText = look(textClient.config).slice(0, cut)
 
-		//twilio and sendgrid
+		//twilio
 		const _twilio = require('twilio')
 		const _sendgrid = require('@sendgrid/mail')
 		o.twilioRequired = look(_twilio).slice(0, cut)
@@ -43,13 +43,7 @@ async function requireModules() {
 		o.twilioClient = look(twilioClient).slice(0, cut)
 		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
 
-		//jimp and sharp
-
-		const { Jimp } = await import('jimp')//matches documentation for jimp v1, careful as chat only knows about jimp v0
-		const image = new Jimp({width: 200, height: 120})
-		let b = await image.getBase64('image/png')
-		o.jimpPngBase64 = b
-
+		//sharp
 		const _sharp = require('sharp')
 		const b2 = await _sharp({
 			create: {
@@ -62,24 +56,7 @@ async function requireModules() {
 		let d = Data({array: b2})
 		o.sharpPngBase64 = d.base64()
 
-		/*
-		o.jimpRequired = look(_jimp).slice(0, cut)
-		const _sharp = require('sharp')
-		o.sharpRequired = look(_sharp).slice(0, cut)
-
-		let jimpImage = _jimp.create(256, 256, 0xFFFFFFFF)
-		o.jimpImage = jimpImage
-		let sharpImage = _sharp({
-			create: {
-				width: 256,
-				height: 256,
-				channels: 3,
-				background: { r: 255, g: 255, b: 255 }
-			}
-		})
-		o.sharpImage = await sharpImage.metadata()
-		*/
-
+		//done
 		o.note = 'successfully finished! 🎉'
 
 	} catch (e) { o.error = e.stack }
