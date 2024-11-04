@@ -26,24 +26,38 @@ encrypt
 	./.env                store secret symmetric encryption key here for node
 	./.dev.vars           and also here for cloudflare wrangler to make available to nitro in nuxt
 	./net23/.env          and also here for serverless framework to use locally and deploy to lambda
-	                      and also set it in the cloudflare dashboard
-	                      icarus using vite is front-end and correctly can't reach it
+												and also set it in the cloudflare dashboard
+												icarus using vite is front-end and correctly can't reach it
 
 	./seal.js             $ npm run seal to generate the next two files:
 	./wrapper.txt         first, a file manifest
 	./icarus/wrapper.js   from that, hash and date of the manifest, versioning the code
-	                      and including the contents of .env.local encrypted with the secret symmetric key
+												and including the contents of .env.local encrypted with the secret symmetric key
 	./icarus/sticker.js   sticker.js imports wrapper.js, adding environment detection, a tick and tag
 */
 const pathWrapperTxt = 'wrapper.txt'
 const pathWrapperJs  = 'icarus/wrapper.js'
 async function seal() {
+	await placeSecrets()
 	let list = await listFiles()
 	let properties = await hashFiles(list)
 	let manifest = await composeWrapper(properties)
 	await affixSeal(properties, manifest)
 }
 seal()
+
+async function placeSecrets() {
+
+	//you've already placed these secret files in the project root:
+	fs.access('.env')//throws if not found
+	fs.access('.env.local')
+	fs.access('card.js')
+
+	//copy them down where workspaces need them
+	fs.copyFile('.env', 'net23/.env')//lambda uses regular .env, and automatically deploys to amazon
+	fs.copyFile('.env', 'site/.dev.vars')//cloudflare wants it named .dev.vars instead, and only for local; you have to also set the secret key in the dashboard
+	fs.copyFile('.env', 'site/.env')//also put it here
+}
 
 async function listFiles() {
 

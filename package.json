@@ -23,7 +23,8 @@
   "scripts": {
     "test": "node test",
     "seal": "node seal",
-    "powerwash": "rimraf node_modules yarn.lock icarus/node_modules net23/.serverless net23/node_modules site/.nuxt site/.wrangler site/dist site/node_modules"
+    "removelock": "rm yarn.lock",
+    "powerwash": "rimraf yarn.lock node_modules icarus/node_modules net23/.serverless net23/node_modules site/.nuxt site/.wrangler site/dist site/node_modules"
   },
   "dependencies": {
     "icarus": "*"
