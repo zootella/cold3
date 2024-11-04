@@ -19,6 +19,21 @@ async function requireModules() {
 	try {
 		o.intro = "now let's try some modules"
 
+		o.PATH = process.env.PATH
+		o.NODE_PATH = process.env.NODE_PATH
+		o.modulePaths1before = module.paths
+		const layerNodeModulesPaths = [
+			'/opt/nodejs/node_modules',
+			'/opt/nodejs/node20/node_modules'
+		]
+		const _module = require('module')
+		layerNodeModulesPaths.forEach(layerPath => {
+			if (!_module.globalPaths.includes(layerPath)) {
+				_module.globalPaths.push(layerPath)
+			}
+		})
+		o.modulePaths2after = module.paths
+
 		//amazon, deployed will come from the environment
 		const { SESClient, GetSendQuotaCommand } = require('@aws-sdk/client-ses')
 		const mailClient = new SESClient({region: 'us-east-1'})
