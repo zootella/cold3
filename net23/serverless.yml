@@ -41,6 +41,9 @@ functions:
           method: get
   snippet2:
     handler: src/snippet2.handler
+    layers:
+      - arn:aws:lambda:us-east-1:782173356706:layer:layernet23t:1 #added twilio ^5.3.5 and @sendgrid/mail ^8.1.4
+      - arn:aws:lambda:us-east-1:782173356706:layer:layernet23s:1 #added sharp ^0.33.5, getting native modules with docker --platform linux/amd64 amazonlinux:2023
     timeout: 30
     events:
       - http:
@@ -63,10 +66,7 @@ functions:
 package:
   excludeDevDependencies: true #apparently they are not excluded by default
   exclude:
-    #- ./node_modules/aws-sdk/**
     #- ./node_modules/@esbuild/win32-x64/**
-    #- ./node_modules/@img/sharp-win32-x64/**
-    #- ./node_modules/@img/sharp-darwin-x64/**
     - ./www/**
     - ./*.txt
     - ./scratch.*

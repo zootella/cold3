@@ -19,7 +19,7 @@ async function requireModules() {
 	try {
 		o.intro = "now let's try some modules"
 
-		//amazon
+		//amazon, deployed will come from the environment
 		const { SESClient, GetSendQuotaCommand } = require('@aws-sdk/client-ses')
 		const mailClient = new SESClient({region: 'us-east-1'})
 		o.amazonMail = look(mailClient.config).slice(0, cut)
@@ -33,7 +33,7 @@ async function requireModules() {
 		const textClient = new SNSClient({region: 'us-east-1'})
 		o.amazonText = look(textClient.config).slice(0, cut)
 
-		//twilio
+		//twilio, deployed will come from the layer
 		const _twilio = require('twilio')
 		const _sendgrid = require('@sendgrid/mail')
 		o.twilioRequired = look(_twilio).slice(0, cut)
@@ -43,7 +43,7 @@ async function requireModules() {
 		o.twilioClient = look(twilioClient).slice(0, cut)
 		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
 
-		//sharp
+		//sharp, deployed will come from the layer
 		const _sharp = require('sharp')
 		const b2 = await _sharp({
 			create: {
@@ -64,17 +64,6 @@ async function requireModules() {
 }
 
 module.exports = { loadGrand, requireModules }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
