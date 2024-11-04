@@ -17,7 +17,7 @@ async function requireModules() {
 	let cut = 512
 	let o = {}
 	try {
-		o.intro = "now let's try some modules"
+		o.intro = "modules are working, streamlining docker deploy"
 
 		//amazon
 		const { SESClient, GetSendQuotaCommand } = require('@aws-sdk/client-ses')
