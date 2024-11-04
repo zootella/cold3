@@ -19,7 +19,6 @@ async function requireModules() {
 	try {
 		o.intro = "now let's try some modules"
 
-/*
 		//amazon
 		const { SESClient, GetSendQuotaCommand } = require('@aws-sdk/client-ses')
 		const mailClient = new SESClient({region: 'us-east-1'})
@@ -43,7 +42,6 @@ async function requireModules() {
 		let twilioClient = _twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
 		o.twilioClient = look(twilioClient).slice(0, cut)
 		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
-*/
 
 		//jimp and sharp
 
