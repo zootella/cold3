@@ -3,7 +3,7 @@
   "description": "Network 23",
   "license": "GPL-3.0-only",
   "version": "0.1.0",
-  "type": "commonjs",
+  "type": "module",
   "private": true,
   "repository": {
     "type": "git",

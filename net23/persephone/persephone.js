@@ -4,38 +4,27 @@
 //but library code can't use functions here
 //so that is the order of things
 
-let _grand
-async function loadGrand() {
-	if (!_grand) _grand = await import('icarus')
-	return _grand
-}
+import { Sticker, getAccess, log, look, Size, Data } from 'icarus'
 
-async function requireModules() {
-	let grand = await loadGrand()
-	let { Sticker, getAccess, log, look, Size, Data } = grand
+import { SESClient, GetSendQuotaCommand } from '@aws-sdk/client-ses'
+import { SNSClient } from '@aws-sdk/client-sns'
+/*
+import _twilio from 'twilio'
+import _sendgrid from '@sendgrid/mail'
+import _sharp from 'sharp'
+*/
+
+export async function requireModules() {
 
 	let cut = 512
 	let o = {}
 	try {
-		o.intro = "now let's try some modules"
+		o.intro = "now let's try some modules, start with all commented out edition"
 
-		o.PATH = process.env.PATH
-		o.NODE_PATH = process.env.NODE_PATH
-		o.modulePaths1before = module.paths
-		const layerNodeModulesPaths = [
-			'/opt/nodejs/node_modules',
-			'/opt/nodejs/node20/node_modules'
-		]
-		const _module = require('module')
-		layerNodeModulesPaths.forEach(layerPath => {
-			if (!_module.globalPaths.includes(layerPath)) {
-				_module.globalPaths.push(layerPath)
-			}
-		})
-		o.modulePaths2after = module.paths
+		o.PATH = ''+process?.env?.PATH
+		o.NODE_PATH = ''+process?.env?.NODE_PATH
 
 		//amazon, deployed will come from the environment
-		const { SESClient, GetSendQuotaCommand } = require('@aws-sdk/client-ses')
 		const mailClient = new SESClient({region: 'us-east-1'})
 		o.amazonMail = look(mailClient.config).slice(0, cut)
 		try {
@@ -44,13 +33,10 @@ async function requireModules() {
 		} catch (e2) {//permissions error deployed, but chat is explaining iam roles to define in serverless.yml
 			o.amazonMailQuotaError = e2.stack
 		}
-		const { SNSClient } = require('@aws-sdk/client-sns')
 		const textClient = new SNSClient({region: 'us-east-1'})
 		o.amazonText = look(textClient.config).slice(0, cut)
 
 		//twilio, deployed will come from the layer
-		const _twilio = require('twilio')
-		const _sendgrid = require('@sendgrid/mail')
 		o.twilioRequired = look(_twilio).slice(0, cut)
 		o.sendgridRequired = look(_sendgrid).slice(0, cut)
 		let access = await getAccess()
@@ -59,7 +45,6 @@ async function requireModules() {
 		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
 
 		//sharp, deployed will come from the layer
-		const _sharp = require('sharp')
 		const b2 = await _sharp({
 			create: {
 				width: 200,
@@ -70,6 +55,7 @@ async function requireModules() {
 		}).png().toBuffer()//returns a Node Buffer, which is a subclass of Uint8Array
 		let d = Data({array: b2})
 		o.sharpPngBase64 = d.base64()
+*/
 
 		//done
 		o.note = 'successfully finished! 🎉'
@@ -78,7 +64,7 @@ async function requireModules() {
 	return o
 }
 
-module.exports = { loadGrand, requireModules }
+//module.exports = { loadGrand, requireModules }
 
 
 
