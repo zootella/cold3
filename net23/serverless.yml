@@ -63,17 +63,28 @@ functions:
 package:
   excludeDevDependencies: true #apparently they are not excluded by default
   exclude:
+
     - ./node_modules/@img/sharp-win32-x64/** #exclude sharp's native libraries for windows,
     - ./node_modules/@img/sharp-darwin-arm64/** #apple silicon mac,
     - ./node_modules/@img/sharp-linuxmusl-x64/** #and the alpine linux ones you got from docker, too
     - ./node_modules/@img/sharp-libvips-win32-x64/**
     - ./node_modules/@img/sharp-libvips-darwin-arm64/**
     - ./node_modules/@img/sharp-libvips-linuxmusl-x64/** #same three platforms, sharp's other native thing
-    #- ./node_modules/@esbuild/win32-x64/**
-    - ./www/**
-    - ./*.txt
+
+    - ./node_modules/@esbuild/** #icarus' biggest devDependencies, which serverless doesn't exclude (facepalm)
+    - ./node_modules/@vue/**
+    - ./node_modules/vue/**
+    - ./node_modules/@rollup/**
+    - ./node_modules/rollup/**
+    - ./node_modules/vite/**
+    - ./node_modules/vue-router/**
+
+    - ./www/** #the static site for s3, nothing to do with the lambdas
+    - ./*.mjs #keep stowaway.mjs out of the zip--much irony
+    - ./*.txt #notes and scratchpads
     - ./scratch.*
-    # notes on this package section:
+
+    # some more notes on this package section:
     # in package.json, you moved aws-sdk from -S to -D, and that was all that was necessary to keep it out of the zip
     # chat was sure that the root package.json should be excluded, but this breaks the deployment!
     # and, alongside exclude you can have individually: true, but have not tested that or tried it out to see if it's better
