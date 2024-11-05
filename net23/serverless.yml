@@ -63,10 +63,13 @@ functions:
 package:
   excludeDevDependencies: true #apparently they are not excluded by default
   exclude:
-    #- ./node_modules/aws-sdk/**
+    - ./node_modules/@img/sharp-win32-x64/** #exclude sharp's native libraries for windows,
+    - ./node_modules/@img/sharp-darwin-arm64/** #apple silicon mac,
+    - ./node_modules/@img/sharp-linuxmusl-x64/** #and the alpine linux ones you got from docker, too
+    - ./node_modules/@img/sharp-libvips-win32-x64/**
+    - ./node_modules/@img/sharp-libvips-darwin-arm64/**
+    - ./node_modules/@img/sharp-libvips-linuxmusl-x64/** #same three platforms, sharp's other native thing
     #- ./node_modules/@esbuild/win32-x64/**
-    #- ./node_modules/@img/sharp-win32-x64/**
-    #- ./node_modules/@img/sharp-darwin-x64/**
     - ./www/**
     - ./*.txt
     - ./scratch.*
