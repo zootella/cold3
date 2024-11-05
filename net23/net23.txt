@@ -99,6 +99,24 @@ Requirements
 
 
 
+computer and software are made of instructions
+since the dawn of software, there have been three kinds of instructions:
+
+I. configuration (mental, or readable)
+II. configuration as code (machine executable)
+III. code (machine executable)
+
+traditionally, instrutions in category I are kept and versioned in the human brains of the development team
+the rule here is that can't be the only place: all instructions in category I must also be codified here, in human readable if not machine executable form
+the test is: could you hand this file to a brand new team member, and could they use it to set everything up, without asking your human brain any questions
+
+the second value related to this is to keep instructions as far down that list as possible
+code is better than configuration as code
+configuration as code is better than configuration (this idea has gained recent popularity in software engineering)
+
+but exceptions to this guideline exist!: like maybe all the domain name stuff in serverless.yml
+it took a week to craft screenfuls of potentially brittle configuration
+and maybe all that could be done just once at the start of the project, and documented here, as a few human-readable instructions on what to click on amazon's website dashboard
 
 
 
@@ -1628,11 +1646,7 @@ so after running yarn, so you have to stow them away again
 serverless.yml's exclude keeps the mac or windows binaries out of the zip,
 but lets the stowaways through
 
-
-
-
-
-
+more info and example commands in net23/stowaway.mjs
 
 
      _            _             
@@ -1641,7 +1655,11 @@ but lets the stowaways through
 | (_| | (_) | (__|   <  __/ |   
  \__,_|\___/ \___|_|\_\___|_|   
                                 
-
+to be able to get the files to stow away, you learned docker
+and, docker is still the more correct, clean, and secure way to build for lambda
+maybe the stowaway method will break,
+or maybe some new node module will need to actually compile binaries for amazon linux
+if so, you've got docker ready to (again) save the day
 
 
 
