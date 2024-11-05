@@ -26,6 +26,10 @@ stats*.html
 env.js
 card.js
 
+#lock files; forgetting to delete one on a new os would really mess up the build
+package-lock.json
+yarn.lock
+
 #logs and diffs
 logs
 *.log
