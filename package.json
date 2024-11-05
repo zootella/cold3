@@ -1,6 +1,6 @@
 {
   "name": "w5",
-  "description": "Serverless library, lambdas and workers",
+  "description": "Coding web2+3 serverless and JAMstack with Vue, Cloudflare, and Lambda",
   "license": "GPL-3.0-only",
   "version": "0.1.0",
   "type": "module",
@@ -23,7 +23,6 @@
   "scripts": {
     "test": "node test",
     "seal": "node seal",
-    "removelock": "rm yarn.lock",
     "powerwash": "rimraf yarn.lock node_modules icarus/node_modules net23/.serverless net23/node_modules site/.nuxt site/.wrangler site/dist site/node_modules"
   },
   "dependencies": {
