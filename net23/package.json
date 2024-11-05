@@ -12,7 +12,8 @@
   "scripts": {
     "local": "serverless offline --reloadHandler",
     "build": "serverless package",
-    "deploy": "serverless deploy --force --package .serverless",
+    "dockerdeploy": "bash ./dockerdeploy.sh",
+    "deploypackage": "serverless deploy --force --package .serverless",
     "www": "serverless s3sync"
   },
   "dependencies": {
