@@ -119,7 +119,7 @@ async function affixSeal(properties, manifest) {
 			!f.path.endsWith('yarn.lock') &&
 			!f.path.endsWith('.gif') &&
 			!f.path.endsWith('.png') &&
-			!(f.path.startsWith('stats') && f.path.endsWith('.html'))) {
+			!(f.path.includes('stats') && f.path.endsWith('.html'))) {
 			codeFiles++; codeSize += f.size
 		}
 	}
