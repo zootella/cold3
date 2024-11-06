@@ -5,7 +5,10 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
 	plugins: [
 		vue(),
-		//added this so Ctrl+S in a library file resets the on page log output, rather than growing it
+		/*
+		hot reload works great without this; maybe even better, even
+		you kept it, however, so Ctrl+S restarts the log output on the page, rather than growing it
+		*/
 		{
 			name: 'force-full-reload',
 			handleHotUpdate({ file, server }) {
