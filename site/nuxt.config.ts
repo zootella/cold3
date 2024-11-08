@@ -3,6 +3,10 @@ import { visualizer } from 'rollup-plugin-visualizer'//npm run build generates s
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+	site: {
+		url: 'https://cold3.cc',//added this for nuxt og image, which uses it to set absolute urls
+		name: 'cold3.cc'
+	},
 	compatibilityDate: '2024-04-03',
 	nitro: {
 		preset: 'cloudflare-pages',
@@ -13,8 +17,14 @@ export default defineNuxtConfig({
 		},
 	},
 	modules: [
-		'nitro-cloudflare-dev'
+		'nuxt-og-image',
+		'nitro-cloudflare-dev',
 	],
+	ogImage: {
+		defaults: {
+			renderer: 'satori',
+		}
+	},
 	devtools: {
 		enabled: true
 	},
