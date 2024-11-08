@@ -103,3 +103,38 @@ snippet,
 export {
 
 } from './cloud2.js'
+
+/*
+bundling all this together here means you can move a function from one file to another,
+change where it is here,
+but then all the code above, which just gets it from icarus, doesn't need to change
+
+it would be even nicer if the files within icarus could do that
+but that makes circular references that rollup warns about:
+
+Export "log" of module "../icarus/library0.js" was reexported through module "../icarus/grand.js" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+Either change the import in "components/AccountComponent.vue" to point directly to the exporting module or reconfigure "output.manualChunks" to ensure these modules end up in the same chunk.
+
+so for now, we're using this shortcut above, but not here
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
