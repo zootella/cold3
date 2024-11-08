@@ -181,6 +181,100 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 
 
 
+//move floppy disk to library2, as it's specific to this application
+
+const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
+const floppyDiskLabelWidth = 16
+export function sayFloppyDisk(wrapper) {
+	let date = sayDate(wrapper.tick)
+	let year = date.slice(0, 4)
+	let hash = wrapper.hash.slice(0, 7)
+	let full = Math.round(wrapper.codeSize*100/floppyDiskCapacity)
+
+	let line1 = extend(' ', `${wrapper.name} ~ ${hash}`)
+	let line2 = extend('_', `${sayDate(wrapper.tick)}`)
+	let line3 = extend('_', `${wrapper.codeFiles}_files`)
+	let line4 = extend('_', `${wrapper.codeSize}_bytes`)
+	let line5 = extend('_', `disk_filled_${full}%`)
+	function extend(padding, line) { return line.padEnd(floppyDiskLabelWidth, padding).slice(0, floppyDiskLabelWidth) }
+
+	return {
+		disk: deindent(`
+			 ____________________
+			| |${line1        }| |
+			|.|________________|H|
+			| |${line2        }| |
+			| |${line3        }| |
+			| |${line4        }| |
+			| |${line5        }| |
+			| |________________| |
+			|                    |
+			|    ____________    |
+			|   |   |  _     |   |
+			|   |   | | |    |   |
+			|   |   | |_|    | V |
+			|___|___|________|___|
+		`),
+		hash, year, full
+	}
+}
+
+
+
+
+
+
+
+
+
+noop(() => {
+	let disk = sayFloppyDisk(wrapper)
+	let markdown = deindent(`
+		${'```'}
+		${disk.disk}
+		${'```'}
+
+		How quick, simple, and cheap can the web2 stack be in ${disk.year}?
+		[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
+		exploring pouring and curing a
+		tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
+	`)
+	log(markdown)
+})
+
+
+/*
+$ node disk, just shows it, rather than seal which makes it
+*/
+//ok, total vanity, but here's the ascii disk in a readme.md for github
+//exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
