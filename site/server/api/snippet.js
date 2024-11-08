@@ -17,14 +17,10 @@ async function doorProcessBelow(door) {
 }
 
 /*
-october. you still want to know if console.log goes to teh cloudflare dashboard
+ttd november. you still want to know if console.log goes to teh cloudflare dashboard
 if you jsut console.log here, can you see it in the cloudflare dashboard?
 if not, why not? what does it mean that they made logging better?
 https://blog.cloudflare.com/builder-day-2024-announcements/#logs-for-every-worker
-
-october. can you use the door system in a simple GET snippet?
-can you use the door system here in this GET snippet?
-probably not, as its going to try to read a body, but you want to
 
 
 */

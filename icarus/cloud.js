@@ -14,7 +14,7 @@ doorPromise,
 //load core node modules with code that also builds, even if it doesn't function, for front-end and web worker environments
 let _fs;
 async function loadFs() {
-	if (!_fs && Sticker().where == 'LocalNode') {//october, change to Sticker().isLocalNode; look at isCloud and isLocal, too
+	if (!_fs && Sticker().where == 'LocalNode') {//ttd november, change to Sticker().isLocalNode; look at isCloud and isLocal, too
 		_fs = (await import('fs')).default.promises
 	}
 	return _fs

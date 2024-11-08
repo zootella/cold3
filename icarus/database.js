@@ -27,11 +27,6 @@ keep it all here together for easy refactoring and auditing
 
 
 
-
-
-//october, now that you've figured out isomorphic methods, and could send a twilio text with fetch from a worker, with twilio's node module from a worker, or through that module in a lambda, revisit how these files load and confirm code from icarus, node, worker, and lambda can all call into any file--can you write a test alongside any function, anywhere, to look at in icarus?
-
-
 //get a client connection to supabase
 let _client
 async function client() {//does this on first use, not on first import

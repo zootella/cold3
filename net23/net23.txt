@@ -158,6 +158,41 @@ $ git push origin --delete name1  # And, you should delete it from GitHub, the o
 
 
 
+here are some steps you did to get main
+
+after lots of branching away to try out new features,
+land1 is ready to replace main
+but, it's been so long that there are some changes on main
+you did a diff to make sure that you don't need any of thm
+
+to be able to do a fast forward merge,
+backup the current state of main to a new branch named main1
+reset main back to the branch point, ec2023c in this example
+and then main's merge of land1 gets to be fast forward
+
+$ git checkout main
+$ git branch main1
+$ git push origin main1
+$ git reset --hard ec2023c
+$ git push origin main --force-with-lease
+$ git merge land1
+$ git push origin main
+
+
+
+$ git log --graph --oneline --decorate --all
+$ git log --graph --oneline --decorate --all --pretty=format:"%h %ad %d %s" --date=format:"%Y%b%d"
+$ git diff ec2023c..9edded6
+
+see the subway graph, and do a diff between two commits picking them out by their hashes
+
+
+
+
+
+
+
+
 
 
 

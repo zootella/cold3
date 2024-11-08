@@ -24,8 +24,6 @@ async function doorProcessBelow(door) {
 }
 
 
-//october maybe rename this bridge entirely. no, it goes away--trusted code in cloudflare will call lambda functions as needed; this is a bridge directly from untrusted client code through a worker to lambda, which is great for demonstration and testing, but is not a part of the evenutal design!
-
 
 
 
@@ -53,7 +51,22 @@ async function bridge(path, body) {
 	return await $fetch(host+path, {method: 'POST', body})
 }
 
+/*
+ttd november - there won't be a cold3 api endpoint which just bridges over directly to network 23
+trusted code in a worker will, in the middle of its business logic, use a bridge function to call a network 23 api
+net23 lambdas are only called by trusted worker code, all calls are POST, all authenticated with the net23 secret
+also, you think the lambda code won't need to use the database; rather the worker does from the net23 result
 
+since adding sharp to lambdas, you've seen reliability problems!
+like a 500 internal server error that is corrected by hitting refresh in the browser
+and, the cold start is apparent now--a first hit in the morning takes seconds, then after that it's fast
+so make this bridge first hit a wakup endpoint, and then do the real request
+this simple stateless workaround won't slow things down much and is way easier than trying to clean up a failed request will preventing duplicate stateful real world action, like sending the user two text messages instead of one
+
+
+
+
+*/
 
 
 
