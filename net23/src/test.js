@@ -1,10 +1,10 @@
 
-const { loadGrand } = require('../persephone/persephone.js');
+const { loadIcarus } = require('../persephone/persephone.js');
 
 exports.handler = async (lambdaEvent, lambdaContext) => {
 	let note = ''
 	try {
-		let { Sticker, runTests } = await loadGrand()
+		let { Sticker, runTests } = await loadIcarus()
 
 		note = `lambda says: ${(await runTests()).message}, ${Sticker().all}`
 

@@ -4,15 +4,15 @@
 //but library code can't use functions here
 //so that is the order of things
 
-let _grand
-async function loadGrand() {
-	if (!_grand) _grand = await import('icarus')
-	return _grand
+let _icarus
+async function loadIcarus() {
+	if (!_icarus) _icarus = await import('icarus')
+	return _icarus
 }
 
 async function requireModules() {
-	let grand = await loadGrand()
-	let { Sticker, getAccess, log, look, Size, Data } = grand
+	let icarus = await loadIcarus()
+	let { Sticker, getAccess, log, look, Size, Data } = icarus
 
 	let cut = 512
 	let o = {}
@@ -63,7 +63,7 @@ async function requireModules() {
 	return o
 }
 
-module.exports = { loadGrand, requireModules }
+module.exports = { loadIcarus, requireModules }
 
 
 
