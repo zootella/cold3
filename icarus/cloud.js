@@ -1,12 +1,11 @@
 
 import {
-Now, Sticker, sayTick,
-} from './sticker.js'
-import {
+Now, sayTick,
 log, look, say, toss, newline, test, ok,
 stringify, replaceOne,
 } from './library0.js'
 import {
+Sticker,
 canGetAccess, getAccess,
 doorPromise,
 } from './library2.js'

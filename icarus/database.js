@@ -1,14 +1,14 @@
 
 import {
-Now, Tag,
-} from './sticker.js'
-import {
+Now,
 log, toss,
 checkInt,
 intToText, textToInt,
 checkHash, checkSquare,
-checkTag,
 } from './library0.js'
+import {
+Tag, checkTag,
+} from './library1.js'
 import {
 getAccess,
 } from './library2.js'

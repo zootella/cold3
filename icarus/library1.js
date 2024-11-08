@@ -1,18 +1,10 @@
 
-import { customAlphabet } from 'nanoid'
-import Joi from 'joi'
-import creditCardType from 'credit-card-type'
-import { parsePhoneNumberFromString } from 'libphonenumber-js'
-
 import {
 wrapper,
 } from './wrapper.js'
 import {
-tagLength, Tag,
-Now, sayDate, sayTick,
-} from './sticker.js'
-import {
 Time,
+Now, sayDate, sayTick,
 noop, test, ok, toss,
 log,
 say, look,
@@ -22,6 +14,39 @@ starts, cut,
 onlyNumerals,
 fraction, exponent, int, big, thinSpace, deindent, newline,
 } from './library0.js'
+
+import { customAlphabet } from 'nanoid'
+import Joi from 'joi'
+import creditCardType from 'credit-card-type'
+import { parsePhoneNumberFromString } from 'libphonenumber-js'
+
+
+
+
+
+
+//  _              
+// | |_ __ _  __ _ 
+// | __/ _` |/ _` |
+// | || (_| | (_| |
+//  \__\__,_|\__, |
+//           |___/ 
+
+//generate a new universally unique double-clickable tag of 21 letters and numbers
+export const tagLength = 21//we're choosing 21, long enough to be unique, short enough to be reasonable
+export function Tag() {
+	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
+	return customAlphabet(alphabet, tagLength)()//same default nanoid length
+}
+
+//make sure a tag is exactly 21 letters and numbers, for the database
+export function checkTag(s) {
+	checkText(s); checkAlpha(s)
+	if (s.length != tagLength) toss('data', {s})
+}
+test(() => {
+	checkTag('qqdTuhRdZwJwo7KKeaegs')
+})
 
 
 

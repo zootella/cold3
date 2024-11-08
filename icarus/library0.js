@@ -1,9 +1,9 @@
 
 import {
-Now,
-sayDate, sayTick,
-tagLength,
-} from './sticker.js'
+wrapper,
+} from './wrapper.js'
+
+//library0 functions work anywhere javascript does (well, current browsers and node20+), and without any module imports!
 
 //              _ _       
 //  _   _ _ __ (_) |_ ___ 
@@ -33,6 +33,37 @@ Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
 
 export const noop = (() => {})//no operation, a function that does nothing
+
+//                    _   _                
+//  ___  __ _ _   _  | |_(_)_ __ ___   ___ 
+// / __|/ _` | | | | | __| | '_ ` _ \ / _ \
+// \__ \ (_| | |_| | | |_| | | | | | |  __/
+// |___/\__,_|\__, |  \__|_|_| |_| |_|\___|
+//            |___/                        
+
+export const Now = Date.now//just a shortcut
+
+//say a tick count like "2024sep09" in UTC
+export function sayDate(t) {
+	let d = new Date(t)
+	let year = d.getUTCFullYear()
+	let month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][d.getUTCMonth()]
+	let day = d.getUTCDate().toString().padStart(2, '0')
+	return `${year}${month}${day}`
+}
+
+//say a tick count like "Fri04:09p39.470s" using the local offset in the wrapper
+export function sayTick(t) {
+	if (!t) return '(not yet)'//don't render 1970jan1 as a time something actually happened
+	let d = new Date(t + (wrapper.local * 3600000))//offset manually, then we'll use UTC methods below
+	let weekday = d.toUTCString().slice(0, 3)
+	let hours = (d.getUTCHours() % 12 || 12).toString().padStart(2, '0')//convert hours 0-23 to 1-12
+	let meridiem = d.getUTCHours() < 12 ? 'a' : 'p'
+	let minutes = d.getUTCMinutes().toString().padStart(2, '0')
+	let seconds = d.getUTCSeconds().toString().padStart(2, '0')
+	let milliseconds = d.getUTCMilliseconds().toString().padStart(3, '0')
+	return `${weekday}${hours}:${minutes}${meridiem}${seconds}.${milliseconds}s`
+}
 
 //  _   _               _            _       
 // | |_(_)_ __  _   _  | |_ ___  ___| |_ ___ 
@@ -1389,15 +1420,6 @@ noop(async () => {//see what these objects look like before we stringify and bas
 // | || (_| | (_| |
 //  \__\__,_|\__, |
 //           |___/ 
-
-//make sure a tag is exactly 21 letters and numbers, for the database
-export function checkTag(s) {
-	checkText(s); checkAlpha(s)
-	if (s.length != tagLength) toss('data', {s})
-}
-test(() => {
-	checkTag('qqdTuhRdZwJwo7KKeaegs')
-})
 
 //                    _   _                
 //  ___  __ _ _   _  | |_(_)_ __ ___   ___ 

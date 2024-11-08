@@ -6,16 +6,8 @@ wrapper
 } from './wrapper.js'//details of this shrinkwrapped version of the code
 export {
 
-Sticker,
-senseEnvironment,
-tagLength, Tag,
-Now,
-sayDate, sayTick,
-
-} from './sticker.js'//small to not slow down ping
-export {
-
 Time, Size, noop,
+Now, sayDate, sayTick,
 test, ok, runTests,
 toss,
 log, composeLog, recordLog, getLogRecord, composeLogArguments,
@@ -38,7 +30,6 @@ checkDate,
 size4, number4,
 Bin, Data,
 base62ToInt, intToBase62,
-checkTag,
 
 randomBetweenLight, randomBetween, randomCode,
 hashLength, subtleHash, checkHashLight, checkHash,
@@ -63,6 +54,7 @@ getBrowserAgentRendererAndVendor,
 } from './library0.js'//helpful javascript functions with no module imports
 export {
 
+tagLength, Tag, checkTag,
 validateEmail, validatePhone, validateCard,
 measurePasswordStrength,
 generatePosts, postDatabase,
@@ -72,6 +64,7 @@ testBox,
 } from './library1.js'//functions that use module imports
 export {
 
+Sticker, senseEnvironment,
 canGetAccess, accessWorker, getAccess,
 doorWorker, doorLambda, doorPromise, awaitDoorPromises,
 getBrowserTag,

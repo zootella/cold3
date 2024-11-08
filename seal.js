@@ -33,7 +33,7 @@ encrypt
 	./wrapper.txt         first, a file manifest
 	./icarus/wrapper.js   from that, hash and date of the manifest, versioning the code
 												and including the contents of .env.local encrypted with the secret symmetric key
-	./icarus/sticker.js   sticker.js imports wrapper.js, adding environment detection, a tick and tag
+	./icarus/library2.js  library2.js imports wrapper.js, adding environment detection, a tick and tag
 */
 const pathWrapperTxt = 'wrapper.txt'
 const pathWrapperJs  = 'icarus/wrapper.js'
