@@ -156,6 +156,15 @@ $ git push origin --delete name1  # And, you should delete it from GitHub, the o
 
 
 
+steps to merge in a simple branch:
+
+$ git checkout card1
+$ git diff main >> diff.diff  #see the changes the merge will make
+$ git checkout main
+$ git merge card1
+$ git push origin main
+
+
 
 
 here are some steps you did to get main
