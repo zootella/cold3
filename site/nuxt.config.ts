@@ -22,7 +22,7 @@ export default defineNuxtConfig({
 	],
 	ogImage: {
 		defaults: {
-			renderer: 'satori',
+			renderer: 'satori',//default, not really needed
 			cacheMaxAgeSeconds: 2*60//2 minutes in seconds
 		},
 		runtimeCacheStorage: {

@@ -1942,12 +1942,12 @@ so a cache of 1 minute will still save a lot of processor churn
 
 
 
+http://localhost:3000/__og-image__/image/og.png
+http://localhost:3000/__og-image__/image/og.svg
 
 
-
-
-
-
+https://cold3.cc/__og-image__/image/og.png
+https://cold3.cc/__og-image__/image/og.svg (deployed, svg doesn't work, not sure why but doesn't matter)
 
 
 
