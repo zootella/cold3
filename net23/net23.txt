@@ -1907,6 +1907,45 @@ https://esbuild.github.io/
 
 
 
+                                                _     
+  ___  _ __   ___ _ __     __ _ _ __ __ _ _ __ | |__  
+ / _ \| '_ \ / _ \ '_ \   / _` | '__/ _` | '_ \| '_ \ 
+| (_) | |_) |  __/ | | | | (_| | | | (_| | |_) | | | |
+ \___/| .__/ \___|_| |_|  \__, |_|  \__,_| .__/|_| |_|
+      |_|                 |___/          |_|          
+
+
+
+cloudflare dashboard, workers and pages, KV, create a namespace
+OG_IMAGE_CACHE, name
+copy the generated id, paste it into wrangler.toml
+
+then make some images, and you can see them in the dashboard
+keys like: 3.0.8:index:Ug4EEj6VqZ
+values like:
+{
+	"value":"iVBORw0KGgoAAAANSUhEUgAABLA... (whole thing is 159 KB when downloaded) ...NW84AAAAASUVORK5CYII=",
+	"headers":{
+		"Vary":"accept-encoding, host",
+		"etag":"W/\"fvJ5qGVPK5\"",
+		"last-modified":"Sat, 09 Nov 2024 02:39:05 GMT",
+		"cache-control":"public, s-maxage=604800, stale-while-revalidate"
+	},
+	"expiresAt":1731724745242
+}
+
+you're not sure how the invalidation works, so you're going to set it to 1 minute for now
+if a popular user drops a link in a reddit or telegram chat, a bunch of requests will come in all at once
+so a cache of 1 minute will still save a lot of processor churn
+
+
+
+
+
+
+
+
+
 
 
 

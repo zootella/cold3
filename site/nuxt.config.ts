@@ -23,6 +23,11 @@ export default defineNuxtConfig({
 	ogImage: {
 		defaults: {
 			renderer: 'satori',
+			cacheMaxAgeSeconds: 2*60//2 minutes in seconds
+		},
+		runtimeCacheStorage: {
+			driver: 'cloudflare-kv-binding',
+			binding: 'OG_IMAGE_CACHE'
 		}
 	},
 	devtools: {

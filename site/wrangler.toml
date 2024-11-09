@@ -9,3 +9,7 @@ mode = "smart"
 
 [observability]
 enabled = true
+
+[[kv_namespaces]]
+binding = "OG_IMAGE_CACHE"
+id = "ee95a879988944c2a7eb9521e62eb102"
