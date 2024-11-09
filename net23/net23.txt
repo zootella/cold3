@@ -1914,14 +1914,20 @@ https://esbuild.github.io/
  \___/| .__/ \___|_| |_|  \__, |_|  \__,_| .__/|_| |_|
       |_|                 |___/          |_|          
 
+you got open graph images working by adding nuxt-og-image:
+https://www.npmjs.com/package/nuxt-og-image
+https://nuxt.com/modules/og-image
+https://nuxtseo.com/docs/og-image/getting-started/introduction
 
-
+dashboard clicking steps were:
 cloudflare dashboard, workers and pages, KV, create a namespace
 OG_IMAGE_CACHE, name
-copy the generated id, paste it into wrangler.toml
+then the dashboard generates an id, pasted that into wrangler.toml
 
-then make some images, and you can see them in the dashboard
-keys like: 3.0.8:index:Ug4EEj6VqZ
+this was enough to get image caching working; you can see them in the dashboard
+keys have nuxt og image module version:route:not sure, like:
+3.0.8:index:SQxRoEWOgn
+3.0.8:card:whatever-you-put-here:a04axs96VI
 values like:
 {
 	"value":"iVBORw0KGgoAAAANSUhEUgAABLA... (whole thing is 159 KB when downloaded) ...NW84AAAAASUVORK5CYII=",
@@ -1934,20 +1940,35 @@ values like:
 	"expiresAt":1731724745242
 }
 
-you're not sure how the invalidation works, so you're going to set it to 1 minute for now
-if a popular user drops a link in a reddit or telegram chat, a bunch of requests will come in all at once
-so a cache of 1 minute will still save a lot of processor churn
-
-
-
-
+urls like:
 
 http://localhost:3000/__og-image__/image/og.png
 http://localhost:3000/__og-image__/image/og.svg
 
-
 https://cold3.cc/__og-image__/image/og.png
-https://cold3.cc/__og-image__/image/og.svg (deployed, svg doesn't work, not sure why but doesn't matter)
+https://cold3.cc/__og-image__/image/og.svg (deployed, svg doesn't work; not sure why but doesn't matter)
+
+still to investigate further:
+
+how is this actually working? it's amazing that it doesn't need a lambda after all!
+https://github.com/vercel/satori renders the SVG, and then
+https://github.com/thx/resvg-js converts SVG -> PNG, all on the worker
+
+how does the cache expiration work?
+if a post is very popular, you want to deliver the card instantly to thousands of followers
+but also, if a user edits their post, they want the card to immediately show the edited information
+
+and you've tried the ?purge flag, like
+https://cold3.cc/__og-image__/image/og.png?purge
+but it doesn't always regenerate the image
+
+you've set cards with defineOgImageComponent() in index.vue and card/[more].vue
+but what if someone sends a link to cold3.cc/settings
+you want the same card as the home page
+can you define a global card, which then gets overridden with a user page or post card?
+
+
+
 
 
 

@@ -4,12 +4,29 @@ compatibility_date = "2024-10-04"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "./dist"
 
+# The defaults above, including the node compatibility flag, came from:
+# $ npm create cloudflare@latest
+# https://developers.cloudflare.com/workers/runtime-apis/nodejs/#enable-nodejs-with-workers
+# https://workers-nodejs-compat-matrix.pages.dev/
+# For both built-in runtime APIs and polyfills, add nodejs_compat
+# and have a compatibility_date of 2024sep23 or later.
+# nodejs_compat is then the same as nodejs_compat_v2
+
+# Automatically place your workloads in an optimal location to minimize latency.
+# If you are running back-end logic in a Pages Function, running it closer to your back-end infrastructure
+# rather than the end user may result in better performance.
+# Docs: https://developers.cloudflare.com/pages/functions/smart-placement/#smart-placement
 [placement]
 mode = "smart"
 
+# The Observability setting allows you to automatically ingest, store, filter, and analyze logging
+# data emitted from Cloudflare Workers directly from your Cloudflare Worker’s dashboard.
+# When set to true on a Worker, logs for the Worker are persisted.
 [observability]
 enabled = true
 
-[[kv_namespaces]]
-binding = "OG_IMAGE_CACHE"
-id = "ee95a879988944c2a7eb9521e62eb102"
+# Bind a KV Namespace. Use KV as persistent storage for small key-value pairs.
+# Docs: https://developers.cloudflare.com/pages/functions/bindings/#kv-namespaces
+[[kv_namespaces]]                       #yeah, double braces here is correct
+binding = "OG_IMAGE_CACHE"              #to set this up, you made a new KV store in the cloudflare dashboard,
+id = "ee95a879988944c2a7eb9521e62eb102" #got this id, and pasted it here

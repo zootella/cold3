@@ -5,11 +5,10 @@ log, look, Sticker,
 } from 'icarus'
 
 defineOgImageComponent('NuxtSeo', {
-	title: `🍺 cold3.cc, v3`,
+	title: `🍺 cold3.cc`,
 	description: Sticker().all,
-	theme: '#ff0000',
+	theme: '#ff00ff',
 	colorMode: 'light',
-	cacheMaxAgeSeconds: 0,//disable caching just for this image
 })
 
 </script>

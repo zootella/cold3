@@ -3,13 +3,14 @@ import { visualizer } from 'rollup-plugin-visualizer'//npm run build generates s
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-	site: {
-		url: 'https://cold3.cc',//added this for nuxt og image, which uses it to set absolute urls
-		name: 'cold3.cc'
+
+	//defaults, with some additions
+	compatibilityDate: '2024-04-03',//default from $ npm create cloudflare@latest
+	devtools: {
+		enabled: true//default from create
 	},
-	compatibilityDate: '2024-04-03',
 	nitro: {
-		preset: 'cloudflare-pages',
+		preset: 'cloudflare-pages',//default from create
 		esbuild: {
 			options: {
 				target: 'esnext'//added to solve error on npm run build about es2019 not including bigint literals
@@ -17,28 +18,16 @@ export default defineNuxtConfig({
 		},
 	},
 	modules: [
-		'nuxt-og-image',
-		'nitro-cloudflare-dev',
+		'nitro-cloudflare-dev',//default from create
+		'nuxt-og-image',//added for open graph cards
 	],
-	ogImage: {
-		defaults: {
-			renderer: 'satori',//default, not really needed
-			cacheMaxAgeSeconds: 2*60//2 minutes in seconds
-		},
-		runtimeCacheStorage: {
-			driver: 'cloudflare-kv-binding',
-			binding: 'OG_IMAGE_CACHE'
-		}
-	},
-	devtools: {
-		enabled: true
-	},
+
+	//added for secrets and access
 	runtimeConfig: {//nuxt promises these will be available on the server side, and never exposed to a client
 		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET
 	},
-	build: {
-		sourcemap: true//added for visualizer
-	},
+
+	//added for rollup visualizer to make stats.html
 	vite: {
 		plugins: [
 			visualizer({
@@ -47,5 +36,23 @@ export default defineNuxtConfig({
 				brotliSize: true
 			})
 		]
+	},
+	build: {
+		sourcemap: true//added for visualizer
+	},
+
+	//added for open graph cards
+	site: {
+		url: 'https://cold3.cc',//added this for nuxt og image, which uses it to set absolute urls
+		name: 'cold3.cc'
+	},
+	ogImage: {
+		defaults: {
+			cacheMaxAgeSeconds: 20*60//20 minutes in seconds; default if you omit this is 3 days
+		},
+		runtimeCacheStorage: {
+			driver: 'cloudflare-kv-binding',
+			binding: 'OG_IMAGE_CACHE'
+		}
 	}
 })

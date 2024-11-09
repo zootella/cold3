@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-log, look,
+log, look, defined, Sticker,
 } from 'icarus'
 
 import { useRoute } from 'vue-router'
@@ -9,18 +9,18 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 let more = route.params.more
 
-/*
-here's where you do the open graph protocol cards
-first, just text
-then, dynamically generated images stored on the new pic.net23.cc, served through cloudfront publically
-and a database that includes a hide column so you can invalidate them, just stop linking them, rather than block links into them from working, which is what vhs.net23.cc will need
-*/
+defineOgImageComponent('NuxtSeo', {
+	title: `this is a card for "${more}"`,
+	description: Sticker().all,
+	theme: '#ff00ff',
+	colorMode: 'light'
+})
 
 </script>
 <template>
 
 <NavigationComponent note="on card" />
 
-<p>this is card/{{ more }}</p>
+<p>this is a page for "{{ more }}"</p>
 
 </template>
