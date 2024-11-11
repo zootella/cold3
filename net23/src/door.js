@@ -18,6 +18,7 @@ async function doorProcessBelow(door) {
 
 	//prove you got the body by including in message
 	let message = `hello ${door.body.name} age ${door.body.age} from ${Sticker().all}`
+	//november refactor proof of door.body better than this
 
 	response.message = message
 	return response

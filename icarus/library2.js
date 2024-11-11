@@ -5,7 +5,7 @@ wrapper,
 import {
 Time, Now, sayDate, sayTick,
 log, look, defined, noop, test, ok, toss,
-hasText, checkText, newline,
+hasText, checkText, newline, deindent,
 Data, decrypt, subtleHash,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
@@ -227,7 +227,7 @@ export function sayFloppyDisk(wrapper) {
 
 
 
-noop(() => {
+test(() => {
 	let disk = sayFloppyDisk(wrapper)
 	let markdown = deindent(`
 		${'```'}

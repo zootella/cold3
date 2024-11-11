@@ -135,8 +135,9 @@ class TossError extends Error {//custom error to identify it's one of ours, and 
 // |_|\___/ \__, |
 //          |___/ 
 
-export function log(...a) { let s = composeLog(...a); recordLog(s); logToSinks(s); console.log(s) }
-export function composeLog(...a) {
+export function log(...a) { let s = composeLog(...a); logTo(console.log, s) }
+
+function composeLog(...a) {
 	let s = ''//compose some nice display text
 	if (a.length == 0) {//no arguments, just the timestamp
 	} else if (a.length == 1) {//timestamp and the one argument
@@ -147,30 +148,10 @@ export function composeLog(...a) {
 	let arrow = s.trimEnd().includes('\n') ? ' ↓' : ' →'//point arrow down if multiple lines below
 	return sayTick(Now()) + arrow + (s.length ? (' ' + s) : '')
 }
-export function recordLog(s) {
-	logRecord += (logRecord.length ? newline : '') + s//don't start with a blank line
-	if (logRecord.length > logRecordLimit) logRecord = 'early logs too long to keep ~';
-}
-let logRecord = ''//all the text log has logged
-const logRecordLimit = 256*Size.kb;//until its length reaches this limit
-export function getLogRecord() { return logRecord }
 
-//TODO new, differently factored, not using yet as part of composeLog; november
-export function composeLogArguments(...a) {
-	let s = ''//compose some nice display text
-	if (a.length == 0) {//no arguments, just the timestamp
-	} else if (a.length == 1) {//timestamp and the one argument
-		s = say(a[0])
-	} else {//timestamp and newlines between multiple arguments
-		a.forEach(e => { s += newline + say(e) })
-	}
-	return s.trimStart()//added this, too
-}
-
-//ttd november added log sinks
-const logSinks = []
+const logSinks = []//more places to log, like a function that writes to a file, or a string to show on a page
 export function addLogSink(f) { logSinks.push(f) }
-function logToSinks(s) { logSinks.forEach(f => f(s)) }
+export function logTo(sink, s) { [sink, ...logSinks].forEach(f => f(s)) }
 
 //                                           
 //   ___ ___  _ __ ___  _ __   __ _ _ __ ___ 

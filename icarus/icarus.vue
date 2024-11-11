@@ -1,17 +1,13 @@
 <script setup>
 
-import { ref, onMounted } from 'vue' 
-
-/* tiny tests run six places:
--- ./pages/ping/test.vue      nuxt page, server and client rendered
--- ./server/api/ping/test.js  nuxt api
--- ./net23/src/test.js        lambda
--> ./icarus/icarus.vue        vite
--- ./test.js                  node
-*/
 import {
-runTests, getLogRecord, testBox
+runTests, testBox, addLogSink, newline,
 } from './index.js'
+
+import { ref, onMounted } from 'vue'
+
+let logs = ''//just for the icarus page, make a local record all the logs code everywhere makes
+addLogSink((s) => { logs += (logs.length ? newline : '') + s })//don't start with a blank line
 
 const boxModel = ref('')
 const testMessage = ref('')
@@ -20,13 +16,21 @@ onMounted(async () => {
 	testMessage.value = (await runTests()).message
 })
 
+/* tiny tests run six places:
+-- ./pages/ping/test.vue      nuxt page, server and client rendered
+-- ./server/api/ping/test.js  nuxt api
+-- ./net23/src/test.js        lambda
+-> ./icarus/icarus.vue        vite
+-- ./test.js                  node
+*/
+
 </script>
 <template>
 
 <p class="class1">{{ testMessage }}</p>
 <p class="class2a"><input type="text" v-model="boxModel" class="class2" id="box2"/></p>
 <pre class="class3">{{ testBox(boxModel) }}</pre>
-<textarea readOnly :value="getLogRecord()" class="class4" id="box4"></textarea>
+<textarea readOnly :value="logs" class="class4" id="box4"></textarea>
 
 </template>
 <style scoped>

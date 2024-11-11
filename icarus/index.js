@@ -10,7 +10,7 @@ Time, Size, noop,
 Now, sayDate, sayTick,
 test, ok, runTests,
 toss,
-log, composeLog, addLogSink, recordLog, getLogRecord, composeLogArguments,
+log, addLogSink, logTo,
 sameObject, sameArray,
 
 checkText, hasText, checkInt, minInt,

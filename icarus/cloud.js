@@ -1,7 +1,7 @@
 
 import {
 Now, sayTick,
-log, look, say, toss, newline, test, ok,
+log, logTo, look, say, toss, newline, test, ok,
 stringify, replaceOne,
 } from './library0.js'
 import {
@@ -10,14 +10,6 @@ canGetAccess, getAccess,
 doorPromise,
 } from './library2.js'
 
-//load core node modules with code that also builds, even if it doesn't function, for front-end and web worker environments
-let _fs;
-async function loadFs() {
-	if (!_fs && Sticker().where == 'LocalNode') {//ttd november, change to Sticker().isLocalNode; look at isCloud and isLocal, too
-		_fs = (await import('fs')).default.promises
-	}
-	return _fs
-}
 
 /*
 ttd november loging
@@ -249,27 +241,21 @@ export function logAlert(headline, watch) { doorPromise(awaitLogAlert(headline, 
 export async function awaitDog(...a) {//await async forms
 	let c = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
-		console.log(c.body[0].message)
-		sendLog_useIcarus(c.body[0].message)//running locally in icarus, append to the text box on the page
-		await sendLog_useFile(c.body[0].message)//running locally in node, append to a file named "cloud.log"
+		logTo(console.log, c.body[0].message)
 		return await sendLog_useDatadog(c)
 	}
 }
 export async function awaitLogAudit(headline, watch) {
 	let c = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
-		console.log(c.body[0].message)
-		sendLog_useIcarus(c.body[0].message)
-		await sendLog_useFile(c.body[0].message)
+		logTo(console.log, c.body[0].message)
 		return await sendLog_useDatadog(c)//keep an audit trail of every use of third party apis, running both cloud *and* local
 	}
 }
 export async function awaitLogAlert(headline, watch) {
 	let c = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
-		console.error(c.body[0].message)
-		sendLog_useIcarus(c.body[0].message)
-		await sendLog_useFile(c.body[0].message)
+		logTo(console.error, c.body[0].message)
 		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
 	}
 }
