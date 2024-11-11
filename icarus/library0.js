@@ -135,7 +135,7 @@ class TossError extends Error {//custom error to identify it's one of ours, and 
 // |_|\___/ \__, |
 //          |___/ 
 
-export function log(...a) { let s = composeLog(...a); recordLog(s); console.log(s) }
+export function log(...a) { let s = composeLog(...a); recordLog(s); logToSinks(s); console.log(s) }
 export function composeLog(...a) {
 	let s = ''//compose some nice display text
 	if (a.length == 0) {//no arguments, just the timestamp
@@ -155,7 +155,7 @@ let logRecord = ''//all the text log has logged
 const logRecordLimit = 256*Size.kb;//until its length reaches this limit
 export function getLogRecord() { return logRecord }
 
-//TODO new, differently factored, not using yet as part of composeLog
+//TODO new, differently factored, not using yet as part of composeLog; november
 export function composeLogArguments(...a) {
 	let s = ''//compose some nice display text
 	if (a.length == 0) {//no arguments, just the timestamp
@@ -166,6 +166,11 @@ export function composeLogArguments(...a) {
 	}
 	return s.trimStart()//added this, too
 }
+
+//ttd november added log sinks
+const logSinks = []
+export function addLogSink(f) { logSinks.push(f) }
+function logToSinks(s) { logSinks.forEach(f => f(s)) }
 
 //                                           
 //   ___ ___  _ __ ___  _ __   __ _ _ __ ___ 

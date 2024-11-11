@@ -401,7 +401,7 @@ function readText(s) { if (s === '') return s; checkText(s); return squareDecode
 
 
 
-
+2024nov11 ~ now you can clean this up
 
 
 

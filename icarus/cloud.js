@@ -20,6 +20,17 @@ async function loadFs() {
 }
 
 /*
+ttd november loging
+[]when finished, move logging to level2.js, service
+[]see if you can get rid of library0's getLogRecord() and vite.config.js's force-full-reload with icarus still updating with single most recent pass logs every Ctrl+S
+[]dont load or even mention fs in an icarus file; there's a nuxt warning every build. instead, define file logger in text.js and call a new addLogger(f)
+*/
+
+
+
+
+
+/*
 //load npm modules on-demand and once on first call; use the await import pattern because in es6 you can't require()
 let _twilio, _sendgrid
 async function loadTwilio()   { if (!_twilio   && canGetAccess()) _twilio   = await import('twilio');         return _twilio   }
@@ -305,7 +316,7 @@ async function prepareLog(status, type, label, headline, watch) {
 
 //log to the icarus page so you don't have to look at the browser inspector
 function sendLog_useIcarus(s) {
-	//TODO
+	//TODO november, implement log icarus, or move it?
 }
 
 //log to the file "cloud.log"; only works for $ node test, but is very useful there

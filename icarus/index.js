@@ -10,7 +10,7 @@ Time, Size, noop,
 Now, sayDate, sayTick,
 test, ok, runTests,
 toss,
-log, composeLog, recordLog, getLogRecord, composeLogArguments,
+log, composeLog, addLogSink, recordLog, getLogRecord, composeLogArguments,
 sameObject, sameArray,
 
 checkText, hasText, checkInt, minInt,
@@ -96,6 +96,23 @@ snippet,
 export {
 
 } from './cloud2.js'
+
+/*
+ttd, rename from library to level
+each level rests on lower levels
+
+level0 - (script) just javascript that runs anywhere
+level1 - (modules) plus helpful node modules that run anywhere
+level2 - (services) more application specific environment and service functions
+level3 - (application) application logic
+
+so convert to base62 is level 0, script
+make a random tag is level 1, module
+so read a row from the database is level 2, service
+sign a user in is level 3, application
+*/
+
+
 
 /*
 bundling all this together here means you can move a function from one file to another,
