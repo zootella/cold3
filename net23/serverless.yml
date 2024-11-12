@@ -72,6 +72,7 @@ package:
     - ./node_modules/@img/sharp-libvips-linuxmusl-x64/** #same three platforms, sharp's other native thing
 
     - ./node_modules/@esbuild/** #icarus' biggest devDependencies, which serverless doesn't exclude (facepalm)
+    - ./node_modules/@babel/**
     - ./node_modules/@vue/**
     - ./node_modules/vue/**
     - ./node_modules/@rollup/**
