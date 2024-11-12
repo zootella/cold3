@@ -47,9 +47,8 @@ squareEncode, squareDecode, checkSquare,
 correctLength,
 say, look, stringify,
 
-replaceAll, replaceOne,
-parseEnvStyleFileContents,
-getBrowserAgentRendererAndVendor,
+replaceAll, replaceOne, parseEnvStyleFileContents,
+ashFetchum, getBrowserAgentRendererAndVendor,
 
 } from './library0.js'//helpful javascript functions with no module imports
 export {
@@ -67,6 +66,8 @@ export {
 Sticker, senseEnvironment,
 canGetAccess, accessWorker, getAccess,
 doorWorker, doorLambda, doorPromise, awaitDoorPromises,
+dog, logAudit, logAlert,
+awaitDog, awaitLogAudit, awaitLogAlert,
 getBrowserTag,
 
 } from './library2.js'//functions that use parts of the larger application and environment
@@ -85,17 +86,6 @@ rowExists, createRow, readRow, writeRow,
 database_pingCount,
 
 } from './database.js'
-export {
-
-dog, logAudit, logAlert,
-awaitDog, awaitLogAudit, awaitLogAlert,
-
-snippet,
-
-} from './cloud.js'
-export {
-
-} from './cloud2.js'
 
 /*
 ttd, rename from library to level

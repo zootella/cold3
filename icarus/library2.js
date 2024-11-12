@@ -4,18 +4,16 @@ wrapper,
 } from './wrapper.js'
 import {
 Time, Now, sayDate, sayTick,
-log, look, defined, noop, test, ok, toss,
+log, logTo, say, look, defined, noop, test, ok, toss,
 hasText, checkText, newline, deindent,
 Data, decrypt, subtleHash,
-replaceAll, replaceOne,
+stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
+ashFetchum,
 } from './library0.js'
 import {
 Tag, tagLength, checkTag,
 } from './library1.js'
-import {
-dog, logAlert, awaitLogAlert,
-} from './cloud.js'
 
 import { getQuery, readBody } from 'h3'
 
@@ -226,8 +224,7 @@ export function sayFloppyDisk(wrapper) {
 
 
 
-
-test(() => {
+noop(() => {
 	let disk = sayFloppyDisk(wrapper)
 	let markdown = deindent(`
 		${'```'}
@@ -785,6 +782,245 @@ export function getBrowserTag() {
 		return tag
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+very brief notes about logging:
+
+do use console log and console error, they go to local terminal, amazon cloudwatch, and maybe later cloudflare, too
+
+log sinks include:
+-icarus textarea
+-node write file
+-browser inspector
+-bash command line
+-amazon dashboard
+-cloudflare dashboard
+-datadog
+
+types of logs include:
+-temporary for development, DEBUG, dog()
+-unusual to investigate, ALERT, logAlert()
+-record of transaction, AUDIT, logAudit()
+
+parts of a complete log:
+-type, like DEBUG, ALERT, AUDIT
+-tag, so you know if it's a different log or the same log twice
+-tick, so you know when it happened, machine and human readable here also, please
+-cloud true or not
+-environment detection and tags
+-title, one or just a few words
+-longer message, composed message that describes easily
+-human readable watch, like from look()
+-machine complete watch, like from JSON.stringify()
+-size of all that before you send it to datadog, so you know if this is going to impact your bill
+
+log exceptions at the top of the call stack, not at the bottom
+so, not in toss(), but rather around door
+
+general checks
+[]everywhere you call console log and console error directly, shouldn't they go through this system?
+general questions
+[]what do you do with a caught exception after logging to datadog has failed?
+future expeditions
+[]errors on the page, how do they get to datadog? through a fetch to api, i guess, but then they're not trusted? what's the right nuxt way to deal with these?
+*/
+
+/*
+november, check then remove this duplicate essay about logging:
+
+copying here, an essay you wrote about loggin'
+
+i want to use datadog for a variety of purposes. for instance, here are four:
+(1 "robin") high frequency performance analysis: logs of different named attempts, their duration, and success, failure, or timeout. there could be a lot of these (many per second). also, the app will need to query them, to find out what's working quickly and reliably, and get percentiles over recent time periods
+(2 "audit") verbose documentation of third party api performance: here, the logs will be longer, and contain json of objects that go perhaps several references deep. with this use case, there's no querying--this is for archival, only. later on, if an api is misbehaving, developers may go into datadog to look at this record to try to determine the cause
+(3 "alert") important and immediate information for developers: let's say a truly exceptional exception occurs, like code that we wrote that's part of our app throws, in a way that should be impossible. this third category of logs (top level uncaught exceptions) needs to be extremely verbose, separate from the other two types, and immediately for the attention of the development team
+(4 "debug") current development in deployed environment: when coding, a developer might use console.log to see some variables they're watching in code as it runs. then, when deployed, it can be useful to also see those kinds of logs. on the next push, these log statements might be removed. and, these logs are meant to be throwaway--they won't be saved, and they won't be consistent
+*/
+
+//       _                 _   _                   _             
+//   ___| | ___  _   _  __| | | | ___   __ _  __ _(_)_ __   __ _ 
+//  / __| |/ _ \| | | |/ _` | | |/ _ \ / _` |/ _` | | '_ \ / _` |
+// | (__| | (_) | |_| | (_| | | | (_) | (_| | (_| | | | | | (_| |
+//  \___|_|\___/ \__,_|\__,_| |_|\___/ \__, |\__, |_|_| |_|\__, |
+//                                     |___/ |___/         |___/ 
+/*
+... to begin, a brief essay about logs and logging. ahem... .....
+.................................................................
+... log('note', s1, o2) .........................................
+.................................................................
+log is our wrapper on console.log, which adds the time and works with icarus
+use with look() to see into objects with types, values, and structure
+when you're done with code, log calls should already be removed
+.................................................................
+... dog('note', s1, o2) ........................... [DEBUG] .....
+.................................................................
+dog is like log, but it goes to datadog, too
+also just for development, this is if you want to see what code is doing that's deployed
+in datadog, dog logs are tagged debug
+.................................................................
+... logAudit('title', {w1, w2}) ................... [AUDIT] .....
+.................................................................
+we want to keep an audit trail of every use of every third-party api
+for instance, did we try to send this email? charge this credit card? how did the api respond?
+audit logs get saved in datadog both from local and cloud deployed code, because the use of the api was real
+.................................................................
+... logAlert('title', {e, w1, w2}) ................ [ALERT] .....
+.................................................................
+in every entrypoint where your code starts running, have a try block that catches and sends to alert
+this means that a mistake you didn't intend, a truly exceptional circumstance, has otherwise gone uncaught
+in deployed cloud code only, alert logs to to datadog; from there they should wake up the fellow on pager duty!
+.................................................................
+... ROBIN .......................................................
+.................................................................
+not here but related is the round robin system of api use
+functions will record duration and success of higher level user tasks, like entering a code in a text message
+robin won't use datadog, but rather two tables in postgres
+.................................................................
+... RUM .........................................................
+.................................................................
+so all that's great, but is the real experience of real users on the site fast?
+for that, we'll incorporate real user monitoring, probably datadog's product, which is separate from logs
+the run script on client side pages communicates with their back end, and makes nice charts for us to review
+.................................................................
+... the end .....................................................
+*/
+export function dog(...a)                 { doorPromise(awaitDog(...a))                 }//fire and forget forms
+export function logAudit(headline, watch) { doorPromise(awaitLogAudit(headline, watch)) }
+export function logAlert(headline, watch) { doorPromise(awaitLogAlert(headline, watch)) }
+export async function awaitDog(...a) {//await async forms
+	let c = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
+	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
+		logTo(console.log, c.body[0].message)
+		return await sendLog_useDatadog(c)
+	}
+}
+export async function awaitLogAudit(headline, watch) {
+	let c = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
+	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
+		logTo(console.log, c.body[0].message)
+		return await sendLog_useDatadog(c)//keep an audit trail of every use of third party apis, running both cloud *and* local
+	}
+}
+export async function awaitLogAlert(headline, watch) {
+	let c = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
+	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
+		logTo(console.error, c.body[0].message)
+		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
+	}
+}
+async function prepareLog(status, type, label, headline, watch) {
+	let sticker = Sticker()//find out what, where, and when we're running, also makes a tag for this sticker check right now
+	let access = await getAccess()//access secrets to be able to redact them
+	let d = {//this is the object we'll log to datadog
+
+		//datadog required
+		ddsource: sticker.where,//the source of the log
+		service: sticker.where,//the name of the service that created the log, setting the same but this field is required
+		message: '',//description of what happened; very visible in dashboard; required, we'll fill in below
+
+		//datadog reccomended
+		//not sending: hostname: k.where,//hostname where the log came from; not required and additionally redundant
+		status: status,//the severity level of what happened, like "debug", "info", "warn", "error", "critical"
+		tags: [type, 'where:'+sticker.core.where, 'what:'+sticker.what],//set tags to categorize and filter logs, array of "key:value" strings
+
+		//and then add our custom stuff
+		tag: sticker.tag,//tag this log entry so if you see it two places you know it's the same one, not a second identical one
+		when: sayTick(sticker.now),//human readable time local to reader, not computer; the tick number is also logged, in sticker.nowTick
+		sticker: sticker.core,//put not the whole sticker in here, which includes the complete code hash, the tags we found to sense what environment this is, and the tick count now as we're preparing the log object
+		watch: {}//message (datadog required) and watch (our custom property) are the two important ones we fill in below
+	}
+
+	//set the watch object, and compose the message
+	if (headline != '↓') headline = `"${headline}"`//put quotes around a headline
+	d.watch = watch//machine parsable; human readable is later lines of message using look() below
+	d.message = `${sayTick(sticker.now)} [${label}] ${headline} ${sticker.where}.${sticker.what} ${sticker.tag} ‹SIZE›${newline}${look(watch)}`
+
+	//prepare the body
+	let b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
+	let s = stringify(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
+	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
+	let size = s.length//byte size of body, this is how datadog bills us
+	s         = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
+	d.message = replaceOne(d.message, '‹SIZE›', `‹${size}›`)//also get that into the message text for the other sinks
+
+	let c = {}//c is our call with complete information about our fetch to datadog
+	c.body = b//c.body is the http request body, as an object, for our own information
+	c.bodyText = s//c.bodyText is the stringified body of the http request our call to fetch will use
+	return c
+}
+
+//log to the icarus page so you don't have to look at the browser inspector
+function sendLog_useIcarus(s) {
+	//TODO november, implement log icarus, or move it?
+}
+
+//log to the file "cloud.log"; only works for $ node test, but is very useful there
+async function sendLog_useFile(s) {
+	let fs = await loadFs()
+	if (fs) await fs.appendFile('cloud.log', s.trimEnd()+newline)//becomes a quick no-op running in places we can't load fs
+}
+
+//log to datadog, fetching to their api
+async function sendLog_useDatadog(c) {
+	let access = await getAccess()
+	let q = {
+		resource: access.get('ACCESS_DATADOG_ENDPOINT'),
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
+		},
+		body: c.bodyText
+	}
+	return await ashFetchum(c, q)
+}
+
+//if you change anything that could cause these functions and those they use to even possibly throw, check with simulation mode--but be sure to not call a real API in here, as there won't be an AUDIT saved!
+const cloudLogSimulationMode = false
+test(() => { if (cloudLogSimulationMode) log('WARNING: cloud logging is set to simulation mode, do not deploy like this!') })
+function cloudLogSimulation(c) {
+	log(
+		'', '(1) message for text box in datadog:',                       '', c.body[0].message,
+		'', '(2) body, correctly before size and redactions:',            '', look(c.body),
+		'', '(3) body stringified, this is what fetch sends to datadog:', '', c.bodyText)
+}
+test(async () => { if (!cloudLogSimulationMode) return//only run these in simulation mode
+
+	let a = 'apple'
+	let b = 2
+	let e1, e2
+	try { let o = {}; o.notThere.andBeyond } catch (e) { e1 = e }
+	try { toss('toss note', {a, b, e1})    } catch (e) { e2 = e }
+
+	if (false) await awaitDog('hi', 7)
+	if (false) await awaitLogAudit('audit title',     {a, b})
+	if (false) await awaitLogAlert('alert title', {e1, a, b})
+})
+
+
+
+
+
 
 
 

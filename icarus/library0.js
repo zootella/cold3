@@ -2445,6 +2445,117 @@ ok(o['TRUE_MATH'] == '2+2=4')
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+//     _        _       _____    _       _                     
+//    / \   ___| |__   |  ___|__| |_ ___| |__  _   _ _ __ ___  
+//   / _ \ / __| '_ \  | |_ / _ \ __/ __| '_ \| | | | '_ ` _ \ 
+//  / ___ \\__ \ | | | |  _|  __/ || (__| | | | |_| | | | | | |
+// /_/   \_\___/_| |_| |_|  \___|\__\___|_| |_|\__,_|_| |_| |_|
+//                                                            
+/* ...gotta fetch 'em all!
+
+fetch() is from the browser, plain vanilla and what all the rest ultimately call down to
+$fetch() is from nuxt, use in page and api code, server and client, but not lambda, obeys middleware and parses for you
+useFetch() is from nuxt, use in page code, does hybrid rendering
+ashFetchum() is your own, parses, measures duration, and catches errors
+
+let r = ashFetchum(  takes...
+	c,  [c]all parameters, everything you used to prepare the request
+	q)  re[q]uest details, what ash will use to call fetch
+r: {                 ...and returns c and q unchanged other than filling in q.tick, and:
+	c,
+	q,
+	p   res[p]onse details, everything that happened as a result of the request
+}
+
+[c]all:
+c might have details like c.name, c.email, c.phoneNumber which you prepared into q.body
+
+re[q]uest:
+q.resource is the url like https://example.com
+q.method is GET or POST
+q.headers is an object of keys and values for fetch
+q.body is already stringified body text, raw and ready for fetch
+
+time:
+q.tick is when we made the request
+p.tick is when we finished reading the response
+p.duration is how long that took
+
+res[p]onse:
+p.success is true if everything looks good as far as ash can tell
+p.response is what fetch returned
+p.bodyText is raw from the wire
+p.body is what we tried to parse that into
+p.error is an exception if thrown
+*/
+export async function ashFetchum(c, q) {
+	let o = {method: q.method, headers: q.headers, body: q.body}
+
+	q.tick = Now()//record when this happened and how long it takes
+	let response, bodyText, body, error, success
+	try {
+		response = await fetch(q.resource, o)
+		bodyText = await response.text()
+		if (response.ok) {
+			success = true
+			if (response.headers?.get('Content-Type')?.includes('application/json')) {
+				body = JSON.parse(bodyText)//can throw, and then it's the api's fault, not your code here
+			}
+		}
+	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
+	let t = Now()
+
+	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
+}
+/*
+additional fancy features ash can't do yet, but you could add later:
+(1) use axios, which keeps coming up in stackoverflow and chatgpt, and can do timeouts
+fetch is working just fine, but can 52 million weekly npm downloads all be wrong? "¯\_(ツ)_/¯"
+(2) set a give up timeout, using AbortController, setTimeout, and clearTimeout, or just axios
+adding this and setting to like 4 seconds will keep a misbehaving API frm making the user wait
+but also, workers only live 30 seconds max, and you've set lambda to the same, so that should also govern here
+(3) have a fire and forget option, to not wait for the body to arrive, or not wait at all
+you tried this and immediately logs were unreliable because cloudflare and amazon were tearing down early
+the way to do this in a worker is event.waitUntil(p), which looks well designed
+you don't think there's a way to do this in lambda, so instead you Promise.all() to delay sending the response
+with that, workers are faster, lambdas the same, well maybe faster because now the fetches can run in parallel
+but there's a code benefit: you could call dog() and logAudit() without having to await them
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function getBrowserAgentRendererAndVendor() {
 	let agent, renderer, vendor
 	if (defined(typeof navigator)) agent = navigator.userAgent
