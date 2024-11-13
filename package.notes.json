@@ -1,168 +1,109 @@
 
+//you can't write comments in package.json, so here are some alongside
 
-
-(1)
-
-//call this notes.json in the root, and noboby reads it so you get syntax highlightin in json after all!
-
-//root, the monorepo root and some node scripts
-"dependencies": {
-  "icarus": "*",//icarus is a local dependency used everywhere but itself
-},
-"devDependencies": {
-	"fast-glob": "^3.3.2",//once, powers node seal
-}
-
-//icarus, the vue and vite test driven development test runner
-"dependencies": {
-  "nanoid": "^5.0.7",//information processing utilities that work everywhere
-  "credit-card-type": "^10.0.0",
-  "joi": "^17.13.1",
-  "libphonenumber-js": "^1.11.3",
-
-  "h3": "^1.13.0",//brought in by nuxt, but used directly in library door
-	"@supabase/supabase-js": "^2.39.8",
-  "vue": "latest",
-  "vue-router": "latest",
-},
-"devDependencies": {
-  "rfc4648": "^1.5.3",//for a noop fuzz confirmation
-
-  "@vitejs/plugin-vue": "^5.0.4",//framework
-  "vite": "^5.2.0",
-}
-
-//site, the nuxt and nitro site on cloudflare pages and workers
-"dependencies": {
-  "icarus": "*",//library
-
-  "nuxt": "^3.13.0",//framework
-  "vue": "latest",
-  "vue-router": "latest",
-},
-"devDependencies": {
-  "@cloudflare/workers-types": "^4.20241004.0",//framework
-  "nitro-cloudflare-dev": "^0.1.6",
-  "rollup-plugin-visualizer": "^5.12.0",
-  "wrangler": "^3.80.0",
-}
-
-//net23, the serverless framework project that deploys lambda functions
-"dependencies": {
-  "icarus": "*",//library
-
-	"jimp": "^1.6.0",//node modules designed to run on a server
-	"sharp": "^0.33.5",
-	"@sendgrid/mail": "^8.1.4",
-	"twilio": "^5.3.4",
-},
-"devDependencies": {
-  "aws-sdk": "^2.1659.0",//amazon framework we do not need to deploy
-
-  "serverless": "^3.39.0",//framework
-  "serverless-domain-manager": "^7.3.8",
-  "serverless-offline": "^13.6.0",
-  "serverless-s3-sync": "^3.3.0",
-}
-
-
-
-
-
-
-(2) another take at in on mac now in the yarn1 branch
+1 icarus
+2 utility
+3 service
+4 framework
 
 root
-  "dependencies": {
-    library
-    "icarus": "*"
-  },
-  "devDependencies": {
-    utility
-    "fast-glob": "^3.3.2",
-    "rimraf": "^6.0.1"
-  }
+{
+	"type": "module",
+	"dependencies": {
+
+		1 icarus
+		"icarus": "*",
+	},
+	"devDependencies": {
+
+		2 utility
+		"fast-glob": "^3.3.2",//seal uses to list files to hash
+		"rimraf": "^6.0.1",//powerwash script uses directly; code doesn't use
+	}
+}
 
 icarus
-  "dependencies": {
-    utility
-    "credit-card-type": "^10.0.0",
-    "joi": "^17.13.1",
-    "libphonenumber-js": "^1.11.3",
-    "nanoid": "^5.0.7",
-    service
-    "@supabase/supabase-js": "^2.39.8",
-    framework
-    "h3": "^1.13.0",
-  },
-  "devDependencies": {
-    utility
-    "rfc4648": "^1.5.3",
-    framework
-    "@vitejs/plugin-vue": "^5.0.4",
-    "vite": "^5.2.0",
-    "vue": "^3.5.12",
-    "vue-router": "^4.4.5",
-  }
+{
+	"type": "module",
+	"dependencies": {
+
+		2 utility
+		"nanoid": "^5.0.7",
+		"credit-card-type": "^10.0.0",
+		"joi": "^17.13.1",
+		"libphonenumber-js": "^1.11.3",
+		"h3": "^1.13.0",//brought in by nuxt; listed explicitly so doorWorkerOpen can be in library2.js
+
+		3 service
+		"@supabase/supabase-js": "^2.39.8",//supabase works local and deployed x worker and lambda
+	},
+	"devDependencies": {
+
+		2 utility
+		"rfc4648": "^1.5.3",//for an icarus fuzz test behind a noop when not used
+
+		4 framework
+		"@vitejs/plugin-vue": "^5.0.4",//icarus' framework is vite and vue
+		"vite": "^5.2.0",
+		"vue": "^3.5.12",
+		"vue-router": "^4.4.5",
+	}
+}
 
 net23
-  "dependencies": {
-    library
-    "icarus": "*",
-    framework
-    "@supabase/supabase-js": "^2.39.8",
-  },
-  "devDependencies": {
-    framework
-    "serverless": "^3.39.0",
-    "serverless-domain-manager": "^7.3.8",
-    "serverless-offline": "^13.6.0",
-    "serverless-s3-sync": "^3.3.0",
-  }
+{
+	"type": "commonjs",//net23 is old school CommonJS to require() modules that were written to expect traditional servers
+	"dependencies": {
+
+		1 icarus
+		"icarus": "*",
+
+		3 service
+		"@supabase/supabase-js": "^2.39.8",//only used by icarus; here so yarn nohoist lets serverless package it into the zip
+		"twilio": "^5.3.5",//node modules lambda code require()s
+		"@sendgrid/mail": "^8.1.4",
+		"sharp": "^0.33.5",//needs native modules, bundle in amazon linux docker container or use the stowaway script
+	},
+	"devDependencies": {
+
+		2 utility
+		"fs-extra": "^11.2.0",//for stowaway script
+
+		3 service
+		"@aws-sdk/client-ses": "^3.682.0",//aws sdk v3 parts are already on lambda; these dev dependencies just for local development
+		"@aws-sdk/client-sns": "^3.682.0",
+
+		4 framework
+		"serverless": "^3.39.0",//net23 uses Serverless Framework
+		"serverless-domain-manager": "^7.3.8",
+		"serverless-offline": "^13.6.0",
+		"serverless-s3-sync": "^3.3.0",
+	}
+}
 
 site
-  "dependencies": {
-    library
-    "icarus": "*",
-    framework
-    "nuxt": "^3.13.0",
-    "vue": "^3.5.12",
-    "vue-router": "^4.4.5",
-  },
-  "devDependencies": {
-    utility
-    "rollup-plugin-visualizer": "^5.12.0",
-    service
-    "wrangler": "^3.80.0",
-    framework
-    "@cloudflare/workers-types": "^4.20241004.0",
-    "nitro-cloudflare-dev": "^0.1.6",
-  },
+{
+	"type": "module",
+	"dependencies": {
 
+		1 icarus
+		"icarus": "*",
 
+		4 framework
+		"nuxt": "^3.13.0",//the website's framework is Nuxt with Vue on Cloudflare Pages
+		"vue": "^3.5.12",
+		"vue-router": "^4.4.5",
+		"nuxt-og-image": "^3.0.8",//added to make social share cards; works with cloudflare KV to cache them
+	},
+	"devDependencies": {
 
+		2 utility
+		"sharp": "^0.33.5",//installed to try out jpeg cards with nuxt-og-image, but only in local development
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		4 framework
+		"@cloudflare/workers-types": "^4.20241004.0",
+		"nitro-cloudflare-dev": "^0.1.6",
+		"wrangler": "^3.80.0",
+		"rollup-plugin-visualizer": "^5.12.0",//added so build makes stats.html
+	},
+}
