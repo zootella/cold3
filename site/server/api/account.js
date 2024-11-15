@@ -3,6 +3,7 @@ import {
 log, look, hasText, checkTag,
 doorWorker, accessWorker, getAccess,
 accessTableInsert, accessTableQuery,
+timeSafeEqual,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -19,7 +20,7 @@ async function doorProcessBelow(door) {
 	checkTag(door.body.browserTag)
 
 	//validate the password, only needed to sign in
-	o.passwordValid = (door.body.password == access.get('ACCESS_PASSWORD_SECRET'))
+	o.passwordValid = timeSafeEqual(door.body.password, access.get('ACCESS_PASSWORD_SECRET'))
 
 	//is this browser already signed in?
 	let rows = await accessTableQuery(door.body.browserTag)//get all the rows

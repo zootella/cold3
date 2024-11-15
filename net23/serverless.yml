@@ -46,6 +46,13 @@ functions:
       - http:
           path: snippet2
           method: get
+  message:
+    handler: src/message.handler
+    timeout: 30
+    events:
+      - http:
+          path: message
+          method: post
   snippet3:
     handler: src/snippet3.handler
     timeout: 30

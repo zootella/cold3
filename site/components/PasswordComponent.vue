@@ -100,12 +100,17 @@ password page backlog
 //yes, this is a factory preset, correctly in the page, which gets sent to the client, where the user can see it
 const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
 const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC = 420//thousands, OWASP recommends 100-500
+/*
+todo remember when comparing *even password hashes* on the server to use your fancy new timeSafeEqual(s1, s2)
+otherwise, the attacker won't bother computing hash values on his client at all, and will just guess forward the hash value--he'll never get the password, but will gain access to the account!
+*/
 
 
-import { ref } from 'vue'
 import {
 log, look, Time, hashPassword, Data, Now, sayTick,
 } from 'icarus'
+
+import { ref } from 'vue'
 
 // Define reactive variables
 const inputValue = ref('')
@@ -126,6 +131,7 @@ async function myFunction2() {
 
 	outputText.value = `${h.base32()} hashed from ${ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC} thousand iterations in ${duration}ms on ${sayTick(t)}`
 }
+
 
 
 

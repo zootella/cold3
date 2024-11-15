@@ -1028,6 +1028,48 @@ noop(() => {//this might be slow, actually, but should be ok for individual one 
 	log(s)
 })
 
+//                         _ 
+//   ___  __ _ _   _  __ _| |
+//  / _ \/ _` | | | |/ _` | |
+// |  __/ (_| | |_| | (_| | |
+//  \___|\__, |\__,_|\__,_|_|
+//          |_|              
+
+export function timeSafeEqual(s1, s2) {//compare two strings without leaking timing clues about how far in they are different
+	s1 = s1.normalize('NFC')//make both strings unicode Normalization Form C so surrogate pairs match correctly
+	s2 = s2.normalize('NFC')
+	
+	s1 = s1.length + ':' + s1//prefix the strings with their lengths
+	s2 = s2.length + ':' + s2
+	let length = Math.max(s1.length, s2.length)//find the longest length
+	length += Math.floor(Math.random() * (length + 256))//add a random length beyond that
+	s1 = s1.padEnd(length, '\0')//put 0 bytes at the end to make both strings the same longer length
+	s2 = s2.padEnd(length, '\0')
+
+	let differences = 0//do constant-time comparison with ^ XOR and |= bitwise OR
+	for (let i = 0; i < length; i++) differences |= s1.charCodeAt(i) ^ s2.charCodeAt(i)
+	return differences == 0//true if there were no differences
+}
+test(() => {
+	ok(timeSafeEqual('', ''))
+	ok(timeSafeEqual('a', 'a'))
+	ok(!timeSafeEqual('a', ''))
+	ok(timeSafeEqual('password12345',  'password12345'))
+	ok(!timeSafeEqual('password12345', 'password12345x'))//extra letter
+	ok(!timeSafeEqual('password12345', 'Password12345'))//case difference
+
+	let e = 'é'//demonstration of accented unicode characters and different normalized forms in javascript
+	let e1 = e.normalize('NFC')//the javascript string literal é is already in C form
+	let e2 = e.normalize('NFD')//convert it into D form
+	let e3 = e2.normalize('NFC')//round trip back to C form
+	ok(e.length == 1 && e1.length == 1 && e2.length == 2 && e3.length == 1)
+	ok(Data({text: e}).base16()  == 'c3a9')
+	ok(Data({text: e1}).base16() == 'c3a9')
+	ok(Data({text: e2}).base16() == '65cc81')//form D is different
+	ok(Data({text: e3}).base16() == 'c3a9')
+	ok(timeSafeEqual(e1, e2))//our function deals with that
+})
+
 //                                   _   
 //   ___ _ __   ___ _ __ _   _ _ __ | |_ 
 //  / _ \ '_ \ / __| '__| | | | '_ \| __|
@@ -1400,12 +1442,9 @@ noop(async () => {//see what these objects look like before we stringify and bas
 
 
 
-//  _              
-// | |_ __ _  __ _ 
-// | __/ _` |/ _` |
-// | || (_| | (_| |
-//  \__\__,_|\__, |
-//           |___/ 
+
+
+
 
 //                    _   _                
 //  ___  __ _ _   _  | |_(_)_ __ ___   ___ 

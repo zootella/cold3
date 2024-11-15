@@ -66,6 +66,18 @@ let statusText2 = ref('(status text 2)')
 
 async function sendMessage() {
 	log('hi from send message')
+	try {
+		let response = await $fetch('/api/message', {
+			method: 'POST',
+			body: {
+				b1: 'in vue file, fetch to nuxt api message'
+			}
+		})
+		log('api message success', look(response))
+		return response
+	} catch (e) {
+		log('caught', e)
+	}
 }
 
 /*

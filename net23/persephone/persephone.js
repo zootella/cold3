@@ -72,6 +72,27 @@ module.exports = { loadIcarus, requireModules }
 
 
 
+async function warmAmazonEmail() {
+	let { Sticker } = await loadIcarus();
+	let m = loadAmazonEmail()
+	log(look(m))
+}
+async function warmAmazonTexts() {
+	let { Sticker } = await loadIcarus();
+	let m = loadAmazonTexts()
+	log(look(m))
+}
+async function warmTwilio() {
+	let { Sticker } = await loadIcarus();
+	let m = loadTwilio()
+	log(look(m))
+}
+async function warmSendgrid() {
+	let { Sticker } = await loadIcarus();
+	let m = loadSendgrid()
+	log(look(m))
+}
+module.exports = { ...module.exports, warmAmazonEmail, warmAmazonTexts, warmTwilio, warmSendgrid }
 
 
 

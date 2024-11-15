@@ -6,7 +6,7 @@ import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 hasText, checkText, newline, deindent,
-Data, decrypt, subtleHash,
+Data, decrypt, subtleHash, timeSafeEqual,
 stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
@@ -569,7 +569,7 @@ async function doorLambdaOpen(lambdaEvent, lambdaContext) {
 	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
 	//(3) the network 23 access code is valid
 	let access = await getAccess()
-	if (door.body.ACCESS_NETWORK_23_SECRET != access.get('ACCESS_NETWORK_23_SECRET')) toss('bad access code', {door})
+	if (!timeSafeEqual(door.body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
 
 	return door
 }
@@ -733,6 +733,81 @@ noop(() => {//first, a demonstration of a promise race
 		log('3 versus 2 race error:', look(error))//hits here, gave up waiting, after 2 (not 3) seconds
 	})
 })
+
+
+
+
+
+
+
+
+//  _          _     _              _                     _   ____  _____ 
+// | |__  _ __(_) __| | __ _  ___  | |_ ___    _ __   ___| |_|___ \|___ / 
+// | '_ \| '__| |/ _` |/ _` |/ _ \ | __/ _ \  | '_ \ / _ \ __| __) | |_ \ 
+// | |_) | |  | | (_| | (_| |  __/ | || (_) | | | | |  __/ |_ / __/ ___) |
+// |_.__/|_|  |_|\__,_|\__, |\___|  \__\___/  |_| |_|\___|\__|_____|____/ 
+//                     |___/                                              
+
+/*
+forceCloudLambda false means local worker -> local lambda; cloud worker -> cloud lambda
+forceCloudLambda true  means local worker -> cloud lambda; cloud worker -> cloud lambda
+either way a cloud worker always calls to a cloud lambda, because callign down wouldn't work at all
+*/
+const forceCloudLambda = false
+const resourceLocalNetwork23 = 'http://localhost:4000/prod'//check your local Network 23 affliate
+const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivity via satellite
+export async function fetchNetwork23(nuxtDollarFetchFunction, warm, path, body) {//pass in $fetch which nuxt has imported in site/server/api/caller.js but not here in icarus
+
+	/*
+	warm is the module that the lambda will use, like "AE" for amazon email
+	if warm is set, then do a first warmup call, right here, before doing teh real call
+	so callers of fetchNetwork23 get that warmup service for free, and don't have to think about it
+	*/
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
+	let access = await getAccess()
+	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
+	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+	body.warm = warm
+	return await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
+}
+
+/*
+since adding sharp to lambdas, you've seen reliability problems!
+like a 500 internal server error that is corrected by hitting refresh in the browser
+and, the cold start is apparent now--a first hit in the morning takes seconds, then after that it's fast
+so make this bridge first hit a wakup endpoint, and then do the real request
+this simple stateless workaround won't slow things down much and is way easier than trying to clean up a failed request will preventing duplicate stateful real world action, like sending the user two text messages instead of one
+
+
+ok, the flow is
+1 do warm call
+2 if failed, do warm call again
+3 do real call
+
+and log alerts when second warm call fails, meaning you don't try
+or second warm call succeeds, meaning you fixed it but that was weird
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
