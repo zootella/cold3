@@ -1,6 +1,6 @@
 
 import {
-log, look, hasText, checkTag,
+log, look, checkTag,
 doorWorker, accessWorker, getAccess,
 accessTableInsert, accessTableQuery,
 timeSafeEqual,

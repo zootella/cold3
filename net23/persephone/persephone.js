@@ -9,9 +9,20 @@ async function loadIcarus() { if (!module_icarus) module_icarus = await import('
 
 let module_amazonEmail, module_amazonText, module_twilio, module_sendgrid//this project is CommonJS so that we can use require with node modules that may expect that classic styling
 function loadAmazonEmail() { if (!module_amazonEmail) module_amazonEmail = require('@aws-sdk/client-ses'); return module_amazonEmail }
-function loadAmazonTexts() { if (!module_amazonText)  module_amazonText  = require('@aws-sdk/client-sns'); return module_amazonText  }
-function loadTwilio()      { if (!module_twilio)      module_twilio      = require('twilio');              return module_twilio      }
-function loadSendgrid()    { if (!module_sendgrid)    module_sendgrid    = require('@sendgrid/mail');      return module_sendgrid    }
+function loadAmazonPhone() { if (!module_amazonText)  module_amazonText  = require('@aws-sdk/client-sns'); return module_amazonText  }
+function loadTwilioEmail() { if (!module_sendgrid)    module_sendgrid    = require('@sendgrid/mail');      return module_sendgrid    }
+function loadTwilioPhone() { if (!module_twilio)      module_twilio      = require('twilio');              return module_twilio      }
+
+async function warm(serviceDotProvider) {
+	await loadIcarus()//also always warm icarus
+	switch (serviceDotProvider) {
+		case 'Amazon.Email.': loadAmazonEmail(); break
+		case 'Amazon.Phone.': loadAmazonPhone(); break
+		case 'Twilio.Email.': loadTwilioEmail(); break
+		case 'Twilio.Phone.': loadTwilioPhone(); break
+	}
+}
+module.exports = {...module.exports, warm}
 
 async function requireModules() {
 	let { Sticker, getAccess, log, look, Size, Data } = await loadIcarus()
@@ -65,34 +76,13 @@ async function requireModules() {
 	return o
 }
 
-module.exports = { loadIcarus, requireModules }
+module.exports = {...module.exports, loadIcarus, requireModules}
 
 
 
 
 
 
-async function warmAmazonEmail() {
-	let { Sticker } = await loadIcarus();
-	let m = loadAmazonEmail()
-	log(look(m))
-}
-async function warmAmazonTexts() {
-	let { Sticker } = await loadIcarus();
-	let m = loadAmazonTexts()
-	log(look(m))
-}
-async function warmTwilio() {
-	let { Sticker } = await loadIcarus();
-	let m = loadTwilio()
-	log(look(m))
-}
-async function warmSendgrid() {
-	let { Sticker } = await loadIcarus();
-	let m = loadSendgrid()
-	log(look(m))
-}
-module.exports = { ...module.exports, warmAmazonEmail, warmAmazonTexts, warmTwilio, warmSendgrid }
 
 
 

@@ -756,7 +756,7 @@ either way a cloud worker always calls to a cloud lambda, because callign down w
 const forceCloudLambda = false
 const resourceLocalNetwork23 = 'http://localhost:4000/prod'//check your local Network 23 affliate
 const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivity via satellite
-export async function fetchNetwork23(nuxtDollarFetchFunction, warm, path, body) {//pass in $fetch which nuxt has imported in site/server/api/caller.js but not here in icarus
+export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService, path, body) {//pass in $fetch which nuxt has imported in site/server/api/caller.js but not here in icarus
 
 	/*
 	warm is the module that the lambda will use, like "AE" for amazon email
@@ -767,7 +767,7 @@ export async function fetchNetwork23(nuxtDollarFetchFunction, warm, path, body) 
 	let access = await getAccess()
 	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
 	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
-	body.warm = warm
+	body.warm = providerDotService
 	return await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
 }
 

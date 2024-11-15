@@ -2,7 +2,8 @@
 
 import {
 log, look, Now, sayTick, newline, Data, Tag,
-getBrowserTag
+getBrowserTag,
+validateEmail, validatePhone,
 } from 'icarus'
 
 import { ref, reactive, onMounted } from 'vue'
@@ -29,7 +30,7 @@ async function callAccount(action) {
 		t = Now() - t
 		log('success', look(response))
 		stick(look(response))
-		statusText.value = `This browser is ${response.signedIn2 ? 'signed in. 🟢' : 'signed out. ❌'} Fetch: ${t}ms. Note: ${response.note}`
+		signInStatus.value = `This browser is ${response.signedIn2 ? 'signed in. 🟢' : 'signed out. ❌'} Fetch: ${t}ms. Note: ${response.note}`
 		return response
 	} catch (e) {
 		log('caught', e)
@@ -55,22 +56,30 @@ async function runSnippet() {
 }
 
 let passwordModel = ref('')
-let statusText = ref('(no status yet)')
+let signInStatus = ref('')
 let stickText = ref('')
 function stick(s) { stickText.value += s + newline + newline }
 
 let addressModel = ref('')
 let messageModel = ref('')
-let providerModel = ref('')
-let statusText2 = ref('(status text 2)')
+let providerModel = ref('Amazon.')//make amazon default and radio selection always set to something
+let addressStatus = ref('')
 
 async function sendMessage() {
 	log('hi from send message')
+
+	let message = messageModel.value
+	let provider = providerModel.value
+	let address = addressModel.value
+	let service
+	if (validateEmail(address).valid) service = 'Email.'
+	if (validatePhone(address).valid) service = 'Phone.'
+
 	try {
 		let response = await $fetch('/api/message', {
 			method: 'POST',
 			body: {
-				b1: 'in vue file, fetch to nuxt api message'
+				provider, service, address, message,
 			}
 		})
 		log('api message success', look(response))
@@ -78,6 +87,18 @@ async function sendMessage() {
 	} catch (e) {
 		log('caught', e)
 	}
+}
+
+function addressKey() {
+	let s = addressModel.value
+	let emailValidation = validateEmail(s)
+	let phoneValidation = validatePhone(s)
+
+	let c = s.length + ' characters'
+	if (emailValidation.valid) c += `, valid email "${emailValidation.presented}"`
+	if (phoneValidation.valid) c += `, valid phone "${phoneValidation.presented}"`
+
+	addressStatus.value = c
 }
 
 /*
@@ -98,21 +119,23 @@ amazon calls cold3<>net23, also
 <template>
 
 <div>
-	<input v-model="passwordModel" type="text" placeholder="password" />{{' '}}
+	<input type="text" v-model="passwordModel" placeholder="password" />{{' '}}
 	<button @click="signIn">Sign In</button>
 	<button @click="signOut">Sign Out</button>
 	<button @click="signCheck">Sign Check</button>{{' '}}
 	<button @click="runSnippet">Snippet</button>
 </div>
 <div>
-	<p><i>{{ statusText }}</i></p>
+	<p><i>{{ signInStatus }}</i></p>
 </div>
 
 <div>
-	<p><input v-model="addressModel" type="text" placeholder="email, phone, or user name" /> <i>{{ statusText2 }}</i></p>
+
+
+	<p><input type="text" v-model="addressModel" @input="addressKey" placeholder="email, phone, or user name" /> <i>{{ addressStatus }}</i></p>
 	<p><input v-model="messageModel" type="text" placeholder="message" />
-	<input type="radio" id="amazon" value="Amazon" v-model="providerModel" /><label for="amazon">Amazon</label>
-	<input type="radio" id="twilio" value="Twilio" v-model="providerModel" /><label for="twilio">Twilio</label>{{' '}}
+	<input type="radio" id="idProviderA" value="Amazon." v-model="providerModel" /><label for="idProviderA">Amazon</label>
+	<input type="radio" id="idProviderT" value="Twilio." v-model="providerModel" /><label for="idProviderT">Twilio</label>{{' '}}
 	<button @click="sendMessage">Send</button></p>
 </div>
 

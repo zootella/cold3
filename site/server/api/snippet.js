@@ -1,9 +1,9 @@
 
 import {
 log, look, Now, Tag,
-doorWorker, accessWorker, awaitDoorPromises,
+doorWorker, accessWorker,
 dog,
-Sticker, snippet,
+Sticker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
