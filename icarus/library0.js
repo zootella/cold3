@@ -1162,6 +1162,7 @@ test(() => {
 // |_|                                          
 
 export async function hashPassword(thousandsOfIterations, saltData, passwordText) {
+	passwordText = passwordText.normalize('NFC')//use normalization Form C, canonical composition so if the user comes back and enters the same characters but somehow with a different composition, the hashes match and we grant them access
 
 	//first, format the password text as key material for PBKDF2
 	let materia = await crypto.subtle.importKey(
