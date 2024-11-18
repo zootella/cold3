@@ -741,6 +741,8 @@ noop(() => {//first, a demonstration of a promise race
 
 
 
+
+
 //  _          _     _              _                     _   ____  _____ 
 // | |__  _ __(_) __| | __ _  ___  | |_ ___    _ __   ___| |_|___ \|___ / 
 // | '_ \| '__| |/ _` |/ _` |/ _ \ | __/ _ \  | '_ \ / _ \ __| __) | |_ \ 
@@ -767,8 +769,18 @@ export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService
 	let access = await getAccess()
 	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
 	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+
 	body.warm = providerDotService
-	return await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
+	let resultWarm = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
+
+	body.warm = 'Action.'
+	let resultAction = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
+	return resultAction
+
+	/*
+	[]retry if first one fails, but only once
+
+	*/
 }
 
 /*

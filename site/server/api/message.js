@@ -1,6 +1,6 @@
 
 import {
-log, look,
+log, look, Size, toss,
 doorWorker,
 Sticker,
 fetchNetwork23,
@@ -18,19 +18,42 @@ async function doorProcessBelow(door) {
 
 	let {provider, service, address, message} = door.body//pull values from the body the untrusted page posted to us
 
-	let emailValidated = validateEmail(address)
-	let phoneValidated = validatePhone(address)
+	let validated
+	if      (service == 'Email.') validated = validateEmail(address)
+	else if (service == 'Phone.') validated = validatePhone(address)
+	else toss('form, service', {provider, service, address, message, door})//does this become logAlert? you want it to
 
-	let trustedService
-	if (emailValidated.valid) trustedService = 'Email.'
-	if (phoneValidated.valid) trustedService = 'Phone.'
-	if (trustedService != service) toss('form', {trustedService, service, address, door})
+	if (!validated.valid) toss('form, address', {provider, service, address, message, door})
+
+	//this is in place of checking the message and making it safe
+	message = message.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ' ').slice(0, Size.kb).trim()
+
+	o.network23Response = await fetchNetwork23($fetch, provider+service, '/message', {provider, service, address, message})
+	return o
+}
 
 
-	if (validateEmail(address).valid) trustedService = 'Email.'
-	if (validatePhone(address).valid) trustedService = 'Phone.'
+/*
+simple to do here:
 
-	log(look(message))
+provider must be Amazon. or Twilio.
+service must be Email. or Phone.
+based on service, address must validate as email or phone (you don't need to try both of them here)
+message must be not too long and not contain any special characters
+
+toss if doesn't make it through that gauntlet
+then call lambda to send the messaging
+all the database and datadog can be here in the worker, calling the lambda is essentially calling the api
+
+of course there's that first call where you just warm it up, and that's built into fetchNetwork23 providerDotService
+
+
+and to start
+-don't do the warmup thing yet, and
+-have the lambda just print out what it would do, to local console
+this is easy and you can do it now
+also, when you're sending locally, aws is already authenticated
+*/
 
 /*
 lots to do here, including:
@@ -48,19 +71,6 @@ you sorta came up with a format for enums in data, which is title case, ends wit
 this isn't bad, really--you can easily identify them in code, and can string them together if you need to
 */
 
-
-	let body = {}
-
-
-	let r = await fetchNetwork23($fetch, door.body.providerDotService, '/message', body)
-	o.network23Response = r
-
-
-
-
-
-	return o
-}
 
 
 /*

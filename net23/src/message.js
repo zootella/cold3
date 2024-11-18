@@ -1,5 +1,5 @@
 
-const { loadIcarus, warm } = require('../persephone/persephone.js');
+const { loadIcarus, warmMessage, sendMessage } = require('../persephone/persephone.js');
 
 exports.handler = async (lambdaEvent, lambdaContext) => {
 	try {
@@ -13,19 +13,18 @@ async function doorProcessBelow(door) {
 	try {
 		let { Sticker, runTests, defined, log, look } = await loadIcarus()
 
-		await warm(door.body.warm)
+		let {warm, provider, service, address, message} = door.body
 
-		response.message = 'hi from net23 snippet2, using door and require!'
-		response.sticker = Sticker().all
-		response.version = defined(process) ? process.version : 'process not defined'
-		response.tests = (await runTests()).message
-		response.warmed = door.body.warm
-
-
+		if (warm != 'Action.') {
+			await warmMessage(warm)
+		} else {
+			response.sent = await sendMessage(provider, service, address, message)
+		}
 
 	} catch (e) { response.error = e.stack }
 	return response
 }
+
 
 
 

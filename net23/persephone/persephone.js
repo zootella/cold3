@@ -13,7 +13,9 @@ function loadAmazonPhone() { if (!module_amazonText)  module_amazonText  = requi
 function loadTwilioEmail() { if (!module_sendgrid)    module_sendgrid    = require('@sendgrid/mail');      return module_sendgrid    }
 function loadTwilioPhone() { if (!module_twilio)      module_twilio      = require('twilio');              return module_twilio      }
 
-async function warm(serviceDotProvider) {
+async function warmMessage(serviceDotProvider) {
+	let {log} = await loadIcarus()
+	log('warming for '+serviceDotProvider)
 	await loadIcarus()//also always warm icarus
 	switch (serviceDotProvider) {
 		case 'Amazon.Email.': loadAmazonEmail(); break
@@ -22,7 +24,76 @@ async function warm(serviceDotProvider) {
 		case 'Twilio.Phone.': loadTwilioPhone(); break
 	}
 }
-module.exports = {...module.exports, warm}
+
+
+async function sendMessage(provider, service, address, message) {
+	let {log} = await loadIcarus()
+
+/*
+	let fromName
+	let fromEmail
+	let toEmail
+	let subjectText
+	let bodyText
+	let bodyHtml
+*/
+
+	if        (service == 'Email.' && provider == 'Amazon.') {
+
+//		return await sendEmail_useAmazon({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml})
+
+
+		log(`would send ${provider}, ${service}, ${address}, ${message}`)
+	} else if (service == 'Email.' && provider == 'Twilio.') {
+		log(`would send ${provider}, ${service}, ${address}, ${message}`)
+	} else if (service == 'Phone.' && provider == 'Amazon.') {
+		log(`would send ${provider}, ${service}, ${address}, ${message}`)
+	} else if (service == 'Phone.' && provider == 'Twilio.') {
+		log(`would send ${provider}, ${service}, ${address}, ${message}`)
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+module.exports = {...module.exports, warmMessage, sendMessage}
 
 async function requireModules() {
 	let { Sticker, getAccess, log, look, Size, Data } = await loadIcarus()
@@ -93,7 +164,6 @@ module.exports = {...module.exports, loadIcarus, requireModules}
 
 
 
-/*
 
 
 
@@ -106,17 +176,19 @@ module.exports = {...module.exports, loadIcarus, requireModules}
 //                                                                   
 
 async function sendEmail_useAmazon(c) {
+	let access = await getAccess()
 
 	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
-	const ses = await loadAmazonEmail()
 	let q = {
-		Source: `${fromName} <${fromEmail}>`,//must be verified email or domain
-		Destination: { ToAddresses: [toEmail] },
+		Source: `"${fromName}" <${fromEmail}>`,//must be verified email or domain
+		Destination: {
+			ToAddresses: [toEmail]
+		},
 		Message: {
-			Subject: { Data: subjectText },
+			Subject: {Data: subjectText, Charset: 'UTF-8'},
 			Body: {//both plain text and html for multipart/alternative email format
-				Text: { Data: bodyText },
-				Html: { Data: bodyHtml }
+				Text: {Data: bodyText, Charset: 'UTF-8'},
+				Html: {Data: bodyHtml, Charset: 'UTF-8'}
 			}
 		}
 	}
@@ -124,8 +196,9 @@ async function sendEmail_useAmazon(c) {
 
 	let t1 = Now()
 	try {
-		result = await ses.sendEmail(q).promise()
-		//sanity check to set success false
+		const {SESClient, SendEmailCommand} = loadAmazonEmail()
+		const client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
+		result = await client.send(new SendEmailCommand(q))
 	} catch (e) { error = e; success = false }
 	let t2 = Now()
 
@@ -133,10 +206,66 @@ async function sendEmail_useAmazon(c) {
 	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
 }
 
+async function sendEmail_useTwilio(c) {
+	let access = await getAccess()
+
+	let { fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml } = c
+	const q = {
+		from: {name: fromName, email: fromEmail},
+		to: toEmail,
+		subject: subjectText,
+		text: bodyText,
+		html: bodyHtml,
+	}
+	let result, error, success = true
+
+	let t1 = Now()
+	try {
+		const sendgrid = loadTwilioEmail()
+		sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
+		result = await sendgrid.send(q)
+	} catch (e) { error = e; success = false }
+	let t2 = Now()
+
+	q.tick = t1
+	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 async function sendText_useAmazon(c) {
 
 	let {toPhone, messageText} = c
-	const sns = await loadAmazonTexts()
+	const sns = loadAmazonPhone()
 	let p = {
 		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
 		Message: messageText,//must be 160 characters or less
@@ -154,7 +283,10 @@ async function sendText_useAmazon(c) {
 	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
 }
 
-async function sendEmail_useSendgrid(c) {
+module.exports = {...module.exports, loadIcarus, requireModules}
+
+/*
+async function sendEmail_useSendgrid_fetchEdition(c) {
 	let { ashFetchum } = await loadIcarus()
 	let access = await getAccess()
 	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
@@ -178,7 +310,7 @@ async function sendEmail_useSendgrid(c) {
 	return await ashFetchum(c, q)
 }
 
-async function sendText_useTwilio(c) {
+async function sendText_useTwilio_fetchEdition(c) {
 	let { ashFetchum } = await loadIcarus()
 	let access = await getAccess()
 
