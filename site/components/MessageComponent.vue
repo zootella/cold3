@@ -79,6 +79,7 @@ async function sendMessage() {
 		let response = await $fetch('/api/message', {
 			method: 'POST',
 			body: {
+				browserTag: getBrowserTag(),
 				provider, service, address, message,
 			}
 		})

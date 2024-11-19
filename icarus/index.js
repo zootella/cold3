@@ -55,6 +55,7 @@ ashFetchum, getBrowserAgentRendererAndVendor,
 export {
 
 tagLength, Tag, checkTag,
+checkEmail, checkPhone,
 validateEmail, validatePhone, validateCard,
 measurePasswordStrength,
 generatePosts, postDatabase,

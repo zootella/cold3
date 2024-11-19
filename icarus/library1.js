@@ -106,6 +106,10 @@ and return an object like { raw, adjusted, presented, normalized, valid: true/fa
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|
 //                                     
 
+export function checkEmail(raw) { let v = validateEmail(raw); if (!v.valid) toss('form', {v}); return v }
+export function checkPhone(raw) { let v = validatePhone(raw); if (!v.valid) toss('form', {v}); return v }
+//^these functions validate and throw; use them deeper in the stack when things have already been checked and corrected
+
 const periodIgnorers = ['gmail.com', 'googlemail.com', 'proton.me', 'protonmail.com', 'pm.me', 'protonmail.ch']//these providers, gmail and protonmail, deliver mail addressed to first.last@gmail.com to the user firstlast@gmail.com
 const _email = Joi.string().email({ tlds: { allow: false } }).required()//no list of true TLDs
 export function validateEmail(raw) {

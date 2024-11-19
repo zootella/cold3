@@ -13,11 +13,24 @@ function loadAmazonPhone() { if (!module_amazonText)  module_amazonText  = requi
 function loadTwilioEmail() { if (!module_sendgrid)    module_sendgrid    = require('@sendgrid/mail');      return module_sendgrid    }
 function loadTwilioPhone() { if (!module_twilio)      module_twilio      = require('twilio');              return module_twilio      }
 
-async function warmMessage(serviceDotProvider) {
-	let {log} = await loadIcarus()
-	log('warming for '+serviceDotProvider)
-	await loadIcarus()//also always warm icarus
-	switch (serviceDotProvider) {
+/*
+ttd november, await loadIcarus in every function is pretty cumbersome, so maybe once this is working, if you're feeling expeditionary, do try switching net23 to ESM and bringing in the four modules the ESM way; they should be able to handle it
+but do this in a branch you abandon if things don't work out
+
+chat says that the amazon stuff is ready for commonjs and ESM, while the twilio stuff expects commonjs (so let's see if it works with esm)
+
+let module_amazonEmail, module_amazonText, module_twilio, module_sendgrid
+async function loadAmazonEmail() { if (!module_amazonEmail) module_amazonEmail =  await import('@aws-sdk/client-ses');     return module_amazonEmail }
+async function loadAmazonPhone() { if (!module_amazonText)  module_amazonText  =  await import('@aws-sdk/client-sns');     return module_amazonText  }
+async function loadTwilioEmail() { if (!module_sendgrid)    module_sendgrid    = (await import('@sendgrid/mail')).default; return module_sendgrid    }
+async function loadTwilioPhone() { if (!module_twilio)      module_twilio      = (await import('twilio')).default;         return module_twilio      }
+
+also check sharp
+*/
+
+async function warmMessage(provider, service) {
+	await loadIcarus()//warm icarus, too
+	switch (provider+service) {
 		case 'Amazon.Email.': loadAmazonEmail(); break
 		case 'Amazon.Phone.': loadAmazonPhone(); break
 		case 'Twilio.Email.': loadTwilioEmail(); break
@@ -25,35 +38,153 @@ async function warmMessage(serviceDotProvider) {
 	}
 }
 
-
 async function sendMessage(provider, service, address, message) {
-	let {log} = await loadIcarus()
+	let {getAccess, Sticker, checkEmail, checkPhone, look, logAudit} = await loadIcarus()
 
-/*
-	let fromName
-	let fromEmail
-	let toEmail
-	let subjectText
-	let bodyText
-	let bodyHtml
-*/
+	let source = `${Sticker().all}.${provider}${service}`
+	let content = `${source} ~ ${message}`
 
-	if        (service == 'Email.' && provider == 'Amazon.') {
+	let result
+	if (service == 'Email.') {
 
-//		return await sendEmail_useAmazon({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml})
+		let access = await getAccess()
+		let fromName = access.get('ACCESS_MESSAGE_BRAND')
+		let fromEmail = access.get('ACCESS_MESSAGE_EMAIL')
+		let toEmail = checkEmail(address).adjusted
+		let subjectText = source
+		let bodyText = content
+		let bodyHtml = `<html><body><p style="font-size: 24px; color: gray; font-family: 'SF Pro Rounded', 'Noto Sans Rounded', sans-serif;">${content}</p></body></html>`
 
+		if      (provider == 'Amazon.') { result = await sendEmail_useAmazon({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
+		else if (provider == 'Twilio.') { result = await sendEmail_useTwilio({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
 
-		log(`would send ${provider}, ${service}, ${address}, ${message}`)
-	} else if (service == 'Email.' && provider == 'Twilio.') {
-		log(`would send ${provider}, ${service}, ${address}, ${message}`)
-	} else if (service == 'Phone.' && provider == 'Amazon.') {
-		log(`would send ${provider}, ${service}, ${address}, ${message}`)
-	} else if (service == 'Phone.' && provider == 'Twilio.') {
-		log(`would send ${provider}, ${service}, ${address}, ${message}`)
+	} else if (service == 'Phone.') {
+		let toPhone = checkPhone(address).normalized
+		let messageText = content
+
+		if      (provider == 'Amazon.') { result = await sendText_useAmazon({toPhone, messageText}) }
+		else if (provider == 'Twilio.') { result = await sendText_useTwilio({toPhone, messageText}) }
 	}
-
+	logAudit('message', {provider, service, address, message, result})
+	return result
 }
 
+
+
+
+
+
+//                       _ _                   _                     
+//   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___ 
+//  / _ \ '_ ` _ \ / _` | | |  / _` | '_ \ / _` | / __| '_ ` _ \/ __|
+// |  __/ | | | | | (_| | | | | (_| | | | | (_| | \__ \ | | | | \__ \
+//  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
+//                                                                   
+
+async function sendEmail_useAmazon(c) {
+	let {getAccess, Now} = await loadIcarus()
+	let access = await getAccess()
+
+	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
+	let q = {
+		Source: `"${fromName}" <${fromEmail}>`,//must be verified email or domain
+		Destination: {ToAddresses: [toEmail]},
+		Message: {
+			Subject: {Data: subjectText, Charset: 'UTF-8'},
+			Body: {//both plain text and html for multipart/alternative email format
+				Text: {Data: bodyText, Charset: 'UTF-8'},
+				Html: {Data: bodyHtml, Charset: 'UTF-8'}
+			}
+		}
+	}
+	let result, error, success = true
+
+	let t1 = Now()
+	try {
+		const {SESClient, SendEmailCommand} = loadAmazonEmail()
+		let client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
+		result = await client.send(new SendEmailCommand(q))
+	} catch (e) { error = e; success = false }
+	let t2 = Now()
+
+	q.tick = t1
+	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+}
+
+async function sendEmail_useTwilio(c) {
+	let {getAccess, Now} = await loadIcarus()
+	let access = await getAccess()
+
+	let { fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml } = c
+	let q = {
+		from: {name: fromName, email: fromEmail},
+		personalizations: [{to: [{email: toEmail}]}],
+		subject: subjectText,
+		content: [
+			{type: 'text/plain', value: bodyText},
+			{type: 'text/html',  value: bodyHtml}
+		]
+	}
+	let result, error, success = true
+
+	let t1 = Now()
+	try {
+		const sendgrid = loadTwilioEmail()
+		sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
+		result = await sendgrid.send(q)
+	} catch (e) { error = e; success = false }
+	let t2 = Now()
+
+	q.tick = t1
+	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+}
+
+async function sendText_useAmazon(c) {
+	let {getAccess, Now} = await loadIcarus()
+	let access = await getAccess()
+
+	let {toPhone, messageText} = c
+	let q = {
+		PhoneNumber: toPhone,
+		Message: messageText,
+	}
+	let result, error, success = true
+
+	let t1 = Now()
+	try {
+		const {SNSClient, PublishCommand} = loadAmazonPhone()
+		let client = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
+		result = await client.send(new PublishCommand(q))
+	} catch (e) { error = e; success = false }
+	let t2 = Now()
+
+	q.tick = t1
+	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+}
+
+async function sendText_useTwilio(c) {
+	let {getAccess, Now} = await loadIcarus()
+	let access = await getAccess()
+
+	let {toPhone, messageText} = c
+	let q = {
+		from: access.get('ACCESS_TWILIO_PHONE'),
+		to: toPhone,
+		body: messageText
+	}
+	let result, error, success = true
+
+	let t1 = Now()
+	try {
+		const twilio = loadTwilioPhone()
+		let client = twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
+		result = await client.messages.create(q)
+	} catch (e) { error = e; success = false }
+	let t2 = Now()
+
+	q.tick = t1
+	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+}
 
 
 
@@ -168,169 +299,9 @@ module.exports = {...module.exports, loadIcarus, requireModules}
 
 
 
-//                       _ _                   _                     
-//   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___ 
-//  / _ \ '_ ` _ \ / _` | | |  / _` | '_ \ / _` | / __| '_ ` _ \/ __|
-// |  __/ | | | | | (_| | | | | (_| | | | | (_| | \__ \ | | | | \__ \
-//  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
-//                                                                   
-
-async function sendEmail_useAmazon(c) {
-	let access = await getAccess()
-
-	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
-	let q = {
-		Source: `"${fromName}" <${fromEmail}>`,//must be verified email or domain
-		Destination: {
-			ToAddresses: [toEmail]
-		},
-		Message: {
-			Subject: {Data: subjectText, Charset: 'UTF-8'},
-			Body: {//both plain text and html for multipart/alternative email format
-				Text: {Data: bodyText, Charset: 'UTF-8'},
-				Html: {Data: bodyHtml, Charset: 'UTF-8'}
-			}
-		}
-	}
-	let result, error, success = true
-
-	let t1 = Now()
-	try {
-		const {SESClient, SendEmailCommand} = loadAmazonEmail()
-		const client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
-		result = await client.send(new SendEmailCommand(q))
-	} catch (e) { error = e; success = false }
-	let t2 = Now()
-
-	q.tick = t1
-	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
-}
-
-async function sendEmail_useTwilio(c) {
-	let access = await getAccess()
-
-	let { fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml } = c
-	const q = {
-		from: {name: fromName, email: fromEmail},
-		to: toEmail,
-		subject: subjectText,
-		text: bodyText,
-		html: bodyHtml,
-	}
-	let result, error, success = true
-
-	let t1 = Now()
-	try {
-		const sendgrid = loadTwilioEmail()
-		sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
-		result = await sendgrid.send(q)
-	} catch (e) { error = e; success = false }
-	let t2 = Now()
-
-	q.tick = t1
-	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
-}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-async function sendText_useAmazon(c) {
-
-	let {toPhone, messageText} = c
-	const sns = loadAmazonPhone()
-	let p = {
-		PhoneNumber: toPhone,//recipient phone number in E.164 format, libphonenumber-js can do this
-		Message: messageText,//must be 160 characters or less
-	}
-	let result, error, success = true
-
-	let t1 = Now()
-	try {
-		result = await sns.publish(p).promise()
-		//sanity check to set success false
-	} catch (e) { error = e; success = false }
-	let t2 = Now()
-
-	q.tick = t1
-	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
-}
-
-module.exports = {...module.exports, loadIcarus, requireModules}
-
-/*
-async function sendEmail_useSendgrid_fetchEdition(c) {
-	let { ashFetchum } = await loadIcarus()
-	let access = await getAccess()
-	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
-	let q = {
-		resource: access.get('ACCESS_SENDGRID_URL'),
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': 'Bearer '+access.get('ACCESS_SENDGRID_KEY_SECRET')
-		},
-		body: JSON.stringify({
-			from: { name: fromName, email: fromEmail },
-			personalizations: [{ to: [{ email: toEmail }] }],
-			subject: subjectText,
-			content: [
-				{ type: 'text/plain', value: bodyText },
-				{ type: 'text/html',  value: bodyHtml },
-			]
-		})
-	}
-	return await ashFetchum(c, q)
-}
-
-async function sendText_useTwilio_fetchEdition(c) {
-	let { ashFetchum } = await loadIcarus()
-	let access = await getAccess()
-
-	let {toPhone, messageText} = c
-	let q = {
-		resource: access.get('ACCESS_TWILIO_URL')+'/Accounts/'+access.get('ACCESS_TWILIO_SID')+'/Messages.json',
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-			'Authorization': 'Basic '+btoa(access.get('ACCESS_TWILIO_SID')+':'+access.get('ACCESS_TWILIO_AUTH_SECRET'))
-		},
-		body: new URLSearchParams({
-			From: access.get('ACCESS_TWILIO_PHONE'),//the phone number twilio rents to us to send texts from
-			To:   toPhone,//recipient phone number in E.164 format
-			Body: messageText
-		})
-	}
-	return await ashFetchum(c, q)//call my wrapped fetch
-}
-*/
 
 
 

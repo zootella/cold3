@@ -770,10 +770,10 @@ export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService
 	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
 	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
-	body.warm = providerDotService
+	body.warm = true
 	let resultWarm = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
 
-	body.warm = 'Action.'
+	body.warm = false
 	let resultAction = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
 	return resultAction
 

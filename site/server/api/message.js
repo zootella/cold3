@@ -5,6 +5,7 @@ doorWorker,
 Sticker,
 fetchNetwork23,
 validateEmail, validatePhone,
+accessTableQuery,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -16,7 +17,12 @@ async function doorProcessBelow(door) {
 
 	//here's where you need to revalidate the input from the form
 
-	let {provider, service, address, message} = door.body//pull values from the body the untrusted page posted to us
+	let {browserTag, provider, service, address, message} = door.body//pull values from the body the untrusted page posted to us
+
+	let rows = await accessTableQuery(browserTag)//get all the rows
+	let signedIn = rows.length && rows[0].signed_in
+	if (!signedIn) toss('account', {browserTag, door})
+	//^factor that into a function on level3
 
 	let validated
 	if      (service == 'Email.') validated = validateEmail(address)
