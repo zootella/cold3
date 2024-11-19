@@ -19,42 +19,42 @@ provider:
 # #### FOR API FUNCTIONS ####
 functions:
   ping5:
-    handler: src/ping5.handler #paths to distribution for upload after rollup
+    handler: dist/handler.ping5 #paths to distribution for upload after rollup
     timeout: 30 #let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
           path: ping5
           method: get #GET so you can check it with a regular browser
   test:
-    handler: src/test.handler
+    handler: dist/handler.test
     timeout: 30
     events:
       - http:
           path: test
           method: get
   snippet:
-    handler: src/snippet.handler
+    handler: dist/handler.snippet
     timeout: 30
     events:
       - http:
           path: snippet
           method: get
   snippet2:
-    handler: src/snippet2.handler
+    handler: dist/handler.snippet2
     timeout: 30
     events:
       - http:
           path: snippet2
           method: get
   snippet3:
-    handler: src/snippet3.handler
+    handler: dist/handler.snippet3
     timeout: 30
     events:
       - http:
           path: snippet3
           method: get
   door:
-    handler: src/door.handler
+    handler: dist/handler.door
     timeout: 30
     events:
       - http:

@@ -1,11 +1,8 @@
+import { Sticker, runTests } from 'icarus';
 
-const { loadIcarus } = require('../persephone/persephone.js');
-
-exports.handler = async (lambdaEvent, lambdaContext) => {
+export default async function handler (lambdaEvent, lambdaContext) {
 	let note = ''
 	try {
-		let { Sticker, runTests } = await loadIcarus()
-
 		note = `lambda says: ${(await runTests()).message}, ${Sticker().all}`
 
 	} catch (e) { note = 'ping test lambda error: '+e.stack }

@@ -1,21 +1,11 @@
+import { Sticker, getAccess, log, look, Size, Data } from 'icarus'
 //here's where you require all the node modules
 //code here can use library functions
 //lambdas can call in to functions here
 //but library code can't use functions here
 //so that is the order of things
 
-let module_icarus
-async function loadIcarus() { if (!module_icarus) module_icarus = await import('icarus'); return module_icarus }//icarus is ESM, so you have to await a dynamic import into this CommonJS module
-
-let module_amazonEmail, module_amazonText, module_twilio, module_sendgrid//this project is CommonJS so that we can use require with node modules that may expect that classic styling
-function loadAmazonEmail() { if (!module_amazonEmail) module_amazonEmail = require('@aws-sdk/client-ses'); return module_amazonEmail }
-function loadAmazonTexts() { if (!module_amazonText)  module_amazonText  = require('@aws-sdk/client-sns'); return module_amazonText  }
-function loadTwilio()      { if (!module_twilio)      module_twilio      = require('twilio');              return module_twilio      }
-function loadSendgrid()    { if (!module_sendgrid)    module_sendgrid    = require('@sendgrid/mail');      return module_sendgrid    }
-
-async function requireModules() {
-	let { Sticker, getAccess, log, look, Size, Data } = await loadIcarus()
-
+export async function requireModules() {
 	let cut = 512
 	let o = {}
 	try {
@@ -65,8 +55,6 @@ async function requireModules() {
 	return o
 }
 
-module.exports = { loadIcarus, requireModules }
-
 
 
 
@@ -87,12 +75,12 @@ module.exports = { loadIcarus, requireModules }
 
 
 
-//                       _ _                   _                     
-//   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___ 
+//                       _ _                   _
+//   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___
 //  / _ \ '_ ` _ \ / _` | | |  / _` | '_ \ / _` | / __| '_ ` _ \/ __|
 // |  __/ | | | | | (_| | | | | (_| | | | | (_| | \__ \ | | | | \__ \
 //  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
-//                                                                   
+//
 
 async function sendEmail_useAmazon(c) {
 
@@ -235,7 +223,7 @@ And wisdom to know the difference.
 
 
 
-async function snippet() {
+export async function snippet() {
 	return 'turned off twilio snippet as that is moving to persophne'
 	/*
 	let twilio = await loadTwilio()
@@ -265,7 +253,7 @@ and check datadog, amazon, and twilio dashboards throughout!
 
 
 //let's test this stuff with node on the command line
-async function snippet2(card) {
+export async function snippet2(card) {
 	log('hi from snippet')
 	log(look(card))
 
