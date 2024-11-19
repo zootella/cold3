@@ -51,7 +51,6 @@ async function placeSecrets() {
 	//you've already placed these secret files in the project root:
 	fs.access('.env')//throws if not found
 	fs.access('.env.local')
-	fs.access('card.js')
 
 	//copy them down where workspaces need them
 	fs.copyFile('.env', 'net23/.env')//lambda uses regular .env, and automatically deploys to amazon

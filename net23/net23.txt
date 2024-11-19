@@ -1753,9 +1753,8 @@ bash-5.2# uname -m, confirm x86_64 (by default, docker will match host architect
 		# yarn --version
 		# exit
 
-$ docker cp ../.env           container23:/code/cold3/.env
-$ docker cp ../.env.local     container23:/code/cold3/.env.local
-$ docker cp ../card.js        container23:/code/cold3/card.js
+$ docker cp ../.env       container23:/code/cold3/.env
+$ docker cp ../.env.local container23:/code/cold3/.env.local
 
 		# git pull
 		# yarn install
@@ -1766,7 +1765,7 @@ $ docker cp ../card.js        container23:/code/cold3/card.js
 
 $ rm -rf .serverless
 $ docker cp container23:/code/cold3/net23/.serverless .serverless
-$ docker cp container23:/code/cold3/wrapper.txt ../wrapper.txt
+$ docker cp container23:/code/cold3/wrapper.txt       ../wrapper.txt
 $ docker cp container23:/code/cold3/icarus/wrapper.js ../icarus/wrapper.js
 
 $ yarn justdeploy (have serverless deploy the .serverless folder without building it first)
