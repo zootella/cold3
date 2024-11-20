@@ -407,6 +407,66 @@ function readText(s) { if (s === '') return s; checkText(s); return squareDecode
 
 
 
+2024nov20 ~ new design note
+
+some of these ideas may be known inventions, others discredited antipatterns
+every row has a tick and a tag
+code never deletes a row, rather, it adds a new one later which invalidates it
+or marks a cell on the row as deleted--the column name for this is standard
+
+instead of having a table for phone numbers and a table for email addresses,
+and then doing long joins from users to each,
+what if we had two columns in an existing table
+the first tells the type of the contents of the second, like "Email." or "Phone."
+and then the second has text with the value in the correct form for that type
+
+so then if you just want all the email address in the database
+instead of looking at one entire special email table
+you filter the unified omnitable by "Email."
+
+this is starting to be a little more like a document database
+but could be simple enough, and will hugely reduce the number of tables that are in there
+when you add a new data type, you don't have to create a new table for it
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
