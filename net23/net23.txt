@@ -1661,6 +1661,8 @@ dollar sign on the left is your host computer; hashtag indented are commands ins
 $ brew update
 $ brew install --cask docker
 
+on mac, run Docker.app to start Docker Desktop for the command line docker to work
+
 $ docker --version
 $ docker-compose --version
 $ docker run hello-world
