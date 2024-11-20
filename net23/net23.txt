@@ -1727,12 +1727,19 @@ $ docker rm container9
 
 ==== docker setup
 
-$ docker run -it --platform linux/amd64 --name container23 amazonlinux:2023 /bin/bash
-$ exit
-$ docker start -ai container23
+use the platform attribute to specify what processor architecture we want
+switching from default amd64 x86 to faster better cheaper amazon graviton arm64
+notice the subtle aMD versus aRM below!
 
-macmini% uname -m, confirm arm64
-bash-5.2# uname -m, confirm x86_64 (by default, docker will match host architecture, and yarn will get the same wrong native sharp libraries! but also: you should probably have started with the new one, amazon graviton processors, which are arm!!)
+$ docker run -it --platform linux/amd64 --name container23amd amazonlinux:2023 /bin/bash
+$ docker run -it --platform linux/arm64 --name container23arm amazonlinux:2023 /bin/bash
+$ exit
+$ docker start -ai container23arm
+
+$ uname -m
+arm64  ~host apple silicon mac mini
+x86_64  ~container made with platform linux/amd64 to match amazon lambda default
+aarch64  ~container made with platform linux/arm64 to match amazon graviton
 
 		# yum update -y
 		# yum install -y which git tar zip
@@ -1740,21 +1747,19 @@ bash-5.2# uname -m, confirm x86_64 (by default, docker will match host architect
 		# source ~/.nvm/nvm.sh
 		# nvm install 20
 		# npm install -g yarn@1
+		# node --version
+		# yarn --version
 
 		# mkdir code
 		# cd code
 		# git clone https://github.com/zootella/cold3
 		# cd cold3
-		# git checkout auto1
+		# git checkout graviton1  ~branch name if you're working on a branch right now
 		# rm yarn.lock
 		# yarn install
 
-		# node --version
-		# yarn --version
-		# exit
-
-$ docker cp ../.env       container23:/code/cold3/.env
-$ docker cp ../.env.local container23:/code/cold3/.env.local
+$ docker cp ../.env       container23arm:/code/cold3/.env
+$ docker cp ../.env.local container23arm:/code/cold3/.env.local
 
 		# git pull
 		# yarn install
@@ -1764,9 +1769,9 @@ $ docker cp ../.env.local container23:/code/cold3/.env.local
 		# yarn build
 
 $ rm -rf .serverless
-$ docker cp container23:/code/cold3/net23/.serverless .serverless
-$ docker cp container23:/code/cold3/wrapper.txt       ../wrapper.txt
-$ docker cp container23:/code/cold3/icarus/wrapper.js ../icarus/wrapper.js
+$ docker cp container23arm:/code/cold3/net23/.serverless .serverless
+$ docker cp container23arm:/code/cold3/wrapper.txt       ../wrapper.txt
+$ docker cp container23arm:/code/cold3/icarus/wrapper.js ../icarus/wrapper.js
 
 $ yarn justdeploy (have serverless deploy the .serverless folder without building it first)
 $ cd ../site (then also deploy the nuxt site to cloudflare)
@@ -1776,7 +1781,7 @@ $ git status (and commit and push to github the sealed version you deployed)
 
 ==== docker loop
 
-$ docker start -ai container23
+$ docker start -ai container23arm
 
 		# source ~/.nvm/nvm.sh
 		# nvm install 20
@@ -1794,10 +1799,9 @@ $ docker start -ai container23
 		# yarn build
 
 $ rm -rf .serverless
-$ docker cp container23:/code/cold3/net23/.serverless .serverless
-$ docker cp container23:/code/cold3/wrapper.txt ../wrapper.txt
-$ docker cp container23:/code/cold3/icarus/wrapper.js ../icarus/wrapper.js
-		# exit
+$ docker cp container23arm:/code/cold3/net23/.serverless .serverless
+$ docker cp container23arm:/code/cold3/wrapper.txt ../wrapper.txt
+$ docker cp container23arm:/code/cold3/icarus/wrapper.js ../icarus/wrapper.js
 
 $ yarn justdeploy
 $ cd ../site
@@ -1814,10 +1818,10 @@ REPOSITORY    TAG       IMAGE ID       CREATED       SIZE
 amazonlinux   2023      5bf4cf420ef7   2 weeks ago   214MB
 % docker ps -a
 CONTAINER ID   IMAGE              COMMAND       CREATED        STATUS                    PORTS     NAMES
-c65859f86d9a   amazonlinux:2023   "/bin/bash"   22 hours ago   Exited (0) 17 hours ago             container23
+c65859f86d9a   amazonlinux:2023   "/bin/bash"   22 hours ago   Exited (0) 17 hours ago             container23arm
 0c25625e7aaf   amazonlinux:2023   "/bin/bash"   30 hours ago   Exited (0) 29 hours ago             layer1
 
-enter container23 to do the loop tasks above
+enter container23arm to do the loop tasks above
 the other container, layer1, is where you made lambda layers for sharp and twilio that you could not get working
 
 using these notes, you were building the zip inside docker,
