@@ -1,9 +1,3 @@
-//stowaway.mjs
-/*
-net23's package.json has type set to commonjs so we can require classic modules for lambda
-but we want to run this script with $ yarn stowaway
-the extension .mjs lets us keep things modern here
-*/
 
 import fs from 'fs-extra'
 

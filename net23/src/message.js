@@ -1,9 +1,14 @@
 
-const { loadIcarus, warmMessage, sendMessage } = require('../persephone/persephone.js');
+import {
+Sticker, doorLambda,
+} from 'icarus'
 
-exports.handler = async (lambdaEvent, lambdaContext) => {
+import {
+warmMessage, sendMessage,
+} from '../persephone/persephone.js'
+
+export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
-		let { doorLambda } = await loadIcarus()
 		return doorLambda({lambdaEvent, lambdaContext, doorProcessBelow})
 	} catch (e) { console.error('[OUTER]', e) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
@@ -11,7 +16,6 @@ exports.handler = async (lambdaEvent, lambdaContext) => {
 async function doorProcessBelow(door) {
 	let response = {}
 	try {
-		let { Sticker, runTests, defined, log, look } = await loadIcarus()
 
 		let {warm, provider, service, address, message} = door.body
 
@@ -24,22 +28,6 @@ async function doorProcessBelow(door) {
 	} catch (e) { response.error = e.stack }
 	return response
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /*

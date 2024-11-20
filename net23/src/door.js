@@ -1,16 +1,20 @@
 
-const { loadIcarus } = require('../persephone/persephone.js');
+import {
+Sticker, doorLambda, dog,
+} from 'icarus'
 
-exports.handler = async (lambdaEvent, lambdaContext) => {
+import {
+requireModules,
+} from '../persephone/persephone.js'
+
+export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
-		let { doorLambda } = await loadIcarus()
 		return doorLambda({lambdaEvent, lambdaContext, doorProcessBelow})
 	} catch (e) { console.error('[OUTER]', e) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }
 async function doorProcessBelow(door) {
 	let response = {}
-	let { Sticker, dog } = await loadIcarus()
 
 	//CHECKPOINT 5
 	dog('door lambda')

@@ -1,9 +1,14 @@
 
-const { loadIcarus, requireModules } = require('../persephone/persephone.js');
+import {
+Sticker, doorLambda, runTests, defined,
+} from 'icarus'
 
-exports.handler = async (lambdaEvent, lambdaContext) => {
+import {
+requireModules,
+} from '../persephone/persephone.js'
+
+export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
-		let { doorLambda } = await loadIcarus()
 		return doorLambda({lambdaEvent, lambdaContext, doorProcessBelow})
 	} catch (e) { console.error('[OUTER]', e) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
@@ -11,7 +16,6 @@ exports.handler = async (lambdaEvent, lambdaContext) => {
 async function doorProcessBelow(door) {
 	let response = {}
 	try {
-		let { Sticker, runTests, defined } = await loadIcarus()
 
 		response.message = 'hi from net23 snippet2, using door and require!'
 		response.sticker = Sticker().all
@@ -22,3 +26,4 @@ async function doorProcessBelow(door) {
 	} catch (e) { response.error = e.stack }
 	return response
 }
+

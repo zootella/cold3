@@ -1,19 +1,17 @@
 
-const { loadIcarus } = require('../persephone/persephone.js');
+import {
+Sticker, runTests,
+} from 'icarus'
 
-exports.handler = async (lambdaEvent, lambdaContext) => {
+export const handler = async (lambdaEvent, lambdaContext) => {
 	let note = ''
 	try {
-		let { Sticker, runTests } = await loadIcarus()
 
 		note = `lambda says: ${(await runTests()).message}, ${Sticker().all}`
 
 	} catch (e) { note = 'ping test lambda error: '+e.stack }
 	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }
 }
-
-
-
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered
@@ -22,4 +20,3 @@ exports.handler = async (lambdaEvent, lambdaContext) => {
 -- ./icarus/icarus.vue        vite
 -- ./test.js                  node
 */
-

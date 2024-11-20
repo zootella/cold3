@@ -3,7 +3,7 @@
   "description": "Network 23",
   "license": "GPL-3.0-only",
   "version": "0.1.0",
-  "type": "commonjs",
+  "type": "module",
   "private": true,
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
     "build": "serverless package",
     "deploy": "serverless deploy --force",
     "justdeploy": "serverless deploy --force --package .serverless",
-    "stowaway": "node stowaway.mjs",
+    "stowaway": "node stowaway.js",
     "www": "serverless s3sync"
   },
   "dependencies": {

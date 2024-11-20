@@ -1,10 +1,15 @@
 
-const { loadIcarus } = require('../persephone/persephone.js');
+import {
+Sticker,
+} from 'icarus'
 
-exports.handler = async (lambdaEvent, lambdaContext) => {
+import {
+requireModules,
+} from '../persephone/persephone.js'
+
+export const handler = async (lambdaEvent, lambdaContext) => {
 	let note = ''
 	try {
-		let { Sticker } = await loadIcarus()
 
 		note = `lambda says: ${Sticker().all}, ping5done`
 
