@@ -1731,7 +1731,7 @@ use the platform attribute to specify what processor architecture we want
 switching from default amd64 x86 to faster better cheaper amazon graviton arm64
 notice the subtle aMD versus aRM below!
 
-$ docker run -it --platform linux/amd64 --name container23amd amazonlinux:2023 /bin/bash
+$ docker run -it --platform linux/amd64 --name container23    amazonlinux:2023 /bin/bash
 $ docker run -it --platform linux/arm64 --name container23arm amazonlinux:2023 /bin/bash
 $ exit
 $ docker start -ai container23arm
@@ -1815,11 +1815,14 @@ from this experimentation and use, here's what you've got on your mac:
 
 % docker images
 REPOSITORY    TAG       IMAGE ID       CREATED       SIZE
-amazonlinux   2023      5bf4cf420ef7   2 weeks ago   214MB
+amazonlinux   2023      6c2c3bb2ce48   6 days ago    248MB
+<none>        <none>    5bf4cf420ef7   4 weeks ago   214MB  ~you're seeing this remnant from amazonlinux a month ago but leaving it alone
+
 % docker ps -a
-CONTAINER ID   IMAGE              COMMAND       CREATED        STATUS                    PORTS     NAMES
-c65859f86d9a   amazonlinux:2023   "/bin/bash"   22 hours ago   Exited (0) 17 hours ago             container23arm
-0c25625e7aaf   amazonlinux:2023   "/bin/bash"   30 hours ago   Exited (0) 29 hours ago             layer1
+CONTAINER ID   IMAGE              COMMAND       CREATED             STATUS                   PORTS     NAMES
+270df468a535   amazonlinux:2023   "/bin/bash"   About an hour ago   Up About an hour                   container23arm
+c65859f86d9a   5bf4cf420ef7       "/bin/bash"   2 weeks ago         Exited (0) 2 weeks ago             container23
+0c25625e7aaf   5bf4cf420ef7       "/bin/bash"   2 weeks ago         Exited (0) 2 weeks ago             layer1
 
 enter container23arm to do the loop tasks above
 the other container, layer1, is where you made lambda layers for sharp and twilio that you could not get working
@@ -1837,33 +1840,6 @@ you also worked on scripting the loop tasks, using a bash .sh script
 the hard part there was being able to tell on the outside when the build on the inside finished
 you planned a little done.txt file inside that outside would watch
 you never ran the script draft now that stowaway is the fast way, and all inside docker is the good way
-
-                _     _ _            _                  
-  __ _ _ __ ___| |__ (_) |_ ___  ___| |_ _   _ _ __ ___ 
- / _` | '__/ __| '_ \| | __/ _ \/ __| __| | | | '__/ _ \
-| (_| | | | (__| | | | | ||  __/ (__| |_| |_| | | |  __/
- \__,_|_|  \___|_| |_|_|\__\___|\___|\__|\__,_|_|  \___|
-                                                        
-starting that over, you probably should have picked arm64 for lambda instead of x86_64
-arm may have slightly longer cold start times
-
-x86_64 (Intel/AMD) the default you're using (but not specifying--you could specify it explicitly)
-ARM64 (AWS Graviton) 20-30% quicker cold start time, 20-40% better performance for multi-threaded tasks, 20-30% cheaper monetary cost
-
-you can specify architecture in serverless.yml:
-provider:
-  name: aws
-  runtime: nodejs20.x
-  architectures:
-    - arm64
-
-and detect it in the javascript of the handler:
-process.arch
-process.platform
-process.version//node version
-
-make a docker container to match it and install modules to deploy:
-$ docker run -it --platform linux/arm64 --name container23arm amazonlinux:2023 /bin/bash
 
                   _    
  _ __   __ _  ___| | __
