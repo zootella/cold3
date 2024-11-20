@@ -3,9 +3,9 @@ service: net23
 frameworkVersion: '3' #version 4 is out, but doesn't work with the plugins
 useDotenv: true
 plugins:
-  - serverless-offline #emulates Lambda and API Gateway for local development
-  - serverless-domain-manager #use our domain for API Gateway and Lambda
-  - serverless-s3-sync #upload static site files from www with $ npm run sync
+  # - serverless-offline #emulates Lambda and API Gateway for local development
+  # - serverless-domain-manager #use our domain for API Gateway and Lambda
+  # - serverless-s3-sync #upload static site files from www with $ npm run sync
 
 provider:
   name: aws
