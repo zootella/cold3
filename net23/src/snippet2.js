@@ -14,16 +14,20 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }
 async function doorProcessBelow(door) {
-	let response = {}
+	let o = {}
 	try {
 
-		response.message = 'hi from net23 snippet2, using door and require!'
-		response.sticker = Sticker().all
-		response.version = defined(process) ? process.version : 'process not defined'
-		response.tests = (await runTests()).message
-		response.modules = await requireModules()
+		o.message = 'hi from net23 snippet2, using door and require!'
+		o.sticker = Sticker().all
+		if (defined(typeof process)) {
+			o.processArch = process.arch
+			o.processPlatform = process.platform
+			o.processVersion = process.version//node version
+		}
+		o.tests = (await runTests()).message
+		o.modules = await requireModules()
 
-	} catch (e) { response.error = e.stack }
-	return response
+	} catch (e) { o.error = e.stack }
+	return o
 }
 
