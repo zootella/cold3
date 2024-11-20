@@ -3,10 +3,6 @@ import {
 Sticker,
 } from 'icarus'
 
-import {
-requireModules,
-} from '../persephone/persephone.js'
-
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let note = ''
 	try {

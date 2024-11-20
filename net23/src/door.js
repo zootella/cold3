@@ -3,10 +3,6 @@ import {
 Sticker, doorLambda, dog,
 } from 'icarus'
 
-import {
-requireModules,
-} from '../persephone/persephone.js'
-
 export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
 		return doorLambda({lambdaEvent, lambdaContext, doorProcessBelow})

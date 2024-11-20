@@ -9,8 +9,10 @@ plugins:
 
 provider:
   name: aws
-  runtime: nodejs20.x #as of 2024jul, Node 16 is deprecated, and 18 and 20 are current
   region: us-east-1 #Lambda@Edge requires North Virginia
+  architectures:
+    - arm64 #choose Amazon's custom ARM64 Graviton processor for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to the default x86_64
+  runtime: nodejs20.x #as of 2024jul, Node 16 is deprecated, and 18 and 20 are current
   stage: prod #set production by default, as this script includes resources like buckets
   environment: #name variables in .env file here so they are on process.env for the Lambda code
     ACCESS_KEY_SECRET:         ${env:ACCESS_KEY_SECRET}
