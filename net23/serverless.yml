@@ -9,27 +9,26 @@ plugins:
 
 provider:
   name: aws
-  region: us-east-1
-  runtime: nodejs20.x
-  stage: prod
-  environment:
+  region: us-east-1 #Lambda@Edge requires North Virginia
+  runtime: nodejs20.x #as of 2024jul, Node 16 is deprecated, and 18 and 20 are current
+  architecture: arm64 #choose Amazon's custom Graviton2 chip for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to default x86_64
+  stage: prod #set production by default, as this script includes resources like buckets
+  environment: #name variables in .env file here so they are on process.env for the Lambda code
     ACCESS_KEY_SECRET:         ${env:ACCESS_KEY_SECRET}
-    ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE}
-  iam:
+    ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE} #promises not to change through automatic renewals
+  iam: #grant the identity role that runs the lambda functions additional permissions
     role:
       statements:
         - Effect: Allow
           Action:
-            - ses:*
+            - ses:* #give them full run of the messaging apis
             - sns:*
-          Resource: '*'
+          Resource: '*' #for all the resources we might use, like sns topics or ses domains
 
 # #### FOR API FUNCTIONS ####
 functions:
   ping5:
     handler: src/ping5.handler #paths to distribution for upload after rollup
-    architectures:
-      - arm64
     timeout: 30 #let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
@@ -37,8 +36,6 @@ functions:
           method: get #GET so you can check it with a regular browser
   test:
     handler: src/test.handler
-    architectures:
-      - arm64
     timeout: 30
     events:
       - http:
@@ -46,8 +43,6 @@ functions:
           method: get
   snippet:
     handler: src/snippet.handler
-    architectures:
-      - arm64
     timeout: 30
     events:
       - http:
@@ -55,8 +50,6 @@ functions:
           method: get
   snippet2:
     handler: src/snippet2.handler
-    architectures:
-      - arm64
     timeout: 30
     events:
       - http:
@@ -64,8 +57,6 @@ functions:
           method: get
   message:
     handler: src/message.handler
-    architectures:
-      - arm64
     timeout: 30
     events:
       - http:
@@ -73,8 +64,6 @@ functions:
           method: post
   snippet3:
     handler: src/snippet3.handler
-    architectures:
-      - arm64
     timeout: 30
     events:
       - http:
@@ -82,8 +71,6 @@ functions:
           method: get
   door:
     handler: src/door.handler
-    architectures:
-      - arm64
     timeout: 30
     events:
       - http:

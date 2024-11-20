@@ -10,7 +10,6 @@
     "url": "https://github.com/zootella/cold3.git"
   },
   "scripts": {
-    "sv": "serverless --version",
     "local": "serverless offline --reloadHandler",
     "build": "serverless package",
     "deploy": "serverless deploy --force",
