@@ -131,80 +131,27 @@ and maybe all that could be done just once at the start of the project, and docu
  \__, |_|\__|  \___|_| |_|\___|\__,_|\__| |___/_| |_|\___|\___|\__|
  |___/                                                             
 
-
-
 $ git clone git@github.com:username/repository.git
 
-$ git checkout -b name1      # Create a new branch and switch to it
-$ git push -u origin name1   # Push the new branch to github and set the upstream
+$ git checkout -b name1             # Create a new branch and switch to it
+$ git push -u origin name1          # Push the new branch to github and set the upstream
 
-$ git fetch origin           # Later, on another computer, find out about new branches up at origin
-$ git branch -vv             # List branches and their origins
-$ git checkout name1         # And switch to one of the new ones there
-
-$ git checkout name1         # Switch to the 'name1' branch
-$ git checkout main          # Switch back to the main branch
-$ git diff main              # Show differences between the current branch and 'main'
-$ git diff name1             # Show differences between 'main' (or current branch) and 'name1'
-
-$ git merge --dry-run name1  # Simulate a merge with 'name1' to check for conflicts
-$ git merge name1            # Merge 'name1' into the current branch, handling conflicts if they arise
-$ git merge --abort          # Cancel a merge if conflicts are difficult to resolve
-
-$ git branch -d name1             # Delete 'name1' after merging it (safe deletion)
-$ git push origin --delete name1  # And, you should delete it from GitHub, the origin
-
-
-
-steps to merge in a simple branch:
-
-$ git checkout card1
-$ git diff main >> diff.diff  #see the changes the merge will make
-$ git checkout main
-$ git merge card1
-$ git push origin main
-
-
-
-
-here are some steps you did to get main
-
-after lots of branching away to try out new features,
-land1 is ready to replace main
-but, it's been so long that there are some changes on main
-you did a diff to make sure that you don't need any of thm
-
-to be able to do a fast forward merge,
-backup the current state of main to a new branch named main1
-reset main back to the branch point, ec2023c in this example
-and then main's merge of land1 gets to be fast forward
-
-$ git checkout main
-$ git branch main1
-$ git push origin main1
-$ git reset --hard ec2023c
-$ git push origin main --force-with-lease
-$ git merge land1
-$ git push origin main
-
-
+$ git fetch origin                  # Later, on another computer, find out about new branches up at origin
+$ git branch -vv                    # List branches and their origins
+$ git checkout name1                # And switch to one of the new ones there
+$ git checkout main                 # Switch back to the main branch
 
 $ git log --graph --oneline --decorate --all
 $ git log --graph --oneline --decorate --all --pretty=format:"%h %ad %d %s" --date=format:"%Y%b%d"
 $ git diff ec2023c..9edded6
+$ git diff name1 name2 > diff.diff  #see the subway graph, and do a diff between two commits or branches; where you are doesn't matter
 
-see the subway graph, and do a diff between two commits picking them out by their hashes
+$ git checkout main                 #make sure main is a direct ancestor of name1 for an easy fast-forward merge
+$ git merge name1
+$ git push origin main
 
-
-
-
-
-
-
-
-
-
-
+$ git branch -d name1               # Delete 'name1' after merging it (safe deletion)
+$ git push origin --delete name1    # And, you should delete it from GitHub, the origin
 
 										 _                         _           _   
 	___ _ __ ___  __ _| |_ ___   _ __  _ __ ___ (_) ___  ___| |_ 
