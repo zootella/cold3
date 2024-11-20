@@ -11,8 +11,6 @@ provider:
   name: aws
   region: us-east-1
   runtime: nodejs20.x
-  architectures:
-    - arm64
   stage: prod
   environment:
     ACCESS_KEY_SECRET:         ${env:ACCESS_KEY_SECRET}
@@ -30,6 +28,8 @@ provider:
 functions:
   ping5:
     handler: src/ping5.handler #paths to distribution for upload after rollup
+    architectures:
+      - arm64
     timeout: 30 #let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
@@ -37,6 +37,8 @@ functions:
           method: get #GET so you can check it with a regular browser
   test:
     handler: src/test.handler
+    architectures:
+      - arm64
     timeout: 30
     events:
       - http:
@@ -44,6 +46,8 @@ functions:
           method: get
   snippet:
     handler: src/snippet.handler
+    architectures:
+      - arm64
     timeout: 30
     events:
       - http:
@@ -51,6 +55,8 @@ functions:
           method: get
   snippet2:
     handler: src/snippet2.handler
+    architectures:
+      - arm64
     timeout: 30
     events:
       - http:
@@ -58,6 +64,8 @@ functions:
           method: get
   message:
     handler: src/message.handler
+    architectures:
+      - arm64
     timeout: 30
     events:
       - http:
@@ -65,6 +73,8 @@ functions:
           method: post
   snippet3:
     handler: src/snippet3.handler
+    architectures:
+      - arm64
     timeout: 30
     events:
       - http:
@@ -72,6 +82,8 @@ functions:
           method: get
   door:
     handler: src/door.handler
+    architectures:
+      - arm64
     timeout: 30
     events:
       - http:
