@@ -28,7 +28,7 @@ provider:
 # #### FOR API FUNCTIONS ####
 functions:
   ping5:
-    handler: src/ping5.handler #paths to distribution for upload after rollup
+    handler: src/ping5.handler
     timeout: 30 #let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
