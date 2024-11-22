@@ -4,7 +4,7 @@ Sticker, doorLambda, runTests, defined,
 } from 'icarus'
 
 import {
-requireModules,
+snippet2,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
@@ -25,7 +25,7 @@ async function doorProcessBelow(door) {
 			o.processVersion = process.version//node version
 		}
 		o.tests = (await runTests()).message
-		o.modules = await requireModules()
+		o.modules = await snippet2()
 
 	} catch (e) { o.error = e.stack }
 	return o

@@ -3,6 +3,9 @@ import {
 Sticker, runTests,
 } from 'icarus'
 
+import {//not importing anything, but this lets tests get listed to run below
+} from '../persephone/persephone.js'
+
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let note = ''
 	try {

@@ -14,7 +14,7 @@ export default defineEventHandler(async (workerEvent) => {
 	try {
 
 		let workerNote = (await runTests()).message
-		let lambdaNote = (await $fetch('https://api.net23.cc/test')).note
+		let lambdaNote = (await $fetch(Sticker().isCloud ? 'https://api.net23.cc/test' : 'http://localhost:4000/prod/test')).note
 		note = `worker says: ${workerNote}, ${Sticker().all}; ${lambdaNote}`
 
 	} catch (e) { note = 'ping test worker error: '+e.stack }

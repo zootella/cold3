@@ -4,7 +4,7 @@ Sticker, doorLambda,
 } from 'icarus'
 
 import {
-warmMessage, sendMessage,
+warm, sendMessage,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
@@ -20,7 +20,7 @@ async function doorProcessBelow(door) {
 		let {warm, provider, service, address, message} = door.body
 
 		if (warm) {
-			await warmMessage(provider, service)
+			await warm(provider+service)
 		} else {
 			response.result = await sendMessage(provider, service, address, message)
 		}
@@ -28,18 +28,3 @@ async function doorProcessBelow(door) {
 	} catch (e) { response.error = e.stack }
 	return response
 }
-
-
-/*
-this api endpoint, based on body parameters, let's you warm or send messages four ways
-also, it requires post, and doesn't allow get; see how you do that in door
-*/
-
-
-
-
-
-
-
-
-

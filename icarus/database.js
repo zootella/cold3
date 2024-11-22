@@ -476,6 +476,64 @@ export async function database_pingCount() {
 
 
 
+//adding without reviewing all the work above here
+
+function checkCell(column, value) {
+	if      (column.endsWith('_tag'))  checkCell_text(value, tagLength)
+	else if (column.endsWith('_hash')) checkCell_text(value, hashLength)
+	else if (column.endsWith('_text')) checkCell_text(value)
+	else if (column.endsWith('_tick')) checkCell_int(value)
+	else                               checkCell_int(value)
+}
+function checkCell_text(value, requiredLength) {
+	//make sure value is a string
+	//and if we got a required length, that it's that length
+	//what about checking characters for tags and hashes? should you do that? these are supposed to be really fast
+
+	checkTag(value)
+	checkHash(value)
+
+}
+function checkCell_int(value) {
+	//here just check that it's an integer in javascript
+	//the full range of those fit just fine into a PostgreSQL BIGINT
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

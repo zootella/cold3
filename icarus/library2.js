@@ -197,54 +197,42 @@ export function sayFloppyDisk(wrapper) {
 	function extend(padding, line) { return line.padEnd(floppyDiskLabelWidth, padding).slice(0, floppyDiskLabelWidth) }
 
 	return {
-		disk: deindent(`
-			 ____________________
-			| |${line1        }| |
-			|.|________________|H|
-			| |${line2        }| |
-			| |${line3        }| |
-			| |${line4        }| |
-			| |${line5        }| |
-			| |________________| |
-			|                    |
-			|    ____________    |
-			|   |   |  _     |   |
-			|   |   | | |    |   |
-			|   |   | |_|    | V |
-			|___|___|________|___|
-		`),
+		disk: `
+ ____________________
+| |${line1        }| |
+|.|________________|H|
+| |${line2        }| |
+| |${line3        }| |
+| |${line4        }| |
+| |${line5        }| |
+| |________________| |
+|                    |
+|    ____________    |
+|   |   |  _     |   |
+|   |   | | |    |   |
+|   |   | |_|    | V |
+|___|___|________|___|
+`,
 		hash, year, full
 	}
 }
-
-
-
-
-
-
-
-
 noop(() => {
 	let disk = sayFloppyDisk(wrapper)
-	let markdown = deindent(`
-		${'```'}
-		${disk.disk}
-		${'```'}
+	let markdown = `${'```'}${disk.disk}
+${'```'}
 
-		How quick, simple, and cheap can the web2 stack be in ${disk.year}?
-		[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
-		exploring pouring and curing a
-		tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
-	`)
+How quick, simple, and cheap can the web2 stack be in ${disk.year}?
+[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
+exploring pouring and curing a
+tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
+`
 	log(markdown)
 })
-
-
 /*
 $ node disk, just shows it, rather than seal which makes it
 */
 //ok, total vanity, but here's the ascii disk in a readme.md for github
-//exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
+//ttd november, disk: exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
 
 
 
@@ -453,6 +441,61 @@ test(() => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+function workerGotInformation(workerEvent) {
+
+	//confirmed by cloudflare
+	let tlsVersion = workerEvent.req.cf?.tlsVersion//like "TLSv1.3" or undefined if http rather than https
+	let clientIp = workerEvent.req.headers['cf-connecting-ip']//like "192.168.1.1" or "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+	//^ this information comes from cloudflare, so the client cannot fake it
+
+	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
+	let origin = workerEvent.req.headers['origin']//nuxt makes this lowercase
+	let referer = workerEvent.req.headers['referer']//and web standards can't correct this spelling!
+	//^ these come from the client browser, so script alone cannot fake it, but curl or postman can
+
+	//and now the rest are set by the client, and can be changed by script or browser extensions
+	let userAgent = workerEvent.req.headers['user-agent']//like "Mozilla/5.0 (iPhone; CPU iPhone OS..."
+	let method = getMethod(workerEvent)//like "GET" or "POST"
+	let url = workerEvent.req.url//like "route/subroute?key=value"
+}
+
+function lambdaGotInformation(lambdaEvent, lambdaContext) {
+
+	//confirmed by amazon
+	let isHttps = lambdaEvent.headers['x-forwarded-proto'] == 'https'//set by api gateway
+	let clientIp = lambdaEvent.requestContext?.identity?.sourceIp
+
+	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
+	let origin = lambdaEvent.headers['origin']
+	let referer = lambdaEvent.headers['referer']
+
+	//script and extensions can spoof these, or they are simply set by the user and his script or extensions
+	let method = lambdaEvent.httpMethod
+	let urlPath = lambdaEvent.path
+	let urlQueryStringParameters = lambdaEvent.queryStringParameters
+	let userAgent = lambdaEvent.headers['User-Agent']
+
+	lambdaContext.awsRequestId//A unique identifier for the request (useful for tracing and debugging).
+}
+*/
 
 
 
@@ -770,26 +813,27 @@ export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService
 	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
 	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
+	let d = Duration()
 	body.warm = true
 	let resultWarm = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
 
 	body.warm = false
 	let resultAction = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
+	d.finish()//but then log this or return this or something, right now you're just trying out your new Duration object
 	return resultAction
 
 	/*
+	november
 	[]retry if first one fails, but only once
-
+	[]record the entire duration so you can see how long the whole two punch thing takes
 	*/
 }
-
 /*
 since adding sharp to lambdas, you've seen reliability problems!
 like a 500 internal server error that is corrected by hitting refresh in the browser
 and, the cold start is apparent now--a first hit in the morning takes seconds, then after that it's fast
 so make this bridge first hit a wakup endpoint, and then do the real request
 this simple stateless workaround won't slow things down much and is way easier than trying to clean up a failed request will preventing duplicate stateful real world action, like sending the user two text messages instead of one
-
 
 ok, the flow is
 1 do warm call
@@ -799,9 +843,35 @@ ok, the flow is
 and log alerts when second warm call fails, meaning you don't try
 or second warm call succeeds, meaning you fixed it but that was weird
 
-
-
+but also--you've only seen these reliability problems on GET lambdas, never POST
+you still like calling into a warm lambda, and the code isn't too hard, though
 */
+
+//move to level0
+export function Duration(givenOpenTick) {//a small object to keep tick counts together for durations
+
+	let _openTick, _shutTick, _duration
+	function openTick() { return _openTick }//accessors
+	function shutTick() { return _shutTick }
+	function duration() { return _duration }
+
+	_openTick = givenOpenTick ? givenOpenTick : Now()//use the given start time, or right now
+
+	function finish() {//call a little later when whatever you're timing has finished
+		_shutTick = Now()
+		_duration = _shutTick - _openTick
+	}
+	return {openTick, shutTick, duration, finish}
+}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1054,17 +1124,6 @@ async function prepareLog(status, type, label, headline, watch) {
 	c.body = b//c.body is the http request body, as an object, for our own information
 	c.bodyText = s//c.bodyText is the stringified body of the http request our call to fetch will use
 	return c
-}
-
-//log to the icarus page so you don't have to look at the browser inspector
-function sendLog_useIcarus(s) {
-	//TODO november, implement log icarus, or move it?
-}
-
-//log to the file "cloud.log"; only works for $ node test, but is very useful there
-async function sendLog_useFile(s) {
-	let fs = await loadFs()
-	if (fs) await fs.appendFile('cloud.log', s.trimEnd()+newline)//becomes a quick no-op running in places we can't load fs
 }
 
 //log to datadog, fetching to their api

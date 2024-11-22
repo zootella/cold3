@@ -16,7 +16,7 @@ async function doorProcessBelow(door) {
 	//blowup1()
 
 	//prove you got the body by including in message
-	let message = `hello ${door.body.name} age ${door.body.age} from door ${Sticker().all}`
+	let message = `${door.body.name}.${door.body.quantity}.${door.body.condition} from ${Sticker().all}`
 
 	response.message = message
 	response.when = Now()

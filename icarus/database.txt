@@ -437,6 +437,68 @@ when you add a new data type, you don't have to create a new table for it
 
 
 
+probably already written above
+column names say their type, and if they don't end with a type, they're a BIGINT which might be used as a count, enum, or boolean
+
+
+row_tag, globally unique tag chosen to identify this row, nothing else
+row_tick, when this row was inserted
+hide_enum, 0 by default, then nonzero to hide the row, perhaps because it's made not relevant by later rows, like the user deleted it, or edited it, or it's no longer necessary to come to the same conclusion
+hidden rows should never never be sent to the client, for any reason--it's ok for the server to look at them and make decisions based upon them, though
+
+
+
+
+>access_table
+row_tag
+row_tick
+browser_tag
+signed_in_enum (change from signed_in)
+
+>counts_table
+browser_tag
+count_int (change from count) (no, now count is just fine again! woohoo!)
+
+>settings_table
+key_text
+value_text
+
+
+
+does katy already work this way?
+
+also, you're really not sure of square encoding
+maybe you don't need a multiple add
+and maybe if you do, put all free form text, like something that isn't an email or name which is really restricted, in a separate table looked up by hash or tag
+
+here's teh idea, the suffixes are:
+_tick, bigint
+_tag, text 21
+_hash, text 52 or whatever
+_text, variable text
+(everything else), (no suffix), bigint
+and everything else has to be an integer!
+then you don't have to clutter names with _enum when actuall it's a count or a boolean, etc
+this is a great idea
+
+imagining how this might grow
+_json, and postgres has a type for this, and if you use it a lot you sorta go into document database land, you've heard. not sure if you want to go there, but there might be a way to go there
+_tags, meaning text like "Amazon.Email." holding two tags, and you're thinking tags are title case and always end with a period
+
+
+current thinking is leave square encoding off to the side
+for now, don't include it in katy at all
+
+have you written katyCheck(r) yet taht takes a whole row
+and inside it's like {
+  row_tag:
+row_hash
+row_text
+count
+}
+and it goes through them all, checking appropriately
+if something doesn't have a suffix, then it hits it with whole integer negative or positive
+
 
 
 

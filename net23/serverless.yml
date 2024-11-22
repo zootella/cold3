@@ -27,55 +27,41 @@ provider:
 
 # #### FOR API FUNCTIONS ####
 functions:
-  ping5:
-    handler: src/ping5.handler
+  door: #post, uses door, powers door route demonstration from nuxt page
+    handler: src/door.handler
     timeout: 30 #let a Lambda run for 30 seconds, up from default 3 second limit, maximum possible is 15 minutes
     events:
       - http:
-          path: ping5
-          method: get #GET so you can check it with a regular browser
-  test:
-    handler: src/test.handler
-    timeout: 30
-    events:
-      - http:
-          path: test
-          method: get
-  snippet:
-    handler: src/snippet.handler
-    timeout: 30
-    events:
-      - http:
-          path: snippet
-          method: get
-  snippet2:
-    handler: src/snippet2.handler
-    timeout: 30
-    events:
-      - http:
-          path: snippet2
-          method: get
-  message:
+          path: door
+          method: post #POST because this is a real api call
+  message: #post, uses door, powers sending messages from nuxt page
     handler: src/message.handler
     timeout: 30
     events:
       - http:
           path: message
           method: post
-  snippet3:
-    handler: src/snippet3.handler
+  ping5: #get, doesn't use door, responds to checkly pings
+    handler: src/ping5.handler
     timeout: 30
     events:
       - http:
-          path: snippet3
+          path: ping5
+          method: get #GET so you can check it with a regular browser
+  snippet2: #get, uses door (so you have to put access key in query string!), visit in browser to confirm moduls can load
+    handler: src/snippet2.handler
+    timeout: 30
+    events:
+      - http:
+          path: snippet2
           method: get
-  door:
-    handler: src/door.handler
+  test: #get, doesn't use door, manual check to run tiny tests on lambda
+    handler: src/test.handler
     timeout: 30
     events:
       - http:
-          path: door
-          method: post #POST because now this is a real api call
+          path: test
+          method: get
 package:
   excludeDevDependencies: true #apparently they are not excluded by default
   patterns:

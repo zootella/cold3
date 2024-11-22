@@ -15,7 +15,7 @@ async function doorProcessBelow(door) {
 
 
 
-	let lambdaResult = await bridge('/door', {name: door.body.name, age: door.body.age})
+	let lambdaResult = await bridge('/door', {name: door.body.name, quantity: door.body.quantity, condition: door.body.condition})
 	let message = lambdaResult.message
 
 	response.message = message

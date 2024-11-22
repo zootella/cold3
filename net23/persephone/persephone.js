@@ -3,6 +3,7 @@ import {
 Sticker, getAccess,
 log, logAudit, look, Now, Size, Data,
 checkEmail, checkPhone,
+test, ok,
 } from 'icarus'
 
 let module_amazonEmail, module_amazonText, module_twilio, module_sendgrid, module_sharp
@@ -13,17 +14,68 @@ async function loadTwilioPhone() { if (!module_twilio)      module_twilio      =
 async function loadSharp()       { if (!module_sharp)       module_sharp       = (await import('sharp')).default;          return module_sharp       }
 //^the last three were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
 
+test(async () => {//deployed, make sure we're running in Node 20 on Amazon Linux on their Graviton chip, as serverless.yml requested
+	if (Sticker().isCloud) ok(process.version.startsWith('v20.') && process.platform == 'linux' && process.arch == 'arm64')
+})
+test(async () => {//test amazon modules load and appear ready
+	let access = await getAccess()
 
+	//check amazon email loads and looks ready
+	const {SESClient, GetSendQuotaCommand} = await loadAmazonEmail()
+	const mailClient = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
+	let quota = await mailClient.send(new GetSendQuotaCommand({}))
+	ok(quota.Max24HourSend >= 50000)//approved out of the sandbox, amazon limits to 50 thousand emails a day
 
+	//and amazon text messaging
+	const {SNSClient, GetSMSAttributesCommand} = await loadAmazonPhone()
+	const textClient = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
+	let smsAttributes = await textClient.send(new GetSMSAttributesCommand({}))
+	ok(smsAttributes.attributes.MonthlySpendLimit.length)//MonthlySpendLimit is a string like "50" dollars
+})
+test(async () => {//test twilio modules load and appear ready
+	let access = await getAccess()
 
-export async function warmMessage(provider, service) {
-	switch (provider+service) {
+	//twilio
+	const twilio = await loadTwilioPhone()
+	let twilioClient = twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
+	let accountContext = await twilioClient.api.accounts(access.get('ACCESS_TWILIO_SID'))
+	ok(accountContext._version._domain.baseUrl.startsWith('https://'))
+
+	//sendgrid
+	const sendgrid = await loadTwilioEmail()
+	sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
+	ok(sendgrid.client.defaultRequest.baseUrl.startsWith('https://'))
+})
+test(async () => {//test that we can use sharp, which relies on native libraries
+
+	//sharp
+	const sharp = await loadSharp()
+	const b = await sharp({//make an image
+		create: {
+			width: 42, height: 42, channels: 4,//small square
+			background: {r: 255, g: 0, b: 255, alpha: 1}//hot pink like it's 1988
+		}
+	}).png().toBuffer()//render it as PNG; returns a Node Buffer, which is a subclass of Uint8Array
+	let d = Data({array: b})
+	ok(d.base64().startsWith('iVBORw0KGgo'))//headers at the start are the same for every image
+})
+
+export async function warm(providerAndService) {
+	switch (providerAndService) {
 		case 'Amazon.Email.': await loadAmazonEmail(); break
 		case 'Amazon.Phone.': await loadAmazonPhone(); break
 		case 'Twilio.Email.': await loadTwilioEmail(); break
 		case 'Twilio.Phone.': await loadTwilioPhone(); break
+		case 'Sharp.':        await loadSharp();       break
 	}
 }
+
+//                       _ _                   _                     
+//   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___ 
+//  / _ \ '_ ` _ \ / _` | | |  / _` | '_ \ / _` | / __| '_ ` _ \/ __|
+// |  __/ | | | | | (_| | | | | (_| | | | | (_| | \__ \ | | | | \__ \
+//  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
+//                                                                   
 
 export async function sendMessage(provider, service, address, message) {
 
@@ -41,34 +93,22 @@ export async function sendMessage(provider, service, address, message) {
 		let bodyText = content
 		let bodyHtml = `<html><body><p style="font-size: 24px; color: gray; font-family: 'SF Pro Rounded', 'Noto Sans Rounded', sans-serif;">${content}</p></body></html>`
 
-		if      (provider == 'Amazon.') { result = await sendEmail_useAmazon({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
-		else if (provider == 'Twilio.') { result = await sendEmail_useTwilio({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
+		if      (provider == 'Amazon.') { result = await message_AmazonEmail({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
+		else if (provider == 'Twilio.') { result = await message_TwilioEmail({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
 
 	} else if (service == 'Phone.') {
 		let toPhone = checkPhone(address).normalized
 		let messageText = content
 
-		if      (provider == 'Amazon.') { result = await sendText_useAmazon({toPhone, messageText}) }
-		else if (provider == 'Twilio.') { result = await sendText_useTwilio({toPhone, messageText}) }
+		if      (provider == 'Amazon.') { result = await message_AmazonPhone({toPhone, messageText}) }
+		else if (provider == 'Twilio.') { result = await message_TwilioPhone({toPhone, messageText}) }
 	}
 	logAudit('message', {provider, service, address, message, result})
-	//ttd november if not successfull, log that with logAlert
+	//ttd november if not successfull, log that with logAlert; and probably summarize if successful, to not leak keys. here's where you use look to pick out the important parts of the giant message they give us
 	return result
 }
 
-
-
-
-
-
-//                       _ _                   _                     
-//   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___ 
-//  / _ \ '_ ` _ \ / _` | | |  / _` | '_ \ / _` | / __| '_ ` _ \/ __|
-// |  __/ | | | | | (_| | | | | (_| | | | | (_| | \__ \ | | | | \__ \
-//  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
-//                                                                   
-
-async function sendEmail_useAmazon(c) {
+async function message_AmazonEmail(c) {
 	let access = await getAccess()
 
 	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
@@ -97,7 +137,7 @@ async function sendEmail_useAmazon(c) {
 	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
 }
 
-async function sendEmail_useTwilio(c) {
+async function message_TwilioEmail(c) {
 	let access = await getAccess()
 
 	let { fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml } = c
@@ -124,7 +164,7 @@ async function sendEmail_useTwilio(c) {
 	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
 }
 
-async function sendText_useAmazon(c) {
+async function message_AmazonPhone(c) {
 	let access = await getAccess()
 
 	let {toPhone, messageText} = c
@@ -146,7 +186,7 @@ async function sendText_useAmazon(c) {
 	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
 }
 
-async function sendText_useTwilio(c) {
+async function message_TwilioPhone(c) {
 	let access = await getAccess()
 
 	let {toPhone, messageText} = c
@@ -177,20 +217,13 @@ async function sendText_useTwilio(c) {
 
 
 
-
-
-
-
-
-
-
-
-export async function requireModules() {
+//november, you're doing this as tests now, and can remove this
+export async function snippet2() {
 
 	let cut = 512
 	let o = {}
 	try {
-		o.intro = "modules are working, streamlining docker deploy"
+		o.intro = "hi from snippet2 in persephone; tests cover all of this now, so you should soon delete it"
 		let access = await getAccess()
 
 		//amazon
@@ -204,7 +237,7 @@ export async function requireModules() {
 			o.amazonMailQuotaError = e2.stack
 		}
 		const {SNSClient} = await loadAmazonPhone()
-		const textClient = new SNSClient({region: 'us-east-1'})
+		const textClient = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
 		o.amazonText = look(textClient.config).slice(0, cut)
 
 		//twilio
@@ -220,9 +253,7 @@ export async function requireModules() {
 		const _sharp = await loadSharp()
 		const b2 = await _sharp({
 			create: {
-				width: 200,
-				height: 120,
-				channels: 4,
+				width: 200, height: 120, channels: 4,
 				background: {r: 255, g: 0, b: 0, alpha: 1}
 			}
 		}).png().toBuffer()//returns a Node Buffer, which is a subclass of Uint8Array
@@ -235,6 +266,7 @@ export async function requireModules() {
 	} catch (e) { o.error = e.stack }
 	return o
 }
+
 
 
 
