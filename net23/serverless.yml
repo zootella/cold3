@@ -62,7 +62,6 @@ functions:
           path: test
           method: get
 package:
-  excludeDevDependencies: true #apparently they are not excluded by default
   patterns:
 
     - '!**' #exclude everything
@@ -76,6 +75,7 @@ package:
     - 'node_modules/@img/sharp-libvips-linux-arm64/**' #outside the docker container, remember to yarn stowaway so these are there!
     - 'node_modules/@img/sharp-linux-arm64/**' #there is another pair with names like "linuxmusl" for Alpine Linux which you don't need
 
+    - '!node_modules/@aws-sdk/**' #i can't, even
     - '!node_modules/@esbuild/**' #icarus' biggest devDependencies, which serverless doesn't exclude (facepalm)
     - '!node_modules/@babel/**'
     - '!node_modules/@vue/**'
