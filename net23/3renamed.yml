@@ -1,6 +1,6 @@
 
 service: net23
-frameworkVersion: '3' #version 4 is out, but we haven't switched yet
+frameworkVersion: '3' #version 4 is out, but doesn't work with the plugins
 useDotenv: true
 plugins:
   - serverless-offline #emulates Lambda and API Gateway for local development
