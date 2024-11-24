@@ -63,20 +63,36 @@ functions:
           method: get
 package:
   patterns:
-
-    - '!**' #exclude everything
-    - 'node_modules/**' #then include the things we want in net23.zip
-    - 'persephone/**'
-    - 'src/**'
-    - 'package.json'
-    - 'serverless.yml'
+    - '!**'             #exclude everything; following patterns include the folders and files we want in net23.zip
+    - 'src/**'          #lambda function handlers
+    - 'persephone/**'   #node code used by them
+    - 'node_modules/**' #node modules they import
+    - 'package.json'    #chat was sure that package.json should be excluded, but that breaks the deployment!
+    - 'serverless.yml'  #not necessary but we're throwing it in there
 
     - '!node_modules/@img/**' #take just the sharp native binaries for amazon linux graviton arm64
     - 'node_modules/@img/sharp-libvips-linux-arm64/**' #outside the docker container, remember to yarn stowaway so these are there!
     - 'node_modules/@img/sharp-linux-arm64/**' #there is another pair with names like "linuxmusl" for Alpine Linux which you don't need
 
-    - '!node_modules/@aws-sdk/**' #i can't, even
-    - '!node_modules/@esbuild/**' #icarus' biggest devDependencies, which serverless doesn't exclude (facepalm)
+    #even now on the current v4, serverless' package task is pretty broken
+    #without nohoist in the root package.json, net23.zip will be empty!
+    #aws-sdk is here again, even though it's a devDependency
+    #as are all icarus' devDependencies
+    #and serverless itself, and its plugins, and their dependencies are here, even though they are all devDependencies!
+    #so below, we manually exclude the largest ones; many more small ones are along for the ride
+
+    - '!node_modules/@aws-sdk'
+
+    - '!node_modules/serverless'
+    - '!node_modules/xml2js'
+
+    - '!node_modules/serverless-offline'
+    - '!node_modules/java-invoke-local'
+    - '!node_modules/luxon'
+    - '!node_modules/tsx'
+    - '!node_modules/web-streams-polyfill'
+
+    - '!node_modules/@esbuild/**'
     - '!node_modules/@babel/**'
     - '!node_modules/@vue/**'
     - '!node_modules/vue/**'
@@ -84,11 +100,6 @@ package:
     - '!node_modules/rollup/**'
     - '!node_modules/vite/**'
     - '!node_modules/vue-router/**'
-
-    # some more notes on this package section:
-    # in package.json, you moved aws-sdk from -S to -D, and that was all that was necessary to keep it out of the zip
-    # chat was sure that the root package.json should be excluded, but this breaks the deployment!
-    # and, alongside exclude you can have individually: true, but have not tested that or tried it out to see if it's better
 
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization
