@@ -1,11 +1,10 @@
 
 service: net23
-frameworkVersion: '3' #version 4 is out, but we haven't switched yet
+frameworkVersion: '4'
 useDotenv: true
 plugins:
   - serverless-offline #emulates Lambda and API Gateway for local development
   - serverless-domain-manager #use our domain for API Gateway and Lambda
-  - serverless-s3-sync #upload static site files from www with $ npm run sync
 
 provider:
   name: aws
@@ -198,14 +197,6 @@ resources:
       Value: !GetAtt WWWDistribution.DomainName
 
 custom:
-
-  # #### FOR WWW STATIC SITE ####
-  s3Sync: #settings for serverless-s3-sync so $ npm run www syncs the www folder up to the bucket behind the distribution for www.net23.cc
-    - bucketName: www-net23-cc
-      localDir: www
-      deleteRemoved: true #remove files in the bucket missing from the folder
-
-  # #### FOR API FUNCTIONS ####
   serverless-offline:
     httpPort: 4000 #run locally on port 4000 instead of the default 3000 when we do $ npm run local, nuxt wants 3000
   customDomain: #settings for serverless-domain-manager to get lambdas up at api.net23.cc

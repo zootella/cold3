@@ -30,8 +30,6 @@
     "@aws-sdk/client-sns": "^3.682.0",
     "serverless": "^4.4.11",
     "serverless-offline": "^14.3.4",
-    "serverless-domain-manager": "^8.0.0",
-    "@silvermine/serverless-plugin-cloudfront-lambda-edge": "^2.2.3",
-    "serverless-s3-sync": "^3.3.0"
+    "serverless-domain-manager": "^8.0.0"
   }
 }
