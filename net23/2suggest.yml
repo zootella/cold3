@@ -1,0 +1,289 @@
+
+service: net23
+frameworkVersion: '3' #version 4 is out, but doesn't work with the plugins
+useDotenv: true
+plugins:
+  - serverless-offline #emulates Lambda and API Gateway for local development
+  - serverless-domain-manager #use our domain for API Gateway and Lambda
+  - serverless-s3-sync #upload static site files from www with $ npm run sync
+
+provider:
+  name: aws
+  region: us-east-1 #Lambda@Edge requires North Virginia
+  runtime: nodejs20.x #as of 2024jul, Node 16 is deprecated, and 18 and 20 are current
+  architecture: arm64 #choose Amazon's custom Graviton2 chip for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to default x86_64
+  stage: prod #set production by default, as this script includes resources like buckets
+  environment: #name variables in .env file here so they are on process.env for the Lambda code
+    ACCESS_KEY_SECRET:         ${env:ACCESS_KEY_SECRET}
+    ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE} #promises not to change through automatic renewals
+  iam: #grant the identity role that runs the lambda functions additional permissions
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - ses:* #let lambdas use the messaging apis
+            - sns:*
+            - s3:GetObject #and the bucket api
+          Resource:
+            - '*' #and use all our resources, like all our buckets
+
+# #### FOR API FUNCTIONS ####
+functions:
+  snippet2: # Regular lambda api endpoint
+    handler: src/snippet2.handler
+    timeout: 30
+    events:
+      - http:
+          path: snippet2
+          method: post
+  validatotron: # New Lambda@Edge function to act as gatekeeper of vhs.net23.cc files
+    handler: src/validatotron.handler
+    timeout: 30
+    events:
+      - cloudFront:
+          eventType: viewer-request
+          origin: S3Origin
+    # The serverless-plugin-cloudfront-lambda-edge will handle packaging and deployment
+
+package:
+  excludeDevDependencies: true # apparently they are not excluded by default
+  patterns:
+    - '!**' # exclude everything
+    - 'node_modules/**' # then include the things we want in net23.zip
+    - 'persephone/**'
+    - 'src/**'
+    - 'package.json'
+    - 'serverless.yml'
+
+    - '!node_modules/@img/**' # take just the sharp native binaries for amazon linux graviton arm64
+    - 'node_modules/@img/sharp-libvips-linux-arm64/**' # outside the docker container, remember to yarn stowaway so these are there!
+    - 'node_modules/@img/sharp-linux-arm64/**' # there is another pair with names like "linuxmusl" for Alpine Linux which you don't need
+
+    - '!node_modules/@esbuild/**' # icarus' biggest devDependencies, which serverless doesn't exclude (facepalm)
+    - '!node_modules/@babel/**'
+    - '!node_modules/@vue/**'
+    - '!node_modules/vue/**'
+    - '!node_modules/@rollup/**'
+    - '!node_modules/rollup/**'
+    - '!node_modules/vite/**'
+    - '!node_modules/vue-router/**'
+
+    # some more notes on this package section:
+    # in package.json, you moved aws-sdk from -S to -D, and that was all that was necessary to keep it out of the zip
+    # chat was sure that the root package.json should be excluded, but this breaks the deployment!
+    # and, alongside exclude you can have individually: true, but have not tested that or tried it out to see if it's better
+
+resources:
+  Resources: #yes, it's correct to have resources twice and nested with different capitalization
+
+    # #### FOR WWW STATIC SITE ####
+    # Static site files in a private bucket get served only by a cloudfront distribution
+    # Before running this script, perform manual steps to get the domain and ssl certificate
+    # And put the ARN of the certificate in the .env file, referenced below
+
+    WWWBucket: #create and configure a bucket
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: www-net23-cc #globally unique name in aws
+        AccessControl: Private #private because a cloudfront distribution will serve files
+
+    VHSBucket: #create and configure the new bucket
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: vhs-net23-cc #globally unique name in aws
+        AccessControl: Private #private because a cloudfront distribution will serve files
+
+    WWWBucketPolicy: #define a policy for a bucket to allow cloudfront access
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref WWWBucket #the bucket this policy is about
+        PolicyDocument: #a policy document with just one statement
+          Statement: #allows the specified Principal, cloudfront OAI, to get objects from the bucket
+            - Action: 's3:GetObject'
+              Effect: Allow
+              Resource: !Sub 'arn:aws:s3:::www-net23-cc/*' #reference to all objects in the bucket
+              Principal:
+                CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+    VHSBucketPolicy: #define a policy for the vhs bucket to allow cloudfront access
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref VHSBucket #the bucket this policy is about
+        PolicyDocument: #a policy document with just one statement
+          Statement: #allows the specified Principal, cloudfront OAI, to get objects from the bucket
+            - Action: 's3:GetObject'
+              Effect: Allow
+              Resource: !Sub 'arn:aws:s3:::vhs-net23-cc/*' #reference to all objects in the bucket
+              Principal:
+                CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+    CloudFrontOriginAccessIdentity: #create an OAI, a special user, so cloudfront can access the bucket
+      Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+      Properties:
+        CloudFrontOriginAccessIdentityConfig:
+          Comment: 'Grant CloudFront access to S3 bucket to serve www.net23.cc' #comment saved in dashboard
+
+    CloudFrontDistributionVHS: #create a cloudfront distribution which serves the VHS static website files
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Origins:
+            - DomainName: !GetAtt VHSBucket.DomainName #internal aws domain name of the bucket
+              Id: VHSOrigin
+              S3OriginConfig:
+                OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+          DefaultCacheBehavior:
+            TargetOriginId: VHSOrigin
+            ViewerProtocolPolicy: redirect-to-https # Redirect HTTP to HTTPS
+            ForwardedValues: #required parameter
+              QueryString: true # forward query string for Lambda@Edge validation
+              Cookies:
+                Forward: none # do not forward cookies
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+            DefaultTTL: 86400 #1 day in seconds, how long files stay in cache
+            MaxTTL: 31536000 #1 year, maximum time in cache
+            MinTTL: 0 #no caching, minimum time in cache
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN: !GetAtt ValidatotronLambdaVersion.Arn
+          Aliases:
+            - vhs.net23.cc
+          ViewerCertificate:
+            AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE} # get arn from .env file
+            SslSupportMethod: sni-only
+          Comment: 'Distribution for static site vhs.net23.cc'
+          DefaultRootObject: index.html
+
+    Route53RecordSetGroupVHS: #define a group of dns records in route 53 for vhs.net23.cc
+      Type: AWS::Route53::RecordSetGroup
+      Properties:
+        HostedZoneName: net23.cc. # assuming the same hosted zone
+        RecordSets:
+          - Name: vhs.net23.cc.
+            Type: A # dns A records are for ipv4 addresses
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistributionVHS.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2 # aws identifier for cloudfront
+          - Name: vhs.net23.cc.
+            Type: AAAA # dns AAAA records are for ipv6 addresses
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistributionVHS.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
+
+    CloudFrontDistribution: # existing CloudFront distribution for www.net23.cc
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Origins:
+            - DomainName: !GetAtt WWWBucket.DomainName # internal aws domain name of the bucket
+              Id: S3Origin
+              S3OriginConfig:
+                OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+          DefaultCacheBehavior:
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https # Redirect HTTP to HTTPS
+            ForwardedValues: # required parameter
+              QueryString: false # do not forward a query string
+              Cookies:
+                Forward: none # do not forward cookies
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            DefaultTTL: 86400 #1 day in seconds, how long files stay in cache
+            MaxTTL: 31536000 #1 year, maximum time in cache
+            MinTTL: 0 #no caching, minimum time in cache
+          Aliases:
+            - www.net23.cc
+            - net23.cc
+          ViewerCertificate:
+            AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE} # get arn from .env file
+            SslSupportMethod: sni-only
+          Comment: 'Distribution for static site www.net23.cc'
+          DefaultRootObject: index.html
+
+    Route53RecordSetGroup: # existing Route53 records for www.net23.cc and net23.cc
+      Type: AWS::Route53::RecordSetGroup
+      Properties:
+        HostedZoneName: net23.cc. # assuming the same hosted zone
+        RecordSets:
+          - Name: net23.cc. # ends with dot to indicate fully qualified
+            Type: A # dns A records are for ipv4 addresses
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2 # aws identifier for cloudfront
+          - Name: www.net23.cc.
+            Type: A
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
+          - Name: net23.cc.
+            Type: AAAA # dns AAAA records are for ipv6 addresses
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
+          - Name: www.net23.cc.
+            Type: AAAA
+            AliasTarget:
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
+
+  Outputs: #correctly within the outer resources section
+    S3BucketName:
+      Description: Name of the WWW S3 bucket
+      Value: !Ref WWWBucket
+    CloudFrontDistributionId:
+      Description: ID of the WWW CloudFront distribution
+      Value: !Ref CloudFrontDistribution
+    CloudFrontDomainName:
+      Description: Domain name of the WWW CloudFront distribution
+      Value: !GetAtt CloudFrontDistribution.DomainName
+    VHSBucketName:
+      Description: Name of the VHS S3 bucket
+      Value: !Ref VHSBucket
+    CloudFrontDistributionVHSId:
+      Description: ID of the VHS CloudFront distribution
+      Value: !Ref CloudFrontDistributionVHS
+    CloudFrontDistributionVHSDomainName:
+      Description: Domain name of the VHS CloudFront distribution
+      Value: !GetAtt CloudFrontDistributionVHS.DomainName
+
+custom:
+
+  # #### FOR WWW STATIC SITE ####
+  s3Sync: # settings for serverless-s3-sync so $ npm run www syncs the www folder up to the bucket behind the distribution for www.net23.cc
+    - bucketName: www-net23-cc
+      localDir: www
+      deleteRemoved: true # remove files in the bucket missing from the folder
+
+  # #### FOR API FUNCTIONS ####
+  serverless-offline:
+    httpPort: 4000 # run locally on port 4000 instead of the default 3000 when we do $ npm run local, nuxt wants 3000
+  customDomain: # settings for serverless-domain-manager to get lambdas up at api.net23.cc
+    domainName: api.net23.cc
+    basePath: ''
+    stage: ${opt:stage, self:provider.stage}
+    createRoute53Record: true
+    endpointType: 'regional'
+    securityPolicy: 'tls_1_2'
+    certificateArn: ${env:ACCESS_AMAZON_CERTIFICATE}
+
+  # #### FOR VHS STATIC SITE ####
+  domainManagerVHS: # additional configuration for vhs.net23.cc
+    domainName: vhs.net23.cc
+    basePath: ''
+    stage: ${opt:stage, self:provider.stage}
+    createRoute53Record: true
+    endpointType: 'regional'
+    securityPolicy: 'tls_1_2'
+    certificateArn: ${env:ACCESS_AMAZON_CERTIFICATE}

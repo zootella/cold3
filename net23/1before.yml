@@ -105,7 +105,7 @@ resources:
         BucketName: www-net23-cc #globally unique name in aws
         AccessControl: Private #private because a cloudfront distribution will serve files
 
-    WWWBucketPolicy: #define a policy for a bucket to allow cloudfront access
+    S3BucketPolicy: #define a policy for a bucket to allow cloudfront access
       Type: AWS::S3::BucketPolicy
       Properties:
         Bucket: !Ref WWWBucket #the bucket this policy is about
@@ -115,15 +115,15 @@ resources:
               Effect: Allow
               Resource: !Sub 'arn:aws:s3:::www-net23-cc/*' #reference to all objects in the bucket
               Principal:
-                CanonicalUser: !GetAtt WWWAccessIdentity.S3CanonicalUserId
+                CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
 
-    WWWAccessIdentity: #create an OAI, a special user, so cloudfront can access the bucket
+    CloudFrontOriginAccessIdentity: #create an OAI, a special user, so cloudfront can access the bucket
       Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
       Properties:
         CloudFrontOriginAccessIdentityConfig:
           Comment: 'Grant CloudFront access to S3 bucket to serve www.net23.cc' #comment saved in dashboard
 
-    WWWDistribution: #create a cloudfront distribution which serves the static website files
+    CloudFrontDistribution: #create a cloudfront distribution which serves the static website files
       Type: AWS::CloudFront::Distribution
       Properties:
         DistributionConfig:
@@ -132,7 +132,7 @@ resources:
             - DomainName: !GetAtt WWWBucket.DomainName #internal aws domain name of the bucket
               Id: S3Origin
               S3OriginConfig:
-                OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${WWWAccessIdentity}'
+                OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
           DefaultCacheBehavior:
             TargetOriginId: S3Origin
             ViewerProtocolPolicy: redirect-to-https # Redirect HTTP to HTTPS
@@ -158,7 +158,7 @@ resources:
           Comment: 'Distribution for static site www.net23.cc'
           DefaultRootObject: index.html
 
-    Net23DomainRecords: #define a group of dns records in route 53
+    Route53RecordSetGroup: #define a group of dns records in route 53
       Type: AWS::Route53::RecordSetGroup
       Properties:
         HostedZoneName: net23.cc. #we manually made this hosted zone before mentioning it here
@@ -166,36 +166,36 @@ resources:
           - Name: net23.cc. #ends with dot to indicate fully qualified
             Type: A #dns A records are for ipv4 addresses
             AliasTarget:
-              DNSName: !GetAtt WWWDistribution.DomainName
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2 #aws identifier for cloudfront
           - Name: www.net23.cc.
             Type: A
             AliasTarget:
-              DNSName: !GetAtt WWWDistribution.DomainName
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
           - Name: net23.cc.
             Type: AAAA #dns AAAA records are for ipv6 addresses
             AliasTarget:
-              DNSName: !GetAtt WWWDistribution.DomainName
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
           - Name: www.net23.cc.
             Type: AAAA
             AliasTarget:
-              DNSName: !GetAtt WWWDistribution.DomainName
+              DNSName: !GetAtt CloudFrontDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
 
   # #### FOR WWW STATIC SITE ####
   Outputs: #correctly within the outer resources section
     #values to store in the cloudformation template Outputs tab, not logged out to the console
-    OutputWWWBucket:
+    S3BucketName:
       Description: Name of the S3 bucket
       Value: !Ref WWWBucket
-    OutputWWWDistribution:
+    CloudFrontDistributionId:
       Description: ID of the CloudFront distribution
-      Value: !Ref WWWDistribution
-    OutputWWWDistributionDomainName:
+      Value: !Ref CloudFrontDistribution
+    CloudFrontDomainName:
       Description: Domain name of the CloudFront distribution
-      Value: !GetAtt WWWDistribution.DomainName
+      Value: !GetAtt CloudFrontDistribution.DomainName
 
 custom:
 
