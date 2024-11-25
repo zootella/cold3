@@ -15,7 +15,7 @@
     "deploy": "serverless deploy --force",
     "justdeploy": "serverless deploy --force --package .serverless",
     "stowaway": "node stowaway.js",
-    "www": "serverless s3sync"
+    "www": "aws s3 sync ./www s3://www-net23-cc --delete"
   },
   "dependencies": {
     "icarus": "*",

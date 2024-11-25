@@ -788,6 +788,18 @@ as an aside, "$ serverless deploy" works, but doesn't notice changed files in ww
 you added a script to package.json so "$ npm run www" force syncs everything
 
 
+(note later)
+to avoid obscure modules, you replaced serverless-s3-sync with an aws cli command:
+"www": "aws s3 sync ./www s3://www-net23-cc --delete"
+$ yarn www
+$ aws cloudfront create-invalidation --distribution-id E2J...KAR --paths "/*"
+$ aws cloudfront list-invalidations --distribution-id E2J...KAR
+it correctly deletes files in the bucket that aren't in the folder!
+use create and list invalidations to get the cloudfront distribution in front of it to get new files from the bucket
+
+
+
+
 
 
 (bookmark)
