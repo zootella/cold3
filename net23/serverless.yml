@@ -61,6 +61,13 @@ functions:
       - http:
           path: test
           method: get
+  # screen: #screen is the lambda@edge function which persons the gate at vhs.net23.cc
+  #   handler: src/screen.handler
+  #   timeout: 5 #Lambda@Edge limits 5 seconds for the viewer request phase
+  #   events: #notice how there's no http event here, instead, it's hooked up to the vhs cloudfront distribution
+  #     - cloudFront:
+  #         eventType: viewer-request
+  #         origin: VHSDistribution
 package:
   patterns:
     - '!**'             #exclude everything; following patterns include the folders and files we want in net23.zip
@@ -114,6 +121,11 @@ resources:
       Properties:
         BucketName: www-net23-cc #globally unique name in aws
         AccessControl: Private #private because a cloudfront distribution will serve files
+    # VHSBucket:
+    #   Type: AWS::S3::Bucket
+    #   Properties:
+    #     BucketName: vhs-net23-cc
+    #     AccessControl: Private
 
     WWWBucketPolicy: #define a policy for a bucket to allow cloudfront access
       Type: AWS::S3::BucketPolicy
@@ -126,12 +138,28 @@ resources:
               Resource: !Sub 'arn:aws:s3:::www-net23-cc/*' #reference to all objects in the bucket
               Principal:
                 CanonicalUser: !GetAtt WWWAccessIdentity.S3CanonicalUserId
+    # VHSBucketPolicy:
+    #   Type: AWS::S3::BucketPolicy
+    #   Properties:
+    #     Bucket: !Ref VHSBucket
+    #     PolicyDocument:
+    #       Statement:
+    #         - Action: 's3:GetObject'
+    #           Effect: Allow
+    #           Resource: !Sub 'arn:aws:s3:::vhs-net23-cc/*'
+    #           Principal:
+    #             CanonicalUser: !GetAtt VHSAccessIdentity.S3CanonicalUserId
 
     WWWAccessIdentity: #create an OAI, a special user, so cloudfront can access the bucket
       Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
       Properties:
         CloudFrontOriginAccessIdentityConfig:
-          Comment: 'Grant CloudFront access to S3 bucket to serve www.net23.cc' #comment saved in dashboard
+          Comment: 'Made this OAI so CloudFront can read the www bucket to serve the static website' #comment saved in dashboard
+    # VHSAccessIdentity:
+    #   Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    #   Properties:
+    #     CloudFrontOriginAccessIdentityConfig:
+    #       Comment: 'Made this OAI so CloudFront can read the vhs bucket to serve media files at the vhs subdomain'
 
     WWWDistribution: #create a cloudfront distribution which serves the static website files
       Type: AWS::CloudFront::Distribution
@@ -149,7 +177,7 @@ resources:
             ForwardedValues: #required parameter
               QueryString: false #do not forward a query string
               Cookies:
-                Forward: none #do not forward cookies
+                Forward: none #by our Corporate Policy, Network 23 does not use cookies. the mere thought!
             AllowedMethods:
               - GET
               - HEAD
@@ -157,32 +185,72 @@ resources:
               - GET
               - HEAD
             DefaultTTL: 86400 #1 day in seconds, how long files stay in cache
-            MaxTTL: 31536000 #1 year, maximum time in cache
-            MinTTL: 0 #no caching, minimum time in cache
+            MaxTTL: 172800 #2 days, maximum time in cache
+            MinTTL: 0 #zero to let cloudfront revalidate with the origin as needed
           Aliases:
-            - www.net23.cc
+            - www.net23.cc #for the static site, we don't redirect www to the bare domain, we serve it from both
             - net23.cc
           ViewerCertificate:
             AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE} #get arm from .env file
             SslSupportMethod: sni-only
-          Comment: 'Distribution for static site www.net23.cc'
+          Comment: 'Made this CloudFront distribution for www, the static site'
           DefaultRootObject: index.html
+    # VHSDistribution:
+    #   Type: AWS::CloudFront::Distribution
+    #   Properties:
+    #     DistributionConfig:
+    #       Enabled: true
+    #       Origins:
+    #         - DomainName: !GetAtt VHSBucket.DomainName
+    #           Id: VHSOrigin
+    #           S3OriginConfig:
+    #             OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${VHSAccessIdentity}'
+    #       DefaultCacheBehavior:
+    #         TargetOriginId: VHSOrigin
+    #         ViewerProtocolPolicy: redirect-to-https
+    #         ForwardedValues:
+    #           QueryString: true #here, we do want the query string, because it contains the access code
+    #           Cookies:
+    #             Forward: none
+    #         AllowedMethods:
+    #           - GET
+    #           - HEAD
+    #         CachedMethods:
+    #           - GET
+    #           - HEAD
+    #         DefaultTTL: 86400 #1 day in seconds, how long files stay in cache
+    #         MaxTTL: 172800 #2 days, maximum time in cache
+    #         MinTTL: 0 #no time, allowing cloudfront to always get a fresh version from the bucket if necessary
+    #       Aliases:
+    #         - vhs.net23.cc #no bare domain here, of course, vhs.net23.cc is the only domain for media files
+    #       ViewerCertificate:
+    #         AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE}
+    #         SslSupportMethod: sni-only
+    #       Comment: 'Made this CloudFront distribution for vhs, the media archive'
+    #       DefaultRootObject: index.html
+    #       LambdaFunctionAssociations: #here's where we attach the Lambda@Edge function
+    #         - EventType: viewer-request
+    #           LambdaFunctionARN: !GetAtt screen.Arn
 
     Net23DomainRecords: #define a group of dns records in route 53
       Type: AWS::Route53::RecordSetGroup
       Properties:
         HostedZoneName: net23.cc. #we manually made this hosted zone before mentioning it here
         RecordSets:
+
+          # bare domain goes to static site
           - Name: net23.cc. #ends with dot to indicate fully qualified
-            Type: A #dns A records are for ipv4 addresses
+            Type: A #dns A records are for ipv4 addresses; AAAA below is for ipv6
             AliasTarget:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2 #aws identifier for cloudfront
           - Name: net23.cc.
-            Type: AAAA #dns AAAA records are for ipv6 addresses
+            Type: AAAA
             AliasTarget:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
+
+          # www subdomain goes to static site
           - Name: www.net23.cc.
             Type: A
             AliasTarget:
@@ -193,6 +261,8 @@ resources:
             AliasTarget:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
+
+          # vhs subdomain goes to media files
           # - Name: vhs.net23.cc.
           #   Type: A
           #   AliasTarget:
@@ -204,18 +274,28 @@ resources:
           #     DNSName: !GetAtt VHSDistribution.DomainName
           #     HostedZoneId: Z2FDTNDATAQYW2
 
-  # #### FOR WWW STATIC SITE ####
-  Outputs: #correctly within the outer resources section
-    #values to store in the cloudformation template Outputs tab, not logged out to the console
+  Outputs: #outputs, correctly here in the outer resources section, end up in the cloudformation template Outputs tab. things will probably work without creating any outputs here at all, but we're leaving it just in case we later find out it's helpful
+
     OutputWWWBucket:
-      Description: Name of the S3 bucket
+      Description: 'Made this output identifier for the bucket for www static site files'
       Value: !Ref WWWBucket
+    # OutputVHSBucket:
+    #   Description: 'Made this output identifier for the bucket for vhs media files'
+    #   Value: !Ref VHSBucket
+
     OutputWWWDistribution:
-      Description: ID of the CloudFront distribution
+      Description: 'Made this output identifier for the CloudFront distribution for www static site files'
       Value: !Ref WWWDistribution
+    # OutputVHSDistribution:
+    #   Description: 'Made this output identifier for the CloudFront distribution for vhs media files'
+    #   Value: !Ref VHSDistribution
+
     OutputWWWDistributionDomainName:
-      Description: Domain name of the CloudFront distribution
+      Description: 'Made this output identifier for the domain name for www static site files'
       Value: !GetAtt WWWDistribution.DomainName
+    # OutputVHSDistributionDomainName:
+    #   Description: 'Made this output identifier for the domain name for vhs media files'
+    #   Value: !GetAtt VHSDistribution.DomainName
 
 custom:
   serverless-offline:
