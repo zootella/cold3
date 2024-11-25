@@ -140,11 +140,11 @@ resources:
           Enabled: true
           Origins:
             - DomainName: !GetAtt WWWBucket.DomainName #internal aws domain name of the bucket
-              Id: S3Origin
+              Id: WWWOrigin
               S3OriginConfig:
                 OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${WWWAccessIdentity}'
           DefaultCacheBehavior:
-            TargetOriginId: S3Origin
+            TargetOriginId: WWWOrigin
             ViewerProtocolPolicy: redirect-to-https # Redirect HTTP to HTTPS
             ForwardedValues: #required parameter
               QueryString: false #do not forward a query string
@@ -178,13 +178,13 @@ resources:
             AliasTarget:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2 #aws identifier for cloudfront
-          - Name: www.net23.cc.
-            Type: A
+          - Name: net23.cc.
+            Type: AAAA #dns AAAA records are for ipv6 addresses
             AliasTarget:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
-          - Name: net23.cc.
-            Type: AAAA #dns AAAA records are for ipv6 addresses
+          - Name: www.net23.cc.
+            Type: A
             AliasTarget:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
@@ -193,6 +193,16 @@ resources:
             AliasTarget:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
+          # - Name: vhs.net23.cc.
+          #   Type: A
+          #   AliasTarget:
+          #     DNSName: !GetAtt VHSDistribution.DomainName
+          #     HostedZoneId: Z2FDTNDATAQYW2
+          # - Name: vhs.net23.cc.
+          #   Type: AAAA
+          #   AliasTarget:
+          #     DNSName: !GetAtt VHSDistribution.DomainName
+          #     HostedZoneId: Z2FDTNDATAQYW2
 
   # #### FOR WWW STATIC SITE ####
   Outputs: #correctly within the outer resources section
