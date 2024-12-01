@@ -6,7 +6,7 @@ dog,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker({workerMethod: 'Post.', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let response = {}
@@ -36,15 +36,3 @@ function blowup3() {
 	let o = {}
 	o.notHere.blowupBeyond
 }
-
-
-
-
-
-
-
-
-
-
-
-

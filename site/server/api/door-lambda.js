@@ -6,7 +6,7 @@ dog,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker({workerMethod: 'Post.', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let response = {}
@@ -44,20 +44,3 @@ async function bridge(path, body) {
 	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 	return await $fetch(host+path, {method: 'POST', body})
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

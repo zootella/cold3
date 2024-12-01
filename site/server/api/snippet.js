@@ -7,7 +7,7 @@ Sticker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker({workerMethod: 'Get.', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let o = {}
@@ -36,4 +36,3 @@ can we reply on supabase not throwing or returning an error if the row didn't ge
 there needs to be server side logic so if the user is already signed in our out, they can't duplicate that
 and also gray out buttons on the page
 */
-

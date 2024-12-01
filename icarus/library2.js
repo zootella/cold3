@@ -518,7 +518,7 @@ or, amazon has invoked a lambda and sent an event and context for us to respond
 
 //copypasta for a worker api endpoint:
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker({workerMethod: 'Todo.', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 
 //copypasta for a lambda api endpoint:
@@ -529,7 +529,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 then write your code in doorProcessBelow() beneath
 */
 
-export async function doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow}) {
+export async function doorWorker({workerMethod, workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow}) {
 	try {
 		let door = {}, response, error
 		try {
@@ -547,7 +547,7 @@ export async function doorWorker({workerEvent, useRuntimeConfig, setResponseStat
 	} catch (e3) { console.error('[OUTER]', e3) }
 	setResponseStatus(workerEvent, 500); return null
 }
-export async function doorLambda({lambdaEvent, lambdaContext, doorProcessBelow}) {
+export async function doorLambda({lambdaMethod, lambdaEvent, lambdaContext, doorProcessBelow}) {
 	try {
 		let door = {}, response, error
 		try {
@@ -1206,41 +1206,3 @@ the design is simple:
 
 
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -9,7 +9,7 @@ accessTableQuery,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker({workerMethod: 'Post.', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let o = {}
@@ -102,20 +102,3 @@ the lambdas can be really simple and dumb
 
 
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

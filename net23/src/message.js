@@ -9,7 +9,7 @@ warm, sendMessage,
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	try {
-		return doorLambda({lambdaEvent, lambdaContext, doorProcessBelow})
+		return doorLambda({lambdaMethod: 'Post.', lambdaEvent, lambdaContext, doorProcessBelow})
 	} catch (e) { console.error('[OUTER]', e) }
 	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
 }

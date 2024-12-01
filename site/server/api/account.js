@@ -7,7 +7,7 @@ timeSafeEqual,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker({workerMethod: 'Post.', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let o = {}
@@ -67,4 +67,3 @@ there needs to be server side logic so if the user is already signed in our out,
 and also gray out buttons on the page
 
 */
-
