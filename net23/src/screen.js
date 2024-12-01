@@ -8,10 +8,7 @@ import {
 
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	try {
-		return doorLambda({lambdaMethod: 'Get.', lambdaEvent, lambdaContext, doorProcessBelow})
-	} catch (e) { console.error('[OUTER]', e) }
-	return {statusCode: 500, headers: {'Content-Type': 'application/json'}, body: null}
+	return doorLambda({method: 'GET', lambdaEvent, lambdaContext, doorProcessBelow})
 }
 async function doorProcessBelow(door) {
 
@@ -21,7 +18,7 @@ async function doorProcessBelow(door) {
 
 	you need to factor this properly and securely
 	like maybe it's:
-		return doorLambda({lambdaMethod: 'Get.', lambdaEvent, lambdaContext, doorProcessBelow})
+		return doorLambda({method: 'GET', lambdaEvent, lambdaContext, doorProcessBelow})
 	and then doorlambda checks that this is the method, parses to body that way
 	and only checks the access code on POST
 	yeah, that's probably the right way to do it

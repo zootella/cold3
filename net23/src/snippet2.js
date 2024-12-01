@@ -8,10 +8,7 @@ snippet2,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	try {
-		return doorLambda({lambdaMethod: 'Get.', lambdaEvent, lambdaContext, doorProcessBelow})
-	} catch (e) { console.error('[OUTER]', e) }
-	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
+	return doorLambda({method: 'GET', lambdaEvent, lambdaContext, doorProcessBelow})
 }
 async function doorProcessBelow(door) {
 	let o = {}

@@ -518,23 +518,23 @@ or, amazon has invoked a lambda and sent an event and context for us to respond
 
 //copypasta for a worker api endpoint:
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({workerMethod: 'Todo.', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker({method: 'VERB', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 
 //copypasta for a lambda api endpoint:
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda({lambdaEvent, lambdaContext, doorProcessBelow})
+	return doorLambda({method: 'VERB', lambdaEvent, lambdaContext, doorProcessBelow})
 }
 
 then write your code in doorProcessBelow() beneath
 */
 
-export async function doorWorker({workerMethod, workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow}) {
+export async function doorWorker({method, workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow}) {
 	try {
 		let door = {}, response, error
 		try {
 
-			door = await doorWorkerOpen(workerEvent, useRuntimeConfig)
+			door = await doorWorkerOpen({method, workerEvent, useRuntimeConfig})
 			response = await doorProcessBelow(door)
 
 		} catch (e1) { error = e1 }
@@ -547,12 +547,12 @@ export async function doorWorker({workerMethod, workerEvent, useRuntimeConfig, s
 	} catch (e3) { console.error('[OUTER]', e3) }
 	setResponseStatus(workerEvent, 500); return null
 }
-export async function doorLambda({lambdaMethod, lambdaEvent, lambdaContext, doorProcessBelow}) {
+export async function doorLambda({method, lambdaEvent, lambdaContext, doorProcessBelow}) {
 	try {
 		let door = {}, response, error
 		try {
 
-			door = await doorLambdaOpen(lambdaEvent, lambdaContext)
+			door = await doorLambdaOpen({method, lambdaEvent, lambdaContext})
 			response = await doorProcessBelow(door)
 
 		} catch (e) { error = e }
@@ -563,7 +563,7 @@ export async function doorLambda({lambdaMethod, lambdaEvent, lambdaContext, door
 
 		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }
 	} catch (e3) { console.error('[OUTER]', e3) }
-	return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: null }
+	return {statusCode: 500, headers: {'Content-Type': 'application/json'}, body: null}
 }
 /*
 note on this design catching exceptions
@@ -574,7 +574,7 @@ so, we use console.error, which won't show up in datadog,
 but should still be findable in the amazon or cloudflare dashboard
 */
 
-async function doorWorkerOpen(workerEvent, useRuntimeConfig) {
+async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	accessWorker({workerEvent, useRuntimeConfig})
 
 	let door = {}//make door object to bundle everything together about this request we're doing
@@ -582,38 +582,41 @@ async function doorWorkerOpen(workerEvent, useRuntimeConfig) {
 	door.tag = Tag()//tag the request for our own records
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
-	door.method = workerEvent.req.method
-	if (door.method == 'POST') {
-		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
-	} else if (door.method == 'GET') {
+	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
+	door.method = method//save the method
+	if (method == 'GET') {
 		door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
+	} else if (method == 'POST') {
+		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
 	} else { toss('method not supported', {door}) }
 
 	return door
 }
-async function doorLambdaOpen(lambdaEvent, lambdaContext) {
+async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	let door = {}//our object that bundles together everything about this incoming request
 	door.startTick = Now()//when we got it
 	door.tag = Tag()//our tag for it
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
 	door.lambdaContext = lambdaContext
 
-	door.method = lambdaEvent.httpMethod
-	if (door.method == 'POST') {
+	if (method != lambdaEvent.httpMethod) toss('method mismatch', {method, door})
+	door.method = method
+	if (method == 'GET') {
+		door.body = lambdaEvent.queryStringParameters
+	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = JSON.parse(door.bodyText)
-	} else if (door.method == 'GET') {
-		door.body = lambdaEvent.queryStringParameters
 	} else { toss('method not supported', {door}) }
 
-	//confirm (1) the connection is secure
-	if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
-	//(2) the request is not from any browser, anywhere; there is no origin header at all
-	if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
-	//(3) the network 23 access code is valid
-	let access = await getAccess()
-	if (!timeSafeEqual(door.body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
-
+	if (method == 'POST') {//make sure POST calls are properly authenticated; they should all be from trusted code in a worker
+		//confirm (1) the connection is secure
+		if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
+		//(2) the request is not from any browser, anywhere; there is no origin header at all
+		if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
+		//(3) the network 23 access code is valid
+		let access = await getAccess()
+		if (!timeSafeEqual(door.body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
+	}
 	return door
 }
 
