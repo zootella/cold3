@@ -7,7 +7,7 @@ timeSafeEqual,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({method: 'POST', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let o = {}

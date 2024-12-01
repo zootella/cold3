@@ -8,7 +8,7 @@ Sticker, doorLambda, dog,
 
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda({method: 'POST', lambdaEvent, lambdaContext, doorProcessBelow})
+	return doorLambda('POST', {lambdaEvent, lambdaContext, doorProcessBelow})
 }
 async function doorProcessBelow(door) {
 	let response = {}

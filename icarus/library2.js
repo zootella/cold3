@@ -518,18 +518,18 @@ or, amazon has invoked a lambda and sent an event and context for us to respond
 
 //copypasta for a worker api endpoint:
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({method: 'VERB', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 
 //copypasta for a lambda api endpoint:
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda({method: 'VERB', lambdaEvent, lambdaContext, doorProcessBelow})
+	return doorLambda('POST', {lambdaEvent, lambdaContext, doorProcessBelow})
 }
 
 then write your code in doorProcessBelow() beneath
 */
 
-export async function doorWorker({method, workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow}) {
+export async function doorWorker(method, {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow}) {
 	try {
 		let door = {}, response, error
 		try {
@@ -547,7 +547,7 @@ export async function doorWorker({method, workerEvent, useRuntimeConfig, setResp
 	} catch (e3) { console.error('[OUTER]', e3) }
 	setResponseStatus(workerEvent, 500); return null
 }
-export async function doorLambda({method, lambdaEvent, lambdaContext, doorProcessBelow}) {
+export async function doorLambda(method, {lambdaEvent, lambdaContext, doorProcessBelow}) {
 	try {
 		let door = {}, response, error
 		try {

@@ -7,7 +7,7 @@ Sticker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker({method: 'GET', workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let o = {}

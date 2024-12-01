@@ -13,7 +13,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 		note = `lambda says: ${(await runTests()).message}, ${Sticker().all}`
 
 	} catch (e) { note = 'ping test lambda error: '+e.stack }
-	return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({note}) }
+	return {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({note})}
 }
 
 /* tiny tests run six places:

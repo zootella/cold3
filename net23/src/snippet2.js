@@ -8,7 +8,7 @@ snippet2,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda({method: 'GET', lambdaEvent, lambdaContext, doorProcessBelow})
+	return doorLambda('GET', {lambdaEvent, lambdaContext, doorProcessBelow})
 }
 async function doorProcessBelow(door) {
 	let o = {}
