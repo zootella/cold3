@@ -24,7 +24,6 @@ provider:
             - sns:*
           Resource: '*' #for all the resources we might use, like sns topics or ses domains
 
-# #### FOR API FUNCTIONS ####
 functions:
   door: #post, uses door, powers door route demonstration from nuxt page
     handler: src/door.handler
@@ -107,7 +106,6 @@ package:
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization
 
-    # #### FOR WWW STATIC SITE ####
     # Static site files in a private bucket get served only by a cloudfront distribution
     # Before running this script, perform manual steps to get the domain and ssl certificate
     # And put the ARN of the certificate in the .env file, referenced below
