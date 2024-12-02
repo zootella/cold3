@@ -10,6 +10,7 @@ Data, decrypt, subtleHash, timeSafeEqual,
 stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
+sameIgnoringCase, sameIgnoringTrailingSlash,
 } from './library0.js'
 import {
 Tag, tagLength, checkTag,
@@ -585,16 +586,40 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
-		door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
-	} else if (method == 'POST') {
-		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
-	} else { toss('method not supported', {door}) }
-	/*
-	ttd november, here the worker is getting requests; let's think about security
-	you can't use a shared secret access code, but can check the origin header
-	*/
 
-	log(look(workerEvent.req.headers))
+		//parse body
+		door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
+
+		dog('1 worker get', {'workerEvent.req.method': workerEvent.req.method, 'workerEvent.req.headers': workerEvent.req.headers})
+
+		/*
+		get 8 permutations in datadog
+		worker | lambda x GET | POST x local | cloud
+		and see where you can get and what they look like for:
+		-security, https or not
+		-method, GET or POST
+		-headers, origin header in there, and are they capitalized
+		*/
+
+		/*
+		//authenticate request
+		checkOriginOmittedOrValid(workerEvent.req.headers)
+		toss('worker GET not in use', {door})//so actually, we don't use any GET requests to nuxt APIs; block off access entirely
+		*/
+
+	} else if (method == 'POST') {
+
+		//parse body
+		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
+
+		dog('2 worker post', {'workerEvent.req.method': workerEvent.req.method, 'workerEvent.req.headers': workerEvent.req.headers})
+
+		/*
+		//authenticate request
+		checkOriginOmittedOrValid(workerEvent.req.headers)
+		*/
+
+	} else { toss('method not supported', {door}) }
 
 	return door
 }
@@ -611,6 +636,8 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 
 		//parse body
 		door.body = lambdaEvent.queryStringParameters
+
+		dog('3 lambda get', {'lambdaEvent.httpMethod': lambdaEvent.httpMethod, 'lambdaEvent.headers': lambdaEvent.headers})
 
 		//authenticate request; confirm (1) the connection is secure
 		//(2) the request is from script in a tab navigated to an approved domain name
@@ -634,6 +661,8 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = JSON.parse(door.bodyText)
 
+		dog('4 lambda post', {'lambdaEvent.httpMethod': lambdaEvent.httpMethod, 'lambdaEvent.headers': lambdaEvent.headers})
+
 		//authenticate request; confirm (1) the connection is secure
 		if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
 		//(2) the request is not from any browser, anywhere; there is no origin header at all
@@ -644,67 +673,82 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 
 	} else { toss('method not supported', {door}) }
 
-	//look at lambda headers
-	log(look(lambdaEvent.headers))
-
 	return door
 }
 
 /*
 worker, GET & POST
-origin must be 
+origin must be
+
+
+
+worker GET:  no access
+worker POST: origin valid or omitted
+lambda GET:  origin valid
+lambda POST: origin omitted
+
+
+
+
+
 */
 
 
 
 
-function countOriginHeader(headers) {
+
+
+//             _       _         _                    _           
+//   ___  _ __(_) __ _(_)_ __   | |__   ___  __ _  __| | ___ _ __ 
+//  / _ \| '__| |/ _` | | '_ \  | '_ \ / _ \/ _` |/ _` |/ _ \ '__|
+// | (_) | |  | | (_| | | | | | | | | |  __/ (_| | (_| |  __/ |   
+//  \___/|_|  |_|\__, |_|_| |_| |_| |_|\___|\__,_|\__,_|\___|_|   
+//               |___/                                            
+
+function checkOriginOmitted(headers) {
+	if (headerCount(headers, 'origin')) toss('origin must not be present', {headers})
+}
+async function checkOriginValid(headers) {
+	let n = headerCount(headers, 'origin')
+	if (n != 1) toss('origin header missing or multiple', {n, headers})
+	let v = headerGet(headers, 'origin')
+	let access = await getAccess()
+	let allowed = access.get('ACCESS_ORIGIN_URL')
+	if (!sameIgnoringTrailingSlash(v, allowed)) toss('origin not allowed', {n, v, allowed, headers})
+}
+async function checkOriginOmittedOrValid(headers) {
+	let n = headerCount(headers, 'origin')
+	if (n == 0) {}//omitted is fine
+	else if (n == 1) { checkOriginValid(headers) }//if one present, make sure it's valid
+	else { toss('headers malformed with multiple origin', {headers}) }//headers malformed this way would be very unusual
+}
+
+function headerCount(headers, name) {
 	let n = 0
-	Object.keys(headers).forEach(name => {
-		if (name.toLowerCase() == 'origin') n++
-	})
+	Object.keys(headers).forEach(header => { if (sameIgnoringCase(header, name)) n++ })
 	return n
 }
-function getOriginHeader(headers) {
+function headerGet(headers, name) {
 	let v = null
-	Object.keys(headers).forEach(name => {
-		if (name.toLowerCase() == 'origin') v = headers[name]
-	})
+	Object.keys(headers).forEach(header => { if (sameIgnoringCase(header, name)) v = headers[header] })
 	return v
 }
-test(() => {
+test(async () => {
+	ok(0 == headerCount({}, 'origin'))
+	ok(1 == headerCount({'origin': 'o1'}, 'origin'))
+	ok(2 == headerCount({'referer': 'r1', 'origin': 'o1', 'Origin': 'o2'}, 'origin'))
 
-	ok(0 == countOriginHeader({}))
-	ok(1 == countOriginHeader({'origin': 'o1'}))
-	ok(2 == countOriginHeader({'referer': 'r1', 'origin': 'o1', 'Origin': 'o2'}))
-
-	ok(null === getOriginHeader({'referer': 'r1'}))
-	ok('o1' == getOriginHeader({'origin': 'o1'}))
-	ok('o1' == getOriginHeader({'ORIGIN': 'o1'}))
-
-
-
-
+	ok(null === headerGet({'referer': 'r1'}, 'origin'))
+	ok('o1' == headerGet({'origin': 'o1'}, 'origin'))
+	ok('o1' == headerGet({'ORIGIN': 'o1'}, 'origin'))
 })
 
-
-	/*
-	imagine headers comes in and the key names can be any case
-	we want to know
-	-there is no origin header, any case
-	-there is an origin header, any case, and this is its value
-
-	ok, so how about here you
-	loop through headers, finding all those that match any case with "origin"
-	if there is more than 1, toss
-	then there is the value
-	*/
-
-
-
-
-
-
+function checkForwardedSecure(headers) {
+	let n = headerCount(headers, 'x-forwarded-proto')
+	if (n != 1) toss('x forwarded proto header missing or multiple', {n, headers})
+	let v = headerGet(headers, 'x-forwarded-proto')
+	if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
+}
 
 
 

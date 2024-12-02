@@ -2623,6 +2623,18 @@ noop(() => {
 
 
 
+export function sameIgnoringCase(s1, s2) {
+	return s1.toLowerCase() == s2.toLowerCase()
+}
+export function sameIgnoringTrailingSlash(s1, s2) {
+	if (s1.endsWith('/')) s1 = s1.slice(0, -1)
+	if (s2.endsWith('/')) s2 = s2.slice(0, -1)
+	return s1 == s2
+}
+test(() => {
+	ok(sameIgnoringCase('origin', 'Origin'))
+	ok(sameIgnoringTrailingSlash('https://example.com/', 'https://example.com'))
+})
 
 
 

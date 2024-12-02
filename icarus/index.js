@@ -51,6 +51,8 @@ say, look, stringify,
 replaceAll, replaceOne, parseEnvStyleFileContents,
 ashFetchum, getBrowserAgentRendererAndVendor,
 
+sameIgnoringCase, sameIgnoringTrailingSlash,
+
 } from './library0.js'//helpful javascript functions with no module imports
 export {
 

@@ -445,15 +445,15 @@ password
 bookmark
 */
 export function testBox(s) {
+	/*
 	return look({
-		/*
 		length: s.length,
 		validateEmail: validateEmail(s),
 		validatePhone: validatePhone(s),
 		validateCard: validateCard(s),
-		*/
 		validatePasswordStrength: measurePasswordStrength(s),
 	})
+	*/
 }
 
 
