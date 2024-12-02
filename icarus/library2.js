@@ -589,6 +589,12 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
 	} else { toss('method not supported', {door}) }
+	/*
+	ttd november, here the worker is getting requests; let's think about security
+	you can't use a shared secret access code, but can check the origin header
+	*/
+
+	log(look(workerEvent.req.headers))
 
 	return door
 }
@@ -602,23 +608,159 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	if (method != lambdaEvent.httpMethod) toss('method mismatch', {method, door})
 	door.method = method
 	if (method == 'GET') {
+
+		//parse body
 		door.body = lambdaEvent.queryStringParameters
+
+		//authenticate request; confirm (1) the connection is secure
+		//(2) the request is from script in a tab navigated to an approved domain name
+		//this blocks: direct links, malicious sites; does not block: malicious extensions, curl and sophisticated tools
+
+		//authenticate request
+		/*
+		[]first, confirm in datadog that you do get the origin header in a get request made from script on a page
+		ttd november: also check lambda get origin header--do you have notes for this already?
+		for lambda get, origin should be a 
+		which will prevent a dug-out link from loading when pasted directly into a tab (where there is no origin header)
+		and a third party hackorz site from rendering such links (where the browser will send their domain as the origin header)
+		[]have a list of acceptable tlds in access
+		[]factor up reading the origin header from lambdaEvent.headers
+		how does this work running locally?
+		*/
+
 	} else if (method == 'POST') {
+
+		//parse body
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = JSON.parse(door.bodyText)
-	} else { toss('method not supported', {door}) }
 
-	if (method == 'POST') {//make sure POST calls are properly authenticated; they should all be from trusted code in a worker
-		//confirm (1) the connection is secure
+		//authenticate request; confirm (1) the connection is secure
 		if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
 		//(2) the request is not from any browser, anywhere; there is no origin header at all
 		if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
 		//(3) the network 23 access code is valid
 		let access = await getAccess()
 		if (!timeSafeEqual(door.body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
-	}
+
+	} else { toss('method not supported', {door}) }
+
+	//look at lambda headers
+	log(look(lambdaEvent.headers))
+
 	return door
 }
+
+/*
+worker, GET & POST
+origin must be 
+*/
+
+
+
+
+function countOriginHeader(headers) {
+	let n = 0
+	Object.keys(headers).forEach(name => {
+		if (name.toLowerCase() == 'origin') n++
+	})
+	return n
+}
+function getOriginHeader(headers) {
+	let v = null
+	Object.keys(headers).forEach(name => {
+		if (name.toLowerCase() == 'origin') v = headers[name]
+	})
+	return v
+}
+test(() => {
+
+	ok(0 == countOriginHeader({}))
+	ok(1 == countOriginHeader({'origin': 'o1'}))
+	ok(2 == countOriginHeader({'referer': 'r1', 'origin': 'o1', 'Origin': 'o2'}))
+
+	ok(null === getOriginHeader({'referer': 'r1'}))
+	ok('o1' == getOriginHeader({'origin': 'o1'}))
+	ok('o1' == getOriginHeader({'ORIGIN': 'o1'}))
+
+
+
+
+})
+
+
+	/*
+	imagine headers comes in and the key names can be any case
+	we want to know
+	-there is no origin header, any case
+	-there is an origin header, any case, and this is its value
+
+	ok, so how about here you
+	loop through headers, finding all those that match any case with "origin"
+	if there is more than 1, toss
+	then there is the value
+	*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Network 23 Security; Memorandum; Subject: How we use the origin header and a shared secret to protect Network 23 APIs and files
+
+To begin, imagine an ecosystem of victim n00b users and sophisticated attackers
+The sophisticated attacker can trick n00b users into:
+(a) clicking a link they prepared to open a GET request to net23.cc in a new browser tab
+(b) installing a malicious browser extension they programmed, which can run and edit script on a page from valid.com
+(c) navigating to a page at their domain, attack.com, which has script that makes requests to net23.cc
+(d) following instructions they wrote to open the browser developer tools while navigated to valid.com to run commands
+
+Valid requests to network 23 include:
+(i) script on a tab navigated to valid.com makes GET and POST requests to net23.cc
+here, the browser includes the origin header, set to valid.com
+(ii) trusted code in cloudflare workers make POST requests to net23.cc
+here, the worker omits the origin header
+additionally, the worker passes a shared secret to network 23 in the encrypted request
+
+Attack scenarios include:
+I.
+a browser is navigated to a page at valid.com or attack.com
+script on that page makes a request to net23.cc
+~
+while a browser extension, or the user directly, can change the script on the page,
+the browser will truthfully state the domain name in the origin header, and the user and script cannot change it
+~
+GET requests to network 23 must have an origin header set to valid.com, so attack.com is blocked
+POST requests to network 23 must have no origin header, so attack.com is blocked
+
+II.
+a browser navigates directly to net23.cc to make a request
+~
+the browser will not include the origin header at all
+~
+GET requests to network 23 must have an origin header set to valid.com, so direct links are blocked
+
+III:
+curl, postman, or a modified or custom browser makes a request to net23.cc
+~
+the attacker can omit the origin header, or set it to any domain they choose
+~
+a sophisticated attacker can do this, but they can't easily lead n00b users to do this
+the attacker will only be able to perform functions within the permissions of their own account
+POST requests must have the shared secret, which the attacker does not know
+*/
 
 async function doorWorkerShut(door, response, error) {
 	door.stopTick = Now()//time
