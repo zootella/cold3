@@ -3,8 +3,10 @@
 
 <NavigationComponent note="on door" />
 
-<DoorLambda />
-<DoorWorker />
+<R3 />
+<R1 />
+<R4 />
+<R2 />
 
 </div>
 </template>

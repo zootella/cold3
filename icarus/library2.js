@@ -590,7 +590,7 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 		//parse body
 		door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
 
-		dog('1 worker get', {'workerEvent.req.method': workerEvent.req.method, 'workerEvent.req.headers': workerEvent.req.headers})
+		//dog('1 worker get', {'workerEvent.req.method': workerEvent.req.method, 'workerEvent.req.headers': workerEvent.req.headers})
 
 		/*
 		get 8 permutations in datadog
@@ -612,7 +612,7 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 		//parse body
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
 
-		dog('2 worker post', {'workerEvent.req.method': workerEvent.req.method, 'workerEvent.req.headers': workerEvent.req.headers})
+		//dog('2 worker post', {'workerEvent.req.method': workerEvent.req.method, 'workerEvent.req.headers': workerEvent.req.headers})
 
 		/*
 		//authenticate request
@@ -637,7 +637,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		//parse body
 		door.body = lambdaEvent.queryStringParameters
 
-		dog('3 lambda get', {'lambdaEvent.httpMethod': lambdaEvent.httpMethod, 'lambdaEvent.headers': lambdaEvent.headers})
+		//dog('3 lambda get', {'lambdaEvent.httpMethod': lambdaEvent.httpMethod, 'lambdaEvent.headers': lambdaEvent.headers})
 
 		//authenticate request; confirm (1) the connection is secure
 		//(2) the request is from script in a tab navigated to an approved domain name
@@ -661,8 +661,9 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = JSON.parse(door.bodyText)
 
-		dog('4 lambda post', {'lambdaEvent.httpMethod': lambdaEvent.httpMethod, 'lambdaEvent.headers': lambdaEvent.headers})
+		//dog('4 lambda post', {'lambdaEvent.httpMethod': lambdaEvent.httpMethod, 'lambdaEvent.headers': lambdaEvent.headers})
 
+		if (false) {//turn this back on with the new security system
 		//authenticate request; confirm (1) the connection is secure
 		if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
 		//(2) the request is not from any browser, anywhere; there is no origin header at all
@@ -670,6 +671,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		//(3) the network 23 access code is valid
 		let access = await getAccess()
 		if (!timeSafeEqual(door.body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
+		}
 
 	} else { toss('method not supported', {door}) }
 
@@ -969,6 +971,41 @@ noop(() => {//first, a demonstration of a promise race
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export async function fetch23(f, method, path, body) {//give us the fetch function we should use
+
+	let url = (Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
+	url += path
+
+	if (method == 'GET') {
+
+		url += '?'+(new URLSearchParams(body).toString())
+		return await f(url, {method})
+
+	} else if (method == 'POST') {
+
+		body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')
+		return await f(url, {method, body})
+	}
+}
 
 
 

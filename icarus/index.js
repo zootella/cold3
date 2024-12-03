@@ -73,7 +73,7 @@ doorWorker, doorLambda, doorPromise, awaitDoorPromises,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 getBrowserTag,
-fetchNetwork23,
+fetch23, fetchNetwork23,
 
 } from './library2.js'//functions that use parts of the larger application and environment
 

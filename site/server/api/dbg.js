@@ -6,26 +6,18 @@ dog,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
 	let response = {}
 
-
-
-
-
-	let lambdaResult = await bridge('/door', {name: door.body.name, quantity: door.body.quantity, condition: door.body.condition})
+	let lambdaResult = await bridge('/dlg?'+(new URLSearchParams({name: door.body.name, quantity: door.body.quantity, condition: door.body.condition}).toString()))
 	let message = lambdaResult.message
 
 	response.message = message
 	response.when = Now()
 	return response
 }
-
-
-
-
 
 //ttd november, copied this to library2.js, refactor door-lambda once that's working, or get rid of it entirely
 /*
@@ -37,10 +29,10 @@ also, you think the lambda code won't need to use the database; rather the worke
 const forceCloudLambda = false
 const resourceLocalNetwork23 = 'http://localhost:4000/prod'//check your local Network 23 affliate
 const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivity via satellite
-async function bridge(path, body) {
-	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
+async function bridge(path) {
+	checkText(path); if (path[0] != '/') toss('data', {path})//call this with path like '/door'
 	let access = await getAccess()
 	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
-	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
-	return await $fetch(host+path, {method: 'POST', body})
+	//body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+	return await $fetch(host+path, {method: 'GET'})
 }

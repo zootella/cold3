@@ -25,12 +25,19 @@ provider:
           Resource: '*' #for all the resources we might use, like sns topics or ses domains
 
 functions:
-  door: #post, uses door, powers door route demonstration from nuxt page
-    handler: src/door.handler
+  rgl:
+    handler: src/rgl.handler
+    timeout: 25
+    events:
+      - http:
+          path: rgl
+          method: get
+  rpl: #post, uses door, powers door route demonstration from nuxt page
+    handler: src/rpl.handler
     timeout: 25 #let a Lambda run for 25 seconds, up from default 6 second limit, api gateway has maximum possible of 29 seconds
     events:
       - http:
-          path: door
+          path: rpl
           method: post #POST because this is a real api call
   message: #post, uses door, powers sending messages from nuxt page
     handler: src/message.handler
