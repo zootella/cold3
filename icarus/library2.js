@@ -835,7 +835,12 @@ async function doorLambdaShut(door, response, error) {
 		logAlert('door lambda shut', {error, door})
 		r = null
 	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json',
+
+		//ttd december, added additional headers here to investigate cors and security
+		'Access-Control-Allow-Origin': '*',
+
+		}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	}
 	await awaitDoorPromises()
 	return r
