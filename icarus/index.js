@@ -73,7 +73,7 @@ doorWorker, doorLambda, doorPromise, awaitDoorPromises,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 getBrowserTag,
-fetch23, fetchNetwork23,
+fetchNetwork23,
 
 } from './library2.js'//functions that use parts of the larger application and environment
 
@@ -124,24 +124,3 @@ note that with these warnings, the build still worked, and stats.html still look
 but you're heeding these warnings for now, and enjoying importing everything from just icarus in all the code above
 but still naming individual files within icarus
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

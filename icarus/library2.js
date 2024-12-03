@@ -577,6 +577,7 @@ but should still be findable in the amazon or cloudflare dashboard
 
 async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	accessWorker({workerEvent, useRuntimeConfig})
+	let access = await getAccess()
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.startTick = Now()//record when we got the request
@@ -586,44 +587,24 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
-
-		//parse body
 		door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
 
-		//dog('1 worker get', {'workerEvent.req.method': workerEvent.req.method, 'workerEvent.req.headers': workerEvent.req.headers})
-
-		/*
-		get 8 permutations in datadog
-		worker | lambda x GET | POST x local | cloud
-		and see where you can get and what they look like for:
-		-security, https or not
-		-method, GET or POST
-		-headers, origin header in there, and are they capitalized
-		*/
-
-		/*
-		//authenticate request
-		checkOriginOmittedOrValid(workerEvent.req.headers)
-		toss('worker GET not in use', {door})//so actually, we don't use any GET requests to nuxt APIs; block off access entirely
-		*/
+		//authenticate worker get request: (0) block entirely!
+		toss('worker get not in use', {door})
 
 	} else if (method == 'POST') {
-
-		//parse body
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
 
-		//dog('2 worker post', {'workerEvent.req.method': workerEvent.req.method, 'workerEvent.req.headers': workerEvent.req.headers})
-
-		/*
-		//authenticate request
-		checkOriginOmittedOrValid(workerEvent.req.headers)
-		*/
+		//authenticate worker post request: (1) https; (2) origin omitted or valid
+		checkForwardedSecure(workerEvent.req.headers)
+		checkOriginOmittedOrValid(workerEvent.req.headers, access)
 
 	} else { toss('method not supported', {door}) }
-
 	return door
 }
 async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
+	let access = await getAccess()
+
 	let door = {}//our object that bundles together everything about this incoming request
 	door.startTick = Now()//when we got it
 	door.tag = Tag()//our tag for it
@@ -633,101 +614,80 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	if (method != lambdaEvent.httpMethod) toss('method mismatch', {method, door})
 	door.method = method
 	if (method == 'GET') {
-
-		//parse body
 		door.body = lambdaEvent.queryStringParameters
 
-		//dog('3 lambda get', {'lambdaEvent.httpMethod': lambdaEvent.httpMethod, 'lambdaEvent.headers': lambdaEvent.headers})
-
-		//authenticate request; confirm (1) the connection is secure
-		//(2) the request is from script in a tab navigated to an approved domain name
-		//this blocks: direct links, malicious sites; does not block: malicious extensions, curl and sophisticated tools
-
-		//authenticate request
-		/*
-		[]first, confirm in datadog that you do get the origin header in a get request made from script on a page
-		ttd november: also check lambda get origin header--do you have notes for this already?
-		for lambda get, origin should be a 
-		which will prevent a dug-out link from loading when pasted directly into a tab (where there is no origin header)
-		and a third party hackorz site from rendering such links (where the browser will send their domain as the origin header)
-		[]have a list of acceptable tlds in access
-		[]factor up reading the origin header from lambdaEvent.headers
-		how does this work running locally?
-		*/
+		//authenticate lambda get request: (1) https; (2) origin valid
+		checkForwardedSecure(lambdaEvent.headers)
+		checkOriginValid(lambdaEvent.headers, access)
 
 	} else if (method == 'POST') {
-
-		//parse body
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = JSON.parse(door.bodyText)
 
-		//dog('4 lambda post', {'lambdaEvent.httpMethod': lambdaEvent.httpMethod, 'lambdaEvent.headers': lambdaEvent.headers})
-
-		if (false) {//turn this back on with the new security system
-		//authenticate request; confirm (1) the connection is secure
-		if (lambdaEvent.headers['X-Forwarded-Proto'] && lambdaEvent.headers['X-Forwarded-Proto'] != 'https') toss('connection not secure', {door})//amazon api gateway only allows https, so this check is redundant. serverless framework's emulation does not include this header at all, so this check doesn't interrupt local development
-		//(2) the request is not from any browser, anywhere; there is no origin header at all
-		if (((Object.keys(lambdaEvent.headers)).join(';')+';').toLowerCase().includes('origin;')) toss('found origin header', {door})//api gateway already blocks OPTIONS requests and requests that mention Origin as part of the defaults when we haven't configured CORS, so this check is also redundant. The Network 23 Application Programming Interface is exclusively for server to server communication, no browsers allowed
-		//(3) the network 23 access code is valid
-		let access = await getAccess()
-		if (!timeSafeEqual(door.body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
-		}
+		//authenticate lambda post request: (1) https; (2) origin *omitted*; (3) access code valid
+		checkForwardedSecure(lambdaEvent.headers)
+		checkOriginOmitted(lambdaEvent.headers)
+		checkNetwork23AccessCode(door.body, access)
 
 	} else { toss('method not supported', {door}) }
-
 	return door
 }
 
+//                           _ _         
+//  ___  ___  ___ _   _ _ __(_) |_ _   _ 
+// / __|/ _ \/ __| | | | '__| | __| | | |
+// \__ \  __/ (__| |_| | |  | | |_| |_| |
+// |___/\___|\___|\__,_|_|  |_|\__|\__, |
+//                                 |___/ 
 /*
-worker, GET & POST
-origin must be
+The security checks above are *in addition to* default and configured Cloudflare and Amazon settings
+and, in addition to how we've configured CORS with both providers
+Here are the checks above visualized as an ASCII table:
 
+        worker                          lambda
+        ------                          ------
+GET  |  0 block(v)                      1 https
+                                        2 origin valid(iv)
 
+POST |  1 https                         1 https
+        2 origin omitted or valid(iii)  2 origin omitted(i)
+                                        3 access code(ii)
 
-worker GET:  no access
-worker POST: origin valid or omitted
-lambda GET:  origin valid
-lambda POST: origin omitted
-
-
-
-
-
+Notes: (i) The Network 23 Application Programming Interface is exclusively for server to server communication, no pages allowed
+(ii) the worker and lambda have shared a secret securely stored in both server environments
+(iii) valid only would allow page access, but we must allow omitted also so SSR can deliver a page pre-rendered with worker api results
+(iv) valid only to break link sharing; site pages don't pre-render with media files
+(v) the site doesn't use worker GET APIs at all, so our security grid blocks this quadrant entirely
 */
-
-
-
-
-
-
-//             _       _         _                    _           
-//   ___  _ __(_) __ _(_)_ __   | |__   ___  __ _  __| | ___ _ __ 
-//  / _ \| '__| |/ _` | | '_ \  | '_ \ / _ \/ _` |/ _` |/ _ \ '__|
-// | (_) | |  | | (_| | | | | | | | | |  __/ (_| | (_| |  __/ |   
-//  \___/|_|  |_|\__, |_|_| |_| |_| |_|\___|\__,_|\__,_|\___|_|   
-//               |___/                                            
-
-function checkOriginOmitted(headers) {
-	if (headerCount(headers, 'origin')) toss('origin must not be present', {headers})
+function checkNetwork23AccessCode(body, access) {
+	if (!timeSafeEqual(body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
 }
-async function checkOriginValid(headers) {
-	let n = headerCount(headers, 'origin')
-	if (n != 1) toss('origin header missing or multiple', {n, headers})
-	let v = headerGet(headers, 'origin')
-	let access = await getAccess()
-	let allowed = access.get('ACCESS_ORIGIN_URL')
-	if (!sameIgnoringTrailingSlash(v, allowed)) toss('origin not allowed', {n, v, allowed, headers})
+function checkForwardedSecure(headers) { if (Sticker().isLocal) return//skip these checks during local development
+	let n = headerCount(headers, 'X-Forwarded-Proto')
+	if (n != 1) toss('x forwarded proto header missing or multiple', {n, headers})
+	let v = headerGet(headers, 'X-Forwarded-Proto')
+	if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
 }
-async function checkOriginOmittedOrValid(headers) {
-	let n = headerCount(headers, 'origin')
+async function checkOriginOmittedOrValid(headers, access) {
+	let n = headerCount(headers, 'Origin')
 	if (n == 0) {}//omitted is fine
-	else if (n == 1) { checkOriginValid(headers) }//if one present, make sure it's valid
+	else if (n == 1) { checkOriginValid(headers, access) }//if exactly one origin header is present, then make sure it's valid
 	else { toss('headers malformed with multiple origin', {headers}) }//headers malformed this way would be very unusual
+}
+function checkOriginOmitted(headers) {
+	if (headerCount(headers, 'Origin')) toss('origin must not be present', {headers})
+}
+function checkOriginValid(headers, access) { if (Sticker().isLocal) return//skip these checks during local development
+	let n = headerCount(headers, 'Origin')
+	if (n != 1) toss('origin header missing or multiple', {n, headers})
+	let v = headerGet(headers, 'Origin')
+	let allowed = access.get('ACCESS_ORIGIN_URL')
+	if (v != allowed) toss('origin not allowed', {n, v, allowed, headers})
 }
 
 function headerCount(headers, name) {
 	let n = 0
-	Object.keys(headers).forEach(header => { if (sameIgnoringCase(header, name)) n++ })
+	Object.keys(headers).forEach(header => { if (sameIgnoringCase(header, name)) n++ })//Cloudflare lowercases header names, while Amazon leaves them in Title-Case like the HTTP standard. JavaScript object property names are case sensitive, so a collision like {name: "value1", Name: "value2"} is possible. so here, we deal with all that ;)
 	return n
 }
 function headerGet(headers, name) {
@@ -736,21 +696,18 @@ function headerGet(headers, name) {
 	return v
 }
 test(async () => {
-	ok(0 == headerCount({}, 'origin'))
-	ok(1 == headerCount({'origin': 'o1'}, 'origin'))
-	ok(2 == headerCount({'referer': 'r1', 'origin': 'o1', 'Origin': 'o2'}, 'origin'))
+	let o = {name: 'value1', Name: 'value2'}//javascript property names are unique case sensitive, so case insensitive collisions like this are possible!
+	ok(o.name == 'value1' && o.Name == 'value2')
 
-	ok(null === headerGet({'referer': 'r1'}, 'origin'))
-	ok('o1' == headerGet({'origin': 'o1'}, 'origin'))
-	ok('o1' == headerGet({'ORIGIN': 'o1'}, 'origin'))
+	ok(0 == headerCount({},                                                'Origin'))
+	ok(1 == headerCount({'origin': 'o1'},                                  'Origin'))
+	ok(2 == headerCount({'referer': 'r1', 'origin': 'o1', 'Origin': 'o2'}, 'Origin'))
+
+	ok(null === headerGet({'referer': 'r1'}, 'Origin'))
+	ok('o1' == headerGet({'origin': 'o1'},   'Origin'))
+	ok('o1' == headerGet({'ORIGIN': 'o1'},   'Origin'))
 })
 
-function checkForwardedSecure(headers) {
-	let n = headerCount(headers, 'x-forwarded-proto')
-	if (n != 1) toss('x forwarded proto header missing or multiple', {n, headers})
-	let v = headerGet(headers, 'x-forwarded-proto')
-	if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
-}
 
 
 
@@ -758,55 +715,6 @@ function checkForwardedSecure(headers) {
 
 
 
-
-
-
-
-
-/*
-Network 23 Security; Memorandum; Subject: How we use the origin header and a shared secret to protect Network 23 APIs and files
-
-To begin, imagine an ecosystem of victim n00b users and sophisticated attackers
-The sophisticated attacker can trick n00b users into:
-(a) clicking a link they prepared to open a GET request to net23.cc in a new browser tab
-(b) installing a malicious browser extension they programmed, which can run and edit script on a page from valid.com
-(c) navigating to a page at their domain, attack.com, which has script that makes requests to net23.cc
-(d) following instructions they wrote to open the browser developer tools while navigated to valid.com to run commands
-
-Valid requests to network 23 include:
-(i) script on a tab navigated to valid.com makes GET and POST requests to net23.cc
-here, the browser includes the origin header, set to valid.com
-(ii) trusted code in cloudflare workers make POST requests to net23.cc
-here, the worker omits the origin header
-additionally, the worker passes a shared secret to network 23 in the encrypted request
-
-Attack scenarios include:
-I.
-a browser is navigated to a page at valid.com or attack.com
-script on that page makes a request to net23.cc
-~
-while a browser extension, or the user directly, can change the script on the page,
-the browser will truthfully state the domain name in the origin header, and the user and script cannot change it
-~
-GET requests to network 23 must have an origin header set to valid.com, so attack.com is blocked
-POST requests to network 23 must have no origin header, so attack.com is blocked
-
-II.
-a browser navigates directly to net23.cc to make a request
-~
-the browser will not include the origin header at all
-~
-GET requests to network 23 must have an origin header set to valid.com, so direct links are blocked
-
-III:
-curl, postman, or a modified or custom browser makes a request to net23.cc
-~
-the attacker can omit the origin header, or set it to any domain they choose
-~
-a sophisticated attacker can do this, but they can't easily lead n00b users to do this
-the attacker will only be able to perform functions within the permissions of their own account
-POST requests must have the shared secret, which the attacker does not know
-*/
 
 async function doorWorkerShut(door, response, error) {
 	door.stopTick = Now()//time
@@ -983,34 +891,6 @@ noop(() => {//first, a demonstration of a promise race
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-export async function fetch23(f, method, path, body) {//give us the fetch function we should use
-
-	let url = (Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
-	url += path
-
-	if (method == 'GET') {
-
-		url += '?'+(new URLSearchParams(body).toString())
-		return await f(url, {method})
-
-	} else if (method == 'POST') {
-
-		body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')
-		return await f(url, {method, body})
-	}
-}
 
 
 
