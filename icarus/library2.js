@@ -595,8 +595,6 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
 
-		dog('door worker post will now check', examineOrigin(workerEvent.req.headers, access))
-
 		//authenticate worker post request: (1) https; (2) origin omitted or valid
 		checkForwardedSecure(workerEvent.req.headers)
 		checkOriginOmittedOrValid(workerEvent.req.headers, access)

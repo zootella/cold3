@@ -1,19 +1,16 @@
 
 import {
-Sticker, runTests,
+Sticker, doorLambda, runTests,
 } from 'icarus'
 
 import {//not importing anything, but this lets tests get listed to run below
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	let note = ''
-	try {
-
-		note = `lambda says: ${(await runTests()).message}, ${Sticker().all}`
-
-	} catch (e) { note = 'ping test lambda error: '+e.stack }
-	return {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({note})}
+	return doorLambda('POST', {lambdaEvent, lambdaContext, doorProcessBelow})
+}
+async function doorProcessBelow(door) {
+	return {note: `lambda says: ${(await runTests()).message}, ${Sticker().all}`}
 }
 
 /* tiny tests run six places:

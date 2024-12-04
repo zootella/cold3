@@ -1,7 +1,7 @@
 <script setup>
 
 let t = Date.now()
-let {data, error} = await useFetch('/api/ping/ping5')
+let {data, error} = await useFetch('/api/ping/ping5', {method: 'POST'})
 let duration = Date.now() - t
 
 </script>

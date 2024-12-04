@@ -1,12 +1,11 @@
 
-import { Sticker } from 'icarus'
+import {
+Sticker, doorWorker,
+} from 'icarus'
 
-export default defineEventHandler((workerEvent) => {
-	let note = ''
-	try {
-
-		note = `worker says: ${Sticker().all}, ping3done`
-
-	} catch (e) { note = 'ping3 worker error: '+e.stack }
-	return {note}
+export default defineEventHandler(async (workerEvent) => {
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
+async function doorProcessBelow(door) {
+	return {note: `worker says: ${Sticker().all}, ping3done`}
+}

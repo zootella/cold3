@@ -48,13 +48,13 @@ functions:
       - http:
           path: message
           method: post
-  ping5: #get, doesn't use door, responds to checkly pings
+  ping5:
     handler: src/ping5.handler
     timeout: 25
     events:
       - http:
           path: ping5
-          method: get #GET so you can check it with a regular browser
+          method: post
   snippet2: #get, uses door (so you have to put access key in query string!), visit in browser to confirm moduls can load
     handler: src/snippet2.handler
     timeout: 25
@@ -62,13 +62,13 @@ functions:
       - http:
           path: snippet2
           method: get
-  test: #get, doesn't use door, manual check to run tiny tests on lambda
+  test:
     handler: src/test.handler
     timeout: 25
     events:
       - http:
           path: test
-          method: get
+          method: post
   # screen: #screen is the lambda@edge function which persons the gate at vhs.net23.cc
   #   handler: src/screen.handler
   #   timeout: 5 #Lambda@Edge limits 5 seconds for the viewer request phase

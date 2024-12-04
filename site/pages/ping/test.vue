@@ -21,7 +21,7 @@ there's also process.env.NODE_ENV != 'production'
 let note = `script setup says: ${(await runTests()).message}, ${Sticker().all}`
 
 //run tests a third time, by fetching a server api endpoint, will run on server
-let {data, error} = await useFetch('/api/ping/test')
+let {data, error} = await useFetch('/api/ping/test', {method: 'POST'})
 
 </script>
 <template>

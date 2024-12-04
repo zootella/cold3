@@ -1,5 +1,21 @@
 
-import { Sticker, runTests } from 'icarus'
+import {
+Sticker, doorWorker, Now, getAccess, runTests,
+} from 'icarus'
+
+export default defineEventHandler(async (workerEvent) => {
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+})
+async function doorProcessBelow(door) {
+
+	let workerNote = (await runTests()).message
+	let lambdaNote = (await $fetch(
+		Sticker().isCloud ? 'https://api.net23.cc/test' : 'http://localhost:4000/prod/test',
+		{method: 'POST', body: {ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET')}
+		})).note
+
+	return {note: `worker says: ${workerNote}, ${Sticker().all}; ${lambdaNote}`}
+}
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered
@@ -8,18 +24,6 @@ import { Sticker, runTests } from 'icarus'
 -- ./icarus/icarus.vue        vite
 -- ./test.js                  node
 */
-
-export default defineEventHandler(async (workerEvent) => {
-	let note = ''
-	try {
-
-		let workerNote = (await runTests()).message
-		let lambdaNote = (await $fetch(Sticker().isCloud ? 'https://api.net23.cc/test' : 'http://localhost:4000/prod/test')).note
-		note = `worker says: ${workerNote}, ${Sticker().all}; ${lambdaNote}`
-
-	} catch (e) { note = 'ping test worker error: '+e.stack }
-	return {note}
-})
 
 /*
 2024sep18 curled and then copied rendered page, and it's weird!
