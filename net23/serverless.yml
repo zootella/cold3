@@ -25,23 +25,32 @@ provider:
           Resource: '*' #for all the resources we might use, like sns topics or ses domains
 
 functions:
+  snippet2:
+    handler: src/snippet2.handler
+    timeout: 25
+    events:
+      - http:
+          path: /snippet2
+          method: get #ttd december decide if you're keeping this GET function
+          #omit cors to block requests from pages and allow direct navigation from tabs
   rgl:
     handler: src/rgl.handler
     timeout: 25
     events:
       - http:
           path: /rgl
-          method: get
-          cors: true #have api gateway respond to a page's preflight request, and not block requests based on the presence or value of the origin header
-  rpl: #post, uses door, powers door route demonstration from nuxt page
+          method: get #ttd december decide if you're keeping this GET function
+          cors: true #ttd december for testing you've got cors true here but should probably delete the whole function
+          #configure cors simply true to open things up: API Gateway will respond to a page's preflight OPTIONS request, allowing all origins
+  rpl:
     handler: src/rpl.handler
     timeout: 25 #let a Lambda run for 25 seconds, up from default 6 second limit, api gateway has maximum possible of 29 seconds
     events:
       - http:
           path: /rpl
-          method: post #POST because this is a real api call
-          cors: true #have api gateway respond to a page's preflight request, and not block requests based on the presence or value of the origin header
-  message: #post, uses door, powers sending messages from nuxt page
+          method: post
+          #omitting cors configuration here makes API Gateway not handle the preflight OPTIONS request, and not include Access-Control-Allow* headers in responses. Script on a page in a browser attempting a cross-origin request will fail on OPTIONS, blocking a subsequent POST request. Additionally, if a browser did make such a request, doorLambdaOpen's call to checkOriginOmitted would block it
+  message:
     handler: src/message.handler
     timeout: 25
     events:
@@ -55,13 +64,6 @@ functions:
       - http:
           path: /ping5
           method: post
-  snippet2: #get, uses door (so you have to put access key in query string!), visit in browser to confirm moduls can load
-    handler: src/snippet2.handler
-    timeout: 25
-    events:
-      - http:
-          path: /snippet2
-          method: get
   test:
     handler: src/test.handler
     timeout: 25

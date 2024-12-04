@@ -619,6 +619,8 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		//authenticate lambda get request: (1) https; (2) origin valid
 		checkForwardedSecure(lambdaEvent.headers)
 		checkOriginValid(lambdaEvent.headers, access)//ttd december: does a media file request to vhs.net23.cc go through here? or is this just for api.net23.cc? if vhs, then you want origin valid to break shared links; if api, then you can block GET entirely
+		//this configuration breaks snippet2; you could change it, or just delete snippet2 as its checks are done in tests now
+		//having screen block tabs is important, but is a special case you can handle in screen.js, also
 
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
@@ -747,6 +749,7 @@ async function doorLambdaShut(door, response, error) {
 
 		//ttd december, added additional headers here to investigate cors and security
 		'Access-Control-Allow-Origin': '*',
+		//^now that you're closing out your cors experiment, you want to move this from code to configuration, of course
 
 		}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	}
