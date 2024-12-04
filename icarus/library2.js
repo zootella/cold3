@@ -595,6 +595,8 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
 
+		dog('door worker post will now check', examineOrigin(workerEvent.req.headers, access))
+
 		//authenticate worker post request: (1) https; (2) origin omitted or valid
 		checkForwardedSecure(workerEvent.req.headers)
 		checkOriginOmittedOrValid(workerEvent.req.headers, access)
@@ -618,7 +620,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 
 		//authenticate lambda get request: (1) https; (2) origin valid
 		checkForwardedSecure(lambdaEvent.headers)
-		checkOriginValid(lambdaEvent.headers, access)
+		checkOriginValid(lambdaEvent.headers, access)//ttd december: does a media file request to vhs.net23.cc go through here? or is this just for api.net23.cc? if vhs, then you want origin valid to break shared links; if api, then you can block GET entirely
 
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
@@ -668,7 +670,7 @@ function checkForwardedSecure(headers) { if (Sticker().isLocal) return//skip the
 	let v = headerGet(headers, 'X-Forwarded-Proto')
 	if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
 }
-async function checkOriginOmittedOrValid(headers, access) {
+function checkOriginOmittedOrValid(headers, access) {
 	let n = headerCount(headers, 'Origin')
 	if (n == 0) {}//omitted is fine
 	else if (n == 1) { checkOriginValid(headers, access) }//if exactly one origin header is present, then make sure it's valid
@@ -695,7 +697,7 @@ function headerGet(headers, name) {
 	Object.keys(headers).forEach(header => { if (sameIgnoringCase(header, name)) v = headers[header] })
 	return v
 }
-test(async () => {
+test(() => {
 	let o = {name: 'value1', Name: 'value2'}//javascript property names are unique case sensitive, so case insensitive collisions like this are possible!
 	ok(o.name == 'value1' && o.Name == 'value2')
 
