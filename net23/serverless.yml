@@ -30,7 +30,7 @@ functions:
     timeout: 25
     events:
       - http:
-          path: rgl
+          path: /rgl
           method: get
           cors: true #have api gateway respond to a page's preflight request, and not block requests based on the presence or value of the origin header
   rpl: #post, uses door, powers door route demonstration from nuxt page
@@ -38,7 +38,7 @@ functions:
     timeout: 25 #let a Lambda run for 25 seconds, up from default 6 second limit, api gateway has maximum possible of 29 seconds
     events:
       - http:
-          path: rpl
+          path: /rpl
           method: post #POST because this is a real api call
           cors: true #have api gateway respond to a page's preflight request, and not block requests based on the presence or value of the origin header
   message: #post, uses door, powers sending messages from nuxt page
@@ -46,32 +46,32 @@ functions:
     timeout: 25
     events:
       - http:
-          path: message
+          path: /message
           method: post
   ping5:
     handler: src/ping5.handler
     timeout: 25
     events:
       - http:
-          path: ping5
+          path: /ping5
           method: post
   snippet2: #get, uses door (so you have to put access key in query string!), visit in browser to confirm moduls can load
     handler: src/snippet2.handler
     timeout: 25
     events:
       - http:
-          path: snippet2
+          path: /snippet2
           method: get
   test:
     handler: src/test.handler
     timeout: 25
     events:
       - http:
-          path: test
+          path: /test
           method: post
   # screen: #screen is the lambda@edge function which persons the gate at vhs.net23.cc
   #   handler: src/screen.handler
-  #   timeout: 5 #Lambda@Edge limits 5 seconds for the viewer request phase
+  #   timeout: 4 #Lambda@Edge limits 5 seconds for the viewer request phase
   #   events: #notice how there's no http event here, instead, it's hooked up to the vhs cloudfront distribution
   #     - cloudFront:
   #         eventType: viewer-request
