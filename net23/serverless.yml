@@ -22,6 +22,9 @@ provider:
           Action:
             - ses:* #give them full run of the messaging apis
             - sns:*
+            - logs:CreateLogGroup #and let them log logs; this kept on coming up coding the screen lambda@edge function
+            - logs:CreateLogStream
+            - logs:PutLogEvents
           Resource: '*' #for all the resources we might use, like sns topics or ses domains
 
 functions:
@@ -114,6 +117,12 @@ package:
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization
 
+    ScreenFunctionVersion: #lambda@edge requires a versioned lambda function arn, so we're making one here
+      Type: AWS::Lambda::Version
+      Properties:
+        FunctionName: !Ref ScreenLambdaFunction #automatically defined from calling the function "screen" above
+        Description: 'screen function version 2024dec4b' #increment this description to deploy edited code
+
     # Static site files in a private bucket get served only by a cloudfront distribution
     # Before running this script, perform manual steps to get the domain and ssl certificate
     # And put the ARN of the certificate in the .env file, referenced below
@@ -197,42 +206,43 @@ resources:
             SslSupportMethod: sni-only
           Comment: 'Made this CloudFront distribution for www, the static site'
           DefaultRootObject: index.html
-    # VHSDistribution:
-    #   Type: AWS::CloudFront::Distribution
-    #   Properties:
-    #     DistributionConfig:
-    #       Enabled: true
-    #       Origins:
-    #         - DomainName: !GetAtt VHSBucket.DomainName
-    #           Id: VHSOrigin
-    #           S3OriginConfig:
-    #             OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${VHSAccessIdentity}'
-    #       DefaultCacheBehavior:
-    #         TargetOriginId: VHSOrigin
-    #         ViewerProtocolPolicy: redirect-to-https
-    #         ForwardedValues:
-    #           QueryString: true #here, we do want the query string, because it contains the access code
-    #           Cookies:
-    #             Forward: none
-    #         AllowedMethods:
-    #           - GET
-    #           - HEAD
-    #         CachedMethods:
-    #           - GET
-    #           - HEAD
-    #         DefaultTTL: 86400 #1 day in seconds, how long files stay in cache
-    #         MaxTTL: 172800 #2 days, maximum time in cache
-    #         MinTTL: 0 #no time, allowing cloudfront to always get a fresh version from the bucket if necessary
-    #       Aliases:
-    #         - vhs.net23.cc #no bare domain here, of course, vhs.net23.cc is the only domain for media files
-    #       ViewerCertificate:
-    #         AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE}
-    #         SslSupportMethod: sni-only
-    #       Comment: 'Made this CloudFront distribution for vhs, the media archive'
-    #       DefaultRootObject: index.html
-    #       LambdaFunctionAssociations: #here's where we attach the Lambda@Edge function
-    #         - EventType: viewer-request
-    #           LambdaFunctionARN: !GetAtt screen.Arn
+    VHSDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Origins:
+            - DomainName: !GetAtt VHSBucket.DomainName
+              Id: VHSOrigin
+              S3OriginConfig:
+                OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${VHSAccessIdentity}'
+          DefaultCacheBehavior:
+            TargetOriginId: VHSOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            ForwardedValues:
+              QueryString: true #here, we do want the query string, because it contains the access code
+            QueryStringCacheKeys:
+              - key #include our parameter named "key" in cloudfront's cache key to keep someone from having the path but not the key from getting it from the cloudfront cache
+            Cookies:
+              Forward: none
+            LambdaFunctionAssociations: #here's where we attach the Lambda@Edge function
+              - EventType: viewer-request
+                LambdaFunctionARN: !GetAtt ScreenFunctionVersion.Arn
+            DefaultTTL: 86400 #1 day in seconds, how long files stay in cache
+            MaxTTL: 172800 #2 days, maximum time in cache
+            MinTTL: 0 #no time, allowing cloudfront to always get a fresh version from the bucket if necessary
+          Aliases:
+            - vhs.net23.cc #no bare domain here, of course, vhs.net23.cc is the only domain for media files
+          ViewerCertificate:
+            AcmCertificateArn: ${env:ACCESS_AMAZON_CERTIFICATE}
+            SslSupportMethod: sni-only
+          Comment: 'Made this CloudFront distribution for vhs, the media archive'
 
     Net23DomainRecords: #define a group of dns records in route 53
       Type: AWS::Route53::RecordSetGroup
@@ -265,17 +275,16 @@ resources:
               HostedZoneId: Z2FDTNDATAQYW2
 
           # vhs subdomain goes to media files
-
-          # - Name: vhs.net23.cc.
-          #   Type: A
-          #   AliasTarget:
-          #     DNSName: !GetAtt VHSDistribution.DomainName
-          #     HostedZoneId: Z2FDTNDATAQYW2
-          # - Name: vhs.net23.cc.
-          #   Type: AAAA
-          #   AliasTarget:
-          #     DNSName: !GetAtt VHSDistribution.DomainName
-          #     HostedZoneId: Z2FDTNDATAQYW2
+          - Name: vhs.net23.cc.
+            Type: A
+            AliasTarget:
+              DNSName: !GetAtt VHSDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
+          - Name: vhs.net23.cc.
+            Type: AAAA
+            AliasTarget:
+              DNSName: !GetAtt VHSDistribution.DomainName
+              HostedZoneId: Z2FDTNDATAQYW2
 
   Outputs: #outputs, correctly here in the outer resources section, end up in the cloudformation template Outputs tab. things will probably work without creating any outputs here at all, but we're leaving it just in case we later find out it's helpful
 
@@ -289,16 +298,16 @@ resources:
     OutputWWWDistribution:
       Description: 'Made this output identifier for the CloudFront distribution for www static site files'
       Value: !Ref WWWDistribution
-    # OutputVHSDistribution:
-    #   Description: 'Made this output identifier for the CloudFront distribution for vhs media files'
-    #   Value: !Ref VHSDistribution
+    OutputVHSDistribution:
+      Description: 'Made this output identifier for the CloudFront distribution for vhs media files'
+      Value: !Ref VHSDistribution
 
     OutputWWWDistributionDomainName:
       Description: 'Made this output identifier for the domain name for www static site files'
       Value: !GetAtt WWWDistribution.DomainName
-    # OutputVHSDistributionDomainName:
-    #   Description: 'Made this output identifier for the domain name for vhs media files'
-    #   Value: !GetAtt VHSDistribution.DomainName
+    OutputVHSDistributionDomainName:
+      Description: 'Made this output identifier for the domain name for vhs media files'
+      Value: !GetAtt VHSDistribution.DomainName
 
 custom:
   serverless-offline:
