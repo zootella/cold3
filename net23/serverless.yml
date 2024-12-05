@@ -71,13 +71,10 @@ functions:
       - http:
           path: /test
           method: post
-  # screen: #screen is the lambda@edge function which persons the gate at vhs.net23.cc
-  #   handler: src/screen.handler
-  #   timeout: 4 #Lambda@Edge limits 5 seconds for the viewer request phase
-  #   events: #notice how there's no http event here, instead, it's hooked up to the vhs cloudfront distribution
-  #     - cloudFront:
-  #         eventType: viewer-request
-  #         origin: VHSDistribution
+  screen: #screen is the lambda@edge function which persons the gate at vhs.net23.cc
+    handler: src/screen.handler
+    #no events; we'll attach screen to the vhs distribution below
+
 package:
   patterns:
     - '!**'             #exclude everything; following patterns include the folders and files we want in net23.zip
