@@ -1,4 +1,6 @@
 
+# deploy2 ~ added the screen lambda edge function to vhs
+
 service: net23
 frameworkVersion: '4'
 useDotenv: true
@@ -23,6 +25,9 @@ provider:
           Action:
             - ses:* #give them full run of the messaging apis
             - sns:*
+            - logs:CreateLogGroup #and let them log logs; this kept on coming up coding the lambda@edge function
+            - logs:CreateLogStream
+            - logs:PutLogEvents
 
 functions:
   snippet2:
@@ -71,6 +76,9 @@ functions:
       - http:
           path: /test
           method: post
+  screen:
+    handler: src/screen.handler
+    #omitting events as CloudFront, not API Gateway, will invoke this Lambda@Edge function
 
 package:
   patterns:
@@ -224,6 +232,16 @@ resources:
               QueryString: true #here, we do want the query string, because it contains the access code
               Cookies:
                 Forward: none
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN: !Ref ScreenLambdaVersion
+
+    ScreenLambdaVersion: #Lambda@Edge requires a versioned Lambda function ARN, so we're making one here
+      Type: AWS::Lambda::Version
+      Properties:
+        # FunctionName: !GetAtt ScreenLambdaFunction.Arn
+        FunctionName: !Ref ScreenLambdaFunction
+        Description: 'screen lambda version sealed as 7PTYEHH'
 
     Net23DomainRecords: #define a group of dns records in route 53
       Type: AWS::Route53::RecordSetGroup

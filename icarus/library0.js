@@ -1440,6 +1440,87 @@ noop(async () => {//see what these objects look like before we stringify and bas
 
 
 
+async function generateSignature(secret, message) {
+	const key = await crypto.subtle.importKey(
+		'raw',
+		new TextEncoder().encode(secret),
+		{name: 'HMAC', hash: {name: 'SHA-256'}},
+		false,
+		['sign']
+	)
+	const signature = await crypto.subtle.sign(
+		'HMAC',
+		key,
+		new TextEncoder().encode(message)
+	)
+	return btoa(String.fromCharCode(...new Uint8Array(signature)))
+}
+
+async function validateSignature(secret, message, signature) {
+	const key = await crypto.subtle.importKey(
+		'raw',
+		new TextEncoder().encode(secret),
+		{name: 'HMAC', hash: {name: 'SHA-256'}},
+		false,
+		['verify']
+	)
+	return await crypto.subtle.verify(
+		'HMAC',
+		key,
+		Uint8Array.from(atob(signature), c => c.charCodeAt(0)),
+		new TextEncoder().encode(message)
+	)
+}
+
+test(async () => {
+	
+	let secret = 'your-very-long-secret-key-string'
+	let message = 'Hello, HMAC!'
+	
+	let signature = await generateSignature(secret, message)
+	log('Generated Signature: ', signature)
+	
+	let isValid = await validateSignature(secret, message, signature)
+	log('Signature is valid: ', isValid)
+})
+
+//bookmark
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

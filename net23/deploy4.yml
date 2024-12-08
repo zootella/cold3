@@ -1,4 +1,6 @@
 
+# deploy4 ~ vhs is just like www, then you'll manually add a cloudfront function in the dashboard
+
 service: net23
 frameworkVersion: '4'
 useDotenv: true
@@ -23,6 +25,9 @@ provider:
           Action:
             - ses:* #give them full run of the messaging apis
             - sns:*
+            - logs:CreateLogGroup #and let them log logs; this kept on coming up coding the lambda@edge function
+            - logs:CreateLogStream
+            - logs:PutLogEvents
 
 functions:
   snippet2:

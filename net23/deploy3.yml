@@ -1,4 +1,6 @@
 
+# deploy3 ~ paste code into the dashboard, then the arn into here
+
 service: net23
 frameworkVersion: '4'
 useDotenv: true
@@ -23,6 +25,9 @@ provider:
           Action:
             - ses:* #give them full run of the messaging apis
             - sns:*
+            - logs:CreateLogGroup #and let them log logs; this kept on coming up coding the lambda@edge function
+            - logs:CreateLogStream
+            - logs:PutLogEvents
 
 functions:
   snippet2:
@@ -224,6 +229,9 @@ resources:
               QueryString: true #here, we do want the query string, because it contains the access code
               Cookies:
                 Forward: none
+            LambdaFunctionAssociations:
+              - EventType: viewer-request
+                LambdaFunctionARN: arn:aws:lambda:us-east-1:782173356706:function:manualscreen2:1
 
     Net23DomainRecords: #define a group of dns records in route 53
       Type: AWS::Route53::RecordSetGroup

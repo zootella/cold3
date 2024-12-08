@@ -1,13 +1,17 @@
 function handler(event) {
-	let s = 'function v2024dec7h'
+	let s = `function v2024dec7.3`
+
+
+
 	try {
 		let request = event.request
 		let key1Value = '(none)'
 		if (request.querystring.key1) key1Value = request.querystring.key1
-		s += `; key1 is "${key1Value}"`
+		s += `; stringified event is "${JSON.stringify(event)}"`
 		s += `; uri ${request.uri}`
 		let secretKey = 'your-very-secure-secret-key'
 		let dataToSign = request.uri
+		const crypto = require('crypto')
 		let hmac = crypto.createHmac('sha256', secretKey)
 		hmac.update(dataToSign);
 		let expectedSignature = hmac.digest('hex')

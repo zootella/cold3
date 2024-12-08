@@ -1,0 +1,295 @@
+
+
+
+
+
+can you do const stuff at the top
+can you have more than one function
+write in icarus a hmac example, you need that in library0 essentially, with crypto
+yeah, start there
+
+
+
+
+
+
+
+
+/*
+export const handler = async (event) => {
+	console.log('hello from lambda edge function!')
+	const request = event.Records[0].cf.request
+	return request//let everything through
+}
+
+
+
+function handler(event) {
+console.log('hi from mycloudfunction1, v2024dec7a')
+var request = event.request
+return request
+}
+
+/*
+
+
+
+exports.handler = (event, context, callback) => {//got this from aws docs
+	const request = event.Records[0].cf.request
+	callback(null, request)
+}
+
+
+next we'll try a dashboard cloudfront function
+
+
+*/
+
+
+
+//^pasted into web dashboard, ugh
+
+
+//all commented out as we try the paste into dashboard solution trail
+
+/*
+export const handler = (lambdaEvent, lambdaContext, lambdaCallback) => {
+	console.log('hi from screen! sealed as 7PTYEHH')//modifying code to try to avoid duplicate version error
+	let r = lambdaEvent.Records[0].cf.request
+	lambdaCallback(null, r)//return the unchanged request to allow it through
+}
+*/
+
+/*
+ok, testing the first simple configuration:
+
+2c2
+< # deploy1 ~ no mention of screen, www is the same as vhs and should produce two equivalent public static sites
+---
+> # deploy2 ~ added the screen lambda edge function to vhs
+78a79,81
+>   screen:
+>     handler: src/screen.handler
+>     #omitting events as CloudFront, not API Gateway, will invoke this Lambda@Edge function
+231a235,237
+>             LambdaFunctionAssociations:
+>               - EventType: viewer-request
+>                 LambdaFunctionARN: !Ref ScreenLambdaVersion
+232a239,243
+>     ScreenLambdaVersion: #Lambda@Edge requires a versioned Lambda function ARN, so we're making one here
+>       Type: AWS::Lambda::Version
+>       Properties:
+>         FunctionName: !GetAtt ScreenLambdaFunction.Arn #serverless framework makes this name, changing the handler name to title case
+
+[x]check site, www, vhs - does it work right now before you do anything?
+[x]deploy1 - WEFRDEY
+[x]check site, www, vhs - does the first simple way still work with an update?
+[]deploy2 - UGNSPCL47UVHWQMEKUS4KBHVE2WCZTI4O4FZ4KOQQ5JEAZF75JCQ
+[]check site, www, vhs - does adding screen work? error or success, next we'll try to go back
+[]deploy1
+[]check site, www, vhs - can you go back to a working system with deploy1?
+
+notes for after that:
+possible differences for lambda#edge
+-maybe, node 18 only? hopefully not
+-maybe, no arm yet?
+-probably, can't get .env variables the same way, ugh
+with all that, maybe this should be a lambda function you code standalone and paste into the dashboard!
+*/
+
+/*
+import {
+Sticker, doorLambda,
+} from 'icarus'
+
+export const handler = async (lambdaEvent, lambdaContext) => {
+	return doorLambda('GET', {lambdaEvent, lambdaContext, doorProcessBelow})
+}
+async function doorProcessBelow(door) {
+
+	//make sure the origin header is present and value valid right here, too
+	//vhs should only serve media files to pages (not naked tabs) on the valid domain name (not weird unknown sites)
+
+	if (door.body.key == 'value1') {//todo november, obviosly this gets more sophisticated
+		return door.lambdaEvent.Records[0].cf.request//return the original request object, allowing the request to proceed to the vhs CloudFront distribution, which will serve the media file from the vhs bucket
+	} else {
+		return {statusCode: 403, headers: {'Content-Type': 'application/json'}, body: null}//return 403 Forbidden
+	}
+}
+*/
+
+
+
+
+
+
+
+
+stuff from the event object to use
+method, get
+headers, origin, must be cold3.cc
+read the query string hash value
+read the uri
+
+event.request.method
+event.request.querystring.key1.value
+event.request.headers.origin.value
+
+hash must be valid
+time stamp must not be expired
+path must be allowed
+
+
+
+const event = {
+	"request": {
+		"method": "GET",
+		"uri": "/banner.png",
+		"querystring": {
+			"key1": {
+				"value": "value1"
+			}
+		},
+		"headers": {
+			"sec-ch-ua-mobile": {
+				"value": "?0"
+			},
+			"host": {
+				"value": "vhs.net23.cc"
+			},
+		},
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const event = {
+	"version": "1.0",
+	"context": {
+		"distributionDomainName": "d3gyu79osnlyit.cloudfront.net",
+		"distributionId": "E1J8VJVPBZKWTC",
+		"eventType": "viewer-request",
+		"requestId": "Mvpm-oYGLoYkQAwHmyoF_rKNTJR0a08OVHK2szYaA5gctX3vB7jdHg=="
+	},
+	"viewer": {
+		"ip": "2600:4808:6057:3e00:2dad:b3fa:cd8e:ce32"
+	},
+	"request": {
+		"method": "GET",
+		"uri": "/banner.png",
+		"querystring": {
+			"key1": {
+				"value": "value1"
+			}
+		},
+		"headers": {
+			"user-agent": {
+				"value": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+			},
+			"sec-ch-ua-mobile": {
+				"value": "?0"
+			},
+			"host": {
+				"value": "vhs.net23.cc"
+			},
+			"accept": {
+				"value": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+			},
+			"upgrade-insecure-requests": {
+				"value": "1"
+			},
+			"sec-fetch-site": {
+				"value": "none"
+			},
+			"sec-fetch-dest": {
+				"value": "document"
+			},
+			"accept-language": {
+				"value": "en-US,en;q=0.9"
+			},
+			"accept-encoding": {
+				"value": "gzip, deflate, br, zstd"
+			},
+			"sec-ch-ua-platform": {
+				"value": "\"macOS\""
+			},
+			"sec-fetch-user": {
+				"value": "?1"
+			},
+			"sec-ch-ua": {
+				"value": "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\""
+			},
+			"sec-fetch-mode": {
+				"value": "navigate"
+			}
+		},
+		"cookies": {}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
