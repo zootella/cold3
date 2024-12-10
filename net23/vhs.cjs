@@ -1,7 +1,14 @@
 
 //test values of secrets; be careful to not overwrite the real ones in the amazon box!
-const ACCESS_VHS_SECRET = 'gC76h1zXas4tQHoiZKymxASqyKzx6AmMtdYTdLnDe3'
+const ACCESS_VHS_SECRET = '8d64b043e91a4e08e492ae37b8ac96bdb89877865b9dbcbe7789766216854f90'
 const ACCESS_ORIGIN_URL = 'https://cold3.cc'
+
+//       _                 _  __                 _      __                  _   _             
+//   ___| | ___  _   _  __| |/ _|_ __ ___  _ __ | |_   / _|_   _ _ __   ___| |_(_) ___  _ __  
+//  / __| |/ _ \| | | |/ _` | |_| '__/ _ \| '_ \| __| | |_| | | | '_ \ / __| __| |/ _ \| '_ \ 
+// | (__| | (_) | |_| | (_| |  _| | | (_) | | | | |_  |  _| |_| | | | | (__| |_| | (_) | | | |
+//  \___|_|\___/ \__,_|\__,_|_| |_|  \___/|_| |_|\__| |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|
+//                                                                                            
 
 // ~~~~ paste below into the dashboard box ~~~~
 
@@ -29,15 +36,15 @@ function handler(event) {
 function handler2(event, log, response403, response500) {
 	//amazon's cloudfront-js-2.0 runtime has strange limitations
 	//remember you can't comment after code on the same line!
-	log.push('v2024dec9p')
+	log.push('v2024dec10a')
 
 	//determine the method of this request we're handling, like GET or POST; we only allow GET
 	let method = event.request.method
 	if (method != 'GET') { log.push('method not get'); return response403 }
 
-	//the uri is the file cloudfront will return if we let this request through
+	//the uri is the file cloudfront will return if we let this request through, like "/folder1/folder2/file.ext"
 	let uri = event.request.uri
-	if (!uri || !uri.length || !uri.startsWith('/') || uri.endsWith('/')) { log.push('bad uri'); return response403 }
+	if (!(uri && uri.length && uri.startsWith('/') && !uri.endsWith('/'))) { log.push('bad uri'); return response403 }
 
 	//cloudfront lowercases headers; if amazon changes this the code below will break closed, not open
 	//requiring origin blocks link sharing; checking origin blocks hotlinking
@@ -55,12 +62,13 @@ function handler2(event, log, response403, response500) {
 		if (event.request.querystring.hash) q.hash = decodeURIComponent(event.request.querystring.hash.value)
 	}
 	//check path, which must be like "/folder1/folder2/"
-	if (!q.path || !q.path.length || !q.path.startsWith('/') || !q.path.endsWith('/')) { log.push('bad query path'); return response403 }
+	if (!(q.path && q.path.length && q.path.startsWith('/') && q.path.endsWith('/'))) { log.push('bad query path'); return response403 }
+
 	//path is the allowed folder, and uri is the requested file; make sure uri starts with path
 	if (!uri.startsWith(q.path)) { log.push('requested uri is outside of query path'); return response403 }
 
 	//check tick, which must be an integer
-	if (!q.tick || !q.tick.length) { log.push('bad query tick'); return response403 }
+	if (!(q.tick && q.tick.length)) { log.push('bad query tick'); return response403 }
 	let t = parseInt(q.tick)
 	if (`${t}` != q.tick) { log.push('query tick failed round trip check'); return response403 }
 	//make sure tick is not in the past, nor more than 7 days in the future; we can do this check before the crypto!
@@ -68,14 +76,15 @@ function handler2(event, log, response403, response500) {
 	if (t > Date.now() + 604800000) { log.push('query tick too far in future'); return response403 }
 
 	//check seed, which must be a tag
-	if (!q.seed || q.seed.length != 21) { log.push('bad query seed'); return response403 }
+	if (!(q.seed && q.seed.length == 21)) { log.push('bad query seed'); return response403 }
 
 	//check that the query string includes a hash
-	if (!q.hash || !q.hash.length) { log.push('no query hash'); return response403 }
+	if (!(q.hash && q.hash.length)) { log.push('no query hash'); return response403 }
 	//all of that looks to be in order; now we'll check that it's properly signed
-	//compose the same message the worker hashed, and hash it, using our shared secret
+	//compose the same message the worker hashed
 	let message = `path=${encodeURIComponent(q.path)}&tick=${t}&seed=${q.seed}`
-	let h = require('crypto').createHmac('sha256', ACCESS_VHS_SECRET).update(message).digest('base64')
+	//hash the message, using our shared secret 32 bytes of cryptographically securely generated random data
+	let h = require('crypto').createHmac('sha256', Buffer.from(ACCESS_VHS_SECRET, 'hex')).update(message).digest('base64')
 	//compare the given and computed hashes to validate the signature
 	//loop down all the characters to guard against a timing attack
 	let same = (h.length == q.hash.length)
@@ -95,8 +104,8 @@ function handler2(event, log, response403, response500) {
 
 // ~~~~ paste above into the dashboard box ~~~~
 
-// $ node screen.cjs
-const testEvent = { //got this started from logging a real production one
+// test locally with $ node vhs.cjs
+let testEvent = {//got this started from logging a real production one
 	"version": "1.0",
 	"context": {
 		"distributionDomainName": "9osnlyitd3gyu7.cloudfront.net",//not real information
@@ -109,12 +118,12 @@ const testEvent = { //got this started from logging a real production one
 	},
 	"request": {
 		"method": "GET",
-		"uri": "/folder1/folder2/cat.jpg", //confirm this is the same here in node testing as what you get from production logging
+		"uri": "/folder1/folder2/file.ext",//confirm this is the same here in node testing as what you get from production logging
 		"querystring": {
-			"path": {"value": "%2Ffolder1%2Ffolder2%2F"},//path and hash can have slashes, and arrive to our function encoded
-			"tick": {"value": "1733962320938"},//you have to update this to test without hitting query tick expired
-			"seed": {"value": "gFpzqGE3YVZkpazvNC9hQ"},
-			"hash": {"value": "sJL4iSdCKJ93Cct%2BQpFc1hKsWc6gNclnrtBg75hX%2FGU%3D"},
+			"path": {"value": "%2Ffolder1%2Ffolder2%2F"},//path and hash can have slashes, and wierdly, arrive to our function encoded
+			"tick": {"value": "1733865221895"},//you have to update this to test without hitting query tick expired
+			"seed": {"value": "LsX2IlDdSRQ5ioFccXBOL"},
+			"hash": {"value": "tZt6CmoGaTrPCQeIpAfwmhKUn4rfpCpS9AmMx4GY2Js%3D"},
 		},
 		"headers": {
 			"user-agent": {
@@ -124,15 +133,17 @@ const testEvent = { //got this started from logging a real production one
 				"value": "vhs.net23.cc"
 			},
 			"origin": {
-				"value": "https://cold3.cc" //made this up, not sure if it really looks like this
+				"value": "https://cold3.cc"//made this up, not sure if it really looks like this
 			},
-			//there were more in here you omitted
+			//there's more in a real one that you've omitted here
 		},
 		"cookies": {}
 	}
 }
 function test() {
-	let response = handler(testEvent) //run the handler in this local node simulation
-	console.log(JSON.stringify(response, null, 2)) //log out the response object the handler would return to cloudfront
+	let response = handler(testEvent)//run the handler in this local node simulation
+	console.log(JSON.stringify(response, null, 2))//log out the response object the handler would return to cloudfront
 }
 test()
+
+//^bookmarkvhs

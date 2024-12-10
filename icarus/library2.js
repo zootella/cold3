@@ -6,13 +6,11 @@ import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 hasText, checkText, newline, deindent,
-Data, decrypt, subtleHash, timeSafeEqual,
+Data, decrypt, subtleHash, timeSafeEqual, hmacSign,
 stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
-
-screenSign0,
 } from './library0.js'
 import {
 Tag, tagLength, checkTag,
@@ -1288,38 +1286,44 @@ test(async () => { if (!cloudLogSimulationMode) return//only run these in simula
 
 
 
-
-
-//        _                                        
-// __   _| |__  ___   ___  ___ _ __ ___  ___ _ __  
-// \ \ / / '_ \/ __| / __|/ __| '__/ _ \/ _ \ '_ \ 
-//  \ V /| | | \__ \ \__ \ (__| | |  __/  __/ | | |
-//   \_/ |_| |_|___/ |___/\___|_|  \___|\___|_| |_|
-//                                                 
+//        _         
+// __   _| |__  ___ 
+// \ \ / / '_ \/ __|
+//  \ V /| | | \__ \
+//   \_/ |_| |_|___/
+//                  
 /*
-ttd december, here is where you briefly document vhs screen
-
-
-
-path is like "/folder1/folder2/" with slashes on both ends
-expiration is a number of milliseconds, like 2*Time.hour
-uses the time now, and a new random unique tag
+make the query string for a signed link to a path within vhs.net23.cc the bearer can use for read access
+path is like "/folder1/folder2/" with slashes on both ends, granting access to folders and files within
+expiration is a number of milliseconds, like 2*Time.hour, granting access for that long
+uses the time now, generates a new random unique tag, and uses the shared vhs secret
 returns query string parameters like:
 
 path=%2Ffolder1%2Ffolder2%2F&tick=1733785941120&seed=gh9U49hZ2Cdp0osLFdFL4&hash=NYAIl8bGpoY0PQx4Eq5p8
 Gb%2BabT%2FX%2FOx0Edh3ifBJ7g%3D
 
-note the uri encoding that turns / into %2F and = into %3D
+note the uri encoding that turns / into %2F and = into %3D; path and hash can have characters that need to be encoded
 */
-async function screenSign2(path, expiration) {//takes a path like , and a number of milliseconds before the link expires
-	let access = await getAccess()
-	let message = `path=${encodeURIComponent(path)}&tick=${Now()+expiration}&seed=${Tag()}`
-	let hash = await screenSign0(access.get('ACCESS_VHS_SECRET'), message)
+export async function vhsSign(path, expiration) {
+	let access = await getAccess()//this uses access, the current time, and a new random tag, so it's difficult to test
+	return await _vhsSign(Data({base16: access.get('ACCESS_VHS_SECRET')}), path, Now()+expiration, Tag())
+}
+async function _vhsSign(secret, path, now, expiration, seed) {//so we've factored out this core for testing, below
+	let message = `path=${encodeURIComponent(path)}&tick=${now+expiration}&seed=${seed}`
+	let hash = await hmacSign(secret, message)
 	return message+`&hash=${encodeURIComponent(hash.base64())}`
 }
-noop(async () => {//icarus can't run this because it needs getAccess, but you can $ yarn test to see it in node
-	log(await screenSign2('/folder1/folder2/', 2*Time.day))
+test(async () => {
+	let secret = Data({base16: '8d64b043e91a4e08e492ae37b8ac96bdb89877865b9dbcbe7789766216854f90'})
+	ok(secret.size() == 32)
+	let path = '/folder1/folder2/'
+	let now = 1733858021895
+	let expiration = 2*Time.hour
+	let seed = 'LsX2IlDdSRQ5ioFccXBOL'
+	ok(await _vhsSign(secret, path, now, expiration, seed) == 'path=%2Ffolder1%2Ffolder2%2F&tick=1733865221895&seed=LsX2IlDdSRQ5ioFccXBOL&hash=tZt6CmoGaTrPCQeIpAfwmhKUn4rfpCpS9AmMx4GY2Js%3D')
 })
+
+//^bookmarkvhs
 
 
 

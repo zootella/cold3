@@ -36,6 +36,7 @@ timeSafeEqual,
 hashLength, subtleHash, checkHashLight, checkHash,
 hashPassword,
 encrypt, decrypt,
+hmacSign,
 rsaEncrypt, rsaDecrypt,
 objectToBase62, base62ToObject,
 curveSign, curveVerify,
@@ -73,7 +74,7 @@ doorWorker, doorLambda, doorPromise, awaitDoorPromises,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 getBrowserTag,
-fetchNetwork23,
+fetchNetwork23, vhsSign,
 
 } from './library2.js'//functions that use parts of the larger application and environment
 

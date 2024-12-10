@@ -7,6 +7,302 @@
 
 
 
+/*
+[]are there other subtle apis that return ArrayBuffer?
+[]do you use atoi for library0's base64? it certainly could, but you need to avoid the tostring pitfall you hit earlier
+*/
+
+
+
+//six day blank check
+test(async () => {
+	let secret = Data({base16: '8d64b043e91a4e08e492ae37b8ac96bdb89877865b9dbcbe7789766216854f90'})
+	let path = '/'
+	let now = Now()
+	let expiration = 6*Time.day
+	let seed = Tag()
+	log(await _vhsSign(secret, path, now, expiration, seed))
+})
+
+
+
+
+
+
+//refactor generate to use library functions
+async function screen_signatureMake(message) {
+	const key = await crypto.subtle.importKey(
+		'raw',
+		Data({text: screen_secret}).array(),
+		{name: 'HMAC', hash: {name: 'SHA-256'}},
+		false,
+		['sign']
+	)
+	const signature = await crypto.subtle.sign(
+		'HMAC',
+		key,
+		Data({text: message}).array()
+	)
+	return btoa(signature)
+}
+
+//refactor validate to work in cloudfront runtime 2
+const screen_secret = 'gC76h1zXas4tQHoiZKymxASqyKzx6AmMtdYTdLnDe3'
+const screen_crypto = crypto.subtle
+async function screen_signatureCheck(message, signature) {
+	const key = await screen_crypto.importKey(
+		'raw',
+		new TextEncoder().encode(screen_secret),
+		{name: 'HMAC', hash: {name: 'SHA-256'}},
+		false,
+		['verify']
+	)
+	return await screen_crypto.verify(
+		'HMAC',
+		key,
+		atob(signature),
+		new TextEncoder().encode(message)
+	)
+
+	function screen_base16ToArray(s) {
+		let a = new Uint8Array(s.length / 2)
+		for (let i = 0; i < a.length; i++) { a[i] = parseInt(s.substr(i*2, 2), 16) }
+		return a
+	}
+
+}
+
+
+noop(async () => {
+
+	let message = 'here is some example message plaintext, and make it a little longer'
+	let signature = await screen_signatureMake(message)
+	log(signature)
+
+//	let valid = await screen_signatureCheck(message, signature)
+	/*
+	ok(signature == 'f9ec609ffadfbc461af1eb9b1ba66bbd8856ed45e5af56a2ada10b154577f4ed')
+	ok(signature == 'W29iamVjdCBBcnJheUJ1ZmZlcl0=')
+	t5GsF3Z1zRprh9Eq1r6l44FgxUWh4jsz4RNdS7R06oM=
+	ok(valid)
+	*/
+	log(signature, valid)
+})
+
+
+noop(async () => {
+
+
+	let p = new URLSearchParams()
+	p.append('path', '/folder1/folder2/')
+	p.append('tick', '1733701225483')
+	p.append('seed', 'gFpzqGE3YVZkpazvNC9hQ')
+	let s = p.toString()//encodes slashes and other characters as necessary
+	let hash = await screen_signatureMake(s)
+
+
+
+	log(s, hash)
+
+	/*
+	p.append('hash', 'W29iamVjdCBBcnJheUJ1ZmZlcl0=')
+	s = p.toString()
+	log(s)
+
+
+
+
+	let message = 'here is some example message plaintext, and make it a little longer'
+	let signature = await screen_signatureMake(message)
+	let valid = await screen_signatureCheck(message, signature)
+	ok(signature == 'f9ec609ffadfbc461af1eb9b1ba66bbd8856ed45e5af56a2ada10b154577f4ed')
+	ok(valid)
+	log(signature, valid)
+	*/
+})
+
+
+
+
+function handler(event) {
+	let o = {}
+	try {
+		o.version = 'function v2024dec8.3'
+
+		o.event = event
+
+		o.tick = Date.now()
+
+		const crypto = require('crypto')
+		o.crypto = typeof crypto
+
+		//this is the code to get producing the same base64 output in the function and icarus
+		let path = '/folder1/folder2/'
+		let tick = '1733701225483'
+		let seed = 'gFpzqGE3YVZkpazvNC9hQ'
+		let message = `path=${encodeURIComponent(path)}&tick=${tick}&seed=${seed}`
+		let secret = 'gC76h1zXas4tQHoiZKymxASqyKzx6AmMtdYTdLnDe3'
+		let hash = crypto.createHmac('sha256', secret).update(message).digest('base64')
+		o.hash = hash
+
+		o.done = 'made it to the end'
+
+	} catch (error) { o.error = error.message }
+	console.log(JSON.stringify(o))
+	return event.request
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function handler(event) {
+	const response403 = {
+		statusCode: 403,
+		statusDescription: 'Forbidden',
+		headers: {'content-type': {value: 'text/plain'}, 'cache-control': {value: 'no-cache'}},
+		body: 'Access Denied'
+	}
+	const response500 = {
+		statusCode: 500,
+		statusDescription: 'Internal Server Error',
+		headers: {'content-type': {value: 'text/plain'}, 'cache-control': {value: 'no-cache'}},
+		body: 'An unexpected error occurred. Please try again later.'
+	}
+	try {
+
+		let l = []
+
+		handler2(event, l, ACCESS_VHS_SECRET, )
+
+
+
+
+
+
+		if (l.length) console.log(JSON.stringify(l))
+
+	} catch (e) { console.log('[OUTER]', e) }
+	return response500
+}
+
+function handler2(event, l, secret, h) { //takes event object, log array, vhs secret, and hash function
+	l.push('here is how you log')
+
+}
+
+test(() => {
+
+
+})
+
+
+
+
+
+
+
+
+
+
+	let response = event.request
+	let o = {}
+	try {
+
+		//version
+		o.version = 'function v2024dec9i'
+
+		//clock
+		o.clock = Date.now()
+
+		//read
+		o.request_method = event.request.method
+		o.request_uri = event.request.uri
+		if (event.request.querystring) {
+			if (event.request.querystring.path) o.request_path = event.request.querystring.path.value
+			if (event.request.querystring.tick) o.request_tick = event.request.querystring.tick.value
+			if (event.request.querystring.seed) o.request_seed = event.request.querystring.seed.value
+			if (event.request.querystring.hash) o.request_hash = event.request.querystring.hash.value
+		}
+
+		//read, decode
+		if (o.request_path) o.request_path_decoded = decodeURIComponent(o.request_path)
+		if (o.request_hash) o.request_hash_decoded = decodeURIComponent(o.request_hash)
+
+		//read, lengths
+		if (o.request_path)         o.request_path_length         = o.request_path.length
+		if (o.request_hash)         o.request_hash_length         = o.request_hash.length
+		if (o.request_path_decoded) o.request_path_decoded_length = o.request_path_decoded.length
+		if (o.request_hash_decoded) o.request_hash_decoded_length = o.request_hash_decoded.length
+
+		//crypto
+		const crypto = require('crypto')
+		const secret = 'gC76h1zXas4tQHoiZKymxASqyKzx6AmMtdYTdLnDe3'
+
+		let path = '/folder1/folder2/'
+		let tick = '1733765298051'
+		let seed = 'gFpzqGE3YVZkpazvNC9hQ'
+		let message = `path=${encodeURIComponent(path)}&tick=${tick}&seed=${seed}`
+
+		let hash = crypto.createHmac('sha256', secret).update(message).digest('base64')
+
+		o.module = typeof crypto
+		o.hash = hash
+		o.valid = hash == 'ELjTcnY8nJ7/SG8vLGuEIwKoCsylq/tdZMcCigPu/mc='
+
+		let a = hash
+		let b = 'ELjTcnY8nJ7/SG8vLGuEIwKoCsylq/tdZMcCigPu/mc='
+		let same = (a.length == b.length)
+		if (same) {
+			let total = 0
+			for (let i = 0; i < a.length; i++) {
+				total |= a.charCodeAt(i) ^ b.charCodeAt(i);
+			}
+			same = (total == 0)
+		}
+		o.same = same
+
+		//forbidden
+		const forbidden = {
+			statusCode: 403,
+			statusDescription: 'Forbidden',
+			headers: {'content-type': {value: 'application/json'}},
+			body: ''
+		}
+		if (o.clock % 2) response = forbidden
+
+		o.done = 'ALLDONE'
+
+	} catch (error) { o.error = error.message }
+	console.log(JSON.stringify(o))
+	return response
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -89,7 +385,7 @@ oh, also, how do you simulate this in icarus for testing
 
 
 
-
+//screen really isn't the name of anything, name all this vhs
 
 
 
@@ -789,6 +1085,31 @@ RXbdiWkJwM1UG5m3OheI6ea8yRDX9rWB85tvwG2Jf_QpDs1jY8zebw== [
 	//return event.request
 	return response403
 */
+
+
+
+
+
+
+
+
+
+
+//^bookmarkvhs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

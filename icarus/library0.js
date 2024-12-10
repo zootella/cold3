@@ -1093,10 +1093,9 @@ const _subtle = {
 	symmetricStrength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
 	symmetricVectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 	symmetricUse: ['encrypt', 'decrypt'],//create and import keys that can do these things
-	symmetricFormat: 'raw',//export symmetric key as raw bytes
 
 	//symmetric hash-based message authentication codes
-	hmacName: 'HMAC',
+	hmacName: 'HMAC',//the keyed-Hash Message Authentication Code, by Mihir Bellare, Ran Canetti, and Hugo Krawczyk in their 1997 RFC 2104
 
 	//public and private key pair encryption
 	rsaName: 'RSA-OAEP',//rsa encryption scheme with Optimal Asymmetric Encryption Padding
@@ -1232,17 +1231,17 @@ test(async () => {
 })
 
 async function symmetric_createKey() {
-	return await crypto.subtle.generateKey({ name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
+	return await crypto.subtle.generateKey({name: _subtle.symmetricName, length: _subtle.symmetricStrength}, _subtle.extractable, _subtle.symmetricUse)
 }
 async function symmetric_exportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
-	return Data({buffer: await crypto.subtle.exportKey(_subtle.symmetricFormat, key)})//key is an imported CryptoKey object
+	return Data({buffer: await crypto.subtle.exportKey('raw', key)})//key is an imported CryptoKey object
 }
 async function symmetric_importKey(keyData) {//do this once per script run, not every time a function that needs it is called!
-	return await crypto.subtle.importKey(_subtle.symmetricFormat, keyData.array(), { name: _subtle.symmetricName, length: _subtle.symmetricStrength }, _subtle.extractable, _subtle.symmetricUse)
+	return await crypto.subtle.importKey('raw', keyData.array(), {name: _subtle.symmetricName, length: _subtle.symmetricStrength}, _subtle.extractable, _subtle.symmetricUse)
 }
 async function symmetric_encrypt(key, plainText) {
 	let vector = Data({random: _subtle.symmetricVectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
-	let cipher = Data({buffer: await crypto.subtle.encrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, Data({text: plainText}).array())})
+	let cipher = Data({buffer: await crypto.subtle.encrypt({name: _subtle.symmetricName, iv: vector.array()}, key, Data({text: plainText}).array())})
 	let storeBin = Bin(vector.size() + cipher.size())
 	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
 	storeBin.add(cipher)
@@ -1251,7 +1250,7 @@ async function symmetric_encrypt(key, plainText) {
 async function symmetric_decrypt(key, storeData) {//stored data that is initialization vector followed by cipher bytes
 	let vector = storeData.clip(0, _subtle.symmetricVectorSize)//unpack
 	let cipher = storeData.clip(_subtle.symmetricVectorSize, storeData.size() - _subtle.symmetricVectorSize)
-	return Data({buffer: await crypto.subtle.decrypt({ name: _subtle.symmetricName, iv: vector.array() }, key, cipher.array())})
+	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.symmetricName, iv: vector.array()}, key, cipher.array())})
 }
 test(async () => {
 
@@ -1289,12 +1288,59 @@ test(async () => {
 	ok(p == d2.text())
 })
 
-//  ____  ____    _    
-// |  _ \/ ___|  / \   
-// | |_) \___ \ / _ \  
-// |  _ < ___) / ___ \ 
-// |_| \_\____/_/   \_\
-//                    
+//  _                          
+// | |__  _ __ ___   __ _  ___ 
+// | '_ \| '_ ` _ \ / _` |/ __|
+// | | | | | | | | | (_| | (__ 
+// |_| |_|_| |_| |_|\__,_|\___|
+//                             
+
+export async function hmacSign(secretData, messageText) {//shared secret key should be 32 bytes of random data
+	const key = await crypto.subtle.importKey(
+		'raw',
+		secretData.array(),
+		{name: _subtle.hmacName, hash: {name: _subtle.passwordAlgorithmHashFunction}},
+		false,//not extractable
+		['sign']
+	)
+	const signature = await crypto.subtle.sign(
+		_subtle.hmacName,
+		key,
+		Data({text: messageText}).array()
+	)/*
+	.------------------------.
+	|\\////////       90 min |
+	| \/  __  ______  __     |
+	|    /  \|\.....|/  \    |
+	|    \__/|/_____|\__/    |
+	| B         HMAC Secured |
+	|    ________________    |
+	|___/_._o________o_._\___| wtx */
+	return Data({buffer: signature})
+}
+test(async () => {
+	let sharedSecretData = Data({base16: 'f9b9079fa7021b0c67f26de8758cde5b02e1944dade0e9041d00e808a4b21cc7'})//example shared secret both sides have secure
+	let signature = await hmacSign(sharedSecretData, 'example message')
+	ok(signature.size() == 32)//hmac hashes are 32 bytes
+	ok(signature.base16() == '1b8f8b63c8bacedebe05f030e05f325c185cb8fe771abcb07987688e823928b4')
+	ok(signature.base64() == 'G4+LY8i6zt6+BfAw4F8yXBhcuP53GryweYdojoI5KLQ=')
+
+	let path = '/folder1/folder2/'
+	let tick = '1733765298051'
+	let seed = 'gFpzqGE3YVZkpazvNC9hQ'//we're throwing in a random seed, probably unnecessarily
+	let message = `path=${encodeURIComponent(path)}&tick=${tick}&seed=${seed}`//compose a query string
+	ok((await hmacSign(sharedSecretData, message)).base64() == 'qDOJXeFRSZLnuI5mm+YnZ9lIBCr87y/yA7vyXxfGqTc=')
+
+})
+
+//^bookmarkvhs
+
+//                 
+//  _ __ ___  __ _ 
+// | '__/ __|/ _` |
+// | |  \__ \ (_| |
+// |_|  |___/\__,_|
+//                 
 
 async function rsaMakeKeys() {//returns public and private keys in base62
 	let keys = await crypto.subtle.generateKey({name: _subtle.rsaName, modulusLength: _subtle.rsaLength, publicExponent: _subtle.rsaPublicExponent, hash: {name: _subtle.rsaHashFunction}}, _subtle.extractable, _subtle.rsaUse)
@@ -1427,272 +1473,6 @@ noop(async () => {//see what these objects look like before we stringify and bas
 	let exportedPrivateKey = await curve_exportKey(keys.privateKey)
 	log(look({keys, exportedPublicKey, exportedPrivateKey}))
 })
-
-
-
-
-
-
-
-
-
-
-
-
-//  _                          
-// | |__  _ __ ___   __ _  ___ 
-// | '_ \| '_ ` _ \ / _` |/ __|
-// | | | | | | | | | (_| | (__ 
-// |_| |_|_| |_| |_|\__,_|\___|
-//                             
-
-export async function screenSign0(secretText, messageText) {
-	const key = await crypto.subtle.importKey(
-		'raw',
-		Data({text: secretText}).array(),
-		{name: _subtle.hmacName, hash: {name: _subtle.passwordAlgorithmHashFunction}},
-		false,
-		['sign']
-	)
-	const signature = await crypto.subtle.sign(
-		_subtle.hmacName,
-		key,
-		Data({text: messageText}).array()
-	)
-	return Data({buffer: signature})
-}
-test(async () => {
-	let d = await screenSign0('example secret key', 'example message')//hmac reccommends 32 random bytes for the shared secret key, equivalent to 43 base62 characters
-	ok(d.size() == 32)//hmac hashes are 32 bytes
-	ok(d.base16() == 'ada6ce24495fea369859c11be1e41f2f240a5a767cd769e0c9c8599cbf375608')
-
-	const secret = 'gC76h1zXas4tQHoiZKymxASqyKzx6AmMtdYTdLnDe3'//example shared secret both sides have secure
-	let path = '/folder1/folder2/'
-	let tick = '1733765298051'
-	let seed = 'gFpzqGE3YVZkpazvNC9hQ'//we're throwing in a random seed, probably unnecessarily
-	let message = `path=${encodeURIComponent(path)}&tick=${tick}&seed=${seed}`//compose a query string
-	ok((await screenSign0(secret, message)).base64() == 'ELjTcnY8nJ7/SG8vLGuEIwKoCsylq/tdZMcCigPu/mc=')
-})
-
-
-
-
-
-
-
-test(async () => {
-
-
-
-})
-
-
-
-
-
-
-/*
-[]are there other subtle apis that return ArrayBuffer?
-[]do you use atoi for library0's base64? it certainly could, but you need to avoid the tostring pitfall you hit earlier
-*/
-
-
-
-
-
-
-
-
-
-noop(async () => {
-
-	const secret = 'gC76h1zXas4tQHoiZKymxASqyKzx6AmMtdYTdLnDe3'
-
-	let path = '/folder1/folder2/'
-	let tick = '1733765298051'
-	let seed = 'gFpzqGE3YVZkpazvNC9hQ'
-	let message = `path=${encodeURIComponent(path)}&tick=${tick}&seed=${seed}`
-
-
-	let hash = Data({buffer: signature}).base64()
-	ok(hash == 'ELjTcnY8nJ7/SG8vLGuEIwKoCsylq/tdZMcCigPu/mc=')
-
-	let a = hash
-	let b = 'ELjTcnY8nJ7/SG8vLGuEIwKoCsylq/tdZMcCigPu/mc='
-	let same = (a.length == b.length)
-	if (same) {
-		let total = 0
-		for (let i = 0; i < a.length; i++) {
-			total |= a.charCodeAt(i) ^ b.charCodeAt(i);
-		}
-		same = (total == 0)
-	}
-	ok(same)
-
-
-
-
-
-
-})
-
-
-
-
-
-
-//refactor generate to use library functions
-async function screen_signatureMake(message) {
-	const key = await crypto.subtle.importKey(
-		'raw',
-		Data({text: screen_secret}).array(),
-		{name: 'HMAC', hash: {name: 'SHA-256'}},
-		false,
-		['sign']
-	)
-	const signature = await crypto.subtle.sign(
-		'HMAC',
-		key,
-		Data({text: message}).array()
-	)
-	return btoa(signature)
-}
-
-//refactor validate to work in cloudfront runtime 2
-const screen_secret = 'gC76h1zXas4tQHoiZKymxASqyKzx6AmMtdYTdLnDe3'
-const screen_crypto = crypto.subtle
-async function screen_signatureCheck(message, signature) {
-	const key = await screen_crypto.importKey(
-		'raw',
-		new TextEncoder().encode(screen_secret),
-		{name: 'HMAC', hash: {name: 'SHA-256'}},
-		false,
-		['verify']
-	)
-	return await screen_crypto.verify(
-		'HMAC',
-		key,
-		atob(signature),
-		new TextEncoder().encode(message)
-	)
-
-	function screen_base16ToArray(s) {
-		let a = new Uint8Array(s.length / 2)
-		for (let i = 0; i < a.length; i++) { a[i] = parseInt(s.substr(i*2, 2), 16) }
-		return a
-	}
-
-}
-
-
-noop(async () => {
-
-	let message = 'here is some example message plaintext, and make it a little longer'
-	let signature = await screen_signatureMake(message)
-	log(signature)
-
-//	let valid = await screen_signatureCheck(message, signature)
-	/*
-	ok(signature == 'f9ec609ffadfbc461af1eb9b1ba66bbd8856ed45e5af56a2ada10b154577f4ed')
-	ok(signature == 'W29iamVjdCBBcnJheUJ1ZmZlcl0=')
-	t5GsF3Z1zRprh9Eq1r6l44FgxUWh4jsz4RNdS7R06oM=
-	ok(valid)
-	*/
-	log(signature, valid)
-})
-
-
-noop(async () => {
-
-
-	let p = new URLSearchParams()
-	p.append('path', '/folder1/folder2/')
-	p.append('tick', '1733701225483')
-	p.append('seed', 'gFpzqGE3YVZkpazvNC9hQ')
-	let s = p.toString()//encodes slashes and other characters as necessary
-	let hash = await screen_signatureMake(s)
-
-
-
-	log(s, hash)
-
-	/*
-	p.append('hash', 'W29iamVjdCBBcnJheUJ1ZmZlcl0=')
-	s = p.toString()
-	log(s)
-
-
-
-
-	let message = 'here is some example message plaintext, and make it a little longer'
-	let signature = await screen_signatureMake(message)
-	let valid = await screen_signatureCheck(message, signature)
-	ok(signature == 'f9ec609ffadfbc461af1eb9b1ba66bbd8856ed45e5af56a2ada10b154577f4ed')
-	ok(valid)
-	log(signature, valid)
-	*/
-})
-
-
-
-
-function handler(event) {
-	let o = {}
-	try {
-		o.version = 'function v2024dec8.3'
-
-		o.event = event
-
-		o.tick = Date.now()
-
-		const crypto = require('crypto')
-		o.crypto = typeof crypto
-
-		//this is the code to get producing the same base64 output in the function and icarus
-		let path = '/folder1/folder2/'
-		let tick = '1733701225483'
-		let seed = 'gFpzqGE3YVZkpazvNC9hQ'
-		let message = `path=${encodeURIComponent(path)}&tick=${tick}&seed=${seed}`
-		let secret = 'gC76h1zXas4tQHoiZKymxASqyKzx6AmMtdYTdLnDe3'
-		let hash = crypto.createHmac('sha256', secret).update(message).digest('base64')
-		o.hash = hash
-
-		o.done = 'made it to the end'
-
-	} catch (error) { o.error = error.message }
-	console.log(JSON.stringify(o))
-	return event.request
-}
-
-
-
-
-
-
-
-
-
-
-
-
-//bookmark
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
