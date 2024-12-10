@@ -11,6 +11,8 @@ stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
+
+screenSign0,
 } from './library0.js'
 import {
 Tag, tagLength, checkTag,
@@ -1288,7 +1290,36 @@ test(async () => { if (!cloudLogSimulationMode) return//only run these in simula
 
 
 
+//        _                                        
+// __   _| |__  ___   ___  ___ _ __ ___  ___ _ __  
+// \ \ / / '_ \/ __| / __|/ __| '__/ _ \/ _ \ '_ \ 
+//  \ V /| | | \__ \ \__ \ (__| | |  __/  __/ | | |
+//   \_/ |_| |_|___/ |___/\___|_|  \___|\___|_| |_|
+//                                                 
+/*
+ttd december, here is where you briefly document vhs screen
 
+
+
+path is like "/folder1/folder2/" with slashes on both ends
+expiration is a number of milliseconds, like 2*Time.hour
+uses the time now, and a new random unique tag
+returns query string parameters like:
+
+path=%2Ffolder1%2Ffolder2%2F&tick=1733785941120&seed=gh9U49hZ2Cdp0osLFdFL4&hash=NYAIl8bGpoY0PQx4Eq5p8
+Gb%2BabT%2FX%2FOx0Edh3ifBJ7g%3D
+
+note the uri encoding that turns / into %2F and = into %3D
+*/
+async function screenSign2(path, expiration) {//takes a path like , and a number of milliseconds before the link expires
+	let access = await getAccess()
+	let message = `path=${encodeURIComponent(path)}&tick=${Now()+expiration}&seed=${Tag()}`
+	let hash = await screenSign0(access.get('ACCESS_VHS_SECRET'), message)
+	return message+`&hash=${encodeURIComponent(hash.base64())}`
+}
+noop(async () => {//icarus can't run this because it needs getAccess, but you can $ yarn test to see it in node
+	log(await screenSign2('/folder1/folder2/', 2*Time.day))
+})
 
 
 
