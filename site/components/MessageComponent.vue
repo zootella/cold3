@@ -119,6 +119,8 @@ amazon calls cold3<>net23, also
 </script>
 <template>
 
+<VhsComponent />
+
 <div>
 	<input type="text" v-model="passwordModel" placeholder="password" />{{' '}}
 	<button @click="signIn">Sign In</button>

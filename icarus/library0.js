@@ -1315,8 +1315,7 @@ export async function hmacSign(secretData, messageText) {//shared secret key sho
 	|    \__/|/_____|\__/    |
 	| B         HMAC Secured |
 	|    ________________    |
-	|___/_._o________o_._\___| wtx */
-	return Data({buffer: signature})
+	|___/_._o________o_._\___| wtx */return Data({buffer: signature})
 }
 test(async () => {
 	let sharedSecretData = Data({base16: 'f9b9079fa7021b0c67f26de8758cde5b02e1944dade0e9041d00e808a4b21cc7'})//example shared secret both sides have secure
