@@ -36,7 +36,7 @@ function handler(event) {
 function handler2(event, log, response403, response500) {
 	//amazon's cloudfront-js-2.0 runtime has strange limitations
 	//remember you can't comment after code on the same line!
-	log.push('v2024dec10a')
+	log.push('v2024dec10c')
 
 	//determine the method of this request we're handling, like GET or POST; we only allow GET
 	let method = event.request.method
@@ -46,11 +46,16 @@ function handler2(event, log, response403, response500) {
 	let uri = event.request.uri
 	if (!(uri && uri.length && uri.startsWith('/') && !uri.endsWith('/'))) { log.push('bad uri'); return response403 }
 
-	//cloudfront lowercases headers; if amazon changes this the code below will break closed, not open
-	//requiring origin blocks link sharing; checking origin blocks hotlinking
+	//note that cloudfront lowercases header names in the event object they give us
+	//browsers don't commonly use the origin header with GET requests, but if it's there, make sure it's right
 	let origin = event.request.headers['origin']
-	if (!origin) { log.push('origin required'); return response403 }
-	if (origin.value != ACCESS_ORIGIN_URL) { log.push('origin wrong'); return response403 }
+	if (origin) {
+		if (origin.value != ACCESS_ORIGIN_URL) { log.push('origin wrong'); return response403 }
+	}
+	//to prevent link sharing and hotlinking, referer must be present and correct
+	let referer = event.request.headers['referer']
+	if (!referer) { log.push('referer missing'); return response403 }
+	if (!referer.value.startsWith(ACCESS_ORIGIN_URL)) { log.push('referer wrong'); return response403 }
 
 	//read information from the query string
 	//while tick and seed can only contain letters and numbers, we decode all four just to be sure
@@ -120,10 +125,10 @@ let testEvent = {//got this started from logging a real production one
 		"method": "GET",
 		"uri": "/folder1/folder2/file.ext",//confirm this is the same here in node testing as what you get from production logging
 		"querystring": {
-			"path": {"value": "%2Ffolder1%2Ffolder2%2F"},//path and hash can have slashes, and wierdly, arrive to our function encoded
-			"tick": {"value": "1733865221895"},//you have to update this to test without hitting query tick expired
-			"seed": {"value": "LsX2IlDdSRQ5ioFccXBOL"},
-			"hash": {"value": "tZt6CmoGaTrPCQeIpAfwmhKUn4rfpCpS9AmMx4GY2Js%3D"},
+			"path": {"value": "%2F"},//path and hash can have slashes, and wierdly, arrive to our function encoded
+			"tick": {"value": "1734391189644"},//you have to update this to test without hitting query tick expired
+			"seed": {"value": "AgmP6a2IHYE9xl8NYlL01"},
+			"hash": {"value": "IWI52ffzXAM68x4DtGx9pBYz2kMQij8372a5%2BjQvjbU%3D"},
 		},
 		"headers": {
 			"user-agent": {
@@ -133,7 +138,10 @@ let testEvent = {//got this started from logging a real production one
 				"value": "vhs.net23.cc"
 			},
 			"origin": {
-				"value": "https://cold3.cc"//made this up, not sure if it really looks like this
+				"value": "https://cold3.cc"//origin can be omitted or correct
+			},
+			"referer": {
+				"value": "https://cold3.cc/page"//referer must be present and correct
 			},
 			//there's more in a real one that you've omitted here
 		},
