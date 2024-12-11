@@ -153,6 +153,17 @@ $ git push origin main
 $ git branch -d name1               # Delete 'name1' after merging it (safe deletion)
 $ git push origin --delete name1    # And, you should delete it from GitHub, the origin
 
+
+
+$ git diff main feature1 > feature1.diff
+$ git checkout main
+$ git merge feature1
+$ git push origin main
+
+
+
+
+
 										 _                         _           _   
 	___ _ __ ___  __ _| |_ ___   _ __  _ __ ___ (_) ___  ___| |_ 
  / __| '__/ _ \/ _` | __/ _ \ | '_ \| '__/ _ \| |/ _ \/ __| __|
