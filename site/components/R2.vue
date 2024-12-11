@@ -13,8 +13,7 @@ const {data, refresh} = useFetch(u, {method: 'GET'})
 <template>
 
 <div>
-r2 get to lambda, allow
-<i>(pre-render intentionally blocked: lambda get is just for media files; allowing omitted origin would let media render in tabs with no pages, enabling link sharing outside permissions!)</i>
+r2 get to lambda, block
 <button @click="refresh">Refresh</button><pre>{{look(data)}}</pre>
 </div>
 

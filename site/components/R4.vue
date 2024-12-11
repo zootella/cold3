@@ -13,7 +13,8 @@ const {data, refresh} = useFetch(u, {method: 'POST', body: {name: 'r4'}})
 <template>
 
 <div>
-r4 page posts directly to lambda, block <button @click="refresh">Refresh</button><pre>{{look(data)}}</pre>
+r4 post to lambda, block
+<button @click="refresh">Refresh</button><pre>{{look(data)}}</pre>
 </div>
 
 </template>

@@ -232,7 +232,7 @@ resources:
         HostedZoneName: net23.cc. #we manually made this hosted zone before mentioning it here
         RecordSets:
 
-          # bare domain goes to static site
+          #bare domain goes to static site
           - Name: net23.cc. #ends with dot to indicate fully qualified
             Type: A #dns A records are for ipv4 addresses; AAAA below is for ipv6
             AliasTarget:
@@ -244,7 +244,7 @@ resources:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
 
-          # www subdomain goes to static site
+          #www subdomain goes to static site
           - Name: www.net23.cc.
             Type: A
             AliasTarget:
@@ -256,7 +256,7 @@ resources:
               DNSName: !GetAtt WWWDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
 
-          # vhs subdomain goes to media files
+          #vhs subdomain goes to media files
           - Name: vhs.net23.cc.
             Type: A
             AliasTarget:
@@ -267,6 +267,8 @@ resources:
             AliasTarget:
               DNSName: !GetAtt VHSDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
+
+          #you did manual dashboard steps to create the api.net23.cc record and connect it to "prod-net23", which this script created in API Gateway
 
   Outputs: #outputs, correctly here in the outer resources section, end up in the cloudformation template Outputs tab. things will probably work without creating any outputs here at all, but we're leaving it just in case we later find out it's helpful
 

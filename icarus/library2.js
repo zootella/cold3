@@ -616,13 +616,8 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	if (method == 'GET') {
 		door.body = lambdaEvent.queryStringParameters
 
-		//[]ttd december, now that vhs is guarded by a cloudfront function, block same as worker get!
-
-		//authenticate lambda get request: (1) https; (2) origin valid
-		checkForwardedSecure(lambdaEvent.headers)
-		checkOriginValid(lambdaEvent.headers, access)//ttd december: does a media file request to vhs.net23.cc go through here? or is this just for api.net23.cc? if vhs, then you want origin valid to break shared links; if api, then you can block GET entirely
-		//this configuration breaks snippet2; you could change it, or just delete snippet2 as its checks are done in tests now
-		//having screen block tabs is important, but is a special case you can handle in screen.js, also
+		//authenticate lambda get request: (0) block entirely!
+		toss('lambda get not in use', {door})
 
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
@@ -650,18 +645,17 @@ Here are the checks above visualized as an ASCII table:
 
         worker                          lambda
         ------                          ------
-GET  |  0 block(v)                      1 https
-                                        2 origin valid(iv)
+GET  |  0 block(iv)                     0 block(v)
 
 POST |  1 https                         1 https
         2 origin omitted or valid(iii)  2 origin omitted(i)
                                         3 access code(ii)
 
-Notes: (i) The Network 23 Application Programming Interface is exclusively for server to server communication, no pages allowed
+Notes: (i) The Network 23 Application Programming Interface is exclusively for server to server communication; no pages allowed
 (ii) the worker and lambda have shared a secret securely stored in both server environments
-(iii) valid only would allow page access, but we must allow omitted also so SSR can deliver a page pre-rendered with worker api results
-(iv) valid only to break link sharing; site pages don't pre-render with media files
-(v) the site doesn't use worker GET APIs at all, so our security grid blocks this quadrant entirely
+(iii) valid only would allow page access, but we must also allow omitted for SSR to work
+(iv) all site APIs are POST; we block GET entirely
+(v) similarly, there are no GET lambdas; note that this whole grid is for api.net23.cc; vhs.net23.cc is the cloudfront function which does its own checks of the method and origin and referer headers
 */
 function checkNetwork23AccessCode(body, access) {
 	if (!timeSafeEqual(body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
@@ -1308,7 +1302,7 @@ note the uri encoding that turns / into %2F and = into %3D; path and hash can ha
 */
 export async function vhsSign(path, expiration) {
 	let access = await getAccess()//this uses access, the current time, and a new random tag, so it's difficult to test
-	return await _vhsSign(Data({base16: access.get('ACCESS_VHS_SECRET')}), path, Now()+expiration, Tag())
+	return await _vhsSign(Data({base16: access.get('ACCESS_VHS_SECRET')}), path, Now(), expiration, Tag())
 }
 async function _vhsSign(secret, path, now, expiration, seed) {//so we've factored out this core for testing, below
 	let message = `path=${encodeURIComponent(path)}&tick=${now+expiration}&seed=${seed}`

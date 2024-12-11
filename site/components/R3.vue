@@ -13,7 +13,8 @@ const {data, refresh} = useFetch('/api/rgw?'+(new URLSearchParams({name: 'r3'}).
 <template>
 
 <div>
-r3 get to worker, block <button @click="refresh">Refresh</button><pre>{{look(data)}}</pre>
+r3 get to worker, block
+<button @click="refresh">Refresh</button><pre>{{look(data)}}</pre>
 </div>
 
 </template>

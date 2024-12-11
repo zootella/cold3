@@ -36,7 +36,7 @@ function handler(event) {
 function handler2(event, log, response403, response500) {
 	//amazon's cloudfront-js-2.0 runtime has strange limitations
 	//remember you can't comment after code on the same line!
-	log.push('v2024dec10c')
+	log.push('v2024dec11a')
 
 	//determine the method of this request we're handling, like GET or POST; we only allow GET
 	let method = event.request.method

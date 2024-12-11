@@ -1,7 +1,7 @@
 
 import {
 log, look, checkTag,
-doorWorker, accessWorker, getAccess,
+doorWorker, getAccess,
 accessTableInsert, accessTableQuery,
 timeSafeEqual,
 } from 'icarus'

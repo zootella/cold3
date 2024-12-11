@@ -1,7 +1,7 @@
 
 import {
 log, look, Now, Tag,
-doorWorker, accessWorker,
+doorWorker,
 dog,
 Sticker,
 } from 'icarus'

@@ -9,6 +9,11 @@ snippet2,
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	return doorLambda('GET', {lambdaEvent, lambdaContext, doorProcessBelow})
+	/*
+	no longer in service, as GET is blocked now
+	if you want a snippet, just do a POST through the regular page->worker->lambda flow
+	you can still easily return and view objects; have the page do <pre>{{look(o)}}</pre>
+	*/
 }
 async function doorProcessBelow(door) {
 	let o = {}
