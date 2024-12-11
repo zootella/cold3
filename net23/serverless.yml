@@ -224,6 +224,7 @@ resources:
               QueryString: true #here, we do want the query string, because it contains the access code
               Cookies:
                 Forward: none
+            #you really tried to attach a Lambda@Edge function here, to no avail; instead, copy the CloudFront Function in vhs.cjs and paste it into a box in amazon's web dashboard
 
     Net23DomainRecords: #define a group of dns records in route 53
       Type: AWS::Route53::RecordSetGroup

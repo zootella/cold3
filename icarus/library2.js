@@ -616,6 +616,8 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	if (method == 'GET') {
 		door.body = lambdaEvent.queryStringParameters
 
+		//[]ttd december, now that vhs is guarded by a cloudfront function, block same as worker get!
+
 		//authenticate lambda get request: (1) https; (2) origin valid
 		checkForwardedSecure(lambdaEvent.headers)
 		checkOriginValid(lambdaEvent.headers, access)//ttd december: does a media file request to vhs.net23.cc go through here? or is this just for api.net23.cc? if vhs, then you want origin valid to break shared links; if api, then you can block GET entirely
