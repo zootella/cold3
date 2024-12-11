@@ -741,13 +741,7 @@ async function doorLambdaShut(door, response, error) {
 		logAlert('door lambda shut', {error, door})
 		r = null
 	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json',
-
-		//ttd december, added additional headers here to investigate cors and security
-		'Access-Control-Allow-Origin': '*',
-		//^now that you're closing out your cors experiment, you want to move this from code to configuration, of course
-
-		}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
 	}
 	await awaitDoorPromises()
 	return r
@@ -893,8 +887,15 @@ noop(() => {//first, a demonstration of a promise race
 
 
 
+/*
+ttd december, figure out how bridge works now that you've got cors done
+write something small and simple which ping4 and test can use, too; right now they're doing this
+and, importantly, because you're building security upon it:
+[]replace Sticker().isCloud with something that isn't based on fuzzy logic!
 
-
+to begin--don't do the warm thing, either--the errors you were seeing were only for GET, not POST
+well, now you sort of want to do it
+*/
 
 //  _          _     _              _                     _   ____  _____ 
 // | |__  _ __(_) __| | __ _  ___  | |_ ___    _ __   ___| |_|___ \|___ / 

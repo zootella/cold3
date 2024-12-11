@@ -23,13 +23,7 @@ async function doorProcessBelow(door) {
 	return o
 }
 
-
-
-
-
-
-
-
-
-
-
+/*
+ttd december, you've got R1,2,3,4 + dbg,dwp,rgw,rpw, and more in a door cors test mess
+clean all that up now!
+*/
