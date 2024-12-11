@@ -13,10 +13,6 @@
     "local": "serverless offline --reloadHandler",
     "build": "serverless package",
     "deploy": "serverless deploy",
-    "deploy1": "serverless deploy --config deploy1.yml",
-    "deploy2": "serverless deploy --config deploy2.yml",
-    "deploy3": "serverless deploy --config deploy3.yml",
-    "deploy4": "serverless deploy --config deploy4.yml",
     "justdeploy": "serverless deploy --package .serverless",
     "stowaway": "node stowaway.js",
     "www": "aws s3 sync ./www s3://www-net23-cc --delete"
