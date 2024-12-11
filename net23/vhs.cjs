@@ -153,5 +153,3 @@ function test() {
 	console.log(JSON.stringify(response, null, 2))//log out the response object the handler would return to cloudfront
 }
 test()
-
-//^bookmarkvhs

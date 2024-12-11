@@ -1314,7 +1314,7 @@ async function _vhsSign(secret, path, now, expiration, seed) {//so we've factore
 	return message+`&hash=${encodeURIComponent(hash.base64())}`
 }
 test(async () => {
-	let secret = Data({base16: '8d64b043e91a4e08e492ae37b8ac96bdb89877865b9dbcbe7789766216854f90'})
+	let secret = Data({base16: '8d64b043e91a4e08e492ae37b8ac96bdb89877865b9dbcbe7789766216854f90'})//example test secret
 	ok(secret.size() == 32)
 	let path = '/folder1/folder2/'
 	let now = 1733858021895
@@ -1323,7 +1323,6 @@ test(async () => {
 	ok(await _vhsSign(secret, path, now, expiration, seed) == 'path=%2Ffolder1%2Ffolder2%2F&tick=1733865221895&seed=LsX2IlDdSRQ5ioFccXBOL&hash=tZt6CmoGaTrPCQeIpAfwmhKUn4rfpCpS9AmMx4GY2Js%3D')
 })
 
-//^bookmarkvhs
 
 
 

@@ -1931,21 +1931,38 @@ can you define a global card, which then gets overridden with a user page or pos
  \___|_|\___/ \__,_|\__,_|_| |_|  \___/|_| |_|\__| |_|  \__,_|_| |_|\___|\__|_|\___/|_| |_|
                                                                                            
 
+after not being able to get Lambda@Edge to work in serverless.yml,
+you found amazon's weird CloudFront Functions:
+https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/edge-functions.html
+it's javascript, sorta; there are a lot of weird limitations:
+https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/functions-javascript-runtime-20.html
+for instance, you can't comment at the end of a line; comments have to be on separate lines
 
-ttd december
+$ node vhs.cjs
 
+is the edit-test-debug loop you made
+deployment is pasting code into a box in the aws dashboards:
 
+aws dashboard, cloudfront
+functions, third one down on the left
+create function
+vhs1, name
+cloudfront-js-2.0, runtime
 
+paste secrets into the top of the box
+paste code into the box below the secrets, save changes
 
+publish tab, publish function
+then at the bottom, associated distributions, add association
+vhs.net23.cc, distribution
+viewer request, event type
+cache behavior, clicked down and selected default, not sure what this is or if there's a use here for you
+add association
 
+in the code, console.log works (console.error isn't there, though!)
+and logs started going into CloudWatch without you having to configure anything
 
-
-
-
-
-//^bookmarkvhs
-
-
+if you change the code, a new deploy takes 5-10min, so use vhs.cjs
 
 
 

@@ -1070,52 +1070,6 @@ test(() => {
 	ok(timeSafeEqual(e1, e2))//our function deals with that
 })
 
-//                                   _   
-//   ___ _ __   ___ _ __ _   _ _ __ | |_ 
-//  / _ \ '_ \ / __| '__| | | | '_ \| __|
-// |  __/ | | | (__| |  | |_| | |_) | |_ 
-//  \___|_| |_|\___|_|   \__, | .__/ \__|
-//                       |___/|_|        
-
-const _subtle = {
-
-	//our choices for one-directional hashing
-	hashName: 'SHA-256',
-
-	//password hashing
-	passwordAlgorithmKeyDerivation: 'PBKDF2',//the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
-	passwordAlgorithmEncryption:    'AES-GCM',
-	passwordAlgorithmHashFunction:  'SHA-256',
-	passwordKeyLength: 256,//256 bit derived key length
-
-	//symmetric encryption
-	symmetricName: 'AES-GCM',
-	symmetricStrength: 256,//256-bit AES, only slightly slower than 128, and the strongest ever
-	symmetricVectorSize: 12,//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
-	symmetricUse: ['encrypt', 'decrypt'],//create and import keys that can do these things
-
-	//symmetric hash-based message authentication codes
-	hmacName: 'HMAC',//the keyed-Hash Message Authentication Code, by Mihir Bellare, Ran Canetti, and Hugo Krawczyk in their 1997 RFC 2104
-
-	//public and private key pair encryption
-	rsaName: 'RSA-OAEP',//rsa encryption scheme with Optimal Asymmetric Encryption Padding
-	rsaLength: 2048,//modulus length in bits
-	rsaPublicExponent: new Uint8Array([1, 0, 1]),//standard public exponent 65537 or 0x10001
-	rsaHashFunction: 'SHA-256',//hash function for OAEP padding process
-	rsaUse: ['encrypt', 'decrypt'],//we'll use rsa keys to encrypt and decrypt
-	rsaFormat: 'jwk',//we'll export and import keys in json web key format
-
-	//and digital signatures
-	curveName: 'ECDSA',
-	curveType: 'P-256',
-	curveUse: ['sign', 'verify'],
-	curveFormat: 'jwk',//export sign keys as javascript objects
-
-	//and general or multi-purpose settings
-	extractable: true,//say we want to be able to export the key
-}
-Object.freeze(_subtle)
-
 //  _               _     
 // | |__   __ _ ___| |__  
 // | '_ \ / _` / __| '_ \ 
@@ -1126,7 +1080,7 @@ Object.freeze(_subtle)
 //compute the 32 byte SHA-256 hash value of data
 export const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
 export async function subtleHash(data) {
-	return Data({buffer: await crypto.subtle.digest(_subtle.hashName, data.array())})
+	return Data({buffer: await crypto.subtle.digest('SHA-256', data.array())})
 }
 test(async () => {
 	let d = Data({random: 500})//hash 500 random bytes, different every time we run the test
@@ -1170,15 +1124,15 @@ export async function hashPassword(thousandsOfIterations, saltData, passwordText
 	let materia = await crypto.subtle.importKey(
 		'raw',
 		Data({text: passwordText}).array(),
-		{name: _subtle.passwordAlgorithmKeyDerivation},
+		{name: 'PBKDF2'},//the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
 		false,//not extractable
 		['deriveBits', 'deriveKey'])
 
 	//second, derive the key using PBKDF2 with the given salt and number of iterations
 	let derived = await crypto.subtle.deriveKey(
-		{name: _subtle.passwordAlgorithmKeyDerivation, salt: saltData.array(), iterations: thousandsOfIterations*1000, hash: _subtle.passwordAlgorithmHashFunction},
+		{name: 'PBKDF2', salt: saltData.array(), iterations: thousandsOfIterations*1000, hash: 'SHA-256'},
 		materia,
-		{name: _subtle.passwordAlgorithmEncryption, length: _subtle.passwordKeyLength},
+		{name: 'AES-GCM', length: 256},//256 bit derived key length
 		true,//extractable
 		['encrypt', 'decrypt'])//we use the key to securely store the password, but it also works for encryption and decryption!
 
@@ -1201,6 +1155,9 @@ test(async () => {//this is twice as slow as all your other tests, combined!
 // \__ \ |_| | | | | | | | | | | |  __/ |_| |  | | (__ 
 // |___/\__, |_| |_| |_|_| |_| |_|\___|\__|_|  |_|\___|
 //      |___/                                          
+
+const symmetric_strength = 256//256-bit AES, only slightly slower than 128, and the strongest ever
+const symmetric_vector_size = 12//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 
 async function createKey() {
 	let key = await symmetric_createKey()
@@ -1231,26 +1188,26 @@ test(async () => {
 })
 
 async function symmetric_createKey() {
-	return await crypto.subtle.generateKey({name: _subtle.symmetricName, length: _subtle.symmetricStrength}, _subtle.extractable, _subtle.symmetricUse)
+	return await crypto.subtle.generateKey({name: 'AES-GCM', length: symmetric_strength}, true, ['encrypt', 'decrypt'])
 }
 async function symmetric_exportKey(key) {//do this once per application instance launch. the length is 64 base16 characters
 	return Data({buffer: await crypto.subtle.exportKey('raw', key)})//key is an imported CryptoKey object
 }
 async function symmetric_importKey(keyData) {//do this once per script run, not every time a function that needs it is called!
-	return await crypto.subtle.importKey('raw', keyData.array(), {name: _subtle.symmetricName, length: _subtle.symmetricStrength}, _subtle.extractable, _subtle.symmetricUse)
+	return await crypto.subtle.importKey('raw', keyData.array(), {name: 'AES-GCM', length: symmetric_strength}, true, ['encrypt', 'decrypt'])
 }
 async function symmetric_encrypt(key, plainText) {
-	let vector = Data({random: _subtle.symmetricVectorSize})//every encrypt operation has its own initialization vector of 12 secure random bytes
-	let cipher = Data({buffer: await crypto.subtle.encrypt({name: _subtle.symmetricName, iv: vector.array()}, key, Data({text: plainText}).array())})
+	let vector = Data({random: symmetric_vector_size})//every encrypt operation has its own initialization vector of 12 secure random bytes
+	let cipher = Data({buffer: await crypto.subtle.encrypt({name: 'AES-GCM', iv: vector.array()}, key, Data({text: plainText}).array())})
 	let storeBin = Bin(vector.size() + cipher.size())
 	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
 	storeBin.add(cipher)
 	return storeBin.data()
 }
 async function symmetric_decrypt(key, storeData) {//stored data that is initialization vector followed by cipher bytes
-	let vector = storeData.clip(0, _subtle.symmetricVectorSize)//unpack
-	let cipher = storeData.clip(_subtle.symmetricVectorSize, storeData.size() - _subtle.symmetricVectorSize)
-	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.symmetricName, iv: vector.array()}, key, cipher.array())})
+	let vector = storeData.clip(0, symmetric_vector_size)//unpack
+	let cipher = storeData.clip(symmetric_vector_size, storeData.size() - symmetric_vector_size)
+	return Data({buffer: await crypto.subtle.decrypt({name: 'AES-GCM', iv: vector.array()}, key, cipher.array())})
 }
 test(async () => {
 
@@ -1295,16 +1252,16 @@ test(async () => {
 // |_| |_|_| |_| |_|\__,_|\___|
 //                             
 
-export async function hmacSign(secretData, messageText) {//shared secret key should be 32 bytes of random data
-	const key = await crypto.subtle.importKey(
+export async function hmacSign(secretData, messageText) {//given shared secret key should be 32 bytes of random data
+	let key = await crypto.subtle.importKey(
 		'raw',
 		secretData.array(),
-		{name: _subtle.hmacName, hash: {name: _subtle.passwordAlgorithmHashFunction}},
+		{name: 'HMAC', hash: {name: 'SHA-256'}},//the keyed-Hash Message Authentication Code, by Mihir Bellare, Ran Canetti, and Hugo Krawczyk in their 1997 RFC 2104
 		false,//not extractable
 		['sign']
 	)
-	const signature = await crypto.subtle.sign(
-		_subtle.hmacName,
+	let b = await crypto.subtle.sign(
+		'HMAC',
 		key,
 		Data({text: messageText}).array()
 	)/*
@@ -1315,9 +1272,11 @@ export async function hmacSign(secretData, messageText) {//shared secret key sho
 	|    \__/|/_____|\__/    |
 	| B         HMAC Secured |
 	|    ________________    |
-	|___/_._o________o_._\___| wtx */return Data({buffer: signature})
+	|___/_._o________o_._\___| wtx */return Data({buffer: b})
 }
 test(async () => {
+	//log(Data({random: 32}).base16())//uncomment to generate secure random secret to share and store securely
+
 	let sharedSecretData = Data({base16: 'f9b9079fa7021b0c67f26de8758cde5b02e1944dade0e9041d00e808a4b21cc7'})//example shared secret both sides have secure
 	let signature = await hmacSign(sharedSecretData, 'example message')
 	ok(signature.size() == 32)//hmac hashes are 32 bytes
@@ -1329,10 +1288,7 @@ test(async () => {
 	let seed = 'gFpzqGE3YVZkpazvNC9hQ'//we're throwing in a random seed, probably unnecessarily
 	let message = `path=${encodeURIComponent(path)}&tick=${tick}&seed=${seed}`//compose a query string
 	ok((await hmacSign(sharedSecretData, message)).base64() == 'qDOJXeFRSZLnuI5mm+YnZ9lIBCr87y/yA7vyXxfGqTc=')
-
 })
-
-//^bookmarkvhs
 
 //                 
 //  _ __ ___  __ _ 
@@ -1342,22 +1298,40 @@ test(async () => {
 //                 
 
 async function rsaMakeKeys() {//returns public and private keys in base62
-	let keys = await crypto.subtle.generateKey({name: _subtle.rsaName, modulusLength: _subtle.rsaLength, publicExponent: _subtle.rsaPublicExponent, hash: {name: _subtle.rsaHashFunction}}, _subtle.extractable, _subtle.rsaUse)
+	let keys = await crypto.subtle.generateKey({
+		name: 'RSA-OAEP',//rsa encryption scheme with Optimal Asymmetric Encryption Padding
+		modulusLength: 2048,//modulus length in bits
+		publicExponent: new Uint8Array([1, 0, 1]),//standard public exponent 65537 or 0x10001
+		hash: {name: 'SHA-256'}},
+		true,
+		['encrypt', 'decrypt'])
 	return {
-		keyPublicBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.publicKey)),
-		keyPrivateBase62: objectToBase62(await crypto.subtle.exportKey(_subtle.rsaFormat, keys.privateKey))
+		keyPublicBase62: objectToBase62(await crypto.subtle.exportKey('jwk', keys.publicKey)),
+		keyPrivateBase62: objectToBase62(await crypto.subtle.exportKey('jwk', keys.privateKey))
 	}
 }
 export async function rsaEncrypt(keyPublicBase62, plainText) {
-	let keyPublicImported = await rsa_importKey(base62ToObject(keyPublicBase62), 'encrypt')
-	return Data({buffer: await crypto.subtle.encrypt({name: _subtle.rsaName}, keyPublicImported, Data({text: plainText}).array())}).base62()
+	let keyPublicImported = await rsa_importKey(base62ToObject(keyPublicBase62), ['encrypt'])
+	let b = await crypto.subtle.encrypt(
+		{name: 'RSA-OAEP'},
+		keyPublicImported,
+		Data({text: plainText}).array())
+	return Data({buffer: b}).base62()
 }
 export async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
-	let keyPrivateImported = await rsa_importKey(base62ToObject(keyPrivateBase62), 'decrypt')
-	return Data({buffer: await crypto.subtle.decrypt({name: _subtle.rsaName}, keyPrivateImported, Data({base62: cipherBase62}).array())}).text()
+	let keyPrivateImported = await rsa_importKey(base62ToObject(keyPrivateBase62), ['decrypt'])
+	let b = await crypto.subtle.decrypt({name: 'RSA-OAEP'},
+		keyPrivateImported,
+		Data({base62: cipherBase62}).array())
+	return Data({buffer: b}).text()
 }
 async function rsa_importKey(key, use) {
-	return await crypto.subtle.importKey(_subtle.rsaFormat, key, {name: _subtle.rsaName, hash: { name: _subtle.rsaHashFunction }}, _subtle.extractable, [use])
+	return await crypto.subtle.importKey(
+		'jwk',
+		key,
+		{name: 'RSA-OAEP', hash: {name: 'SHA-256'}},
+		true,
+		use)
 }
 export function objectToBase62(o) { return Data({text: JSON.stringify(o)}).base62() }
 export function base62ToObject(s) { return JSON.parse(Data({base62: s}).text()) }
@@ -1451,20 +1425,20 @@ test(async () => {//this test imports premade keys, as they will come from acces
 	ok(!(await curveVerify(publicKeyBase62, premadeSignatureData, wrongMessage)))
 })
 
-async function curve_createKeys() {//returns { publicKey: CryptoKey, privateKey: CryptoKey }
-	return await crypto.subtle.generateKey({ name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, _subtle.curveUse)
+async function curve_createKeys() {//returns {publicKey: CryptoKey, privateKey: CryptoKey}
+	return await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify'])
 }
 async function curve_exportKey(key) {//returns an object with format notes and values named d, x, and y
-	return await crypto.subtle.exportKey(_subtle.curveFormat, key)
+	return await crypto.subtle.exportKey('jwk', key)
 }
 async function curve_importKey(keyObject) {
-	return await crypto.subtle.importKey(_subtle.curveFormat, keyObject, { name: _subtle.curveName, namedCurve: _subtle.curveType, }, _subtle.extractable, keyObject.key_ops)
+	return await crypto.subtle.importKey('jwk', keyObject, {name: 'ECDSA', namedCurve: 'P-256'}, true, keyObject.key_ops)
 }
 async function curve_sign(privateKey, plainText) {
-	return Data({buffer: await crypto.subtle.sign({ name: _subtle.curveName, hash: { name: _subtle.hashName } }, privateKey, Data({text: plainText}).array())})
+	return Data({buffer: await crypto.subtle.sign({name: 'ECDSA', hash: {name: 'SHA-256'}}, privateKey, Data({text: plainText}).array())})
 }
 async function curve_verify(publicKey, signatureData, plainText) {
-	return await crypto.subtle.verify({ name: _subtle.curveName, hash: { name: _subtle.hashName }, }, publicKey, signatureData.array(), Data({text: plainText}).array())
+	return await crypto.subtle.verify({ name: 'ECDSA', hash: {name: 'SHA-256'}}, publicKey, signatureData.array(), Data({text: plainText}).array())
 }
 noop(async () => {//see what these objects look like before we stringify and base62 them
 	let keys = await curve_createKeys()
