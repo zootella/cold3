@@ -22,6 +22,7 @@
     "icarus": "*",
     "nuxt": "^3.13.0",
     "nuxt-og-image": "^3.0.8",
+    "vidstack": "^1.12.12",
     "vue": "^3.5.12",
     "vue-router": "^4.4.5"
   },

@@ -121,6 +121,15 @@ and maybe all that could be done just once at the start of the project, and docu
 
 
 
+When selecting an open-source component from a leaderboard of popular options, a compelling pattern emerges: the second-most popular option often strikes the best balance. These components are widely adopted enough that AI tools and community resources can reliably address questions, yet they frequently benefit from more modern construction than their top-ranked counterparts. Their designs tend to emphasize simplicity and efficiency, often making them smaller and easier to work with.
+
+The contrast in positioning is also notable. The #1-ranked component often commands its spot by framing itself as the "industry standard" or "default choice," appealing to developers with its dominance and perceived authority. In contrast, #2 typically targets users who are dissatisfied with complexity, positioning itself as a simpler, more approachable alternative. This focus on ease of use can lead to faster adoption and smoother integration, especially for teams valuing efficiency over exhaustive feature sets.
+
+there's even a cheap cosmetic beneift: unstyled or default-styled #1 looks looks generic because it is widely recognized as an unmodified default. unstyled or default styled #2 can be misinterpreted as a custom look for the app!
+
+example:
+instead of react, vue
+instead of videojs, vidstack formerly plyr
 
 
 

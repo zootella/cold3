@@ -1,5 +1,6 @@
 
 import { visualizer } from 'rollup-plugin-visualizer'//npm run build generates stats.html, but npm run local does not
+import { vite as vidstack } from 'vidstack/plugins'//added for vidstack, from the vidstack.io getting started guide, step 9, setup bundler, but looks weird!
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -27,14 +28,16 @@ export default defineNuxtConfig({
 		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET
 	},
 
-	//added for rollup visualizer to make stats.html
 	vite: {
 		plugins: [
+			//added for rollup visualizer to make stats.html
 			visualizer({
 				filename: './stats.html',
 				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
 				brotliSize: true
-			})
+			}),
+			//added for vidstack
+			vidstack(),
 		]
 	},
 	build: {
@@ -54,5 +57,16 @@ export default defineNuxtConfig({
 			driver: 'cloudflare-kv-binding',
 			binding: 'OG_IMAGE_CACHE'
 		}
-	}
+	},
+
+	//added for vidstack
+	vue: {
+		compilerOptions: {
+			isCustomElement: (tag) => tag.startsWith('media-'),
+		},
+	},
+	css: [
+		//ttd december, this got it working, but you don't think it's correct, and there are a lot more css files you could add, too
+		'vidstack/player/styles/default/layouts/video.css',
+	],
 })

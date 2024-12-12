@@ -1,9 +1,9 @@
 <script setup>
 
-import { ref, reactive, watch, computed } from 'vue'
 import {
 log, look,
 } from 'icarus'
+import { ref, reactive, watch, computed } from 'vue'
 
 let {data, error} = useFetch('/api/image', {method: 'POST'})
 
