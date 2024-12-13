@@ -1,72 +1,46 @@
 
-import { visualizer } from 'rollup-plugin-visualizer'//npm run build generates stats.html, but npm run local does not
-import { vite as vidstack } from 'vidstack/plugins'//added for vidstack, from the vidstack.io getting started guide, step 9, setup bundler, but looks weird!
+//cold3
 
-// https://nuxt.com/docs/api/configuration/nuxt-config
+import {visualizer} from 'rollup-plugin-visualizer'//visualizer
+import {vite as vidstack} from 'vidstack/plugins'//vidstack
+
 export default defineNuxtConfig({
 
-	//defaults, with some additions
-	compatibilityDate: '2024-04-03',//default from $ npm create cloudflare@latest
-	devtools: {
-		enabled: true//default from create
-	},
-	nitro: {
-		preset: 'cloudflare-pages',//default from create
-		esbuild: {
-			options: {
-				target: 'esnext'//added to solve error on npm run build about es2019 not including bigint literals
-			}
-		},
-	},
+	compatibilityDate: '2024-04-03',//nuxt
+	devtools: {enabled: true},//nuxt
 	modules: [
-		'nitro-cloudflare-dev',//default from create
-		'nuxt-og-image',//added for open graph cards
+		'nitro-cloudflare-dev',//cloudflare
+
+		'nuxt-og-image',//ogimage
 	],
-
-	//added for secrets and access
-	runtimeConfig: {//nuxt promises these will be available on the server side, and never exposed to a client
-		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET
-	},
-
-	vite: {
-		plugins: [
-			//added for rollup visualizer to make stats.html
-			visualizer({
-				filename: './stats.html',
-				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
-				brotliSize: true
-			}),
-			//added for vidstack
-			vidstack(),
-		]
-	},
-	build: {
-		sourcemap: true//added for visualizer
-	},
-
-	//added for open graph cards
-	site: {
-		url: 'https://cold3.cc',//added this for nuxt og image, which uses it to set absolute urls
-		name: 'cold3.cc'
-	},
-	ogImage: {
-		defaults: {
-			cacheMaxAgeSeconds: 20*60//20 minutes in seconds; default if you omit this is 3 days
-		},
-		runtimeCacheStorage: {
-			driver: 'cloudflare-kv-binding',
-			binding: 'OG_IMAGE_CACHE'
-		}
-	},
-
-	//added for vidstack
 	vue: {
 		compilerOptions: {
-			isCustomElement: (tag) => tag.startsWith('media-'),
+			isCustomElement: (tag) => tag.startsWith('media-'),//vidstack
 		},
 	},
-	css: [
-		//ttd december, this got it working, but you don't think it's correct, and there are a lot more css files you could add, too
+	vite: {
+		plugins: [
+			vidstack(),//vidstack
+			visualizer({filename: './stats.html', template: 'treemap', brotliSize: true}),//visualizer
+		]
+	},
+	nitro: {
+		preset: 'cloudflare-pages',//cloudflare
+		esbuild: {options: {target: 'esnext'}},//added for bigint
+	},
+
+	runtimeConfig: {ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET},//added for secrets
+
+	build: {sourcemap: true},//visualizer
+
+	site: {url: 'https://cold3.cc', name: 'cold3.cc'},//ogimage
+
+	ogImage: {//ogimage
+		defaults: {cacheMaxAgeSeconds: 20*60},
+		runtimeCacheStorage: {driver: 'cloudflare-kv-binding', binding: 'OG_IMAGE_CACHE'}
+	},
+
+	css: [//vidstack, this is the weird fix that isn't necessary in cute4, delete it!
 		'vidstack/player/styles/default/layouts/video.css',
 	],
 })
