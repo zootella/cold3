@@ -10,7 +10,7 @@ export default defineNuxtConfig({
 	devtools: {enabled: true},//nuxt
 	modules: [
 		'nitro-cloudflare-dev',//cloudflare
-
+		'@nuxtjs/tailwindcss',//tailwind
 		'nuxt-og-image',//ogimage
 	],
 	vue: {
@@ -34,13 +34,9 @@ export default defineNuxtConfig({
 	build: {sourcemap: true},//visualizer
 
 	site: {url: 'https://cold3.cc', name: 'cold3.cc'},//ogimage
-
-	ogImage: {//ogimage
+	ogImage: {
 		defaults: {cacheMaxAgeSeconds: 20*60},
 		runtimeCacheStorage: {driver: 'cloudflare-kv-binding', binding: 'OG_IMAGE_CACHE'}
 	},
 
-	css: [//vidstack, this is the weird fix that isn't necessary in cute4, delete it!
-		'vidstack/player/styles/default/layouts/video.css',
-	],
 })
