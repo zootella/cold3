@@ -1,6 +1,7 @@
 <style scoped>
 </style>
 <template>
+<div class="page-container">
 
 <NavigationComponent note="on feed2" />
 <PostComponent
@@ -12,6 +13,7 @@
 	:postBelow="null"
 />
 
+</div>
 </template>
 <script setup>
 

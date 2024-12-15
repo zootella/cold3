@@ -36,6 +36,7 @@ export default defineNuxtConfig({
 		},
 	},
 
+
 	runtimeConfig: {//added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
 		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
 	},
@@ -56,5 +57,16 @@ export default defineNuxtConfig({
 			driver: 'cloudflare-kv-binding',
 			binding: 'OG_IMAGE_CACHE',
 		},
+	},
+
+	tailwindcss: {//from tailwind
+		cssPath: '~/assets/css/tailwind.css',
+		/*
+		config: {
+			plugins: [
+				require('@tailwindcss/forms'),
+			],
+		},
+		*/
 	},
 })

@@ -13,7 +13,7 @@ defineOgImageComponent('NuxtSeo', {
 
 </script>
 <template>
-<div>
+<div class="page-container">
 
 <NavigationComponent note="on index" />
 
