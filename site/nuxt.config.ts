@@ -36,19 +36,18 @@ export default defineNuxtConfig({
 		},
 	},
 
-
 	runtimeConfig: {//added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
 		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
 	},
-
 	build: {
 		sourcemap: true,//from visualizer; causes rollup to make stats.html
 	},
-
 	site: {//from ogimage
 		url: 'https://cold3.cc',//ogimage needs site's deployed domain to set absolute urls in the cards
 		name: 'cold3.cc',
 	},
+
+	//from ogimage
 	ogImage: {
 		defaults: {
 			cacheMaxAgeSeconds: 20*60,//20 minutes in seconds; default if you omit this is 3 days
@@ -59,14 +58,8 @@ export default defineNuxtConfig({
 		},
 	},
 
-	tailwindcss: {//from tailwind
+	//from tailwind
+	tailwindcss: {
 		cssPath: '~/assets/css/tailwind.css',
-		/*
-		config: {
-			plugins: [
-				require('@tailwindcss/forms'),
-			],
-		},
-		*/
 	},
 })
