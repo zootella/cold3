@@ -38,6 +38,155 @@ With these manual setup steps complete, you can proceed to integrate the Turnsti
 
 ## Example site-wide client-code code
 
+
+
+when the site loads, turnstile is there, using behavior to distinguish human or bot activity, even before the user visits the form
+q. could this slow anything down?
+
+
+(a) Load Turnstile site-wide as soon as possible, allowing it to observe user behavior before they reach your protected form.
+
+<!-- app.vue -->
+<template>
+  <NuxtPage />
+</template>
+
+<head>
+  <!-- Load Turnstile script globally -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+
+<script setup>
+// No additional client-side code needed here.
+// The global script tag ensures Turnstile is available.
+</script>
+
+
+
+
+
+(b) Only generate a Turnstile token when the form is ready to submit (just before the user actually submits). This ensures the token is fresh and reduces delays at submission time.
+
+
+
+
+
+<!-- ./components/NameComponent.vue -->
+<template>
+  <form @submit.prevent="onSubmit">
+    <!-- Turnstile container (invisible mode) -->
+    <div ref="turnstileEl"></div>
+    
+    <input v-model="desiredName" type="text" placeholder="Enter desired username" required />
+    <!-- Submit is disabled until token is ready -->
+    <button type="submit" :disabled="!isTokenReady">Check</button>
+  </form>
+</template>
+
+<script setup>
+import { ref, onMounted, watch } from 'vue'
+import { useRuntimeConfig } from '#app'
+
+const config = useRuntimeConfig()
+const turnstileSiteKey = config.public.ACCESS_TURNSTILE_ID
+
+const desiredName = ref('')
+const turnstileToken = ref('')
+const turnstileEl = ref(null)
+const isTokenReady = ref(false)
+
+// Condition that determines if form is ready
+function formIsReady() {
+  return desiredName.value.trim().length >= 3
+}
+
+// Called when Turnstile successfully generates a token
+function onTurnstileSuccess(token) {
+  turnstileToken.value = token
+  isTokenReady.value = true
+}
+
+function renderTurnstile() {
+  if (window.turnstile && turnstileEl.value) {
+    window.turnstile.render(turnstileEl.value, {
+      sitekey: turnstileSiteKey,
+      callback: onTurnstileSuccess,
+      size: 'invisible',
+      execution: 'execute' // Token generated only when we call execute()
+    })
+  }
+}
+
+onMounted(() => {
+  // Render the widget once Turnstile is available
+  if (window.turnstile) {
+    renderTurnstile()
+  } else {
+    const interval = setInterval(() => {
+      if (window.turnstile) {
+        clearInterval(interval)
+        renderTurnstile()
+      }
+    }, 100)
+  }
+})
+
+// Watch the form fields; when the form becomes ready and we haven't generated a token yet,
+// call turnstile.execute() to get a fresh token ahead of time
+watch(desiredName, () => {
+  if (window.turnstile && turnstileEl.value && !isTokenReady.value && formIsReady()) {
+    window.turnstile.execute(turnstileEl.value)
+  }
+})
+
+async function onSubmit() {
+  if (!turnstileToken.value) {
+    alert('Verification not complete. Please wait for Turnstile.')
+    return
+  }
+
+  // (c) Submit form and token to the server
+  try {
+    const response = await $fetch('/api/check-name', {
+      method: 'POST',
+      body: {
+        name: desiredName.value,
+        turnstileToken: turnstileToken.value
+      }
+    })
+
+    if (response.available) {
+      alert('Username is available!')
+    } else {
+      alert('Username is taken. Please choose another.')
+    }
+  } catch (error) {
+    console.error('Error:', error)
+    alert('Failed to verify or check the name. Please try again.')
+  }
+}
+</script>
+
+<style scoped></style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(c) Submit the form along with the valid Turnstile token to your server endpoint for verification.
+
+
 ./app.vue
 ```vue
 <!-- app.vue -->
@@ -157,6 +306,7 @@ async function submitForm() {
 
 ./server/api/check-name.js
 ```js
+<script>
 // ./server/api/check-name.js
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -181,6 +331,7 @@ export default defineEventHandler(async (event) => {
 
   return { available }
 })
+</script>
 ```
 
 questions:
@@ -214,6 +365,107 @@ ok, so we want to get that in short simple code that is secure and also correct 
 
 
 
+
+
+<!-- app.vue -->
+<template>
+  <NuxtPage />
+</template>
+
+<head>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+
+<script setup>
+</script>
+
+
+
+
+<!-- app.vue -->
+<template>
+  <NuxtPage />
+</template>
+
+<script setup>
+useHead({
+  script: [
+    { src: 'https://challenges.cloudflare.com/turnstile/v0/api.js', async: true, defer: true }
+  ]
+})
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+previous one:
+
+<template>
+<div>
+
+<Head>
+	<Title>cold3.cc</Title>
+	<Link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>" />
+</Head>
+
+<NuxtPage />
+
+</div>
+</template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fin
 
 
 
