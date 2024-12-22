@@ -10,7 +10,7 @@ Data, randomBetween,
 starts, cut,
 onlyNumerals,
 fraction, exponent, int, big, thinSpace, deindent, newline,
-} from './library0.js'
+} from './level0.js'
 
 import { customAlphabet } from 'nanoid'                        //use to make unique tags
 import Joi from 'joi'                                          //use to validate email and card
@@ -521,8 +521,8 @@ https://www.npmjs.com/package/rfc4648
 ~1 million weekly downloads
 installed into icarus, and not the nuxt project
 
-but Data is in library0
-using that module would require elevating Data to library1
+but Data is in level0
+using that module would require elevating Data to level1
 so you're bringing your own short functions
 and this fuzz tester confirms they work the same as the module
 
@@ -585,7 +585,7 @@ noop(() => {
 
 
 
-//move these new say functions to library0, as they are general use and import nothing
+//move these new say functions to level0, as they are general use and import nothing
 //move thinSpace into this section, also
 
 //say a huge integer like "802 billion"

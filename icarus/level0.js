@@ -3,7 +3,7 @@ import {
 wrapper,
 } from './wrapper.js'
 
-//library0 functions work anywhere javascript does (well, current browsers and node20+), and without any module imports!
+//level0 functions work anywhere javascript does (well, current browsers and node20+), and without any module imports!
 
 //              _ _       
 //  _   _ _ __ (_) |_ ___ 
@@ -2660,11 +2660,3 @@ test(() => {
 	ok(sameIgnoringCase('origin', 'Origin'))
 	ok(sameIgnoringTrailingSlash('https://example.com/', 'https://example.com'))
 })
-
-
-
-
-
-
-
-

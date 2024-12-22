@@ -180,7 +180,7 @@ code encoding, some bikeshedding
 
 [x]from separate project entry point, Ctrl+S leads to green or red check on page
 
-library0 ~
+level0 ~
 
 []base16 data
 []base64 data
@@ -191,7 +191,7 @@ library0 ~
 []toss on failure
 []speed test your base62 with the browser's base64
 
-library1 ~
+level1 ~
 
 []random 1-9
 []random 0-9

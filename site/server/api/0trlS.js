@@ -7,7 +7,7 @@ export default defineEventHandler((workerEvent) => {
 2024sep20
 
 ./server/api/endpoint1.js
-./library/library1.js
+./library/level1.js
 
 Nitro automatically restarts really fast when you save the code for a Nuxt endpoint
 but if you make a change in a library function endpoint code uses, it doesn't restart

@@ -5,7 +5,7 @@
 
 
 //a drawerful of awesome javascript library functions from previous coding
-//move these into library0 and library1 as you need them
+//move these into level0 and level1 as you need them
 //and, as you do, run and improve syntax and tests!
 
 
@@ -561,13 +561,3 @@ test(function() {
 	ok(intOrZero("5") == 5);
 	ok(intOrZero("789") == 789);
 });
-
-
-
-
-
-
-
-
-
-

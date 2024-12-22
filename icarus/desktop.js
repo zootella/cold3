@@ -5,13 +5,13 @@ log, toss,
 checkInt,
 intToText, textToInt,
 checkHash, checkSquare,
-} from './library0.js'
+} from './level0.js'
 import {
 Tag, checkTag,
-} from './library1.js'
+} from './level1.js'
 import {
 getAccess,
-} from './library2.js'
+} from './level2.js'
 
 import { createClient } from '@supabase/supabase-js'
 

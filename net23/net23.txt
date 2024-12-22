@@ -1412,7 +1412,7 @@ $ npx nuxi add myapi
 |_|   \__,_|_| |_|  \__\___||___/\__|___/
 																				 
 
-tiny tests, in library0.js, exports test(), ok(), and runTests()
+tiny tests, in level0.js, exports test(), ok(), and runTests()
 all calls to test() are in the library
 and, as much as possible, factor all *code* into the library as well!
 pages, components, and api handlers should be really short

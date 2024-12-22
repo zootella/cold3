@@ -11,10 +11,10 @@ stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
-} from './library0.js'
+} from './level0.js'
 import {
 Tag, tagLength, checkTag,
-} from './library1.js'
+} from './level1.js'
 
 import { getQuery, readBody } from 'h3'
 

@@ -219,7 +219,7 @@ http://localhost:5173/
 ```
 
 * And then see `log()` output and work on library functions; `Ctrl+S` closes the loop. Enjoy lightning-quick TDD red-green-refactor cycles and developer bliss.
-* `library0.js` requires no imports; `library1.js` needs the imports in package.json. Functions in here could be useful to other projects. Project-specific stuff goes in named `.js` files alongside.
+* `level0.js` requires no imports; `level1.js` needs the imports in package.json. Functions in here could be useful to other projects. Project-specific stuff goes in named `.js` files alongside.
 * Design guideline to keep components as short and empty as possible, and factor everything down as far as possible.
 
 ## Roster

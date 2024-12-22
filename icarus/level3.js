@@ -7,12 +7,12 @@ Data, decrypt, subtleHash, timeSafeEqual,
 stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
-} from './library0.js'
+} from './level0.js'
 import {
 Tag, tagLength, checkTag,
-} from './library1.js'
+} from './level1.js'
 import {
-} from './library2.js'
+} from './level2.js'
 
 //level3 ~ welcome to the level of business logic
 
