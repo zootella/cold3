@@ -21,7 +21,7 @@ and also, the handler fires if either the user or our own script changes any of 
 individual handlers in the template would only be able to detect changes the user makes on the page
 
 building upon this, we'll:
-[]do a real fetch to an api endpoint
+[x]do a real fetch to an api endpoint
 []add Cloudflare Turnstile to this simple form
 */
 
@@ -81,6 +81,11 @@ async function buttonClicked() {
 		}"
 		@click="buttonClicked"
 	>Check</button>
+	<!--
+		add buttons Claim and Release,
+		and use the row invalidated and new row made pattern
+		also, see what it's like for the disabled and in-flight status to apply to multiple buttons
+	-->
 </p>
 <p>Status: <i>{{ refStatus }}</i>; Duration: {{ refDuration }}</p>
 

@@ -1,76 +1,29 @@
 
-
-
-
-
-
-
-
-
-
-
-/*
-add a checkbox []accept terms
-submit button is only available when name not blank and box checked
-when that happens, is also when turnstile generates its thing
-a single click causes fetch, and unchecks the box, which grays the button--this is the client side debounce
-this is a great idea--if you can get this basic flow right, you'll use it everywhere
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Cloudflare Turnstile Integration Guide
 
 Cloudflare Turnstile is a modern, privacy-focused replacement for traditional CAPTCHAs that aims to minimize user friction while maintaining robust bot detection. Instead of asking users to solve tedious challenges, it operates largely behind the scenes, relying on automated checks and signals to determine whether a visitor is human. This approach helps ensure a more seamless and privacy-friendly experience compared to legacy solutions.
 
 This guide demonstrates how to integrate Turnstile into a Nuxt 3 application hosted on Cloudflare Pages. In this scenario, Turnstile is used to protect a form that new users interact with during signup, specifically when they attempt to check whether their desired username is available. The frontend code is implemented using Vue 3’s Composition API, while the backend logic resides in a Nuxt 3 API endpoint running as a Cloudflare Worker. Both frontend and backend communicate using Nuxt’s $fetch function.
 
-For more details on the fundamentals of Turnstile, refer to the official documentation: https://developers.cloudflare.com/turnstile/get-started/
+For more details on the fundamentals of Turnstile, refer to the official documentation:
+https://developers.cloudflare.com/turnstile/get-started/
 
 ## Manual Steps
 
-Before integrating Turnstile into the code, you must perform a few manual configuration steps within the Cloudflare dashboard:
+Before integrating Turnstile into the code, you must perform a few manual configuration steps within the Cloudflare dashboard.
+Create a new turnstile widget, and choose these settings:
 
-1. Navigate to Your Cloudflare Dashboard:
-Log in to the Cloudflare dashboard and select the domain where you wish to deploy Turnstile.
+widget name: turnstile1
+hostname management: cold3.cc
+widget mode: invisible
+pre-clearance: no
 
-2. Access the Turnstile Configuration Page:
-From the Cloudflare dashboard, go to the Turnstile section. Here, you can manage Turnstile widgets for your site.
+and then get the site key and secret key, which in our code will be:
 
-3. Create and Manage a Widget:
-Click on "Manage widget" and create a new Turnstile widget. For example, you might name it turnstile1 and associate it with your domain (e.g., cold3.cc). Consult the domain management documentation if you need guidance on configuring hostnames:
-https://developers.cloudflare.com/turnstile/concepts/domain-management/
-
-4. Choose Widget Mode:
-Select the "invisible" widget mode, which attempts to verify users silently without displaying a challenge. If pre-clearance is not needed, select "No" when asked about pre-clearance. For more information on pre-clearance and its implications, review the following documentation:
-https://developers.cloudflare.com/turnstile/concepts/pre-clearance-support/
-Additionally, Cloudflare’s blog post explains how Turnstile can integrate with the Cloudflare WAF to challenge suspicious requests: https://blog.cloudflare.com/integrating-turnstile-with-the-cloudflare-waf-to-challenge-fetch-requests/
-
-5. Retrieve Your Keys:
-Once the widget is created, the Cloudflare dashboard will provide you with two key values:
-
-ACCESS_TURNSTILE_SITE_KEY: This is the public key used on the client side.
-ACCESS_TURNSTILE_SECRET: This is the private secret key used for server-side verification.
-
-Store these keys securely. The site key can be exposed in your public-facing code, but the secret key must remain private and accessible only on the server side.
-
-With these manual setup steps complete, you can proceed to integrate the Turnstile widget and verification logic into your Nuxt 3 application.
+ACCESS_TURNSTILE_SITE_KEY_PUBLIC, available to untrusted front-end code, revealed to users
+ACCESS_TURNSTILE_SECRET, securely and secretly stored in the cloudflare worker
 
 ## Example site-wide client-code code
-
-
-
-
 
 [I: ./app.vue]
 Load Turnstile site-wide as soon as possible, allowing it to observe user behavior before they reach the protected form.
@@ -96,9 +49,10 @@ Load Turnstile site-wide as soon as possible, allowing it to observe user behavi
 ```
 
 [II: ./components/NameComponent.vue]
-Users interact wtih the choose name component before signing up.
-We use Turnstile to protect the API endpoint
-We've configured Turnstile to work, for most users most of the time, without any visual change or noticable time delay
+Consider a component that lets a new user see if their desired username is available.
+Users interact with this component before they've signed up, so it needs to be hardened against attack.
+We use Turnstile to protect the API endpoint.
+We've configured Turnstile to work, for most users most of the time, without any visual change or noticable time delay.
 
 ```vue
 <script setup>
