@@ -27,6 +27,9 @@
 		@apply text-xs font-mono;
 	}
 
-
+	a               { @apply text-blue-600 underline; }
+	a:hover         { @apply text-blue-400; }
+	a:visited       { @apply text-purple-600; }
+	a:visited:hover { @apply text-purple-400; }
+	a:active        { @apply text-red-800; }
 }
-

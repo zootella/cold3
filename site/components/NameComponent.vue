@@ -29,9 +29,10 @@ let refName = ref('')
 let refTerms = ref(false)
 let refContentsSubmittable = ref(false)//true when the form contents are complete enough the user could submit them
 let refInFlight = ref(false)//true while the page has post out to the server
-let refStatus = ref('')
+let refStatus = ref('(none)')
+let refDuration = ref(0)
 
-watch([refName, refTerms], () => {
+watch([refName, refTerms], () => {//nuxt runs this whenever name or terms change, by the user or by our own code here in these functions
 	refContentsSubmittable.value = refName.value.length && refTerms.value
 	//here, we don't need to watch refInFlight, maybe because all we're setting is refContentsSubmittable, and that doesn't depend on in flight or not
 })
@@ -40,11 +41,24 @@ async function buttonClicked() {
 	refTerms.value = false//uncheck the box, but keep the name the same
 
 	log('flight start')
-	refInFlight.value = true//as though we're fetching
-	setTimeout(() => {//as though a second later, the fetch is done
+	let t = Now()
+	try {
+		refInFlight.value = true
+		let response = await $fetch('/api/name', {
+			method: 'POST',
+			body: {
+				name: refName.value,
+				terms: refTerms.value
+			}
+		})
+		refStatus.value = `server response: ${response.note}`
+	} catch (e) {
+		refStatus.value = `fetch threw error: ${e.message}`
+	} finally {
+		refDuration.value = Now() - t
 		refInFlight.value = false
 		log('flight completed')
-	}, 2*Time.second)
+	}
 }
 
 </script>
@@ -68,7 +82,7 @@ async function buttonClicked() {
 		@click="buttonClicked"
 	>Check</button>
 </p>
-<p>Status: <i>{{ refStatus }}</i></p>
+<p>Status: <i>{{ refStatus }}</i>; Duration: {{ refDuration }}</p>
 
 </div>
 </template>
