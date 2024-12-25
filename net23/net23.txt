@@ -1992,6 +1992,51 @@ if you change the code, a new deploy takes 5-10min, so use vhs.cjs
 
 
 
+ _                        _   _ _      
+| |_ _   _ _ __ _ __  ___| |_(_) | ___ 
+| __| | | | '__| '_ \/ __| __| | |/ _ \
+| |_| |_| | |  | | | \__ \ |_| | |  __/
+ \__|\__,_|_|  |_| |_|___/\__|_|_|\___|
+                                       
+
+(right now, you're working with chat on a turnstile guide)
+that will become TurnstileComonent.vue, the note in app.vue, and some additional notes here
+
+
+additional features you're not using yet, but which may be good
+https://developers.cloudflare.com/turnstile/concepts/pre-clearance-support/
+designed for SPAs, which we are, so that you can include turnstile on every POST but not get turnstile bothering the user
+you think; the turnstile documentation isn't super clear when trying to parse out just our use case
+
+Choose level of pre-clearance
+Interactive
+Allows a user with a clearance cookie of this level to not be challenged by Interactive, Managed or JavaScript Challenge Firewall Rules
+Managed
+Allows a user with a clearance cookie of this level to not be challenged by Managed Challenge or JavaScript Challenge Firewall Rules
+Non-interactive
+Allows a user with a clearance cookie of this level to not be challenged by JavaScript Challenge Firewall Rules.
+no idea what all that is
+and also, no idea where to set the cookie expiration
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 										 _                       
  _ __ ___   __ _  __| |_ __ ___   __ _ _ __  
