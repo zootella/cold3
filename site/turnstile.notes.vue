@@ -23,538 +23,180 @@ and then get the site key and secret key, which in our code will be:
 ACCESS_TURNSTILE_SITE_KEY_PUBLIC, available to untrusted front-end code, revealed to users
 ACCESS_TURNSTILE_SECRET, securely and secretly stored in the cloudflare worker
 
-## Example site-wide client-code code
+(a) Load script globally.
+(b) Render widget in the component.
+(c) Execute token generation when user is ready.
+(d) Send token in a form submission ($fetch).
+(e) Verify token on the server using Turnstile’s /siteverify.
 
-[I: ./app.vue]
-Load Turnstile site-wide as soon as possible, allowing it to observe user behavior before they reach the protected form.
+## (a) app.vue – Load the Turnstile script globally
 
-```vue
-<script setup>
-  useHead({
-    title: 'cold3.cc',
-    script: [
-      {
-        src: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
-        async: true,//tell the browser: you can download this script while you're parsing the HTML
-        defer: true//but don't run the script until the html is fully parsed
-      }
-    ]
-  })
-</script>
-<template>
-  <NuxtLayout>
-    <NuxtPage />
-  </NuxtLayout>
-</template>
-```
+* Ensures the Turnstile library is downloaded site-wide, as early as possible.
+* usehead in app.vue is the reccommended way to load global scripts in nuxt 3
+* this doesn't slow down page load, or show anything to the user. async and defer mean the browser downloads and runs the cloudflare turnstile script in parallel with the page loading normally
 
-[II: ./components/NameComponent.vue]
-Consider a component that lets a new user see if their desired username is available.
-Users interact with this component before they've signed up, so it needs to be hardened against attack.
-We use Turnstile to protect the API endpoint.
-We've configured Turnstile to work, for most users most of the time, without any visual change or noticable time delay.
-
-```vue
-<script setup>
-
-import {
-log, look, Now,
-} from 'icarus'
-import {ref} from 'vue'
-
-let name = ref('')
-let status = ref('(no status yet)')
-function textChanged() {
-  log(`text changed to "${name.value}"`)
-  status.value = `entered ${name.value.length} characters`
-}
-async function buttonClicked() {
-  log(`button clicked with name "${name.value}"`)
-
-  try {
-    let t = Now()
-    let response = await $fetch('/api/name', {method: 'POST', body: {name: name.value}})
-    let d = Now() - t
-
-    status.value = `name api took ${d}ms to say: ${response.note}`
-  } catch (e) {
-    log('fetch caused exception:', look(e))
-  }
-}
-
-</script>
-<template>
-
-<p>Check if your desired username is available.</p>
-<input type="text" v-model="name" @input="textChanged" />
-<button @click="buttonClicked">Check</button>
-<p><i>{{ status }}</i></p>
-
-</template>
-```
-
-[III: ./server/api/name.js]
-
-```js
-import {
-log, look, toss, doorWorker, Sticker,
-} from 'icarus'
-
-export default defineEventHandler(async (workerEvent) => {
-  return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
-})
-async function doorProcessBelow(door) {
-  let o = {}
-
-  o.note = `name api will check "${door.body.name}" in ${Sticker().all}`
-
-  return o
-}
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-(c) Submit the form along with the valid Turnstile token to your server endpoint for verification.
-
+at this point, turnstile is on the site, quietly observing user behavior for better bot detection
 
 ./app.vue
 ```vue
-<!-- app.vue -->
-<template>
-  <NuxtPage />
-</template>
-
-<script setup>
-// No special code needed in the script here, just ensure the script tag below is present.
-</script>
-
-<head>
-  <!-- Include Turnstile script globally, so it's available throughout the site -->
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-</head>
-```
-
-## Example client-side code
-
-./components/NameComonent.vue
-```vue
-<!-- ./components/NameComponent.vue -->
-<template>
-  <form @submit.prevent="onSubmit">
-    <!-- Container for Turnstile widget; invisible mode, triggered by execute() -->
-    <div ref="turnstileEl"></div>
-    
-    <input v-model="desiredName" type="text" placeholder="Enter desired username" required />
-    <button type="submit">Check</button>
-  </form>
-</template>
-
-<script setup>
-import { ref, onMounted } from 'vue'
-import { useRuntimeConfig } from '#app'
-
-const config = useRuntimeConfig()
-const turnstileSiteKey = config.public.ACCESS_TURNSTILE_ID
-const desiredName = ref('')
-const turnstileToken = ref('')
-const turnstileEl = ref(null)
-
-// Callback after token is generated
-function onTurnstileSuccess(token) {
-  turnstileToken.value = token
-  submitForm()
-}
-
-// Render Turnstile in invisible mode, so no UI until executed
-function renderTurnstile() {
-  if (window.turnstile && turnstileEl.value) {
-    window.turnstile.render(turnstileEl.value, {
-      sitekey: turnstileSiteKey,
-      callback: onTurnstileSuccess,
-      size: 'invisible', 
-      // Use 'execute' mode so we can control when token is generated
-      execution: 'execute'
-    })
-  }
-}
-
-onMounted(() => {
-  // If not globally loaded, ensure script is loaded. 
-  // If you placed it in app.vue or a plugin, Turnstile should already be available.
-  if (window.turnstile) {
-    renderTurnstile()
-  } else {
-    const interval = setInterval(() => {
-      if (window.turnstile) {
-        clearInterval(interval)
-        renderTurnstile()
-      }
-    }, 100)
-  }
-})
-
-function onSubmit() {
-  if (!window.turnstile || !turnstileEl.value) {
-    alert('Verification system not ready. Please try again later.')
-    return
-  }
-  // Execute Turnstile to get a fresh token right now
-  window.turnstile.execute(turnstileEl.value)
-}
-
-async function submitForm() {
-  try {
-    const response = await $fetch('/api/check-name', {
-      method: 'POST',
-      body: {
-        name: desiredName.value,
-        turnstileToken: turnstileToken.value
-      }
-    })
-    
-    if (response.available) {
-      alert('Username is available!')
-    } else {
-      alert('Username is taken. Please choose another.')
-    }
-  } catch (error) {
-    console.error('Error:', error)
-    alert('Failed to verify or check the name. Please try again.')
-  }
-}
-</script>
-
-<style scoped></style>
-</script>
-
-<style scoped>
-/* Optional: Style the Turnstile container if needed */
-</style>
-```
-
-## Example server side code
-
-./server/api/check-name.js
-```js
-<script>
-// ./server/api/check-name.js
-export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
-  const { name, turnstileToken } = body
-
-  // Verify the Turnstile token
-  const verificationResponse = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      secret: ACCESS_TURNSTILE_SECRET,
-      response: turnstileToken
-    })
-  })
-
-  if (!verificationResponse.success) {
-    throw createError({ statusCode: 403, statusMessage: 'Bad Turnstile token' })
-  }
-
-  // If verification passed, check username availability
-  const available = await checkNameAvailability(name)
-
-  return { available }
-})
-</script>
-```
-
-questions:
-
-(1) should the tunrstile widget be in app.vue, where it will be rendered throughout the user's session with the site, or just within the component? official documentation seems to indicate a site using turnstile anywhere should have it in the html head, right from the start, and always--is this correct? if so, what's the right way to do that in nuxt 3?
-
-(2) let's say the form to protect is short; users will complete it quickly. alternatively, let's say the form is long, a user might navigate to the page, leave it open for minutes as the user collects information from the form, and submit it after a longer delay. should turnstile be used differently in those cases. we want form submission to not be delayed, but we also want to not send an old, possibly expired token
-
-(3) in the normal, non-attack scenario, will the challenge api ever say no? what's the flow for a user who is not a bot, but (for whatever reason) turnstile thinks is high-risk
-
-(4) what settings are there to control the strength of the widget, for instance, to set it to be more secure, even if it bothers more users, or less secure, never bothering a user
-
-(5) if the visual indicator appears, where does it appear within the html of the page? are there any options to affect its visual appearance, such as, to style it?
-
-(6) is there a way a site can collect data on how many users saw the widget, and for how many the experience was entirely invisible
-
-(7) does turnstile use cookies? is there a way to use turnstile without cookies, for users who have turned cookies off or do not wish to make a choice about them?
-
-
-
-
-
-
-
-imagine this flow:
-(a) turnstile is part of the root page, so cloudflare can observe real user behavior long before the user navigates to the form
-(b) when the form is complete and ready to submit (not earlier, when the form is rendered, and not later, when the user presses the submit button) that is when script gets the token which must be submitted and verified and lasts for 300 seconds. earlier, and there could be failures with expired tokens; later, and the form submission could be slower for the user
-(c) form submission includes the turnstile token, which the worker then validates
-ok, so we want to get that in short simple code that is secure and also correct to (and a correct and common use of) the turnstile api, in the context of a nuxt 3 app
-
-
-
-
-
-
-<!-- app.vue -->
-<template>
-  <NuxtPage />
-</template>
-
-<head>
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-</head>
-
-<script setup>
-</script>
-
-
-
-
-<!-- app.vue -->
-<template>
-  <NuxtPage />
-</template>
-
 <script setup>
 useHead({
-  script: [
-    { src: 'https://challenges.cloudflare.com/turnstile/v0/api.js', async: true, defer: true }
-  ]
+	script: [
+		{
+			src: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
+			async: true,
+			defer: true
+		}
+	]
 })
 </script>
-
-
-
-
-
-
-
-
-
-
-
-
-previous one:
-
 <template>
-<div>
-
-<Head>
-  <Title>cold3.cc</Title>
-  <Link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍺</text></svg>" />
-</Head>
-
-<NuxtPage />
-
-</div>
+	<NuxtLayout>
+		<NuxtPage />
+	</NuxtLayout>
 </template>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-fin
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<script>
-/*
-const turnstileSiteKey = config.public.ACCESS_TURNSTILE_ID
-
-let name = ref('')
-let status = ref('(no status yet)')
-
-const turnstileEl = ref(null)
-const turnstileToken = ref('')
-
-function textChanged() {
-  log(`text changed to "${name.value}"`)
-  status.value = `entered ${name.value.length} characters`
-}
-
-// When Turnstile succeeds, store the token
-function onTurnstileSuccess(token) {
-  turnstileToken.value = token
-}
-
-function renderTurnstile() {
-  if (window.turnstile && turnstileEl.value) {
-    window.turnstile.render(turnstileEl.value, {
-      sitekey: turnstileSiteKey,
-      callback: onTurnstileSuccess,
-      size: 'invisible',
-      execution: 'execute'
-    })
-  }
-}
+```
+
+## (b) turnstile.render – Render the Turnstile widget for use in a component
+
+* The user navigates to a sign-up form component. Since these users are not signed in yet, we need Turnstile to protect the form’s API endpoint.
+* We attach Turnstile to <div ref="refTurnstileElement">. If Turnstile needs a visible challenge, it will appear here.
+* Nuxt runs onMounted only on the client, after the component is inserted into the DOM. We immediately try to call turnstileRender(). If the Turnstile script isn’t ready yet (loaded async in app.vue), we poll until window.turnstile becomes available.
+* size: 'invisible' keeps Turnstile hidden unless suspicious behavior prompts a challenge.
+* execution: 'execute' defers token generation until we explicitly call .execute(). This prevents token expiration if the user lingers on the form.
+
+./components/ExampleComponent.vue
+```vue
+<script setup>
+import { ref, onMounted } from 'vue'
+const refTurnstileElement = ref(null)
 
 onMounted(() => {
-  // Wait until Turnstile script is ready, then render the widget
-  if (window.turnstile) {
-    renderTurnstile()
-  } else {
-    const i = setInterval(() => {
-      if (window.turnstile) {
-        clearInterval(i)
-        renderTurnstile()
-      }
-    }, 100)
-  }
-})
-
-// Watch the name field. Once user starts typing and we don't yet have a token, request one.
-watch(name, () => {
-  if (name.value.length > 0 && !turnstileToken.value && turnstileEl.value && window.turnstile) {
-    window.turnstile.execute(turnstileEl.value)
-  }
-})
-
-async function buttonClicked() {
-  log(`button clicked with name "${name.value}"`)
-
-  if (!turnstileToken.value) {
-    alert('Verification in progress, please wait a moment and try again.')
-    return
-  }
-
-  try {
-    let t = Now()
-    let response = await $fetch('/api/name', {
-      method: 'POST',
-      body: {
-        name: name.value,
-        turnstileToken: turnstileToken.value
-      }
-    })
-    let d = Now() - t
-    status.value = `name api took ${d}ms to say: ${response.note}`
-  } catch (e) {
-    log('fetch caused exception:', look(e))
-  }
-}
-*/
-</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-<p>Check if your desired username is available.</p>
-<p>
-	Name: <input type="text" v-model="refName" @input="somethingChanged" />
-</p>
-<p>
-  <input type="checkbox" v-model="refTerms" @change="somethingChanged" /> Accept Terms
-	<button :disabled="refButtonDisabled" @click="buttonClicked">Check</button>
-</p>
-<p>Status: <i>{{ refStatus }}</i></p>
-*/
-
-
-/*
-	try {
-		let t = Now()
-		let response = await $fetch('/api/name', {method: 'POST', body: {name: refName.value}})
-		let d = Now() - t
-
-		refStatus.value = `name api took ${d}ms to say: ${response.note}`
-	} catch (e) {
-		log('fetch caused exception:', look(e))
+	if (window.turnstile) {
+		turnstileRender()
+	} else {
+		const intervalId = setInterval(() => {
+			if (window.turnstile) {
+				clearInterval(intervalId)
+				turnstileRender()
+			}
+		}, 100)
 	}
-*/
+})
+function turnstileRender() {
+	if (window.turnstile && refTurnstileElement.value) {
+		window.turnstile.render(refTurnstileElement.value, {
+			sitekey: 'YOUR_TURNSTILE_SITE_KEY',
+			callback: turnstileCallback,
+			size: 'invisible',
+			execution: 'execute'
+		})
+	}
+}
+
+</script>
+<template>
+	<div ref="refTurnstileElement"></div>
+</template>
+```
+
+## (c) turnstile.execute – Genereate a Turnstile token when the form is ready to submit
+
+* Once the form is valid and the user is ready to submit, call turnstile.execute(...) to generate a fresh token.
+* Possible Delay: Turnstile may perform CPU-intensive operations (e.g., hashing) or display a spinner or challenge if the user’s behavior appears suspicious.
+* Invisible for Most Users: Under normal conditions, users see no prompt—Turnstile issues a token quickly in the background.
+* Callback: When Turnstile finishes, it calls your turnstileCallback function with the newly generated token. You store the token for use in your POST request.
+
+./components/ExampleComponent.vue
+```vue
+<script setup>
+const refTermsAccepted = ref(false)
+
+watch([refTermsAccepted], () => {
+	if (formIsValid() && !refTurnstileToken.value) {
+		turnstileExecute()
+	}
+})
+function turnstileExecute() {
+	if (window.turnstile && refTurnstileElement.value) {
+		window.turnstile.execute(refTurnstileElement.value)//ask turnstile to make a new token
+	}
+}
+//possible time delay, spinner, or interactive challenge happens between these two here
+function turnstileCallback(token) {//turnstile has made a new token for us
+	refTurnstileToken.value = token
+}
+
+</script>
+<template>
+	<label><input type="checkbox" v-model="refTermsAccepted" />Accept Terms</label>
+	<div ref="refTurnstileElement"></div>
+	<button :disabled="!refTurnstileToken">Submit</button>
+</template>
+
+## (d) POST - Include the Turnstile token in the form submission
+
+* Include the Turnstile Token in your request body alongside the rest of your form fields.
+
+./components/ExampleComponent.vue
+```vue
+<script setup>
+
+async function onSubmit() {
+	try {
+		const response = await $fetch('/api/submit-form', {
+			method: 'POST',
+			body: {
+				name: refName.value,
+				turnstileToken: refTurnstileToken.value
+			}
+		})
+		refStatus.value = `Server says: ${response.message}`
+	} catch (e) {
+		refStatus.value = 'Submission failed. Please try again.'
+		console.error('Error posting form:', e)
+	}
+}
+</script>
+<template>
+	<label><input type="checkbox" v-model="refTermsAccepted" />Accept Terms</label>
+	<div ref="refTurnstileElement"></div>
+	<button :disabled="!refTurnstileToken">Submit</button>
+</template>
+
+(e) api – Validate the token with the Cloudflare Challengese platform in trusted code on the server side
+
+// ./server/api/submit-form.js
+```js
+export default defineEventHandler(async (event) => {
+
+	const body = await readBody(event)
+	const { name, turnstileToken } = body
+	const config = useRuntimeConfig()
+	const secretKey = config.TURNSTILE_SECRET
+
+	const verificationResponse = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+		body: new URLSearchParams({
+			secret: secretKey,
+			response: turnstileToken
+		})
+	})
+	if (!verificationResponse.success) {
+		throw createError({ statusCode: 403, statusMessage: 'turnstile token not valid' })
+	}
+
+	return { message: `Form submission accepted for ${name}` }
+})
+```
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+check this as a whole, please--im looking for mistakes in how the guide describes interactions related to
+-web standards
+-how browsers work
+-how to correctly use nuxt 3 with vue's composition api
+-how to correctly use turnstile with our choices to generate the token before submit, and keep things as invisible as possible
 
 
 
