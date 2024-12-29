@@ -208,6 +208,59 @@ check this as a whole, please--im looking for mistakes in how the guide describe
 
 
 
+./components/FormComponent.vue
+
+<script setup>
+import {ref} from 'vue'
+const refTurnstileComponent = ref()
+async function onFormContentsSubmittable() {
+	//call when the form is ready to submit
+	//await; may be really fast, may be a second with user interaction
+  let token = await refTurnstileComponent.value.runTurnstileToMakeToken()
+	//returns the turnstile token, include token with form data in POST
+}
+</script>
+
+<template>
+<p>This is the outer parent component with the form</p>
+<TurnstileComponent ref="refTurnstileComponent" />
+</template>
+
+./components/TurnstileComponent.vue
+
+<script setup>
+import {ref, defineExpose} from 'vue'
+async function runTurnstileToMakeToken() {
+	return 'token'
+}
+defineExpose({runTurnstileToMakeToken})
+</script>
+
+<template>
+<p>This inner child component keeps and runs turnstile for outer parent forms that need it</p>
+</template>
+
+you've defined and exposed your own async function turnstile()
+call it when the user has gotten the form ready to submit
+it may take no time, or an undetectable 100ms or so
+or, it may show the spinner or checkbox on the page, and take that interaction and a second to run
+await the call, and you'll get back the turnstile token
+the forms submit button, unavailable while the user is filling out the form
+should stay unavailable while turnstile is running
+when turnstile returns, you've got the token, make submit available for the user to press
+when the user presses submit, POST the turnstile token with the form data
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
