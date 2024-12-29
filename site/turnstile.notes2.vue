@@ -861,7 +861,7 @@ async function buttonClicked() {
 
 
 
-
+additional notes about component communication coming next
 
 
 
