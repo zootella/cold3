@@ -180,6 +180,9 @@ $ git push origin main
  \___|_|  \___|\__,_|\__\___| | .__/|_|  \___// |\___|\___|\__|
 															|_|           |__/               
 
+[]todo january, in vmware windows and a new mac silicon user, set up project from scratch to check and minimize these notes. divide "create project" into two sections: "prepare workstation" which has stuff like brew and yarn and wrangler and serverless, all the global stuff, and "repot the pant" with stuff like cloudflare create and serverless' create
+sorta also in this section is how to set it up in docker; that's a new workstation
+
 == install aws cli
 
 npm's aws-cli is deprecated as of 6 years ago
@@ -191,6 +194,11 @@ $ aws --version
 aws-cli/2.16.4 Python/3.11.8 Windows/10 exe/AMD64
 
 (note on mac, you're trying $ brew install awscli)
+$ brew --version
+$ brew update
+$ brew upgrade
+$ xcode-select install
+$ xcode-select -p
 
 == give aws cli access to your aws account
 
