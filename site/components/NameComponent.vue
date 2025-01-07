@@ -3,7 +3,7 @@
 import {
 log, look, Now, Time,
 } from 'icarus'
-import {ref, watch} from 'vue'
+import {ref, watch, onMounted} from 'vue'
 
 /*
 here's a simple example of states for a simple form
@@ -27,15 +27,61 @@ building upon this, we'll:
 
 let refName = ref('')
 let refTerms = ref(false)
-let refContentsSubmittable = ref(false)//true when the form contents are complete enough the user could submit them
-let refInFlight = ref(false)//true while the page has post out to the server
 let refStatus = ref('(none)')
 let refDuration = ref(0)
+let refContentsSubmittable = ref(false)//true when the form contents are complete enough the user could submit them
+let refInFlight = ref(false)//true while the page has post out to the server
+
+let refTurnstileElement = ref(null)
+let refTurnstileToken = ref('')
+
+onMounted(() => {
+	if (window.turnstile) {
+		turnstileRender()
+	} else {
+		const intervalId = setInterval(() => {
+			if (window.turnstile) {
+				clearInterval(intervalId)
+				turnstileRender()
+			}
+		}, 100)//poll ten times a second until window.turnstile becomes available
+		//[]todo january--work this into the watch while you wait for both the user to get the form data ready, and turnstile to become ready--the submit button becomes available when all of those things are ready
+	}
+})
+const ACCESS_TURNSTILE_SITE_KEY_PUBLIC = '0x4AAAAAAA0P1yzAbb7POlXe'
+function turnstileRender() {
+	if (window.turnstile && refTurnstileElement.value) {
+		window.turnstile.render(refTurnstileElement.value, {
+			sitekey: ACCESS_TURNSTILE_SITE_KEY_PUBLIC,
+			callback: turnstileCallback,
+			size: 'invisible',//don't show the spinner or checkbox to the user unless things seem suspicious
+			execution: 'execute'//don't generate a token now; we'll call turnstile.execute() to make the token later
+		})
+	}
+}
 
 watch([refName, refTerms], () => {//nuxt runs this whenever name or terms change, by the user or by our own code here in these functions
 	refContentsSubmittable.value = refName.value.length && refTerms.value
 	//here, we don't need to watch refInFlight, maybe because all we're setting is refContentsSubmittable, and that doesn't depend on in flight or not
+
+	//here is where we want to make a turnstile token
+	//review the flow of the state machine as a whole
+	//later, this will get simpler when you factor out both 1[]TurnstileComponent and 2[]your own system for validating forms client and server; there will be standard methods for moving between the states enforced by those systems
+	if (refContentsSubmittable.value && !refTurnstileToken.value) {
+		turnstileExecute()
+	}
 })
+function turnstileExecute() {
+	if (window.turnstile && refTurnstileElement.value) {
+		log('hi in name component turnstile execute; executing to get a token...')
+		window.turnstile.execute(refTurnstileElement.value)//ask turnstile to make a new token
+	}
+}
+//possible time delay, spinner, or interactive challenge happens between these two here
+function turnstileCallback(token) {//turnstile has made a new token for us
+	log('...callback got token: '+token)
+	refTurnstileToken.value = token
+}
 
 async function buttonClicked() {
 	refTerms.value = false//uncheck the box, but keep the name the same
@@ -48,7 +94,8 @@ async function buttonClicked() {
 			method: 'POST',
 			body: {
 				name: refName.value,
-				terms: refTerms.value
+				terms: refTerms.value,
+				turnstileToken: refTurnstileToken.value
 			}
 		})
 		refStatus.value = `server response: ${response.note}`
@@ -69,6 +116,7 @@ async function buttonClicked() {
 <p>
 	Name: <input type="text" v-model="refName" />
 </p>
+<p>invisible turnstile element: <div ref="refTurnstileElement"></div></p>
 <p>
 	<input type="checkbox" v-model="refTerms" id="idTerms" />{{' '}}
 	<label for="idTerms">Accept Terms</label>{{' '}}

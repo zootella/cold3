@@ -25,15 +25,15 @@ ACCESS_TURNSTILE_SECRET, securely and secretly stored in the cloudflare worker
 
 (a) Load script globally.
 (b) Render widget in the component.
-(c) Execute token generation when user is ready.
+(c) Execute token generation when the user is about to submit the form. (earlier, the token may expire; later, there may be a noticable delay)
 (d) Send token in a form submission ($fetch).
 (e) Verify token on the server using Turnstile’s /siteverify.
 
 ## (a) app.vue – Load the Turnstile script globally
 
 * Ensures the Turnstile library is downloaded site-wide, as early as possible.
-* usehead in app.vue is the reccommended way to load global scripts in nuxt 3
-* this doesn't slow down page load, or show anything to the user. async and defer mean the browser downloads and runs the cloudflare turnstile script in parallel with the page loading normally
+* useHead in app.vue is the reccommended way to load global scripts in nuxt 3
+* Does not slow down page load, or show anything to the user. async and defer mean the browser downloads and runs the cloudflare turnstile script in parallel with the page loading normally
 
 at this point, turnstile is on the site, quietly observing user behavior for better bot detection
 
@@ -69,7 +69,7 @@ useHead({
 ```vue
 <script setup>
 import { ref, onMounted } from 'vue'
-const refTurnstileElement = ref(null)
+let refTurnstileElement = ref(null)
 
 onMounted(() => {
 	if (window.turnstile) {
@@ -88,8 +88,8 @@ function turnstileRender() {
 		window.turnstile.render(refTurnstileElement.value, {
 			sitekey: 'YOUR_TURNSTILE_SITE_KEY',
 			callback: turnstileCallback,
-			size: 'invisible',
-			execution: 'execute'
+			size: 'invisible',//don't show the spinner or checkbox to the user unless things seem suspicious
+			execution: 'execute'//don't generate a token now; we'll call turnstile.execute() to make the token later
 		})
 	}
 }
@@ -100,7 +100,7 @@ function turnstileRender() {
 </template>
 ```
 
-## (c) turnstile.execute – Genereate a Turnstile token when the form is ready to submit
+## (c) turnstile.execute – Generate a Turnstile token when the form is ready to submit
 
 * Once the form is valid and the user is ready to submit, call turnstile.execute(...) to generate a fresh token.
 * Possible Delay: Turnstile may perform CPU-intensive operations (e.g., hashing) or display a spinner or challenge if the user’s behavior appears suspicious.
@@ -110,7 +110,9 @@ function turnstileRender() {
 ./components/ExampleComponent.vue
 ```vue
 <script setup>
-const refTermsAccepted = ref(false)
+let refTurnstileElement = ref(null)
+let refTurnstileToken = ref('')
+let refTermsAccepted = ref(false)
 
 watch([refTermsAccepted], () => {
 	if (formIsValid() && !refTurnstileToken.value) {

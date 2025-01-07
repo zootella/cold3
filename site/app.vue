@@ -12,8 +12,8 @@ useHead({
 		{
 			//from https://developers.cloudflare.com/turnstile/get-started/#add-the-turnstile-widget-to-your-site
 			src: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
-			async: true,//tell the browser: you can download this script while you're parsing the HTML
-			defer: true//but don't run the script until the html is fully parsed
+			async: true,//tell the browser: you can download this script while you're parsing the HTML,
+			defer: true//but don't run the script until you've finished fully paring the HTML
 		}
 	]
 })
