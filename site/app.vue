@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-Sticker,
+Sticker, addTurnstileHeadScript,
 } from 'icarus'
 
 let head = {
@@ -13,12 +13,7 @@ let head = {
 		},
 	],
 }
-if (Sticker().isCloud) head.script = [{
-	//from https://developers.cloudflare.com/turnstile/get-started/#add-the-turnstile-widget-to-your-site
-	src: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
-	async: true,//tell the browser: you can download this script while you're parsing the HTML,
-	defer: true,//but don't run the script until you've finished fully paring the HTML
-}]
+addTurnstileHeadScript(head)
 useHead(head)
 
 </script>

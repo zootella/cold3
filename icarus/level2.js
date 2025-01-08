@@ -1335,6 +1335,20 @@ test(async () => {
 //  \__|\__,_|_|  |_| |_|___/\__|_|_|\___|
 //                                        
 
+//used in app.vue to get the turnstile script on the whole site, just in case we need to use it
+export function addTurnstileHeadScript(head) {
+	if (Sticker().isCloud) {
+		if (!head.script) head.script = []
+		head.script.push({
+			//from https://developers.cloudflare.com/turnstile/get-started/#add-the-turnstile-widget-to-your-site
+			src: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
+			async: true,//tell the browser: you can download this script while you're parsing the HTML,
+			defer: true,//but don't run the script until you've finished fully paring the HTML
+		})
+	}
+}
+
+//used by trusted code in a worker for a nuxt api handler, to validate a turnstile token submitted with form data from an untrusted user
 export async function checkTurnstileToken(token) {
 	log('checkTurnstileToken got a token of length '+token?.length)
 	//todo january, replace with something ironclad that uses door, not fingerprinting. if uncertainty, go cloud not local
