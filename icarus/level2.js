@@ -1335,9 +1335,14 @@ test(async () => {
 //  \__|\__,_|_|  |_| |_|___/\__|_|_|\___|
 //                                        
 
+export function useTurnstileHere() {
+	return true
+	//return Sticker().isCloud
+}
+
 //used in app.vue to get the turnstile script on the whole site, just in case we need to use it
 export function addTurnstileHeadScript(head) {
-	if (Sticker().isCloud) {
+	if (useTurnstileHere()) {
 		if (!head.script) head.script = []
 		head.script.push({
 			//from https://developers.cloudflare.com/turnstile/get-started/#add-the-turnstile-widget-to-your-site
@@ -1352,7 +1357,7 @@ export function addTurnstileHeadScript(head) {
 export async function checkTurnstileToken(token) {
 	log('checkTurnstileToken got a token of length '+token?.length)
 	//todo january, replace with something ironclad that uses door, not fingerprinting. if uncertainty, go cloud not local
-	if (Sticker().isCloud) {//we only use turnstile deployed to the cloud
+	if (useTurnstileHere()) {//we only use turnstile deployed to the cloud
 		const access = await getAccess()
 		let response = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
 			method: 'POST',
