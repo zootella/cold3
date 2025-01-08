@@ -1328,6 +1328,68 @@ test(async () => {
 
 
 
+//  _                        _   _ _      
+// | |_ _   _ _ __ _ __  ___| |_(_) | ___ 
+// | __| | | | '__| '_ \/ __| __| | |/ _ \
+// | |_| |_| | |  | | | \__ \ |_| | |  __/
+//  \__|\__,_|_|  |_| |_|___/\__|_|_|\___|
+//                                        
+
+export async function checkTurnstileToken(token) {
+	log('checkTurnstileToken got a token of length '+token?.length)
+	//todo january, replace with something ironclad that uses door, not fingerprinting. if uncertainty, go cloud not local
+	if (Sticker().isCloud) {//we only use turnstile deployed to the cloud
+		const access = await getAccess()
+		let response = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+			},
+			body: new URLSearchParams({
+				secret: access.get('ACCESS_TURNSTILE_SECRET'),
+				response: token,
+			})
+		})
+		if (!response.success) toss('turnstile challenge failed', {token, response})
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

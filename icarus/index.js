@@ -92,6 +92,7 @@ dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 getBrowserTag,
 fetchNetwork23, vhsSign,
+checkTurnstileToken,
 
 } from './level2.js'
 

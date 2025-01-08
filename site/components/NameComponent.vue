@@ -116,7 +116,7 @@ async function buttonClicked() {
 <p>
 	Name: <input type="text" v-model="refName" />
 </p>
-<p>invisible turnstile element: <div ref="refTurnstileElement"></div></p>
+<div>invisible turnstile element: <div ref="refTurnstileElement"></div></div>
 <p>
 	<input type="checkbox" v-model="refTerms" id="idTerms" />{{' '}}
 	<label for="idTerms">Accept Terms</label>{{' '}}
