@@ -102,6 +102,22 @@ async function turnstileExecute() {//generate a new turnstile token on the page 
 			 when the token is made, turnstile will call our callback below */
 		promise2 = new Promise(resolve => { resolve2 = resolve })//set promise2 truthy to block an overlapping call into execute
 		token = await promise2//return here after turnstile has called our callback below
+
+		/*
+		ok, so the problem is, when turnstile throws, like you're testing it locally so it correctly can't work
+		browser Console shows uncaught TurnstileError
+		turnstileCallback below never happens
+		execution never reaches here
+		your form thinks (sorta correctly) that turnstile token generation hasn't finished yet
+
+		Uncaught TurnstileError: [Cloudflare Turnstile] Error: 110200.
+    at m (api.js:1:10491)
+    at k (api.js:1:36001)
+
+    following web standards and vue 3 composition api patterns and best practices
+    what is the correct way to find out about this error?
+    ironclad, even if the call to window.turnstile.execute responds via the callback, we need to know its result, success or fail, not matter what
+		*/
 	} finally {
 		promise2 = null//let an exception throw upwards, but keep promise2 correct as a marker for execution in progress
 	}

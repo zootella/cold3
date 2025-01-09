@@ -1,6 +1,6 @@
 
 import {
-log, look, toss, doorWorker, Sticker,
+log, look, toss, doorWorker, Sticker, dog,
 checkTurnstileToken,
 } from 'icarus'
 
@@ -10,6 +10,8 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorProcessBelow(door) {
 	let o = {}
 	log('hi in server api name.js; we got the turnstile token '+door.body.turnstileToken)
+
+	dog(look(door.body))
 
 	await checkTurnstileToken(door.body.turnstileToken)
 

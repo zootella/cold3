@@ -261,6 +261,151 @@ when the user presses submit, POST the turnstile token with the form data
 
 
 
+/*
+a simple form with turnstile; let's figure out and standardize the states
+
+first
+form is blank, user begins filling it out
+turnstile is not executing
+post is not in flight
+button is gray
+
+second
+the user has gotten form contents submittable
+DO turnstile execute to get the token; may show spinner or checkbox
+button is gray
+
+third
+form contents still submittable
+turnstile execute has finished; we have the token
+DO make the button green
+
+fourth
+user has clicked the green button
+DO post form data and token to endpoint
+DO make the button orange
+
+fifth
+post has returned
+DO uncheck the box, which will take things back to first
+*/
+
+
+
+	/*
+	actions to take here:
+	get the token - when nothing is in flight, the form is ready
+	make the button green - 
+	make the button orange - when post is in flight
+	*/
+
+	if (false) {
+		log('before turnstile execute')
+		refTurnstileComponent.value.turnstileExecute().then((token) => {
+			//the idea is when you set the token, another call to watch comes in
+
+			//instead of await, you might actually want to use then here, so you get a separate function that isn't going to keep going later in watch. ironic, i know, but still. also, then (get it?) the watch handler isn't async any more, which might work but looks like trouble
+			log('after turnstile execute, got token length '+token.length)
+			refTurnstileToken.value = token
+		})
+	}
+
+
+
+
+	try {
+		refGettingResponse.value = true
+
+		let body = {
+			name: refName.value,
+			terms: refTerms.value,
+			turnstileToken: refTurnstileToken.value
+		}
+		log(look(body))
+
+		let response = await $fetch('/api/name', {
+			method: 'POST',
+			body: {
+				name: refName.value,
+				terms: refTerms.value,
+				turnstileToken: refTurnstileToken.value
+			}
+		})
+		refStatus.value = `server response: ${response.note}`
+	} catch (e) {
+		refStatus.value = `fetch threw error: ${e.message}`
+	} finally {
+		refTerms.value = false//uncheck the box, but keep the name the same
+		refDuration.value = Now() - t
+		refGettingResponse.value = false
+		log('flight completed')
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1094,6 +1094,102 @@ async function oneAtATimePlease() {
 
 
 
+//form elements the user and script change
+let refName = ref('')
+let refTerms = ref(false)
+
+//turnstile token script gets
+let refTurnstileExecuting = ref(false)//true while we're waiting for the token
+let refToken = ref('')//token value once we get it
+
+//our own fetch to our own server
+let refPostInFlight = ref(false)
+
+
+
+let refToken = ref('')
+
+
+let refStatus = ref('(none)')
+let ref
+
+
+let refDuration = ref(0)
+
+let refContentsSubmittable = ref(false)//true when the form contents are complete enough the user could submit them
+let refInFlight = ref(false)//true while the page has post out to the server
+
+const refTurnstileComponent = ref(null)
+const refTurnstileToken = ref('no token yet')
+
+
+
+
+
+
+
+
+
+
+	<!--
+		add buttons Claim and Release,
+		and use the row invalidated and new row made pattern
+		also, see what it's like for the disabled and in-flight status to apply to multiple buttons
+	-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
