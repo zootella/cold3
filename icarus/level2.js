@@ -1338,6 +1338,7 @@ test(async () => {
 export function useTurnstileHere() {
 	return true
 	//return Sticker().isCloud
+	//ttd january
 }
 
 //used in app.vue to get the turnstile script on the whole site, just in case we need to use it

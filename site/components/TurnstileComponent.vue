@@ -65,9 +65,9 @@ onMounted(() => {//this component has been rendered and inserted into the page's
 		if (window.turnstile) {//turnstile is loaded already from app.vue useHead(); this is likely
 			turnstileRender()
 		} else {//the browser is still downloading and running the turnstile script from cloudflare; unlikely but possible
-			const intervalId = setInterval(() => {
+			const interval = setInterval(() => {
 				if (window.turnstile) {
-					clearInterval(intervalId)
+					clearInterval(interval)
 					turnstileRender()
 				}
 			}, 100)//poll ten times a second until turnstile is loaded
@@ -77,7 +77,7 @@ onMounted(() => {//this component has been rendered and inserted into the page's
 const ACCESS_TURNSTILE_SITE_KEY_PUBLIC = '0x4AAAAAAA0P1yzAbb7POlXe'
 let resolve1; let promise1 = new Promise(resolve => { resolve1 = resolve })//promisifying the load and render steps
 function turnstileRender() {
-	log('turnstile render!')
+	log('~~ turnstile render!')
 	window.turnstile.render(//this call returns synchronously, and when it does, turnstile is ready to execute
 		refTurnstileElement.value,//this DOM element is where turnstile could show the user as a spinner or checkbox during token generation
 		{
@@ -92,22 +92,24 @@ function turnstileRender() {
 
 let resolve2, promise2//promisifying the execute and wait for callback step
 async function turnstileExecute() {//generate a new turnstile token on the page to POST along with form submission from an untrusted user
-	log('turnstile execute!')
+	log('~~ turnstile execute!')
 	if (promise2) toss('state')//you can call turnstileExecute() again, but only after a awaiting call has returned
 	let token
 	try {
-		await promise1//make sure turnstile is loaded and rendered
-		window.turnstile.execute(refTurnstileElement.value)//make a turnstile token; may take a little time, or show the user a spinner or checkbox
-		promise2 = new Promise(resolve => { resolve2 = resolve })
-		token = await promise2//stay here until turnstile calls our callback below
+		await promise1//return here after turnstile is loaded and rendered
+		window.turnstile.execute(refTurnstileElement.value)//make a turnstile token
+		/* the browser may compute a hash that takes a split second, or the user may see a spinner or have to check a checkbox
+			 when the token is made, turnstile will call our callback below */
+		promise2 = new Promise(resolve => { resolve2 = resolve })//set promise2 truthy to block an overlapping call into execute
+		token = await promise2//return here after turnstile has called our callback below
 	} finally {
 		promise2 = null//let an exception throw upwards, but keep promise2 correct as a marker for execution in progress
 	}
 	return token
 }
-defineExpose({turnstileExecute})//let the form that we're a part of call turnstileExecute to make and get a token to POST
+defineExpose({turnstileExecute})//let the form that we're a part of call turnstileExecute() to make and get a token to POST
 function turnstileCallback(token) {//turnstile has made a new token for us
-	log(`turnstile callback! token is ${token.length} characters`)
+	log(`~~ turnstile callback! token is ${token.length} characters`)
 	resolve2(token)//resolve the promise with the token so turnstileExecute can return it
 }
 
@@ -117,37 +119,3 @@ function turnstileCallback(token) {//turnstile has made a new token for us
 <div ref="refTurnstileElement"></div>
 
 </template>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

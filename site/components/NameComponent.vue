@@ -44,8 +44,7 @@ onMounted(() => {
 				clearInterval(intervalId)
 				turnstileRender()
 			}
-		}, 100)//poll ten times a second until window.turnstile becomes available
-		//[]todo january--work this into the watch while you wait for both the user to get the form data ready, and turnstile to become ready--the submit button becomes available when all of those things are ready
+		}, 100)
 	}
 })
 const ACCESS_TURNSTILE_SITE_KEY_PUBLIC = '0x4AAAAAAA0P1yzAbb7POlXe'
@@ -84,8 +83,6 @@ function turnstileCallback(token) {//turnstile has made a new token for us
 }
 
 async function buttonClicked() {
-	refTerms.value = false//uncheck the box, but keep the name the same
-
 	log('flight start')
 	let t = Now()
 	try {
@@ -102,10 +99,17 @@ async function buttonClicked() {
 	} catch (e) {
 		refStatus.value = `fetch threw error: ${e.message}`
 	} finally {
+		refTerms.value = false//uncheck the box, but keep the name the same
 		refDuration.value = Now() - t
 		refInFlight.value = false
 		log('flight completed')
 	}
+}
+
+const refExposeComponent = ref(null)
+async function snippetClicked() {
+	let s = await refExposeComponent.value.exposedFunction()
+	log(s)
 }
 
 </script>
@@ -136,6 +140,9 @@ async function buttonClicked() {
 	-->
 </p>
 <p>Status: <i>{{ refStatus }}</i>; Duration: {{ refDuration }}</p>
+
+<button @click="snippetClicked">Snippet</button>
+<ExposeComponent ref="refExposeComponent" />
 
 </div>
 </template>
