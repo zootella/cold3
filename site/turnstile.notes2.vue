@@ -889,11 +889,192 @@ additional notes about component communication coming next
 
 
 
+async function myFunction() {
+	return new Promise((resolve, reject) => {
+		turnstilePromise.value = resolve; // keep reference to resolve so we can call it later
+		
+		// Make the call that eventually leads to callbackFunction being invoked
+		platformApiCall();
+	});
+}
+
+// The platform calls this at some later time with the result
+function callbackFunction(result) {
+	// complete the Promise we created in myFunction
+	if (turnstilePromise.value) {
+		turnstilePromise.value(result);
+		turnstilePromise.value = null; // avoid issues if callback is called multiple times
+	}
+}
 
 
 
 
 
+
+
+
+/*
+i'm trying to code my own function, useTheSystem(), below
+it's async, and will await and return the result from the platform's async function, systemExecute
+the difficulty is this: the platform documentation warns against calling systemExecute until the system is ready
+and the way for me to find out the system is ready is to register a callback function
+
+but i want to group these two async things (first, system ready; second, waiting for execute to finish) into a single async function im writing, useTheSystem
+
+is this a common JavaScript pattern?
+is my sample solution below correct?
+is there a better or more standard solution to this problem?
+*/
+
+//i need to turn a callback into 
+
+import {registerCallback, systemExecute} from 'some_example_platform'
+
+let myResolver//save the resolver function the promise constructor gives us when we make the promise
+let myPromise = new Promise(resolve => { myResolver = resolve })//make a promise that we'll take from pending to fulfilled
+
+function callback() {//external platform code will call our callback function here when the system is ready
+	myResolver()
+}
+registerCallback(callback)//here, we're telling the platform to use our callback, so we can know when the system is ready
+
+async function useTheSystem() {
+	await myPromise//don't proceed until the platform is ready
+	return await systemExecute()//the API function systemExecute is async; we await it and return what it gives us
+}
+
+
+
+
+
+/*
+ok, so this is all fine, execpt when our code calls await useTheSystem(), it's possible that the system isn't ready yet!
+this is a JavaScript question now, generalized away from any specific API or platform or system
+what is the best way to "pause" execution at [A] until the system is ready?
+(of course, nothing will really pause, as other events, like the callback, can happen, as JavaScript is event based and asynchronous)
+also, to make [A] work well, we can absolutely add code to position [B]
+*/
+
+
+
+
+
+
+
+
+
+async function turnstileExecute() {
+	if (useTurnstileHere() && refTurnstileRendered.value /* window.turnstile && refTurnstileElement.value <-- changed checks */) {
+		log('hi in name component turnstile execute; executing to get a token...')
+		window.turnstile.execute(refTurnstileElement.value)//ask turnstile to make a new token
+	}
+}
+//possible time delay, spinner, or interactive challenge happens between these two here
+function turnstileCallback(token) {//turnstile has made a new token for us
+	log('...callback got token: '+token)
+	refTurnstileToken.value = token
+}
+
+
+
+/*
+[]factor turnstile into this component which is easy for a form that needs turnstile protection to use
+
+[]also, make turnstile a noop when local, maybe all the way up to app.vue?
+[]and, you have to make this not reuse a token! have it keep the token, and zero it out once used, maybe
+unless that is a complex pattern to keep track of
+*/
+
+async function runTurnstileToMakeToken() {
+	return 'token'
+}
+defineExpose({runTurnstileToMakeToken})
+/*
+ok, but how do you communicate your token is ready back up to the parent component?
+your idea was await the exposed function
+but are worried you can't find more than two mentions of defineExpose in the official documentation
+so maybe the more standard and introductory message passing pattern is better here
+
+FormComponent has a TurnstileComponent
+and sends it commands like:
+-1 render, meaning prepare to make a token
+-2 execute, meaning make a token now
+and the component sends messages back up, like
+-1 rendered, ready for you to call execute
+-2 executed, and here is your token
+ok but then what happens if:
+-the form calls render and execute back to back, and we're still polling? we need to cache the execute request and do it as soon as we're done
+-the form tries to double-use a token; instead there should be a clear way to get a second working token when the user tries new info in the form
+
+okay, lots to think about here
+
+
+
+
+*/
+
+
+
+
+
+
+
+
+/*
+here are the states of turnstile as we use it, from site load to second form submission:
+
+1 included - starting point when using turnstile; already the case because turnstile is in app.vue
+2 loaded - may have to wait for this; detect with if (window.turnstile)
+3 rendered - only async if we're waiting for mounted; call render() in form component onMounted
+4 executed - call execute() when user has got form data ready to submit; async through possible spinner; makes token
+5 submitted - call submit() when you're going to POST the token; component needs to know to not use it again
+
+if the user wants to use the form again, states 4 and 5 happen again--earlier states aren't repeated
+
+so here's how you do it all with a single async function: await turnstileExecute()
+you include <TurnstileComponent /> in your form, and it takes care of mounting and rendering
+when the form is ready to submit, you call await turnstileExecute()
+which waits for mounted and rendered, if those haven't finished yet, and then makes the token, maybe showing the spinner
+then, it returns the token to submit; at this point, it assumes you're going to use that token
+if the user wants to use the form again, call await turnstileExecute() again, and you'll get a new token
+
+if you call turnstileExecute() twice, toss
+if you call turnstileExecute() before things are ready, it just includes that in the await
+*/
+
+
+
+
+
+
+
+
+/*
+ok, now let's modify this to allow multiple calls to execute
+if there's an execute call in flight, that's not allowed--i want to throw an exception! calling code should never do that
+but, it is valid for calling code to do let token = await turnstileExecute(), get the token, and then later, want to repeat the process
+
+here are my ideas about how to do this:
+-while promise1 needed to be outside so turnstileExecute could await it, promise2 has a simpler job; we could move it into turnstileExecute entirely
+-even if that's true and we do that refactor, resolve2 needs to be on the margin so turnstileCallback can reach it
+
+we need a mechanism so that if a second call comes into turnstileExecute, it throws
+
+*/
+
+let executing = false
+async function oneAtATimePlease() {
+	if (executing) toss('state')
+	executing = true
+	try {
+		let r = await someApiCall()
+	} finally {
+		executing = false
+	}//if the api call throws, we need to set executing before we leave, but *do* want the exception to propegate upwards
+	return r
+}
+//im learning about promises in javascript, and want to make sure that while this async function can be called a second time after a first call returns, while execution is awaiting inside, a second call is blocked. is this a common pattern? is the solution i came up with here common or correct? (as in, first, does it work, and second, is this the best practice solution for this problem)
 
 
 
