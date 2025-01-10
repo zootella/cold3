@@ -385,6 +385,48 @@ DO uncheck the box, which will take things back to first
 
 
 
+ok, so if you switch to bury the turnstile darkpenny time in the orange submit
+does that mean you don't have to uncheck the box?
+you think so
+
+user naviages to form, blank
+user fills out form, not submittable yet
+user gets the form submittable: turnstile token starts
+user clicks submit: button turns orange
+
+as soon as the turnstile token is generated, form automatically POSTs to the api endpoint
+the whole time, the button is orange
+
+response received--the form is still submittable, the token has been blanked
+the button goes back to green
+now if the user wants to submit the form again, they press the button again
+their click starts the second turnstile token execution+api POST sequence, orange the whole time
+
+so that's a pretty complex state machine
+and if you're back in there redesigning it, maybe also keep track of when a token is 2 minutes old and should be refreshed
+there can only be one .execute() at a time
+you're already calling .refresh() before every .execute(), and that's working well
+so then the following things can prompt making a new token:
+-once the first time, the user has gotten the form ready to submit
+-the user has pressed submit (without a current execute in flight, of course, probably a second use)
+and separately a 2*Time.minute timeout can throw away an expired token
+
+yeah, that's a pretty good design
+and if cloudflare decides this user really does need an interactive checkbox, then the experience is:
+-the user fills out the form, the button goes gray to green
+-the user presses Submit, the button goes animate orange (which is again disabled to prevent a second click)
+-below the button, a new annoying checkbox cloudflare thing appears, the user checks it; the orange button above is still spinnin'
+-the whole thing works
+ok, so that isn't that bad, actually
+and as a whole, this is a better design than making the user wait, after filling out the form, to be able to press submit
+
+
+
+currently just an orange button, in actual desing of course there will be:
+[]animation on the button to assure the user things are under way
+[]instrumentation through datadog or something to measure how long real users are delayed by turnstile+POST 
+
+
 
 
 
