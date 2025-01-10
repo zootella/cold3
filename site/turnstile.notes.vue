@@ -486,6 +486,13 @@ and you like it how your observed behavior of turnstile, in that it takes 3 seco
 
 
 
+ok, here's the redesign:
+[]for debug, the turnstile component shows its spinner, as well as some text which shows what part of the process it's on
+show it on a form beneath the submit button;
+we're assuming that it'll never appear with a checkbox,
+and that we can bury its 3s delay in the user filling out the form,
+or the button being orange
+
 
 
 
