@@ -502,6 +502,25 @@ or the button being orange
 
 
 
+/*
+ok, for the new design, mount+load+render+execute all happen onMounted, getting the token ready right when the user navigates to the form
+then, the async function which the form uses to get the token is getToken()
+when the form calls getToken(), we could be in a few different states:
+
+(a) we're still waiting for the first automatic execute call to finish, so we await that, and return the first new fresh token
+(b) the first automatic execute call did finish, and the token is still fresh, so we return it without delay
+(c) the first token is too old to use, so upon the getToken() call, we reset and execute again to start making a new one, which we return when it's ready
+
+after the first call to getToken(), the form could call getToken() again to get a second new token
+(d) this is the second call to getToken(), so we start a new call to execute() and make the user wait the whole time
+
+
+could you write a single async function which you can call multiple times, and which onMounted calls,
+which discards additional calls in, because we're doing it already
+and which only renders once if necessary
+
+
+*/
 
 
 
