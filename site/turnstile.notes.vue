@@ -430,40 +430,56 @@ currently just an orange button, in actual desing of course there will be:
 
 
 
+ok, let's take a step back here
+the amount of time between a user getting form data submittable, and pressing Submit, is probably less than a second
+and the turnstile token generation times you're seeing are like 3 seconds
+so taking the amount of time the user must wait down to 2.5 seconds from 3 seconds isn't really significant
+
+favoring simplicity, especially considering client side state logic (with vue, web3, turnstile, everything) gets really crazy really fast, may be the best approach
+users will only interact with turnstile once, when signing in--then they stay signed in indefinitely
+so you could just do this really simple approach:
+1 user visits blank form, button gray, turnstile quiet
+2 user fills out form, button green, turnstile quiet
+3 user presses submit: button orange, submit handler always does these two things one after the other: generate token, then POST to api
+also done this way, you don't have to worry about expired tokens--the page only generates a token right before submitting it, so they're by definition fresh
+
+ok, so that's the simple option
+now you've thought of the alternative fancy one
+
+if there's always going to be a 3 second delay, and you want to hide that from the user,
+generate the token as soon as the user visits the form
+you have to code in the following fancy timing:
+-when the user presses submit, if there's a token in flight, you wait for it, if not, you do token+post
+-if the token expires, you blank it--don't recreate it; have submit take 4 seconds in this unusual case
+as usually goes with these things, you're currently thinking "yeah, that's not too bad"
+
+if cloudflare wants to show the checkbox, then it'll appear right at the start, or while the user is filling out the form
+so, it may make sense to put the widget above the submit button--if it shows, it'll push the submit button down before the user gets to the end
 
 
+can you build token expiration into TurnstileComponent?
+when it's made a token, it starts a 1*Time.second interval to notice when it's expired
+and set an expiration time to 2 minutes or something--documentation says 5 minutes, you remember seeing something about 3 minutes, maybe from chat
+in testing you'll make that like 10 seconds or something
+and when it's expired, it blanks its own record as well as calling window.turnstile.reset()
+this assumes you can call reset twice in a row, but you probably can
 
 
+so with this design, TurnstileComponent does all of the following onLoad:
+waits for load
+renders
+executes to make a token
+(and after an expiration time)
+resets and blanks the token
 
+and then when the form calls getToken or whatever
+if it has a token, it returns it immedately
+if it's in the process of making a token, it awaits for that to finish and returns it
+if there's not token nor execution in flight, it executes and awaits, to return the token
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+yeah, that's sorta complicated
+but you like it how you may be able to comparmentalize it all into TokenComponent
+and you like it how your observed behavior of turnstile, in that it takes 3 seconds but doesn't show a checkbox, is completely hidden from the user signing up or in for the first time
 
 
 
