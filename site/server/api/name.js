@@ -11,8 +11,6 @@ async function doorProcessBelow(door) {
 	let o = {}
 	log('hi in server api name.js; we got the turnstile token '+door.body.turnstileToken)
 
-	dog(look(door.body))
-
 	await checkTurnstileToken(door.body.turnstileToken)
 
 	o.note = `turnstile good!; name api will check "${door.body.name}" in ${Sticker().all}`
