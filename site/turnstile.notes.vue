@@ -353,6 +353,32 @@ DO uncheck the box, which will take things back to first
 
 
 
+			//choices here are "invisible", "normal", "compact", "flexible", but compact is way bigger than normal!
+			//to see the spinner, you changed the dashboard from Invisible to Non-interactive, and changed this setting from "invisible" to "normal"
+			/*
+			ttd january
+			if you don't like the way the widget looks, it will be easy to generate your own spinner
+			without moving the submit button, have a spot that says something like "one moment as we check for bots..." or something
+			and have that animate
+			and only show up if it's been 400ms or something that we're making the user wait
+
+			what if the user finishes the form, and then lingers? the token will expire
+			so a really sophisticated TurnstileComponent would notice this, and *regenerate* the token after 2.5 minutes or something
+
+			the other option, which would only work if it's true that non interactive means there's never a checkbox
+			would be to bury the turnstile delay in the submission
+			this is the most expected for the user, as servers are commonly slow (not here at cold3.cc, though!)
+			so, this is simpler and better, but breaks the following way if the widget suddenly shows its checkbox
+			the user presses submit, the button turns disabled and orange, and then jumps downwards, because rendered above it is another thing to do--the checkbox
+			so, that's pretty unacceptable, but also typical for these days of the horrible broken web
+			and you could code it up that way until you see someone get a checkbox appear
+
+			documented behavior is turnstile non-interactive could still show a checkbox
+			but observed behavior is that it doesn't
+			also the name, non-interactive, seems to indicate there won't be a checkbox
+
+			if you do this, then there are two timeouts to observe--how long token generation happened, and how long the POST took
+			*/
 
 
 

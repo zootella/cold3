@@ -42,7 +42,9 @@ async function getToken() {//gets called when form data is submittable
 		refToken.value = await refTurnstileComponent.value.turnstileExecute()
 
 	} catch (e) {
-		log('get token caught', {e})
+		log('get token caught', look({e}))
+		refTerms.value = false//uncheck the box so user action will try again (otherwise causes infinite loop of token execution!)
+		refToken.value = ''//shouldn't have been able to set anything but just in case
 	} finally {
 		refGettingToken.value = false
 		log('get token end')
@@ -91,7 +93,7 @@ function clickedSnippet() {
 </p>
 <p>Response: <i>{{ refResponse }}</i></p>
 
-<p><button @click="clickedSnippet">Snippet</button></p>
+<!-- <p><button @click="clickedSnippet">Snippet</button></p> -->
 
 </div>
 </template>

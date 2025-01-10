@@ -2010,30 +2010,54 @@ if you change the code, a new deploy takes 5-10min, so use vhs.cjs
 (right now, you're working with chat on a turnstile guide)
 that will become TurnstileComonent.vue, the note in app.vue, and some additional notes here
 
+in the dashboard:
+Widget Mode
+() Managed: Cloudflare will use information from the visitor to decide if an interactive challenge should be used. If we do show an interaction, the user will be prompted to check a box (no images or text to decipher).
+() Non-interactive: A purely non-interactive challenge. Users will see a widget with a loading bar while the browser challenge is run.
+() Invisible: Invisible challenge that does not require interaction.
+
+and then in code:
+window.turnstile.render({size: 'invisible'})
+choices here are:
+-invisible
+-normal
+-compact
+-flexible
+
+you've tried these two paired combinations:
+[1] dashboard Invisible, size invisible
+[2] dashboard Non-interactive, size normal
+
+with invisible, you observed a long (several second) time delay
+with normal, you're seeing first a vertical gap, then the spinner, then the green all good
+
+compact is much taller than normal, size normal is actually the most compact
+you haven't ever seen the checkbox, maybe because invisible is also non-interactive, and non-interactive is what it is titled to mean
+but documentation doesn't make this promise--saying that in extreme situations, the widget could show the checkbox to wait for a human click
+
+right now for cold3.cc/name, you're going with non-interactive+normal
+later for production you'll probably go back to invisible+invisible
+if you do that you either need to show your own spinner before the user clicks submit
+
+or, hide the turnstile page work time in the submit,
+which will be great user experience as instead of weird bot messages and waiting, it just looks like the fetch took a few seconds, common on the modern broken consumer web
+but will be pretty bad if turnstile suddenly starts showing checkboxes
+
+
+
+you were getting this message in the browser console:
+"[Cloudflare Turnstile] Call to execute() on a widget that was already executed (cf-chl-widget-k***8), execute() will return the previous token obtained. Consider using reset() before execute() to obtain a fresh token."
+and put a call to .reset() before every, even the first, call to .execute()
+seems like a kludge, but now things are running smoothly
+window.turnstile.reset()//calling reset before every, even the first, execute, to avoid ttd january, trying always reset to begin, a little bit of a kludge 
+window.turnstile.execute(refTurnstileElement.value)//make a turnstile token
+
+
 
 additional features you're not using yet, but which may be good
 https://developers.cloudflare.com/turnstile/concepts/pre-clearance-support/
 designed for SPAs, which we are, so that you can include turnstile on every POST but not get turnstile bothering the user
 you think; the turnstile documentation isn't super clear when trying to parse out just our use case
-
-Choose level of pre-clearance
-Interactive
-Allows a user with a clearance cookie of this level to not be challenged by Interactive, Managed or JavaScript Challenge Firewall Rules
-Managed
-Allows a user with a clearance cookie of this level to not be challenged by Managed Challenge or JavaScript Challenge Firewall Rules
-Non-interactive
-Allows a user with a clearance cookie of this level to not be challenged by JavaScript Challenge Firewall Rules.
-no idea what all that is
-and also, no idea where to set the cookie expiration
-
-
-
-
-
-
-
-
-
 
 
 

@@ -4,7 +4,7 @@ import {
 log, look, Now, Time, Sticker,
 useTurnstileHere,
 } from 'icarus'
-import {ref, onMounted, defineExpose} from 'vue'
+import {ref, onMounted, /*defineExpose*/} from 'vue'//warning about defineExpose being a compiler macro that doesn't need to be imported
 
 /*
 here are the states of turnstile as we use it, from site load to second form submission:
@@ -75,7 +75,7 @@ onMounted(() => {//this component has been rendered and inserted into the page's
 	}
 })
 const ACCESS_TURNSTILE_SITE_KEY_PUBLIC = '0x4AAAAAAA0P1yzAbb7POlXe'
-let resolve1; let promise1 = new Promise(resolve => { resolve1 = resolve })//promisifying the load and render steps
+let resolve1; let promise1 = new Promise(s => { resolve1 = s })//promisifying the load and render steps
 function turnstileRender() {
 	log('~~ turnstile render!')
 	window.turnstile.render(//this call returns synchronously, and when it does, turnstile is ready to execute
@@ -83,41 +83,29 @@ function turnstileRender() {
 		{
 			sitekey: ACCESS_TURNSTILE_SITE_KEY_PUBLIC,
 			callback: turnstileCallback,//after we call execute(), turnstile will give this callback the token
-			size: 'invisible',//don't show the spinner or checkbox to the user unless things seem suspicious
+			'error-callback': turnstileErrorCallback,			
+			size: 'normal',
+			/*
+			size options are: "invisible"|"normal"|"compact"|"flexible"
+			related is the dashboard's Widget Mode options of: ()Managed|(x)Non-interactive|()Invisible
+			*/
 			execution: 'execute',//don't generate a token now; we'll call turnstile.execute() to make the token later
 		}
 	)
 	resolve1()//turnstile is loaded and rendered; let a call to execute below proceed
 }
 
-let resolve2, promise2//promisifying the execute and wait for callback step
+let resolve2, reject2, promise2//promisifying the execute and wait for callback step
 async function turnstileExecute() {//generate a new turnstile token on the page to POST along with form submission from an untrusted user
 	log('~~ turnstile execute!')
 	if (promise2) toss('state')//you can call turnstileExecute() again, but only after a awaiting call has returned
 	let token
 	try {
 		await promise1//return here after turnstile is loaded and rendered
+		window.turnstile.reset()//calling reset before every, even the first, execute, from a suggestion in the Console
 		window.turnstile.execute(refTurnstileElement.value)//make a turnstile token
-		/* the browser may compute a hash that takes a split second, or the user may see a spinner or have to check a checkbox
-			 when the token is made, turnstile will call our callback below */
-		promise2 = new Promise(resolve => { resolve2 = resolve })//set promise2 truthy to block an overlapping call into execute
+		promise2 = new Promise((s, j) => { resolve2 = s; reject2 = j })//set promise2 truthy to block an overlapping call into execute
 		token = await promise2//return here after turnstile has called our callback below
-
-		/*
-		ok, so the problem is, when turnstile throws, like you're testing it locally so it correctly can't work
-		browser Console shows uncaught TurnstileError
-		turnstileCallback below never happens
-		execution never reaches here
-		your form thinks (sorta correctly) that turnstile token generation hasn't finished yet
-
-		Uncaught TurnstileError: [Cloudflare Turnstile] Error: 110200.
-    at m (api.js:1:10491)
-    at k (api.js:1:36001)
-
-    following web standards and vue 3 composition api patterns and best practices
-    what is the correct way to find out about this error?
-    ironclad, even if the call to window.turnstile.execute responds via the callback, we need to know its result, success or fail, not matter what
-		*/
 	} finally {
 		promise2 = null//let an exception throw upwards, but keep promise2 correct as a marker for execution in progress
 	}
@@ -125,8 +113,12 @@ async function turnstileExecute() {//generate a new turnstile token on the page 
 }
 defineExpose({turnstileExecute})//let the form that we're a part of call turnstileExecute() to make and get a token to POST
 function turnstileCallback(token) {//turnstile has made a new token for us
-	log(`~~ turnstile callback! token is ${token.length} characters`)
+	log(`~~ turnstile callback! token is ${token.length} characters: ${token}`)
 	resolve2(token)//resolve the promise with the token so turnstileExecute can return it
+}
+function turnstileErrorCallback(errorCode) {//getting a error code number as a string, like "110200"
+	log(`~~ turnstile ERROR callback! error code is ${errorCode}`)
+	reject2(errorCode)
 }
 
 </script>
