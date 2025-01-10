@@ -1336,8 +1336,7 @@ test(async () => {
 //                                        
 
 export function useTurnstileHere() {
-	return true
-	//return Sticker().isCloud
+	return Sticker().isCloud
 	//todo january, replace with something ironclad that uses door, not fingerprinting. if uncertainty, go cloud not local
 }
 
