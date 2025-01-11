@@ -1337,7 +1337,11 @@ test(async () => {
 
 export function useTurnstileHere() {
 	return Sticker().isCloud
-	//todo january, replace with something ironclad that uses door, not fingerprinting. if uncertainty, go cloud not local
+	//todo january, replace with something ironclad that uses door, not fingerprinting. if uncertain, go cloud not local
+	/*
+	if (where({uncertain: 'cloud'}) == 'cloud')
+	maybe this is how you design this
+	*/
 }
 
 //used in app.vue to get the turnstile script on the whole site, just in case we need to use it
@@ -1355,13 +1359,10 @@ export function addTurnstileHeadScript(head) {
 //used by trusted code in a worker for a nuxt api handler, to validate a turnstile token submitted with form data from an untrusted user
 export async function checkTurnstileToken(token) {
 	if (!useTurnstileHere()) return
-	log('checkTurnstileToken got a token of length '+token?.length)
 	const access = await getAccess()
 	let response = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
 		method: 'POST',
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-		},
+		headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 		body: new URLSearchParams({
 			secret: access.get('ACCESS_TURNSTILE_SECRET'),
 			response: token,

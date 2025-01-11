@@ -2007,57 +2007,72 @@ if you change the code, a new deploy takes 5-10min, so use vhs.cjs
  \__|\__,_|_|  |_| |_|___/\__|_|_|\___|
                                        
 
-(right now, you're working with chat on a turnstile guide)
-that will become TurnstileComonent.vue, the note in app.vue, and some additional notes here
+cloudflare turnstile is better than recaptcha because not google, and no clicking traffic lights
+https://developers.cloudflare.com/turnstile/get-started/
+we're also on cloudflare pages, a site hosted anywhere can use turnstile the same way we do
 
-in the dashboard:
-Widget Mode
-() Managed: Cloudflare will use information from the visitor to decide if an interactive challenge should be used. If we do show an interaction, the user will be prompted to check a box (no images or text to decipher).
-() Non-interactive: A purely non-interactive challenge. Users will see a widget with a loading bar while the browser challenge is run.
-() Invisible: Invisible challenge that does not require interaction.
+start in the dashboard
+widget name: turnstile1
+hostname management: cold3.cc
+widget mode: invisible
+pre-clearance: no
 
-and then in code:
-window.turnstile.render({size: 'invisible'})
-choices here are:
+and then get the site key and secret key, which in our code will be:
+ACCESS_TURNSTILE_SITE_KEY_PUBLIC, available to untrusted front-end code, revealed to users
+ACCESS_TURNSTILE_SECRET, securely and secretly stored in the cloudflare worker
+
+app.vue loads Turnstile site-wide as soon as the user navigates to any route
+if later the user navigates to a turnstile-protected form, turnstile already has signals that indicate human behavior
+
+in the dashboard, Widget Mode choices are:
+-Managed
+-Non-interactive
+-Invisible
+and in code, window.turnstile.render size options are:
 -invisible
 -normal
 -compact
 -flexible
 
-you've tried these two paired combinations:
-[1] dashboard Invisible, size invisible
-[2] dashboard Non-interactive, size normal
+running configured invisible+invisible, widget doesn't show up, 2.3 second delay
+running configured noninteractive+normal, widget shows up, then sometimes disappears, 2.3 second delay, and shows a spinner, or a green check in a circle
+you haven't seen the checkbox the user must check, but officially, that's a possibility you can't rule out
+coding turnstile you configured it noninteractive+normal
+[]but to use it later you'll change back to invisible+invisible
 
-with invisible, you observed a long (several second) time delay
-with normal, you're seeing first a vertical gap, then the spinner, then the green all good
+so, because the time delay is noticeably long, and there's no user interaction, your user experience desigin plan is this:
+when the user navigates to the form, turnstile executes to get a token invisibly
+the user won't notice any delay unless they fill out and submit the form faster than 2.3 seconds, or longer than 4 minutes
+a really fast user will get the remaining delay hidden into the submit button being orange
+a really slow user will get the full delay baked
+so even if our api endpoint gets back in milliseconds, it will look like the server took a few seconds
+this is a normal and expected experience on the consumer web today
 
-compact is much taller than normal, size normal is actually the most compact
-you haven't ever seen the checkbox, maybe because invisible is also non-interactive, and non-interactive is what it is titled to mean
-but documentation doesn't make this promise--saying that in extreme situations, the widget could show the checkbox to wait for a human click
+with this design, we're never showing turnstile feedback,
+and hiding the time delay in the user's typing in the form and the submit button
+the submit button already needs a good visual "working on it" appearance (like pink hearts bubbling up or something)
+and that spinner will work for both delays
+here, we've also grouped two progress bars into a single progress bar, à la Office Space
 
-right now for cold3.cc/name, you're going with non-interactive+normal
-later for production you'll probably go back to invisible+invisible
-if you do that you either need to show your own spinner before the user clicks submit
-
-or, hide the turnstile page work time in the submit,
-which will be great user experience as instead of weird bot messages and waiting, it just looks like the fetch took a few seconds, common on the modern broken consumer web
-but will be pretty bad if turnstile suddenly starts showing checkboxes
-
-
-
-you were getting this message in the browser console:
-"[Cloudflare Turnstile] Call to execute() on a widget that was already executed (cf-chl-widget-k***8), execute() will return the previous token obtained. Consider using reset() before execute() to obtain a fresh token."
-and put a call to .reset() before every, even the first, call to .execute()
-seems like a kludge, but now things are running smoothly
-window.turnstile.reset()//calling reset before every, even the first, execute, to avoid ttd january, trying always reset to begin, a little bit of a kludge 
-window.turnstile.execute(refTurnstileElement.value)//make a turnstile token
-
-
+even configured invisible, turnstile documentation says that there's a possibility it will show up for the user to check a box
+if it does this, the experience will be:
+while the button is orange, beneath it, the widget appears
+the user checks the box, and then the orange button finishes normally
+this experience is below our standard for user experience on the site, but is totally normal for average websites
+also, it may never happen if "non-interactive" and "invisible" really mean those things
 
 additional features you're not using yet, but which may be good
 https://developers.cloudflare.com/turnstile/concepts/pre-clearance-support/
 designed for SPAs, which we are, so that you can include turnstile on every POST but not get turnstile bothering the user
-you think; the turnstile documentation isn't super clear when trying to parse out just our use case
+
+also there's stats about turnstile in the dashboard
+see if you can see how long the browser hashing delay is for real useres, ideally p50 and p95
+and if the widget has ever shown anyone the checkbox
+
+
+
+
+
 
 
 
