@@ -1034,7 +1034,7 @@ if there's no localStorage, getBrowserTag() will throw an exception
 */
 const browserTagName = 'current_session_password'
 const browserTagValuePrefix = 'account_access_code_DO_NOT_SHARE_'
-export function getBrowserTag() {
+export function getBrowserTag() {//use from a comonent's onMounted to be sure local storage is there
 	let v = localStorage.getItem(browserTagName)
 	if (
 		hasText(v) &&
@@ -1047,10 +1047,9 @@ export function getBrowserTag() {
 
 		let tag = Tag()
 		localStorage.setItem(browserTagName, browserTagValuePrefix+tag)
-		return tag
+		return tag//return the tag we just made, and tried to set for next time
 	}
 }
-
 
 
 

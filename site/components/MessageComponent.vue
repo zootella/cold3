@@ -5,11 +5,12 @@ log, look, Now, sayTick, newline, Data, Tag,
 getBrowserTag,
 validateEmail, validatePhone,
 } from 'icarus'
+import {ref, reactive, onMounted} from 'vue'
 
-import { ref, reactive, onMounted } from 'vue'
-
+let browserTag
 onMounted(async () => {//doesn't run on server, even when hydrating
-	stick(`${getBrowserTag()} is this browser's tag`)
+	browserTag = getBrowserTag()
+	stick(`${browserTag} is this browser's tag`)
 	await signCheck()
 })
 
@@ -22,9 +23,9 @@ async function callAccount(action) {
 		let response = await $fetch('/api/account', {
 			method: 'POST',
 			body: {
-				browserTag: getBrowserTag(),
+				browserTag,
 				password: passwordModel.value,
-				action
+				action,
 			}
 		})
 		t = Now() - t
@@ -42,11 +43,7 @@ async function runSnippet() {
 	try {
 		let response = await $fetch('/api/snippet', {
 			method: 'POST',
-			body: {
-				browserTag: getBrowserTag(),
-				now: Now(),
-				tag: Tag()
-			}
+			body: {browserTag, now: Now(), tag: Tag()}
 		})
 		log('success', look(response))
 		return response
@@ -78,10 +75,7 @@ async function sendMessage() {
 	try {
 		let response = await $fetch('/api/message', {
 			method: 'POST',
-			body: {
-				browserTag: getBrowserTag(),
-				provider, service, address, message,
-			}
+			body: {browserTag, provider, service, address, message}
 		})
 		log('api message success', look(response))
 		return response
@@ -102,20 +96,6 @@ function addressKey() {
 	addressStatus.value = c
 }
 
-/*
-bookmark
-to this, you want to add
-if you're signed in, messaging controls appear below
-()amazon ()twilio
-to[]
-message[]
-[send]
-you can type an email or phone number into to
-and a short single line note
-it outputs the timestamp it put on it, like
-amazon calls cold3<>net23, also
-*/
-
 </script>
 <template>
 
@@ -131,8 +111,6 @@ amazon calls cold3<>net23, also
 </div>
 
 <div>
-
-
 	<p><input type="text" v-model="addressModel" @input="addressKey" placeholder="email, phone, or user name" /> <i>{{ addressStatus }}</i></p>
 	<p><input v-model="messageModel" type="text" placeholder="message" />
 	<input type="radio" id="idProviderA" value="Amazon." v-model="providerModel" /><label for="idProviderA">Amazon</label>

@@ -1,13 +1,16 @@
 <script setup>
 
-import { ref, reactive, onMounted } from 'vue'
 import {
 log, look, Now, sayTick, newline, Data, Tag,
-getBrowserTag
-} from 'icarus'
+getBrowserTag,
 
+} from 'icarus'
+import {ref, reactive, onMounted} from 'vue'
+
+let browserTag
 onMounted(async () => {//doesn't run on server, even when hydrating
-	stick(`${getBrowserTag()} is this browser's tag`)
+	browserTag = getBrowserTag()
+	stick(`${browserTag} is this browser's tag`)
 	await signCheck()
 })
 
@@ -20,9 +23,9 @@ async function callAccount(action) {
 		let response = await $fetch('/api/account', {
 			method: 'POST',
 			body: {
-				browserTag: getBrowserTag(),
+				browserTag,
 				password: passwordModel.value,
-				action
+				action,
 			}
 		})
 		t = Now() - t
@@ -40,11 +43,7 @@ async function snippet() {
 	try {
 		let response = await $fetch('/api/snippet', {
 			method: 'POST',
-			body: {
-				browserTag: getBrowserTag(),
-				now: Now(),
-				tag: Tag()
-			}
+			body: {browserTag, now: Now(), tag: Tag()}
 		})
 		log('success', look(response))
 		return response
@@ -57,20 +56,6 @@ let passwordModel = ref('')
 let statusText = ref('(no status yet)')
 let stickText = ref('')
 function stick(s) { stickText.value += s + newline + newline }
-
-/*
-bookmark
-to this, you want to add
-if you're signed in, messaging controls appear below
-()amazon ()twilio
-to[]
-message[]
-[send]
-you can type an email or phone number into to
-and a short single line note
-it outputs the timestamp it put on it, like
-amazon calls cold3<>net23, also
-*/
 
 </script>
 <template>
@@ -107,3 +92,14 @@ textarea {
 }
 
 </style>
+
+
+
+
+
+
+
+
+
+
+
