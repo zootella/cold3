@@ -9,6 +9,7 @@ export default defineNuxtConfig({
 	devtools: {enabled: true},//from nuxt
 	modules: [
 		'nitro-cloudflare-dev',//from cloudflare
+		'@pinia/nuxt',//from pinia
 		'@nuxtjs/tailwindcss',//from tailwind
 		'nuxt-og-image',//from ogimage
 	],

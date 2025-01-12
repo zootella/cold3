@@ -1358,6 +1358,7 @@ export function addTurnstileHeadScript(head) {
 //used by trusted code in a worker for a nuxt api handler, to validate a turnstile token submitted with form data from an untrusted user
 export async function checkTurnstileToken(token) {
 	if (!useTurnstileHere()) return
+	checkText(token)//before bothering cloudflare, make sure we got some text for token
 	const access = await getAccess()
 	let response = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
 		method: 'POST',
@@ -1369,6 +1370,7 @@ export async function checkTurnstileToken(token) {
 	})
 	if (!response.success) toss('turnstile challenge failed', {token, response})
 }
+//ttd january--just realized you're using $fetch in level2.js above, but this is technically a violation of isomorphism as level2 is in icarus so these should work for lambda, too! so does that mean you just refactor these three back up to were you call them? or pass in $fetch? or just not worry about this, as it seems to not make the lambda crash!?
 
 
 

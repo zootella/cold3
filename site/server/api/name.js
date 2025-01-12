@@ -9,7 +9,6 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorProcessBelow(door) {
 	let o = {}
-	log('hi in server api name.js; we got the turnstile token '+door.body.turnstileToken)
 
 	await checkTurnstileToken(door.body.turnstileToken)
 
