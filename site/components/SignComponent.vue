@@ -31,80 +31,28 @@ and really shows that this code is only for a page running with the user
 let browserTag
 onMounted(() => {//doesn't run on server, even when hydrating
 	browserTag = getBrowserTag()
-	signCheck()//async but not awaiting
 })
+//something this doesn't do yet is cache the signed-in status once we know it; each call here bothers the database. not doing that here because we'll do that in pinia soon
 
-async function signCheck() {
-	let response = signFetch({action: 'SignCheck.'})
+async function signAsk() {
+	return (await signFetch({action: 'SignAsk.'})).signedIn2//returns true or false we're signed in
 }
 async function signOut() {
-	let response = signFetch({action: 'SignOut.'})
+	await signFetch({action: 'SignOut.'})//no return, but throws on server reports error
 }
 async function signIn(password) {
-	let response = signFetch({action: 'SignIn.', password})
+	return await signFetch({action: 'SignIn.', password})//returns the server body, with details like bad password
 }
+defineExpose({signAsk, signOut, signIn})
 
 async function signFetch(body) {
 	body.browserTag = browserTag
-	let response = await $fetch('/api/account2', {method: 'POST', body})
+	return await $fetch('/api/account2', {method: 'POST', body})
 	//totally fine to let exceptions go all the way up to the component that called us, remember (but check to see what this is like!)
-	return response
 }
 
-
-	let response = await $fetch('/api/account2', {
-		method: 'POST',
-		body: {browserTag, password: passwordModel.value, action: "SignIn."}
-	})
-
-	let response = await $fetch('/api/account2', {
-		method: 'POST',
-		body: {browserTag, action: "SignOut."}
-	})
-
-	let response = await $fetch('/api/account2', {
-		method: 'POST',
-		body: {browserTag, action: "SignCheck."}
-	})
-
-
-
-async function signIn(password)    { await callAccount('action in')    }//these should be "In." "Out." "Check."
-async function signOut()   { await callAccount('action out')   }
-async function signCheck() { await callAccount('action check') }
-async function callAccount(action) {
-	try {
-		let t = Now()
-		let response = await $fetch('/api/account2', {
-			method: 'POST',
-			body: {
-				browserTag,
-				password: passwordModel.value,
-				action,
-			}
-		})
-		t = Now() - t
-		log('success', look(response))
-		statusText.value = `This browser is ${response.signedIn2 ? 'signed in. 🟢' : 'signed out. ❌'} Fetch: ${t}ms. Note: ${response.note}`
-		return response
-	} catch (e) {
-		log('caught', e)
-	}
-}
-
-let passwordModel = ref('')
-let statusText = ref('(no status yet)')
-let stickText = ref('')
-
+//note no template below (which apparently is OK), but we're still a component to use onMounted
 </script>
-<template>
-<div>
-
-sign-in component to try refactoring from account component and message component
-
-</div>
-</template>
-
 
 
 
