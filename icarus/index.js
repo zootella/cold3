@@ -36,11 +36,9 @@ but then all the code above, which just gets it from icarus, doesn't need to cha
 //once done, move groups of functions into the correct levels below
 export {
 
-settings_getText, settings_getNumber, settings_setText, settings_setNumber,
-counts_getGlobalCount, counts_setGlobalCount, counts_getBrowserCount, counts_setBrowserCount,
-access_addRecord, access_getRecords,
 accessTableInsert, accessTableQuery,
-rowExists, createRow, readRow, writeRow,
+
+countGlobal_rowExists, countGlobal_createRow, countGlobal_readRow, countGlobal_writeRow,
 database_pingCount,
 
 } from './desktop.js'

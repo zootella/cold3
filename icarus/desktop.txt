@@ -504,6 +504,38 @@ if something doesn't have a suffix, then it hits it with whole integer negative 
 
 
 
+2025jan19
+diving back into katy
+
+
+
+
+can you reflect types with column names
+don't use square encoding
+have high level, save, but not table nor application specific database functions
+
+crazy idea to have local posgres and your own wrapper functions
+less crazy idea to have test versions of tables, tests use them, you can switch the whole thing between them
+card to export and import the database, the round trip
+
+
+
+what if there was an object, static, that describes a table
+names it, and what the columns are
+so then you use that to setup a table
+it switches between test and real
+and it checks that you're specifying a row correctly
+
+imagine there are data functions
+they take, as a first argument, schema, which says what table, has the sql command that creates the table
+these are const and you import them
+
+
+should tags be UNIQUE?
+chat says yes, because of the principal of defense in depth
+also, if you label a column unique, then postgres builds a b tree index
+which makes lookups by tag faster
+you won't really be doing lookups by tag, though
 
 
 
@@ -521,6 +553,159 @@ if something doesn't have a suffix, then it hits it with whole integer negative 
 
 
 
+
+
+
+
+actually exported from desktop.js:
+
+
+
+
+
+
+
+
+
+
+
+export async function accessTableInsert(browser_tag, signed_in) {
+export async function accessTableQuery(browser_tag) {
+
+
+
+export async function rowExists() {
+export async function createRow() {
+export async function readRow() {
+export async function writeRow(newValue) {
+
+export async function database_pingCount() {
+
+
+
+
+
+
+
+
+
+
+
+/*
+types are indicated by column names
+
+*/
+function checkCell(column, value){//column name and cell value
+	let type = _type(column)
+	if      (type == 'enum') { checkInt(value)    }//a boolean saved as the int 0 or 1 which could become an enum
+	else if (type == 'tick') { checkInt(value)    }//a tick count of an actual time something happened
+	else if (type == 'int')  { checkInt(value)    }//integer
+	else if (type == 'tag')  { checkTag(value)    }//a tag, 21 letters and numbers
+	else if (type == 'hash') { checkHash(value)   }//a sha256 hash value encoded to base32, 52 characters
+//	else if (type == 'text') { checkSquare(value) }//text, can be blank, square encoded in the database 
+	else { toss('data', {column, value}) }
+}
+
+function columnType(column) {
+	
+}
+//where's the idea that if it doesn't have any of these, then it's an int, rather than requiring one
+/*
+name_tag
+name_hash
+name_text
+everything else must be an integer
+
+or you can also just
+
+suffix is what is after the last underscore, or if none, the whole thing
+
+
+
+*/
+
+
+
+function settings_table(database) {
+	return {database, table: 'settings_table', [
+		'key_text',
+		'value_text'
+	]}
+}
+
+const createTables = `
+
+-- settings for the application as a whole
+CREATE TABLE settings_table (
+	key_text    TEXT  PRIMARY KEY  NOT NULL, -- name of the setting
+	value_text  TEXT               NOT NULL  -- value, text or numerals, blank if none so still not null
+);
+
+-- counts for each browser, works without being signed in
+CREATE TABLE counts_table (
+	browser_tag  CHAR(21)  PRIMARY KEY  NOT NULL, -- browser tag
+	count        BIGINT                 NOT NULL  -- count for that browser
+);
+
+-- composite index so the common query that filters by browser tag and sorts by tick is fast
+CREATE INDEX access_index_on_browser_tick ON access_table (browser_tag, row_tick);
+
+CREATE TABLE table_access (
+	row_number    BIGSERIAL  PRIMARY KEY  NOT NULL,
+	tick          BIGINT                  NOT NULL,
+	tag           CHAR(21)   UNIQUE       NOT NULL,
+	browser_hash  CHAR(52)                NOT NULL,
+	signed_in     BIGINT                  NOT NULL
+);
+
+CREATE TABLE table_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE table_counts (
+  browser_tag CHAR(21) PRIMARY KEY,
+  count BIGINT DEFAULT 0 NOT NULL
+);
+
+
+
+`
+
+
+let createTablesParsed
+export function table(database, name) {
+	if (!createTablesParsed) createTablesParsed = parseCreateTables()
+	return {database, table: createTablesParsed[name]}
+}
+
+function parseCreateTables() {
+	/*
+	todo, goes through the multiline string building a js object like this
+	*/
+	createTablesParsed = {
+		settings_table: ['key_text', 'value_text']
+	}
+}
+
+
+function access_table(database) {
+	return {database, table: 'access_table', ['row_tag', 'row_tick', 'browser_tag', 'signed_in']}
+}
+function counts_table(database) {
+	return {database, table: 'counts_table', ['browser_tag', 'count']}
+}
+
+
+
+
+
+function table_counts(database) {
+	return {database, table: 'table_counts', ['browser_tag', 'count']}
+}
+function table_settings(database) {
+	return {database, table: 'table_settings', ['key', 'value']}
+}
 
 
 

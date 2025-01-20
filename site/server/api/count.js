@@ -1,10 +1,10 @@
 
 import {
 Sticker,
-log, look, Now, Tag, getAccess, checkText,
+log, look, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
-rowExists, createRow, readRow, writeRow,
+countGlobal_rowExists, countGlobal_createRow, countGlobal_readRow, countGlobal_writeRow,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -17,20 +17,20 @@ async function doorProcessBelow(door) {
 	o.mirroredBody = door.body
 
 	//create the row if it doesn't exist
-	if (!(await rowExists())) {
-		await createRow()
+	if (!(await countGlobal_rowExists())) {
+		await countGlobal_createRow()
 	}
 
 	//increment
 	let countGlobal = 0
 	if (door.body.countGlobal > 0) {
-		countGlobal = +(await readRow())//read, convert string to int afterards
+		countGlobal = textToInt(await countGlobal_readRow())//read, convert string to int afterards
 		countGlobal += door.body.countGlobal//increment with requested value
-		await writeRow(countGlobal+'')//write, convert int to string beforehand
+		await countGlobal_writeRow(countGlobal+'')//write, convert int to string beforehand
 	}
 
 	//read
-	countGlobal = +(await readRow())//read or read again to check, convert string to int afterards
+	countGlobal = +(await countGlobal_readRow())//read or read again to check, convert string to int afterards
 
 	o.countGlobal = countGlobal
 	o.countBrowser = 0
