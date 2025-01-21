@@ -39,6 +39,7 @@ export {
 accessTableInsert, accessTableQuery,
 countGlobal_rowExists, countGlobal_createRow, countGlobal_readRow, countGlobal_writeRow,
 
+database_hit,
 database_countRows, database_addRow, database_updateCell, database_getRow, database_getRows,
 
 } from './desktop.js'
