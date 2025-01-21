@@ -711,6 +711,52 @@ function table_settings(database) {
 
 
 
+draft of high level notes:
+
+yes make indices
+no don't use foreign keys, they don't help with query speed
+
+
+
+row_tag
+row_tick
+hide         -- initialize to zero to not hide, nonzero numbers indicate why its hidden
+
+name_text
+email_hash
+
+
+
+
+
+column_enum   BIGNUM    boolean 0 or 1 which could grow in the future into an enumeration
+column_tick   BIGNUM    tick count since the start of 1970
+column_int    BIGNUM    number value counting something
+
+column_tag    CHAR(21)  21 letters and numbers of a universally unique tag
+column_hash   CHAR(52)  52 characters of a sha256 hash value encoded to base32
+column_text   TEXT      text which can be blank or long, and is square encoded
+
+
+does katy already work this way?
+
+also, you're really not sure of square encoding
+maybe you don't need a multiple add
+and maybe if you do, put all free form text, like something that isn't an email or name which is really restricted, in a separate table looked up by hash or tag
+
+here's teh idea, the suffixes are:
+_tick, bigint
+_tag, text 21
+_hash, text 52 or whatever
+_text, variable text
+(everything else), (no suffix), bigint
+and everything else has to be an integer!
+then you don't have to clutter names with _enum when actuall it's a count or a boolean, etc
+this is a great idea
+
+imagining how this might grow
+_json, and postgres has a type for this, and if you use it a lot you sorta go into document database land, you've heard. not sure if you want to go there, but there might be a way to go there
+_tags, meaning text like "Amazon.Email." holding two tags, and you're thinking tags are title case and always end with a period
 
 
 
@@ -719,11 +765,70 @@ function table_settings(database) {
 
 
 
+export async function specified_rowExists() {
+	let n = await countRows('settings_table', 'key_text', 'count')
+	return n > 0
+}
+export async function specified_createRow() {
+	await generalized_createRow('settings_table', [{key_text: 'count', value_text: intToText(0)}])
+}
+export async function specified_readRow() {
+	let data = 
+	return data[0]?.value_text
+}
+export async function specified_writeRow(newValue) {
+}
 
 
 
+export async function countRows(table, column, value) {
+	let database = await realDatabase()
+	let {data, error, count} = (await database.from(table).select(column, {count: 'exact'}).eq(column, value))
+	if (error) toss('supabase', {error})
+	return count
+}
+export async function addRow(table, row) {
+	let database = await realDatabase()
+	let {data, error} = (await database.from(table).insert(row))
+	if (error) toss('supabase', {error})
+}
+export async function generalized_readRow(table, column, value) {
+	let database = await realDatabase()
+	let {data, error} = (await database.from(table).select('value_text').eq('key_text', 'count'))
+	if (error) toss('supabase', {error})
+	return data
+}
+export async function generalized_writeRow(tablenewValue) {
+	let database = await realDatabase()
+	let {data, error} = (await database.from(table).update({value_text: newValue}).eq('key_text', 'count').select())
+	if (error) toss('supabase', {error})
+	if (!data.length) toss('no updated rows')
+}
 
 
+
+/*
+table:
+
+some_table              table names must end _table
+
+column: (the type is after the last _, or otherwise the whole thing)
+
+_tag   CHAR(21)  21 letters and numbers of a universally unique tag
+_hash  CHAR(52)  52 characters of a sha256 hash value encoded to base32
+
+_text  TEXT  text which can be blank or long
+_tags  TEXT  title case tags each of which ends with a period like "Amazon.Email."
+
+_bool  BIGNUM  boolean 0 or 1 which could grow in the future into an enumeration
+_enum  BIGNUM  
+_int   BIGNUM  number value counting something
+only   BIGNUM  any other name also treat as a number; text must be suffixed _text, above
+
+future expansions:
+
+_json
+*/
 
 
 

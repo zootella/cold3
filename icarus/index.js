@@ -37,9 +37,9 @@ but then all the code above, which just gets it from icarus, doesn't need to cha
 export {
 
 accessTableInsert, accessTableQuery,
-
 countGlobal_rowExists, countGlobal_createRow, countGlobal_readRow, countGlobal_writeRow,
-database_pingCount,
+
+database_countRows, database_addRow, database_updateCell, database_getRow, database_getRows,
 
 } from './desktop.js'
 

@@ -360,6 +360,43 @@ test(() => {
 	ok(!hasTextSame('a', 'b'))
 })
 
+//ttd january, and you also need check int no minimum
+
+export function checkIntNoMinimum(i) { if (!hasIntNoMinimum(i)) toss('type', {i}) }
+export function hasIntNoMinimum(i) { // Note (0)
+	return (
+		i === 0                      // Note (1)
+	) || (
+		Number.isInteger(i)          && // Note (3)
+		i >= Number.MIN_SAFE_INTEGER && // Note (5)
+		i <= Number.MAX_SAFE_INTEGER && // Note (5)
+		/^-?[1-9]\d*$/.test(i+'')       /* Note (6)
+		(3) Includes typeof i == 'number' and !isNaN(i) checks, according to MDN.
+		(4) At or above the given minimum.
+		(5) Small enough to stay an integer everywhere; biggest integers are:
+				(2^53)-1 ==      9,007,199,254,740,991 in JavaScript;
+				(2^63)-1 == 19,223,372,036,854,775,807 in a BIGINT PostgreSQL field, a signed 8 byte integer.
+		(6) Plus blank for quick convert, then regular expression that:
+				allows one optional minus sign at the start;
+				blocks a leading zero;
+				and ensures all numerals, blocking JavaScript numbers like 2.5 decimal and 5e-7 scientific notation. */
+	)
+}
+test(() => {
+	ok(hasIntNoMinimum(0))
+	ok(hasIntNoMinimum(789456))
+	ok(hasIntNoMinimum(-100000))
+
+
+	ok(!hasIntNoMinimum())
+	ok(!hasIntNoMinimum(''))
+	ok(!hasIntNoMinimum(' '))
+	ok(!hasIntNoMinimum('0'))
+
+})
+
+
+
 //  _            _   
 // | |_ _____  _| |_ 
 // | __/ _ \ \/ / __|

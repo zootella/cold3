@@ -50,6 +50,14 @@ async function incrementCount(increment1, increment2) {
 	}
 }
 
+async function clickedHit() {
+	let response = await $fetch('/api/hit', {
+		method: 'POST',
+		body: {
+		}
+	})
+}
+
 </script>
 
 <template>
@@ -67,6 +75,10 @@ async function incrementCount(increment1, increment2) {
 <p v-else-if="fetching">Loading...</p>
 <!-- Display an error message if there was an error fetching the data -->
 <p v-else>Error: {{ error }}</p>
+
+
+<button @click="clickedHit">Hit</button>
+
 
 </div>
 </template>
