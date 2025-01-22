@@ -720,6 +720,25 @@ columns do have an order, but we refer to them by their unique name, so we don't
 
 
 
+//ttd january, probably have one which gets not one row, not all rows sorted, rather the greatest tick row, that one row
+//and then the idea here is, you keep on adding generalized functions, even if each is quite specific to a new type of query you want to do
+/*
+at this level, call these the query functions
+rename to be like:
+
+queryUpdateCell
+queryAddRows - add several at once
+queryAddRow - add just one of them
+queryCountRows
+queryGetRows - get all of them
+queryGetNRows - just the desired number, sorted by given title
+queryGetSingleRow - use when you know there's zero or one
+queryGetRecentRow - use when there could be many
+
+how do you write fast little tests of these that really hit the database?
+your manual testing has been slow and tedious
+*/
+
 
 
 

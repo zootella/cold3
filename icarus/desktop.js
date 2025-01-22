@@ -22,33 +22,14 @@ import {createClient} from '@supabase/supabase-js'
 
 
 
-//create the supabase client to talk to the cloud database
-let _real, _test
-async function realDatabase() {
-	if (!_real) {
-		let access = await getAccess()
-		_real = createClient(access.get('ACCESS_SUPABASE_REAL1_URL'), access.get('ACCESS_SUPABASE_REAL1_KEY_SECRET'))
-	}
-	return _real
-}
-async function testDatabase() {
-	if (!_test) {
-		let access = await getAccess()
-		_test = createClient(access.get('ACCESS_SUPABASE_TEST1_URL'), access.get('ACCESS_SUPABASE_TEST1_KEY_SECRET'))
-	}
-	return _test
-}
 
 
-
-
-
+//these are ready for level3, specific to the application
 
 /*
 this sitting goal: get all current database use factored through generalized functions
 then tonight you can go on a notes and previous scraps deleteathon
 */
-
 
 export async function database_hit() {
 	/*
@@ -63,22 +44,7 @@ export async function database_hit() {
 	*/
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 //these are the database functions in use; next, use the generalized functions above to refactor these away
-
-
-
 
 //insert a new row into table_access with the given row tag, browser tag, and signed in status
 export async function accessTableInsert(browserTag, signedIn) {
@@ -89,9 +55,6 @@ export async function accessTableQuery(browserTag) {
 	let rows = await database_getRows({table: 'access_table', title: 'browser_tag', cell: browserTag, titleSort: 'row_tick'})
 	return rows
 }
-
-
-
 
 export async function countGlobal_rowExists() {
 	let hits = await database_countRows({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
@@ -127,9 +90,46 @@ export async function countGlobal_writeRow(newValue) {
 
 
 
+
+
+
+
+//getting this ready for level2, specific to supabase but not the application above
+
+//      _       _        _                    
+//   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
+//  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
+// | (_| | (_| | || (_| | |_) | (_| \__ \  __/
+//  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
+//                                            
+
+//create the supabase client to talk to the cloud database
+let _real, _test
+async function realDatabase() {
+	if (!_real) {
+		let access = await getAccess()
+		_real = createClient(access.get('ACCESS_SUPABASE_REAL1_URL'), access.get('ACCESS_SUPABASE_REAL1_KEY_SECRET'))
+	}
+	return _real
+}
+async function testDatabase() {
+	if (!_test) {
+		let access = await getAccess()
+		_test = createClient(access.get('ACCESS_SUPABASE_TEST1_URL'), access.get('ACCESS_SUPABASE_TEST1_KEY_SECRET'))
+	}
+	return _test
+}
+
+//                              
+//   __ _ _   _  ___ _ __ _   _ 
+//  / _` | | | |/ _ \ '__| | | |
+// | (_| | |_| |  __/ |  | |_| |
+//  \__, |\__,_|\___|_|   \__, |
+//     |_|                |___/ 
+
 //in table, look at column title, and count how many rows have the given cell value
 export async function database_countRows({table, title, cell}) {
-	checkTitle(table); checkCell(title, cell)
+	checkQueryTitle(table); checkQueryCell(title, cell)
 	let database = await realDatabase()
 	let {count, error} = (await database
 		.from(table)
@@ -141,7 +141,7 @@ export async function database_countRows({table, title, cell}) {
 
 //to table add a new row like {title1_text: "cell1", title2_text: "cell2", ...}
 export async function database_addRow({table, row}) {
-	checkTitle(table); checkRow(row)
+	checkQueryTitle(table); checkQueryRow(row)
 	let database = await realDatabase()
 	let {data, error} = (await database
 		.from(table)
@@ -152,7 +152,7 @@ export async function database_addRow({table, row}) {
 
 //in table, look at titleFind to find one row with value cellFind, then go right to column titleSet, and write cellSet there
 export async function database_updateCell({table, titleFind, cellFind, titleSet, cellSet}) {
-	checkTitle(table); checkCell(titleFind, cellFind); checkCell(titleSet, cellSet)
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
 	let database = await realDatabase()
 	let {data, error} = (await database
 		.from(table)
@@ -164,7 +164,7 @@ export async function database_updateCell({table, titleFind, cellFind, titleSet,
 
 //in table, look at column title to find one row with value cell, and get the whole row like {title1_text: "cell1", title2_text: "cell2"}
 export async function database_getRow({table, title, cell}) {
-	checkTitle(table); checkCell(title, cell)
+	checkQueryTitle(table); checkQueryCell(title, cell)
 	let database = await realDatabase()
 	let {data, error} = (await database
 		.from(table)
@@ -177,7 +177,7 @@ export async function database_getRow({table, title, cell}) {
 
 //in table, look at column title to get all the rows with cell value, and get them biggest to smallest based on the cells below titleSort
 export async function database_getRows({table, title, cell, titleSort}) {
-	checkTitle(table); checkCell(title, cell); checkTitle(titleSort)
+	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
 	let database = await realDatabase()
 	let {data, error} = (await database
 		.from(table)
@@ -188,57 +188,46 @@ export async function database_getRows({table, title, cell, titleSort}) {
 	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
 }
 
-//ttd january, probably have one which gets not one row, not all rows sorted, rather the greatest tick row, that one row
+//                                     _               _    
+//   __ _ _   _  ___ _ __ _   _    ___| |__   ___  ___| | __
+//  / _` | | | |/ _ \ '__| | | |  / __| '_ \ / _ \/ __| |/ /
+// | (_| | |_| |  __/ |  | |_| | | (__| | | |  __/ (__|   < 
+//  \__, |\__,_|\___|_|   \__, |  \___|_| |_|\___|\___|_|\_\
+//     |_|                |___/                             
 
-//and then the idea here is, you keep on adding generalized functions, even if each is quite specific to a new type of query you want to do
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function checkTitle(title) {//check title looks to name a table or column title
-	if (!isTitle(title)) toss('check title', {title, cell})
+function checkQueryTitle(title) {//make sure the given title looks ok as a table name or column title
+	if (!isQueryTitle(title)) toss('check title', {title, cell})
 }
-function checkRow(row) {//checks row like {"name_text": "bob", "hits": 789}
-	for (let [title, cell] of Object.entries(row)) checkCell(title, cell)
+function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
+	for (let [title, cell] of Object.entries(row)) checkQueryCell(title, cell)
 }
-function checkCell(title, cell){//column title and value in a cell beneath that title
-	if (!isTitle(title)) toss('check title', {title, cell})
-	let type = titleType(title)
-	if      (type == 'tag')  { if (!isTag(cell))  toss('check tag',  {title, cell}) }
-	else if (type == 'hash') { if (!isHash(cell)) toss('check hash', {title, cell}) }
-	else if (type == 'text') { if (!isText(cell)) toss('check text', {title, cell}) }
-	else                     { if (!isInt(cell))  toss('check int',  {title, cell}) }
+function checkQueryCell(title, cell){//in a column with the given title, check the value in a cell
+	if (!isQueryTitle(title)) toss('check title', {title, cell})
+	let type = _type(title)
+	if      (type == 'tag')  { if (!isQueryTag(cell))  toss('check tag',  {title, cell}) }
+	else if (type == 'hash') { if (!isQueryHash(cell)) toss('check hash', {title, cell}) }
+	else if (type == 'text') { if (!isQueryText(cell)) toss('check text', {title, cell}) }
+	else                     { if (!isQueryInt(cell))  toss('check int',  {title, cell}) }
 }
-function titleType(s) {//from a column title like 'name_type', clip out 'type'
+function _type(s) {//from a column title like "name_type", clip out "type"
 	let i = s.lastIndexOf('_')
-	return i == -1 ? s : s.slice(i + 1)
+	return i == -1 ? s : s.slice(i + 1)//return whole thing if not found
 }
+
 //these simple and nearby functions keep us safe from making a bad query or storing bad data
-function isText(s) {//text must be a string, can be blank, can contain weird characters
+function isQueryText(s) {//text must be a string, can be blank, can contain weird characters
 	return typeof s == 'string'
 }
-function isTitle(s) {//table names and column titles are like "some_name_text"
+function isQueryTitle(s) {//table names and column titles are like "some_name_text"
 	return typeof s == 'string' && s.length > 0 && /^[a-z](?:[a-z0-9_]*[a-z0-9])?$/.test(s)
 }
-function isTag(s) {//a tag must be 21 letters and numbers
+function isQueryTag(s) {//a tag must be 21 letters and numbers
 	return typeof s == 'string' && s.length == 21 && /^[A-Za-z0-9]+$/.test(s)
 }
-function isHash(s) {//a sha256 hash value in base32 without padding is 52 A-Z and 2-7
+function isQueryHash(s) {//a sha256 hash value in base32 without padding is 52 A-Z and 2-7
 	return typeof s == 'string' && s.length == 52 && /^[A-Z2-7]+$/.test(s)
 }
-function isInt(i) {//make sure i is an integer within range, negative is fine
+function isQueryInt(i) {//make sure i is an integer within range, negative is fine
 	return (
 		i === 0//let zero through quickly
 	) || (
@@ -249,7 +238,7 @@ function isInt(i) {//make sure i is an integer within range, negative is fine
 	)
 }
 test(() => {
-	checkRow({
+	checkQueryRow({
 		'name_text': 'bob',
 		'optional_text': '',
 		'count': 7,
@@ -259,70 +248,70 @@ test(() => {
 	})
 })
 test(() => {
-	checkCell('browser_tag', '5WWs2JIIZQZ6UFJj2bHH2')
-	checkCell('password_hash', '2KJNI2IKXJPFHUGIUZRAB4AN7WD4OJUY7OWUGGYB3CQ75AD4MBNQ')
-	checkCell('name_text', 'bob')//because column title ends "_text" cell value must be a string
-	checkCell('name_text', '')//blank is ok
-	checkCell('count', 7)//without a type suffix in the title, the cell must hold an integer
+	checkQueryCell('browser_tag', '5WWs2JIIZQZ6UFJj2bHH2')
+	checkQueryCell('password_hash', '2KJNI2IKXJPFHUGIUZRAB4AN7WD4OJUY7OWUGGYB3CQ75AD4MBNQ')
+	checkQueryCell('name_text', 'bob')//because column title ends "_text" cell value must be a string
+	checkQueryCell('name_text', '')//blank is ok
+	checkQueryCell('count', 7)//without a type suffix in the title, the cell must hold an integer
 })
 test(() => {
-	ok(titleType('name_text') == 'text')
-	ok(titleType('other') == 'other')
-	ok(titleType('longer_name_hash') == 'hash')
+	ok(_type('name_text') == 'text')
+	ok(_type('other') == 'other')
+	ok(_type('longer_name_hash') == 'hash')
 })
 test(() => {
 
 	//text in a cell in the database can be blank
-	ok(isText('hi'))
-	ok(isText(''))
+	ok(isQueryText('hi'))
+	ok(isQueryText(''))
 	//text can't be nothing or a non-string, though
-	ok(!isText())
-	ok(!isText(0))
-	ok(!isText(null))
+	ok(!isQueryText())
+	ok(!isQueryText(0))
+	ok(!isQueryText(null))
 
 	//table names and column titles are like "name" or "some_longer_name"
-	ok(isTitle('name'))
-	ok(isTitle('some_longer_name'))
+	ok(isQueryTitle('name'))
+	ok(isQueryTitle('some_longer_name'))
 	//titles can't be blank, or have spaces or even uppercase letters, by our convention
-	ok(!isTitle(''))
-	ok(!isTitle('has space'))
-	ok(!isTitle('Title_Case'))
+	ok(!isQueryTitle(''))
+	ok(!isQueryTitle('has space'))
+	ok(!isQueryTitle('Title_Case'))
 	//underscores are fine
-	ok(isTitle('a'))
-	ok(isTitle('a_b'))
-	ok(isTitle('a__b'))
+	ok(isQueryTitle('a'))
+	ok(isQueryTitle('a_b'))
+	ok(isQueryTitle('a__b'))
 	//except not at the start or end
-	ok(!isTitle('_'))
-	ok(!isTitle('a_'))
-	ok(!isTitle('_b'))
+	ok(!isQueryTitle('_'))
+	ok(!isQueryTitle('a_'))
+	ok(!isQueryTitle('_b'))
 	//digits are fine, but not at the start
-	ok(isTitle('name2_text'))
-	ok(isTitle('a2'))
-	ok(!isTitle('2b'))
-	ok(!isTitle('2'))
+	ok(isQueryTitle('name2_text'))
+	ok(isQueryTitle('a2'))
+	ok(!isQueryTitle('2b'))
+	ok(!isQueryTitle('2'))
 
 	//there are lots of tags in the database; they must be 21 letters or numbers
-	ok(!isTag(''))
-	ok(!isTag('f26mjatF7WxmuXjv0Iid'))//too short
-	ok( isTag('f26mjatF7WxmuXjv0Iid0'))//looks good
-	ok(!isTag('f26mjatF7WxmuXjv0Ii_0'))//invalid character
-	ok(!isTag('f26mjatF7WxmuXjv0Iid0a'))//too long
+	ok(!isQueryTag(''))
+	ok(!isQueryTag('f26mjatF7WxmuXjv0Iid'))//too short
+	ok( isQueryTag('f26mjatF7WxmuXjv0Iid0'))//looks good
+	ok(!isQueryTag('f26mjatF7WxmuXjv0Ii_0'))//invalid character
+	ok(!isQueryTag('f26mjatF7WxmuXjv0Iid0a'))//too long
 
 	//hashes in the database are also common; we're using sha256 and base32 without padding
-	ok(!isHash(''))
-	ok(!isHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3E'))//too short
-	ok( isHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3EA'))//looks good
-	ok(!isHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO38A'))//invalid character
-	ok(!isHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3EA2'))//too long
+	ok(!isQueryHash(''))
+	ok(!isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3E'))//too short
+	ok( isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3EA'))//looks good
+	ok(!isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO38A'))//invalid character
+	ok(!isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3EA2'))//too long
 
 	//negative integers are fine in the database
-	ok(isInt(0))
-	ok(isInt(-500))
-	ok(isInt(1737493381245))
-	ok(!isInt())
-	ok(!isInt(''))
-	ok(!isInt(null))
-	ok(!isInt(2.5))
+	ok(isQueryInt(0))
+	ok(isQueryInt(-500))
+	ok(isQueryInt(1737493381245))
+	ok(!isQueryInt())
+	ok(!isQueryInt(''))
+	ok(!isQueryInt(null))
+	ok(!isQueryInt(2.5))
 	//chat suggested 012 decimal, which is just 10
 	//strict mode blocks code with negative decimal like -09
 	//negative zero literal, -0, makes it through, but -0+'' is "0"

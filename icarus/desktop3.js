@@ -346,7 +346,7 @@ as each trip to supabase is taking ~150ms
 
 
 
-
+/*
 here's a crazy idea
 your database design means that you're, at the start, going to have to get all the rows for a browser tag from maybe a half dozen different tables
 then, with all those rows in the worker, you'll synthesize and decide what to do next
@@ -358,7 +358,7 @@ which is not acceptable, of course
 
 but then you just realized, do multiple async calls in parallel in this case
 yeah, how does that work in this fully finished time of async await
-
+*/
 
 
 
@@ -400,7 +400,7 @@ function readText(s) { if (s === '') return s; checkText(s); return squareDecode
 
 
 
-
+/*
 2024nov11 ~ now you can clean this up
 
 
@@ -427,6 +427,7 @@ you filter the unified omnitable by "Email."
 this is starting to be a little more like a document database
 but could be simple enough, and will hugely reduce the number of tables that are in there
 when you add a new data type, you don't have to create a new table for it
+*/
 
 
 
@@ -435,8 +436,7 @@ when you add a new data type, you don't have to create a new table for it
 
 
 
-
-
+/*
 probably already written above
 column names say their type, and if they don't end with a type, they're a BIGINT which might be used as a count, enum, or boolean
 
@@ -710,7 +710,7 @@ function table_settings(database) {
 
 
 
-
+/*
 draft of high level notes:
 
 yes make indices
@@ -757,7 +757,7 @@ this is a great idea
 imagining how this might grow
 _json, and postgres has a type for this, and if you use it a lot you sorta go into document database land, you've heard. not sure if you want to go there, but there might be a way to go there
 _tags, meaning text like "Amazon.Email." holding two tags, and you're thinking tags are title case and always end with a period
-
+*/
 
 
 
