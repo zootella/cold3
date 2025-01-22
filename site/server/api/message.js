@@ -23,6 +23,7 @@ async function doorProcessBelow(door) {
 	let signedIn = rows.length && rows[0].signed_in
 	if (!signedIn) toss('account', {browserTag, door})
 	//^factor that into a function on level3
+	//ttd january
 
 	let validated
 	if      (service == 'Email.') validated = validateEmail(address)

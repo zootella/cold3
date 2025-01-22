@@ -1091,22 +1091,12 @@ test(async () => {
 	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
 	ok(d2.base32().length == hashLength)
 })
-
-//make sure s looks like a hash value in base 32, to help katy, baring the door to the database
-export function checkHashLight(s) {
-	checkText(s); if (s.length != hashLength) toss('data', {s})
-	if (!base32Set) base32Set = new Set(base32Alphabet)
-	for (let i = 0; i < s.length; i++) {//olde fashioned loop is faster because no es6 iterator
-		if (!base32Set.has(s[i])) toss('data', {s, i})
-	}
-}
-export function checkHash(s) {//slower, does round trip check
+export function checkHash(s) {
 	checkText(s); if (s.length != hashLength) toss('data', {s})
 	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
 }
 test(() => {
-	function f(s) { checkHashLight(s); checkHash(s) }
-	f('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//fine
+	checkHash('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//fine
 	//also tried blank, bad character, too short, too long
 })
 

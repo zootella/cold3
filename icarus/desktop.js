@@ -80,52 +80,34 @@ export async function database_hit() {
 
 
 
-//insert a new row into table_access with the given row tag, browser hash, and signed in status
-export async function accessTableInsert(browser_tag, signed_in) {
-	checkTag(browser_tag)//put type checks here, you think, to be sure only good data gets inserted
-	checkInt(signed_in)
-
-	let database = await realDatabase()
-	let {data, error} = (await database.from('access_table').insert([{row_tick: Now(), row_tag: Tag(), browser_tag, signed_in}]))
-	if (error) toss('supabase', {error})
+//insert a new row into table_access with the given row tag, browser tag, and signed in status
+export async function accessTableInsert(browserTag, signedIn) {
+	database_addRow({table: 'access_table', row: {row_tick: Now(), row_tag: Tag(), browser_tag: browserTag, signed_in: signedIn}})
 }
-//query table_access to get all the rows with a matching browser_tag
-export async function accessTableQuery(browser_tag) {
-	checkTag(browser_tag)
-
-	let database = await realDatabase()
-	let { data, error } = (await database.from('access_table').select('*').eq('browser_tag', browser_tag).order('row_tick', {ascending: false}))//most recent row first
-	if (error) toss('supabase', {error})
-	return data
+//query table_access to get all the rows with a matching browser tag
+export async function accessTableQuery(browserTag) {
+	let rows = await database_getRows({table: 'access_table', title: 'browser_tag', cell: browserTag, titleSort: 'row_tick'})
+	return rows
 }
 
 
 
 
 export async function countGlobal_rowExists() {
-	let database = await realDatabase()
-	let {data, error, count} = (await database.from('settings_table').select('key_text', {count: 'exact'}).eq('key_text', 'count'))
-	if (error) toss('supabase', {error})
-	return count > 0
+	let hits = await database_countRows({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
+	return hits > 0
 }
 export async function countGlobal_createRow() {
-	let database = await realDatabase()
-	let {data, error} = (await database.from('settings_table').insert([{key_text: 'count', value_text: intToText(0)}]))
-	if (error) toss('supabase', {error})
+	await database_addRow({table: 'settings_table', row: {setting_name_text: 'hits', setting_value_text: '0'}})
 }
-export async function countGlobal_readRow() {
-	let database = await realDatabase()
-	let {data, error} = (await database.from('settings_table').select('value_text').eq('key_text', 'count'))
-	if (error) toss('supabase', {error})
-	return data[0]?.value_text
+export async function countGlobal_readRow() {//returns the count
+	let row = await database_getRow({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
+	return row.setting_value_text
 }
 export async function countGlobal_writeRow(newValue) {
-	let database = await realDatabase()
-	let {data, error} = (await database.from('settings_table').update({value_text: newValue}).eq('key_text', 'count').select())
-	if (error) toss('supabase', {error})
-	if (!data.length) toss('no updated rows')
+	await database_updateCell({table: 'settings_table', titleFind: 'setting_name_text', cellFind: 'hits', titleSet: 'setting_value_text', cellSet: newValue})
+	log('incremented')
 }
-
 
 
 
@@ -205,6 +187,8 @@ export async function database_getRows({table, title, cell, titleSort}) {
 	if (error) toss('supabase', {error})
 	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
 }
+
+//ttd january, probably have one which gets not one row, not all rows sorted, rather the greatest tick row, that one row
 
 //and then the idea here is, you keep on adding generalized functions, even if each is quite specific to a new type of query you want to do
 
