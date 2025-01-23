@@ -14,6 +14,7 @@ defineProps({note: String})
 		<NuxtLink to="/">index</NuxtLink>{{' - '}}
 		<NuxtLink to="/ping/test">test</NuxtLink>{{' '}}
 		<NuxtLink to="/door">door</NuxtLink>{{' '}}
+		<NuxtLink to="/query">query</NuxtLink>{{' '}}
 		<NuxtLink to="/image">image</NuxtLink>{{' '}}
 		<NuxtLink to="/video">video</NuxtLink>{{' '}}
 		<NuxtLink to="/name">name</NuxtLink>{{' '}}

@@ -726,11 +726,11 @@ columns do have an order, but we refer to them by their unique name, so we don't
 at this level, call these the query functions
 rename to be like:
 
-queryUpdateCell
+querySetCell - change an existing cell to a new value
 queryAddRows - add several at once
-queryAddRow - add just one of them
+queryAddRow - add just one of them; these do all the checks first before leading to the same helper
 queryCountRows
-queryGetRows - get all of them
+queryGetRows - get all of them, sorted
 queryGetNRows - just the desired number, sorted by given title
 queryGetSingleRow - use when you know there's zero or one
 queryGetRecentRow - use when there could be many

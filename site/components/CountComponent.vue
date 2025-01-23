@@ -76,9 +76,7 @@ async function clickedHit() {
 <!-- Display an error message if there was an error fetching the data -->
 <p v-else>Error: {{ error }}</p>
 
-
 <button @click="clickedHit">Hit</button>
-
 
 </div>
 </template>

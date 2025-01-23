@@ -127,6 +127,49 @@ async function testDatabase() {
 //  \__, |\__,_|\___|_|   \__, |
 //     |_|                |___/ 
 
+/*
+[]rename to like:
+
+queryDeleteRow - delete one row if it meets the specified criteria
+queryDeleteRows - delete all rows that meet the specified criteria
+querySetCell - change an existing cell to a new value
+queryAddRows - add several at once
+queryAddRow - add just one of them; these do all the checks first before leading to the same helper
+queryCountRows - return the number of rows that meet specified criteria
+queryGetRows - get all of them, sorted
+queryGetPage - just the desired number, sorted by given title, have limit and offset
+queryGetSingleRow - use when you know there's zero or one
+queryGetRecentRow - use when there could be many
+
+
+queryAddRow – Insert a single new row.
+queryAddRows – Insert multiple new rows in bulk.
+querySetCell – Update a single column in exactly one row.
+querySetCells - update all the cells in a column, like setting their hide to 1
+queryUpdateRow – Update multiple columns in exactly one row.
+queryUpdateRows – Update one or more columns across all matching rows.
+queryDeleteRow – Delete exactly one row matching specified criteria.
+queryDeleteRows – Delete all rows matching specified criteria.
+queryCountRows – Return the number of rows matching a condition.
+queryGetRows – Retrieve all matching rows, possibly filtered, sorted.
+queryGetNRows – Retrieve a limited set of matching rows, sorted.
+queryGetSingleRow – Retrieve a unique row (or none) matching some condition.
+queryGetRecentRow – Retrieve the most recent row (or a small set), usually by a time/tick column.
+queryExists – Return a boolean indicating if any row matches a given condition. (Optional but common)
+
+
+
+you'll need a page, database test
+and three buttons, Populate, Query, and Clear
+yeah, this is a good idea, but don't spend more than a day on it
+
+
+
+
+
+
+*/
+
 //in table, look at column title, and count how many rows have the given cell value
 export async function database_countRows({table, title, cell}) {
 	checkQueryTitle(table); checkQueryCell(title, cell)
@@ -139,7 +182,7 @@ export async function database_countRows({table, title, cell}) {
 	return count
 }
 
-//to table add a new row like {title1_text: "cell1", title2_text: "cell2", ...}
+//add a new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
 export async function database_addRow({table, row}) {
 	checkQueryTitle(table); checkQueryRow(row)
 	let database = await realDatabase()
