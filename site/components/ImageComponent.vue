@@ -3,9 +3,16 @@
 import {
 log, look,
 } from 'icarus'
-import { ref, reactive, watch, computed } from 'vue'
+import {ref, reactive, watch, computed} from 'vue'
 
 let {data, error} = useFetch('/api/image', {method: 'POST'})
+
+watch([data], () => {
+
+	log(`watch on data seeing ${look(data.value)}`)
+
+}, {immediate: true})
+
 
 </script>
 <template>

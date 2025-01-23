@@ -197,7 +197,9 @@ export async function vhsSign(path, expiration) {
 async function _vhsSign(secret, path, now, expiration, seed) {//so we've factored out this core for testing, below
 	let message = `path=${encodeURIComponent(path)}&tick=${now+expiration}&seed=${seed}`
 	let hash = await hmacSign(secret, message)
-	return message+`&hash=${encodeURIComponent(hash.base64())}`
+	let queryString = `${message}&hash=${encodeURIComponent(hash.base64())}`
+	log(`_vhsSign composed queryString: ${queryString}`)//ttd january, trying to find problem on local
+	return queryString
 }
 test(async () => {
 	let secret = Data({base16: '8d64b043e91a4e08e492ae37b8ac96bdb89877865b9dbcbe7789766216854f90'})//example test secret
