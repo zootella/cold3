@@ -32,17 +32,6 @@ but then all the code above, which just gets it from icarus, doesn't need to cha
 
 
 
-//temporary desktop, currently cluttered with database stuff
-//once done, move groups of functions into the correct levels below
-export {
-
-accessTableInsert, accessTableQuery,
-countGlobal_rowExists, countGlobal_createRow, countGlobal_readRow, countGlobal_writeRow,
-
-database_hit,
-database_countRows, database_addRow, database_updateCell, database_getRow, database_getRows,
-
-} from './desktop.js'
 
 
 
@@ -71,6 +60,13 @@ wrapper
 */
 export {
 
+getBrowserTag,
+fetchNetwork23, vhsSign,
+
+//database
+snippetClear, snippetPopulate, snippetQuery,
+query_AccessTableInsert, query_AccessTableQuery, query_HitRowExists, query_HitCreateRow, query_HitReadRow, query_HitWriteRow,
+
 } from './level3.js'
 
 //  _                _ ____  
@@ -89,9 +85,10 @@ canGetAccess, accessWorker, getAccess,
 doorWorker, doorLambda, doorPromise, awaitDoorPromises,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
-getBrowserTag,
-fetchNetwork23, vhsSign,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
+
+//database
+queryCountRows, queryAddRow, querySetCell, queryGetRow, queryGetRows,
 
 } from './level2.js'
 

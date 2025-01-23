@@ -16,7 +16,8 @@ import {
 Tag, tagLength, checkTag,
 } from './level1.js'
 
-import { getQuery, readBody } from 'h3'
+import {getQuery, readBody} from 'h3'
+import {createClient} from '@supabase/supabase-js'
 
 
 
@@ -887,187 +888,6 @@ noop(() => {//first, a demonstration of a promise race
 
 
 
-/*
-ttd december, figure out how bridge works now that you've got cors done
-write something small and simple which ping4 and test can use, too; right now they're doing this
-and, importantly, because you're building security upon it:
-[]replace Sticker().isCloud with something that isn't based on fuzzy logic!
-
-to begin--don't do the warm thing, either--the errors you were seeing were only for GET, not POST
-well, now you sort of want to do it
-*/
-
-//  _          _     _              _                     _   ____  _____ 
-// | |__  _ __(_) __| | __ _  ___  | |_ ___    _ __   ___| |_|___ \|___ / 
-// | '_ \| '__| |/ _` |/ _` |/ _ \ | __/ _ \  | '_ \ / _ \ __| __) | |_ \ 
-// | |_) | |  | | (_| | (_| |  __/ | || (_) | | | | |  __/ |_ / __/ ___) |
-// |_.__/|_|  |_|\__,_|\__, |\___|  \__\___/  |_| |_|\___|\__|_____|____/ 
-//                     |___/                                              
-
-/*
-forceCloudLambda false means local worker -> local lambda; cloud worker -> cloud lambda
-forceCloudLambda true  means local worker -> cloud lambda; cloud worker -> cloud lambda
-either way a cloud worker always calls to a cloud lambda, because callign down wouldn't work at all
-*/
-const forceCloudLambda = false
-const resourceLocalNetwork23 = 'http://localhost:4000/prod'//check your local Network 23 affliate
-const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivity via satellite
-export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService, path, body) {//pass in $fetch which nuxt has imported in site/server/api/caller.js but not here in icarus
-
-	/*
-	warm is the module that the lambda will use, like "AE" for amazon email
-	if warm is set, then do a first warmup call, right here, before doing teh real call
-	so callers of fetchNetwork23 get that warmup service for free, and don't have to think about it
-	*/
-	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
-	let access = await getAccess()
-	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
-	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
-
-	let d = Duration()
-	body.warm = true
-	let resultWarm = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
-
-	body.warm = false
-	let resultAction = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
-	d.finish()//but then log this or return this or something, right now you're just trying out your new Duration object
-	return resultAction
-
-	/*
-	november
-	[]retry if first one fails, but only once
-	[]record the entire duration so you can see how long the whole two punch thing takes
-	*/
-}
-/*
-since adding sharp to lambdas, you've seen reliability problems!
-like a 500 internal server error that is corrected by hitting refresh in the browser
-and, the cold start is apparent now--a first hit in the morning takes seconds, then after that it's fast
-so make this bridge first hit a wakup endpoint, and then do the real request
-this simple stateless workaround won't slow things down much and is way easier than trying to clean up a failed request will preventing duplicate stateful real world action, like sending the user two text messages instead of one
-
-ok, the flow is
-1 do warm call
-2 if failed, do warm call again
-3 do real call
-
-and log alerts when second warm call fails, meaning you don't try
-or second warm call succeeds, meaning you fixed it but that was weird
-
-but also--you've only seen these reliability problems on GET lambdas, never POST
-you still like calling into a warm lambda, and the code isn't too hard, though
-*/
-
-//move to level0
-export function Duration(givenOpenTick) {//a small object to keep tick counts together for durations
-
-	let _openTick, _shutTick, _duration
-	function openTick() { return _openTick }//accessors
-	function shutTick() { return _shutTick }
-	function duration() { return _duration }
-
-	_openTick = givenOpenTick ? givenOpenTick : Now()//use the given start time, or right now
-
-	function finish() {//call a little later when whatever you're timing has finished
-		_shutTick = Now()
-		_duration = _shutTick - _openTick
-	}
-	return {openTick, shutTick, duration, finish}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//  _                                       _              
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| |
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |
-//                                                   |___/ 
-/*
-to keep the user signed in without expiration,
-and to identify a user even before they've signed up,
-we save a tag in the browser's local storage
-
-to prevent a user from revealing their tag,
-even if a n00b user is being coached by a hacker on reddit or discard to dig around the inspector,
-we use a frighteningly worded key name and value prefix
-
-getBrowserTag() creates and sets if not found, as though it was already there
-if something is malforming the tag or preventing it from being saved, getBrowserTag() returns a new tag every time
-if there's no localStorage, getBrowserTag() will throw an exception
-*/
-const browserTagName = 'current_session_password'
-const browserTagValuePrefix = 'account_access_code_DO_NOT_SHARE_'
-export function getBrowserTag() {//use from a comonent's onMounted to be sure local storage is there
-	let v = localStorage.getItem(browserTagName)
-	if (
-		hasText(v) &&
-		v.length == browserTagValuePrefix.length+tagLength &&
-		v.startsWith(browserTagValuePrefix)) {//read and return
-
-		return v.slice(-tagLength)
-
-	} else {//make and return
-
-		let tag = Tag()
-		localStorage.setItem(browserTagName, browserTagValuePrefix+tag)
-		return tag//return the tag we just made, and tried to set for next time
-	}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /*
@@ -1282,44 +1102,6 @@ test(async () => { if (!cloudLogSimulationMode) return//only run these in simula
 
 
 
-//        _         
-// __   _| |__  ___ 
-// \ \ / / '_ \/ __|
-//  \ V /| | | \__ \
-//   \_/ |_| |_|___/
-//                  
-/*
-make the query string for a signed link to a path within vhs.net23.cc the bearer can use for read access
-path is like "/folder1/folder2/" with slashes on both ends, granting access to folders and files within
-expiration is a number of milliseconds, like 2*Time.hour, granting access for that long
-uses the time now, generates a new random unique tag, and uses the shared vhs secret
-returns query string parameters like:
-
-path=%2Ffolder1%2Ffolder2%2F&tick=1733785941120&seed=gh9U49hZ2Cdp0osLFdFL4&hash=NYAIl8bGpoY0PQx4Eq5p8
-Gb%2BabT%2FX%2FOx0Edh3ifBJ7g%3D
-
-note the uri encoding that turns / into %2F and = into %3D; path and hash can have characters that need to be encoded
-*/
-export async function vhsSign(path, expiration) {
-	let access = await getAccess()//this uses access, the current time, and a new random tag, so it's difficult to test
-	return await _vhsSign(Data({base16: access.get('ACCESS_VHS_SECRET')}), path, Now(), expiration, Tag())
-}
-async function _vhsSign(secret, path, now, expiration, seed) {//so we've factored out this core for testing, below
-	let message = `path=${encodeURIComponent(path)}&tick=${now+expiration}&seed=${seed}`
-	let hash = await hmacSign(secret, message)
-	return message+`&hash=${encodeURIComponent(hash.base64())}`
-}
-test(async () => {
-	let secret = Data({base16: '8d64b043e91a4e08e492ae37b8ac96bdb89877865b9dbcbe7789766216854f90'})//example test secret
-	ok(secret.size() == 32)
-	let path = '/folder1/folder2/'
-	let now = 1733858021895
-	let expiration = 2*Time.hour
-	let seed = 'LsX2IlDdSRQ5ioFccXBOL'
-	ok(await _vhsSign(secret, path, now, expiration, seed) == 'path=%2Ffolder1%2Ffolder2%2F&tick=1733865221895&seed=LsX2IlDdSRQ5ioFccXBOL&hash=tZt6CmoGaTrPCQeIpAfwmhKUn4rfpCpS9AmMx4GY2Js%3D')
-})
-
-
 
 
 
@@ -1388,29 +1170,6 @@ export async function checkTurnstileToken(token) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //            _     _       
 //  _ __ ___ | |__ (_)_ __  
 // | '__/ _ \| '_ \| | '_ \ 
@@ -1431,3 +1190,345 @@ the design is simple:
 
 
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//      _       _        _                    
+//   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
+//  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
+// | (_| | (_| | || (_| | |_) | (_| \__ \  __/
+//  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
+//                                            
+
+//create the supabase client to talk to the cloud database
+let _real, _test
+async function realDatabase() {
+	if (!_real) {
+		let access = await getAccess()
+		_real = createClient(access.get('ACCESS_SUPABASE_REAL1_URL'), access.get('ACCESS_SUPABASE_REAL1_KEY_SECRET'))
+	}
+	return _real
+}
+async function testDatabase() {
+	if (!_test) {
+		let access = await getAccess()
+		_test = createClient(access.get('ACCESS_SUPABASE_TEST1_URL'), access.get('ACCESS_SUPABASE_TEST1_KEY_SECRET'))
+	}
+	return _test
+}
+
+//                              
+//   __ _ _   _  ___ _ __ _   _ 
+//  / _` | | | |/ _ \ '__| | | |
+// | (_| | |_| |  __/ |  | |_| |
+//  \__, |\__,_|\___|_|   \__, |
+//     |_|                |___/ 
+
+/*
+[]rename to like:
+
+queryDeleteRow - delete one row if it meets the specified criteria
+queryDeleteRows - delete all rows that meet the specified criteria
+querySetCell - change an existing cell to a new value
+queryAddRows - add several at once
+queryAddRow - add just one of them; these do all the checks first before leading to the same helper
+queryCountRows - return the number of rows that meet specified criteria
+queryGetRows - get all of them, sorted
+queryGetPage - just the desired number, sorted by given title, have limit and offset
+queryGetSingleRow - use when you know there's zero or one
+queryGetRecentRow - use when there could be many
+
+
+queryAddRow – Insert a single new row.
+queryAddRows – Insert multiple new rows in bulk.
+querySetCell – Update a single column in exactly one row.
+querySetCells - update all the cells in a column, like setting their hide to 1
+queryUpdateRow – Update multiple columns in exactly one row.
+queryUpdateRows – Update one or more columns across all matching rows.
+queryDeleteRow – Delete exactly one row matching specified criteria.
+queryDeleteRows – Delete all rows matching specified criteria.
+queryCountRows – Return the number of rows matching a condition.
+queryGetRows – Retrieve all matching rows, possibly filtered, sorted.
+queryGetNRows – Retrieve a limited set of matching rows, sorted.
+queryGetSingleRow – Retrieve a unique row (or none) matching some condition.
+queryGetRecentRow – Retrieve the most recent row (or a small set), usually by a time/tick column.
+queryExists – Return a boolean indicating if any row matches a given condition. (Optional but common)
+
+
+
+you'll need a page, database test
+and three buttons, Populate, Query, and Clear
+yeah, this is a good idea, but don't spend more than a day on it
+
+
+
+
+
+
+*/
+
+//in table, look at column title, and count how many rows have the given cell value
+export async function queryCountRows({table, title, cell}) {
+	checkQueryTitle(table); checkQueryCell(title, cell)
+	let database = await realDatabase()
+	let {count, error} = (await database
+		.from(table)
+		.select(title, {count: 'exact'})//count exact matches based on title
+		.eq(title, cell))//filter rows to those with the cell value
+	if (error) toss('supabase', {error})
+	return count
+}
+
+//add a new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
+export async function queryAddRow({table, row}) {
+	checkQueryTitle(table); checkQueryRow(row)
+	let database = await realDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.insert([row]))//order of properties doesn't matter
+	if (error) toss('supabase', {error})
+	//no return
+}
+
+//in table, look at titleFind to find one row with value cellFind, then go right to column titleSet, and write cellSet there
+export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
+	let database = await realDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.update({[titleSet]: cellSet})//write cellSet in column titleSet
+		.eq(titleFind, cellFind))//in the row where titleFind equals cellFind
+	if (error) toss('supabase', {error})
+	//no return
+}
+
+//in table, look at column title to find one row with value cell, and get the whole row like {title1_text: "cell1", title2_text: "cell2"}
+export async function queryGetRow({table, title, cell}) {
+	checkQueryTitle(table); checkQueryCell(title, cell)
+	let database = await realDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//select all columns to get the whole row
+		.eq(title, cell)//find the row where title equals cell
+		.single())//if no rows match returns data as null, if 2+ rows match returns error
+	if (error) toss('supabase', {error})
+	return data//data is the whole row
+}
+
+//in table, look at column title to get all the rows with cell value, and get them biggest to smallest based on the cells below titleSort
+export async function queryGetRows({table, title, cell, titleSort}) {
+	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
+	let database = await realDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//select all columns to retrieve entire rows
+		.eq(title, cell)//filter to get rows where title equals cell
+		.order(titleSort, {ascending: false}))//sort rows by titleSort in descending order
+	if (error) toss('supabase', {error})
+	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
+}
+
+//                                     _               _    
+//   __ _ _   _  ___ _ __ _   _    ___| |__   ___  ___| | __
+//  / _` | | | |/ _ \ '__| | | |  / __| '_ \ / _ \/ __| |/ /
+// | (_| | |_| |  __/ |  | |_| | | (__| | | |  __/ (__|   < 
+//  \__, |\__,_|\___|_|   \__, |  \___|_| |_|\___|\___|_|\_\
+//     |_|                |___/                             
+
+function checkQueryTitle(title) {//make sure the given title looks ok as a table name or column title
+	if (!isQueryTitle(title)) toss('check title', {title, cell})
+}
+function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
+	for (let [title, cell] of Object.entries(row)) checkQueryCell(title, cell)
+}
+function checkQueryCell(title, cell){//in a column with the given title, check the value in a cell
+	if (!isQueryTitle(title)) toss('check title', {title, cell})
+	let type = _type(title)
+	if      (type == 'tag')  { if (!isQueryTag(cell))  toss('check tag',  {title, cell}) }
+	else if (type == 'hash') { if (!isQueryHash(cell)) toss('check hash', {title, cell}) }
+	else if (type == 'text') { if (!isQueryText(cell)) toss('check text', {title, cell}) }
+	else                     { if (!isQueryInt(cell))  toss('check int',  {title, cell}) }
+}
+function _type(s) {//from a column title like "name_type", clip out "type"
+	let i = s.lastIndexOf('_')
+	return i == -1 ? s : s.slice(i + 1)//return whole thing if not found
+}
+
+//these simple and nearby functions keep us safe from making a bad query or storing bad data
+function isQueryText(s) {//text must be a string, can be blank, can contain weird characters
+	return typeof s == 'string'
+}
+function isQueryTitle(s) {//table names and column titles are like "some_name_text"
+	return typeof s == 'string' && s.length > 0 && /^[a-z](?:[a-z0-9_]*[a-z0-9])?$/.test(s)
+}
+function isQueryTag(s) {//a tag must be 21 letters and numbers
+	return typeof s == 'string' && s.length == 21 && /^[A-Za-z0-9]+$/.test(s)
+}
+function isQueryHash(s) {//a sha256 hash value in base32 without padding is 52 A-Z and 2-7
+	return typeof s == 'string' && s.length == 52 && /^[A-Z2-7]+$/.test(s)
+}
+function isQueryInt(i) {//make sure i is an integer within range, negative is fine
+	return (
+		i === 0//let zero through quickly
+	) || (
+		Number.isInteger(i)          &&//covers typeof, isNaN, isFinite, and Math.floor checks
+		i >= Number.MIN_SAFE_INTEGER &&//BIGINT's range is 2^63, wider than JavaScript's 2^53
+		i <= Number.MAX_SAFE_INTEGER &&
+		/^-?[1-9]\d*$/.test(i+'')//and make sure it looks like an integer as text
+	)
+}
+test(() => {
+	checkQueryRow({
+		'name_text': 'bob',
+		'optional_text': '',
+		'count': 7,
+		'some_tag': 'yz5OjTi1aeD4YnEM47gUD',
+		'some_hash': 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ',
+		'preference': -1,
+	})
+})
+test(() => {
+	checkQueryCell('browser_tag', '5WWs2JIIZQZ6UFJj2bHH2')
+	checkQueryCell('password_hash', '2KJNI2IKXJPFHUGIUZRAB4AN7WD4OJUY7OWUGGYB3CQ75AD4MBNQ')
+	checkQueryCell('name_text', 'bob')//because column title ends "_text" cell value must be a string
+	checkQueryCell('name_text', '')//blank is ok
+	checkQueryCell('count', 7)//without a type suffix in the title, the cell must hold an integer
+})
+test(() => {
+	ok(_type('name_text') == 'text')
+	ok(_type('other') == 'other')
+	ok(_type('longer_name_hash') == 'hash')
+})
+test(() => {
+
+	//text in a cell in the database can be blank
+	ok(isQueryText('hi'))
+	ok(isQueryText(''))
+	//text can't be nothing or a non-string, though
+	ok(!isQueryText())
+	ok(!isQueryText(0))
+	ok(!isQueryText(null))
+
+	//table names and column titles are like "name" or "some_longer_name"
+	ok(isQueryTitle('name'))
+	ok(isQueryTitle('some_longer_name'))
+	//titles can't be blank, or have spaces or even uppercase letters, by our convention
+	ok(!isQueryTitle(''))
+	ok(!isQueryTitle('has space'))
+	ok(!isQueryTitle('Title_Case'))
+	//underscores are fine
+	ok(isQueryTitle('a'))
+	ok(isQueryTitle('a_b'))
+	ok(isQueryTitle('a__b'))
+	//except not at the start or end
+	ok(!isQueryTitle('_'))
+	ok(!isQueryTitle('a_'))
+	ok(!isQueryTitle('_b'))
+	//digits are fine, but not at the start
+	ok(isQueryTitle('name2_text'))
+	ok(isQueryTitle('a2'))
+	ok(!isQueryTitle('2b'))
+	ok(!isQueryTitle('2'))
+
+	//there are lots of tags in the database; they must be 21 letters or numbers
+	ok(!isQueryTag(''))
+	ok(!isQueryTag('f26mjatF7WxmuXjv0Iid'))//too short
+	ok( isQueryTag('f26mjatF7WxmuXjv0Iid0'))//looks good
+	ok(!isQueryTag('f26mjatF7WxmuXjv0Ii_0'))//invalid character
+	ok(!isQueryTag('f26mjatF7WxmuXjv0Iid0a'))//too long
+
+	//hashes in the database are also common; we're using sha256 and base32 without padding
+	ok(!isQueryHash(''))
+	ok(!isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3E'))//too short
+	ok( isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3EA'))//looks good
+	ok(!isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO38A'))//invalid character
+	ok(!isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3EA2'))//too long
+
+	//negative integers are fine in the database
+	ok(isQueryInt(0))
+	ok(isQueryInt(-500))
+	ok(isQueryInt(1737493381245))
+	ok(!isQueryInt())
+	ok(!isQueryInt(''))
+	ok(!isQueryInt(null))
+	ok(!isQueryInt(2.5))
+	//chat suggested 012 decimal, which is just 10
+	//strict mode blocks code with negative decimal like -09
+	//negative zero literal, -0, makes it through, but -0+'' is "0"
+	//and more importantly there is no negative 0 in PostgreSQL's BIGINT; one would get stored as regular zero
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -4,7 +4,7 @@ Sticker,
 log, look, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
-countGlobal_rowExists, countGlobal_createRow, countGlobal_readRow, countGlobal_writeRow,
+query_HitRowExists, query_HitCreateRow, query_HitReadRow, query_HitWriteRow,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -17,20 +17,20 @@ async function doorProcessBelow(door) {
 	o.mirroredBody = door.body
 
 	//create the row if it doesn't exist
-	if (!(await countGlobal_rowExists())) {
-		await countGlobal_createRow()
+	if (!(await query_HitRowExists())) {
+		await query_HitCreateRow()
 	}
 
 	//increment
 	let countGlobal = 0
 	if (door.body.countGlobal > 0) {
-		countGlobal = textToInt(await countGlobal_readRow())//read, convert string to int afterards
+		countGlobal = textToInt(await query_HitReadRow())//read, convert string to int afterards
 		countGlobal += door.body.countGlobal//increment with requested value
-		await countGlobal_writeRow(countGlobal+'')//write, convert int to string beforehand
+		await query_HitWriteRow(countGlobal+'')//write, convert int to string beforehand
 	}
 
 	//read
-	countGlobal = +(await countGlobal_readRow())//read or read again to check, convert string to int afterards
+	countGlobal = +(await query_HitReadRow())//read or read again to check, convert string to int afterards
 
 	o.countGlobal = countGlobal
 	o.countBrowser = 0

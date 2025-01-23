@@ -2,7 +2,7 @@
 import {
 log, look, checkTag,
 doorWorker, getAccess,
-accessTableInsert, accessTableQuery,
+query_AccessTableInsert, query_AccessTableQuery,
 timeSafeEqual,
 } from 'icarus'
 
@@ -19,7 +19,7 @@ async function doorProcessBelow(door) {
 	checkTag(door.body.browserTag)
 
 	//is this browser already signed in?
-	let rows = await accessTableQuery(door.body.browserTag)//get all the rows
+	let rows = await query_AccessTableQuery(door.body.browserTag)//get all the rows
 	let signedIn1 = false
 	if (rows.length && rows[0].signed_in) signedIn1 = true//most recent row sorted first
 	o.signedIn1 = signedIn1//state before this request runs
@@ -31,7 +31,7 @@ async function doorProcessBelow(door) {
 		if (!signedIn1) {
 			o.note = 'already signed out'
 		} else {
-			await accessTableInsert(door.body.browserTag, 0)//insert a row to sign out
+			await query_AccessTableInsert(door.body.browserTag, 0)//insert a row to sign out
 			o.signedIn2 = false
 			o.note = 'signed out'
 		}
@@ -42,7 +42,7 @@ async function doorProcessBelow(door) {
 			const access = await getAccess()
 			o.passwordValid = timeSafeEqual(door.body.password, access.get('ACCESS_PASSWORD_SECRET'))
 			if (o.passwordValid) {//if password valid
-				await accessTableInsert(door.body.browserTag, 1)//insert a row to sign in
+				await query_AccessTableInsert(door.body.browserTag, 1)//insert a row to sign in
 				o.signedIn2 = true
 				o.note = 'signed in'
 			} else {

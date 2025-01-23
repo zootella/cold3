@@ -5,7 +5,7 @@ doorWorker,
 Sticker,
 fetchNetwork23,
 validateEmail, validatePhone,
-accessTableQuery,
+query_AccessTableQuery,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -19,7 +19,7 @@ async function doorProcessBelow(door) {
 
 	let {browserTag, provider, service, address, message} = door.body//pull values from the body the untrusted page posted to us
 
-	let rows = await accessTableQuery(browserTag)//get all the rows
+	let rows = await query_AccessTableQuery(browserTag)//get all the rows
 	let signedIn = rows.length && rows[0].signed_in
 	if (!signedIn) toss('account', {browserTag, door})
 	//^factor that into a function on level3

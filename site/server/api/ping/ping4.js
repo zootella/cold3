@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorWorker, Now, countGlobal_readRow, textToInt,
+Sticker, doorWorker, Now, query_HitReadRow, textToInt,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -9,7 +9,7 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorProcessBelow(door) {
 
 	let t = Now()
-	let count = textToInt(await countGlobal_readRow())
+	let count = textToInt(await query_HitReadRow())
 	let duration = Now() - t
 
 	return {note: `worker says: database took ${duration}ms to get count ${count}, ${Sticker().all}, ping4done`}

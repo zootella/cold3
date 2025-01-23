@@ -4,7 +4,7 @@ Sticker,
 log, look, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
-countGlobal_rowExists, countGlobal_createRow, countGlobal_readRow, countGlobal_writeRow,
+snippetClear, snippetPopulate, snippetQuery,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -13,11 +13,16 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorProcessBelow(door) {
 	let o = {}
 
-	o = {
-		sticker: Sticker().all,
-		message: 'hi from api query',
-		action: door.body.action,
+	let action = door.body.action
+	let result
+	switch (action) {
+		case 'Clear.':    result = await snippetClear();    break;
+		case 'Populate.': result = await snippetPopulate(); break;
+		case 'Query.':    result = await snippetQuery();    break;
+		default: toss('action', {door}); break;
 	}
 
+	o.sticker = Sticker().all
+	o.result = result
 	return o
 }
