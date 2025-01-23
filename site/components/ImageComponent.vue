@@ -11,8 +11,8 @@ let {data, error} = useFetch('/api/image', {method: 'POST'})
 <template>
 
 <div>
-<p><img :src="data.source" :alt="data.sticker" /></p>
-<p>signed by <i>{{ data.sticker }}</i></p>
+<p><img :src="data?.source" :alt="data?.sticker" /></p>
+<p>signed by <i>{{ data?.sticker }}</i></p>
 </div>
 
 </template>
