@@ -309,7 +309,6 @@ export async function query_HitReadRow() {//returns the count
 }
 export async function query_HitWriteRow(newValue) {
 	await querySetCell({table: 'settings_table', titleFind: 'setting_name_text', cellFind: 'hits', titleSet: 'setting_value_text', cellSet: newValue})
-	log('incremented')
 }
 
 

@@ -1389,7 +1389,7 @@ function isQueryText(s) {//text must be a string, can be blank, can contain weir
 	return typeof s == 'string'
 }
 function isQueryTitle(s) {//table names and column titles are like "some_name_text"
-	return typeof s == 'string' && s.length > 0 && /^[a-z](?:[a-z0-9_]*[a-z0-9])?$/.test(s)
+	return typeof s == 'string' && s.length > 0 && /^[a-z](?:[a-z0-9_]*[a-z0-9])?$/.test(s)//lowercase, can have numerals but not start with one, can have underscores but not start or end with one
 }
 function isQueryTag(s) {//a tag must be 21 letters and numbers
 	return typeof s == 'string' && s.length == 21 && /^[A-Za-z0-9]+$/.test(s)
