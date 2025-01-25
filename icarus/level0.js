@@ -1100,6 +1100,13 @@ test(() => {
 	//also tried blank, bad character, too short, too long
 })
 
+export async function hash(s) {//convenience function which goes text encoder to base 32
+	return (await subtleHash(Data({text: s.normalize('NFC')}))).base32()//use Normalization Form C
+}
+test(async () => {
+	ok((await hash('example')) == 'KDMFRYEYL3GH6YCBRKXQZRNLLB7UFQSXBKEEBFNJ5DGKZUHWKROA')
+})
+
 //                                            _ 
 //  _ __   __ _ ___ _____      _____  _ __ __| |
 // | '_ \ / _` / __/ __\ \ /\ / / _ \| '__/ _` |

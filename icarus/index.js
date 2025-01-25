@@ -64,7 +64,6 @@ getBrowserTag,
 fetchNetwork23, vhsSign,
 
 //database
-snippetClear, snippetPopulate, snippetQuery,
 query_AccessTableInsert, query_AccessTableQuery, query_HitRowExists, query_HitCreateRow, query_HitReadRow, query_HitWriteRow,
 
 } from './level3.js'
@@ -87,8 +86,11 @@ dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
+snippetClear, snippetPopulate, snippetQuery,
 //database
-queryCountRows, queryAddRow, querySetCell, queryGetRow, queryGetRows,
+queryCountAllRows, queryDeleteAllRows,
+queryAddRow, queryAddRows,
+queryCountRows, querySetCell, queryGetRow, queryGetRows,
 
 } from './level2.js'
 
@@ -151,7 +153,7 @@ base62ToInt, intToBase62,
 
 randomBetweenLight, randomBetween, randomCode,
 timeSafeEqual,
-hashLength, subtleHash, checkHash,
+hashLength, subtleHash, checkHash, hash,
 hashPassword,
 encrypt, decrypt,
 hmacSign,

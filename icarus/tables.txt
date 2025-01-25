@@ -1,0 +1,108 @@
+
+
+
+
+
+
+
+
+
+don't build wide at this level at thi stime
+rather, sketch out what you'll need for the next list of things, like:
+attestation - this user has proven they control this address, different forms
+governor - the system messaged this address hash this long ago, this many times
+browser - this user tag is signed in with these browser tags
+code - the we texted you this many numbers
+and then the other functions which you may need in the future, list those here in a brief comment, but don't code them
+
+how does sign-in work, separate 
+
+how dose code work, separate 
+
+
+database tables:
+1 hold simple, atomic facts (rather than the results of logic examining those facts)
+	example: one row for sent code, another row for entered code
+2 are a ledger that grows, rather than changes
+	example: one row for added email, another later timestamped row for removed email
+3 hold different kinds of data in a column (rather than having different tables for data)
+	example: one table for every way to sign in, that grows as we add new sign-in methods (rather than JOINs between tables about email, sms, x, metamask, etc.)
+
+first, sketch out on paper what the user does and what the system does through valid flows
+
+a user, already signed in, returns to the site
+
+an attacker enters a victims email address many times to get the victim to be sent codes they don't need
+
+a user signes up with email
+and then validates that email address
+
+a user, already signed in, 
+
+an anonymous user sets their nickname, and stars something
+
+a signed-in user authenticates with another factor to perform a protected action, like changing sign in
+these permissions only extend to their current device
+an hour later, their permission level on that device returns to normal
+
+a new user gets codes to validate their email address adn then sms number
+the second code they get is code B
+the third code they get is 6 digits, not 4
+
+a user signs in on desktop
+then on mobile
+returns later and is still signed in
+then signs out of everywhere on desktop
+(what table links a user tag to their browser tags?)
+(when does a user get a user tag? how does this work with anonymous users following a feed and renaming themselves?)
+(what happens when an anonymous user with data signs up or signs in? this is the cart combined problem)
+
+
+
+
+user_address_table
+
+user_browser_table
+
+governor_table
+the purpose of governor table is to 
+
+short_code_table
+
+attestation - this user has proven they control this address, different forms
+governor - the system messaged this address hash this long ago, this many times
+browser - this user tag is signed in with these browser tags
+code - the we texted you this many numbers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

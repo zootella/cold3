@@ -5,12 +5,13 @@ wrapper,
 import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
-hasText, checkText, newline, deindent,
+checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, subtleHash, timeSafeEqual, hmacSign,
 stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
+randomBetween,
 } from './level0.js'
 import {
 Tag, tagLength, checkTag,
@@ -1231,20 +1232,20 @@ the design is simple:
 //                                            
 
 //create the supabase client to talk to the cloud database
-let _real, _test
-async function realDatabase() {
-	if (!_real) {
+let _real1, _test1
+async function getDatabase() {
+	if (!_real1) {
 		let access = await getAccess()
-		_real = createClient(access.get('ACCESS_SUPABASE_REAL1_URL'), access.get('ACCESS_SUPABASE_REAL1_KEY_SECRET'))
+		_real1 = createClient(access.get('ACCESS_SUPABASE_REAL1_URL'), access.get('ACCESS_SUPABASE_REAL1_KEY_SECRET'))
 	}
-	return _real
+	return _real1
 }
-async function testDatabase() {
-	if (!_test) {
+async function getTestDatabase() {
+	if (!_test1) {
 		let access = await getAccess()
-		_test = createClient(access.get('ACCESS_SUPABASE_TEST1_URL'), access.get('ACCESS_SUPABASE_TEST1_KEY_SECRET'))
+		_test1 = createClient(access.get('ACCESS_SUPABASE_TEST1_URL'), access.get('ACCESS_SUPABASE_TEST1_KEY_SECRET'))
 	}
-	return _test
+	return _test1
 }
 
 //                              
@@ -1257,32 +1258,32 @@ async function testDatabase() {
 /*
 []rename to like:
 
-queryDeleteRow - delete one row if it meets the specified criteria
-queryDeleteRows - delete all rows that meet the specified criteria
-querySetCell - change an existing cell to a new value
-queryAddRows - add several at once
-queryAddRow - add just one of them; these do all the checks first before leading to the same helper
-queryCountRows - return the number of rows that meet specified criteria
-queryGetRows - get all of them, sorted
-queryGetPage - just the desired number, sorted by given title, have limit and offset
-queryGetSingleRow - use when you know there's zero or one
-queryGetRecentRow - use when there could be many
+[]queryDeleteRow - delete one row if it meets the specified criteria
+[]queryDeleteRows - delete all rows that meet the specified criteria
+[]querySetCell - change an existing cell to a new value
+[x]queryAddRows - add several at once
+[x]queryAddRow - add just one of them; these do all the checks first before leading to the same helper
+[]queryCountRows - return the number of rows that meet specified criteria
+[]queryGetRows - get all of them, sorted
+[]queryGetPage - just the desired number, sorted by given title, have limit and offset
+[]queryGetSingleRow - use when you know there's zero or one
+[]queryGetRecentRow - use when there could be many
 
 
-queryAddRow – Insert a single new row.
-queryAddRows – Insert multiple new rows in bulk.
-querySetCell – Update a single column in exactly one row.
-querySetCells - update all the cells in a column, like setting their hide to 1
-queryUpdateRow – Update multiple columns in exactly one row.
-queryUpdateRows – Update one or more columns across all matching rows.
-queryDeleteRow – Delete exactly one row matching specified criteria.
-queryDeleteRows – Delete all rows matching specified criteria.
-queryCountRows – Return the number of rows matching a condition.
-queryGetRows – Retrieve all matching rows, possibly filtered, sorted.
-queryGetNRows – Retrieve a limited set of matching rows, sorted.
-queryGetSingleRow – Retrieve a unique row (or none) matching some condition.
-queryGetRecentRow – Retrieve the most recent row (or a small set), usually by a time/tick column.
-queryExists – Return a boolean indicating if any row matches a given condition. (Optional but common)
+[]queryAddRow – Insert a single new row.
+[]queryAddRows – Insert multiple new rows in bulk.
+[]querySetCell – Update a single column in exactly one row.
+[]querySetCells - update all the cells in a column, like setting their hide to 1
+[]queryUpdateRow – Update multiple columns in exactly one row.
+[]queryUpdateRows – Update one or more columns across all matching rows.
+[]queryDeleteRow – Delete exactly one row matching specified criteria.
+[]queryDeleteRows – Delete all rows matching specified criteria.
+[]queryCountRows – Return the number of rows matching a condition.
+[]queryGetRows – Retrieve all matching rows, possibly filtered, sorted.
+[]queryGetNRows – Retrieve a limited set of matching rows, sorted.
+[]queryGetSingleRow – Retrieve a unique row (or none) matching some condition.
+[]queryGetRecentRow – Retrieve the most recent row (or a small set), usually by a time/tick column.
+[]queryExists – Return a boolean indicating if any row matches a given condition. (Optional but common)
 
 
 
@@ -1291,16 +1292,114 @@ and three buttons, Populate, Query, and Clear
 yeah, this is a good idea, but don't spend more than a day on it
 
 
+delete all the rows older than something
+invalidate all the rows older than something by changing their hide to 2 or something
 
 
+[]make it so snippet doesn't run adn doesn't render cloud; this is only local
 
 
 */
 
+
+
+export async function snippetClear() {
+	await queryDeleteAllRows({table: 'example_table'})
+}
+export async function snippetPopulate() {
+	let rows = generateExampleRows(12, Time.hour, '🔥☺  𝕔𝓸𝒇ᶠ𝒆έ  👽💘')
+	await queryAddRows({table: 'example_table', rows})
+}
+export async function snippetQuery() {
+
+	return 'hi from snippet query'
+}
+
+
+function generateExampleRows(count, between, batch) {
+	checkInt(count, 1); checkInt(between, 1); checkText(batch)//make sure you're using properly during testing
+	let rows = []
+	let t = Now() - ((count + 1) * between)//start early enough in the past no rows will be in the future
+	for (let i = 0; i < count; i++) {
+		rows.push({
+			row_tag: Tag(),
+			row_tick: t,
+			hide: 0,
+			name_text: `${batch} ${i}`,
+			some_hash: Data({random: 32}).base32(),
+			hits: 5,
+		})
+		t += randomBetween(1, between)//move forward in time a random amount
+	}
+	return rows
+}
+
+
+//writing these for the three button tests
+
+
+
+
+
+
+
+
+
+
+
+//[]
+//in table, find out how many rows there are
+export async function queryCountAllRows({table}) {
+	checkQueryTitle(table)
+	let database = await getDatabase()
+	let {count, error} = (await database
+		.from(table)
+		.select('*', {count: 'exact'}))//exact count of all rows
+	if (error) toss('supabase', {error})
+	return count
+}
+
+//[x]
+//delete all the rows from table
+export async function queryDeleteAllRows({table}) {
+	checkQueryTitle(table)
+	if (table != 'example_table') toss('test', {table})//delete all only works on the example table!
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.delete()
+		.neq('row_tag', null))//supabase requires a condition; this one matches every row
+	if (error) toss('supabase', {error})
+	//no return
+}
+
+
+//[]
+//add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
+export async function queryAddRow({table, row}) {
+	await queryAddRows({table, rows: [row]})
+	//no return
+}
+//[x]
+//add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
+export async function queryAddRows({table, rows}) {
+	checkQueryTitle(table); rows.forEach(row => checkQueryRow(row))
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.insert(rows))//order of properties doesn't matter
+	if (error) toss('supabase', {error})
+	//no return
+}
+
+
+
+
+//[]
 //in table, look at column title, and count how many rows have the given cell value
 export async function queryCountRows({table, title, cell}) {
 	checkQueryTitle(table); checkQueryCell(title, cell)
-	let database = await realDatabase()
+	let database = await getDatabase()
 	let {count, error} = (await database
 		.from(table)
 		.select(title, {count: 'exact'})//count exact matches based on title
@@ -1309,21 +1408,13 @@ export async function queryCountRows({table, title, cell}) {
 	return count
 }
 
-//add a new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
-export async function queryAddRow({table, row}) {
-	checkQueryTitle(table); checkQueryRow(row)
-	let database = await realDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.insert([row]))//order of properties doesn't matter
-	if (error) toss('supabase', {error})
-	//no return
-}
 
+
+//[]
 //in table, look at titleFind to find one row with value cellFind, then go right to column titleSet, and write cellSet there
 export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
 	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
-	let database = await realDatabase()
+	let database = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.update({[titleSet]: cellSet})//write cellSet in column titleSet
@@ -1332,10 +1423,11 @@ export async function querySetCell({table, titleFind, cellFind, titleSet, cellSe
 	//no return
 }
 
+//[]
 //in table, look at column title to find one row with value cell, and get the whole row like {title1_text: "cell1", title2_text: "cell2"}
 export async function queryGetRow({table, title, cell}) {
 	checkQueryTitle(table); checkQueryCell(title, cell)
-	let database = await realDatabase()
+	let database = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.select('*')//select all columns to get the whole row
@@ -1345,10 +1437,11 @@ export async function queryGetRow({table, title, cell}) {
 	return data//data is the whole row
 }
 
+//[]
 //in table, look at column title to get all the rows with cell value, and get them biggest to smallest based on the cells below titleSort
 export async function queryGetRows({table, title, cell, titleSort}) {
 	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
-	let database = await realDatabase()
+	let database = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.select('*')//select all columns to retrieve entire rows
