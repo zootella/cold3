@@ -57,6 +57,24 @@ then signs out of everywhere on desktop
 (when does a user get a user tag? how does this work with anonymous users following a feed and renaming themselves?)
 (what happens when an anonymous user with data signs up or signs in? this is the cart combined problem)
 
+an anonymous user navigates to the site
+their browser gets a browser tag, which is set once, and never changes
+the anonymous user stars a feed and sets a nickname, but does not sign up or sign in
+it's a shared computer. another user navigates to the site and signs in
+they use their account
+they sign out
+the browser goes back to showing the nicnmake of the anonymous user
+a second user signs in
+they user their account
+they sign out
+back to anon user
+that anon user signs up
+their stars and nickname carry into their new account
+
+a signed in user visits a page that shows them
+where they are currently signed in
+where they have previously been signed in
+with information from the browser's reported query string and geolocation, like city and country
 
 
 
@@ -77,7 +95,9 @@ code - the we texted you this many numbers
 
 
 
-
+first, just think about how the short code table works
+even before you do the lettered and length variations--imagine all the codes are 6 digits long and random
+how does it work that the user has to type it into the same
 
 
 
