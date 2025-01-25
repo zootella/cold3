@@ -2,14 +2,18 @@
 
 import {
 log, look, Now, sayTick, newline, Data, Tag,
-getBrowserTag,
+getBrowserTag, isLocal,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 
 let refOutput = ref({})
 
 async function clicked(action) {
-	refOutput.value = await $fetch('/api/query', {method: 'POST', body: {action}})
+	if (isLocal({uncertain: 'Cloud.'})) {//running locally for certain
+		refOutput.value = await $fetch('/api/query', {method: 'POST', body: {action}})
+	} else {//possibly or definitely deployed to cloud
+		refOutput.value = 'local only'
+	}
 }
 
 </script>

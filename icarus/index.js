@@ -61,7 +61,7 @@ wrapper
 export {
 
 getBrowserTag,
-fetchNetwork23, vhsSign,
+urlNetwork23, fetchNetwork23, vhsSign,
 
 //database
 query_AccessTableInsert, query_AccessTableQuery, query_HitRowExists, query_HitCreateRow, query_HitReadRow, query_HitWriteRow,
@@ -79,7 +79,7 @@ functions that use parts of the larger application and environment
 */
 export {
 
-Sticker, senseEnvironment,
+Sticker, isLocal, isCloud, senseEnvironment,
 canGetAccess, accessWorker, getAccess,
 doorWorker, doorLambda, doorPromise, awaitDoorPromises,
 dog, logAudit, logAlert,

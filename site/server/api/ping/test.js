@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorWorker, Now, getAccess, runTests,
+Sticker, doorWorker, Now, getAccess, runTests, urlNetwork23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -10,9 +10,14 @@ async function doorProcessBelow(door) {
 
 	let workerNote = (await runTests()).message
 	let lambdaNote = (await $fetch(
-		Sticker().isCloud ? 'https://api.net23.cc/test' : 'http://localhost:4000/prod/test',
-		{method: 'POST', body: {ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET')}
-		})).note
+		urlNetwork23() + '/test',
+		{
+			method: 'POST',
+			body: {
+				ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET')
+			}
+		}
+	)).note
 
 	return {note: `worker says: ${workerNote}, ${Sticker().all}; ${lambdaNote}`}
 }

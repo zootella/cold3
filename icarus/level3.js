@@ -13,7 +13,7 @@ import {
 Tag, tagLength, checkTag,
 } from './level1.js'
 import {
-getAccess,
+getAccess, Sticker, isLocal, isCloud,
 queryCountRows, queryAddRow, querySetCell, queryGetRow, queryGetRows,
 } from './level2.js'
 
@@ -54,9 +54,12 @@ forceCloudLambda false means local worker -> local lambda; cloud worker -> cloud
 forceCloudLambda true  means local worker -> cloud lambda; cloud worker -> cloud lambda
 either way a cloud worker always calls to a cloud lambda, because callign down wouldn't work at all
 */
-const forceCloudLambda = false
+const _forceCloudLambda = false
 const resourceLocalNetwork23 = 'http://localhost:4000/prod'//check your local Network 23 affliate
 const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivity via satellite
+export function urlNetwork23(forceCloudLambda) {//where you can find Network 23; no trailing slash
+	return (forceCloudLambda || isCloud({uncertain: 'Cloud.'})) ? resourceCloudNetwork23 : resourceLocalNetwork23
+}
 export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService, path, body) {//pass in $fetch which nuxt has imported in site/server/api/caller.js but not here in icarus
 
 	/*
@@ -66,7 +69,7 @@ export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService
 	*/
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
 	let access = await getAccess()
-	let host = (forceCloudLambda || Sticker().isCloud) ? resourceCloudNetwork23 : resourceLocalNetwork23
+	let host = urlNetwork23(_forceCloudLambda)
 	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
 	let d = Duration()

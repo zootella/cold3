@@ -1,30 +1,30 @@
 <script setup>
 
-import { ref, reactive, watch } from 'vue'
 import {
-Sticker, log, look,
+Sticker, isLocal, isCloud, log, look, urlNetwork23,
 } from 'icarus'
+import {ref, reactive, watch} from 'vue'
 
-let u = Sticker().isCloud ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
-u += '/rgl'+'?'+(new URLSearchParams({name: 'r2'}).toString())
-const {data, refresh} = useFetch(u, {method: 'GET'})
+const {data, refresh} = useFetch(
+	urlNetwork23() + '/rgl?' + (new URLSearchParams({
+		name: 'r2'
+	})).toString(),
+	{
+		method: 'GET'
+	}
+)
+
+
+
+
+
 
 </script>
 <template>
 
 <div>
 r2 get to lambda, block
-<button @click="refresh">Refresh</button><pre>{{look(data)}}</pre>
+<button @click="refresh">Refresh</button><pre>{{ look(data) }}</pre>
 </div>
 
 </template>
-
-
-
-
-
-
-
-
-
-

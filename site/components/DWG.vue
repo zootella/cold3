@@ -1,17 +1,27 @@
 <script setup>
 
-import { ref, reactive, watch } from 'vue'
 import {
-log, look
+Sticker, isLocal, isCloud, log, look, urlNetwork23,
 } from 'icarus'
+import {ref, reactive, watch} from 'vue'
 
-const {data, refresh} = useFetch('/api/dwg?'+(new URLSearchParams({name: 'DoorWorkerGet', quantity: 2002, condition: false}).toString()), {method: 'GET'})
+const {data, refresh} = useFetch(
+	'/api/dwg?' + (new URLSearchParams({
+		name: 'DoorWorkerGet',
+		quantity: 2002,
+		condition: false
+	})).toString(),
+	{
+		method: 'GET'
+	}
+)
+
 
 </script>
 <template>
 
 <div>
-	<p>door worker get: {{data?.message}} <button @click="refresh">Refresh</button></p>
+	<p>door worker get: {{ data?.message }} <button @click="refresh">Refresh</button></p>
 </div>
 
 </template>

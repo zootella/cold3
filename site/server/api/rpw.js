@@ -1,7 +1,7 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText,
-doorWorker,
+doorWorker, urlNetwork23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -9,9 +9,16 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorProcessBelow(door) {
 
-	let u = Sticker().isCloud ? 'https://api.net23.cc' : 'http://localhost:4000/prod'
-	u += '/rpl'
-	let bridge = await $fetch(u, {method: 'POST', body: {name: 'rpw', ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET')}})
+	let bridge = await $fetch(
+		urlNetwork23() + '/rpl',
+		{
+			method: 'POST',
+			body: {
+				name: 'rpw',
+				ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET')
+			}
+		}
+	)
 
 	let o = {}
 	o.name = 'rpw'

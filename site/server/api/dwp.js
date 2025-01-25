@@ -1,8 +1,9 @@
 
+
 import {
-Sticker, log, look, Now, Tag, getAccess, checkText,
+Sticker, isLocal, isCloud, log, look, urlNetwork23,
+Now, Tag, getAccess, checkText,
 doorWorker,
-dog,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

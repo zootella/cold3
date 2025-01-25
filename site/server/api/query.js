@@ -1,6 +1,6 @@
 
 import {
-Sticker,
+Sticker, isCloud,
 log, look, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
@@ -12,6 +12,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorProcessBelow(door) {
 	let o = {}
+	if (isCloud({uncertain: 'Cloud.'})) toss('where', {door})//this endpoint is only for local development
 
 	let action = door.body.action
 	let result

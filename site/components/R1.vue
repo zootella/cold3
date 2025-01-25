@@ -1,11 +1,19 @@
 <script setup>
 
-import { ref, reactive, watch } from 'vue'
 import {
-log, look,
+Sticker, isLocal, isCloud, log, look, urlNetwork23,
 } from 'icarus'
+import {ref, reactive, watch} from 'vue'
 
-const {data, refresh} = useFetch('/api/rpw', {method: 'POST', body: {name: 'r1'}})
+const {data, refresh} = useFetch(
+	'/api/rpw',
+	{
+		method: 'POST',
+		body: {
+			name: 'r1'
+		}
+	}
+)
 
 
 
@@ -14,7 +22,7 @@ const {data, refresh} = useFetch('/api/rpw', {method: 'POST', body: {name: 'r1'}
 
 <div>
 r1 post to worker to lambda, allow both
-<button @click="refresh">Refresh</button><pre>{{look(data)}}</pre>
+<button @click="refresh">Refresh</button><pre>{{ look(data) }}</pre>
 </div>
 
 </template>

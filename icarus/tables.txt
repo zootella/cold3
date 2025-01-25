@@ -106,9 +106,32 @@ how does it work that the user has to type it into the same
 
 
 
+== user identity 0.01
 
+imagine this subset
+no anonymous users
+no email or sms or anything else
+it's a user name, and a password
+under the hood, there's a browser tag, and a user tag
+users can sign up, sign in, sign out
+users can delete their account, even--another user can sign up with that name
+users can change their user name, their user tag does not change
+two different users can share a computer
 
+and a user has a page,
+where there is a counter they can change
+and a message they can change
 
+and if they are signed in, it shows where they are signed in
+and where they used to be signed in, also
+with just this, you can code the list that shows where the user is signed in,
+and where they have been signed in
+
+yeah, that's a good user identity 0.01
+and also will show you
+and then after that, add email
+and by adding email successfully, you enable multifactor within the same schema
+and email also includes one time codes
 
 
 

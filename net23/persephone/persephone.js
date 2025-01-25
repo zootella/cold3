@@ -1,6 +1,6 @@
 
 import {
-Sticker, getAccess,
+Sticker, isCloud, getAccess,
 log, logAudit, look, Now, Size, Data,
 checkEmail, checkPhone,
 test, ok,
@@ -15,7 +15,7 @@ async function loadSharp()       { if (!module_sharp)       module_sharp       =
 //^the last three were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
 
 test(async () => {//deployed, make sure we're running in Node 20 on Amazon Linux on their Graviton chip, as serverless.yml requested
-	if (Sticker().isCloud) ok(process.version.startsWith('v20.') && process.platform == 'linux' && process.arch == 'arm64')
+	if (isCloud({uncertain: 'Cloud.'})) ok(process.version.startsWith('v20.') && process.platform == 'linux' && process.arch == 'arm64')
 })
 test(async () => {//test amazon modules load and appear ready
 	let access = await getAccess()

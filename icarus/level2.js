@@ -84,6 +84,12 @@ export function Sticker() {
 
 	return sticker
 }
+export function isLocal(o) { return Sticker().isLocal }
+export function isCloud(o) { return Sticker().isCloud }
+/*
+ttd january--make the two above ironclad, using door properties rather than environment fingerprinting
+and also have them take {uncertain: 'Cloud.'} meaning if not sure, default to cloud or local
+*/
 
 //                                            _                                      _   
 //  ___  ___ _ __  ___  ___    ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
@@ -662,7 +668,7 @@ Notes: (i) The Network 23 Application Programming Interface is exclusively for s
 function checkNetwork23AccessCode(body, access) {
 	if (!timeSafeEqual(body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
 }
-function checkForwardedSecure(headers) { if (Sticker().isLocal) return//skip these checks during local development
+function checkForwardedSecure(headers) { if (isLocal({uncertain: 'Cloud.'})) return//skip these checks during local development
 	let n = headerCount(headers, 'X-Forwarded-Proto')
 	if (n != 1) toss('x forwarded proto header missing or multiple', {n, headers})
 	let v = headerGet(headers, 'X-Forwarded-Proto')
@@ -677,7 +683,7 @@ function checkOriginOmittedOrValid(headers, access) {
 function checkOriginOmitted(headers) {
 	if (headerCount(headers, 'Origin')) toss('origin must not be present', {headers})
 }
-function checkOriginValid(headers, access) { if (Sticker().isLocal) return//skip these checks during local development
+function checkOriginValid(headers, access) { if (isLocal({uncertain: 'Cloud.'})) return//skip these checks during local development
 	let n = headerCount(headers, 'Origin')
 	if (n != 1) toss('origin header missing or multiple', {n, headers})
 	let v = headerGet(headers, 'Origin')
@@ -1013,7 +1019,7 @@ export async function awaitLogAlert(headline, watch) {
 	let c = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
 		logTo(console.error, c.body[0].message)
-		let r; if (Sticker().isCloud) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
+		let r; if (isCloud({uncertain: 'Cloud.'})) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
 	}
 }
 async function prepareLog(status, type, label, headline, watch) {
@@ -1118,7 +1124,7 @@ test(async () => { if (!cloudLogSimulationMode) return//only run these in simula
 //                                        
 
 export function useTurnstileHere() {
-	return Sticker().isCloud
+	return isCloud({uncertain: 'Cloud.'})
 	//todo january, replace with something ironclad that uses door, not fingerprinting. if uncertain, go cloud not local
 	/*
 	if (where({uncertain: 'cloud'}) == 'cloud')
@@ -1307,7 +1313,7 @@ export async function snippetClear() {
 	await queryDeleteAllRows({table: 'example_table'})
 }
 export async function snippetPopulate() {
-	let rows = generateExampleRows(12, Time.hour, '🔥☺  𝕔𝓸𝒇ᶠ𝒆έ  👽💘')
+	let rows = generateExampleRows(12, Time.hour, 'first')
 	await queryAddRows({table: 'example_table', rows})
 }
 export async function snippetQuery() {
