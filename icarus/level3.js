@@ -267,6 +267,20 @@ then tonight you can go on a notes and previous scraps deleteathon
 
 //these are the database functions in use; next, use the generalized functions above to refactor these away
 
+//proposed
+
+export async function browserSignedIn(browserTag) {
+
+}
+export async function browserSignIn(browserTag) {
+
+}
+export async function browserSignOut(browserTag) {
+
+}
+
+//previous
+
 //insert a new row into table_access with the given row tag, browser tag, and signed in status
 export async function query_AccessTableInsert(browserTag, signedIn) {
 	queryAddRow({table: 'access_table', row: {row_tick: Now(), row_tag: Tag(), browser_tag: browserTag, signed_in: signedIn}})
@@ -276,6 +290,29 @@ export async function query_AccessTableQuery(browserTag) {
 	let rows = await queryGetRows({table: 'access_table', title: 'browser_tag', cell: browserTag, titleSort: 'row_tick'})
 	return rows
 }
+
+
+//proposed
+
+export async function hitGlobalRead() {
+
+}
+export async function hitGlobalWrite(n) {
+
+}
+/*
+you realize you need this here, and maybe more widely
+you're trying to read or write a cell
+if the row isn't there, then you want to create the row with the default or starting value
+
+currently, you do this with two round trips to the database
+isntead, can you get the "not found" error from supabase, and then do the write
+
+actually, you may not need this in the rest of the tables, and so you could skip the row exists check entirely
+no wait you'll need it for browser tag, duh
+*/
+
+//previous
 
 export async function query_HitRowExists() {
 	let hits = await queryCountRows({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})

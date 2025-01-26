@@ -103,6 +103,14 @@ how does it work that the user has to type it into the same
 
 
 
+what prevents a user who has just gotten a 1234 code from trying 10,000 times for guaranteed entry?
+turnstile will slow them down
+the code will only last 20 minutes
+should you also put a governor on trying answers for that code (on a hash of the codeTag in the page)?
+
+
+
+
 
 
 
@@ -121,6 +129,7 @@ two different users can share a computer
 and a user has a page,
 where there is a counter they can change
 and a message they can change
+(oh, their page also has a card:)
 
 and if they are signed in, it shows where they are signed in
 and where they used to be signed in, also
@@ -132,11 +141,17 @@ and also will show you
 and then after that, add email
 and by adding email successfully, you enable multifactor within the same schema
 and email also includes one time codes
+and forgot password, that flow
 
+and after that, add sms
+which is like another kind of email
+and also has forgot password, validate, one time codes, code expiration, rate limiting
+lots of advanced stuff
 
-
-
-
+this is your current idea of how you get started with user identity
+(1) password, demonstrating linking browserTag and userTag
+(2) email, demonstrating one time code validation and forgot password and more
+(3) sms, as an alternative additional method to email that you can add without much additional code or schema
 
 
 
