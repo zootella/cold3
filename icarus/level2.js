@@ -1261,65 +1261,9 @@ async function getTestDatabase() {
 //  \__, |\__,_|\___|_|   \__, |
 //     |_|                |___/ 
 
-/*
-[]rename to like:
-
-[]queryDeleteRow - delete one row if it meets the specified criteria
-[]queryDeleteRows - delete all rows that meet the specified criteria
-[]querySetCell - change an existing cell to a new value
-[x]queryAddRows - add several at once
-[x]queryAddRow - add just one of them; these do all the checks first before leading to the same helper
-[]queryCountRows - return the number of rows that meet specified criteria
-[]queryGetRows - get all of them, sorted
-[]queryGetPage - just the desired number, sorted by given title, have limit and offset
-[]queryGetSingleRow - use when you know there's zero or one
-[]queryGetRecentRow - use when there could be many
-
-
-[]queryAddRow – Insert a single new row.
-[]queryAddRows – Insert multiple new rows in bulk.
-[]querySetCell – Update a single column in exactly one row.
-[]querySetCells - update all the cells in a column, like setting their hide to 1
-[]queryUpdateRow – Update multiple columns in exactly one row.
-[]queryUpdateRows – Update one or more columns across all matching rows.
-[]queryDeleteRow – Delete exactly one row matching specified criteria.
-[]queryDeleteRows – Delete all rows matching specified criteria.
-[]queryCountRows – Return the number of rows matching a condition.
-[]queryGetRows – Retrieve all matching rows, possibly filtered, sorted.
-[]queryGetNRows – Retrieve a limited set of matching rows, sorted.
-[]queryGetSingleRow – Retrieve a unique row (or none) matching some condition.
-[]queryGetRecentRow – Retrieve the most recent row (or a small set), usually by a time/tick column.
-[]queryExists – Return a boolean indicating if any row matches a given condition. (Optional but common)
 
 
 
-you'll need a page, database test
-and three buttons, Populate, Query, and Clear
-yeah, this is a good idea, but don't spend more than a day on it
-
-
-delete all the rows older than something
-invalidate all the rows older than something by changing their hide to 2 or something
-
-
-[]make it so snippet doesn't run adn doesn't render cloud; this is only local
-
-
-*/
-
-
-
-export async function snippetClear() {
-	await queryDeleteAllRows({table: 'example_table'})
-}
-export async function snippetPopulate() {
-	let rows = generateExampleRows(12, Time.hour, 'first')
-	await queryAddRows({table: 'example_table', rows})
-}
-export async function snippetQuery() {
-
-	return 'hi from snippet query'
-}
 
 
 function generateExampleRows(count, between, batch) {
@@ -1340,8 +1284,62 @@ function generateExampleRows(count, between, batch) {
 	return rows
 }
 
+export async function snippetClear() {
+	await queryDeleteAllRows({table: 'example_table'})
+}
+export async function snippetPopulate() {
+	let rows = generateExampleRows(12, Time.hour, 'first')
+	await queryAddRows({table: 'example_table', rows})
+}
+export async function snippetQuery() {
+	let data, error
+	try { data = await snippet() } catch (e) { error = e }
+	if (error) return look(error)
+	else return data
+}
 
-//writing these for the three button tests
+
+
+
+
+async function snippet() {
+	return await queryFilterSortTop({
+		table: 'access_table',
+		title: 'browser_tag',
+		cell: 'mUI301FUXDWTtgwq4eSGz',
+		titleSort: 'row_tag',
+	})
+}
+
+//[ran]
+//filter table to rows with cell under title, returning the one with the biggest titleSort value, or null if none found
+export async function queryFilterSortTop({table, title, cell, titleSort}) {
+	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//select all columns to retrieve entire rows
+		.eq(title, cell)//filter to get rows where title equals cell
+		.order(titleSort, {ascending: false})//sort rows by titleSort in descending order
+		.limit(1)//just the winning row, probably using to get the most recent row_tag
+	)
+	if (error) toss('supabase', {error})
+	return data[0]//data is an array with one element, or empty if none found
+}
+//[ran]
+//filter to just rows with cell under title, and return sorted by titleSort, biggest first, or [] if none found
+export async function queryFilterSortAll({table, title, cell, titleSort}) {
+	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//select all columns to retrieve entire rows
+		.eq(title, cell)//filter to get rows where title equals cell
+		.order(titleSort, {ascending: false})//sort rows by titleSort in descending order
+	)
+	if (error) toss('supabase', {error})
+	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
+}
 
 
 
@@ -1353,19 +1351,141 @@ function generateExampleRows(count, between, batch) {
 
 
 
-//[]
-//in table, find out how many rows there are
+//[ran]
+export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
+	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
+	if (!row) toss('row not found')
+}
+//[ran]
+export async function querySetCellOrAddRow({table, titleFind, cellFind, titleSet, cellSet, rowAddDefault}) {
+	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
+	if (!row) await queryAddRow({table, row: rowAddDefault})
+}
+async function _querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.update({[titleSet]: cellSet})//write cellSet under titleSet
+		.eq(titleFind, cellFind)//in the row where titleFind equals cellFind
+		.select()//return the updated rows
+		.maybeSingle()//data is the updated row, null of no rows matched, error if 2+ rows matched
+	)
+	if (error) toss('supabase', {error})
+	return data//data is the whole updated row
+}
+
+
+
+
+
+
+//[ran]
+export async function queryGetCell({table, titleFind, cellFind, titleGet}) {
+	let row = await _queryGetRow({table, titleFind, cellFind})
+	if (!row) toss('row not found')
+	let cellGet = row[titleGet]
+	checkQueryCell(titleGet, cellGet)
+	return cellGet
+}
+//[ran]
+//get the cell under titleGet from the row where titleFind is cellFind, adds a default row if not found
+export async function queryGetCellOrAddRow({table, titleFind, cellFind, titleGet, rowAddDefault}) {
+	let row = await queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault})
+	let cellGet = row[titleGet]
+	checkQueryCell(titleGet, cellGet)
+	return cellGet
+}
+
+
+
+
+//[ran]
+export async function queryGetRow({table, titleFind, cellFind}) {
+	let row = await _queryGetRow({table, titleFind, cellFind})
+	if (!row) toss('row not found')
+	return row
+}
+//[ran]
+//get the one row with value cellFind under titleFind, add the given default row if not found
+export async function queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault}) {
+	let row = await _queryGetRow({table, titleFind, cellFind})
+	if (!row) {
+		row = rowAddDefault
+		await queryAddRow({table, row: rowAddDefault})
+	}
+	return row
+}
+//in table, look at column titleFind to find one row with value cellFind, null if not found
+async function _queryGetRow({table, titleFind, cellFind}) {
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//select all columns to get the whole row
+		.eq(titleFind, cellFind)//find the row where titleFind equals cellFind
+		.maybeSingle()//data null of no rows match, error if 2+ rows match
+	)
+	if (error) toss('supabase', {error})
+	return data//data is the whole row
+}
+
+
+
+
+
+//[ran]
+//add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
+export async function queryAddRow({table, row}) {
+	await queryAddRows({table, rows: [row]})
+}
+//[ran]
+//add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
+export async function queryAddRows({table, rows}) {
+	checkQueryTitle(table); rows.forEach(row => checkQueryRow(row))
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.insert(rows)//order of properties in each row object in the rows array doesn't matter
+	)
+	if (error) toss('supabase', {error})
+}
+
+
+
+
+
+
+
+
+//[ran]
+//count how many rows have cellFind under titleFind
+export async function queryCountRows({table, titleFind, cellFind}) {
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
+	let database = await getDatabase()
+	let {count, error} = (await database
+		.from(table)
+		.select(titleFind, {count: 'exact'})//count exact matches based on titleFind
+		.eq(titleFind, cellFind)//filter rows to those with the cellFind value
+	)
+	if (error) toss('supabase', {error})
+	return count
+}
+
+//[ran]
+//how many rows table has
 export async function queryCountAllRows({table}) {
 	checkQueryTitle(table)
 	let database = await getDatabase()
 	let {count, error} = (await database
 		.from(table)
-		.select('*', {count: 'exact'}))//exact count of all rows
+		.select('*', {count: 'exact'})//exact count of all rows
+	)
 	if (error) toss('supabase', {error})
 	return count
 }
 
-//[x]
+//[ran]
 //delete all the rows from table
 export async function queryDeleteAllRows({table}) {
 	checkQueryTitle(table)
@@ -1374,88 +1494,20 @@ export async function queryDeleteAllRows({table}) {
 	let {data, error} = (await database
 		.from(table)
 		.delete()
-		.neq('row_tag', null))//supabase requires a condition; this one matches every row
+		.neq('row_tag', null)//supabase requires a condition; this one matches every row
+	)
 	if (error) toss('supabase', {error})
-	//no return
-}
-
-
-//[]
-//add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
-export async function queryAddRow({table, row}) {
-	await queryAddRows({table, rows: [row]})
-	//no return
-}
-//[x]
-//add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
-export async function queryAddRows({table, rows}) {
-	checkQueryTitle(table); rows.forEach(row => checkQueryRow(row))
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.insert(rows))//order of properties doesn't matter
-	if (error) toss('supabase', {error})
-	//no return
 }
 
 
 
 
-//[]
-//in table, look at column title, and count how many rows have the given cell value
-export async function queryCountRows({table, title, cell}) {
-	checkQueryTitle(table); checkQueryCell(title, cell)
-	let database = await getDatabase()
-	let {count, error} = (await database
-		.from(table)
-		.select(title, {count: 'exact'})//count exact matches based on title
-		.eq(title, cell))//filter rows to those with the cell value
-	if (error) toss('supabase', {error})
-	return count
-}
 
 
 
-//[]
-//in table, look at titleFind to find one row with value cellFind, then go right to column titleSet, and write cellSet there
-export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
-	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.update({[titleSet]: cellSet})//write cellSet in column titleSet
-		.eq(titleFind, cellFind))//in the row where titleFind equals cellFind
-	if (error) toss('supabase', {error})
-	//no return
-}
 
-//[]
-//in table, look at column title to find one row with value cell, and get the whole row like {title1_text: "cell1", title2_text: "cell2"}
-export async function queryGetRow({table, title, cell}) {
-	checkQueryTitle(table); checkQueryCell(title, cell)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')//select all columns to get the whole row
-		.eq(title, cell)//find the row where title equals cell
-		.single())//if no rows match returns data as null, if 2+ rows match returns error
-	if (error) toss('supabase', {error})
-	return data//data is the whole row
-}
 
-//[]
-//in table, look at column title to get all the rows with cell value, and get them biggest to smallest based on the cells below titleSort
-export async function queryGetRows({table, title, cell, titleSort}) {
-	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')//select all columns to retrieve entire rows
-		.eq(title, cell)//filter to get rows where title equals cell
-		.order(titleSort, {ascending: false}))//sort rows by titleSort in descending order
-	if (error) toss('supabase', {error})
-	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
-}
+
 
 //                                     _               _    
 //   __ _ _   _  ___ _ __ _   _    ___| |__   ___  ___| | __

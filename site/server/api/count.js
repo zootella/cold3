@@ -4,7 +4,7 @@ Sticker,
 log, look, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
-query_HitRowExists, query_HitCreateRow, query_HitReadRow, query_HitWriteRow,
+settingReadInt, settingWrite,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -16,25 +16,15 @@ async function doorProcessBelow(door) {
 	o.message = 'hi from api count'
 	o.mirroredBody = door.body
 
-	//create the row if it doesn't exist
-	if (!(await query_HitRowExists())) {
-		await query_HitCreateRow()
+	let g = await settingReadInt('hits', 0)//default 0 in case this makes the row
+	if (door.body.countGlobal > 0) {//increment
+		g += door.body.countGlobal//increment with requested value
+		await settingWrite('hits', g)//write
 	}
 
-	//increment
-	let countGlobal = 0
-	if (door.body.countGlobal > 0) {
-		countGlobal = textToInt(await query_HitReadRow())//read, convert string to int afterards
-		countGlobal += door.body.countGlobal//increment with requested value
-		await query_HitWriteRow(countGlobal+'')//write, convert int to string beforehand
-	}
-
-	//read
-	countGlobal = +(await query_HitReadRow())//read or read again to check, convert string to int afterards
-
-	o.countGlobal = countGlobal
+	o.countGlobal = g
 	o.countBrowser = 0
-	o.count1 = countGlobal
+	o.count1 = g
 	o.count2 = 0
 
 	return o

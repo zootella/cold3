@@ -11,6 +11,7 @@ let refOutput = ref({})
 async function clicked(action) {
 	if (isLocal({uncertain: 'Cloud.'})) {//running locally for certain
 		refOutput.value = await $fetch('/api/query', {method: 'POST', body: {action}})
+		log(refOutput.value.result)
 	} else {//possibly or definitely deployed to cloud
 		refOutput.value = 'local only'
 	}

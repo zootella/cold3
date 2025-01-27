@@ -63,8 +63,12 @@ export {
 getBrowserTag,
 urlNetwork23, fetchNetwork23, vhsSign,
 
-//database
-query_AccessTableInsert, query_AccessTableQuery, query_HitRowExists, query_HitCreateRow, query_HitReadRow, query_HitWriteRow,
+/* level 3 query */
+
+settingReadInt, settingRead, settingWrite,
+browserIsSignedIn, browserSignIn, browserSignOut,
+
+query_AccessTableInsert, query_AccessTableQuery,
 
 } from './level3.js'
 
@@ -86,11 +90,30 @@ dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
-snippetClear, snippetPopulate, snippetQuery,
-//database
-queryCountAllRows, queryDeleteAllRows,
-queryAddRow, queryAddRows,
-queryCountRows, querySetCell, queryGetRow, queryGetRows,
+/* level 2 query */
+
+snippetClear,
+snippetPopulate,
+snippetQuery,
+
+queryFilterSortAll,
+queryFilterSortTop,
+
+querySetCell,
+querySetCellOrAddRow,
+
+queryGetCell,
+queryGetCellOrAddRow,
+
+queryGetRow,
+queryGetRowOrAddRow,
+
+queryAddRow,
+queryAddRows,
+
+queryCountRows,
+queryCountAllRows,
+queryDeleteAllRows,
 
 } from './level2.js'
 

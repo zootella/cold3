@@ -1,30 +1,4 @@
 
-import {
-Now,
-log, toss,
-checkInt,
-intToText, textToInt,
-checkHash, checkSquare,
-} from './level0.js'
-import {
-Tag, checkTag,
-} from './level1.js'
-import {
-getAccess,
-} from './level2.js'
-
-import {createClient} from '@supabase/supabase-js'
-
-
-
-
-
-
-
-
-
-
-//cleanup: 4 not yet sorted
 
 
 
@@ -36,175 +10,34 @@ import {createClient} from '@supabase/supabase-js'
 
 
 
-/*
-database.js
-database schema, sql statements to create the tables
-database utility functions
-interface between the application and the database
-keep it all here together for easy refactoring and auditing
-*/
-//no, actually, organize into tight sections and move into library2
 
 
 
 
-//  _         _             _                  _   _                _                  
-// | | ____ _| |_ _   _    | |__   __ _ _ __  | |_| |__   ___    __| | ___   ___  _ __ 
-// | |/ / _` | __| | | |   | '_ \ / _` | '__| | __| '_ \ / _ \  / _` |/ _ \ / _ \| '__|
-// |   < (_| | |_| |_| |_  | |_) | (_| | |    | |_| | | |  __/ | (_| | (_) | (_) | |   
-// |_|\_\__,_|\__|\__, ( ) |_.__/ \__,_|_|     \__|_| |_|\___|  \__,_|\___/ \___/|_|   
-//                |___/|/                                                              
 
 /*
 our tables do everthing with just a small handful of postgres types,
-and our conventions for table and column names identify what kind of data columns have:
+and our conventions for column titles identify what kind of data columns have:
 
-some_table              table names must end _table
+example2_table            table names end _table, lowercase and numerals ok
 
-column_enum   BIGNUM    boolean 0 or 1 which could grow in the future into an enumeration
-column_tick   BIGNUM    tick count since the start of 1970
-column_int    BIGNUM    number value counting something
+row_tag         CHAR(21)  a globally unique tag to identify this row
+row_tick        BIGNUM    set when we added the row
+hide            BIGNUM    0 to start, nonzero to ignore this row in regular use
+                          ^ most tables start with these three columns
 
-column_tag    CHAR(21)  21 letters and numbers of a universally unique tag
-column_hash   CHAR(52)  52 characters of a sha256 hash value encoded to base32
-column_text   TEXT      text which can be blank or long, and is square encoded
+password_hash   CHAR(52)  52 characters of a sha256 hash value encoded to base32
+user_name_text  TEXT      text which can be blank or long
 
-you must use squareEncode() and squareDecode() in a layer above this one!
-
-katy's functions, below, are our defense against saving or reading malformed data
-they use the column name convention to check the data is correct for the stated type
+_tag, _hash, and _text are strings; everything else must be an integer
+a column which can be a tag or blank is _text
+as is a column which can be text or numerals, like settings_table
 */
 
-function katyTable(tableName) {//just a table name, this one is silly
-	if (_type(tableName) != 'table') toss('data', {tableName})
-}
-function katyColumn(columnName){//just a column name
-	_type(columnName)//throws if there isn't 
-}
-function katyRows(rows) {//here's an array of rows, are you really going to check every cell? you need to see how many ms this adds on larger queries. you technically don't have to do this, imagining bad data is never added to the database
-	rows.forEach(katyRow)
-}
-function katyRow(row) {//object of column names: cell contents
-	for (let [column, value] of Object.entries(row)) katyCell(column, value)//won't pick up properties that are non-enumerable or from the prototype chain
-}
-function katyCell(column, value){//column name and cell value
-	let type = _type(column)
-	if      (type == 'enum') { checkInt(value)    }//a boolean saved as the int 0 or 1 which could become an enum
-	else if (type == 'tick') { checkInt(value)    }//a tick count of an actual time something happened
-	else if (type == 'int')  { checkInt(value)    }//integer
-	else if (type == 'tag')  { checkTag(value)    }//a tag, 21 letters and numbers
-	else if (type == 'hash') { checkHash(value)   }//a sha256 hash value encoded to base32, 52 characters
-	else if (type == 'text') { checkSquare(value) }//text, can be blank, square encoded in the database 
-	else { toss('data', {column, value}) }
-}
 
-function _type(s) {//from a column name like 'name_type', clip out 'type'
-	checkSquare(s)//ensure table and column names don't contain puncutation potentially useful to inject sql
-	let i = s.lastIndexOf('_')
-	if ((i < 1) || (s.length < i + 2)) toss('data', {s})//shortest possible valid column name is 'a_b'
-	return s.substring(s.lastIndexOf('_') + 1)
-}
 
-/*
-katy checks, she doesn't transform
-so here are the functions you need in layer1 to do necessary data transformations
 
-for instance, database schema and conventions keep a boolean like true false
-as the values 1 or 0 in a BIGINT column with a name like something_enum
 
-while no names or text can contain characters that won't be in square encoded text,
-all text in TEXT columns (names ending _text) is saved safely square encoded
-use saveText() and readText() in layer1 below to do this encoding there exactly once each way
-
-and in some instances, like the settings table,
-a TEXT column has some values that the application knows to interpret as ints
-use saveIntAsText() and readIntAsText() for these cells
-*/
-function saveBoolean(b) { return b ? 1    : 0     }
-function readBoolean(i) { return i ? true : false }
-
-function saveText(s) { return squareEncode(s) }
-function readText(s) { return squareDecode(s) }
-
-function saveIntAsText(i) { return intToText(i) }
-function readIntAsText(s) { return textToInt(s) }
-
-//  _                          ___  
-// | | __ _ _   _  ___ _ __   / _ \ 
-// | |/ _` | | | |/ _ \ '__| | | | |
-// | | (_| | |_| |  __/ |    | |_| |
-// |_|\__,_|\__, |\___|_|     \___/ 
-//          |___/                   
-
-/*
-all the functions that call the supbase api have to be here, and are not exported, either!
-they work on whatever table you tell them to
-and katy checks the column names and data types going in both directions
-*/
-
-//in table, look at column1, and count how many rows have value1
-async function database_countRows(table, column1, value1) {
-	katyTable(table); katyCell(column1, value1)
-	let { count, error } = (await (await client())
-		.from(table)
-		.select(column1, { count: 'exact' })//count exact matches based on column1
-		.eq(column1, value1))//filter rows to those with value1
-	if (error) toss('supabase', {error})
-	return count
-}
-
-//add a new row to table, with values like { column1_name: cell1_value, column2_name... }
-async function database_addRow(table, values) {
-	katyTable(table); katyRow(values)
-	let { data, error } = (await (await client())
-		.from(table)
-		.insert([values]))//make a new row with all the given values
-	if (error) toss('supabase', { error })
-	//no return
-}
-
-//in table, look at column1 to find one row with value1, then go right to column2, and write value2 there
-async function database_updateCell(table, column1, value1, column2, value2) {
-	katyTable(table); katyCell(column1, value1); katyCell(column2, value2)
-	let { data, error } = (await (await client())
-		.from(table)
-		.update({ [column2]: value2 })//write value2 in column2
-		.eq(column1, value1))//in the row where column1 equals value1
-	if (error) toss('supabase', {error})
-	//no return
-}
-
-//in table, look at column1 to find one row with value1, and get the whole row
-async function database_getRow(table, column1, value1) {
-	katyTable(table); katyCell(column1, value1)
-	let { data, error } = (await (await client())
-		.from(table)
-		.select('*')//select all columns to get the whole row
-		.eq(column1, value1)//find the row where column1 equals value1
-		.single())//if no rows match returns data as null, if 2+ rows match returns error
-	if (error) toss('supabase', {error})
-	katyRow(data)
-	return data//data is the whole row
-}
-
-//in table, look at column1 to get all the rows with value1, and get them biggest to smallest based on their values in columnSort
-async function database_getRows(table, column1, value1, columnSort) {
-	katyTable(table); katyCell(column1, value1); katyColumn(columnSort)
-	let { data, error } = (await (await client())
-		.from(table)
-		.select('*')//select all columns to retrieve entire rows
-		.eq(column1, value1)//filter to get rows where column1 equals value1
-		.order(columnSort, { ascending: false }))//sort rows by column2 in descending order
-	if (error) toss('supabase', {error})
-	katyRows(data)//if this is slow, it's not necessary
-	return data//data is an array of rows
-}
-
-/*
-notes:
-what's more at this level?
-joins, maybe, where you're returning rows based on how they match up with other tables
-*/
 
 //  _                         _ 
 // | | __ _ _   _  ___ _ __  / |
@@ -213,23 +46,19 @@ joins, maybe, where you're returning rows based on how they match up with other 
 // |_|\__,_|\__, |\___|_|    |_|
 //          |___/               
 
-/*
-in this higher layer, functions are specific to the application's use of the database
-only starting here can functions be exported
 
-this is also where you use saveText() and readText() to square encode and decode
-this way, you only have to do that here
-and you know that in each direction, you're only doing it one time
 
-katy will make sure no characters that won't appear in square encoded text get anywhere near the database
-but she only checks, she doesn't transform, so here is where you do square encoding
-similarly, this is also where you convert a truthy javascript variable into the number 1
-for a BIGINT column named something_enum
-and where you keep numeric settings as text in the settings table
 
-as well as other application-specific data transformations in the future, they'll be here
-keeping katy simple and strong above
-*/
+
+
+
+
+a takeaway here is
+can you make this so 
+
+
+
+
 
 //settings
 async function settings_getText(name) {
@@ -738,6 +567,82 @@ queryGetRecentRow - use when there could be many
 how do you write fast little tests of these that really hit the database?
 your manual testing has been slow and tedious
 */
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+you realize you need this here, and maybe more widely
+you're trying to read or write a cell
+if the row isn't there, then you want to create the row with the default or starting value
+
+currently, you do this with two round trips to the database
+isntead, can you get the "not found" error from supabase, and then do the write
+
+actually, you may not need this in the rest of the tables, and so you could skip the row exists check entirely
+no wait you'll need it for browser tag, duh
+*/
+
+//previous
+/*
+export async function query_HitRowExists() {
+	let hits = await queryCountRows({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
+	return hits > 0
+}
+export async function query_HitCreateRow() {
+	await queryAddRow({table: 'settings_table', row: {setting_name_text: 'hits', setting_value_text: '0'}})
+}
+export async function query_HitReadRow() {//returns the count
+	let row = await queryGetRow({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
+	return row.setting_value_text
+}
+export async function query_HitWriteRow(newValue) {
+	await querySetCell({table: 'settings_table', titleFind: 'setting_name_text', cellFind: 'hits', titleSet: 'setting_value_text', cellSet: newValue})
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -2,7 +2,7 @@
 import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
-hasText, checkText, newline, deindent,
+textToInt, hasText, checkText, newline, deindent,
 Data, decrypt, subtleHash, timeSafeEqual,
 stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
@@ -14,7 +14,32 @@ Tag, tagLength, checkTag,
 } from './level1.js'
 import {
 getAccess, Sticker, isLocal, isCloud,
-queryCountRows, queryAddRow, querySetCell, queryGetRow, queryGetRows,
+
+/* query level 2 */
+
+snippetClear,
+snippetPopulate,
+snippetQuery,
+
+queryFilterSortAll,
+queryFilterSortTop,
+
+querySetCell,
+querySetCellOrAddRow,
+
+queryGetCell,
+queryGetCellOrAddRow,
+
+queryGetRow,
+queryGetRowOrAddRow,
+
+queryAddRow,
+queryAddRows,
+
+queryCountRows,
+queryCountAllRows,
+queryDeleteAllRows,
+
 } from './level2.js'
 
 //level3 ~ welcome to the level of business logic
@@ -246,13 +271,6 @@ export function validateMessageForm() {
 
 
 
-
-
-
-
-
-
-
 //      _       _        _                    
 //   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
 //  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
@@ -269,14 +287,29 @@ then tonight you can go on a notes and previous scraps deleteathon
 
 //proposed
 
-export async function browserSignedIn(browserTag) {
+//bookmark january, next, use these in account.js, account2.js, and message.js, and then delete the remaining query_
 
+export async function browserIsSignedIn(browserTag) {
+	let row = await queryFilterSortTop({
+		table: 'access_table',
+		title: 'browser_tag', cell: browserTag,
+		titleSort: 'row_tag',
+	})
+	return row?.signed_in
 }
-export async function browserSignIn(browserTag) {
-
-}
-export async function browserSignOut(browserTag) {
-
+export async function browserSignIn(browserTag)  { await _browserSignedInSet(browserTag, 1) }
+export async function browserSignOut(browserTag) { await _browserSignedInSet(browserTag, 0) }
+async function _browserSignedInSet(browserTag, signedIn) {
+	await queryAddRow(
+		'access_table',
+		{
+			row_tag: Tag(),
+			row_tick: Now(),
+			hide: 0,
+			browser_tag: browserTag,
+			signed_in: signedIn,
+		}
+	)
 }
 
 //previous
@@ -294,68 +327,43 @@ export async function query_AccessTableQuery(browserTag) {
 
 //proposed
 
-export async function hitGlobalRead() {
 
+
+
+
+
+//[ran]
+export async function settingReadInt(name, defaultValue) {
+	return textToInt(await settingRead(name, defaultValue))
 }
-export async function hitGlobalWrite(n) {
-
+export async function settingRead(name, defaultValue) {
+	let defaultValueText = defaultValue+''
+	return await queryGetCellOrAddRow({
+		table: 'settings_table',
+		titleFind: 'setting_name_text',
+		cellFind: name,
+		titleGet: 'setting_value_text',
+		rowAddDefault: {
+			setting_name_text: name,
+			setting_value_text: defaultValueText,
+		}
+	})
 }
-/*
-you realize you need this here, and maybe more widely
-you're trying to read or write a cell
-if the row isn't there, then you want to create the row with the default or starting value
-
-currently, you do this with two round trips to the database
-isntead, can you get the "not found" error from supabase, and then do the write
-
-actually, you may not need this in the rest of the tables, and so you could skip the row exists check entirely
-no wait you'll need it for browser tag, duh
-*/
-
-//previous
-
-export async function query_HitRowExists() {
-	let hits = await queryCountRows({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
-	return hits > 0
+//[]
+export async function settingWrite(name, value) {
+	let valueText = value+''
+	return await querySetCellOrAddRow({
+		table: 'settings_table',
+		titleFind: 'setting_name_text',
+		cellFind: name,
+		titleSet: 'setting_value_text',
+		cellSet: valueText,
+		rowAddDefault: {
+			setting_name_text: name,
+			setting_value_text: valueText,
+		}
+	})
 }
-export async function query_HitCreateRow() {
-	await queryAddRow({table: 'settings_table', row: {setting_name_text: 'hits', setting_value_text: '0'}})
-}
-export async function query_HitReadRow() {//returns the count
-	let row = await queryGetRow({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
-	return row.setting_value_text
-}
-export async function query_HitWriteRow(newValue) {
-	await querySetCell({table: 'settings_table', titleFind: 'setting_name_text', cellFind: 'hits', titleSet: 'setting_value_text', cellSet: newValue})
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

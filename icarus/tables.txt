@@ -7,6 +7,34 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 don't build wide at this level at thi stime
 rather, sketch out what you'll need for the next list of things, like:
 attestation - this user has proven they control this address, different forms
@@ -152,6 +180,165 @@ this is your current idea of how you get started with user identity
 (1) password, demonstrating linking browserTag and userTag
 (2) email, demonstrating one time code validation and forgot password and more
 (3) sms, as an alternative additional method to email that you can add without much additional code or schema
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+every code could be 4 digits, you now realize
+a code only lives 20 minutes or 4 guesses, whichever happens first
+it's tied to the browser hash, so a code stealer can't use it
+import interactions are authenticated with a strong second factor, anyway
+
+you're not sure how to do code B, code C, so on
+because are those specific to the email?
+or the browser?
+but this might make things harder for the user
+
+what if instead it's six digits and the first two are given
+your code is 12-3456
+and prepopulated in the box is 12-
+or lowercase letters, and then they're before the box
+
+ui7855
+gx7588
+and it's clear you can' ttype the letters because they're already there and the box is number only
+yeah, maybe this is a good design
+
+what if it's a single letter, omitting l and o and g
+
+Your code is v9622 from cold3
+and then the box shows the v within the box, but it's fancy css
+yeah, this is better design for the user and for implementation
+
+Code H [1234]
+Your code H is 1234 from cold3. Don't share it with anyone--they could steal your whole account!
+
+
+
+
+
+/*
+[]rename to like:
+
+[]queryDeleteRow - delete one row if it meets the specified criteria
+[]queryDeleteRows - delete all rows that meet the specified criteria
+[]querySetCell - change an existing cell to a new value
+[x]queryAddRows - add several at once
+[x]queryAddRow - add just one of them; these do all the checks first before leading to the same helper
+[]queryCountRows - return the number of rows that meet specified criteria
+[]queryGetRows - get all of them, sorted
+[]queryGetPage - just the desired number, sorted by given title, have limit and offset
+[]queryGetSingleRow - use when you know there's zero or one
+[]queryGetRecentRow - use when there could be many
+
+
+[]queryAddRow – Insert a single new row.
+[]queryAddRows – Insert multiple new rows in bulk.
+[]querySetCell – Update a single column in exactly one row.
+[]querySetCells - update all the cells in a column, like setting their hide to 1
+[]queryUpdateRow – Update multiple columns in exactly one row.
+[]queryUpdateRows – Update one or more columns across all matching rows.
+[]queryDeleteRow – Delete exactly one row matching specified criteria.
+[]queryDeleteRows – Delete all rows matching specified criteria.
+[]queryCountRows – Return the number of rows matching a condition.
+[]queryGetRows – Retrieve all matching rows, possibly filtered, sorted.
+[]queryGetNRows – Retrieve a limited set of matching rows, sorted.
+[]queryGetSingleRow – Retrieve a unique row (or none) matching some condition.
+[]queryGetRecentRow – Retrieve the most recent row (or a small set), usually by a time/tick column.
+[]queryExists – Return a boolean indicating if any row matches a given condition. (Optional but common)
+
+do not try to build out a complete set, there are two many permutations with a single table
+and later when you're doing JOINs the permutations will go geometric
+instead, all of these functions are table-agnostic
+but made quite bespoke to an application use above in level3
+if there's an obvious neighboring use, sure, include it
+yeah, that's fine
+
+
+you'll need a page, database test
+and three buttons, Populate, Query, and Clear
+yeah, this is a good idea, but don't spend more than a day on it
+
+
+delete all the rows older than something
+invalidate all the rows older than something by changing their hide to 2 or something
+
+
+[]make it so snippet doesn't run adn doesn't render cloud; this is only local
+
+
+*/
+
+
+
+
+is this going slow because you don't have automated tests?
+remember that you could code some up in example_table
+
+
+
+
+/* level 3 query */
+
+settingReadInt, settingRead, settingWrite,
+
+query_AccessTableInsert, query_AccessTableQuery,
+
+/* query level 2 */
+
+snippetClear,
+snippetPopulate,
+snippetQuery,
+
+queryFilterSortAll,
+queryFilterSortTop,
+
+querySetCell,
+querySetCellOrAddRow,
+
+queryGetCell,
+queryGetCellOrAddRow,
+
+queryGetRow,
+queryGetRowOrAddRow,
+
+queryAddRow,
+queryAddRows,
+
+queryCountRows,
+queryCountAllRows,
+queryDeleteAllRows,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
