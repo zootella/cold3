@@ -278,60 +278,6 @@ export function validateMessageForm() {
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
 //                                            
 
-/*
-this sitting goal: get all current database use factored through generalized functions
-then tonight you can go on a notes and previous scraps deleteathon
-*/
-
-//these are the database functions in use; next, use the generalized functions above to refactor these away
-
-//proposed
-
-//bookmark january, next, use these in account.js, account2.js, and message.js, and then delete the remaining query_
-
-export async function browserIsSignedIn(browserTag) {
-	let row = await queryFilterSortTop({
-		table: 'access_table',
-		title: 'browser_tag', cell: browserTag,
-		titleSort: 'row_tag',
-	})
-	return row?.signed_in
-}
-export async function browserSignIn(browserTag)  { await _browserSignedInSet(browserTag, 1) }
-export async function browserSignOut(browserTag) { await _browserSignedInSet(browserTag, 0) }
-async function _browserSignedInSet(browserTag, signedIn) {
-	await queryAddRow(
-		'access_table',
-		{
-			row_tag: Tag(),
-			row_tick: Now(),
-			hide: 0,
-			browser_tag: browserTag,
-			signed_in: signedIn,
-		}
-	)
-}
-
-//previous
-
-//insert a new row into table_access with the given row tag, browser tag, and signed in status
-export async function query_AccessTableInsert(browserTag, signedIn) {
-	queryAddRow({table: 'access_table', row: {row_tick: Now(), row_tag: Tag(), browser_tag: browserTag, signed_in: signedIn}})
-}
-//query table_access to get all the rows with a matching browser tag
-export async function query_AccessTableQuery(browserTag) {
-	let rows = await queryGetRows({table: 'access_table', title: 'browser_tag', cell: browserTag, titleSort: 'row_tick'})
-	return rows
-}
-
-
-//proposed
-
-
-
-
-
-
 //[ran]
 export async function settingReadInt(name, defaultValue) {
 	return textToInt(await settingRead(name, defaultValue))
@@ -349,7 +295,7 @@ export async function settingRead(name, defaultValue) {
 		}
 	})
 }
-//[]
+//[ran]
 export async function settingWrite(name, value) {
 	let valueText = value+''
 	return await querySetCellOrAddRow({
@@ -364,6 +310,38 @@ export async function settingWrite(name, value) {
 		}
 	})
 }
+
+//[ran]
+export async function browserSignedInSet(browserTag, signedInSet) {
+	let signedInSetInt = signedInSet ? 1 : 0
+	await queryAddRow({//always makes a new row
+		table: 'access_table',
+		row: {
+			row_tag: Tag(),
+			row_tick: Now(),
+			hide: 0,
+			browser_tag: browserTag,
+			signed_in: signedInSetInt,
+		}
+	})
+}
+//[ran]
+export async function browserSignedInGet(browserTag) {
+	let row = await queryFilterSortTop({//never makes a new row
+		table: 'access_table',
+		title: 'browser_tag', cell: browserTag,
+		titleSort: 'row_tick',
+	})
+	return row?.signed_in
+}
+
+
+
+
+
+
+
+
 
 
 

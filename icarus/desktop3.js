@@ -833,3 +833,16 @@ _json
 
 
 
+/*
+do you hit the database a third time at the end to confirm the change set?
+can we reply on supabase not throwing or returning an error if the row didn't get in there
+*/
+
+
+/*
+there needs to be server side logic so if the user is already signed in our out, they can't duplicate that
+and also gray out buttons on the page
+
+*/
+
+

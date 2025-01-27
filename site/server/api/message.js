@@ -5,7 +5,7 @@ doorWorker,
 Sticker,
 fetchNetwork23,
 validateEmail, validatePhone,
-query_AccessTableQuery,
+browserSignedInGet,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -19,11 +19,8 @@ async function doorProcessBelow(door) {
 
 	let {browserTag, provider, service, address, message} = door.body//pull values from the body the untrusted page posted to us
 
-	let rows = await query_AccessTableQuery(browserTag)//get all the rows
-	let signedIn = rows.length && rows[0].signed_in
+	let signedIn = await browserSignedInGet(browserTag)
 	if (!signedIn) toss('account', {browserTag, door})
-	//^factor that into a function on level3
-	//ttd january
 
 	let validated
 	if      (service == 'Email.') validated = validateEmail(address)

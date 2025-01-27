@@ -60,111 +60,7 @@ can you make this so
 
 
 
-//settings
-async function settings_getText(name) {
-	return readText((await database_getRow('settings_table', 'key_text', name)).value_text)
-}
-async function settings_getNumber(name) {
-	return readIntAsText((await database_getRow('settings_table', 'key_text', name)).value_text)
-}
-async function settings_setText(name, value) {
-	await database_updateCell('settings_table', 'key_text', name, 'value_text', saveText(value))
-}
-async function settings_setNumber(name, value) {
-	await database_updateCell('settings_table', 'key_text', name, 'value_text', saveIntAsText(value))
-}
 
-//global count
-async function counts_getGlobalCount() {
-	let row = await database_getRow('settings_table', 'key_text', browserTag)
-	if (row) {
-		return row.count
-	} else {
-		await database_addRow('settings_table', {'key_text': browserTag, 'count_int': 0})
-		return 0
-	}
-}
-async function counts_setGlobalCount(count) {
-	let row = await database_getRow('settings_table', 'key_text', browserTag)
-	if (row) {
-		await database_updateCell('settings_table', 'key_text', browserTag, 'count_int', count)
-	} else {
-		await database_addRow('settings_table', {'key_text': browserTag, 'count_int': count})
-	}
-}
-
-//browser counts
-async function counts_getBrowserCount(browserTag) {
-	let row = await database_getRow('counts_table', 'browser_tag', browserTag)
-	if (row) {
-		return readInt(row.count)
-	} else {
-		await database_addRow('counts_table', {'browser_tag': browserTag, 'count_int': 0})
-		return 0
-	}
-}
-async function counts_setBrowserCount(browserTag, count) {
-	let row = await database_getRow('counts_table', 'browser_tag', browserTag)
-	if (row) {
-		await database_updateCell('counts_table', 'browser_tag', browserTag, 'count_int', count)
-	} else {
-		await database_addRow('counts_table', {'browser_tag': browserTag, 'count_int': count})
-	}
-}
-
-//browser sign in status records
-async function access_addRecord(browserTag, signedIn) {
-	await database_addRow('access_table', {
-		row_tick: Now(),
-		row_tag: Tag(),
-		browser_tag: browserTag,
-		signed_in_enum: saveBoolean(signedIn)
-	})
-}
-async function access_getRecords(browserTag) {
-	return await database_getRows('access_table', 'browser_tag', browserTag, 'row_tick')
-}
-
-/*
-TODO change the schema in Supabase! :(0)
-
-can you rename signed_in to signed_in_enum?
-you need to make this change in supabase
-
-also in counts_table, you need to rename count to count_int
-
-*/
-
-
-
-
-
-
-
-/*
-account needs:
-make a row for a sign in record
-get all the rows for a browser of all its sign in records, sorted newest first
-
-browser count needs:
-is there already a row for this browser?
-what is this browser's count?
-update this browser's count to the new value
-
-global count needs:
-is there already a row for this global count setting?
-make that row with starting count 0
-update the global count setting row to this new value
-
-
-*/
-//at this level, make it not about the table, but rather about the application use case
-
-
-
-/*
-you may be overdoing the naming, settings_table should have the columns name and value, how about
-*/
 
 
 
@@ -591,26 +487,26 @@ actually, you may not need this in the rest of the tables, and so you could skip
 no wait you'll need it for browser tag, duh
 */
 
-//previous
+
+
+
+
+
+
+
+
+
+
 /*
-export async function query_HitRowExists() {
-	let hits = await queryCountRows({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
-	return hits > 0
-}
-export async function query_HitCreateRow() {
-	await queryAddRow({table: 'settings_table', row: {setting_name_text: 'hits', setting_value_text: '0'}})
-}
-export async function query_HitReadRow() {//returns the count
-	let row = await queryGetRow({table: 'settings_table', title: 'setting_name_text', cell: 'hits'})
-	return row.setting_value_text
-}
-export async function query_HitWriteRow(newValue) {
-	await querySetCell({table: 'settings_table', titleFind: 'setting_name_text', cellFind: 'hits', titleSet: 'setting_value_text', cellSet: newValue})
-}
+this sitting goal: get all current database use factored through generalized functions
+then tonight you can go on a notes and previous scraps deleteathon
 */
 
+//these are the database functions in use; next, use the generalized functions above to refactor these away
 
+//proposed
 
+//bookmark january, next, use these in account.js, account2.js, and message.js, and then delete the remaining query_
 
 
 

@@ -1254,17 +1254,12 @@ async function getTestDatabase() {
 	return _test1
 }
 
-//                              
-//   __ _ _   _  ___ _ __ _   _ 
-//  / _` | | | |/ _ \ '__| | | |
-// | (_| | |_| |  __/ |  | |_| |
-//  \__, |\__,_|\___|_|   \__, |
-//     |_|                |___/ 
-
-
-
-
-
+//                                          _                  _   
+//   __ _ _   _  ___ _ __ _   _   ___ _ __ (_)_ __  _ __   ___| |_ 
+//  / _` | | | |/ _ \ '__| | | | / __| '_ \| | '_ \| '_ \ / _ \ __|
+// | (_| | |_| |  __/ |  | |_| | \__ \ | | | | |_) | |_) |  __/ |_ 
+//  \__, |\__,_|\___|_|   \__, | |___/_| |_|_| .__/| .__/ \___|\__|
+//     |_|                |___/              |_|   |_|             
 
 function generateExampleRows(count, between, batch) {
 	checkInt(count, 1); checkInt(between, 1); checkText(batch)//make sure you're using properly during testing
@@ -1298,18 +1293,15 @@ export async function snippetQuery() {
 	else return data
 }
 
-
-
-
-
 async function snippet() {
-	return await queryFilterSortTop({
-		table: 'access_table',
-		title: 'browser_tag',
-		cell: 'mUI301FUXDWTtgwq4eSGz',
-		titleSort: 'row_tag',
-	})
 }
+
+//                              
+//   __ _ _   _  ___ _ __ _   _ 
+//  / _` | | | |/ _ \ '__| | | |
+// | (_| | |_| |  __/ |  | |_| |
+//  \__, |\__,_|\___|_|   \__, |
+//     |_|                |___/ 
 
 //[ran]
 //get the one biggest titleSort row that has cell under title, or undefined if none found
@@ -1341,16 +1333,6 @@ export async function queryFilterSortAll({table, title, cell, titleSort}) {
 	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
 }
 
-
-
-
-
-
-
-
-
-
-
 //[ran]
 export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
 	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
@@ -1375,11 +1357,6 @@ async function _querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
 	return data//data is the whole updated row
 }
 
-
-
-
-
-
 //[ran]
 export async function queryGetCell({table, titleFind, cellFind, titleGet}) {
 	let row = await _queryGetRow({table, titleFind, cellFind})
@@ -1396,9 +1373,6 @@ export async function queryGetCellOrAddRow({table, titleFind, cellFind, titleGet
 	checkQueryCell(titleGet, cellGet)
 	return cellGet
 }
-
-
-
 
 //[ran]
 export async function queryGetRow({table, titleFind, cellFind}) {
@@ -1430,10 +1404,6 @@ async function _queryGetRow({table, titleFind, cellFind}) {
 	return data//data is the whole row
 }
 
-
-
-
-
 //[ran]
 //add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
 export async function queryAddRow({table, row}) {
@@ -1450,13 +1420,6 @@ export async function queryAddRows({table, rows}) {
 	)
 	if (error) toss('supabase', {error})
 }
-
-
-
-
-
-
-
 
 //[ran]
 //count how many rows have cellFind under titleFind
@@ -1498,16 +1461,6 @@ export async function queryDeleteAllRows({table}) {
 	)
 	if (error) toss('supabase', {error})
 }
-
-
-
-
-
-
-
-
-
-
 
 //                                     _               _    
 //   __ _ _   _  ___ _ __ _   _    ___| |__   ___  ___| | __
@@ -1638,32 +1591,6 @@ test(() => {
 	//negative zero literal, -0, makes it through, but -0+'' is "0"
 	//and more importantly there is no negative 0 in PostgreSQL's BIGINT; one would get stored as regular zero
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

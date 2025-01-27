@@ -290,20 +290,61 @@ remember that you could code some up in example_table
 
 
 
+
+here's how you figur eout the simple universal and correct way to link browser tags and user tags
+make user sign up and sign in with password, only
+have a message the user can see, themselves
+let both anonymous users and signed-in useres see their message
+do you need users to pick unique user names to do this? you think so, and that's fine
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* level 3 query */
 
 settingReadInt, settingRead, settingWrite,
+browserSignedInSet, browserSignedInGet,
 
-query_AccessTableInsert, query_AccessTableQuery,
-
-/* query level 2 */
+/* level 2 query */
 
 snippetClear,
 snippetPopulate,
 snippetQuery,
 
-queryFilterSortAll,
 queryFilterSortTop,
+queryFilterSortAll,
 
 querySetCell,
 querySetCellOrAddRow,

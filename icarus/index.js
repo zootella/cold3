@@ -66,9 +66,7 @@ urlNetwork23, fetchNetwork23, vhsSign,
 /* level 3 query */
 
 settingReadInt, settingRead, settingWrite,
-browserIsSignedIn, browserSignIn, browserSignOut,
-
-query_AccessTableInsert, query_AccessTableQuery,
+browserSignedInSet, browserSignedInGet,
 
 } from './level3.js'
 
@@ -96,8 +94,8 @@ snippetClear,
 snippetPopulate,
 snippetQuery,
 
-queryFilterSortAll,
 queryFilterSortTop,
+queryFilterSortAll,
 
 querySetCell,
 querySetCellOrAddRow,

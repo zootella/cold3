@@ -11,22 +11,18 @@ let browserTag
 onMounted(async () => {//doesn't run on server, even when hydrating
 	browserTag = getBrowserTag()
 	stick(`${browserTag} is this browser's tag`)
-	await signCheck()
+	await signGet()
 })
 
-async function signIn()    { await callAccount('action in')    }
-async function signOut()   { await callAccount('action out')   }
-async function signCheck() { await callAccount('action check') }
+async function signIn()  { await callAccount('SignIn.')  }
+async function signOut() { await callAccount('SignOut.') }
+async function signGet() { await callAccount('SignGet.') }
 async function callAccount(action) {
 	try {
 		let t = Now()
 		let response = await $fetch('/api/account', {
 			method: 'POST',
-			body: {
-				browserTag,
-				password: passwordModel.value,
-				action,
-			}
+			body: {browserTag, password: passwordModel.value, action}
 		})
 		t = Now() - t
 		log('success', look(response))
@@ -103,7 +99,7 @@ function addressKey() {
 	<input type="text" v-model="passwordModel" placeholder="password" />{{' '}}
 	<button @click="signIn">Sign In</button>
 	<button @click="signOut">Sign Out</button>
-	<button @click="signCheck">Sign Check</button>{{' '}}
+	<button @click="signGet">Sign Check</button>{{' '}}
 	<button @click="runSnippet">Snippet</button>
 </div>
 <div>

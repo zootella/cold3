@@ -34,8 +34,8 @@ onMounted(() => {//doesn't run on server, even when hydrating
 })
 //something this doesn't do yet is cache the signed-in status once we know it; each call here bothers the database. not doing that here because we'll do that in pinia soon
 
-async function signAsk() {
-	return (await signFetch({action: 'SignAsk.'})).signedIn2//returns true or false we're signed in
+async function signGet() {
+	return (await signFetch({action: 'SignGet.'})).signedIn2//returns true or false we're signed in
 }
 async function signOut() {
 	await signFetch({action: 'SignOut.'})//no return, but throws on server reports error
@@ -43,11 +43,11 @@ async function signOut() {
 async function signIn(password) {
 	return await signFetch({action: 'SignIn.', password})//returns the server body, with details like bad password
 }
-defineExpose({signAsk, signOut, signIn})
+defineExpose({signGet, signOut, signIn})
 
 async function signFetch(body) {
 	body.browserTag = browserTag
-	return await $fetch('/api/account2', {method: 'POST', body})
+	return await $fetch('/api/account', {method: 'POST', body})
 	//totally fine to let exceptions go all the way up to the component that called us, remember (but check to see what this is like!)
 }
 
