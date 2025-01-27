@@ -1312,7 +1312,7 @@ async function snippet() {
 }
 
 //[ran]
-//filter table to rows with cell under title, returning the one with the biggest titleSort value, or null if none found
+//get the one biggest titleSort row that has cell under title, or undefined if none found
 export async function queryFilterSortTop({table, title, cell, titleSort}) {
 	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
 	let database = await getDatabase()
@@ -1327,7 +1327,7 @@ export async function queryFilterSortTop({table, title, cell, titleSort}) {
 	return data[0]//data is an array with one element, or empty if none found
 }
 //[ran]
-//filter to just rows with cell under title, and return sorted by titleSort, biggest first, or [] if none found
+//filter table to rows with cell under title, and return sorted by titleSort, biggest first, or [] if none found
 export async function queryFilterSortAll({table, title, cell, titleSort}) {
 	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
 	let database = await getDatabase()
