@@ -45,6 +45,14 @@ test(() => {
 	checkTag('qqdTuhRdZwJwo7KKeaegs')
 })
 
+export function checkTagOrBlank(s) {
+	if (s === ''); else checkTag(s)
+}
+test(() => {
+	checkTagOrBlank('')
+	checkTagOrBlank('21j3i1DJMw6JPkxYgTt1B')
+})
+
 
 
 

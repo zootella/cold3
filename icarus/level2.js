@@ -1286,14 +1286,14 @@ export async function snippetPopulate() {
 	let rows = generateExampleRows(12, Time.hour, 'first')
 	await queryAddRows({table: 'example_table', rows})
 }
-export async function snippetQuery() {
+export async function snippetQuery2() {
 	let data, error
-	try { data = await snippet() } catch (e) { error = e }
+	try { data = await snippet2() } catch (e) { error = e }
 	if (error) return look(error)
 	else return data
 }
-
-async function snippet() {
+export async function snippet2() {
+	log('hi from query snippet2')
 }
 
 //                              
@@ -1331,6 +1331,31 @@ export async function queryFilterSortAll({table, title, cell, titleSort}) {
 	)
 	if (error) toss('supabase', {error})
 	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
+}
+
+//[]
+//add row if table doesn't already have one with the same value for column titles like 'title1,title2,title3' comma separated with no spaces
+export async function queryAddRowIfCellsUnique({table, row, titles}) {
+	checkQueryTitle(table); checkQueryRow(row); checkText(titles)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.insert(
+			row,
+			{
+				onConflict: titles,//look for a row with matching values in these columns
+				ignoreDuplicates: true,//if you find one, do nothing
+				upsert: false,//don't "update on conflict"
+			}
+		)
+	)
+	if (error) {
+		if (error.code == '23505') {
+			//we expect PostgreSQL error 23505 with a message like "duplicate key value violates unique constraint "hit_table_quarter_day_index"; confirmed the index still makes things fast and this is expected
+		} else {
+			toss('supabase', {error})//we got some other error
+		}
+	}
 }
 
 //[ran]
@@ -1387,10 +1412,10 @@ export async function queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDef
 	if (!row) {
 		row = rowAddDefault
 		await queryAddRow({table, row: rowAddDefault})
-	}
+	}//^ lots of discussion with chat about the race condition here, and no good fix: .upsert() can do it in one statement, but will modify the row on conflict, not return it; .insert(..., {ignoreDuplicates: true}) works but means we have to call out to supabase twice every time
 	return row
 }
-//in table, look at column titleFind to find one row with value cellFind, null if not found
+//in table, look at column titleFind to find one row with value cellFind, undefined if not found
 async function _queryGetRow({table, titleFind, cellFind}) {
 	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
 	let database = await getDatabase()
@@ -1398,7 +1423,7 @@ async function _queryGetRow({table, titleFind, cellFind}) {
 		.from(table)
 		.select('*')//select all columns to get the whole row
 		.eq(titleFind, cellFind)//find the row where titleFind equals cellFind
-		.maybeSingle()//data null of no rows match, error if 2+ rows match
+		.maybeSingle()//data undefined of no rows match, error if 2+ rows match
 	)
 	if (error) toss('supabase', {error})
 	return data//data is the whole row

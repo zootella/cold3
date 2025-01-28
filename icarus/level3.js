@@ -10,7 +10,7 @@ ashFetchum,
 hmacSign,
 } from './level0.js'
 import {
-Tag, tagLength, checkTag,
+Tag, tagLength, checkTag, checkTagOrBlank,
 } from './level1.js'
 import {
 getAccess, Sticker, isLocal, isCloud,
@@ -19,10 +19,12 @@ getAccess, Sticker, isLocal, isCloud,
 
 snippetClear,
 snippetPopulate,
-snippetQuery,
+snippetQuery2,
 
 queryFilterSortAll,
 queryFilterSortTop,
+
+queryAddRowIfCellsUnique,
 
 querySetCell,
 querySetCellOrAddRow,
@@ -269,14 +271,39 @@ export function validateMessageForm() {
 
 
 
+//                                 _        _        _     _      
+//   _____  ____ _ _ __ ___  _ __ | | ___  | |_ __ _| |__ | | ___ 
+//  / _ \ \/ / _` | '_ ` _ \| '_ \| |/ _ \ | __/ _` | '_ \| |/ _ \
+// |  __/>  < (_| | | | | | | |_) | |  __/ | || (_| | |_) | |  __/
+//  \___/_/\_\__,_|_| |_| |_| .__/|_|\___|  \__\__,_|_.__/|_|\___|
+//                          |_|                                   
+
+//use for practice
+
+`sql
+-- get a list of all indices on all tables; you can ignore the _pkey ones which are the primary key defaults
+SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public';
+`
 
 
-//      _       _        _                    
-//   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
-//  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
-// | (_| | (_| | || (_| | |_) | (_| \__ \  __/
-//  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
-//                                            
+
+//  _     _ _         _        _     _      
+// | |__ (_) |_ ___  | |_ __ _| |__ | | ___ 
+// | '_ \| | __/ __| | __/ _` | '_ \| |/ _ \
+// | | | | | |_\__ \ | || (_| | |_) | |  __/
+// |_| |_|_|\__|___/  \__\__,_|_.__/|_|\___|
+//                                          
+
+//use for the browser hit, if you end up coding that at all at this point
+
+
+
+//           _   _   _                   _        _     _      
+//  ___  ___| |_| |_(_)_ __   __ _ ___  | |_ __ _| |__ | | ___ 
+// / __|/ _ \ __| __| | '_ \ / _` / __| | __/ _` | '_ \| |/ _ \
+// \__ \  __/ |_| |_| | | | | (_| \__ \ | || (_| | |_) | |  __/
+// |___/\___|\__|\__|_|_| |_|\__, |___/  \__\__,_|_.__/|_|\___|
+//                           |___/                             
 
 //[ran]
 export async function settingReadInt(name, defaultValue) {
@@ -311,6 +338,16 @@ export async function settingWrite(name, value) {
 	})
 }
 
+
+
+
+//                                _        _     _      
+//   __ _  ___ ___ ___  ___ ___  | |_ __ _| |__ | | ___ 
+//  / _` |/ __/ __/ _ \/ __/ __| | __/ _` | '_ \| |/ _ \
+// | (_| | (_| (_|  __/\__ \__ \ | || (_| | |_) | |  __/
+//  \__,_|\___\___\___||___/___/  \__\__,_|_.__/|_|\___|
+//                                                      
+
 //[ran]
 export async function browserSignedInSet(browserTag, signedInSet) {
 	let signedInSetInt = signedInSet ? 1 : 0
@@ -334,6 +371,115 @@ export async function browserSignedInGet(browserTag) {
 	})
 	return row?.signed_in
 }
+
+
+
+
+
+
+
+
+//  _                                       _        _     _      
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
+//                                                                
+
+noop(`sql
+-- what user is signed into this browser?
+CREATE TABLE browser_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
+	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
+	hide         BIGINT                 NOT NULL,  -- 0 to start, nonzero reason we can ignore row
+	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
+	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
+	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
+);
+
+-- index to get visible rows about a browser, recent first, quickly
+CREATE INDEX browser_table_browser_tag_index
+ON browser_table (hide, browser_tag, row_tick DESC);
+`)
+
+
+
+
+
+
+
+
+//  _     _ _     _        _     _      
+// | |__ (_) |_  | |_ __ _| |__ | | ___ 
+// | '_ \| | __| | __/ _` | '_ \| |/ _ \
+// | | | | | |_  | || (_| | |_) | |  __/
+// |_| |_|_|\__|  \__\__,_|_.__/|_|\___|
+//                                      
+
+noop(`sql
+-- where is this hit coming from?
+CREATE TABLE hit_table (
+	row_tag        CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick       BIGINT                 NOT NULL,  -- time of first hit like this in this quarter day
+	hide           BIGINT                 NOT NULL,
+	quarter_day    BIGINT                 NOT NULL,  -- tick rounded down to 6 hour window
+	browser_tag    CHAR(21)               NOT NULL,  -- the browser that hit us
+	user_tag_text  TEXT                   NOT NULL,  -- the user at that browser, or blank if none identifed
+	ip_text        TEXT                   NOT NULL,  -- ip address, according to cloudflare
+	city_text      TEXT                   NOT NULL,  -- geographic location, according to cloudflare
+	agent_text     TEXT                   NOT NULL,  -- user agent string, according to the browser
+	graphics_text  TEXT                   NOT NULL   -- webgl hardware info, according to the browser
+);
+
+-- index to quickly log a new hit, coalesced to identical information in each quarter day
+CREATE UNIQUE INDEX hit_table_quarter_day_index
+ON hit_table (hide, quarter_day, browser_tag, user_tag_text, ip_text, city_text, agent_text, graphics_text);
+`)
+
+export async function recordHit({browserTag, userTag, ip, city, agent, graphics}) {
+	checkTag(browserTag); checkTagOrBlank(userTag)
+
+	let t = Now()//tick count now, of this hit
+	let d = (Math.floor(t / (6*Time.hour)))*(6*Time.hour)//tick count when the quarter day t is in began
+
+	let row = {
+		row_tag: Tag(),//standard for a new row
+		row_tick: t,
+		hide: 0,
+
+		quarter_day: d,//cells that describe the first hit like this in this quarter day time period
+		browser_tag: browserTag,
+		user_tag_text: userTag,
+		ip_text: ip,
+		city_text: city,
+		agent_text: agent,
+		graphics_text: graphics
+	}
+	let titles = 'hide,quarter_day,browser_tag,user_tag_text,ip_text,city_text,agent_text,graphics_text'
+	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
+}
+
+
+export async function snippetQuery3() {
+	let data, error
+	try { data = await snippet3() } catch (e) { error = e }
+	if (error) return look(error)
+	else return data
+}
+export async function snippet3() {
+	log('hi from query snippet3')
+
+	let browserTag = 'm7tgGjER1bCALs2OQfMic'
+	let userTag = '2lTJRp5P0sjc0jmZxiUJ4'
+
+	let row1 = {browserTag, userTag, ip: 'ip3', city: 'city3', agent: 'agent3', graphics: ''}
+
+	await recordHit(row1)
+}
+
+
+
+
 
 
 

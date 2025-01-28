@@ -4,7 +4,7 @@ Sticker, isCloud,
 log, look, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
-snippetClear, snippetPopulate, snippetQuery,
+snippetClear, snippetPopulate, snippetQuery2, snippetQuery3,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -19,7 +19,8 @@ async function doorProcessBelow(door) {
 	switch (action) {
 		case 'Clear.':    result = await snippetClear();    break;
 		case 'Populate.': result = await snippetPopulate(); break;
-		case 'Query.':    result = await snippetQuery();    break;
+		case 'Query2.':   result = await snippetQuery2();   break;
+		case 'Query3.':   result = await snippetQuery3();   break;
 		default: toss('action', {door}); break;
 	}
 

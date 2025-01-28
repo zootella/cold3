@@ -68,6 +68,8 @@ urlNetwork23, fetchNetwork23, vhsSign,
 settingReadInt, settingRead, settingWrite,
 browserSignedInSet, browserSignedInGet,
 
+snippetQuery3,
+
 } from './level3.js'
 
 //  _                _ ____  
@@ -92,10 +94,12 @@ useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
 snippetClear,
 snippetPopulate,
-snippetQuery,
+snippetQuery2,
 
 queryFilterSortTop,
 queryFilterSortAll,
+
+queryAddRowIfCellsUnique,
 
 querySetCell,
 querySetCellOrAddRow,
@@ -126,7 +130,7 @@ functions that use module imports
 */
 export {
 
-tagLength, Tag, checkTag,
+tagLength, Tag, checkTag, checkTagOrBlank,
 checkEmail, checkPhone,
 validateEmail, validatePhone, validateCard,
 measurePasswordStrength,

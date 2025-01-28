@@ -1,12 +1,25 @@
 
 
 
+demo
+so far in the database
 
+i've been coding for years, but am totally new to databases!
+ive never written a schema before
 
+no jwt - a format for a format, and expiration
+no orm - instead just functions that look at grids of text and numbers
 
+example_table and a demonstration of types
+column title defines type for sanity checking
 
+strategy
+keep things simple and verbose in the database
+keep things really simple in the browser
+handfuls of quick queries in the worker bring it together
 
-
+tables are ledgers; we append to them
+instead of deleting a row, mark it as hidden
 
 
 
@@ -366,6 +379,212 @@ queryDeleteAllRows,
 
 
 
+
+
+
+
+
+
+
+plan out on paper how username and password-based sign up works
+
+sign up
+sign in
+delete account
+
+browser tag
+user tag
+
+user name
+
+a user has a page and a message they can set
+other users can see this page, but only the user can change it
+you can change your password, but there's no forgot yet
+
+a user's page has a card, which shows their name and when they signed up
+
+a user's page can also have a list of where they're signed in
+
+so from that, tables will probably be
+user_password_table - says when p
+user_access_table
+
+there is a lot here, actually, even with only one way to sign in (name+password)
+you'll figure out how browser tag and user tag are related
+how sign out signs out everywhere
+how pinia? holds the signed-in status, although you might check it every time in the database anyway
+
+
+
+
+
+
+ok, real simple, on paper
+imagine a user is already signed in
+they have browserTag and userTag assigned
+a worker gets a request from a page,
+and the page tells the user that they are signed in, and what their userTag is
+what is the database table that contains that information
+
+row_tag  row_tick  hide  user_tag  browser_tag  signed_in
+
+row tag, tick, hide are all just standard
+user_tag of the user, browser_tag of the browser, signed_in 1 true means that the user is signed in there
+browser_tag of the browser and signed_in 0 false means the user is signed out there, and everywhere else, too
+
+so the worker, given a browser tag, wants to determine which user is signed in here
+it filters on browser tag, looking at rows in descending order
+there could be different users in that row set, of course
+
+so now the worker is looking at a list, most recent first, of:
+
+user_tag  signed_in
+<meaningful>
+
+no rows for this browser tag; nobody is signed in
+
+user_tag  signed_in
+alice     1 <--meaningful
+
+only a single user has ever used this browser, and she's still signed in
+
+user_tag  signed_in
+alice     1 <--meaningful
+alice     0
+alice     1
+
+here, just alice is using this browser, signed in, out, then in again
+alice is signed in here
+
+user_tag  signed_in
+alice     0 <--meaningful
+alice     1
+
+nobody is signed in, alice has previously signed in, but signed out
+this is good, that we still have data of what happened in the past here, because if alice signed up with method X, the sign in form can preference or hint at method X
+
+user_tag  signed_in
+bob       1 <--meaningful
+alice     0
+alice     1
+
+after alice signed in and then out, bob signed in. bob is signed in here
+
+user_tag  signed_in
+alice     1 <--meaningful
+bob       0
+bob       1
+alice     0
+alice     1
+
+alice signs in and out, bob signs in and out, then alice signs in
+
+
+ok, so keeping with the simplification that a sign out signs out everywhere
+looking at this, filtered for one browser, you will run into useres who look signed in here, but somewhere else, they signed out
+you almost need a separate table of sign-outs:
+
+sign_out_table
+row_tick user_tag
+
+so this is just the list of times when alice or bob last signed out
+so here's how you use those?
+you look at the sign-in table for this browser, to get the users who are currently signed in here
+then you go to the signed out table to invalidate sign ins for alice that are older than her most recent sign out
+wow, that's already a quite complex query
+
+you just realized when you're doing the super authentication that only lasts 1 hour, or wahtever, and only exists on one browser, you can do that like this:
+
+user_tag  signed_in
+alice     2 <--meaningful
+alice     1
+
+assuming that the time now is within an hour of the 2 row
+
+ok, back to one table
+here's how the "who is signed in here?" worker figures that out
+filter to just rows about this browser tag
+from that, get all the users who have done something with this browser here
+
+now you have a list of users
+you go back to the table and pull all the rows about all of those users
+
+user_tag  signed_in  browser_tag
+alice     1          here
+alice     1          elsewhere
+bob       0          elsewhere
+bob       1          here
+
+users who are most recently signed in 0 you exclude--it doesn't matter whether they signed out here or elsewhere--they can sign in again
+
+user_tag  signed_in  browser_tag
+alice     1          here
+alice     1          elsewhere
+
+what if there's a separate table of user tag, and when they last signed out
+so from the first table, you look at who's signed in here
+that is, browser tag is here, signed in is >0, you get a list of users
+you go down that list most recent to earlier, looking user by user at sign-outs in the other table. the first one you find who's signe din here and not signed out after that, is signed in here
+
+ok, so that's pretty not simple, and you have hopeful doubt, rather than confidence, about its workign and ramifications
+
+assuming private devices, it's also acceptably low number of round trips
+but omg, you can't do this simple first thing with one query?!
+
+here it is again, one table, a series of queries
+pull all the rows about this browser tag and sign-ins
+from that, you have a list of users who are or have ever signed in here
+
+then do the second query--all sign out records of all of those users, everywhere
+now you're piecing through that in the worker, i guess?
+you go user by user, in order of signed in here
+and then look at that user's most recent sign out, anywhere
+the first signed in here user who doesn't have a more recent signed out, anywhere, is signed in here
+
+
+
+
+
+
+
+
+what if the ledger design is a mistake?
+what if instead, you should keep an actual unqueryable but free to blather ledger
+and do things in the database by editing
+like a normal DBA
+
+(or, you actually use the row invalidation thing)
+(or, you have both--a table that gets edited, to be fast and final, and alongside those, tables that are logs essentially, which you use to infer things and audit things--they can grow big and slow)
+
+ok, what's that look like
+there's a table that maps browser tag to user who is signed in here
+there can only be one browser tag, so there's only one user who can be signed in
+when a user signs out, we have to find all the browser tag rows where they are signed in, and sign them out of all of those
+this is a bigger operation than just adding a new row to create a command and record to sign out
+
+
+
+
+
+what if you hide rows as you go
+
+othe ridea is to limit the number of places a user can sign in
+
+but you're feeling better about this design now, though
+
+user_browser_table - tells where users are signed in to what browsers
+user_identification_table - tells how users prove they are who they say they are, with email, sms, metamask, two factor app codes, all that
+
+also, let's design assuming two things
+-supabase api always works
+-two or more supabase commands do complete as a transaction (there isn't the same user writing a similar thing at the same time)
+at this point, those assumptions are necessarily, essentially, to be able to move forward
+
+
+
+
+
+browser_table
 
 
 

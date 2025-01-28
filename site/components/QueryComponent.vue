@@ -23,7 +23,8 @@ async function clicked(action) {
 <div>
 	<button @click="clicked('Clear.')">Clear</button>{{' '}}
 	<button @click="clicked('Populate.')">Populate</button>{{' '}}
-	<button @click="clicked('Query.')">Query</button>
+	<button @click="clicked('Query2.')">Query 2</button>{{' '}}
+	<button @click="clicked('Query3.')">Query 3</button>
 </div>
 
 <pre>{{ refOutput }}</pre>
