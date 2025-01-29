@@ -1239,7 +1239,7 @@ the design is simple:
 
 //create the supabase client to talk to the cloud database
 let _real1, _test1
-async function getDatabase() {
+export async function getDatabase() {
 	if (!_real1) {
 		let access = await getAccess()
 		_real1 = createClient(access.get('ACCESS_SUPABASE_REAL1_URL'), access.get('ACCESS_SUPABASE_REAL1_KEY_SECRET'))
@@ -1265,13 +1265,14 @@ function generateExampleRows(count, between, batch) {
 	checkInt(count, 1); checkInt(between, 1); checkText(batch)//make sure you're using properly during testing
 	let rows = []
 	let t = Now() - ((count + 1) * between)//start early enough in the past no rows will be in the future
+	let h = Data({random: 32}).base32()
 	for (let i = 0; i < count; i++) {
 		rows.push({
 			row_tag: Tag(),
 			row_tick: t,
 			hide: 0,
 			name_text: `${batch} ${i}`,
-			some_hash: Data({random: 32}).base32(),
+			some_hash: h,
 			hits: 5,
 		})
 		t += randomBetween(1, between)//move forward in time a random amount
@@ -1294,6 +1295,13 @@ export async function snippetQuery2() {
 }
 export async function snippet2() {
 	log('hi from query snippet2')
+	let r = await queryHideRows({
+		table: 'example_table',
+		titleFind: 'some_hash',
+		cellFind: 'KJI3KGJVS25NNQU5PKVWBLOYD3Q7UF7QDUFSZXMI3NJV7MOZOJ3A',
+		hideSet: 1
+	})
+	log(look(r))
 }
 
 //                              
@@ -1303,6 +1311,40 @@ export async function snippet2() {
 //  \__, |\__,_|\___|_|   \__, |
 //     |_|                |___/ 
 
+
+
+
+//[]
+//get the most recent visible row with filter like {title1: cell1, title2: cell2}
+export async function queryFilterRecent({table, filter}) {
+	checkQueryTitle(table)
+	let database = await getDatabase()
+	let q = (database
+		.from(table)
+		.select('*')
+		.eq('hide', 0)
+	)
+	for (let [title, cell] of Object.entries(filter)) {
+		checkQueryCell(title, cell)
+		q = q.eq(title, cell)
+	}
+	let {data, error} = (await q
+		.order('row_tick', {ascending: false})
+		.limit(1)
+	)
+	if (error) toss('supabase', { error })
+	return data[0]//data is an array with one element, or empty if none found
+}
+
+
+
+
+
+//[]
+//get the most recent row in table where cell is under title, or undefined if none found
+export async function queryFilterMostRecent({table, title, cell}) {
+	return await queryFilterSortTop({table, title, cell, titleSort: 'row_tick'})
+}
 //[ran]
 //get the one biggest titleSort row that has cell under title, or undefined if none found
 export async function queryFilterSortTop({table, title, cell, titleSort}) {
@@ -1356,6 +1398,22 @@ export async function queryAddRowIfCellsUnique({table, row, titles}) {
 			toss('supabase', {error})//we got some other error
 		}
 	}
+}
+
+//[ran]
+//hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
+export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkInt(hideSet, 1)
+	let database = await getDatabase()
+	let {data, error} = (await database//this call doesn't return count, so we look at data.length below
+		.from(table)
+		.update({hide: hideSet})//hide rows that match:
+		.eq('hide', 0)//not yet hidden, and
+		.eq(titleFind, cellFind)//cellFind under titleFind
+		.select('*', {count: 'exact'})//get the rows we changed, count exact to count rows that matched our query
+	)
+	if (error) toss('supabase', {error})
+	return data.length
 }
 
 //[ran]
@@ -1451,7 +1509,7 @@ export async function queryAddRows({table, rows}) {
 export async function queryCountRows({table, titleFind, cellFind}) {
 	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
 	let database = await getDatabase()
-	let {count, error} = (await database
+	let {data, count, error} = (await database
 		.from(table)
 		.select(titleFind, {count: 'exact'})//count exact matches based on titleFind
 		.eq(titleFind, cellFind)//filter rows to those with the cellFind value
@@ -1465,7 +1523,7 @@ export async function queryCountRows({table, titleFind, cellFind}) {
 export async function queryCountAllRows({table}) {
 	checkQueryTitle(table)
 	let database = await getDatabase()
-	let {count, error} = (await database
+	let {data, count, error} = (await database
 		.from(table)
 		.select('*', {count: 'exact'})//exact count of all rows
 	)
@@ -1494,31 +1552,49 @@ export async function queryDeleteAllRows({table}) {
 //  \__, |\__,_|\___|_|   \__, |  \___|_| |_|\___|\___|_|\_\
 //     |_|                |___/                             
 
-function checkQueryTitle(title) {//make sure the given title looks ok as a table name or column title
+export function checkQueryTitle(title) {//make sure the given title looks ok as a table name or column title
 	if (!isQueryTitle(title)) toss('check title', {title, cell})
 }
-function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
+export function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
 	for (let [title, cell] of Object.entries(row)) checkQueryCell(title, cell)
 }
-function checkQueryCell(title, cell){//in a column with the given title, check the value in a cell
+export function checkQueryCell(title, cell){//in a column with the given title, check the value in a cell
 	if (!isQueryTitle(title)) toss('check title', {title, cell})
 	let type = _type(title)
-	if      (type == 'tag')  { if (!isQueryTag(cell))  toss('check tag',  {title, cell}) }
-	else if (type == 'hash') { if (!isQueryHash(cell)) toss('check hash', {title, cell}) }
-	else if (type == 'text') { if (!isQueryText(cell)) toss('check text', {title, cell}) }
-	else                     { if (!isQueryInt(cell))  toss('check int',  {title, cell}) }
+	if      (type == 'tag')  checkQueryTag(cell)
+	else if (type == 'hash') checkQueryHash(cell)
+	else if (type == 'text') checkQueryText(cell)
+	else                     checkQueryInt(cell)
 }
 function _type(s) {//from a column title like "name_type", clip out "type"
 	let i = s.lastIndexOf('_')
 	return i == -1 ? s : s.slice(i + 1)//return whole thing if not found
 }
 
+export function checkQueryTag(cell)  { if (!isQueryTag(cell))  toss('check', {cell}) }
+export function checkQueryHash(cell) { if (!isQueryHash(cell)) toss('check', {cell}) }
+export function checkQueryText(cell) { if (!isQueryText(cell)) toss('check', {cell}) }
+export function checkQueryInt(cell)  { if (!isQueryInt(cell))  toss('check', {cell}) }
+
+export function checkQueryTagOrBlank(cell) { if (!isQueryTagOrBlank(cell)) toss('check', {cell}) }
+function isQueryTagOrBlank(cell) {
+	return cell === '' || isQueryTag(cell)
+}
+test(() => {
+	ok(isQueryTagOrBlank(''))
+	ok(isQueryTagOrBlank('21j3i1DJMw6JPkxYgTt1B'))
+	ok(!isQueryTagOrBlank(' '))//space not valid
+	ok(!isQueryTagOrBlank('21j3i1DJMw6JPkxYgTt1B2'))//too long
+})
+
 //these simple and nearby functions keep us safe from making a bad query or storing bad data
 function isQueryText(s) {//text must be a string, can be blank, can contain weird characters
 	return typeof s == 'string'
 }
 function isQueryTitle(s) {//table names and column titles are like "some_name_text"
-	return typeof s == 'string' && s.length > 0 && /^[a-z](?:[a-z0-9_]*[a-z0-9])?$/.test(s)//lowercase, can have numerals but not start with one, can have underscores but not start or end with one
+	return (
+		typeof s == 'string' && s.length > 0 && s.length <= 63 &&//PostgreSQL table and column names must fit in 63 bytes
+		/^[a-z](?:[a-z0-9_]*[a-z0-9])?$/.test(s))//lowercase, can have numerals but not start with one, can have underscores but not start or end with one
 }
 function isQueryTag(s) {//a tag must be 21 letters and numbers
 	return typeof s == 'string' && s.length == 21 && /^[A-Za-z0-9]+$/.test(s)

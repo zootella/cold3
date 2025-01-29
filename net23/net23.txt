@@ -1449,6 +1449,33 @@ lambda serverless framework is local/deployed--run in those two environments
 
 
 
+     _       _        _                    
+  __| | __ _| |_ __ _| |__   __ _ ___  ___ 
+ / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
+| (_| | (_| | || (_| | |_) | (_| \__ \  __/
+ \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
+                                           
+
+bookmark january
+here's where you talk about
+-what you learned
+-choices you've made
+-concessions you've made
+-conventions you've set
+about
+SQL, PostgreSQL, and Supabase
+as well as manual steps to create a database
+and backup and restore the database, cloud and local postgres
+
+https://supabase.com/docs/guides/platform/backups
+"All Pro, Team and Enterprise Plan Supabase projects are backed up automatically on a daily basis."
+pro costs $25/month
+
+
+
+
+
+
 
 
 

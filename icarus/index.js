@@ -92,14 +92,20 @@ useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
 /* level 2 query */
 
+getDatabase,
+
+
 snippetClear,
 snippetPopulate,
 snippetQuery2,
 
+queryFilterRecent,
+queryFilterMostRecent,
 queryFilterSortTop,
 queryFilterSortAll,
 
 queryAddRowIfCellsUnique,
+queryHideRows,
 
 querySetCell,
 querySetCellOrAddRow,
@@ -116,6 +122,16 @@ queryAddRows,
 queryCountRows,
 queryCountAllRows,
 queryDeleteAllRows,
+
+
+checkQueryTitle,
+checkQueryRow,
+checkQueryCell,
+checkQueryTag,
+checkQueryHash,
+checkQueryText,
+checkQueryInt,
+checkQueryTagOrBlank,
 
 } from './level2.js'
 

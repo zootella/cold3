@@ -15,16 +15,22 @@ Tag, tagLength, checkTag, checkTagOrBlank,
 import {
 getAccess, Sticker, isLocal, isCloud,
 
-/* query level 2 */
+/* level 2 query */
+
+getDatabase,
+
 
 snippetClear,
 snippetPopulate,
 snippetQuery2,
 
-queryFilterSortAll,
+queryFilterRecent,
+queryFilterMostRecent,
 queryFilterSortTop,
+queryFilterSortAll,
 
 queryAddRowIfCellsUnique,
+queryHideRows,
 
 querySetCell,
 querySetCellOrAddRow,
@@ -41,6 +47,16 @@ queryAddRows,
 queryCountRows,
 queryCountAllRows,
 queryDeleteAllRows,
+
+
+checkQueryTitle,
+checkQueryRow,
+checkQueryCell,
+checkQueryTag,
+checkQueryHash,
+checkQueryText,
+checkQueryInt,
+checkQueryTagOrBlank,
 
 } from './level2.js'
 
@@ -379,31 +395,17 @@ export async function browserSignedInGet(browserTag) {
 
 
 
-//  _                                       _        _     _      
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
-//                                                                
-
-noop(`sql
--- what user is signed into this browser?
-CREATE TABLE browser_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
-	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
-	hide         BIGINT                 NOT NULL,  -- 0 to start, nonzero reason we can ignore row
-	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
-	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
-	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
-);
-
--- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser_table_browser_tag_index
-ON browser_table (hide, browser_tag, row_tick DESC);
-`)
 
 
 
+//                                               _        _     _      
+//   __ _  _____   _____ _ __ _ __   ___  _ __  | |_ __ _| |__ | | ___ 
+//  / _` |/ _ \ \ / / _ \ '__| '_ \ / _ \| '__| | __/ _` | '_ \| |/ _ \
+// | (_| | (_) \ V /  __/ |  | | | | (_) | |    | || (_| | |_) | |  __/
+//  \__, |\___/ \_/ \___|_|  |_| |_|\___/|_|     \__\__,_|_.__/|_|\___|
+//  |___/                                                              
+
+//when did we last do this? how frequently have we done this recently?
 
 
 
@@ -466,109 +468,135 @@ export async function snippetQuery3() {
 	if (error) return look(error)
 	else return data
 }
+
+
+
+
+
+
+
+
+
+
+
+//  _                                       _        _     _      
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
+//                                                                
+
+//who's signed into this browser? sign users in and out
+
+noop(`sql
+-- what user is signed into this browser?
+CREATE TABLE browser_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
+	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
+	hide         BIGINT                 NOT NULL,  -- 0 to start, nonzero reason we can ignore row
+	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
+	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
+	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
+);
+
+-- index to get visible rows about a browser, recent first, quickly
+CREATE INDEX browser_table_browser_tag_index
+ON browser_table (hide, browser_tag, row_tick DESC);
+`)
+
+
+
 export async function snippet3() {
 	log('hi from query snippet3')
 
-	let browserTag = 'm7tgGjER1bCALs2OQfMic'
-	let userTag = '2lTJRp5P0sjc0jmZxiUJ4'
+	/*
+	let userTag = await signGet({browserTag: 'mUI301FUXDWTtgwq4eSGz'})
+	log('userTag is:', look(userTag))
+	*/
 
-	let row1 = {browserTag, userTag, ip: 'ip3', city: 'city3', agent: 'agent3', graphics: ''}
+	//bookmark january--you've written signGet, signIn, signOut
+	//next, []run them here with dummy values
+	//after that you'll hook them up to a component that lets you sign in and out
 
-	await recordHit(row1)
+
+
 }
 
 
-/*
-where the info comes from
-
-//worker's clock
-		row_tick: t,
-		quarter_day: d,//cells that describe the first hit like this in this quarter day time period
-
-//cloudflare, trusted
-		ip_text: ip,
-		city_text: city,
-
-//browser, what it says it is
-		browser_tag: browserTag,
-		agent_text: agent,
-		graphics_text: graphics
-
-//determined from several sources
-		user_tag_text: userTag,
 
 
 
-
-parse these out in doorWorkerOpen, probably
-workerEvent.req.headers.get('CF-Connecting-IP')
-const userIp = request.headers.get("cf-connecting-ip");
-ask: what kind of object is headers? what is the .get method? should i use upper or lower case here?
-Because CF-Connecting-IP is added by Cloudflare’s edge, it is considered trusted. It tells you the actual IP (IPv4 or IPv6) Cloudflare sees from the client, regardless of any untrusted X-Forwarded-For or other headers the browser might send.
-
-
-const cf = workerEvent.req.cf;
-const city = cf?.city;         // e.g. "New York"
-const region = cf?.region;     // e.g. "NY"
-const country = cf?.country;   // e.g. "US"
-const continent = cf?.continent; // e.g. "NA"
-
-make sure geolocation is enabled
-
-
-const cfInfo = request.cf; 
-cfInfo might look like:
-{
-  asOrganization: "AS12345 Some ISP",
-  city: "Los Angeles",
-  region: "CA",
-  country: "US",
-  continent: "NA",
-  postalCode: "90001",
-  latitude: "34.0522",
-  longitude: "-118.2437",
-  timezone: "America/Los_Angeles",
-  // ... and so on
+export async function signGet({browserTag}) {//what user, if any, is signed in at this browser?
+	checkTag(browserTag)
+	return signGet_query({browserTag})
+}
+//[]
+async function signGet_query({browserTag}) {
+	checkQueryTag(browserTag)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from('browser_table')
+		.select('*')//retrieve the matching rows
+		.eq('hide', 0)//only rows that are not hidden
+		.eq('browser_tag', browserTag)//rows about this browser
+		.gt('signed_in', 0)//that describe a user signing in, greater than 0
+		.order('row_tick', {ascending: false})//most recent first
+		.limit(1)//we only need the topmost row
+	)
+	if (error) toss('supabase', {error})
+	return data[0]?.user_tag
 }
 
-request.headers.get("user-agent")
-
-
-also you should only register hits onCloud()
-
-
-json stringify cfInfo to see what they look like in supabase
-and similarly, this is a good way to use
-
-now code some pinia
-pinia 1[]the local counter that stays when you go back to the route it's on, all local
-pinia 3[]graphics info, setting once at the start
-
-
-maybe actually store it parsed, not raw
-because you don't want to reparse it differently later
-raw is big, and not private
-
-
-don't do the nvidia stuff because it isn't already on the worker
-save the whole cfInfo stringified
-
-
-
-
-
-
-
-
-
-*/
-
-
-
+export async function signIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
+	checkTag(browserTag); checkTag(userTag)
+	await queryAddRow({
+		table: 'browser_table',
+		row: {
+			row_tag: Tag(),
+			row_tick: Now(),
+			hide: 0,
+			browser_tag: browserTag,
+			user_tag: userTag,
+			signed_in: 1,//1 means this row is about the user signing in here and now
+		}
+	})
+}
+export async function signOut({browserTag, userTag}) {//sign the user at this browser out everywhere
+	checkTag(browserTag); checkTag(userTag)
+	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
+	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
+	//also, make a new row to record when the user signed out, and that they signed out from this browser
+	await queryAddRow({
+		table: 'browser_table',
+		row: {
+			row_tag: Tag(),
+			row_tick: Now(),
+			hide: 0,
+			browser_tag: browserTag,
+			user_tag: userTag,
+			signed_in: 0,//0 means this row is about the user signing out
+		}
+	})
+}
 
 
 
 
+
+
+
+
+
+
+
+//              _   _                _   _           _         _        _     _      
+//   __ _ _   _| |_| |__   ___ _ __ | |_(_) ___ __ _| |_ ___  | |_ __ _| |__ | | ___ 
+//  / _` | | | | __| '_ \ / _ \ '_ \| __| |/ __/ _` | __/ _ \ | __/ _` | '_ \| |/ _ \
+// | (_| | |_| | |_| | | |  __/ | | | |_| | (_| (_| | ||  __/ | || (_| | |_) | |  __/
+//  \__,_|\__,_|\__|_| |_|\___|_| |_|\__|_|\___\__,_|\__\___|  \__\__,_|_.__/|_|\___|
+//                                                                                   
+
+//a user proves they are the same person as before
 
 
 
