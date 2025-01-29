@@ -478,7 +478,90 @@ export async function snippet3() {
 }
 
 
+/*
+where the info comes from
 
+//worker's clock
+		row_tick: t,
+		quarter_day: d,//cells that describe the first hit like this in this quarter day time period
+
+//cloudflare, trusted
+		ip_text: ip,
+		city_text: city,
+
+//browser, what it says it is
+		browser_tag: browserTag,
+		agent_text: agent,
+		graphics_text: graphics
+
+//determined from several sources
+		user_tag_text: userTag,
+
+
+
+
+parse these out in doorWorkerOpen, probably
+workerEvent.req.headers.get('CF-Connecting-IP')
+const userIp = request.headers.get("cf-connecting-ip");
+ask: what kind of object is headers? what is the .get method? should i use upper or lower case here?
+Because CF-Connecting-IP is added by Cloudflare’s edge, it is considered trusted. It tells you the actual IP (IPv4 or IPv6) Cloudflare sees from the client, regardless of any untrusted X-Forwarded-For or other headers the browser might send.
+
+
+const cf = workerEvent.req.cf;
+const city = cf?.city;         // e.g. "New York"
+const region = cf?.region;     // e.g. "NY"
+const country = cf?.country;   // e.g. "US"
+const continent = cf?.continent; // e.g. "NA"
+
+make sure geolocation is enabled
+
+
+const cfInfo = request.cf; 
+cfInfo might look like:
+{
+  asOrganization: "AS12345 Some ISP",
+  city: "Los Angeles",
+  region: "CA",
+  country: "US",
+  continent: "NA",
+  postalCode: "90001",
+  latitude: "34.0522",
+  longitude: "-118.2437",
+  timezone: "America/Los_Angeles",
+  // ... and so on
+}
+
+request.headers.get("user-agent")
+
+
+also you should only register hits onCloud()
+
+
+json stringify cfInfo to see what they look like in supabase
+and similarly, this is a good way to use
+
+now code some pinia
+pinia 1[]the local counter that stays when you go back to the route it's on, all local
+pinia 3[]graphics info, setting once at the start
+
+
+maybe actually store it parsed, not raw
+because you don't want to reparse it differently later
+raw is big, and not private
+
+
+don't do the nvidia stuff because it isn't already on the worker
+save the whole cfInfo stringified
+
+
+
+
+
+
+
+
+
+*/
 
 
 
