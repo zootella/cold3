@@ -283,6 +283,120 @@ export function validateMessageForm() {
 
 
 
+/*
+const reservedRoutes = `
+about
+account
+admin
+administrator
+app
+ban
+billing
+blog
+community
+config
+contact
+creator
+dashboard
+developer
+e
+f
+fan
+faq
+feed
+feedback
+forum
+help
+home
+i
+legal
+login
+logout
+manage
+me
+messages
+moderator
+my
+notifications
+official
+privacy
+profile
+register
+report
+root
+search
+settings
+shop
+signin
+signout
+signup
+staff
+status
+store
+subscribe
+support
+system
+terms
+unsubscribe
+user
+verify
+`
+*/
+/*
+and what are your ideas for user names?
+upper and lower case fine
+length 1 through 42 fine
+-_. fine but can't have multiple non letter number in a row
+can a  name start with a number or _? yes, to match twitter like _SomeName_
+
+check your previous notes on this
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

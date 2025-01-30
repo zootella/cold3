@@ -2657,3 +2657,82 @@ test(() => {
 	ok(sameIgnoringCase('origin', 'Origin'))
 	ok(sameIgnoringTrailingSlash('https://example.com/', 'https://example.com'))
 })
+
+
+
+
+
+
+
+/*
+design teh form
+user name [MyName]
+appear on the page "MyName"
+appear in links [MyName]
+this link also works "myname"
+
+1-42 numbers and letters; -_. ok but not in a row
+
+user changes text in the first box, second box automatically set
+but also, user can edit second box separately
+so accented latin goes unadorned
+and user can type all kanji into the first box and their english translation in the second
+*/
+
+export function removeAccent(s) {
+	/*from chat, of course
+function removeAccents(str) {
+  return str
+    // Convert accented characters to their decomposed form
+    .normalize('NFD')
+    // Remove combining diacritic marks
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+// Usage example:
+const userInput = "áéíóúÁÉÍÓÚ";
+const sanitized = removeAccents(userInput); // "aeiouAEIOU"
+	*/
+
+}
+test(() => {
+
+	ok(removeAccent('français') == 'francais')
+	ok(removeAccent('łódź') == 'lodz')
+	ok(removeAccent('İstanbul') == 'Istanbul')
+
+})
+
+//or use https://www.npmjs.com/package/slugify
+//try both--slugify may be more than you need here
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
