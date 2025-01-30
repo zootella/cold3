@@ -67,6 +67,7 @@ urlNetwork23, fetchNetwork23, vhsSign,
 
 settingReadInt, settingRead, settingWrite,
 browserSignedInSet, browserSignedInGet,
+signGet, signIn, signOut,
 
 snippetQuery3,
 

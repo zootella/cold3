@@ -505,20 +505,45 @@ ON browser_table (hide, browser_tag, row_tick DESC);
 `)
 
 
+//                         CiiiiiiiiiiiiiiiiiiiC
+//                         GRAYuseriiiiiiiiiiiiG
+//                         PINKuseriiiiiiiiiiiiP
+//                         PinkCloudUseriiiiiPCU
+const exampleUserTagA   = 'AiiiiiiiiiiiiiiiiiiiA'
+const exampleUserTagB   = 'BiiiiiiiiiiiiiiiiiiiB'
+const exampleBrowserTag1 = 'browsertag11111111111'
+const exampleBrowserTag2 = 'browsertag22222222222'
 
 export async function snippet3() {
 	log('hi from query snippet3')
-
-	/*
-	let userTag = await signGet({browserTag: 'mUI301FUXDWTtgwq4eSGz'})
-	log('userTag is:', look(userTag))
-	*/
 
 	//bookmark january--you've written signGet, signIn, signOut
 	//next, []run them here with dummy values
 	//after that you'll hook them up to a component that lets you sign in and out
 
+	/*
+	sign user a into browsers 1 and 2
+	sign user a out on browser 2
+	see if user a is signed in on browser 1
+	*/
+	//user a signs into both browsers
+	/*
+	await signIn({browserTag: exampleBrowserTag1, userTag: exampleUserTagA})
+	await signIn({browserTag: exampleBrowserTag2, userTag: exampleUserTagA})
+	*/
 
+//	await signOut({browserTag: exampleBrowserTag1, userTag: exampleUserTagA})
+	/*
+
+
+	await signIn({browserTag: exampleBrowserTag, userTag: exampleUserTagB})
+*/
+	//sign b into 2
+//	await signIn({browserTag: exampleBrowserTag2, userTag: exampleUserTagB})
+	//whose signed into 1? [x]nobody
+	//whose signed into 2? [x]b
+
+	let userTag = await signGet({browserTag: exampleBrowserTag2}); log('userTag is:', look(userTag)); return userTag
 
 }
 
@@ -527,6 +552,7 @@ export async function snippet3() {
 
 
 export async function signGet({browserTag}) {//what user, if any, is signed in at this browser?
+	log('made it to sign get')
 	checkTag(browserTag)
 	return signGet_query({browserTag})
 }
@@ -539,12 +565,12 @@ async function signGet_query({browserTag}) {
 		.select('*')//retrieve the matching rows
 		.eq('hide', 0)//only rows that are not hidden
 		.eq('browser_tag', browserTag)//rows about this browser
-		.gt('signed_in', 0)//that describe a user signing in, greater than 0
+		.gt('signed_in', 0)//that describe a user signing in, gt is greater than
 		.order('row_tick', {ascending: false})//most recent first
-		.limit(1)//we only need the topmost row
+		.limit(1)//just one row
 	)
 	if (error) toss('supabase', {error})
-	return data[0]?.user_tag
+	return data[0]?.user_tag//returns undefined if no row, or if there is a row, it must have a user tag
 }
 
 export async function signIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
