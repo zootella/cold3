@@ -57,11 +57,11 @@ function stick(s) { stickText.value += s + newline + newline }
 <template>
 
 <div>
-	<input v-model="passwordModel" type="text" placeholder="password" />
-	<button @click="signIn">Sign In</button>
-	<button @click="signOut">Sign Out</button>
-	<button @click="signGet">Sign Check</button>
-	<button @click="snippet">Snippet</button>
+	<input v-model="passwordModel" type="text" placeholder="password" />{{' '}}
+	<button class="pushy" @click="signIn">Sign In</button>{{' '}}
+	<button class="pushy" @click="signOut">Sign Out</button>{{' '}}
+	<button class="pushy" @click="signGet">Sign Check</button>{{' '}}
+	<button class="pushy" @click="snippet">Snippet</button>{{' '}}
 </div>
 
 <div>

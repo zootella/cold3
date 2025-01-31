@@ -5,7 +5,7 @@ doorWorker,
 Sticker,
 fetchNetwork23,
 validateEmail, validatePhone,
-browserSignedInGet,
+legacyAccessSet, legacyAccessGet,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -19,7 +19,7 @@ async function doorProcessBelow(door) {
 
 	let {browserTag, provider, service, address, message} = door.body//pull values from the body the untrusted page posted to us
 
-	let signedIn = await browserSignedInGet(browserTag)
+	let signedIn = await legacyAccessGet(browserTag)
 	if (!signedIn) toss('account', {browserTag, door})
 
 	let validated

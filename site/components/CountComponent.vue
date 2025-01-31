@@ -58,9 +58,9 @@ async function incrementCount(increment1, increment2) {
 <!-- Only display the count details if the data is available -->
 <p v-if="data">
 	Count
-	<button @click="incrementCount(1, 0)">{{ data.countGlobal }} global</button>
+	<button class="pushy" @click="incrementCount(1, 0)">{{ data.countGlobal }} global</button>
 	updated in {{ tick.durationGlobal }}ms, and
-	<button @click="incrementCount(0, 1)">{{ data.countBrowser }} browser</button>
+	<button class="pushy" @click="incrementCount(0, 1)">{{ data.countBrowser }} browser</button>
 	updated in {{ tick.durationBrowser }}ms for this browser tagged <i>{{ browserTag }}</i>.
 </p>
 <!-- Display a loading message while the data is being fetched -->

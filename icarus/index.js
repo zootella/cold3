@@ -65,16 +65,27 @@ urlNetwork23, fetchNetwork23, vhsSign,
 
 /* level 3 query */
 
-settingReadInt, settingRead, settingWrite,
-browserSignedInSet, browserSignedInGet,
+snippetQuery3,
+snippet3,
 
-signGet, signIn, signOut,
+settingReadInt, settingRead, settingWrite,
+legacyAccessSet, legacyAccessGet,
+recordHit,
+
 authenticateSignGet,
 authenticateSignUp,
 authenticateSignIn,
 authenticateSignOut,
 
-snippetQuery3,
+userToRoute,
+routeToUser,
+routeAdd,
+routeRemove,
+routeMove,
+
+browserToUser,
+browserSignIn,
+browserSignOut,
 
 } from './level3.js'
 
@@ -100,10 +111,10 @@ useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
 getDatabase,
 
-
 snippetClear,
 snippetPopulate,
 snippetQuery2,
+snippet2,
 
 queryFilterRecent,
 queryFilterMostRecent,
@@ -113,14 +124,9 @@ queryFilterSortAll,
 queryAddRowIfCellsUnique,
 queryHideRows,
 
-querySetCell,
-querySetCellOrAddRow,
-
-queryGetCell,
-queryGetCellOrAddRow,
-
-queryGetRow,
-queryGetRowOrAddRow,
+querySetCell, querySetCellOrAddRow,
+queryGetCell, queryGetCellOrAddRow,
+queryGetRow,  queryGetRowOrAddRow,
 
 queryAddRow,
 queryAddRows,
@@ -129,14 +135,15 @@ queryCountRows,
 queryCountAllRows,
 queryDeleteAllRows,
 
-
 checkQueryTitle,
 checkQueryRow,
 checkQueryCell,
+
 checkQueryTag,
 checkQueryHash,
 checkQueryText,
 checkQueryInt,
+
 checkQueryTagOrBlank,
 
 } from './level2.js'

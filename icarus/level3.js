@@ -22,10 +22,10 @@ getAccess, Sticker, isLocal, isCloud,
 
 getDatabase,
 
-
 snippetClear,
 snippetPopulate,
 snippetQuery2,
+snippet2,
 
 queryFilterRecent,
 queryFilterMostRecent,
@@ -35,14 +35,9 @@ queryFilterSortAll,
 queryAddRowIfCellsUnique,
 queryHideRows,
 
-querySetCell,
-querySetCellOrAddRow,
-
-queryGetCell,
-queryGetCellOrAddRow,
-
-queryGetRow,
-queryGetRowOrAddRow,
+querySetCell, querySetCellOrAddRow,
+queryGetCell, queryGetCellOrAddRow,
+queryGetRow,  queryGetRowOrAddRow,
 
 queryAddRow,
 queryAddRows,
@@ -51,14 +46,15 @@ queryCountRows,
 queryCountAllRows,
 queryDeleteAllRows,
 
-
 checkQueryTitle,
 checkQueryRow,
 checkQueryCell,
+
 checkQueryTag,
 checkQueryHash,
 checkQueryText,
 checkQueryInt,
+
 checkQueryTagOrBlank,
 
 } from './level2.js'
@@ -478,15 +474,13 @@ export async function settingWrite(name, value) {
 
 
 
-//                                _        _     _      
-//   __ _  ___ ___ ___  ___ ___  | |_ __ _| |__ | | ___ 
-//  / _` |/ __/ __/ _ \/ __/ __| | __/ _` | '_ \| |/ _ \
-// | (_| | (_| (_|  __/\__ \__ \ | || (_| | |_) | |  __/
-//  \__,_|\___\___\___||___/___/  \__\__,_|_.__/|_|\___|
-//                                                      
+
+
+
+// legacy, access_table, which has the global password and unlocks messaging
 
 //[ran]
-export async function browserSignedInSet(browserTag, signedInSet) {
+export async function legacyAccessSet(browserTag, signedInSet) {
 	let signedInSetInt = signedInSet ? 1 : 0
 	await queryAddRow({//always makes a new row
 		table: 'access_table',
@@ -500,7 +494,7 @@ export async function browserSignedInSet(browserTag, signedInSet) {
 	})
 }
 //[ran]
-export async function browserSignedInGet(browserTag) {
+export async function legacyAccessGet(browserTag) {
 	let row = await queryFilterSortTop({//never makes a new row
 		table: 'access_table',
 		title: 'browser_tag', cell: browserTag,
@@ -605,7 +599,14 @@ export async function recordHit({browserTag, userTag, ip, city, agent, graphics}
 
 
 
+//                   __ _ _        _        _     _      
+//  _ __  _ __ ___  / _(_) | ___  | |_ __ _| |__ | | ___ 
+// | '_ \| '__/ _ \| |_| | |/ _ \ | __/ _` | '_ \| |/ _ \
+// | |_) | | | (_) |  _| | |  __/ | || (_| | |_) | |  __/
+// | .__/|_|  \___/|_| |_|_|\___|  \__\__,_|_.__/|_|\___|
+// |_|                                                   
 
+//first it's just status message here; eventually this is user name, avatar image, all that
 
 
 
@@ -621,10 +622,26 @@ export async function recordHit({browserTag, userTag, ip, city, agent, graphics}
 
 //ttd january - today's new level: self identified users with names that are routes
 
+
+/*
+bookmark january
+ok, clicking through these four work
+[]make another pass to be sure
+[]see "Taken." get reported back up to the user
+[]deal with an exception here telling the page 500--catch those in the page
+[]understand where you check what up and down the stack
+[]improve the form so you can show it to friends, like gray the buttons until they've entered text for user name that is an acceptable route; very minimal
+
+and then what's next? maybe status message in a new table,
+which the user, once signed in, can edit--new component for this
+and then user page at a route that holds that message
+and that's where you figure out how to get nuxt to do mixed root routes, which hopefully is common and easy
+*/
+
 //[]
 //determine what user is signed into the given connected browser, and also get their route text (which we're using as user name in this early intermediate stage)
 export async function authenticateSignGet({browserTag}) {
-	let userTag = await signGet({browserTag})
+	let userTag = await browserToUser({browserTag})
 	let routeText
 	if (userTag) routeText = await userToRoute({userTag})
 	return {browserTag, userTag, routeText}
@@ -641,7 +658,7 @@ export async function authenticateSignUp({browserTag, routeText}) {
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
 	await routeAdd({userTag, routeText})
 
-	await signIn({browserTag, userTag})//and sign the new user into this browser
+	await browserSignIn({browserTag, userTag})//and sign the new user into this browser
 	return {browserTag, userTag, routeText, note: 'signed up'}//just for testing; we won't send user tags to pages
 }
 //[]
@@ -652,14 +669,14 @@ export async function authenticateSignIn({browserTag, routeText}) {
 	let userTag = await routeToUser({routeText})
 	if (!userTag) return 'NotFound.'
 
-	await signIn({browserTag, userTag})
+	await browserSignIn({browserTag, userTag})
 	return {browserTag, userTag, routeText, note: 'signed in'}//just for testing; we won't send user tags to pages
 }
 //[]
 //if anybody's signed int this browser, sign them out!
 export async function authenticateSignOut({browserTag}) {
-	let userTag = await signGet({browserTag})
-	if (userTag) await signOut({browserTag, userTag})
+	let userTag = await browserToUser({browserTag})
+	if (userTag) await browserSignOut({browserTag, userTag})
 }
 
 
@@ -758,12 +775,12 @@ CREATE TABLE browser_table (
 CREATE INDEX browser_table_browser_tag_index ON browser_table (hide, browser_tag, row_tick DESC);
 `)
 
-export async function signGet({browserTag}) {//what user, if any, is signed in at this browser?
+export async function browserToUser({browserTag}) {//what user, if any, is signed in at this browser?
 	checkTag(browserTag)
-	let row = await signGet_query({browserTag})
+	let row = await query_browserToUser({browserTag})
 	return row?.user_tag
 }
-async function signGet_query({browserTag}) {//level2-style up here in level3; this query is bespoke with two eq and a gt
+async function query_browserToUser({browserTag}) {//level2-style up here in level3; this query is bespoke with two eq and a gt
 	checkQueryTag(browserTag)
 	let database = await getDatabase()
 	let {data, error} = (await database
@@ -779,31 +796,25 @@ async function signGet_query({browserTag}) {//level2-style up here in level3; th
 	return data[0]//returns the row, or undefined if no row
 }
 
-export async function signIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
+export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
 	checkTag(browserTag); checkTag(userTag)
 	await queryAddRow({
 		table: 'browser_table',
-		row: {
-			row_tag: Tag(),
-			row_tick: Now(),
-			hide: 0,
+		row: {row_tag: Tag(), row_tick: Now(), hide: 0,
 			browser_tag: browserTag,
 			user_tag: userTag,
 			signed_in: 1,//1 means this row is about the user signing in here and now
 		}
 	})
 }
-export async function signOut({browserTag, userTag}) {//sign the user at this browser out everywhere
+export async function browserSignOut({browserTag, userTag}) {//sign the user at this browser out everywhere
 	checkTag(browserTag); checkTag(userTag)
 	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
 	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
 	//also, make a new row to record when the user signed out, and that they signed out from this browser
 	await queryAddRow({
 		table: 'browser_table',
-		row: {
-			row_tag: Tag(),
-			row_tick: Now(),
-			hide: 0,
+		row: {row_tag: Tag(), row_tick: Now(), hide: 0,
 			browser_tag: browserTag,
 			user_tag: userTag,
 			signed_in: 0,//0 means this row is about the user signing out

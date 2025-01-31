@@ -2,7 +2,7 @@
 import {
 log, look, checkTag,
 doorWorker, getAccess,
-browserSignedInSet, browserSignedInGet,
+legacyAccessSet, legacyAccessGet,
 timeSafeEqual,
 } from 'icarus'
 
@@ -19,7 +19,7 @@ async function doorProcessBelow(door) {
 	checkTag(door.body.browserTag)
 
 	//is this browser already signed in?
-	o.signedIn1 = o.signedIn2 = await browserSignedInGet(door.body.browserTag)
+	o.signedIn1 = o.signedIn2 = await legacyAccessGet(door.body.browserTag)
 
 	o.requestedAction = door.body.action
 	if (door.body.action == 'SignGet.') {//nothing more to do actually
@@ -27,7 +27,7 @@ async function doorProcessBelow(door) {
 		if (!o.signedIn1) {
 			o.note = 'already signed out'
 		} else {
-			await browserSignedInSet(door.body.browserTag, false)
+			await legacyAccessSet(door.body.browserTag, false)
 			o.signedIn2 = false
 			o.note = 'signed out'
 		}
@@ -38,7 +38,7 @@ async function doorProcessBelow(door) {
 			let access = await getAccess()
 			o.passwordValid = timeSafeEqual(door.body.password, access.get('ACCESS_PASSWORD_SECRET'))
 			if (o.passwordValid) {//if password valid
-				await browserSignedInSet(door.body.browserTag, true)
+				await legacyAccessSet(door.body.browserTag, true)
 				o.signedIn2 = true
 				o.note = 'signed in'
 			} else {

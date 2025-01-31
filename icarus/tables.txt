@@ -782,7 +782,7 @@ do you need users to pick unique user names to do this? you think so, and that's
 /* level 3 query */
 
 settingReadInt, settingRead, settingWrite,
-browserSignedInSet, browserSignedInGet,
+legacyAccessSet, legacyAccessGet,
 
 /* level 2 query */
 
@@ -1071,22 +1071,6 @@ they don't have routes or pages yet
 also, at this point, user names are lowercase routes
 
 
-
-
-
-
-authenticateSignGet - browserTag > userTag and routeText
-authenticateSignUp - browserTag, routeText
-authenticateSignIn
-authenticateSignOut
-
-userToRoute
-routeToUser
-routeAdd
-
-signGet
-signIn
-signOut
 
 
 

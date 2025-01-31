@@ -97,21 +97,21 @@ function addressKey() {
 
 <div>
 	<input type="text" v-model="passwordModel" placeholder="password" />{{' '}}
-	<button @click="signIn">Sign In</button>
-	<button @click="signOut">Sign Out</button>
-	<button @click="signGet">Sign Check</button>{{' '}}
-	<button @click="runSnippet">Snippet</button>
+	<button class="pushy" @click="signIn">Sign In</button>{{' '}}
+	<button class="pushy" @click="signOut">Sign Out</button>{{' '}}
+	<button class="pushy" @click="signGet">Sign Check</button>{{' '}}
+	<button class="pushy" @click="runSnippet">Snippet</button>{{' '}}
 </div>
 <div>
 	<p><i>{{ signInStatus }}</i></p>
 </div>
 
 <div>
-	<p><input type="text" v-model="addressModel" @input="addressKey" placeholder="email, phone, or user name" /> <i>{{ addressStatus }}</i></p>
-	<p><input v-model="messageModel" type="text" placeholder="message" />
-	<input type="radio" id="idProviderA" value="Amazon." v-model="providerModel" /><label for="idProviderA">Amazon</label>
+	<p><input type="text" v-model="addressModel" @input="addressKey" placeholder="email, phone, or user name" /> <i>{{ addressStatus }}</i></p>{{' '}}
+	<p><input v-model="messageModel" type="text" placeholder="message" />{{' '}}
+	<input type="radio" id="idProviderA" value="Amazon." v-model="providerModel" /><label for="idProviderA">Amazon</label>{{' '}}
 	<input type="radio" id="idProviderT" value="Twilio." v-model="providerModel" /><label for="idProviderT">Twilio</label>{{' '}}
-	<button @click="sendMessage">Send</button></p>
+	<button class="pushy" @click="sendMessage">Send</button></p>
 </div>
 
 <div>

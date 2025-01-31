@@ -65,7 +65,7 @@ function logToBox(s) {
 </p>
 <div>
 	<p>
-		<button @click="clickedFetch">Fetch</button>
+		<button class="pushy" @click="clickedFetch">Fetch</button>
 	</p>
 </div>
 
@@ -73,7 +73,7 @@ function logToBox(s) {
 
 <div>
 	<form @submit.prevent="submitEnter">
-		Text <input type="text" v-model="textContents" /> <button>Enter</button>
+		Text <input type="text" v-model="textContents" /> <button class="pushy">Enter</button>
 		{{ textContents.length ? `measured ${textContents.length} characters` : "no contents" }}
 	</form>
 </div>
