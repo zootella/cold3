@@ -1057,6 +1057,52 @@ this is actually a lot easier a task than browser_table!
 
 
 
+later realized, an account could also be temporarily suspended by staff
+while we clear something up with a user, who, if in chat oob, promises to not do that again
+so both closed and hidden can be done by user or staff
+
+
+
+
+
+connect these above and below:
+right now just for users signign up and signin in
+they don't have routes or pages yet
+also, at this point, user names are lowercase routes
+
+
+
+
+
+
+authenticateSignGet - browserTag > userTag and routeText
+authenticateSignUp - browserTag, routeText
+authenticateSignIn
+authenticateSignOut
+
+userToRoute
+routeToUser
+routeAdd
+
+signGet
+signIn
+signOut
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

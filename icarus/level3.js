@@ -8,6 +8,9 @@ stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 hmacSign,
+
+checkUserRoute, validUserRoute,
+
 } from './level0.js'
 import {
 Tag, tagLength, checkTag, checkTagOrBlank,
@@ -415,16 +418,20 @@ check your previous notes on this
 SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public';
 `
 
+export async function snippetQuery3() {
+	let data, error
+	try { data = await snippet3() } catch (e) { error = e }
+	if (error) return look(error)
+	else return data
+}
+export async function snippet3() {
+	log("hi from snippet 3")
+}
 
 
-//  _     _ _         _        _     _      
-// | |__ (_) |_ ___  | |_ __ _| |__ | | ___ 
-// | '_ \| | __/ __| | __/ _` | '_ \| |/ _ \
-// | | | | | |_\__ \ | || (_| | |_) | |  __/
-// |_| |_|_|\__|___/  \__\__,_|_.__/|_|\___|
-//                                          
 
-//use for the browser hit, if you end up coding that at all at this point
+
+
 
 
 
@@ -576,11 +583,83 @@ export async function recordHit({browserTag, userTag, ip, city, agent, graphics}
 }
 
 
-export async function snippetQuery3() {
-	let data, error
-	try { data = await snippet3() } catch (e) { error = e }
-	if (error) return look(error)
-	else return data
+
+
+
+
+
+
+//              _   _                _   _           _         _        _     _      
+//   __ _ _   _| |_| |__   ___ _ __ | |_(_) ___ __ _| |_ ___  | |_ __ _| |__ | | ___ 
+//  / _` | | | | __| '_ \ / _ \ '_ \| __| |/ __/ _` | __/ _ \ | __/ _` | '_ \| |/ _ \
+// | (_| | |_| | |_| | | |  __/ | | | |_| | (_| (_| | ||  __/ | || (_| | |_) | |  __/
+//  \__,_|\__,_|\__|_| |_|\___|_| |_|\__|_|\___\__,_|\__\___|  \__\__,_|_.__/|_|\___|
+//                                                                                   
+
+//a user proves they are the same person as before
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//ttd january - today's new level: self identified users with names that are routes
+
+//[]
+//determine what user is signed into the given connected browser, and also get their route text (which we're using as user name in this early intermediate stage)
+export async function authenticateSignGet({browserTag}) {
+	let userTag = await signGet({browserTag})
+	let routeText
+	if (userTag) routeText = await userToRoute({userTag})
+	return {browserTag, userTag, routeText}
+}
+//[]
+//make a new user and sign them in
+export async function authenticateSignUp({browserTag, routeText}) {
+	log('made it to authenticate sign up', look({browserTag, routeText}))
+	checkTag(browserTag); checkUserRoute(routeText)
+
+	let occupant = await routeToUser({routeText})//confirm route is available in database
+	if (occupant) return 'Taken.'
+
+	let userTag = Tag()//create a new user, making the unique tag that will identify them
+	await routeAdd({userTag, routeText})
+
+	await signIn({browserTag, userTag})//and sign the new user into this browser
+	return {browserTag, userTag, routeText, note: 'signed up'}//just for testing; we won't send user tags to pages
+}
+//[]
+//sign an existing user in
+export async function authenticateSignIn({browserTag, routeText}) {
+	checkTag(browserTag); checkUserRoute(routeText)
+
+	let userTag = await routeToUser({routeText})
+	if (!userTag) return 'NotFound.'
+
+	await signIn({browserTag, userTag})
+	return {browserTag, userTag, routeText, note: 'signed in'}//just for testing; we won't send user tags to pages
+}
+//[]
+//if anybody's signed int this browser, sign them out!
+export async function authenticateSignOut({browserTag}) {
+	let userTag = await signGet({browserTag})
+	if (userTag) await signOut({browserTag, userTag})
 }
 
 
@@ -589,14 +668,12 @@ export async function snippetQuery3() {
 
 
 
-//                                                     _        _     _      
-//  _   _ ___  ___ _ __   _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
-// | | | / __|/ _ \ '__| | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
-// | |_| \__ \  __/ |    | | | | (_| | | | | | |  __/ | || (_| | |_) | |  __/
-//  \__,_|___/\___|_|    |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
-//                                                                           
-
-//links user tags with routes
+//                  _         _        _     _      
+//  _ __ ___  _   _| |_ ___  | |_ __ _| |__ | | ___ 
+// | '__/ _ \| | | | __/ _ \ | __/ _` | '_ \| |/ _ \
+// | | | (_) | |_| | ||  __/ | || (_| | |_) | |  __/
+// |_|  \___/ \__,_|\__\___|  \__\__,_|_.__/|_|\___|
+//                                                  
 
 noop(`sql
 -- go between a user's tag and route
@@ -614,14 +691,17 @@ CREATE INDEX route_table_index_1 ON route_table (hide, user_tag,   row_tick DESC
 CREATE INDEX route_table_index_2 ON route_table (hide, route_text, row_tick DESC);
 `)
 
+//[ran]
 export async function userToRoute({userTag}) {//given a user tag, find their route
 	let row = await queryFilterRecent({table: 'route_table', title: 'user_tag', cell: userTag})
 	return row ? row.route_text : false
 }
+//[ran]
 export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
 	let row = await queryFilterRecent({table: 'route_table', title: 'route_text', cell: routeText})
 	return row ? row.user_tag : false
 }
+//[ran]
 export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
 	await queryAddRow({
 		table: 'route_table',
@@ -631,94 +711,23 @@ export async function routeAdd({userTag, routeText}) {//create a new user at rou
 		}
 	})
 }
+//[ran]
 export async function routeRemove({userTag}) {//vacate the given user's route
 	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
 }
+//[ran]
 export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
 	await routeRemove({userTag})
 	await routeAdd({userTag, routeText: destinationRouteText})
 }
 
-
-
-
-
-
-
-
-
-export async function userNameTable_add({userTag, routeText}) {
-
-}
-export async function userNameTable_delete({userTag}) {
-
-}
-
-export async function authenticateSignUp({browserTag, nameText, routeText, lookText}) {
-	checkTag(browserTag)
-	checkUserName({nameText, routeText, lookText})//check these appear valid, doesn't use database
-
-	let available = await userRouteIsAvailable({lookText})//confirm route is available in database
-	if (!available) return 'Taken.'
-
-	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	await queryAddRow({
-		table: 'user_name_table',
-		row: {
-			row_tag: Tag(),
-			row_tick: Now(),
-			hide: 0,
-
-			user_tag: userTag,
-			name_text: nameText,
-			route_text: routeText,
-			look_text: lookText,
-		}
-	})
-
-	await signIn({browserTag, userTag})//and sign the new user into this browser
-}
-export async function authenticateSignIn({browserTag, routeText}) {
-	checkTag(browserTag); checkText(routeText)
-
-	let userTag = await userNameToUserTag({routeText})
-	checkTag(userTag)
-
-	await signIn({browserTag, userTag})
-}
-
-export async function userNameToUserTag({routeText}) {
-	let nameText = routeText
-	let lookText = routeText.toLowerCase()
-	checkUserName({nameText, routeText, lookText})//ttd january, placeholder for now as users sign in with their working route names
-}
-
-//authenticate level, browser_table
-
-export async function authenticateSignGet({browserTag}) {
-	return await browserTagToSignedInUser({browserTag})
-}
-export async function authenticateSignOut({browserTag}) {
-	let userTag = await browserTagToSignedInUser({browserTag})
-	if (hasText(userTag)) {
-		await signOut({browserTag, userTag})
-	}
-}
-//given a browser tag, find the user tag of the user who is authenticated and signed in there
-//returns a valid user tag, or false if no user signed in
-export async function browserTagToSignedInUser({browserTag}) {
-	checkTag(browserTag)
-	let row = signGet_query({browserTag})
-	if (row) {
-		checkTag(row.user_tag)
-		return row.user_tag
-	} else {
-		return false
-	}
-}
 //ttd january []confirm that an exception here causes throws up all the way back to the page
 //[]and hits datadog
 //and then deal with exceptions in the page
+
+
+
+
 
 
 
@@ -739,73 +748,20 @@ CREATE TABLE browser_table (
 	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
 	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
 	hide         BIGINT                 NOT NULL,  -- 0 to start, nonzero reason we can ignore row
+
 	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
 	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
 	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
 );
 
 -- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser_table_browser_tag_index
-ON browser_table (hide, browser_tag, row_tick DESC);
+CREATE INDEX browser_table_browser_tag_index ON browser_table (hide, browser_tag, row_tick DESC);
 `)
-
-
-//                         CiiiiiiiiiiiiiiiiiiiC
-//                         GRAYuseriiiiiiiiiiiiG
-//                         PINKuseriiiiiiiiiiiiP
-//                         PinkCloudUseriiiiiPCU
-//                         PinkLocalUseriiiiiPLU
-const exampleUserTagA   = 'AiiiiiiiiiiiiiiiiiiiA'
-const exampleUserTagB   = 'BiiiiiiiiiiiiiiiiiiiB'
-const exampleBrowserTag1 = 'browsertag11111111111'
-const exampleBrowserTag2 = 'browsertag22222222222'
-
-export async function snippet3() {
-	log('hi from query snippet3')
-
-	//bookmark january--you've written signGet, signIn, signOut
-	//next, []run them here with dummy values
-	//after that you'll hook them up to a component that lets you sign in and out
-
-	/*
-	sign user a into browsers 1 and 2
-	sign user a out on browser 2
-	see if user a is signed in on browser 1
-	*/
-	//user a signs into both browsers
-	/*
-	await signIn({browserTag: exampleBrowserTag1, userTag: exampleUserTagA})
-	await signIn({browserTag: exampleBrowserTag2, userTag: exampleUserTagA})
-	*/
-
-//	await signOut({browserTag: exampleBrowserTag1, userTag: exampleUserTagA})
-	/*
-
-
-	await signIn({browserTag: exampleBrowserTag, userTag: exampleUserTagB})
-*/
-	//sign b into 2
-//	await signIn({browserTag: exampleBrowserTag2, userTag: exampleUserTagB})
-	//whose signed into 1? [x]nobody
-	//whose signed into 2? [x]b
-
-	let userTag = await signGet({browserTag: exampleBrowserTag2}); log('userTag is:', look(userTag)); return userTag
-
-}
-
-
-
-
 
 export async function signGet({browserTag}) {//what user, if any, is signed in at this browser?
 	checkTag(browserTag)
-	let row = signGet_query({browserTag})
-	if (row) {
-		checkTag(row.user_tag)//if we got a row, the schema ensures that user_tag is a tag
-		return row.user_tag
-	} else {
-		return false
-	}
+	let row = await signGet_query({browserTag})
+	return row?.user_tag
 }
 async function signGet_query({browserTag}) {//level2-style up here in level3; this query is bespoke with two eq and a gt
 	checkQueryTag(browserTag)
@@ -858,21 +814,6 @@ export async function signOut({browserTag, userTag}) {//sign the user at this br
 
 
 
-
-
-
-
-
-
-
-//              _   _                _   _           _         _        _     _      
-//   __ _ _   _| |_| |__   ___ _ __ | |_(_) ___ __ _| |_ ___  | |_ __ _| |__ | | ___ 
-//  / _` | | | | __| '_ \ / _ \ '_ \| __| |/ __/ _` | __/ _ \ | __/ _` | '_ \| |/ _ \
-// | (_| | |_| | |_| | | |  __/ | | | |_| | (_| (_| | ||  __/ | || (_| | |_) | |  __/
-//  \__,_|\__,_|\__|_| |_|\___|_| |_|\__|_|\___\__,_|\__\___|  \__\__,_|_.__/|_|\___|
-//                                                                                   
-
-//a user proves they are the same person as before
 
 
 

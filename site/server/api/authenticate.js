@@ -18,8 +18,8 @@ async function doorProcessBelow(door) {
 	let action = door.body.action
 	switch (action) {
 		case 'AuthenticateSignGet.': o.result = await authenticateSignGet({browserTag: door.body.browserTag}); break;
-		case 'AuthenticateSignUp.':  o.result = await authenticateSignUp({browserTag: door.body.browserTag, userName: door.body.userName}); break;
-		case 'AuthenticateSignIn.':  o.result = await authenticateSignIn({browserTag: door.body.browserTag, userName: door.body.userName}); break;
+		case 'AuthenticateSignUp.':  o.result = await authenticateSignUp({browserTag: door.body.browserTag, routeText: door.body.userName}); break;
+		case 'AuthenticateSignIn.':  o.result = await authenticateSignIn({browserTag: door.body.browserTag, routeText: door.body.userName}); break;
 		case 'AuthenticateSignOut.': o.result = await authenticateSignOut({browserTag: door.body.browserTag}); break;
 		default: toss('action', {door}); break;
 	}

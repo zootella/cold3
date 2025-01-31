@@ -223,5 +223,6 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 
 
 typeUserName, checkUserName,
+checkUserRoute, validUserRoute,
 
 } from './level0.js'

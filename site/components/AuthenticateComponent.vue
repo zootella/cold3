@@ -32,33 +32,39 @@ let refReturningUserNameBox = ref('')
 
 onMounted(async () => {//doesn't run on server, even when hydrating
 	refBrowserTag.value = getBrowserTag()//read browser tag from local storage
+	await doSignGet()
+})
+
+async function doSignGet() {
 	let r = await $fetch('/api/authenticate', {method: 'POST', body:
 		{action: 'AuthenticateSignGet.', browserTag: refBrowserTag.value}})
-	log(look(r))
-
-	if (hasText(r.result)) {//server tells us we've got a user signed into this browser here
+	log('doSignGet fetched:', look(r))
+	if (r.result.userTag) {//server tells us we've got a user signed into this browser here
 		refState.value = 4
-		refUserTag.value = r.result
+		refUserTag.value = r.result.userTag
+		refUserName.value = r.result.routeText
 	} else {//server tells us, no user is signed in here based on our browser tag
 		refState.value = 1
 	}
-})
-
+}
 
 async function clickedSignUp() {
-	let r = await $fetch('/api/signin', {method: 'POST', body:
+	let r = await $fetch('/api/authenticate', {method: 'POST', body:
 		{action: 'AuthenticateSignUp.', browserTag: refBrowserTag.value, userName: refDesiredUserNameBox.value}})
 	log(look(r))
+	await doSignGet()
 }
 async function clickedSignIn() {
-	let r = await $fetch('/api/signin', {method: 'POST', body:
+	let r = await $fetch('/api/authenticate', {method: 'POST', body:
 		{action: 'AuthenticateSignIn.', browserTag: refBrowserTag.value, userName: refReturningUserNameBox.value}})
 	log(look(r))
+	await doSignGet()
 }
 async function clickedSignOut() {
-	let r = await $fetch('/api/signin', {method: 'POST', body:
+	let r = await $fetch('/api/authenticate', {method: 'POST', body:
 		{action: 'AuthenticateSignOut.', browserTag: refBrowserTag.value}})
 	log(look(r))
+	await doSignGet()
 }
 
 </script>
@@ -98,7 +104,7 @@ async function clickedSignOut() {
 
 <!-- state 4: user is signed in -->
 <div v-show="refState == 4">
-	<p><code>{{ refUserTag }}</code> signed in user tag</p>
+	<p><code>{{ refUserTag }}</code> user tag of <code>{{ refUserName }}</code> signed in</p>
 	<p><button @click="clickedSignOut()" class="pushy">Sign Out</button></p>
 </div>
 

@@ -4,7 +4,6 @@
 <NavigationComponent note="on query" />
 
 <QueryComponent />
-<SignInComponent />
 
 </div>
 </template>

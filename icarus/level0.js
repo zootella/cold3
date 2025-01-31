@@ -2766,12 +2766,51 @@ export function checkUserName({pageName, routeName, lookName}) {
 }
 
 
+const nameLength = 42//we support the longest names in the business, yessiree!
+export function checkUserRoute(s) { if (!validUserRoute(s)) toss('check', {s}) }
+export function validUserRoute(s) {//check route text s, like "name-a"
+	return (
+		typeof s == 'string' && s.length >= 1 &&//string that's not blank
+		s.length <= nameLength &&//nor too long
+		/^[a-z0-9._-]+$/.test(s) &&//only lowercase letters, numbers, and ._- allowed
+		!(/[._-]{2}/.test(s))//but those three allowed characters can't appear together!
+		//ttd january, maybe also can't have a period at the start or the end
+		//and research what current popular platforms do--you haven't done enough research for this to design it properly
+	)
+}
+test(() => {
+	ok(validUserRoute('a'))
+	ok(!validUserRoute('A'))
+
+	ok(validUserRoute('user-a'))
+	ok(!validUserRoute('user a'))
+
+	ok(validUserRoute('_some.name_'))
+	ok(!validUserRoute('some..name'))
+	ok(!validUserRoute('some.-name'))
+})
 
 
 
 
 
 
+//sanity checking this as you use these getting data out of the database
+test(() => {
+	function t(x) { if (x); else ok(false) }//if (x) must work
+	function f(x) { if (x) ok(false)}//if (x) must not work
+
+	t(true)
+	t([])//empty arrays and objects are also true, because the container is there
+	t({})
+
+	f(false)
+	f(undefined)//undefined and null are also false
+	f(null)
+
+	t('hi')//text is true
+	f('')//to your surprise just now, a blank string is false!
+})
 
 
 
