@@ -587,12 +587,138 @@ export async function snippetQuery3() {
 
 
 
-// user_name_table
 
-export async function authenticateSignGet({browserTag}) {}
-export async function authenticateSignUp({browserTag, userName}) {}
-export async function authenticateSignIn({browserTag, userName}) {}
-export async function authenticateSignOut({browserTag}) {}
+
+//                                                     _        _     _      
+//  _   _ ___  ___ _ __   _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
+// | | | / __|/ _ \ '__| | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
+// | |_| \__ \  __/ |    | | | | (_| | | | | | |  __/ | || (_| | |_) | |  __/
+//  \__,_|___/\___|_|    |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
+//                                                                           
+
+//links user tags with routes
+
+noop(`sql
+-- go between a user's tag and route
+CREATE TABLE route_table (
+	row_tag     CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick    BIGINT                 NOT NULL,
+	hide        BIGINT                 NOT NULL,
+
+	user_tag    CHAR(21)               NOT NULL,
+	route_text  TEXT                   NOT NULL   -- unique working route, normalized to lower case
+);
+
+-- quickly find the most recent visible row by user tag, and by route
+CREATE INDEX route_table_index_1 ON route_table (hide, user_tag,   row_tick DESC);
+CREATE INDEX route_table_index_2 ON route_table (hide, route_text, row_tick DESC);
+`)
+
+export async function userToRoute({userTag}) {//given a user tag, find their route
+	let row = await queryFilterRecent({table: 'route_table', title: 'user_tag', cell: userTag})
+	return row ? row.route_text : false
+}
+export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
+	let row = await queryFilterRecent({table: 'route_table', title: 'route_text', cell: routeText})
+	return row ? row.user_tag : false
+}
+export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
+	await queryAddRow({
+		table: 'route_table',
+		row: {row_tag: Tag(), row_tick: Now(), hide: 0,
+			user_tag: userTag,
+			route_text: routeText,
+		}
+	})
+}
+export async function routeRemove({userTag}) {//vacate the given user's route
+	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
+}
+export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
+	await routeRemove({userTag})
+	await routeAdd({userTag, routeText: destinationRouteText})
+}
+
+
+
+
+
+
+
+
+
+export async function userNameTable_add({userTag, routeText}) {
+
+}
+export async function userNameTable_delete({userTag}) {
+
+}
+
+export async function authenticateSignUp({browserTag, nameText, routeText, lookText}) {
+	checkTag(browserTag)
+	checkUserName({nameText, routeText, lookText})//check these appear valid, doesn't use database
+
+	let available = await userRouteIsAvailable({lookText})//confirm route is available in database
+	if (!available) return 'Taken.'
+
+	let userTag = Tag()//create a new user, making the unique tag that will identify them
+	await queryAddRow({
+		table: 'user_name_table',
+		row: {
+			row_tag: Tag(),
+			row_tick: Now(),
+			hide: 0,
+
+			user_tag: userTag,
+			name_text: nameText,
+			route_text: routeText,
+			look_text: lookText,
+		}
+	})
+
+	await signIn({browserTag, userTag})//and sign the new user into this browser
+}
+export async function authenticateSignIn({browserTag, routeText}) {
+	checkTag(browserTag); checkText(routeText)
+
+	let userTag = await userNameToUserTag({routeText})
+	checkTag(userTag)
+
+	await signIn({browserTag, userTag})
+}
+
+export async function userNameToUserTag({routeText}) {
+	let nameText = routeText
+	let lookText = routeText.toLowerCase()
+	checkUserName({nameText, routeText, lookText})//ttd january, placeholder for now as users sign in with their working route names
+}
+
+//authenticate level, browser_table
+
+export async function authenticateSignGet({browserTag}) {
+	return await browserTagToSignedInUser({browserTag})
+}
+export async function authenticateSignOut({browserTag}) {
+	let userTag = await browserTagToSignedInUser({browserTag})
+	if (hasText(userTag)) {
+		await signOut({browserTag, userTag})
+	}
+}
+//given a browser tag, find the user tag of the user who is authenticated and signed in there
+//returns a valid user tag, or false if no user signed in
+export async function browserTagToSignedInUser({browserTag}) {
+	checkTag(browserTag)
+	let row = signGet_query({browserTag})
+	if (row) {
+		checkTag(row.user_tag)
+		return row.user_tag
+	} else {
+		return false
+	}
+}
+//ttd january []confirm that an exception here causes throws up all the way back to the page
+//[]and hits datadog
+//and then deal with exceptions in the page
 
 
 
@@ -672,12 +798,16 @@ export async function snippet3() {
 
 
 export async function signGet({browserTag}) {//what user, if any, is signed in at this browser?
-	log('made it to sign get')
 	checkTag(browserTag)
-	return signGet_query({browserTag})
+	let row = signGet_query({browserTag})
+	if (row) {
+		checkTag(row.user_tag)//if we got a row, the schema ensures that user_tag is a tag
+		return row.user_tag
+	} else {
+		return false
+	}
 }
-//[]
-async function signGet_query({browserTag}) {
+async function signGet_query({browserTag}) {//level2-style up here in level3; this query is bespoke with two eq and a gt
 	checkQueryTag(browserTag)
 	let database = await getDatabase()
 	let {data, error} = (await database
@@ -690,7 +820,7 @@ async function signGet_query({browserTag}) {
 		.limit(1)//just one row
 	)
 	if (error) toss('supabase', {error})
-	return data[0]?.user_tag//returns undefined if no row, or if there is a row, it must have a user tag
+	return data[0]//returns the row, or undefined if no row
 }
 
 export async function signIn({browserTag, userTag}) {//this user has proven their identity, sign them in here

@@ -221,4 +221,7 @@ ashFetchum, getBrowserAgentRendererAndVendor,
 
 sameIgnoringCase, sameIgnoringTrailingSlash,
 
+
+typeUserName, checkUserName,
+
 } from './level0.js'

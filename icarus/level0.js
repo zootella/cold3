@@ -2712,6 +2712,58 @@ noop(() => {
 
 
 
+/*
+like dracula, user names have three forms
+
+page
+route
+look
+
+on the front end:
+user types pageName, gets suggestions for routeName and gets to see lookName
+user edits routeName, pageName doesn't change, lookName does
+user sees if what they've got is valid
+
+on the back end:
+validate all three, in the future
+
+validate pageName before saving it in the database, in a distant table
+validate lookName before saving it in the table you're on now
+
+
+
+*/
+
+//for use in the form, while typing, says if valid and suggests
+export function typeUserName({pageRaw, routeRaw}) {//if they changed pageRaw, omit routeRaw; if they typed routeRaw, include both
+
+	let pageName = pageRaw
+	let routeName = routeRaw
+	let lookName = routeName.toLowerCase()
+
+	return {
+		valid: true,
+		hint: 'type something',
+		pageName,
+		routeName,
+		lookName,
+	}
+}
+//for use on both sides of fetch, throws on a problem
+export function checkUserName({pageName, routeName, lookName}) {
+	if (!routeName) routeName = lookName; if (!pageName) pageName = routeName//earlier are optional
+	/*
+	lots to do here later, like
+	pageName can't have double spaces or start or end with spaces--condensed must be the same as given
+	routeName lowercased must be lookName
+
+	those routes can have only letters, numbers, and -_.
+	but also can't have any of -_. next to one another
+	*/
+
+	//minimal check for today's need:
+	checkText(lookName)
+}
 
 
 

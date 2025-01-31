@@ -1315,24 +1315,19 @@ export async function snippet2() {
 
 
 //[]
-//get the most recent visible row with filter like {title1: cell1, title2: cell2}
-export async function queryFilterRecent({table, filter}) {
-	checkQueryTitle(table)
+//get the most recent visible row with cell under title
+export async function queryFilterRecent({table, title, cell}) {
+	checkQueryTitle(table); checkQueryCell(title, cell)
 	let database = await getDatabase()
-	let q = (database
+	let {data, error} = (await database
 		.from(table)
 		.select('*')
 		.eq('hide', 0)
-	)
-	for (let [title, cell] of Object.entries(filter)) {
-		checkQueryCell(title, cell)
-		q = q.eq(title, cell)
-	}
-	let {data, error} = (await q
+		.eq(title, cell)
 		.order('row_tick', {ascending: false})
 		.limit(1)
 	)
-	if (error) toss('supabase', { error })
+	if (error) toss('supabase', {error})
 	return data[0]//data is an array with one element, or empty if none found
 }
 
