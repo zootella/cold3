@@ -51,11 +51,11 @@ async function clickedSubmit() {//gets called when the user clicks the button
 
 <p>Check if your desired username is available.</p>
 <p>Name: <input type="text" v-model="refName" /></p>
-<p>
-	<label><input type="checkbox" v-model="refTerms" />Accept Terms</label>
-	<button :disabled="refButtonState != 'green'" :class="refButtonState" @click="clickedSubmit">Check</button>
-</p>
-<p>Response: <i>{{ refResponse }}</i></p>
+<div>
+	<label><input type="checkbox" v-model="refTerms" /> Accept Terms</label>{{' '}}
+	<button :disabled="refButtonState != 'green'" :class="refButtonState" @click="clickedSubmit" class="pushy">Check</button>
+</div>
+<p>Response: <code>{{ refResponse }}</code></p>
 <TurnstileComponent ref="refTurnstileComponent" />
 
 </div>

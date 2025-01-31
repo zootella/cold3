@@ -587,7 +587,12 @@ export async function snippetQuery3() {
 
 
 
+// user_name_table
 
+export async function authenticateSignGet({browserTag}) {}
+export async function authenticateSignUp({browserTag, userName}) {}
+export async function authenticateSignIn({browserTag, userName}) {}
+export async function authenticateSignOut({browserTag}) {}
 
 
 
@@ -623,6 +628,7 @@ ON browser_table (hide, browser_tag, row_tick DESC);
 //                         GRAYuseriiiiiiiiiiiiG
 //                         PINKuseriiiiiiiiiiiiP
 //                         PinkCloudUseriiiiiPCU
+//                         PinkLocalUseriiiiiPLU
 const exampleUserTagA   = 'AiiiiiiiiiiiiiiiiiiiA'
 const exampleUserTagB   = 'BiiiiiiiiiiiiiiiiiiiB'
 const exampleBrowserTag1 = 'browsertag11111111111'

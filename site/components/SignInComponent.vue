@@ -39,8 +39,8 @@ async function clickedSignOut() {
 
 <div>
 User Tag <input type="text" v-model="refUserTagBox" />{{' '}}
-<button @click="clickedSignIn()">Sign In</button>{{' '}}
-<button @click="clickedSignOut()">Sign Out</button>
+<button @click="clickedSignIn()" class="pushy">Sign In</button>{{' '}}
+<button @click="clickedSignOut()" class="pushy">Sign Out</button>
 </div>
 
 

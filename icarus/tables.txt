@@ -1026,7 +1026,34 @@ browser_table
 
 
 
+user_stage_table
+user_tag
+stage
 
+records a user's lifecycle
+0 does not actually exist in this table or anywhere else, reserved
+1 new anonymous user we're letting leave traces, but who has not signed up yet
+2 regular signed up user in good standing
+3 account hidden, could be unhidden
+4 account closed
+notice how permissions (creator, staff) are reflected elsewhere
+notice how reason for deleting (banned, user left) are also not reflected here
+
+
+
+user_name_table
+user_tag
+name_text - user name rendered, as on a page
+route_text - user name as in a route, all lowercase
+
+links page user name, route user name, and user tag
+records changes to those in ledger format
+
+
+you just realized that in these two, changes are rare
+so you can query the most recent row
+adn don't have to worry about hiding previous rows
+this is actually a lot easier a task than browser_table!
 
 
 

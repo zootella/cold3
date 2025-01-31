@@ -25,6 +25,10 @@
 		@apply bg-white text-gray-800 font-sans;
 		font-family: "Noto Sans", sans-serif;
 		margin: 0; /* Tailwind doesn't reset margin on html/body by default */
+
+		/* ttd january, trying to get cleartype back with chat, but this fix isn't working*/
+		-webkit-font-smoothing: subpixel-antialiased;
+		-moz-osx-font-smoothing: auto;
 	}
 
 	/* A global container class if you want consistent margins */
@@ -38,13 +42,9 @@
 		font-family: "Noto Sans", sans-serif;
 	}
 
-	button {
-		@apply inline-block bg-gray-400 text-white px-2 py-1 rounded hover:bg-blue-700;
-		font-family: "Noto Sans", sans-serif;
-	}
-
 	pre, code {
-		@apply font-mono;
+		@apply font-mono text-sm text-gray-400 font-bold;
+		font-family: "Noto Sans Mono", monospace;
 	}
 
 	a               { @apply text-blue-600 underline; }
@@ -54,10 +54,29 @@
 	a:active        { @apply text-red-800; }
 }
 
+/* Components layer: define reusable classes for buttons, etc. */
+@layer components {
+	/* A standard button class */
+	.pushy {
+		@apply inline-flex items-center bg-gray-400 text-white px-2 py-1 rounded;
+		@apply hover:bg-blue-700 cursor-pointer;
+		font-family: "Noto Sans", sans-serif;
+	}
+	.pushy:focus {
+		@apply outline-none ring-2 ring-blue-500;
+	}
 
-
-
-
+	/* A button that looks and acts like a link */
+	.linky {
+		@apply bg-transparent border-none p-0 text-blue-600 underline cursor-pointer;
+		font-family: "Noto Sans", sans-serif;
+		
+		/* We override any base button hover styles with transparent background */
+		&:hover {
+			@apply text-blue-400 bg-transparent;
+		}
+	}
+}
 
 
 
