@@ -1,20 +1,15 @@
 <script setup>
+//this file is ./components/HitComponent.vue
 
 import {
 log, look, Now, Tag,
 getBrowserTag,
 } from 'icarus'
 import {ref, reactive, onMounted, watch} from 'vue'
+import {useStore1} from '~/stores/store1'
 
-let {data, pending, error} = useFetch(
-	'/api/hit',
-	{
-		method: 'POST',
-		body: {
-			action: 'Get.'
-		}
-	}
-)
+const store1 = useStore1()
+await store1.getHits()
 
 </script>
 <template>
@@ -22,9 +17,7 @@ let {data, pending, error} = useFetch(
 
 <p><i>HitComponent</i></p>
 
-<div v-if="pending">Loading hit count...</div>
-<div v-else-if="error">Error: {{ error.message }}</div>
-<div v-else>{{data.hits}} hits from {{data.sticker}}</div>
+<div>{{store1.hits}} hits from {{store1.sticker}} in {{store1.duration}}ms</div>
 
 </div>
 </template>
