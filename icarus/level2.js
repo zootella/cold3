@@ -670,9 +670,12 @@ function checkNetwork23AccessCode(body, access) {
 }
 function checkForwardedSecure(headers) { if (isLocal({uncertain: 'Cloud.'})) return//skip these checks during local development
 	let n = headerCount(headers, 'X-Forwarded-Proto')
-	if (n != 1) toss('x forwarded proto header missing or multiple', {n, headers})
-	let v = headerGet(headers, 'X-Forwarded-Proto')
-	if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
+	if (n == 0) {
+		//seeing CloudNuxtServer with headers just {accept, content-type, and host: "localhost"} when $fetch calls an api endpoint to hydrate on the server during hybrid rendering, so making X-Forwarded-Proto required doesn't work
+	} else if (n == 1) {
+		let v = headerGet(headers, 'X-Forwarded-Proto')
+		if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
+	} else { toss('multiple x forwarded proto headers', {n, headers}) }
 }
 function checkOriginOmittedOrValid(headers, access) {
 	let n = headerCount(headers, 'Origin')

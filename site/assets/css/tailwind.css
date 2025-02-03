@@ -26,7 +26,7 @@
 		font-family: "Noto Sans", sans-serif;
 		margin: 0; /* Tailwind doesn't reset margin on html/body by default */
 
-		/* ttd january, trying to get cleartype back with chat, but this fix isn't working*/
+		/* ttd january, trying to get cleartype back with chat, but this fix isn't working; addendum: the next day, it is working now!? */
 		-webkit-font-smoothing: subpixel-antialiased;
 		-moz-osx-font-smoothing: auto;
 	}
