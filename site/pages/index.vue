@@ -17,7 +17,7 @@ defineOgImageComponent('NuxtSeo', {
 
 <NavigationComponent note="on index" />
 
-<ColdComponent />
+<IndexComponent />
 
 </div>
 </template>

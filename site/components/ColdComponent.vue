@@ -51,12 +51,6 @@ function logToBox(s) {
 <div>
 
 <p>
-	This is cold3.cc, Nuxt on Cloudflare.
-</p>
-
-<CountComponent />
-
-<p>
 	tick1 {{ sayTick(t.tick1) }}, script start<br/>
 	tick2 {{ sayTick(t.tick2) }}, on mounted<br/>
 	tick3 {{ sayTick(t.tick3) }}, before fetch<br/>
@@ -68,8 +62,6 @@ function logToBox(s) {
 		<button class="pushy" @click="clickedFetch">Fetch</button>
 	</p>
 </div>
-
-<NoteComponent />
 
 <div>
 	<form @submit.prevent="submitEnter">
