@@ -1,8 +1,9 @@
 <template>
 <div class="page-container">
 
-<NavigationComponent note="on page1" />
+<NavigationComponent note="on page3" />
 
+<HitComponent />
 
 </div>
 </template>

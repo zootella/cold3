@@ -1,9 +1,8 @@
 <template>
 <div class="page-container">
 
-<NavigationComponent note="on chat" />
+<NavigationComponent note="on page4" />
 
-<ChatComponent />
 
 </div>
 </template>

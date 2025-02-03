@@ -24,7 +24,7 @@ const {data, refresh} = useFetch(
 
 <div>
 r3 get to worker, block
-<button @click="refresh">Refresh</button><pre>{{ look(data) }}</pre>
+<button class="pushy" @click="refresh">Refresh</button><pre>{{ look(data) }}</pre>
 </div>
 
 </template>

@@ -22,7 +22,7 @@ const {data, refresh} = useFetch(
 
 <div>
 r1 post to worker to lambda, allow both
-<button @click="refresh">Refresh</button><pre>{{ look(data) }}</pre>
+<button class="pushy" @click="refresh">Refresh</button><pre>{{ look(data) }}</pre>
 </div>
 
 </template>

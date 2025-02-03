@@ -139,8 +139,8 @@ async function myFunction2() {
 <template>
 
 <form @submit.prevent="myFunction2">
-	<input type="text" v-model="inputValue" @input="myFunction1" placeholder="Type something..." />
-	<button type="submit">Submit</button>
+	<input type="text" v-model="inputValue" @input="myFunction1" placeholder="Type something..." />{{' '}}
+	<button class="pushy" type="submit">Submit</button>
 	<p>{{ outputText }}</p>
 </form>
 
