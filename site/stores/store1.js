@@ -2,7 +2,7 @@
 //this file is ./stores/store1.js
 
 import {
-log, look, Now, Tag,
+Sticker, log, look, Now, Tag,
 getBrowserTag,
 } from 'icarus'
 import {ref} from 'vue'
@@ -51,6 +51,7 @@ async function _fetchHit(action) {
 	}
 	loading.value = false
 	duration.value = Now() - t
+	log(`store1 fetched api hit in ${duration.value}ms at ${Sticker().all}`)
 }
 
 return {
