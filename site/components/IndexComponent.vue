@@ -11,7 +11,7 @@ import {ref, reactive, onMounted} from 'vue'
 
 <p>This is cold3.cc, Nuxt on Cloudflare.</p>
 
-<HitComponent />
+<!-- <HitComponent /> -->
 
 <ColdComponent />
 

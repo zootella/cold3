@@ -58,6 +58,7 @@ return {
 	hits, sticker,
 	loading, error, duration,
 	getHits, incrementHits,
+	gotten,//necessary for the store to download correctly after server rendering
 }
 
 })
