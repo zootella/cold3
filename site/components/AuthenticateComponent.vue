@@ -38,7 +38,7 @@ onMounted(async () => {//doesn't run on server, even when hydrating
 async function doSignGet() {
 	let r = await $fetch('/api/authenticate', {method: 'POST', body:
 		{action: 'AuthenticateSignGet.', browserTag: refBrowserTag.value}})
-	log('doSignGet fetched:', look(r))
+//	log('doSignGet fetched:', look(r))
 	if (r.result.userTag) {//server tells us we've got a user signed into this browser here
 		refState.value = 4
 		refUserTag.value = r.result.userTag

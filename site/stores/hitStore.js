@@ -8,7 +8,7 @@ getBrowserTag,
 import {ref} from 'vue'
 import {defineStore} from 'pinia'
 
-export const useStore1 = defineStore('store1', () => {
+export const useHitStore = defineStore('hit_store', () => {
 
 // State
 const hits = ref(0)//information from the server endpoint

@@ -1,14 +1,41 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
-settingReadInt, settingWrite, headerGetOne,
+checkTag, settingReadInt, settingWrite, headerGetOne, authenticateSignGet,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
 	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
 })
 async function doorProcessBelow(door) {
-	let o = {}
+	let r = {}
+
+	let browserTag = door.body.browserTag
+	checkTag(browserTag)
+
+	let {userTag, routeText} = await authenticateSignGet({browserTag})
+
+	let h = door?.workerEvent?.req?.headers
+	r = {
+		browserTag: door.body.browserTag,
+		browserGraphics: door.body.browserGraphics,
+
+		ip: headerGetOne(h, 'cf-connecting-ip'),
+		agent: headerGetOne(h, 'user-agent'),
+		country: headerGetOne(h, 'cf-ipcountry'),
+		//above headers should always be there; below ones are sometimes there
+		city: headerGetOne(h, 'cf-ipcity'),
+		region: headerGetOne(h, 'cf-region-code'),
+		postal: headerGetOne(h, 'cf-postal-code'),
+		//you'll use these for (1) sudo access and (2) hit log
+
+		sticker: Sticker().all,
+		userTag: userTag,
+		userName: routeText,
+	}
+
+	log('hi from hello2', look(r))
+
 
 	/*
 	/api/hello2
@@ -28,23 +55,17 @@ async function doorProcessBelow(door) {
 	tick now, from cloudflare, so these are more trustworthy
 
 	hello2 can take more time because the page is running now with loading components while we get this info in parallel
+
+
+		let data = await $fetch('/api/hello2', {method: 'POST', body: {
+		}})
+		sticker2.value = data.sticker
+		userTag.value = data.userTag
+		userName.value = data.userName
 	*/
 
 
-	let h = workerEvent?.req?.headers
-	let v
-	
-	v = headerGetOne(h, 'cf-connecting-ip')
-	v = headerGetOne(h, 'user-agent')
-	v = headerGetOne(h, 'cf-ipcountry')
-	//above headers should always be there; below ones are sometimes there
-	v = headerGetOne(h, 'cf-ipcity')
-	v = headerGetOne(h, 'cf-region-code')
-	v = headerGetOne(h, 'cf-postal-code')
-	//you'll use these for (1) sudo access and (2) hit log
-
-
-	return o
+	return r
 }
 
 

@@ -226,6 +226,7 @@ correctLength,
 say, look, stringify,
 
 replaceAll, replaceOne, parseEnvStyleFileContents,
+noOverlap,
 ashFetchum,
 
 getBrowserGraphics,

@@ -2510,6 +2510,31 @@ ok(o['TRUE_MATH'] == '2+2=4')
 
 
 
+//                            _               
+//  _ __  _ __ ___  _ __ ___ (_)___  ___  ___ 
+// | '_ \| '__/ _ \| '_ ` _ \| / __|/ _ \/ __|
+// | |_) | | | (_) | | | | | | \__ \  __/\__ \
+// | .__/|_|  \___/|_| |_| |_|_|___/\___||___/
+// |_|                                        
+
+//make a once-at-a-time version g of a given async function f
+//when multiple calls like await g() happen close together, only the first starts f
+//return values and thrown exceptions behave as if you were directly calling f!
+export function noOverlap(f) {//takes f, the async function we want to protect from overlapping calls
+	let p = null//current in-flight promise, or null not running; note how p is enclosed in each call to noOverlap(), not each call to either f or g
+	let g = function(...a) {//make g, the wrapper function; use a to pass arguments from outer g to inner f
+		if (!p) {//if f is not running already, start it
+			p = f(...a).finally(() => {//call f and save its promise
+				p = null//after return or throw, execution goes here; reset p to let the next non-overlapping call in
+			})
+		}
+		return p//g returns the in-flight promise, which may be newly created or already pending
+	}
+	return g//return g, the newly created function this call to noOverlap() wrapped around f to protect it
+}
+
+
+
 
 
 
@@ -2612,10 +2637,20 @@ but there's a code benefit: you could call dog() and logAudit() without having t
 
 
 
-export function getBrowserGraphics() {//returns a string
-	let o = getBrowserAgentRendererAndVendor()
-	let p = {renderer: o.renderer, vendor: o.vendor}//just take these two parts
-	return JSON.stringify(p)
+export function getBrowserGraphics() {//returns an object like {renderer: "ANGLE (Intel, Intel(R) UHD Graphics 630 ... Direct3D11 vs_5_0 ps_5_0, D3D11)", vendor:"Google Inc. (Intel)"}
+	let p = {}
+	if (defined(typeof document)) {
+		let e = document.createElement('canvas')//make a HTML5 <canvas> tag element; doesn't append it to the DOM
+		let c = e.getContext('webgl') || e.getContext('experimental-webgl')
+		if (c) {
+			let x = c.getExtension('WEBGL_debug_renderer_info')
+			if (x) {
+				p.renderer = c.getParameter(x.UNMASKED_RENDERER_WEBGL)
+				p.vendor   = c.getParameter(x.UNMASKED_VENDOR_WEBGL)
+			}
+		}
+	}
+	return p
 }
 
 

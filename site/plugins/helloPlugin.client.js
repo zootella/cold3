@@ -5,7 +5,7 @@ import {
 Sticker, log, look, Now, Tag, getBrowserTag, checkText, hasText, awaitDog,
 getBrowserGraphics, awaitLogAlert,
 } from 'icarus'
-import {useStore1} from '~/stores/store1'
+import {useHelloStore} from '~/stores/helloStore'
 
 //runs once on the server when a new browser tab GETs, and once again in that browser tab; doesn't run as the user clicks from route to route in the tab, nor when a component POSTs back to an api endpoint
 export default defineNuxtPlugin(async (nuxtApp) => {
@@ -30,22 +30,27 @@ async function pluginProcessBelow({nuxtApp}) {
 	*/
 
 
-	const store1 = useStore1()
-	await store1.getHits()//$fetch-es to /api/hit on first call, does not do that on later calls
-	let hits = store1.hits
+	const helloStore = useHelloStore()
+	await helloStore.hello1()//$fetch-es to /api/hello1 on first call, does not do that on later calls
+	//await hello1, as a whole bunch of components will render depending on helloStore.userTag or not
+	//but don't await this one, just get it started now, when the page hits a new tab, and let it happen in a moment after there are already components on the page
+	/*no await*/helloStore.hello2()
+
+	/*
+	let hits = helloStore.hits
 
 
 	//on the client: browser graphics
 
 	//on the client: browser tag
 	let browserTag = getBrowserTag()
-	store1._browserTag = browserTag
+	helloStore._browserTag = browserTag
 
 	let browserGraphics = getBrowserGraphics()
-	store1._browserGraphics = browserGraphics
+	helloStore._browserGraphics = browserGraphics
 
-	log(`hi from plugin1.js witih process.client at ${Sticker().all}, called store1 to get hits ${hits}, and knows our browser tag ${browserTag}`)
-
+	log(`hi from plugin1.js witih process.client at ${Sticker().all}, called helloStore to get hits ${hits}, and knows our browser tag ${browserTag}`)
+*/
 
 
 }
