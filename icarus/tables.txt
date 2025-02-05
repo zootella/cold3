@@ -1074,14 +1074,56 @@ also, at this point, user names are lowercase routes
 
 
 
+super permission hour:
 
 
 
+first factor: (fans)
+- browser tag
+- no expiration
+
+second factor: (creators, or a destructive operation)
+- browser tag
+- user tag, signed in at that browser
+- ip address, according to connection (trustworthy)
+- user agent string, according to headers (less trustworthy)
+- OpenGL hardware, according to browser (less trustworthy)
+- one hour expiration, according to server clock (trustworthy)
 
 
 
+imagine you have a multipurpose table:
 
+trail_table
 
+	row_tag
+	row_tick
+	hide
+
+	hash
+
+and indexed on tick and then hash, and hash and then tick, both directions
+
+rows older than 10 days are discarded by a github action cron endpoint
+you can always hash any amount of different things down into a single value
+so you can use this, alone for things that need to be recent, or not recent
+and to figure out if they are recent enough
+or how many times they happened in a time period within the last 10 days
+
+when a user super authenticates, you can hash together their:
+1 browserTag
+2 userTag
+3 ipAddress
+and put it in the trail table
+when seeing if a request has such status, you can search for that hash in the last hour
+
+fancier, more brittle, not much stronger would hash
+1 browserTag
+2 userTag
+3 ipAddress, trusted from cloudflare
+4 user agent string, according to headers browser sent
+6 opengl renderer and vendor, according post body browser sent
+sure, whatever
 
 
 

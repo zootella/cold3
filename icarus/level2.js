@@ -592,6 +592,18 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	door.tag = Tag()//tag the request for our own records
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
+	/*
+	ttd february
+	in here, get and save
+	[]the ip address, according to how cloudflare sees the connection
+	[]the user agent string, according to the headers the browser sent
+
+	door.ip
+	door.agent
+
+	we don't need these for lambda below becase only workers, not pages, connect to lambda
+	*/
+
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {

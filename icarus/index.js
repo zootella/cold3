@@ -224,7 +224,10 @@ correctLength,
 say, look, stringify,
 
 replaceAll, replaceOne, parseEnvStyleFileContents,
-ashFetchum, getBrowserAgentRendererAndVendor,
+ashFetchum,
+
+getBrowserGraphics,
+getBrowserAgentRendererAndVendor,
 
 sameIgnoringCase, sameIgnoringTrailingSlash,
 

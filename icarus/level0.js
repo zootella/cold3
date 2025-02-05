@@ -2612,10 +2612,11 @@ but there's a code benefit: you could call dog() and logAudit() without having t
 
 
 
-
-
-
-
+export function getBrowserGraphics() {//returns a string
+	let o = getBrowserAgentRendererAndVendor()
+	let p = {renderer: o.renderer, vendor: o.vendor}//just take these two parts
+	return JSON.stringify(p)
+}
 
 
 export function getBrowserAgentRendererAndVendor() {
@@ -2817,8 +2818,17 @@ test(() => {
 
 
 
+/*
+ttd february
+
+write a helper function which takes a hash value
+and turns it into text like "user00ff00ff00ff"
+this is to show the use rin a unique way
+we'll use it to show them their browser tag and user tag
 
 
+
+*/
 
 
 

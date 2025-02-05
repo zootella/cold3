@@ -26,5 +26,10 @@ async function clickedHit() {
 <button class="pushy" @click="clickedHit()">Hit</button>
 {{store1.hits}} hits in {{store1.duration}}ms from {{store1.sticker}}
 
+<p><i>"{{store1._ipAddressOnLoad}}"</i> ip address on load, blank running local</p>
+<p><i>"{{store1._userAgentOnLoad}}"</i> user agent on load</p>
+<p><i>'{{store1._browserGraphics}}'</i> browser graphics</p>
+<p><i>"{{store1._browserTag}}"</i> browser tag</p>
+
 </div>
 </template>
