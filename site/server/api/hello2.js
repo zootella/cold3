@@ -1,7 +1,8 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
-checkTag, settingReadInt, settingWrite, headerGetOne, authenticateSignGet,
+checkTag, settingReadInt, settingWrite, headerGetOne, authenticateSignGet, hash,
+isCloud, hasText, recordHit,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -20,13 +21,13 @@ async function doorProcessBelow(door) {
 		browserTag: door.body.browserTag,
 		browserGraphics: door.body.browserGraphics,
 
-		ip: headerGetOne(h, 'cf-connecting-ip'),
-		agent: headerGetOne(h, 'user-agent'),
-		country: headerGetOne(h, 'cf-ipcountry'),
+		ipAddress: headerGetOne(h, 'cf-connecting-ip'),
+		userAgent: headerGetOne(h, 'user-agent'),
+		geoCountry: headerGetOne(h, 'cf-ipcountry'),
 		//above headers should always be there; below ones are sometimes there
-		city: headerGetOne(h, 'cf-ipcity'),
-		region: headerGetOne(h, 'cf-region-code'),
-		postal: headerGetOne(h, 'cf-postal-code'),
+		geoCity: headerGetOne(h, 'cf-ipcity'),
+		geoRegion: headerGetOne(h, 'cf-region-code'),
+		geoPostal: headerGetOne(h, 'cf-postal-code'),
 		//you'll use these for (1) sudo access and (2) hit log
 
 		sticker: Sticker().all,
@@ -35,6 +36,43 @@ async function doorProcessBelow(door) {
 	}
 
 	log('hi from hello2', look(r))
+
+	//now as a time test, let's hash some stuff
+	let o = {
+		browser: browserTag,
+		user: userTag,
+		ip: r.ipAddress,
+		agent: r.userAgent,
+		renderer: door.body.browserGraphics.renderer,
+		vendor: door.body.browserGraphics.vendor,
+	}
+	let s = JSON.stringify(o)
+	let t = Now()
+	let v = await hash(s)
+	r.hashPlain = s
+	r.hashValue = v
+	r.hashDuration = Now() - t//getting 0ms hash duration, which is great
+
+	//and next we'll record the hit in the database
+	let g = {}
+	if (hasText(r.geoCountry)) g.country = r.geoCountry
+	if (hasText(r.geoCity))    g.city    = r.geoCity
+	if (hasText(r.geoRegion))  g.region  = r.geoRegion
+	if (hasText(r.geoPostal))  g.postal  = r.geoPostal
+	let b = {
+		agent: r.userAgent,
+		renderer: door.body.browserGraphics.renderer,
+		vendor: door.body.browserGraphics.vendor,
+	}
+	if (isCloud({uncertain: 'Cloud.'})) {
+		await recordHit({
+			browserTag,
+			userTag: hasText(userTag) ? userTag : '',
+			ipText: r.ipAddress,
+			geographyText: JSON.stringify(g),
+			browserText: JSON.stringify(b),
+		})
+	}
 
 
 	/*

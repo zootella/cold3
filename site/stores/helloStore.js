@@ -23,6 +23,9 @@ const error2 = ref(null)
 const duration2 = ref(-1)
 const sticker2 = ref('')
 const userName = ref('')
+const ipAddress = ref('')
+const userAgent = ref('')
+const geography = ref(null)
 
 // Actions
 const hello1 = noOverlap(async () => {
@@ -51,6 +54,10 @@ const hello2 = noOverlap(async () => {
 		userTag.value = r.userTag
 		userName.value = r.userName
 
+		ipAddress.value = r.ipAddress
+		userAgent.value = r.userAgent
+		geography.value = {country: r.geoCountry, city: r.geoCity, region: r.geoRegion, postal: r.geoPostal}
+
 		log('hello2 result', look(r))
 	} catch (e) { error2.value = e }
 	duration2.value = Now() - t
@@ -62,6 +69,7 @@ return {
 	error1, duration1, sticker1,
 	error2, duration2, sticker2,
 	userTag, userName,
+	ipAddress, userAgent, geography,
 }
 
 })

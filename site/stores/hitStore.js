@@ -36,6 +36,14 @@ coded this way, there will be a flurry of overlapping and identical fetch calls
 so you need to isolate this as follows:
 - if there's a fetch in flight, another one doesn't begin
 - and you need to do the fancy promise thing where after the first or going fetch finishes, any number of await-ers all return at once
+
+and you realized you need both protections
+wrap this with noOverlap - prevents multiple calls from overlapping on the page or cloud sides
+and also leave gotten - prevents a second unnecessary call on the client side
+
+also because action is different, you can't noOverlap _fetchHit
+you've got to add a layer between the calls above and _fetchHit below
+
 */
 
 //Private helper functions

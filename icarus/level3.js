@@ -10,6 +10,7 @@ ashFetchum,
 hmacSign,
 
 checkUserRoute, validUserRoute,
+checkInt,
 
 } from './level0.js'
 import {
@@ -536,28 +537,29 @@ export async function legacyAccessGet(browserTag) {
 noop(`sql
 -- where is this hit coming from?
 CREATE TABLE hit_table (
-	row_tag        CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick       BIGINT                 NOT NULL,  -- time of first hit like this in this quarter day
-	hide           BIGINT                 NOT NULL,
-	quarter_day    BIGINT                 NOT NULL,  -- tick rounded down to 6 hour window
-	browser_tag    CHAR(21)               NOT NULL,  -- the browser that hit us
-	user_tag_text  TEXT                   NOT NULL,  -- the user at that browser, or blank if none identifed
-	ip_text        TEXT                   NOT NULL,  -- ip address, according to cloudflare
-	city_text      TEXT                   NOT NULL,  -- geographic location, according to cloudflare
-	agent_text     TEXT                   NOT NULL,  -- user agent string, according to the browser
-	graphics_text  TEXT                   NOT NULL   -- webgl hardware info, according to the browser
+	row_tag         CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick        BIGINT                 NOT NULL,  -- time of first hit like this in this quarter day
+	hide            BIGINT                 NOT NULL,
+
+	quarter_day     BIGINT                 NOT NULL,  -- tick rounded down to 6 hour window
+
+	browser_tag     CHAR(21)               NOT NULL,  -- the browser that hit us
+	user_tag_text   TEXT                   NOT NULL,  -- the user at that browser, or blank if none identifed
+	ip_text         TEXT                   NOT NULL,  -- ip address, according to cloudflare
+	geography_text  TEXT                   NOT NULL,  -- geographic information, according to cloudflare
+	browser_text    TEXT                   NOT NULL   -- user agent string and WebGL hardware, according to the browser
 );
 
 -- index to quickly log a new hit, coalesced to identical information in each quarter day
-CREATE UNIQUE INDEX hit_table_quarter_day_index
-ON hit_table (hide, quarter_day, browser_tag, user_tag_text, ip_text, city_text, agent_text, graphics_text);
+CREATE UNIQUE INDEX hit_table_index1
+ON hit_table (hide, quarter_day, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
 `)
 
-export async function recordHit({browserTag, userTag, ip, city, agent, graphics}) {
+export async function recordHit({browserTag, userTag, ipText, geographyText, browserText}) {
 	checkTag(browserTag); checkTagOrBlank(userTag)
 
 	let t = Now()//tick count now, of this hit
-	let d = (Math.floor(t / (6*Time.hour)))*(6*Time.hour)//tick count when the quarter day t is in began
+	let d = roundDown(t, 6*Time.hour)//tick count when the quarter day t is in began
 
 	let row = {
 		row_tag: Tag(),//standard for a new row
@@ -565,16 +567,28 @@ export async function recordHit({browserTag, userTag, ip, city, agent, graphics}
 		hide: 0,
 
 		quarter_day: d,//cells that describe the first hit like this in this quarter day time period
+
 		browser_tag: browserTag,
 		user_tag_text: userTag,
-		ip_text: ip,
-		city_text: city,
-		agent_text: agent,
-		graphics_text: graphics
+		ip_text: ipText,
+		geography_text: geographyText,
+		browser_text: browserText,
 	}
-	let titles = 'hide,quarter_day,browser_tag,user_tag_text,ip_text,city_text,agent_text,graphics_text'
+	let titles = 'hide,quarter_day,browser_tag,user_tag_text,ip_text,geography_text,browser_text'
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
+
+
+
+
+//round down integer i to the nearest whole unit of d
+export function roundDown(i, d) {
+	checkInt(i); checkInt(d, 1)
+	return (Math.floor(i / d)) * d
+}
+test(() => {
+	ok(roundDown(10, 3) == 9)
+})
 
 
 

@@ -16,12 +16,16 @@ const helloStore = useHelloStore()
 
 <p><code>{{helloStore.browserTag}}</code> browser tag</p>
 
-<p>~ hello1 took {{helloStore.duration1}}ms at {{helloStore.sticker1}}</p>
+<p><i><b>hello1</b> at {{helloStore.sticker1}} took {{helloStore.duration1}}ms</i></p>
 <p><code>{{helloStore.userTag}}</code> user tag</p>
 
-<p>~ hello2 took {{helloStore.duration2}}ms at {{helloStore.sticker2}}</p>
+<p><i><b>hello2</b> at {{helloStore.sticker2}} took {{helloStore.duration2}}ms</i></p>
 <p><code>{{helloStore.browserGraphics}}</code> browser graphics</p>
 <p><code>{{helloStore.userName}}</code> user name</p>
+
+<p><code>{{helloStore.ipAddress}}</code> ip address</p>
+<p><code>{{helloStore.userAgent}}</code> user agent</p>
+<p><code>{{helloStore.geography}}</code> geography</p>
 
 </div>
 </template>

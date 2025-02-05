@@ -164,6 +164,31 @@ my question is, where in
 
 
 
+the point of yoru plugin is, quickly get signed in info into the store and to the user:
+
+1 -- browser GETs to server
+
+2 -- server responds with page and store
+
+server can read ip address from connection
+server can read user agent string from headers
+
+3 -- page POSTs to /api/hi
+
+page includes browser tag in body
+page includes browser graphics in body
+
+4 -- /api/hi responds with user and level
+
+server reads ip address from connection
+server reads user agent string from headers
+server reads browser tag from body
+server reads browser graphics from body
+server reads time from its trusted clock
+
+(now we can look things up)
+browser tag -> user tag signed in here
+user tag -> user name
 
 
 
@@ -177,7 +202,8 @@ my question is, where in
 
 
 
-
+it's fine to send a user tag to the page
+never send a browser tag to the page!
 
 
 
