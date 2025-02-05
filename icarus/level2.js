@@ -592,18 +592,6 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	door.tag = Tag()//tag the request for our own records
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
-	/*
-	ttd february
-	in here, get and save
-	[]the ip address, according to how cloudflare sees the connection
-	[]the user agent string, according to the headers the browser sent
-
-	door.ip
-	door.agent
-
-	we don't need these for lambda below becase only workers, not pages, connect to lambda
-	*/
-
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
@@ -650,6 +638,39 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 
 	} else { toss('method not supported', {door}) }
 	return door
+}
+
+async function doorWorkerShut(door, response, error) {
+	door.stopTick = Now()//time
+	door.duration = door.stopTick - door.startTick
+	door.response = response//bundle
+	door.error = error
+
+	let r
+	if (error) {//processing this request caused an error
+		logAlert('door worker shut', {error, door})//tell staff about it
+		r = null//return no response
+	} else {
+		r = response//nuxt will stringify and add status code and headers
+	}
+	await awaitDoorPromises()
+	return r
+}
+async function doorLambdaShut(door, response, error) {
+	door.stopTick = Now()//time
+	door.duration = door.stopTick - door.startTick
+	door.response = response//bundle
+	door.error = error
+
+	let r
+	if (error) {
+		logAlert('door lambda shut', {error, door})
+		r = null
+	} else {
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
+	}
+	await awaitDoorPromises()
+	return r
 }
 
 //                           _ _         
@@ -729,45 +750,13 @@ test(() => {
 	ok('o1' == headerGet({'ORIGIN': 'o1'},   'Origin'))
 })
 
-
-
-
-
-
-
-
-
-async function doorWorkerShut(door, response, error) {
-	door.stopTick = Now()//time
-	door.duration = door.stopTick - door.startTick
-	door.response = response//bundle
-	door.error = error
-
-	let r
-	if (error) {//processing this request caused an error
-		logAlert('door worker shut', {error, door})//tell staff about it
-		r = null//return no response
-	} else {
-		r = response//nuxt will stringify and add status code and headers
-	}
-	await awaitDoorPromises()
-	return r
-}
-async function doorLambdaShut(door, response, error) {
-	door.stopTick = Now()//time
-	door.duration = door.stopTick - door.startTick
-	door.response = response//bundle
-	door.error = error
-
-	let r
-	if (error) {
-		logAlert('door lambda shut', {error, door})
-		r = null
-	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
-	}
-	await awaitDoorPromises()
-	return r
+export function headerGetOne(headers, name) {
+	if (!headers)                     toss('no headers',    {headers, name})
+	if (!Object.keys(headers).length) toss('empty headers', {headers, name})
+	let n = headerCount(headers, name)
+	if      (n == 0) return null
+	else if (n == 1) return headerGet(headers, name)
+	else             toss('overlapping headers', {headers, name})
 }
 
 //      _                        _                 _   _                 

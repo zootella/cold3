@@ -102,7 +102,9 @@ export {
 
 Sticker, isLocal, isCloud, senseEnvironment,
 canGetAccess, accessWorker, getAccess,
-doorWorker, doorLambda, doorPromise, awaitDoorPromises,
+doorWorker, doorLambda,
+headerGetOne,
+doorPromise, awaitDoorPromises,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,

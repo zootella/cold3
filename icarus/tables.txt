@@ -1132,7 +1132,21 @@ sure, whatever
 
 
 
+maybe, not all tables are ledger
+settings_table already isnt
+browser_table, which links browser and user tags
+needs to be definitive as it controls returning logins, lots of security there
+needs to be quick as the client plugin will get the info an dthen render one whole set of components or another
+this is hi1
+which needs only to know if a user is signed in here or not
 
+actually, it can do that pretty fast with the current ledger design
+so maybe keep it
+
+when do we create the anonymous user?
+we could when we first see a new browser tag; we'll have a lot of them
+we could instead when a new person first clicks Follow, or sets their nickname
+yeah, you like that better, less clutter in the database
 
 
 

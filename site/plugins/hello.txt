@@ -1,20 +1,95 @@
 
-import {
-Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
-settingReadInt, settingWrite,
-} from 'icarus'
-
-export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
-})
-async function doorProcessBelow(door) {
-	let o = {}
 
 
 
+	/*
+	ttd february - the hello system
 
-	return o
-}
+	./plugins/helloPlugin.client.js - runs as soon as the page hits a new tab; calls helloStore.hello1()
+	./stores/helloStore.js - .hello1() fetches to the first endpoint:
+	./server/api/hello1.js - very quickly tells if there's a user at this browser tag or not
+	./server/api/hello2.js - slower nonessential first run on tab tasks, like getting user stage and permissions information, logging the hit; this happens while components are loading and the user is clicking
+
+
+
+
+	*/
+
+
+
+
+who calls hello2?
+maybe that's an async you don't await in app.vue or something
+
+
+
+/*
+ttd february
+figured out today 2025feb4:
+
+-plugin1.server.js would have nothing to do, you can omit it
+-plugin2.client.js could get the browser tag, get store1 going, which POSTs to /api/hi1, find out the user name signed in, and then render either the brochure or the feed--all this is always necessary, and must be very fast (single supabase query)
+
+/api/hi1
+
+must be really fast, single query
+
+sends
+- browser tag
+
+server does
+- tells if a user is signed in or not, only
+
+/api/hi2
+
+can be slower, happens in background of loaded components
+
+sends
+- browser tag
+- opengl renderer and vendor
+
+server does
+- tells what user is signed in, just like hi1 did
+- registers a hit with information, maybe do that with a door promise off to the side, even
+- gets the user name
+- figures out if they're within a super permissions hour
+- figures out if they're a creator or just a user, staff, anon user, their role, essentially
+
+done this way, h1 and h2 both happen only once each time a new tab first goes to the site
+not again as the user clicks around
+hi1 is as fast as possible to choose the right components to load
+hi2 can be slower and work in the background while the user is already looking over the site
+*/
+
+
+
+/*
+ttd february
+
+today you added plugins
+[]also add layouts
+they're not a part of the data flow, but they may be useful
+like you might have layouts for
+
+brochure, no user is signed in yet
+feed, user consuming content
+panel, user changing their password
+terms, legal docs like privacy and terms, static and minimal
+machine, like ping, not meant for users to visit
+
+
+
+
+*/
+
+
+
+
+
+
+
+
+
 
 /*
 /api/hi
@@ -77,3 +152,57 @@ my question is, where in
 
 
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
