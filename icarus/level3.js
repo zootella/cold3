@@ -848,9 +848,15 @@ export async function browserSignOut({browserTag, userTag}) {//sign the user at 
 
 
 
+//  _             _ _   _        _     _      
+// | |_ _ __ __ _(_) | | |_ __ _| |__ | | ___ 
+// | __| '__/ _` | | | | __/ _` | '_ \| |/ _ \
+// | |_| | | (_| | | | | || (_| | |_) | |  __/
+//  \__|_|  \__,_|_|_|  \__\__,_|_.__/|_|\___|
+//                                            
 
 noop(`sql
--- see when we recorded this same thing in the past
+-- a thing that may be happening recently, is it too late? too soon? too frequent?
 CREATE TABLE trail_table (
 	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
 	row_tick     BIGINT                 NOT NULL,
@@ -881,7 +887,22 @@ export async function trailAdd({hash}) {
 }
 
 
+/*
+too late - codes expire in 20min and we sent that one to you 25min ago
+too soon - we just sent you a code 30 seconds ago; try to look for it again. if you really can't find it, we can send you a new one after 5 minutes
+too frequent - we can't message that address anymore because we sent it 10 codes in the last 24 hours
 
+ok, that one, how do you tell them when they can come back?
+like, you could say come back tomorrow, for sure
+but it's also possible stuff will work sooner, as soon as the oldest code in that set recedes over the horizon
+
+well, you could do it like this:
+if you've sent 10 codes in the last 24 hours (trailCount)
+then we won't let you send another one for 6 hours (trailRecent)
+yeah, you're fine
+
+and, about anything! because it's usees hashes!
+*/
 
 
 

@@ -1106,6 +1106,7 @@ export async function hash(s) {//convenience function which goes text encoder to
 test(async () => {
 	ok((await hash('example')) == 'KDMFRYEYL3GH6YCBRKXQZRNLLB7UFQSXBKEEBFNJ5DGKZUHWKROA')
 })
+//ttd february--ok, the reason you can't call this hash is because you want to use that for variable names, duh! so maybe hashData and hashText. also, these throw on blank or empty because Data can't be empty. so maybe that's ok, or maybe you do some times want to hash no data or no text. if so, then probably don't change data, rather, hard code in the empty value
 
 //                                            _ 
 //  _ __   __ _ ___ _____      _____  _ __ __| |
