@@ -103,15 +103,15 @@ and also have them take {uncertain: 'Cloud.'} meaning if not sure, default to cl
 //the insanity that follows is you trying to be able to sense what and where is running us
 const _senseEnvironmentVersion = 1//first version, if you change how this works at all, increment!
 const _senseEnvironment = `
-               Aclo Clie Docu Doma Loca           Lamb Node Proc Regi Requ Scri Self Serv Stor      Zulu >Determining
-                                        Eigh Glob      Node Proc                                         >LocalNode
+							 Aclo Clie Docu Doma Loca           Lamb Node Proc Regi Requ Scri Self Serv Stor      Zulu >Determining
+																				Eigh Glob      Node Proc                                         >LocalNode
 Achr Asaf Awin           Docu      Loca                                         Self      Stor Wind      >LocalVite
-                                        Eigh Glob      Node Proc Regi                                    >LocalLambda
-                                        Eigh Glob Lamb Node Proc Regi                               Zulu >CloudLambda
-                                        Eigh Glob      Node Proc                     Serv                >LocalNuxtServer
-               Aclo                                         Proc           Scri Self                Zulu >CloudNuxtServer
-                                        Eigh Glob      Node Proc      Requ           Serv                >LocalPageServer
-                                                            Proc           Scri Self Serv           Zulu >CloudPageServer
+																				Eigh Glob      Node Proc Regi                                    >LocalLambda
+																				Eigh Glob Lamb Node Proc Regi                               Zulu >CloudLambda
+																				Eigh Glob      Node Proc                     Serv                >LocalNuxtServer
+							 Aclo                                         Proc           Scri Self                Zulu >CloudNuxtServer
+																				Eigh Glob      Node Proc      Requ           Serv                >LocalPageServer
+																														Proc           Scri Self Serv           Zulu >CloudPageServer
 Achr Asaf Awin      Clie Docu      Loca                     Proc                Self      Stor Wind      >LocalPageClient
 Achr Asaf Awin           Docu Doma                                              Self      Stor Wind      >CloudPageClient
 `
@@ -684,13 +684,13 @@ The security checks above are *in addition to* default and configured Cloudflare
 and, in addition to how we've configured CORS with both providers
 Here are the checks above visualized as an ASCII table:
 
-        worker                          lambda
-        ------                          ------
+				worker                          lambda
+				------                          ------
 GET  |  0 block(iv)                     0 block(v)
 
 POST |  1 https                         1 https
-        2 origin omitted or valid(iii)  2 origin omitted(i)
-                                        3 access code(ii)
+				2 origin omitted or valid(iii)  2 origin omitted(i)
+																				3 access code(ii)
 
 Notes: (i) The Network 23 Application Programming Interface is exclusively for server to server communication; no pages allowed
 (ii) the worker and lambda have shared a secret securely stored in both server environments
@@ -1315,6 +1315,9 @@ export async function snippet2() {
 //  \__, |\__,_|\___|_|   \__, |
 //     |_|                |___/ 
 
+//how these are settling down is: they are generalized, but assume hide 0 and row_tick ascending false
+//which is fine, and means that maybe really all your tables should have the same starting three columns
+//so that you can use all of these functions on any table
 
 
 
@@ -1334,6 +1337,25 @@ export async function queryFilterRecent({table, title, cell}) {
 	if (error) toss('supabase', {error})
 	return data[0]//data is an array with one element, or empty if none found
 }
+
+//[]
+//count how many visible rows with cell under title were added since the given tick count
+export async function queryCountSince({table, title, cell, since}) {
+	checkQueryTitle(table); checkQueryCell(title, cell); checkInt(since)
+	let database = await getDatabase()
+	let {data, count, error} = (await database
+		.from(table)
+		.select('', {count: 'exact', head: true})//select blank, exact, head to count rows without getting row data
+		.eq('hide', 0)//visible rows only
+		.eq(title, cell)//with the given cell value
+		.gte('row_tick', since)//recorded on or since the given starting time
+	)
+	if (error) toss('supabase', {error})
+	return count
+}
+
+
+
 
 
 
@@ -1484,6 +1506,16 @@ async function _queryGetRow({table, titleFind, cellFind}) {
 	)
 	if (error) toss('supabase', {error})
 	return data//data is the whole row
+}
+
+
+//[]
+//add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
+export async function queryAdd({table, row}) {
+	row.row_tag = Tag()
+	row.row_tick = Now()
+	row.hide = 0
+	await queryAddRow({table, row})
 }
 
 //[ran]

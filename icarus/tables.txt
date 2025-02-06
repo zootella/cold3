@@ -1150,7 +1150,10 @@ yeah, you like that better, less clutter in the database
 
 
 
-
+totally make the api_table
+which is a history and audit of every request and every response to every api
+so you can see what worked and what didn't work
+and 
 
 
 

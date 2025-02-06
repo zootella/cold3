@@ -8,6 +8,7 @@ stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 hmacSign,
+checkHash,
 
 checkUserRoute, validUserRoute,
 checkInt,
@@ -29,6 +30,8 @@ snippetQuery2,
 snippet2,
 
 queryFilterRecent,
+queryCountSince,
+
 queryFilterMostRecent,
 queryFilterSortTop,
 queryFilterSortAll,
@@ -40,6 +43,7 @@ querySetCell, querySetCellOrAddRow,
 queryGetCell, queryGetCellOrAddRow,
 queryGetRow,  queryGetRowOrAddRow,
 
+queryAdd,
 queryAddRow,
 queryAddRows,
 
@@ -835,6 +839,89 @@ export async function browserSignOut({browserTag, userTag}) {//sign the user at 
 		}
 	})
 }
+
+
+
+
+
+
+
+
+
+
+noop(`sql
+-- see when we recorded this same thing in the past
+CREATE TABLE trail_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick     BIGINT                 NOT NULL,
+	hide         BIGINT                 NOT NULL,  -- not used
+
+	hash         CHAR(52)               NOT NULL   -- the hash of the message about the event that happened on row tick
+);
+
+CREATE INDEX trail_table_index1 ON trail_table (hide, row_tick DESC);        -- hide or delete old rows quickly
+CREATE INDEX trail_table_index2 ON trail_table (hide, hash, row_tick DESC);  -- get time sorted rows by hash
+`)
+
+//get the tick count of the most recent record about hash, 0 if none found
+export async function trailRecent({hash}) {
+	checkHash(hash)
+	let row = await queryFilterRecent({table: 'trail_table', title: 'hash', cell: hash})
+	return row ? row.row_tick : 0
+}
+//count how many records we have for hash since the given tick time in the past
+export async function trailCount({hash, since}) {
+	checkHash(hash); checkInt(since)
+	return await queryCountSince({table: 'trail_table', title: 'hash', cell: hash, since})
+}
+//make a new record of the given hash right now
+export async function trailAdd({hash}) {
+	checkHash(hash)
+	await queryAdd({table: 'trail_table', row: {hash: hash}})
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//service table
+//complete record of our interactions with third-party services
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

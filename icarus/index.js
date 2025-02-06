@@ -87,6 +87,10 @@ browserToUser,
 browserSignIn,
 browserSignOut,
 
+trailCount,
+trailRecent,
+trailAdd,
+
 } from './level3.js'
 
 //  _                _ ____  
@@ -119,6 +123,8 @@ snippetQuery2,
 snippet2,
 
 queryFilterRecent,
+queryCountSince,
+
 queryFilterMostRecent,
 queryFilterSortTop,
 queryFilterSortAll,
@@ -130,6 +136,7 @@ querySetCell, querySetCellOrAddRow,
 queryGetCell, queryGetCellOrAddRow,
 queryGetRow,  queryGetRowOrAddRow,
 
+queryAdd,
 queryAddRow,
 queryAddRows,
 

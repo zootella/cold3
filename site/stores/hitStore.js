@@ -8,6 +8,8 @@ getBrowserTag,
 import {ref} from 'vue'
 import {defineStore} from 'pinia'
 
+//unlike helloStore, hitStore is used only one place, HitComponent, and not in any plugins. this lets it demonstrates hybrid rendering: curl gets a page with the current hit count, nothing blinks, and the browser console shows there's  no second fetch at all!
+
 export const useHitStore = defineStore('hit_store', () => {
 
 // State
@@ -120,57 +122,3 @@ return {
 }
 
 })
-
-
-
-
-/*
-these are api endpoints, as well as methods on the store
-
-/api/hi1
-is a user signed in or not
-should be able to do in a single ~150ms call to supabase
-necessary very early, as the site will either render brochure-like or feed-like components!
-
-right after that, in the background, call hi2 to do more introductory stuff that doesn't matter as much
-
-/api/hi2
-is a user signed in or not
-what is the user's name
-and the hash or part of their user tag, maybe hash then base16 like user00ff00ff00ff
-([]^write a little helper function for that)
-is the user super authenticated for an hour or less right now (maybe you'll show a dot)
-and record this new hit to our server
-
-
-
-
-
-
-
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

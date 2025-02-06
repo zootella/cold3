@@ -35,7 +35,7 @@ async function doorProcessBelow(door) {
 		userName: routeText,
 	}
 
-	log('hi from hello2', look(r))
+//	log('hi from hello2', look(r))
 
 	//now as a time test, let's hash some stuff
 	let o = {

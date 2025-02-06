@@ -27,6 +27,8 @@ const ipAddress = ref('')
 const userAgent = ref('')
 const geography = ref(null)
 
+//^ttd february--is this an application for reactive instead of ref? does that report updates when you just change one little thing within, or even two hops down, a big object? ask chat and also test that out
+
 // Actions
 const hello1 = noOverlap(async () => {
 	let t = Now()
@@ -58,7 +60,7 @@ const hello2 = noOverlap(async () => {
 		userAgent.value = r.userAgent
 		geography.value = {country: r.geoCountry, city: r.geoCity, region: r.geoRegion, postal: r.geoPostal}
 
-		log('hello2 result', look(r))
+//		log('hello2 result', look(r))
 	} catch (e) { error2.value = e }
 	duration2.value = Now() - t
 })

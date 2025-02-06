@@ -3,7 +3,5 @@
 
 <NavigationComponent note="on page3" />
 
-<HitComponent />
-
 </div>
 </template>
