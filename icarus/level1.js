@@ -56,8 +56,27 @@ test(() => {
 
 
 
+/*
+ttd february
+ok, if your thinking from last summer on raw/adjusted/presented/normalized is good
+can you do this with date of birth?
+do these work with user names like "東京❤️女の子"/"Tokyo_Girl"/"tokyo_girl" which is page, working route, normalized route--that doesn't need to fit in here, but as a test of the flexibility and extensibility of the system, try it out
+and align validatePhone and validateEmail, also
+
+choose names so good it's easy to remember them
+.valid
+
+.raw - exactly what the user typed
+.page - put back on the page
+.formal - send to apis
+.normal - store in the database to enforce uniqueness
+
+.notes - extra information from the validator, not a common form
 
 
+
+
+*/
 
 /*
 notes about validation

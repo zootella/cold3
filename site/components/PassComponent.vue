@@ -13,7 +13,7 @@ function generateSingle() {
 function generateAll() {
 	const quantity = 200
 	let s = ''
-	for (var i = 0; i < quantity; i++) s += generateSingle() + ', '
+	for (let i = 0; i < quantity; i++) s += generateSingle() + ', '
 	return s + " all generated locally"
 }
 let output = generateAll()

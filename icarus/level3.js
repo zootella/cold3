@@ -546,6 +546,7 @@ CREATE TABLE hit_table (
 	hide            BIGINT                 NOT NULL,
 
 	quarter_day     BIGINT                 NOT NULL,  -- tick rounded down to 6 hour window
+	-- ttd february, change this to hour; can you rename it?
 
 	browser_tag     CHAR(21)               NOT NULL,  -- the browser that hit us
 	user_tag_text   TEXT                   NOT NULL,  -- the user at that browser, or blank if none identifed
@@ -584,7 +585,7 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 
 
 
-
+//ttd february, move to level0, obviously
 //round down integer i to the nearest whole unit of d
 export function roundDown(i, d) {
 	checkInt(i); checkInt(d, 1)
@@ -888,6 +889,9 @@ export async function trailAdd({hash}) {
 
 
 /*
+and, about anything! because it's usees hashes!
+
+
 too late - codes expire in 20min and we sent that one to you 25min ago
 too soon - we just sent you a code 30 seconds ago; try to look for it again. if you really can't find it, we can send you a new one after 5 minutes
 too frequent - we can't message that address anymore because we sent it 10 codes in the last 24 hours
@@ -900,8 +904,36 @@ well, you could do it like this:
 if you've sent 10 codes in the last 24 hours (trailCount)
 then we won't let you send another one for 6 hours (trailRecent)
 yeah, you're fine
+no--nevermind, three hours later there aren't 10 codes anymore, so the user can send more
+and, as written, we can't tell them when they can try again
+so you may need another query, that counts within a recent stripe of time, or something
 
-and, about anything! because it's usees hashes!
+this may not matter because the person who hit this limit likely did a whole bunch, in a row, very recently
+so telling him he has to wait 24 hours to com eback is likely true
+and even if its not, even if it's actually 12 hours, we're trying to slow that person down at this point
+
+ok thought of how you do it
+as soon as you detect the overflow (10 codes in 24 hours)
+you record another row, representing the cool-down block
+that block says come back in 24 hours
+and then actually just lasts for 20 hours
+and then when checking if an address is cool to message, you look for
+1 current block in effect, searching for that hash value, and
+2 frequency at limit, so make a new block right now!
+
+
+
+
+extra things later you realized you can us ethis for:
+-a user has authenticated themselves at a single browser for an hour of super user permissions
+-
+
+
+
+
+
+
+
 */
 
 

@@ -39,7 +39,6 @@ async function clicked(action) {
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="any message, blank becomes yo" class="w-96" />{{' '}}
-	<!-- im using tailwind in this nuxt 3 project, how can i make my text box wider? -->
 	<button @click="clicked('Get.')" class="pushy">Search</button>{{' '}}
 	<button @click="clicked('Set.')" class="pushy">Record</button>
 </p>

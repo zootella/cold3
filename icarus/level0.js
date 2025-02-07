@@ -377,6 +377,12 @@ test(() => {
 	ok(thinSpace.length == 1 && Data({text: thinSpace}).base16() == 'e28089')//one character, but three bytes
 })
 
+/*
+ttd february--move these from here to drawer
+make a note about standardizing your use of string methods .substring, .slice, .substr, those three
+have little tests here which demonstrate what they do if you go off the edge
+*/
+
 export function start(s, n)  { return clip(s, 0, n) }            // Clip out the first n characters of s, start(s, 3) is CCCccccccc	
 export function end(s, n)    { return clip(s, s.length - n, n) } // Clip out the last n characters of s, end(s, 3) is cccccccCCC	
 export function beyond(s, i) { return clip(s, i, s.length - i) } // Clip out the characters beyond index i in s, beyond(s, 3) is cccCCCCCCC	
@@ -413,9 +419,9 @@ export function findLast(s, t)  { if (s.length && t.length) { return s.lastIndex
 
 // In a single pass through s, replace whole instances of t1 with t2
 export function swap(s, t1, t2) {
-	var s2 = ''          // Target string to fill with text as we break off parts and make the replacement
+	let s2 = ''          // Target string to fill with text as we break off parts and make the replacement
 	while (s.length) {   // Loop until s is blank, also makes sure it's a string
-		var c = cut(s, t1) // Cut s around the first instance of the tag in it
+		let c = cut(s, t1) // Cut s around the first instance of the tag in it
 		s2 += c.before     // Move the part before from s to done
 		if (c.found) s2 += t2
 		s = c.after
@@ -425,8 +431,8 @@ export function swap(s, t1, t2) {
 
 // Parse out the part of s between t1 and t2
 export function parse(s, t1, t2) {
-	var c1 = cut(s,        t1)
-	var c2 = cut(c1.after, t2)
+	let c1 = cut(s,        t1)
+	let c2 = cut(c1.after, t2)
 	if (c1.found && c2.found) {
 		return {
 			found:     true,
@@ -2312,6 +2318,8 @@ function lookSayFunction(f) {
 // |___/\__|_|  |_|_| |_|\__, |_|_|  \__, |
 //                       |___/       |___/ 
 
+//ttd february--are you using this anywhere?! either way, give it a name other than stringify
+
 //call our wrapped stringify() instead of JSON.stringify() to see into errors, and not worry about exceptions
 export function stringify(o) {
 	try {
@@ -2434,6 +2442,48 @@ noop(() => {//exceptions are slow, so just switch this on when you're using it
 		//log(look(e))//cool message like "Converting circular structure to JSON ... property 'circular3' closes the circle"
 	}
 })
+
+
+
+
+
+//ttd february
+/*
+ok, you need another one
+
+*/
+export function print(o) {//consider in place of JSON.stringify(o); deals with circular references and BigInt
+
+
+	//'CircularReference.'
+	//and just convert bigint to string, duh
+
+}
+export function parse_takeNameFromPrevious(s) {//consider in place of JSON.parse(s);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2766,6 +2816,17 @@ validate all three, in the future
 
 validate pageName before saving it in the database, in a distant table
 validate lookName before saving it in the table you're on now
+
+
+more on this
+userName  "東京❤️女の子"
+userRoute "Tokyo-Girl"
+userLook  "tokyo-girl"
+stuff you could do:
+- user types name, other two are set automatically
+  but then user adjusts route, and that changes look but not name
+- visitor navigates to route, and route changes to userRoute, capitalizing things for instance
+- user edits route, but not in a way that changes look, so you don't have to adjust that table
 
 
 
