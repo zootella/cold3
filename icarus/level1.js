@@ -63,6 +63,103 @@ test(() => {
 
 
 
+
+//             _ _     _       _       
+// __   ____ _| (_) __| | __ _| |_ ___ 
+// \ \ / / _` | | |/ _` |/ _` | __/ _ \
+//  \ V / (_| | | | (_| | (_| | ||  __/
+//   \_/ \__,_|_|_|\__,_|\__,_|\__\___|
+//                                     
+
+/*
+text validation happens here!
+validate functions help the user as they type,
+and also make sure
+
+let v = validateSomething(s)//s is raw text the user just added or removed a keystroke from, or a string in a body an untrusted client just sent to us, trusted server-side code
+
+v.isValid - true if what the user typed is valid or we could make it valid
+
+v.formNormal - normalized to detect a duplicate
+v.formFormal - use with apis
+v.formPage
+
+v.raw - echoing back to you exactly what you submitted, what the user typed
+v.somethingElse - more properties can be in here specific to the validator
+
+
+return 
+
+*/
+
+
+/*
+ttd february
+
+align these:
+- email
+- phone
+- credit card
+add these:
+- user name
+- date of birth
+
+
+*/
+
+
+
+/*
+ttd february
+ok, if your thinking from last summer on raw/adjusted/presented/normalized is good
+can you do this with date of birth?
+do these work with user names like "東京❤️女の子"/"Tokyo_Girl"/"tokyo_girl" which is page, working route, normalized route--that doesn't need to fit in here, but as a test of the flexibility and extensibility of the system, try it out
+and align validatePhone and validateEmail, also
+
+choose names so good it's easy to remember them
+v
+	.isValid
+
+	.formNormal - minimized and normalized to detect a duplicate
+	.formPage - form to use with routes and apis
+	.formFormal - form to show on the page
+
+	.raw - exactly what the user typed
+	.(and more stuff in here that's specific to the validator or what we validated)
+
+ok, so if that's good, look over code and write examples for credit cards, email addresses, phone numbers
+and maybe also user names, dates of birth, that stuff
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //  _     _      _   _         _             
 // | |__ (_)_ __| |_| |__   __| | __ _ _   _ 
 // | '_ \| | '__| __| '_ \ / _` |/ _` | | | |
@@ -107,30 +204,6 @@ how does that work? is UTC at the start, end, or middle, oh right it's middle, o
 
 
 
-/*
-ttd february
-ok, if your thinking from last summer on raw/adjusted/presented/normalized is good
-can you do this with date of birth?
-do these work with user names like "東京❤️女の子"/"Tokyo_Girl"/"tokyo_girl" which is page, working route, normalized route--that doesn't need to fit in here, but as a test of the flexibility and extensibility of the system, try it out
-and align validatePhone and validateEmail, also
-
-choose names so good it's easy to remember them
-v
-	.isValid
-
-	.formNormal - minimized and normalized to detect a duplicate
-	.formPage - form to use with routes and apis
-	.formFormal - form to show on the page
-
-	.raw - exactly what the user typed
-	.(and more stuff in here that's specific to the validator or what we validated)
-
-ok, so if that's good, look over code and write examples for credit cards, email addresses, phone numbers
-and maybe also user names, dates of birth, that stuff
-
-
-
-*/
 
 /*
 notes about validation
@@ -750,11 +823,15 @@ have log output that shows in /log, and any page, as you click around, can add t
 
 
 
-
-
-
-
-
+export function checkAction(action, list) {
+	checkText(action)
+	if (!/^[A-Z]/.test(action)) toss('form', {action, list})
+	if (!/\.$/.test(action))    toss('form', {action, list})
+	if (!list.includes(action)) toss('action not supported', {action, list})
+}
+test(() => {
+	checkAction('Do.', ['Do.', 'Some.', 'Thing.'])
+})
 
 
 

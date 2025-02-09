@@ -169,11 +169,15 @@ functions that use module imports
 export {
 
 tagLength, Tag, checkTag, checkTagOrBlank,
+
 checkEmail, checkPhone,
 validateEmail, validatePhone, validateCard,
-measurePasswordStrength,
-generatePosts, postDatabase,
 
+checkAction,
+
+measurePasswordStrength,
+
+generatePosts, postDatabase,
 testBox,
 
 } from './level1.js'

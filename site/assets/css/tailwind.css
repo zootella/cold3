@@ -52,6 +52,11 @@
 	a:visited       { @apply text-purple-600; }
 	a:visited:hover { @apply text-purple-400; }
 	a:active        { @apply text-red-800; }
+
+	/* For all disabled buttons, use the default arrow instead of a hand pointer */
+	button:disabled {
+		@apply cursor-default;
+	}
 }
 
 /* Components layer: define reusable classes for buttons, etc. */

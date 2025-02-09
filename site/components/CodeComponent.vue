@@ -6,57 +6,45 @@ getBrowserTag, isLocal,
 validatePhone,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
-
 const helloStore = useHelloStore()
-
-let refButtonState = ref('gray')//gray for ghosted, green for clickable, or orange for POST-in-flight
 
 const refPhone = ref('')
 const refOutput = ref('')
-
-let refInFlight = ref(false)//true while we're getting a token and POSTing to our own api, both of those combined
+const refInFlight = ref(false)//true while we're getting a token and POSTing to our own api, both of those combined
+const refButtonState = ref('gray')//gray for ghosted, green for clickable, or orange for POST-in-flight
 
 watch([refPhone], () => {
 	let v = validatePhone(refPhone.value)
 	refOutput.value = v
 
-	if (refInFlight.value) {//turnstile or post in flight
-		refButtonState.value = 'orange'
-	} else if (v.valid) {//form ready to submit
-		refButtonState.value = 'green'
-	} else {
-		refButtonState.value = 'gray'
-	}
+	if (refInFlight.value) { refButtonState.value = 'orange' }
+	else if (v.valid) { refButtonState.value = 'green' }
+	else { refButtonState.value = 'gray' }
 })
 
 /*
-1 send a sms (don't deploy)
-2 put in limits (code dies in 20min, 4 tries, replacement issuance; address limited to 10 messages in 24h or 20h cooldown; )
+1 send a sms (don't deploy) or do but they also have to be signed in using the old system? weird but maybe. or, it doesn't actually send deployed until you remove that, which can be soon
+2 put in limits (code dies in 20min, 4 tries, or sent replacement; two codes rigth away fine; then 5min apart; address limited to 10 messages in 24h or 20h cooldown; )
 3 record in address_table (user enters address, which is Challenged. Proven. Removed.)
-4 generate or tie to user tag, user tag is generated on first address submission
+4 generate or tie to user tag, user tag is generated on first address submission so you always have browser tag and user tag
 */
 
 async function clickedSend() {
-	refOutput.value = validatePhone(refPhone.value)
+	//ttd february - doing this right here now but pretty sure it should be in a store? or at least protected with try catch??
+
+	let r = await $fetch('/api/code', {
+		method: 'POST',
+		body: {
+			action: 'Send.',
+			browserTag: helloStore.browserTag,
+			phone: refPhone.value,
+		}
+	})
+	log(look(r))
+	//bookmark february, get those to the backend!
 }
 
 
-/*
-ttd february
-stuff to do at this level generally
-[]how do you say on the page that this text box cannot hold more than 2k characters or some sanity maximum; do that for every box on every page, essentially
-[]tel and numeric is cool, test it out--you can rename the send button, but can you gray it out? if not maybe don't have one
-
-	<form @submit.prevent="clickedSend">
-		<input
-			type="tel"
-			inputmode="numeric"
-			enterkeyhint="Send Code"
-		/>
-		<!-- You can have a visible submit button or not -->
-		<button type="submit" class="hidden">Send Code</button>
-
-*/
 
 
 </script>
@@ -69,10 +57,11 @@ stuff to do at this level generally
 
 <p>
 	<input
-		type="tel" inputmode="numeric"
+		type="tel" inputmode="numeric" enterkeyhint="Send Code"
 		v-model="refPhone" placeholder="sms number"
 		class="w-96"
 	/>{{' '}}
+	<!-- ttd february, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or direct the user's attention back to the page, which is probably what you want to do for usability and consistancy -->
 	<button
 		:disabled="refButtonState != 'green'"
 		:class="refButtonState"
