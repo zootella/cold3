@@ -1512,11 +1512,18 @@ async function _queryGetRow({table, titleFind, cellFind}) {
 //[]
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
 export async function queryAdd({table, row}) {
-	row.row_tag = Tag()
-	row.row_tick = Now()
-	row.hide = 0
+	await queryAddSeveral({table, rows: [row]})
+}
+export async function queryAddSeveral({table, rows}) {
+	let t = Now()//set a single timestamp for the group of rows we're adding
+	rows.forEach(row => {//fill in any missing defaults for the margin columns
+		if (!row.row_tag)  row.row_tag = Tag()
+		if (!row.row_tick) row.row_tick = t
+		if (!row.hide)     row.row_hide = 0//sets 0 if already set, but that's fine
+	})
 	await queryAddRow({table, row})
 }
+//ttd february--have all of these expect a table that starts with the standard three rows; update settings to do that, too. then, the two above replace the two below entirely
 
 //[ran]
 //add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}

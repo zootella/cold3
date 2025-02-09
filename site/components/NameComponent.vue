@@ -54,6 +54,7 @@ async function clickedSubmit() {//gets called when the user clicks the button
 <div>
 	<label><input type="checkbox" v-model="refTerms" /> Accept Terms</label>{{' '}}
 	<button :disabled="refButtonState != 'green'" :class="refButtonState" @click="clickedSubmit" class="pushy">Check</button>
+	<!-- ttd february, this works but you don't have clickedSubmit() parenthesis above?! -->
 </div>
 <p>Response: <code>{{ refResponse }}</code></p>
 <TurnstileComponent ref="refTurnstileComponent" />

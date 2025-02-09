@@ -546,7 +546,7 @@ CREATE TABLE hit_table (
 	hide            BIGINT                 NOT NULL,
 
 	quarter_day     BIGINT                 NOT NULL,  -- tick rounded down to 6 hour window
-	-- ttd february, change this to hour; can you rename it?
+	-- ttd february, change this to hour_tick; can you rename it?
 
 	browser_tag     CHAR(21)               NOT NULL,  -- the browser that hit us
 	user_tag_text   TEXT                   NOT NULL,  -- the user at that browser, or blank if none identifed
@@ -956,6 +956,9 @@ extra things later you realized you can us ethis for:
 
 
 
+
+
+// ~~~~ here we are doing the work behind CodeComponent ~~~~
 
 
 

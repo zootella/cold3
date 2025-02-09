@@ -56,6 +56,57 @@ test(() => {
 
 
 
+
+
+
+
+
+
+
+//  _     _      _   _         _             
+// | |__ (_)_ __| |_| |__   __| | __ _ _   _ 
+// | '_ \| | '__| __| '_ \ / _` |/ _` | | | |
+// | |_) | | |  | |_| | | | (_| | (_| | |_| |
+// |_.__/|_|_|   \__|_| |_|\__,_|\__,_|\__, |
+//                                     |___/ 
+
+/*
+ttd february
+you need to do this with birthdays
+user types it, YYYYMMDD, validate that, spell it out in words as they type
+obviously use the validate pattern you've got below for this
+so the form for the database is probably "YYYYMMDD" as text, not a number
+and the v returned has extra number types attached for .year .month .day
+
+test thsi out with the mobile keypad--can you disable the submit button when it's on the mobile keyboard and not the page? how does that work?
+
+and then, calculate the age of that birthday
+taking and using the local time zone as known by the page
+so if it's 12:30 AM local time on the page
+it may be easiest to get the day today local on the page
+and then sanity check that on the server with the server clock
+how does that work? is UTC at the start, end, or middle, oh right it's middle, of midnight around the world
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 ttd february
 ok, if your thinking from last summer on raw/adjusted/presented/normalized is good
@@ -64,15 +115,18 @@ do these work with user names like "東京❤️女の子"/"Tokyo_Girl"/"tokyo_g
 and align validatePhone and validateEmail, also
 
 choose names so good it's easy to remember them
-.valid
+v
+	.isValid
 
-.raw - exactly what the user typed
-.page - put back on the page
-.formal - send to apis
-.normal - store in the database to enforce uniqueness
+	.formNormal - minimized and normalized to detect a duplicate
+	.formPage - form to use with routes and apis
+	.formFormal - form to show on the page
 
-.notes - extra information from the validator, not a common form
+	.raw - exactly what the user typed
+	.(and more stuff in here that's specific to the validator or what we validated)
 
+ok, so if that's good, look over code and write examples for credit cards, email addresses, phone numbers
+and maybe also user names, dates of birth, that stuff
 
 
 
