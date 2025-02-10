@@ -186,7 +186,9 @@ how does that work? is UTC at the start, end, or middle, oh right it's middle, o
 */
 
 
+export function validateBirthday(raw) {
 
+}
 
 
 

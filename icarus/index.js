@@ -193,7 +193,7 @@ helpful javascript functions with no module imports
 */
 export {
 
-Time, Size, noop,
+Time, Size, textLimit, noop,
 Now, sayDate, sayTick,
 test, ok, runTests,
 toss,

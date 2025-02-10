@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-log, look, Now, sayTick, newline, Data, Tag, hasText,
+log, look, Now, textLimit, sayTick, newline, Data, Tag, hasText,
 getBrowserTag, isLocal,
 validatePhone,
 } from 'icarus'
@@ -45,8 +45,6 @@ async function clickedSend() {
 }
 
 
-
-
 </script>
 <template>
 <div class="border border-gray-300 p-2">
@@ -56,18 +54,19 @@ async function clickedSend() {
 <p><code>{{helloStore.userTag}}</code> user tag</p>
 
 <p>
-	<input
+	<input :maxlength="textLimit"
 		type="tel" inputmode="numeric" enterkeyhint="Send Code"
 		v-model="refPhone" placeholder="sms number"
 		class="w-96"
 	/>{{' '}}
-	<!-- ttd february, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or direct the user's attention back to the page, which is probably what you want to do for usability and consistancy -->
+	<!-- ttd february, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or not use it at all, to direct the user's attention back to the page, which is probably what you want to do for usability and consistancy. no, it's because you haven't done the enclosing form with submit prevent yet -->
 	<button
 		:disabled="refButtonState != 'green'"
 		:class="refButtonState"
 		@click="clickedSend"
 		class="pushy"
 	>Send Code</button>
+	<!-- how does :class and class together work?! -->
 </p>
 
 <pre>{{refOutput}}</pre>

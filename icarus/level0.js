@@ -31,6 +31,7 @@ Size.gb = 1024*Size.mb//gibibyte
 Size.tb = 1024*Size.gb//tebibyte
 Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
+export const textLimit = 2*Size.kb//browser-enforced limit for input and textarea fields on pages
 
 export const noop = (() => {})//no operation, a function that does nothing
 
