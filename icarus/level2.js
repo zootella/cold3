@@ -1519,9 +1519,9 @@ export async function queryAddSeveral({table, rows}) {
 	rows.forEach(row => {//fill in any missing defaults for the margin columns
 		if (!row.row_tag)  row.row_tag = Tag()
 		if (!row.row_tick) row.row_tick = t
-		if (!row.hide)     row.row_hide = 0//sets 0 if already set, but that's fine
+		if (!row.hide)     row.hide = 0//sets 0 if already set, but that's fine
 	})
-	await queryAddRow({table, row})
+	await queryAddRows({table, rows})
 }
 //ttd february--have all of these expect a table that starts with the standard three rows; update settings to do that, too. then, the two above replace the two below entirely
 
