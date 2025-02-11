@@ -7,13 +7,10 @@ timeSafeEqual, checkAction, checkPhone,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {//will become ({door, body, action})
+async function doorHandleBelow({door, body, action}) {
 	let r = {}
-
-	const body = door.body
-	const action = door.body.action
 
 	//first, validate what the untrusted client told us
 	checkTag(body.browserTag)

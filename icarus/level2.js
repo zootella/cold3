@@ -527,24 +527,24 @@ or, amazon has invoked a lambda and sent an event and context for us to respond
 
 //copypasta for a worker api endpoint:
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 
 //copypasta for a lambda api endpoint:
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda('POST', {lambdaEvent, lambdaContext, doorProcessBelow})
+	return doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
 
-then write your code in doorProcessBelow() beneath
+then write your code in doorHandleBelow() beneath
 */
 
-export async function doorWorker(method, {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow}) {
+export async function doorWorker(method, {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow}) {
 	try {
 		let door = {}, response, error
 		try {
 
 			door = await doorWorkerOpen({method, workerEvent, useRuntimeConfig})
-			response = await doorProcessBelow(door)
+			response = await doorHandleBelow({door, body: door.body, action: door.body?.action})
 
 		} catch (e1) { error = e1 }
 		try {
@@ -556,13 +556,13 @@ export async function doorWorker(method, {workerEvent, useRuntimeConfig, setResp
 	} catch (e3) { console.error('[OUTER]', e3) }
 	setResponseStatus(workerEvent, 500); return null
 }
-export async function doorLambda(method, {lambdaEvent, lambdaContext, doorProcessBelow}) {
+export async function doorLambda(method, {lambdaEvent, lambdaContext, doorHandleBelow}) {
 	try {
 		let door = {}, response, error
 		try {
 
 			door = await doorLambdaOpen({method, lambdaEvent, lambdaContext})
-			response = await doorProcessBelow(door)
+			response = await doorHandleBelow({door, body: door.body, action: door.body?.action})
 
 		} catch (e) { error = e }
 		try {
@@ -1730,22 +1730,3 @@ test(() => {
 	//negative zero literal, -0, makes it through, but -0+'' is "0"
 	//and more importantly there is no negative 0 in PostgreSQL's BIGINT; one would get stored as regular zero
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

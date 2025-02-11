@@ -6,20 +6,20 @@ isCloud, hasText, recordHit,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
+async function doorHandleBelow({door, body, action}) {
 	let r = {}
 
-	let browserTag = door.body.browserTag
+	let browserTag = body.browserTag
 	checkTag(browserTag)
 
 	let {userTag, routeText} = await authenticateSignGet({browserTag})
 
 	let h = door?.workerEvent?.req?.headers
 	r = {
-		browserTag: door.body.browserTag,
-		browserGraphics: door.body.browserGraphics,
+		browserTag: body.browserTag,
+		browserGraphics: body.browserGraphics,
 
 		ipAddress: headerGetOne(h, 'cf-connecting-ip'),
 		userAgent: headerGetOne(h, 'user-agent'),
@@ -43,8 +43,8 @@ async function doorProcessBelow(door) {
 		user: userTag,
 		ip: r.ipAddress,
 		agent: r.userAgent,
-		renderer: door.body.browserGraphics.renderer,
-		vendor: door.body.browserGraphics.vendor,
+		renderer: body.browserGraphics.renderer,
+		vendor: body.browserGraphics.vendor,
 	}
 	let s = JSON.stringify(o)
 	let t = Now()
@@ -61,8 +61,8 @@ async function doorProcessBelow(door) {
 	if (hasText(r.geoPostal))  g.postal  = r.geoPostal
 	let b = {
 		agent: r.userAgent,
-		renderer: door.body.browserGraphics.renderer,
-		vendor: door.body.browserGraphics.vendor,
+		renderer: body.browserGraphics.renderer,
+		vendor: body.browserGraphics.vendor,
 	}
 	if (isCloud({uncertain: 'Cloud.'})) {
 		await recordHit({
@@ -105,21 +105,3 @@ async function doorProcessBelow(door) {
 
 	return r
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

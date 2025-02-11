@@ -5,20 +5,20 @@ settingReadInt, settingWrite,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let o = {}
-	o.sticker = Sticker().all
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
+	r.sticker = Sticker().all
 
 	let h = await settingReadInt('hits', 0)
 
-	if (door.body.action == 'Get.') {
-	} else if (door.body.action == 'Increment.') {
+	if (action == 'Get.') {
+	} else if (action == 'Increment.') {
 		h++
 		await settingWrite('hits', h)
 	} else { toss('action', {door}) }
 
-	o.hits = h
-	return o
+	r.hits = h
+	return r
 }

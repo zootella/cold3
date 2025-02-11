@@ -7,14 +7,14 @@ doorWorker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let response = {}
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
 
-	let message = `${door.body.name}.${door.body.quantity}.${door.body.condition} from ${Sticker().all}`
+	let message = `${body.name}.${body.quantity}.${body.condition} from ${Sticker().all}`
 
-	response.message = message
-	response.when = Now()
-	return response
+	r.message = message
+	r.when = Now()
+	return r
 }

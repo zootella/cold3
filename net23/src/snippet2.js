@@ -8,14 +8,14 @@ snippet2,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda('GET', {lambdaEvent, lambdaContext, doorProcessBelow})
+	return doorLambda('GET', {lambdaEvent, lambdaContext, doorHandleBelow})
 	/*
 	no longer in service, as GET is blocked now
 	if you want a snippet, just do a POST through the regular page->worker->lambda flow
 	you can still easily return and view objects; have the page do <pre>{{look(o)}}</pre>
 	*/
 }
-async function doorProcessBelow(door) {
+async function doorHandleBelow({door, body, action}) {
 	let o = {}
 	try {
 

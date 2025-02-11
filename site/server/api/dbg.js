@@ -7,16 +7,16 @@ doorWorker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let response = {}
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
 
 	let lambdaResult = await $fetch(
 		urlNetwork23() + '/dlg?' + (new URLSearchParams({
-			name: door.body.name,
-			quantity: door.body.quantity,
-			condition: door.body.condition
+			name: body.name,
+			quantity: body.quantity,
+			condition: body.condition,
 		})).toString(),
 		{
 			method: 'GET'
@@ -24,9 +24,9 @@ async function doorProcessBelow(door) {
 	)
 	let message = lambdaResult.message
 
-	response.message = message
-	response.when = Now()
-	return response
+	r.message = message
+	r.when = Now()
+	return r
 }
 
 //ttd november, copied this to library2.js, refactor door-lambda once that's working, or get rid of it entirely

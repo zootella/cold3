@@ -5,12 +5,12 @@ checkTag, settingReadInt, settingWrite, browserToUser,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
+async function doorHandleBelow({door, body, action}) {
 	let r = {}
 
-	let browserTag = door.body.browserTag
+	let browserTag = body.browserTag
 	checkTag(browserTag)
 
 	r.sticker = Sticker().all
@@ -26,4 +26,3 @@ async function doorProcessBelow(door) {
 
 	return r
 }
-

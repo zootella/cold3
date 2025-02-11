@@ -6,13 +6,13 @@ vhsSign,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let o = {}
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
 
-	o.source = 'https://vhs.net23.cc/banner.png?'+(await vhsSign('/', 2*Time.hour))//generate a query string that will allow access to everything at vhs.net23.cc for the next two hours
-	o.sticker = Sticker().all//note who we are, signing this link
+	r.source = 'https://vhs.net23.cc/banner.png?'+(await vhsSign('/', 2*Time.hour))//generate a query string that will allow access to everything at vhs.net23.cc for the next two hours
+	r.sticker = Sticker().all//note who we are, signing this link
 
-	return o
+	return r
 }

@@ -9,15 +9,15 @@ legacyAccessSet, legacyAccessGet,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let o = {}
-	o.note = `worker message says: ${Sticker().all}, v2024nov14a`
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
+	r.note = `worker message says: ${Sticker().all}, v2024nov14a`
 
 	//here's where you need to revalidate the input from the form
 
-	let {browserTag, provider, service, address, message} = door.body//pull values from the body the untrusted page posted to us
+	let {browserTag, provider, service, address, message} = body//pull values from the body the untrusted page posted to us
 
 	let signedIn = await legacyAccessGet(browserTag)
 	if (!signedIn) toss('account', {browserTag, door})
@@ -32,8 +32,8 @@ async function doorProcessBelow(door) {
 	//this is in place of checking the message and making it safe
 	message = message.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ' ').slice(0, Size.kb).trim()
 
-	o.network23Response = await fetchNetwork23($fetch, provider+service, '/message', {provider, service, address, message})
-	return o
+	r.network23Response = await fetchNetwork23($fetch, provider+service, '/message', {provider, service, address, message})
+	return r
 }
 
 

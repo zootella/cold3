@@ -6,20 +6,20 @@ trailCount, trailRecent, trailAdd,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {//ttd february, what if you got ({door, body, action}) and could then save some dereferencing, yeah, that's a change many places but probably a great one
+async function doorHandleBelow({door, body, action}) {//ttd february, what if you got ({door, body, action}) and could then save some dereferencing, yeah, that's a change many places but probably a great one
 	let r = {}
 	r.sticker = Sticker().all
 
-	checkTextOrBlank(door.body.message)
-	let h = await hash(door.body.message)
+	checkTextOrBlank(body.message)
+	let h = await hash(body.message)
 	r.hash = h
 
-	if (door.body.action == 'Get.') {
+	if (body.action == 'Get.') {
 		r.count = await trailCount({hash: h, since: Now() - 30*Time.second})
 		r.recent = await trailRecent({hash: h})
-	} else if (door.body.action == 'Set.') {
+	} else if (body.action == 'Set.') {
 		await trailAdd({hash: h})
 	} else { toss('action', {door}) }
 

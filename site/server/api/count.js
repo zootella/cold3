@@ -8,24 +8,24 @@ settingReadInt, settingWrite,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let o = {}
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
 
-	o.message = 'hi from api count'
-	o.mirroredBody = door.body
+	r.message = 'hi from api count'
+	r.mirroredBody = body
 
 	let g = await settingReadInt('hits', 0)//default 0 in case this makes the row
-	if (door.body.countGlobal > 0) {//increment
-		g += door.body.countGlobal//increment with requested value
+	if (body.countGlobal > 0) {//increment
+		g += body.countGlobal//increment with requested value
 		await settingWrite('hits', g)//write
 	}
 
-	o.countGlobal = g
-	o.countBrowser = 0
-	o.count1 = g
-	o.count2 = 0
+	r.countGlobal = g
+	r.countBrowser = 0
+	r.count1 = g
+	r.count2 = 0
 
-	return o
+	return r
 }

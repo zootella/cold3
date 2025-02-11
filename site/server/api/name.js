@@ -5,13 +5,13 @@ checkTurnstileToken,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let o = {}
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
 
-	await checkTurnstileToken(door.body.turnstileToken)
+	await checkTurnstileToken(body.turnstileToken)
 
-	o.note = `turnstile good!; name api will check "${door.body.name}" in ${Sticker().all}`
-	return o
+	r.note = `turnstile good!; name api will check "${body.name}" in ${Sticker().all}`
+	return r
 }

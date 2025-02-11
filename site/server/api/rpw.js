@@ -5,9 +5,9 @@ doorWorker, urlNetwork23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
+async function doorHandleBelow({door, body, action}) {
 
 	let bridge = await $fetch(
 		urlNetwork23() + '/rpl',
@@ -20,14 +20,14 @@ async function doorProcessBelow(door) {
 		}
 	)
 
-	let o = {}
-	o.name = 'rpw'
-	o.sticker = Sticker().all
-	o.method = door.workerEvent.req.method
-	o.headers = door.workerEvent.req.headers
+	let r = {}
+	r.name = 'rpw'
+	r.sticker = Sticker().all
+	r.method = door.workerEvent.req.method
+	r.headers = door.workerEvent.req.headers
 
-	o.bridge = bridge
-	return o
+	r.bridge = bridge
+	return r
 }
 
 /*

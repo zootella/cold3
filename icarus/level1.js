@@ -960,6 +960,77 @@ export const postDatabase = { lookup, chronology }
 
 
 
+//ttd february - here's what dependency injectable Now and Tag might look like
+
+export function testTag(backgroundTag) {
+	checkTag(backgroundTag)
+
+
+}
+export function testNow(startingTick) {
+
+}
+noop(() => {
+	let Tag = testTag('ytFMpUFouv7hYGo8JF0Fp').Tag//make the object locally, giving it the prefix, then get the fake Tag function from it
+
+	ok(Tag() == 'ytFMpUFouv7hYGo000001')//results are now predictable
+	ok(Tag() == 'ytFMpUFouv7hYGo000002')
+	ok(Tag() == 'ytFMpUFouv7hYGo000003')
+
+	//now, design the same thing for time
+
+	let clock = testNow(1739203665391)//likewise, give it a starting time
+	let Now = clock.Now
+	ok(Now() == 1739203665391)
+	ok(Now() == 1739203665392)
+	ok(Now() == 1739203665393)//each one is a millisecond later
+	clock.forward(Time.hour)//move it forward one hour
+
+
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

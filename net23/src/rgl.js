@@ -7,9 +7,9 @@ doorLambda,
 } from 'icarus'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda('GET', {lambdaEvent, lambdaContext, doorProcessBelow})
+	return doorLambda('GET', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
-async function doorProcessBelow(door) {
+async function doorHandleBelow({door, body, action}) {
 	let o = {}
 	o.name = 'rgl'
 	o.sticker = Sticker().all

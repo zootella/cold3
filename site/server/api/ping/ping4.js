@@ -4,9 +4,9 @@ Sticker, doorWorker, Now, settingReadInt, textToInt,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
+async function doorHandleBelow({door, body, action}) {
 
 	let t = Now()
 	let count = await settingReadInt('hits', 0)

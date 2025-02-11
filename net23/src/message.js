@@ -8,13 +8,13 @@ warm, sendMessage,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda('POST', {lambdaEvent, lambdaContext, doorProcessBelow})
+	return doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
-async function doorProcessBelow(door) {
+async function doorHandleBelow({door, body, action}) {
 	let response = {}
 	try {
 
-		let {warm, provider, service, address, message} = door.body
+		let {warm, provider, service, address, message} = body
 
 		if (warm) {
 			await warm(provider+service)

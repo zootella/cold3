@@ -9,20 +9,19 @@ authenticateSignGet, authenticateSignUp, authenticateSignIn, authenticateSignOut
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let o = {}
-	o.sticker = Sticker().all
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
+	r.sticker = Sticker().all
 
-	let action = door.body.action
 	switch (action) {
-		case 'AuthenticateSignGet.': o.result = await authenticateSignGet({browserTag: door.body.browserTag}); break;
-		case 'AuthenticateSignUp.':  o.result = await authenticateSignUp({browserTag: door.body.browserTag, routeText: door.body.userName}); break;
-		case 'AuthenticateSignIn.':  o.result = await authenticateSignIn({browserTag: door.body.browserTag, routeText: door.body.userName}); break;
-		case 'AuthenticateSignOut.': o.result = await authenticateSignOut({browserTag: door.body.browserTag}); break;
+		case 'AuthenticateSignGet.': r.result = await authenticateSignGet({browserTag: body.browserTag}); break;
+		case 'AuthenticateSignUp.':  r.result = await authenticateSignUp({browserTag: body.browserTag, routeText: body.userName}); break;
+		case 'AuthenticateSignIn.':  r.result = await authenticateSignIn({browserTag: body.browserTag, routeText: body.userName}); break;
+		case 'AuthenticateSignOut.': r.result = await authenticateSignOut({browserTag: body.browserTag}); break;
 		default: toss('action', {door}); break;
 	}
 
-	return o
+	return r
 }

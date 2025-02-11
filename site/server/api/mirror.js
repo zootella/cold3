@@ -6,18 +6,18 @@ doorWorker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
+async function doorHandleBelow({door, body, action}) {
 	let access = await getAccess()
-	let o = {}
+	let r = {}
 
-	o.message = 'hello from cold3 api mirror, version 2024oct8b'
-	o.serverTick = Now()
-	o.headers = door.workerEvent.req.headers
-	o.accessLength = access.get('ACCESS_PASSWORD_SECRET').length
-	o.tag = Tag()
-	o.sayEnvironment = Sticker().all
+	r.message = 'hello from cold3 api mirror, version 2024oct8b'
+	r.serverTick = Now()
+	r.headers = door.workerEvent.req.headers
+	r.accessLength = access.get('ACCESS_PASSWORD_SECRET').length
+	r.tag = Tag()
+	r.sayEnvironment = Sticker().all
 
-	return o
+	return r
 }

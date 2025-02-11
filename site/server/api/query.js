@@ -8,13 +8,12 @@ snippetClear, snippetPopulate, snippetQuery2, snippetQuery3,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let o = {}
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
 	if (isCloud({uncertain: 'Cloud.'})) toss('where', {door})//this endpoint is only for local development
 
-	let action = door.body.action
 	let result
 	switch (action) {
 		case 'Clear.':    result = await snippetClear();    break;
@@ -24,7 +23,7 @@ async function doorProcessBelow(door) {
 		default: toss('action', {door}); break;
 	}
 
-	o.sticker = Sticker().all
-	o.result = result
-	return o
+	r.sticker = Sticker().all
+	r.result = result
+	return r
 }

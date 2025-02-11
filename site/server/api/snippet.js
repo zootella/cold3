@@ -7,13 +7,13 @@ Sticker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorProcessBelow})
+	return doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorProcessBelow(door) {
-	let o = {}
-	o.note = `worker snippet says: ${Sticker().all}, v2024oct24a`
+async function doorHandleBelow({door, body, action}) {
+	let r = {}
+	r.note = `worker snippet says: ${Sticker().all}, v2024oct24a`
 
-	return o
+	return r
 }
 
 /*
