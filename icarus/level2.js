@@ -1285,7 +1285,7 @@ export async function snippetClear() {
 }
 export async function snippetPopulate() {
 	let rows = generateExampleRows(12, Time.hour, 'first')
-	await queryAddRows({table: 'example_table', rows})
+	await queryAddSeveral({table: 'example_table', rows})
 }
 export async function snippetQuery2() {
 	let data, error
@@ -1358,11 +1358,14 @@ export async function queryCountSince({table, title, cell, since}) {
 
 
 //[]
+/*
 //get the most recent row in table where cell is under title, or undefined if none found
 export async function queryFilterMostRecent({table, title, cell}) {
 	return await queryFilterSortTop({table, title, cell, titleSort: 'row_tick'})
 }
+*/
 //[ran]
+/*
 //get the one biggest titleSort row that has cell under title, or undefined if none found
 export async function queryFilterSortTop({table, title, cell, titleSort}) {
 	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
@@ -1391,7 +1394,7 @@ export async function queryFilterSortAll({table, title, cell, titleSort}) {
 	if (error) toss('supabase', {error})
 	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
 }
-
+*/
 //[]
 //add row if table doesn't already have one with the same value for column titles like 'title1,title2,title3' comma separated with no spaces
 export async function queryAddRowIfCellsUnique({table, row, titles}) {
@@ -1452,11 +1455,16 @@ actually this get or add is already two calls, is only used for settings_table, 
 */
 
 //[ran]
+/* made for settings, not used
 export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
 	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
 	if (!row) toss('row not found')
 }
+*/
 //[ran]
+
+/*
+//ttd february--these are only used by settings, move them to level3
 export async function querySetCellOrAddRow({table, titleFind, cellFind, titleSet, cellSet, rowAddDefault}) {
 	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
 	if (!row) await queryAddRow({table, row: rowAddDefault})
@@ -1474,8 +1482,10 @@ async function _querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
 	if (error) toss('supabase', {error})
 	return data//data is the whole updated row
 }
+*/
 
 //[ran]
+/* made for settings, not used
 export async function queryGetCell({table, titleFind, cellFind, titleGet}) {
 	let row = await _queryGetRow({table, titleFind, cellFind})
 	if (!row) toss('row not found')
@@ -1483,7 +1493,9 @@ export async function queryGetCell({table, titleFind, cellFind, titleGet}) {
 	checkQueryCell(titleGet, cellGet)
 	return cellGet
 }
+*/
 //[ran]
+/*
 //get the cell under titleGet from the row where titleFind is cellFind, adds a default row if not found
 export async function queryGetCellOrAddRow({table, titleFind, cellFind, titleGet, rowAddDefault}) {
 	let row = await queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault})
@@ -1491,14 +1503,18 @@ export async function queryGetCellOrAddRow({table, titleFind, cellFind, titleGet
 	checkQueryCell(titleGet, cellGet)
 	return cellGet
 }
+*/
 
 //[ran]
+/*
 export async function queryGetRow({table, titleFind, cellFind}) {
 	let row = await _queryGetRow({table, titleFind, cellFind})
 	if (!row) toss('row not found')
 	return row
 }
+*/
 //[ran]
+/*
 //get the one row with value cellFind under titleFind, add the given default row if not found
 export async function queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault}) {
 	let row = await _queryGetRow({table, titleFind, cellFind})
@@ -1508,6 +1524,8 @@ export async function queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDef
 	}//^ lots of discussion with chat about the race condition here, and no good fix: .upsert() can do it in one statement, but will modify the row on conflict, not return it; .insert(..., {ignoreDuplicates: true}) works but means we have to call out to supabase twice every time
 	return row
 }
+*/
+/*
 //in table, look at column titleFind to find one row with value cellFind, undefined if not found
 async function _queryGetRow({table, titleFind, cellFind}) {
 	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
@@ -1521,7 +1539,7 @@ async function _queryGetRow({table, titleFind, cellFind}) {
 	if (error) toss('supabase', {error})
 	return data//data is the whole row
 }
-
+*/
 
 //[]
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
@@ -1535,18 +1553,10 @@ export async function queryAddSeveral({table, rows}) {
 		if (!row.row_tick) row.row_tick = t
 		if (!row.hide)     row.hide = 0//sets 0 if already set, but that's fine
 	})
-	await queryAddRows({table, rows})
+	await _queryAddRows({table, rows})
 }
-//ttd february--have all of these expect a table that starts with the standard three rows; update settings to do that, too. then, the two above replace the two below entirely
-
-//[ran]
-//add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
-export async function queryAddRow({table, row}) {
-	await queryAddRows({table, rows: [row]})
-}
-//[ran]
 //add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
-export async function queryAddRows({table, rows}) {
+async function _queryAddRows({table, rows}) {
 	checkQueryTitle(table); rows.forEach(row => checkQueryRow(row))
 	let database = await getDatabase()
 	let {data, error} = (await database
@@ -1555,6 +1565,20 @@ export async function queryAddRows({table, rows}) {
 	)
 	if (error) toss('supabase', {error})
 }
+
+
+
+
+//ttd february--have all of these expect a table that starts with the standard three rows; update settings to do that, too. then, the two above replace the two below entirely
+
+//[ran]
+/*
+//add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
+export async function queryAddRow({table, row}) {
+	await queryAddRows({table, rows: [row]})
+}
+*/
+//[ran]
 
 //[ran]
 //count how many rows have cellFind under titleFind

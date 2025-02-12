@@ -122,25 +122,54 @@ snippetPopulate,
 snippetQuery2,
 snippet2,
 
-queryFilterRecent,
-queryCountSince,
+//ttd february, ok, you got it down to just 6 functions! give them really good names
+/*
 
-queryFilterMostRecent,
-queryFilterSortTop,
-queryFilterSortAll,
+	queryFilterRecent -> queryTop
+	queryAdd          -> queryAddRow
+	queryAddSeveral   -> queryAddRows
+	queryHideRows, same
 
-queryAddRowIfCellsUnique,
-queryHideRows,
+	queryCountSince, same
+	queryAddRowIfCellsUnique, same
 
+also, look where level3 needs the database directly, can you factor those down to level2 now?
+groups of query functions:
+1-test
+2-common
+3-specialized
+4-check
+
+*/
+
+//-- ttd february: see if you can get just a half dozen useful and commonly used query functions--then you probably don't even have to write tests!
+
+queryFilterRecent,//many users
+queryCountSince,//one user
+
+/*
+queryFilterMostRecent,//no users
+queryFilterSortTop,//one user: legacyAccessGet
+queryFilterSortAll,//no users
+*/
+
+queryAddRowIfCellsUnique,//one user
+queryHideRows,//many users
+
+/*
 querySetCell, querySetCellOrAddRow,
 queryGetCell, queryGetCellOrAddRow,
 queryGetRow,  queryGetRowOrAddRow,
+*/
 
-queryAdd,
-queryAddRow,
-queryAddRows,
+queryAdd,//many users
+queryAddSeveral,//useful helper
+//queryAddRow,//switched everyone to queryAdd, but may want to take the name
+//queryAddRows,//users
 
-queryCountRows,
+//--
+
+queryCountRows,//these are just for testing
 queryCountAllRows,
 queryDeleteAllRows,
 

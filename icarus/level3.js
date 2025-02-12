@@ -29,25 +29,34 @@ snippetPopulate,
 snippetQuery2,
 snippet2,
 
-queryFilterRecent,
-queryCountSince,
+//-- ttd february: see if you can get just a half dozen useful and commonly used query functions--then you probably don't even have to write tests!
 
-queryFilterMostRecent,
-queryFilterSortTop,
-queryFilterSortAll,
+queryFilterRecent,//many users
+queryCountSince,//one user
 
-queryAddRowIfCellsUnique,
-queryHideRows,
+/*
+queryFilterMostRecent,//no users
+queryFilterSortTop,//one user: legacyAccessGet
+queryFilterSortAll,//no users
+*/
 
+queryAddRowIfCellsUnique,//one user
+queryHideRows,//many users
+
+/*
 querySetCell, querySetCellOrAddRow,
 queryGetCell, queryGetCellOrAddRow,
 queryGetRow,  queryGetRowOrAddRow,
+*/
 
-queryAdd,
-queryAddRow,
-queryAddRows,
+queryAdd,//many users
+queryAddSeveral,//useful helper
+//queryAddRow,//switched everyone to queryAdd, but may want to take the name
+//queryAddRows,//users
 
-queryCountRows,
+//--
+
+queryCountRows,//these are just for testing
 queryCountAllRows,
 queryDeleteAllRows,
 
@@ -488,38 +497,81 @@ export async function snippet3() {
 // |___/\___|\__|\__|_|_| |_|\__, |___/  \__\__,_|_.__/|_|\___|
 //                           |___/                             
 
-//[ran]
+
+
+
+noop(`sql
+-- settings for the application as a whole
+CREATE TABLE settings_table (
+	row_tag             CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick            BIGINT                 NOT NULL,
+	hide                BIGINT                 NOT NULL,  -- standard starting three present for consistancy, but not used
+
+	setting_name_text   TEXT                   NOT NULL,  -- the name of the setting kept by this row
+	setting_value_text  TEXT                   NOT NULL   -- the value of that named setting, you have to store a number as text
+);
+
+-- index to quickly log a new hit, coalesced to identical information in each quarter day
+CREATE INDEX settings_table_index_1 ON settings_table (hide, setting_name_text, row_tick DESC);
+`)
+
+//[]
 export async function settingReadInt(name, defaultValue) {
 	return textToInt(await settingRead(name, defaultValue))
 }
 export async function settingRead(name, defaultValue) {
-	let defaultValueText = defaultValue+''
-	return await queryGetCellOrAddRow({
-		table: 'settings_table',
-		titleFind: 'setting_name_text',
-		cellFind: name,
-		titleGet: 'setting_value_text',
-		rowAddDefault: {
+	let row = await queryFilterRecent({table: 'settings_table', title: 'setting_name_text', cell: name})
+	/*
+	ttd february, now that you only have 6 query functions, consider the refactor like:
+	let row = await queryFilterRecent({table: 'settings_table', cell: {setting_name_text: name}})
+	yeah, looking at that now, maybe not!
+	*/
+	if (!row) {
+		row = {
 			setting_name_text: name,
-			setting_value_text: defaultValueText,
+			setting_value_text: defaultValue+'',
 		}
-	})
+		await queryAdd({table: 'settings_table', row})
+	}
+	log(look(row))
+	let cellGet = row['setting_value_text']
+	checkQueryCell('setting_value_text', cellGet)
+	return cellGet
 }
-//[ran]
+
+//[]
 export async function settingWrite(name, value) {
-	let valueText = value+''
-	return await querySetCellOrAddRow({
-		table: 'settings_table',
-		titleFind: 'setting_name_text',
-		cellFind: name,
-		titleSet: 'setting_value_text',
-		cellSet: valueText,
-		rowAddDefault: {
+	checkQueryCell('setting_name_text', name); checkQueryCell('setting_value_text', value+'')
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from('settings_table')
+		.update({setting_value_text: value+''})//write cellSet under titleSet
+		.eq('setting_name_text', name)//in the row where titleFind equals cellFind
+		.select()//return the updated rows
+		.maybeSingle()//data is the updated row, null of no rows matched, error if 2+ rows matched
+	)
+	if (error) toss('supabase', {error})
+	let row = data//data is the whole updated row
+	if (!row) {
+		row = {
 			setting_name_text: name,
-			setting_value_text: valueText,
+			setting_value_text: value+'',
 		}
-	})
+		await queryAdd({table: 'settings_table', row})
+	}
 }
+//ttd february--factor ^ as queryUpdateCell, and have queryHideRows call it. don't worry about multiple matches as only settings cares about that, too
+
+/*
+for read, find the most recent visible row with title: 'setting_name_text', cell: 'hits'
+if not found, add a row
+
+for write, find the same way; if not found, add a row
+querySetCell
+then set a cell, how do you do that?
+
+
+*/
 
 
 
@@ -529,26 +581,23 @@ export async function settingWrite(name, value) {
 
 // legacy, access_table, which has the global password and unlocks messaging
 
-//[ran]
+//[]
 export async function legacyAccessSet(browserTag, signedInSet) {
 	let signedInSetInt = signedInSet ? 1 : 0
-	await queryAddRow({//always makes a new row
+	await queryAdd({
 		table: 'access_table',
 		row: {
-			row_tag: Tag(),
-			row_tick: Now(),
-			hide: 0,
 			browser_tag: browserTag,
 			signed_in: signedInSetInt,
 		}
 	})
 }
-//[ran]
+//[]
 export async function legacyAccessGet(browserTag) {
-	let row = await queryFilterSortTop({//never makes a new row
+	let row = await queryFilterRecent({
 		table: 'access_table',
-		title: 'browser_tag', cell: browserTag,
-		titleSort: 'row_tick',
+		title: 'browser_tag',
+		cell: browserTag,
 	})
 	return row?.signed_in
 }
@@ -600,7 +649,7 @@ CREATE TABLE hit_table (
 	browser_text    TEXT                   NOT NULL   -- user agent string and WebGL hardware, according to the browser
 );
 
--- index to quickly log a new hit, coalesced to identical information in each quarter day
+-- index to quickly log a new hit, coalesced to identical information in each quarter day, note UNIQUE
 CREATE UNIQUE INDEX hit_table_index1
 ON hit_table (hide, quarter_day, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
 `)
@@ -784,9 +833,9 @@ export async function routeToUser({routeText}) {//given a route, find the user t
 }
 //[ran]
 export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
-	await queryAddRow({
+	await queryAdd({
 		table: 'route_table',
-		row: {row_tag: Tag(), row_tick: Now(), hide: 0,
+		row: {
 			user_tag: userTag,
 			route_text: routeText,
 		}
@@ -859,12 +908,13 @@ async function query_browserToUser({browserTag}) {//level2-style up here in leve
 	if (error) toss('supabase', {error})
 	return data[0]//returns the row, or undefined if no row
 }
+//ttd feburary--you'd like to get this back into level2, even if it's quite customized, queryTopEqualGreater(), lol
 
 export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
 	checkTag(browserTag); checkTag(userTag)
-	await queryAddRow({
+	await queryAdd({
 		table: 'browser_table',
-		row: {row_tag: Tag(), row_tick: Now(), hide: 0,
+		row: {
 			browser_tag: browserTag,
 			user_tag: userTag,
 			signed_in: 1,//1 means this row is about the user signing in here and now
@@ -876,9 +926,9 @@ export async function browserSignOut({browserTag, userTag}) {//sign the user at 
 	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
 	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
 	//also, make a new row to record when the user signed out, and that they signed out from this browser
-	await queryAddRow({
+	await queryAdd({
 		table: 'browser_table',
-		row: {row_tag: Tag(), row_tick: Now(), hide: 0,
+		row: {
 			browser_tag: browserTag,
 			user_tag: userTag,
 			signed_in: 0,//0 means this row is about the user signing out
