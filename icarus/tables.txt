@@ -1496,6 +1496,84 @@ settingReadInt
 
 
 
+//ttd february--factor ^ as queryUpdateCell, and have queryHideRows call it. don't worry about multiple matches as only settings cares about that, too
+
+/*
+for read, find the most recent visible row with title: 'setting_name_text', cell: 'hits'
+if not found, add a row
+
+for write, find the same way; if not found, add a row
+querySetCell
+then set a cell, how do you do that?
+
+
+*/
+
+
+
+
+
+
+
+
+
+	/*
+	ttd february, now that you only have 6 query functions, consider the refactor like:
+	let row = await queryTop({table: 'settings_table', cell: {setting_name_text: name}})
+	yeah, looking at that now, maybe not!
+	*/
+
+
+//ttd february, write these ^ maybe also queryUpdateCells, which queryHideRows would use, and then stop exporting getDatabase. oh also, you can sneak a direct database connection into level3 by exporting the test clock, and that's ok, i suppose, except the query check functions are here, and you want to not have to export them, also--yeah, cleanest is not exported is getDatabase, the test clock, all the query check functions--really only touch the database directly in level2!
+
+
+
+
+
+
+
+async function query_browserToUser({browserTag}) {//level2-style up here in level3; this query is bespoke with two eq and a gt
+	checkQueryTag(browserTag)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from('browser_table')
+		.select('*')//retrieve the matching rows
+		.eq('hide', 0)//only rows that are not hidden
+		.eq('browser_tag', browserTag)//rows about this browser
+		.gt('signed_in', 0)//that describe a user signing in, gt is greater than
+		.order('row_tick', {ascending: false})//most recent first
+		.limit(1)//just one row
+	)
+	if (error) toss('supabase', {error})
+	return data[0]//returns the row, or undefined if no row
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

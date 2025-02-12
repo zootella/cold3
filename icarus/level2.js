@@ -1232,7 +1232,7 @@ the design is simple:
 
 //create the supabase client to talk to the cloud database
 let _real1, _test1
-export async function getDatabase() {
+async function getDatabase() {
 	if (!_real1) {
 		let access = await getAccess()
 		_real1 = createClient(access.get('ACCESS_SUPABASE_REAL1_URL'), access.get('ACCESS_SUPABASE_REAL1_KEY_SECRET'))
@@ -1463,6 +1463,41 @@ export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
 export async function queryUpdateCell({}) {}
 export async function queryUpdateCellsVertically({}) {}
 
+
+
+
+
+//[]
+export async function queryUpdateCell_newForSettingWrite({table, titleFind, cellFind, titleSet, cellSet}) {
+	checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.update({[titleSet]: cellSet})//write cellSet under titleSet
+		.eq(titleFind, cellFind)//in the row where titleFind equals cellFind
+		.eq('hide', 0)//that is not hidden
+		.select()//return the updated rows
+		.maybeSingle()//make data the updated row, undefined of no rows matched, error if 2+ rows matched
+	)
+	if (error) toss('supabase', {error})
+	return data//data is the whole updated row, or undefined if not there so you should add it
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //                                                    _       _ _             _ 
 //   __ _ _   _  ___ _ __ _   _   ___ _ __   ___  ___(_) __ _| (_)_______  __| |
 //  / _` | | | |/ _ \ '__| | | | / __| '_ \ / _ \/ __| |/ _` | | |_  / _ \/ _` |
@@ -1508,8 +1543,23 @@ export async function queryAddRowIfCellsUnique({table, row, titles}) {
 	}
 }
 
-export async function queryTopEqualGreater({}) {}
-//ttd february, write these ^ maybe also queryUpdateCells, which queryHideRows would use, and then stop exporting getDatabase. oh also, you can sneak a direct database connection into level3 by exporting the test clock, and that's ok, i suppose, except the query check functions are here, and you want to not have to export them, also--yeah, cleanest is not exported is getDatabase, the test clock, all the query check functions--really only touch the database directly in level2!
+//[]
+//get the most recent visible row with title1: cell1 and title2: a number greater than cell2GreaterThan, like 1 or 2 fine if you pass in 0
+export async function queryTopEqualGreater({table, title1, cell1, title2, cell2GreaterThan}) {
+	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2GreaterThan)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//retrieve the matching rows
+		.eq('hide', 0)//that are not hidden
+		.eq(title1, cell1)//have cell1 under title1
+		.gt(title2, cell2GreaterThan)//and under title2, a cell with a value greater than the given value
+		.order('row_tick', {ascending: false})//most recent first
+		.limit(1)//just one row
+	)
+	if (error) toss('supabase', {error})
+	return data[0]//returns the row, or undefined if no row
+}
 
 //                                     _               _    
 //   __ _ _   _  ___ _ __ _   _    ___| |__   ___  ___| | __
@@ -1518,13 +1568,13 @@ export async function queryTopEqualGreater({}) {}
 //  \__, |\__,_|\___|_|   \__, |  \___|_| |_|\___|\___|_|\_\
 //     |_|                |___/                             
 
-export function checkQueryTitle(title) {//make sure the given title looks ok as a table name or column title
+function checkQueryTitle(title) {//make sure the given title looks ok as a table name or column title
 	if (!isQueryTitle(title)) toss('check title', {title, cell})
 }
-export function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
+function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
 	for (let [title, cell] of Object.entries(row)) checkQueryCell(title, cell)
 }
-export function checkQueryCell(title, cell){//in a column with the given title, check the value in a cell
+function checkQueryCell(title, cell){//in a column with the given title, check the value in a cell
 	if (!isQueryTitle(title)) toss('check title', {title, cell})
 	let type = _type(title)
 	if      (type == 'tag')  checkQueryTag(cell)
@@ -1537,12 +1587,12 @@ function _type(s) {//from a column title like "name_type", clip out "type"
 	return i == -1 ? s : s.slice(i + 1)//return whole thing if not found
 }
 
-export function checkQueryTag(cell)  { if (!isQueryTag(cell))  toss('check', {cell}) }
-export function checkQueryHash(cell) { if (!isQueryHash(cell)) toss('check', {cell}) }
-export function checkQueryText(cell) { if (!isQueryText(cell)) toss('check', {cell}) }
-export function checkQueryInt(cell)  { if (!isQueryInt(cell))  toss('check', {cell}) }
+function checkQueryTag(cell)  { if (!isQueryTag(cell))  toss('check', {cell}) }
+function checkQueryHash(cell) { if (!isQueryHash(cell)) toss('check', {cell}) }
+function checkQueryText(cell) { if (!isQueryText(cell)) toss('check', {cell}) }
+function checkQueryInt(cell)  { if (!isQueryInt(cell))  toss('check', {cell}) }
 
-export function checkQueryTagOrBlank(cell) { if (!isQueryTagOrBlank(cell)) toss('check', {cell}) }
+function checkQueryTagOrBlank(cell) { if (!isQueryTagOrBlank(cell)) toss('check', {cell}) }
 function isQueryTagOrBlank(cell) {
 	return cell === '' || isQueryTag(cell)
 }

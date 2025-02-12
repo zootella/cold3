@@ -2,7 +2,7 @@
 import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
-textToInt, hasText, checkText, newline, deindent,
+textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
 Data, decrypt, subtleHash, timeSafeEqual,
 stringify, replaceAll, replaceOne,
 parseEnvStyleFileContents,
@@ -22,8 +22,6 @@ getAccess, Sticker, isLocal, isCloud,
 
 /* level 2 query */
 
-getDatabase,//ttd february stop exporting!
-
 //query snippet
 snippetClear, snippetPopulate, snippetQuery2, snippet2,
 queryCountRows, queryCountAllRows, queryDeleteAllRows,
@@ -33,18 +31,15 @@ queryTop,
 queryAddRow,
 queryAddRows,
 queryHideRows,
+//ttd february, refactoring update cells for two uses:
 queryUpdateCell,
 queryUpdateCellsVertically,
+queryUpdateCell_newForSettingWrite,
 
 //query specialized
 queryCountSince,
 queryAddRowIfCellsUnique,
 queryTopEqualGreater,
-
-//query check, ttd february stop exporting!
-checkQueryTitle, checkQueryRow, checkQueryCell,
-checkQueryTag, checkQueryHash, checkQueryText, checkQueryInt,
-checkQueryTagOrBlank,
 
 } from './level2.js'
 
@@ -490,63 +485,34 @@ CREATE TABLE settings_table (
 CREATE INDEX settings_table_index_1 ON settings_table (hide, setting_name_text, row_tick DESC);
 `)
 
-//[]
+//[ran]
 export async function settingReadInt(name, defaultValue) {
 	return textToInt(await settingRead(name, defaultValue))
 }
 export async function settingRead(name, defaultValue) {
+	let defaultValueText = defaultValue+''
+	checkText(name); checkTextOrBlank(defaultValueText)
 	let row = await queryTop({table: 'settings_table', title: 'setting_name_text', cell: name})
-	/*
-	ttd february, now that you only have 6 query functions, consider the refactor like:
-	let row = await queryTop({table: 'settings_table', cell: {setting_name_text: name}})
-	yeah, looking at that now, maybe not!
-	*/
 	if (!row) {
-		row = {
-			setting_name_text: name,
-			setting_value_text: defaultValue+'',
-		}
+		row = {setting_name_text: name, setting_value_text: defaultValueText}
 		await queryAddRow({table: 'settings_table', row})
 	}
-	log(look(row))
-	let cellGet = row['setting_value_text']
-	checkQueryCell('setting_value_text', cellGet)
-	return cellGet
+	return row['setting_value_text']
 }
-
-//[]
+//[ran]
 export async function settingWrite(name, value) {
-	checkQueryCell('setting_name_text', name); checkQueryCell('setting_value_text', value+'')
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from('settings_table')
-		.update({setting_value_text: value+''})//write cellSet under titleSet
-		.eq('setting_name_text', name)//in the row where titleFind equals cellFind
-		.select()//return the updated rows
-		.maybeSingle()//data is the updated row, null of no rows matched, error if 2+ rows matched
-	)
-	if (error) toss('supabase', {error})
-	let row = data//data is the whole updated row
-	if (!row) {
-		row = {
-			setting_name_text: name,
-			setting_value_text: value+'',
-		}
+	let valueText = value+''
+	checkText(name); checkTextOrBlank(valueText)
+	let row = await queryUpdateCell_newForSettingWrite({
+		table:     'settings_table',
+		titleFind: 'setting_name_text',  cellFind: name,
+		titleSet:  'setting_value_text', cellSet:  valueText,
+	})
+	if (!row) {//above didn't find a row like that to update, so we need to create one with the given name and value
+		row = {setting_name_text: name, setting_value_text: valueText}
 		await queryAddRow({table: 'settings_table', row})
 	}
 }
-//ttd february--factor ^ as queryUpdateCell, and have queryHideRows call it. don't worry about multiple matches as only settings cares about that, too
-
-/*
-for read, find the most recent visible row with title: 'setting_name_text', cell: 'hits'
-if not found, add a row
-
-for write, find the same way; if not found, add a row
-querySetCell
-then set a cell, how do you do that?
-
-
-*/
 
 
 
@@ -555,7 +521,6 @@ then set a cell, how do you do that?
 
 
 // legacy, access_table, which has the global password and unlocks messaging
-
 //[]
 export async function legacyAccessSet(browserTag, signedInSet) {
 	let signedInSetInt = signedInSet ? 1 : 0
@@ -865,25 +830,24 @@ CREATE INDEX browser_table_browser_tag_index ON browser_table (hide, browser_tag
 
 export async function browserToUser({browserTag}) {//what user, if any, is signed in at this browser?
 	checkTag(browserTag)
-	let row = await query_browserToUser({browserTag})
+	let row = await queryTopEqualGreater({
+		table: 'browser_table',
+		title1: 'browser_tag', cell1: browserTag,
+		title2: 'signed_in', cell2GreaterThan: 0,
+	})
 	return row?.user_tag
 }
-async function query_browserToUser({browserTag}) {//level2-style up here in level3; this query is bespoke with two eq and a gt
-	checkQueryTag(browserTag)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from('browser_table')
-		.select('*')//retrieve the matching rows
-		.eq('hide', 0)//only rows that are not hidden
-		.eq('browser_tag', browserTag)//rows about this browser
-		.gt('signed_in', 0)//that describe a user signing in, gt is greater than
-		.order('row_tick', {ascending: false})//most recent first
-		.limit(1)//just one row
-	)
-	if (error) toss('supabase', {error})
-	return data[0]//returns the row, or undefined if no row
-}
-//ttd feburary--you'd like to get this back into level2, even if it's quite customized, queryTopEqualGreater(), lol
+
+
+
+
+
+
+
+
+
+
+
 
 export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
 	checkTag(browserTag); checkTag(userTag)

@@ -115,8 +115,6 @@ useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
 /* level 2 query */
 
-getDatabase,//ttd february stop exporting!
-
 //query snippet
 snippetClear, snippetPopulate, snippetQuery2, snippet2,
 queryCountRows, queryCountAllRows, queryDeleteAllRows,
@@ -126,18 +124,15 @@ queryTop,
 queryAddRow,
 queryAddRows,
 queryHideRows,
+//ttd february, refactoring update cells for two uses:
 queryUpdateCell,
 queryUpdateCellsVertically,
+queryUpdateCell_newForSettingWrite,
 
 //query specialized
 queryCountSince,
 queryAddRowIfCellsUnique,
 queryTopEqualGreater,
-
-//query check, ttd february stop exporting!
-checkQueryTitle, checkQueryRow, checkQueryCell,
-checkQueryTag, checkQueryHash, checkQueryText, checkQueryInt,
-checkQueryTagOrBlank,
 
 } from './level2.js'
 
