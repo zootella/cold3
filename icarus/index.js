@@ -115,74 +115,27 @@ useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
 /* level 2 query */
 
-getDatabase,
+getDatabase,//stop exporting
 
-snippetClear,
-snippetPopulate,
-snippetQuery2,
-snippet2,
+//query test
+snippetClear, snippetPopulate, snippetQuery2, snippet2,
+queryCountRows, queryCountAllRows, queryDeleteAllRows,
 
-//ttd february, ok, you got it down to just 6 functions! give them really good names
-/*
-	//query test
+//query common
+queryFilterRecent,//--> queryTop
+queryAdd,//--> queryAddRow
+queryAddSeveral,//--> queryAddRows
+queryHideRows,
 
-	//query common
-	queryFilterRecent -> queryTop
-	queryAdd          -> queryAddRow
-	queryAddSeveral   -> queryAddRows
-	queryHideRows, same
+//query specialized
+queryCountSince,
+queryAddRowIfCellsUnique,
+queryUpdateCell,//make
+queryTopEqualGreater,//make
 
-	//query specialized
-	queryCountSince, same
-	queryAddRowIfCellsUnique, same
-	queryUpdateCell, make, []get getDatabase out of level3 entirely! even if the bespoke method is clearly single use
-	queryTopEqualGreater, make
-
-	//query check
-
-
-*/
-
-//-- ttd february: see if you can get just a half dozen useful and commonly used query functions--then you probably don't even have to write tests!
-
-queryFilterRecent,//many users
-queryCountSince,//one user
-
-/*
-queryFilterMostRecent,//no users
-queryFilterSortTop,//one user: legacyAccessGet
-queryFilterSortAll,//no users
-*/
-
-queryAddRowIfCellsUnique,//one user
-queryHideRows,//many users
-
-/*
-querySetCell, querySetCellOrAddRow,
-queryGetCell, queryGetCellOrAddRow,
-queryGetRow,  queryGetRowOrAddRow,
-*/
-
-queryAdd,//many users
-queryAddSeveral,//useful helper
-//queryAddRow,//switched everyone to queryAdd, but may want to take the name
-//queryAddRows,//users
-
-//--
-
-queryCountRows,//these are just for testing
-queryCountAllRows,
-queryDeleteAllRows,
-
-checkQueryTitle,
-checkQueryRow,
-checkQueryCell,
-
-checkQueryTag,
-checkQueryHash,
-checkQueryText,
-checkQueryInt,
-
+//query check
+checkQueryTitle, checkQueryRow, checkQueryCell,
+checkQueryTag, checkQueryHash, checkQueryText, checkQueryInt,
 checkQueryTagOrBlank,
 
 } from './level2.js'

@@ -5,6 +5,9 @@
 
 
 
+//how these are settling down is: they are generalized, but assume hide 0 and row_tick ascending false
+//which is fine, and means that maybe really all your tables should have the same starting three columns
+//so that you can use all of these functions on any table
 
 
 
@@ -1154,6 +1157,255 @@ totally make the api_table
 which is a history and audit of every request and every response to every api
 so you can see what worked and what didn't work
 and 
+
+
+
+
+
+
+
+
+
+
+
+/*
+ttd february
+ok, if you're going to refactor these so querySetCellOrAddRow and queryGetCellOrAddRow and surrounding
+you need to write some tests
+to start quickly, just get node's $ yarn snippet
+you already have $ yarn test running ./test.js
+have that call snippet
+get snippet here
+then break that out into ./test-database.js and $ yarn database
+rename that to testDatabase
+
+most of these tests use example_table, of course
+
+
+
+actually this get or add is already two calls, is only used for settings_table, so just []move it to level3
+*/
+
+//[ran]
+/* made for settings, not used
+export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
+	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
+	if (!row) toss('row not found')
+}
+*/
+//[ran]
+
+/*
+//ttd february--these are only used by settings, move them to level3
+export async function querySetCellOrAddRow({table, titleFind, cellFind, titleSet, cellSet, rowAddDefault}) {
+	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
+	if (!row) await queryAddRow({table, row: rowAddDefault})
+}
+async function _querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.update({[titleSet]: cellSet})//write cellSet under titleSet
+		.eq(titleFind, cellFind)//in the row where titleFind equals cellFind
+		.select()//return the updated rows
+		.maybeSingle()//data is the updated row, null of no rows matched, error if 2+ rows matched
+	)
+	if (error) toss('supabase', {error})
+	return data//data is the whole updated row
+}
+*/
+
+//[ran]
+/* made for settings, not used
+export async function queryGetCell({table, titleFind, cellFind, titleGet}) {
+	let row = await _queryGetRow({table, titleFind, cellFind})
+	if (!row) toss('row not found')
+	let cellGet = row[titleGet]
+	checkQueryCell(titleGet, cellGet)
+	return cellGet
+}
+*/
+//[ran]
+/*
+//get the cell under titleGet from the row where titleFind is cellFind, adds a default row if not found
+export async function queryGetCellOrAddRow({table, titleFind, cellFind, titleGet, rowAddDefault}) {
+	let row = await queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault})
+	let cellGet = row[titleGet]
+	checkQueryCell(titleGet, cellGet)
+	return cellGet
+}
+*/
+
+//[ran]
+/*
+export async function queryGetRow({table, titleFind, cellFind}) {
+	let row = await _queryGetRow({table, titleFind, cellFind})
+	if (!row) toss('row not found')
+	return row
+}
+*/
+//[ran]
+/*
+//get the one row with value cellFind under titleFind, add the given default row if not found
+export async function queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault}) {
+	let row = await _queryGetRow({table, titleFind, cellFind})
+	if (!row) {
+		row = rowAddDefault
+		await queryAddRow({table, row: rowAddDefault})
+	}//^ lots of discussion with chat about the race condition here, and no good fix: .upsert() can do it in one statement, but will modify the row on conflict, not return it; .insert(..., {ignoreDuplicates: true}) works but means we have to call out to supabase twice every time
+	return row
+}
+*/
+/*
+//in table, look at column titleFind to find one row with value cellFind, undefined if not found
+async function _queryGetRow({table, titleFind, cellFind}) {
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//select all columns to get the whole row
+		.eq(titleFind, cellFind)//find the row where titleFind equals cellFind
+		.maybeSingle()//data undefined of no rows match, error if 2+ rows match
+	)
+	if (error) toss('supabase', {error})
+	return data//data is the whole row
+}
+*/
+
+
+
+
+
+
+
+//ttd february--have all of these expect a table that starts with the standard three rows; update settings to do that, too. then, the two above replace the two below entirely
+
+//[ran]
+/*
+//add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
+export async function queryAddRow({table, row}) {
+	await queryAddRows({table, rows: [row]})
+}
+*/
+//[ran]
+
+
+
+
+//[]
+/*
+//get the most recent row in table where cell is under title, or undefined if none found
+export async function queryFilterMostRecent({table, title, cell}) {
+	return await queryFilterSortTop({table, title, cell, titleSort: 'row_tick'})
+}
+*/
+//[ran]
+/*
+//get the one biggest titleSort row that has cell under title, or undefined if none found
+export async function queryFilterSortTop({table, title, cell, titleSort}) {
+	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//select all columns to retrieve entire rows
+		.eq(title, cell)//filter to get rows where title equals cell
+		.order(titleSort, {ascending: false})//sort rows by titleSort in descending order
+		.limit(1)//just the winning row, probably using to get the most recent row_tag
+	)
+	if (error) toss('supabase', {error})
+	return data[0]//data is an array with one element, or empty if none found
+}
+//[ran]
+//filter table to rows with cell under title, and return sorted by titleSort, biggest first, or [] if none found
+export async function queryFilterSortAll({table, title, cell, titleSort}) {
+	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')//select all columns to retrieve entire rows
+		.eq(title, cell)//filter to get rows where title equals cell
+		.order(titleSort, {ascending: false})//sort rows by titleSort in descending order
+	)
+	if (error) toss('supabase', {error})
+	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
+}
+*/
+
+
+
+
+
+
+
+//-- ttd february: see if you can get just a half dozen useful and commonly used query functions--then you probably don't even have to write tests!
+
+
+
+
+this design sketch came together pretty well!:
+
+it's really hard to refactor these without tests
+what if you just had little noop tests beneath each one, you'd turn them on and off individually
+and they'd use example1_table, which is wide, and example2_table, which is narrow
+and i guess each one has a _version which takes
+
+testClock
+
+export async function querySomething({table, row, titles, clock}) {
+	//if no clock, then we
+	const {Now, Tag, database} = getClock(clock)
+	//if clock is null, then you get normal actual now and tag
+	//if clock is not null, then you get fake
+
+	//clock also gives you the real or not real database
+
+
+}
+icarus won't be able to run these tests, they're for $ yarn test
+
+noop(async () => {
+	
+	const clock = testClock({ago: 3*Time.year, tag: ''})
+
+
+	clock.forward(2*Time.hour)
+
+
+
+})
+
+oh yeah, also, if there's a clock, it automatically
+
+
+
+what if 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

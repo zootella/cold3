@@ -1223,13 +1223,6 @@ the design is simple:
 
 
 
-
-
-
-
-
-
-
 //      _       _        _                    
 //   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
 //  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
@@ -1253,6 +1246,62 @@ async function getTestDatabase() {
 	}
 	return _test1
 }
+
+//  _            _          _            _    
+// | |_ ___  ___| |_    ___| | ___   ___| | __
+// | __/ _ \/ __| __|  / __| |/ _ \ / __| |/ /
+// | ||  __/\__ \ |_  | (__| | (_) | (__|   < 
+//  \__\___||___/\__|  \___|_|\___/ \___|_|\_\
+//                                            
+
+async function getClock(clock) {
+	if (clock) return clock//simulated for testing
+	else return {Now, Tag, database: await getDatabase()}//real time, tags, and database
+}
+async function makeClock() {
+	let t = 33*Time.year//test clocks start in 2003
+	let n = 0//test tags are numbered 1, 2, 3 to be unique
+	function testNow() {//get the simulated tick count now, which will be 1 millisecond after the last time you asked
+		t += 1
+		return t
+	}
+	function forward(d) {//move the simulated time forward by d milliseconds, like 2*Time.hour or however long you want to sleep
+		checkInt(d, 1)
+		t += d
+	}
+	function testTag() {//get a simulated globally unique tag, which will be like "TestTag00000000000001", then 2, 3, and so on
+		const prefix = 'TestTag'
+		return prefix + (((++n)+'').padStart(tagLength - prefix.length, '0'))
+	}
+	return {Now: testNow, forward, Tag: testTag, database: await getTestDatabase()}
+}
+
+//to see how to use the test clock, here's an example query function, and noop<->test of that query function:
+async function queryExampleUsingClock({table, title, cell, clock}) {//real code that calls this just leaves out clock
+	const {Now, Tag, database} = await getClock(clock)//do this at the start to choose Now and Tag implementations, test or real, and also get the supabase client
+	//and then use Now, Tag, and database as you normally would
+}
+test(async () => {
+	const clock = await makeClock()//make a simulated clock for this test
+
+	//times start new years eve's 2002 and are 1 millisecond later each time you call Now:
+	let nye2003 = 33*Time.year
+	ok(clock.Now() == nye2003+1)
+	ok(clock.Now() == nye2003+2)
+	ok(clock.Now() == nye2003+3)
+	clock.forward(8*Time.hour)//sleep for eight hours
+	ok(clock.Now() == nye2003+(8*Time.hour)+4)
+
+	//tags are the correct length, and unique for each clock, but definately not globally!
+	ok(clock.Tag() == 'TestTag00000000000001')
+	ok(clock.Tag() == 'TestTag00000000000002')
+	ok(clock.Tag() == 'TestTag00000000000003')
+	for (let i = 0; i < 500; i++) clock.Tag()
+	ok(clock.Tag() == 'TestTag00000000000504')
+
+	//to test a query function, give it your clock
+	await queryExampleUsingClock({table: 'example_table', title: 'name_text', cell: 'Name1', clock})//outside of tests, just omit clock!
+})
 
 //                                          _                  _   
 //   __ _ _   _  ___ _ __ _   _   ___ _ __ (_)_ __  _ __   ___| |_ 
@@ -1304,283 +1353,6 @@ export async function snippet2() {
 	log(look(r))
 }
 
-//                              
-//   __ _ _   _  ___ _ __ _   _ 
-//  / _` | | | |/ _ \ '__| | | |
-// | (_| | |_| |  __/ |  | |_| |
-//  \__, |\__,_|\___|_|   \__, |
-//     |_|                |___/ 
-
-//how these are settling down is: they are generalized, but assume hide 0 and row_tick ascending false
-//which is fine, and means that maybe really all your tables should have the same starting three columns
-//so that you can use all of these functions on any table
-
-
-
-//[]
-//get the most recent visible row with cell under title
-export async function queryFilterRecent({table, title, cell}) {
-	checkQueryTitle(table); checkQueryCell(title, cell)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')
-		.eq('hide', 0)
-		.eq(title, cell)
-		.order('row_tick', {ascending: false})
-		.limit(1)
-	)
-	if (error) toss('supabase', {error})
-	return data[0]//data is an array with one element, or empty if none found
-}
-
-//[]
-//count how many visible rows with cell under title were added since the given tick count
-export async function queryCountSince({table, title, cell, since}) {
-	checkQueryTitle(table); checkQueryCell(title, cell); checkInt(since)
-	let database = await getDatabase()
-	let {data, count, error} = (await database
-		.from(table)
-		.select('', {count: 'exact', head: true})//select blank, exact, head to count rows without getting row data
-		.eq('hide', 0)//visible rows only
-		.eq(title, cell)//with the given cell value
-		.gte('row_tick', since)//recorded on or since the given starting time
-	)
-	if (error) toss('supabase', {error})
-	return count
-}
-
-
-
-
-
-
-
-
-//[]
-/*
-//get the most recent row in table where cell is under title, or undefined if none found
-export async function queryFilterMostRecent({table, title, cell}) {
-	return await queryFilterSortTop({table, title, cell, titleSort: 'row_tick'})
-}
-*/
-//[ran]
-/*
-//get the one biggest titleSort row that has cell under title, or undefined if none found
-export async function queryFilterSortTop({table, title, cell, titleSort}) {
-	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')//select all columns to retrieve entire rows
-		.eq(title, cell)//filter to get rows where title equals cell
-		.order(titleSort, {ascending: false})//sort rows by titleSort in descending order
-		.limit(1)//just the winning row, probably using to get the most recent row_tag
-	)
-	if (error) toss('supabase', {error})
-	return data[0]//data is an array with one element, or empty if none found
-}
-//[ran]
-//filter table to rows with cell under title, and return sorted by titleSort, biggest first, or [] if none found
-export async function queryFilterSortAll({table, title, cell, titleSort}) {
-	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')//select all columns to retrieve entire rows
-		.eq(title, cell)//filter to get rows where title equals cell
-		.order(titleSort, {ascending: false})//sort rows by titleSort in descending order
-	)
-	if (error) toss('supabase', {error})
-	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
-}
-*/
-//[]
-//add row if table doesn't already have one with the same value for column titles like 'title1,title2,title3' comma separated with no spaces
-export async function queryAddRowIfCellsUnique({table, row, titles}) {
-	checkQueryTitle(table); checkQueryRow(row); checkText(titles)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.insert(
-			row,
-			{
-				onConflict: titles,//look for a row with matching values in these columns
-				ignoreDuplicates: true,//if you find one, do nothing
-				upsert: false,//don't "update on conflict"
-			}
-		)
-	)
-	if (error) {
-		if (error.code == '23505') {
-			//we expect PostgreSQL error 23505 with a message like "duplicate key value violates unique constraint "hit_table_quarter_day_index"; confirmed the index still makes things fast and this is expected
-		} else {
-			toss('supabase', {error})//we got some other error
-		}
-	}
-}
-
-//[ran]
-//hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
-export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
-	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkInt(hideSet, 1)
-	let database = await getDatabase()
-	let {data, error} = (await database//this call doesn't return count, so we look at data.length below
-		.from(table)
-		.update({hide: hideSet})//hide rows that match:
-		.eq('hide', 0)//not yet hidden, and
-		.eq(titleFind, cellFind)//cellFind under titleFind
-		.select('*', {count: 'exact'})//get the rows we changed, count exact to count rows that matched our query
-	)
-	if (error) toss('supabase', {error})
-	return data.length
-}
-
-/*
-ttd february
-ok, if you're going to refactor these so querySetCellOrAddRow and queryGetCellOrAddRow and surrounding
-you need to write some tests
-to start quickly, just get node's $ yarn snippet
-you already have $ yarn test running ./test.js
-have that call snippet
-get snippet here
-then break that out into ./test-database.js and $ yarn database
-rename that to testDatabase
-
-most of these tests use example_table, of course
-
-
-
-actually this get or add is already two calls, is only used for settings_table, so just []move it to level3
-*/
-
-//[ran]
-/* made for settings, not used
-export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
-	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
-	if (!row) toss('row not found')
-}
-*/
-//[ran]
-
-/*
-//ttd february--these are only used by settings, move them to level3
-export async function querySetCellOrAddRow({table, titleFind, cellFind, titleSet, cellSet, rowAddDefault}) {
-	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
-	if (!row) await queryAddRow({table, row: rowAddDefault})
-}
-async function _querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
-	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.update({[titleSet]: cellSet})//write cellSet under titleSet
-		.eq(titleFind, cellFind)//in the row where titleFind equals cellFind
-		.select()//return the updated rows
-		.maybeSingle()//data is the updated row, null of no rows matched, error if 2+ rows matched
-	)
-	if (error) toss('supabase', {error})
-	return data//data is the whole updated row
-}
-*/
-
-//[ran]
-/* made for settings, not used
-export async function queryGetCell({table, titleFind, cellFind, titleGet}) {
-	let row = await _queryGetRow({table, titleFind, cellFind})
-	if (!row) toss('row not found')
-	let cellGet = row[titleGet]
-	checkQueryCell(titleGet, cellGet)
-	return cellGet
-}
-*/
-//[ran]
-/*
-//get the cell under titleGet from the row where titleFind is cellFind, adds a default row if not found
-export async function queryGetCellOrAddRow({table, titleFind, cellFind, titleGet, rowAddDefault}) {
-	let row = await queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault})
-	let cellGet = row[titleGet]
-	checkQueryCell(titleGet, cellGet)
-	return cellGet
-}
-*/
-
-//[ran]
-/*
-export async function queryGetRow({table, titleFind, cellFind}) {
-	let row = await _queryGetRow({table, titleFind, cellFind})
-	if (!row) toss('row not found')
-	return row
-}
-*/
-//[ran]
-/*
-//get the one row with value cellFind under titleFind, add the given default row if not found
-export async function queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault}) {
-	let row = await _queryGetRow({table, titleFind, cellFind})
-	if (!row) {
-		row = rowAddDefault
-		await queryAddRow({table, row: rowAddDefault})
-	}//^ lots of discussion with chat about the race condition here, and no good fix: .upsert() can do it in one statement, but will modify the row on conflict, not return it; .insert(..., {ignoreDuplicates: true}) works but means we have to call out to supabase twice every time
-	return row
-}
-*/
-/*
-//in table, look at column titleFind to find one row with value cellFind, undefined if not found
-async function _queryGetRow({table, titleFind, cellFind}) {
-	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')//select all columns to get the whole row
-		.eq(titleFind, cellFind)//find the row where titleFind equals cellFind
-		.maybeSingle()//data undefined of no rows match, error if 2+ rows match
-	)
-	if (error) toss('supabase', {error})
-	return data//data is the whole row
-}
-*/
-
-//[]
-//add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
-export async function queryAdd({table, row}) {
-	await queryAddSeveral({table, rows: [row]})
-}
-export async function queryAddSeveral({table, rows}) {
-	let t = Now()//set a single timestamp for the group of rows we're adding
-	rows.forEach(row => {//fill in any missing defaults for the margin columns
-		if (!row.row_tag)  row.row_tag = Tag()
-		if (!row.row_tick) row.row_tick = t
-		if (!row.hide)     row.hide = 0//sets 0 if already set, but that's fine
-	})
-	await _queryAddRows({table, rows})
-}
-//add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
-async function _queryAddRows({table, rows}) {
-	checkQueryTitle(table); rows.forEach(row => checkQueryRow(row))
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.insert(rows)//order of properties in each row object in the rows array doesn't matter
-	)
-	if (error) toss('supabase', {error})
-}
-//ttd february--obviously factor those two ^ together
-
-
-
-
-//ttd february--have all of these expect a table that starts with the standard three rows; update settings to do that, too. then, the two above replace the two below entirely
-
-//[ran]
-/*
-//add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
-export async function queryAddRow({table, row}) {
-	await queryAddRows({table, rows: [row]})
-}
-*/
-//[ran]
-
 //[ran]
 //count how many rows have cellFind under titleFind
 export async function queryCountRows({table, titleFind, cellFind}) {
@@ -1621,6 +1393,121 @@ export async function queryDeleteAllRows({table}) {
 	)
 	if (error) toss('supabase', {error})
 }
+
+//                                                                          
+//   __ _ _   _  ___ _ __ _   _    ___ ___  _ __ ___  _ __ ___   ___  _ __  
+//  / _` | | | |/ _ \ '__| | | |  / __/ _ \| '_ ` _ \| '_ ` _ \ / _ \| '_ \ 
+// | (_| | |_| |  __/ |  | |_| | | (_| (_) | | | | | | | | | | | (_) | | | |
+//  \__, |\__,_|\___|_|   \__, |  \___\___/|_| |_| |_|_| |_| |_|\___/|_| |_|
+//     |_|                |___/                                             
+
+//[]
+//get the most recent visible row with cell under title
+export async function queryFilterRecent({table, title, cell}) {
+	checkQueryTitle(table); checkQueryCell(title, cell)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')
+		.eq('hide', 0)
+		.eq(title, cell)
+		.order('row_tick', {ascending: false})
+		.limit(1)
+	)
+	if (error) toss('supabase', {error})
+	return data[0]//data is an array with one element, or empty if none found
+}
+
+//[]
+//add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
+export async function queryAdd({table, row}) {
+	await queryAddSeveral({table, rows: [row]})
+}
+export async function queryAddSeveral({table, rows}) {
+	let t = Now()//set a single timestamp for the group of rows we're adding
+	rows.forEach(row => {//fill in any missing defaults for the margin columns
+		if (!row.row_tag)  row.row_tag = Tag()
+		if (!row.row_tick) row.row_tick = t
+		if (!row.hide)     row.hide = 0//sets 0 if already set, but that's fine
+	})
+	await _queryAddRows({table, rows})
+}
+//add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
+async function _queryAddRows({table, rows}) {
+	checkQueryTitle(table); rows.forEach(row => checkQueryRow(row))
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.insert(rows)//order of properties in each row object in the rows array doesn't matter
+	)
+	if (error) toss('supabase', {error})
+}
+//ttd february--obviously factor those two ^ together
+
+//[ran]
+//hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
+export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkInt(hideSet, 1)
+	let database = await getDatabase()
+	let {data, error} = (await database//this call doesn't return count, so we look at data.length below
+		.from(table)
+		.update({hide: hideSet})//hide rows that match:
+		.eq('hide', 0)//not yet hidden, and
+		.eq(titleFind, cellFind)//cellFind under titleFind
+		.select('*', {count: 'exact'})//get the rows we changed, count exact to count rows that matched our query
+	)
+	if (error) toss('supabase', {error})
+	return data.length
+}
+//ttd february--refactor so queryHideRows and queryUpdateCell both call queryUpdateCells; not sure what's common and specialized when you do that
+
+//                                                    _       _ _             _ 
+//   __ _ _   _  ___ _ __ _   _   ___ _ __   ___  ___(_) __ _| (_)_______  __| |
+//  / _` | | | |/ _ \ '__| | | | / __| '_ \ / _ \/ __| |/ _` | | |_  / _ \/ _` |
+// | (_| | |_| |  __/ |  | |_| | \__ \ |_) |  __/ (__| | (_| | | |/ /  __/ (_| |
+//  \__, |\__,_|\___|_|   \__, | |___/ .__/ \___|\___|_|\__,_|_|_/___\___|\__,_|
+//     |_|                |___/      |_|                                        
+
+//[]
+//count how many visible rows with cell under title were added since the given tick count
+export async function queryCountSince({table, title, cell, since}) {
+	checkQueryTitle(table); checkQueryCell(title, cell); checkInt(since)
+	let database = await getDatabase()
+	let {data, count, error} = (await database
+		.from(table)
+		.select('', {count: 'exact', head: true})//select blank, exact, head to count rows without getting row data
+		.eq('hide', 0)//visible rows only
+		.eq(title, cell)//with the given cell value
+		.gte('row_tick', since)//recorded on or since the given starting time
+	)
+	if (error) toss('supabase', {error})
+	return count
+}
+
+//[]
+//add row if table doesn't already have one with the same value for column titles like 'title1,title2,title3' comma separated with no spaces
+export async function queryAddRowIfCellsUnique({table, row, titles}) {
+	checkQueryTitle(table); checkQueryRow(row); checkText(titles)
+	let database = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.insert(row, {
+			onConflict: titles,//look for a row with matching values in these columns
+			ignoreDuplicates: true,//if you find one, do nothing
+			upsert: false,//don't "update on conflict"
+		})
+	)
+	if (error) {
+		if (error.code == '23505') {
+			//we expect PostgreSQL error 23505 with a message like "duplicate key value violates unique constraint "hit_table_quarter_day_index"; confirmed the index still makes things fast and this is expected
+		} else {
+			toss('supabase', {error})//we got some other error
+		}
+	}
+}
+
+export async function queryUpdateCell({}) {}
+export async function queryTopEqualGreater({}) {}
 
 //                                     _               _    
 //   __ _ _   _  ___ _ __ _   _    ___| |__   ___  ___| | __
