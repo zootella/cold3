@@ -71,6 +71,58 @@ test(() => {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|
 //                                     
 
+
+
+
+
+/*
+these are all single line text boxes
+with text based live feedback
+and then validation, and different forms
+
+[]password
+[]email address
+[]phone number
+[]user name
+[]user identifier user1234
+
+email
+phone
+email or phone, the combination of those two
+password
+
+
+bookmark february
+*/
+export function testBox(s) {
+	/*
+	return look({
+		length: s.length,
+		validateEmail: validateEmail(s),
+		validatePhone: validatePhone(s),
+		validateCard: validateCard(s),
+		validatePasswordStrength: measurePasswordStrength(s),
+	})
+	*/
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 text validation happens here!
 validate functions help the user as they type,
@@ -581,36 +633,6 @@ export function measurePasswordStrength(s) {
 
 
 
-/*
-these are all single line text boxes
-with text based live feedback
-and then validation, and different forms
-
-[]password
-[]email address
-[]phone number
-[]user name
-[]user identifier user1234
-
-email
-phone
-email or phone, the combination of those two
-password
-
-
-bookmark
-*/
-export function testBox(s) {
-	/*
-	return look({
-		length: s.length,
-		validateEmail: validateEmail(s),
-		validatePhone: validatePhone(s),
-		validateCard: validateCard(s),
-		validatePasswordStrength: measurePasswordStrength(s),
-	})
-	*/
-}
 
 
 

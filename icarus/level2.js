@@ -1230,10 +1230,6 @@ the design is simple:
 
 
 
-
-
-
-
 //      _       _        _                    
 //   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
 //  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
@@ -1436,6 +1432,24 @@ export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
 	if (error) toss('supabase', {error})
 	return data.length
 }
+
+/*
+ttd february
+ok, if you're going to refactor these so querySetCellOrAddRow and queryGetCellOrAddRow and surrounding
+you need to write some tests
+to start quickly, just get node's $ yarn snippet
+you already have $ yarn test running ./test.js
+have that call snippet
+get snippet here
+then break that out into ./test-database.js and $ yarn database
+rename that to testDatabase
+
+most of these tests use example_table, of course
+
+
+
+actually this get or add is already two calls, is only used for settings_table, so just []move it to level3
+*/
 
 //[ran]
 export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {

@@ -401,6 +401,51 @@ check your previous notes on this
 
 
 
+//      _       _        _                    
+//   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
+//  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
+// | (_| | (_| | || (_| | |_) | (_| \__ \  __/
+//  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
+//                                            
+
+
+
+noop(`
+-- list all the tables, and all the indices
+SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename ASC;
+SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' ORDER BY indexname ASC;
+
+-- see what columns a table has, and what their type is
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'my_table';
+
+-- see what indices a table has, and delete one
+SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'my_table' ORDER BY indexname ASC;
+DROP INDEX IF EXISTS index_name;
+
+-- rename a table, column, and index
+ALTER TABLE current_table RENAME TO renamed_table;
+ALTER TABLE my_table RENAME COLUMN title1 TO title2;
+ALTER INDEX current_index RENAME TO renamed_index;
+`)
+
+
+/*
+ttd feburary, let's rename things
+
+browser_table_browser_tag_index
+
+
+
+
+
+
+
+
+
+
+
+
+*/
 
 
 
@@ -414,10 +459,10 @@ check your previous notes on this
 
 //use for practice
 
-`sql
+noop(`sql
 -- get a list of all indices on all tables; you can ignore the _pkey ones which are the primary key defaults
 SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public';
-`
+`)
 
 export async function snippetQuery3() {
 	let data, error
