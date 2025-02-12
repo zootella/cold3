@@ -1334,7 +1334,7 @@ export async function snippetClear() {
 }
 export async function snippetPopulate() {
 	let rows = generateExampleRows(12, Time.hour, 'first')
-	await queryAddSeveral({table: 'example_table', rows})
+	await queryAddRows({table: 'example_table', rows})
 }
 export async function snippetQuery2() {
 	let data, error
@@ -1403,7 +1403,7 @@ export async function queryDeleteAllRows({table}) {
 
 //[]
 //get the most recent visible row with cell under title
-export async function queryFilterRecent({table, title, cell}) {
+export async function queryTop({table, title, cell}) {
 	checkQueryTitle(table); checkQueryCell(title, cell)
 	let database = await getDatabase()
 	let {data, error} = (await database
@@ -1420,10 +1420,10 @@ export async function queryFilterRecent({table, title, cell}) {
 
 //[]
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
-export async function queryAdd({table, row}) {
-	await queryAddSeveral({table, rows: [row]})
+export async function queryAddRow({table, row}) {
+	await queryAddRows({table, rows: [row]})
 }
-export async function queryAddSeveral({table, rows}) {
+export async function queryAddRows({table, rows}) {
 	let t = Now()//set a single timestamp for the group of rows we're adding
 	rows.forEach(row => {//fill in any missing defaults for the margin columns
 		if (!row.row_tag)  row.row_tag = Tag()
@@ -1460,6 +1460,8 @@ export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
 	return data.length
 }
 //ttd february--refactor so queryHideRows and queryUpdateCell both call queryUpdateCells; not sure what's common and specialized when you do that
+export async function queryUpdateCell({}) {}
+export async function queryUpdateCellsVertically({}) {}
 
 //                                                    _       _ _             _ 
 //   __ _ _   _  ___ _ __ _   _   ___ _ __   ___  ___(_) __ _| (_)_______  __| |
@@ -1506,8 +1508,8 @@ export async function queryAddRowIfCellsUnique({table, row, titles}) {
 	}
 }
 
-export async function queryUpdateCell({}) {}
 export async function queryTopEqualGreater({}) {}
+//ttd february, write these ^ maybe also queryUpdateCells, which queryHideRows would use, and then stop exporting getDatabase. oh also, you can sneak a direct database connection into level3 by exporting the test clock, and that's ok, i suppose, except the query check functions are here, and you want to not have to export them, also--yeah, cleanest is not exported is getDatabase, the test clock, all the query check functions--really only touch the database directly in level2!
 
 //                                     _               _    
 //   __ _ _   _  ___ _ __ _   _    ___| |__   ___  ___| | __

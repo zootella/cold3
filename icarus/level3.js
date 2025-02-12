@@ -22,53 +22,28 @@ getAccess, Sticker, isLocal, isCloud,
 
 /* level 2 query */
 
-getDatabase,
+getDatabase,//ttd february stop exporting!
 
-snippetClear,
-snippetPopulate,
-snippetQuery2,
-snippet2,
+//query snippet
+snippetClear, snippetPopulate, snippetQuery2, snippet2,
+queryCountRows, queryCountAllRows, queryDeleteAllRows,
 
-//-- ttd february: see if you can get just a half dozen useful and commonly used query functions--then you probably don't even have to write tests!
+//query common
+queryTop,
+queryAddRow,
+queryAddRows,
+queryHideRows,
+queryUpdateCell,
+queryUpdateCellsVertically,
 
-queryFilterRecent,//many users
-queryCountSince,//one user
+//query specialized
+queryCountSince,
+queryAddRowIfCellsUnique,
+queryTopEqualGreater,
 
-/*
-queryFilterMostRecent,//no users
-queryFilterSortTop,//one user: legacyAccessGet
-queryFilterSortAll,//no users
-*/
-
-queryAddRowIfCellsUnique,//one user
-queryHideRows,//many users
-
-/*
-querySetCell, querySetCellOrAddRow,
-queryGetCell, queryGetCellOrAddRow,
-queryGetRow,  queryGetRowOrAddRow,
-*/
-
-queryAdd,//many users
-queryAddSeveral,//useful helper
-//queryAddRow,//switched everyone to queryAdd, but may want to take the name
-//queryAddRows,//users
-
-//--
-
-queryCountRows,//these are just for testing
-queryCountAllRows,
-queryDeleteAllRows,
-
-checkQueryTitle,
-checkQueryRow,
-checkQueryCell,
-
-checkQueryTag,
-checkQueryHash,
-checkQueryText,
-checkQueryInt,
-
+//query check, ttd february stop exporting!
+checkQueryTitle, checkQueryRow, checkQueryCell,
+checkQueryTag, checkQueryHash, checkQueryText, checkQueryInt,
 checkQueryTagOrBlank,
 
 } from './level2.js'
@@ -520,10 +495,10 @@ export async function settingReadInt(name, defaultValue) {
 	return textToInt(await settingRead(name, defaultValue))
 }
 export async function settingRead(name, defaultValue) {
-	let row = await queryFilterRecent({table: 'settings_table', title: 'setting_name_text', cell: name})
+	let row = await queryTop({table: 'settings_table', title: 'setting_name_text', cell: name})
 	/*
 	ttd february, now that you only have 6 query functions, consider the refactor like:
-	let row = await queryFilterRecent({table: 'settings_table', cell: {setting_name_text: name}})
+	let row = await queryTop({table: 'settings_table', cell: {setting_name_text: name}})
 	yeah, looking at that now, maybe not!
 	*/
 	if (!row) {
@@ -531,7 +506,7 @@ export async function settingRead(name, defaultValue) {
 			setting_name_text: name,
 			setting_value_text: defaultValue+'',
 		}
-		await queryAdd({table: 'settings_table', row})
+		await queryAddRow({table: 'settings_table', row})
 	}
 	log(look(row))
 	let cellGet = row['setting_value_text']
@@ -557,7 +532,7 @@ export async function settingWrite(name, value) {
 			setting_name_text: name,
 			setting_value_text: value+'',
 		}
-		await queryAdd({table: 'settings_table', row})
+		await queryAddRow({table: 'settings_table', row})
 	}
 }
 //ttd february--factor ^ as queryUpdateCell, and have queryHideRows call it. don't worry about multiple matches as only settings cares about that, too
@@ -584,7 +559,7 @@ then set a cell, how do you do that?
 //[]
 export async function legacyAccessSet(browserTag, signedInSet) {
 	let signedInSetInt = signedInSet ? 1 : 0
-	await queryAdd({
+	await queryAddRow({
 		table: 'access_table',
 		row: {
 			browser_tag: browserTag,
@@ -594,7 +569,7 @@ export async function legacyAccessSet(browserTag, signedInSet) {
 }
 //[]
 export async function legacyAccessGet(browserTag) {
-	let row = await queryFilterRecent({
+	let row = await queryTop({
 		table: 'access_table',
 		title: 'browser_tag',
 		cell: browserTag,
@@ -823,17 +798,17 @@ CREATE INDEX route_table_index_2 ON route_table (hide, route_text, row_tick DESC
 
 //[ran]
 export async function userToRoute({userTag}) {//given a user tag, find their route
-	let row = await queryFilterRecent({table: 'route_table', title: 'user_tag', cell: userTag})
+	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
 	return row ? row.route_text : false
 }
 //[ran]
 export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
-	let row = await queryFilterRecent({table: 'route_table', title: 'route_text', cell: routeText})
+	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
 	return row ? row.user_tag : false
 }
 //[ran]
 export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
-	await queryAdd({
+	await queryAddRow({
 		table: 'route_table',
 		row: {
 			user_tag: userTag,
@@ -912,7 +887,7 @@ async function query_browserToUser({browserTag}) {//level2-style up here in leve
 
 export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
 	checkTag(browserTag); checkTag(userTag)
-	await queryAdd({
+	await queryAddRow({
 		table: 'browser_table',
 		row: {
 			browser_tag: browserTag,
@@ -926,7 +901,7 @@ export async function browserSignOut({browserTag, userTag}) {//sign the user at 
 	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
 	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
 	//also, make a new row to record when the user signed out, and that they signed out from this browser
-	await queryAdd({
+	await queryAddRow({
 		table: 'browser_table',
 		row: {
 			browser_tag: browserTag,
@@ -968,7 +943,7 @@ CREATE INDEX trail_table_index2 ON trail_table (hide, hash, row_tick DESC);  -- 
 //get the tick count of the most recent record about hash, 0 if none found
 export async function trailRecent({hash}) {
 	checkHash(hash)
-	let row = await queryFilterRecent({table: 'trail_table', title: 'hash', cell: hash})
+	let row = await queryTop({table: 'trail_table', title: 'hash', cell: hash})
 	return row ? row.row_tick : 0
 }
 //count how many records we have for hash since the given tick time in the past
@@ -979,7 +954,7 @@ export async function trailCount({hash, since}) {
 //make a new record of the given hash right now
 export async function trailAdd({hash}) {
 	checkHash(hash)
-	await queryAdd({table: 'trail_table', row: {hash: hash}})
+	await queryAddRow({table: 'trail_table', row: {hash: hash}})
 }
 
 
@@ -1054,36 +1029,3 @@ extra things later you realized you can us ethis for:
 
 
 // ~~~~ here we are doing the work behind CodeComponent ~~~~
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

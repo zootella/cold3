@@ -115,25 +115,26 @@ useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
 /* level 2 query */
 
-getDatabase,//stop exporting
+getDatabase,//ttd february stop exporting!
 
 //query snippet
 snippetClear, snippetPopulate, snippetQuery2, snippet2,
 queryCountRows, queryCountAllRows, queryDeleteAllRows,
 
 //query common
-queryFilterRecent,//--> queryTop
-queryAdd,//--> queryAddRow
-queryAddSeveral,//--> queryAddRows
+queryTop,
+queryAddRow,
+queryAddRows,
 queryHideRows,
+queryUpdateCell,
+queryUpdateCellsVertically,
 
 //query specialized
 queryCountSince,
 queryAddRowIfCellsUnique,
-queryUpdateCell,//make
-queryTopEqualGreater,//make
+queryTopEqualGreater,
 
-//query check
+//query check, ttd february stop exporting!
 checkQueryTitle, checkQueryRow, checkQueryCell,
 checkQueryTag, checkQueryHash, checkQueryText, checkQueryInt,
 checkQueryTagOrBlank,
