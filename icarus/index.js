@@ -117,7 +117,7 @@ useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 
 getDatabase,//stop exporting
 
-//query test
+//query snippet
 snippetClear, snippetPopulate, snippetQuery2, snippet2,
 queryCountRows, queryCountAllRows, queryDeleteAllRows,
 

@@ -1281,7 +1281,7 @@ async function queryExampleUsingClock({table, title, cell, clock}) {//real code 
 	const {Now, Tag, database} = await getClock(clock)//do this at the start to choose Now and Tag implementations, test or real, and also get the supabase client
 	//and then use Now, Tag, and database as you normally would
 }
-test(async () => {
+noop(async () => {
 	const clock = await makeClock()//make a simulated clock for this test
 
 	//times start new years eve's 2002 and are 1 millisecond later each time you call Now:

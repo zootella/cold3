@@ -1396,6 +1396,109 @@ what if
 
 
 
+noop(`
+-- list all the tables, and all the indices
+SELECT tablename FROM pg_tables WHERE schemaname = 'public';
+SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public';
+
+-- see what columns a table has, and what their type is
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'my_table';
+
+-- see what indices a table has, and delete one
+SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'my_table';
+DROP INDEX IF EXISTS index_name;
+
+-- rename a table, column, and index
+ALTER TABLE current_table RENAME TO renamed_table;
+ALTER TABLE my_table RENAME COLUMN title1 TO title2;
+ALTER INDEX current_index RENAME TO renamed_index;
+`)
+
+
+/*
+ttd feburary, let's rename things
+
+browser_table_browser_tag_index
+
+
+
+
+ALTER INDEX browser_table_browser_tag_index RENAME TO browser_table_index1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	access_table_pkey
+
+browser_table_index_1
+	browser_table_pkey
+
+	example_table_pkey
+
+hit_table_index_1
+	hit_table_pkey
+
+route_table_index_1
+route_table_index_2
+	route_table_pkey
+
+	settings_table_pkey --stays named table!
+
+trail_table_index_1
+trail_table_index_2
+	trail_table_pkey
+
+
+
+ok so settings is the only one
+so maybe you keep them named _table
+and make those three required on all tables, yeah
+
+
+
+
+
+
+hits 1420
+
+
+
+
+
+
+settingReadInt
+	settingRead
+		queryGetCellOrAddRow (used once)
+			queryGetRowOrAddRow (used once)
+				_queryGetRow
+				queryAddRow
+
+		settingWrite
+			querySetCellOrAddRow (used once)
+				_querySetCell
+				queryAddRow
+
+
+
+
+
+
+
+
+
+
+
 
 
 
