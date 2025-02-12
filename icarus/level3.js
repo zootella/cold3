@@ -387,8 +387,6 @@ check your previous notes on this
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
 //                                            
 
-
-
 noop(`
 -- list all the tables, and all the indices
 SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename ASC;
@@ -406,28 +404,11 @@ ALTER TABLE current_table RENAME TO renamed_table;
 ALTER TABLE my_table RENAME COLUMN title1 TO title2;
 ALTER INDEX current_index RENAME TO renamed_index;
 `)
-
-
 /*
-ttd feburary, let's rename things
-
-browser_table_browser_tag_index
-
-
-
-
-
-
-
-
-
-
-
-
+ttd february ^ use these to confirm that your green sections here match the schema supabase is actually running
+fire up test1 and run SQL there to test out commands beside the actual database!
+put tables below in alphabetical order, also
 */
-
-
-
 
 //                                 _        _        _     _      
 //   _____  ____ _ _ __ ___  _ __ | | ___  | |_ __ _| |__ | | ___ 
@@ -442,6 +423,7 @@ noop(`sql
 -- get a list of all indices on all tables; you can ignore the _pkey ones which are the primary key defaults
 SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public';
 `)
+//ttd february, missing the block here; use test1 to try out making the schema, that's a good idea
 
 export async function snippetQuery3() {
 	let data, error
@@ -453,22 +435,12 @@ export async function snippet3() {
 	log("hi from snippet 3")
 }
 
-
-
-
-
-
-
-
 //           _   _   _                   _        _     _      
 //  ___  ___| |_| |_(_)_ __   __ _ ___  | |_ __ _| |__ | | ___ 
 // / __|/ _ \ __| __| | '_ \ / _` / __| | __/ _` | '_ \| |/ _ \
 // \__ \  __/ |_| |_| | | | | (_| \__ \ | || (_| | |_) | |  __/
 // |___/\___|\__|\__|_|_| |_|\__, |___/  \__\__,_|_.__/|_|\___|
 //                           |___/                             
-
-
-
 
 noop(`sql
 -- settings for the application as a whole
@@ -514,11 +486,12 @@ export async function settingWrite(name, value) {
 	}
 }
 
-
-
-
-
-
+//                                _        _     _      
+//   __ _  ___ ___ ___  ___ ___  | |_ __ _| |__ | | ___ 
+//  / _` |/ __/ __/ _ \/ __/ __| | __/ _` | '_ \| |/ _ \
+// | (_| | (_| (_|  __/\__ \__ \ | || (_| | |_) | |  __/
+//  \__,_|\___\___\___||___/___/  \__\__,_|_.__/|_|\___|
+//                                                      
 
 // legacy, access_table, which has the global password and unlocks messaging
 //[]
@@ -541,29 +514,6 @@ export async function legacyAccessGet(browserTag) {
 	})
 	return row?.signed_in
 }
-
-
-
-
-
-
-
-
-
-
-
-//                                               _        _     _      
-//   __ _  _____   _____ _ __ _ __   ___  _ __  | |_ __ _| |__ | | ___ 
-//  / _` |/ _ \ \ / / _ \ '__| '_ \ / _ \| '__| | __/ _` | '_ \| |/ _ \
-// | (_| | (_) \ V /  __/ |  | | | | (_) | |    | || (_| | |_) | |  __/
-//  \__, |\___/ \_/ \___|_|  |_| |_|\___/|_|     \__\__,_|_.__/|_|\___|
-//  |___/                                                              
-
-//when did we last do this? how frequently have we done this recently?
-
-
-
-
 
 //  _     _ _     _        _     _      
 // | |__ (_) |_  | |_ __ _| |__ | | ___ 
@@ -617,8 +567,6 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
 
-
-
 //ttd february, move to level0, obviously
 //round down integer i to the nearest whole unit of d
 export function roundDown(i, d) {
@@ -628,13 +576,6 @@ export function roundDown(i, d) {
 test(() => {
 	ok(roundDown(10, 3) == 9)
 })
-
-
-
-
-
-
-
 
 //              _   _                _   _           _         _        _     _      
 //   __ _ _   _| |_| |__   ___ _ __ | |_(_) ___ __ _| |_ ___  | |_ __ _| |__ | | ___ 
