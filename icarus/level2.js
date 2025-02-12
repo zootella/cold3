@@ -1565,6 +1565,7 @@ async function _queryAddRows({table, rows}) {
 	)
 	if (error) toss('supabase', {error})
 }
+//ttd february--obviously factor those two ^ together
 
 
 

@@ -124,21 +124,22 @@ snippet2,
 
 //ttd february, ok, you got it down to just 6 functions! give them really good names
 /*
+	//query test
 
+	//query common
 	queryFilterRecent -> queryTop
 	queryAdd          -> queryAddRow
 	queryAddSeveral   -> queryAddRows
 	queryHideRows, same
 
+	//query specialized
 	queryCountSince, same
 	queryAddRowIfCellsUnique, same
+	queryUpdateCell, make, []get getDatabase out of level3 entirely! even if the bespoke method is clearly single use
+	queryTopEqualGreater, make
 
-also, look where level3 needs the database directly, can you factor those down to level2 now?
-groups of query functions:
-1-test
-2-common
-3-specialized
-4-check
+	//query check
+
 
 */
 
