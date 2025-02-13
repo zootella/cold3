@@ -2934,6 +2934,15 @@ we'll use it to show them their browser tag and user tag
 
 
 
+//round down integer i to the nearest whole unit of d
+export function roundDown(i, d) {
+	checkInt(i); checkInt(d, 1)
+	return (Math.floor(i / d)) * d
+}
+test(() => {
+	ok(roundDown(10, 3) == 9)
+})
+
 
 
 

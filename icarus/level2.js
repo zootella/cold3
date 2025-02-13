@@ -1536,7 +1536,7 @@ export async function queryAddRowIfCellsUnique({table, row, titles}) {
 	)
 	if (error) {
 		if (error.code == '23505') {
-			//we expect PostgreSQL error 23505 with a message like "duplicate key value violates unique constraint "hit_table_quarter_day_index"; confirmed the index still makes things fast and this is expected
+			//we expect PostgreSQL error 23505 with a message like 'duplicate key value violates unique constraint "hit1"'; confirmed the index still makes things fast and this is expected; also note the index we made *must be* UNIQUE for this to work correctly!
 		} else {
 			toss('supabase', {error})//we got some other error
 		}

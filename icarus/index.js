@@ -228,4 +228,6 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 typeUserName, checkUserName,
 checkUserRoute, validUserRoute,
 
+roundDown,
+
 } from './level0.js'

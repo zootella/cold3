@@ -245,6 +245,9 @@ test(async () => {
 
 
 
+
+
+
 //   __                      
 //  / _| ___  _ __ _ __ ___  
 // | |_ / _ \| '__| '_ ` _ \ 
@@ -252,10 +255,15 @@ test(async () => {
 // |_|  \___/|_|  |_| |_| |_|
 //                           
 
-
 export function validateMessageForm() {
 
 }
+//ttd february--so the idea here is, then for a form, you bundle the verification of multiple fields into a single object. does that work with different steps? this is just a sketch at this point, but you like the concept of getting standard "whole form is good to go" logic in one place, for client and server, rather than in Vue handlers above. (you really like that idea) as well as having a standard .isValid for a whole form, rather than just a bunch of individual form field valid flags
+
+
+
+
+
 
 
 
@@ -335,51 +343,6 @@ can a  name start with a number or _? yes, to match twitter like _SomeName_
 check your previous notes on this
 */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //      _       _        _                    
 //   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
 //  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
@@ -387,7 +350,7 @@ check your previous notes on this
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
 //                                            
 
-noop(`
+noop(`sql
 -- list all the tables, and all the indices
 SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename ASC;
 SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' ORDER BY indexname ASC;
@@ -410,6 +373,93 @@ fire up test1 and run SQL there to test out commands beside the actual database!
 put tables below in alphabetical order, also
 */
 
+export async function snippetQuery3() {
+	let data, error
+	try { data = await snippet3() } catch (e) { error = e }
+	if (error) return look(error)
+	else return data
+}
+export async function snippet3() {
+	log("hi from snippet 3")
+}
+
+//                                _        _     _      
+//   __ _  ___ ___ ___  ___ ___  | |_ __ _| |__ | | ___ 
+//  / _` |/ __/ __/ _ \/ __/ __| | __/ _` | '_ \| |/ _ \
+// | (_| | (_| (_|  __/\__ \__ \ | || (_| | |_) | |  __/
+//  \__,_|\___\___\___||___/___/  \__\__,_|_.__/|_|\___|
+//                                                      
+
+noop(`sql
+-- legacy access with single global password to unlock messaging
+CREATE TABLE access_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
+	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
+	hide         BIGINT                 NOT NULL,  -- 0 visible to begin, later nonzero reason why most code should ignore this row
+
+	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
+	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in
+);
+
+-- index to get visible rows about a browser, sorted recent first, quickly
+CREATE INDEX access1 ON access_table (hide, browser_tag, row_tick DESC);
+`)
+
+// legacy, access_table, which has the global password and unlocks messaging
+//[]
+export async function legacyAccessSet(browserTag, signedInSet) {
+	let signedInSetInt = signedInSet ? 1 : 0
+	await queryAddRow({
+		table: 'access_table',
+		row: {
+			browser_tag: browserTag,
+			signed_in: signedInSetInt,
+		}
+	})
+}
+//[]
+export async function legacyAccessGet(browserTag) {
+	let row = await queryTop({
+		table: 'access_table',
+		title: 'browser_tag',
+		cell: browserTag,
+	})
+	return row?.signed_in
+}
+
+//  _                                       _        _     _      
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
+//                                                                
+
+noop(`sql
+-- what user is signed into this browser? sign users in and out
+CREATE TABLE browser_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
+	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
+	hide         BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore
+
+	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
+	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
+	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
+);
+
+-- index to get visible rows about a browser, recent first, quickly
+CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);
+`)
+
+export async function browserToUser({browserTag}) {//what user, if any, is signed in at this browser?
+	checkTag(browserTag)
+	let row = await queryTopEqualGreater({
+		table: 'browser_table',
+		title1: 'browser_tag', cell1: browserTag,
+		title2: 'signed_in', cell2GreaterThan: 0,
+	})
+	return row?.user_tag
+}
+
 //                                 _        _        _     _      
 //   _____  ____ _ _ __ ___  _ __ | | ___  | |_ __ _| |__ | | ___ 
 //  / _ \ \/ / _` | '_ ` _ \| '_ \| |/ _ \ | __/ _` | '_ \| |/ _ \
@@ -420,20 +470,127 @@ put tables below in alphabetical order, also
 //use for practice
 
 noop(`sql
--- get a list of all indices on all tables; you can ignore the _pkey ones which are the primary key defaults
-SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public';
-`)
-//ttd february, missing the block here; use test1 to try out making the schema, that's a good idea
+-- example table for demonstration, practice, and testing
+CREATE TABLE example_table (
+	row_tag    CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
+	row_tick   BIGINT                 NOT NULL,  -- tick when row was added
+	hide       BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore this row
 
-export async function snippetQuery3() {
-	let data, error
-	try { data = await snippet3() } catch (e) { error = e }
-	if (error) return look(error)
-	else return data
+	name_text  TEXT                   NOT NULL,  -- example holding any text including blank
+	hits       BIGINT                 NOT NULL,  -- examle holding any integer
+	some_hash  CHAR(52)               NOT NULL   -- example holding hash values
+);
+
+-- index to get visible rows, sorted recent first, quickly
+CREATE INDEX example1 ON example_table (hide, row_tick DESC);
+`)
+
+//  _     _ _     _        _     _      
+// | |__ (_) |_  | |_ __ _| |__ | | ___ 
+// | '_ \| | __| | __/ _` | '_ \| |/ _ \
+// | | | | | |_  | || (_| | |_) | |  __/
+// |_| |_|_|\__|  \__\__,_|_.__/|_|\___|
+//                                      
+
+noop(`sql
+-- where is this hit coming from?
+CREATE TABLE hit_table (
+	row_tag         CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick        BIGINT                 NOT NULL,  -- exact time within hour_tick of the hit
+	hide            BIGINT                 NOT NULL,
+
+	hour_tick       BIGINT                 NOT NULL,  -- tick of the start of the hour this hit happened in
+	browser_tag     CHAR(21)               NOT NULL,  -- the browser that hit us
+	user_tag_text   TEXT                   NOT NULL,  -- the user at that browser, or blank if none identifed
+	ip_text         TEXT                   NOT NULL,  -- ip address, according to cloudflare
+	geography_text  TEXT                   NOT NULL,  -- geographic information, according to cloudflare
+	browser_text    TEXT                   NOT NULL   -- user agent string and WebGL hardware, according to the browser
+);
+
+-- index to quickly log a new hit, coalesced to identical information in an hour
+CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
+-- ^note UNIQUE, which *is necessary* for the query we're using with this table to add if unique in a single call
+`)
+
+export async function recordHit({browserTag, userTag, ipText, geographyText, browserText}) {
+	checkTag(browserTag); checkTagOrBlank(userTag)
+
+	let t = Now()//tick count now, of this hit
+	let d = roundDown(t, 6*Time.hour)//tick count when the quarter day t is in began
+
+	let row = {
+		row_tag: Tag(),//standard for a new row
+		row_tick: t,
+		hide: 0,
+
+		hour_tick: d,//cells that describe the first hit like this this hour
+
+		browser_tag: browserTag,
+		user_tag_text: userTag,
+		ip_text: ipText,
+		geography_text: geographyText,
+		browser_text: browserText,
+	}
+	let titles = 'hide,hour_tick,browser_tag,user_tag_text,ip_text,geography_text,browser_text'
+	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
-export async function snippet3() {
-	log("hi from snippet 3")
+
+//                  _         _        _     _      
+//  _ __ ___  _   _| |_ ___  | |_ __ _| |__ | | ___ 
+// | '__/ _ \| | | | __/ _ \ | __/ _` | '_ \| |/ _ \
+// | | | (_) | |_| | ||  __/ | || (_| | |_) | |  __/
+// |_|  \___/ \__,_|\__\___|  \__\__,_|_.__/|_|\___|
+//                                                  
+
+noop(`sql
+-- go between a user's tag and route
+CREATE TABLE route_table (
+	row_tag     CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick    BIGINT                 NOT NULL,
+	hide        BIGINT                 NOT NULL,
+
+	user_tag    CHAR(21)               NOT NULL,
+	route_text  TEXT                   NOT NULL   -- unique working route, normalized to lower case
+);
+
+-- quickly find the most recent visible row by user tag, and by route
+CREATE INDEX route1 ON route_table (hide, user_tag,   row_tick DESC);
+CREATE INDEX route2 ON route_table (hide, route_text, row_tick DESC);
+`)
+
+//[ran]
+export async function userToRoute({userTag}) {//given a user tag, find their route
+	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
+	return row ? row.route_text : false
 }
+//[ran]
+export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
+	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
+	return row ? row.user_tag : false
+}
+//[ran]
+export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
+	await queryAddRow({
+		table: 'route_table',
+		row: {
+			user_tag: userTag,
+			route_text: routeText,
+		}
+	})
+}
+//[ran]
+export async function routeRemove({userTag}) {//vacate the given user's route
+	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
+}
+//[ran]
+export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
+	await routeRemove({userTag})
+	await routeAdd({userTag, routeText: destinationRouteText})
+}
+
+//ttd january []confirm that an exception here causes throws up all the way back to the page
+//[]and hits datadog
+//and then deal with exceptions in the page
 
 //           _   _   _                   _        _     _      
 //  ___  ___| |_| |_(_)_ __   __ _ ___  | |_ __ _| |__ | | ___ 
@@ -453,8 +610,8 @@ CREATE TABLE settings_table (
 	setting_value_text  TEXT                   NOT NULL   -- the value of that named setting, you have to store a number as text
 );
 
--- index to quickly log a new hit, coalesced to identical information in each quarter day
-CREATE INDEX settings_table_index_1 ON settings_table (hide, setting_name_text, row_tick DESC);
+-- index to quickly find a setting by its name
+CREATE INDEX settings1 ON settings_table (hide, setting_name_text, row_tick DESC);
 `)
 
 //[ran]
@@ -486,96 +643,70 @@ export async function settingWrite(name, value) {
 	}
 }
 
-//                                _        _     _      
-//   __ _  ___ ___ ___  ___ ___  | |_ __ _| |__ | | ___ 
-//  / _` |/ __/ __/ _ \/ __/ __| | __/ _` | '_ \| |/ _ \
-// | (_| | (_| (_|  __/\__ \__ \ | || (_| | |_) | |  __/
-//  \__,_|\___\___\___||___/___/  \__\__,_|_.__/|_|\___|
-//                                                      
-
-// legacy, access_table, which has the global password and unlocks messaging
-//[]
-export async function legacyAccessSet(browserTag, signedInSet) {
-	let signedInSetInt = signedInSet ? 1 : 0
-	await queryAddRow({
-		table: 'access_table',
-		row: {
-			browser_tag: browserTag,
-			signed_in: signedInSetInt,
-		}
-	})
-}
-//[]
-export async function legacyAccessGet(browserTag) {
-	let row = await queryTop({
-		table: 'access_table',
-		title: 'browser_tag',
-		cell: browserTag,
-	})
-	return row?.signed_in
-}
-
-//  _     _ _     _        _     _      
-// | |__ (_) |_  | |_ __ _| |__ | | ___ 
-// | '_ \| | __| | __/ _` | '_ \| |/ _ \
-// | | | | | |_  | || (_| | |_) | |  __/
-// |_| |_|_|\__|  \__\__,_|_.__/|_|\___|
-//                                      
+//  _             _ _   _        _     _      
+// | |_ _ __ __ _(_) | | |_ __ _| |__ | | ___ 
+// | __| '__/ _` | | | | __/ _` | '_ \| |/ _ \
+// | |_| | | (_| | | | | || (_| | |_) | |  __/
+//  \__|_|  \__,_|_|_|  \__\__,_|_.__/|_|\___|
+//                                            
 
 noop(`sql
--- where is this hit coming from?
-CREATE TABLE hit_table (
-	row_tag         CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick        BIGINT                 NOT NULL,  -- time of first hit like this in this quarter day
-	hide            BIGINT                 NOT NULL,
+-- a thing that may be happening recently, is it too late? too soon? too frequent?
+CREATE TABLE trail_table (
+	row_tag   CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick  BIGINT                 NOT NULL,
+	hide      BIGINT                 NOT NULL,  -- not used, in the future we might hide old rows, or actually delete them!
 
-	quarter_day     BIGINT                 NOT NULL,  -- tick rounded down to 6 hour window
-	-- ttd february, change this to hour_tick; can you rename it?
-
-	browser_tag     CHAR(21)               NOT NULL,  -- the browser that hit us
-	user_tag_text   TEXT                   NOT NULL,  -- the user at that browser, or blank if none identifed
-	ip_text         TEXT                   NOT NULL,  -- ip address, according to cloudflare
-	geography_text  TEXT                   NOT NULL,  -- geographic information, according to cloudflare
-	browser_text    TEXT                   NOT NULL   -- user agent string and WebGL hardware, according to the browser
+	hash      CHAR(52)               NOT NULL   -- the hash of the message about the event that happened on row tick
 );
 
--- index to quickly log a new hit, coalesced to identical information in each quarter day, note UNIQUE
-CREATE UNIQUE INDEX hit_table_index1
-ON hit_table (hide, quarter_day, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
+CREATE INDEX trail1 ON trail_table (hide, row_tick DESC);        -- hide or delete old rows quickly
+CREATE INDEX trail2 ON trail_table (hide, hash, row_tick DESC);  -- get time sorted rows by hash
 `)
 
-export async function recordHit({browserTag, userTag, ipText, geographyText, browserText}) {
-	checkTag(browserTag); checkTagOrBlank(userTag)
-
-	let t = Now()//tick count now, of this hit
-	let d = roundDown(t, 6*Time.hour)//tick count when the quarter day t is in began
-
-	let row = {
-		row_tag: Tag(),//standard for a new row
-		row_tick: t,
-		hide: 0,
-
-		quarter_day: d,//cells that describe the first hit like this in this quarter day time period
-
-		browser_tag: browserTag,
-		user_tag_text: userTag,
-		ip_text: ipText,
-		geography_text: geographyText,
-		browser_text: browserText,
-	}
-	let titles = 'hide,quarter_day,browser_tag,user_tag_text,ip_text,geography_text,browser_text'
-	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
+//get the tick count of the most recent record about hash, 0 if none found
+export async function trailRecent({hash}) {
+	checkHash(hash)
+	let row = await queryTop({table: 'trail_table', title: 'hash', cell: hash})
+	return row ? row.row_tick : 0
+}
+//count how many records we have for hash since the given tick time in the past
+export async function trailCount({hash, since}) {
+	checkHash(hash); checkInt(since)
+	return await queryCountSince({table: 'trail_table', title: 'hash', cell: hash, since})
+}
+//make a new record of the given hash right now
+export async function trailAdd({hash}) {
+	checkHash(hash)
+	await queryAddRow({table: 'trail_table', row: {hash: hash}})
 }
 
-//ttd february, move to level0, obviously
-//round down integer i to the nearest whole unit of d
-export function roundDown(i, d) {
-	checkInt(i); checkInt(d, 1)
-	return (Math.floor(i / d)) * d
-}
-test(() => {
-	ok(roundDown(10, 3) == 9)
-})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //              _   _                _   _           _         _        _     _      
 //   __ _ _   _| |_| |__   ___ _ __ | |_(_) ___ __ _| |_ ___  | |_ __ _| |__ | | ___ 
@@ -585,13 +716,6 @@ test(() => {
 //                                                                                   
 
 //a user proves they are the same person as before
-
-
-
-
-
-
-
 
 //                   __ _ _        _        _     _      
 //  _ __  _ __ ___  / _(_) | ___  | |_ __ _| |__ | | ___ 
@@ -679,62 +803,6 @@ export async function authenticateSignOut({browserTag}) {
 
 
 
-//                  _         _        _     _      
-//  _ __ ___  _   _| |_ ___  | |_ __ _| |__ | | ___ 
-// | '__/ _ \| | | | __/ _ \ | __/ _` | '_ \| |/ _ \
-// | | | (_) | |_| | ||  __/ | || (_| | |_) | |  __/
-// |_|  \___/ \__,_|\__\___|  \__\__,_|_.__/|_|\___|
-//                                                  
-
-noop(`sql
--- go between a user's tag and route
-CREATE TABLE route_table (
-	row_tag     CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick    BIGINT                 NOT NULL,
-	hide        BIGINT                 NOT NULL,
-
-	user_tag    CHAR(21)               NOT NULL,
-	route_text  TEXT                   NOT NULL   -- unique working route, normalized to lower case
-);
-
--- quickly find the most recent visible row by user tag, and by route
-CREATE INDEX route_table_index_1 ON route_table (hide, user_tag,   row_tick DESC);
-CREATE INDEX route_table_index_2 ON route_table (hide, route_text, row_tick DESC);
-`)
-
-//[ran]
-export async function userToRoute({userTag}) {//given a user tag, find their route
-	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
-	return row ? row.route_text : false
-}
-//[ran]
-export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
-	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
-	return row ? row.user_tag : false
-}
-//[ran]
-export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
-	await queryAddRow({
-		table: 'route_table',
-		row: {
-			user_tag: userTag,
-			route_text: routeText,
-		}
-	})
-}
-//[ran]
-export async function routeRemove({userTag}) {//vacate the given user's route
-	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
-}
-//[ran]
-export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
-	await routeRemove({userTag})
-	await routeAdd({userTag, routeText: destinationRouteText})
-}
-
-//ttd january []confirm that an exception here causes throws up all the way back to the page
-//[]and hits datadog
-//and then deal with exceptions in the page
 
 
 
@@ -742,42 +810,6 @@ export async function routeMove({userTag, destinationRouteText}) {//move a user 
 
 
 
-
-
-//  _                                       _        _     _      
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
-//                                                                
-
-//who's signed into this browser? sign users in and out
-
-noop(`sql
--- what user is signed into this browser?
-CREATE TABLE browser_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
-	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
-	hide         BIGINT                 NOT NULL,  -- 0 to start, nonzero reason we can ignore row
-
-	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
-	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
-	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
-);
-
--- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser_table_browser_tag_index ON browser_table (hide, browser_tag, row_tick DESC);
-`)
-
-export async function browserToUser({browserTag}) {//what user, if any, is signed in at this browser?
-	checkTag(browserTag)
-	let row = await queryTopEqualGreater({
-		table: 'browser_table',
-		title1: 'browser_tag', cell1: browserTag,
-		title2: 'signed_in', cell2GreaterThan: 0,
-	})
-	return row?.user_tag
-}
 
 
 
@@ -824,46 +856,9 @@ export async function browserSignOut({browserTag, userTag}) {//sign the user at 
 
 
 
-//  _             _ _   _        _     _      
-// | |_ _ __ __ _(_) | | |_ __ _| |__ | | ___ 
-// | __| '__/ _` | | | | __/ _` | '_ \| |/ _ \
-// | |_| | | (_| | | | | || (_| | |_) | |  __/
-//  \__|_|  \__,_|_|_|  \__\__,_|_.__/|_|\___|
-//                                            
-
-noop(`sql
--- a thing that may be happening recently, is it too late? too soon? too frequent?
-CREATE TABLE trail_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick     BIGINT                 NOT NULL,
-	hide         BIGINT                 NOT NULL,  -- not used
-
-	hash         CHAR(52)               NOT NULL   -- the hash of the message about the event that happened on row tick
-);
-
-CREATE INDEX trail_table_index1 ON trail_table (hide, row_tick DESC);        -- hide or delete old rows quickly
-CREATE INDEX trail_table_index2 ON trail_table (hide, hash, row_tick DESC);  -- get time sorted rows by hash
-`)
-
-//get the tick count of the most recent record about hash, 0 if none found
-export async function trailRecent({hash}) {
-	checkHash(hash)
-	let row = await queryTop({table: 'trail_table', title: 'hash', cell: hash})
-	return row ? row.row_tick : 0
-}
-//count how many records we have for hash since the given tick time in the past
-export async function trailCount({hash, since}) {
-	checkHash(hash); checkInt(since)
-	return await queryCountSince({table: 'trail_table', title: 'hash', cell: hash, since})
-}
-//make a new record of the given hash right now
-export async function trailAdd({hash}) {
-	checkHash(hash)
-	await queryAddRow({table: 'trail_table', row: {hash: hash}})
-}
-
 
 /*
+notes excited about trailtable
 and, about anything! because it's usees hashes!
 
 
@@ -934,3 +929,51 @@ extra things later you realized you can us ethis for:
 
 
 // ~~~~ here we are doing the work behind CodeComponent ~~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
