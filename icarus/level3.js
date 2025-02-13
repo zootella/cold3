@@ -12,6 +12,7 @@ checkHash,
 
 checkUserRoute, validUserRoute,
 checkInt,
+roundDown,
 
 } from './level0.js'
 import {
@@ -356,22 +357,25 @@ SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename A
 SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' ORDER BY indexname ASC;
 
 -- see what columns a table has, and what their type is
-SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'my_table';
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'example_table';
+
+-- more information about how a table is set up in the schema
+SELECT c.ordinal_position, c.column_name, c.data_type, c.is_nullable, c.column_default, c.character_maximum_length, tc.constraint_type
+FROM information_schema.columns c
+LEFT JOIN information_schema.key_column_usage kcu ON c.table_schema = kcu.table_schema AND c.table_name = kcu.table_name AND c.column_name = kcu.column_name
+LEFT JOIN information_schema.table_constraints tc ON kcu.constraint_schema = tc.constraint_schema AND kcu.constraint_name = tc.constraint_name
+WHERE c.table_schema = 'public' AND c.table_name = 'example_table'
+ORDER BY c.ordinal_position;
 
 -- see what indices a table has, and delete one
-SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'my_table' ORDER BY indexname ASC;
-DROP INDEX IF EXISTS index_name;
+SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'example_table' ORDER BY indexname ASC;
+DROP INDEX IF EXISTS index1;
 
 -- rename a table, column, and index
-ALTER TABLE current_table RENAME TO renamed_table;
-ALTER TABLE my_table RENAME COLUMN title1 TO title2;
-ALTER INDEX current_index RENAME TO renamed_index;
+ALTER TABLE example_table RENAME TO renamed_table;
+ALTER TABLE example_table RENAME COLUMN title1 TO title2;
+ALTER INDEX index1 RENAME TO index2;
 `)
-/*
-ttd february ^ use these to confirm that your green sections here match the schema supabase is actually running
-fire up test1 and run SQL there to test out commands beside the actual database!
-put tables below in alphabetical order, also
-*/
 
 export async function snippetQuery3() {
 	let data, error
@@ -516,7 +520,7 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 	checkTag(browserTag); checkTagOrBlank(userTag)
 
 	let t = Now()//tick count now, of this hit
-	let d = roundDown(t, 6*Time.hour)//tick count when the quarter day t is in began
+	let d = roundDown(t, Time.hour)//tick count when the hour t is in began
 
 	let row = {
 		row_tag: Tag(),//standard for a new row
@@ -524,7 +528,6 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 		hide: 0,
 
 		hour_tick: d,//cells that describe the first hit like this this hour
-
 		browser_tag: browserTag,
 		user_tag_text: userTag,
 		ip_text: ipText,

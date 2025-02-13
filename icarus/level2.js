@@ -1531,12 +1531,12 @@ export async function queryAddRowIfCellsUnique({table, row, titles}) {
 		.insert(row, {
 			onConflict: titles,//look for a row with matching values in these columns
 			ignoreDuplicates: true,//if you find one, do nothing
-			upsert: false,//don't "update on conflict"
+			upsert: false,//don't "update on conflict"; insert only if no identical row (as determined by the UNIQUE index) exists
 		})
 	)
 	if (error) {
 		if (error.code == '23505') {
-			//we expect PostgreSQL error 23505 with a message like 'duplicate key value violates unique constraint "hit1"'; confirmed the index still makes things fast and this is expected; also note the index we made *must be* UNIQUE for this to work correctly!
+			//we expect PostgreSQL error 23505 with a message like 'duplicate key value violates unique constraint "hit1"'
 		} else {
 			toss('supabase', {error})//we got some other error
 		}
