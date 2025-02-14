@@ -4,10 +4,10 @@ wrapper,
 } from './wrapper.js'
 import {
 Time, Now, sayDate, sayTick,
-log, logTo, say, look, defined, noop, test, ok, toss, parse, print,
+log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, subtleHash, timeSafeEqual, hmacSign,
-stringify_draft, replaceAll, replaceOne,
+parse, print, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
@@ -381,7 +381,7 @@ function redact_prepare(key, secrets) {
 	//make sure all the secret values are findable, even when stringified
 	values.forEach(v => {
 		if (!redact_safe(v)) {//v may contain '.,-_ but not "\
-			toss('not redactable because stringify changed', {secretValueLength: v.length})//watch the length, not the secret value
+			toss('not redactable because changed', {secretValueLength: v.length})//watch the length, not the secret value
 		}
 	})
 
@@ -929,7 +929,7 @@ parts of a complete log:
 -title, one or just a few words
 -longer message, composed message that describes easily
 -human readable watch, like from look()
--machine complete watch, like from JSON.stringify()
+-machine complete watch, like from print()'s wrapped stringify
 -size of all that before you send it to datadog, so you know if this is going to impact your bill
 
 log exceptions at the top of the call stack, not at the bottom
@@ -1055,7 +1055,7 @@ async function prepareLog(status, type, label, headline, watch) {
 
 	//prepare the body
 	let b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
-	let s = stringify_draft(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
+	let s = print(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
 	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
 	let size = s.length//byte size of body, this is how datadog bills us
 	s         = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message

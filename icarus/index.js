@@ -210,7 +210,7 @@ defined,
 squareEncode, squareDecode, checkSquare,
 correctLength,
 say, look,
-parse, print, printForLog, stringify_draft,
+parse, print,
 
 replaceAll, replaceOne, parseEnvStyleFileContents,
 noOverlap,

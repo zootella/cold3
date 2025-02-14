@@ -2291,58 +2291,43 @@ function lookSayFunction(f) {
 	return c
 }
 
-//      _        _             _  __       
-//  ___| |_ _ __(_)_ __   __ _(_)/ _|_   _ 
-// / __| __| '__| | '_ \ / _` | | |_| | | |
-// \__ \ |_| |  | | | | | (_| | |  _| |_| |
-// |___/\__|_|  |_|_| |_|\__, |_|_|  \__, |
-//                       |___/       |___/ 
-
-//ttd february
-/*
-ok, you need another one
-*/
-/*
-export function print(o) {//consider in place of JSON.stringify(o); deals with circular references and BigInt
-	//'CircularReference.'
-	//and just convert bigint to string, duh
-}
-export function parse_takeNameFromPrevious(s) {//consider in place of JSON.parse(s);
-}
-*/
-
-export const printForLog = print//get rid of this, all you need is print
-
-
+//                                              _              _       _   
+//  _ __   __ _ _ __ ___  ___    __ _ _ __   __| |  _ __  _ __(_)_ __ | |_ 
+// | '_ \ / _` | '__/ __|/ _ \  / _` | '_ \ / _` | | '_ \| '__| | '_ \| __|
+// | |_) | (_| | |  \__ \  __/ | (_| | | | | (_| | | |_) | |  | | | | | |_ 
+// | .__/ \__,_|_|  |___/\___|  \__,_|_| |_|\__,_| | .__/|_|  |_|_| |_|\__|
+// |_|                                             |_|                     
 
 export const parse = JSON.parse//same as JSON.parse(s), but without having to shout JSON all the time
 export function print(o) {//like JSON.stringify(o) but deals with BigInt values, circular references, and doesn't omit Error objects
 	const seen = new WeakSet()//keep track of objects we've seen so far to note circular references rather than throwing on them
-	return JSON.stringify(o, (k, v) => {//use custom replacer function, letting us look at each key and value in o all the way down
+	try {
+		return JSON.stringify(o, (k, v) => {//use custom replacer function, letting us look at each key and value in o all the way down
 
-		//instead of throwing, print BigInt values as numerals
-		if (typeof v == 'bigint') return v.toString()
+			//instead of throwing, print BigInt values as numerals
+			if (typeof v == 'bigint') return v.toString()
 
-		//instead of throwing, identify circular references
-		if (v && typeof v == 'object') {
-			if (seen.has(v)) return 'CircularReference.'
-			seen.add(v)
-		}
+			//instead of throwing, identify circular references
+			if (v && typeof v == 'object') {
+				if (seen.has(v)) return 'CircularReference.'
+				seen.add(v)
+			}
 
-		//instead of omitting Error objects, print out useful information about them
-		if (v instanceof Error) {
-			let m = {}//create a modified object with information from the error to give to json stringify instead of the actual error object which it would see nothing inside
-			_customErrorKeys.forEach(errorKey => {//look for a set list of error properties, both javascript ones like "stack" and ones toss adds like "tossWatch"
-				if (errorKey in v) {
-					m[errorKey] = v[errorKey]
-				}
-			})
-			return m//give json stringify our custom object with error information that it can see
-		}
+			//instead of omitting Error objects, print out useful information about them
+			if (v instanceof Error) {
+				let m = {}//create a modified object with information from the error to give to json stringify instead of the actual error object which it would see nothing inside
+				_customErrorKeys.forEach(errorKey => {//look for a set list of error properties, both javascript ones like "stack" and ones toss adds like "tossWatch"
+					if (errorKey in v) {
+						m[errorKey] = v[errorKey]
+					}
+				})
+				return m//give json stringify our custom object with error information that it can see
+			}
 
-		//if we didn't jump in and return a different value, let stringify do its regular thing
-		return v
-	})
+			//if we didn't jump in and return a different value, let stringify do its regular thing
+			return v
+		})
+	} catch (e) { return '{"message":"stringify threw"}' }//print never throws, just reports inability
 }
 test(() => {
 	let e = new Error('Title of test error')
@@ -2359,72 +2344,53 @@ test(() => {
 	ok(s.includes('"stack":"Error: Title of test error'))
 	ok(s.includes('"cause":{"self":"CircularReference."}},"nested":"CircularReference."}'))
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-	} catch (e) { return '{"message":"stringify threw"}' }//never throws, just reports inability
-
-put this in at the end, and ask, can this ever happen???
-
-*/
-
-
-/*
-now you think you can just have parse and print, and use those two, everywhere
-parse is important to be standard because we're going through what an api gave us
-and, you have no modifications there
-print matters less--this is when we're talking to an api
-so if you speak nonsense at it, the api will just not work
-if, for instance, you give it a body that contains stuff like "CircularReference." and bigint as a string when it should have thrown, and so on
-*/
-
-//ttd february--are you using this anywhere?! either way, give it a name other than stringify
-
-//call our wrapped stringify_draft() instead of JSON.stringify() to see into errors, and not worry about exceptions
-export function stringify_draft(o) {
-	try {
-
-		return JSON.stringify(o, (k, v) => {//use json stringify with this custom replacer function, which gets each key value pair
-			if (v instanceof Error) {//special for errors
-				let m = {}//create a modified object with information from the error to give to json stringify instead of the actual error object which it would see nothing inside
-				_customErrorKeys.forEach(errorKey => {//look for a set list of error properties, both javascript ones like "stack" and ones toss adds like "tossWatch"
-					if (errorKey in v) {
-						m[errorKey] = v[errorKey]
-					}
-				})
-				return m//give json stringify our custom object with error information that it can deal with
-			} else {
-				return v//non errors just pass through
-			}
-		})
-
-	} catch (e) { return '{"message":"stringify threw"}' }//never throws, just reports inability
-}
 test(() => {
-	ok(JSON.stringify() == undefined)
-	ok(stringify_draft() == undefined)//notice it's not the string "undefined"
+	ok(JSON.stringify() === undefined && print() === undefined)//notice it's not the string "undefined"
 
-	ok(stringify_draft(5) == '5')
-	ok(stringify_draft('hi') == '"hi"')//adds double quotes
-	ok(stringify_draft(['hi', 5]) == '["hi",5]')
-	ok(stringify_draft({key1: 'value1', key2: 7}) == '{"key1":"value1","key2":7}')//we'll almost always give stringify an object
+	ok(print(5) == '5')
+	ok(print('hi') == '"hi"')//adds double quotes
+	ok(print(['hi', 5]) == '["hi",5]')
+	ok(print({key1: 'value1', key2: 7}) == '{"key1":"value1","key2":7}')//we'll almost always give stringify an object
 })
-noop(() => {//leave off because errors are slow, this is just a demonstration
-	function includesAll(s, a) { a.forEach(tag => ok(s.includes(tag))) }
+test(() => { if (true) return//leave false because errors are slow; this is just a demonstration
 
-	//and now for why we're here, stringifying errors
+	//i didn't go to the bike shed, JSON.stringify *drove* me to the bike shed! code to demonstrate those limitations:
+	const x = JSON.stringify//compare to brand X
+
+	//demonstration 1: not showing errors
+	let o = {
+		s: 'hi',
+		n: 7,
+		e: new Error('message')
+	}
+	ok(x(o) == '{"s":"hi","n":7,"e":{}}')//useless empty object which datadog will even omit!
+	log(print(o))//see the error details
+
+	//demonstration 2: throwing on BigInt
+	try {
+		let o2 = {
+			big2: BigInt(5)
+		}
+		log(print(o2))//just says it threw, importantly without actually throwing
+		x(o2)//throws
+		ok(false)//won't get here
+	} catch (e) {
+		log(look(e))//the message is "Do not know how to serialize a BigInt"
+	}
+
+	// demonstration 3: throwing on a circular reference
+	try {
+		let o3 = {}
+		o3.circular3 = o3
+		log(print(o3))//here also, just says stringify threw, importantly without actually throwing
+		x(o3)
+		ok(false)
+	} catch (e) {
+		log(look(e))//cool message like "Converting circular structure to JSON ... property 'circular3' closes the circle"
+	}
+
+	//and now for why we're here, seeing errors
+	function includesAll(s, a) { a.forEach(tag => ok(s.includes(tag))) }
 	try {
 		let o = {}
 		o.notHere.andBeyond
@@ -2434,9 +2400,9 @@ noop(() => {//leave off because errors are slow, this is just a demonstration
 		d.note2 = 17
 		d.caughtError = e//pin the caught error within our big picture object
 
-		let s = stringify_draft(d)
+		let s = print(d)
 		includesAll(s, ['note one', '17', 'TypeError', 'andBeyond'])
-		//log(look(s))
+		log(look(s))
 	}
 
 	//make sure it works with toss()
@@ -2446,9 +2412,9 @@ noop(() => {//leave off because errors are slow, this is just a demonstration
 		let c = ['carrot', 'car', 'carpentry']
 		toss('custom1', {a, b, c})
 	} catch (e) {
-		let s = stringify_draft(e)
+		let s = print(e)
 		includesAll(s, ['apple', '200', 'TossError', 'carpentry', 'tossWatch', 'tossTick', 'tossWhen'])
-		//log(look(s))
+		log(look(s))
 	}
 
 	//third demonstration, an error pinned to an error the way javascript does it
@@ -2464,56 +2430,27 @@ noop(() => {//leave off because errors are slow, this is just a demonstration
 			examine = e4
 		}
 	}
-	let mustHave = ['RangeError', 'Invalid array length', 'ReferenceError', 'neverDefined3 is not defined']
+	const mustHave = ['RangeError', 'Invalid array length', 'ReferenceError', 'neverDefined3 is not defined']
 	let s1 = look(examine)//first, look with your look(), pride of the bike shed, verbose, complete, custom, but not reversible
-	//log(s1)
+	log(s1)
 	includesAll(s1, mustHave)
-	let s2 = stringify_draft(examine)//next, with your wrapped stringify()
-	//log(s2)
+	let s2 = print(examine)//next, with your wrapped stringify()
+	log(s2)
 	includesAll(s1, mustHave)
-	//so yeah, your wrapped stringify() can look into errors pinned to errors
-	//this still isn't a test of getting one from the system where .cause is already in use, but surely it's equivalent?
 })
-/*
-i didn't go to the bike shed, JSON.stringify *drove* me to the bike shed
-because today i learned it turns error objects into {} which is pretty useless in logs
-there are other corner cases to round out, like throwing on BigInt and circular references
-first, a test to demonstrate those limitations:
-*/
-noop(() => {//exceptions are slow, so just switch this on when you're using it
 
-	//demonstration 1: not showing errors
-	let o = {
-		s: 'hi',
-		n: 7,
-		e: new Error('message')
-	}
-	ok(JSON.stringify(o) == '{"s":"hi","n":7,"e":{}}')//useless empty object which datadog will even omit!
-	//log(stringify(o))//see the error details
 
-	//demonstration 2: throwing on BigInt
-	try {
-		let o2 = {
-			big2: BigInt(5)
-		}
-		//log(stringify(o2))//just says stringify threw, importantly without actually throwing
-		JSON.stringify(o2)//throws
-		ok(false)//won't get here
-	} catch (e) {
-		//log(look(e))//the message is "Do not know how to serialize a BigInt"
-	}
 
-	// demonstration 3: throwing on a circular reference
-	try {
-		let o3 = {}
-		o3.circular3 = o3
-		//log(stringify(o3))//here also, just says stringify threw, importantly without actually throwing
-		JSON.stringify(o3)
-		ok(false)
-	} catch (e) {
-		//log(look(e))//cool message like "Converting circular structure to JSON ... property 'circular3' closes the circle"
-	}
-})
+
+
+
+
+
+
+
+//ttd february, get rid of these, just have print
+
+
 
 
 
