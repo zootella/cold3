@@ -431,7 +431,7 @@ export function swap(s, t1, t2) {
 }
 
 // Parse out the part of s between t1 and t2
-export function parse(s, t1, t2) {
+export function between(s, t1, t2) {
 	let c1 = cut(s,        t1)
 	let c2 = cut(c1.after, t2)
 	if (c1.found && c2.found) {
@@ -474,7 +474,7 @@ test(() => {
 test(() => {
 	ok(swap('a blue balloon in a blue sky', 'blue', 'red') == 'a red balloon in a red sky')
 
-	let p = parse('with <i>emphasis</i> added', '<i>', '</i>')
+	let p = between('with <i>emphasis</i> added', '<i>', '</i>')
 	ok(p.found)
 	ok(p.before == 'with ')
 	ok(p.middle == 'emphasis')
@@ -512,27 +512,6 @@ test(() => {
 	s = ' 0123456789 一二三 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ .-_ 🌴? yes '
 	ok(onlyBase16(s) == '0123456789abcdefe')
 	ok(onlyName(s) == '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-_yes')
-})
-
-//make sure a birthdate is like '1990.2.14', for the database
-export function checkDate(s) {
-	checkText(s)
-	let p = parse(s, '.', '.')
-	let o = {
-		year:  textToInt(p.before),
-		month: textToInt(p.middle),
-		day:   textToInt(p.after)
-	}
-	if (o.year  < 1869 || o.year  > 9999 ||
-			o.month <    1 || o.month >   12 ||
-			o.day   <    1 || o.day   >   31) toss('data', {s, o})//sanity check bounds for a current date of birth
-	return o
-}
-test(() => {
-	let d = checkDate('1990.2.14')
-	ok(d.year == 1990)
-	ok(d.month == 2)
-	ok(d.day = 14)
 })
 
 //                                _ _       

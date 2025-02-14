@@ -244,6 +244,27 @@ export function validateBirthday(raw) {
 
 
 
+//make sure a birthdate is like '1990.2.14', for the database
+function checkDate(s) {
+	checkText(s)
+	let p = between(s, '.', '.')
+	let o = {
+		year:  textToInt(p.before),
+		month: textToInt(p.middle),
+		day:   textToInt(p.after)
+	}
+	if (o.year  < 1869 || o.year  > 9999 ||
+			o.month <    1 || o.month >   12 ||
+			o.day   <    1 || o.day   >   31) toss('data', {s, o})//sanity check bounds for a current date of birth
+	return o
+}
+noop(() => {
+	let d = checkDate('1990.2.14')
+	ok(d.year == 1990)
+	ok(d.month == 2)
+	ok(d.day = 14)
+})
+
 
 
 
