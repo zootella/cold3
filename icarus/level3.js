@@ -32,10 +32,7 @@ queryTop,
 queryAddRow,
 queryAddRows,
 queryHideRows,
-//ttd february, refactoring update cells for two uses:
-queryUpdateCell,
-queryUpdateCellsVertically,
-queryUpdateCell_newForSettingWrite,
+queryUpdateCells,
 
 //query specialized
 queryCountSince,
@@ -635,7 +632,7 @@ export async function settingRead(name, defaultValue) {
 export async function settingWrite(name, value) {
 	let valueText = value+''
 	checkText(name); checkTextOrBlank(valueText)
-	let row = await queryUpdateCell_newForSettingWrite({
+	let row = await queryUpdateCells({
 		table:     'settings_table',
 		titleFind: 'setting_name_text',  cellFind: name,
 		titleSet:  'setting_value_text', cellSet:  valueText,

@@ -1599,6 +1599,59 @@ browser_table_browser_tag_index
 
 
 
+/*
+ttd february, below, you want to refactor this into a tree such as:
+
+queryUpdateCell, used by settings
+queryHideRows, commonly used
+(both call down to the same)
+queryUpdateCellsVertically
+*/
+
+//here are two older functions, for reference, that some new functions we write will replace the functionality of:
+
+/*
+//hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
+export async function queryHideRows({table, titleFind, cellFind, hideSet, clock}) { const {Now, Tag, database, context} = await getClock(clock)
+	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkInt(hideSet, 1)
+	let {data, error} = (await database//this call doesn't return count, so we look at data.length below
+		.from(table)
+		.update({hide: hideSet})//hide rows that match:
+		.eq('hide', 0)//not yet hidden, and
+		.eq(titleFind, cellFind)//cellFind under titleFind
+		.select('*', {count: 'exact'})//get the rows we changed, count exact to count rows that matched our query
+	)
+	if (error) toss('supabase', {error})
+	return data.length
+}
+//ttd february--refactor so queryHideRows and queryUpdateCell both call queryUpdateCells; not sure what's common and specialized when you do that
+export async function queryUpdateCell({}) {}
+export async function queryUpdateCell_newForSettingWrite({table, titleFind, cellFind, titleSet, cellSet, clock}) { const {Now, Tag, database, context} = await getClock(clock)
+	checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
+	let {data, error} = (await database
+		.from(table)
+		.update({[titleSet]: cellSet})//write cellSet under titleSet
+		.eq(titleFind, cellFind)//in the row where titleFind equals cellFind
+		.eq('hide', 0)//that is not hidden
+		.select()//return the updated rows
+		.maybeSingle()//make data the updated row, undefined of no rows matched, error if 2+ rows matched
+	)
+	if (error) toss('supabase', {error})
+	return data//data is the whole updated row, or undefined if not there so you should add it
+}
+*/
+
+//now, let's write the three new ones, as follows:
+/*
+queryUpdateCellsVertically will select rows, and then change all the cells under a given title to a new given value
+this generalized use case is then specialized by these two functions, which call that:
+queryHideRows selects the rows, and changes the hide column to the given number
+queryUpdateCell selects a single row, if present, and changes the given column to the given value
+*/
+
+
+
+
 
 
 

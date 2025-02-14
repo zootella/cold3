@@ -2323,6 +2323,14 @@ export function printForLog(o) {//the protections of print(o) above, but also lo
 	let s = JSON.stringify(o)
 	return s;
 }
+/*
+now you think you can just have parse and print, and use those two, everywhere
+parse is important to be standard because we're going through what an api gave us
+and, you have no modifications there
+print matters less--this is when we're talking to an api
+so if you speak nonsense at it, the api will just not work
+if, for instance, you give it a body that contains stuff like "CircularReference." and bigint as a string when it should have thrown, and so on
+*/
 
 //ttd february--are you using this anywhere?! either way, give it a name other than stringify
 

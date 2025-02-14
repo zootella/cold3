@@ -124,10 +124,7 @@ queryTop,
 queryAddRow,
 queryAddRows,
 queryHideRows,
-//ttd february, refactoring update cells for two uses:
-queryUpdateCell,
-queryUpdateCellsVertically,
-queryUpdateCell_newForSettingWrite,
+queryUpdateCells,
 
 //query specialized
 queryCountSince,
