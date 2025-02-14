@@ -390,7 +390,7 @@ export function beyond(s, i) { return clip(s, i, s.length - i) } // Clip out the
 export function chop(s, n)   { return clip(s, 0, s.length - n) } // Chop the last n characters off the end of s, chop(s, 3) is CCCCCCCccc	
 export function clip(s, i, n) {                                  // Clip out part of s, clip(s, 5, 3) is cccccCCCcc
 	if (i < 0 || n < 0 || i + n > s.length) toss('bounds', {s, i, n})
-	return s.substring(i, i + n);
+	return s.slice(i, i + n);
 }
 
 export function has(s, t)    { return                      findFirst(s, t) != -1 } // True if s contains t
@@ -642,7 +642,7 @@ function arrayToText(a, trip) {
 function base16ToArray(s, trip) {
 	if (s.length % 2 != 0) toss('data', {s})
 	let a = new Uint8Array(s.length / 2)
-	for (let i = 0; i < a.length; i++) { a[i] = parseInt(s.substr(i*2, 2), 16) }
+	for (let i = 0; i < a.length; i++) { a[i] = parseInt(s.slice(i*2, (i*2)+2), 16) }
 	if (trip) checkSame(s, arrayToBase16(a, false))
 	return a
 }
