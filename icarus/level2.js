@@ -1256,10 +1256,10 @@ async function getTestDatabase() {
 
 async function getClock(clock) {
 	if (clock) return clock//simulated for testing
-	else return {Now, Tag, database: await getDatabase()}//real time, tags, and database
+	else return {Now, Tag, database: await getDatabase(), context: 'Real.'}//real time, tags, and database
 }
 async function makeClock() {
-	let t = 33*Time.year//test clocks start in 2003
+	let t = 1050000000000//test clocks start in April, 2003
 	let n = 0//test tags are numbered 1, 2, 3 to be unique
 	function testNow() {//get the simulated tick count now, which will be 1 millisecond after the last time you asked
 		t += 1
@@ -1273,7 +1273,7 @@ async function makeClock() {
 		const prefix = 'TestTag'
 		return prefix + (((++n)+'').padStart(tagLength - prefix.length, '0'))
 	}
-	return {Now: testNow, forward, Tag: testTag, database: await getTestDatabase()}
+	return {Now: testNow, forward, Tag: testTag, database: await getTestDatabase(), context: 'Test.'}
 }
 
 //to see how to use the test clock, here's an example query function, and noop<->test of that query function:
@@ -1284,13 +1284,13 @@ async function queryExampleUsingClock({table, title, cell, clock}) {//real code 
 noop(async () => {
 	const clock = await makeClock()//make a simulated clock for this test
 
-	//times start new years eve's 2002 and are 1 millisecond later each time you call Now:
-	let nye2003 = 33*Time.year
-	ok(clock.Now() == nye2003+1)
-	ok(clock.Now() == nye2003+2)
-	ok(clock.Now() == nye2003+3)
+	//times start 2003apr10 and are 1 millisecond later each time you call Now:
+	let april2003 = 1050000000000//lots of 0s to be recognizable as test data, but still the same number of digits as times now
+	ok(clock.Now() == april2003+1)
+	ok(clock.Now() == april2003+2)
+	ok(clock.Now() == april2003+3)
 	clock.forward(8*Time.hour)//sleep for eight hours
-	ok(clock.Now() == nye2003+(8*Time.hour)+4)
+	ok(clock.Now() == april2003+(8*Time.hour)+4)
 
 	//tags are the correct length, and unique for each clock, but definately not globally!
 	ok(clock.Tag() == 'TestTag00000000000001')
@@ -1299,9 +1299,22 @@ noop(async () => {
 	for (let i = 0; i < 500; i++) clock.Tag()
 	ok(clock.Tag() == 'TestTag00000000000504')
 
+	//make sure this isn't the real one before you do something destructive!
+	ok(!(clock.context == 'Real.'))
+	ok(clock.context == 'Test.')
+
 	//to test a query function, give it your clock
 	await queryExampleUsingClock({table: 'example_table', title: 'name_text', cell: 'Name1', clock})//outside of tests, just omit clock!
 })
+
+
+
+
+
+
+
+
+
 
 //                                          _                  _   
 //   __ _ _   _  ___ _ __ _   _   ___ _ __ (_)_ __  _ __   ___| |_ 
@@ -1382,10 +1395,9 @@ export async function queryCountAllRows({table}) {
 
 //[ran]
 //delete all the rows from table
-export async function queryDeleteAllRows({table}) {
+export async function queryDeleteAllRows({table, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table)
-	if (table != 'example_table') toss('test', {table})//delete all only works on the example table!
-	let database = await getDatabase()
+	if (context != 'Test.') toss('test', {table})//delete all only works on the test database!
 	let {data, error} = (await database
 		.from(table)
 		.delete()
@@ -1418,6 +1430,30 @@ export async function queryTop({table, title, cell}) {
 	return data[0]//data is an array with one element, or empty if none found
 }
 
+
+//ok, how does it look/work with the test clock???
+
+//get the most recent visible row with cell under title
+export async function queryTop_draft({table, title, cell, clock}) {
+	checkQueryTitle(table); checkQueryCell(title, cell)
+	const {Now, Tag, database} = await getClock(clock) //<--new line
+//let database = await getDatabase()                   <--previous line
+	let {data, error} = (await database
+		.from(table)
+		.select('*')
+		.eq('hide', 0)
+		.eq(title, cell)
+		.order('row_tick', {ascending: false})
+		.limit(1)
+	)
+	if (error) toss('supabase', {error})
+	return data[0]//data is an array with one element, or empty if none found
+}
+
+
+
+
+
 //[]
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
 export async function queryAddRow({table, row}) {
@@ -1444,6 +1480,17 @@ async function _queryAddRows({table, rows}) {
 }
 //ttd february--obviously factor those two ^ together
 
+
+
+
+/*
+ttd february, below, you want to refactor this into a tree such as:
+
+queryUpdateCell, used by settings
+queryHideRows, commonly used
+(both call down to the same)
+queryUpdateCellsVertically
+*/
 //[ran]
 //hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
 export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
@@ -1462,11 +1509,6 @@ export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
 //ttd february--refactor so queryHideRows and queryUpdateCell both call queryUpdateCells; not sure what's common and specialized when you do that
 export async function queryUpdateCell({}) {}
 export async function queryUpdateCellsVertically({}) {}
-
-
-
-
-
 //[]
 export async function queryUpdateCell_newForSettingWrite({table, titleFind, cellFind, titleSet, cellSet}) {
 	checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
