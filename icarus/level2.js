@@ -1368,9 +1368,8 @@ export async function snippet2() {
 
 //[ran]
 //count how many rows have cellFind under titleFind
-export async function queryCountRows({table, titleFind, cellFind}) {
+export async function queryCountRows({table, titleFind, cellFind, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
-	let database = await getDatabase()
 	let {data, count, error} = (await database
 		.from(table)
 		.select(titleFind, {count: 'exact'})//count exact matches based on titleFind
@@ -1382,9 +1381,8 @@ export async function queryCountRows({table, titleFind, cellFind}) {
 
 //[ran]
 //how many rows table has
-export async function queryCountAllRows({table}) {
+export async function queryCountAllRows({table, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table)
-	let database = await getDatabase()
 	let {data, count, error} = (await database
 		.from(table)
 		.select('*', {count: 'exact'})//exact count of all rows
@@ -1415,9 +1413,8 @@ export async function queryDeleteAllRows({table, clock}) { const {Now, Tag, data
 
 //[]
 //get the most recent visible row with cell under title
-export async function queryTop({table, title, cell}) {
+export async function queryTop({table, title, cell, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(title, cell)
-	let database = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.select('*')
@@ -1429,49 +1426,24 @@ export async function queryTop({table, title, cell}) {
 	if (error) toss('supabase', {error})
 	return data[0]//data is an array with one element, or empty if none found
 }
-
-
-//ok, how does it look/work with the test clock???
-
-//get the most recent visible row with cell under title
-export async function queryTop_draft({table, title, cell, clock}) {
-	checkQueryTitle(table); checkQueryCell(title, cell)
-	const {Now, Tag, database} = await getClock(clock) //<--new line
-//let database = await getDatabase()                   <--previous line
-	let {data, error} = (await database
-		.from(table)
-		.select('*')
-		.eq('hide', 0)
-		.eq(title, cell)
-		.order('row_tick', {ascending: false})
-		.limit(1)
-	)
-	if (error) toss('supabase', {error})
-	return data[0]//data is an array with one element, or empty if none found
-}
-
-
-
-
 
 //[]
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
-export async function queryAddRow({table, row}) {
-	await queryAddRows({table, rows: [row]})
+export async function queryAddRow({table, row, clock}) {
+	await queryAddRows({table, rows: [row], clock})
 }
-export async function queryAddRows({table, rows}) {
+export async function queryAddRows({table, rows, clock}) {
 	let t = Now()//set a single timestamp for the group of rows we're adding
 	rows.forEach(row => {//fill in any missing defaults for the margin columns
 		if (!row.row_tag)  row.row_tag = Tag()
 		if (!row.row_tick) row.row_tick = t
 		if (!row.hide)     row.hide = 0//sets 0 if already set, but that's fine
 	})
-	await _queryAddRows({table, rows})
+	await _queryAddRows({table, rows, clock})
 }
 //add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
-async function _queryAddRows({table, rows}) {
+async function _queryAddRows({table, rows, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); rows.forEach(row => checkQueryRow(row))
-	let database = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.insert(rows)//order of properties in each row object in the rows array doesn't matter
@@ -1493,9 +1465,8 @@ queryUpdateCellsVertically
 */
 //[ran]
 //hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
-export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
+export async function queryHideRows({table, titleFind, cellFind, hideSet, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkInt(hideSet, 1)
-	let database = await getDatabase()
 	let {data, error} = (await database//this call doesn't return count, so we look at data.length below
 		.from(table)
 		.update({hide: hideSet})//hide rows that match:
@@ -1510,9 +1481,8 @@ export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
 export async function queryUpdateCell({}) {}
 export async function queryUpdateCellsVertically({}) {}
 //[]
-export async function queryUpdateCell_newForSettingWrite({table, titleFind, cellFind, titleSet, cellSet}) {
+export async function queryUpdateCell_newForSettingWrite({table, titleFind, cellFind, titleSet, cellSet, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
-	let database = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.update({[titleSet]: cellSet})//write cellSet under titleSet
@@ -1549,9 +1519,8 @@ export async function queryUpdateCell_newForSettingWrite({table, titleFind, cell
 
 //[]
 //count how many visible rows with cell under title were added since the given tick count
-export async function queryCountSince({table, title, cell, since}) {
+export async function queryCountSince({table, title, cell, since, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(title, cell); checkInt(since)
-	let database = await getDatabase()
 	let {data, count, error} = (await database
 		.from(table)
 		.select('', {count: 'exact', head: true})//select blank, exact, head to count rows without getting row data
@@ -1565,9 +1534,8 @@ export async function queryCountSince({table, title, cell, since}) {
 
 //[]
 //add row if table doesn't already have one with the same value for column titles like 'title1,title2,title3' comma separated with no spaces
-export async function queryAddRowIfCellsUnique({table, row, titles}) {
+export async function queryAddRowIfCellsUnique({table, row, titles, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryRow(row); checkText(titles)
-	let database = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.insert(row, {
@@ -1587,9 +1555,8 @@ export async function queryAddRowIfCellsUnique({table, row, titles}) {
 
 //[]
 //get the most recent visible row with title1: cell1 and title2: a number greater than cell2GreaterThan, like 1 or 2 fine if you pass in 0
-export async function queryTopEqualGreater({table, title1, cell1, title2, cell2GreaterThan}) {
+export async function queryTopEqualGreater({table, title1, cell1, title2, cell2GreaterThan, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2GreaterThan)
-	let database = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
 		.select('*')//retrieve the matching rows
