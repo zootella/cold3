@@ -2311,18 +2311,76 @@ export function parse_takeNameFromPrevious(s) {//consider in place of JSON.parse
 }
 */
 
-export function parse(s) {//same as JSON.parse(s); use for APIs
-	let o = JSON.parse(s)
-	return o
+export const printForLog = print//get rid of this, all you need is print
+
+
+
+export const parse = JSON.parse//same as JSON.parse(s), but without having to shout JSON all the time
+export function print(o) {//like JSON.stringify(o) but deals with BigInt values, circular references, and doesn't omit Error objects
+	const seen = new WeakSet()//keep track of objects we've seen so far to note circular references rather than throwing on them
+	return JSON.stringify(o, (k, v) => {//use custom replacer function, letting us look at each key and value in o all the way down
+
+		//instead of throwing, print BigInt values as numerals
+		if (typeof v == 'bigint') return v.toString()
+
+		//instead of throwing, identify circular references
+		if (v && typeof v == 'object') {
+			if (seen.has(v)) return 'CircularReference.'
+			seen.add(v)
+		}
+
+		//instead of omitting Error objects, print out useful information about them
+		if (v instanceof Error) {
+			let m = {}//create a modified object with information from the error to give to json stringify instead of the actual error object which it would see nothing inside
+			_customErrorKeys.forEach(errorKey => {//look for a set list of error properties, both javascript ones like "stack" and ones toss adds like "tossWatch"
+				if (errorKey in v) {
+					m[errorKey] = v[errorKey]
+				}
+			})
+			return m//give json stringify our custom object with error information that it can see
+		}
+
+		//if we didn't jump in and return a different value, let stringify do its regular thing
+		return v
+	})
 }
-export function print(o) {//like JSON.stringify(o) but deals with BigInt and circular references; use for APIs
-	let s = JSON.stringify(o)
-	return s;
-}
-export function printForLog(o) {//the protections of print(o) above, but also looks into Error objects; use for logging
-	let s = JSON.stringify(o)
-	return s;
-}
+test(() => {
+	let e = new Error('Title of test error')
+	e.tossWatch = {s: 'sample', n: 7}
+	e.tossWhen = 1050000000000
+	let o = {value: 'normal value', huge: 12345678901234567890n, error: e, nested: {}}
+	o.nested.self = o//put in two circular references, one in a regular object, the other in the Error object
+	e.cause = o.nested
+	let s = print(o)
+	ok(s.includes('"value":"normal value"'))
+	ok(s.includes('"huge":"12345678901234567890"'))
+	ok(s.includes('"error":{"name":"Error","message":"Title of test error"'))
+	ok(s.includes('"tossWatch":{"s":"sample","n":7},"tossWhen":1050000000000'))
+	ok(s.includes('"stack":"Error: Title of test error'))
+	ok(s.includes('"cause":{"self":"CircularReference."}},"nested":"CircularReference."}'))
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+	} catch (e) { return '{"message":"stringify threw"}' }//never throws, just reports inability
+
+put this in at the end, and ask, can this ever happen???
+
+*/
+
+
 /*
 now you think you can just have parse and print, and use those two, everywhere
 parse is important to be standard because we're going through what an api gave us
@@ -2767,11 +2825,11 @@ and user can type all kanji into the first box and their english translation in 
 export function removeAccent(s) {
 	/*from chat, of course
 function removeAccents(str) {
-  return str
-    // Convert accented characters to their decomposed form
-    .normalize('NFD')
-    // Remove combining diacritic marks
-    .replace(/[\u0300-\u036f]/g, '');
+	return str
+		// Convert accented characters to their decomposed form
+		.normalize('NFD')
+		// Remove combining diacritic marks
+		.replace(/[\u0300-\u036f]/g, '');
 }
 
 // Usage example:
@@ -2822,7 +2880,7 @@ userRoute "Tokyo-Girl"
 userLook  "tokyo-girl"
 stuff you could do:
 - user types name, other two are set automatically
-  but then user adjusts route, and that changes look but not name
+	but then user adjusts route, and that changes look but not name
 - visitor navigates to route, and route changes to userRoute, capitalizing things for instance
 - user edits route, but not in a way that changes look, so you don't have to adjust that table
 
