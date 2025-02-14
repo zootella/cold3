@@ -4,7 +4,7 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
 Data, decrypt, subtleHash, timeSafeEqual,
-stringify, replaceAll, replaceOne,
+replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 hmacSign,
@@ -932,51 +932,3 @@ extra things later you realized you can us ethis for:
 
 
 // ~~~~ here we are doing the work behind CodeComponent ~~~~
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

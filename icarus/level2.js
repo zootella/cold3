@@ -4,10 +4,10 @@ wrapper,
 } from './wrapper.js'
 import {
 Time, Now, sayDate, sayTick,
-log, logTo, say, look, defined, noop, test, ok, toss,
+log, logTo, say, look, defined, noop, test, ok, toss, parse, print,
 checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, subtleHash, timeSafeEqual, hmacSign,
-stringify, replaceAll, replaceOne,
+stringify_draft, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
@@ -406,7 +406,7 @@ function redact_prepare(key, secrets) {
 }
 function redact_safe(v) {
 	let o = {name: v}
-	let s = JSON.stringify(o)
+	let s = print(o)
 	return s.includes(v)//make sure we can still find the value in the stringified object
 }
 test(() => {
@@ -629,7 +629,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
-		door.body = JSON.parse(door.bodyText)
+		door.body = parse(door.bodyText)
 
 		//authenticate lambda post request: (1) https; (2) origin *omitted*; (3) access code valid
 		checkForwardedSecure(lambdaEvent.headers)
@@ -667,7 +667,7 @@ async function doorLambdaShut(door, response, error) {
 		logAlert('door lambda shut', {error, door})
 		r = null
 	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(response)}//by comparison, amazon wants it raw
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: print(response)}//by comparison, amazon wants it raw
 	}
 	await awaitDoorPromises()
 	return r
@@ -1055,7 +1055,7 @@ async function prepareLog(status, type, label, headline, watch) {
 
 	//prepare the body
 	let b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
-	let s = stringify(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
+	let s = stringify_draft(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
 	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
 	let size = s.length//byte size of body, this is how datadog bills us
 	s         = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message

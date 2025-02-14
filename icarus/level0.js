@@ -1317,8 +1317,8 @@ async function rsa_importKey(key, use) {
 		true,
 		use)
 }
-export function objectToBase62(o) { return Data({text: JSON.stringify(o)}).base62() }
-export function base62ToObject(s) { return JSON.parse(Data({base62: s}).text()) }
+export function objectToBase62(o) { return Data({text: print(o)}).base62() }
+export function base62ToObject(s) { return parse(Data({base62: s}).text()) }
 noop(async () => {
 	let plainText = (await createKey()).base62()//recall that public and private key encryption is for encrypting symmetric keys, not long messages
 	let t1 = Now()
@@ -2298,10 +2298,36 @@ function lookSayFunction(f) {
 // |___/\__|_|  |_|_| |_|\__, |_|_|  \__, |
 //                       |___/       |___/ 
 
+//ttd february
+/*
+ok, you need another one
+*/
+/*
+export function print(o) {//consider in place of JSON.stringify(o); deals with circular references and BigInt
+	//'CircularReference.'
+	//and just convert bigint to string, duh
+}
+export function parse_takeNameFromPrevious(s) {//consider in place of JSON.parse(s);
+}
+*/
+
+export function parse(s) {//same as JSON.parse(s); use for APIs
+	let o = JSON.parse(s)
+	return o
+}
+export function print(o) {//like JSON.stringify(o) but deals with BigInt and circular references; use for APIs
+	let s = JSON.stringify(o)
+	return s;
+}
+export function printForLog(o) {//the protections of print(o) above, but also looks into Error objects; use for logging
+	let s = JSON.stringify(o)
+	return s;
+}
+
 //ttd february--are you using this anywhere?! either way, give it a name other than stringify
 
-//call our wrapped stringify() instead of JSON.stringify() to see into errors, and not worry about exceptions
-export function stringify(o) {
+//call our wrapped stringify_draft() instead of JSON.stringify() to see into errors, and not worry about exceptions
+export function stringify_draft(o) {
 	try {
 
 		return JSON.stringify(o, (k, v) => {//use json stringify with this custom replacer function, which gets each key value pair
@@ -2322,12 +2348,12 @@ export function stringify(o) {
 }
 test(() => {
 	ok(JSON.stringify() == undefined)
-	ok(stringify() == undefined)//notice it's not the string "undefined"
+	ok(stringify_draft() == undefined)//notice it's not the string "undefined"
 
-	ok(stringify(5) == '5')
-	ok(stringify('hi') == '"hi"')//adds double quotes
-	ok(stringify(['hi', 5]) == '["hi",5]')
-	ok(stringify({key1: 'value1', key2: 7}) == '{"key1":"value1","key2":7}')//we'll almost always give stringify an object
+	ok(stringify_draft(5) == '5')
+	ok(stringify_draft('hi') == '"hi"')//adds double quotes
+	ok(stringify_draft(['hi', 5]) == '["hi",5]')
+	ok(stringify_draft({key1: 'value1', key2: 7}) == '{"key1":"value1","key2":7}')//we'll almost always give stringify an object
 })
 noop(() => {//leave off because errors are slow, this is just a demonstration
 	function includesAll(s, a) { a.forEach(tag => ok(s.includes(tag))) }
@@ -2342,7 +2368,7 @@ noop(() => {//leave off because errors are slow, this is just a demonstration
 		d.note2 = 17
 		d.caughtError = e//pin the caught error within our big picture object
 
-		let s = stringify(d)
+		let s = stringify_draft(d)
 		includesAll(s, ['note one', '17', 'TypeError', 'andBeyond'])
 		//log(look(s))
 	}
@@ -2354,7 +2380,7 @@ noop(() => {//leave off because errors are slow, this is just a demonstration
 		let c = ['carrot', 'car', 'carpentry']
 		toss('custom1', {a, b, c})
 	} catch (e) {
-		let s = stringify(e)
+		let s = stringify_draft(e)
 		includesAll(s, ['apple', '200', 'TossError', 'carpentry', 'tossWatch', 'tossTick', 'tossWhen'])
 		//log(look(s))
 	}
@@ -2376,7 +2402,7 @@ noop(() => {//leave off because errors are slow, this is just a demonstration
 	let s1 = look(examine)//first, look with your look(), pride of the bike shed, verbose, complete, custom, but not reversible
 	//log(s1)
 	includesAll(s1, mustHave)
-	let s2 = stringify(examine)//next, with your wrapped stringify()
+	let s2 = stringify_draft(examine)//next, with your wrapped stringify()
 	//log(s2)
 	includesAll(s1, mustHave)
 	//so yeah, your wrapped stringify() can look into errors pinned to errors
@@ -2426,22 +2452,6 @@ noop(() => {//exceptions are slow, so just switch this on when you're using it
 
 
 
-
-//ttd february
-/*
-ok, you need another one
-
-*/
-export function print(o) {//consider in place of JSON.stringify(o); deals with circular references and BigInt
-
-
-	//'CircularReference.'
-	//and just convert bigint to string, duh
-
-}
-export function parse_takeNameFromPrevious(s) {//consider in place of JSON.parse(s);
-
-}
 
 
 
@@ -2630,7 +2640,7 @@ export async function ashFetchum(c, q) {
 		if (response.ok) {
 			success = true
 			if (response.headers?.get('Content-Type')?.includes('application/json')) {
-				body = JSON.parse(bodyText)//can throw, and then it's the api's fault, not your code here
+				body = parse(bodyText)//can throw, and then it's the api's fault, not your code here
 			}
 		}
 	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
@@ -2921,58 +2931,3 @@ export function roundDown(i, d) {
 test(() => {
 	ok(roundDown(10, 3) == 9)
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

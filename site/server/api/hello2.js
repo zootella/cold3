@@ -1,7 +1,7 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
-checkTag, settingReadInt, settingWrite, headerGetOne, authenticateSignGet, hash,
+checkTag, settingReadInt, settingWrite, headerGetOne, authenticateSignGet, hash, parse, print,
 isCloud, hasText, recordHit,
 } from 'icarus'
 
@@ -46,7 +46,7 @@ async function doorHandleBelow({door, body, action}) {
 		renderer: body.browserGraphics.renderer,
 		vendor: body.browserGraphics.vendor,
 	}
-	let s = JSON.stringify(o)
+	let s = print(o)
 	let t = Now()
 	let v = await hash(s)
 	r.hashPlain = s
@@ -69,8 +69,8 @@ async function doorHandleBelow({door, body, action}) {
 			browserTag,
 			userTag: hasText(userTag) ? userTag : '',
 			ipText: r.ipAddress,
-			geographyText: JSON.stringify(g),
-			browserText: JSON.stringify(b),
+			geographyText: print(g),
+			browserText: print(b),
 		})
 	}
 

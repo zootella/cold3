@@ -1,8 +1,8 @@
 
 import {
 wrapper,
-log, look, newline, Data, Now,
-encrypt
+log, look, newline, Data, Now, parse, print,
+encrypt,
 } from 'icarus'
 
 import { promises as fs } from 'fs'
@@ -140,7 +140,7 @@ async function affixSeal(properties, manifest) {
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
 	o.secrets = cipherData.base62()
-	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`
+	let s = `export const wrapper = Object.freeze(${print(o, null, 2)})`
 	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
