@@ -1,0 +1,175 @@
+
+
+
+
+
+
+
+
+
+things that fit neatly into the validate pattern
+
+email
+phone
+card
+birthday
+
+things that are similar, but not a perfect fit to that pattern
+
+name, title, post: including spaces, paragraphs, slugs
+password strength
+action sent to api
+
+
+
+
+
+
+
+
+
+/*
+design teh form
+user name [MyName]
+appear on the page "MyName"
+appear in links [MyName]
+this link also works "myname"
+
+1-42 numbers and letters; -_. ok but not in a row
+
+user changes text in the first box, second box automatically set
+but also, user can edit second box separately
+so accented latin goes unadorned
+and user can type all kanji into the first box and their english translation in the second
+*/
+
+
+
+
+
+
+//t1-t2-Net-Win-OS9-Uni-null-terminator
+/*
+	// Step 1 (Normalization):
+	// 1a: Remove accents (e.g., using NFD/NFKD to turn 'á' into 'a').
+	s = deaccent(s)
+	// 1b: Convert fancy punctuation (e.g., em-dash, en-dash, and multiple hyphens/dashes) into a simple ASCII hyphen.
+	s = s.replace(/[-–—]+/g, '-')
+	// allow all the RFC 3986 characters: letters (A-Z, a-z), digits (0-9), whitespace, hyphen, underscore, period, and tilde.
+	s = s.replace(/[^A-Za-z0-9\s\-_.~]/g, ' ')
+
+	// Step 2 (Whitespace Handling):
+	// 2a: Replace all groups of whitespace (spaces, tabs, newlines) with a single space.
+	s = s.replace(/\s+/gu, ' ')
+	// 2b: Trim leading and trailing whitespace.
+	s = s.trim()
+	// 2c: Replace spaces with hyphens to form word boundaries.
+	s = s.replace(/ /g, '-')
+
+	// Step 3 (Punctuation Normalization):
+	// 3a: Collapse long sequences of allowed punctuation (e.g., more than two hyphens) to a maximum of two.
+	s = s.replace(/([-._~]{3,})/g, match => match.slice(0, 2))
+	// 3b: Collapse 2 or more periods into a single period.
+	s = s.replace(/\.{2,}/g, '.');
+
+	// Step 4 (Length Truncation):
+	// 4a: Enforce the maximum slug length by truncating to slugLength.
+	s = s.slice(0, slugLength)
+
+	//must begin with a letter or underscore, can end with a letter, number, or underscore
+	s = s.replace(/^[^A-Za-z_]+|[^A-Za-z0-9_]+$/g, '')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	ok, from our conversation, i've assembeled the above draft of our implementation as a whole
+	check it, and make sure it's behavior with a wide variety of input, including malicious input, will match the following specification we were given to code today, repeated here:
+
+	let's allow all the RFC 3986 characters, even tilde
+
+	make a pass that doesn't change the length, but does improve characters, which would
+	remove accents from vowels
+	turn dashes into a single hyphen, em and en dashes, and --, all of those, into just -
+
+	then let's attack whitespace
+	replace all groups of sapce, tab, and newline characters with a single space
+	and trim the ends
+	and then replace spaces with hyphen
+
+	then let's allow, but guard against, long sequences of only puncutation characters
+	two puncutation characters in a row are ok
+	if there is a string of more than that, though, we want to keep only the first two
+	so __This-Is-Fine__ while ~~~Something becomes ~~Something
+
+	and, there are additional rules for periods
+	periods are ok, but two in a row become one
+	and any on the edges are removed
+
+
+	before we dive into code, let's talk generally about these steps
+	are some unnecessary?
+	are there some others along these lines that im not thinking of?
+	what order should we do these steps in? how can we group them together into named stages of processing the input?
+
+	*/
+
+/*
+
+
+
+
+According to RFC 3986, URLs are allowed to include a set of characters called the unreserved characters:
+AZaz09
+~.-_
+
+
+		!(/[._-]{2}/.test(s))//but those three allowed characters can't appear together!
+		//ttd january, maybe also can't have a period at the start or the end
+		//and research what current popular platforms do--you haven't done enough research for this to design it properly
+
+ok, here's your uninformed draft
+for simplicity, same rules for user names and post titles, how about
+same length, super long 42
+
+allow all the rfc3986 characters, even tilde
+allow two of them together, but no longer, so you can do __SeverelyUnderlined__
+allow period, but here you can't do dots at the start or the end, and you can't do two dots together
+
+replace accented characters with their nonaccented versions
+remove illegal characters, just take the safe ones
+itls ok if the resulting input is blank--we'll handle this elsewhere in the stack!
+
+
+
+
+Alphabets: A–Z and a–z
+Digits: 0–9
+Punctuation: Hyphen (-), Period (.), Underscore (_), and Tilde (~
+
+
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+

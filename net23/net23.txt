@@ -177,7 +177,12 @@ $ git push origin main
 
 
 
-
+below are first and once for the project steps
+group them into these categories
+- setup a new computer, like get windows or mac ready to check out and build the site and net23
+- configure and authenticate services, like install the aws cli and sign it in, cloudflare, serverless framework
+- make a new similar shell project from scratch, useful to try out a new module or test something on the side, the clean room, this is like nuxt's setup, cloudflare create cli, that stuff
+- not sure whre in there is make a github repo
 
 
           _                                                 _            
@@ -201,6 +206,87 @@ includes stuff like get git, node, node version manager, place secrets
 
 
 
+
+
+
+
+                      _     _   _                  _             _   
+ _ __ ___ _ __   ___ | |_  | |_| |__   ___   _ __ | | __ _ _ __ | |_ 
+| '__/ _ \ '_ \ / _ \| __| | __| '_ \ / _ \ | '_ \| |/ _` | '_ \| __|
+| | |  __/ |_) | (_) | |_  | |_| | | |  __/ | |_) | | (_| | | | | |_ 
+|_|  \___| .__/ \___/ \__|  \__|_| |_|\___| | .__/|_|\__,_|_| |_|\__|
+				 |_|                                |_|                      
+
+
+
+
+
+quick repot1
+
+$ npm create cloudflare@latest
+repot1
+website or web app
+nuxt
+yes git for version control
+yes deploy to cloudflare
+(quickly get the right chrome profile forward, and already signed in to cloudflare there!)
+yeah it's up at
+https://repot1.pages.dev/
+
+$ npx nuxi add mypage
+$ npx nuxi add mycomponent
+$ npx nuxi add myapi
+
+
+2025feb trying to find or make new repot steps
+https://developers.cloudflare.com/pages/get-started/c3/
+$ yarn create cloudflare
+
+ttd february
+
+get just enough to generate stats.html
+and to deploy to a pages.dev domain
+use this to find small modules for qr codes and totp codes that works in cloudflare
+and have good notes so you can return to it later, also
+
+
+
+
+
+
+
+										_            _       
+ _ __ _   _ _ __   | |_ ___  ___| |_ ___ 
+| '__| | | | '_ \  | __/ _ \/ __| __/ __|
+| |  | |_| | | | | | ||  __/\__ \ |_\__ \
+|_|   \__,_|_| |_|  \__\___||___/\__|___/
+																				 
+
+tiny tests, in level0.js, exports test(), ok(), and runTests()
+all calls to test() are in the library
+and, as much as possible, factor all *code* into the library as well!
+pages, components, and api handlers should be really short
+
+run tests in...
+
+(1) Node 20
+$ cd ./library
+$ node test.js
+test results are logged out
+
+(2) Vite
+$ cd ./icarus
+$ npm run icarus
+and then see test results on the home route
+
+(3) Nuxt
+$ cd ./
+$ npm run local
+and then see test results on the route /tests, TODO!
+
+(and add more)
+nuxt really is local/deployed x client/server--can you run tests in all four environments?
+lambda serverless framework is local/deployed--run in those two environments
 
 
 
@@ -1407,78 +1493,6 @@ awaitLogAlert
 
 
 
-
-
-
-
-                      _     _   _                  _             _   
- _ __ ___ _ __   ___ | |_  | |_| |__   ___   _ __ | | __ _ _ __ | |_ 
-| '__/ _ \ '_ \ / _ \| __| | __| '_ \ / _ \ | '_ \| |/ _` | '_ \| __|
-| | |  __/ |_) | (_) | |_  | |_| | | |  __/ | |_) | | (_| | | | | |_ 
-|_|  \___| .__/ \___/ \__|  \__|_| |_|\___| | .__/|_|\__,_|_| |_|\__|
-				 |_|                                |_|                      
-
-
-
-
-
-quick repot1
-
-$ npm create cloudflare@latest
-repot1
-website or web app
-nuxt
-yes git for version control
-yes deploy to cloudflare
-(quickly get the right chrome profile forward, and already signed in to cloudflare there!)
-yeah it's up at
-https://repot1.pages.dev/
-
-$ npx nuxi add mypage
-$ npx nuxi add mycomponent
-$ npx nuxi add myapi
-
-
-
-
-
-
-
-
-
-
-										_            _       
- _ __ _   _ _ __   | |_ ___  ___| |_ ___ 
-| '__| | | | '_ \  | __/ _ \/ __| __/ __|
-| |  | |_| | | | | | ||  __/\__ \ |_\__ \
-|_|   \__,_|_| |_|  \__\___||___/\__|___/
-																				 
-
-tiny tests, in level0.js, exports test(), ok(), and runTests()
-all calls to test() are in the library
-and, as much as possible, factor all *code* into the library as well!
-pages, components, and api handlers should be really short
-
-run tests in...
-
-(1) Node 20
-$ cd ./library
-$ node test.js
-test results are logged out
-
-(2) Vite
-$ cd ./icarus
-$ npm run icarus
-and then see test results on the home route
-
-(3) Nuxt
-$ cd ./
-$ npm run local
-and then see test results on the route /tests, TODO!
-
-(and add more)
-nuxt really is local/deployed x client/server--can you run tests in all four environments?
-lambda serverless framework is local/deployed--run in those two environments
 
 
 

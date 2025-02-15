@@ -9,7 +9,7 @@ checkText, checkAlpha,
 Data, randomBetween,
 starts, cut,
 onlyNumerals,
-fraction, exponent, int, big, thinSpace, deindent, newline,
+fraction, exponent, int, big, deindent, newline,
 } from './level0.js'
 
 import { customAlphabet } from 'nanoid'                        //use to make unique tags
@@ -64,12 +64,321 @@ test(() => {
 
 
 
+
+
+
+
+//  _            _   
+// | |_ _____  _| |_ 
+// | __/ _ \ \/ / __|
+// | ||  __/>  <| |_ 
+//  \__\___/_/\_\\__|
+//                   
+
+export const middleDot = '·'
+export const thinSpace = ' '
+test(() => {
+	ok(middleDot === '\u00B7')//U+00B7 on websites about unicode
+	ok(thinSpace === '\u2009')//U+2009
+	ok(middleDot.length == 1 && Data({text: middleDot}).base16() == 'c2b7')//one character, but two bytes
+	ok(thinSpace.length == 1 && Data({text: thinSpace}).base16() == 'e28089')//one character, but three bytes
+})
+
+//split the given text into an array of lines, omitting blank lines, and trimming and coalescing space in each line
+export function lines(s) {
+  return (s
+  	.replace(/[\r\n\u2028\u2029]+/gu, '\n')//turn each group of any newlines into just \n all Mac classic-style
+    .split('\n')//to then split the text into an array of lines
+    .map(line => trim(line))//trim each line and collapse internal whitespace
+    .filter(line => line.length > 0)//and omit blank lines
+   )
+}
+test(() => {
+	ok(lines('\A\r\nB').length == 2)
+	ok(lines('\nA\n\nB\n').length == 2)
+})
+
+//trim space from the ends of s, and coalesce multiple whitespace characters
+export function trim(s) {
+	return (s
+		.replace(/[\t\n\r\u2028\u2029]/gu, ' ')//first, convert ascii and unicode tabs and newlines into normal spaces
+		.trim()//remove whitespace from the ends
+		.replace(/(\s)\s+/gu, '$1')//remove all but the first whitespace character in groups of two or more
+	)
+}
+test(() => {
+	ok(trim('a') == 'a')
+	ok(trim('') == '')
+	ok(trim(' ') == '')
+
+	ok(trim('\nA\nB\n') == 'A B')
+	ok(trim('\tIndented  wide\r\n') == 'Indented wide')
+
+	ok(trim(`$12${thinSpace+thinSpace}345${middleDot}67`) == `$12${thinSpace}345${middleDot}67`)
+	ok(trim('  First\u00A0 Last  ') == 'First\u00A0Last')//unicode nonbreaking space
+})
+
+//remove accents from vowels
+export function deaccent(s) {
+	return (s
+		.normalize('NFD')//convert accented characters to their decomposed form
+		.replace(/[\u0300-\u036f]/g, '')//remove combining diacritic marks
+	)
+}
+test(() => {
+	ok(deaccent('áéíóúÁÉÍÓÚ') == 'aeiouAEIOU')
+	ok(deaccent('français') == 'francais')
+	ok(deaccent('İstanbul (Not Constantinople)') == 'Istanbul (Not Constantinople)')//tmbg
+
+	//this method is pretty good and very simple, but really only works for vowels:
+	ok(deaccent('łódź') == 'łodz')
+	//chat says maybe NFKD could get those; there are also npm modules for this like slugify
+})
+
+//sanitize text from the user that might be fine on the page for use in the URL, like a user name or post title
+const slugLength = 42//maximum length, super sized from twitter 15, 20 reddit, 30 gmail, and 32 tumblr
+export function slug(s) {//will return blank if s doesn't have any safe characters at all!
+	s = deaccent(s)//remove accents from vowels
+	s = s.replace(/[-–—]+/g, '-')//simplify dashes
+	s = s.replace(/[^A-Za-z0-9\s\-_.~]/gu, ' ')//allow all RFC 3986's unreserved characters, even tilde
+
+	s = s.replace(/\s+/gu, ' ')//coalesce and convert groups of ascii and unicode space, tab, and new line characters into single spaces, note gu where we match with \s to be certain to include unicode spaces
+	s = s.trim()
+	s = s.replace(/ /g, '-')//avoid %20
+
+	s = s.replace(/([-._~]{3,})/g, match => match.slice(0, 2))//allow groups of punctuation, but no longer than 2
+	s = s.replace(/\.{2,}/g, '.')//allow periods, but not 2 or more together
+
+	s = s.slice(0, slugLength)
+	s = s.replace(/^[^A-Za-z_]+|[^A-Za-z0-9_]+$/g, '')//must start Az_ but can end Az09_
+	return s
+}
+//export function liveBox(s) { return slug(s) }//live box is great for playing with slug, also
+test(() => {
+	ok(slug('Strong🐯✊Cat') == 'Strong-Cat')
+	ok(slug('東京TOK❤️JFK女の子') == 'TOK-JFK')
+	ok(slug('___Hello, World___') == '__Hello-World__')
+	ok(slug('_._._.another..day_._._.') == '_.another.day_')
+	ok(slug('_._._.another..day._._._') == '_.another.day._')
+	ok(slug('007agent007') == 'agent007')
+	ok(slug(`The Price is $12${thinSpace+thinSpace}345${middleDot}67, please.`) == 'The-Price-is-12-345-67-please')
+	ok(slug('\tt1\tt2\nNet\nWin\r\nOS9\rUni\u2028And null\0') == 't1-t2-Net-Win-OS9-Uni-And-null')//a little System 9 in there, for you
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function liveBox(s) {
+	return slug(s)
+}
+
+
+
+/*
+like dracula, user names have three forms
+
+page
+route
+look
+
+on the front end:
+user types pageName, gets suggestions for routeName and gets to see lookName
+user edits routeName, pageName doesn't change, lookName does
+user sees if what they've got is valid
+
+on the back end:
+validate all three, in the future
+
+validate pageName before saving it in the database, in a distant table
+validate lookName before saving it in the table you're on now
+
+
+more on this
+userName  "東京❤️女の子"
+userRoute "Tokyo-Girl"
+userLook  "tokyo-girl"
+stuff you could do:
+- user types name, other two are set automatically
+	but then user adjusts route, and that changes look but not name
+- visitor navigates to route, and route changes to userRoute, capitalizing things for instance
+- user edits route, but not in a way that changes look, so you don't have to adjust that table
+
+
+
+*/
+
+//for use in the form, while typing, says if valid and suggests
+export function typeUserName({pageRaw, routeRaw}) {//if they changed pageRaw, omit routeRaw; if they typed routeRaw, include both
+
+	let pageName = pageRaw
+	let routeName = routeRaw
+	let lookName = routeName.toLowerCase()
+
+	return {
+		valid: true,
+		hint: 'type something',
+		pageName,
+		routeName,
+		lookName,
+	}
+}
+//for use on both sides of fetch, throws on a problem
+export function checkUserName({pageName, routeName, lookName}) {
+	if (!routeName) routeName = lookName; if (!pageName) pageName = routeName//earlier are optional
+	/*
+	lots to do here later, like
+	pageName can't have double spaces or start or end with spaces--condensed must be the same as given
+	routeName lowercased must be lookName
+
+	those routes can have only letters, numbers, and -_.
+	but also can't have any of -_. next to one another
+	*/
+
+	//minimal check for today's need:
+	checkText(lookName)
+}
+
+
+const nameLength = 42//we support the longest names in the business, yessiree!
+export function checkUserRoute(s) { if (!validUserRoute(s)) toss('check', {s}) }
+export function validUserRoute(s) {//check route text s, like "name-a"
+	return (
+		typeof s == 'string' && s.length >= 1 &&//string that's not blank
+		s.length <= nameLength &&//nor too long
+		/^[a-z0-9._-]+$/.test(s) &&//only lowercase letters, numbers, and ._- allowed
+		!(/[._-]{2}/.test(s))//but those three allowed characters can't appear together!
+		//ttd january, maybe also can't have a period at the start or the end
+		//and research what current popular platforms do--you haven't done enough research for this to design it properly
+	)
+}
+test(() => {
+	ok(validUserRoute('a'))
+	ok(!validUserRoute('A'))
+
+	ok(validUserRoute('user-a'))
+	ok(!validUserRoute('user a'))
+
+	ok(validUserRoute('_some.name_'))
+	ok(!validUserRoute('some..name'))
+	ok(!validUserRoute('some.-name'))
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //             _ _     _       _       
 // __   ____ _| (_) __| | __ _| |_ ___ 
 // \ \ / / _` | | |/ _` |/ _` | __/ _ \
 //  \ V / (_| | | | (_| | (_| | ||  __/
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|
 //                                     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -92,19 +401,8 @@ email or phone, the combination of those two
 password
 
 
-bookmark february
+ttd february
 */
-export function testBox(s) {
-	/*
-	return look({
-		length: s.length,
-		validateEmail: validateEmail(s),
-		validatePhone: validatePhone(s),
-		validateCard: validateCard(s),
-		validatePasswordStrength: measurePasswordStrength(s),
-	})
-	*/
-}
 
 
 
@@ -995,44 +1293,6 @@ for (let i = 0; i < chronology.length; i++) {
 	lookup[p.tag] = p
 }
 export const postDatabase = { lookup, chronology }
-
-
-
-
-
-
-
-
-//ttd february - here's what dependency injectable Now and Tag might look like
-
-export function testTag(backgroundTag) {
-	checkTag(backgroundTag)
-
-
-}
-export function testNow(startingTick) {
-
-}
-noop(() => {
-	let Tag = testTag('ytFMpUFouv7hYGo8JF0Fp').Tag//make the object locally, giving it the prefix, then get the fake Tag function from it
-
-	ok(Tag() == 'ytFMpUFouv7hYGo000001')//results are now predictable
-	ok(Tag() == 'ytFMpUFouv7hYGo000002')
-	ok(Tag() == 'ytFMpUFouv7hYGo000003')
-
-	//now, design the same thing for time
-
-	let clock = testNow(1739203665391)//likewise, give it a starting time
-	let Now = clock.Now
-	ok(Now() == 1739203665391)
-	ok(Now() == 1739203665392)
-	ok(Now() == 1739203665393)//each one is a millisecond later
-	clock.forward(Time.hour)//move it forward one hour
-
-
-
-})
-
 
 
 

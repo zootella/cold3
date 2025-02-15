@@ -1,19 +1,19 @@
 <script setup>
 
 import {
-runTests, testBox, addLogSink, newline,
+runTests, liveBox, addLogSink, newline,
 } from './index.js'
 
-import { ref, onMounted } from 'vue'
+import {ref, onMounted} from 'vue'
 
 let logs = ''//just for the icarus page, make a local record all the logs code everywhere makes
 addLogSink((s) => { logs += (logs.length ? newline : '') + s })//don't start with a blank line
 
-const boxModel = ref('')
-const testMessage = ref('')
+const refResults = ref('')
+const refLiveBox = ref('')
 
 onMounted(async () => {
-	testMessage.value = (await runTests()).message
+	refResults.value = (await runTests()).message
 })
 
 /* tiny tests run six places:
@@ -27,9 +27,9 @@ onMounted(async () => {
 </script>
 <template>
 
-<p class="class1">{{ testMessage }}</p>
-<p class="class2a"><input type="text" v-model="boxModel" class="class2" id="box2"/></p>
-<pre class="class3">{{ testBox(boxModel) }}</pre>
+<p class="class1">{{refResults}}</p>
+<p class="class2a"><input type="text" v-model="refLiveBox" class="class2" id="box2"/></p>
+<pre class="class3">{{liveBox(refLiveBox)}}</pre>
 <textarea readOnly :value="logs" class="class4" id="box4"></textarea>
 
 </template>

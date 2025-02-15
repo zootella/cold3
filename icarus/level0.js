@@ -368,15 +368,7 @@ test(() => {
 //  \__\___/_/\_\\__|
 //                   
 
-export const newline = '\r\n'//a valid newline on unix and windows
-export const middleDot = '·'//good for single international number style
-export const thinSpace = ' '
-test(() => {
-	ok(middleDot === '\u00B7')//U+00B7 on websites about unicode
-	ok(thinSpace === '\u2009')//U+2009
-	ok(middleDot.length == 1 && Data({text: middleDot}).base16() == 'c2b7')//one character, but two bytes
-	ok(thinSpace.length == 1 && Data({text: thinSpace}).base16() == 'e28089')//one character, but three bytes
-})
+export const newline = '\r\n'//we use the Microsoft Windows-style newline, valid on windows, mac, and linux
 
 /*
 ttd february--move these from here to drawer
@@ -2744,147 +2736,6 @@ test(() => {
 
 
 
-/*
-design teh form
-user name [MyName]
-appear on the page "MyName"
-appear in links [MyName]
-this link also works "myname"
-
-1-42 numbers and letters; -_. ok but not in a row
-
-user changes text in the first box, second box automatically set
-but also, user can edit second box separately
-so accented latin goes unadorned
-and user can type all kanji into the first box and their english translation in the second
-*/
-
-export function removeAccent(s) {
-	/*from chat, of course
-function removeAccents(str) {
-	return str
-		// Convert accented characters to their decomposed form
-		.normalize('NFD')
-		// Remove combining diacritic marks
-		.replace(/[\u0300-\u036f]/g, '');
-}
-
-// Usage example:
-const userInput = "áéíóúÁÉÍÓÚ";
-const sanitized = removeAccents(userInput); // "aeiouAEIOU"
-	*/
-
-}
-noop(() => {
-
-	ok(removeAccent('français') == 'francais')
-	ok(removeAccent('łódź') == 'lodz')
-	ok(removeAccent('İstanbul') == 'Istanbul')
-
-})
-
-//or use https://www.npmjs.com/package/slugify
-//try both--slugify may be more than you need here
-
-
-
-
-
-
-
-/*
-like dracula, user names have three forms
-
-page
-route
-look
-
-on the front end:
-user types pageName, gets suggestions for routeName and gets to see lookName
-user edits routeName, pageName doesn't change, lookName does
-user sees if what they've got is valid
-
-on the back end:
-validate all three, in the future
-
-validate pageName before saving it in the database, in a distant table
-validate lookName before saving it in the table you're on now
-
-
-more on this
-userName  "東京❤️女の子"
-userRoute "Tokyo-Girl"
-userLook  "tokyo-girl"
-stuff you could do:
-- user types name, other two are set automatically
-	but then user adjusts route, and that changes look but not name
-- visitor navigates to route, and route changes to userRoute, capitalizing things for instance
-- user edits route, but not in a way that changes look, so you don't have to adjust that table
-
-
-
-*/
-
-//for use in the form, while typing, says if valid and suggests
-export function typeUserName({pageRaw, routeRaw}) {//if they changed pageRaw, omit routeRaw; if they typed routeRaw, include both
-
-	let pageName = pageRaw
-	let routeName = routeRaw
-	let lookName = routeName.toLowerCase()
-
-	return {
-		valid: true,
-		hint: 'type something',
-		pageName,
-		routeName,
-		lookName,
-	}
-}
-//for use on both sides of fetch, throws on a problem
-export function checkUserName({pageName, routeName, lookName}) {
-	if (!routeName) routeName = lookName; if (!pageName) pageName = routeName//earlier are optional
-	/*
-	lots to do here later, like
-	pageName can't have double spaces or start or end with spaces--condensed must be the same as given
-	routeName lowercased must be lookName
-
-	those routes can have only letters, numbers, and -_.
-	but also can't have any of -_. next to one another
-	*/
-
-	//minimal check for today's need:
-	checkText(lookName)
-}
-
-
-const nameLength = 42//we support the longest names in the business, yessiree!
-export function checkUserRoute(s) { if (!validUserRoute(s)) toss('check', {s}) }
-export function validUserRoute(s) {//check route text s, like "name-a"
-	return (
-		typeof s == 'string' && s.length >= 1 &&//string that's not blank
-		s.length <= nameLength &&//nor too long
-		/^[a-z0-9._-]+$/.test(s) &&//only lowercase letters, numbers, and ._- allowed
-		!(/[._-]{2}/.test(s))//but those three allowed characters can't appear together!
-		//ttd january, maybe also can't have a period at the start or the end
-		//and research what current popular platforms do--you haven't done enough research for this to design it properly
-	)
-}
-test(() => {
-	ok(validUserRoute('a'))
-	ok(!validUserRoute('A'))
-
-	ok(validUserRoute('user-a'))
-	ok(!validUserRoute('user a'))
-
-	ok(validUserRoute('_some.name_'))
-	ok(!validUserRoute('some..name'))
-	ok(!validUserRoute('some.-name'))
-})
-
-
-
-
-
 
 //sanity checking this as you use these getting data out of the database
 test(() => {
@@ -2934,3 +2785,56 @@ export function roundDown(i, d) {
 test(() => {
 	ok(roundDown(10, 3) == 9)
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

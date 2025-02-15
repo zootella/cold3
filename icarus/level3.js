@@ -10,7 +10,6 @@ ashFetchum,
 hmacSign,
 checkHash,
 
-checkUserRoute, validUserRoute,
 checkInt,
 roundDown,
 

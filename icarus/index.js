@@ -145,16 +145,13 @@ functions that use module imports
 export {
 
 tagLength, Tag, checkTag, checkTagOrBlank,
-
 checkEmail, checkPhone,
 validateEmail, validatePhone, validateCard,
-
 checkAction,
-
 measurePasswordStrength,
-
 generatePosts, postDatabase,
-testBox,
+
+liveBox,
 
 } from './level1.js'
 
@@ -179,7 +176,7 @@ sameObject, sameArray,
 checkText, hasText, checkInt, minInt,
 intToText, textToInt,
 checkTextSame, hasTextSame, checkTextOrBlank, hasTextOrBlank,
-newline, middleDot, thinSpace,
+newline,
 
 start, end, beyond, chop, clip,
 has, starts, ends,
@@ -220,10 +217,6 @@ getBrowserGraphics,
 getBrowserAgentRendererAndVendor,
 
 sameIgnoringCase, sameIgnoringTrailingSlash,
-
-
-typeUserName, checkUserName,
-checkUserRoute, validUserRoute,
 
 roundDown,
 
