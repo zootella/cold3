@@ -552,7 +552,7 @@ export function ageDate(rawDate_fromUser, offsetMinutes_fromPage) {//called by s
     Now()//(3) the time now, in milliseconds, which is trusted when api handler code calls this on the server side
   )//returns the date's age in full years local to the page's time zone
 }
-export function _ageDate(rawDate_fromUser, offsetMinutes_fromPage, now_fromClock) {//separate so tests can simulate now time
+function _ageDate(rawDate_fromUser, offsetMinutes_fromPage, now_fromClock) {//separate so tests can simulate now time
   let date_fromUser = checkDate(rawDate_fromUser)//date has .year .month .day numbers; throws if raw wasn't valid
 
   checkInt(offsetMinutes_fromPage, zoneMin)
@@ -582,7 +582,7 @@ test(() => {
     rockies:      420,//Mountain time (UTC-7 in winter) ⛰️
     caboVerde:     60,//Cabo Verde (UTC-1)
     london:         0,//London (UTC+0 in winter)
-    alps:         -60,//Paris and Zurich (UTC+1 in winter) 🇨🇭
+    alps:         -60,//Zurich (UTC+1 in winter) 🇨🇭
     tokyo:       -540,//Tokyo (UTC+9)
     lineIslands: -840,//Line Islands (UTC+14) and the furthest eastward possible
   }//but what about summertime? daylight savings shifts don't go outside this range
@@ -594,22 +594,26 @@ test(() => {
   ok(_ageDate(r, offset.rockies, n) == 19)//it's not his 20th birthday yet back home in the Canadian Rockies ⛰️
   ok(_ageDate(r, offset.alps,    n) == 20)//but it is where he's shredding the Alps 🇨🇭
 
-  //it's the very start of june in 🇬🇧, let's shift the given date back and forth a day
+  //it's the very start of june in 🇬🇧, let's shift a ID date back and forth
+  ok(_ageDate('19791231', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 22)
+  ok(_ageDate('19800101', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 22)
   ok(_ageDate('19800531', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 22)//born yesterday, May 31st
   ok(_ageDate('19800601', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 22)//born today
   ok(_ageDate('19800602', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 21)//born tomorrow
+  ok(_ageDate('19801231', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 21)
+  ok(_ageDate('19810101', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 21)
 
   //next, shift the location west to east
   ok(_ageDate('19800601', offset.bakerIsland, Date.parse('2002-06-01T00:00:00.000Z')) == 21)//westward edge
   ok(_ageDate('19800601', offset.caboVerde,   Date.parse('2002-06-01T00:00:00.000Z')) == 21)//still young in Cabo
   ok(_ageDate('19800601', offset.london,      Date.parse('2002-06-01T00:00:00.000Z')) == 22)//aged up in London
-  ok(_ageDate('19800601', offset.alps,        Date.parse('2002-06-01T00:00:00.000Z')) == 22)//and in Paris
+  ok(_ageDate('19800601', offset.alps,        Date.parse('2002-06-01T00:00:00.000Z')) == 22)//and in Zurich
   ok(_ageDate('19800601', offset.lineIslands, Date.parse('2002-06-01T00:00:00.000Z')) == 22)//eastward edge
 
   //third and last, shift what the clock says now
   ok(_ageDate('19800601', 0, Date.parse('2002-01-01T00:00:00.000Z')) == 21)//start of the year
   ok(_ageDate('19800601', 0, Date.parse('2002-05-31T23:59:59.999Z')) == 21)//not quite your birthday yet
-  ok(_ageDate('19800601', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 22)//now the party's started
+  ok(_ageDate('19800601', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 22)//now the party's started 🎉
   ok(_ageDate('19800601', 0, Date.parse('2002-06-01T00:00:00.001Z')) == 22)//going hard
   ok(_ageDate('19800601', 0, Date.parse('2002-12-31T23:59:59.999Z')) == 22)//end of the year
 })

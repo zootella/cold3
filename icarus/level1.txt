@@ -173,3 +173,81 @@ Punctuation: Hyphen (-), Period (.), Underscore (_), and Tilde (~
 
 
 
+//  _     _      _   _         _             
+// | |__ (_)_ __| |_| |__   __| | __ _ _   _ 
+// | '_ \| | '__| __| '_ \ / _` |/ _` | | | |
+// | |_) | | |  | |_| | | | (_| | (_| | |_| |
+// |_.__/|_|_|   \__|_| |_|\__,_|\__,_|\__, |
+//                                     |___/ 
+
+/*
+ttd february
+you need to do this with birthdays
+user types it, YYYYMMDD, validate that, spell it out in words as they type
+obviously use the validate pattern you've got below for this
+so the form for the database is probably "YYYYMMDD" as text, not a number
+and the v returned has extra number types attached for .year .month .day
+
+test thsi out with the mobile keypad--can you disable the submit button when it's on the mobile keyboard and not the page? how does that work?
+
+and then, calculate the age of that birthday
+taking and using the local time zone as known by the page
+so if it's 12:30 AM local time on the page
+it may be easiest to get the day today local on the page
+and then sanity check that on the server with the server clock
+how does that work? is UTC at the start, end, or middle, oh right it's middle, of midnight around the world
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fin
+
+
+
+
+
+
+
+
