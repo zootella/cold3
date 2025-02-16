@@ -542,8 +542,8 @@ test(() => {
   ok(v.isValid && v.year == 2003 && v.month == 5 && v.day == 25)
 })
 
-const zoneMax = -((-12)*60)//the Howland Islands are UTC-12, reverse sign to match JavaScript's .getTimezoneOffset
-const zoneMin = -(14*60)//the Republic of Kiribati is UTC+14
+const zoneMax = (-12)*(-60)//the Howland Islands are UTC-12, times 60 minutes and flip sign to match JavaScript's .getTimezoneOffset
+const zoneMin =    14*(-60)//the Republic of Kiribati is UTC+14
 export function getPageOffsetMinutes() { return (new Date()).getTimezoneOffset() }//called by page
 export function ageDate(rawDate_fromUser, offsetMinutes_fromPage) {//called by server; how old is the given date where the page is?
   return _ageDate(//takes:
@@ -579,10 +579,10 @@ test(() => {
   const offset = {//presented left to right on the map, which is small to big UTC hour offsets, and big to small getTimezoneOffset()s
     bakerIsland:  720,//Baker Island (UTC-12) and the furthest westward possible 🗺️
     california:   480,//California (UTC-8 in winter)
-    rockies:      420,//Mountain time (UTC-7 in winter) ⛰️
+    rockies:      420,//Mountain time (UTC-7 in winter)
     caboVerde:     60,//Cabo Verde (UTC-1)
     london:         0,//London (UTC+0 in winter)
-    alps:         -60,//Zurich (UTC+1 in winter) 🇨🇭
+    alps:         -60,//Zurich (UTC+1 in winter)
     tokyo:       -540,//Tokyo (UTC+9)
     lineIslands: -840,//Line Islands (UTC+14) and the furthest eastward possible
   }//but what about summertime? daylight savings shifts don't go outside this range
@@ -610,7 +610,7 @@ test(() => {
   ok(_ageDate('19800601', offset.alps,        Date.parse('2002-06-01T00:00:00.000Z')) == 22)//and in Zurich
   ok(_ageDate('19800601', offset.lineIslands, Date.parse('2002-06-01T00:00:00.000Z')) == 22)//eastward edge
 
-  //third and last, shift what the clock says now
+  //third and last, hang out at the Shepherd Gate Clock for a year
   ok(_ageDate('19800601', 0, Date.parse('2002-01-01T00:00:00.000Z')) == 21)//start of the year
   ok(_ageDate('19800601', 0, Date.parse('2002-05-31T23:59:59.999Z')) == 21)//not quite your birthday yet
   ok(_ageDate('19800601', 0, Date.parse('2002-06-01T00:00:00.000Z')) == 22)//now the party's started 🎉
