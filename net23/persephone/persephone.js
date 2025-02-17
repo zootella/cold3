@@ -88,7 +88,7 @@ export async function sendMessage(provider, service, address, message) {
 		let access = await getAccess()
 		let fromName = access.get('ACCESS_MESSAGE_BRAND')
 		let fromEmail = access.get('ACCESS_MESSAGE_EMAIL')
-		let toEmail = checkEmail(address).adjusted
+		let toEmail = checkEmail(address).formFormal
 		let subjectText = source
 		let bodyText = content
 		let bodyHtml = `<html><body><p style="font-size: 24px; color: gray; font-family: 'SF Pro Rounded', 'Noto Sans Rounded', sans-serif;">${content}</p></body></html>`
@@ -97,7 +97,7 @@ export async function sendMessage(provider, service, address, message) {
 		else if (provider == 'Twilio.') { result = await message_TwilioEmail({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
 
 	} else if (service == 'Phone.') {
-		let toPhone = checkPhone(address).normalized
+		let toPhone = checkPhone(address).formFormal
 		let messageText = content
 
 		if      (provider == 'Amazon.') { result = await message_AmazonPhone({toPhone, messageText}) }
@@ -291,10 +291,3 @@ God, grant me the serenity to accept the things I cannot change,
 Courage to change the things I can,
 And wisdom to know the difference.
 */
-
-
-
-
-
-
-
