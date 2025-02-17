@@ -14,7 +14,7 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 } from './level0.js'
 import {
-Tag, tagLength, checkTag,
+Tag, Limit, checkTag,
 } from './level1.js'
 
 import {getQuery, readBody} from 'h3'
@@ -1263,7 +1263,7 @@ async function makeClock() {
 	let n = 0//test tags are numbered 1, 2, 3 to be unique
 	function testNow() { t += 1; return t }//get the simulated tick count now, which will be 1 millisecond after the last time you asked
 	function forward(d) { checkInt(d, 1); t += d }//move the simulated time forward by d milliseconds, like 2*Time.hour or however long you want to sleep
-	function testTag() { const prefix = 'TestTag'; return prefix + (((++n)+'').padStart(tagLength - prefix.length, '0')) }//get a simulated globally unique tag, which will be like "TestTag00000000000001", then 2, 3, and so on
+	function testTag() { const prefix = 'TestTag'; return prefix + (((++n)+'').padStart(Limit.tag - prefix.length, '0')) }//get a simulated globally unique tag, which will be like "TestTag00000000000001", then 2, 3, and so on
 	return {Now: testNow, forward, Tag: testTag, database: await getTestDatabase(), context: 'Test.'}
 }
 noop(async () => { const clock = await makeClock()//make a simulated clock for this test

@@ -144,7 +144,7 @@ functions that use module imports
 */
 export {
 
-tagLength, Tag, checkTag, checkTagOrBlank,
+Limit, Tag, checkTag, checkTagOrBlank,
 checkEmail, checkPhone,
 validateEmail, validatePhone, validateCard,
 checkAction,
@@ -166,7 +166,7 @@ helpful javascript functions with no module imports
 */
 export {
 
-Time, Size, textLimit, noop,
+Time, Size, noop,
 Now, sayDate, sayTick,
 test, ok, runTests,
 toss,
@@ -184,15 +184,12 @@ cut, cutLast,
 findFirst, findLast,
 swap, between,
 
-checkNumerals, checkBase16, checkAlpha, checkName,
-onlyNumerals, onlyBase16, onlyAlpha, onlyName,
-size4, number4,
 Bin, Data,
 base62ToInt, intToBase62,
 
 randomBetweenLight, randomBetween, randomCode,
 timeSafeEqual,
-hashLength, subtleHash, checkHash, hash,
+subtleHash, checkHash, hash,
 hashPassword,
 encrypt, decrypt,
 hmacSign,

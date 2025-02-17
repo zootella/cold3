@@ -31,7 +31,6 @@ Size.gb = 1024*Size.mb//gibibyte
 Size.tb = 1024*Size.gb//tebibyte
 Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
-export const textLimit = 2*Size.kb//browser-enforced limit for input and textarea fields on pages
 
 export const noop = (() => {})//no operation, a function that does nothing
 
@@ -472,66 +471,6 @@ test(() => {
 	ok(p.middle == 'emphasis')
 	ok(p.after == ' added')
 })
-
-//       _               _      _            _   
-//   ___| |__   ___  ___| | __ | |_ _____  _| |_ 
-//  / __| '_ \ / _ \/ __| |/ / | __/ _ \ \/ / __|
-// | (__| | | |  __/ (__|   <  | ||  __/>  <| |_ 
-//  \___|_| |_|\___|\___|_|\_\  \__\___/_/\_\\__|
-//                                               
-
-//toss if s is blank or has any characters that are not
-export function checkNumerals(s) { if(!(/^[0-9]+$/.test(s)))           toss('data', {s}) }
-export function checkBase16(s)   { if(!(/^[0-9a-f]+$/.test(s)))        toss('data', {s}) }
-export function checkAlpha(s)    { if(!(/^[0-9A-Za-z]+$/.test(s)))     toss('data', {s}) }
-export function checkName(s)     { if(!(/^[0-9A-Za-z.\-_]+$/.test(s))) toss('data', {s}) }
-
-//return s with everything removed except
-export function onlyNumerals(s) { return s.replace(/[^0-9]/g,           '') }//numerals 0-9
-export function onlyBase16(s)   { return s.replace(/[^0-9a-f]/g,        '') }//numerals 0-9 and letters a-f, for base16
-export function onlyAlpha(s)    { return s.replace(/[^0-9A-Za-z]/g,     '') }//0-9, A-Z, and a-z, for tags
-export function onlyName(s)     { return s.replace(/[^0-9a-zA-Z.\-_]/g, '') }//0-9, A-Z, a-z, and .-_, for screen names
-test(() => {
-	ok(onlyNumerals('0123456789') == '0123456789')
-	ok(onlyNumerals('  012345\t6789\r\n') == '0123456789')
-
-	let s = '\t0123456789 abcdef ghi ABC XYZ period ., hyphen -, underscore _ for names\r\n'
-	ok(onlyNumerals(s) == '0123456789')
-	ok(onlyBase16(s) == '0123456789abcdefededecefae')
-	ok(onlyAlpha(s) == '0123456789abcdefghiABCXYZperiodhyphenunderscorefornames')
-	ok(onlyName(s) == '0123456789abcdefghiABCXYZperiod.hyphen-underscore_fornames')
-
-	s = ' 0123456789 一二三 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ .-_ 🌴? yes '
-	ok(onlyBase16(s) == '0123456789abcdefe')
-	ok(onlyName(s) == '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-_yes')
-})
-
-//                                _ _       
-//  ___  __ _ _   _   _   _ _ __ (_) |_ ___ 
-// / __|/ _` | | | | | | | | '_ \| | __/ __|
-// \__ \ (_| | |_| | | |_| | | | | | |_\__ \
-// |___/\__,_|\__, |  \__,_|_| |_|_|\__|___/
-//            |___/                         
-
-// Describe big sizes and counts in four digits or less
-export function size4(n)   { return _number4(n, 1024, [' bytes', ' KB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB']) }
-export function number4(n) { return _number4(n, 1000, ['',       ' K',  ' M',  ' B',  ' T',  ' P',  ' E',  ' Z',  ' Y'])  }
-function _number4(n, power, units) {
-	var u = 0 // Start on the first unit
-	var d = 1 // Which has a value of 1 each
-	while (u < units.length) { // Loop to larger units until we can say n in four digits or less
-
-		var w = Math.floor(n / d) // Find out how many of the current unit we have
-		if (w <= 9999) return w + units[u] // Four digits or less, use this unit
-
-		u++ // Move to the next larger unit
-		d *= power
-	}
-	return n+'' // We ran out of units
-}
-
-
-
 
 
 
@@ -1062,7 +1001,7 @@ rename hash       -> hashText, which takes and returns text, careful to avoid wh
 */
 
 //compute the 32 byte SHA-256 hash value of data
-export const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
+const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
 export async function subtleHash(data) {
 	return Data({buffer: await crypto.subtle.digest('SHA-256', data.array())})
 }
@@ -2791,56 +2730,3 @@ export function roundDown(i, d) {
 test(() => {
 	ok(roundDown(10, 3) == 9)
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

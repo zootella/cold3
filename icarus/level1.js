@@ -5,10 +5,9 @@ Now, sayDate, sayTick,
 noop, test, ok, toss, checkInt, hasText, Size,
 log,
 say, look,
-checkText, checkAlpha,
+checkText,
 Data, randomBetween,
 starts, cut,
-onlyNumerals,
 fraction, exponent, int, big, deindent, newline,
 subtleHash, hash,
 } from './level0.js'
@@ -23,6 +22,141 @@ import {parsePhoneNumberFromString} from 'libphonenumber-js' //use to validate p
 
 
 
+
+
+
+export function liveBox(s) {
+	return
+	let date = validateDate(s)
+	let age
+	if (date.isValid) age = ageDate(s, 60, Now())
+	return {date, age}
+}
+
+
+
+
+
+
+
+
+
+
+
+//                                          _                   
+//  ___  __ _ _   _   _ __  _   _ _ __ ___ | |__   ___ _ __ ___ 
+// / __|/ _` | | | | | '_ \| | | | '_ ` _ \| '_ \ / _ \ '__/ __|
+// \__ \ (_| | |_| | | | | | |_| | | | | | | |_) |  __/ |  \__ \
+// |___/\__,_|\__, | |_| |_|\__,_|_| |_| |_|_.__/ \___|_|  |___/
+//            |___/                                             
+
+//remove all characters but the numerals 0-9
+export function onlyNumerals(s) { return s.replace(/[^0-9]/g, '') }
+test(() => {
+	ok(onlyNumerals('') == '')
+	ok(onlyNumerals('A') == '')
+	ok(onlyNumerals('0123456789') == '0123456789')
+	ok(onlyNumerals('  012345\t6789\r\n') == '0123456789')
+	ok(onlyNumerals(' 0123456789 一二三 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ .-_ 🌴? yes ', '0123456789'))
+})
+
+//use to say "5 things" like `${n} thing${sayPlural(n)}`
+export function sayPlural(i) {
+	return i == 1 ? '' : 's'
+}
+test(() => {
+	ok(sayPlural(0) == 's')//like "0 carrots"
+	ok(sayPlural(1) == '') //like "1 carrot"
+	ok(sayPlural(2) == 's')//like "2 carrots"
+})
+
+//group digits like "12,345"
+export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
+	if (!thousandsSeparator) thousandsSeparator = thinSpace
+	let minus = ''
+	if (s.startsWith('-')) { minus = '-'; s = s.slice(1) }//deal with negative numbers
+	if (s.length > 4) {//let a group of four through
+		s = s.split('').reverse().join('')//reversed
+		s = s.match(/.{1,3}/g).join(thousandsSeparator)//grouped reverse
+		s = s.split('').reverse().join('')//forward again
+	}
+	return minus+s
+}
+
+//say a huge integer like "802 billion"
+const _magnitudes = ['', ' thousand', ' million', ' billion', ' trillion', ' quadrillion', ' quintillion', ' sextillion', ' septillion', ' octillion', ' nonillion', ' decillion']
+export function sayHugeInteger(i) {
+	let b = big(i)
+	let u = 0
+	while (b >= 1000n && u < _magnitudes.length - 1) {
+		b /= 1000n
+		u++
+	}
+	return `${sayGroupDigits(b+'')}${_magnitudes[u]} year${sayPlural(i)}`
+}
+
+// Describe big sizes and counts in four digits or less
+export function saySize4(n)   { return _number4(n, 1024, [' bytes', ' KB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB']) }
+export function sayNumber4(n) { return _number4(n, 1000, ['',       ' K',  ' M',  ' B',  ' T',  ' P',  ' E',  ' Z',  ' Y'])  }
+function _number4(n, power, units) {
+	var u = 0 // Start on the first unit
+	var d = 1 // Which has a value of 1 each
+	while (u < units.length) { // Loop to larger units until we can say n in four digits or less
+
+		var w = Math.floor(n / d) // Find out how many of the current unit we have
+		if (w <= 9999) return w + units[u] // Four digits or less, use this unit
+
+		u++ // Move to the next larger unit
+		d *= power
+	}
+	return n+'' // We ran out of units
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//  _              
+// | |_ __ _  __ _ 
+// | __/ _` |/ _` |
+// | || (_| | (_| |
+//  \__\__,_|\__, |
+//           |___/ 
+
+//generate a new universally unique double-clickable tag of 21 letters and numbers
+export function Tag() {
+	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
+	return customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
+}
+
+//make sure a tag is exactly 21 letters and numbers, for the database
+export function checkTagOrBlank(s) { if (s === ''); else checkTag(s) }
+export function checkTag(s) { if (!hasTag(s)) toss('data', {s}) }
+export function hasTag(s) {
+	return (
+		typeof s == 'string' &&
+		s.length == Limit.tag &&
+		/^[0-9A-Za-z]+$/.test(s)
+	)
+}
+test(() => {
+	ok( hasTag('AgKxru95C7jFp5iPuK9O7'))
+	ok(!hasTag('AgKxru95C7jFp5iPuK9O7b'))//too long
+	ok(!hasTag('AgKxru95C7jFp5iPuK9_7'))//invalid character
+
+	ok(!hasTag(''))
+	checkTagOrBlank('')
+	checkTagOrBlank('21j3i1DJMw6JPkxYgTt1B')
+})
 
 
 
@@ -54,7 +188,7 @@ export const Limit = Object.freeze({
 	hash: 52,//a sha256 hash value in base32 without padding is exactly 52 characters, like "FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA"
 
 	//user submission limits
-	name: 42,//user names and route slugs can be up to 42 characters
+	name: 42,//user names and route slugs, super sized from twitter 15, 20 reddit, 30 gmail, and 32 tumblr
 	title: 280,//from twitter
 	post: 2200,//for posts and comments, from instagram and tiktok
 
@@ -76,75 +210,6 @@ test(async () => {
 	ok(Tag().length == Limit.tag)//program types
 	ok((await subtleHash(Data({random: 4}))).base32().length == Limit.hash)
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//  _              
-// | |_ __ _  __ _ 
-// | __/ _` |/ _` |
-// | || (_| | (_| |
-//  \__\__,_|\__, |
-//           |___/ 
-
-//generate a new universally unique double-clickable tag of 21 letters and numbers
-export const tagLength = 21//we're choosing 21, long enough to be unique, short enough to be reasonable
-export function Tag() {
-	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-	return customAlphabet(alphabet, tagLength)()//same default nanoid length
-}
-
-//make sure a tag is exactly 21 letters and numbers, for the database
-export function checkTag(s) {
-	checkText(s); checkAlpha(s)
-	if (s.length != tagLength) toss('data', {s})
-}
-test(() => {
-	checkTag('qqdTuhRdZwJwo7KKeaegs')
-})
-
-export function checkTagOrBlank(s) {
-	if (s === ''); else checkTag(s)
-}
-test(() => {
-	checkTagOrBlank('')
-	checkTagOrBlank('21j3i1DJMw6JPkxYgTt1B')
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //  _        _                             _   _ _                 
 // | |_ _ __(_)_ __ ___     __ _ _ __   __| | | (_)_ __   ___  ___ 
@@ -224,7 +289,7 @@ export function slug(s) {//will return blank if s doesn't have any safe characte
 	s = s.replace(/([-._~]{3,})/g, match => match.slice(0, 2))//allow groups of punctuation, but no longer than 2
 	s = s.replace(/\.{2,}/g, '.')//allow periods, but not 2 or more together
 
-	s = s.slice(0, nameLength)
+	s = s.slice(0, Limit.name)
 	s = s.replace(/^[^A-Za-z_]+|[^A-Za-z0-9_]+$/g, '')//must start Az_ but can end Az09_
 	return s
 }
@@ -259,15 +324,14 @@ yes, it should--both check that the given text can be made valid and normal, and
 add that check to the other checkSomething editions
 */
 
-const nameLength = 42//maximum length, super sized from twitter 15, 20 reddit, 30 gmail, and 32 tumblr
 export function validateName(raw) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let formPage = trim(raw)//"東京❤️女の子" valid for display on the page
 	let formFormal = slug(raw)//"Tokyo-Girl" working and correct route for links
 	let formNormal = formFormal.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
 	let isValid = (
-		hasText(formPage)   && formPage.length   <= nameLength &&
-		hasText(formFormal) && formFormal.length <= nameLength &&
-		hasText(formNormal) && formNormal.length <= nameLength
+		hasText(formPage)   && formPage.length   <= Limit.name &&
+		hasText(formFormal) && formFormal.length <= Limit.name &&
+		hasText(formNormal) && formNormal.length <= Limit.name
 	)
 	return {isValid, formNormal, formFormal, formPage, raw}
 
@@ -309,193 +373,27 @@ export function validatePost(raw) {//returns an array of paragraphs
 
 
 
-//earlier draft and thinking and attempt:
-//for use in the form, while typing, says if valid and suggests
-export function typeUserName({pageRaw, routeRaw}) {//if they changed pageRaw, omit routeRaw; if they typed routeRaw, include both
-	let pageName = pageRaw
-	let routeName = routeRaw
-	let lookName = routeName.toLowerCase()
-	return {
-		isValid: true,
-		hint: 'type something',
-		pageName,
-		routeName,
-		lookName,
-	}
-}
-//for use on both sides of fetch, throws on a problem
-export function checkUserName({pageName, routeName, lookName}) {
-	if (!routeName) routeName = lookName; if (!pageName) pageName = routeName//earlier are optional
-	/*
-	lots to do here later, like
-	pageName can't have double spaces or start or end with spaces--condensed must be the same as given
-	routeName lowercased must be lookName
-	those routes can have only letters, numbers, and -_.
-	but also can't have any of -_. next to one another
-	*/
-	//minimal check for today's need:
-	checkText(lookName)
-}
-//const nameLength = 42//we support the longest names in the business, yessiree!
-export function checkUserRoute(s) { if (!validUserRoute(s)) toss('check', {s}) }
-export function validUserRoute(s) {//check route text s, like "name-a"
-	return (
-		typeof s == 'string' && s.length >= 1 &&//string that's not blank
-		s.length <= nameLength &&//nor too long
-		/^[a-z0-9._-]+$/.test(s) &&//only lowercase letters, numbers, and ._- allowed
-		!(/[._-]{2}/.test(s))//but those three allowed characters can't appear together!
-		//ttd january, maybe also can't have a period at the start or the end
-		//and research what current popular platforms do--you haven't done enough research for this to design it properly
-	)
+
+
+
+
+
+//             _   _             
+//   __ _  ___| |_(_) ___  _ __  
+//  / _` |/ __| __| |/ _ \| '_ \ 
+// | (_| | (__| |_| | (_) | | | |
+//  \__,_|\___|\__|_|\___/|_| |_|
+//                               
+
+export function checkAction(action, list) {
+	checkText(action)
+	if (!/^[A-Z]/.test(action)) toss('form', {action, list})
+	if (!/\.$/.test(action))    toss('form', {action, list})
+	if (!list.includes(action)) toss('action not supported', {action, list})
 }
 test(() => {
-	ok(validUserRoute('a'))
-	ok(!validUserRoute('A'))
-	ok(validUserRoute('user-a'))
-	ok(!validUserRoute('user a'))
-	ok(validUserRoute('_some.name_'))
-	ok(!validUserRoute('some..name'))
-	ok(!validUserRoute('some.-name'))
+	checkAction('Do.', ['Do.', 'Some.', 'Thing.'])
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export function liveBox(s) {
-	return
-	let date = validateDate(s)
-	let age
-	if (date.isValid) age = ageDate(s, 60, Now())
-	return {date, age}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //             _ _     _       _       
 // __   ____ _| (_) __| | __ _| |_ ___ 
@@ -1060,64 +958,6 @@ noop(() => {
 
 
 
-//move these new say functions to level0, as they are general use and import nothing
-//move thinSpace into this section, also
-
-//say a huge integer like "802 billion"
-const _magnitudes = ['', ' thousand', ' million', ' billion', ' trillion', ' quadrillion', ' quintillion', ' sextillion', ' septillion', ' octillion', ' nonillion', ' decillion']
-function sayHugeInteger(i) {
-	let b = big(i)
-	let u = 0
-	while (b >= 1000n && u < _magnitudes.length - 1) {
-		b /= 1000n
-		u++
-	}
-	return `${sayGroupDigits(b+'')}${_magnitudes[u]} year${sayPlural(i)}`
-}
-
-//use to say "5 things" like `${n} thing${sayPlural(n)}`
-export function sayPlural(i) {
-	return i == 1 ? '' : 's'
-}
-test(() => {
-	ok(sayPlural(0) == 's')//like "0 carrots"
-	ok(sayPlural(1) == '') //like "1 carrot"
-	ok(sayPlural(2) == 's')//like "2 carrots"
-})
-
-//group digits like "12,345"
-export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
-	if (!thousandsSeparator) thousandsSeparator = thinSpace
-	let minus = ''
-	if (s.startsWith('-')) { minus = '-'; s = s.slice(1) }//deal with negative numbers
-	if (s.length > 4) {//let a group of four through
-		s = s.split('').reverse().join('')//reversed
-		s = s.match(/.{1,3}/g).join(thousandsSeparator)//grouped reverse
-		s = s.split('').reverse().join('')//forward again
-	}
-	return minus+s
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-deindent
-the first line will be blank
-the second line, the whitespace that starts it, must be removed from later lines
-actually just remove tabs, spaces after tabs stay, spaces stay
-later lines, that number of spaces, remove them
-the last line will be just whitespace, omit it
-*/
 
 
 
@@ -1133,26 +973,6 @@ the last line will be just whitespace, omit it
 
 
 
-
-/*
-here's a good first pinia task, maybe
-have log output that shows in /log, and any page, as you click around, can add to
-*/
-
-
-
-
-
-
-export function checkAction(action, list) {
-	checkText(action)
-	if (!/^[A-Z]/.test(action)) toss('form', {action, list})
-	if (!/\.$/.test(action))    toss('form', {action, list})
-	if (!list.includes(action)) toss('action not supported', {action, list})
-}
-test(() => {
-	checkAction('Do.', ['Do.', 'Some.', 'Thing.'])
-})
 
 
 
@@ -1271,50 +1091,3 @@ for (let i = 0; i < chronology.length; i++) {
 	lookup[p.tag] = p
 }
 export const postDatabase = { lookup, chronology }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

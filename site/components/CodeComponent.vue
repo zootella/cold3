@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-log, look, Now, textLimit, sayTick, newline, Data, Tag, hasText,
+log, look, Now, Limit, sayTick, newline, Data, Tag, hasText,
 getBrowserTag, isLocal,
 validatePhone,
 } from 'icarus'
@@ -54,7 +54,7 @@ async function clickedSend() {
 <p><code>{{helloStore.userTag}}</code> user tag</p>
 
 <p>
-	<input :maxlength="textLimit"
+	<input :maxlength="Limit.input"
 		type="tel" inputmode="numeric" enterkeyhint="Send Code"
 		v-model="refPhone" placeholder="sms number"
 		class="w-96"

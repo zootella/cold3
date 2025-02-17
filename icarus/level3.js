@@ -15,7 +15,7 @@ roundDown,
 
 } from './level0.js'
 import {
-Tag, tagLength, checkTag, checkTagOrBlank,
+Tag, Limit, checkTag, checkTagOrBlank,
 } from './level1.js'
 import {
 getAccess, Sticker, isLocal, isCloud,
@@ -180,10 +180,10 @@ export function getBrowserTag() {//use from a comonent's onMounted to be sure lo
 	let v = localStorage.getItem(browserTagName)
 	if (
 		hasText(v) &&
-		v.length == browserTagValuePrefix.length+tagLength &&
+		v.length == browserTagValuePrefix.length+Limit.tag &&
 		v.startsWith(browserTagValuePrefix)) {//read and return
 
-		return v.slice(-tagLength)
+		return v.slice(-Limit.tag)
 
 	} else {//make and return
 
