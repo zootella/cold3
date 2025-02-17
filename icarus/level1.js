@@ -10,12 +10,89 @@ Data, randomBetween,
 starts, cut,
 onlyNumerals,
 fraction, exponent, int, big, deindent, newline,
+subtleHash, hash,
 } from './level0.js'
 
 import {customAlphabet} from 'nanoid'                        //use to make unique tags
 import Joi from 'joi'                                        //use to validate email and card
 import creditCardType from 'credit-card-type'                //use to validate card
 import {parsePhoneNumberFromString} from 'libphonenumber-js' //use to validate phone
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//       _                          _            
+//   ___| |__   __ _ _ __ __ _  ___| |_ ___  ___ 
+//  / __| '_ \ / _` | '__/ _` |/ __| __/ _ \/ __|
+// | (__| | | | (_| | | | (_| | (__| ||  __/\__ \
+//  \___|_| |_|\__,_|_|  \__,_|\___|\__\___||___/
+//                                               
+
+export const middleDot = '·'
+export const thinSpace = ' '
+test(() => {
+	ok(middleDot === '\u00B7')//U+00B7 on websites about unicode
+	ok(thinSpace === '\u2009')//U+2009
+	ok(middleDot.length == 1 && Data({text: middleDot}).base16() == 'c2b7')//one character, but two bytes
+	ok(thinSpace.length == 1 && Data({text: thinSpace}).base16() == 'e28089')//one character, but three bytes
+})
+
+export const Limit = Object.freeze({
+
+	//program types
+	tag: 21,//tags are exactly 21 characters, like "JhpmKdxqPtxv6zXZWglBL"
+	hash: 52,//a sha256 hash value in base32 without padding is exactly 52 characters, like "FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA"
+
+	//user submission limits
+	name: 42,//user names and route slugs can be up to 42 characters
+	title: 280,//from twitter
+	post: 2200,//for posts and comments, from instagram and tiktok
+
+	//html form field limits
+	input: 512,//higher ceiling for single line form fields
+	area: 10000,//and for text areas, from twitter DMs and reddit posts
+})
+test(async () => {
+	function f(s, characters, bytes) {
+		ok(s.length == characters)
+		ok(Data({text: s}).size() == bytes)
+	}
+	//we'll enforce the above limits with the easy and common s.length, while realizing percieved characters and actual bytes are not always the same!
+	f('A', 1, 1)//simple letter A, one character, one byte
+	f('é', 1, 2)//acute e, one character, two bytes
+	f('😀', 2, 4)//emoji and instagram fonts can be more!
+	f('𝓗', 2, 4)
+
+	ok(Tag().length == Limit.tag)//program types
+	ok((await subtleHash(Data({random: 4}))).base32().length == Limit.hash)
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -68,23 +145,6 @@ test(() => {
 
 
 
-
-
-//       _                          _                
-//   ___| |__   __ _ _ __ __ _  ___| |_ ___ _ __ ___ 
-//  / __| '_ \ / _` | '__/ _` |/ __| __/ _ \ '__/ __|
-// | (__| | | | (_| | | | (_| | (__| ||  __/ |  \__ \
-//  \___|_| |_|\__,_|_|  \__,_|\___|\__\___|_|  |___/
-//                                                   
-
-export const middleDot = '·'
-export const thinSpace = ' '
-test(() => {
-	ok(middleDot === '\u00B7')//U+00B7 on websites about unicode
-	ok(thinSpace === '\u2009')//U+2009
-	ok(middleDot.length == 1 && Data({text: middleDot}).base16() == 'c2b7')//one character, but two bytes
-	ok(thinSpace.length == 1 && Data({text: thinSpace}).base16() == 'e28089')//one character, but three bytes
-})
 
 //  _        _                             _   _ _                 
 // | |_ _ __(_)_ __ ___     __ _ _ __   __| | | (_)_ __   ___  ___ 

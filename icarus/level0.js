@@ -1055,6 +1055,12 @@ test(() => {
 // |_| |_|\__,_|___/_| |_|
 //                        
 
+/*
+ttd february
+rename subtleHash -> hashData, which takes and returns Data
+rename hash       -> hashText, which takes and returns text, careful to avoid where you say hash and it's not the function!
+*/
+
 //compute the 32 byte SHA-256 hash value of data
 export const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
 export async function subtleHash(data) {
