@@ -189,7 +189,7 @@ base62ToInt, intToBase62,
 
 randomBetweenLight, randomBetween, randomCode,
 timeSafeEqual,
-subtleHash, checkHash, hash,
+checkHash, hashData, hashText,
 hashPassword,
 encrypt, decrypt,
 hmacSign,

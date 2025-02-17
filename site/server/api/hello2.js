@@ -1,7 +1,7 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
-checkTag, settingReadInt, settingWrite, headerGetOne, authenticateSignGet, hash, parse, print,
+checkTag, settingReadInt, settingWrite, headerGetOne, authenticateSignGet, hashText, parse, print,
 isCloud, hasText, recordHit,
 } from 'icarus'
 
@@ -48,7 +48,7 @@ async function doorHandleBelow({door, body, action}) {
 	}
 	let s = print(o)
 	let t = Now()
-	let v = await hash(s)
+	let v = await hashText(s)
 	r.hashPlain = s
 	r.hashValue = v
 	r.hashDuration = Now() - t//getting 0ms hash duration, which is great

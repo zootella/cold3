@@ -6,7 +6,7 @@ import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
-Data, decrypt, subtleHash, timeSafeEqual, hmacSign,
+Data, decrypt, hashData, timeSafeEqual, hmacSign,
 parse, print, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,

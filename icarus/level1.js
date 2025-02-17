@@ -9,7 +9,7 @@ checkText,
 Data, randomBetween,
 starts, cut,
 fraction, exponent, int, big, deindent, newline,
-subtleHash, hash,
+hashData, hashText,
 } from './level0.js'
 
 import {customAlphabet} from 'nanoid'                        //use to make unique tags
@@ -72,7 +72,7 @@ test(() => {
 
 //group digits like "12,345"
 export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
-	if (!thousandsSeparator) thousandsSeparator = thinSpace
+	if (!thousandsSeparator) thousandsSeparator = ','
 	let minus = ''
 	if (s.startsWith('-')) { minus = '-'; s = s.slice(1) }//deal with negative numbers
 	if (s.length > 4) {//let a group of four through
@@ -82,6 +82,13 @@ export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or 
 	}
 	return minus+s
 }
+test(() => {
+	ok(sayGroupDigits('') == '')
+	ok(sayGroupDigits('1234') == '1234')
+	ok(sayGroupDigits('12345') == '12,345')
+	ok(sayGroupDigits('-50') == '-50')
+	ok(sayGroupDigits('-70800') == '-70,800')
+})
 
 //say a huge integer like "802 billion"
 const _magnitudes = ['', ' thousand', ' million', ' billion', ' trillion', ' quadrillion', ' quintillion', ' sextillion', ' septillion', ' octillion', ' nonillion', ' decillion']
@@ -208,7 +215,7 @@ test(async () => {
 	f('𝓗', 2, 4)
 
 	ok(Tag().length == Limit.tag)//program types
-	ok((await subtleHash(Data({random: 4}))).base32().length == Limit.hash)
+	ok((await hashData(Data({random: 4}))).base32().length == Limit.hash)
 })
 
 //  _        _                             _   _ _                 
@@ -337,6 +344,34 @@ export function validateName(raw) {//raw text from either the first (page) or se
 
 	//ttd february, slug truncates to 42, but you need to add that here for maximum name length for page, also
 }
+test(() => {
+	function f(raw, normal, formal, page) {
+		let v = validateName(raw)
+		ok(v.formNormal == normal)
+		ok(v.formFormal == formal)
+		ok(v.formPage   == page)
+	}
+	let v = validateName('2 Rainbows 🌈🌈 4U ')//raw text from user that starts with number, contains emoji, and has an extra space at the end
+	ok(v.formPage == '2 Rainbows 🌈🌈 4U')//text to display on the page, trimmed
+	ok(v.formFormal == 'Rainbows-4U')//chosen route, case preserved
+	ok(v.formNormal == 'rainbows-4u')//normalized route to confirm unique and then reserve--both of these routes work
+
+	/*
+	ttd february
+	on the choose/change your user name form, there'll be two boxes
+	Name: [rawName]
+	      "formPage" will be your name as it appears on pages
+	Link: [rawLink]
+				"formFormal" will be your name as it shows up in links
+	(and the normalized link, which maybe you'll not show?)
+	you think you can use validateName() for both boxes
+	if the user changes text in the name box, then you do v = validateName(rawName), and v.formFormal => Link
+	if the user changes text in the link box, you leave Name alone, and do v = validateName(rawLink)
+
+	yeah you need to see what it's like if you're typing in a box the page is also changing text in
+	but you're pretty sure you can do both boxes with just this one function, as written, which is cool
+	*/
+})
 
 //  _   _ _   _                        _                   _   
 // | |_(_) |_| | ___    __ _ _ __   __| |  _ __   ___  ___| |_ 

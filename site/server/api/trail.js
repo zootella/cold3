@@ -1,7 +1,7 @@
 
 import {
 doorWorker, Sticker, log, look, toss, Now, Tag, getAccess,//ttd february, maybe, *maybe*, now that the project structure has settled down, pick a small repertoire and define them in that thing that means the're available everywhere in nuxt components and endpoints and stores and plugins. but back out again if there's any trouble, just like you did the last time!
-checkTextOrBlank, Time, hash,
+checkTextOrBlank, Time, hashText,
 trailCount, trailRecent, trailAdd,
 } from 'icarus'
 
@@ -13,7 +13,7 @@ async function doorHandleBelow({door, body, action}) {//ttd february, what if yo
 	r.sticker = Sticker().all
 
 	checkTextOrBlank(body.message)
-	let h = await hash(body.message)
+	let h = await hashText(body.message)
 	r.hash = h
 
 	if (body.action == 'Get.') {

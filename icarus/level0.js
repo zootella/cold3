@@ -1002,14 +1002,14 @@ rename hash       -> hashText, which takes and returns text, careful to avoid wh
 
 //compute the 32 byte SHA-256 hash value of data
 const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
-export async function subtleHash(data) {
+export async function hashData(data) {
 	return Data({buffer: await crypto.subtle.digest('SHA-256', data.array())})
 }
 test(async () => {
 	let d = Data({random: 500})//hash 500 random bytes, different every time we run the test
-	let h = await subtleHash(d)
+	let h = await hashData(d)
 	ok(h.size() == 32)//32 byte hash value, around 44 base62 characters
-	let d2 = await subtleHash(Data({text: 'hello'}))
+	let d2 = await hashData(Data({text: 'hello'}))
 	ok(d2.base16() == '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')//found on the web
 	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
 	ok(d2.base32().length == hashLength)
@@ -1023,11 +1023,11 @@ test(() => {
 	//also tried blank, bad character, too short, too long
 })
 
-export async function hash(s) {//convenience function which goes text encoder to base 32
-	return (await subtleHash(Data({text: s.normalize('NFC')}))).base32()//use Normalization Form C
+export async function hashText(s) {//convenience function which goes text encoder to base 32
+	return (await hashData(Data({text: s.normalize('NFC')}))).base32()//use Normalization Form C
 }
 test(async () => {
-	ok((await hash('example')) == 'KDMFRYEYL3GH6YCBRKXQZRNLLB7UFQSXBKEEBFNJ5DGKZUHWKROA')
+	ok((await hashText('example')) == 'KDMFRYEYL3GH6YCBRKXQZRNLLB7UFQSXBKEEBFNJ5DGKZUHWKROA')
 })
 //ttd february--ok, the reason you can't call this hash is because you want to use that for variable names, duh! so maybe hashData and hashText. also, these throw on blank or empty because Data can't be empty. so maybe that's ok, or maybe you do some times want to hash no data or no text. if so, then probably don't change data, rather, hard code in the empty value
 
