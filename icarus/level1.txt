@@ -715,6 +715,17 @@ exporty({margin});
 
 
 
+function linesLength_draft(a) {
+	let l = 0
+
+	//total up all the lines
+	//doesn't include newlines, 
+
+	//ok, on the page these will become p; in the database separate by \n, i guess?
+	//ttd february
+
+	//maybe lines above returns an object with the array, text with \n, and length and size already all in there; yeah
+}
 
 
 
@@ -723,10 +734,34 @@ exporty({margin});
 
 
 
+export const Limit = Object.freeze({
+
+	//program types
+	tag: 21,//tags are exactly 21 characters, like "JhpmKdxqPtxv6zXZWglBL"
+	hash: 52,//a sha256 hash value in base32 without padding is exactly 52 characters, like "FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA"
+
+	//user submission limits
+	name: 42,//user names and route slugs, super sized from twitter 15, 20 reddit, 30 gmail, and 32 tumblr
+	title: 280,//from 𝕏 née Twitter
+	post: 2200,//for posts and comments, from instagram and tiktok
+
+	//html form field limits
+	input: 512,//higher ceiling for single line form fields
+	area: 10000,//and for text areas, from twitter DMs and reddit posts
+})
 
 
 
 
+
+//ttd february, you need to add maximum length truncation and checks to these. actually set limits in the page, and enforce them here--if somehow text makes it down that's over that limit, you don't have to truncate, just isValid false
+/*
+no, just have these truncate
+and then also set the same limits in the page so the page stops accepting keystrokes
+
+how long is the declaration of independence?
+see what this is like, experience-wise, on the page
+*/
 
 
 

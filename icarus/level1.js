@@ -172,12 +172,14 @@ test(() => {
 
 
 
-//       _                          _            
-//   ___| |__   __ _ _ __ __ _  ___| |_ ___  ___ 
-//  / __| '_ \ / _` | '__/ _` |/ __| __/ _ \/ __|
-// | (__| | | | (_| | | | (_| | (__| ||  __/\__ \
-//  \___|_| |_|\__,_|_|  \__,_|\___|\__\___||___/
-//                                               
+
+
+//       _                          _                
+//   ___| |__   __ _ _ __ __ _  ___| |_ ___ _ __ ___ 
+//  / __| '_ \ / _` | '__/ _` |/ __| __/ _ \ '__/ __|
+// | (__| | | | (_| | | | (_| | (__| ||  __/ |  \__ \
+//  \___|_| |_|\__,_|_|  \__,_|\___|\__\___|_|  |___/
+//                                                   
 
 export const middleDot = '·'
 export const thinSpace = ' '
@@ -196,13 +198,18 @@ export const Limit = Object.freeze({
 
 	//user submission limits
 	name: 42,//user names and route slugs, super sized from twitter 15, 20 reddit, 30 gmail, and 32 tumblr
-	title: 280,//from twitter
+	title: 280,//from 𝕏 née Twitter
 	post: 2200,//for posts and comments, from instagram and tiktok
 
 	//html form field limits
 	input: 512,//higher ceiling for single line form fields
 	area: 10000,//and for text areas, from twitter DMs and reddit posts
 })
+export function cropToLimit(s, customLimit, defaultLimit) {
+	let limit = customLimit || defaultLimit//use the default limit if the caller above specified no custom limit
+	if (!limit) toss('use', {s, customLimit, defaultLimit})//you must call crop with a default limit!
+	return s.length > limit ? s.slice(0, limit) : s//take just the first part, up to the limit, if s is too long
+}
 test(async () => {
 	function f(s, characters, bytes) {
 		ok(s.length == characters)
@@ -212,51 +219,61 @@ test(async () => {
 	f('A', 1, 1)//simple letter A, one character, one byte
 	f('é', 1, 2)//acute e, one character, two bytes
 	f('😀', 2, 4)//emoji and instagram fonts can be more!
-	f('𝓗', 2, 4)
+	f('𝕏', 2, 4)
 
 	ok(Tag().length == Limit.tag)//program types
 	ok((await hashData(Data({random: 4}))).base32().length == Limit.hash)
 })
+test(() => {
+	let limit; ok(cropToLimit('123456', limit, 5) == '12345')//limit not set, so goes to the required given default
+	limit = 3; ok(cropToLimit('123456', limit, 5) == '123')
+})
 
-//  _        _                             _   _ _                 
-// | |_ _ __(_)_ __ ___     __ _ _ __   __| | | (_)_ __   ___  ___ 
-// | __| '__| | '_ ` _ \   / _` | '_ \ / _` | | | | '_ \ / _ \/ __|
-// | |_| |  | | | | | | | | (_| | | | | (_| | | | | | | |  __/\__ \
-//  \__|_|  |_|_| |_| |_|  \__,_|_| |_|\__,_| |_|_|_| |_|\___||___/
-//                                                                 
+//  _        _             _ _                 
+// | |_ _ __(_)_ __ ___   | (_)_ __   ___  ___ 
+// | __| '__| | '_ ` _ \  | | | '_ \ / _ \/ __|
+// | |_| |  | | | | | | | | | | | | |  __/\__ \
+//  \__|_|  |_|_| |_| |_| |_|_|_| |_|\___||___/
+//                                             
 
 //split the given text into an array of lines, omitting blank lines, and trimming and coalescing space in each line
-export function lines(s) {
-	return (s
+export function trimLines(s, limit) {
+	let cropped = cropToLimit(s, limit, Limit.area)
+	let lines = (cropped
 		.replace(/[\r\n\u2028\u2029]+/gu, '\n')//turn each group of any newlines into just \n all Mac classic-style
 		.split('\n')//to then split the text into an array of lines
-		.map(line => trim(line))//trim each line and collapse internal whitespace
+		.map(line => trimLine(line, limit))//trim each line and collapse internal whitespace
 		.filter(line => line.length > 0)//and omit blank lines
-	 )
+	)
+	return {lines, text: lines.join('\n')}//text for the database, lines for the page
 }
 test(() => {
-	ok(lines('\A\r\nB').length == 2)
-	ok(lines('\nA\n\nB\n').length == 2)
+	ok(trimLines('A\r\nB').lines.length == 2)
+	ok(trimLines('\nA\n\nB\n').lines.length == 2)
+
+	//add some tests to confirm no blank lines, and .text ends \n
+	//ttd february
 })
 
 //trim space from the ends of s, and coalesce multiple whitespace characters
-export function trim(s) {
-	return (s
+export function trimLine(s, limit) {
+	let cropped = cropToLimit(s, limit, Limit.area)
+	return (cropped
 		.replace(/[\t\n\r\u2028\u2029]/gu, ' ')//first, convert ascii and unicode tabs and newlines into normal spaces
 		.trim()//remove whitespace from the ends
 		.replace(/(\s)\s+/gu, '$1')//remove all but the first whitespace character in groups of two or more
 	)
 }
 test(() => {
-	ok(trim('a') == 'a')
-	ok(trim('') == '')
-	ok(trim(' ') == '')
+	ok(trimLine('a') == 'a')
+	ok(trimLine('') == '')
+	ok(trimLine(' ') == '')
 
-	ok(trim('\nA\nB\n') == 'A B')
-	ok(trim('\tIndented  wide\r\n') == 'Indented wide')
+	ok(trimLine('\nA\nB\n') == 'A B')
+	ok(trimLine('\tIndented  wide\r\n') == 'Indented wide')
 
-	ok(trim(`$12${thinSpace+thinSpace}345${middleDot}67`) == `$12${thinSpace}345${middleDot}67`)
-	ok(trim('  First\u00A0 Last  ') == 'First\u00A0Last')//unicode nonbreaking space
+	ok(trimLine(`$12${thinSpace+thinSpace}345${middleDot}67`) == `$12${thinSpace}345${middleDot}67`)
+	ok(trimLine('  First\u00A0 Last  ') == 'First\u00A0Last')//unicode nonbreaking space
 })
 
 //      _                __                              _       
@@ -284,7 +301,9 @@ test(() => {
 })
 
 //sanitize text from the user that might be fine on the page for use in the URL, like a user name or post title
-export function slug(s) {//will return blank if s doesn't have any safe characters at all!
+export function slug(s, limit) {//will return blank if s doesn't have any safe characters at all!
+	s = cropToLimit(s, limit, Limit.name)
+
 	s = deaccent(s)//remove accents from vowels
 	s = s.replace(/[-–—]+/g, '-')//simplify dashes
 	s = s.replace(/[^A-Za-z0-9\s\-_.~]/gu, ' ')//allow all RFC 3986's unreserved characters, even tilde
@@ -296,7 +315,7 @@ export function slug(s) {//will return blank if s doesn't have any safe characte
 	s = s.replace(/([-._~]{3,})/g, match => match.slice(0, 2))//allow groups of punctuation, but no longer than 2
 	s = s.replace(/\.{2,}/g, '.')//allow periods, but not 2 or more together
 
-	s = s.slice(0, Limit.name)
+	s = cropToLimit(s, limit, Limit.name)
 	s = s.replace(/^[^A-Za-z_]+|[^A-Za-z0-9_]+$/g, '')//must start Az_ but can end Az09_
 	return s
 }
@@ -319,8 +338,8 @@ test(() => {
 // |_| |_|\__,_|_| |_| |_|\___|  \__,_|_| |_|\__,_| |_|  \___/ \__,_|\__\___|
 //                                                                           
 
-export function checkName(s) {//already validated text as a user's normalized route
-	let v = validateName(s)
+export function checkName(s, limit) {//already validated text as a user's normalized route
+	let v = validateName(s, limit)
 	if (!v.isValid)        toss('not valid',           {s, v})
 	if (v.formNormal != s) toss('round trip mismatch', {s, v})
 }
@@ -331,16 +350,18 @@ yes, it should--both check that the given text can be made valid and normal, and
 add that check to the other checkSomething editions
 */
 
-export function validateName(raw) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
-	let formPage = trim(raw)//"東京❤️女の子" valid for display on the page
-	let formFormal = slug(raw)//"Tokyo-Girl" working and correct route for links
+//bookmark
+export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
+	let cropped = cropToLimit(raw, limit, Limit.name)
+	let formPage = trimLine(cropped)//"東京❤️女の子" valid for display on the page
+	let formFormal = slug(cropped)//"Tokyo-Girl" working and correct route for links
 	let formNormal = formFormal.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
 	let isValid = (
 		hasText(formPage)   && formPage.length   <= Limit.name &&
 		hasText(formFormal) && formFormal.length <= Limit.name &&
 		hasText(formNormal) && formNormal.length <= Limit.name
 	)
-	return {isValid, formNormal, formFormal, formPage, raw}
+	return {isValid, formNormal, formFormal, formPage, raw, cropped}
 
 	//ttd february, slug truncates to 42, but you need to add that here for maximum name length for page, also
 }
@@ -380,21 +401,19 @@ test(() => {
 //  \__|_|\__|_|\___|  \__,_|_| |_|\__,_| | .__/ \___/|___/\__|
 //                                        |_|                  
 
-const titleLength = 128
-export function validateTitle(raw) {
-	let formNormal = trim(raw)
-	if (!hasText(formNormal) || formNormal.length > titleLength) return {formNormal, raw}
-	return {isValid: true, formNormal, raw}
+export function validateTitle(raw, limit) {
+	let cropped = cropToLimit(raw, limit, Limit.title)
+	let formNormal = trimLine(cropped)
+	if (!hasText(formNormal)) return {formNormal, raw, cropped}
+	return {isValid: true, formNormal, raw, cropped}
 }
 
-const postLength = 2*Size.kb
-export function validatePost(raw) {//returns an array of paragraphs
-	let a = lines(raw)
-	if (!a.length) return {raw}
-	//ttd february
-	return {isValid: true, formNormal: a, raw}
+export function validatePost(raw, limit) {//returns an array of paragraphs
+	let cropped = cropToLimit(raw, limit, Limit.post)
+	let lines = trimLines(cropped)
+	if (!hasText(lines.text)) return {raw, cropped}
+	return {isValid: true, formNormal: lines.text, lines, raw, cropped}//normal form is single string with \n at the end of each line, also including lines, the array, which will be useful if this is going to get rendered into <p> tags or something on a web page
 }
-//ttd february, you need to add maximum length truncation and checks to these. actually set limits in the page, and enforce them here--if somehow text makes it down that's over that limit, you don't have to truncate, just isValid false
 
 
 
@@ -494,16 +513,17 @@ and return an object like {isValid, formNormal, formFormal, formPage, raw, other
 
 const periodIgnorers = ['gmail.com', 'googlemail.com', 'proton.me', 'protonmail.com', 'pm.me', 'protonmail.ch']//these providers, gmail and protonmail, deliver mail addressed to first.last@gmail.com to the user firstlast@gmail.com
 const _email = Joi.string().email({tlds: {allow: false}}).required()//no list of true TLDs
-export function checkEmail(raw) { let v = validateEmail(raw); if (!v.isValid) toss('form', {v}); return v }
-export function validateEmail(raw) {
+export function checkEmail(raw, limit) { let v = validateEmail(raw, limit); if (!v.isValid) toss('form', {v}); return v }
+export function validateEmail(raw, limit) {
+	let cropped = cropToLimit(raw, limit, Limit.title)
 
 	/* (1) adjusted step for email
 	trim space before and after
 	don't touch space in the middle
 	*/
-	let formFormal = raw.trim()
+	let formFormal = cropped.trim()
 	let j1 = _email.validate(formFormal)
-	if (j1.error) return {formFormal, raw, j1}//isValid not true on these early returns
+	if (j1.error) return {formFormal, raw, cropped, j1}//isValid not true on these early returns
 
 	/* (2) presented step for email
 	leave the name the same, but lowercase the domain
@@ -513,7 +533,7 @@ export function validateEmail(raw) {
 	let p = cut(formFormal, "@")
 	let formPage = p.before + "@" + p.after.toLowerCase()
 	let j2 = _email.validate(formPage)
-	if (j2.error) return {formFormal, formPage, raw, j2}
+	if (j2.error) return {formFormal, formPage, raw, cropped, j2}
 
 	/* (3) normalized step for email
 	here, we want to prevent MrMorgan@example.com from creating a second account as mrmorgan@example.com
@@ -526,9 +546,9 @@ export function validateEmail(raw) {
 	if (periodIgnorers.includes(domain)) name = name.replace(/\./g, '')//first.last@gmail.com is really firstlast@gmail.com
 	let formNormal = name + "@" + domain
 	let j3 = _email.validate(formNormal)
-	if (j3.error) return {formFormal, formPage, formNormal, raw, j3}
+	if (j3.error) return {formFormal, formPage, formNormal, raw, cropped, j3}
 
-	return {isValid: true, formNormal, formFormal, formPage, raw}
+	return {isValid: true, formNormal, formFormal, formPage, raw, cropped}
 }
 test(() => {
 
@@ -582,23 +602,25 @@ test(() => {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___| | .__/|_| |_|\___/|_| |_|\___|
 //                                      |_|                           
 
-export function checkPhone(raw) { let v = validatePhone(raw); if (!v.isValid) toss('form', {v}); return v }
-export function validatePhone(raw) {
-	let numerals = onlyNumerals(raw)
+export function checkPhone(raw, limit) { let v = validatePhone(raw, limit); if (!v.isValid) toss('form', {v}); return v }
+export function validatePhone(raw, limit) {
+	let cropped = cropToLimit(raw, limit, Limit.title)
+
+	let numerals = onlyNumerals(cropped)
 	let assumedRegion//leave undefined if not US
 	if (numerals.length == 10 ||//assume all 10 digit numbers are US
 		(numerals.length == 11 && starts(numerals, '1')))//or they also typed the 1 at the start
 		assumedRegion = 'US'
 
-	let phone = parsePhoneNumberFromString(raw, assumedRegion)
-	if (!phone || !phone.isValid()) return {raw, assumedRegion, phone}
+	let phone = parsePhoneNumberFromString(cropped, assumedRegion)
+	if (!phone || !phone.isValid()) return {raw, cropped, assumedRegion, phone}
 
 	let formNormal = phone.format('E.164')//as established by the International Telecommunication Union
 	let formFormal = formNormal//use E.164 with APIs, also
 	let formPage = phone.formatInternational()//prettier, with spaces, for the user to see on the page
-	if (!hasText(formNormal) || !hasText(formPage)) return {formNormal, formFormal, formPage, raw, assumedRegion, phone}
+	if (!hasText(formNormal) || !hasText(formPage)) return {formNormal, formFormal, formPage, raw, cropped, assumedRegion, phone}
 
-	return {isValid: true, formNormal, formFormal, formPage, raw, assumedRegion, phone}
+	return {isValid: true, formNormal, formFormal, formPage, raw, cropped, assumedRegion, phone}
 }
 test(() => {
 	ok(!validatePhone('').isValid)//blank
@@ -646,20 +668,21 @@ test(() => {
 //                                                           
 
 const _card = Joi.string().creditCard().required()
-export function validateCard(raw) {
+export function validateCard(raw, limit) {
+	let cropped = cropToLimit(raw, limit, Limit.title)
 
 	/* (1) adjusted step for credit card number
 	just numerals, removing spaces, dots, dashes
 	/* (2) this is the normalized form
 	*/
-	let formNormal = onlyNumerals(raw)
+	let formNormal = onlyNumerals(cropped)
 
 	/* (3) intermediate step for a number the user hasn't finished typing yet
 	use braintree's credit-card-type module to get the type
 	this module also tells you how to group the numerals
 	*/
 	let cardType = creditCardType(formNormal)//from npm credit-card-type
-	if (!cardType.length) return {formNormal, raw, cardType, note: 'no type'}//cardType should be an array of at least one possible type
+	if (!cardType.length) return {formNormal, raw, cropped, cardType, note: 'no type'}//cardType should be an array of at least one possible type
 	let gaps = cardType[0].gaps//go with first identified type, but know that there can be several
 	let gap = 0//index in the array of gaps
 	let formPage = ''
@@ -670,14 +693,14 @@ export function validateCard(raw) {
 		}
 		formPage += formNormal[i]//bring in this numeral
 	}
-	if (onlyNumerals(formPage) != formNormal) return {formNormal, formPage, raw, cardType, note: 'round trip mismatch'}
+	if (onlyNumerals(formPage) != formNormal) return {formNormal, formPage, raw, cropped, cardType, note: 'round trip mismatch'}
 
 	/* (4) use joi to validate at the end
 	*/
 	let j1 = _card.validate(formNormal)//Joi will do the Luhn check, which credit-card-type can't do, so that's why we use both
-	if (j1.error) return {formNormal, formPage, raw, cardType, j1}
+	if (j1.error) return {formNormal, formPage, raw, cropped, cardType, j1}
 
-	return {isValid: true, formNormal, formPage, raw, cardType}//also return the detected type information
+	return {isValid: true, formNormal, formPage, raw, cropped, cardType}//also return the detected type information
 }
 test(() => {
 
@@ -743,6 +766,7 @@ export const months = ['',//Jan at index 1, Dec at 12
 export function checkDate(raw) { let v = validateDate(raw); if (!v.isValid) toss('form', {v}); return v }
 export function validateDate(raw) {
 	let adjusted = onlyNumerals(raw)
+	adjusted = cropToLimit(adjusted, undefined, 8)//"YYYYMMDD" is 8 characters
 	if (adjusted.length != 8) return {isValid: false, raw}
 	let year  = parseInt(adjusted.slice(0, 4), 10)
 	let month = parseInt(adjusted.slice(4, 6), 10)
