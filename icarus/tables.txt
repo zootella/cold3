@@ -1824,20 +1824,200 @@ ok, actually, a sign out does need to hide rows of previous sign ins
 
 
 
+slept on it
+if it's simpler (but you don't think it is) you could blow away a browser's provisional user if some other user signs in there
+provisional useres are great to help new people sign in for the first time
+but in a corner case that's more complex than that, it's actually a little weird if you're signing out and then there's still some fragment of something different left behind
+the most common cas when this will happen is it's the same human, who signed up and in disjointedly
+so yeah, you probably should blow away
+
+for logging, you want to have
+hit_text as a final notes column for lots of these
+when a table is about the user tag, exclusively, you can still have the browser tag where they did it in hit_text
+hit_text then includes all the columns of hit_table, but as json
+this is a good idea
 
 
 
+ok, yes, i think we are on the right track
+i did some more thinking along these lines, and will share that now
+
+before i get started, you mentioned Sessions
+i do want to say that our web app design is already, perhaps, not typical in that our framework does not have, nor allow, cookies or other common methods to create an automatic session
+here is what we have:
+- each browser always has a unique and unchanging browser tag
+- the database
+there's nothing else in the middle. no cookies, no memcache, no KV store, etc. we can tell a request is from the same browser as before (a moment before, a year before) because the incoming POST will include a browser tag that we have records about in the database
+my hope is that this limitation is freeing, in simplicity, rather than confining, as we come up with this design
+
+first, in the patterns set up by our DBA, tables in this app have three default "margin" columns:
+row_tag
+row_tick
+hide
+
+each row, when it is added, gets a guid that identifies the row, set in row_tag
+this is also the primary key, which must be unique
+these tags are always there, and we could use them in the application, but have not needed to do that yet
+instead, our application code so far is ignoring them
+
+row_tick is the unix epoch timestamp when the row was added
+in other tables in our application, we are using this timestamp
+if the row is about something that happened, we can know when the event happened by querying row_tick
+we don't have to make a separate column for like event_time_tick or something
+row_tick also lets us sort rows in chronological order
+other tabes use this to find, for instance, the most recently recorded row that is visible (described next) and fits other criteria
+we're finding this to be a useful pattern with our tables *a lot*!
+
+the third margin column is hide
+by default, hide is 0, meaning the row is visible
+instead of deleting rows, we hide them, as a way to audit things later outside of the context of the normal and automatic use of the running app and system as a whole
+our DBA set up the hide pattern as an insurance policy against something going wrong, and then it being very difficult to figure out what happened, looking at the current state of the database
+
+hide also means we usually do not edit rows
+instead, we make a new row (recording the timestamp row_tick of the edit)
+and hide the previous row the new one replaces
+
+ok, so as we design browser_table in this conversation, know that those are the first three margin rows
+we can follow the patterns of their use
+and also use them to avoid creating columns after unnecessarily
+
+ok, now ill revisit my thinking on the browser_table columns after the starting margin columns, which may be:
+browser_tag - identifying the browser and device, like "phone", "laptop" for the example ill get to in a moment
+user_tag - identifying the user as soon as they start giving the system information, even before completing sign up, like "alice", "bob" in the sketch below
+hide - an enumeration that says what happened, such as:
+0 signed out
+1 provisional user (provided information, but has not yet completed sign up to be able to sign out or sign in on this or any other device)
+2 actual user (traditional full user who can reset their password and all the common user stories)
+3 sudo authenticated--not sure on this one, but including it because my hope is we find a design which easily clearly simply extends to also cover this. a user on a device may want to do some elevated permission tasks, like changing a password or moving funds. to do this, they'll complete some two factor authentication step, and then be sudo authenticated--but with limitations that are unique to this level. their sudo-ness will only be on this one browser (identified by browser tag). and, it will only last one hour (start time identified by row tick)
+
+ok, so, from all that, now i'm sketching out scenarios of two users with two devices, doing different things. neither of these users are attackers--this is all happy path planning. also, while this scenario explores some edge cases, they will likely be not uncommon! ok, here's an example simulation
+
+browser_tag, user_tag, level, (event description):
+phone, alice, 1, alice on her phone starts the sign up process
+phone, alice, 2, and finishes it, creating a full regular account with a password and recovery options
+laptop, alice, 2, alice goes to her laptop, and signs in there. now she's signed in on both devices
+phone, alice, 0, back on her phone, alice clicks sign out
+
+a design choice that has come from management is that when a user signs out anywehre, they are signed out everywhere, as a security precaution (rather than having two sign out buttons, that a user may click the weaker when they are looking for the stronger--all sign outs are strong)
+
+so, i think (do you agree) that the system does the sign out as follows:
+add a row to record the sign out, but just for audit: phone, alice, 0
+hide all rows in the table about alice!
+(so, we could make the phone,alice,0 row visible and then hide all rows (as an alice row it will be hidden)
+or, we could make that row hidden to start, and then hide all the others--both have the same result)
+
+alice and bob are partners and share a laptop
+bob hears about the site, and wants to sign up to, grabbing the laptop
+
+laptop, bob, 1, bob begins his own sign up process
+
+bob doesn't finish, though, and next alice comes to the laptop, visits the site, and signs in
+
+laptop, alice, 2
+
+now the steps the server performs looking at this table to see who is signed into this browser tag will see the following
+looking at only visible rows, and filtered to the laptop browser tag
+there will be two rows
+bob's provisional presence, at an earlier time, recorded by 1
+alice's actual presence, at a more recent time, recorded by level 2
+
+it's correct for the handler to answer that at the laptop, alice is signed in
+so it must either pick the highest level? or the most recent time? here is a specific question i need your help with, to get the logic simple and correct and certain, even against all real-world permutations and possibilities!
+
+continuing our same scenario, alice finishes with the site, and signs out
+laptop, alice, 0, hidden
+the handler creates that row, and also hides all alice rows, for all browser tags, laptop and any others
+
+now, bob comes back to the laptop, where he most recently started signing up
+his stuff is there, because a request for server side code using this table to answer a page's questino "here's my browser tag, what user tag is here?" finds the laptop,bob,1 row, and answers bob, at level 1 (provisional)
+
+so all of that is an example of a single sceario
+
+so here's what i need your help with:
+
+(1) is my reasonging here correct? have i missed something with the logic of this design? some simple way a user can mess things up for themselves? some way that a user can create bad data in the table which will affect themselves or the app as a whole? (i need to be sure neither of these things, especially the second one, is possible!)
+
+(2) as a human, i can sketch out one scenario in a few minutes, an dthen a second in a few more minutes. i can try to guess at what some people on some devices might do next, and what the database table will look like as a result of those actions. and, at each step, when a request comes in to find out what user is at a given browser, what application code will do to look at the table and produce some answer to that question. but, i can't imagine twenty scenarios all at once, or easily be certain that my design covers all possible scenarios. so, that's what i need your help with--finding mistakes in my reasoning. following the logic of my rules, but maliciously, to get the database into an unusual state which will cause next requests to not work the way we want them to
+
+(3) if this design works, how would it work to build upon it and also have level 3 sudo? i've intentially left it out above, as i want to get the simple part working first. it's not absolutely necessary for the sudo access system to use browser_table--lots of user permission things will be handled by other tables and logic, either way
+
+ok, that's my thinking, and my questions
 
 
 
+ok, my feedback:
+
+these are good and valid suggestions, but are not within the scope of our discussion
+i need to get the columns and cells of browser_table correct
+and also make sure the steps that server code performs upon requests is correct and valid
+that's the part im working on (columns, cells, steps) those three
+
+yes, we can trust the clock
+we can trust that a single set of steps to handle a request are completed atomically
+we can trust that credentials are provided accordingly
+we don't have to worry about race conditions within steps
+we *do* need to make sure our design prevents things getting out of sync between events done at human timeframes (minutes later, hours later)
+
+you say "Use row_tick as the sudo start time and then add logic in your application to check if the current time is within one hour, or (make another column)" yes, i want to use row_tick for that. i do not want to make a new column unless necessary, as we are looking for a simple design that handles happy and edge cases, guards against malicious activity, and is small enough to easily reason about
+
+you say "Ensure that your code routinely checks"--this type of feedback is not helpful, for two reasons (1) our task here is to set the exact steps, at a high level, the code performs, not offer a platitude about it being vigilant, and (2) there is nothing here that runs "routinely"--rather, requests come in from browsers, telling us their browser tag, or taking an action related to a user providing information to sign up, signing up, signin in, or signing out. these POSTs are the only thing that happens, and when they do, an untrusted page can say whatever it wants, and then our trusted code on the server to handle that request can validate that data, using the exact rules we come up with, and read and write to browser_table. **that's it, and we have to be specific and complete and stay within that!!**
+
+you say "Testing Is Key: Since it can be hard to imagine every possible sequence" i know that--i need your help thinking of additinal sequences, dozens perhaps, even if we can't come up with every possible one, and then confirming that no sequence jumps the logic we come up for the event handlers to product a result, for the user, or in the table, which is outside our expected and intended behavior.
+
+so, based on all that, please, let's try again
 
 
 
+yeah, chat couldn't do it
+
+
+ok, here's new and your own thinking
+
+to sign out, you make a new row level 0
+and the immediately hide all rows about that user, which also hits the row you just made
+
+you can do sudo level 3
+if that's the most recent thing, and it's an hour+ old
+then do the cleanup where you hide rows about old sudo
+you think that existing sign-ins level 2 will show forth, then
+you could do this for just that user, or really for all useres, probably also fast
+but make sure you have an index for that
+and then if you pulled an expired sudo, you hide all expired sudos, and then repeat the search
+so we're slowing down not every request, just the requests for expired sudos
 
 
 
+let's see if you can help with this:
 
+```js
+[I] what are the high level functions on top of this?
 
+q1. im a browser with browser tag, what user if any is here? provisional, actual, or super
+{<same browserTag>, userTag, 1+ level} = await browserToUser({browserTag})
+
+c1. sign this user out everywhere right now!
+await signOut({userTag, browserTag})
+
+c2. the human here has entered information we should remember. they're not an actual user yet. make them a user tag to record that they were here, so they can pick up where they left off, maybe immediately, maybe in days
+{<same browserTag>, userTag, level=1provisional} = await createUser({browserTag})
+
+c3. the human here as proven they're this user with this user tag. sign them in here
+c4. the human here has finished signing up, using this previously provisional user tag. sign them in here
+await signInUser({browserTag, userTag})
+
+[II] and then there's the middle part you're also figuring out
+
+???
+
+[III] which calls down to a table that you're pretty sure now looks like this
+
+row_tag | row_tick | hide | browser_tag | user_tag | level
+^the three starting ones
+                            laptop        alice      0 signed out, but this row will immediately be hidden
+                                                     1 provisional user signing up or customizing
+                                                     2 normal actual signed in user
+                                                     3 sudo, just for one hour, and just here
+```
 
 
 

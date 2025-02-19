@@ -144,14 +144,30 @@ functions that use module imports
 */
 export {
 
-Limit, Tag, checkTag, checkTagOrBlank,
-checkEmail, checkPhone,
-validateEmail, validatePhone, validateCard,
-checkAction,
-measurePasswordStrength,
-generatePosts, postDatabase,
+liveBox,//move to whichever level you need it!
 
-liveBox,
+onlyNumerals, sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
+Tag, checkTagOrBlank, checkTag, hasTag,
+middleDot, thinSpace,
+Limit, cropToLimit,
+trimLines, trimLine,
+deaccent, slug,
+
+checkNameNormal,
+checkNamePage,
+checkName,
+validateName,
+
+validateTitle, validatePost,
+checkAction,
+checkEmail, validateEmail,
+checkPhone, validatePhone,
+checkCard, validateCard,
+months3, checkDate, validateDate, getPageOffsetMinutes, ageDate,
+
+measurePasswordStrength,
+
+generatePosts, postDatabase,
 
 } from './level1.js'
 

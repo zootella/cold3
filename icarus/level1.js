@@ -375,6 +375,7 @@ add that check to the other checkSomething editions
 */
 
 //bookmark
+//ttd february, maybe make these passed limits compulsory so below is simpler, and calls here are explicit; you have to say it in the html after all
 export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let cropped = cropToLimit(raw, limit, Limit.name)
 	let formPage = trimLine(cropped)//"東京❤️女の子" valid for display on the page
@@ -692,6 +693,7 @@ test(() => {
 //                                                           
 
 const _card = Joi.string().creditCard().required()
+export function checkCard(raw, limit) {}//ttd february, you never added this one
 export function validateCard(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
 
@@ -783,7 +785,7 @@ test(() => {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|  \__,_|\__,_|\__\___|
 //                                                           
 
-export const months = ['',//Jan at index 1, Dec at 12
+export const months3 = ['',//Jan at index 1, Dec at 12
 	'Jan', 'Feb', 'Mar', 'Apr',
 	'May', 'Jun', 'Jul', 'Aug',
 	'Sep', 'Oct', 'Nov', 'Dec']
@@ -802,7 +804,7 @@ export function validateDate(raw) {
 		isValid: true,
 		formNormal: adjusted,//store in database to record and identify duplicates
 		formFormal: adjusted,//not really used, would be the form we would hand to an API
-		formPage: `${year}-${months[month]}-${day}`,//form to show to the user on the page
+		formPage: `${year}-${months3[month]}-${day}`,//form to show to the user on the page
 		raw,//exactly the string we were given
 		year, month, day,//component information for use by code, these are numbers, not text, for instance
 	}
