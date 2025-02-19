@@ -381,14 +381,9 @@ export function validateName(raw, limit) {//raw text from either the first (page
 	let formPage = trimLine(cropped)//"東京❤️女の子" valid for display on the page
 	let formFormal = slug(cropped)//"Tokyo-Girl" working and correct route for links
 	let formNormal = formFormal.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
-	let isValid = (
-		hasText(formPage)   && formPage.length   <= Limit.name &&
-		hasText(formFormal) && formFormal.length <= Limit.name &&
-		hasText(formNormal) && formNormal.length <= Limit.name
-	)
-	return {isValid, formNormal, formFormal, formPage, raw, cropped}
-
-	//ttd february, slug truncates to 42, but you need to add that here for maximum name length for page, also
+	let isValid = hasText(formPage) && hasText(formFormal) && hasText(formNormal)
+	let formPageIsValid = hasText(formPage)
+	return {isValid, formNormal, formFormal, formPage, formPageIsValid, raw, cropped}
 }
 test(() => {
 	function f(raw, normal, formal, page) {
