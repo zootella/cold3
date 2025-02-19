@@ -295,29 +295,27 @@ test(() => {
 	ok(deaccent('français') == 'francais')
 	ok(deaccent('İstanbul (Not Constantinople)') == 'Istanbul (Not Constantinople)')//tmbg
 
-	//this method is pretty good and very simple, but really only works for vowels:
-	ok(deaccent('łódź') == 'łodz')
-	//chat says maybe NFKD could get those; there are also npm modules for this like slugify
+	ok(deaccent('łódź') == 'łodz')//this method is pretty good and very simple, but really only works for vowels; chat says NFKD might get this one; there's also npm slugify
 })
 
 //sanitize text from the user that might be fine on the page for use in the URL, like a user name or post title
 export function slug(s, limit) {//will return blank if s doesn't have any safe characters at all!
-	s = cropToLimit(s, limit, Limit.name)
+	s = cropToLimit(s, limit, Limit.name)//crop at the start; mutations below all make s the same length or shorter
 
 	s = deaccent(s)//remove accents from vowels
 	s = s.replace(/[-–—]+/g, '-')//simplify dashes
 	s = s.replace(/[^A-Za-z0-9\s\-_.~]/gu, ' ')//allow all RFC 3986's unreserved characters, even tilde
 
-	s = s.replace(/\s+/gu, ' ')//coalesce and convert groups of ascii and unicode space, tab, and new line characters into single spaces, note gu where we match with \s to be certain to include unicode spaces
+	s = s.replace(/\s+/gu, ' ')//coalesce and convert groups of ascii and unicode space, tab, and new line characters into single spaces, note "gu" where we match with \s to be certain to include unicode spaces
 	s = s.trim()
 	s = s.replace(/ /g, '-')//avoid %20
 
 	s = s.replace(/([-._~]{3,})/g, match => match.slice(0, 2))//allow groups of punctuation, but no longer than 2
 	s = s.replace(/\.{2,}/g, '.')//allow periods, but not 2 or more together
 
-	s = cropToLimit(s, limit, Limit.name)
 	s = s.replace(/^[^A-Za-z_]+|[^A-Za-z0-9_]+$/g, '')//must start Az_ but can end Az09_
-	return s
+
+	return s.replace(/[^A-Za-z0-9~.\-_]/g, '')//concluding sanity check to make sure we only let Az09~.-_ through
 }
 //export function liveBox(s) { return slug(s) }//live box is great for playing with slug, also
 test(() => {
@@ -337,6 +335,32 @@ test(() => {
 // | | | | (_| | | | | | |  __/ | (_| | | | | (_| | | | | (_) | |_| | ||  __/
 // |_| |_|\__,_|_| |_| |_|\___|  \__,_|_| |_|\__,_| |_|  \___/ \__,_|\__\___|
 //                                                                           
+
+
+
+
+/*
+checkNameNormal(nameNormal) makes sure nameNormal is a valid normalized route that doesn't change when we validate it
+checkNamePage(namePage) makes sure namePage is a valid name for the page that doesn't change when we validate it
+checkName(all three) makes sure that when we validate each of three they don't change, and also, that formal normalizes to normal!
+
+maybe put those into a single checkName which acts on what it's given--or maybe that's much harder to reason about
+*/
+
+
+
+
+
+
+
+export function checkNameNormal(s) {
+	//given a supposed normalized user route, confirm that it's normal, and validating it doesn't change it
+
+}
+export function checkNamePage(s) {
+
+}
+
 
 export function checkName(s, limit) {//already validated text as a user's normalized route
 	let v = validateName(s, limit)

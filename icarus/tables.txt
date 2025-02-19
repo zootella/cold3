@@ -1658,6 +1658,80 @@ queryUpdateCell selects a single row, if present, and changes the given column t
 
 
 
+the idea of how you approach
+start with the schema
+the very bottom, upwards
+then the functions that access that table
+place data in supabase manually
+code the read pathways
+then after all that is done, do the edit and write pathways
+
+previously you've been thinking write first, smallest possible loop
+but those get too big and too complicated when you switch from simple examples to real interactions
+
+
+name_table
+
+row_tag
+row_tick
+hide
+
+user_tag
+
+normal_text --reserved route, lowercase
+formal_text --chosen and correct route, chosen case
+page_text --chosen and correct name, only for page
+
+that's the schema, now here are the functions
+a GET request has come in--do we have a user by that name? is the case correct, or should we redirect?
+a user is trying to take a name--is it unique for them to take?
+
+{userTag, nameNormal, nameFormal, namePage} = await lookupUserTag({userTag})
+{userTag, nameNormal, nameFormal, namePage} = await lookupUserRoute({requestedRoute})
+lookupUserName({nameNormal nameFormal or namePage})
+
+actually could be just two functions
+{userTag, nameNormal, nameFormal, namePage} = await getUserName({
+	userTag//get information about this user
+	requestedRoute//to serve a GET request, find out if there's a user here
+	nameNormal//find out if this route is taken already
+	nameFormal
+	namePage//find out if this name is taken already
+})
+await setUserName({userTag, nameNormal, nameFormal, namePage})//makes a new row
+do you need to hide the older ones?
+
+indices are, you're going to lookup (all these as normal by hide and sorted tick)
+normal_text
+page_text
+
+
+
+
+takeUserName({userTag, nameNormal, nameFormal, namePage})//you've already checked for uniqueness in this same call, use to establish a user at a route for the first time, or change just nameFormal without changing the route, or just the display name on the page without
+
+
+getUserName -- returns {userTag}, or falsy if available
+getUserRoute({requestedRoute}) -- returns {userTag, nameFormal, nameNormal, shouldRedirect} or falsy if available
+takeUserName({userTag, nameNormal, nameFormal, namePage})//doesn't check for duplicates, does invalidate previous rows. use this when a user signs up, changes their name,
+or changes something that doesn't actually affect routing, like
+
+
+nameGetPage(raw)
+nameLookRoute(raw)//true if yes, available so you can take it
+
+nameLookupRoute
+
+
+
+other user stuff, like status, avatar, goes in profile_table
+but we do keep the user's name on the page here
+because it's closely related to their route
+and because we also want to enforce uniqueness there--we can't let two users both call themseves Tokyo❤️Girl, for instance
+
+
+
+actually, maybe you should have
 
 
 
@@ -1667,6 +1741,138 @@ queryUpdateCell selects a single row, if present, and changes the given column t
 
 
 
+
+simpler browser_table
+
+row_tag
+row_tick
+hide
+
+browser_tag
+user_tag
+
+and that's it
+
+(*) when a new person submits information, we make them a user tag, and sign them in at their browser tag
+
+browser_tag  user_tag
+----         ----
+browser1     user1
+
+(*) that user finishes signing in, or otherwise gains additional permissions; browser_table doesn't care
+
+(*) that person goes to a different computer,
+which immediately gets a new browser tag
+there, they prove they are the same person as before, we sign them in
+
+browser_tag  user_tag
+----         ----
+browser1     user1
+browser2     user1
+
+note how user_tag cannot be unique, as two rows with the same user tag are valid and how we keep the user signed in two places
+
+(*) on the second computer, browser2, the user clicks sign out
+we hide all the rows with user tag user1
+(note that we don't record a timestamp of when this happened, nor information about where it happened, which we're doing in this ultra-simple design to keep it simple)
+
+browser_tag  user_tag
+----         ----
+(no visible rows)
+
+(*) the user returns to browser1, and signs back in again
+
+browser_tag  user_tag
+----         ----
+browser1     user1
+
+(ok, so that's all fine; now imagine there's another user who starts out on browser2)
+
+(*) a new person goes to browser2, and Follow
+
+browser_tag  user_tag
+----         ----
+browser2     user2
+
+this is a real user tag, and user2 is signed into browser2. they can't sign in anywhere else, nor sign out, of course, until they create a real account, which they won't do yet
+
+(*) an existing user goes to browser2, and signs in
+
+browser_tag  user_tag
+----         ----
+browser2     user2
+
+
+
+hmm, maybe there is a level
+0 sign out
+1 provisional (clicked Follow or entered a phone number to get a code, didn't do anything more. user can pick up wher they left off by returning to this browser. they can't sign out, though, because they're not really signed in)
+2 actual (full account signed in. the user can sign out)
+3 dual factored (just for the next hour, and just on this browser, the user has elevated permissions)
+
+and, imagine we never hide rows, either! (making one part simpler and the other more complex)
+
+and then imagine a cluttered table, and we know a browserTag, and want to know whos signed in here
+
+
+ok, actually, a sign out does need to hide rows of previous sign ins
+
+(yeah, this is all interesting--you haven't figured it out yet!)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fin
 
 
 

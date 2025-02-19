@@ -2635,25 +2635,6 @@ export function getBrowserGraphics() {//returns an object like {renderer: "ANGLE
 }
 
 
-export function getBrowserAgentRendererAndVendor() {
-	let agent, renderer, vendor
-	if (defined(typeof navigator)) agent = navigator.userAgent
-	if (defined(typeof document)) {
-		let e = document.createElement('canvas')//make a HTML5 <canvas> tag element; doesn't append it to the DOM
-		let c = e.getContext('webgl') || e.getContext('experimental-webgl')
-		if (c) {
-			let x = c.getExtension('WEBGL_debug_renderer_info')
-			if (x) {
-				renderer = c.getParameter(x.UNMASKED_RENDERER_WEBGL)
-				vendor   = c.getParameter(x.UNMASKED_VENDOR_WEBGL)
-			}
-		}
-	}
-	return {agent, renderer, vendor}
-}
-noop(() => {
-	log(look(getBrowserAgentRendererAndVendor()))
-})
 
 
 

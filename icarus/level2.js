@@ -1423,6 +1423,7 @@ export async function queryAddRows({table, rows, clock}) { const {Now, Tag, data
 
 //hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
 export async function queryHideRows({table, titleFind, cellFind, hideSet, clock}) {
+	if (!hideSet) hideSet = 1//make sure we never set hide to 0, and use the custom passed hideSet number code, or 1 the generic default
 	await queryUpdateCells({table, titleFind, cellFind, titleSet: 'hide', cellSet: hideSet, clock})
 }
 //change the vertical column of cells under titleSet to cellSet in all the rows that have cellFind under titleFind

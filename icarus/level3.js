@@ -445,6 +445,7 @@ CREATE TABLE browser_table (
 	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
 	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
 );
+-- ttd february, should there be unique indicies to enforce uniqueness of visible rows?
 
 -- index to get visible rows about a browser, recent first, quickly
 CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);
@@ -458,6 +459,41 @@ export async function browserToUser({browserTag}) {//what user, if any, is signe
 		title2: 'signed_in', cell2GreaterThan: 0,
 	})
 	return row?.user_tag
+	/*
+	ttd february
+	stop overloading cell2 -- the strength and permissions of a sign in will be handled elsewhere, most likely
+	make browser_table really simple to think about (it's not yet)
+	a browser visits for the first time; they get a browser tag
+	the person enters the first bit of information; they get a user tag, this user tag isn't signed up yet, it's provisional
+	the person provides more information, finishes signing up--pretty sure browser_table doesn't care about that
+	the user signs out, everywhere--browser_table is all about this
+	a user 
+	*/
+}
+export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
+	checkTag(browserTag); checkTag(userTag)
+	await queryAddRow({
+		table: 'browser_table',
+		row: {
+			browser_tag: browserTag,
+			user_tag: userTag,
+			signed_in: 1,//1 means this row is about the user signing in here and now
+		}
+	})
+}
+export async function browserSignOut({browserTag, userTag}) {//sign the user at this browser out everywhere
+	checkTag(browserTag); checkTag(userTag)
+	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
+	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
+	//also, make a new row to record when the user signed out, and that they signed out from this browser
+	await queryAddRow({
+		table: 'browser_table',
+		row: {
+			browser_tag: browserTag,
+			user_tag: userTag,
+			signed_in: 0,//0 means this row is about the user signing out
+		}
+	})
 }
 
 //                                 _        _        _     _      
@@ -534,6 +570,93 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
 
+
+
+
+
+
+
+
+
+
+noop(`sql
+-- go between a user's tag, route, and name as it appears on the page
+CREATE TABLE name_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick     BIGINT                 NOT NULL,
+	hide         BIGINT                 NOT NULL,
+
+	user_tag     CHAR(21)               NOT NULL,
+
+	normal_text  TEXT                   NOT NULL,  -- like "user-name", route lowercased to check unique
+	formal_text  TEXT                   NOT NULL,  -- like "User-Name", route with case the user chose
+	page_text    TEXT                   NOT NULL   -- like "User Name", the user's name for pages and cards
+);
+
+-- indices to ensure unique values in these columns among visible rows, for defense-in-depth, as setName() prevents duplicates first
+CREATE UNIQUE INDEX name1 ON name_table (user_tag)    WHERE hide = 0;
+CREATE UNIQUE INDEX name2 ON name_table (normal_text) WHERE hide = 0;
+CREATE UNIQUE INDEX name3 ON name_table (formal_text) WHERE hide = 0;
+CREATE UNIQUE INDEX name4 ON name_table (page_text)   WHERE hide = 0;
+
+-- indices to make queries fast
+CREATE INDEX name5 ON name_table (hide, user_tag,    row_tick DESC); -- look up a user's route and name by their tag
+CREATE INDEX name6 ON name_table (hide, normal_text, row_tick DESC); -- what user is at this route? is it taken?
+CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC); -- is this page name taken?
+`)
+export async function getName({//look up user route and name information by one of these
+	userTag,//a user's tag we already know from another part of this request, OR
+	nameNormal,//the normalized route we're GETting for a browser, OR
+	namePage,//a page name a user is trying to take, to see if it's unique
+}) {
+	let row
+	if      (userTag)    { checkTag(userTag);           row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
+	else if (nameNormal) { checkNameNormal(nameNormal); row = await queryTop({table: 'name_table', title: 'normal_text', cell: nameNormal}) }
+	else if (namePage)   { checkNamePage(namePage);     row = await queryTop({table: 'name_table', title: 'page_text',   cell: namePage})   }
+	else { toss('use', {userTag, nameNormal, namePage}) }
+
+	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
+	return {userTag: row.user_tag, nameNormal: row.normal_text, nameFormal: row.formal_text, namePage: row.page_text}
+}
+export async function setName({userTag, nameNormal, nameFormal, namePage}) {
+	checkTag(userTag); checkName({nameNormal, nameFormal, namePage})
+	if ((await getName({nameNormal})) || (await getName({namePage}))) toss('unique', {userTag, nameNormal, nameFormal, namePage})//the route and page name must not be taken
+	await removeName({userTag})//replace an existing row about this user with a new one:
+	await queryAddRow({table: 'name_table', row: {user_tag: userTag, normal_text: nameNormal, formal_text: nameFormal, page_text: namePage}})
+}
+export async function removeName({userTag, hideSet}) {//remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
+	checkTag(userTag);
+	await queryHideRows({table: 'name_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //                  _         _        _     _      
 //  _ __ ___  _   _| |_ ___  | |_ __ _| |__ | | ___ 
 // | '__/ _ \| | | | __/ _ \ | __/ _` | '_ \| |/ _ \
@@ -608,6 +731,7 @@ CREATE TABLE settings_table (
 	setting_name_text   TEXT                   NOT NULL,  -- the name of the setting kept by this row
 	setting_value_text  TEXT                   NOT NULL   -- the value of that named setting, you have to store a number as text
 );
+-- ttd february, should there be unique indicies to enforce uniqueness of visible rows?
 
 -- index to quickly find a setting by its name
 CREATE INDEX settings1 ON settings_table (hide, setting_name_text, row_tick DESC);
@@ -820,32 +944,6 @@ export async function authenticateSignOut({browserTag}) {
 
 
 
-
-export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
-	checkTag(browserTag); checkTag(userTag)
-	await queryAddRow({
-		table: 'browser_table',
-		row: {
-			browser_tag: browserTag,
-			user_tag: userTag,
-			signed_in: 1,//1 means this row is about the user signing in here and now
-		}
-	})
-}
-export async function browserSignOut({browserTag, userTag}) {//sign the user at this browser out everywhere
-	checkTag(browserTag); checkTag(userTag)
-	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
-	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
-	//also, make a new row to record when the user signed out, and that they signed out from this browser
-	await queryAddRow({
-		table: 'browser_table',
-		row: {
-			browser_tag: browserTag,
-			user_tag: userTag,
-			signed_in: 0,//0 means this row is about the user signing out
-		}
-	})
-}
 
 
 

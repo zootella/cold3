@@ -211,7 +211,6 @@ noOverlap,
 ashFetchum,
 
 getBrowserGraphics,
-getBrowserAgentRendererAndVendor,
 
 sameIgnoringCase, sameIgnoringTrailingSlash,
 
