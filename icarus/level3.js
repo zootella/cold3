@@ -273,7 +273,8 @@ export function validateMessageForm() {
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
 //                                            
 
-noop(`sql
+const SQL = noop//keeping the schema alongside the code; run by copypastaing on the supabase dashboard
+SQL(`
 -- list all the tables, and all the indices
 SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename ASC;
 SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' ORDER BY indexname ASC;
@@ -328,7 +329,7 @@ export async function snippet3() {
 
 //use for practice
 
-noop(`sql
+SQL(`
 -- example table for demonstration, practice, and testing
 CREATE TABLE example_table (
 	row_tag    CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
@@ -350,7 +351,7 @@ CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get v
 // |_| |_|_|\__|  \__\__,_|_.__/|_|\___|
 //                                      
 
-noop(`sql
+SQL(`
 -- where is this hit coming from?
 CREATE TABLE hit_table (
 	row_tag         CHAR(21)  PRIMARY KEY  NOT NULL,
@@ -417,7 +418,7 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 // |___/\___|\__|\__|_|_| |_|\__, |___/  \__\__,_|_.__/|_|\___|
 //                           |___/                             
 
-noop(`sql
+SQL(`
 -- settings for the application as a whole
 CREATE TABLE settings_table (
 	row_tag             CHAR(21)  PRIMARY KEY  NOT NULL,
@@ -466,7 +467,7 @@ export async function settingWrite(name, value) {
 //  \__|_|  \__,_|_|_|  \__\__,_|_.__/|_|\___|
 //                                            
 
-noop(`sql
+SQL(`
 -- a thing that may be happening recently, is it too late? too soon? too frequent?
 CREATE TABLE trail_table (
 	row_tag   CHAR(21)  PRIMARY KEY  NOT NULL,
@@ -538,6 +539,19 @@ export async function trailAdd({hash}) {
 
 //ttd february, pulled these two out of the alphebetized list to finish them
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 //  _                                       _        _     _      
 // | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
 // | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
@@ -545,7 +559,7 @@ export async function trailAdd({hash}) {
 // |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
 //                                                                
 
-noop(`sql
+SQL(`
 -- what user is signed into this browser? sign users in and out
 CREATE TABLE browser_table (
 	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
@@ -696,7 +710,7 @@ export async function routeMove({userTag, destinationRouteText}) {//move a user 
 // |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
 //                                                     
 
-noop(`sql
+SQL(`
 -- go between a user's tag, route, and name as it appears on the page
 CREATE TABLE name_table (
 	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,

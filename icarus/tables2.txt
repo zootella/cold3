@@ -313,9 +313,30 @@ name_delete
 
 
 
+```
+lots of states, permissions, roles, and life cycle-stages to think about:
 
+most fundamental level:
+- create (happens when user signing up provides first bit of information)
+- identify
+- delete (happens when user or staff bans)
 
+slightly higher level on top of that:
+- provisional (clicked follow) or signed up (has password)
+- suspended (by staff)
+- hidden (by user)
 
+that kind of stuff, and then also, permissions:
+- provisional
+- normal
+- staff
+
+those categories and enumerations, and also, roles:
+- creator
+- just a fan
+
+and more?! lots ot figure out here as we go from ameoba-stage to small multicelled organism
+```
 
 
 
