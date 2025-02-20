@@ -5,7 +5,6 @@ doorWorker,
 Sticker,
 fetchNetwork23,
 validateEmail, validatePhone,
-legacyAccessSet, legacyAccessGet,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

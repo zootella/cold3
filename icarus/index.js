@@ -69,7 +69,6 @@ snippetQuery3,
 snippet3,
 
 settingReadInt, settingRead, settingWrite,
-legacyAccessSet, legacyAccessGet,
 recordHit,
 
 authenticateSignGet,

@@ -383,49 +383,9 @@ export async function snippet3() {
 	log("hi from snippet 3")
 }
 
-//                                _        _     _      
-//   __ _  ___ ___ ___  ___ ___  | |_ __ _| |__ | | ___ 
-//  / _` |/ __/ __/ _ \/ __/ __| | __/ _` | '_ \| |/ _ \
-// | (_| | (_| (_|  __/\__ \__ \ | || (_| | |_) | |  __/
-//  \__,_|\___\___\___||___/___/  \__\__,_|_.__/|_|\___|
-//                                                      
 
-noop(`sql
--- legacy access with single global password to unlock messaging
-CREATE TABLE access_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
-	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
-	hide         BIGINT                 NOT NULL,  -- 0 visible to begin, later nonzero reason why most code should ignore this row
 
-	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
-	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in
-);
 
--- index to get visible rows about a browser, sorted recent first, quickly
-CREATE INDEX access1 ON access_table (hide, browser_tag, row_tick DESC);
-`)
-
-// legacy, access_table, which has the global password and unlocks messaging
-//[]
-export async function legacyAccessSet(browserTag, signedInSet) {
-	let signedInSetInt = signedInSet ? 1 : 0
-	await queryAddRow({
-		table: 'access_table',
-		row: {
-			browser_tag: browserTag,
-			signed_in: signedInSetInt,
-		}
-	})
-}
-//[]
-export async function legacyAccessGet(browserTag) {
-	let row = await queryTop({
-		table: 'access_table',
-		title: 'browser_tag',
-		cell: browserTag,
-	})
-	return row?.signed_in
-}
 
 //  _                                       _        _     _      
 // | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
@@ -444,6 +404,10 @@ CREATE TABLE browser_table (
 	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
 	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
 	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
+
+
+	//delte and remake this, ttd february
+	with level 0 signed out, 1 provisional information, 2 normal, 3 super
 );
 -- ttd february, should there be unique indicies to enforce uniqueness of visible rows?
 

@@ -785,7 +785,6 @@ do you need users to pick unique user names to do this? you think so, and that's
 /* level 3 query */
 
 settingReadInt, settingRead, settingWrite,
-legacyAccessSet, legacyAccessGet,
 
 /* level 2 query */
 
@@ -2097,13 +2096,3 @@ and that's all separate from everything that's about to get settled in browser t
 
 
 fin
-
-
-
-
-
-
-
-
-
-

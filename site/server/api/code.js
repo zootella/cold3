@@ -2,7 +2,6 @@
 import {
 log, look, Tag, checkTag,
 doorWorker, getAccess,
-legacyAccessSet, legacyAccessGet,
 timeSafeEqual, checkAction, checkPhone,
 } from 'icarus'
 
