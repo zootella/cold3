@@ -1,7 +1,7 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
-checkTag, settingReadInt, settingWrite, browserToUser,
+checkTag, settingReadInt, settingWrite,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -14,7 +14,7 @@ async function doorHandleBelow({door, body, action}) {
 	checkTag(browserTag)
 
 	r.sticker = Sticker().all
-	r.userTag = await browserToUser({browserTag})
+//	r.userTag = await browserToUser({browserTag})
 
 	/*
 	/api/hello1

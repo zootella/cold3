@@ -1,7 +1,7 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
-checkTag, settingReadInt, settingWrite, headerGetOne, authenticateSignGet, hashText, parse, print,
+checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, print,
 isCloud, hasText, recordHit,
 } from 'icarus'
 
@@ -14,7 +14,8 @@ async function doorHandleBelow({door, body, action}) {
 	let browserTag = body.browserTag
 	checkTag(browserTag)
 
-	let {userTag, routeText} = await authenticateSignGet({browserTag})
+//	let {userTag, routeText} = await authenticateSignGet({browserTag})
+	let userTag, routeText
 
 	let h = door?.workerEvent?.req?.headers
 	r = {

@@ -76,16 +76,6 @@ authenticateSignUp,
 authenticateSignIn,
 authenticateSignOut,
 
-userToRoute,
-routeToUser,
-routeAdd,
-routeRemove,
-routeMove,
-
-browserToUser,
-browserSignIn,
-browserSignOut,
-
 trailCount,
 trailRecent,
 trailAdd,

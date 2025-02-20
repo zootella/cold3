@@ -1996,7 +1996,194 @@ so we're slowing down not every request, just the requests for expired sudos
 
 
 
+
+
+
+
+
+
+
+
+these are good: turn into documentation vvv
+/*
+notes excited about trailtable
+and, about anything! because it's usees hashes!
+
+too late - codes expire in 20min and we sent that one to you 25min ago
+too soon - we just sent you a code 30 seconds ago; try to look for it again. if you really can't find it, we can send you a new one after 5 minutes
+too frequent - we can't message that address anymore because we sent it 10 codes in the last 24 hours
+
+ok, that one, how do you tell them when they can come back?
+like, you could say come back tomorrow, for sure
+but it's also possible stuff will work sooner, as soon as the oldest code in that set recedes over the horizon
+
+well, you could do it like this:
+if you've sent 10 codes in the last 24 hours (trailCount)
+then we won't let you send another one for 6 hours (trailRecent)
+yeah, you're fine
+no--nevermind, three hours later there aren't 10 codes anymore, so the user can send more
+and, as written, we can't tell them when they can try again
+so you may need another query, that counts within a recent stripe of time, or something
+
+this may not matter because the person who hit this limit likely did a whole bunch, in a row, very recently
+so telling him he has to wait 24 hours to com eback is likely true
+and even if its not, even if it's actually 12 hours, we're trying to slow that person down at this point
+
+ok thought of how you do it
+as soon as you detect the overflow (10 codes in 24 hours)
+you record another row, representing the cool-down block
+that block says come back in 24 hours
+and then actually just lasts for 20 hours
+and then when checking if an address is cool to message, you look for
+1 current block in effect, searching for that hash value, and
+2 frequency at limit, so make a new block right now!
+
+extra things later you realized you can us ethis for:
+-a user has authenticated themselves at a single browser for an hour of super user permissions
+-
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//removed this because now we have name_table, which has routes
+
+//                  _         _        _     _      
+//  _ __ ___  _   _| |_ ___  | |_ __ _| |__ | | ___ 
+// | '__/ _ \| | | | __/ _ \ | __/ _` | '_ \| |/ _ \
+// | | | (_) | |_| | ||  __/ | || (_| | |_) | |  __/
+// |_|  \___/ \__,_|\__\___|  \__\__,_|_.__/|_|\___|
+//                                                  
+
+noop(`sql
+-- go between a user's tag and route
+CREATE TABLE route_table (
+	row_tag     CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick    BIGINT                 NOT NULL,
+	hide        BIGINT                 NOT NULL,
+
+	user_tag    CHAR(21)               NOT NULL,
+	route_text  TEXT                   NOT NULL   -- unique working route, normalized to lower case
+);
+
+-- quickly find the most recent visible row by user tag, and by route
+CREATE INDEX route1 ON route_table (hide, user_tag,   row_tick DESC);
+CREATE INDEX route2 ON route_table (hide, route_text, row_tick DESC);
+`)
+
+//[ran]
+export async function userToRoute({userTag}) {//given a user tag, find their route
+	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
+	return row ? row.route_text : false
+}
+//[ran]
+export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
+	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
+	return row ? row.user_tag : false
+}
+//[ran]
+export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
+	await queryAddRow({
+		table: 'route_table',
+		row: {
+			user_tag: userTag,
+			route_text: routeText,
+		}
+	})
+}
+//[ran]
+export async function routeRemove({userTag}) {//vacate the given user's route
+	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
+}
+//[ran]
+export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
+	await routeRemove({userTag})
+	await routeAdd({userTag, routeText: destinationRouteText})
+}
+
+//ttd january []confirm that an exception here causes throws up all the way back to the page
+//[]and hits datadog
+//and then deal with exceptions in the page
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 2025feb19
+
+## map
+
+
+
+userToRoute,
+routeToUser,
+routeAdd,
+routeRemove,
+routeMove,
+
+browserToUser,
+browserSignIn,
+browserSignOut,
+
+
+
+
+/level1
+
+checkNameNormal(nameNormal) makes sure nameNormal is a valid normalized route that doesn't change when we validate it
+checkNamePage(namePage) makes sure namePage is a valid name for the page that doesn't change when we validate it
+checkName(all three) makes sure that when we validate each of three they don't change, and also, that formal normalizes to normal!
+(maybe put those into a single checkName which acts on what it's given--or maybe that's much harder to reason about)
+
+validateName
+
+
+
+
+
+
+
+
 
 ## best thinking so far:
 
@@ -2071,6 +2258,23 @@ here are some big pices that are about to come together:
 -nuxt dynamic routes and redirects
 -check username form
 and that's all separate from everything that's about to get settled in browser table
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

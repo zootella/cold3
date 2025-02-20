@@ -12,10 +12,10 @@ fraction, exponent, int, big, deindent, newline,
 hashData, hashText,
 } from './level0.js'
 
-import {customAlphabet} from 'nanoid'                        //use to make unique tags
-import Joi from 'joi'                                        //use to validate email and card
-import creditCardType from 'credit-card-type'                //use to validate card
-import {parsePhoneNumberFromString} from 'libphonenumber-js' //use to validate phone
+import {customAlphabet} from 'nanoid'//use to make unique tags
+import Joi from 'joi'//use to validate email and card
+import creditCardType from 'credit-card-type'//use to validate card
+import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone
 
 
 
@@ -336,9 +336,7 @@ test(() => {
 // |_| |_|\__,_|_| |_| |_|\___|  \__,_|_| |_|\__,_| |_|  \___/ \__,_|\__\___|
 //                                                                           
 
-
-
-
+//ttd february
 /*
 checkNameNormal(nameNormal) makes sure nameNormal is a valid normalized route that doesn't change when we validate it
 checkNamePage(namePage) makes sure namePage is a valid name for the page that doesn't change when we validate it
@@ -347,21 +345,11 @@ checkName(all three) makes sure that when we validate each of three they don't c
 maybe put those into a single checkName which acts on what it's given--or maybe that's much harder to reason about
 */
 
-
-
-
-
-
-
 export function checkNameNormal(s) {
 	//given a supposed normalized user route, confirm that it's normal, and validating it doesn't change it
-
 }
 export function checkNamePage(s) {
-
 }
-
-
 export function checkName(s, limit) {//already validated text as a user's normalized route
 	let v = validateName(s, limit)
 	if (!v.isValid)        toss('not valid',           {s, v})
@@ -373,8 +361,9 @@ wait--should checkRoute, for instance, also validate that as given, it doesn't c
 yes, it should--both check that the given text can be made valid and normal, and that the given text is alerady valid and normal
 add that check to the other checkSomething editions
 */
+//ttd february, you also need to block this list
+const reservedRoutes = ['about', 'account', 'admin', 'administrator', 'app', 'ban', 'billing', 'blog', 'community', 'config', 'contact', 'creator', 'dashboard', 'developer', 'dm', 'e', 'f', 'fan', 'faq', 'feed', 'feedback', 'forum', 'help', 'home', 'i', 'legal', 'login', 'logout', 'manage', 'me', 'messages', 'moderator', 'my', 'notifications', 'official', 'privacy', 'profile', 'q', 'qr', 'register', 'report', 'root', 'search', 'settings', 'shop', 'signin', 'signout', 'signup', 'staff', 'status', 'store', 'subscribe', 'support', 'system', 'terms', 'unsubscribe', 'user', 'verify']
 
-//bookmark
 //ttd february, maybe make these passed limits compulsory so below is simpler, and calls here are explicit; you have to say it in the html after all
 export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let cropped = cropToLimit(raw, limit, Limit.name)

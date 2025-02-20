@@ -270,76 +270,6 @@ export function validateMessageForm() {
 
 
 
-
-/*
-const reservedRoutes = `
-about
-account
-admin
-administrator
-app
-ban
-billing
-blog
-community
-config
-contact
-creator
-dashboard
-developer
-e
-f
-fan
-faq
-feed
-feedback
-forum
-help
-home
-i
-legal
-login
-logout
-manage
-me
-messages
-moderator
-my
-notifications
-official
-privacy
-profile
-register
-report
-root
-search
-settings
-shop
-signin
-signout
-signup
-staff
-status
-store
-subscribe
-support
-system
-terms
-unsubscribe
-user
-verify
-`
-*/
-/*
-and what are your ideas for user names?
-upper and lower case fine
-length 1 through 42 fine
--_. fine but can't have multiple non letter number in a row
-can a  name start with a number or _? yes, to match twitter like _SomeName_
-
-check your previous notes on this
-*/
-
 //      _       _        _                    
 //   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
 //  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
@@ -383,9 +313,15 @@ export async function snippet3() {
 	log("hi from snippet 3")
 }
 
+//            _     _                     _        _     _      
+//   __ _  __| | __| |_ __ ___  ___ ___  | |_ __ _| |__ | | ___ 
+//  / _` |/ _` |/ _` | '__/ _ \/ __/ __| | __/ _` | '_ \| |/ _ \
+// | (_| | (_| | (_| | | |  __/\__ \__ \ | || (_| | |_) | |  __/
+//  \__,_|\__,_|\__,_|_|  \___||___/___/  \__\__,_|_.__/|_|\___|
+//                                                              
 
-
-
+//--this user mentioned, or proved they can read messages sent to, this address
+//address_table, ttd february
 
 //  _                                       _        _     _      
 // | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
@@ -403,16 +339,13 @@ CREATE TABLE browser_table (
 
 	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
 	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
-	signed_in    BIGINT                 NOT NULL   -- 0 signed out, 1 signed in, 2 authenticated second factor
-
-
-	//delte and remake this, ttd february
-	with level 0 signed out, 1 provisional information, 2 normal, 3 super
+	level        BIGINT                 NOT NULL   -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
 );
--- ttd february, should there be unique indicies to enforce uniqueness of visible rows?
 
 -- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);
+CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);  -- filter by browser
+CREATE INDEX browser2 ON browser_table (hide, user_tag, row_tick DESC);     -- or by user
+CREATE INDEX browser3 ON browser_table (hide, level, row_tick DESC);        -- quickly find expired super user hours
 `)
 
 export async function browserToUser({browserTag}) {//what user, if any, is signed in at this browser?
@@ -534,14 +467,12 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
 
-
-
-
-
-
-
-
-
+//                               _        _     _      
+//  _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
+// | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
+// | | | | (_| | | | | | |  __/ | || (_| | |_) | |  __/
+// |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
+//                                                     
 
 noop(`sql
 -- go between a user's tag, route, and name as it appears on the page
@@ -593,90 +524,15 @@ export async function removeName({userTag, hideSet}) {//remove a user's route an
 	await queryHideRows({table: 'name_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
 }
 
+//                   __ _ _        _        _     _      
+//  _ __  _ __ ___  / _(_) | ___  | |_ __ _| |__ | | ___ 
+// | '_ \| '__/ _ \| |_| | |/ _ \ | __/ _` | '_ \| |/ _ \
+// | |_) | | | (_) |  _| | |  __/ | || (_| | |_) | |  __/
+// | .__/|_|  \___/|_| |_|_|\___|  \__\__,_|_.__/|_|\___|
+// |_|                                                   
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//                  _         _        _     _      
-//  _ __ ___  _   _| |_ ___  | |_ __ _| |__ | | ___ 
-// | '__/ _ \| | | | __/ _ \ | __/ _` | '_ \| |/ _ \
-// | | | (_) | |_| | ||  __/ | || (_| | |_) | |  __/
-// |_|  \___/ \__,_|\__\___|  \__\__,_|_.__/|_|\___|
-//                                                  
-
-noop(`sql
--- go between a user's tag and route
-CREATE TABLE route_table (
-	row_tag     CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick    BIGINT                 NOT NULL,
-	hide        BIGINT                 NOT NULL,
-
-	user_tag    CHAR(21)               NOT NULL,
-	route_text  TEXT                   NOT NULL   -- unique working route, normalized to lower case
-);
-
--- quickly find the most recent visible row by user tag, and by route
-CREATE INDEX route1 ON route_table (hide, user_tag,   row_tick DESC);
-CREATE INDEX route2 ON route_table (hide, route_text, row_tick DESC);
-`)
-
-//[ran]
-export async function userToRoute({userTag}) {//given a user tag, find their route
-	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
-	return row ? row.route_text : false
-}
-//[ran]
-export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
-	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
-	return row ? row.user_tag : false
-}
-//[ran]
-export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
-	await queryAddRow({
-		table: 'route_table',
-		row: {
-			user_tag: userTag,
-			route_text: routeText,
-		}
-	})
-}
-//[ran]
-export async function routeRemove({userTag}) {//vacate the given user's route
-	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
-}
-//[ran]
-export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
-	await routeRemove({userTag})
-	await routeAdd({userTag, routeText: destinationRouteText})
-}
-
-//ttd january []confirm that an exception here causes throws up all the way back to the page
-//[]and hits datadog
-//and then deal with exceptions in the page
+//--user name and route are in route_table, this is for the stuff beyond that like status message and avatar image
+//ttd february, make profile_table
 
 //           _   _   _                   _        _     _      
 //  ___  ___| |_| |_(_)_ __   __ _ ___  | |_ __ _| |__ | | ___ 
@@ -695,13 +551,10 @@ CREATE TABLE settings_table (
 	setting_name_text   TEXT                   NOT NULL,  -- the name of the setting kept by this row
 	setting_value_text  TEXT                   NOT NULL   -- the value of that named setting, you have to store a number as text
 );
--- ttd february, should there be unique indicies to enforce uniqueness of visible rows?
 
--- index to quickly find a setting by its name
-CREATE INDEX settings1 ON settings_table (hide, setting_name_text, row_tick DESC);
+CREATE UNIQUE INDEX settings1 ON settings_table (setting_name_text) WHERE hide = 0;  -- among visible rows, setting names must be unique
 `)
 
-//[ran]
 export async function settingReadInt(name, defaultValue) {
 	return textToInt(await settingRead(name, defaultValue))
 }
@@ -715,7 +568,7 @@ export async function settingRead(name, defaultValue) {
 	}
 	return row['setting_value_text']
 }
-//[ran]
+
 export async function settingWrite(name, value) {
 	let valueText = value+''
 	checkText(name); checkTextOrBlank(valueText)
@@ -795,26 +648,6 @@ export async function trailAdd({hash}) {
 
 
 
-//              _   _                _   _           _         _        _     _      
-//   __ _ _   _| |_| |__   ___ _ __ | |_(_) ___ __ _| |_ ___  | |_ __ _| |__ | | ___ 
-//  / _` | | | | __| '_ \ / _ \ '_ \| __| |/ __/ _` | __/ _ \ | __/ _` | '_ \| |/ _ \
-// | (_| | |_| | |_| | | |  __/ | | | |_| | (_| (_| | ||  __/ | || (_| | |_) | |  __/
-//  \__,_|\__,_|\__|_| |_|\___|_| |_|\__|_|\___\__,_|\__\___|  \__\__,_|_.__/|_|\___|
-//                                                                                   
-
-//a user proves they are the same person as before
-
-//                   __ _ _        _        _     _      
-//  _ __  _ __ ___  / _(_) | ___  | |_ __ _| |__ | | ___ 
-// | '_ \| '__/ _ \| |_| | |/ _ \ | __/ _` | '_ \| |/ _ \
-// | |_) | | | (_) |  _| | |  __/ | || (_| | |_) | |  __/
-// | .__/|_|  \___/|_| |_|_|\___|  \__\__,_|_.__/|_|\___|
-// |_|                                                   
-
-//first it's just status message here; eventually this is user name, avatar image, all that
-
-
-
 
 
 
@@ -826,8 +659,6 @@ export async function trailAdd({hash}) {
 
 
 //ttd january - today's new level: self identified users with names that are routes
-
-
 /*
 bookmark january
 ok, clicking through these four work
@@ -836,24 +667,21 @@ ok, clicking through these four work
 []deal with an exception here telling the page 500--catch those in the page
 []understand where you check what up and down the stack
 []improve the form so you can show it to friends, like gray the buttons until they've entered text for user name that is an acceptable route; very minimal
-
+-
 and then what's next? maybe status message in a new table,
 which the user, once signed in, can edit--new component for this
 and then user page at a route that holds that message
 and that's where you figure out how to get nuxt to do mixed root routes, which hopefully is common and easy
 */
-
-//[]
 //determine what user is signed into the given connected browser, and also get their route text (which we're using as user name in this early intermediate stage)
-export async function authenticateSignGet({browserTag}) {
+export async function authenticateSignGet({browserTag}) { return
 	let userTag = await browserToUser({browserTag})
 	let routeText
 	if (userTag) routeText = await userToRoute({userTag})
 	return {browserTag, userTag, routeText}
 }
-//[]
 //make a new user and sign them in
-export async function authenticateSignUp({browserTag, routeText}) {
+export async function authenticateSignUp({browserTag, routeText}) { return
 	log('made it to authenticate sign up', look({browserTag, routeText}))
 	checkTag(browserTag); checkUserRoute(routeText)
 
@@ -861,14 +689,13 @@ export async function authenticateSignUp({browserTag, routeText}) {
 	if (occupant) return 'Taken.'
 
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	await routeAdd({userTag, routeText})
+	//await routeAdd({userTag, routeText})
 
-	await browserSignIn({browserTag, userTag})//and sign the new user into this browser
+	//await browserSignIn({browserTag, userTag})//and sign the new user into this browser
 	return {browserTag, userTag, routeText, note: 'signed up'}//just for testing; we won't send user tags to pages
 }
-//[]
 //sign an existing user in
-export async function authenticateSignIn({browserTag, routeText}) {
+export async function authenticateSignIn({browserTag, routeText}) { return
 	checkTag(browserTag); checkUserRoute(routeText)
 
 	let userTag = await routeToUser({routeText})
@@ -877,9 +704,8 @@ export async function authenticateSignIn({browserTag, routeText}) {
 	await browserSignIn({browserTag, userTag})
 	return {browserTag, userTag, routeText, note: 'signed in'}//just for testing; we won't send user tags to pages
 }
-//[]
 //if anybody's signed int this browser, sign them out!
-export async function authenticateSignOut({browserTag}) {
+export async function authenticateSignOut({browserTag}) { return
 	let userTag = await browserToUser({browserTag})
 	if (userTag) await browserSignOut({browserTag, userTag})
 }
@@ -917,55 +743,6 @@ export async function authenticateSignOut({browserTag}) {
 
 
 
-
-/*
-notes excited about trailtable
-and, about anything! because it's usees hashes!
-
-
-too late - codes expire in 20min and we sent that one to you 25min ago
-too soon - we just sent you a code 30 seconds ago; try to look for it again. if you really can't find it, we can send you a new one after 5 minutes
-too frequent - we can't message that address anymore because we sent it 10 codes in the last 24 hours
-
-ok, that one, how do you tell them when they can come back?
-like, you could say come back tomorrow, for sure
-but it's also possible stuff will work sooner, as soon as the oldest code in that set recedes over the horizon
-
-well, you could do it like this:
-if you've sent 10 codes in the last 24 hours (trailCount)
-then we won't let you send another one for 6 hours (trailRecent)
-yeah, you're fine
-no--nevermind, three hours later there aren't 10 codes anymore, so the user can send more
-and, as written, we can't tell them when they can try again
-so you may need another query, that counts within a recent stripe of time, or something
-
-this may not matter because the person who hit this limit likely did a whole bunch, in a row, very recently
-so telling him he has to wait 24 hours to com eback is likely true
-and even if its not, even if it's actually 12 hours, we're trying to slow that person down at this point
-
-ok thought of how you do it
-as soon as you detect the overflow (10 codes in 24 hours)
-you record another row, representing the cool-down block
-that block says come back in 24 hours
-and then actually just lasts for 20 hours
-and then when checking if an address is cool to message, you look for
-1 current block in effect, searching for that hash value, and
-2 frequency at limit, so make a new block right now!
-
-
-
-
-extra things later you realized you can us ethis for:
--a user has authenticated themselves at a single browser for an hour of super user permissions
--
-
-
-
-
-
-
-
-*/
 
 
 
