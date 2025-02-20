@@ -315,7 +315,8 @@ export function slug(s, limit) {//will return blank if s doesn't have any safe c
 
 	s = s.replace(/^[^A-Za-z_]+|[^A-Za-z0-9_]+$/g, '')//must start Az_ but can end Az09_
 
-	return s.replace(/[^A-Za-z0-9~.\-_]/g, '')//concluding sanity check to make sure we only let Az09~.-_ through
+	s = s.replace(/[^A-Za-z0-9~.\-_]/g, '')//concluding sanity check to make sure we only let Az09~.-_ through
+	return /[A-Za-z]/.test(s) ? s : ''//and only allow s if there's at least one letter, somewhere
 }
 //export function liveBox(s) { return slug(s) }//live box is great for playing with slug, also
 test(() => {
@@ -362,15 +363,15 @@ yes, it should--both check that the given text can be made valid and normal, and
 add that check to the other checkSomething editions
 */
 //ttd february, you also need to block this list
-const reservedRoutes = ['about', 'account', 'admin', 'administrator', 'app', 'ban', 'billing', 'blog', 'community', 'config', 'contact', 'creator', 'dashboard', 'developer', 'dm', 'e', 'f', 'fan', 'faq', 'feed', 'feedback', 'forum', 'help', 'home', 'i', 'legal', 'login', 'logout', 'manage', 'me', 'messages', 'moderator', 'my', 'notifications', 'official', 'privacy', 'profile', 'q', 'qr', 'register', 'report', 'root', 'search', 'settings', 'shop', 'signin', 'signout', 'signup', 'staff', 'status', 'store', 'subscribe', 'support', 'system', 'terms', 'unsubscribe', 'user', 'verify']
-
 //ttd february, maybe make these passed limits compulsory so below is simpler, and calls here are explicit; you have to say it in the html after all
+
+const reservedRoutes = ['about', 'account', 'admin', 'administrator', 'app', 'ban', 'billing', 'blog', 'community', 'config', 'contact', 'creator', 'dashboard', 'developer', 'dm', 'e', 'f', 'fan', 'faq', 'feed', 'feedback', 'forum', 'help', 'home', 'i', 'legal', 'login', 'logout', 'manage', 'me', 'messages', 'moderator', 'my', 'notifications', 'official', 'privacy', 'profile', 'q', 'qr', 'register', 'report', 'root', 'search', 'settings', 'shop', 'signin', 'signout', 'signup', 'staff', 'status', 'store', 'subscribe', 'support', 'system', 'terms', 'unsubscribe', 'user', 'verify']//profile pages are on the root route; prevent a user from clashing with a utility or brochure page!
 export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let cropped = cropToLimit(raw, limit, Limit.name)
 	let formPage = trimLine(cropped)//"東京❤️女の子" valid for display on the page
 	let formFormal = slug(cropped)//"Tokyo-Girl" working and correct route for links
 	let formNormal = formFormal.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
-	let isValid = hasText(formPage) && hasText(formFormal) && hasText(formNormal)
+	let isValid = hasText(formPage) && hasText(formFormal) && hasText(formNormal) && !reservedRoutes.includes(formNormal)
 	let formPageIsValid = hasText(formPage)
 	return {isValid, formNormal, formFormal, formPage, formPageIsValid, raw, cropped}
 }
@@ -385,6 +386,8 @@ test(() => {
 	ok(v.formPage == '2 Rainbows 🌈🌈 4U')//text to display on the page, trimmed
 	ok(v.formFormal == 'Rainbows-4U')//chosen route, case preserved
 	ok(v.formNormal == 'rainbows-4u')//normalized route to confirm unique and then reserve--both of these routes work
+
+	ok(!validateName('Terms').isValid)//format is valid, but normal form is reserved
 
 	/*
 	ttd february

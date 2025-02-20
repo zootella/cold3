@@ -8,11 +8,7 @@ replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
 hmacSign,
-checkHash,
-
-checkInt,
-roundDown,
-
+checkHash, checkInt, roundDown, hashText,
 } from './level0.js'
 import {
 Tag, Limit, checkTag, checkTagOrBlank,
@@ -566,45 +562,47 @@ CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);  -- f
 CREATE INDEX browser2 ON browser_table (hide, user_tag,    row_tick DESC);  -- or by user
 CREATE INDEX browser3 ON browser_table (hide, level,       row_tick DESC);  -- quickly find expired super user hours
 `)
+//ttd february, trying the pattern where the group of functions which exclusively touch the table are named example_someThing, as below. if it works well for browser and name tables, then look at expanding to everywhere
 
-export async function browserToUser({browserTag}) {//what user, if any, is signed in at this browser?
+export async function browser_get({browserTag}) {//what user, if any, is signed in at this browser?
 	checkTag(browserTag)
 	let row = await queryTopEqualGreater({
 		table: 'browser_table',
 		title1: 'browser_tag', cell1: browserTag,
-		title2: 'signed_in', cell2GreaterThan: 0,
+		title2: 'level', cell2GreaterThan: 0,
 	})
 	return row?.user_tag
 }
-export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
-	checkTag(browserTag); checkTag(userTag)
+export async function browser_in({browserTag, userTag, level}) {//this user has proven their identity, sign them in here
+	checkTag(browserTag); checkTag(userTag); checkInt(level, 1)//make sure level is 1+
 	await queryAddRow({
 		table: 'browser_table',
 		row: {
 			browser_tag: browserTag,
 			user_tag: userTag,
-			signed_in: 1,//1 means this row is about the user signing in here and now
+			level,//sign in at level 1 provisional, 2 normal, or 3 start an hour of elevated permissions
 		}
 	})
 }
-export async function browserSignOut({browserTag, userTag}) {//sign the user at this browser out everywhere
+export async function browser_out({browserTag, userTag, hideSet}) {//sign this user out everywhere; browser tag included but doesn't matter; hide reason code is optional for a note different than default 1
 	checkTag(browserTag); checkTag(userTag)
-	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
-	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
-	//also, make a new row to record when the user signed out, and that they signed out from this browser
-	await queryAddRow({
+	await queryAddRow({//record that this user's sign-out happened now, and from this browser
 		table: 'browser_table',
 		row: {
 			browser_tag: browserTag,
 			user_tag: userTag,
-			signed_in: 0,//0 means this row is about the user signing out
+			level: 0,//level 0 means this row is about the user signing out
 		}
 	})
-	//ttd january, no, add first, and then hide them all
-	//and you don't have to pass hideSet if you don't want to, that is the default (confirm)
+	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet})//hide all the rows about this user, including the one we just made, signing them out, everywhere
 }
 
 
+
+test(async () => {
+	let tag = Tag()
+	log(`${tag} hashes to ${await hashText(tag)}`)
+})
 
 
 
@@ -666,8 +664,8 @@ export async function routeAdd({userTag, routeText}) {//create a new user at rou
 		}
 	})
 }
-export async function routeRemove({userTag}) {//vacate the given user's route
-	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
+export async function routeRemove({userTag, hideSet}) {//vacate the given user's route
+	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
 }
 export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
 	await routeRemove({userTag})
@@ -723,10 +721,11 @@ CREATE INDEX name5 ON name_table (hide, user_tag,    row_tick DESC);  -- look up
 CREATE INDEX name6 ON name_table (hide, normal_text, row_tick DESC);  -- what user is at this route? is it taken?
 CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC);  -- is this page name taken?
 `)
-export async function getName({//look up user route and name information by one of these
-	userTag,//a user's tag we already know from another part of this request, OR
-	nameNormal,//the normalized route we're GETting for a browser, OR
-	namePage,//a page name a user is trying to take, to see if it's unique
+
+export async function name_get({//look up user route and name information by calling with one of these:
+	userTag,//a user's tag, like we're showing information about that user, or
+	nameNormal,//a normalized route, like we're filling a request to that route, or
+	namePage,//a user name, like we're seeing if it's available
 }) {
 	let row
 	if      (userTag)    { checkTag(userTag);           row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
@@ -737,16 +736,45 @@ export async function getName({//look up user route and name information by one 
 	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
 	return {userTag: row.user_tag, nameNormal: row.normal_text, nameFormal: row.formal_text, namePage: row.page_text}
 }
-export async function setName({userTag, nameNormal, nameFormal, namePage}) {
+
+//set the given normal, formal, and page names for the given user
+//setName() does not make sure the names it sets are available--you've already done that before calling here!
+//there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
+export async function name_set({userTag, nameNormal, nameFormal, namePage}) {
 	checkTag(userTag); checkName({nameNormal, nameFormal, namePage})
-	if ((await getName({nameNormal})) || (await getName({namePage}))) toss('unique', {userTag, nameNormal, nameFormal, namePage})//the route and page name must not be taken
 	await removeName({userTag})//replace an existing row about this user with a new one:
 	await queryAddRow({table: 'name_table', row: {user_tag: userTag, normal_text: nameNormal, formal_text: nameFormal, page_text: namePage}})
 }
-export async function removeName({userTag, hideSet}) {//remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
+
+//remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
+export async function name_delete({userTag, hideSet}) {//hide reason code optional
 	checkTag(userTag);
 	await queryHideRows({table: 'name_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
 }
+
+/*
+ttd february
+is this level complete to use name_table? yes, you think so
+if you want to query by formal name, you normalize it, and then call getName({nameNormal})
+and you could just lowercase it, but should isntead do checkName().formNormal which will throw if not valid, or something--you're just establishing this pattern
+
+well, you have to write these, of course:
+checkNameNormal, checkNamePage, checkName
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

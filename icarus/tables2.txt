@@ -153,12 +153,66 @@ and that's all separate from everything that's about to get settled in browser t
 
 
 
+## ui you can make now
+
+not sure how many different components this is
+but it all leads down to browser_table and name_table as you've written them
+also, at this point, all users have pages, this will of course not be the case
+there may be a little bit of the provisional user peeking through here, as you may create the userTag before they actually choose and take a name
+
+maybe try lots of different components, to see what that's like
+harder at this point, but may let each grow to be larger and more complex?
+
+```
+~ UserInformationComponent
+browser tag: "CnsWynLDKPgorrBcwEQLi"//exactly identifies browser, never changes
+user tag: "07bnKpPvsq56NKKAIqtri"//exactly identifies user, never changes
+page name: "2 Rainbows 🌈🌈 4U"//user's current name as it shows up on pages and cards
+formal name: "Rainbows-4U"//canonical working route, and 301 redirect destionation
+normal name: "rainbows-4u"//normalized reserved route, unique, also a working route
+
+~ UserInvitationComponent
+[Sign Up] [Sign In]
+
+~ UserIntakeComponent
+Welcome new person! Sign up is easy; just choose a name for yourself.
+[   ]name [Check Availability] <--sets all three for simplicity
+[Sign Up]
+
+~ UserAuthenticateComponent (which doesn't actually do any authentication yet!)
+Welcome back! State your name to re-enter; we trust everyone at this point.
+[   ]normal or formal name
+[Sign In]
+
+~ UserRenameComponent
+You can edit your name as it appears on pages, cards, and links.
+[   ]page name
+[   ]formal name
+[Check Availability] [Change Name]
+
+~ UserExitComponent
+[Sign Out] [Permanently Close Account] <--ooh!
+```
+
+
+
+
+you are not signed in
+
+
+you are identified as:
 
 
 
 
 
+see if you can do this in 25min with chat and tailwind
+text boxes have a thick rounded border
+you can change the color, from red to green
+you can change the stroke, solid or dashed
 
+buttons are solid color, with inverse video text
+you can already change the color
 
 
 
@@ -240,7 +294,17 @@ CREATE INDEX route2 ON route_table (hide, route_text, row_tick DESC);
 
 
 
+yeah, you like this pattern
 
+browser_table's functions:
+browser_get
+browser_signIn
+browser_signOut
+
+on name_table, you can see that the three functions you use to query that table are
+name_get
+name_set
+name_delete
 
 
 
