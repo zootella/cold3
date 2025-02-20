@@ -1987,6 +1987,20 @@ so we're slowing down not every request, just the requests for expired sudos
 
 
 
+
+
+
+
+
+
+
+
+
+
+2025feb19
+
+## best thinking so far:
+
 let's see if you can help with this:
 
 ```js
@@ -2020,6 +2034,10 @@ row_tag | row_tick | hide | browser_tag | user_tag | level
 ```
 
 
+## stuff you'll clean up
+
+
+(those sets of functions hanging around from a few weeks ago, list them here)
 
 
 
@@ -2028,6 +2046,32 @@ row_tag | row_tick | hide | browser_tag | user_tag | level
 
 
 
+
+## notes about that
+
+[]get rid of access_table, it's confusing you
+blow it up. and its functions and endpoints and components, too
+and you don't need the global access password anymore, either
+
+you're pretty sure that duplicate visible cells for browser_tag and user_tag are totally expected
+so that means you won't have any of those unique indices
+
+1 so browserToUser does one query
+but if it gets a user who's sudo, and that sudo is expired, it does two more queries
+2 hide all the expired sudos, everywhere--all Kevin Uxbridge-style
+3 repeat query 1
+that's crazy but you think it'll work well
+[]find the right index to make that really fast, probably just visible, chronological, level 3 rows, regardless of all the tags, yeah, that'll be really fast
+
+
+
+here are some big pices that are about to come together:
+-turnstile store
+-route table
+-user name validation
+-nuxt dynamic routes and redirects
+-check username form
+and that's all separate from everything that's about to get settled in browser table
 
 
 
