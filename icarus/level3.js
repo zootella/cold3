@@ -323,76 +323,6 @@ export async function snippet3() {
 //--this user mentioned, or proved they can read messages sent to, this address
 //address_table, ttd february
 
-//  _                                       _        _     _      
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
-//                                                                
-
-noop(`sql
--- what user is signed into this browser? sign users in and out
-CREATE TABLE browser_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
-	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
-	hide         BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore
-
-	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
-	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
-	level        BIGINT                 NOT NULL   -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
-);
-
--- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);  -- filter by browser
-CREATE INDEX browser2 ON browser_table (hide, user_tag, row_tick DESC);     -- or by user
-CREATE INDEX browser3 ON browser_table (hide, level, row_tick DESC);        -- quickly find expired super user hours
-`)
-
-export async function browserToUser({browserTag}) {//what user, if any, is signed in at this browser?
-	checkTag(browserTag)
-	let row = await queryTopEqualGreater({
-		table: 'browser_table',
-		title1: 'browser_tag', cell1: browserTag,
-		title2: 'signed_in', cell2GreaterThan: 0,
-	})
-	return row?.user_tag
-	/*
-	ttd february
-	stop overloading cell2 -- the strength and permissions of a sign in will be handled elsewhere, most likely
-	make browser_table really simple to think about (it's not yet)
-	a browser visits for the first time; they get a browser tag
-	the person enters the first bit of information; they get a user tag, this user tag isn't signed up yet, it's provisional
-	the person provides more information, finishes signing up--pretty sure browser_table doesn't care about that
-	the user signs out, everywhere--browser_table is all about this
-	a user 
-	*/
-}
-export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
-	checkTag(browserTag); checkTag(userTag)
-	await queryAddRow({
-		table: 'browser_table',
-		row: {
-			browser_tag: browserTag,
-			user_tag: userTag,
-			signed_in: 1,//1 means this row is about the user signing in here and now
-		}
-	})
-}
-export async function browserSignOut({browserTag, userTag}) {//sign the user at this browser out everywhere
-	checkTag(browserTag); checkTag(userTag)
-	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
-	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
-	//also, make a new row to record when the user signed out, and that they signed out from this browser
-	await queryAddRow({
-		table: 'browser_table',
-		row: {
-			browser_tag: browserTag,
-			user_tag: userTag,
-			signed_in: 0,//0 means this row is about the user signing out
-		}
-	})
-}
-
 //                                 _        _        _     _      
 //   _____  ____ _ _ __ ___  _ __ | | ___  | |_ __ _| |__ | | ___ 
 //  / _ \ \/ / _` | '_ ` _ \| '_ \| |/ _ \ | __/ _` | '_ \| |/ _ \
@@ -414,8 +344,7 @@ CREATE TABLE example_table (
 	some_hash  CHAR(52)               NOT NULL   -- example holding hash values
 );
 
--- index to get visible rows, sorted recent first, quickly
-CREATE INDEX example1 ON example_table (hide, row_tick DESC);
+CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get visible rows, sorted recent first, quickly
 `)
 
 //  _     _ _     _        _     _      
@@ -440,9 +369,8 @@ CREATE TABLE hit_table (
 	browser_text    TEXT                   NOT NULL   -- user agent string and WebGL hardware, according to the browser
 );
 
--- index to quickly log a new hit, coalesced to identical information in an hour
+-- index to quickly log a new hit, coalesced to identical information in an hour, note UNIQUE, which *is necessary* for the query we're using with this table to add if unique in a single call
 CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
--- ^note UNIQUE, which *is necessary* for the query we're using with this table to add if unique in a single call
 `)
 
 export async function recordHit({browserTag, userTag, ipText, geographyText, browserText}) {
@@ -467,63 +395,6 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
 
-//                               _        _     _      
-//  _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
-// | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
-// | | | | (_| | | | | | |  __/ | || (_| | |_) | |  __/
-// |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
-//                                                     
-
-noop(`sql
--- go between a user's tag, route, and name as it appears on the page
-CREATE TABLE name_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick     BIGINT                 NOT NULL,
-	hide         BIGINT                 NOT NULL,
-
-	user_tag     CHAR(21)               NOT NULL,
-
-	normal_text  TEXT                   NOT NULL,  -- like "user-name", route lowercased to check unique
-	formal_text  TEXT                   NOT NULL,  -- like "User-Name", route with case the user chose
-	page_text    TEXT                   NOT NULL   -- like "User Name", the user's name for pages and cards
-);
-
--- indices to ensure unique values in these columns among visible rows, for defense-in-depth, as setName() prevents duplicates first
-CREATE UNIQUE INDEX name1 ON name_table (user_tag)    WHERE hide = 0;
-CREATE UNIQUE INDEX name2 ON name_table (normal_text) WHERE hide = 0;
-CREATE UNIQUE INDEX name3 ON name_table (formal_text) WHERE hide = 0;
-CREATE UNIQUE INDEX name4 ON name_table (page_text)   WHERE hide = 0;
-
--- indices to make queries fast
-CREATE INDEX name5 ON name_table (hide, user_tag,    row_tick DESC); -- look up a user's route and name by their tag
-CREATE INDEX name6 ON name_table (hide, normal_text, row_tick DESC); -- what user is at this route? is it taken?
-CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC); -- is this page name taken?
-`)
-export async function getName({//look up user route and name information by one of these
-	userTag,//a user's tag we already know from another part of this request, OR
-	nameNormal,//the normalized route we're GETting for a browser, OR
-	namePage,//a page name a user is trying to take, to see if it's unique
-}) {
-	let row
-	if      (userTag)    { checkTag(userTag);           row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
-	else if (nameNormal) { checkNameNormal(nameNormal); row = await queryTop({table: 'name_table', title: 'normal_text', cell: nameNormal}) }
-	else if (namePage)   { checkNamePage(namePage);     row = await queryTop({table: 'name_table', title: 'page_text',   cell: namePage})   }
-	else { toss('use', {userTag, nameNormal, namePage}) }
-
-	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
-	return {userTag: row.user_tag, nameNormal: row.normal_text, nameFormal: row.formal_text, namePage: row.page_text}
-}
-export async function setName({userTag, nameNormal, nameFormal, namePage}) {
-	checkTag(userTag); checkName({nameNormal, nameFormal, namePage})
-	if ((await getName({nameNormal})) || (await getName({namePage}))) toss('unique', {userTag, nameNormal, nameFormal, namePage})//the route and page name must not be taken
-	await removeName({userTag})//replace an existing row about this user with a new one:
-	await queryAddRow({table: 'name_table', row: {user_tag: userTag, normal_text: nameNormal, formal_text: nameFormal, page_text: namePage}})
-}
-export async function removeName({userTag, hideSet}) {//remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
-	checkTag(userTag);
-	await queryHideRows({table: 'name_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
-}
-
 //                   __ _ _        _        _     _      
 //  _ __  _ __ ___  / _(_) | ___  | |_ __ _| |__ | | ___ 
 // | '_ \| '__/ _ \| |_| | |/ _ \ | __/ _` | '_ \| |/ _ \
@@ -533,6 +404,15 @@ export async function removeName({userTag, hideSet}) {//remove a user's route an
 
 //--user name and route are in route_table, this is for the stuff beyond that like status message and avatar image
 //ttd february, make profile_table
+
+//                      _            _        _     _      
+//  ___  ___ _ ____   _(_) ___ ___  | |_ __ _| |__ | | ___ 
+// / __|/ _ \ '__\ \ / / |/ __/ _ \ | __/ _` | '_ \| |/ _ \
+// \__ \  __/ |   \ V /| | (_|  __/ | || (_| | |_) | |  __/
+// |___/\___|_|    \_/ |_|\___\___|  \__\__,_|_.__/|_|\___|
+//                                                         
+
+//service_table, complete record of our interactions with third-party services, to instrument them, and later, round robin them
 
 //           _   _   _                   _        _     _      
 //  ___  ___| |_| |_(_)_ __   __ _ ___  | |_ __ _| |__ | | ___ 
@@ -658,22 +538,77 @@ export async function trailAdd({hash}) {
 
 
 
-//ttd january - today's new level: self identified users with names that are routes
-/*
-bookmark january
-ok, clicking through these four work
-[]make another pass to be sure
-[]see "Taken." get reported back up to the user
-[]deal with an exception here telling the page 500--catch those in the page
-[]understand where you check what up and down the stack
-[]improve the form so you can show it to friends, like gray the buttons until they've entered text for user name that is an acceptable route; very minimal
--
-and then what's next? maybe status message in a new table,
-which the user, once signed in, can edit--new component for this
-and then user page at a route that holds that message
-and that's where you figure out how to get nuxt to do mixed root routes, which hopefully is common and easy
-*/
-//determine what user is signed into the given connected browser, and also get their route text (which we're using as user name in this early intermediate stage)
+
+
+//ttd february, pulled these two out of the alphebetized list to finish them
+
+//  _                                       _        _     _      
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
+//                                                                
+
+noop(`sql
+-- what user is signed into this browser? sign users in and out
+CREATE TABLE browser_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
+	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
+	hide         BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore
+
+	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
+	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
+	level        BIGINT                 NOT NULL   -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
+);
+
+-- index to get visible rows about a browser, recent first, quickly
+CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);  -- filter by browser
+CREATE INDEX browser2 ON browser_table (hide, user_tag,    row_tick DESC);  -- or by user
+CREATE INDEX browser3 ON browser_table (hide, level,       row_tick DESC);  -- quickly find expired super user hours
+`)
+
+export async function browserToUser({browserTag}) {//what user, if any, is signed in at this browser?
+	checkTag(browserTag)
+	let row = await queryTopEqualGreater({
+		table: 'browser_table',
+		title1: 'browser_tag', cell1: browserTag,
+		title2: 'signed_in', cell2GreaterThan: 0,
+	})
+	return row?.user_tag
+}
+export async function browserSignIn({browserTag, userTag}) {//this user has proven their identity, sign them in here
+	checkTag(browserTag); checkTag(userTag)
+	await queryAddRow({
+		table: 'browser_table',
+		row: {
+			browser_tag: browserTag,
+			user_tag: userTag,
+			signed_in: 1,//1 means this row is about the user signing in here and now
+		}
+	})
+}
+export async function browserSignOut({browserTag, userTag}) {//sign the user at this browser out everywhere
+	checkTag(browserTag); checkTag(userTag)
+	//first, hide existing rows about where the user has previously signed in and out; this signs the user out everywhere
+	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
+	//also, make a new row to record when the user signed out, and that they signed out from this browser
+	await queryAddRow({
+		table: 'browser_table',
+		row: {
+			browser_tag: browserTag,
+			user_tag: userTag,
+			signed_in: 0,//0 means this row is about the user signing out
+		}
+	})
+	//ttd january, no, add first, and then hide them all
+	//and you don't have to pass hideSet if you don't want to, that is the default (confirm)
+}
+
+
+
+
+
+// <previous draft>
 export async function authenticateSignGet({browserTag}) { return
 	let userTag = await browserToUser({browserTag})
 	let routeText
@@ -689,9 +624,9 @@ export async function authenticateSignUp({browserTag, routeText}) { return
 	if (occupant) return 'Taken.'
 
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	//await routeAdd({userTag, routeText})
+	await routeAdd({userTag, routeText})
 
-	//await browserSignIn({browserTag, userTag})//and sign the new user into this browser
+	await browserSignIn({browserTag, userTag})//and sign the new user into this browser
 	return {browserTag, userTag, routeText, note: 'signed up'}//just for testing; we won't send user tags to pages
 }
 //sign an existing user in
@@ -709,6 +644,109 @@ export async function authenticateSignOut({browserTag}) { return
 	let userTag = await browserToUser({browserTag})
 	if (userTag) await browserSignOut({browserTag, userTag})
 }
+// </previous draft>
+
+
+
+// <previous draft>
+export async function userToRoute({userTag}) {//given a user tag, find their route
+	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
+	return row ? row.route_text : false
+}
+export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
+	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
+	return row ? row.user_tag : false
+}
+export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
+	await queryAddRow({
+		table: 'route_table',
+		row: {
+			user_tag: userTag,
+			route_text: routeText,
+		}
+	})
+}
+export async function routeRemove({userTag}) {//vacate the given user's route
+	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
+}
+export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
+	await routeRemove({userTag})
+	await routeAdd({userTag, routeText: destinationRouteText})
+}
+// </previous draft>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//                               _        _     _      
+//  _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
+// | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
+// | | | | (_| | | | | | |  __/ | || (_| | |_) | |  __/
+// |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
+//                                                     
+
+noop(`sql
+-- go between a user's tag, route, and name as it appears on the page
+CREATE TABLE name_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick     BIGINT                 NOT NULL,
+	hide         BIGINT                 NOT NULL,
+
+	user_tag     CHAR(21)               NOT NULL,
+
+	normal_text  TEXT                   NOT NULL,  -- like "user-name", route lowercased to check unique
+	formal_text  TEXT                   NOT NULL,  -- like "User-Name", route with case the user chose
+	page_text    TEXT                   NOT NULL   -- like "User Name", the user's name for pages and cards
+);
+
+-- indices to ensure unique values in these columns among visible rows, for defense-in-depth, as setName() prevents duplicates first
+CREATE UNIQUE INDEX name1 ON name_table (user_tag)    WHERE hide = 0;
+CREATE UNIQUE INDEX name2 ON name_table (normal_text) WHERE hide = 0;
+CREATE UNIQUE INDEX name3 ON name_table (formal_text) WHERE hide = 0;
+CREATE UNIQUE INDEX name4 ON name_table (page_text)   WHERE hide = 0;
+
+-- indices to make queries fast
+CREATE INDEX name5 ON name_table (hide, user_tag,    row_tick DESC);  -- look up a user's route and name by their tag
+CREATE INDEX name6 ON name_table (hide, normal_text, row_tick DESC);  -- what user is at this route? is it taken?
+CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC);  -- is this page name taken?
+`)
+export async function getName({//look up user route and name information by one of these
+	userTag,//a user's tag we already know from another part of this request, OR
+	nameNormal,//the normalized route we're GETting for a browser, OR
+	namePage,//a page name a user is trying to take, to see if it's unique
+}) {
+	let row
+	if      (userTag)    { checkTag(userTag);           row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
+	else if (nameNormal) { checkNameNormal(nameNormal); row = await queryTop({table: 'name_table', title: 'normal_text', cell: nameNormal}) }
+	else if (namePage)   { checkNamePage(namePage);     row = await queryTop({table: 'name_table', title: 'page_text',   cell: namePage})   }
+	else { toss('use', {userTag, nameNormal, namePage}) }
+
+	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
+	return {userTag: row.user_tag, nameNormal: row.normal_text, nameFormal: row.formal_text, namePage: row.page_text}
+}
+export async function setName({userTag, nameNormal, nameFormal, namePage}) {
+	checkTag(userTag); checkName({nameNormal, nameFormal, namePage})
+	if ((await getName({nameNormal})) || (await getName({namePage}))) toss('unique', {userTag, nameNormal, nameFormal, namePage})//the route and page name must not be taken
+	await removeName({userTag})//replace an existing row about this user with a new one:
+	await queryAddRow({table: 'name_table', row: {user_tag: userTag, normal_text: nameNormal, formal_text: nameFormal, page_text: namePage}})
+}
+export async function removeName({userTag, hideSet}) {//remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
+	checkTag(userTag);
+	await queryHideRows({table: 'name_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
+}
 
 
 
@@ -745,25 +783,3 @@ export async function authenticateSignOut({browserTag}) { return
 
 
 
-
-
-
-
-
-
-
-
-
-//service table
-//complete record of our interactions with third-party services
-
-
-
-
-
-
-
-
-
-
-// ~~~~ here we are doing the work behind CodeComponent ~~~~

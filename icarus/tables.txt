@@ -2056,64 +2056,13 @@ extra things later you realized you can us ethis for:
 
 
 
-//removed this because now we have name_table, which has routes
 
-//                  _         _        _     _      
-//  _ __ ___  _   _| |_ ___  | |_ __ _| |__ | | ___ 
-// | '__/ _ \| | | | __/ _ \ | __/ _` | '_ \| |/ _ \
-// | | | (_) | |_| | ||  __/ | || (_| | |_) | |  __/
-// |_|  \___/ \__,_|\__\___|  \__\__,_|_.__/|_|\___|
-//                                                  
 
-noop(`sql
--- go between a user's tag and route
-CREATE TABLE route_table (
-	row_tag     CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick    BIGINT                 NOT NULL,
-	hide        BIGINT                 NOT NULL,
 
-	user_tag    CHAR(21)               NOT NULL,
-	route_text  TEXT                   NOT NULL   -- unique working route, normalized to lower case
-);
 
--- quickly find the most recent visible row by user tag, and by route
-CREATE INDEX route1 ON route_table (hide, user_tag,   row_tick DESC);
-CREATE INDEX route2 ON route_table (hide, route_text, row_tick DESC);
-`)
 
-//[ran]
-export async function userToRoute({userTag}) {//given a user tag, find their route
-	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
-	return row ? row.route_text : false
-}
-//[ran]
-export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
-	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
-	return row ? row.user_tag : false
-}
-//[ran]
-export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
-	await queryAddRow({
-		table: 'route_table',
-		row: {
-			user_tag: userTag,
-			route_text: routeText,
-		}
-	})
-}
-//[ran]
-export async function routeRemove({userTag}) {//vacate the given user's route
-	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet: 1})
-}
-//[ran]
-export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
-	await routeRemove({userTag})
-	await routeAdd({userTag, routeText: destinationRouteText})
-}
+// ~~~~ here we are doing the work behind CodeComponent ~~~~
 
-//ttd january []confirm that an exception here causes throws up all the way back to the page
-//[]and hits datadog
-//and then deal with exceptions in the page
 
 
 
@@ -2135,129 +2084,6 @@ export async function routeMove({userTag, destinationRouteText}) {//move a user 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-2025feb19
-
-## map
-
-
-
-userToRoute,
-routeToUser,
-routeAdd,
-routeRemove,
-routeMove,
-
-browserToUser,
-browserSignIn,
-browserSignOut,
-
-
-
-
-/level1
-
-checkNameNormal(nameNormal) makes sure nameNormal is a valid normalized route that doesn't change when we validate it
-checkNamePage(namePage) makes sure namePage is a valid name for the page that doesn't change when we validate it
-checkName(all three) makes sure that when we validate each of three they don't change, and also, that formal normalizes to normal!
-(maybe put those into a single checkName which acts on what it's given--or maybe that's much harder to reason about)
-
-validateName
-
-
-
-
-
-
-
-
-
-## best thinking so far:
-
-let's see if you can help with this:
-
-```js
-[I] what are the high level functions on top of this?
-
-q1. im a browser with browser tag, what user if any is here? provisional, actual, or super
-{<same browserTag>, userTag, 1+ level} = await browserToUser({browserTag})
-
-c1. sign this user out everywhere right now!
-await signOut({userTag, browserTag})
-
-c2. the human here has entered information we should remember. they're not an actual user yet. make them a user tag to record that they were here, so they can pick up where they left off, maybe immediately, maybe in days
-{<same browserTag>, userTag, level=1provisional} = await createUser({browserTag})
-
-c3. the human here as proven they're this user with this user tag. sign them in here
-c4. the human here has finished signing up, using this previously provisional user tag. sign them in here
-await signInUser({browserTag, userTag})
-
-[II] and then there's the middle part you're also figuring out
-
-???
-
-[III] which calls down to a table that you're pretty sure now looks like this
-
-row_tag | row_tick | hide | browser_tag | user_tag | level
-^the three starting ones
-                            laptop        alice      0 signed out, but this row will immediately be hidden
-                                                     1 provisional user signing up or customizing
-                                                     2 normal actual signed in user
-                                                     3 sudo, just for one hour, and just here
-```
-
-
-## stuff you'll clean up
-
-
-(those sets of functions hanging around from a few weeks ago, list them here)
-
-
-
-
-
-
-
-
-
-## notes about that
-
-[]get rid of access_table, it's confusing you
-blow it up. and its functions and endpoints and components, too
-and you don't need the global access password anymore, either
-
-you're pretty sure that duplicate visible cells for browser_tag and user_tag are totally expected
-so that means you won't have any of those unique indices
-
-1 so browserToUser does one query
-but if it gets a user who's sudo, and that sudo is expired, it does two more queries
-2 hide all the expired sudos, everywhere--all Kevin Uxbridge-style
-3 repeat query 1
-that's crazy but you think it'll work well
-[]find the right index to make that really fast, probably just visible, chronological, level 3 rows, regardless of all the tags, yeah, that'll be really fast
-
-
-
-here are some big pices that are about to come together:
--turnstile store
--route table
--user name validation
--nuxt dynamic routes and redirects
--check username form
-and that's all separate from everything that's about to get settled in browser table
 
 
 
