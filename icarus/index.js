@@ -142,8 +142,6 @@ Limit, cropToLimit,
 trimLines, trimLine,
 deaccent, slug,
 
-checkNameNormal,
-checkNamePage,
 checkName,
 validateName,
 

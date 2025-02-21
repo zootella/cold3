@@ -25,13 +25,6 @@ import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate ph
 
 
 
-export function liveBox(s) {
-	return
-	let date = validateDate(s)
-	let age
-	if (date.isValid) age = ageDate(s, 60, Now())
-	return {date, age}
-}
 
 
 
@@ -346,16 +339,20 @@ checkName(all three) makes sure that when we validate each of three they don't c
 maybe put those into a single checkName which acts on what it's given--or maybe that's much harder to reason about
 */
 
-export function checkNameNormal(s) {
-	//given a supposed normalized user route, confirm that it's normal, and validating it doesn't change it
+/*
+
+*/
+
+
+export function liveBox(s) {
+	return
 }
-export function checkNamePage(s) {
-}
-export function checkName(s, limit) {//already validated text as a user's normalized route
-	let v = validateName(s, limit)
-	if (!v.isValid)        toss('not valid',           {s, v})
-	if (v.formNormal != s) toss('round trip mismatch', {s, v})
-}
+
+
+
+
+
+
 /*
 ^ttd february, so, do you need this? next make the choose/change your user name and route form to figure that out
 wait--should checkRoute, for instance, also validate that as given, it doesn't change to normal?!
@@ -365,6 +362,52 @@ add that check to the other checkSomething editions
 //ttd february, you also need to block this list
 //ttd february, maybe make these passed limits compulsory so below is simpler, and calls here are explicit; you have to say it in the html after all
 
+
+
+export function checkName({formPage, formFormal, formNormal}) {
+	let message = _checkName({formPage, formFormal, formNormal})
+	if (message != 'Ok.') toss(message, {formPage, formFormal, formNormal})
+}
+function _checkName({formPage, formFormal, formNormal}) {
+	let validPage, validFormal, validNormal
+	if (formPage !== undefined) {//remember that blank strings, while not valid, are falsey!
+		validPage = validateName(formPage, Limit.name)
+		if (!validPage.formPageIsValid) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
+		if (validPage.formPage != formPage) return 'page form round trip mismatch'
+	}
+	if (formFormal !== undefined) {
+		validFormal = validateName(formFormal, Limit.name)
+		if (!validFormal.isValid) return 'formal form not valid'
+		if (validFormal.formFormal != formFormal) return 'formal form round trip mismatch'
+	}
+	if (formNormal !== undefined) {
+		validNormal = validateName(formNormal, Limit.name)
+		if (!validNormal.isValid) return 'normal form not valid'
+		if (validNormal.formNormal != formNormal) return 'normal form round trip mismatch'
+	}
+	if (formFormal && formNormal) {//after checking all given forms individually, also make sure formal normalizes into normal
+		if (validFormal.formNormal != formNormal) return 'round trip mismatch between normal and formal forms'
+	}
+	return 'Ok.'
+}
+test(() => {
+	//example use
+	ok(_checkName({formPage: 'My Name', formFormal: 'My-Name', formNormal: 'my-name'}) == 'Ok.')//all valid and happen to match
+	ok(_checkName({formPage: '2B', formFormal: 'TwoB', formNormal: 'twob'}) == 'Ok.')//all valid, with formal is custom from page
+
+	ok(_checkName({formPage: ''})   != 'Ok.')//make sure blank is identified as not valid
+	ok(_checkName({formFormal: ''}) != 'Ok.')
+	ok(_checkName({formNormal: ''}) != 'Ok.')
+
+	ok(_checkName({formPage:   ' '}) == 'page form not valid')//cannot be made valid, not ok
+	ok(_checkName({formPage:   ' Untrimmed'}) == 'page form round trip mismatch')//have to be made valid, also not ok
+	ok(_checkName({formFormal: 'Has Space'})  == 'formal form round trip mismatch')
+	ok(_checkName({formNormal: 'Uppercase'})  == 'normal form round trip mismatch')
+
+	//below, all four forms are valid individually...
+	ok(_checkName({formFormal: 'Name-1', formNormal: 'name-1'}) == 'Ok.')//...and together
+	ok(_checkName({formFormal: 'Name-1', formNormal: 'name-2'}) != 'Ok.')//...but not together!
+})
 const reservedRoutes = ['about', 'account', 'admin', 'administrator', 'app', 'ban', 'billing', 'blog', 'community', 'config', 'contact', 'creator', 'dashboard', 'developer', 'dm', 'e', 'f', 'fan', 'faq', 'feed', 'feedback', 'forum', 'help', 'home', 'i', 'legal', 'login', 'logout', 'manage', 'me', 'messages', 'moderator', 'my', 'notifications', 'official', 'privacy', 'profile', 'q', 'qr', 'register', 'report', 'root', 'search', 'settings', 'shop', 'signin', 'signout', 'signup', 'staff', 'status', 'store', 'subscribe', 'support', 'system', 'terms', 'unsubscribe', 'user', 'verify']//profile pages are on the root route; prevent a user from clashing with a utility or brochure page!
 export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let cropped = cropToLimit(raw, limit, Limit.name)
@@ -388,22 +431,6 @@ test(() => {
 	ok(v.formNormal == 'rainbows-4u')//normalized route to confirm unique and then reserve--both of these routes work
 
 	ok(!validateName('Terms').isValid)//format is valid, but normal form is reserved
-
-	/*
-	ttd february
-	on the choose/change your user name form, there'll be two boxes
-	Name: [rawName]
-	      "formPage" will be your name as it appears on pages
-	Link: [rawLink]
-				"formFormal" will be your name as it shows up in links
-	(and the normalized link, which maybe you'll not show?)
-	you think you can use validateName() for both boxes
-	if the user changes text in the name box, then you do v = validateName(rawName), and v.formFormal => Link
-	if the user changes text in the link box, you leave Name alone, and do v = validateName(rawLink)
-
-	yeah you need to see what it's like if you're typing in a box the page is also changing text in
-	but you're pretty sure you can do both boxes with just this one function, as written, which is cool
-	*/
 })
 
 //  _   _ _   _                        _                   _   

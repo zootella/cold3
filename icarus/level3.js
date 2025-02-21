@@ -477,7 +477,7 @@ CREATE TABLE trail_table (
 	hash      CHAR(52)               NOT NULL   -- the hash of the message about the event that happened on row tick
 );
 
-CREATE INDEX trail1 ON trail_table (hide, row_tick DESC);        -- hide or delete old rows quickly
+CREATE INDEX trail1 ON trail_table (hide,       row_tick DESC);  -- hide or delete old rows quickly
 CREATE INDEX trail2 ON trail_table (hide, hash, row_tick DESC);  -- get time sorted rows by hash
 `)
 
@@ -613,7 +613,7 @@ export async function browser_out({browserTag, userTag, hideSet}) {//sign this u
 
 
 
-test(async () => {
+noop(async () => {
 	let tag = Tag()
 	log(`${tag} hashes to ${await hashText(tag)}`)
 })
@@ -742,9 +742,9 @@ export async function name_get({//look up user route and name information by cal
 	namePage,//a user name, like we're seeing if it's available
 }) {
 	let row
-	if      (userTag)    { checkTag(userTag);           row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
-	else if (nameNormal) { checkNameNormal(nameNormal); row = await queryTop({table: 'name_table', title: 'normal_text', cell: nameNormal}) }
-	else if (namePage)   { checkNamePage(namePage);     row = await queryTop({table: 'name_table', title: 'page_text',   cell: namePage})   }
+	if      (userTag)    { checkTag(userTag);                   row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
+	else if (nameNormal) { checkName({formNormal: nameNormal}); row = await queryTop({table: 'name_table', title: 'normal_text', cell: nameNormal}) }
+	else if (namePage)   { checkName({formPage:   namePage});   row = await queryTop({table: 'name_table', title: 'page_text',   cell: namePage})   }
 	else { toss('use', {userTag, nameNormal, namePage}) }
 
 	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
@@ -755,7 +755,7 @@ export async function name_get({//look up user route and name information by cal
 //setName() does not make sure the names it sets are available--you've already done that before calling here!
 //there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
 export async function name_set({userTag, nameNormal, nameFormal, namePage}) {
-	checkTag(userTag); checkName({nameNormal, nameFormal, namePage})
+	checkTag(userTag); checkName({formNormal: nameNormal, formFormal: nameFormal, formPage: namePage})
 	await removeName({userTag})//replace an existing row about this user with a new one:
 	await queryAddRow({table: 'name_table', row: {user_tag: userTag, normal_text: nameNormal, formal_text: nameFormal, page_text: namePage}})
 }

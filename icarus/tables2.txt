@@ -194,7 +194,16 @@ You can edit your name as it appears on pages, cards, and links.
 [Sign Out] [Permanently Close Account] <--ooh!
 ```
 
+do all these use identityStore or something?
+so then you're trying to factor down lower
+components and api endpoints
+stores
+level3
+level2... and so on
 
+for permaclose, you could do a confirmation time, like 1-2min from first click
+
+also, imagine much later the user wants to change their name, but have a redirect from the old name to the new one, how would you do that?
 
 
 you are not signed in
@@ -337,6 +346,72 @@ those categories and enumerations, and also, roles:
 
 and more?! lots ot figure out here as we go from ameoba-stage to small multicelled organism
 ```
+
+
+
+
+
+imagine you let a user delete their account, but as a precaution, they have to click delete once, then come back between 24-48h later, and click delete again
+you just realized you can do all that with trail_table!
+
+also, you realized you do not need to expire or delete trail table rows
+because the index that ends row_tick DESC's btree will already make it super fast to ignore rows older than the given since time 
+
+
+
+
+
+
+maybe there's a level4 - high level application logic
+like teh code that calls down to the level3 functions that are specific to a table, but deal with tables at an application-specific, but still quite granular, level
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
