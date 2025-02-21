@@ -375,6 +375,22 @@ like teh code that calls down to the level3 functions that are specific to a tab
 
 
 
+validateName
+	/*
+	ttd february
+	on the choose/change your user name form, there'll be two boxes
+	Name: [rawName]
+	      "formPage" will be your name as it appears on pages
+	Link: [rawLink]
+				"formFormal" will be your name as it shows up in links
+	(and the normalized link, which maybe you'll not show?)
+	you think you can use validateName() for both boxes
+	if the user changes text in the name box, then you do v = validateName(rawName), and v.formFormal => Link
+	if the user changes text in the link box, you leave Name alone, and do v = validateName(rawLink)
+
+	yeah you need to see what it's like if you're typing in a box the page is also changing text in
+	but you're pretty sure you can do both boxes with just this one function, as written, which is cool
+	*/
 
 
 

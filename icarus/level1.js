@@ -9,7 +9,7 @@ checkText,
 Data, randomBetween,
 starts, cut,
 fraction, exponent, int, big, deindent, newline,
-hashData, hashText,
+hashData, hashText, given,
 } from './level0.js'
 
 import {customAlphabet} from 'nanoid'//use to make unique tags
@@ -364,28 +364,31 @@ add that check to the other checkSomething editions
 
 
 
+
+
+
 export function checkName({formPage, formFormal, formNormal}) {
 	let message = _checkName({formPage, formFormal, formNormal})
 	if (message != 'Ok.') toss(message, {formPage, formFormal, formNormal})
 }
 function _checkName({formPage, formFormal, formNormal}) {
 	let validPage, validFormal, validNormal
-	if (formPage !== undefined) {//remember that blank strings, while not valid, are falsey!
+	if (given(formPage)) {//remember that blank strings, while not valid, are falsey!
 		validPage = validateName(formPage, Limit.name)
 		if (!validPage.formPageIsValid) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
 		if (validPage.formPage != formPage) return 'page form round trip mismatch'
 	}
-	if (formFormal !== undefined) {
+	if (given(formFormal)) {
 		validFormal = validateName(formFormal, Limit.name)
 		if (!validFormal.isValid) return 'formal form not valid'
 		if (validFormal.formFormal != formFormal) return 'formal form round trip mismatch'
 	}
-	if (formNormal !== undefined) {
+	if (given(formNormal)) {
 		validNormal = validateName(formNormal, Limit.name)
 		if (!validNormal.isValid) return 'normal form not valid'
 		if (validNormal.formNormal != formNormal) return 'normal form round trip mismatch'
 	}
-	if (formFormal && formNormal) {//after checking all given forms individually, also make sure formal normalizes into normal
+	if (given(formFormal) && given(formNormal)) {//after checking all given forms individually, also make sure formal normalizes into normal
 		if (validFormal.formNormal != formNormal) return 'round trip mismatch between normal and formal forms'
 	}
 	return 'Ok.'
