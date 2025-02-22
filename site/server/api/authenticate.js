@@ -5,7 +5,7 @@ log, look, toss, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
 snippetClear, snippetPopulate, snippetQuery2, snippetQuery3,
-authenticateSignGet, authenticateSignUp, authenticateSignIn, authenticateSignOut,
+demonstrationSignGet, demonstrationSignUp, demonstrationSignIn, demonstrationSignOut,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -16,10 +16,10 @@ async function doorHandleBelow({door, body, action}) {
 	r.sticker = Sticker().all
 
 	switch (action) {
-		case 'AuthenticateSignGet.': r.result = await authenticateSignGet({browserTag: body.browserTag}); break;
-		case 'AuthenticateSignUp.':  r.result = await authenticateSignUp({browserTag: body.browserTag, routeText: body.userName}); break;
-		case 'AuthenticateSignIn.':  r.result = await authenticateSignIn({browserTag: body.browserTag, routeText: body.userName}); break;
-		case 'AuthenticateSignOut.': r.result = await authenticateSignOut({browserTag: body.browserTag}); break;
+		case 'DemonstrationSignGet.': r.result = await demonstrationSignGet({browserTag: body.browserTag});                        break;
+		case 'DemonstrationSignUp.':  r.result = await demonstrationSignUp({browserTag:  body.browserTag, nameRaw: body.nameRaw}); break;
+		case 'DemonstrationSignIn.':  r.result = await demonstrationSignIn({browserTag:  body.browserTag, nameRaw: body.nameRaw}); break;
+		case 'DemonstrationSignOut.': r.result = await demonstrationSignOut({browserTag: body.browserTag});                        break;
 		default: toss('action', {door}); break;
 	}
 

@@ -400,6 +400,37 @@ validateName
 
 
 
+/*
+bookmark january
+
+no password yet, just a user name you choose
+also for this v0.01 really simple normalization, like only letters numbers and -_.
+purpose here is to make a system where you can easily type in different chrome profiles
+and confirm that it works as you expect
+and the database table records are as you expect
+as a test of your schema and way of reading it
+
+pretty cool you've separated this concern even from password
+and after this you'll work on (a)hide and (b)delete account
+and also (c)anonymous users who get started leaving data before they sign up
+this seedling is enough to get those three powerful features right
+*/
+
+
+//(in practice, we won't show a browser tag, because sharing those is dangerous, and we likely won't ever send a user tag to the page, because while not sensitive, there is no reason to do so--the server must look this up each time it needs it to get a trusted answer; it's not ok for a browser to state "this is my user tag", rather, the browser does say "this is my browser tag" and then it is the *server* that decides what user, if any, is signed in there)
+
+
+
+
+/*
+ttd february
+is this level complete to use name_table? yes, you think so
+if you want to query by formal name, you normalize it, and then call getName({nameNormal})
+and you could just lowercase it, but should isntead do checkName().formNormal which will throw if not valid, or something--you're just establishing this pattern
+
+well, you have to write these, of course:
+checkNameNormal, checkNamePage, checkName
+*/
 
 
 
@@ -407,6 +438,41 @@ validateName
 
 
 
+function nameRawToNormal(nameRaw) {//ttd february, this is stub for simple demonstration forgiving but secure name-based sign up and sign in
+	let v = validateName(nameRaw)
+	if (!v.isValid) toss('bad raw name', {nameRaw})
+	return v.nameNormal
+}
+
+
+/*
+// <previous draft>
+export async function userToRoute({userTag}) {//given a user tag, find their route
+	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
+	return row ? row.route_text : false
+}
+export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
+	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
+	return row ? row.user_tag : false
+}
+export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
+	await queryAddRow({
+		table: 'route_table',
+		row: {
+			user_tag: userTag,
+			route_text: routeText,
+		}
+	})
+}
+export async function routeRemove({userTag, hideSet}) {//vacate the given user's route
+	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
+}
+export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
+	await routeRemove({userTag})
+	await routeAdd({userTag, routeText: destinationRouteText})
+}
+// </previous draft>
+*/
 
 
 
