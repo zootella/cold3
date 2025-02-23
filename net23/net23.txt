@@ -221,8 +221,136 @@ includes stuff like get git, node, node version manager, place secrets
 
 == mac, 2025feb, unboxing, apple silicon, macOS 15 Sequoia
 
+install iterm2
+https://iterm2.com/
+Download
+
+install git
+$ git --version
+install box for command line developer tools appears, Install
+used storage goes from 57->62gb
+$ git --version, 2.39.5
+
+install homebrew
+https://brew.sh/
+$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+and then follow steps to add to path by editing ~/.zprofile
+$ brew --version, 4.4.21
+$ brew update, do before installing new packages
+
+install nvm, node, and npm
+used homebrew to install nvm, and it worked fine,
+but homebrew shows output that says the nvm people want us to say they don't like it
+$ brew install nvm    $ nvm --version, 0.40.1
+$ nvm install 20      $ node --version, 20.18.3
+$ npm install -g npm  $ npm --version, 11.1.0, the update changed the version from 10->11
+
+install yarn version 1 with npm (not brew)
+$ npm install -g yarn@1
+$ yarn --version, 1.22.22
+
+install the aws cli with brew (not npm, also notice we're not using yarn to install anything globally)
+$ brew install awscli
+$ aws --version, 2.24.10
+
+install cloudflare wrangler globally, which is also referenced in individual projects' package.json files
+$ npm install -g wrangler
+$ wrangler --version, 3.109.2
+
+install serverless framework globally with npm
+$ npm install -g serverless
+$ serverless --version, 4.6.4, and running that also causes it to update
+
+authenticate git with github
+instructions:
+https://docs.github.com/en/authentication/connecting-to-github-with-ssh
+control panel:
+https://github.com/settings/keys
+choosing ed25519 instead of rsa
+choosing no passphrase, which means you also don't have to deal with the ssh agent
+on the new mac, there is no .ssh folder at all yet
+$ ssh-keygen -t ed25519 -C "name@example.com"
+using the email address github knows about, which will also match the git global config step in a moment
+now you have these two files:
+~/.ssh/id_ed_25519
+~/.ssh/id_ed_25519.pub
+the public one goes into the github control panel; the private one stays private on your new box
+
+set name and email in git
+$ git config --global --list
+user.name=First Last
+user.email=name@example.com
+git config --global user.name "First Last"
+git config --global user.email "name@example.com"
+
+now you can check out private repositories, notice this new form that doesn't start https and ends .git
+$ git clone git@github.com:username/repository.git
+
+chrome, Add New Profile, sign in with google credentials for project profile, yes sync
+then sign into web dashboards:
+https://cloudflare.com/
+http://aws.amazon.com/, Sign in using root user email
+https://app.serverless.com/
+https://supabase.com/
+https://app.datadoghq.com/logs
+keep that chrome profile forward so when the command line pops to web to authenticate, it finds it
+
+authenticate wrangler to be able to deploy to cloudflare pages
+$ npm install -g wrangler, you already did this
+$ wrangler --version, 3.109.2
+$ wrangler whoami
+$ wrangler login, pops to browser so make sure you've got the right tab signed in and forward!
+$ wrangler logout, if you need to switch accounts
+
+authenticate the aws cli
+dashboards at aws.amazon.com
+iam dashboard
+click the number of users
+create user
+net23dev2, example name
+attach policies directly
+check AdministratorAccess, second one
+create user
+click new user
+access key 1, create access key
+use case, command line interface, check understand reccomendation, next
+no description, create access key
+secret access key only shows once, paste it right into bash
+
+AWS Access Key ID [None]: YOUR_ACCESS_KEY_ID
+AWS Secret Access Key [None]: YOUR_SECRET_ACCESS_KEY (paste in these two)
+Default region name [None]: us-east-1
+Default output format [None]: json (type these two)
+
+commands to sign in, check sign in, and test sign in by listing your buckets
+$ aws configure
+$ aws sts get-caller-identity
+$ aws s3 ls
+
+now you've got this box set up enough you can checkout and build
+$ git clone git@github.com:zootella/cold3.git
+$ cd cold3
+$ yarn install
+$ yarn test
+
+copy in secrets and stowaway
+cold3/.env
+cold3/.env.local, place the two secrets files in the project root
+stowaway, and the stowaway folder beside the project root
+
+$ yarn seal, which copies the secrets files you just placed
+$ cd site
+$ yarn build, works before you've authenticated wrangler
+$ cd ../net23
+$ yarn stowaway, which copies the linux binaries you placed
+$ yarn build
+the net23 build enters flow to authenticate serverless framework cli
+
+and those are the steps to get a brand new mac ready to develop, build and deploy
+
 == windows
 
+(next, do all the same steps in vmware)
 
 
 
@@ -236,7 +364,7 @@ includes stuff like get git, node, node version manager, place secrets
 |_|  \___| .__/ \___/ \__|  \__|_| |_|\___| | .__/|_|\__,_|_| |_|\__|
 				 |_|                                |_|                      
 
-
+(these steps are about recreating the project, not the computer you're building the project on)
 
 
 
@@ -319,8 +447,9 @@ lambda serverless framework is local/deployed--run in those two environments
  \___|_|  \___|\__,_|\__\___| | .__/|_|  \___// |\___|\___|\__|
 															|_|           |__/               
 
-[]todo january, in vmware windows and a new mac silicon user, set up project from scratch to check and minimize these notes. divide "create project" into two sections: "prepare workstation" which has stuff like brew and yarn and wrangler and serverless, all the global stuff, and "repot the pant" with stuff like cloudflare create and serverless' create
+[]todo january, in vmware windows and a new mac silicon user, set up project from scratch to check and minimize these notes. divide "create project" into two sections: "prepare workstation" which has stuff like brew and yarn and wrangler and serverless, all the global stuff, and "repot the plant" with stuff like cloudflare create and serverless' create
 sorta also in this section is how to set it up in docker; that's a new workstation
+also on this list is stuff where you authenticate, like github, aws cli, cloudflare
 
 == install aws cli
 
