@@ -8,6 +8,8 @@
 	font-style: normal;
 }
 
+/* ttd march, in the single team page, this came up as main.css? and the fonts are simpler? see if that pattern is better than the one that grew here */
+
 /* 2. Same idea for Noto Sans Mono */
 @font-face {
 	font-family: 'Noto Sans Mono';
@@ -56,6 +58,11 @@
 	/* For all disabled buttons, use the default arrow instead of a hand pointer */
 	button:disabled {
 		@apply cursor-default;
+	}
+
+	/* Don't show the blue ring on focused input boxes; our own border will show focus tyvm! */
+	input:focus {
+		box-shadow: none !important;
 	}
 }
 

@@ -3,6 +3,7 @@
 
 <NavigationComponent note="on page4" />
 
+<StyleComponent />
 
 </div>
 </template>
