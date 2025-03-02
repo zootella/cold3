@@ -30,7 +30,7 @@ where you either style all input boxes?
 or make a class name you can mention wehre you want it?
 
 downwards:
-making your own low level granular vue comonents like <Box /> <ParagraphBox /> and <PasswordBox />
+making your own low level granular vue comonents like <TextBox /> <NumberBox /> <PasswordBox /> and <ParagraphBox />
 then, there's some duplication between those three, but that's ok
 and this is interesting, because they keep their own state
 you pass in a validator function for each, which they use when their text changes, and update their appearance automatically
@@ -62,6 +62,19 @@ and work on the button's animated state, which probably has an ellipsis that bli
 and maybe also a gently swimming wallpaper background
 
 ## more notes
+
+remember that most users won't ever encounter the password box
+as passwords are out of style because they're hard for users to do, and frequently not at all secure
+so keep time, code, and complexity pretty encapsulated on that
+
+if you do <Box /> <ParagraphBox /> and <PasswordBox /> would you also do
+<NumberBox />
+<PhoneBox />
+<EmailBox />
+<NameBox /> which can be username, phone, or email?
+not sure how the factoring works around these, either--is it a simple box that the form knows the very specific contents of,
+or is it a very particular box which knows that, itself
+you kinda like the simpler factorization, but there should still be <NumberBox /> because it brings up the number pad on mobile
 
 some of these styles, like mt-4 and max-w-xs are really about layout, and should go to divs higher in the tree
 
