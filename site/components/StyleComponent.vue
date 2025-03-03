@@ -20,6 +20,35 @@ understandably common--boxes have a border all the way around so everyone's mom 
 
 oh wait--if you accomplish these goals with chat and tailwind, does that mean you don't use a prepackaged component library? or you do, but just to get the slider-style checkbox, or something? don't those comonent libraries already come with a password box? so maybe you shouldn't be doing this here yourself, at all!
 
+remember to really lead with the design here
+figure out how you want things to work, then from that make choices about tools and factoring
+imagine this step in a form is jsut a box wher the user types their email
+they mistakingly type "name.example.com", so, not valid
+should the Next button not be clickable until they fix it?
+should there be text below that says "That's not a valid email address"?
+should that text appear while they're typing? after they blur the box? after they hit submit?
+how does that work when you can place the Submit button on the phone keyboard, so they don't have to return focus to the page at all?
+if you wire it up so the submit button isn't even clickable until the form contains valid looking information, does that interrupt the user's flow? (the 1998 way, before client-side validation, is they press submit, and then get errors they have to scroll up to fix, which as an extreme, is also bad. but also also bad is the most modern way, where the user is pecking a nonworking submit button because they haven't correctly typed their email in a box above they're no longer looking at)
+should the boxes animate "No" left and right like they do on macOS? is this clever or annoying?
+should this be like typeform, a whole bunch of different steps, or like the early web, a long form you spend time getting right before submitting
+you know you want to keep forms short enough that even with the keyboard up, there's no scrolling at all--and this means really, really short--you're already seeing scrolling with navigation links at the top when there's a password box on the page, so the keyboard is taller because there are password manager controls above it!
+but you also know you don't want to make the thing a million step conversation the user feels lost in, like when will it end, likek typeform
+
+also remember, most users are going to be able to fill out these forms, no problem
+so don't choose a design that gets in their way, or is distracting, or just even a little weird, as they're doing that!
+
+maybe dashed means undone, so you go to the form and all the boxes and teh button are dashed
+and then as you complete things, making them valid, they become solid
+until at last the button is also solid
+ok so then how do you show where the focus is?
+
+and then text about something not valid yet appears when the user has
+blurred the box, which would include trying to hit an unhittable select button
+or stopped typing for like 2 seconds, maybe, also?
+
+you came here just because you're coding up some boxes and buttons and are having some code duplication issues
+so it may still make sense to, now, try out making <TextBox /> and <Button /> with watch, validate, and basic states
+
 ## factoring
 
 should styles be here? no, lots of duplication. okay, so then there are two directions you can factgor them:
@@ -80,6 +109,11 @@ some of these styles, like mt-4 and max-w-xs are really about layout, and should
 
 the dashed border looks weird and bad in firefox, maybe try a dotted border?
 remember to deploy to see what this looks like on mobile, both ios and android!
+
+all the text the user types should be monospace, like Noto Sans Mono
+when they write a post, even, it's mono
+when it's rendered on the page it's in the brand font
+hook that up for these controls
 
 
 
