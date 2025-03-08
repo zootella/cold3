@@ -789,7 +789,7 @@ we won't need the results, but do need to wait for them all to finish before ret
 also, if one fails, we want to know about that
 */
 let _doorPromises = []
-export function doorPromise(p) {//instead of awaiting p, add it here to keep going in parallel, and wait for it at the end
+export function keep(p) {//instead of awaiting p, add it here to keep going in parallel, and keep the promise of waiting for it at the end
 	_doorPromises.push(p
 		.then(result => ({success: true, result}))
 		.catch(error => ({success: false, error})))//wrap the promise so we can get its result or error, and to prevent it from throwing
@@ -853,13 +853,13 @@ noop(async () => {//a demonstration of waiting for door promises, success and fa
 	let p7 = new Promise((resolve, reject) => { setTimeout(() => { resolve('slow success')       }, durationSlow) })
 
 	//they're all already started and running in parallel; add them to the door promises array
-	doorPromise(p1)//successes
-	if (addFailures) doorPromise(p2)
-	doorPromise(p3)
-	if (addFailures) doorPromise(p4)
-	doorPromise(p5)
-	if (addFailures) doorPromise(p6)
-	doorPromise(p7)
+	keep(p1)//successes
+	if (addFailures) keep(p2)
+	keep(p3)
+	if (addFailures) keep(p4)
+	keep(p5)
+	if (addFailures) keep(p6)
+	keep(p7)
 
 	//returning the web response can cause amazon and cloudflare to tear down the execution environment immediately!
 	//so, before we return from the request handler, we await all the promises we added
@@ -1002,9 +1002,9 @@ the run script on client side pages communicates with their back end, and makes 
 .................................................................
 ... the end .....................................................
 */
-export function dog(...a)                 { doorPromise(awaitDog(...a))                 }//fire and forget forms
-export function logAudit(headline, watch) { doorPromise(awaitLogAudit(headline, watch)) }
-export function logAlert(headline, watch) { doorPromise(awaitLogAlert(headline, watch)) }
+export function dog(...a)                 { keep(awaitDog(...a))                 }//fire and forget forms
+export function logAudit(headline, watch) { keep(awaitLogAudit(headline, watch)) }
+export function logAlert(headline, watch) { keep(awaitLogAlert(headline, watch)) }
 export async function awaitDog(...a) {//await async forms
 	let c = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
 	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {

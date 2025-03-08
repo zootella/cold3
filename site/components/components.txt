@@ -248,7 +248,11 @@ well that's not going to be usable at all!
 
 
 code tonight maybe
-- doorPromise -> keep
+[x] doorPromise -> keep
+[~] awaitDoorPromises -> awaitKeptPromises
+
+
+
 - Data normalizes to NFC so you don't have to
 - a form with two text boxes and a button, componentize, see how code length, complexity, flow changes
 
