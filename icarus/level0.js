@@ -1023,6 +1023,28 @@ test(() => {
 	//also tried blank, bad character, too short, too long
 })
 
+/*
+ttd march
+
+bring s.normalize('NFC') into Data({text: s})
+which means it can't do a round trip anymore; well, it can do it to the after normalized form
+confirm this means you really don't need it anywhere else
+
+mostly for tests and test-documented code, write
+function textLength(s) which computes the length all the different ways, with all the different normalizations
+and returns an object that shows all that
+not sure how much you like this idea now that you've typed it out, actually
+
+factor time safe equal to compare base16 strings
+secureSameText(s1, s2) just converts to Data (which normalizes) and then calls
+secureSameData(d1, d2) which does this
+converts to base16
+pads with a random additional amount of spaces to make the same length
+uses a javascript 101 loop to count the number of characters that are different
+so, no bitwise arithmatic anymore
+
+*/
+
 export async function hashText(s) {//convenience function which goes text encoder to base 32
 	return (await hashData(Data({text: s.normalize('NFC')}))).base32()//use Normalization Form C
 }

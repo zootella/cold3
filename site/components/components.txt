@@ -2,6 +2,282 @@
 notes about the front end
 
 
+from StyleComponent.vue
+
+
+/*
+ttd march
+took a day to play around with styling components in tailwind
+
+## goals
+
+visually simple--like you drew it all with a thick crayon
+flat--as opposed to shadows, bubbles, shine, any z dimensional cues, accomplish things without those!
+completely communicative--the user knows where the focus is, which fields are valid, what the button can do and is doing
+does not depend upon color--you could use it all with just gray and pink, for instance
+understandably common--boxes have a border all the way around so everyone's mom understands they're a box. unlike Android in the teens!
+
+oh wait--if you accomplish these goals with chat and tailwind, does that mean you don't use a prepackaged component library? or you do, but just to get the slider-style checkbox, or something? don't those comonent libraries already come with a password box? so maybe you shouldn't be doing this here yourself, at all!
+
+remember to really lead with the design here
+figure out how you want things to work, then from that make choices about tools and factoring
+imagine this step in a form is jsut a box wher the user types their email
+they mistakingly type "name.example.com", so, not valid
+should the Next button not be clickable until they fix it?
+should there be text below that says "That's not a valid email address"?
+should that text appear while they're typing? after they blur the box? after they hit submit?
+how does that work when you can place the Submit button on the phone keyboard, so they don't have to return focus to the page at all?
+if you wire it up so the submit button isn't even clickable until the form contains valid looking information, does that interrupt the user's flow? (the 1998 way, before client-side validation, is they press submit, and then get errors they have to scroll up to fix, which as an extreme, is also bad. but also also bad is the most modern way, where the user is pecking a nonworking submit button because they haven't correctly typed their email in a box above they're no longer looking at)
+should the boxes animate "No" left and right like they do on macOS? is this clever or annoying?
+should this be like typeform, a whole bunch of different steps, or like the early web, a long form you spend time getting right before submitting
+you know you want to keep forms short enough that even with the keyboard up, there's no scrolling at all--and this means really, really short--you're already seeing scrolling with navigation links at the top when there's a password box on the page, so the keyboard is taller because there are password manager controls above it!
+but you also know you don't want to make the thing a million step conversation the user feels lost in, like when will it end, likek typeform
+
+also remember, most users are going to be able to fill out these forms, no problem
+so don't choose a design that gets in their way, or is distracting, or just even a little weird, as they're doing that!
+
+maybe dashed means undone, so you go to the form and all the boxes and teh button are dashed
+and then as you complete things, making them valid, they become solid
+until at last the button is also solid
+ok so then how do you show where the focus is?
+
+and then text about something not valid yet appears when the user has
+blurred the box, which would include trying to hit an unhittable select button
+or stopped typing for like 2 seconds, maybe, also?
+
+you came here just because you're coding up some boxes and buttons and are having some code duplication issues
+so it may still make sense to, now, try out making <TextBox /> and <Button /> with watch, validate, and basic states
+
+## factoring
+
+should styles be here? no, lots of duplication. okay, so then there are two directions you can factgor them:
+
+upwards:
+all the way up to tailwind/main.css,
+where you either style all input boxes?
+or make a class name you can mention wehre you want it?
+
+downwards:
+making your own low level granular vue comonents like <TextBox /> <NumberBox /> <PasswordBox /> and <ParagraphBox />
+then, there's some duplication between those three, but that's ok
+and this is interesting, because they keep their own state
+you pass in a validator function for each, which they use when their text changes, and update their appearance automatically
+you'll learn some more vue if you choose this path,
+as you still need the larger form using them to know when their text changes, too!
+and for the password box, does that include the strength meter? lots to try out and decide here
+and on the set password form, how do you get both eye controls connected?
+
+## charm
+
+ok, so here, the charm does not interfere with typing or selecting text
+but does draw on top of text, if you get enough text in there so it makes it over to the right of the box
+if you tell chat3 to get it under the text, it goes on a very advanced path of dynamically creating a background image for the box
+using data urls like url('data:image/svg+xml,%3Csvg xmlns...
+which is impressive, but
+in practice, you might either
+1 move the charm to the upper right corner, so it's still on top, but really doesn't get in the way
+2 not use the charm at all, instead picking some background wallpaper that changes from - to x and v
+3 not use the charm at all, instead showing the validation status entirely in the 
+right now, you'd pick 1, as you may not color the border
+
+or maybe this is too fancy and too difficult in situations where you've got several and they start to depend upon one another
+and remember that the whole finished product actually won't have that many different forms or fields!
+
+## button
+
+another thing to do here now is style a button alongside these boxes
+and work on the button's animated state, which probably has an ellipsis that blinks ., .., ...
+and maybe also a gently swimming wallpaper background
+
+## more notes
+
+remember that most users won't ever encounter the password box
+as passwords are out of style because they're hard for users to do, and frequently not at all secure
+so keep time, code, and complexity pretty encapsulated on that
+
+if you do <Box /> <ParagraphBox /> and <PasswordBox /> would you also do
+<NumberBox />
+<PhoneBox />
+<EmailBox />
+<NameBox /> which can be username, phone, or email?
+not sure how the factoring works around these, either--is it a simple box that the form knows the very specific contents of,
+or is it a very particular box which knows that, itself
+you kinda like the simpler factorization, but there should still be <NumberBox /> because it brings up the number pad on mobile
+
+some of these styles, like mt-4 and max-w-xs are really about layout, and should go to divs higher in the tree
+
+the dashed border looks weird and bad in firefox, maybe try a dotted border?
+remember to deploy to see what this looks like on mobile, both ios and android!
+
+all the text the user types should be monospace, like Noto Sans Mono
+when they write a post, even, it's mono
+when it's rendered on the page it's in the brand font
+hook that up for these controls
+
+
+
+
+
+*/
+
+
+big questions about granular components
+- are they really going to make things better? maybe a longer form code even with some repitition is simpler with less communication, state machines, events flying around. you're more directly in control
+- does using props for configuration and emits for notifications mean you can't get the clarity of await any longer?
+- if you make your own granular components with tailwind here, and then soon want to get a vue tailwind component library into the stack to benefit from their professional and consistant look, are those two things not going to mix well together? maybe you should do as little as you can on this trail until you've investigated component libraries off the shelf
+
+
+
+
+
+
+ttd march, paper sketch of granular components
+
+for each of these, figure out what
+1 you initialize them with; this information shouldn't change
+2 you call down to command them with after that fact, and
+3 they communicate up to you, telling you that something has happened, returning information, or asking for information
+
+<Link /> looks like a link, is actually a button, avoids navigation pitfall
+<Button /> looks like a submit, is actually just do something like move to the next step
+<PostButton /> last or only step in a form, causes a real POST
+<TurnstileButton /> does turnstile as soon as its rendered, causes a real POST with turnstile
+
+<EmailBox />
+	<TextBox />
+<PhoneBox />
+<DateBox />
+	<NumberBox />
+	<PasswordBox />
+	<ParagraphBox />
+
+do these hold a line of status or help or error text beneath them
+like "Got that as US +1 987 555 124" for phone number
+or "Prosessing for 5 seconds..." on a slow POST
+
+
+
+
+
+
+
+
+stop working on password because it won't even be in 1.0
+the identity trail is
+- magic link
+- two factor app
+- social login
+and then you're at a very solid workable set, and can grow from there with
+- wallet
+and you still haven't done password yet
+
+
+
+simple idea for the crayon design
+as a visual communication of brand, though, this may be too distinctive
+highly usable, but look underdeveloped, retro, rudimentary, less than current or professional
+ok with that caveat, here it is anyway
+
+inputs and buttons look a lot alike, buttons have text in them, buttons are solid
+dashed always means not valid, solid always means valid
+dashed box means blank or that's not an email address
+dashed button means you haven't gotten this form submittable yet
+the accent color (pink, not gray) means that thing has the focus
+
+ok, so what's a solid background dashed button look like? does that look bad? weird? all 1997-style? is that a good thing?
+
+and then all you have to figure out is what the Submitting... animation is for buttons
+ideas include
+the dots of the button jiggle slightly
+there's a regular spinner in front of the text
+the ellipsis grows and blinks (do this in addition to things; or maybe this is really all you need)
+the button text changes from Submit to Submitting...
+there's a striped or arrowed or sprinkley background to the button, which lazily drifts to the right
+
+in all this, also note that firefox dashes look horrible because they're not all the same width
+how do their dots look?
+
+ok, if you were deciding right now, you'd
+use dashes, even though firefox's are bad; most people will be on chrome
+inputs are open, buttons are filled
+pink is focused, gray is blurred
+solid is valid or clickable, dashed is not
+submitting animation is changing the word to "ing" and adding "..." which blinks rapidly, and grows quickly, before resetting
+
+and this is all the animatino you need as you're building this thing so there's never a wait more than a second
+ok, yeah, this meets your crayon requirement
+is really simple, both visually, and to code
+
+
+
+
+
+
+
+maybe you can code your own inputs and buttons easily
+but they look too kindergarten, too Yoshi's Wolly World
+and for that reason you bring in a look from a vue tailwind component library
+
+or maybe you just bring in the library to get the mobile-style checkbox
+
+
+
+
+two forms, one with html elements, the other with components, how much harier is it
+the behavior of styling the elements; you don't have to do that with repeated code
+other than making a whole vue component that contains the element
+what are other ways to remove that duplication?
+like global styles, for instance
+or named styles
+
+
+
+oh, can you set the placeholder text in one font and color (diatype, gray)
+and the text the user types in another (noto sans mono, black)
+is that easy, or does that involve changing the style of the contained text if the contents are blank or not?
+
+
+what does a gray button with white text and a dotted border look like
+even if you hate it, it's probably what you're doing for now
+and test out using the keyboard to move the focus over to one and pressing it
+this is the only time it'll be pink in this scenario, you realize
+well that's not going to be usable at all!
+
+
+
+
+
+code tonight maybe
+- doorPromise -> keep
+- Data normalizes to NFC so you don't have to
+- a form with two text boxes and a button, componentize, see how code length, complexity, flow changes
+
+watch({refBox1, refBox2})//how does that change?
+
+async function buttonClicked() {//how does that change?
+	
+}
+
+ExampleForm
+ExampleBox
+ExampleButton
+
+because if it's at all harier
+then you don't do granular components
+and explore other ways, styling, library functions, to setup similar fields and buttons without code duplication
+
+but if it is simple enough, it would be cool to get
+text maximum defaults
+POST and Turnstile+POST
+automatic visual status
+automatic validation and feedback
+
+
+
+
+
+
+
 
 
 
