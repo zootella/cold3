@@ -1,0 +1,79 @@
+
+
+
+
+you are ready to code name-based sign up and sign in
+which will use real tables and functions
+even though it has the following simplifications
+- all users have routes
+- users identify themselves by their route
+- "you are who you say you are" user validation for sign-in
+
+from this first strand, though, you can code these features
+[]a user has a status message
+[]a user can change their status message, others can only view it
+[]a user has a card that shows their status message
+and you'll be able to code
+[]a user hides and unhides themselves
+[]a user closes their account
+
+
+
+getting back to the cold forge,
+find the existing tables, functions, and components which you have started building this in
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+site/stores/helloStore.js
+v
+site/server/api/hello1.js > demonstrationSignGet
+site/server/api/hello2.js > demonstrationSignGet
+
+site/server/api/authenticate.js
+v
+demonstrationSignGet > userToRoute
+demonstrationSignUp > routeToUser, routeAdd
+demonstrationSignIn > routeToUser
+demonstrationSignOut
+
+new functions to write and use instead:
+
+site/server/api/hello1.js > browserToUser
+site/server/api/hello2.js > somethingNew({browserTag}) => {userTag, routeText}
+
+( ~ new stuff on top of that calls down to:)
+browserToUser
+browserSignIn
+browserSignOut
+
+( ~ new stuff on top of that calls down to:)
+getName
+setName
+removeName
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

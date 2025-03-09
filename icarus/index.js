@@ -71,6 +71,7 @@ snippet3,
 settingReadInt, settingRead, settingWrite,
 recordHit,
 
+demonstrationSignQuick,
 demonstrationSignGet,
 demonstrationSignUp,
 demonstrationSignIn,

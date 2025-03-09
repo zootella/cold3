@@ -392,6 +392,17 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
 
+//                                        _   _        _     _      
+//  _ __   ___ _ __ ___  ___  _ __   __ _| | | |_ __ _| |__ | | ___ 
+// | '_ \ / _ \ '__/ __|/ _ \| '_ \ / _` | | | __/ _` | '_ \| |/ _ \
+// | |_) |  __/ |  \__ \ (_) | | | | (_| | | | || (_| | |_) | |  __/
+// | .__/ \___|_|  |___/\___/|_| |_|\__,_|_|  \__\__,_|_.__/|_|\___|
+// |_|                                                              
+
+//--the person at this browser tag, who may have just been assigned this user tag even before finishing sign up, provided this personally identifying information
+//like a dob or a cc number, which we can use to get them back in later if they've lost access
+//this might hold normal, formal redacted, and hashed normal forms
+
 //                   __ _ _        _        _     _      
 //  _ __  _ __ ___  / _(_) | ___  | |_ __ _| |__ | | ___ 
 // | '_ \| '__/ _ \| |_| | |/ _ \ | __/ _` | '_ \| |/ _ \
@@ -534,11 +545,27 @@ export async function trailAdd({hash}) {
 
 
 
+export async function demonstrationSignHello({browserTag}) {//always does only one query to be fast
+	checkTag(browserTag)
 
+	let b = await browser_get({browserTag})//look for a user at the given browser
+	return b.userTag
+}
+/*
+ttd march
+ok, so you just wrote demonstrationSignHello above so that hello1 would always do a single supabase call
+but does this really make things faster?
+for the person who is brand new, sign hello and sign get will both do one call
+and the returning user is going to have to wait for hello2 to do several calls in sign get anyway
+so maybe the fact that now you've written sign get to do one call for brand new people
+means that you can combine hello1 and hello2, even
 
+look at the big picture, remembering that some customizations come from the route
+which are available on first GET
+and other customizations come from the browsertag
+which are only available after first GET and POST
 
-
-
+*/
 
 //bookmark february; working on this demonstration where user identity is based on normalized name, and you are who you say you are--it's simplified, but parts its made of are useful now and for the larger system as well
 

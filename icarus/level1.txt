@@ -47,38 +47,15 @@ and user can type all kanji into the first box and their english translation in 
 
 
 
+for the name validation rules, you have this note:
+//and research what current popular platforms do--you haven't done enough research for this to design it properly
+which is a really good idea, and you coded it all without doing that
 
 
-//t1-t2-Net-Win-OS9-Uni-null-terminator
-/*
-	// Step 1 (Normalization):
-	// 1a: Remove accents (e.g., using NFD/NFKD to turn 'á' into 'a').
-	s = deaccent(s)
-	// 1b: Convert fancy punctuation (e.g., em-dash, en-dash, and multiple hyphens/dashes) into a simple ASCII hyphen.
-	s = s.replace(/[-–—]+/g, '-')
-	// allow all the RFC 3986 characters: letters (A-Z, a-z), digits (0-9), whitespace, hyphen, underscore, period, and tilde.
-	s = s.replace(/[^A-Za-z0-9\s\-_.~]/g, ' ')
 
-	// Step 2 (Whitespace Handling):
-	// 2a: Replace all groups of whitespace (spaces, tabs, newlines) with a single space.
-	s = s.replace(/\s+/gu, ' ')
-	// 2b: Trim leading and trailing whitespace.
-	s = s.trim()
-	// 2c: Replace spaces with hyphens to form word boundaries.
-	s = s.replace(/ /g, '-')
 
-	// Step 3 (Punctuation Normalization):
-	// 3a: Collapse long sequences of allowed punctuation (e.g., more than two hyphens) to a maximum of two.
-	s = s.replace(/([-._~]{3,})/g, match => match.slice(0, 2))
-	// 3b: Collapse 2 or more periods into a single period.
-	s = s.replace(/\.{2,}/g, '.');
 
-	// Step 4 (Length Truncation):
-	// 4a: Enforce the maximum slug length by truncating to slugLength.
-	s = s.slice(0, slugLength)
 
-	//must begin with a letter or underscore, can end with a letter, number, or underscore
-	s = s.replace(/^[^A-Za-z_]+|[^A-Za-z0-9_]+$/g, '')
 
 
 
@@ -95,126 +72,6 @@ and user can type all kanji into the first box and their english translation in 
 
 
 
-	ok, from our conversation, i've assembeled the above draft of our implementation as a whole
-	check it, and make sure it's behavior with a wide variety of input, including malicious input, will match the following specification we were given to code today, repeated here:
-
-	let's allow all the RFC 3986 characters, even tilde
-
-	make a pass that doesn't change the length, but does improve characters, which would
-	remove accents from vowels
-	turn dashes into a single hyphen, em and en dashes, and --, all of those, into just -
-
-	then let's attack whitespace
-	replace all groups of sapce, tab, and newline characters with a single space
-	and trim the ends
-	and then replace spaces with hyphen
-
-	then let's allow, but guard against, long sequences of only puncutation characters
-	two puncutation characters in a row are ok
-	if there is a string of more than that, though, we want to keep only the first two
-	so __This-Is-Fine__ while ~~~Something becomes ~~Something
-
-	and, there are additional rules for periods
-	periods are ok, but two in a row become one
-	and any on the edges are removed
-
-
-	before we dive into code, let's talk generally about these steps
-	are some unnecessary?
-	are there some others along these lines that im not thinking of?
-	what order should we do these steps in? how can we group them together into named stages of processing the input?
-
-	*/
-
-/*
-
-
-
-
-According to RFC 3986, URLs are allowed to include a set of characters called the unreserved characters:
-AZaz09
-~.-_
-
-
-		!(/[._-]{2}/.test(s))//but those three allowed characters can't appear together!
-		//ttd january, maybe also can't have a period at the start or the end
-		//and research what current popular platforms do--you haven't done enough research for this to design it properly
-
-ok, here's your uninformed draft
-for simplicity, same rules for user names and post titles, how about
-same length, super long 42
-
-allow all the rfc3986 characters, even tilde
-allow two of them together, but no longer, so you can do __SeverelyUnderlined__
-allow period, but here you can't do dots at the start or the end, and you can't do two dots together
-
-replace accented characters with their nonaccented versions
-remove illegal characters, just take the safe ones
-itls ok if the resulting input is blank--we'll handle this elsewhere in the stack!
-
-
-
-
-Alphabets: A–Z and a–z
-Digits: 0–9
-Punctuation: Hyphen (-), Period (.), Underscore (_), and Tilde (~
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-//  _     _      _   _         _             
-// | |__ (_)_ __| |_| |__   __| | __ _ _   _ 
-// | '_ \| | '__| __| '_ \ / _` |/ _` | | | |
-// | |_) | | |  | |_| | | | (_| | (_| | |_| |
-// |_.__/|_|_|   \__|_| |_|\__,_|\__,_|\__, |
-//                                     |___/ 
-
-/*
-ttd february
-you need to do this with birthdays
-user types it, YYYYMMDD, validate that, spell it out in words as they type
-obviously use the validate pattern you've got below for this
-so the form for the database is probably "YYYYMMDD" as text, not a number
-and the v returned has extra number types attached for .year .month .day
-
-test thsi out with the mobile keypad--can you disable the submit button when it's on the mobile keyboard and not the page? how does that work?
-
-and then, calculate the age of that birthday
-taking and using the local time zone as known by the page
-so if it's 12:30 AM local time on the page
-it may be easiest to get the day today local on the page
-and then sanity check that on the server with the server clock
-how does that work? is UTC at the start, end, or middle, oh right it's middle, of midnight around the world
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
 on the front end:
 user types namePagepageName, gets suggestions for routeName and gets to see lookName
 user edits routeName, pageName doesn't change, lookName does
@@ -226,56 +83,11 @@ validate all three, in the future
 validate pageName before saving it in the database, in a distant table
 validate lookName before saving it in the table you're on now
 
-
-more on this
-stuff you could do:
-- user types name, other two are set automatically
+ttd march
+[]user types name, other two are set automatically
 	but then user adjusts route, and that changes look but not name
-- visitor navigates to route, and route changes to userRoute, capitalizing things for instance
-- user edits route, but not in a way that changes look, so you don't have to adjust that table
-
-
-
-*/
-
-
-
-
-
-
-
-
-/*
-ttd february, those are going to be really useful and make these validations really easy:
-
-raw box for name -> namePage, nameFormal, nameNormal
-raw box for link -> nameFormal, nameNormal (user types in the second box)
-choose or change your user name box, leading to page display, formal name that works in route, and normal name that is unique
-"東京❤️女の子" namePage
-"Tokyo-Girl" nameFormal
-"tokyo-girl" nameNormal
-
-post title, one line, can be blank
-
-post or comment, multiple lines
-
-
-validateName
-validateRoute
-validateTitle
-validatePost
-
-
-
-*/
-
-//             _ _     _       _                                    
-// __   ____ _| (_) __| | __ _| |_ ___   _ __   __ _ _ __ ___   ___ 
-// \ \ / / _` | | |/ _` |/ _` | __/ _ \ | '_ \ / _` | '_ ` _ \ / _ \
-//  \ V / (_| | | | (_| | (_| | ||  __/ | | | | (_| | | | | | |  __/
-//   \_/ \__,_|_|_|\__,_|\__,_|\__\___| |_| |_|\__,_|_| |_| |_|\___|
-//                                                                  
-
+[]visitor navigates to route, and route changes to userRoute, capitalizing things for instance
+[]user edits route, but not in a way that changes look, so you don't have to adjust that table
 
 
 
