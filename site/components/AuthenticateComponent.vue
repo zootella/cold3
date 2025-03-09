@@ -2,63 +2,81 @@
 
 import {
 log, look, Now, sayTick, newline, Data, Tag, hasText,
-getBrowserTag, isLocal,
+getBrowserTag, isLocal, validateName,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 
-let refState = ref(0)//to begin, determining what our browser tag and user tag are
-let refBrowserTag = ref('')//the browser here's tag, read from local storage
-let refUserTag = ref('')//the user tag of the user who is signed in to this browser right now
-let refUserName = ref('')//the user name of that tag, signed in, according to the server
-let refDesiredUserNameBox = ref('')
-let refReturningUserNameBox = ref('')
+const refState = ref(0)//to begin, determining what our browser tag and user tag are
+const refBrowserTag = ref('')//the browser here's tag, read from local storage
+const refUserTag = ref('')//the user tag of the user who is signed in to this browser right now
+const refUserName = ref('')//the user name of that tag, signed in, according to the server
+const refDesiredUserNameBox = ref('')
+const refReturningUserNameBox = ref('')
+const refMessage = ref('')//status and response message back to the user
 
 onMounted(async () => {//doesn't run on server, even when hydrating
 	refBrowserTag.value = getBrowserTag()//read browser tag from local storage
+	//ttd march, should this instead come from the hello store?
 	await doSignGet()
 })
 
 async function doSignGet() {
 	let r = await $fetch('/api/authenticate', {method: 'POST', body:
 		{action: 'DemonstrationSignGet.', browserTag: refBrowserTag.value}})
-	if (r.result?.isFound) {//server tells us we've got a user signed into this browser here
+	if (r.isFound) {//server tells us we've got a user signed into this browser here
 		refState.value = 4
-		refUserTag.value = r.result.userTag
-		refUserName.value = r.result.nameNormal
+		refUserTag.value = r.userTag
+		refUserName.value = r.nameNormal
 	} else {//server tells us, no user is signed in here based on our browser tag
 		refState.value = 1
 	}
 }
 async function clickedSignUp() {
-	let r = await $fetch('/api/authenticate', {method: 'POST', body:
-		{action: 'DemonstrationSignUp.', browserTag: refBrowserTag.value, nameRaw: refDesiredUserNameBox.value}})
-	log(look(r))
-	await doSignGet()
+	let v = validateName(refDesiredUserNameBox.value)
+	if (v.isValid) {
+		let r = await $fetch('/api/authenticate', {method: 'POST', body:
+			{action: 'DemonstrationSignUp.', browserTag: refBrowserTag.value, nameNormal: v.formNormal}})
+		if (r.isSignedUp) {
+			await doSignGet()//ttd march, this shouldn't be another round trip
+		} else {
+			refMessage.value = r.reason//probably NameTaken.
+		}
+	} else {
+		refMessage.value = 'Name not valid'
+	}
 }
 
 async function clickedSignIn() {
-	let r = await $fetch('/api/authenticate', {method: 'POST', body:
-		{action: 'DemonstrationSignIn.', browserTag: refBrowserTag.value, nameRaw: refReturningUserNameBox.value}})
-	log(look(r))
-	await doSignGet()
+	let v = validateName(refReturningUserNameBox.value)
+	if (v.isValid) {
+		let r = await $fetch('/api/authenticate', {method: 'POST', body:
+			{action: 'DemonstrationSignIn.', browserTag: refBrowserTag.value, nameNormal: v.formNormal}})
+		if (r.isSignedIn) {
+			await doSignGet()//ttd march, this shouldn't be another round trip
+		} else {
+			refMessage.value = r.reason
+		}
+	} else {
+		refMessage.value = 'Name not valid'
+	}
 }
+
 async function clickedSignOut() {
 	let r = await $fetch('/api/authenticate', {method: 'POST', body:
 		{action: 'DemonstrationSignOut.', browserTag: refBrowserTag.value}})
-	log(look(r))
-	await doSignGet()
+	if (r.isSignedOut) {
+		await doSignGet()//ttd march, should not need another round trip
+	} else {
+		refMessage.value = r.reason
+	}
 }
-
-
-//ttd february, just add something so the []button only is clickable when not in flight, and when v.isValid is true
-//and show []text below the box that says "not valid for a username" or "validated to blah-1" showing the normalized form
 
 </script>
 <template>
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>AuthenticateComponent</i></p>
 
-<p><code>{{ refBrowserTag }}</code> browser tag</p>
+<p><code>{{refBrowserTag}}</code> browser tag</p>
 
 <!-- state 0: determining if there is a user signed in; show no controls yet -->
 
@@ -92,6 +110,10 @@ async function clickedSignOut() {
 <div v-show="refState == 4">
 	<p><code>{{ refUserTag }}</code> user tag of <code>{{ refUserName }}</code> signed in</p>
 	<p><button @click="clickedSignOut()" class="pushy">Sign Out</button></p>
+</div>
+
+<div>
+	<p>{{refMessage}}</p>
 </div>
 
 </div>

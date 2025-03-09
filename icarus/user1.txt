@@ -74,49 +74,6 @@ TABLE name_table (user_tag, normal_text, formal_text, page_text);
 
 
 
-use checkName on the page and server
-
-on the page, the user is typing in the first box
-
-
-on the page, the user is typing in the second box
-
-
-on the server, 
-
-
-
-
-
-
-
-export function checkName({formPage, formFormal, formNormal}) {
-	let message = _checkName({formPage, formFormal, formNormal})
-	if (message != 'Ok.') toss(message, {formPage, formFormal, formNormal})
-}
-function _checkName({formPage, formFormal, formNormal}) {
-	let validPage, validFormal, validNormal
-	if (given(formPage)) {//remember that blank strings, while not valid, are falsey!
-		validPage = validateName(formPage, Limit.name)
-		if (!validPage.formPageIsValid) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
-		if (validPage.formPage != formPage) return 'page form round trip mismatch'
-	}
-	if (given(formFormal)) {
-		validFormal = validateName(formFormal, Limit.name)
-		if (!validFormal.isValid) return 'formal form not valid'
-		if (validFormal.formFormal != formFormal) return 'formal form round trip mismatch'
-	}
-	if (given(formNormal)) {
-		validNormal = validateName(formNormal, Limit.name)
-		if (!validNormal.isValid) return 'normal form not valid'
-		if (validNormal.formNormal != formNormal) return 'normal form round trip mismatch'
-	}
-	if (given(formFormal) && given(formNormal)) {//after checking all given forms individually, also make sure formal normalizes into normal
-		if (validFormal.formNormal != formNormal) return 'round trip mismatch between normal and formal forms'
-	}
-	return 'Ok.'
-}
-
 
 
 

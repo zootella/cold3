@@ -15,7 +15,6 @@ async function doorHandleBelow({door, body, action}) {
 
 	r.sticker = Sticker().all
 	r.userTag = (await demonstrationSignHello({browserTag})).userTag
-	//^could be 
 
 	/*
 	/api/hello1

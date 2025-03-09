@@ -548,8 +548,7 @@ export async function trailAdd({hash}) {
 export async function demonstrationSignHello({browserTag}) {//always does only one query to be fast
 	checkTag(browserTag)
 
-	let b = await browser_get({browserTag})//look for a user at the given browser
-	return b.userTag
+	return await browser_get({browserTag})//look for a user at the given browser
 }
 /*
 ttd march
@@ -582,30 +581,26 @@ export async function demonstrationSignGet({browserTag}) {
 	return {isFound: false, browserTag}
 }
 
-export async function demonstrationSignUp({browserTag, nameRaw}) {
-	checkTag(browserTag)
-	let v = validateName(nameRaw)
-	if (!v.isValid) return {isSignedUp: false, reason: 'NameInvalid.', browserTag, nameRaw}
+export async function demonstrationSignUp({browserTag, nameNormal}) {
+	checkTag(browserTag); checkName({formNormal: nameNormal})
 
-	let n = await name_get({nameNormal: v.formNormal})//confirm route is available in database
-	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserTag, nameRaw}
+	let n = await name_get({nameNormal})//confirm route is available in database
+	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserTag, nameNormal}
 
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	await name_set({userTag, nameNormal: v.formNormal, nameFormal: v.formFormal, namePage: v.formPage})//ttd january, all the same for now
+	await name_set({userTag, nameNormal, nameFormal: nameNormal, namePage: nameNormal})//ttd january, all the same for now
 	await browser_in({browserTag, userTag, level: 2})//and sign the new user into the requesting browser, in our records
-	return {isSignedUp: true, browserTag, userTag, name: v.formNormal, nameRaw}//just for testing; we won't send user tags to pages
+	return {isSignedUp: true, browserTag, userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
 }
 
-export async function demonstrationSignIn({browserTag, nameRaw}) {
-	checkTag(browserTag)
-	let v = validateName(nameRaw)
-	if (!v.isValid) return {isSignedIn: false, reason: 'NameInvalid.', browserTag, nameRaw}
+export async function demonstrationSignIn({browserTag, nameNormal}) {
+	checkTag(browserTag); checkName({formNormal: nameNormal})
 
-	let n = await name_get({nameNormal: v.formNormal})//in this early simplification before user_table, a user exists by their tag with a route
-	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserTag, nameRaw}
+	let n = await name_get({nameNormal})//in this early simplification before user_table, a user exists by their tag with a route
+	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserTag, nameNormal}
 
 	await browser_in({browserTag, userTag: n.userTag, level: 2})//and sign the new user into the requesting browser, in our records
-	return {isSignedIn: true, browserTag, userTag: n.userTag, name: v.formNormal, nameRaw}//just for testing; we won't send user tags to pages
+	return {isSignedIn: true, browserTag, userTag: n.userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
 }
 
 export async function demonstrationSignOut({browserTag}) {
@@ -670,7 +665,6 @@ async function browser_get({browserTag}) {//what user, if any, is signed in at t
 	return row ? {browserTag: row.browser_tag, userTag: row.user_tag, level: row.level} : false
 }
 async function browser_in({browserTag, userTag, level}) {//this user has proven their identity, sign them in here
-	log("now we're within browser in with", look({browserTag, userTag, level}))
 	checkTag(browserTag); checkTag(userTag); checkInt(level, 1)//make sure level is 1+
 	await queryAddRow({
 		table: 'browser_table',

@@ -13,13 +13,12 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
-	r.sticker = Sticker().all
 
 	switch (action) {
-		case 'DemonstrationSignGet.': r.result = await demonstrationSignGet({browserTag: body.browserTag});                        break;
-		case 'DemonstrationSignUp.':  r.result = await demonstrationSignUp({browserTag:  body.browserTag, nameRaw: body.nameRaw}); break;
-		case 'DemonstrationSignIn.':  r.result = await demonstrationSignIn({browserTag:  body.browserTag, nameRaw: body.nameRaw}); break;
-		case 'DemonstrationSignOut.': r.result = await demonstrationSignOut({browserTag: body.browserTag});                        break;
+		case 'DemonstrationSignGet.': r = await demonstrationSignGet({browserTag: body.browserTag});                        break;
+		case 'DemonstrationSignUp.':  r = await demonstrationSignUp({browserTag:  body.browserTag, nameNormal: body.nameNormal}); break;
+		case 'DemonstrationSignIn.':  r = await demonstrationSignIn({browserTag:  body.browserTag, nameNormal: body.nameNormal}); break;
+		case 'DemonstrationSignOut.': r = await demonstrationSignOut({browserTag: body.browserTag});                        break;
 		default: toss('action', {door}); break;
 	}
 

@@ -1,6 +1,6 @@
 
 import {
-Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
+Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, keep,
 checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, print,
 isCloud, hasText, recordHit, demonstrationSignGet,
 } from 'icarus'
@@ -67,13 +67,13 @@ async function doorHandleBelow({door, body, action}) {
 		vendor: body.browserGraphics.vendor,
 	}
 	if (isCloud({uncertain: 'Cloud.'})) {
-		await recordHit({
+		keep(recordHit({
 			browserTag,
 			userTag: hasText(userTag) ? userTag : '',
 			ipText: r.ipAddress,
 			geographyText: print(g),
 			browserText: print(b),
-		})
+		}))
 	}
 
 
