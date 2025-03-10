@@ -398,6 +398,37 @@ and have good notes so you can return to it later, also
 
 
 
+notes repotting for nuxt based static site start, 2025mar
+https://developers.cloudflare.com/pages/get-started/c3/
+
+$ wrangler whoami (make sure you're signed into the cloudflare account you want to use)
+$ yarn create cloudflare (with yarn 1 installed globally)
+example-com, sets the local directory and pages project name in the dashboard; use hyphen, not space
+Framework Starter, category
+Nuxt, framework
+y, yes to install nuxi@3; didn't get asked the second time through these steps
+no, don't use git for version control; going to drag created files into this existing repository
+yes, deploy to cloudflare; add domain after that in the dashboard
+
+github website
+navigate to organization or user, repository list, New green button
+example.com, repository name, ok to use a period here
+wrote description
+Public
+no readme, gitignore, license, to start out with a completely empty repository
+Create repository
+
+$ git clone git@github.com:username/example-com.git
+warning: You appear to have cloned an empty repository.
+
+then, drag contents from example-com folder to example.com folder
+set README.md, LICENSE, and .gitignore
+in package.json, rename dev to local
+git add, commit, push
+yarn build, local, and deploy
+
+
+
 
 
 
