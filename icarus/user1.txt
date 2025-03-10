@@ -79,6 +79,18 @@ TABLE name_table (user_tag, normal_text, formal_text, page_text);
 
 
 
+uses of checkName
+choose or change name
+- changed contents of first box
+- changed contents of second box
+- ok to submit or submitted based on both boxes, on the page
+- same thing as that, on the server
+demonstration sign up
+- typed in sign up box, forgiving
+demonstration sign in
+- typed in sign in box, forgiving
+get to route
+- GET to route, decide to 302 or 404 or 200
 
 
 
@@ -86,15 +98,14 @@ TABLE name_table (user_tag, normal_text, formal_text, page_text);
 
 
 
-
-
-
-
-
-
-
-
-
+that's the schema, now here are the functions
+a GET request has come in--do we have a user by that name? is the case correct, or should we redirect?
+a user is trying to take a name--is it unique for them to take?
+ 
+other user stuff, like status, avatar, goes in profile_table
+but we do keep the user's name on the page here
+because it's closely related to their route
+and because we also want to enforce uniqueness there--we can't let two users both call themseves Tokyo❤️Girl, for instance
 
 
 

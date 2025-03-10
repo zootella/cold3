@@ -43,24 +43,22 @@ every column is NOT NULL to make things simpler, generally and for .upsert()
 
 /*
 to this add:
-using indices, and multicolumn indices, to match common queries and makek them fast
+using indices, and multicolumn indices, to match common queries and make them fast
 not using foreign keys, which establish constraints between tables, and don't help performance
 */
 
 
 
-here are the things we're accpeting:
-a call to supabase takes ~100ms, some queries may have a handful of them, and we accept this can make some things the user clicks on take nearly a second to complete, a noticable delay
+concessions, here are the things we're accpeting
+- a call to supabase takes ~100ms, some queries may have a handful of them, and we accept this can make some things the user clicks on take nearly a second to complete, a noticable delay
 
-
-
-here are the assumptions we're making
-the supabase api and workers' connections to supabase will be reliable, and the supabase api is error-free. we assume that if a call succeeds, it did what it said it would, without checking
-if neighboring lines in a worker make two edits to the database, there won't be a change to the database between them
-if information in the database enters an unexpected, should-be-impossible state, code is conservative enough that this won't break the app, and later changes could heal the data
+asumptions, here are the assumptions we're making
+- the supabase api and workers' connections to supabase will be reliable, and the supabase api is error-free. we assume that if a call succeeds, it did what it said it would, without checking
+- if neighboring lines in a worker make two edits to the database, there won't be a change to the database between them
+- if information in the database enters an unexpected, should-be-impossible state, code is conservative enough that this won't break the app, and later changes could heal the data
 
 essentially, i've found it's not possible to code with the database to the same level of perfection as dealing with other parts of the system
-to be able to move forward, a level of trust
+to be able to move forward, a level of trust is needed, expressed in these concessions and assumptions
 
 
 
@@ -79,17 +77,6 @@ to be able to move forward, a level of trust
 
 
 
-/*
--- records of browsers signing in with password and signing out
-CREATE TABLE access_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL, -- row tag
-	row_tick     BIGINT                 NOT NULL, -- when inserted
-	browser_tag  CHAR(21)               NOT NULL, -- browser tag
-	signed_in    BIGINT                 NOT NULL  -- 0 signed out or 1 signed in
-);
--- composite index to make a filtering by browser tag and sorting by tick fast
-CREATE INDEX access_index_on_browser_tick ON access_table (browser_tag, row_tick);
-*/
 
 
 
@@ -97,11 +84,9 @@ CREATE INDEX access_index_on_browser_tick ON access_table (browser_tag, row_tick
 
 
 
-/*
 facts about postgres and choices about how we're using it:
 we're using BIGINT for every integer, for simplicity, even if we only plan on storing 0 or 1
 indices make queries much faster, and compound indices that match queries are a good idea
-*/
 
 
 
@@ -125,15 +110,9 @@ and exchanging objects like {title1: 101, title2: 202} back and forth with the s
 
 
 
-/*
 make sure postgresql has the default utf-8 character encoding with a sql statement like this:
-
-SELECT pg_encoding_to_char(encoding) AS encoding
-FROM pg_database
-WHERE datname = current_database()
-
+SELECT pg_encoding_to_char(encoding) AS encoding FROM pg_database WHERE datname = current_database()
 ran this in supabase's sql editor, and the result is "UTF8"
-*/
 
 
 supabase is full of darkpatterns to turn on row level security
@@ -154,7 +133,6 @@ turning off rls is fine, and common when server code has exclusive access to the
 
 
 
-/*
 long chat about transactions that ended up with this
 
 const sql = `
@@ -187,66 +165,12 @@ the problem is, the supabase api doesn't include them
 there isn't a way to do two inserts in a single call to the supabase api, either
 even with all the method chaining
 
-so the plan is to
-use the supabase api for reads
-and individual writes
-but when you need to insert multiple rows all at once
-to drop down to raw sql and execute a block like above
-
-but now you need to worry about the infamous sql injection attack
-but maybe it's not too hard
-you think essentially you just have to validate the inserts really well
-and your own functions are doing this
-
-but additionally, get protection from using knex, continued below
-(that didn't work because they all assume api or node, rerouting)
-
-also, batch raw inserts like this also will likely be faster,
-as each trip to supabase is taking ~150ms
-*/
 
 
 
 
 
 
-/*
-here's a crazy idea
-your database design means that you're, at the start, going to have to get all the rows for a browser tag from maybe a half dozen different tables
-then, with all those rows in the worker, you'll synthesize and decide what to do next
-rather than most databases, which have requirements and a single users table, for instance
-
-ok, so let's say that even the most trivial supabase call takes 100ms
-so if you do 10 of them, that's a full second!
-which is not acceptable, of course
-
-but then you just realized, do multiple async calls in parallel in this case
-yeah, how does that work in this fully finished time of async await
-*/
-
-
-
-/*
-some of these ideas may be known inventions, others discredited antipatterns
-
-every row has a tick and a tag
-code never deletes a row, rather, it adds a new one later which invalidates it
-or marks a cell on the row as deleted--the column name for this is standard
-
-instead of having a table for phone numbers and a table for email addresses,
-and then doing long joins from users to each,
-what if we had two columns in an existing table
-the first tells the type of the contents of the second, like "Email." or "Phone."
-and then the second has text with the value in the correct form for that type
-
-so then if you just want all the email address in the database
-instead of looking at one entire special email table
-you filter the unified omnitable by "Email."
-
-this is starting to be a little more like a document database
-but could be simple enough, and will hugely reduce the number of tables that are in there
-when you add a new data type, you don't have to create a new table for it
-*/
 
 
 hide, 0 by default, then nonzero to hide the row, perhaps because it's made not relevant by later rows, like the user deleted it, or edited it, or it's no longer necessary to come to the same conclusion
@@ -256,8 +180,9 @@ but even that should be rare--when performing an audit for a staff member, or so
 
 
 imagining how this might grow
-_json, and postgres has a type for this, and if you use it a lot you sorta go into document database land, you've heard. not sure if you want to go there, but there might be a way to go there
-
+_json, and postgres has a type for this, and if you use it a lot you sorta go into document database land, you've heard. not sure if you want to go there, but there might be a way to go there, and a reason to go there
+for now you're storing json in _text
+and only in instances where you never need to filter or query on it
 
 another thing we're not doing
 labeling any columns UNIQUE in the schema
@@ -271,13 +196,6 @@ so we don't need more individual indices
 
 yes make indices
 no don't use foreign keys, they don't help with query speed
-
-row_tag
-row_tick
-hide         -- initialize to zero to not hide, nonzero numbers indicate why its hidden
-
-
-
 
 
 
@@ -309,109 +227,20 @@ supabase
 
 
 
-hit_table
-
-
-/*
-where the info comes from
-
-//worker's clock
-		row_tick: t,
-		quarter_day: d,//cells that describe the first hit like this in this quarter day time period
-
-//cloudflare, trusted
-		ip_text: ip,
-		city_text: city,
-
-//browser, what it says it is
-		browser_tag: browserTag,
-		agent_text: agent,
-		graphics_text: graphics
-
-//determined from several sources
-		user_tag_text: userTag,
 
 
 
 
-parse these out in doorWorkerOpen, probably
-workerEvent.req.headers.get('CF-Connecting-IP')
-const userIp = request.headers.get("cf-connecting-ip");
-ask: what kind of object is headers? what is the .get method? should i use upper or lower case here?
 Because CF-Connecting-IP is added by Cloudflare’s edge, it is considered trusted. It tells you the actual IP (IPv4 or IPv6) Cloudflare sees from the client, regardless of any untrusted X-Forwarded-For or other headers the browser might send.
 
 
-const cf = workerEvent.req.cf;
-const city = cf?.city;         // e.g. "New York"
-const region = cf?.region;     // e.g. "NY"
-const country = cf?.country;   // e.g. "US"
-const continent = cf?.continent; // e.g. "NA"
 
 make sure geolocation is enabled
 
 
-const cfInfo = request.cf; 
-cfInfo might look like:
-{
-  asOrganization: "AS12345 Some ISP",
-  city: "Los Angeles",
-  region: "CA",
-  country: "US",
-  continent: "NA",
-  postalCode: "90001",
-  latitude: "34.0522",
-  longitude: "-118.2437",
-  timezone: "America/Los_Angeles",
-  // ... and so on
-}
-
-request.headers.get("user-agent")
 
 
 also you should only register hits onCloud()
-
-
-json stringify cfInfo to see what they look like in supabase
-and similarly, this is a good way to use
-
-now code some pinia
-pinia 1[]the local counter that stays when you go back to the route it's on, all local
-pinia 3[]graphics info, setting once at the start
-
-
-maybe actually store it parsed, not raw
-because you don't want to reparse it differently later
-raw is big, and not private
-
-
-don't do the nvidia stuff because it isn't already on the worker
-save the whole cfInfo stringified
-
-
-
-
-
-
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -556,19 +385,6 @@ with information from the browser's reported query string and geolocation, like 
 
 
 
-user_address_table
-
-user_browser_table
-
-governor_table
-the purpose of governor table is to 
-
-short_code_table
-
-attestation - this user has proven they control this address, different forms
-governor - the system messaged this address hash this long ago, this many times
-browser - this user tag is signed in with these browser tags
-code - the we texted you this many numbers
 
 
 
@@ -585,7 +401,7 @@ what prevents a user who has just gotten a 1234 code from trying 10,000 times fo
 turnstile will slow them down
 the code will only last 20 minutes
 should you also put a governor on trying answers for that code (on a hash of the codeTag in the page)?
-
+yes, and trail_table can do this easily
 
 
 
@@ -632,6 +448,8 @@ this is your current idea of how you get started with user identity
 (3) sms, as an alternative additional method to email that you can add without much additional code or schema
 
 
+
+bookmark march
 
 
 
@@ -771,45 +589,6 @@ do you need users to pick unique user names to do this? you think so, and that's
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-/* level 3 query */
-
-settingReadInt, settingRead, settingWrite,
-
-/* level 2 query */
-
-snippetClear,
-snippetPopulate,
-snippetQuery,
-
-queryFilterSortTop,
-queryFilterSortAll,
-
-querySetCell,
-querySetCellOrAddRow,
-
-queryGetCell,
-queryGetCellOrAddRow,
-
-queryGetRow,
-queryGetRowOrAddRow,
-
-queryAddRow,
-queryAddRows,
-
-queryCountRows,
-queryCountAllRows,
-queryDeleteAllRows,
 
 
 
@@ -1185,159 +964,11 @@ most of these tests use example_table, of course
 actually this get or add is already two calls, is only used for settings_table, so just []move it to level3
 */
 
-//[ran]
-/* made for settings, not used
-export async function querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
-	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
-	if (!row) toss('row not found')
-}
-*/
-//[ran]
-
-/*
-//ttd february--these are only used by settings, move them to level3
-export async function querySetCellOrAddRow({table, titleFind, cellFind, titleSet, cellSet, rowAddDefault}) {
-	let row = await _querySetCell({table, titleFind, cellFind, titleSet, cellSet})
-	if (!row) await queryAddRow({table, row: rowAddDefault})
-}
-async function _querySetCell({table, titleFind, cellFind, titleSet, cellSet}) {
-	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.update({[titleSet]: cellSet})//write cellSet under titleSet
-		.eq(titleFind, cellFind)//in the row where titleFind equals cellFind
-		.select()//return the updated rows
-		.maybeSingle()//data is the updated row, null of no rows matched, error if 2+ rows matched
-	)
-	if (error) toss('supabase', {error})
-	return data//data is the whole updated row
-}
-*/
-
-//[ran]
-/* made for settings, not used
-export async function queryGetCell({table, titleFind, cellFind, titleGet}) {
-	let row = await _queryGetRow({table, titleFind, cellFind})
-	if (!row) toss('row not found')
-	let cellGet = row[titleGet]
-	checkQueryCell(titleGet, cellGet)
-	return cellGet
-}
-*/
-//[ran]
-/*
-//get the cell under titleGet from the row where titleFind is cellFind, adds a default row if not found
-export async function queryGetCellOrAddRow({table, titleFind, cellFind, titleGet, rowAddDefault}) {
-	let row = await queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault})
-	let cellGet = row[titleGet]
-	checkQueryCell(titleGet, cellGet)
-	return cellGet
-}
-*/
-
-//[ran]
-/*
-export async function queryGetRow({table, titleFind, cellFind}) {
-	let row = await _queryGetRow({table, titleFind, cellFind})
-	if (!row) toss('row not found')
-	return row
-}
-*/
-//[ran]
-/*
-//get the one row with value cellFind under titleFind, add the given default row if not found
-export async function queryGetRowOrAddRow({table, titleFind, cellFind, rowAddDefault}) {
-	let row = await _queryGetRow({table, titleFind, cellFind})
-	if (!row) {
-		row = rowAddDefault
-		await queryAddRow({table, row: rowAddDefault})
-	}//^ lots of discussion with chat about the race condition here, and no good fix: .upsert() can do it in one statement, but will modify the row on conflict, not return it; .insert(..., {ignoreDuplicates: true}) works but means we have to call out to supabase twice every time
-	return row
-}
-*/
-/*
-//in table, look at column titleFind to find one row with value cellFind, undefined if not found
-async function _queryGetRow({table, titleFind, cellFind}) {
-	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')//select all columns to get the whole row
-		.eq(titleFind, cellFind)//find the row where titleFind equals cellFind
-		.maybeSingle()//data undefined of no rows match, error if 2+ rows match
-	)
-	if (error) toss('supabase', {error})
-	return data//data is the whole row
-}
-*/
 
 
 
 
 
-
-
-//ttd february--have all of these expect a table that starts with the standard three rows; update settings to do that, too. then, the two above replace the two below entirely
-
-//[ran]
-/*
-//add one new row to table like {title1_text: "cell1", title2_text: "cell2", ...}
-export async function queryAddRow({table, row}) {
-	await queryAddRows({table, rows: [row]})
-}
-*/
-//[ran]
-
-
-
-
-//[]
-/*
-//get the most recent row in table where cell is under title, or undefined if none found
-export async function queryFilterMostRecent({table, title, cell}) {
-	return await queryFilterSortTop({table, title, cell, titleSort: 'row_tick'})
-}
-*/
-//[ran]
-/*
-//get the one biggest titleSort row that has cell under title, or undefined if none found
-export async function queryFilterSortTop({table, title, cell, titleSort}) {
-	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')//select all columns to retrieve entire rows
-		.eq(title, cell)//filter to get rows where title equals cell
-		.order(titleSort, {ascending: false})//sort rows by titleSort in descending order
-		.limit(1)//just the winning row, probably using to get the most recent row_tag
-	)
-	if (error) toss('supabase', {error})
-	return data[0]//data is an array with one element, or empty if none found
-}
-//[ran]
-//filter table to rows with cell under title, and return sorted by titleSort, biggest first, or [] if none found
-export async function queryFilterSortAll({table, title, cell, titleSort}) {
-	checkQueryTitle(table); checkQueryCell(title, cell); checkQueryTitle(titleSort)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')//select all columns to retrieve entire rows
-		.eq(title, cell)//filter to get rows where title equals cell
-		.order(titleSort, {ascending: false})//sort rows by titleSort in descending order
-	)
-	if (error) toss('supabase', {error})
-	return data//data is an array of objects like [{'row_tag': 'nW83MrWposHNSsZxOjO03', ...}, {}, ...]
-}
-*/
-
-
-
-
-
-
-
-//-- ttd february: see if you can get just a half dozen useful and commonly used query functions--then you probably don't even have to write tests!
 
 
 
@@ -1349,164 +980,16 @@ what if you just had little noop tests beneath each one, you'd turn them on and 
 and they'd use example1_table, which is wide, and example2_table, which is narrow
 and i guess each one has a _version which takes
 
-testClock
 
-export async function querySomething({table, row, titles, clock}) {
-	//if no clock, then we
-	const {Now, Tag, database} = getClock(clock)
-	//if clock is null, then you get normal actual now and tag
-	//if clock is not null, then you get fake
 
-	//clock also gives you the real or not real database
 
 
-}
-icarus won't be able to run these tests, they're for $ yarn test
 
-noop(async () => {
-	
-	const clock = testClock({ago: 3*Time.year, tag: ''})
 
 
-	clock.forward(2*Time.hour)
 
 
 
-})
-
-oh yeah, also, if there's a clock, it automatically
-
-
-
-what if 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-noop(`
--- list all the tables, and all the indices
-SELECT tablename FROM pg_tables WHERE schemaname = 'public';
-SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public';
-
--- see what columns a table has, and what their type is
-SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'my_table';
-
--- see what indices a table has, and delete one
-SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'my_table';
-DROP INDEX IF EXISTS index_name;
-
--- rename a table, column, and index
-ALTER TABLE current_table RENAME TO renamed_table;
-ALTER TABLE my_table RENAME COLUMN title1 TO title2;
-ALTER INDEX current_index RENAME TO renamed_index;
-`)
-
-
-/*
-ttd feburary, let's rename things
-
-browser_table_browser_tag_index
-
-
-
-
-ALTER INDEX browser_table_browser_tag_index RENAME TO browser_table_index1;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	access_table_pkey
-
-browser_table_index_1
-	browser_table_pkey
-
-	example_table_pkey
-
-hit_table_index_1
-	hit_table_pkey
-
-route_table_index_1
-route_table_index_2
-	route_table_pkey
-
-	settings_table_pkey --stays named table!
-
-trail_table_index_1
-trail_table_index_2
-	trail_table_pkey
-
-
-
-ok so settings is the only one
-so maybe you keep them named _table
-and make those three required on all tables, yeah
-
-
-
-
-
-
-hits 1420
-
-
-
-
-
-
-settingReadInt
-	settingRead
-		queryGetCellOrAddRow (used once)
-			queryGetRowOrAddRow (used once)
-				_queryGetRow
-				queryAddRow
-
-		settingWrite
-			querySetCellOrAddRow (used once)
-				_querySetCell
-				queryAddRow
-
-
-
-
-
-
-
-
-//ttd february--factor ^ as queryUpdateCell, and have queryHideRows call it. don't worry about multiple matches as only settings cares about that, too
-
-/*
-for read, find the most recent visible row with title: 'setting_name_text', cell: 'hits'
-if not found, add a row
-
-for write, find the same way; if not found, add a row
-querySetCell
-then set a cell, how do you do that?
-
-
-*/
 
 
 
@@ -1531,127 +1014,6 @@ then set a cell, how do you do that?
 
 
 
-async function query_browserToUser({browserTag}) {//level2-style up here in level3; this query is bespoke with two eq and a gt
-	checkQueryTag(browserTag)
-	let database = await getDatabase()
-	let {data, error} = (await database
-		.from('browser_table')
-		.select('*')//retrieve the matching rows
-		.eq('hide', 0)//only rows that are not hidden
-		.eq('browser_tag', browserTag)//rows about this browser
-		.gt('signed_in', 0)//that describe a user signing in, gt is greater than
-		.order('row_tick', {ascending: false})//most recent first
-		.limit(1)//just one row
-	)
-	if (error) toss('supabase', {error})
-	return data[0]//returns the row, or undefined if no row
-}
-
-
-
-
-
-
-
-
-//                                               _        _     _      
-//   __ _  _____   _____ _ __ _ __   ___  _ __  | |_ __ _| |__ | | ___ 
-//  / _` |/ _ \ \ / / _ \ '__| '_ \ / _ \| '__| | __/ _` | '_ \| |/ _ \
-// | (_| | (_) \ V /  __/ |  | | | | (_) | |    | || (_| | |_) | |  __/
-//  \__, |\___/ \_/ \___|_|  |_| |_|\___/|_|     \__\__,_|_.__/|_|\___|
-//  |___/                                                              
-
-//when did we last do this? how frequently have we done this recently?
-
-
-
-
-
-
-
-
-
-/*
-ttd feburary, let's rename things
-
-browser_table_browser_tag_index
-
-
-
-
-
-
-
-
-
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-/*
-ttd february, below, you want to refactor this into a tree such as:
-
-queryUpdateCell, used by settings
-queryHideRows, commonly used
-(both call down to the same)
-queryUpdateCellsVertically
-*/
-
-//here are two older functions, for reference, that some new functions we write will replace the functionality of:
-
-/*
-//hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
-export async function queryHideRows({table, titleFind, cellFind, hideSet, clock}) { const {Now, Tag, database, context} = await getClock(clock)
-	checkQueryTitle(table); checkQueryCell(titleFind, cellFind); checkInt(hideSet, 1)
-	let {data, error} = (await database//this call doesn't return count, so we look at data.length below
-		.from(table)
-		.update({hide: hideSet})//hide rows that match:
-		.eq('hide', 0)//not yet hidden, and
-		.eq(titleFind, cellFind)//cellFind under titleFind
-		.select('*', {count: 'exact'})//get the rows we changed, count exact to count rows that matched our query
-	)
-	if (error) toss('supabase', {error})
-	return data.length
-}
-//ttd february--refactor so queryHideRows and queryUpdateCell both call queryUpdateCells; not sure what's common and specialized when you do that
-export async function queryUpdateCell({}) {}
-export async function queryUpdateCell_newForSettingWrite({table, titleFind, cellFind, titleSet, cellSet, clock}) { const {Now, Tag, database, context} = await getClock(clock)
-	checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
-	let {data, error} = (await database
-		.from(table)
-		.update({[titleSet]: cellSet})//write cellSet under titleSet
-		.eq(titleFind, cellFind)//in the row where titleFind equals cellFind
-		.eq('hide', 0)//that is not hidden
-		.select()//return the updated rows
-		.maybeSingle()//make data the updated row, undefined of no rows matched, error if 2+ rows matched
-	)
-	if (error) toss('supabase', {error})
-	return data//data is the whole updated row, or undefined if not there so you should add it
-}
-*/
-
-//now, let's write the three new ones, as follows:
-/*
-queryUpdateCellsVertically will select rows, and then change all the cells under a given title to a new given value
-this generalized use case is then specialized by these two functions, which call that:
-queryHideRows selects the rows, and changes the hide column to the given number
-queryUpdateCell selects a single row, if present, and changes the given column to the given value
-*/
-
-
-
-
-
 
 
 
@@ -1669,68 +1031,6 @@ previously you've been thinking write first, smallest possible loop
 but those get too big and too complicated when you switch from simple examples to real interactions
 
 
-name_table
-
-row_tag
-row_tick
-hide
-
-user_tag
-
-normal_text --reserved route, lowercase
-formal_text --chosen and correct route, chosen case
-page_text --chosen and correct name, only for page
-
-that's the schema, now here are the functions
-a GET request has come in--do we have a user by that name? is the case correct, or should we redirect?
-a user is trying to take a name--is it unique for them to take?
-
-{userTag, nameNormal, nameFormal, namePage} = await lookupUserTag({userTag})
-{userTag, nameNormal, nameFormal, namePage} = await lookupUserRoute({requestedRoute})
-lookupUserName({nameNormal nameFormal or namePage})
-
-actually could be just two functions
-{userTag, nameNormal, nameFormal, namePage} = await getUserName({
-	userTag//get information about this user
-	requestedRoute//to serve a GET request, find out if there's a user here
-	nameNormal//find out if this route is taken already
-	nameFormal
-	namePage//find out if this name is taken already
-})
-await setUserName({userTag, nameNormal, nameFormal, namePage})//makes a new row
-do you need to hide the older ones?
-
-indices are, you're going to lookup (all these as normal by hide and sorted tick)
-normal_text
-page_text
-
-
-
-
-takeUserName({userTag, nameNormal, nameFormal, namePage})//you've already checked for uniqueness in this same call, use to establish a user at a route for the first time, or change just nameFormal without changing the route, or just the display name on the page without
-
-
-getUserName -- returns {userTag}, or falsy if available
-getUserRoute({requestedRoute}) -- returns {userTag, nameFormal, nameNormal, shouldRedirect} or falsy if available
-takeUserName({userTag, nameNormal, nameFormal, namePage})//doesn't check for duplicates, does invalidate previous rows. use this when a user signs up, changes their name,
-or changes something that doesn't actually affect routing, like
-
-
-nameGetPage(raw)
-nameLookRoute(raw)//true if yes, available so you can take it
-
-nameLookupRoute
-
-
-
-other user stuff, like status, avatar, goes in profile_table
-but we do keep the user's name on the page here
-because it's closely related to their route
-and because we also want to enforce uniqueness there--we can't let two users both call themseves Tokyo❤️Girl, for instance
-
-
-
-actually, maybe you should have
 
 
 
@@ -1809,14 +1109,6 @@ hmm, maybe there is a level
 2 actual (full account signed in. the user can sign out)
 3 dual factored (just for the next hour, and just on this browser, the user has elevated permissions)
 
-and, imagine we never hide rows, either! (making one part simpler and the other more complex)
-
-and then imagine a cluttered table, and we know a browserTag, and want to know whos signed in here
-
-
-ok, actually, a sign out does need to hide rows of previous sign ins
-
-(yeah, this is all interesting--you haven't figured it out yet!)
 
 
 

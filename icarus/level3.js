@@ -355,15 +355,15 @@ SQL(`
 -- where is this hit coming from?
 CREATE TABLE hit_table (
 	row_tag         CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick        BIGINT                 NOT NULL,  -- exact time within hour_tick of the hit
+	row_tick        BIGINT                 NOT NULL,  -- Trusted: exact time within hour_tick of the hit
 	hide            BIGINT                 NOT NULL,
 
-	hour_tick       BIGINT                 NOT NULL,  -- tick of the start of the hour this hit happened in
-	browser_tag     CHAR(21)               NOT NULL,  -- the browser that hit us
-	user_tag_text   TEXT                   NOT NULL,  -- the user at that browser, or blank if none identifed
-	ip_text         TEXT                   NOT NULL,  -- ip address, according to cloudflare
-	geography_text  TEXT                   NOT NULL,  -- geographic information, according to cloudflare
-	browser_text    TEXT                   NOT NULL   -- user agent string and WebGL hardware, according to the browser
+	hour_tick       BIGINT                 NOT NULL,  -- Trusted: tick of the start of the hour this hit happened in
+	browser_tag     CHAR(21)               NOT NULL,  -- Reported: the browser that hit us
+	user_tag_text   TEXT                   NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
+	ip_text         TEXT                   NOT NULL,  -- Trusted: ip address, according to cloudflare
+	geography_text  TEXT                   NOT NULL,  -- Trusted: geographic information, according to cloudflare
+	browser_text    TEXT                   NOT NULL   -- Reported: user agent string and WebGL hardware, according to the browser
 );
 
 -- index to quickly log a new hit, coalesced to identical information in an hour, note UNIQUE, which *is necessary* for the query we're using with this table to add if unique in a single call
