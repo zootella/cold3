@@ -10,28 +10,19 @@ const helloStore = useHelloStore()
 
 const refPhone = ref('')
 const refOutput = ref('')
-const refInFlight = ref(false)//true while we're getting a token and POSTing to our own api, both of those combined
-const refButtonState = ref('gray')//gray for ghosted, green for clickable, or orange for POST-in-flight
+const refInFlight = ref(false)
+const refButtonState = ref('gray')//gray for ghosted, green for clickable, or orange for in flight
 
 watch([refPhone], () => {
 	let v = validatePhone(refPhone.value)
 	refOutput.value = v
 
 	if (refInFlight.value) { refButtonState.value = 'orange' }
-	else if (v.valid) { refButtonState.value = 'green' }
+	else if (v.isValid) { refButtonState.value = 'green' }
 	else { refButtonState.value = 'gray' }
 })
 
-/*
-1 send a sms (don't deploy) or do but they also have to be signed in using the old system? weird but maybe. or, it doesn't actually send deployed until you remove that, which can be soon
-2 put in limits (code dies in 20min, 4 tries, or sent replacement; two codes rigth away fine; then 5min apart; address limited to 10 messages in 24h or 20h cooldown; )
-3 record in address_table (user enters address, which is Challenged. Proven. Removed.)
-4 generate or tie to user tag, user tag is generated on first address submission so you always have browser tag and user tag
-*/
-
 async function clickedSend() {
-	//ttd february - doing this right here now but pretty sure it should be in a store? or at least protected with try catch??
-
 	let r = await $fetch('/api/code', {
 		method: 'POST',
 		body: {
@@ -41,9 +32,7 @@ async function clickedSend() {
 		}
 	})
 	log(look(r))
-	//bookmark february, get those to the backend!
 }
-
 
 </script>
 <template>
@@ -59,17 +48,15 @@ async function clickedSend() {
 		v-model="refPhone" placeholder="sms number"
 		class="w-96"
 	/>{{' '}}
-	<!-- ttd february, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or not use it at all, to direct the user's attention back to the page, which is probably what you want to do for usability and consistancy. no, it's because you haven't done the enclosing form with submit prevent yet -->
 	<button
 		:disabled="refButtonState != 'green'"
 		:class="refButtonState"
 		@click="clickedSend"
 		class="pushy"
 	>Send Code</button>
-	<!-- how does :class and class together work?! -->
 </p>
 
-<pre>{{refOutput}}</pre>
+<p>{{refOutput}}</p>
 
 </div>
 </template>

@@ -1,0 +1,222 @@
+
+
+http://localhost:3000/page2
+
+./site/components/CodeComponent.vue
+./site/server/api/code.js
+
+in scope now:
+[]send code
+[]validate code
+[]assign user tag on submit
+[]notice a live code after refresh and put up box to get it
+[]limit with trail_table
+[]necessary limitations
+[]additional limitations
+
+in scope soon:
+[]button component
+[]turnstile
+[]email or sms
+[]see how :class and class together work
+[]get enterkeyhint working and decide about it
+
+
+
+
+
+
+
+-per code, dead in 20 minutes
+-per code, dead after 4 tries
+-per code, dead on issued replacement
+
+-per address, 10 codes in 24 hours creates 20 hour cooldown
+-per address, first two codes in 5 days right away, then 5 minutes delay
+-per address, first two codes in 5 days length 4, then length 6
+-per address, first one code in 5 days no prefix, then random letter prefix
+
+
+trailtable lets you hash a message that says anything
+and see how many times it's been recorded
+and when each time was recorded
+
+start with simplest happy path interaction
+
+new person navigates to page
+browser assigns browser tag
+they don't have a user tag
+
+person enters new valid sms number, presses send code
+server assigns user tag, provisional user
+server texts code
+
+person enters code into box
+server has proof that this user controls this address
+user isn't provisional anymore, now they're standard
+server signs user into browser
+
+user goes to browser on different device
+browser assigns browser tag
+
+user enters same valid sms number, presses send code
+server finds existing user tag, but doesn't sign in user
+server texts code
+
+user enters code into box
+server has proof that this is the same user as before
+server signs user into browser
+
+
+
+there's going to be another component that receives the code
+when does it show up?
+when this browsertag has a live code
+see if you can do this without involving the user tag
+
+
+
+
+server receives send code
+has this information
+- browser tag, reported, always present
+- address, reported, always present
+- user tag, derived
+
+derived user tag can be:
+- standard, user is signed into the browser
+- provisional, we're tracking a person at this browser who has entered some information
+- absent
+
+address can be:
+- known and controlled by an existing user
+- known but not controlled
+- never seen before
+
+simpler
+
+user tag is standard, not
+address is controlled, not
+
+standard user signed into this browser, address controlled:
+	a signed in standard user typed another user's address--send no code!
+standard user signed into this browser, address not controlled:
+	user is adding additional address, send a code
+no standard user signed into this browser, address controlled:
+	user is signing into additional browser, send a code
+no standard user signed into this browser, address not controlled:
+	person is all new, send a code
+
+ok, now all you have to define is
+how do you get user tag is here and standard (you have a function for this)
+tell me about this address, is it controlled by a user or not (next, make tables and functions for this)
+
+
+
+
+simplest happy path
+new person navigates browser, gets browser tag
+enters new address, presses submit
+endpoint has browser tag, no user tag, brand new address
+server makes random code, sends it to address
+site knows code for this browser is live, puts up catch box
+person types code into catch box
+server sees that code is valid, does three things
+- makes standard user tag
+- signs user into browser
+- identifies address as controlled by user
+
+
+
+
+
+user tag can be present (a user is signed in here) or absent (browser not signed in)
+
+possibilities
+address is
+- never seen it before
+- validated by an existing user
+
+
+
+have we seen this address before
+
+
+
+
+
+
+
+soon, to make sure you've got the provisional  user tag right
+users will type in dob first
+and imagine the flow that starts with credit card number
+
+
+
+
+/*
+1 send a sms (don't deploy) or do but they also have to be signed in using the old system? weird but maybe. or, it doesn't actually send deployed until you remove that, which can be soon
+2 put in limits (code dies in 20min, 4 tries, or sent replacement; two codes rigth away fine; then 5min apart; address limited to 10 messages in 24h or 20h cooldown; )
+3 record in address_table (user enters address, which is Challenged. Proven. Removed.)
+4 generate or tie to user tag, user tag is generated on first address submission so you always have browser tag and user tag
+*/
+
+
+
+	<!-- ttd february, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or not use it at all, to direct the user's attention back to the page, which is probably what you want to do for usability and consistancy. no, it's because you haven't done the enclosing form with submit prevent yet -->
+	<button
+		:disabled="refButtonState != 'green'"
+		:class="refButtonState"
+		@click="clickedSend"
+		class="pushy"
+	>Send Code</button>
+	<!-- how does :class and class together work?! -->
+
+
+	<!-- how does :class and class together work?! -->
+
+
+
+
+
+
+first, just do email
+then do the thing where you ask email or phone
+you could make a box that accepts either, but then can't show the number mobile keyboard
+so, separate boxes
+
+
+
+
+async function clickedSend() {
+	//ttd february - doing this right here now but pretty sure it should be in a store? or at least protected with try catch??
+
+	let r = await $fetch('/api/code', {
+		method: 'POST',
+		body: {
+			action: 'Send.',
+			browserTag: helloStore.browserTag,
+			phone: refPhone.value,
+		}
+	})
+	log(look(r))
+	//bookmark february, get those to the backend!
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -281,10 +281,16 @@ automatic validation and feedback
 
 
 
+or maybe you keep the input boxes raw and here
+and factor the submit button, the ones that do turnstile and post, into components
+yeah, that's an interesting idea
+so you don't have to deal with component communication until the page really does a POST
+which is when things get complicated and delayed anyway
+and this lets you factor away both turnstile and $fetch
 
 
-
-
+yeah, this means you can also put $fetch in a try {} catch (e) {}
+so that if there's an exception on the server, which is fine, the not 200 it returns doesn't mess up the page
 
 
 

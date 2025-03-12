@@ -266,6 +266,20 @@ export function validateMessageForm() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //      _       _        _                    
 //   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
 //  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
@@ -319,6 +333,112 @@ export async function snippet3() {
 
 //--this user mentioned, or proved they can read messages sent to, this address
 //address_table, ttd february
+
+/*
+simplest question to answer: is this address
+proven owned and controlled by an existing user
+not (maybe totally new, maybe mentioned but not validated yet)
+
+*/
+
+
+SQL(`
+-- has a user proven they control this address?
+CREATE TABLE address_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
+	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
+	hide         BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore
+
+	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
+
+	type_text    TEXT                   NOT NULL,  -- what type of address this is, like "Email." or "Phone."
+	normal_text  TEXT                   NOT NULL,  -- normalized form of address, to match as unique
+	formal_text  TEXT                   NOT NULL,  -- formal form of address, to send messages
+	page_text    TEXT                   NOT NULL,  -- page form of address, to show the user
+
+	event        BIGINT                 NOT NULL   -- 1 removed, 2 mentioned, 3 challenged, 4 validated
+);
+
+-- index to get visible rows about a browser, recent first, quickly
+CREATE INDEX browser1 ON address_table (hide, browser_tag, row_tick DESC);  -- filter by browser
+CREATE INDEX browser2 ON address_table (hide, user_tag,    row_tick DESC);  -- or by user
+CREATE INDEX browser3 ON address_table (hide, level,       row_tick DESC);  -- quickly find expired super user hours
+`)
+
+
+/*
+0 zero not used
+1 removed
+
+2 mentioned
+3 challenged
+4 validated
+*/
+
+
+
+
+
+
+
+//  _                                       _        _     _      
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
+//                                                                
+
+SQL(`
+-- what user is signed into this browser? sign users in and out
+CREATE TABLE browser_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
+	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
+	hide         BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore
+
+	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
+	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
+	level        BIGINT                 NOT NULL   -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
+);
+
+-- index to get visible rows about a browser, recent first, quickly
+CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);  -- filter by browser
+CREATE INDEX browser2 ON browser_table (hide, user_tag,    row_tick DESC);  -- or by user
+CREATE INDEX browser3 ON browser_table (hide, level,       row_tick DESC);  -- quickly find expired super user hours
+`)
+//ttd february, trying the pattern where the group of functions which exclusively touch the table are named example_someThing, as below. if it works well for browser and name tables, then look at expanding to everywhere
+
+async function browser_get({browserTag}) {//what user, if any, is signed in at this browser?
+	checkTag(browserTag)
+	let row = await queryTopEqualGreater({
+		table: 'browser_table',
+		title1: 'browser_tag', cell1: browserTag,
+		title2: 'level', cell2GreaterThan: 0,
+	})
+	return row ? {browserTag: row.browser_tag, userTag: row.user_tag, level: row.level} : false
+}
+async function browser_in({browserTag, userTag, level}) {//this user has proven their identity, sign them in here
+	checkTag(browserTag); checkTag(userTag); checkInt(level, 1)//make sure level is 1+
+	await queryAddRow({
+		table: 'browser_table',
+		row: {
+			browser_tag: browserTag,
+			user_tag: userTag,
+			level,//sign in at level 1 provisional, 2 normal, or 3 start an hour of elevated permissions
+		}
+	})
+}
+async function browser_out({browserTag, userTag, hideSet}) {//sign this user out everywhere; browser tag included but doesn't matter; hide reason code is optional for a note different than default 1
+	checkTag(browserTag); checkTag(userTag)
+	await queryAddRow({//record that this user's sign-out happened now, and from this browser
+		table: 'browser_table',
+		row: {
+			browser_tag: browserTag,
+			user_tag: userTag,
+			level: 0,//level 0 means this row is about the user signing out
+		}
+	})
+	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet})//hide all the rows about this user, including the one we just made, signing them out, everywhere
+}
 
 //                                 _        _        _     _      
 //   _____  ____ _ _ __ ___  _ __ | | ___  | |_ __ _| |__ | | ___ 
@@ -392,6 +512,69 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
 
+//                               _        _     _      
+//  _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
+// | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
+// | | | | (_| | | | | | |  __/ | || (_| | |_) | |  __/
+// |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
+//                                                     
+
+SQL(`
+-- go between a user's tag, route, and name as it appears on the page
+CREATE TABLE name_table (
+	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick     BIGINT                 NOT NULL,
+	hide         BIGINT                 NOT NULL,
+
+	user_tag     CHAR(21)               NOT NULL,
+
+	normal_text  TEXT                   NOT NULL,  -- like "user-name", route lowercased to check unique
+	formal_text  TEXT                   NOT NULL,  -- like "User-Name", route with case the user chose
+	page_text    TEXT                   NOT NULL   -- like "User Name", the user's name for pages and cards
+);
+
+-- indices to ensure unique values in these columns among visible rows, for defense-in-depth, as setName() prevents duplicates first
+CREATE UNIQUE INDEX name1 ON name_table (user_tag)    WHERE hide = 0;
+CREATE UNIQUE INDEX name2 ON name_table (normal_text) WHERE hide = 0;
+CREATE UNIQUE INDEX name3 ON name_table (formal_text) WHERE hide = 0;
+CREATE UNIQUE INDEX name4 ON name_table (page_text)   WHERE hide = 0;
+
+-- indices to make queries fast
+CREATE INDEX name5 ON name_table (hide, user_tag,    row_tick DESC);  -- look up a user's route and name by their tag
+CREATE INDEX name6 ON name_table (hide, normal_text, row_tick DESC);  -- what user is at this route? is it taken?
+CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC);  -- is this page name taken?
+`)
+
+async function name_get({//look up user route and name information by calling with one of these:
+	userTag,//a user's tag, like we're showing information about that user, or
+	nameNormal,//a normalized route, like we're filling a request to that route, or
+	namePage,//a user name, like we're seeing if it's available
+}) {
+	let row
+	if      (given(userTag))    { checkTag(userTag);                   row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
+	else if (given(nameNormal)) { checkName({formNormal: nameNormal}); row = await queryTop({table: 'name_table', title: 'normal_text', cell: nameNormal}) }
+	else if (given(namePage))   { checkName({formPage:   namePage});   row = await queryTop({table: 'name_table', title: 'page_text',   cell: namePage})   }
+	else { toss('use', {userTag, nameNormal, namePage}) }
+
+	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
+	return {userTag: row.user_tag, nameNormal: row.normal_text, nameFormal: row.formal_text, namePage: row.page_text}
+}
+
+//set the given normal, formal, and page names for the given user
+//setName() does not make sure the names it sets are available--you've already done that before calling here!
+//there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
+async function name_set({userTag, nameNormal, nameFormal, namePage}) {
+	checkTag(userTag); checkName({formNormal: nameNormal, formFormal: nameFormal, formPage: namePage})
+	await name_delete({userTag})//replace an existing row about this user with a new one:
+	await queryAddRow({table: 'name_table', row: {user_tag: userTag, normal_text: nameNormal, formal_text: nameFormal, page_text: namePage}})
+}
+
+//remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
+async function name_delete({userTag, hideSet}) {//hide reason code optional
+	checkTag(userTag);
+	await queryHideRows({table: 'name_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
+}
+
 //                                        _   _        _     _      
 //  _ __   ___ _ __ ___  ___  _ __   __ _| | | |_ __ _| |__ | | ___ 
 // | '_ \ / _ \ '__/ __|/ _ \| '_ \ / _` | | | __/ _` | '_ \| |/ _ \
@@ -403,6 +586,16 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 //like a dob or a cc number, which we can use to get them back in later if they've lost access
 //this might hold normal, formal redacted, and hashed normal forms
 
+
+
+
+
+
+
+
+
+
+
 //                   __ _ _        _        _     _      
 //  _ __  _ __ ___  / _(_) | ___  | |_ __ _| |__ | | ___ 
 // | '_ \| '__/ _ \| |_| | |/ _ \ | __/ _` | '_ \| |/ _ \
@@ -413,6 +606,29 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 //--user name and route are in route_table, this is for the stuff beyond that like status message and avatar image
 //ttd february, make profile_table
 
+SQL(`
+-- stuff on the user's profile page that doesn't need to be unique or indexed
+CREATE TABLE profile_table (
+	row_tag       CHAR(21)  PRIMARY KEY  NOT NULL,
+	row_tick      BIGINT                 NOT NULL,
+	hide          BIGINT                 NOT NULL,
+
+	user_tag      CHAR(21)               NOT NULL,
+	profile_text  TEXT                   NOT NULL,  -- printed object so you can add properties without changing schema; you never need to index by one
+);
+
+`)
+
+
+
+
+
+
+
+
+
+
+
 //                      _            _        _     _      
 //  ___  ___ _ ____   _(_) ___ ___  | |_ __ _| |__ | | ___ 
 // / __|/ _ \ '__\ \ / / |/ __/ _ \ | __/ _` | '_ \| |/ _ \
@@ -421,6 +637,18 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 //                                                         
 
 //service_table, complete record of our interactions with third-party services, to instrument them, and later, round robin them
+
+//here's where you record what you send apis, and what you got back
+//and how fast they are, how reliable they are
+//how quickly users can complete tasks with them, all of that leads into robin
+
+
+
+
+
+
+
+
 
 //           _   _   _                   _        _     _      
 //  ___  ___| |_| |_(_)_ __   __ _ ___  | |_ __ _| |__ | | ___ 
@@ -509,282 +737,6 @@ export async function trailAdd({hash}) {
 	await queryAddRow({table: 'trail_table', row: {hash: hash}})
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export async function demonstrationSignHello({browserTag}) {//always does only one query to be fast
-	checkTag(browserTag)
-
-	return await browser_get({browserTag})//look for a user at the given browser
-}
-/*
-ttd march
-ok, so you just wrote demonstrationSignHello above so that hello1 would always do a single supabase call
-but does this really make things faster?
-for the person who is brand new, sign hello and sign get will both do one call
-and the returning user is going to have to wait for hello2 to do several calls in sign get anyway
-so maybe the fact that now you've written sign get to do one call for brand new people
-means that you can combine hello1 and hello2, even
-
-look at the big picture, remembering that some customizations come from the route
-which are available on first GET
-and other customizations come from the browsertag
-which are only available after first GET and POST
-
-*/
-
-//bookmark february; working on this demonstration where user identity is based on normalized name, and you are who you say you are--it's simplified, but parts its made of are useful now and for the larger system as well
-
-export async function demonstrationSignGet({browserTag}) {
-	checkTag(browserTag)
-
-	let b = await browser_get({browserTag})//look for a user at the given browser
-	if (b) {
-		let n = await name_get({userTag: b.userTag})//find that user's name, right now their normalized route identifies them
-		if (n) {
-			return {isFound: true, browserTag, userTag: b.userTag, nameNormal: n.nameNormal, nameFormal: n.nameFormal, namePage: n.namePage}
-		}
-	}
-	return {isFound: false, browserTag}
-}
-
-export async function demonstrationSignUp({browserTag, nameNormal}) {
-	checkTag(browserTag); checkName({formNormal: nameNormal})
-
-	let n = await name_get({nameNormal})//confirm route is available in database
-	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserTag, nameNormal}
-
-	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	await name_set({userTag, nameNormal, nameFormal: nameNormal, namePage: nameNormal})//ttd january, all the same for now
-	await browser_in({browserTag, userTag, level: 2})//and sign the new user into the requesting browser, in our records
-	return {isSignedUp: true, browserTag, userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
-}
-
-export async function demonstrationSignIn({browserTag, nameNormal}) {
-	checkTag(browserTag); checkName({formNormal: nameNormal})
-
-	let n = await name_get({nameNormal})//in this early simplification before user_table, a user exists by their tag with a route
-	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserTag, nameNormal}
-
-	await browser_in({browserTag, userTag: n.userTag, level: 2})//and sign the new user into the requesting browser, in our records
-	return {isSignedIn: true, browserTag, userTag: n.userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
-}
-
-export async function demonstrationSignOut({browserTag}) {
-	checkTag(browserTag)
-
-	let u = await demonstrationSignGet({browserTag})
-	if (u.isFound) {
-		await browser_out({browserTag, userTag: u.userTag, hideSet: 2})//hide set 2 meaning at user's click we did this
-		return {isSignedOut: true, browserTag, userTag: u.userTag}
-	} else {
-		return {isSignedOut: false, reason: 'NameNotFound.', browserTag}
-	}
-}
-
-
-
-
-
-
-
-
-
-
-
-
-//ttd february, pulled these two out of the alphebetized list to finish them
-//also you realize the level like browser_get should not be exported--that's the separation between these and the higher level ones above, and they can all be in level3, you don't need a level4
-
-//  _                                       _        _     _      
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
-//                                                                
-
-SQL(`
--- what user is signed into this browser? sign users in and out
-CREATE TABLE browser_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
-	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
-	hide         BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore
-
-	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
-	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
-	level        BIGINT                 NOT NULL   -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
-);
-
--- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);  -- filter by browser
-CREATE INDEX browser2 ON browser_table (hide, user_tag,    row_tick DESC);  -- or by user
-CREATE INDEX browser3 ON browser_table (hide, level,       row_tick DESC);  -- quickly find expired super user hours
-`)
-//ttd february, trying the pattern where the group of functions which exclusively touch the table are named example_someThing, as below. if it works well for browser and name tables, then look at expanding to everywhere
-
-async function browser_get({browserTag}) {//what user, if any, is signed in at this browser?
-	checkTag(browserTag)
-	let row = await queryTopEqualGreater({
-		table: 'browser_table',
-		title1: 'browser_tag', cell1: browserTag,
-		title2: 'level', cell2GreaterThan: 0,
-	})
-	return row ? {browserTag: row.browser_tag, userTag: row.user_tag, level: row.level} : false
-}
-async function browser_in({browserTag, userTag, level}) {//this user has proven their identity, sign them in here
-	checkTag(browserTag); checkTag(userTag); checkInt(level, 1)//make sure level is 1+
-	await queryAddRow({
-		table: 'browser_table',
-		row: {
-			browser_tag: browserTag,
-			user_tag: userTag,
-			level,//sign in at level 1 provisional, 2 normal, or 3 start an hour of elevated permissions
-		}
-	})
-}
-async function browser_out({browserTag, userTag, hideSet}) {//sign this user out everywhere; browser tag included but doesn't matter; hide reason code is optional for a note different than default 1
-	checkTag(browserTag); checkTag(userTag)
-	await queryAddRow({//record that this user's sign-out happened now, and from this browser
-		table: 'browser_table',
-		row: {
-			browser_tag: browserTag,
-			user_tag: userTag,
-			level: 0,//level 0 means this row is about the user signing out
-		}
-	})
-	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet})//hide all the rows about this user, including the one we just made, signing them out, everywhere
-}
-
-//                               _        _     _      
-//  _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
-// | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
-// | | | | (_| | | | | | |  __/ | || (_| | |_) | |  __/
-// |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
-//                                                     
-
-SQL(`
--- go between a user's tag, route, and name as it appears on the page
-CREATE TABLE name_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick     BIGINT                 NOT NULL,
-	hide         BIGINT                 NOT NULL,
-
-	user_tag     CHAR(21)               NOT NULL,
-
-	normal_text  TEXT                   NOT NULL,  -- like "user-name", route lowercased to check unique
-	formal_text  TEXT                   NOT NULL,  -- like "User-Name", route with case the user chose
-	page_text    TEXT                   NOT NULL   -- like "User Name", the user's name for pages and cards
-);
-
--- indices to ensure unique values in these columns among visible rows, for defense-in-depth, as setName() prevents duplicates first
-CREATE UNIQUE INDEX name1 ON name_table (user_tag)    WHERE hide = 0;
-CREATE UNIQUE INDEX name2 ON name_table (normal_text) WHERE hide = 0;
-CREATE UNIQUE INDEX name3 ON name_table (formal_text) WHERE hide = 0;
-CREATE UNIQUE INDEX name4 ON name_table (page_text)   WHERE hide = 0;
-
--- indices to make queries fast
-CREATE INDEX name5 ON name_table (hide, user_tag,    row_tick DESC);  -- look up a user's route and name by their tag
-CREATE INDEX name6 ON name_table (hide, normal_text, row_tick DESC);  -- what user is at this route? is it taken?
-CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC);  -- is this page name taken?
-`)
-
-async function name_get({//look up user route and name information by calling with one of these:
-	userTag,//a user's tag, like we're showing information about that user, or
-	nameNormal,//a normalized route, like we're filling a request to that route, or
-	namePage,//a user name, like we're seeing if it's available
-}) {
-	let row
-	if      (given(userTag))    { checkTag(userTag);                   row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
-	else if (given(nameNormal)) { checkName({formNormal: nameNormal}); row = await queryTop({table: 'name_table', title: 'normal_text', cell: nameNormal}) }
-	else if (given(namePage))   { checkName({formPage:   namePage});   row = await queryTop({table: 'name_table', title: 'page_text',   cell: namePage})   }
-	else { toss('use', {userTag, nameNormal, namePage}) }
-
-	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
-	return {userTag: row.user_tag, nameNormal: row.normal_text, nameFormal: row.formal_text, namePage: row.page_text}
-}
-
-//set the given normal, formal, and page names for the given user
-//setName() does not make sure the names it sets are available--you've already done that before calling here!
-//there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
-async function name_set({userTag, nameNormal, nameFormal, namePage}) {
-	checkTag(userTag); checkName({formNormal: nameNormal, formFormal: nameFormal, formPage: namePage})
-	await name_delete({userTag})//replace an existing row about this user with a new one:
-	await queryAddRow({table: 'name_table', row: {user_tag: userTag, normal_text: nameNormal, formal_text: nameFormal, page_text: namePage}})
-}
-
-//remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
-async function name_delete({userTag, hideSet}) {//hide reason code optional
-	checkTag(userTag);
-	await queryHideRows({table: 'name_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
-}
-
-
-
-
-
-
-
-
-
-
-
-//                   __ _ _        _        _     _      
-//  _ __  _ __ ___  / _(_) | ___  | |_ __ _| |__ | | ___ 
-// | '_ \| '__/ _ \| |_| | |/ _ \ | __/ _` | '_ \| |/ _ \
-// | |_) | | | (_) |  _| | |  __/ | || (_| | |_) | |  __/
-// | .__/|_|  \___/|_| |_|_|\___|  \__\__,_|_.__/|_|\___|
-// |_|                                                   
-
-SQL(`
--- stuff on the user's profile page that doesn't need to be unique or indexed
-CREATE TABLE profile_table (
-	row_tag       CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick      BIGINT                 NOT NULL,
-	hide          BIGINT                 NOT NULL,
-
-	user_tag      CHAR(21)               NOT NULL,
-	profile_text  TEXT                   NOT NULL,  -- printed object so you can add properties without changing schema; you never need to index by one
-);
-
-`)
-
-
-
-
-
 //                        _        _     _      
 //  _   _ ___  ___ _ __  | |_ __ _| |__ | | ___ 
 // | | | / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
@@ -812,6 +764,115 @@ closed by user/by staff; and unclosed?
 
 
 `)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ttd march
+some tables have functions that only work on them, these are exported
+others only make sense with higher level functions that cover more than one table
+for these, you're using snake_case, and they are *not* exported
+*/
+/*
+ttd march
+get rid of demonstration sign hello, just use demonstration sign get
+you wrote it for hello1, but it isn't any faster
+
+you wrote the below for the "you are who you say you are" sign up and sign in system
+but you think these will also be useful when we're validating addresses, which is soon
+*/
+export async function demonstrationSignHello({browserTag}) {//always does only one query to be fast
+	checkTag(browserTag)
+
+	return await browser_get({browserTag})//look for a user at the given browser
+}
+export async function demonstrationSignGet({browserTag}) {
+	checkTag(browserTag)
+
+	let b = await browser_get({browserTag})//look for a user at the given browser
+	if (b) {
+		let n = await name_get({userTag: b.userTag})//find that user's name, right now their normalized route identifies them
+		if (n) {
+			return {isFound: true, browserTag, userTag: b.userTag, nameNormal: n.nameNormal, nameFormal: n.nameFormal, namePage: n.namePage}
+		}
+	}
+	return {isFound: false, browserTag}
+}
+export async function demonstrationSignUp({browserTag, nameNormal}) {
+	checkTag(browserTag); checkName({formNormal: nameNormal})
+
+	let n = await name_get({nameNormal})//confirm route is available in database
+	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserTag, nameNormal}
+
+	let userTag = Tag()//create a new user, making the unique tag that will identify them
+	await name_set({userTag, nameNormal, nameFormal: nameNormal, namePage: nameNormal})//ttd january, all the same for now
+	await browser_in({browserTag, userTag, level: 2})//and sign the new user into the requesting browser, in our records
+	return {isSignedUp: true, browserTag, userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
+}
+export async function demonstrationSignIn({browserTag, nameNormal}) {
+	checkTag(browserTag); checkName({formNormal: nameNormal})
+
+	let n = await name_get({nameNormal})//in this early simplification before user_table, a user exists by their tag with a route
+	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserTag, nameNormal}
+
+	await browser_in({browserTag, userTag: n.userTag, level: 2})//and sign the new user into the requesting browser, in our records
+	return {isSignedIn: true, browserTag, userTag: n.userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
+}
+export async function demonstrationSignOut({browserTag}) {
+	checkTag(browserTag)
+
+	let u = await demonstrationSignGet({browserTag})
+	if (u.isFound) {
+		await browser_out({browserTag, userTag: u.userTag, hideSet: 2})//hide set 2 meaning at user's click we did this
+		return {isSignedOut: true, browserTag, userTag: u.userTag}
+	} else {
+		return {isSignedOut: false, reason: 'NameNotFound.', browserTag}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
