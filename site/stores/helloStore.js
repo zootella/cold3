@@ -60,10 +60,22 @@ const hello2 = noOverlap(async () => {
 		userAgent.value = r.userAgent
 		geography.value = {country: r.geoCountry, city: r.geoCity, region: r.geoRegion, postal: r.geoPostal}
 
-//		log('hello2 result', look(r))
 	} catch (e) { error2.value = e }
 	duration2.value = Now() - t
 })
+/*
+ttd march
+you've split this into hello1 and hello2 so that
+hello1 can, in a single 150ms query, determine if there's a user here or if this is a new browser
+ostensibly, the page can use this to render one whole set of components, or another
+
+but you realize now you could combine these as follows
+if there is no user at this browser, hello could get back in two parallel database queries (browser to user, and record hit)
+and if there is, then the user needs to wait for more queries anyway
+
+take a look at this when you also do the customizataions related to the route on the first GET
+it has been said, premature optimization is bad--everything's fine so long as the site loads in <500ms, so you have time here
+*/
 
 return {
 	hello1, hello2,
@@ -75,12 +87,3 @@ return {
 }
 
 })
-
-
-
-
-
-
-
-
-

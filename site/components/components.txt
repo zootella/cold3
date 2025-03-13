@@ -310,4 +310,43 @@ so that if there's an exception on the server, which is fine, the not 200 it ret
 
 
 
+should you use defineExpose
+rarely?
+never?
+all the time?
+how does this work with pinia stores doing turnstile
+how does this work if you make PostButton and TurnstileButton
+
+
+
+
+SignComponent.vue
+<script setup>
+
+let browserTag
+onMounted(() => {//doesn't run on server, even when hydrating
+	browserTag = getBrowserTag()
+})
+
+...
+
+//note no template below (which apparently is OK), but we're still a component to use onMounted
+</script>
+
+ideas there to check
+[]exceptions go all the way up to the component that called us, but are caught properly there!
+[]you can make a component with no template to use onMounted, but now with pinia stores may never need to?
+
+
+
+
+
+
+
+
+
+
+
+
+
 

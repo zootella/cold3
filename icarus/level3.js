@@ -343,37 +343,27 @@ not (maybe totally new, maybe mentioned but not validated yet)
 
 
 SQL(`
--- has a user proven they control this address?
+-- has a user proven they control an address?
 CREATE TABLE address_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
-	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
-	hide         BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore
+	row_tag      CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick     BIGINT    NOT NULL,
+	hide         BIGINT    NOT NULL,
 
-	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
+	user_tag     CHAR(21)  NOT NULL,  -- the user who has mentioned, controls, or removed an address
 
-	type_text    TEXT                   NOT NULL,  -- what type of address this is, like "Email." or "Phone."
-	normal_text  TEXT                   NOT NULL,  -- normalized form of address, to match as unique
-	formal_text  TEXT                   NOT NULL,  -- formal form of address, to send messages
-	page_text    TEXT                   NOT NULL,  -- page form of address, to show the user
+	type_text    TEXT      NOT NULL,  -- what type of address this is, like "Email." or "Phone."
+	normal_text  TEXT      NOT NULL,  -- normalized form of address, to match as unique
+	formal_text  TEXT      NOT NULL,  -- formal form of address, to send messages
+	page_text    TEXT      NOT NULL,  -- page form of address, to show the user
 
-	event        BIGINT                 NOT NULL   -- 1 removed, 2 mentioned, 3 challenged, 4 validated
+	event        BIGINT    NOT NULL   -- 2 mentioned, 3 challenged, 4 validated, 1 removed
 );
 
--- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser1 ON address_table (hide, browser_tag, row_tick DESC);  -- filter by browser
-CREATE INDEX browser2 ON address_table (hide, user_tag,    row_tick DESC);  -- or by user
-CREATE INDEX browser3 ON address_table (hide, level,       row_tick DESC);  -- quickly find expired super user hours
+CREATE INDEX address1 ON address_table (hide, user_tag,               row_tick DESC);  -- filter by user
+CREATE INDEX address2 ON address_table (hide, type_text, normal_text, row_tick DESC);  -- or by address
 `)
 
 
-/*
-0 zero not used
-1 removed
-
-2 mentioned
-3 challenged
-4 validated
-*/
 
 
 

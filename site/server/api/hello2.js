@@ -75,6 +75,7 @@ async function doorHandleBelow({door, body, action}) {
 			browserText: print(b),
 		}))
 	}
+	//ttd march actually do this as early as you can because keep() makes it parallelized, and that's not any faster if you do it at the end!
 
 
 	/*
