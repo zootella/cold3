@@ -209,6 +209,24 @@ async function clickedSend() {
 
 
 
+a user might request a code to their address once to sign up
+and again, the next day, to sign in a second device
+
+another user might specify codes to that address as their second factor authentication
+either for sudo hour
+or for a single transaction
+
+the first user will have two codes sent
+the second user will have lots of codes sent
+
+it would be great if address_table just recorded challenges and validations
+and didn't care what they were for
+but of course, if user1 has validated address1 with code1
+and then (either to second factor or sign in another device) requests code2
+but never validates it (they get sidetracked)
+user1 *still* controls address1!
+so make sure your rules allow for that
+
 
 
 
