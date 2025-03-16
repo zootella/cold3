@@ -363,6 +363,67 @@ CREATE INDEX address1 ON address_table (hide, user_tag,               row_tick D
 CREATE INDEX address2 ON address_table (hide, type_text, normal_text, row_tick DESC);  -- or by address
 `)
 
+export async function addressRemoved({userTag, type, v})    { await address_add({userTag, type, v, event: 1}) }
+export async function addressMentioned({userTag, type, v})  { await address_add({userTag, type, v, event: 2}) }
+export async function addressChallenged({userTag, type, v}) { await address_add({userTag, type, v, event: 3}) }
+export async function addressValidated({userTag, type, v})  { await address_add({userTag, type, v, event: 4}) }
+async function address_add({userTag, type, v, event}) {//v is the result of a validate function, containing the three forms
+	await queryAddRow({table: 'address_table', row: {
+		user_tag: userTag,
+		type_text: type,
+		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.fromPage,
+		event: event,
+	}})
+}
+/*
+addressToUser - given an address, get the user who we've challenged it for, or validated, and has not removed it
+so returns a user tag and ownership level 3 or 4, or falsey if the address is available
+
+userToAddresses - given a user, get the addresses we've challenged and validated, that have not been removed
+so returns an array of addresses, different types, events collapsed to be most recent 3 or 4
+*/
+
+
+export async function addressToUser({type, formNormal}) {
+	//the query you need is all rows that are visible that match those two cells
+	/*
+	let's say we query all the rows about that address, it's type and normalized form
+	what does code here need to do to process that further?
+
+	looking for 3 or 4 that does not have more recent 1
+
+	if there's a 1, knock thta out and all earlier records
+	then look for a 4
+	if not thta then a 3
+
+	return {userTag, event 3 or 4}, or false
+
+	like the most recent
+	*/
+
+
+	//returns user tag, or falsey if that address is not in validated ownership by anyone
+}
+export async function userToAddress({userTag}) {
+	//here, we return all the addresses that a user has validated, of all types
+
+
+}
+//see if you can code the simplest happy paths with these two, you can always add more later
+
+
+/*
+get
+
+does anyone control this address? falsey or user tag
+what addresses does this user control?
+
+
+are we hiding rows here? maybe for this one, which is lower churn than signing in, we dont
+
+
+*/
+
 
 
 

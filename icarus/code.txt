@@ -32,8 +32,8 @@ in scope soon:
 -per code, dead on issued replacement
 
 -per address, 10 codes in 24 hours creates 20 hour cooldown
--per address, first two codes in 5 days right away, then 5 minutes delay
--per address, first two codes in 5 days length 4, then length 6
+-per address, first two codes in 5 days right away, then 5 minutes delay between codes
+-per address, first two codes in 5 days length 4, then length codes are 6
 -per address, first one code in 5 days no prefix, then random letter prefix
 
 
@@ -226,6 +226,66 @@ and then (either to second factor or sign in another device) requests code2
 but never validates it (they get sidetracked)
 user1 *still* controls address1!
 so make sure your rules allow for that
+
+
+
+
+
+
+later, be able to add "Is +1 789 555 1234 still your number? [Yes] [No]" "Is name@example.com still your email? [Yes] [No]"
+do that if the haven't validated it in 6 months or whatever, either initial validation, or a later validation for sudo hour or individual destructive transaction permission
+also, if they say no, but that's the only way you have to identify them, what do you do?
+
+
+
+
+
+
+a nice thing about address_table is, unlike browser_table, it doesn't have to be super fast
+a returning user can navigate to the site, be signed in, get their feed, all without touching address_table
+if things like adding, validating, removing an address take half-seconds of database round trips, that's fine
+
+so, you can do more processing in the worker after getting more rows
+and you don't need to hide rows to make queries easy
+
+
+
+
+wait, validated should be verified
+
+
+
+
+simple happy path you're coding
+user signs up on browser1, validating his email
+user signs in on browser2, validating that same email
+and at that point, you need to code
+cold3.cc/settings
+and on it, there will be a list of addresses, both challenged and validated
+and links like _Verify_ and _Remove_
+all of this needs to be on your plate right now
+
+
+
+
+
+
+
+
+
+
+
+
+
+there is a function
+
+
+
+function 
+
+
+
+
 
 
 
