@@ -27,14 +27,100 @@ in scope soon:
 
 
 
--per code, dead in 20 minutes
--per code, dead after 4 tries
--per code, dead on issued replacement
+[]per code, dead in 20 minutes
+[x]per code, dead after 4 tries
+[x]per code, dead on issued replacement
 
--per address, 10 codes in 24 hours creates 20 hour cooldown
--per address, first two codes in 5 days right away, then 5 minutes delay between codes
--per address, first two codes in 5 days length 4, then length codes are 6
--per address, first one code in 5 days no prefix, then random letter prefix
+[x]per address, can't send another code if there are already 10 in the past 24 hours
+[x]per address, first two codes in 5 days right away, then 5 minutes delay between codes
+[x]per address, first two codes in 5 days length 4, then length codes are 6
+
+[x]per user, first one code in 5 days no prefix, then random letter prefix
+
+b: browser tag
+u: user tag
+t: code tag
+a: address
+code: full correct code
+letter: prefix letter
+
+
+event 1 >>>> can we send a code to address a?
+
+let p = await codePermissionToAddress({userTag, v})//can we send another code now?
+p.isPermitted true
+p.useLength 4 or 6
+p.userCodeCount how many codes we've ever sent this user, the alphabet index
+
+event 2 >>>> send a code to address a
+
+let index = p.userCodeCount
+let code = makeRandomCode(p.useLength)
+actually send it using the email or sms api
+let codeTag = await codeRecordSend({userTag, type, v, index, code})
+
+event 3 >>>> is this page expecting the user to type in a received code?
+
+
+
+
+also realized when a code expires, the box should disappear on the page!
+
+
+event 4 >>>> the user has entered a code
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ok, but seriously
+it may be possible to do this all with trail_table
+but way simpler to reason about if you also make code_table
+
+code_table
+
+row_tag
+row_tick
+hide - use to revoke
+
+browser_tag
+user_tag
+code_text "1234" "B1234" "D123456"
+guesses - 0, 1, 2
+
+	store when we've sent a new code to address a
+	when and how many codes we've sent to address a
+
+
+
+//when and how many codes we've sent to address a
+	//from this we can rate limit making a new code, and choose the code prefix presence and length
+	//from this we can tell if a guess is correct or not
+
+store(`${t} wrong guess`)//user entered a guess that's wrong
+	//from this we can count wrong guesses
+store(`${t} dead`)//code killed by one correct guess, a fourth wrong guess, or being replaced by a new code
+	//we have to check this to make sure a code is still live
+
+
+
+
+
 
 
 trailtable lets you hash a message that says anything

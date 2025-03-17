@@ -80,6 +80,7 @@ demonstrationSignOut,
 trailCount,
 trailRecent,
 trailAdd,
+trailAddHashes,
 
 } from './level3.js'
 
@@ -111,6 +112,8 @@ queryCountRows, queryCountAllRows, queryDeleteAllRows,
 
 //query common
 queryTop,
+queryGet,
+queryGet2,
 queryAddRow,
 queryAddRows,
 queryHideRows,
@@ -120,6 +123,7 @@ queryUpdateCells,
 queryCountSince,
 queryAddRowIfCellsUnique,
 queryTopEqualGreater,
+queryTopSinceMatchGreater,
 
 } from './level2.js'
 

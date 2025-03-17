@@ -1400,6 +1400,34 @@ export async function queryTop({table, title, cell, clock}) { const {Now, Tag, d
 	return data[0]//data is an array with one element, or empty if none found
 }
 
+//get all the visible rows with cell under title
+export async function queryGet({table, title, cell, clock}) { const {Now, Tag, database, context} = await getClock(clock)
+	checkQueryTitle(table); checkQueryCell(title, cell)
+	let {data, error} = (await database
+		.from(table)
+		.select('*')
+		.eq('hide', 0)
+		.eq(title, cell)
+		.order('row_tick', {ascending: false})
+	)
+	if (error) toss('supabase', {error})
+	return data
+}
+//get all the visible rows matching two cells
+export async function queryGet2({table, title1, cell1, title2, cell2, clock}) { const {Now, Tag, database, context} = await getClock(clock)
+	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2)
+	let {data, error} = (await database
+		.from(table)
+		.select('*')
+		.eq('hide', 0)
+		.eq(title1, cell1)
+		.eq(title2, cell2)
+		.order('row_tick', {ascending: false})
+	)
+	if (error) toss('supabase', {error})
+	return data
+}
+
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
 export async function queryAddRow({table, row, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	await queryAddRows({table, rows: [row], clock})
@@ -1505,6 +1533,22 @@ export async function queryTopEqualGreater({table, title1, cell1, title2, cell2G
 	)
 	if (error) toss('supabase', {error})
 	return data[0]//returns the row, or undefined if no row
+}
+
+//get recent rows since the given tick count where title1 == cell1 and title2's cell is greater than the given integer
+export async function queryTopSinceMatchGreater({table, since, title1, cell1, title2, cell2GreaterThan, clock}) { const {Now, Tag, database, context} = await getClock(clock)
+	checkQueryTitle(table); checkInt(since); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2GreaterThan)
+	let {data, error} = (await database
+		.from(table)
+		.select('*')
+		.eq('hide', 0)//visible only
+		.eq(title1, cell1)//matching cell
+		.gte('row_tick', since)//recent
+		.gt(title2, cell2GreaterThan)
+		.order('row_tick', {ascending: false})//most recent first
+	)
+	if (error) toss('supabase', {error})
+	return data.length ? data : false//return an array of 1+ matching rows, or false, rather than an empty array
 }
 
 //                                     _               _    

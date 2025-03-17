@@ -24,6 +24,8 @@ queryCountRows, queryCountAllRows, queryDeleteAllRows,
 
 //query common
 queryTop,
+queryGet,
+queryGet2,
 queryAddRow,
 queryAddRows,
 queryHideRows,
@@ -491,6 +493,161 @@ async function browser_out({browserTag, userTag, hideSet}) {//sign this user out
 	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet})//hide all the rows about this user, including the one we just made, signing them out, everywhere
 }
 
+
+
+
+
+
+//                _        _        _     _      
+//   ___ ___   __| | ___  | |_ __ _| |__ | | ___ 
+//  / __/ _ \ / _` |/ _ \ | __/ _` | '_ \| |/ _ \
+// | (_| (_) | (_| |  __/ | || (_| | |_) | |  __/
+//  \___\___/ \__,_|\___|  \__\__,_|_.__/|_|\___|
+//                                               
+
+export const Code = {//factory settings for address verification codes
+
+	//for each code
+	lifespan20: 20*Time.minute,//dead in 20 minutes
+	guesses4:   4,             //dead after 4 wrong guesses
+	//also, dead after issued replacement
+
+	//for each address
+	quantity10: 10,      //limit 10 codes,
+	days1:      Time.day,//in 24 hours.
+
+	quantity2: 2,            //first 2 codes in,
+	days5:     5*Time.day,   //5 days we can issue back to back, then,
+	minutes5:  5*Time.minute,//5 minute delay between sending codes to an address.
+
+	length4: 4,//first 2 codes in 5 days to an address can be short like "1234"
+	length6: 6,//after that, longer like "123456"
+
+	//for each user
+	alphabet: 'ABCDEFHJKMNPQRSTUVWXYZ',//22 letters that don't look like numbers, so not gG~9, iI~1, lL~1, oO~0
+}
+Object.freeze(Code)
+
+export async function codePermissionToAddress({userTag, v}) {//can we send another code now?
+	const now = Now()
+	const hash = await hashText(`sent code to address ${v.formNormal}`)
+
+	//use the trail table to find out how many codes we've sent address
+	let rows5 = await trailGet({hash, since: now - Code.days5})//in the past 5 days
+	let rows1 = rows5.filter(row => row.row_tick >= now - Code.days1)//those in just the last 24 hours
+
+	if (rows1.length >= Code.quantity10) {//we've already sent 10 codes to this address in the last 24 hours!
+		return {
+			isPermitted: false,
+			explanation: 'We can only send 10 codes in 24 hours.',
+			whenCanSend: rows1[rows1.length - 1].row_tick + Code.days1,//when the earliest receeds over the horizon
+		}
+	}
+
+	if (rows5.length >= Code.quantity2) {//we've sent 2+ codes to this address in the last 5 days
+		let cool = rows5[0].row_tick + Code.minutes5//tick when this address is cool again
+		if (now < cool) {//hasn't happened yet
+			return {
+				isPermitted: false,
+				explanation: 'Must wait 5 minutes between codes.',
+				whenCanSend: cool,
+			}
+		}
+	}
+	
+	return {
+		isPermitted: true,
+		useLength: rows5.length < Code.quantity2 ? Code.length4 : Code.length6,
+		userCodeCount: await queryCountRows({table: 'code_table', titleFind: 'user_tag', cellFind: userTag}),//for code identification prefix letter from alphabet
+	}
+}
+
+export async function codeRecordSend({userTag, type, v, index, code}) {//we're sending another code now
+	const codeTag = Tag()//make a tag to identify this code, will also be the row tag in code table
+	const now = Now()//ttd march, maybe get rid of all the custom now all over the place; everything will happen really quickly anyway and it may not matter
+
+	await trailAdd({now, hash: await hashText(`sent code to address ${v.formNormal}`)})
+	await code_add({now, codeTag, userTag, type, v, index, code})
+	return codeTag//return the code tag we assigned
+}
+
+export async function codeLiveForUser({userTag}) {//should this user be entering any codes?
+	let rows = await queryTopSinceMatchGreater({table: 'code_table',
+		since: Now() - Code.lifespan20,
+		title1: 'user_tag', cell1: userTag,
+		title2: 'lives', cell2GreaterThan: 0,
+	})
+	if (rows) {
+		return rows.map(row => ({
+			codeTag:   row.row_tag,//the code's tag, also the row tag, we use with the page to identify the challenge
+			startTick: row.row_tick,//the code's birthday, it lives for 20 minutes from this time
+			addressType: row.type_text,//the type of address, like "Email."
+			addressPage: row.page_text,//the address in the form to show the user on the page
+			index: row.index,//this code's index in the quantity of all codes we've sent this user, 0 for the very first
+			lives: row.lives,//how many guesses this user has left on this code
+			//note we importantly do not send code_hash to the page, that's the secret part!
+		}))
+	}
+}
+
+SQL(`
+-- what code like 1234 have we sent to a user to verify their address?
+CREATE TABLE code_table (
+	row_tag      CHAR(21)  NOT NULL PRIMARY KEY,  -- used to identify the code
+	row_tick     BIGINT    NOT NULL,
+	hide         BIGINT    NOT NULL,  -- not used, instead set lives to 0 below
+
+	user_tag     CHAR(21)  NOT NULL,  -- the provisional or full user verifying this address
+
+	type_text    TEXT      NOT NULL,  -- address type like "Email." or "Phone."
+	normal_text  TEXT      NOT NULL,  -- address in the three forms, we'll use normal to find and page to show
+	formal_text  TEXT      NOT NULL,
+	page_text    TEXT      NOT NULL,
+
+	index        BIGINT    NOT NULL,  -- 0+ index of quantity of codes we've ever sent this user
+	code_hash    CHAR(52)  NOT NULL,  -- the hash of the correct answer, the 4 or 6 numerals
+
+	lives        BIGINT    NOT NULL   -- starts 4 guesses, decrement, or set directly to 0 to invalidate
+);
+
+CREATE INDEX code1 ON code_table (user_tag,               row_tick DESC) WHERE hide = 0;  -- filter by user
+CREATE INDEX code2 ON code_table (type_text, normal_text, row_tick DESC) WHERE hide = 0;  -- or by address
+^ttd march, maybe, change all indices to partial with where hide zero like above
+`)
+
+async function code_get_user({userTag}) {//get all the rows about the given user
+	return await queryGet({table: 'code_table', title: 'user_tag', cell: userTag})
+}
+async function code_get_address({type, formNormal}) {//get all the rows about the given address
+	return await queryGet2({table: 'code_table', title1: 'type_text', cell1: type, title2: 'normal_text', cell2: formNormal})
+}
+
+async function code_set_lives({rowTag, lives}) {//set the number of lives, decrement on wrong guess or 0 to revoke
+	await queryUpdateCells({table: 'code_table',
+		titleFind: 'row_tag', cellFind: rowTag,
+		titleSet:  'lives',   cellSet: lives,
+	})
+}
+async function code_add({now, codeTag, userTag, type, v, index, code}) {//make a record to send a new code
+	await queryAddRow({table: 'code_table', row: {
+		row_tag: codeTag,//unique, identifies row and code, so chosen earlier to save a copy
+		row_tick: now,
+		user_tag: userTag,
+		type_text: type,
+		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.formPage,
+		index: index,
+		code_hash: await hashText(code),
+		lives: Code.guesses4,
+	}})
+}
+
+
+
+
+
+
+
+
 //                                 _        _        _     _      
 //   _____  ____ _ _ __ ___  _ __ | | ___  | |_ __ _| |__ | | ___ 
 //  / _ \ \/ / _` | '_ ` _ \| '_ \| |/ _ \ | __/ _` | '_ \| |/ _ \
@@ -782,10 +939,19 @@ export async function trailCount({hash, since}) {
 	checkHash(hash); checkInt(since)
 	return await queryCountSince({table: 'trail_table', title: 'hash', cell: hash, since})
 }
+//get the rows for hash since the given tick time in the past
+export async function trailGet({hash, since}) {
+	checkHash(hash); checkInt(since)
+	return await queryGet({table: 'trail_table', title: 'hash', cell: hash, since})
+}
 //make a new record of the given hash right now
-export async function trailAdd({hash}) {
-	checkHash(hash)
-	await queryAddRow({table: 'trail_table', row: {hash: hash}})
+export async function trailAdd({now, hash}) {//optionally call Now() and pass it in, if you need it
+	await trailAddHashes({now, hashes: [hash]})
+}
+export async function trailAddHashes({now, hashes}) {//an array of several hashes, all at the same time
+	if (!now) now = Now()
+	hashes.forEach(hash => checkHash(hash))
+	await queryAddRows({table: 'trail_table', rows: hashes.map(hash => ({row_tick: now, hash: hash}))})
 }
 
 //                        _        _     _      
@@ -907,9 +1073,6 @@ export async function demonstrationSignOut({browserTag}) {
 		return {isSignedOut: false, reason: 'NameNotFound.', browserTag}
 	}
 }
-
-
-
 
 
 
