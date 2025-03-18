@@ -59,16 +59,26 @@ let code = makeRandomCode(p.useLength)
 actually send it using the email or sms api
 let codeTag = await codeRecordSend({userTag, type, v, index, code})
 
+if this user has a currently live code to that address, we need to invalidate it!
+
+
 event 3 >>>> is this page expecting the user to type in a received code?
 
 
 
 
 also realized when a code expires, the box should disappear on the page!
+the page will have its own timer for this
+and should probably disappear a minute early, too! (or say 20 minutes but actually it's 25, actually, the grace period)
 
 
 event 4 >>>> the user has entered a code
 
+steps 4a, we need to validate it
+
+steps 4b, and, it's incorrect:
+
+steps 4c, or, it's correct:
 
 
 

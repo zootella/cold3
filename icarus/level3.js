@@ -498,54 +498,53 @@ async function browser_out({browserTag, userTag, hideSet}) {//sign this user out
 
 
 
-//                _        _        _     _      
-//   ___ ___   __| | ___  | |_ __ _| |__ | | ___ 
-//  / __/ _ \ / _` |/ _ \ | __/ _` | '_ \| |/ _ \
-// | (_| (_) | (_| |  __/ | || (_| | |_) | |  __/
-//  \___\___/ \__,_|\___|  \__\__,_|_.__/|_|\___|
-//                                               
 
-export const Code = {//factory settings for address verification codes
 
-	//for each code
-	lifespan20: 20*Time.minute,//dead in 20 minutes
-	guesses4:   4,             //dead after 4 wrong guesses
-	//also, dead after issued replacement
 
-	//for each address
-	quantity10: 10,      //limit 10 codes,
-	days1:      Time.day,//in 24 hours.
 
-	quantity2: 2,            //first 2 codes in,
-	days5:     5*Time.day,   //5 days we can issue back to back, then,
-	minutes5:  5*Time.minute,//5 minute delay between sending codes to an address.
 
-	length4: 4,//first 2 codes in 5 days to an address can be short like "1234"
-	length6: 6,//after that, longer like "123456"
 
-	//for each user
-	alphabet: 'ABCDEFHJKMNPQRSTUVWXYZ',//22 letters that don't look like numbers, so not gG~9, iI~1, lL~1, oO~0
-}
-Object.freeze(Code)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//~~~~ send all the codes!
+
+
 
 export async function codePermissionToAddress({userTag, v}) {//can we send another code now?
 	const now = Now()
 	const hash = await hashText(`sent code to address ${v.formNormal}`)
 
 	//use the trail table to find out how many codes we've sent address
-	let rows5 = await trailGet({hash, since: now - Code.days5})//in the past 5 days
-	let rows1 = rows5.filter(row => row.row_tick >= now - Code.days1)//those in just the last 24 hours
+	let days5 = await trailGet({hash, since: now - Code.days5})//in the past 5 days
+	let days1 = days5.filter(row => row.row_tick >= now - Code.days1)//those in just the last 24 hours
 
-	if (rows1.length >= Code.quantity10) {//we've already sent 10 codes to this address in the last 24 hours!
+	if (days1.length >= Code.quantity10) {//we've already sent 10 codes to this address in the last 24 hours!
 		return {
 			isPermitted: false,
 			explanation: 'We can only send 10 codes in 24 hours.',
-			whenCanSend: rows1[rows1.length - 1].row_tick + Code.days1,//when the earliest receeds over the horizon
+			whenCanSend: days1[days1.length - 1].row_tick + Code.days1,//when the earliest will receed over the horizon
 		}
 	}
 
-	if (rows5.length >= Code.quantity2) {//we've sent 2+ codes to this address in the last 5 days
-		let cool = rows5[0].row_tick + Code.minutes5//tick when this address is cool again
+	if (days5.length >= Code.quantity2) {//we've sent 2+ codes to this address in the last 5 days
+		let cool = days5[0].row_tick + Code.minutes5//tick when this address is cool again
 		if (now < cool) {//hasn't happened yet
 			return {
 				isPermitted: false,
@@ -557,7 +556,7 @@ export async function codePermissionToAddress({userTag, v}) {//can we send anoth
 	
 	return {
 		isPermitted: true,
-		useLength: rows5.length < Code.quantity2 ? Code.length4 : Code.length6,
+		useLength: days5.length < Code.quantity2 ? Code.length4 : Code.length6,
 		userCodeCount: await queryCountRows({table: 'code_table', titleFind: 'user_tag', cellFind: userTag}),//for code identification prefix letter from alphabet
 	}
 }
@@ -589,6 +588,42 @@ export async function codeLiveForUser({userTag}) {//should this user be entering
 		}))
 	}
 }
+
+
+
+
+
+
+
+//                _        _        _     _      
+//   ___ ___   __| | ___  | |_ __ _| |__ | | ___ 
+//  / __/ _ \ / _` |/ _ \ | __/ _` | '_ \| |/ _ \
+// | (_| (_) | (_| |  __/ | || (_| | |_) | |  __/
+//  \___\___/ \__,_|\___|  \__\__,_|_.__/|_|\___|
+//                                               
+
+export const Code = {//factory settings for address verification codes
+
+	//for each code
+	lifespan20: 20*Time.minute,//dead in 20 minutes
+	guesses4:   4,             //dead after 4 wrong guesses
+	//also, dead after issued replacement
+
+	//for each address
+	quantity10: 10,      //limit 10 codes,
+	days1:      Time.day,//in 24 hours.
+
+	quantity2: 2,            //first 2 codes in,
+	days5:     5*Time.day,   //5 days we can issue back to back, then,
+	minutes5:  5*Time.minute,//5 minute delay between sending codes to an address.
+
+	length4: 4,//first 2 codes in 5 days to an address can be short like "1234"
+	length6: 6,//after that, longer like "123456"
+
+	//for each user
+	alphabet: 'ABCDEFHJKMNPQRSTUVWXYZ',//22 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0
+}
+Object.freeze(Code)
 
 SQL(`
 -- what code like 1234 have we sent to a user to verify their address?
@@ -640,6 +675,11 @@ async function code_add({now, codeTag, userTag, type, v, index, code}) {//make a
 		lives: Code.guesses4,
 	}})
 }
+
+
+
+
+
 
 
 
