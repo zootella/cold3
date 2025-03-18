@@ -83,7 +83,7 @@ export async function sendMessage({provider, service, address, message}) {
 	let content = `${message} ${source}`
 
 	log('hi from persephone send message', look({provider, service, address, message, source, content}))
-	return 'Off.'
+	return 'Off.'//ttd march obviously
 
 	let result
 	if (service == 'Email.') {
