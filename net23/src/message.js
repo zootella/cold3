@@ -14,12 +14,15 @@ async function doorHandleBelow({door, body, action}) {
 	let response = {}
 	try {
 
-		let {warm, provider, service, address, message} = body
-
-		if (warm) {
-			await warm(provider+service)
+		if (body.warm) {
+			await warm(body.provider+body.service)
 		} else {
-			response.result = await sendMessage(provider, service, address, message)
+			response.result = await sendMessage({
+				provider: body.provider,
+				service: body.service,
+				address: body.address,
+				message: body.message,
+			})
 		}
 
 	} catch (e) { response.error = e.stack }

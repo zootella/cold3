@@ -35,6 +35,25 @@ to then sign in a user, which is a link between
 think about these relationships, fundamentally, when designing today
 
 
+so there's a complete flow coming together here
+and it's all based on browser tag
+but that's enough to run it!
+
+so make components to challenge and verify addresses
+
+CodeRequestComponent.vue
+address[] use[t|a] [Send Code]
+
+CodeEnterComponent.vue
+Code [J-    ] [Enter] _I can't find it_
+
+
+
+
+*/
+
+
+
 "Code J-7148 from brand. Don't tell anyone, they could steal your whole account!"
 Code [J-    ] [Enter] _I can't find it_
 

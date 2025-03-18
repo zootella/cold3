@@ -474,6 +474,13 @@ export function validatePost(raw, limit) {//returns an array of paragraphs
 
 
 
+
+
+
+
+
+
+
 //             _   _             
 //   __ _  ___| |_(_) ___  _ __  
 //  / _` |/ __| __| |/ _ \| '_ \ 
@@ -636,6 +643,13 @@ test(() => {
 	f('bob+spam+note@yahoo.com', 'bob+spam+note@yahoo.com', 'bob+spam+note@yahoo.com', 'bob@yahoo.com')
 	f('a.b+spam@proton.me', 'a.b+spam@proton.me', 'a.b+spam@proton.me', 'ab@proton.me')
 })
+
+//probably won't have these; instead should be part of the theorized validate form as a whole system? ttd march
+export function validateEmailOrPhone(raw) {
+	let vEmail = validateEmail(raw); if (vEmail.isValid) { vEmail.type = 'Email.'; return vEmail }
+	let vPhone = validatePhone(raw); if (vPhone.isValid) { vPhone.type = 'Phone.'; return vPhone }
+	return {email: vEmail, phone: vPhone}//not valid as either
+}
 
 //             _ _     _       _               _                      
 // __   ____ _| (_) __| | __ _| |_ ___   _ __ | |__   ___  _ __   ___ 

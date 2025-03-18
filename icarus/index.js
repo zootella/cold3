@@ -61,7 +61,7 @@ wrapper
 export {
 
 getBrowserTag,
-urlNetwork23, fetchNetwork23, vhsSign,
+urlNetwork23, fetch23, fetchNetwork23, vhsSign,
 
 /* level 3 query */
 
@@ -81,6 +81,8 @@ trailCount,
 trailRecent,
 trailAdd,
 trailAddHashes,
+
+codeCompose,
 
 } from './level3.js'
 
@@ -152,7 +154,7 @@ validateName,
 
 validateTitle, validatePost,
 checkAction,
-checkEmail, validateEmail,
+checkEmail, validateEmail, validateEmailOrPhone,
 checkPhone, validatePhone,
 checkCard, validateCard,
 months3, checkDate, validateDate, getPageOffsetMinutes, ageDate,

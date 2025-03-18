@@ -52,6 +52,18 @@ queryTopEqualGreater,
 
 
 
+//ttd march, quick new one
+export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you call this Nuxt defines it
+	let host = urlNetwork23()
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
+	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+	body.warm = true;  let resultWarm   = await $fetch(host+path, {method: 'POST', body})
+	body.warm = false; let resultAction = await $fetch(host+path, {method: 'POST', body})
+	return resultAction
+}
+
+
+
 
 
 /*
@@ -62,6 +74,13 @@ and, importantly, because you're building security upon it:
 
 to begin--don't do the warm thing, either--the errors you were seeing were only for GET, not POST
 well, now you sort of want to do it
+*/
+
+/*
+ttd march
+you don't need forceCloudLambda anymore, you never used it
+use {} for named arguments, of course
+yeah do the warmup
 */
 
 //  _          _     _              _                     _   ____  _____ 
@@ -524,26 +543,8 @@ async function browser_out({browserTag, userTag, hideSet}) {//sign this user out
 
 
 
-//~~~~ send all the codes!
 
 
-/*
-so there's a complete flow coming together here
-and it's all based on browser tag
-but that's enough to run it!
-
-so make components to challenge and verify addresses
-
-CodeRequestComponent.vue
-address[] use[t|a] [Send Code]
-
-CodeEnterComponent.vue
-Code [J-    ] [Enter] _I can't find it_
-
-
-
-
-*/
 
 
 //functions in the code system call these handlers to report that the person at browser tag challenged an address, and we sent a code there, and, possibly, later, entered the correct code, validating that address
@@ -563,8 +564,7 @@ export async function browserValidatedAddress({browserTag, provider, type, addre
 	*/
 }
 
-
-
+//~~~~ send all the codes!
 
 //can we send another code to this address now?
 export async function codePermissionToAddress({addressNormal}) {
@@ -600,6 +600,17 @@ export async function codePermissionToAddress({addressNormal}) {
 		useLength: days5.length < Code.quantity2 ? Code.length4 : Code.length6,
 		aliveCodeTag: (minutes20.length && minutes20[0].lives) ? minutes20[0].row_tag : false,//include the code tag of a code that we sent to this address less than 20 minutes ago, and could still be verified. if you send a replacement code, you have to kill this one
 	}
+}
+
+export async function codeCompose(codeLength) {
+	if (!codeLength) codeLength = 6
+
+	let codeTag = Tag()
+	let letter = await hashToLetter(codeTag, Code.alphabet)
+	let code = randomCode(codeLength)
+	let hash = await hashText(code)
+
+	return {codeTag, letter, code, hash}
 }
 
 //what it looks like to use these functions to send a code

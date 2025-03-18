@@ -77,7 +77,11 @@ export async function warm(providerAndService) {
 //  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
 //                                                                   
 
-export async function sendMessage(provider, service, address, message) {
+export async function sendMessage({provider, service, address, message}) {
+
+	log('hi from persephone send message', look({provider, service, address, message}))
+
+	return 'Off.'
 
 	let source = `${Sticker().all}.${provider}${service}`
 	let content = `${source} ~ ${message}`

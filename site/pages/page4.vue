@@ -3,7 +3,8 @@
 
 <NavigationComponent note="on page4" />
 
-<StyleComponent />
+<CodeRequestComponent />
+<CodeEnterComponent />
 
 </div>
 </template>
