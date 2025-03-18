@@ -3,7 +3,7 @@ import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
-Data, decrypt, hashData, timeSafeEqual,
+Data, decrypt, hashData, secureSameText,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,

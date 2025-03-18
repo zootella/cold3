@@ -2,7 +2,7 @@
 import {
 log, look, Tag, checkTag,
 doorWorker, getAccess,
-timeSafeEqual, checkAction, checkPhone,
+secureSameText, checkAction, checkPhone,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

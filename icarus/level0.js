@@ -558,9 +558,10 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 //private helper functions, use methods in Data which call down here
 let _textEncoder, _textDecoder//make once and use many times, saves no state between uses
 function textToArray(s, trip) {//true to check conversion in a round trip
+	let c = s.normalize('NFC')//convert to unicode Normalization Form C so surrogate pairs hash and match consistantly
 	if (!_textEncoder) _textEncoder = new TextEncoder()
-	let a = _textEncoder.encode(s)//returns a Uint8Array
-	if (trip) checkSame(s, arrayToText(a, false))//false to not check infinitely!
+	let a = _textEncoder.encode(c)//returns a Uint8Array
+	if (trip) checkSame(c, arrayToText(a, false))//round trip only works on c, not s; false to not check infinitely!
 	return a
 }
 function arrayToText(a, trip) {
@@ -968,39 +969,46 @@ test(async () => {
 //  \___|\__, |\__,_|\__,_|_|
 //          |_|              
 
-export function timeSafeEqual(s1, s2) {//compare two strings without leaking timing clues about how far in they are different
-	s1 = s1.normalize('NFC')//make both strings unicode Normalization Form C so surrogate pairs match correctly
-	s2 = s2.normalize('NFC')
-	
+export function secureSameText(s1, s2) {//compare two strings without leaking timing clues about where they differ
+	return secureSameData(Data({text: 'Pad:'+s1}), Data({text: 'Pad:'+s2}))//normalizes to NFC, must pad because Data can't take blank
+}
+export function secureSameData(d1, d2) {
+	let s1 = d1.base16()//express the given bytes in base 16
+	let s2 = d2.base16()
 	s1 = s1.length + ':' + s1//prefix the strings with their lengths
 	s2 = s2.length + ':' + s2
+
 	let length = Math.max(s1.length, s2.length)//find the longest length
 	length += Math.floor(Math.random() * (length + 256))//add a random length beyond that
-	s1 = s1.padEnd(length, '\0')//put 0 bytes at the end to make both strings the same longer length
-	s2 = s2.padEnd(length, '\0')
+	s1 = s1.padEnd(length, ' ')//put spaces at the end to make both strings the same longer length
+	s2 = s2.padEnd(length, ' ')
 
 	let differences = 0//do constant-time comparison with ^ XOR and |= bitwise OR
 	for (let i = 0; i < length; i++) differences |= s1.charCodeAt(i) ^ s2.charCodeAt(i)
 	return differences == 0//true if there were no differences
 }
 test(() => {
-	ok(timeSafeEqual('', ''))
-	ok(timeSafeEqual('a', 'a'))
-	ok(!timeSafeEqual('a', ''))
-	ok(timeSafeEqual('password12345',  'password12345'))
-	ok(!timeSafeEqual('password12345', 'password12345x'))//extra letter
-	ok(!timeSafeEqual('password12345', 'Password12345'))//case difference
+	ok(secureSameText('', ''))
+	ok(secureSameText('a', 'a'))
+	ok(!secureSameText('a', ''))
+	ok(secureSameText('password12345',  'password12345'))
+	ok(!secureSameText('password12345', 'password12345x'))//extra letter
+	ok(!secureSameText('password12345', 'Password12345'))//case difference
 
+	function b16(s) {//base16 without any normalization; Data normalizes to NFC now
+		let a = (new TextEncoder()).encode(s)
+		return (Array.from(a, b => b.toString(16).padStart(2, '0'))).join('')
+	}
 	let e = 'é'//demonstration of accented unicode characters and different normalized forms in javascript
 	let e1 = e.normalize('NFC')//the javascript string literal é is already in C form
 	let e2 = e.normalize('NFD')//convert it into D form
 	let e3 = e2.normalize('NFC')//round trip back to C form
 	ok(e.length == 1 && e1.length == 1 && e2.length == 2 && e3.length == 1)
-	ok(Data({text: e}).base16()  == 'c3a9')
-	ok(Data({text: e1}).base16() == 'c3a9')
-	ok(Data({text: e2}).base16() == '65cc81')//form D is different
-	ok(Data({text: e3}).base16() == 'c3a9')
-	ok(timeSafeEqual(e1, e2))//our function deals with that
+	ok(b16(e)  == 'c3a9')
+	ok(b16(e1) == 'c3a9')
+	ok(b16(e2) == '65cc81')//form D is different
+	ok(b16(e3) == 'c3a9')
+	ok(secureSameText(e1, e2))//our function deals with that
 })
 
 //  _               _     
@@ -1010,17 +1018,25 @@ test(() => {
 // |_| |_|\__,_|___/_| |_|
 //                        
 
-/*
-ttd february
-rename subtleHash -> hashData, which takes and returns Data
-rename hash       -> hashText, which takes and returns text, careful to avoid where you say hash and it's not the function!
-*/
-
 //compute the 32 byte SHA-256 hash value of data
 const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
+export function checkHash(s) {
+	checkText(s); if (s.length != hashLength) toss('data', {s})
+	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
+}
+export async function hashText(s) {//convenience function which goes text encoder to base 32
+	return (await hashData(Data({text: s}))).base32()//uses Normalization Form C inside Data
+}
 export async function hashData(data) {
 	return Data({buffer: await crypto.subtle.digest('SHA-256', data.array())})
 }
+test(() => {
+	checkHash('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//fine
+	//also tried blank, bad character, too short, too long
+})
+test(async () => {
+	ok((await hashText('example')) == 'KDMFRYEYL3GH6YCBRKXQZRNLLB7UFQSXBKEEBFNJ5DGKZUHWKROA')
+})
 test(async () => {
 	let d = Data({random: 500})//hash 500 random bytes, different every time we run the test
 	let h = await hashData(d)
@@ -1030,44 +1046,6 @@ test(async () => {
 	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
 	ok(d2.base32().length == hashLength)
 })
-export function checkHash(s) {
-	checkText(s); if (s.length != hashLength) toss('data', {s})
-	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
-}
-test(() => {
-	checkHash('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//fine
-	//also tried blank, bad character, too short, too long
-})
-
-/*
-ttd march
-
-bring s.normalize('NFC') into Data({text: s})
-which means it can't do a round trip anymore; well, it can do it to the after normalized form
-confirm this means you really don't need it anywhere else
-
-mostly for tests and test-documented code, write
-function textLength(s) which computes the length all the different ways, with all the different normalizations
-and returns an object that shows all that
-not sure how much you like this idea now that you've typed it out, actually
-
-factor time safe equal to compare base16 strings
-secureSameText(s1, s2) just converts to Data (which normalizes) and then calls
-secureSameData(d1, d2) which does this
-converts to base16
-pads with a random additional amount of spaces to make the same length
-uses a javascript 101 loop to count the number of characters that are different
-so, no bitwise arithmatic anymore
-
-*/
-
-export async function hashText(s) {//convenience function which goes text encoder to base 32
-	return (await hashData(Data({text: s.normalize('NFC')}))).base32()//use Normalization Form C
-}
-test(async () => {
-	ok((await hashText('example')) == 'KDMFRYEYL3GH6YCBRKXQZRNLLB7UFQSXBKEEBFNJ5DGKZUHWKROA')
-})
-//ttd february--ok, the reason you can't call this hash is because you want to use that for variable names, duh! so maybe hashData and hashText. also, these throw on blank or empty because Data can't be empty. so maybe that's ok, or maybe you do some times want to hash no data or no text. if so, then probably don't change data, rather, hard code in the empty value
 
 //                                            _ 
 //  _ __   __ _ ___ _____      _____  _ __ __| |
@@ -1077,12 +1055,11 @@ test(async () => {
 // |_|                                          
 
 export async function hashPassword(thousandsOfIterations, saltData, passwordText) {
-	passwordText = passwordText.normalize('NFC')//use normalization Form C, canonical composition so if the user comes back and enters the same characters but somehow with a different composition, the hashes match and we grant them access
 
 	//first, format the password text as key material for PBKDF2
 	let materia = await crypto.subtle.importKey(
 		'raw',
-		Data({text: passwordText}).array(),
+		Data({text: passwordText}).array(),//Data uses normalization Form C, canonical composition so if the user comes back and enters the same characters but somehow with a different composition, the hashes match and we grant them access
 		{name: 'PBKDF2'},//the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
 		false,//not extractable
 		['deriveBits', 'deriveKey'])

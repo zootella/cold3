@@ -6,7 +6,7 @@ import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
-Data, decrypt, hashData, timeSafeEqual, hmacSign,
+Data, decrypt, hashData, secureSameText, hmacSign,
 parse, print, replaceAll, replaceOne,
 parseEnvStyleFileContents,
 ashFetchum,
@@ -699,7 +699,7 @@ Notes: (i) The Network 23 Application Programming Interface is exclusively for s
 (v) similarly, there are no GET lambdas; note that this whole grid is for api.net23.cc; vhs.net23.cc is the cloudfront function which does its own checks of the method and origin and referer headers
 */
 function checkNetwork23AccessCode(body, access) {
-	if (!timeSafeEqual(body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
+	if (!secureSameText(body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
 }
 function checkForwardedSecure(headers) { if (isLocal({uncertain: 'Cloud.'})) return//skip these checks during local development
 	let n = headerCount(headers, 'X-Forwarded-Proto')

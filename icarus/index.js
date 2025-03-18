@@ -196,7 +196,7 @@ Bin, Data,
 base62ToInt, intToBase62,
 
 randomBetweenLight, randomBetween, randomCode, hashToLetter,
-timeSafeEqual,
+secureSameText, secureSameData,
 checkHash, hashData, hashText,
 hashPassword,
 encrypt, decrypt,
