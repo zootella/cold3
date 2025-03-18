@@ -527,15 +527,54 @@ async function browser_out({browserTag, userTag, hideSet}) {//sign this user out
 //~~~~ send all the codes!
 
 
+/*
+so there's a complete flow coming together here
+and it's all based on browser tag
+but that's enough to run it!
 
-export async function codePermissionToAddress({addressNormal}) {//can we send another code now?
+so make components to challenge and verify addresses
+
+CodeRequestComponent.vue
+address[] use[t|a] [Send Code]
+
+CodeEnterComponent.vue
+Code [J-    ] [Enter] _I can't find it_
+
+
+
+
+*/
+
+
+//functions in the code system call these handlers to report that the person at browser tag challenged an address, and we sent a code there, and, possibly, later, entered the correct code, validating that address
+export async function browserChallengedAddress({browserTag, provider, type, addressNormal, addressFormal, addressPage}) {
+	//address_table
+	//service_table
+}
+export async function browserValidatedAddress({browserTag, provider, type, addressNormal, addressFormal, addressPage}) {
+	//address_table
+	//service_table
+	/*
+	so in here is where we do things like:
+	sign the user up
+	sign the user in
+	record that the user validated the address in address_
+	record in service_table that the api succeeded, too
+	*/
+}
+
+
+
+
+//can we send another code to this address now?
+export async function codePermissionToAddress({addressNormal}) {
 	const now = Now()
-	const hash = await hashText(`sent code to address ${addressNormal}`)
 
-	//use the trail table to find out how many codes we've sent address
-	let days5 = await trailGet({hash, since: now - Code.days5})//in the past 5 days
-	//^this can just be find address normal in code_table in the last 5 days
+	//use the code table to find out how many codes we've sent address
+	let rows = await code_get_address({addressNormal})//get all the rows about the given address
+	let days5 = rows.filter(row => row.row_tick >= now - Code.days5)//those over the past 5 days
 	let days1 = days5.filter(row => row.row_tick >= now - Code.days1)//those in just the last 24 hours
+	let minutes20 = days1.filter(row => row.row_tick >= now - Code.lifespan20)//past 20 minutes, so could be active still
 
 	if (days1.length >= Code.quantity10) {//we've already sent 10 codes to this address in the last 24 hours!
 		return {
@@ -546,7 +585,7 @@ export async function codePermissionToAddress({addressNormal}) {//can we send an
 	}
 
 	if (days5.length >= Code.quantity2) {//we've sent 2+ codes to this address in the last 5 days
-		let cool = days5[0].row_tick + Code.minutes5//tick when this address is cool again
+		let cool = days5[0].row_tick + Code.minutes5//tick when this address cooled down
 		if (now < cool) {//hasn't happened yet
 			return {
 				isPermitted: false,
@@ -555,18 +594,49 @@ export async function codePermissionToAddress({addressNormal}) {//can we send an
 			}
 		}
 	}
-	
+
 	return {
 		isPermitted: true,
 		useLength: days5.length < Code.quantity2 ? Code.length4 : Code.length6,
+		aliveCodeTag: (minutes20.length && minutes20[0].lives) ? minutes20[0].row_tag : false,//include the code tag of a code that we sent to this address less than 20 minutes ago, and could still be verified. if you send a replacement code, you have to kill this one
 	}
 }
 
-export async function codeRecordSend({codeTag, browserTag, type, v, code}) {//we're sending another code now
-	await code_add({codeTag, browserTag, type, v, code})
+//what it looks like to use these functions to send a code
+export async function codeExampleSend({browserTag, provider, type, v}) {
+
+	let p = await codePermissionToAddress({addressNormal: v.formNormal})
+	if (p.isPermitted) {
+
+		if (p.aliveCodeTag) {//we need to replace an existing running code to this address
+			await code_set_lives({codeTag: p.aliveCodeTag, lives: 0})//set its lives down to zero
+		}
+
+		//make a new code
+		let codeTag = Tag()
+		let letter = await hashToLetter(codeTag, Code.alphabet)
+		let code = randomCode(p.useLength)
+
+		//now actually send letter-code to v.addressFormal using the given named provider
+		let sent = true
+		if (sent) {//only if that worked, continue
+
+			//take care of address_table and maybe also service_table
+			await browserChallengedAddress({
+				browserTag,
+				provider,
+				type,
+				addressNormal: v.formNormal, addressFormal: v.formFormal, addressPage: v.formPage,
+			})
+
+			//record that we sent the new code
+			await code_add({codeTag, browserTag, provider, type, v, code})
+		}
+	}
 }
 
-export async function codeLiveForBrowser({browserTag}) {//should this browser be entering any codes?
+//is this browser expecting any codes? needs to run fast!
+export async function codeLiveForBrowser({browserTag}) {
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
 		since: Now() - Code.lifespan20,
 		title1: 'browser_tag', cell1: browserTag,
@@ -579,19 +649,46 @@ export async function codeLiveForBrowser({browserTag}) {//should this browser be
 			addressType: row.type_text,//the type of address, like "Email."
 			addressPage: row.page_text,//the address in the form to show on the page
 			lives: row.lives,//how many guesses remain on this code
-			//note we importantly do not send code_hash to the page, that's the secret part!
+			//note we importantly do not send hash to the page, that's the secret part!
 		}))
+	}
+}
+
+//the person at browserTag used the box on the page to enter a code, which could be right or wrong
+export async function codeEnter({browserTag, codeTag, codeCandidate}) {
+	let now = Now()
+
+	//find the row about it
+	let row = await code_get({codeTag})
+	if (!row) return 'Bad.Error.NotFound.Replace.'
+	if (row.browser_tag != browserTag) return 'Bad.Error.BrowserMismatch.Replace.'//this would be very unusual
+
+	if (row.row_tick + Code.lifespan20 < now) return 'Bad.Expired.Replace.'//too late
+	if (!row.lives) return 'Bad.Expended.Replace.'//guessed out or revoked by replacement
+
+	if (secureSameText(row.hash, await hashText(codeCandidate))) {//correct guess
+
+		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
+		await browserValidatedAddress({
+			browserTag,
+			provider: row.provider_text,
+			type: row.type_text,
+			addressNormal: row.normal_text, addressFormal: row.formal_text, addressPage: row.page_text,
+		})
+		return 'Good.Correct.'
+
+	} else {//wrong guess
+
+		let lives = row.lives - 1
+		await code_set_lives({codeTag, lives})
+		return lives ? 'Bad.Wrong.TryAgain.' : 'Bad.Wrong.Replace.'
 	}
 }
 
 
 
-test(async () => {
-	let t = Tag()
-	let c = randomCode(4)
-	let l = await hashToLetter(t, Code.alphabet)
-	log(`${t}, ${l}-${c}`)
-})
+
+
 
 
 
@@ -630,20 +727,21 @@ Object.freeze(Code)
 SQL(`
 -- what code like 1234 have we sent to a user to verify their address?
 CREATE TABLE code_table (
-	row_tag      CHAR(21)  NOT NULL PRIMARY KEY,  -- used to identify the code, and derive the prefix letter
-	row_tick     BIGINT    NOT NULL,  -- when we sent the code, the start of the code's 20 minute lifetime
-	hide         BIGINT    NOT NULL,  -- not used, instead set lives to 0 below to revoke the code
+	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,  -- used to identify the code, and derive the prefix letter
+	row_tick       BIGINT    NOT NULL,  -- when we sent the code, the start of the code's 20 minute lifetime
+	hide           BIGINT    NOT NULL,  -- not used, instead set lives to 0 below to revoke the code
 
-	browser_tag  CHAR(21)  NOT NULL,  -- the browser that entered, and must verify, the address
+	browser_tag    CHAR(21)  NOT NULL,  -- the browser that entered, and must verify, the address
 
-	type_text    TEXT      NOT NULL,  -- address type like "Email." or "Phone."
-	normal_text  TEXT      NOT NULL,  -- address in the three forms, we'll use normal to find and page to show
-	formal_text  TEXT      NOT NULL,
-	page_text    TEXT      NOT NULL,
+	provider_text  TEXT      NOT NULL,  -- note we sent the code using "Amazon." or "Twilio."
+	type_text      TEXT      NOT NULL,  -- address type like "Email." or "Phone."
+	normal_text    TEXT      NOT NULL,  -- address in the three forms, we'll use normal to find and page to show
+	formal_text    TEXT      NOT NULL,
+	page_text      TEXT      NOT NULL,
 
-	code_hash    CHAR(52)  NOT NULL,  -- the hash of the correct answer, the 4 or 6 numerals
+	hash           CHAR(52)  NOT NULL,  -- the hash of the correct answer, the 4 or 6 numeral code
 
-	lives        BIGINT    NOT NULL   -- starts 4 guesses, decrement, or set directly to 0 to invalidate
+	lives          BIGINT    NOT NULL   -- starts 4 guesses, decrement, or set directly to 0 to invalidate
 );
 
 CREATE INDEX code1 ON code_table (browser_tag,            row_tick DESC) WHERE hide = 0;  -- filter by user
@@ -651,7 +749,11 @@ CREATE INDEX code2 ON code_table (type_text, normal_text, row_tick DESC) WHERE h
 ^ttd march, maybe, change all indices to partial with where hide zero like above
 `)
 
-async function code_get_browser({browserTag}) {//get all the rows about the given user
+async function code_get({codeTag}) {//get the row about a code
+	let rows = await queryGet({table: 'code_table', title: 'row_tag', cell: codeTag})
+	return rows.length ? rows[0] : false
+}
+async function code_get_browser({browserTag}) {//get all the rows about the given browser
 	return await queryGet({table: 'code_table', title: 'browser_tag', cell: browserTag})
 }
 async function code_get_address({addressNormal}) {//get all the rows about the given address
@@ -664,13 +766,14 @@ async function code_set_lives({codeTag, lives}) {//set the number of lives, decr
 		titleSet:  'lives',   cellSet: lives,
 	})
 }
-async function code_add({codeTag, browserTag, type, v, code}) {//make a record to send a new code
+async function code_add({codeTag, browserTag, provider, type, v, code}) {//make a record to send a new code
 	await queryAddRow({table: 'code_table', row: {
 		row_tag: codeTag,//unique, identifies row and code, so chosen earlier to save a copy
 		browser_tag: browserTag,
+		provider_text: provider,
 		type_text: type,
 		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.formPage,
-		code_hash: await hashText(code),
+		hash: await hashText(code),
 		lives: Code.guesses4,
 	}})
 }
