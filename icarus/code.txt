@@ -27,6 +27,31 @@ in scope soon:
 
 
 
+
+a code challenge proves a link between
+	address == browser tag
+to then sign in a user, which is a link between
+             browser tag == user tag
+think about these relationships, fundamentally, when designing today
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 []per code, dead in 20 minutes
 [x]per code, dead after 4 tries
 [x]per code, dead on issued replacement
@@ -80,6 +105,22 @@ steps 4b, and, it's incorrect:
 
 steps 4c, or, it's correct:
 
+
+
+
+
+thinking having stepped away
+- now that you have code_table, should you use that instead of trail_table?
+- you're not just validating the address, you're also checking the person at the device, so for security, you should make it so the catch box only appears on the same browser where the person entered the address to challenge
+
+
+
+
+
+to make a code
+1 let permission = await codePermissionToAddress(addressNormal)//check permission
+2 let codeTag = Tag()//generate identifying tag
+3 let code = randomCode(permission.useLength)
 
 
 

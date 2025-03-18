@@ -945,6 +945,22 @@ noop(() => {//this might be slow, actually, but should be ok for individual one 
 	log(s)
 })
 
+//choose a letter from the given alphabet that is a result of the hash of s
+export async function hashToLetter(s, alphabet) {
+	checkText(s); checkText(alphabet)
+
+	let d = await hashData(Data({text: s}))
+	let v = new DataView(d.array().buffer)//from Data's array, get the buffer, we'll use just the first 4 bytes
+	let u = v.getUint32(0, false)//big endian, the Internet's default, but doesn't really matter here
+	let i = u % alphabet.length//modulo down to index in range
+	return alphabet[i]//return alphabet letter at that index, will be even across alphabet
+}
+test(async () => {
+	ok(await hashToLetter('3IXdnF46zWIYmRb9TYFuw', 'ABCD') == 'A')
+	ok(await hashToLetter('4195KLh3ApK74M5gFHnbJ', 'ABCD') == 'D')
+	ok(await hashToLetter('6MIg9Bwj1ZC8wx6BLSgML', 'ABCD') == 'B')
+})
+
 //                         _ 
 //   ___  __ _ _   _  __ _| |
 //  / _ \/ _` | | | |/ _` | |

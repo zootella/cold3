@@ -195,7 +195,7 @@ swap, between,
 Bin, Data,
 base62ToInt, intToBase62,
 
-randomBetweenLight, randomBetween, randomCode,
+randomBetweenLight, randomBetween, randomCode, hashToLetter,
 timeSafeEqual,
 checkHash, hashData, hashText,
 hashPassword,

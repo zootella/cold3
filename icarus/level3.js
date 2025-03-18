@@ -9,6 +9,7 @@ parseEnvStyleFileContents,
 ashFetchum,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
+randomCode, hashToLetter,
 } from './level0.js'
 import {
 Tag, Limit, checkTag, checkTagOrBlank, checkName, validateName,
@@ -527,12 +528,13 @@ async function browser_out({browserTag, userTag, hideSet}) {//sign this user out
 
 
 
-export async function codePermissionToAddress({userTag, v}) {//can we send another code now?
+export async function codePermissionToAddress({addressNormal}) {//can we send another code now?
 	const now = Now()
-	const hash = await hashText(`sent code to address ${v.formNormal}`)
+	const hash = await hashText(`sent code to address ${addressNormal}`)
 
 	//use the trail table to find out how many codes we've sent address
 	let days5 = await trailGet({hash, since: now - Code.days5})//in the past 5 days
+	//^this can just be find address normal in code_table in the last 5 days
 	let days1 = days5.filter(row => row.row_tick >= now - Code.days1)//those in just the last 24 hours
 
 	if (days1.length >= Code.quantity10) {//we've already sent 10 codes to this address in the last 24 hours!
@@ -557,23 +559,17 @@ export async function codePermissionToAddress({userTag, v}) {//can we send anoth
 	return {
 		isPermitted: true,
 		useLength: days5.length < Code.quantity2 ? Code.length4 : Code.length6,
-		userCodeCount: await queryCountRows({table: 'code_table', titleFind: 'user_tag', cellFind: userTag}),//for code identification prefix letter from alphabet
 	}
 }
 
-export async function codeRecordSend({userTag, type, v, index, code}) {//we're sending another code now
-	const codeTag = Tag()//make a tag to identify this code, will also be the row tag in code table
-	const now = Now()//ttd march, maybe get rid of all the custom now all over the place; everything will happen really quickly anyway and it may not matter
-
-	await trailAdd({now, hash: await hashText(`sent code to address ${v.formNormal}`)})
-	await code_add({now, codeTag, userTag, type, v, index, code})
-	return codeTag//return the code tag we assigned
+export async function codeRecordSend({codeTag, browserTag, type, v, code}) {//we're sending another code now
+	await code_add({codeTag, browserTag, type, v, code})
 }
 
-export async function codeLiveForUser({userTag}) {//should this user be entering any codes?
+export async function codeLiveForBrowser({browserTag}) {//should this browser be entering any codes?
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
 		since: Now() - Code.lifespan20,
-		title1: 'user_tag', cell1: userTag,
+		title1: 'browser_tag', cell1: browserTag,
 		title2: 'lives', cell2GreaterThan: 0,
 	})
 	if (rows) {
@@ -581,15 +577,21 @@ export async function codeLiveForUser({userTag}) {//should this user be entering
 			codeTag:   row.row_tag,//the code's tag, also the row tag, we use with the page to identify the challenge
 			startTick: row.row_tick,//the code's birthday, it lives for 20 minutes from this time
 			addressType: row.type_text,//the type of address, like "Email."
-			addressPage: row.page_text,//the address in the form to show the user on the page
-			index: row.index,//this code's index in the quantity of all codes we've sent this user, 0 for the very first
-			lives: row.lives,//how many guesses this user has left on this code
+			addressPage: row.page_text,//the address in the form to show on the page
+			lives: row.lives,//how many guesses remain on this code
 			//note we importantly do not send code_hash to the page, that's the secret part!
 		}))
 	}
 }
 
 
+
+test(async () => {
+	let t = Tag()
+	let c = randomCode(4)
+	let l = await hashToLetter(t, Code.alphabet)
+	log(`${t}, ${l}-${c}`)
+})
 
 
 
@@ -620,57 +622,54 @@ export const Code = {//factory settings for address verification codes
 	length4: 4,//first 2 codes in 5 days to an address can be short like "1234"
 	length6: 6,//after that, longer like "123456"
 
-	//for each user
-	alphabet: 'ABCDEFHJKMNPQRSTUVWXYZ',//22 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0
+	//derived from code tag
+	alphabet: 'ABCDEFHJKMNPQRTUVWXYZ',//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
 }
 Object.freeze(Code)
 
 SQL(`
 -- what code like 1234 have we sent to a user to verify their address?
 CREATE TABLE code_table (
-	row_tag      CHAR(21)  NOT NULL PRIMARY KEY,  -- used to identify the code
-	row_tick     BIGINT    NOT NULL,
-	hide         BIGINT    NOT NULL,  -- not used, instead set lives to 0 below
+	row_tag      CHAR(21)  NOT NULL PRIMARY KEY,  -- used to identify the code, and derive the prefix letter
+	row_tick     BIGINT    NOT NULL,  -- when we sent the code, the start of the code's 20 minute lifetime
+	hide         BIGINT    NOT NULL,  -- not used, instead set lives to 0 below to revoke the code
 
-	user_tag     CHAR(21)  NOT NULL,  -- the provisional or full user verifying this address
+	browser_tag  CHAR(21)  NOT NULL,  -- the browser that entered, and must verify, the address
 
 	type_text    TEXT      NOT NULL,  -- address type like "Email." or "Phone."
 	normal_text  TEXT      NOT NULL,  -- address in the three forms, we'll use normal to find and page to show
 	formal_text  TEXT      NOT NULL,
 	page_text    TEXT      NOT NULL,
 
-	index        BIGINT    NOT NULL,  -- 0+ index of quantity of codes we've ever sent this user
 	code_hash    CHAR(52)  NOT NULL,  -- the hash of the correct answer, the 4 or 6 numerals
 
 	lives        BIGINT    NOT NULL   -- starts 4 guesses, decrement, or set directly to 0 to invalidate
 );
 
-CREATE INDEX code1 ON code_table (user_tag,               row_tick DESC) WHERE hide = 0;  -- filter by user
+CREATE INDEX code1 ON code_table (browser_tag,            row_tick DESC) WHERE hide = 0;  -- filter by user
 CREATE INDEX code2 ON code_table (type_text, normal_text, row_tick DESC) WHERE hide = 0;  -- or by address
 ^ttd march, maybe, change all indices to partial with where hide zero like above
 `)
 
-async function code_get_user({userTag}) {//get all the rows about the given user
-	return await queryGet({table: 'code_table', title: 'user_tag', cell: userTag})
+async function code_get_browser({browserTag}) {//get all the rows about the given user
+	return await queryGet({table: 'code_table', title: 'browser_tag', cell: browserTag})
 }
-async function code_get_address({type, formNormal}) {//get all the rows about the given address
-	return await queryGet2({table: 'code_table', title1: 'type_text', cell1: type, title2: 'normal_text', cell2: formNormal})
+async function code_get_address({addressNormal}) {//get all the rows about the given address
+	return await queryGet({table: 'code_table', title: 'normal_text', cell: addressNormal})
 }
 
-async function code_set_lives({rowTag, lives}) {//set the number of lives, decrement on wrong guess or 0 to revoke
+async function code_set_lives({codeTag, lives}) {//set the number of lives, decrement on wrong guess or 0 to revoke
 	await queryUpdateCells({table: 'code_table',
-		titleFind: 'row_tag', cellFind: rowTag,
+		titleFind: 'row_tag', cellFind: codeTag,
 		titleSet:  'lives',   cellSet: lives,
 	})
 }
-async function code_add({now, codeTag, userTag, type, v, index, code}) {//make a record to send a new code
+async function code_add({codeTag, browserTag, type, v, code}) {//make a record to send a new code
 	await queryAddRow({table: 'code_table', row: {
 		row_tag: codeTag,//unique, identifies row and code, so chosen earlier to save a copy
-		row_tick: now,
-		user_tag: userTag,
+		browser_tag: browserTag,
 		type_text: type,
 		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.formPage,
-		index: index,
 		code_hash: await hashText(code),
 		lives: Code.guesses4,
 	}})
