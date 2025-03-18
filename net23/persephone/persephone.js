@@ -79,12 +79,11 @@ export async function warm(providerAndService) {
 
 export async function sendMessage({provider, service, address, message}) {
 
-	log('hi from persephone send message', look({provider, service, address, message}))
-
-	return 'Off.'
-
 	let source = `${Sticker().all}.${provider}${service}`
-	let content = `${source} ~ ${message}`
+	let content = `${message} ${source}`
+
+	log('hi from persephone send message', look({provider, service, address, message, source, content}))
+	return 'Off.'
 
 	let result
 	if (service == 'Email.') {
