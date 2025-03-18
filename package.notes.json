@@ -92,7 +92,7 @@ site
 		"nuxt": "^3.13.0",//the website's framework is Nuxt with Vue on Cloudflare Pages
 		"vue": "^3.5.12",
 		"vue-router": "^4.4.5",
-		"nuxt-og-image": "^3.0.8",//added to make social share cards; works with cloudflare KV to cache them
+		"nuxt-og-image": "^5.0.4",//added to make social share cards; works with cloudflare KV to cache them
 	},
 	"devDependencies": {
 
