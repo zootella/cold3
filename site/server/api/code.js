@@ -31,12 +31,10 @@ async function doorHandleBelow({door, body, action}) {
 	else if (provider == 'T') provider = 'Twilio.'
 	else toss('bad provider', {body, provider})//ttd march, how does this get back to the page? so it can get the message bad provider, rather than just a blank 500? but not the watch, of course! some design to do here
 
-
 	//first, just send a code, to do this runthrough outer to inner
 	const access = await getAccess()
 	let brand = access.get('ACCESS_MESSAGE_BRAND')
 	let service = v.type
-
 
 	let c = await codeCompose()
 	let s = `Code ${c.letter}-${c.code} from ${brand}.`
@@ -51,55 +49,9 @@ async function doorHandleBelow({door, body, action}) {
 		messageHtml: e.messageHtml,//email body as HTML
 	}})
 
-
-
-
-
-
-/*
-./server/api/message.js ~ just to see how you used the messaging functions
-
-	//this is in place of checking the message and making it safe
-	message = message.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ' ').slice(0, Size.kb).trim()
-	r.network23Response = await fetchNetwork23($fetch, provider+service, '/message', {provider, service, address, message})
-
-provider must be Amazon. or Twilio.
-service must be Email. or Phone.
-based on service, address must validate as email or phone (you don't need to try both of them here)
-message must be not too long and not contain any special characters
-
-toss if doesn't make it through that gauntlet
-then call lambda to send the messaging
-all the database and datadog can be here in the worker, calling the lambda is essentially calling the api
-
-of course there's that first call where you just warm it up, and that's built into fetchNetwork23 providerDotService
-
-and to start
--don't do the warmup thing yet, and
--have the lambda just print out what it would do, to local console
-this is easy and you can do it now
-also, when you're sending locally, aws is already authenticated
-
-[]should that Business Intelligence behind this form be a function in level3.js that both the nuxt page and nuxt api call? (methinks, yes)
-*/
-
-
-
-
-
-
-
 	log(look({
-		browserTag: body.browserTag,
-		userTag,
-		action: body.action,
-		v,
-		provider,
-		service,
-		message,
 		net23,
 	}))
-
 
 	r.message = 'api code, version 2025mar18a'
 	r.note = 'none'
