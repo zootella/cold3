@@ -106,7 +106,7 @@ export async function sendMessage({provider, service, address, subjectText, mess
 		if      (provider == 'Amazon.') { result = await message_AmazonPhone({toPhone, messageText}) }
 		else if (provider == 'Twilio.') { result = await message_TwilioPhone({toPhone, messageText}) }
 	}
-	logAudit('message', {provider, service, address, message, result})
+	logAudit('message', {provider, service, address, subjectText, messageText, messageHtml, result})
 	//ttd november if not successfull, log that with logAlert; and probably summarize if successful, to not leak keys. here's where you use look to pick out the important parts of the giant message they give us
 	return result
 }
