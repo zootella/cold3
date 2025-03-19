@@ -4,7 +4,8 @@ log, look, toss, Tag, checkTag, checkText,
 doorWorker, getAccess,
 secureSameText, checkAction, checkPhone,
 demonstrationSignGet, validateEmailOrPhone,
-codeCompose, fetch23, composeEmail,
+fetch23,
+codePermit, codeCompose, codeSent,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -31,27 +32,33 @@ async function doorHandleBelow({door, body, action}) {
 	else if (provider == 'T') provider = 'Twilio.'
 	else toss('bad provider', {body, provider})//ttd march, how does this get back to the page? so it can get the message bad provider, rather than just a blank 500? but not the watch, of course! some design to do here
 
-	//first, just send a code, to do this runthrough outer to inner
-	const access = await getAccess()
-	let brand = access.get('ACCESS_MESSAGE_BRAND')
-	let service = v.type
 
-	let c = await codeCompose()
-	let s = `Code ${c.letter}-${c.code} from ${brand}.`
-	let e = composeEmail({pink: s, gray: ` Don't tell anyone, they could steal your whole account!`})
+
+
+	let permit = await codePermit({addressNormal: v.formNormal})
+	if (!permit.isPermitted) {
+		r.permit = permit
+		return r
+	}
+
+	let code = await codeCompose({permit, v, provider})
 
 	let net23 = await fetch23({$fetch, path: '/message', body: {
-		provider,
-		service,
-		address: v.formFormal,
-		subjectText: s,//email subject
-		messageText: e.messageText,//email body as text, or complete SMS message
-		messageHtml: e.messageHtml,//email body as HTML
+		provider: code.provider,
+		service: code.service,
+		address: code.address,
+		subjectText: code.subjectText,//email subject
+		messageText: code.messageText,//email body as text, or complete SMS message
+		messageHtml: code.messageHtml,//email body as HTML
 	}})
+	log(look({net23}))
+	//does this throw if it's not successful? does it return a note in the return object?
 
-	log(look({
-		net23,
-	}))
+	await codeSent({code, permit, browserTag: body.browserTag, provider, type: v.type, v})
+
+
+
+
 
 	r.message = 'api code, version 2025mar18a'
 	r.note = 'none'

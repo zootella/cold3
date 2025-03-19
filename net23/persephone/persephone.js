@@ -79,12 +79,11 @@ export async function warm(providerAndService) {
 
 export async function sendMessage({provider, service, address, subjectText, messageText, messageHtml}) {
 
-	//ttd, include sticker true or false
-	let sticker = true ? ` ${Sticker().all}.${provider}${service}` : ''
+	let sticker = ` ${Sticker().all}.${provider}${service}`
 	messageText = replaceOne(messageText, 'STICKER', sticker)
 	messageHtml = replaceOne(messageHtml, 'STICKER', sticker)
 	//ttd, turn sending on or off
-	if (false) {
+	if (true) {
 		log('hi from persephone send message', look({provider, service, address, subjectText, messageText, messageHtml}))
 		return 'Off.'
 	}

@@ -24,6 +24,8 @@ in scope soon:
 
 
 
+ok, next, you put code_table between CodeRequestComponent and sending
+
 
 
 

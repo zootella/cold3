@@ -58,13 +58,6 @@ queryTopEqualGreater,
 
 
 
-export function composeEmail({pink, gray}) {
-	return {
-		messageText: `${pink}${gray}STICKER`,
-		messageHtml: `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${pink}</span><span style="color:#808080;">${gray}STICKER</span></p></body></html>`,
-	}
-}
-
 
 
 
@@ -582,8 +575,9 @@ export async function browserValidatedAddress({browserTag, provider, type, addre
 
 //~~~~ send all the codes!
 
+
 //can we send another code to this address now?
-export async function codePermissionToAddress({addressNormal}) {
+export async function codePermit({addressNormal}) {
 	const now = Now()
 
 	//use the code table to find out how many codes we've sent address
@@ -618,48 +612,43 @@ export async function codePermissionToAddress({addressNormal}) {
 	}
 }
 
-export async function codeCompose(codeLength) {
-	if (!codeLength) codeLength = 6
+export async function codeCompose({permit, v, provider}) {
+	let c = {}
+	c.provider = provider
+	c.service = v.type
+	c.address = v.formFormal
 
-	let codeTag = Tag()
-	let letter = await hashToLetter(codeTag, Code.alphabet)
-	let code = randomCode(codeLength)
-	let hash = await hashText(codeTag+code)
+	c.codeTag = Tag()
+	c.letter = await hashToLetter(c.codeTag, Code.alphabet)
+	c.code = randomCode(permit.useLength)
+	c.hash = await hashText(c.codeTag+c.code)
 
-	return {codeTag, letter, code, hash}
+	c.subjectText = `Code ${c.letter}-${c.code} from ${(await getAccess()).get('ACCESS_MESSAGE_BRAND')}`
+	const warning = ` Don't tell anyone, they could steal your whole account!`
+	const sticker = true ? 'STICKER' : ''//true to turn the sticker back on to see who sent the message
+
+	c.messageText = `${c.subjectText}${warning}${sticker}`
+	c.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${c.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
+	return c
 }
 
 //what it looks like to use these functions to send a code
-export async function codeExampleSend({browserTag, provider, type, v}) {
+export async function codeSent({code, permit, browserTag, provider, type, v}) {
 
-	let p = await codePermissionToAddress({addressNormal: v.formNormal})
-	if (p.isPermitted) {
-
-		if (p.aliveCodeTag) {//we need to replace an existing running code to this address
-			await code_set_lives({codeTag: p.aliveCodeTag, lives: 0})//set its lives down to zero
-		}
-
-		//make a new code
-		let codeTag = Tag()
-		let letter = await hashToLetter(codeTag, Code.alphabet)
-		let code = randomCode(p.useLength)
-
-		//now actually send letter-code to v.addressFormal using the given named provider
-		let sent = true
-		if (sent) {//only if that worked, continue
-
-			//take care of address_table and maybe also service_table
-			await browserChallengedAddress({
-				browserTag,
-				provider,
-				type,
-				addressNormal: v.formNormal, addressFormal: v.formFormal, addressPage: v.formPage,
-			})
-
-			//record that we sent the new code
-			await code_add({codeTag, browserTag, provider, type, v, code})
-		}
+	if (permit.aliveCodeTag) {//we need to replace an existing running code to this address
+		await code_set_lives({codeTag: permit.aliveCodeTag, lives: 0})//set its lives down to zero
 	}
+
+	//take care of address_table and maybe also service_table
+	await browserChallengedAddress({
+		browserTag,
+		provider,
+		type,
+		addressNormal: v.formNormal, addressFormal: v.formFormal, addressPage: v.formPage,
+	})
+
+	//record that we sent the new code
+	await code_add({codeTag: code.codeTag, browserTag, provider, type, v, code: code.code})
 }
 
 //is this browser expecting any codes? needs to run fast!

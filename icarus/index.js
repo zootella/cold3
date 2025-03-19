@@ -62,7 +62,7 @@ export {
 
 getBrowserTag,
 urlNetwork23, fetch23, fetchNetwork23, vhsSign,
-composeEmail,
+codePermit, codeCompose, codeSent,
 
 /* level 3 query */
 
@@ -82,8 +82,6 @@ trailCount,
 trailRecent,
 trailAdd,
 trailAddHashes,
-
-codeCompose,
 
 } from './level3.js'
 

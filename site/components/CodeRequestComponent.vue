@@ -23,7 +23,7 @@ watch([refAddress, refProvider, refInFlight], () => {
 
 	if      (v.isValid && v.type == 'Email.') { refOutput.value = `valid email ${v.formPage}` }
 	else if (v.isValid && v.type == 'Phone.') { refOutput.value = `valid phone ${v.formPage}` }
-	else                                      { refOutput.value = 'type a valid email or phone'    }
+	else                                      { refOutput.value = 'type a valid email or phone' }
 
 	if (refInFlight.value) { refButtonState.value = 'orange' }
 	else if (v?.isValid && hasText(refProvider.value)) { refButtonState.value = 'green' }
