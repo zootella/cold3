@@ -575,11 +575,7 @@ export async function browserValidatedAddress({browserTag, provider, type, v}) {
 
 //~~~~ send all the codes!
 
-export async function codeHandleEnter({}) {
-
-}
-
-export async function codeHandleSend({browserTag, provider, type, v}) {
+export async function codeSend({browserTag, provider, type, v}) {//v is the address, valid, containing the three forms
 
 	//look up the user tag, even though we're not using it with code yet
 	let userTag = (await demonstrationSignGet({browserTag}))?.userTag
@@ -589,7 +585,7 @@ export async function codeHandleSend({browserTag, provider, type, v}) {
 		return permit//change to api response, not permit response
 	}
 
-	let code = await codeCompose({permit, v, provider, sticker: true})
+	let code = await codeCompose({length: permit.useLength, sticker: true})
 
 	let body = {
 		provider: provider,
@@ -605,7 +601,6 @@ export async function codeHandleSend({browserTag, provider, type, v}) {
 
 	await codeSent({browserTag, provider, type, v, permit, code})
 }
-//v should be validAddress, but that's long, try that rename after your refactor. ttd march
 
 //can we send another code to this address now?
 async function codePermit({v}) {
@@ -643,15 +638,16 @@ async function codePermit({v}) {
 	}
 }
 
-async function codeCompose({permit, v, provider, sticker}) {
+//make a new random code and compose message text about it
+async function codeCompose({length, sticker}) {
 	let c = {}
 
 	c.codeTag = Tag()
 	c.letter = await hashToLetter(c.codeTag, Code.alphabet)
-	c.code = randomCode(permit.useLength)
+	c.code = randomCode(length)
 	c.hash = await hashText(c.codeTag+c.code)
 
-	c.subjectText = `Code ${c.letter}-${c.code} from ${(await getAccess()).get('ACCESS_MESSAGE_BRAND')}`
+	c.subjectText = `Code ${c.letter} ${c.code} for ${(await getAccess()).get('ACCESS_MESSAGE_BRAND')}`
 	const warning = ` - Don't tell anyone, they could steal your whole account!`
 	sticker = sticker ? 'STICKER' : ''//gets replaced by the sticker on the lambda
 
@@ -662,7 +658,6 @@ async function codeCompose({permit, v, provider, sticker}) {
 
 //what it looks like to use these functions to send a code
 async function codeSent({browserTag, provider, type, v, permit, code}) {
-	log('HERE', look({browserTag, provider, type, v, permit, code}))
 
 	if (permit.aliveCodeTag) {
 		await code_set_lives({codeTag: permit.aliveCodeTag, lives: 0})//invalidate the code this new one will replace
@@ -695,7 +690,7 @@ async function codeLiveForBrowser({browserTag}) {
 }
 
 //the person at browserTag used the box on the page to enter a code, which could be right or wrong
-async function codeEnter({browserTag, codeTag, codeCandidate}) {
+export async function codeEnter({browserTag, codeTag, codeCandidate}) {
 	let now = Now()
 
 	//find the row about it

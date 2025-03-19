@@ -5,7 +5,7 @@ doorWorker, getAccess,
 secureSameText, checkAction, checkPhone,
 demonstrationSignGet, validateEmailOrPhone,
 fetch23,
-codeHandleSend,
+codeSend, codeEnter,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -30,7 +30,7 @@ async function doorHandleBelow({door, body, action}) {
 
 	if (action == 'Send.') {
 
-		r.didSend = await codeHandleSend({
+		r.didSend = await codeSend({
 			browserTag: body.browserTag,
 			provider: provider,
 			type: v.type,
@@ -39,7 +39,7 @@ async function doorHandleBelow({door, body, action}) {
 
 	} else if (action == 'Enter.') {
 
-		r.didEnter = await codeHandleEnter({})
+		r.didEnter = await codeEnter({})
 
 	} else { toss('action') }
 
