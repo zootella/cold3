@@ -62,6 +62,7 @@ export {
 
 getBrowserTag,
 urlNetwork23, fetch23, fetchNetwork23, vhsSign,
+composeEmail,
 
 /* level 3 query */
 

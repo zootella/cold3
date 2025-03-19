@@ -52,6 +52,23 @@ queryTopEqualGreater,
 
 
 
+
+
+
+
+
+
+export function composeEmail({pink, gray}) {
+	return {
+		messageText: `${pink}${gray}STICKER`,
+		messageHtml: `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${pink}</span><span style="color:#808080;">${gray}STICKER</span></p></body></html>`,
+	}
+}
+
+
+
+
+
 //ttd march, quick new one
 export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you call this Nuxt defines it
 	let host = urlNetwork23()
@@ -61,7 +78,6 @@ export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you
 	body.warm = false; let resultAction = await $fetch(host+path, {method: 'POST', body})
 	return resultAction
 }
-
 
 
 

@@ -4,7 +4,7 @@ log, look, toss, Tag, checkTag, checkText,
 doorWorker, getAccess,
 secureSameText, checkAction, checkPhone,
 demonstrationSignGet, validateEmailOrPhone,
-codeCompose, fetch23,
+codeCompose, fetch23, composeEmail,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -39,16 +39,22 @@ async function doorHandleBelow({door, body, action}) {
 
 
 	let c = await codeCompose()
-	let message = `Code ${c.letter}-${c.code} from ${brand}. Don't tell anyone, they could steal your whole account!`
-
-
+	let s = `Code ${c.letter}-${c.code} from ${brand}.`
+	let e = composeEmail({pink: s, gray: ` Don't tell anyone, they could steal your whole account!`})
 
 	let net23 = await fetch23({$fetch, path: '/message', body: {
-			provider,
-			service,
-			address: v.formFormal,
-			message,
-		}})
+		provider,
+		service,
+		address: v.formFormal,
+		subjectText: s,//email subject
+		messageText: e.messageText,//email body as text, or complete SMS message
+		messageHtml: e.messageHtml,//email body as HTML
+	}})
+
+
+
+
+
 
 /*
 ./server/api/message.js ~ just to see how you used the messaging functions

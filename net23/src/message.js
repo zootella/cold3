@@ -21,7 +21,9 @@ async function doorHandleBelow({door, body, action}) {
 				provider: body.provider,
 				service: body.service,
 				address: body.address,
-				message: body.message,
+				subjectText: body.subjectText,
+				messageText: body.messageText,
+				messageHtml: body.messageHtml,
 			})
 		}
 

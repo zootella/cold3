@@ -3,7 +3,7 @@ import {
 Sticker, isCloud, getAccess,
 log, logAudit, look, Now, Size, Data,
 checkEmail, checkPhone,
-test, ok,
+test, ok, replaceAll, replaceOne,
 } from 'icarus'
 
 let module_amazonEmail, module_amazonText, module_twilio, module_sendgrid, module_sharp
@@ -77,13 +77,17 @@ export async function warm(providerAndService) {
 //  \___|_| |_| |_|\__,_|_|_|  \__,_|_| |_|\__,_| |___/_| |_| |_|___/
 //                                                                   
 
-export async function sendMessage({provider, service, address, message}) {
+export async function sendMessage({provider, service, address, subjectText, messageText, messageHtml}) {
 
-	let source = `${Sticker().all}.${provider}${service}`
-	let content = `${message} ${source}`
-
-	log('hi from persephone send message', look({provider, service, address, message, source, content}))
-	return 'Off.'//ttd march obviously
+	//ttd, include sticker true or false
+	let sticker = true ? ` ${Sticker().all}.${provider}${service}` : ''
+	messageText = replaceOne(messageText, 'STICKER', sticker)
+	messageHtml = replaceOne(messageHtml, 'STICKER', sticker)
+	//ttd, turn sending on or off
+	if (false) {
+		log('hi from persephone send message', look({provider, service, address, subjectText, messageText, messageHtml}))
+		return 'Off.'
+	}
 
 	let result
 	if (service == 'Email.') {
@@ -92,16 +96,12 @@ export async function sendMessage({provider, service, address, message}) {
 		let fromName = access.get('ACCESS_MESSAGE_BRAND')
 		let fromEmail = access.get('ACCESS_MESSAGE_EMAIL')
 		let toEmail = checkEmail(address).formFormal
-		let subjectText = source
-		let bodyText = content
-		let bodyHtml = `<html><body><p style="font-size: 24px; color: gray; font-family: 'SF Pro Rounded', 'Noto Sans Rounded', sans-serif;">${content}</p></body></html>`
 
-		if      (provider == 'Amazon.') { result = await message_AmazonEmail({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
-		else if (provider == 'Twilio.') { result = await message_TwilioEmail({fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml}) }
+		if      (provider == 'Amazon.') { result = await message_AmazonEmail({fromName, fromEmail, toEmail, subjectText, messageText, messageHtml}) }
+		else if (provider == 'Twilio.') { result = await message_TwilioEmail({fromName, fromEmail, toEmail, subjectText, messageText, messageHtml}) }
 
 	} else if (service == 'Phone.') {
 		let toPhone = checkPhone(address).formFormal
-		let messageText = content
 
 		if      (provider == 'Amazon.') { result = await message_AmazonPhone({toPhone, messageText}) }
 		else if (provider == 'Twilio.') { result = await message_TwilioPhone({toPhone, messageText}) }
@@ -114,15 +114,15 @@ export async function sendMessage({provider, service, address, message}) {
 async function message_AmazonEmail(c) {
 	let access = await getAccess()
 
-	let {fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml} = c
+	let {fromName, fromEmail, toEmail, subjectText, messageText, messageHtml} = c
 	let q = {
 		Source: `"${fromName}" <${fromEmail}>`,//must be verified email or domain
 		Destination: {ToAddresses: [toEmail]},
 		Message: {
 			Subject: {Data: subjectText, Charset: 'UTF-8'},
 			Body: {//both plain text and html for multipart/alternative email format
-				Text: {Data: bodyText, Charset: 'UTF-8'},
-				Html: {Data: bodyHtml, Charset: 'UTF-8'}
+				Text: {Data: messageText, Charset: 'UTF-8'},
+				Html: {Data: messageHtml, Charset: 'UTF-8'}
 			}
 		}
 	}
@@ -143,14 +143,14 @@ async function message_AmazonEmail(c) {
 async function message_TwilioEmail(c) {
 	let access = await getAccess()
 
-	let { fromName, fromEmail, toEmail, subjectText, bodyText, bodyHtml } = c
+	let { fromName, fromEmail, toEmail, subjectText, messageText, messageHtml } = c
 	let q = {
 		from: {name: fromName, email: fromEmail},
 		personalizations: [{to: [{email: toEmail}]}],
 		subject: subjectText,
 		content: [
-			{type: 'text/plain', value: bodyText},
-			{type: 'text/html',  value: bodyHtml}
+			{type: 'text/plain', value: messageText},
+			{type: 'text/html',  value: messageHtml}
 		]
 	}
 	let result, error, success = true
