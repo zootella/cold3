@@ -31,16 +31,22 @@ watch([refAddress, refProvider, refInFlight], () => {
 })
 
 async function clickedSend() {
-	let r = await $fetch('/api/code', {
-		method: 'POST',
-		body: {
-			action: 'Send.',
-			browserTag: helloStore.browserTag,
-			address: refAddress.value,
-			provider: refProvider.value,
-		}
-	})
-	log(look(r))
+	try {
+
+		let r = await $fetch('/api/code', {
+			method: 'POST',
+			body: {
+				action: 'Send.',
+				browserTag: helloStore.browserTag,
+				address: refAddress.value,
+				provider: refProvider.value,
+			}
+		})
+		log(look(r))
+
+	} catch (e) {
+		log('did you catch it?', look(e))
+	}
 }
 
 </script>

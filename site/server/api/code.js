@@ -30,7 +30,7 @@ async function doorHandleBelow({door, body, action}) {
 
 	if (action == 'Send.') {
 
-		return await codeHandleSend({
+		r.didSend = await codeHandleSend({
 			browserTag: body.browserTag,
 			provider: provider,
 			type: v.type,
@@ -39,9 +39,9 @@ async function doorHandleBelow({door, body, action}) {
 
 	} else if (action == 'Enter.') {
 
-		return await codeHandleEnter({})
+		r.didEnter = await codeHandleEnter({})
 
-	} else { toss ('action') }
+	} else { toss('action') }
 
 
 

@@ -83,7 +83,7 @@ export async function sendMessage({provider, service, address, subjectText, mess
 	messageText = replaceOne(messageText, 'STICKER', sticker)
 	messageHtml = replaceOne(messageHtml, 'STICKER', sticker)
 	//ttd, turn sending on or off
-	if (true) {
+	if (false) {
 		log('hi from persephone send message', look({provider, service, address, subjectText, messageText, messageHtml}))
 		return 'Off.'
 	}
