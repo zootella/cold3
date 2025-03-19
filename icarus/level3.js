@@ -557,11 +557,11 @@ async function browser_out({browserTag, userTag, hideSet}) {//sign this user out
 
 
 //functions in the code system call these handlers to report that the person at browser tag challenged an address, and we sent a code there, and, possibly, later, entered the correct code, validating that address
-export async function browserChallengedAddress({browserTag, provider, type, addressNormal, addressFormal, addressPage}) {
+export async function browserChallengedAddress({browserTag, provider, type, v}) {
 	//address_table
 	//service_table
 }
-export async function browserValidatedAddress({browserTag, provider, type, addressNormal, addressFormal, addressPage}) {
+export async function browserValidatedAddress({browserTag, provider, type, v}) {
 	//address_table
 	//service_table
 	/*
@@ -575,13 +575,44 @@ export async function browserValidatedAddress({browserTag, provider, type, addre
 
 //~~~~ send all the codes!
 
+export async function codeHandleEnter({}) {
+
+}
+
+export async function codeHandleSend({browserTag, provider, type, v}) {
+
+	//look up the user tag, even though we're not using it with code yet
+	let userTag = (await demonstrationSignGet({browserTag}))?.userTag
+
+	let permit = await codePermit({v})
+	if (!permit.isPermitted) {
+		return permit//change to api response, not permit response
+	}
+
+	let code = await codeCompose({permit, v, provider, sticker: true})
+
+	let body = {
+		provider: provider,
+		service: type,
+		address: v.formFormal,
+		subjectText: code.subjectText,//email subject
+		messageText: code.messageText,//email body as text, or complete SMS message
+		messageHtml: code.messageHtml,//email body as HTML
+	}
+	let net23 = await fetch23({$fetch, path: '/message', body})
+	//log(look({net23}))
+	//does this throw if it's not successful? does it return a note in the return object?
+
+	await codeSent({browserTag, provider, type, v, permit, code})
+}
+//v should be validAddress, but that's long, try that rename after your refactor. ttd march
 
 //can we send another code to this address now?
-export async function codePermit({addressNormal}) {
+async function codePermit({v}) {
 	const now = Now()
 
 	//use the code table to find out how many codes we've sent address
-	let rows = await code_get_address({addressNormal})//get all the rows about the given address
+	let rows = await code_get_address({addressNormal: v.formNormal})//get all the rows about the given address
 	let days5 = rows.filter(row => row.row_tick >= now - Code.days5)//those over the past 5 days
 	let days1 = days5.filter(row => row.row_tick >= now - Code.days1)//those in just the last 24 hours
 	let minutes20 = days1.filter(row => row.row_tick >= now - Code.lifespan20)//past 20 minutes, so could be active still
@@ -612,11 +643,8 @@ export async function codePermit({addressNormal}) {
 	}
 }
 
-export async function codeCompose({permit, v, provider}) {
+async function codeCompose({permit, v, provider, sticker}) {
 	let c = {}
-	c.provider = provider
-	c.service = v.type
-	c.address = v.formFormal
 
 	c.codeTag = Tag()
 	c.letter = await hashToLetter(c.codeTag, Code.alphabet)
@@ -624,8 +652,8 @@ export async function codeCompose({permit, v, provider}) {
 	c.hash = await hashText(c.codeTag+c.code)
 
 	c.subjectText = `Code ${c.letter}-${c.code} from ${(await getAccess()).get('ACCESS_MESSAGE_BRAND')}`
-	const warning = ` Don't tell anyone, they could steal your whole account!`
-	const sticker = true ? 'STICKER' : ''//true to turn the sticker back on to see who sent the message
+	const warning = ` - Don't tell anyone, they could steal your whole account!`
+	sticker = sticker ? 'STICKER' : ''//gets replaced by the sticker on the lambda
 
 	c.messageText = `${c.subjectText}${warning}${sticker}`
 	c.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${c.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
@@ -633,26 +661,22 @@ export async function codeCompose({permit, v, provider}) {
 }
 
 //what it looks like to use these functions to send a code
-export async function codeSent({code, permit, browserTag, provider, type, v}) {
+async function codeSent({browserTag, provider, type, v, permit, code}) {
+	log('HERE', look({browserTag, provider, type, v, permit, code}))
 
-	if (permit.aliveCodeTag) {//we need to replace an existing running code to this address
-		await code_set_lives({codeTag: permit.aliveCodeTag, lives: 0})//set its lives down to zero
+	if (permit.aliveCodeTag) {
+		await code_set_lives({codeTag: permit.aliveCodeTag, lives: 0})//invalidate the code this new one will replace
 	}
 
 	//take care of address_table and maybe also service_table
-	await browserChallengedAddress({
-		browserTag,
-		provider,
-		type,
-		addressNormal: v.formNormal, addressFormal: v.formFormal, addressPage: v.formPage,
-	})
+	await browserChallengedAddress({browserTag, provider, type, v})
 
 	//record that we sent the new code
-	await code_add({codeTag: code.codeTag, browserTag, provider, type, v, code: code.code})
+	await code_add({codeTag: code.codeTag, browserTag, provider, type, v, hash: code.hash, lives: Code.guesses4})
 }
 
 //is this browser expecting any codes? needs to run fast!
-export async function codeLiveForBrowser({browserTag}) {
+async function codeLiveForBrowser({browserTag}) {
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
 		since: Now() - Code.lifespan20,
 		title1: 'browser_tag', cell1: browserTag,
@@ -671,7 +695,7 @@ export async function codeLiveForBrowser({browserTag}) {
 }
 
 //the person at browserTag used the box on the page to enter a code, which could be right or wrong
-export async function codeEnter({browserTag, codeTag, codeCandidate}) {
+async function codeEnter({browserTag, codeTag, codeCandidate}) {
 	let now = Now()
 
 	//find the row about it
@@ -782,15 +806,15 @@ async function code_set_lives({codeTag, lives}) {//set the number of lives, decr
 		titleSet:  'lives',   cellSet: lives,
 	})
 }
-async function code_add({codeTag, browserTag, provider, type, v, code}) {//make a record to send a new code
+async function code_add({codeTag, browserTag, provider, type, v, hash, lives}) {//make a record to send a new code
 	await queryAddRow({table: 'code_table', row: {
 		row_tag: codeTag,//unique, identifies row and code, so chosen earlier to save a copy
 		browser_tag: browserTag,
 		provider_text: provider,
 		type_text: type,
 		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.formPage,
-		hash: await hashText(codeTag+code),
-		lives: Code.guesses4,
+		hash,
+		lives,
 	}})
 }
 
