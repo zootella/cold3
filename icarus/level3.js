@@ -608,7 +608,7 @@ export async function codeCompose(codeLength) {
 	let codeTag = Tag()
 	let letter = await hashToLetter(codeTag, Code.alphabet)
 	let code = randomCode(codeLength)
-	let hash = await hashText(code)
+	let hash = await hashText(codeTag+code)
 
 	return {codeTag, letter, code, hash}
 }
@@ -677,7 +677,7 @@ export async function codeEnter({browserTag, codeTag, codeCandidate}) {
 	if (row.row_tick + Code.lifespan20 < now) return 'Bad.Expired.Replace.'//too late
 	if (!row.lives) return 'Bad.Expended.Replace.'//guessed out or revoked by replacement
 
-	if (secureSameText(row.hash, await hashText(codeCandidate))) {//correct guess
+	if (secureSameText(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
 
 		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
 		await browserValidatedAddress({
@@ -738,7 +738,7 @@ Object.freeze(Code)
 SQL(`
 -- what code like 1234 have we sent to a user to verify their address?
 CREATE TABLE code_table (
-	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,  -- used to identify the code, and derive the prefix letter
+	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,  -- uniquely identifies the row, and also used as the code tag
 	row_tick       BIGINT    NOT NULL,  -- when we sent the code, the start of the code's 20 minute lifetime
 	hide           BIGINT    NOT NULL,  -- not used, instead set lives to 0 below to revoke the code
 
@@ -750,7 +750,7 @@ CREATE TABLE code_table (
 	formal_text    TEXT      NOT NULL,
 	page_text      TEXT      NOT NULL,
 
-	hash           CHAR(52)  NOT NULL,  -- the hash of the correct answer, the 4 or 6 numeral code
+	hash           CHAR(52)  NOT NULL,  -- the hash of the code tag followed by the 4 or 6 numeral code
 
 	lives          BIGINT    NOT NULL   -- starts 4 guesses, decrement, or set directly to 0 to invalidate
 );
@@ -784,7 +784,7 @@ async function code_add({codeTag, browserTag, provider, type, v, code}) {//make 
 		provider_text: provider,
 		type_text: type,
 		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.formPage,
-		hash: await hashText(code),
+		hash: await hashText(codeTag+code),
 		lives: Code.guesses4,
 	}})
 }

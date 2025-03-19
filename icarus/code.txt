@@ -57,10 +57,15 @@ Code [J-    ] [Enter] _I can't find it_
 "Code J-7148 from brand. Don't tell anyone, they could steal your whole account!"
 Code [J-    ] [Enter] _I can't find it_
 
+We emailed Code J to you at name@example.com 25sec ago from our email noreply@example.com.
+Check your spam or promotions folders
+_Correct my email_, _Send a new code_ or _Try another way_
 
+We texted Code J to you at +1 909 555 1234 1min 25sec ago from our number 888 123 4567.
+Check your messages!
+_Correct my number_, _Send a new code_ or _Try another way_
 
-
-
+^and have those count up in time on the page, soft melt to next five second increment
 
 
 
