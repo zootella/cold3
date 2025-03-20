@@ -14,14 +14,11 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
 
-	//ttd march, ok,  you need to get the origin
-	let origin = 'https://cold3.cc'//the origin should not have a trailing slash
-
 	switch (action) {
-		case 'DemonstrationSignGet.': r = await demonstrationSignGet({origin, browserTag: body.browserTag});                        break;
-		case 'DemonstrationSignUp.':  r = await demonstrationSignUp({origin, browserTag:  body.browserTag, nameNormal: body.nameNormal}); break;
-		case 'DemonstrationSignIn.':  r = await demonstrationSignIn({origin, browserTag:  body.browserTag, nameNormal: body.nameNormal}); break;
-		case 'DemonstrationSignOut.': r = await demonstrationSignOut({origin, browserTag: body.browserTag});                        break;
+		case 'DemonstrationSignGet.': r = await demonstrationSignGet({origin: door.origin, browserTag: body.browserTag});                        break;
+		case 'DemonstrationSignUp.':  r = await demonstrationSignUp({origin: door.origin, browserTag:  body.browserTag, nameNormal: body.nameNormal}); break;
+		case 'DemonstrationSignIn.':  r = await demonstrationSignIn({origin: door.origin, browserTag:  body.browserTag, nameNormal: body.nameNormal}); break;
+		case 'DemonstrationSignOut.': r = await demonstrationSignOut({origin: door.origin, browserTag: body.browserTag});                        break;
 		default: toss('action', {door}); break;
 	}
 

@@ -594,7 +594,6 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
 	door.origin = headerOrigin({workerEvent})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
-	dog(`door.origin is "${door.origin}"`)//ttd march
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {

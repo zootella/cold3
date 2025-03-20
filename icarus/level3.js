@@ -885,23 +885,23 @@ CREATE TABLE hit_table (
 	hide            BIGINT    NOT NULL,
 
 	hour_tick       BIGINT    NOT NULL,  -- Trusted: tick of the start of the hour this hit happened in
-	wrapper_text    TEXT      NOT NULL   -- Trusted: project name from wrapper
-	wrapper_hash    CHAR(52)  NOT NULL   -- Trusted: software version hash from wrapper
+	origin_text     TEXT      NOT NULL,  -- Trusted: the origin like "http://localhost:3000" or "https://example.com"
 
 	browser_tag     CHAR(21)  NOT NULL,  -- Reported: the browser that hit us
 	user_tag_text   TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
 	ip_text         TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare
 	geography_text  TEXT      NOT NULL,  -- Trusted: geographic information, according to cloudflare
 	browser_text    TEXT      NOT NULL   -- Reported: user agent string and WebGL hardware, according to the browser
+
+	wrapper_hash    CHAR(52)  NOT NULL   -- Trusted: software version hash from wrapper
 );
 
 -- index to quickly log a new hit, coalesced to identical information in an hour, note UNIQUE, which *is necessary* for the query we're using with this table to add if unique in a single call
-CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, wrapper_text, wrapper_hash, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
-ttd march, added wrapper_text for the project name "cold3", but not sure if that's what you need in a situation where the same software is deployed to several different domains, and we want to know which one this hit is from. so maybe replace that with domain_text and then actually get it from cloudflare headers or something
+CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, origin_text, browser_tag, user_tag_text, ip_text, geography_text, browser_text, wrapper_hash);
 `)
 
-export async function recordHit({browserTag, userTag, ipText, geographyText, browserText}) {
-	checkTag(browserTag); checkTagOrBlank(userTag); checkText(wrapper.name); checkHash(wrapper.hash)
+export async function recordHit({origin, browserTag, userTag, ipText, geographyText, browserText}) {
+	checkText(origin); checkTag(browserTag); checkTagOrBlank(userTag); checkHash(wrapper.hash)
 
 	let t = Now()//tick count now, of this hit
 	let d = roundDown(t, Time.hour)//tick count when the hour t is in began
@@ -912,13 +912,15 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 		hide: 0,
 
 		hour_tick: d,//cells that describe the first hit like this this hour
-		wrapper_text: wrapper.name,
-		wrapper_hash: wrapper.hash,
+		origin_text: origin,
+
 		browser_tag: browserTag,
 		user_tag_text: userTag,
 		ip_text: ipText,
 		geography_text: geographyText,
 		browser_text: browserText,
+
+		wrapper_hash: wrapper.hash,
 	}
 	let titles = 'hide,hour_tick,browser_tag,user_tag_text,ip_text,geography_text,browser_text'
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
