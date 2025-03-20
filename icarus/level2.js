@@ -593,6 +593,13 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	door.tag = Tag()//tag the request for our own records
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
+//	door.origin = new URL(workerEvent.req.url).origin//parse the origin from the request url, cloudflare set this
+	dog('origin hunt', {
+		url: workerEvent.req.url,
+		proto: headerGetOne(workerEvent.req.headers, 'x-forwarded-proto'),
+		host: headerGetOne(workerEvent.req.headers, 'host'),
+	})
+
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {

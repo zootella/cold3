@@ -465,7 +465,17 @@ are we hiding rows here? maybe for this one, which is lower churn than signing i
 
 
 
+/*
+ttd march
+adding domain_text to browser_table
+browser_tag is from local storage
+and local storage is specific to the device, browser, chrome profile, and host name
+so already you have different local storage for localhost as opposed to cold3.cc
+and that's fine, and you do want browser_table to have a record of what host this browser tag cam from the local storage of
 
+
+Exactly! Local storage is scoped specifically to the protocol, port, subdomain, and domain.
+*/
 
 
 //  _                                       _        _     _      
@@ -478,13 +488,15 @@ are we hiding rows here? maybe for this one, which is lower churn than signing i
 SQL(`
 -- what user is signed into this browser? sign users in and out
 CREATE TABLE browser_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
-	row_tick     BIGINT                 NOT NULL,  -- tick when row was added
-	hide         BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore
+	row_tag      CHAR(21)  NOT NULL PRIMARY KEY,  -- unique tag identifies each row
+	row_tick     BIGINT    NOT NULL,  -- tick when row was added
+	hide         BIGINT    NOT NULL,  -- 0 visible, nonzero ignore
 
-	browser_tag  CHAR(21)               NOT NULL,  -- the browser a request is from
-	user_tag     CHAR(21)               NOT NULL,  -- the user we've proven is using that browser
-	level        BIGINT                 NOT NULL   -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
+	browser_tag  CHAR(21)  NOT NULL,  -- the browser a request is from
+	user_tag     CHAR(21)  NOT NULL,  -- the user we've proven is using that browser
+	level        BIGINT    NOT NULL   -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
+
+	origin_text  TEXT      NOT NULL,  -- the protocol, port, subdomain, and domain for the the local storage holding browser tag
 );
 
 -- index to get visible rows about a browser, recent first, quickly
@@ -501,27 +513,29 @@ async function browser_get({browserTag}) {//what user, if any, is signed in at t
 		title1: 'browser_tag', cell1: browserTag,
 		title2: 'level', cell2GreaterThan: 0,
 	})
-	return row ? {browserTag: row.browser_tag, userTag: row.user_tag, level: row.level} : false
+	return row ? {browserTag: row.browser_tag, userTag: row.user_tag, level: row.level, origin: row.origin_text} : false
 }
-async function browser_in({browserTag, userTag, level}) {//this user has proven their identity, sign them in here
-	checkTag(browserTag); checkTag(userTag); checkInt(level, 1)//make sure level is 1+
+async function browser_in({browserTag, userTag, level, origin}) {//this user has proven their identity, sign them in here
+	checkTag(browserTag); checkTag(userTag); checkInt(level, 1); checkText(origin)//make sure level is 1+
 	await queryAddRow({
 		table: 'browser_table',
 		row: {
 			browser_tag: browserTag,
 			user_tag: userTag,
 			level,//sign in at level 1 provisional, 2 normal, or 3 start an hour of elevated permissions
+			origin_text: origin,
 		}
 	})
 }
-async function browser_out({browserTag, userTag, hideSet}) {//sign this user out everywhere; browser tag included but doesn't matter; hide reason code is optional for a note different than default 1
-	checkTag(browserTag); checkTag(userTag)
+async function browser_out({browserTag, userTag, hideSet, origin}) {//sign this user out everywhere; browser tag included but doesn't matter; hide reason code is optional for a note different than default 1
+	checkTag(browserTag); checkTag(userTag); checkText(origin)
 	await queryAddRow({//record that this user's sign-out happened now, and from this browser
 		table: 'browser_table',
 		row: {
 			browser_tag: browserTag,
 			user_tag: userTag,
 			level: 0,//level 0 means this row is about the user signing out
+			origin_text: origin,
 		}
 	})
 	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet})//hide all the rows about this user, including the one we just made, signing them out, everywhere
@@ -883,6 +897,7 @@ CREATE TABLE hit_table (
 
 -- index to quickly log a new hit, coalesced to identical information in an hour, note UNIQUE, which *is necessary* for the query we're using with this table to add if unique in a single call
 CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, wrapper_text, wrapper_hash, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
+ttd march, added wrapper_text for the project name "cold3", but not sure if that's what you need in a situation where the same software is deployed to several different domains, and we want to know which one this hit is from. so maybe replace that with domain_text and then actually get it from cloudflare headers or something
 `)
 
 export async function recordHit({browserTag, userTag, ipText, geographyText, browserText}) {
@@ -1234,7 +1249,7 @@ export async function demonstrationSignGet({browserTag}) {
 	}
 	return {isFound: false, browserTag}
 }
-export async function demonstrationSignUp({browserTag, nameNormal}) {
+export async function demonstrationSignUp({browserTag, nameNormal, origin}) {
 	checkTag(browserTag); checkName({formNormal: nameNormal})
 
 	let n = await name_get({nameNormal})//confirm route is available in database
@@ -1242,24 +1257,24 @@ export async function demonstrationSignUp({browserTag, nameNormal}) {
 
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
 	await name_set({userTag, nameNormal, nameFormal: nameNormal, namePage: nameNormal})//ttd january, all the same for now
-	await browser_in({browserTag, userTag, level: 2})//and sign the new user into the requesting browser, in our records
+	await browser_in({browserTag, userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
 	return {isSignedUp: true, browserTag, userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
 }
-export async function demonstrationSignIn({browserTag, nameNormal}) {
+export async function demonstrationSignIn({browserTag, nameNormal, origin}) {
 	checkTag(browserTag); checkName({formNormal: nameNormal})
 
 	let n = await name_get({nameNormal})//in this early simplification before user_table, a user exists by their tag with a route
 	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserTag, nameNormal}
 
-	await browser_in({browserTag, userTag: n.userTag, level: 2})//and sign the new user into the requesting browser, in our records
+	await browser_in({browserTag, userTag: n.userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
 	return {isSignedIn: true, browserTag, userTag: n.userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
 }
-export async function demonstrationSignOut({browserTag}) {
+export async function demonstrationSignOut({browserTag, origin}) {
 	checkTag(browserTag)
 
 	let u = await demonstrationSignGet({browserTag})
 	if (u.isFound) {
-		await browser_out({browserTag, userTag: u.userTag, hideSet: 2})//hide set 2 meaning at user's click we did this
+		await browser_out({browserTag, userTag: u.userTag, hideSet: 2, origin})//hide set 2 meaning at user's click we did this
 		return {isSignedOut: true, browserTag, userTag: u.userTag}
 	} else {
 		return {isSignedOut: false, reason: 'NameNotFound.', browserTag}
