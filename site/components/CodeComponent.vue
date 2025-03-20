@@ -40,7 +40,7 @@ async function clickedSend() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeComponent</i></p>
 
 <p><code>{{helloStore.browserTag}}</code> browser tag</p>
-<p><code>{{helloStore.userTag}}</code> user tag</p>
+<p><code>{{helloStore.user?.userTag}}</code> user tag</p>
 
 <p>
 	<input :maxlength="Limit.input"

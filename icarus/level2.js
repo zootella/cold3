@@ -754,7 +754,7 @@ export function headerGetOne(headers, name) {
 	if (!headers)                     toss('no headers',    {headers, name})
 	if (!Object.keys(headers).length) toss('empty headers', {headers, name})
 	let n = headerCount(headers, name)
-	if      (n == 0) return null
+	if      (n == 0) return undefined//return undefined so you can set a property that will be omitted by stringification
 	else if (n == 1) return headerGet(headers, name)
 	else             toss('overlapping headers', {headers, name})
 }

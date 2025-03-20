@@ -484,6 +484,15 @@ export async function routeMove({userTag, destinationRouteText}) {//move a user 
 
 
 
+/*
+ttd march
+some tables have functions that only work on them, these are exported
+others only make sense with higher level functions that cover more than one table
+for these, you're using snake_case, and they are *not* exported
+
+well, this pattern is good, but fits more easily with some tables rather than others
+you're keeping it, but not sticking to it 100%
+*/
 
 
 

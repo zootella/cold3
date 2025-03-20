@@ -13,6 +13,7 @@ randomCode, hashToLetter,
 } from './level0.js'
 import {
 Tag, Limit, checkTag, checkTagOrBlank, checkName, validateName,
+bundleValid,
 } from './level1.js'
 import {
 getAccess, Sticker, isLocal, isCloud,
@@ -1185,31 +1186,34 @@ closed by user/by staff; and unclosed?
 
 
 
-
-
-
-
-
-
-/*
-ttd march
-some tables have functions that only work on them, these are exported
-others only make sense with higher level functions that cover more than one table
-for these, you're using snake_case, and they are *not* exported
-*/
-/*
-ttd march
-get rid of demonstration sign hello, just use demonstration sign get
-you wrote it for hello1, but it isn't any faster
-
-you wrote the below for the "you are who you say you are" sign up and sign in system
-but you think these will also be useful when we're validating addresses, which is soon
-*/
-export async function demonstrationSignHello({browserTag}) {//always does only one query to be fast
+//what user, if any, is at the given browser?
+export async function browserToUserTag({browserTag}) {//fast for hello1
 	checkTag(browserTag)
-
-	return await browser_get({browserTag})//look for a user at the given browser
+	let user = {}
+	user.browserTag = browserTag//echo back the browser tag we queried to get
+	let u = await browser_get({browserTag})//always does this one query to be fast
+	if (u) {
+		user.userTag = u.userTag
+		user.level = u.level
+	}
+	return user
 }
+export async function browserToUser({browserTag}) {//complete information about a user from multiple queries for hello2
+	let user = await browserToUserTag({browserTag})
+	if (user.userTag) {//we found a user tag, let's look up its name and more information about it
+		let n = await name_get({userTag: user.userTag})
+		if (n) {
+			user.name = bundleValid(n.nameNormal, n.nameFormal, n.namePage)
+		}
+	}
+	return user
+}
+
+
+
+
+
+
 export async function demonstrationSignGet({browserTag}) {
 	checkTag(browserTag)
 

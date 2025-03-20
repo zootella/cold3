@@ -371,6 +371,19 @@ add that check to the other checkSomething editions
 
 
 
+//a cheat to bundle the validation trio into a v object, when it's from the database, so you don't need to check it
+export function bundleValid(formNormal, formFormal, formPage) {//you really have to get the order right!
+	checkText(formNormal); checkText(formFormal); checkText(formPage)//sanity check, even though you don't know what these are or what's valid for them, bundle, at least, needs them all to be something
+	return {isValid: true, formNormal, formFormal, formPage}
+}
+//ttd march, is this a good idea? you're tried of typing out the three forms everywhere, and v could mean object from validate function
+
+
+
+
+
+
+
 export function checkName({formPage, formFormal, formNormal}) {
 	let message = _checkName({formPage, formFormal, formNormal})
 	if (message != 'Ok.') toss(message, {formPage, formFormal, formNormal})

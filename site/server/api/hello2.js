@@ -1,8 +1,8 @@
 
 import {
-Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, keep,
+Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, keep, blanket,
 checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, print,
-isCloud, hasText, recordHit, demonstrationSignGet,
+isCloud, hasText, recordHit, browserToUser,
 codeLiveForBrowser,
 } from 'icarus'
 
@@ -11,67 +11,37 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
+	r.sticker = Sticker().all//below, stay mindful of the awaits--each one costs us ~150ms!
 
+	//from the browser tag, look up user tag, and information about the user like route and name
 	let browserTag = body.browserTag; checkTag(browserTag)
+	r.user = await browserToUser({browserTag})//in here is browserTag, userTag, and names and routes like name.formFormal
 
-	let d = await demonstrationSignGet({browserTag})
-	let userTag = d.userTag
-	let routeText = d.nameFormal//ttd march will change when you put in real routes and user names
-
+	//get information from cloudflare about the headers, you'll use these for (1) sudo access and (2) hit log, ttd march
 	let h = door?.workerEvent?.req?.headers
-	r = {
-		browserTag: body.browserTag,
-		browserGraphics: body.browserGraphics,
-
-		ipAddress: headerGetOne(h, 'cf-connecting-ip'),
-		userAgent: headerGetOne(h, 'user-agent'),
-		geoCountry: headerGetOne(h, 'cf-ipcountry'),
-		//above headers should always be there; below ones are sometimes there
-		geoCity: headerGetOne(h, 'cf-ipcity'),
-		geoRegion: headerGetOne(h, 'cf-region-code'),
-		geoPostal: headerGetOne(h, 'cf-postal-code'),
-		//you'll use these for (1) sudo access and (2) hit log
-
-		sticker: Sticker().all,
-		userTag: userTag,
-		userName: routeText,
+	r.connection = {
+		ipAddress: headerGetOne(h, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
+		geography: {
+			country: headerGetOne(h, 'cf-ipcountry'),//this one is always present
+			city:    headerGetOne(h, 'cf-ipcity'),//remaining ones are sometimes present
+			region:  headerGetOne(h, 'cf-region-code'),
+			postal:  headerGetOne(h, 'cf-postal-code'),
+		},
+		browser: {
+			agent:   headerGetOne(h, 'user-agent'),//what the browser told cloudflare
+			renderer: body.browserGraphics.renderer,//what the browser reported from code
+			vendor:   body.browserGraphics.vendor,
+		},
 	}
-
-	//~~~ now as a time test, let's hash some stuff
-	let o = {
-		browser: browserTag,
-		user: userTag,
-		ip: r.ipAddress,
-		agent: r.userAgent,
-		renderer: body.browserGraphics.renderer,
-		vendor: body.browserGraphics.vendor,
-	}
-	let s = print(o)
-	let t = Now()
-	let v = await hashText(s)
-	r.hashPlain = s
-	r.hashValue = v
-	r.hashDuration = Now() - t//getting 0ms hash duration, which is great
-	//~~~ ttd confirm this in production, then delete this section ^^^
 
 	//record the hit
-	let g = {}
-	if (hasText(r.geoCountry)) g.country = r.geoCountry
-	if (hasText(r.geoCity))    g.city    = r.geoCity
-	if (hasText(r.geoRegion))  g.region  = r.geoRegion
-	if (hasText(r.geoPostal))  g.postal  = r.geoPostal
-	let b = {
-		agent: r.userAgent,
-		renderer: body.browserGraphics.renderer,
-		vendor: body.browserGraphics.vendor,
-	}
 	if (isCloud({uncertain: 'Cloud.'})) {
-		keep(recordHit({//keep the promise, rather than awaiting it, to go faster
+		keep(recordHit({//keep the promise, rather than await, to do this in parallel and finish faster!
 			browserTag,
-			userTag: hasText(userTag) ? userTag : '',//do this in parallel as soon as we have the user tag
-			ipText: r.ipAddress,
-			geographyText: print(g),
-			browserText: print(b),
+			userTag: blanket(r.user.userTag),//we can't do this first because we need the user tag
+			ipText: blanket(r.connection.ipAddress),
+			geographyText: print(r.connection.geography),
+			browserText: print(r.connection.browser),
 		}))
 	}
 

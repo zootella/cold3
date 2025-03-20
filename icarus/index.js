@@ -72,7 +72,9 @@ snippet3,
 settingReadInt, settingRead, settingWrite,
 recordHit,
 
-demonstrationSignHello,
+browserToUserTag,
+browserToUser,
+
 demonstrationSignGet,
 demonstrationSignUp,
 demonstrationSignIn,
@@ -148,6 +150,7 @@ Limit, cropToLimit,
 trimLines, trimLine,
 deaccent, slug,
 
+bundleValid,
 checkName,
 validateName,
 
@@ -182,7 +185,7 @@ toss,
 log, addLogSink, logTo,
 sameObject, sameArray,
 
-checkText, hasText, checkInt, minInt,
+checkText, hasText, blanket, checkInt, minInt,
 intToText, textToInt,
 checkTextSame, hasTextSame, checkTextOrBlank, hasTextOrBlank,
 newline,

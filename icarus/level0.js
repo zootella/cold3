@@ -272,6 +272,8 @@ test(() => {
 	ok(!hasText(7))//non-string
 	ok(!hasText('\r\n'))//nonprinting characters
 })
+//use like blanket(something?.deeper?.maybe) to get the text there or blank--always returns a string!
+export function blanket(r) { return hasText(r) ? r : '' }
 
 export function checkInt(i, m) { if (!minInt(i, m)) toss('bounds', {i, m}) }
 export function minInt(i, m = 0) { // Note (0)
