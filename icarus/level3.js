@@ -1,5 +1,8 @@
 
 import {
+wrapper,
+} from './wrapper.js'
+import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
@@ -863,24 +866,27 @@ CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get v
 SQL(`
 -- where is this hit coming from?
 CREATE TABLE hit_table (
-	row_tag         CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick        BIGINT                 NOT NULL,  -- Trusted: exact time within hour_tick of the hit
-	hide            BIGINT                 NOT NULL,
+	row_tag         CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick        BIGINT    NOT NULL,  -- Trusted: exact time within hour_tick of the hit
+	hide            BIGINT    NOT NULL,
 
-	hour_tick       BIGINT                 NOT NULL,  -- Trusted: tick of the start of the hour this hit happened in
-	browser_tag     CHAR(21)               NOT NULL,  -- Reported: the browser that hit us
-	user_tag_text   TEXT                   NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
-	ip_text         TEXT                   NOT NULL,  -- Trusted: ip address, according to cloudflare
-	geography_text  TEXT                   NOT NULL,  -- Trusted: geographic information, according to cloudflare
-	browser_text    TEXT                   NOT NULL   -- Reported: user agent string and WebGL hardware, according to the browser
+	hour_tick       BIGINT    NOT NULL,  -- Trusted: tick of the start of the hour this hit happened in
+	wrapper_text    TEXT      NOT NULL   -- Trusted: project name from wrapper
+	wrapper_hash    CHAR(52)  NOT NULL   -- Trusted: software version hash from wrapper
+
+	browser_tag     CHAR(21)  NOT NULL,  -- Reported: the browser that hit us
+	user_tag_text   TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
+	ip_text         TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare
+	geography_text  TEXT      NOT NULL,  -- Trusted: geographic information, according to cloudflare
+	browser_text    TEXT      NOT NULL   -- Reported: user agent string and WebGL hardware, according to the browser
 );
 
 -- index to quickly log a new hit, coalesced to identical information in an hour, note UNIQUE, which *is necessary* for the query we're using with this table to add if unique in a single call
-CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
+CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, wrapper_text, wrapper_hash, browser_tag, user_tag_text, ip_text, geography_text, browser_text);
 `)
 
 export async function recordHit({browserTag, userTag, ipText, geographyText, browserText}) {
-	checkTag(browserTag); checkTagOrBlank(userTag)
+	checkTag(browserTag); checkTagOrBlank(userTag); checkText(wrapper.name); checkHash(wrapper.hash)
 
 	let t = Now()//tick count now, of this hit
 	let d = roundDown(t, Time.hour)//tick count when the hour t is in began
@@ -891,6 +897,8 @@ export async function recordHit({browserTag, userTag, ipText, geographyText, bro
 		hide: 0,
 
 		hour_tick: d,//cells that describe the first hit like this this hour
+		wrapper_text: wrapper.name,
+		wrapper_hash: wrapper.hash,
 		browser_tag: browserTag,
 		user_tag_text: userTag,
 		ip_text: ipText,
