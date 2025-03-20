@@ -20,6 +20,8 @@ const refLetter = ref('D')
 await hashToLetter(c.codeTag, Code.alphabet)
 */
 
+//really, this should be at the top of every page, and render into a list of catch boxes for 0+ codes alive
+
 watch([refPhone], () => {
 	let v = validatePhone(refPhone.value)
 	refOutput.value = v

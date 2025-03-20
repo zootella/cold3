@@ -3,6 +3,7 @@ import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, keep,
 checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, print,
 isCloud, hasText, recordHit, demonstrationSignGet,
+codeLiveForBrowser,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -11,12 +12,11 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
 
-	let browserTag = body.browserTag
-	checkTag(browserTag)
+	let browserTag = body.browserTag; checkTag(browserTag)
 
 	let d = await demonstrationSignGet({browserTag})
 	let userTag = d.userTag
-	let routeText = d.nameFormal
+	let routeText = d.nameFormal//ttd march will change when you put in real routes and user names
 
 	let h = door?.workerEvent?.req?.headers
 	r = {
@@ -37,9 +37,7 @@ async function doorHandleBelow({door, body, action}) {
 		userName: routeText,
 	}
 
-//	log('hi from hello2', look(r))
-
-	//now as a time test, let's hash some stuff
+	//~~~ now as a time test, let's hash some stuff
 	let o = {
 		browser: browserTag,
 		user: userTag,
@@ -54,8 +52,9 @@ async function doorHandleBelow({door, body, action}) {
 	r.hashPlain = s
 	r.hashValue = v
 	r.hashDuration = Now() - t//getting 0ms hash duration, which is great
+	//~~~ ttd confirm this in production, then delete this section ^^^
 
-	//and next we'll record the hit in the database
+	//record the hit
 	let g = {}
 	if (hasText(r.geoCountry)) g.country = r.geoCountry
 	if (hasText(r.geoCity))    g.city    = r.geoCity
@@ -67,16 +66,17 @@ async function doorHandleBelow({door, body, action}) {
 		vendor: body.browserGraphics.vendor,
 	}
 	if (isCloud({uncertain: 'Cloud.'})) {
-		keep(recordHit({
+		keep(recordHit({//keep the promise, rather than awaiting it, to go faster
 			browserTag,
-			userTag: hasText(userTag) ? userTag : '',
+			userTag: hasText(userTag) ? userTag : '',//do this in parallel as soon as we have the user tag
 			ipText: r.ipAddress,
 			geographyText: print(g),
 			browserText: print(b),
 		}))
 	}
-	//ttd march actually do this as early as you can because keep() makes it parallelized, and that's not any faster if you do it at the end!
 
+	//check if this browser is expecting any codes
+	r.codes = await codeLiveForBrowser({browserTag})
 
 	/*
 	/api/hello2
@@ -104,7 +104,6 @@ async function doorHandleBelow({door, body, action}) {
 		userTag.value = data.userTag
 		userName.value = data.userName
 	*/
-
 
 	return r
 }

@@ -41,7 +41,7 @@ async function clickedSend() {
 		log(look(r))
 
 	} catch (e) {
-		log('did you catch it?', look(e))
+		log('did you catch it?', look(e))//ttd march []try throwing exceptions all the way down the stack, and []needing this catch around fetch is a reason to make <PostButton /> and <TurnstilePostButton />
 	}
 }
 

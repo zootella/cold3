@@ -27,6 +27,10 @@ const ipAddress = ref('')
 const userAgent = ref('')
 const geography = ref(null)
 
+const hashValue = ref('')
+const hashDuration = ref(-1)
+const codes = ref([])
+
 //^ttd february--is this an application for reactive instead of ref? does that report updates when you just change one little thing within, or even two hops down, a big object? ask chat and also test that out
 
 // Actions
@@ -60,6 +64,11 @@ const hello2 = noOverlap(async () => {
 		userAgent.value = r.userAgent
 		geography.value = {country: r.geoCountry, city: r.geoCity, region: r.geoRegion, postal: r.geoPostal}
 
+		hashValue.value = r.hashValue
+		hashDuration.value = r.hashDuration
+
+		codes.value = r.codes
+
 	} catch (e) { error2.value = e }
 	duration2.value = Now() - t
 })
@@ -84,6 +93,9 @@ return {
 	error2, duration2, sticker2,
 	userTag, userName,
 	ipAddress, userAgent, geography,
+
+	hashValue, hashDuration,
+	codes,
 }
 
 })

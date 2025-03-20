@@ -27,5 +27,9 @@ const helloStore = useHelloStore()
 <p><code>{{helloStore.userAgent}}</code> user agent</p>
 <p><code>{{helloStore.geography}}</code> geography</p>
 
+<p><code>{{helloStore.hashValue}}</code> hashValue</p>
+<p><code>{{helloStore.hashDuration}}</code> hashDuration</p>
+<p><code>{{helloStore.codes}}</code> codes</p>
+
 </div>
 </template>

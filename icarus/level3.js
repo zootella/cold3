@@ -36,6 +36,7 @@ queryUpdateCells,
 queryCountSince,
 queryAddRowIfCellsUnique,
 queryTopEqualGreater,
+queryTopSinceMatchGreater,
 
 } from './level2.js'
 
@@ -671,7 +672,7 @@ async function codeSent({browserTag, provider, type, v, permit, code}) {
 }
 
 //is this browser expecting any codes? needs to run fast!
-async function codeLiveForBrowser({browserTag}) {
+export async function codeLiveForBrowser({browserTag}) {
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
 		since: Now() - Code.lifespan20,
 		title1: 'browser_tag', cell1: browserTag,
