@@ -896,17 +896,17 @@ CREATE TABLE hit_table (
 	wrapper_hash    CHAR(52)  NOT NULL   -- Trusted: software version hash from wrapper
 );
 
--- index to quickly log a new hit, coalesced to identical information in an hour, note UNIQUE, which *is necessary* for the query we're using with this table to add if unique in a single call
 CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, origin_text, browser_tag, user_tag_text, ip_text, geography_text, browser_text, wrapper_hash);
 `)
+const hit_titles = 'hide,hour_tick,origin_text,browser_tag,user_tag_text,ip_text,geography_text,browser_text,wrapper_hash'
+//index and comma separated list to quickly record a new hit if it contains new information in the same hour
+//note UNIQUE, which *is necessary* for the query we're using to be able to do this in a single call
+//other indices in our schema make queries fast, this one makes this query work!
 
 export async function recordHit({origin, browserTag, userTag, ipText, geographyText, browserText}) {
 	checkText(origin)
-	checkTag(browserTag)
-	checkTagOrBlank(userTag)
-	checkTextOrBlank(ipText)
-	checkTextOrBlank(geographyText)
-	checkTextOrBlank(browserText)
+	checkTag(browserTag); checkTagOrBlank(userTag)
+	checkTextOrBlank(ipText); checkTextOrBlank(geographyText); checkTextOrBlank(browserText)
 	checkHash(wrapper.hash)
 
 	let t = Now()//tick count now, of this hit
@@ -928,8 +928,7 @@ export async function recordHit({origin, browserTag, userTag, ipText, geographyT
 
 		wrapper_hash: wrapper.hash,
 	}
-	let titles = 'hide,hour_tick,origin_text,browser_tag,user_tag_text,ip_text,geography_text,browser_text,wrapper_hash'
-	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
+	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles: hit_titles})
 }
 
 //                               _        _     _      
