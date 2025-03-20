@@ -237,6 +237,7 @@ tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
 `
 	log(markdown)
 })
+//ttd march, you got this into yarn test and seal, next it could go into README.md
 /*
 $ node disk, just shows it, rather than seal which makes it
 */

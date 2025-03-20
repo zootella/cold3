@@ -1,6 +1,6 @@
 
 import {
-wrapper,
+wrapper, sayFloppyDisk, runTests,
 log, look, newline, Data, Now, parse, print,
 encrypt,
 } from 'icarus'
@@ -106,7 +106,6 @@ async function composeWrapper(properties) {
 }
 
 const envSecretFileName = '.env.local'//our file of secrets to encrypt
-const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
 async function affixSeal(properties, manifest) {
 
 	//total up the files, counting those that are something we wrote or created, versus everything
@@ -140,17 +139,16 @@ async function affixSeal(properties, manifest) {
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
 	o.secrets = cipherData.base62()
-	let s = `export const wrapper = Object.freeze(${print(o, null, 2)})`
+	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`
 	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await fs.writeFile(pathWrapperJs, s)
 
 	//output a summary to the shrinkwrapper
-	let codeSizeDiskPercent = Math.round(codeSize*100/floppyDiskCapacity)
-	log('',
-		`${codeFiles} files and ${codeSize} bytes code; your 3.5" floppy disk is filled ${codeSizeDiskPercent}%`,
-		`${totalFiles} files and ${totalSize} bytes total`,
-		'',
-		`${hash.base32()} shrinkwrap hash`)
+	log(
+		sayFloppyDisk(o).disk,
+		(await runTests()).message,//also run tests
+		''
+	)
 }

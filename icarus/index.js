@@ -106,6 +106,7 @@ keep, awaitDoorPromises,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
+sayFloppyDisk,
 
 /* level 2 query */
 
