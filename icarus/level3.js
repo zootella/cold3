@@ -690,7 +690,7 @@ async function codeLiveForBrowser({browserTag}) {
 }
 
 //the person at browserTag used the box on the page to enter a code, which could be right or wrong
-export async function codeEnter({browserTag, codeTag, codeCandidate}) {
+export async function codeEnter({browserTag, codeTag, codeEntered}) {
 	let now = Now()
 
 	//find the row about it
@@ -701,7 +701,7 @@ export async function codeEnter({browserTag, codeTag, codeCandidate}) {
 	if (row.row_tick + Code.lifespan20 < now) return 'Bad.Expired.Replace.'//too late
 	if (!row.lives) return 'Bad.Expended.Replace.'//guessed out or revoked by replacement
 
-	if (secureSameText(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
+	if (secureSameText(row.hash, await hashText(codeTag+codeEntered))) {//correct guess
 
 		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
 		await browserValidatedAddress({
@@ -718,6 +718,8 @@ export async function codeEnter({browserTag, codeTag, codeCandidate}) {
 		await code_set_lives({codeTag, lives})
 		return lives ? 'Bad.Wrong.TryAgain.' : 'Bad.Wrong.Replace.'
 	}
+
+	//ttd march. instead of a list of tags, the return should probably be an object of outcome, type, remedy, as separate parts, yeah, duh
 }
 
 

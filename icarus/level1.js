@@ -43,6 +43,10 @@ import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate ph
 // |___/\__,_|\__, | |_| |_|\__,_|_| |_| |_|_.__/ \___|_|  |___/
 //            |___/                                             
 
+export function checkNumerals(s) {//s must be one or many numerals
+	checkText(s)
+	if (onlyNumerals(s) != s) toss('validation mismatch', {s})
+}
 //remove all characters but the numerals 0-9
 export function onlyNumerals(s) { return s.replace(/[^0-9]/g, '') }
 test(() => {

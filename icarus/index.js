@@ -62,7 +62,7 @@ export {
 
 getBrowserTag,
 urlNetwork23, fetch23, fetchNetwork23, vhsSign,
-codeSend, codeEnter,
+Code, codeSend, codeEnter,
 
 /* level 3 query */
 
@@ -141,7 +141,7 @@ export {
 
 liveBox,//move to whichever level you need it!
 
-onlyNumerals, sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
+checkNumerals, onlyNumerals, sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
 Tag, checkTagOrBlank, checkTag, hasTag,
 middleDot, thinSpace,
 Limit, cropToLimit,
