@@ -28,7 +28,7 @@ ok, next, you put code_table between CodeRequestComponent and sending
 
 
 actually maybe it's
-"Code B 1234 from brand - Don't tell anyone..." no hyphen
+"Code B 1234 for brand - Don't tell anyone..." no hyphen
 and then the box is
 Code B [    ] [Enter] clearly not something you need to type
 because (Code B) is (1234) rather than (Code) is (B 1234)

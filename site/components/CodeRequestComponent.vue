@@ -7,10 +7,6 @@ validatePhone, validateEmail, validateEmailOrPhone,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()
-/*
-<p><code>{{helloStore.browserTag}}</code> browser tag</p>
-<p><code>{{helloStore.userTag}}</code> user tag</p>
-*/
 
 const refAddress = ref('')
 const refProvider = ref('')
