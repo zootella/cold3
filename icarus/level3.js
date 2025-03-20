@@ -901,7 +901,13 @@ CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, origin_text, browser_tag
 `)
 
 export async function recordHit({origin, browserTag, userTag, ipText, geographyText, browserText}) {
-	checkText(origin); checkTag(browserTag); checkTagOrBlank(userTag); checkHash(wrapper.hash)
+	checkText(origin)
+	checkTag(browserTag)
+	checkTagOrBlank(userTag)
+	checkTextOrBlank(ipText)
+	checkTextOrBlank(geographyText)
+	checkTextOrBlank(browserText)
+	checkHash(wrapper.hash)
 
 	let t = Now()//tick count now, of this hit
 	let d = roundDown(t, Time.hour)//tick count when the hour t is in began
@@ -922,7 +928,7 @@ export async function recordHit({origin, browserTag, userTag, ipText, geographyT
 
 		wrapper_hash: wrapper.hash,
 	}
-	let titles = 'hide,hour_tick,browser_tag,user_tag_text,ip_text,geography_text,browser_text'
+	let titles = 'hide,hour_tick,origin_text,browser_tag,user_tag_text,ip_text,geography_text,browser_text,wrapper_hash'
 	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles})
 }
 
