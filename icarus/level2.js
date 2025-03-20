@@ -7,7 +7,7 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, hashData, secureSameText, hmacSign,
-parse, print, replaceAll, replaceOne,
+parse, print, replaceAll, replaceOne, blanket,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
@@ -593,13 +593,8 @@ async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
 	door.tag = Tag()//tag the request for our own records
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
-//	door.origin = new URL(workerEvent.req.url).origin//parse the origin from the request url, cloudflare set this
-	dog('origin hunt', {
-		url: workerEvent.req.url,
-		proto: headerGetOne(workerEvent.req.headers, 'x-forwarded-proto'),
-		host: headerGetOne(workerEvent.req.headers, 'host'),
-	})
-
+	door.origin = headerOrigin({workerEvent})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
+	dog(`door.origin is "${door.origin}"`)//ttd march
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
@@ -765,6 +760,18 @@ export function headerGetOne(headers, name) {
 	if      (n == 0) return undefined//return undefined so you can set a property that will be omitted by stringification
 	else if (n == 1) return headerGet(headers, name)
 	else             toss('overlapping headers', {headers, name})
+}
+
+function headerOrigin({workerEvent}) {
+	return (
+		blanket(headerGetOne(workerEvent.req.headers, 'x-forwarded-proto'))
+		+ '://' +
+		blanket(headerGetOne(workerEvent.req.headers, 'host'))
+	)
+	//just in cloudflare, we need the origin like "http://localhost:3000" or "https://cold3.cc"
+	//from chat and observation, we assemble it from two headers
+	//workerEvent.req.url should be useful, but it's just the route, like "/api/hello1", which is the part we don't need!
+	//we don't need the origin on the lambda side, and it's likely harder to get, anyway
 }
 
 //      _                        _                 _   _                 
