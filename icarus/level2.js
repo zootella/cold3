@@ -1448,14 +1448,8 @@ export async function queryAddRow({table, row, clock}) { const {Now, Tag, databa
 }
 //add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
 export async function queryAddRows({table, rows, clock}) { const {Now, Tag, database, context} = await getClock(clock)
-	checkQueryTitle(table);
-	let t = Now()//set a single timestamp for the group of rows we're adding
-	rows.forEach(row => {//fill in any missing defaults for the margin columns
-		if (!row.row_tag)  row.row_tag = Tag()
-		if (!row.row_tick) row.row_tick = t
-		if (!row.hide)     row.hide = 0//sets 0 if already set, but that's fine
-	})
-	rows.forEach(row => checkQueryRow(row))
+	checkQueryTitle(table)
+	queryFillAndCheckRows(rows)
 	let {data, error} = (await database
 		.from(table)
 		.insert(rows)//order of properties in each row object in the rows array doesn't matter
@@ -1513,15 +1507,15 @@ export async function queryCountSince({table, title, cell, since, clock}) { cons
 	return count
 }
 
-//add row if table doesn't already have one with the same value for column titles like 'title1,title2,title3' comma separated with no spaces
-export async function queryAddRowIfCellsUnique({table, row, titles, clock}) { const {Now, Tag, database, context} = await getClock(clock)
-	checkQueryTitle(table); checkQueryRow(row); checkText(titles)
+//add row if table doesn't already have one with the same row.hash
+export async function queryAddRowIfHashUnique({table, row, clock}) { const {Now, Tag, database, context} = await getClock(clock)
+	checkQueryTitle(table); queryFillAndCheckRows([row])
 	let {data, error} = (await database
 		.from(table)
 		.insert(row, {
-			onConflict: titles,//look for a row with matching values in these columns
+			onConflict: 'hash',//look for a row with matching values in this one column
 			ignoreDuplicates: true,//if you find one, do nothing
-			upsert: false,//don't "update on conflict"; insert only if no identical row (as determined by the UNIQUE index) exists
+			upsert: false,//don't update on conflict
 		})
 	)
 	if (error) {
@@ -1571,6 +1565,16 @@ export async function queryTopSinceMatchGreater({table, since, title1, cell1, ti
 // | (_| | |_| |  __/ |  | |_| | | (__| | | |  __/ (__|   < 
 //  \__, |\__,_|\___|_|   \__, |  \___|_| |_|\___|\___|_|\_\
 //     |_|                |___/                             
+
+function queryFillAndCheckRows(rows) {
+	let t = Now()//set a single timestamp for the group of rows we're adding
+	rows.forEach(row => {//fill in any missing defaults for the margin columns
+		if (!row.row_tag)  row.row_tag = Tag()
+		if (!row.row_tick) row.row_tick = t
+		if (!row.hide)     row.hide = 0//sets 0 if already set, but that's fine
+	})
+	rows.forEach(row => checkQueryRow(row))
+}
 
 function checkQueryTitle(title) {//make sure the given title looks ok as a table name or column title
 	if (!isQueryTitle(title)) toss('check title', {title, cell})

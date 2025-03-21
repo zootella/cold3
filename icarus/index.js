@@ -125,7 +125,7 @@ queryUpdateCells,
 
 //query specialized
 queryCountSince,
-queryAddRowIfCellsUnique,
+queryAddRowIfHashUnique,
 queryTopEqualGreater,
 queryTopSinceMatchGreater,
 

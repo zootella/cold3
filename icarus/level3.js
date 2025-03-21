@@ -5,7 +5,7 @@ wrapper,
 import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
-textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
+textToInt, hasText, checkText, checkTextOrBlank, newline, deindent, print,
 Data, decrypt, hashData, secureSameText,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
@@ -38,7 +38,7 @@ queryUpdateCells,
 
 //query specialized
 queryCountSince,
-queryAddRowIfCellsUnique,
+queryAddRowIfHashUnique,
 queryTopEqualGreater,
 queryTopSinceMatchGreater,
 
@@ -891,17 +891,17 @@ CREATE TABLE hit_table (
 	user_tag_text   TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
 	ip_text         TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare
 	geography_text  TEXT      NOT NULL,  -- Trusted: geographic information, according to cloudflare
-	browser_text    TEXT      NOT NULL   -- Reported: user agent string and WebGL hardware, according to the browser
+	browser_text    TEXT      NOT NULL,  -- Reported: user agent string and WebGL hardware, according to the browser
 
-	wrapper_hash    CHAR(52)  NOT NULL   -- Trusted: software version hash from wrapper
+	wrapper_hash    CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
+
+	hash            CHAR(52)  NOT NULL,  -- hash of printed cells to prevent duplicates within each hour
+	CONSTRAINT hit1 UNIQUE (hash)        -- and corresponding constraint to enforce this and make upserts quick
 );
 
-CREATE UNIQUE INDEX hit1 ON hit_table (hide, hour_tick, origin_text, browser_tag, user_tag_text, ip_text, geography_text, browser_text, wrapper_hash);
+CREATE INDEX hit2 ON hit_table (browser_tag,   row_tick DESC) WHERE hide = 0;
+CREATE INDEX hit3 ON hit_table (user_tag_text, row_tick DESC) WHERE hide = 0;
 `)
-const hit_titles = 'hide,hour_tick,origin_text,browser_tag,user_tag_text,ip_text,geography_text,browser_text,wrapper_hash'
-//index and comma separated list to quickly record a new hit if it contains new information in the same hour
-//note UNIQUE, which *is necessary* for the query we're using to be able to do this in a single call
-//other indices in our schema make queries fast, this one makes this query work!
 
 export async function recordHit({origin, browserTag, userTag, ipText, geographyText, browserText}) {
 	checkText(origin)
@@ -909,15 +909,10 @@ export async function recordHit({origin, browserTag, userTag, ipText, geographyT
 	checkTextOrBlank(ipText); checkTextOrBlank(geographyText); checkTextOrBlank(browserText)
 	checkHash(wrapper.hash)
 
-	let t = Now()//tick count now, of this hit
-	let d = roundDown(t, Time.hour)//tick count when the hour t is in began
-
+	let now = Now()//tick count now, of this hit
+	let hour = roundDown(now, Time.hour)//tick count when the hour t is in began
 	let row = {
-		row_tag: Tag(),//standard for a new row
-		row_tick: t,
-		hide: 0,
-
-		hour_tick: d,//cells that describe the first hit like this this hour
+		hour_tick: hour,//cells that describe the first hit like this this hour
 		origin_text: origin,
 
 		browser_tag: browserTag,
@@ -927,8 +922,10 @@ export async function recordHit({origin, browserTag, userTag, ipText, geographyT
 		browser_text: browserText,
 
 		wrapper_hash: wrapper.hash,
-	}
-	await queryAddRowIfCellsUnique({table: 'hit_table', row, titles: hit_titles})
+	}//these cells^
+	row.hash = await hashText(print(row))//determine the hash
+	row.row_tick = now
+	await queryAddRowIfHashUnique({table: 'hit_table', row})
 }
 
 //                               _        _     _      
