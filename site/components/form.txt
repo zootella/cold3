@@ -1,0 +1,35 @@
+
+
+
+
+
+
+stuff you'll figure out here
+- can you make <PostButton /> and <TurnstilePostButton /> that are easy to use, reduce code duplication, and take care of themselves?
+- how should vue components communicate? the framework provides many different ways. can you use await, or do you have to wire up events and listeners?
+- how does a form work when there are multiple steps?
+- does icarus have form-wide validation functions, like validateSomeForm(), which both the vue component and api handler can use?
+- how do exceptions work? can you toss in an api handler, catch around $fetch, and still show a message to the user?
+- are you going to use <form @submit.prevent="">? are you going to use <input enterkeyhint="">
+- you already have class="pushy" and class="linky"
+- you'll figure out having both :class="refButtonState" and class="pushy", which works, but you're not sure how
+
+
+
+
+
+in SnippetComponent.vue is an exploration of dynamic, static, and regular properties?
+
+
+
+
+make a simple working form with a field, a button that posts
+and then with chat refactor the button into a component
+you must tell the button when the form is ready or not (or, give the button the form fields to watch, and the validator to determine if their contents mean things are ready)
+and then get from the button when it's done
+but teh button should take care of the fetch, catching exceptions, turning different colors and styles, all that
+and it should be easy to switch between StepButton, PostButton, and TurnstilePostButton, ideally just as easy as naming them
+
+
+
+
