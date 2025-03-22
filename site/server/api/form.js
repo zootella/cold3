@@ -26,7 +26,6 @@ async function doorHandleBelow({door, body, action}) {
 			h = await settingReadInt('hits', 0)
 		}
 		r.detail = `got hit count ${h} ${cycles} times in ${Now() - t}ms`
-		log(r.detail)
 
 	} else { toss('action') }
 

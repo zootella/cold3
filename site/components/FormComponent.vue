@@ -1,9 +1,7 @@
 <script setup>
 
 import {
-log, look, Now, Limit, sayTick, newline, Data, Tag, hasText,
-getBrowserTag, isLocal,
-validatePhone, validateEmail, validateEmailOrPhone,
+log, look, Now, Limit,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()
@@ -25,22 +23,33 @@ watch([refNote, refInFlight], () => {
 	else { refButtonState.value = 'gray' }
 })
 
-async function clickedSend() {
+async function clickedButton() {
+	let f = await buttonFetch({
+		inFlight: refInFlight,//give the buttonFetch function the reference to our inFlight, so it can enable and color the button correctly
+		path: '/api/form',
+		body: {
+			action: 'SubmitNote.',
+			browserTag: helloStore.browserTag,
+			note: refNote.value,
+		},
+	})
+	log(look(f))
+}
+
+async function buttonFetch({inFlight, path, body}) {
+	let result, error, success = true
+	let t1 = Now()
 	try {
-
-		let r = await $fetch('/api/form', {
-			method: 'POST',
-			body: {
-				action: 'SubmitNote.',
-				browserTag: helloStore.browserTag,
-				note: refNote.value,
-			}
-		})
-		log(look(r))
-
+		inFlight.value = true
+		result = await $fetch(path, {method: 'POST', body})
 	} catch (e) {
-		log('did you catch it?', look(e))//ttd march []try throwing exceptions all the way down the stack, and []needing this catch around fetch is a reason to make <PostButton /> and <TurnstilePostButton />
+		error = e
+		success = false
+	} finally {
+		inFlight.value = false
 	}
+	let t2 = Now()
+	return {p: {success, result, error, tick: t2, duration: t2 - t1}}
 }
 
 </script>
@@ -49,12 +58,13 @@ async function clickedSend() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>FormComponent</i></p>
 
 <p>
-	<input :maxlength="Limit.input" type="text" v-model="refNote" placeholder="type a note" class="w-72" />{{' '}}
+	<input :maxlength="Limit.input" type="text" v-model="refNote" placeholder="type a note" class="w-72" />
+	{{' '}}
 	<button
 		:disabled="refButtonState != 'green'"
 		:class="refButtonState"
 		class="pushy"
-		@click="clickedSend"
+		@click="clickedButton"
 	>Submit Your Note</button>
 </p>
 
