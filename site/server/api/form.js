@@ -1,6 +1,6 @@
 
 import {
-log, look, toss, Tag, checkTag, checkText, Now,
+Sticker, log, look, toss, Tag, checkTag, checkText, Now,
 doorWorker, getAccess,
 secureSameText, checkAction, checkPhone,
 demonstrationSignGet, validateEmailOrPhone,
@@ -20,7 +20,7 @@ async function doorHandleBelow({door, body, action}) {
 
 	if (action == 'SubmitNote.') {
 
-		const cycles = 10//do this a few times to be noticably slow
+		const cycles = 20//do this a few times to be noticably slow
 		let t = Now(), h
 		for (let i = 0; i < cycles; i++) {
 			h = await settingReadInt('hits', 0)
@@ -31,6 +31,7 @@ async function doorHandleBelow({door, body, action}) {
 	} else { toss('action') }
 
 	r.message = 'api form, version 2025mar22a'
+	r.sticker = Sticker().all
 	r.note = body.note
 	r.noteLength = body.note.length
 	return r
