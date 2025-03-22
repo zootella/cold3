@@ -33,3 +33,60 @@ and it should be easy to switch between StepButton, PostButton, and TurnstilePos
 
 
 
+ways vue components can communicate
+
+
+now, let's take a step back.
+let's talk about vue patterns and apis generally
+i want to focus on what's easy, mainstream, and correct for modern vue, using the composition api
+the area i want to learn about is the different ways parent and child components communicate.
+what are different choices to accomplish this?
+what are the ramifications as to capability and simplicity are in each of those choices?
+my goal is to enumerate them, understand each, and learn how each tool is intended, where it's a good choice, where it's not a good choice, to select the right tool for the job
+
+i've heard about these features of vue which are related to component communication:
+- Props and Custom Events (Emits)
+- v-model (Two-Way Binding)
+- Provide/Inject
+- Refs to Access Child Component Methods/Properties
+- defineExpose({childComponentFunction})
+
+generally, im always interested in short, simple, complete, and common patterns, following standards and best practices. 
+
+in a sense, im trying to learn the "right" way to solve a problem, as intended by platform creators and community, and learn how within that way, i can accomplish some particular objectives
+
+
+
+
+
+notes for each of these
+
+1
+
+i need to be able to run some code when the button clicks, as i can do here:
+
+async function clickedButton() {
+	//log('the user clicked the button!')
+	let f = await buttonFetch({
+		inFlight: refInFlight,//give the buttonFetch function the reference to our inFlight, so it can enable and color the button correctly
+		path: '/api/form',
+		body: {
+			action: 'SubmitNote.',
+			browserTag: helloStore.browserTag,
+			note: refNote.value,
+		},
+	})
+	log('the button finished its tasks!', look(f))
+}
+
+2
+
+
+
+
+
+
+
+
+
+
