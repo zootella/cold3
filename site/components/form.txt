@@ -87,6 +87,20 @@ async function clickedButton() {
 
 
 
+so PostButton should pickup and include browserTag in body automatically
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,4 +1,5 @@
 <script setup>
+//./components/FormComponent1.vue
 
 import {
 log, look, Now, Limit,
@@ -55,7 +56,7 @@ async function buttonFetch({inFlight, path, body}) {
 </script>
 <template>
 <div class="border border-gray-300 p-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>FormComponent</i></p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>FormComponent1</i></p>
 
 <p>
 	<input :maxlength="Limit.input" type="text" v-model="refNote" placeholder="type a note" class="w-72" />
