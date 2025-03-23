@@ -961,6 +961,19 @@ CREATE INDEX name6 ON name_table (hide, normal_text, row_tick DESC);  -- what us
 CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC);  -- is this page name taken?
 `)
 
+export async function nameCheck({v}) {//ttd march, draft like from the check if your desired name is available, to choose and change a name
+	if (!v.isValid) toss('valid', {v})//you have already done this check, but here too to make sure
+
+	let rowNormal = await name_get({nameNormal: v.formNormal})
+	let rowPage   = await name_get({namePage:   v.formPage})
+	return {
+		isAvailable: (!rowNormal) && (!rowPage),
+		isAvailableNormal: !rowNormal,
+		isAvailablePage: !rowPage,
+		v,
+	}
+}
+
 async function name_get({//look up user route and name information by calling with one of these:
 	userTag,//a user's tag, like we're showing information about that user, or
 	nameNormal,//a normalized route, like we're filling a request to that route, or

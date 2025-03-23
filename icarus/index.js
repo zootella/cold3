@@ -75,6 +75,8 @@ recordHit,
 browserToUserTag,
 browserToUser,
 
+nameCheck,
+
 demonstrationSignGet,
 demonstrationSignUp,
 demonstrationSignIn,

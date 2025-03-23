@@ -3,8 +3,9 @@
 
 <NavigationComponent note="on page1" />
 
-<HitComponent />
-<TrailComponent />
+<FormComponent1 />
+<FormComponent2 />
+<NameComponent2 />
 
 </div>
 </template>
