@@ -51,7 +51,7 @@ async function onClick() {
 		labelIdle="Submit Your Note"
 		labelFlying="Note Submitting..."
 		v-model:inFlight="refInFlight"
-		:validToSubmit="refFormSubmittable"
+		:validToSubmit="refValidToSubmit"
 		@click-event="onClick"
 	/>
 </p>

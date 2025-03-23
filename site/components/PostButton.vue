@@ -1,6 +1,12 @@
 <script setup>
 //./components/PostButtonComponent.vue
 
+import {
+log, look, Now, Limit,
+} from 'icarus'
+import {ref, watch} from 'vue'
+const helloStore = useHelloStore()
+
 //props
 const props = defineProps({
 	labelIdle: {type: String, required: true},
@@ -25,6 +31,7 @@ watch([() => props.validToSubmit, () => props.inFlight], () => {
 		refButtonLabel.value = props.labelIdle
 		if (props.validToSubmit) {
 			refButtonState.value = 'green'
+			log('made it green at least')
 		} else {
 			refButtonState.value = 'gray'
 		}
