@@ -47,6 +47,8 @@ function validatePassword(e) {
 
 </script>
 <template>
+<div class="border border-gray-300 p-2">
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>StyleComponent</i></p>
 
 <!-- single line text input box with charm indicator -->
 <div class="relative w-full max-w-xs mt-4">
@@ -136,4 +138,5 @@ function validatePassword(e) {
 	</button>
 </div>
 
+</div>
 </template>

@@ -132,11 +132,10 @@ async function myFunction2() {
 	outputText.value = `${h.base32()} hashed from ${ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC} thousand iterations in ${duration}ms on ${sayTick(t)}`
 }
 
-
-
-
 </script>
 <template>
+<div class="border border-gray-300 p-2">
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordComponent</i></p>
 
 <form @submit.prevent="myFunction2">
 	<input type="text" v-model="inputValue" @input="myFunction1" placeholder="Type something..." />{{' '}}
@@ -144,26 +143,5 @@ async function myFunction2() {
 	<p>{{ outputText }}</p>
 </form>
 
+</div>
 </template>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

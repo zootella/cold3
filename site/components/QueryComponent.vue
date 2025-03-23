@@ -19,6 +19,8 @@ async function clicked(action) {
 
 </script>
 <template>
+<div class="border border-gray-300 p-2">
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>QueryComponent</i></p>
 
 <div>
 	<button class="pushy" @click="clicked('Clear.')">Clear</button>{{' '}}
@@ -29,4 +31,5 @@ async function clicked(action) {
 
 <pre>{{ refOutput }}</pre>
 
+</div>
 </template>

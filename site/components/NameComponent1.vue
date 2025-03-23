@@ -47,9 +47,10 @@ async function clickedSubmit() {//gets called when the user clicks the button
 
 </script>
 <template>
-<div>
+<div class="border border-gray-300 p-2">
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>NameComponent1</i></p>
 
-<p>Check if your desired username is available.</p>
+<p>Check if your desired username is available. Uses Turnstile, when deployed.</p>
 <p>Name: <input type="text" v-model="refName" /></p>
 <div>
 	<label><input type="checkbox" v-model="refTerms" /> Accept Terms</label>{{' '}}

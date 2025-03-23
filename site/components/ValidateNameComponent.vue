@@ -34,7 +34,7 @@ watch([refFormalBox], () => {//which is also independently editable
 </script>
 <template>
 <div class="border border-gray-300 p-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>NameComponent2</i></p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>ValidateNameComponent</i></p>
 
 <p>Choose your user name:</p>
 <p><input :maxlength="Limit.name" v-model="refPageBox" placeholder="name for pages" class="w-96" /></p>

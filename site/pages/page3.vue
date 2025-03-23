@@ -3,7 +3,7 @@
 
 <NavigationComponent note="on page3" />
 
-<NameComponent2 />
+<ValidateNameComponent />
 <StyleComponent />
 
 </div>
