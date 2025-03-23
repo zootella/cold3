@@ -99,6 +99,32 @@ so PostButton should pickup and include browserTag in body automatically
 
 
 
+using what we've learned and the choices we've made here, now, let's take a step back. here are some code snippets written by other team members from this project as a whole:
+
+	<p><button @click="refState = 1" class="linky">{{'<'}} Back</button></p>
+	<p>Hello new person! To sign up, choose a new user name for yourself:</p>
+	<p>
+		<input type="text" v-model="refDesiredUserNameBox" placeholder="desired user name" />{{' '}}
+		<button @click="clickedSignUp()" class="pushy">Sign Up</button>
+	</p>
+
+the pushy and linky css classes, defined in our site-wide tailwind css, make linky buttons resemble links, and style pushy buttons to look like buttons. neither of these two buttons do anything other than run the @click function specified, and that's fine--they're intended as simple ways to get a user's intent into execution in our script setup block
+
+<div>
+	<p>
+		<NuxtLink to="/">index</NuxtLink>{{' - '}}
+		<NuxtLink to="/ping/test">test</NuxtLink>{{' '}}
+		<NuxtLink to="/door">door</NuxtLink>{{' - '}}
+		<NuxtLink to="/image">image</NuxtLink>{{' '}}
+
+for navigation around the site, we use NuxtLink, which is provided by nuxt. here, we want the route to change, and the back button to work
+
+ok, so based on that, now here's my question. what might it look like to create three new very simple (probably only several line) components, called:
+
+LinkButton - internally, will have a button and style it linky; the parent component will set @click
+StepButton - same as that, except will style it with the pushy class, instead
+Link - simply an alternative name for NuxtLink, for readability
+
 
 
 

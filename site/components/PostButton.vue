@@ -1,5 +1,5 @@
 <script setup>
-//./components/PostButtonComponent.vue
+//./components/PostButton.vue
 
 import {
 log, look, Now, Limit,
@@ -31,7 +31,6 @@ watch([() => props.validToSubmit, () => props.inFlight], () => {
 		refButtonLabel.value = props.labelIdle
 		if (props.validToSubmit) {
 			refButtonState.value = 'green'
-			log('made it green at least')
 		} else {
 			refButtonState.value = 'gray'
 		}
