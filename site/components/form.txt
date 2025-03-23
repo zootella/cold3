@@ -130,3 +130,30 @@ Link - simply an alternative name for NuxtLink, for readability
 
 
 
+
+Navigate - NuxtLink
+Link - button that calls function that looks like a link
+Button - button that calls function that looks like a button
+PostButton - looks like button, calls function, does POST
+TurnstileButton - looks like button, calls function, does turnstile and then POST
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

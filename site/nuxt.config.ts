@@ -63,4 +63,14 @@ export default defineNuxtConfig({
 	tailwindcss: {
 		cssPath: '~/assets/css/tailwind.css',
 	},
+
+	//added not for a module
+	components: {
+		dirs: [
+			{
+				path: '~/components',
+				pathPrefix: false,//let a template find <SomeComponent /> as you move SomeComponent.vue into and between subfolders of the components folder
+			},
+		],
+	},
 })

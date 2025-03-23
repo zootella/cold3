@@ -1,5 +1,31 @@
-<script setup>
-//./components/PostButton.vue
+<script setup>//components/PostButton.vue
+/*
+use like:
+
+const refValidToSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
+const refPostButton = ref(null)
+const refInFlight = ref(false)//the button below sets to true while it's working, you can watch
+
+async function myFunction() {
+	let response = await refPostButton.value.clickPerform('/api/form', {
+		action: 'SomeAction.',
+		name: refName.value,
+		email: refEmail.value,
+	})
+}
+
+<PostButton
+	ref="refPostButton"
+	labelIdle="Submit"
+	labelFlying="Submitting..."
+	v-model:inFlight="refInFlight"
+	:validToSubmit="refValidToSubmit"
+	@click-event="myFunction"
+/>
+
+looks like a button; runs a function
+use when this is the last step in a form, and it's time to actually POST to an api endpoint
+*/
 
 import {
 log, look, Now, Limit,
