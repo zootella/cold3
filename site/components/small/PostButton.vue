@@ -16,6 +16,7 @@ async function myFunction() {
 
 <PostButton
 	ref="refButton"
+	:useTurnstile="false"  -- or true if the api endpoint you're going to post to is protected by turnstile
 	labelIdle="Submit"
 	labelFlying="Submitting..."
 	v-model:inFlight="refButtonInFlight"
@@ -25,6 +26,7 @@ async function myFunction() {
 
 looks like a button; runs a function
 use when this is the last step in a form, and it's time to actually POST to an api endpoint
+and additionally, if necessary, protect the endpoint with cloudflare turnstile on the page and server
 */
 
 import {
@@ -38,6 +40,7 @@ const props = defineProps({
 	labelIdle: {type: String, required: true},
 	labelFlying: {type: String, required: true},
 	validToSubmit: {type: Boolean, required: true},
+	useTurnstile: {type: Boolean, required: true},
 	inFlight: {type: Boolean, required: true},
 })
 
@@ -47,6 +50,7 @@ const emit = defineEmits(['click-event', 'update:inFlight'])
 //refs
 const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
+const refTurnstileComponent = ref(null)
 
 watch([() => props.validToSubmit, () => props.inFlight], () => {
 
@@ -67,10 +71,14 @@ watch([() => props.validToSubmit, () => props.inFlight], () => {
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({async onClick(path, body) {
 	let result, error, success = true
-	const t1 = Now()
+	let t1 = Now(), t2, t3
 	try {
 		emit('update:inFlight', true)
-		body.browserTag = helloStore.browserTag//PostButton always adds the browser tag so you don't have to
+		if (props.useTurnstile) {
+			body.turnstileToken = await refTurnstileComponent.value.getToken()//this can take a few seconds
+		}
+		t2 = Now()
+		body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to
 		result = await $fetch(path, {method: 'POST', body})
 	} catch (e) {
 		error = e
@@ -78,8 +86,13 @@ defineExpose({async onClick(path, body) {
 	} finally {
 		emit('update:inFlight', false)
 	}
-	const t2 = Now()
-	return {success, result, error, tick: t2, duration: t2 - t1}
+	t2 = Now()
+	let p = {success, result, error, tick: t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
+	if (props.useTurnstile) {
+		p.durationTurnstile = t2 - t1//how long the button was orange because turnstile wasn't done on the page yet
+		p.durationFetch     = t3 - t2//how long after that the button was orange because of the actual fetch to the server
+	}//ttd march, ok, but get durations the way you want them, also reporting the total time turnstile took to generate the token on the page, not just how much longer the button was orange because of token generation
+	return p
 }})
 
 </script>
@@ -91,6 +104,7 @@ defineExpose({async onClick(path, body) {
 	class="pushy"
 	@click="$emit('click-event')"
 >{{refButtonLabel}}</button>
+<TurnstileComponent v-if="props.useTurnstile" ref="refTurnstileComponent" /><!-- most uses of PostButton will set :useTurnstile="false", and no code inside TurnstileComponent will run -->
 
 </template>
 <style scoped>

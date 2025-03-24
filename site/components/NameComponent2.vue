@@ -46,7 +46,7 @@ async function onClick() {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>NameComponent2</i></p>
 
-<p>Check if your desired username is available. Using TurnstileButton, adding turnstile to that.</p>
+<p>Check if your desired username is available. Using PostButton now with turnstile.</p>
 <div>
 	<input
 		:maxlength="Limit.input"
@@ -56,7 +56,7 @@ async function onClick() {
 		class="w-72"
 	/>
 	{{' '}}
-	<TurnstileButton
+	<PostButton
 		ref="refButton"
 		:useTurnstile="true"
 		labelIdle="Check"

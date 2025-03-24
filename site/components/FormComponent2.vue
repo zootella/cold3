@@ -49,6 +49,7 @@ async function onClick() {
 	{{' '}}
 	<PostButton
 		ref="refButton"
+		:useTurnstile="false"
 		labelIdle="Submit Your Note"
 		labelFlying="Note Submitting..."
 		v-model:inFlight="refButtonInFlight"

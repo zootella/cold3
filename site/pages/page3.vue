@@ -5,8 +5,6 @@
 
 <HitComponent />
 <TrailComponent />
-<FormComponent1 />
-<FormComponent2 />
 <ValidateNameComponent />
 <StyleComponent />
 
