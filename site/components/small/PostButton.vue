@@ -88,7 +88,7 @@ defineExpose({async onClick(path, body) {
 	} finally {
 		emit('update:inFlight', false)
 	}
-	t2 = Now()
+	t3 = Now()
 	let p = {success, result, error, tick: t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
 	if (props.useTurnstile) {
 		p.durationTurnstile = t2 - t1//how long the button was orange because turnstile wasn't done on the page yet
