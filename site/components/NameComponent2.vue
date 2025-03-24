@@ -9,7 +9,6 @@ let refName = ref('')
 let refNameValidStatus = ref('')
 
 let refButtonState = ref('gray')//gray for ghosted, green for clickable, or orange for post-in-flight
-let refTurnstileComponent = ref(null)
 
 let refInFlight = ref(false)//true while we're getting a token and POSTing to our own api, both of those combined
 let refResponse = ref('')
@@ -19,8 +18,9 @@ watch([refName, refInFlight, refResponse], () => {
 	so here we are in namecomponent2, which we can refactor to:
 	1[x]determine if the name is valid to submit, that we can do right here
 	2[x]actually check the name, that's in the endpoint
-	3[]refactor to use PostButton, removing our use of turnstile
-	4[]write and use TurnstileButton, following the turnstile implementation in NameComponent1.vue, read-only
+	3[x]remove turnstile from namecomponent2; you can always refer back to namecomponent1, confirm name availability still works
+	4[]refactor to use PostButton, removing our use of turnstile
+	5[]write and use TurnstileButton, following the turnstile implementation in NameComponent1.vue, read-only
 
 	hide the turnstile widget, and have the texton the page say how long turnstile took to finish and how long the post took, those two, separately
 	*/
@@ -29,7 +29,7 @@ watch([refName, refInFlight, refResponse], () => {
 	if (v.isValid) refNameValidStatus.value = `will check "${v.formNormal}" Normal; "${v.formFormal}" Formal; "${v.formPage}" Page`
 	else refNameValidStatus.value = 'name not valid to check'
 
-	if (refInFlight.value) {//turnstile or post in flight
+	if (refInFlight.value) {//post in flight
 		refButtonState.value = 'orange'
 	} else if (v.isValid) {//form ready to submit
 		refButtonState.value = 'green'
@@ -44,9 +44,8 @@ async function clickedCheck() {//gets called when the user clicks the button
 		refInFlight.value = true
 
 		let t1 = Now()
-		let token = await refTurnstileComponent.value.getToken()//this can take a few seconds
 		let t2 = Now()
-		let body = {name: refName.value, turnstileToken: token}
+		let body = {name: refName.value, turnstileToken: ''}
 		refResponse.value = await $fetch('/api/name', {method: 'POST', body})
 		log(look(refResponse.value))
 		let t3 = Now()
@@ -79,7 +78,6 @@ async function clickedCheck() {//gets called when the user clicks the button
 </div>
 <p>{{refNameValidStatus}}</p>
 <div><pre>{{refResponse}}</pre></div>
-<TurnstileComponent ref="refTurnstileComponent" />
 
 </div>
 </template>
