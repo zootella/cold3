@@ -7,6 +7,7 @@
 <TrailComponent />
 <ValidateNameComponent />
 <StyleComponent />
+<PasswordComponent />
 
 </div>
 </template>
