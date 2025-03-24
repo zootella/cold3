@@ -5,7 +5,7 @@ checkTag, settingReadInt, settingWrite, browserToUserTag,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}

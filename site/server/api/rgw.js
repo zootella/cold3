@@ -5,7 +5,7 @@ doorWorker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 

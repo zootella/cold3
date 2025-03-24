@@ -4,7 +4,7 @@ Sticker, doorWorker, Now, getAccess, urlNetwork23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 

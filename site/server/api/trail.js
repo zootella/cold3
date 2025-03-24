@@ -6,7 +6,7 @@ trailCount, trailRecent, trailAdd,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {//ttd february, what if you got ({door, body, action}) and could then save some dereferencing, yeah, that's a change many places but probably a great one
 	let r = {}

@@ -8,7 +8,7 @@ snippet2,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda('GET', {lambdaEvent, lambdaContext, doorHandleBelow})
+	return await doorLambda('GET', {lambdaEvent, lambdaContext, doorHandleBelow})
 	/*
 	no longer in service, as GET is blocked now
 	if you want a snippet, just do a POST through the regular page->worker->lambda flow

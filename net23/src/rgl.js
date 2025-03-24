@@ -7,7 +7,7 @@ doorLambda,
 } from 'icarus'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda('GET', {lambdaEvent, lambdaContext, doorHandleBelow})
+	return await doorLambda('GET', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
 async function doorHandleBelow({door, body, action}) {
 	let o = {}
