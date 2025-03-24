@@ -1,14 +1,4 @@
-<script setup>
-/*
-so here we are in namecomponent2, which we can refactor to:
-1[x]determine if the name is valid to submit, that we can do right here
-2[x]actually check the name, that's in the endpoint
-3[x]remove turnstile from namecomponent2; you can always refer back to namecomponent1, confirm name availability still works
-4[x]refactor to use PostButton, removing our use of turnstile
-5[]write and use TurnstileButton, following the turnstile implementation in NameComponent1.vue, read-only
-
-hide the turnstile widget, and have the texton the page say how long turnstile took to finish and how long the post took, those two, separately
-*/
+<script setup>//./components/NameComponent2.vue
 
 import {
 log, look, Now, Time, Limit, validateName,

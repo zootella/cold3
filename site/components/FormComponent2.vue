@@ -1,11 +1,9 @@
-<script setup>
-//./components/FormComponent2.vue
+<script setup>//./components/FormComponent2.vue
 
 import {
 log, look, Now, Limit,
 } from 'icarus'
 import {ref, watch} from 'vue'
-const helloStore = useHelloStore()
 
 const refNote = ref('')
 
@@ -27,7 +25,6 @@ async function onClick() {
 	log('the user clicked the button...')
 	let f = await refButton.value.post('/api/form', {
 		action: 'SubmitNote.',
-		browserTag: helloStore.browserTag,
 		note: refNote.value,
 	})
 	log('...the button has finished, returning:', look(f))

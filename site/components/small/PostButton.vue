@@ -1,4 +1,4 @@
-<script setup>//components/PostButton.vue
+<script setup>//./components/PostButton.vue
 /*
 use like:
 
@@ -7,7 +7,7 @@ const refButtonCanSubmit = ref(false)//set to true to let the button be clickabl
 const refButtonInFlight = ref(false)//the button below sets to true while it's working, you can watch
 
 async function onClick() {
-	let response = await refButton.value.onClick('/api/form', {
+	let response = await refButton.value.post('/api/form', {
 		action: 'SomeAction.',
 		name: refName.value,
 		email: refEmail.value,
@@ -17,7 +17,7 @@ async function onClick() {
 <PostButton
 	labelIdle="Submit"
 	labelFlying="Submitting..."
-	:useTurnstile="false"  -- set true if the endpoint needs a turnstile token to run turnstile here on the page
+	:useTurnstile="false"
 
 	ref="refButton"
 	:canSubmit="refButtonCanSubmit"
@@ -99,6 +99,7 @@ defineExpose({post: async (path, body) => {
 	return p
 }})
 
+//ttd march, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something
 </script>
 <template>
 
