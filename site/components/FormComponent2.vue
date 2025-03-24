@@ -8,23 +8,24 @@ import {ref, watch} from 'vue'
 const helloStore = useHelloStore()
 
 const refNote = ref('')
-const refValidToSubmit = ref(false)
-const refInFlight = ref(false)
-const refPostButton = ref(null)
+
+const refButton = ref(null)
+const refButtonCanSubmit = ref(false)
+const refButtonInFlight = ref(false)
 
 function validateNote(s) {
 	if (s.length >= 5) { return {isValid: true,  raw: s} }
 	else               { return {isValid: false, raw: s} }
 }
 
-watch([refNote, refInFlight], () => {
+watch([refNote, refButtonInFlight], () => {
 	let v = validateNote(refNote.value)
-	refValidToSubmit.value = v.isValid
+	refButtonCanSubmit.value = v.isValid
 })
 
 async function onClick() {
 	log('the user clicked the button...')
-	let f = await refPostButton.value.clickPerform('/api/form', {
+	let f = await refButton.value.clickPerform('/api/form', {
 		action: 'SubmitNote.',
 		browserTag: helloStore.browserTag,
 		note: refNote.value,
@@ -47,15 +48,15 @@ async function onClick() {
 	/>
 	{{' '}}
 	<PostButton
-		ref="refPostButton"
+		ref="refButton"
 		labelIdle="Submit Your Note"
 		labelFlying="Note Submitting..."
-		v-model:inFlight="refInFlight"
-		:validToSubmit="refValidToSubmit"
+		v-model:inFlight="refButtonInFlight"
+		:validToSubmit="refButtonCanSubmit"
 		@click-event="onClick"
 	/>
 </p>
-<p>valid to submit <i>{{refValidToSubmit}}</i>, in flight <i>{{refInFlight}}</i></p>
+<p>valid to submit <i>{{refButtonCanSubmit}}</i>, in flight <i>{{refButtonInFlight}}</i></p>
 
 </div>
 </template>

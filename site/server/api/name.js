@@ -6,7 +6,7 @@ validateName, nameCheck,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {turnstile: true, workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})//add turnstile true to door, this is how you protect an api endpoint with turstile, making it required
+	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}

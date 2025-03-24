@@ -8,12 +8,16 @@ import {ref, watch, onMounted} from 'vue'
 let refName = ref('')
 let refNameValidStatus = ref('')
 
-let refButtonState = ref('gray')//gray for ghosted, green for clickable, or orange for post-in-flight
-
+/*
 let refInFlight = ref(false)//true while we're getting a token and POSTing to our own api, both of those combined
+*/
+const refButton = ref(null)
+const refButtonCanSubmit = ref(false)
+const refButtonInFlight = ref(false)
+
 let refResponse = ref('')
 
-watch([refName, refInFlight, refResponse], () => {
+watch([refName, refButtonInFlight, refResponse], () => {
 	/*
 	so here we are in namecomponent2, which we can refactor to:
 	1[x]determine if the name is valid to submit, that we can do right here
@@ -29,34 +33,15 @@ watch([refName, refInFlight, refResponse], () => {
 	if (v.isValid) refNameValidStatus.value = `will check "${v.formNormal}" Normal; "${v.formFormal}" Formal; "${v.formPage}" Page`
 	else refNameValidStatus.value = 'name not valid to check'
 
-	if (refInFlight.value) {//post in flight
-		refButtonState.value = 'orange'
-	} else if (v.isValid) {//form ready to submit
-		refButtonState.value = 'green'
-	} else {
-		refButtonState.value = 'gray'
-	}
+	refButtonCanSubmit.value = v.isValid
 })
 
-async function clickedCheck() {//gets called when the user clicks the button
-	try {
-		log('clicked submit start')
-		refInFlight.value = true
-
-		let t1 = Now()
-		let t2 = Now()
-		let body = {name: refName.value, turnstileToken: ''}
-		refResponse.value = await $fetch('/api/name', {method: 'POST', body})
-		log(look(refResponse.value))
-		let t3 = Now()
-		log(`button was orange for turnstile's ${t2-t1}ms and then fetch's ${t3-t2}ms`)
-
-	} catch (e) {
-		log('clicked submit caught', look(e))
-	} finally {
-		refInFlight.value = false
-		log('clicked submit end')
-	}
+async function onClick() {
+	let f = await refButton.value.clickPerform('/api/name', {
+		name: refName.value,
+	})
+	log(look(f))
+	refResponse.value = f
 }
 
 </script>
@@ -64,7 +49,7 @@ async function clickedCheck() {//gets called when the user clicks the button
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>NameComponent2</i></p>
 
-<p>Check if your desired username is available. Uses Turnstile, when deployed.</p>
+<p>Check if your desired username is available. Removed Turnstile, factoring in PostButton.</p>
 <div>
 	<input
 		:maxlength="Limit.input"
@@ -74,25 +59,21 @@ async function clickedCheck() {//gets called when the user clicks the button
 		class="w-72"
 	/>
 	{{' '}}
-	<button :disabled="refButtonState != 'green'" :class="refButtonState" @click="clickedCheck" class="pushy">Check</button>
+	<PostButton
+		ref="refButton"
+		labelIdle="Check"
+		labelFlying="Checking..."
+		v-model:inFlight="refButtonInFlight"
+		:validToSubmit="refButtonCanSubmit"
+		@click-event="onClick"
+	/>
 </div>
 <p>{{refNameValidStatus}}</p>
+<p>valid to submit <i>{{refButtonCanSubmit}}</i>, in flight <i>{{refButtonInFlight}}</i></p>
 <div><pre>{{refResponse}}</pre></div>
 
 </div>
 </template>
-<style scoped>
-
-button.gray        { background-color: gray;       }
-button.green       { background-color: green;      }
-button.green:hover { background-color: lightgreen; }
-button.orange      { background-color: orange;     }
-
-</style>
-
-
-
-
 
 
 
