@@ -33,8 +33,8 @@ watch([refName], () => {
 	refButtonCanSubmit.value = v.isValid
 })
 
-async function onClick() {
-	let f = await refButton.value.onClick('/api/name', {
+async function onClickParent() {
+	let f = await refButton.value.onClickChild('/api/name', {
 		name: refName.value,
 	})
 	log(look(f))
@@ -65,7 +65,7 @@ async function onClick() {
 		v-model:inFlight="refButtonInFlight"
 
 		:useTurnstile="true"
-		@click-event="onClick"
+		@click-event="onClickParent"
 	/>
 </div>
 <p>{{refStatus1}}</p>

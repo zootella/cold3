@@ -71,7 +71,7 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 }, {immediate: true})
 
 // the method that performs the post operation; this is exposed to the parent
-defineExpose({async onClick(path, body) {
+defineExpose({async onClickChild(path, body) {
 	let result, error, success = true
 	let t1 = Now(), t2, t3
 	try {

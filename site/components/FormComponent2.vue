@@ -23,9 +23,9 @@ watch([refNote, refButtonInFlight], () => {
 	refButtonCanSubmit.value = v.isValid
 })
 
-async function onClick() {
+async function onClickParent() {
 	log('the user clicked the button...')
-	let f = await refButton.value.onClick('/api/form', {
+	let f = await refButton.value.onClickChild('/api/form', {
 		action: 'SubmitNote.',
 		browserTag: helloStore.browserTag,
 		note: refNote.value,
@@ -56,7 +56,7 @@ async function onClick() {
 		v-model:inFlight="refButtonInFlight"
 
 		:useTurnstile="false"
-		@click-event="onClick"
+		@click-event="onClickParent"
 	/>
 </p>
 <p>valid to submit <i>{{refButtonCanSubmit}}</i>, in flight <i>{{refButtonInFlight}}</i></p>
