@@ -59,13 +59,12 @@ async function onClickParent() {
 	<PostButton
 		labelIdle="Check"
 		labelFlying="Checking..."
+		:useTurnstile="true"
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
 		v-model:inFlight="refButtonInFlight"
-
-		:useTurnstile="true"
-		@click-event="onClickParent"
+		:onClickParent="onClickParent"
 	/>
 </div>
 <p>{{refStatus1}}</p>

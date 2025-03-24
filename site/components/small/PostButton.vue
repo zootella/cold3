@@ -17,13 +17,12 @@ async function onClick() {
 <PostButton
 	labelIdle="Submit"
 	labelFlying="Submitting..."
+	:useTurnstile="false"  -- set true if the endpoint needs a turnstile token to run turnstile here on the page
 
 	ref="refButton"
 	:canSubmit="refButtonCanSubmit"
 	v-model:inFlight="refButtonInFlight"
-
-	:useTurnstile="false"  -- set true if the endpoint needs a turnstile token to run turnstile here on the page
-	@click-event="onClick"
+	:onClickParent="onClickParent"
 />
 
 looks like a button; runs a function
@@ -39,15 +38,18 @@ const helloStore = useHelloStore()
 
 //props
 const props = defineProps({
-	labelIdle: {type: String, required: true},
-	labelFlying: {type: String, required: true},
-	canSubmit: {type: Boolean, required: true},
-	useTurnstile: {type: Boolean, required: true},
-	inFlight: {type: Boolean, required: true},
+	labelIdle:     {type: String,   required: true},
+	labelFlying:   {type: String,   required: true},
+	useTurnstile:  {type: Boolean,  required: true},
+
+	/*ref="refButton"*///is here when you're setting attributes, but is not a property, of course
+	canSubmit:     {type: Boolean,  required: true},
+	inFlight:      {type: Boolean,  required: true},
+	onClickParent: {type: Function, required: true},
 })
 
 //emits
-const emit = defineEmits(['click-event', 'update:inFlight'])
+const emit = defineEmits(['update:inFlight'])
 
 //refs
 const refButtonState = ref('gray')
@@ -75,7 +77,7 @@ defineExpose({async onClickChild(path, body) {
 	let result, error, success = true
 	let t1 = Now(), t2, t3
 	try {
-		emit('update:inFlight', true)
+		emit('update:inFlight', true)//this lets our parent follow our orange condition
 		if (props.useTurnstile) {
 			body.turnstileToken = await refTurnstileComponent.value.getToken()//this can take a few seconds
 		}
@@ -104,7 +106,7 @@ defineExpose({async onClickChild(path, body) {
 	:disabled="refButtonState != 'green'"
 	:class="refButtonState"
 	class="pushy"
-	@click="$emit('click-event')"
+	@click="props.onClickParent($event)"
 >{{refButtonLabel}}</button>
 <TurnstileComponent v-if="props.useTurnstile" ref="refTurnstileComponent" /><!-- most uses of PostButton will set :useTurnstile="false", and no code inside TurnstileComponent will run -->
 

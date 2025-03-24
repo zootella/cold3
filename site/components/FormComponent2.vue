@@ -50,13 +50,12 @@ async function onClickParent() {
 	<PostButton
 		labelIdle="Submit Your Note"
 		labelFlying="Note Submitting..."
+		:useTurnstile="false"
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
 		v-model:inFlight="refButtonInFlight"
-
-		:useTurnstile="false"
-		@click-event="onClickParent"
+		:onClickParent="onClickParent"
 	/>
 </p>
 <p>valid to submit <i>{{refButtonCanSubmit}}</i>, in flight <i>{{refButtonInFlight}}</i></p>
