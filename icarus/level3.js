@@ -884,7 +884,6 @@ CREATE TABLE hit_table (
 	row_tick        BIGINT    NOT NULL,  -- Trusted: exact time within hour_tick of the hit
 	hide            BIGINT    NOT NULL,
 
-	hour_tick       BIGINT    NOT NULL,  -- Trusted: tick of the start of the hour this hit happened in
 	origin_text     TEXT      NOT NULL,  -- Trusted: the origin like "http://localhost:3000" or "https://example.com"
 
 	browser_tag     CHAR(21)  NOT NULL,  -- Reported: the browser that hit us
@@ -910,9 +909,7 @@ export async function recordHit({origin, browserTag, userTag, ipText, geographyT
 	checkHash(wrapper.hash)
 
 	let now = Now()//tick count now, of this hit
-	let hour = roundDown(now, Time.hour)//tick count when the hour t is in began
 	let row = {
-		hour_tick: hour,//cells that describe the first hit like this this hour
 		origin_text: origin,
 
 		browser_tag: browserTag,
@@ -922,9 +919,12 @@ export async function recordHit({origin, browserTag, userTag, ipText, geographyT
 		browser_text: browserText,
 
 		wrapper_hash: wrapper.hash,
-	}//these cells^
-	row.hash = await hashText(print(row))//determine the hash
-	row.row_tick = now
+	}
+	row.hash = await hashText(//compute the hash of (below) and include it in the row we will add if it's unique
+		roundDown(now, Time.hour)//the tick count of the start of the hour now is in
+		+':'+
+		print(row))//the values of those cells
+	row.row_tick = now//add the exact time, note we excluded this from the hash
 	await queryAddRowIfHashUnique({table: 'hit_table', row})
 }
 
