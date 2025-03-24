@@ -7,7 +7,7 @@ doorWorker,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door}) {
 
 
 

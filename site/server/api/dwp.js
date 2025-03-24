@@ -9,7 +9,7 @@ doorWorker,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 	let r = {}
 
 	let message = `${body.name}.${body.quantity}.${body.condition} from ${Sticker().all}`

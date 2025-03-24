@@ -567,9 +567,7 @@ export async function doorWorker(method, {
 }
 export async function doorLambda(method, {
 	lambdaEvent, lambdaContext,//amazon event objects
-	//we don't have any lambda environment references to bring over this way
-	doorHandleBelow,//your function that runs code specific to the request
-
+	doorHandleBelow,
 	actions,
 }) {
 	try {
@@ -663,10 +661,7 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 
 	//if the api endpoint code requires cloudflare turnstile, make sure the page sent a valid token
 	if (useTurnstile) {
-		let t1 = Now(), t2
 		await checkTurnstileToken(door.body.turnstileToken)
-		t2 = Now()
-		dog(`check turnstile token took ${t2 - t1}ms`, {token: door.body.turnstileToken})
 	}
 }
 async function doorLambdaCheck({door, actions}) {
@@ -680,7 +675,6 @@ async function doorLambdaCheck({door, actions}) {
 			door.body.ACCESS_NETWORK_23_SECRET,
 			(await getAccess()).get('ACCESS_NETWORK_23_SECRET')
 		)) toss('bad access code', {door})
-		dog(`check net23 access code passed, looking at ${door.body.ACCESS_NETWORK_23_SECRET.length} characters`)
 	}
 }
 function checkActions({door, actions}) {//this actions check is an optional convenience for api endpoint code, and is not required

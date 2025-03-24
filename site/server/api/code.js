@@ -10,7 +10,7 @@ checkNumerals,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Send.', 'Enter.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
@@ -48,8 +48,7 @@ async function doorHandleBelow({door, body, action}) {
 			codeTag: body.codeTag,
 			codeEntered: body.codeEntered,
 		})
-
-	} else { toss('action') }
+	}
 
 	r.message = 'api code, version 2025mar18a'
 	r.note = 'none'

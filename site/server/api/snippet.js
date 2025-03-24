@@ -9,7 +9,7 @@ Sticker,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 	let r = {}
 	r.note = `worker snippet says: ${Sticker().all}, v2024oct24a`
 

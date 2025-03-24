@@ -8,7 +8,7 @@ snippetClear, snippetPopulate, snippetQuery2, snippetQuery3,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {action: ['Hi.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
@@ -21,7 +21,6 @@ async function doorHandleBelow({door, body, action}) {
 		case 'SignIn.':  r.result = await signIn({browserTag: body.browserTag, userTag: body.userTag}); break;
 		case 'SignOut.': r.result = await signOut({browserTag: body.browserTag, userTag: body.userTag}); break;
 		*/
-		default: toss('action', {door}); break;
 	}
 
 	return r

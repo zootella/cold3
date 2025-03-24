@@ -7,7 +7,7 @@ checkTag, settingReadInt, settingWrite, browserToUserTag,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 	let r = {}
 	r.sticker = Sticker().all
 

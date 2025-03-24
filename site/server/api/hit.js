@@ -5,7 +5,7 @@ settingReadInt, settingWrite,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'Increment.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
@@ -17,7 +17,7 @@ async function doorHandleBelow({door, body, action}) {
 	} else if (action == 'Increment.') {
 		h++
 		await settingWrite('hits', h)
-	} else { toss('action', {door}) }
+	}
 
 	r.hits = h
 	return r

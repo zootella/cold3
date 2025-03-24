@@ -25,6 +25,7 @@ watch([refName], () => {
 
 async function onClick() {
 	let f = await refButton.value.post('/api/name', {
+		action: 'Check.',
 		name: refName.value,
 	})
 	log(look(f))

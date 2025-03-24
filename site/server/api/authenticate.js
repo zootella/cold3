@@ -9,7 +9,7 @@ demonstrationSignGet, demonstrationSignUp, demonstrationSignIn, demonstrationSig
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['DemonstrationSignGet.', 'DemonstrationSignUp.', 'DemonstrationSignIn.', 'DemonstrationSignOut.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
@@ -19,7 +19,6 @@ async function doorHandleBelow({door, body, action}) {
 		case 'DemonstrationSignUp.':  r = await demonstrationSignUp({origin: door.origin, browserTag:  body.browserTag, nameNormal: body.nameNormal}); break;
 		case 'DemonstrationSignIn.':  r = await demonstrationSignIn({origin: door.origin, browserTag:  body.browserTag, nameNormal: body.nameNormal}); break;
 		case 'DemonstrationSignOut.': r = await demonstrationSignOut({origin: door.origin, browserTag: body.browserTag});                        break;
-		default: toss('action', {door}); break;
 	}
 
 	return r

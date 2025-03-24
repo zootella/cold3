@@ -10,7 +10,7 @@ checkNumerals, settingReadInt,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['SubmitNote.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
@@ -26,8 +26,7 @@ async function doorHandleBelow({door, body, action}) {
 			h = await settingReadInt('hits', 0)
 		}
 		r.detail = `got hit count ${h} ${cycles} times in ${Now() - t}ms`
-
-	} else { toss('action') }
+	}
 
 	r.message = 'api form, version 2025mar22a'
 	r.sticker = Sticker().all

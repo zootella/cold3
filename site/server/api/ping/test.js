@@ -6,7 +6,7 @@ Sticker, doorWorker, Now, getAccess, runTests, urlNetwork23,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 
 	let workerNote = (await runTests()).message
 	let lambdaNote = (await $fetch(

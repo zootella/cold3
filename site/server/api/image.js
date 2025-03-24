@@ -8,7 +8,7 @@ vhsSign,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 	let r = {}
 
 	r.source = 'https://vhs.net23.cc/banner.png?'+(await vhsSign('/', 2*Time.hour))//generate a query string that will allow access to everything at vhs.net23.cc for the next two hours
