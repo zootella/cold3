@@ -25,7 +25,7 @@ watch([refNote, refButtonInFlight], () => {
 
 async function onClick() {
 	log('the user clicked the button...')
-	let f = await refButton.value.clickPerform('/api/form', {
+	let f = await refButton.value.onClick('/api/form', {
 		action: 'SubmitNote.',
 		browserTag: helloStore.browserTag,
 		note: refNote.value,

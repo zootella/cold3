@@ -1,43 +1,40 @@
 <script setup>
+/*
+so here we are in namecomponent2, which we can refactor to:
+1[x]determine if the name is valid to submit, that we can do right here
+2[x]actually check the name, that's in the endpoint
+3[x]remove turnstile from namecomponent2; you can always refer back to namecomponent1, confirm name availability still works
+4[x]refactor to use PostButton, removing our use of turnstile
+5[]write and use TurnstileButton, following the turnstile implementation in NameComponent1.vue, read-only
+
+hide the turnstile widget, and have the texton the page say how long turnstile took to finish and how long the post took, those two, separately
+*/
 
 import {
 log, look, Now, Time, Limit, validateName,
 } from 'icarus'
 import {ref, watch, onMounted} from 'vue'
 
-let refName = ref('')
-let refNameValidStatus = ref('')
+const refName = ref('')
+const refStatus1 = ref('')
 
-/*
-let refInFlight = ref(false)//true while we're getting a token and POSTing to our own api, both of those combined
-*/
 const refButton = ref(null)
 const refButtonCanSubmit = ref(false)
 const refButtonInFlight = ref(false)
 
-let refResponse = ref('')
+const refResponse = ref('')
 
-watch([refName, refButtonInFlight, refResponse], () => {
-	/*
-	so here we are in namecomponent2, which we can refactor to:
-	1[x]determine if the name is valid to submit, that we can do right here
-	2[x]actually check the name, that's in the endpoint
-	3[x]remove turnstile from namecomponent2; you can always refer back to namecomponent1, confirm name availability still works
-	4[]refactor to use PostButton, removing our use of turnstile
-	5[]write and use TurnstileButton, following the turnstile implementation in NameComponent1.vue, read-only
-
-	hide the turnstile widget, and have the texton the page say how long turnstile took to finish and how long the post took, those two, separately
-	*/
+watch([refName], () => {
 
 	let v = validateName(refName.value, Limit.name)
-	if (v.isValid) refNameValidStatus.value = `will check "${v.formNormal}" Normal; "${v.formFormal}" Formal; "${v.formPage}" Page`
-	else refNameValidStatus.value = 'name not valid to check'
+	if (v.isValid) refStatus1.value = `will check "${v.formNormal}" Normal; "${v.formFormal}" Formal; "${v.formPage}" Page`
+	else refStatus1.value = ''
 
 	refButtonCanSubmit.value = v.isValid
 })
 
 async function onClick() {
-	let f = await refButton.value.clickPerform('/api/name', {
+	let f = await refButton.value.onClick('/api/name', {
 		name: refName.value,
 	})
 	log(look(f))
@@ -68,39 +65,9 @@ async function onClick() {
 		@click-event="onClick"
 	/>
 </div>
-<p>{{refNameValidStatus}}</p>
+<p>{{refStatus1}}</p>
 <p>valid to submit <i>{{refButtonCanSubmit}}</i>, in flight <i>{{refButtonInFlight}}</i></p>
 <div><pre>{{refResponse}}</pre></div>
 
 </div>
 </template>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

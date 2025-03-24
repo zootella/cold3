@@ -63,7 +63,7 @@ watch([() => props.validToSubmit, () => props.inFlight], () => {
 }, {immediate: true})
 
 // the method that performs the post operation; this is exposed to the parent
-defineExpose({async clickPerform(path, body) {
+defineExpose({async onClick(path, body) {
 	let result, error, success = true
 	const t1 = Now()
 	try {

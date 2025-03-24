@@ -7,7 +7,7 @@ const refPostButton = ref(null)
 const refInFlight = ref(false)//the button below sets to true while it's working, you can watch
 
 async function myFunction() {
-	let response = await refPostButton.value.clickPerform('/api/form', {
+	let response = await refPostButton.value.onClick('/api/form', {
 		action: 'SomeAction.',
 		name: refName.value,
 		email: refEmail.value,
@@ -65,7 +65,7 @@ watch([() => props.validToSubmit, () => props.inFlight], () => {
 }, {immediate: true})
 
 // the method that performs the post operation; this is exposed to the parent
-defineExpose({async clickPerform(path, body) {
+defineExpose({async onClick(path, body) {
 	let result, error, success = true
 	const t1 = Now()
 	try {
