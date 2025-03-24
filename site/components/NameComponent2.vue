@@ -58,6 +58,7 @@ async function onClick() {
 	{{' '}}
 	<TurnstileButton
 		ref="refButton"
+		:useTurnstile="true"
 		labelIdle="Check"
 		labelFlying="Checking..."
 		v-model:inFlight="refButtonInFlight"

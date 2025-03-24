@@ -16,10 +16,13 @@ const helloStore = useHelloStore()
 
 //props
 const props = defineProps({
+	useTurnstile: {type: Boolean, required: true},//here, bringing in the preset from how our parent is using us
 	labelIdle: {type: String, required: true},
 	labelFlying: {type: String, required: true},
-	validToSubmit: {type: Boolean, required: true},
-	inFlight: {type: Boolean, required: true},
+	//question, above, these three properties don't change. our  parent sets them in his template, and we take them in
+	validToSubmit: {type: Boolean, required: true},//unlike this one, which our parent does change, and we watch
+	inFlight: {type: Boolean, required: true},//and unlike this one, which we change, and our parent watches! (it's the reverse)
+	//am i using vue correctly for these three different readabilities of properties?
 })
 
 //emits
@@ -28,7 +31,7 @@ const emit = defineEmits(['click-event', 'update:inFlight'])
 //refs
 const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
-const refTurnstileComponent = ref(null)
+const refTurnstileComponent = ref(null)//important question: i want to make sure that if our parent has defined useTurnstile to false, which will be the case most of the time, no code in TurnstileComponent.vue actually runs. even though we're making a ref here to use to reference the component, there won't be one unless useTurnstile is true
 
 watch([() => props.validToSubmit, () => props.inFlight], () => {
 
@@ -52,7 +55,9 @@ defineExpose({async onClick(path, body) {
 	let t1 = Now(), t2, t3
 	try {
 		emit('update:inFlight', true)
-		let token = await refTurnstileComponent.value.getToken()//this can take a few seconds
+		if (props.useTurnstile) {
+			body.turnstileToken = await refTurnstileComponent.value.getToken()//this can take a few seconds
+		}
 		t2 = Now()
 		body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to
 		result = await $fetch(path, {method: 'POST', body})
@@ -63,7 +68,12 @@ defineExpose({async onClick(path, body) {
 		emit('update:inFlight', false)
 	}
 	t3 = Now()
-	return {success, result, error, tick: t3, duration: t3 - t1, durationTurnstile: t2 - t1, durationFetch: t3 - t2}
+	let p = {success, result, error, tick: t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
+	if (props.useTurnstile) {
+		p.durationTurnstile = t2 - t1//how long the button was orange because turnstile wasn't done on the page yet
+		p.durationFetch     = t3 - t2//how long after that the button was orange because of the actual fetch to the server
+	}
+	return p
 }})
 
 </script>
@@ -75,7 +85,7 @@ defineExpose({async onClick(path, body) {
 	class="pushy"
 	@click="$emit('click-event')"
 >{{refButtonLabel}}</button>
-<TurnstileComponent ref="refTurnstileComponent" />
+<TurnstileComponent v-if="props.useTurnstile" ref="refTurnstileComponent" />
 
 </template>
 <style scoped>
