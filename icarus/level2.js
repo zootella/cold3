@@ -528,23 +528,31 @@ or, amazon has invoked a lambda and sent an event and context for us to respond
 
 //copypasta for a worker api endpoint:
 export default defineEventHandler(async (workerEvent) => {
-	return doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 
 //copypasta for a lambda api endpoint:
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
+	return await doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
 
 then write your code in doorHandleBelow() beneath
 */
 
-export async function doorWorker(method, {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow}) {
+export async function doorWorker(method, {
+	workerEvent,//cloudflare event objects
+	useRuntimeConfig, setResponseStatus,//nuxt environment references
+	//^ttd march, can/should we add $fetch here?
+	doorHandleBelow,//your function that runs code specific to the request
+	actions,//a list of acceptable body.action tags, like ['CheckName.', 'TakeName.'] or whatever, so your action if doesn't need an else
+	useTurnstile,//true to protect this api endpoint with cloudflare turnstile; the page must have given us body.turnstileToken
+}) {
 	try {
 		let door = {}, response, error
 		try {
 
 			door = await doorWorkerOpen({method, workerEvent, useRuntimeConfig})
+			await doorWorkerCheck({door, actions, useTurnstile})
 			response = await doorHandleBelow({door, body: door.body, action: door.body?.action})
 
 		} catch (e1) { error = e1 }
@@ -557,12 +565,19 @@ export async function doorWorker(method, {workerEvent, useRuntimeConfig, setResp
 	} catch (e3) { console.error('[OUTER]', e3) }
 	setResponseStatus(workerEvent, 500); return null
 }
-export async function doorLambda(method, {lambdaEvent, lambdaContext, doorHandleBelow}) {
+export async function doorLambda(method, {
+	lambdaEvent, lambdaContext,//amazon event objects
+	//we don't have any lambda environment references to bring over this way
+	doorHandleBelow,//your function that runs code specific to the request
+
+	actions,
+}) {
 	try {
 		let door = {}, response, error
 		try {
 
 			door = await doorLambdaOpen({method, lambdaEvent, lambdaContext})
+			await doorLambdaCheck({door, actions})
 			response = await doorHandleBelow({door, body: door.body, action: door.body?.action})
 
 		} catch (e) { error = e }
@@ -636,11 +651,51 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		//authenticate lambda post request: (1) https; (2) origin *omitted*; (3) access code valid
 		checkForwardedSecure(lambdaEvent.headers)
 		checkOriginOmitted(lambdaEvent.headers)
-		checkNetwork23AccessCode(door.body, access)
 
 	} else { toss('method not supported', {door}) }
 	return door
 }
+
+async function doorWorkerCheck({door, actions, useTurnstile}) {
+
+	//make sure the action the page wants is in the api endpoint code's list of accpetable actions
+	checkActions({door, actions})
+
+	//if the api endpoint code requires cloudflare turnstile, make sure the page sent a valid token
+	if (useTurnstile) {
+		let t1 = Now(), t2
+		await checkTurnstileToken(door.body.turnstileToken)
+		t2 = Now()
+		dog(`check turnstile token took ${t2 - t1}ms`, {token: door.body.turnstileToken})
+	}
+}
+async function doorLambdaCheck({door, actions}) {
+
+	//check the page's requested action
+	checkActions({door, actions})
+
+	//check that the worker sent the lambda the valid Network 23 access key
+	if (door.method == 'POST') {
+		if (!secureSameText(
+			door.body.ACCESS_NETWORK_23_SECRET,
+			(await getAccess()).get('ACCESS_NETWORK_23_SECRET')
+		)) toss('bad access code', {door})
+		dog(`check net23 access code passed, looking at ${door.body.ACCESS_NETWORK_23_SECRET.length} characters`)
+	}
+}
+function checkActions({door, actions}) {//this actions check is an optional convenience for api endpoint code, and is not required
+	if (actions?.length) {//this api endpoint is coded to use the actions check, so now the page's body.action must be in the allowed list
+		checkText(door.body.action)//so, optional for the endpoint, but when used, required for the page
+		if (!actions.includes(door.body.action)) toss('action not allowed', {door, actions, action: door.body.action})//the action the page posted isn't in the api endpoint code's list of allowed actions
+	}
+}
+test(() => {
+	let actions = ['Get.', 'Set.', 'Delete.']
+	ok(actions.includes('Get.'))
+	ok(!actions.includes('Shift.'))
+	ok(!actions.includes(''))
+	ok(!actions.includes('get.'))
+})
 
 async function doorWorkerShut(door, response, error) {
 	door.stopTick = Now()//time
@@ -700,9 +755,6 @@ Notes: (i) The Network 23 Application Programming Interface is exclusively for s
 (iv) all site APIs are POST; we block GET entirely
 (v) similarly, there are no GET lambdas; note that this whole grid is for api.net23.cc; vhs.net23.cc is the cloudfront function which does its own checks of the method and origin and referer headers
 */
-function checkNetwork23AccessCode(body, access) {
-	if (!secureSameText(body.ACCESS_NETWORK_23_SECRET, access.get('ACCESS_NETWORK_23_SECRET'))) toss('bad access code', {door})
-}
 function checkForwardedSecure(headers) { if (isLocal({uncertain: 'Cloud.'})) return//skip these checks during local development
 	let n = headerCount(headers, 'X-Forwarded-Proto')
 	if (n == 0) {
