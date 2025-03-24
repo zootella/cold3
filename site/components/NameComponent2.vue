@@ -48,7 +48,7 @@ async function clickedCheck() {//gets called when the user clicks the button
 		let t2 = Now()
 		let body = {name: refName.value, turnstileToken: token}
 		refResponse.value = await $fetch('/api/name', {method: 'POST', body})
-		log(refResponse.value)
+		log(look(refResponse.value))
 		let t3 = Now()
 		log(`button was orange for turnstile's ${t2-t1}ms and then fetch's ${t3-t2}ms`)
 
