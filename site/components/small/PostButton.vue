@@ -6,7 +6,7 @@ const refButton = ref(null)
 const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
 const refButtonInFlight = ref(false)//the button below sets to true while it's working, you can watch
 
-async function myFunction() {
+async function onClick() {
 	let response = await refButton.value.onClick('/api/form', {
 		action: 'SomeAction.',
 		name: refName.value,
@@ -15,13 +15,15 @@ async function myFunction() {
 }
 
 <PostButton
-	ref="refButton"
-	:useTurnstile="false"  -- or true if the api endpoint you're going to post to is protected by turnstile
 	labelIdle="Submit"
 	labelFlying="Submitting..."
+
+	ref="refButton"
+	:canSubmit="refButtonCanSubmit"
 	v-model:inFlight="refButtonInFlight"
-	:validToSubmit="refButtonCanSubmit"
-	@click-event="myFunction"
+
+	:useTurnstile="false"  -- set true if the endpoint needs a turnstile token to run turnstile here on the page
+	@click-event="onClick"
 />
 
 looks like a button; runs a function
@@ -39,7 +41,7 @@ const helloStore = useHelloStore()
 const props = defineProps({
 	labelIdle: {type: String, required: true},
 	labelFlying: {type: String, required: true},
-	validToSubmit: {type: Boolean, required: true},
+	canSubmit: {type: Boolean, required: true},
 	useTurnstile: {type: Boolean, required: true},
 	inFlight: {type: Boolean, required: true},
 })
@@ -52,14 +54,14 @@ const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
 const refTurnstileComponent = ref(null)
 
-watch([() => props.validToSubmit, () => props.inFlight], () => {
+watch([() => props.canSubmit, () => props.inFlight], () => {
 
 	if (props.inFlight) {
 		refButtonState.value = 'orange'
 		refButtonLabel.value = props.labelFlying
 	} else {
 		refButtonLabel.value = props.labelIdle
-		if (props.validToSubmit) {
+		if (props.canSubmit) {
 			refButtonState.value = 'green'
 		} else {
 			refButtonState.value = 'gray'
