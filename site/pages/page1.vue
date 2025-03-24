@@ -3,9 +3,7 @@
 
 <NavigationComponent note="on page1" />
 
-<FormComponent1 />
-<FormComponent2 />
-<NameComponent2 />
+<NameComponent1 />
 
 </div>
 </template>

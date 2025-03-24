@@ -2,12 +2,12 @@
 /*
 use like:
 
-const refValidToSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
-const refPostButton = ref(null)
-const refInFlight = ref(false)//the button below sets to true while it's working, you can watch
+const refButton = ref(null)
+const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
+const refButtonInFlight = ref(false)//the button below sets to true while it's working, you can watch
 
 async function myFunction() {
-	let response = await refPostButton.value.onClick('/api/form', {
+	let response = await refButton.value.onClick('/api/form', {
 		action: 'SomeAction.',
 		name: refName.value,
 		email: refEmail.value,
@@ -15,11 +15,11 @@ async function myFunction() {
 }
 
 <PostButton
-	ref="refPostButton"
+	ref="refButton"
 	labelIdle="Submit"
 	labelFlying="Submitting..."
-	v-model:inFlight="refInFlight"
-	:validToSubmit="refValidToSubmit"
+	v-model:inFlight="refButtonInFlight"
+	:validToSubmit="refButtonCanSubmit"
 	@click-event="myFunction"
 />
 
@@ -70,6 +70,7 @@ defineExpose({async onClick(path, body) {
 	const t1 = Now()
 	try {
 		emit('update:inFlight', true)
+		body.browserTag = helloStore.browserTag//PostButton always adds the browser tag so you don't have to
 		result = await $fetch(path, {method: 'POST', body})
 	} catch (e) {
 		error = e

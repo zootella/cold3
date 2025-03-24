@@ -3,8 +3,7 @@
 
 <NavigationComponent note="on page2" />
 
-<HitComponent />
-<TrailComponent />
+<NameComponent2 />
 
 </div>
 </template>

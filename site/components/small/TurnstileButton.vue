@@ -1,29 +1,12 @@
 <script setup>//components/TurnstileButton.vue
 /*
-use just like PostButton, except also uses Cloudflare Turnstile to protect the api endpoint from bots
-turnstile works by slowing down the page, but we hide this from the user
-first in the amount of time they spend filling out the form
-and then by making it look like the server is taking longer,
-when actually turnstile on the page is finishing up and we haven't even POSTed yet
+use just like <PostButton />
+but when the api endpoint requires turnstile for protection
+
+
+ttd march, so there is a lot of code duplication here, and you could probably have a prop on PostButton which turns on turnstile
+just  make sure that you only add it to the template
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//ttd march, it's ok if there's some code duplication between this and PostButton, because there should only be two of these! and both post button and turnstile are complex enough you don't want to deal with nesting one inside the other somehow
 
 import {
 log, look, Now, Limit,
@@ -45,6 +28,7 @@ const emit = defineEmits(['click-event', 'update:inFlight'])
 //refs
 const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
+const refTurnstileComponent = ref(null)
 
 watch([() => props.validToSubmit, () => props.inFlight], () => {
 
@@ -65,9 +49,12 @@ watch([() => props.validToSubmit, () => props.inFlight], () => {
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({async onClick(path, body) {
 	let result, error, success = true
-	const t1 = Now()
+	let t1 = Now(), t2, t3
 	try {
 		emit('update:inFlight', true)
+		let token = await refTurnstileComponent.value.getToken()//this can take a few seconds
+		t2 = Now()
+		body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to
 		result = await $fetch(path, {method: 'POST', body})
 	} catch (e) {
 		error = e
@@ -75,8 +62,8 @@ defineExpose({async onClick(path, body) {
 	} finally {
 		emit('update:inFlight', false)
 	}
-	const t2 = Now()
-	return {success, result, error, tick: t2, duration: t2 - t1}
+	t3 = Now()
+	return {success, result, error, tick: t3, duration: t3 - t1, durationTurnstile: t2 - t1, durationFetch: t3 - t2}
 }})
 
 </script>
@@ -88,6 +75,7 @@ defineExpose({async onClick(path, body) {
 	class="pushy"
 	@click="$emit('click-event')"
 >{{refButtonLabel}}</button>
+<TurnstileComponent ref="refTurnstileComponent" />
 
 </template>
 <style scoped>
