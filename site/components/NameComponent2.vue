@@ -33,8 +33,8 @@ watch([refName], () => {
 	refButtonCanSubmit.value = v.isValid
 })
 
-async function onClickParent() {
-	let f = await refButton.value.onClickChild('/api/name', {
+async function onClick() {
+	let f = await refButton.value.post('/api/name', {
 		name: refName.value,
 	})
 	log(look(f))
@@ -64,7 +64,7 @@ async function onClickParent() {
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
 		v-model:inFlight="refButtonInFlight"
-		:onClickParent="onClickParent"
+		:onClick="onClick"
 	/>
 </div>
 <p>{{refStatus1}}</p>

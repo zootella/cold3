@@ -22,7 +22,7 @@ async function onClick() {
 	ref="refButton"
 	:canSubmit="refButtonCanSubmit"
 	v-model:inFlight="refButtonInFlight"
-	:onClickParent="onClickParent"
+	:onClick="onClick"
 />
 
 looks like a button; runs a function
@@ -38,14 +38,14 @@ const helloStore = useHelloStore()
 
 //props
 const props = defineProps({
-	labelIdle:     {type: String,   required: true},
-	labelFlying:   {type: String,   required: true},
-	useTurnstile:  {type: Boolean,  required: true},
+	labelIdle:    {type: String,   required: true},
+	labelFlying:  {type: String,   required: true},
+	useTurnstile: {type: Boolean,  required: true},
 
 	/*ref="refButton"*///is here when you're setting attributes, but is not a property, of course
-	canSubmit:     {type: Boolean,  required: true},
-	inFlight:      {type: Boolean,  required: true},
-	onClickParent: {type: Function, required: true},
+	canSubmit:    {type: Boolean,  required: true},
+	inFlight:     {type: Boolean,  required: true},
+	onClick:      {type: Function, required: true},
 })
 
 //emits
@@ -73,7 +73,7 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 }, {immediate: true})
 
 // the method that performs the post operation; this is exposed to the parent
-defineExpose({async onClickChild(path, body) {
+defineExpose({post: async (path, body) => {
 	let result, error, success = true
 	let t1 = Now(), t2, t3
 	try {
@@ -106,7 +106,7 @@ defineExpose({async onClickChild(path, body) {
 	:disabled="refButtonState != 'green'"
 	:class="refButtonState"
 	class="pushy"
-	@click="props.onClickParent($event)"
+	@click="props.onClick($event)"
 >{{refButtonLabel}}</button>
 <TurnstileComponent v-if="props.useTurnstile" ref="refTurnstileComponent" /><!-- most uses of PostButton will set :useTurnstile="false", and no code inside TurnstileComponent will run -->
 
