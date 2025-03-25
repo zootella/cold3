@@ -5,7 +5,7 @@ wrapper,
 import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
-textToInt, hasText, checkText, checkTextOrBlank, newline, deindent, print,
+textToInt, hasText, checkText, checkTextOrBlank, newline, deindent, stringo,
 Data, decrypt, hashData, secureSameText,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
@@ -923,7 +923,7 @@ export async function recordHit({origin, browserTag, userTag, ipText, geographyT
 	row.hash = await hashText(//compute the hash of (below) and include it in the row we will add if it's unique
 		roundDown(now, Time.hour)//the tick count of the start of the hour now is in
 		+':'+
-		print(row))//the values of those cells
+		stringo(row))//the values of those cells
 	row.row_tick = now//add the exact time, note we excluded this from the hash
 	await queryAddRowIfHashUnique({table: 'hit_table', row})
 }
@@ -1297,51 +1297,3 @@ export async function demonstrationSignOut({browserTag, origin}) {
 		return {isSignedOut: false, reason: 'NameNotFound.', browserTag}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

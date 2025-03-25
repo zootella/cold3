@@ -1271,7 +1271,7 @@ async function rsa_importKey(key, use) {
 		true,
 		use)
 }
-export function objectToBase62(o) { return Data({text: print(o)}).base62() }
+export function objectToBase62(o) { return Data({text: stringo(o)}).base62() }
 export function base62ToObject(s) { return parse(Data({base62: s}).text()) }
 noop(async () => {
 	let plainText = (await createKey()).base62()//recall that public and private key encryption is for encrypting symmetric keys, not long messages
@@ -2252,8 +2252,9 @@ function lookSayFunction(f) {
 // | .__/ \__,_|_|  |___/\___|  \__,_|_| |_|\__,_| | .__/|_|  |_|_| |_|\__|
 // |_|                                             |_|                     
 
+//you wanted to name these parse and print, but should avoid a conflict window.print, which shows the print preview dialog box, rockin' the 90s
 export const parse = JSON.parse//same as JSON.parse(s), but without having to shout JSON all the time
-export function print(o) {//like JSON.stringify(o) but deals with BigInt values, circular references, and doesn't omit Error objects
+export function stringo(o) {//like JSON.stringify(o) but deals with BigInt values, circular references, and doesn't omit Error objects
 	const seen = new WeakSet()//keep track of objects we've seen so far to note circular references rather than throwing on them
 	try {
 		return JSON.stringify(o, (k, v) => {//use custom replacer function, letting us look at each key and value in o all the way down
@@ -2281,7 +2282,7 @@ export function print(o) {//like JSON.stringify(o) but deals with BigInt values,
 			//if we didn't jump in and return a different value, let stringify do its regular thing
 			return v
 		})
-	} catch (e) { return '{"message":"stringify threw"}' }//print never throws, just reports inability
+	} catch (e) { return '{"message":"stringify threw"}' }//stringo never throws, just reports inability
 }
 test(() => {
 	let e = new Error('Title of test error')
@@ -2290,7 +2291,7 @@ test(() => {
 	let o = {value: 'normal value', huge: 12345678901234567890n, error: e, nested: {}}
 	o.nested.self = o//put in two circular references, one in a regular object, the other in the Error object
 	e.cause = o.nested
-	let s = print(o)
+	let s = stringo(o)
 	ok(s.includes('"value":"normal value"'))
 	ok(s.includes('"huge":"12345678901234567890"'))
 	ok(s.includes('"error":{"name":"Error","message":"Title of test error"'))//name and message are here, even on iphone
@@ -2299,12 +2300,12 @@ test(() => {
 	ok(s.includes('"cause":{"self":"CircularReference."}},"nested":"CircularReference."}'))
 })
 test(() => {
-	ok(JSON.stringify() === undefined && print() === undefined)//notice it's not the string "undefined"
+	ok(JSON.stringify() === undefined && stringo() === undefined)//notice it's not the string "undefined"
 
-	ok(print(5) == '5')
-	ok(print('hi') == '"hi"')//adds double quotes
-	ok(print(['hi', 5]) == '["hi",5]')
-	ok(print({key1: 'value1', key2: 7}) == '{"key1":"value1","key2":7}')//we'll almost always give stringify an object
+	ok(stringo(5) == '5')
+	ok(stringo('hi') == '"hi"')//adds double quotes
+	ok(stringo(['hi', 5]) == '["hi",5]')
+	ok(stringo({key1: 'value1', key2: 7}) == '{"key1":"value1","key2":7}')//we'll almost always give stringify an object
 })
 test(() => { if (true) return//leave false because errors are slow; this is just a demonstration
 
@@ -2318,14 +2319,14 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 		e: new Error('message')
 	}
 	ok(x(o) == '{"s":"hi","n":7,"e":{}}')//useless empty object which datadog will even omit!
-	log(print(o))//see the error details
+	log(stringo(o))//see the error details
 
 	//demonstration 2: throwing on BigInt
 	try {
 		let o2 = {
 			big2: BigInt(5)
 		}
-		log(print(o2))//just says it threw, importantly without actually throwing
+		log(stringo(o2))//just says it threw, importantly without actually throwing
 		x(o2)//throws
 		ok(false)//won't get here
 	} catch (e) {
@@ -2336,7 +2337,7 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 	try {
 		let o3 = {}
 		o3.circular3 = o3
-		log(print(o3))//here also, just says stringify threw, importantly without actually throwing
+		log(stringo(o3))//here also, just says stringify threw, importantly without actually throwing
 		x(o3)
 		ok(false)
 	} catch (e) {
@@ -2354,7 +2355,7 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 		d.note2 = 17
 		d.caughtError = e//pin the caught error within our big picture object
 
-		let s = print(d)
+		let s = stringo(d)
 		includesAll(s, ['note one', '17', 'TypeError', 'andBeyond'])
 		log(look(s))
 	}
@@ -2366,7 +2367,7 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 		let c = ['carrot', 'car', 'carpentry']
 		toss('custom1', {a, b, c})
 	} catch (e) {
-		let s = print(e)
+		let s = stringo(e)
 		includesAll(s, ['apple', '200', 'TossError', 'carpentry', 'tossWatch', 'tossTick', 'tossWhen'])
 		log(look(s))
 	}
@@ -2388,7 +2389,7 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 	let s1 = look(examine)//first, look with your look(), pride of the bike shed, verbose, complete, custom, but not reversible
 	log(s1)
 	includesAll(s1, mustHave)
-	let s2 = print(examine)//next, with your wrapped stringify()
+	let s2 = stringo(examine)//next, with your wrapped stringify()
 	log(s2)
 	includesAll(s1, mustHave)
 })
@@ -2808,54 +2809,3 @@ test(() => {
 	ok(f2({p1: 'A'}) == 3)//and truthy values are detected all ways, of course
 	ok(f2({p1: 720}) == 3)//and truthy values are detected all ways, of course
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

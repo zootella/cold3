@@ -1,7 +1,7 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, keep, blanket,
-checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, print,
+checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, stringo,
 isCloud, hasText, recordHit, browserToUser,
 codeLiveForBrowser,
 } from 'icarus'
@@ -41,8 +41,8 @@ async function doorHandleBelow({door, body}) {
 			browserTag,
 			userTag: blanket(r.user.userTag),//we can't do this first because we need the user tag
 			ipText: blanket(r.connection.ipAddress),
-			geographyText: print(r.connection.geography),
-			browserText: print(r.connection.browser),
+			geographyText: stringo(r.connection.geography),
+			browserText: stringo(r.connection.browser),
 		})
 	}
 	//ttd march, trying to do things in parallel with keep(), you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome

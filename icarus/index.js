@@ -219,7 +219,7 @@ defined,
 squareEncode, squareDecode, checkSquare,
 correctLength,
 say, look,
-parse, print,
+parse, stringo,
 
 replaceAll, replaceOne, parseEnvStyleFileContents,
 noOverlap,

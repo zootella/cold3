@@ -7,7 +7,7 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, hashData, secureSameText, hmacSign,
-parse, print, replaceAll, replaceOne, blanket,
+parse, stringo, replaceAll, replaceOne, blanket,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
@@ -407,7 +407,7 @@ function redact_prepare(key, secrets) {
 }
 function redact_safe(v) {
 	let o = {name: v}
-	let s = print(o)
+	let s = stringo(o)
 	return s.includes(v)//make sure we can still find the value in the stringified object
 }
 test(() => {
@@ -718,7 +718,7 @@ async function doorLambdaShut(door, response, error) {
 		logAlert('door lambda shut', {error, door})
 		r = null
 	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: print(response)}//by comparison, amazon wants it raw
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: stringo(response)}//by comparison, amazon wants it raw
 	}
 	await awaitDoorPromises()
 	return r
@@ -989,7 +989,7 @@ parts of a complete log:
 -title, one or just a few words
 -longer message, composed message that describes easily
 -human readable watch, like from look()
--machine complete watch, like from print()'s wrapped stringify
+-machine complete watch, like from stringo()'s wrapped stringify
 -size of all that before you send it to datadog, so you know if this is going to impact your bill
 
 log exceptions at the top of the call stack, not at the bottom
@@ -1115,7 +1115,7 @@ async function prepareLog(status, type, label, headline, watch) {
 
 	//prepare the body
 	let b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
-	let s = print(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
+	let s = stringo(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
 	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
 	let size = s.length//byte size of body, this is how datadog bills us
 	s         = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
