@@ -117,6 +117,64 @@ and because we also want to enforce uniqueness there--we can't let two users bot
 
 
 
+wait--how does it work with other sites for users who are too lazy to find and enter a code
+do they make this work by matching an unverified email with a correct password?
+
+slightly lazy, somewhat fat-fingered, but not malicious user,
+on a simple, common, and happy path
+
+navigates new browser to site for the first time
+enteres email
+is in(?)
+(never completes email code verification flow)
+
+next day, picks up second device
+navigates to site
+(chooses sign in? sign up again?)
+enters the same email
+(are they given access to the account they made on device one?)
+
+your question at this point is not how should you design this
+but rather to observe how other sites deal with this flow
+
+-
+
+but now also thinking through this
+maybe sites solve this by adding a password
+and you could solve it by putting dob before email, those two are good enough for a basic user: dob, address, even if unverified
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
