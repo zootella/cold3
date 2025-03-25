@@ -505,14 +505,22 @@ export function validatePost(raw, limit) {//returns an array of paragraphs
 //  \__,_|\___|\__|_|\___/|_| |_|
 //                               
 
-export function checkAction(action, list) {
-	checkText(action)
-	if (!/^[A-Z]/.test(action)) toss('form', {action, list})
-	if (!/\.$/.test(action))    toss('form', {action, list})
-	if (!list.includes(action)) toss('action not supported', {action, list})
+export function checkActions({action, actions}) {//this actions check is an optional convenience for api endpoint code, and is not required
+	if (actions?.length) {//this api endpoint is coded to use the actions check, so now the page's body.action must be in the allowed list
+		checkText(action)//so, optional for the endpoint, but when used, required for the page
+		if (!/^[A-Z]/.test(action))    toss('form', {action, actions})
+		if (!/\.$/.test(action))       toss('form', {action, actions})
+		if (!actions.includes(action)) toss('action not supported', {action, actions})//the action the page posted isn't in the api endpoint code's list of allowed actions
+	}
 }
 test(() => {
-	checkAction('Do.', ['Do.', 'Some.', 'Thing.'])
+	checkActions({action: 'Do.', actions: ['Do.', 'Some.', 'Thing.']})
+
+	let actions = ['Get.', 'Set.', 'Delete.']
+	ok(actions.includes('Get.'))
+	ok(!actions.includes('Shift.'))
+	ok(!actions.includes(''))
+	ok(!actions.includes('get.'))
 })
 
 //             _ _     _       _       

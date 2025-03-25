@@ -2,7 +2,7 @@
 import {
 Sticker, log, look, toss, Tag, checkTag, checkText, Now,
 doorWorker, getAccess,
-secureSameText, checkAction, checkPhone,
+secureSameText, checkPhone,
 demonstrationSignGet, validateEmailOrPhone,
 fetch23,
 Code, codeSend, codeEnter,

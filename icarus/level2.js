@@ -14,7 +14,7 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 } from './level0.js'
 import {
-Tag, Limit, checkTag,
+Tag, Limit, checkTag, checkActions,
 } from './level1.js'
 
 import {getQuery, readBody} from 'h3'
@@ -657,7 +657,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 async function doorWorkerCheck({door, actions, useTurnstile}) {
 
 	//make sure the action the page wants is in the api endpoint code's list of accpetable actions
-	checkActions({door, actions})
+	checkActions({action: door.body?.action, actions})
 
 	//if the api endpoint code requires cloudflare turnstile, make sure the page sent a valid token
 	if (useTurnstile) {
@@ -667,7 +667,7 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 async function doorLambdaCheck({door, actions}) {
 
 	//check the page's requested action
-	checkActions({door, actions})
+	checkActions({action: door.body?.action, actions})
 
 	//check that the worker sent the lambda the valid Network 23 access key
 	if (door.method == 'POST') {
@@ -677,19 +677,6 @@ async function doorLambdaCheck({door, actions}) {
 		)) toss('bad access code', {door})
 	}
 }
-function checkActions({door, actions}) {//this actions check is an optional convenience for api endpoint code, and is not required
-	if (actions?.length) {//this api endpoint is coded to use the actions check, so now the page's body.action must be in the allowed list
-		checkText(door.body.action)//so, optional for the endpoint, but when used, required for the page
-		if (!actions.includes(door.body.action)) toss('action not allowed', {door, actions, action: door.body.action})//the action the page posted isn't in the api endpoint code's list of allowed actions
-	}
-}
-test(() => {
-	let actions = ['Get.', 'Set.', 'Delete.']
-	ok(actions.includes('Get.'))
-	ok(!actions.includes('Shift.'))
-	ok(!actions.includes(''))
-	ok(!actions.includes('get.'))
-})
 
 async function doorWorkerShut(door, response, error) {
 	door.stopTick = Now()//time

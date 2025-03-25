@@ -158,7 +158,7 @@ checkName,
 validateName,
 
 validateTitle, validatePost,
-checkAction,
+checkActions,
 checkEmail, validateEmail, validateEmailOrPhone,
 checkPhone, validatePhone,
 checkCard, validateCard,
