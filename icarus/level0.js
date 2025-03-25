@@ -2293,9 +2293,9 @@ test(() => {
 	let s = print(o)
 	ok(s.includes('"value":"normal value"'))
 	ok(s.includes('"huge":"12345678901234567890"'))
-	ok(s.includes('"error":{"name":"Error","message":"Title of test error"'))
+	ok(s.includes('"error":{"name":"Error","message":"Title of test error"'))//name and message are here, even on iphone
 	ok(s.includes('"tossWatch":{"s":"sample","n":7},"tossWhen":1050000000000'))
-	//ok(s.includes('"stack":"Error: Title of test error'))//ttd march, this test fails on iphone front end, only, weird!
+	ok(s.includes('"stack":'))//noticed that stack on iphone, only, front-end, does not begin with name and message
 	ok(s.includes('"cause":{"self":"CircularReference."}},"nested":"CircularReference."}'))
 })
 test(() => {
