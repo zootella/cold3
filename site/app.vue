@@ -18,7 +18,10 @@ useHead(head)
 
 </script>
 <template>
-	<NuxtLayout>
-		<NuxtPage />
-	</NuxtLayout>
+
+<NuxtLayout>
+	<NuxtPage />
+</NuxtLayout>
+<StatusBar /><!-- will contain the single global invisible turnstile widget after a PostButton needs it -->
+
 </template>

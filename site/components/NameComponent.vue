@@ -1,4 +1,4 @@
-<script setup>//./components/NameComponent2.vue
+<script setup>//./components/NameComponent.vue
 
 import {
 log, look, Now, Time, Limit, validateName,
@@ -35,7 +35,7 @@ async function onClick() {
 </script>
 <template>
 <div class="border border-gray-300 p-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>NameComponent2</i></p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>NameComponent</i></p>
 
 <p>Check if your desired username is available. Using PostButton now with turnstile.</p>
 <div>
