@@ -30,6 +30,9 @@ use when this is the last step in a form, and it's time to actually POST to an a
 and additionally, if necessary, protect the endpoint with cloudflare turnstile on the page and server
 */
 
+//ok, now switch to turnstile on the bottom everywhere
+//then do the promise protection making calls to getToken line up
+
 import {
 log, look, Now, Limit,
 } from 'icarus'
