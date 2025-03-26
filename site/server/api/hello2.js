@@ -1,6 +1,6 @@
 
 import {
-Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, keep, blanket,
+Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, keepPromise, blanket,
 checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, stringo,
 isCloud, hasText, recordHit, browserToUser,
 codeLiveForBrowser,
