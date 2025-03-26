@@ -4,10 +4,10 @@ use like:
 
 const refButton = ref(null)
 const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
-const refButtonInFlight = ref(false)//the button below sets to true while it's working, you can watch
+const refButtonInFlight = ref(false)//the button below sets to true while it's working, we can watch
 
 async function onClick() {
-	let response = await refButton.value.post('/api/form', {
+	let response = await refButton.value.post('/api/name', {
 		action: 'SomeAction.',
 		name: refName.value,
 		email: refEmail.value,

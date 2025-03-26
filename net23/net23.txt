@@ -150,6 +150,59 @@ isntead, just get it in persephone in the lambda, which will work, first try
 
 
 
+     _         _                    _     _      
+ ___| |_ _   _| | ___    __ _ _   _(_) __| | ___ 
+/ __| __| | | | |/ _ \  / _` | | | | |/ _` |/ _ \
+\__ \ |_| |_| | |  __/ | (_| | |_| | | (_| |  __/
+|___/\__|\__, |_|\___|  \__, |\__,_|_|\__,_|\___|
+         |___/          |___/                    
+
+code at an 8th grade level
+The rule "Simple is better than complex" comes from "The Zen of Python," a set of guiding principles for the language. Emphasized by Python's creator, Guido van Rossum, it promotes writing straightforward, readable code, making Python especially beginner-friendly and easy to maintain.
+
+ideas to write the highly opinionated style guide
+
+use complete words as names, avoid abbreviations and acronyms
+for example, avoid "dev", as this is an abbreviation for developer or development
+$ yarn local
+where an acronym is not avoidable, treat it as a word
+Html - good
+HTML - bad
+avoid all caps
+
+tag names are title case, and end with a period
+SomeTag.
+
+comment nearly every line of code
+write comments at the end of lines so comments do not lengthen the number of lines
+comment not what the line of code does, but rather explain why it is doing that as part of what the surrounding function or larger scope accomplishes
+comments should be nearly so complete and robust that you could give the function name and parameters, with the body stripped to be only comments, only, to a 2024-25 LLM and it could write a functional equivalent
+
+do not format code to wrap onto multiple lines
+your editor should be configured to wrap long lines
+where lines of code are similar, use spaces to align similiarities vertically
+
+use const to be explicit that a reference cannot or must not change
+do not use it everywhere a reference happens to not change or not need to change
+let is fine most of the time
+use const for factory presets, imported module and platform APIs, Vue refs, and similar special cases
+
+blocks of code have { spaces } while {objectProperty: 'literals'} do not
+
+omit semicolons that are not necessary to enforce proper code flow
+so if you have two statements on the same line, then you have to have a semicolon between them
+
+string literals in single quotes, unless double or backtick necessary
+in comments, double quotes
+
+comments in conversational lowercase
+
+
+
+
+
+
+
 
 
        _ _          _                _         _               _   
@@ -365,6 +418,33 @@ and those are the steps to get a brand new mac ready to develop, build and deplo
 				 |_|                                |_|                      
 
 (these steps are about recreating the project, not the computer you're building the project on)
+
+code rot happens faster than ever
+six months later, several modules will be on new full number versions
+and the task of updating them and confirming that the stack fits together and works together as a whole is significant
+
+to keep the project current in today's reality of rapid code rot,
+without spending the time and effort of updating modules individually, testing everything, and then moving on to the next one
+the Network 23 Software Engineering Division instead employs a manœuvre we call "repot the plan"
+
+here's how you do that
+(step 1)
+after updating platform things like node, yarn, git, wrangler, modules outside any project
+(step 2)
+in a completely separate folder,
+following current getting started docs like
+https://developers.cloudflare.com/pages/get-started/c3/
+and
+https://nuxt.com/docs/getting-started/installation
+make a new 'Hello, World!' project from scratch, bringing in the same modules (but new versions)
+essentially, follow the path from the very start that you used the last time to create the project
+(step 3)
+confirm hello world in the new pot is working, local and deployed
+look at the configuration files you get, like wrangler.toml and nuxt.config.ts--the starting default contents will be different
+merge previous project configurations into the new configuration files, make sure this does not break hello world
+(step 4)
+move code files from the old project into the new one
+
 
 
 

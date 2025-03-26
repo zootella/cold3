@@ -89,6 +89,13 @@ export function isCloud(o) { return Sticker().isCloud }
 /*
 ttd january--make the two above ironclad, using door properties rather than environment fingerprinting
 and also have them take {uncertain: 'Cloud.'} meaning if not sure, default to cloud or local
+
+ttd march
+all your ideas for this
+1 fuzzy matching of environment fingerprint, what sticker below does not
+2 the tests in headerOrigin below, looking for 'x-forwarded-proto' and 'host'))
+3 hardcode wrapper.isCloud true into wrapper.js; this means isCloud is always true, and things don't work developed locally; this is the sure way
+4 if you could find some definitive thing nuxt and serverless framework set, somehow (but you have not found this yet!)
 */
 
 //                                            _                                      _   
