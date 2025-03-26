@@ -2517,10 +2517,11 @@ ok(o['TRUE_MATH'] == '2+2=4')
 // |_|                                        
 
 //make a once-at-a-time version g of a given async function f
-//when multiple calls like await g() happen close together, only the first starts f
+//when multiple calls like await g() happen close together, only the first starts f, and they all get the first result when it's ready
+//this is useful for fetch()
 //return values and thrown exceptions behave as if you were directly calling f!
-export function noOverlap(f) {//takes f, the async function we want to protect from overlapping calls
-	let p = null//current in-flight promise, or null not running; note how p is enclosed in each call to noOverlap(), not each call to either f or g
+export function promiseAfterOnce(f) {//takes f, the async function we want to protect from overlapping calls
+	let p = null//current in-flight promise, or null not running; note how p is enclosed in each call to promiseAfterOnce(), not each call to either f or g
 	let g = function(...a) {//make g, the wrapper function; use a to pass arguments from outer g to inner f
 		if (!p) {//if f is not running already, start it
 			p = f(...a).finally(() => {//call f and save its promise
@@ -2529,11 +2530,21 @@ export function noOverlap(f) {//takes f, the async function we want to protect f
 		}
 		return p//g returns the in-flight promise, which may be newly created or already pending
 	}
-	return g//return g, the newly created function this call to noOverlap() wrapped around f to protect it
+	return g//return g, the newly created function this call to promiseAfterOnce() wrapped around f to protect it
 }
 
-
-
+//make a once-at-a-time version g of a given async function f
+//when multiple calls like await g() happen close together, each runs f, they don't overlap, they wait in line, each gets its own result
+//this is useful for turnstile
+export function promiseAfterMany(f) {
+	let p = Promise.resolve()//p starts resolved so the first call starts right away
+	let g = function(...a) {
+		const r = p.then(() => f(...a))//make a new promise that waits for the previous one to finish
+		p = r.catch(() => {})//update the chain, catch errors so one doesn't break future calls
+		return r
+	}
+	return g
+}
 
 
 

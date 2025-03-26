@@ -35,6 +35,7 @@ and additionally, if necessary, protect the endpoint with cloudflare turnstile o
 
 import {
 log, look, Now, Limit,
+useTurnstileHere,
 } from 'icarus'
 import {ref, onMounted, watch} from 'vue'
 const helloStore = useHelloStore()
@@ -60,7 +61,7 @@ const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
 
 onMounted(async () => {
-	if (props.useTurnstile) turnstileStore.renderWidget = true//causes BottomBar to render TurnstileComponent
+	if (props.useTurnstile && useTurnstileHere()) turnstileStore.renderWidget = true//causes BottomBar to render TurnstileComponent
 })
 
 watch([() => props.canSubmit, () => props.inFlight], () => {
@@ -85,8 +86,13 @@ defineExpose({post: async (path, body) => {
 	let t1 = Now(), t2, t3
 	try {
 		emit('update:inFlight', true)//this lets our parent follow our orange condition
-		if (props.useTurnstile) {
-			body.turnstileToken = await turnstileStore.doCallFunction()//this can take a few seconds
+		if (props.useTurnstile && useTurnstileHere()) {
+			body.turnstileToken = await turnstileStore.getToken.value()//this can take a few seconds
+			/*
+			ttd march, this is good enough for now, but there are two possible race conditions here:
+			- somehow, this runs before turnstile component has finished mounting and been able to save its get token function reference for this call here to work
+			- two different post buttons both need tokens right now. code a promise lock so that the second one waits in line, turnstile runs twice, and there are two different working tokens, total
+			*/
 		}
 		t2 = Now()
 		body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to
@@ -99,7 +105,7 @@ defineExpose({post: async (path, body) => {
 	}
 	t3 = Now()
 	let p = {success, result, error, tick: t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
-	if (props.useTurnstile) {
+	if (props.useTurnstile && useTurnstileHere()) {
 		p.durationTurnstile = t2 - t1//how long the button was orange because turnstile wasn't done on the page yet
 		p.durationFetch     = t3 - t2//how long after that the button was orange because of the actual fetch to the server
 	}//ttd march, ok, but get durations the way you want them, also reporting the total time turnstile took to generate the token on the page, not just how much longer the button was orange because of token generation
