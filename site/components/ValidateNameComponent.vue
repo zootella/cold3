@@ -10,7 +10,6 @@ import {ref, reactive, onMounted} from 'vue'
 const refPageBox   = ref(''); const refPageStatus   = ref('')
 const refFormalBox = ref(''); const refFormalStatus = ref('')
 const refStatus = ref('')
-//then have []status altogether, and also here's where you []check name with the api endpoint, and then []turnstileStore!
 
 watch([refPageBox], () => {//the top box controls the lower one
 	let v = validateName(refPageBox.value, Limit.name)

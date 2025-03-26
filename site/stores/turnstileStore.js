@@ -12,7 +12,7 @@ const turnstileEnabled = ref(false)//set to true once, and bottom bar will rende
 const doEnable = () => {
 	if (turnstileEnabled.value) return//only change to true once
 
-	turnstileEnabled.value = true
+	turnstileEnabled.value = true//causes BottomBar to render TurnstileComponent
 }
 
 let savedFunction//note how this is not a ref
