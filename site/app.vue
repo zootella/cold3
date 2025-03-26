@@ -1,4 +1,4 @@
-<script setup>
+<script setup>//./app.vue
 
 import {
 Sticker, addTurnstileHeadScript,
@@ -22,6 +22,6 @@ useHead(head)
 <NuxtLayout>
 	<NuxtPage />
 </NuxtLayout>
-<StatusBar /><!-- will contain the single global invisible turnstile widget after a PostButton needs it -->
+<BottomBar /><!-- will contain the single global invisible turnstile widget after a PostButton needs it -->
 
 </template>

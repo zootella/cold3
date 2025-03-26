@@ -12,8 +12,7 @@ async function doorHandleBelow({door, body, action}) {
 	let r = {}
 	r.sticker = Sticker().all
 
-	//step 1 turnstile, handled now in doorWorker directly, so nothing to do here
-	let t1 = Now()
+	//step 1 turnstile, door already did that for us
 
 	//step 2 check what the page posted
 	let t2 = Now()
@@ -23,6 +22,6 @@ async function doorHandleBelow({door, body, action}) {
 	//step 3 check the database for uniqueness
 	r.available = await nameCheck({v})
 	let t3 = Now()
-	r.duration = `took ${t2 - t1}ms turnstile, can't measure that here anymore, then ${t3 - t2}ms database`
+	r.duration = `took ${t2 - door.startTick}ms turnstile, then ${t3 - t2}ms database`
 	return r
 }

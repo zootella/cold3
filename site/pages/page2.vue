@@ -3,7 +3,7 @@
 
 <NavigationComponent note="on page2" />
 
-<NameComponent />
+<NameComponent2 />
 
 </div>
 </template>
