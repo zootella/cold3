@@ -60,7 +60,7 @@ const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
 
 onMounted(async () => {
-	if (props.useTurnstile) turnstileStore.doEnable()//causes BottomBar to render TurnstileComponent
+	if (props.useTurnstile) turnstileStore.renderWidget = true//causes BottomBar to render TurnstileComponent
 })
 
 watch([() => props.canSubmit, () => props.inFlight], () => {

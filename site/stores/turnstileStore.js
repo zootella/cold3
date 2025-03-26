@@ -8,12 +8,7 @@ import {defineStore} from 'pinia'
 
 export const useTurnstileStore = defineStore('turnstile_store', () => {
 
-const turnstileEnabled = ref(false)//set to true once, and bottom bar will render turnstile component
-const doEnable = () => {
-	if (turnstileEnabled.value) return//only change to true once
-
-	turnstileEnabled.value = true//causes BottomBar to render TurnstileComponent
-}
+const renderWidget = ref(false)//PostButton sets to true, causing BottomBar to render TurnstileComponent
 
 let savedFunction//note how this is not a ref
 const doSaveFunction = (givenFunction) => {
@@ -22,8 +17,8 @@ const doSaveFunction = (givenFunction) => {
 	savedFunction = givenFunction
 }
 const doCallFunction = async () => {
-	if (!turnstileEnabled.value) { log('state mistake, not enabled yet!');       return }
-	if (!savedFunction)          { log('state mistake, no function saved yet!'); return }
+	if (!renderWidget.value) { log('state mistake, not enabled yet!');       return }
+	if (!savedFunction)      { log('state mistake, no function saved yet!'); return }
 
 	return await savedFunction()
 	/*
@@ -35,7 +30,7 @@ const doCallFunction = async () => {
 }
 
 return {
-	turnstileEnabled, doEnable,
+	renderWidget,
 	doSaveFunction, doCallFunction,
 }
 
