@@ -2,7 +2,7 @@
 
 import {
 log, look, Now, Time, Sticker, toss, hasText,
-useTurnstileHere, promiseAfterMany,
+useTurnstileHere, sequentialSeparate,
 } from 'icarus'
 import {ref, onMounted} from 'vue'
 const turnstileStore = useTurnstileStore()
@@ -12,13 +12,13 @@ const fresh = 4*Time.minute//cloudflare says a token expires 5 minutes; we don't
 
 //we begin the process of load+render+execute to get a first token right when the user navigates to the form
 onMounted(() => {//this component has been rendered and inserted into the page's DOM. onMounted *never* runs on server hydration
-	turnstileStore.getToken = promiseAfterMany(getToken)//save our getToken function into the store where post button can call it, and use promise after many so if a button asks for a token while we're already making one, the second call runs afterwards to make a second token
+	turnstileStore.getToken = sequentialSeparate(getToken)//save our getToken function into the store where post button can call it, and use promise after many so if a button asks for a token while we're already making one, the second call runs afterwards to make a second token
 	makeToken()//async but we don't need to await; just getting the process started
 })
 
 //the form using us calls here to get a token that's already been made, or make one and return it
 async function getToken() {
-	//ttd march, use promiseAfterMany here
+	//ttd march, use sequentialSeparate here
 	if (hasText(token.text)) {//we're holding a token
 		if (Now() < token.tick + fresh) {//and it's still fresh
 			return exportToken()//return it

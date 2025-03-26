@@ -222,7 +222,7 @@ say, look,
 parse, stringo,
 
 replaceAll, replaceOne, parseEnvStyleFileContents,
-promiseAfterOnce, promiseAfterMany,
+sequentialShared, sequentialSeparate,
 ashFetchum,
 
 getBrowserGraphics,

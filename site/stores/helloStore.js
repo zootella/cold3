@@ -1,7 +1,7 @@
 
 import {
 Sticker, log, look, Now, Tag, checkText, checkTag,
-getBrowserTag, getBrowserGraphics, promiseAfterOnce,
+getBrowserTag, getBrowserGraphics, sequentialShared,
 } from 'icarus'
 import {ref} from 'vue'
 import {defineStore} from 'pinia'
@@ -24,7 +24,7 @@ const sticker2 = ref('')
 const connection = ref({})//ip address, geographic information, and browser information like user agent string
 const codes = ref([])//currently live one time codes the person at this browser should find and enter!
 
-const hello1 = promiseAfterOnce(async () => {
+const hello1 = sequentialShared(async () => {
 	try {
 		let t = Now()
 		error1.value = null//clear a previous error
@@ -40,7 +40,7 @@ const hello1 = promiseAfterOnce(async () => {
 		duration1.value = Now() - t
 	} catch (e) { error1.value = e }
 })
-const hello2 = promiseAfterOnce(async () => {
+const hello2 = sequentialShared(async () => {
 	try {
 		let t = Now()
 		error2.value = null

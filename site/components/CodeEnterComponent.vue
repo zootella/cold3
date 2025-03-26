@@ -9,39 +9,28 @@ onlyNumerals, Code, hashToLetter,
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()
 
-const refPhone = ref('')
+//ttd march, really, this should be at the top of every page, and render into a list of catch boxes for 0+ codes alive
+const refCodeTag = ref('c2kK42lIV2MThI1VHsTGf')//you need to get this from hello store 2, probably?
+const refLetter = ref('H')//and then you need to hash it down to this with hashToLetter(c.codeTag, Code.alphabet)
 const refInstruction = ref('example instruction')
+const refCode = ref('')
 const refOutput = ref('example output')
-const refInFlight = ref(false)
-const refButtonState = ref('gray')//gray for ghosted, green for clickable, or orange for in flight
 
-const refLetter = ref('D')
-/*
-await hashToLetter(c.codeTag, Code.alphabet)
-*/
+const refButton = ref(null)
+const refButtonCanSubmit = ref(false)
+const refButtonInFlight = ref(false)
 
-//really, this should be at the top of every page, and render into a list of catch boxes for 0+ codes alive
-
-watch([refPhone], () => {
-	let v = validatePhone(refPhone.value)
-	refOutput.value = v
-
-	if (refInFlight.value) { refButtonState.value = 'orange' }
-	else if (v.isValid) { refButtonState.value = 'green' }
-	else { refButtonState.value = 'gray' }
+watch([refCode], () => {
+	refButtonCanSubmit.value = hasText(onlyNumerals(refCode.value))//clickable after even the first number, intentionally
 })
 
-async function clickedSend() {
-	let r = await $fetch('/api/code', {
-		method: 'POST',
-		body: {
-			action: 'Enter.',
-			browserTag: helloStore.browserTag,
-			codeTag: refCodeTag.value,//hidden from the user but kept with the form
-			codeEntered: refCode.value,
-		}
+async function onClick() {
+	let response = await refButton.value.post('/api/code', {
+		action: 'Enter.',
+		codeTag: refCodeTag.value,//hidden from the user but kept with the form
+		codeEntered: onlyNumerals(refCode.value),
 	})
-	log(look(r))
+	log(look(response))
 }
 
 </script>
@@ -54,26 +43,21 @@ async function clickedSend() {
 	Code {{refLetter}}
 	<input :maxlength="Limit.input"
 		type="tel" inputmode="numeric" enterkeyhint="Enter"
-		v-model="refPhone"
+		v-model="refCode"
 		class="w-32"
 	/>{{' '}}
-	<button
-		:disabled="refButtonState != 'green'"
-		:class="refButtonState"
-		@click="clickedSend"
-		class="pushy"
-	>Enter</button>
-</p>
+	<PostButton
+		labelIdle="Enter"
+		labelFlying="Verifying..."
+		:useTurnstile="true"
 
+		ref="refButton"
+		:canSubmit="refButtonCanSubmit"
+		v-model:inFlight="refButtonInFlight"
+		:onClick="onClick"
+	/>
+</p>
 <p>{{refOutput}}</p>
 
 </div>
 </template>
-<style scoped>
-
-button.gray        { background-color: gray;       }
-button.green       { background-color: green;      }
-button.green:hover { background-color: lightgreen; }
-button.orange      { background-color: orange;     }
-
-</style>

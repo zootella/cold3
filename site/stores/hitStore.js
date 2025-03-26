@@ -40,10 +40,10 @@ so you need to isolate this as follows:
 - and you need to do the fancy promise thing where after the first or going fetch finishes, any number of await-ers all return at once
 
 and you realized you need both protections
-wrap this with promiseAfterOnce - prevents multiple calls from overlapping on the page or cloud sides
+wrap this with sequentialShared - prevents multiple calls from overlapping on the page or cloud sides
 and also leave gotten - prevents a second unnecessary call on the client side
 
-also because action is different, you can't promiseAfterOnce _fetchHit
+also because action is different, you can't sequentialShared _fetchHit
 you've got to add a layer between the calls above and _fetchHit below
 
 */

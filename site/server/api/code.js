@@ -10,10 +10,11 @@ checkNumerals,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Send.', 'Enter.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {useTurnstile: true, actions: ['Send.', 'Enter.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
+	//ttd march, split this into code-request and code-enter because request should have turnstile and enter should not!
 
 	//first, validate what the untrusted client told us
 	checkTag(body.browserTag)
