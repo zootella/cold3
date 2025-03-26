@@ -6,6 +6,47 @@ useTurnstileHere,
 } from 'icarus'
 import {ref, onMounted} from 'vue'
 
+/*
+ttd march
+you've factored this into PostButton, so the widget stays near the button, and a form using PostButton can easily use turnstile or not
+but now stress testing on web, you can break turnstile internally by clicking between two routes that have post buttons with turnstile
+the chat suggested fix is to call turnstile.reset(), but your design already does that
+you also managed to get turnstile to say that we sent an alredy submitted token!
+
+the problem here is that turnstile is fundamentally global on the page, window.turnstile
+but your design puts it within the button
+
+a redesign, which you're not doing to do now, might look something like this
+- turnstile is always global to the page--it doesn't keep with the button that needs to post its token
+- the widget is always invisible, and we render it very last thing on the page (if it truly stays invisible, this will be fine, if somehow it shows a checkbox, the user will need to scroll all the way down to see what's going on)
+- when a component renders a post button with turnstile on, the turnstile widget container instantiates the turnstile widget
+so, imagine a second button on the page also does this
+or the user leaves that route, tearing down the button, and then returns to it, quickly, rendering the button again
+all of this is fine because the turnstile container is based, and wakes up, makes a token, even if lots of different buttons above it are shouting at it
+- then, one of those buttons needs the token, turnstile gives it up, and remembers that it needs a new one
+
+ok, so how do we do this?
+does this mean we do turnstileStore after all?
+that makes it so a fly by night button, or several buttons, can all talk to the same single store
+which solidly keeps it single state
+
+but then how does the turnstile component container work?
+you want it at the bottom of the page, but you also want it to not do anything unless a post button has rendered that will need a token to post
+
+also, how can the buttons talk to 
+
+
+
+
+
+
+
+
+
+
+
+*/
+
 const ACCESS_TURNSTILE_SITE_KEY_PUBLIC = '0x4AAAAAAA0P1yzAbb7POlXe'//from the cloudflare dashboard; intentionally public
 const fresh = 4*Time.minute//cloudflare says a token expires 5 minutes; we don't submit one older than 4
 
