@@ -22,6 +22,7 @@ watch([refName], () => {
 
 	refButtonCanSubmit.value = v.isValid
 })
+refName.value = 'Name1'//ttd march, so you can hit check immediately to stress test turnstile
 
 async function onClick() {
 	let f = await refButton.value.post('/api/name', {

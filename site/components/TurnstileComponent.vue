@@ -5,6 +5,7 @@ log, look, Now, Time, Sticker, toss, hasText,
 useTurnstileHere,
 } from 'icarus'
 import {ref, onMounted} from 'vue'
+const turnstileStore = useTurnstileStore()
 
 /*
 ttd march
@@ -38,7 +39,8 @@ also, how can the buttons talk to
 
 
 
-
+as the stress test, have name component once on page1, and twice on page2, and hit all the buttons
+also preload the namecomponent box 
 
 
 
@@ -53,6 +55,7 @@ const fresh = 4*Time.minute//cloudflare says a token expires 5 minutes; we don't
 //we begin the process of load+render+execute to get a first token right when the user navigates to the form
 onMounted(() => {//this component has been rendered and inserted into the page's DOM. onMounted *never* runs on server hydration
 	if (!useTurnstileHere()) return//we only use turnstile deployed to the cloud, but can turn this on for local development
+	turnstileStore.doSaveFunction(getToken)
 	makeToken()//async but we don't need to await; just getting the process started
 })
 

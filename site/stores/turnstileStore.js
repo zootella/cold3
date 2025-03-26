@@ -8,24 +8,35 @@ import {defineStore} from 'pinia'
 
 export const useTurnstileStore = defineStore('turnstile_store', () => {
 
-const error1 = ref(null)
-const duration1 = ref(-1)
-const sticker1 = ref('')
+const turnstileEnabled = ref(false)//set to true once, and bottom bar will render turnstile component
+const doEnable = () => {
+	if (turnstileEnabled.value) return//only change to true once
 
-const hello1 = noOverlap(async () => {
-	try {
-		let t = Now()
-		error1.value = null//clear a previous error
+	turnstileEnabled.value = true
+}
 
+let savedFunction//note how this is not a ref
+const doSaveFunction = (givenFunction) => {
+	if (savedFunction) return//only store the given function once
 
-		duration1.value = Now() - t
-	} catch (e) { error1.value = e }
-})
+	savedFunction = givenFunction
+}
+const doCallFunction = async () => {
+	if (!turnstileEnabled.value) { log('state mistake, not enabled yet!');       return }
+	if (!savedFunction)          { log('state mistake, no function saved yet!'); return }
+
+	return await savedFunction()
+	/*
+	note for a todo later:
+	we need a promise mechanism here that only lets one caller in at a time
+	if there's already a caller awaiting, the next caller waits in line before entering once the first has returned
+	there could be a longer line of awaiting callers, too!
+	*/
+}
 
 return {
-	hello1,
-
-	error1, duration1, sticker1,
+	turnstileEnabled, doEnable,
+	doSaveFunction, doCallFunction,
 }
 
 })

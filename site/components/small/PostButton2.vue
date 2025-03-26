@@ -33,8 +33,9 @@ and additionally, if necessary, protect the endpoint with cloudflare turnstile o
 import {
 log, look, Now, Limit,
 } from 'icarus'
-import {ref, watch} from 'vue'
+import {ref, onMounted, watch} from 'vue'
 const helloStore = useHelloStore()
+const turnstileStore = useTurnstileStore()
 
 //props
 const props = defineProps({
@@ -54,7 +55,10 @@ const emit = defineEmits(['update:inFlight'])
 //refs
 const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
-const refTurnstileComponent = ref(null)
+
+onMounted(async () => {
+	if (props.useTurnstile) turnstileStore.doEnable()//causes BottomBar to render TurnstileComponent
+})
 
 watch([() => props.canSubmit, () => props.inFlight], () => {
 
@@ -79,7 +83,7 @@ defineExpose({post: async (path, body) => {
 	try {
 		emit('update:inFlight', true)//this lets our parent follow our orange condition
 		if (props.useTurnstile) {
-			body.turnstileToken = await refTurnstileComponent.value.getToken()//this can take a few seconds
+			body.turnstileToken = await turnstileStore.doCallFunction()//this can take a few seconds
 		}
 		t2 = Now()
 		body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to
@@ -109,7 +113,6 @@ defineExpose({post: async (path, body) => {
 	class="pushy"
 	@click="props.onClick($event)"
 >{{refButtonLabel}}</button>
-<TurnstileComponent v-if="props.useTurnstile" ref="refTurnstileComponent" /><!-- most uses of PostButton will set :useTurnstile="false", and no code inside TurnstileComponent will run -->
 
 </template>
 <style scoped>
