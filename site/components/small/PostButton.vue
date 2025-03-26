@@ -87,7 +87,7 @@ defineExpose({post: async (path, body) => {
 	try {
 		emit('update:inFlight', true)//this lets our parent follow our orange condition
 		if (props.useTurnstile && useTurnstileHere()) {
-			body.turnstileToken = await turnstileStore.getToken.value()//this can take a few seconds
+			body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
 			/*
 			ttd march, this is good enough for now, but there are two possible race conditions here:
 			- somehow, this runs before turnstile component has finished mounting and been able to save its get token function reference for this call here to work

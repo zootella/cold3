@@ -54,7 +54,7 @@ const fresh = 4*Time.minute//cloudflare says a token expires 5 minutes; we don't
 
 //we begin the process of load+render+execute to get a first token right when the user navigates to the form
 onMounted(() => {//this component has been rendered and inserted into the page's DOM. onMounted *never* runs on server hydration
-	turnstileStore.getToken.value = getToken//give the turnstile store a reference to our get token function for post button to call
+	turnstileStore.getToken = getToken//give the turnstile store a reference to our get token function for post button to call
 	makeToken()//async but we don't need to await; just getting the process started
 })
 
