@@ -25,8 +25,7 @@ watch([refAddress, refProvider], () => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/api/code', {
-		action: 'Send.',
+	let response = await refButton.value.post('/api/code/send', {
 		address: refAddress.value,
 		provider: refProvider.value,
 	})

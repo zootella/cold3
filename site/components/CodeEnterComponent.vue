@@ -25,8 +25,7 @@ watch([refCode], () => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/api/code', {
-		action: 'Enter.',
+	let response = await refButton.value.post('/api/code/enter', {
 		codeTag: refCodeTag.value,//hidden from the user but kept with the form
 		codeEntered: onlyNumerals(refCode.value),
 	})
@@ -49,7 +48,7 @@ async function onClick() {
 	<PostButton
 		labelIdle="Enter"
 		labelFlying="Verifying..."
-		:useTurnstile="true"
+		:useTurnstile="false"
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"

@@ -68,7 +68,7 @@ queryTopSinceMatchGreater,
 
 
 //ttd march, quick new one
-export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you call this Nuxt defines it
+export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you call this Nuxt defines it, ttd march can we get this from door or a global or something instead?
 	let host = urlNetwork23()
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
 	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
@@ -614,7 +614,7 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 		messageText: code.messageText,//email body as text, or complete SMS message
 		messageHtml: code.messageHtml,//email body as HTML
 	}
-	let net23 = await fetch23({$fetch, path: '/message', body})
+	let net23 = await fetch23({$fetch, path: '/message', body})//ttd march, other notes about getting the nuxt environment reference $fetch
 	//log(look({net23}))
 	//does this throw if it's not successful? does it return a note in the return object?
 
