@@ -2547,6 +2547,13 @@ export function sequentialSeparate(f) {
 	return g
 }
 
+/*
+ttd march, maybe
+[]refactor promise stuff from door shut into functions here
+[]refactor primise stuff from turnstile component into functions here
+[]write generalized tests for these functions, even if they're not automated
+*/
+
 
 
 
