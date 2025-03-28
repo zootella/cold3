@@ -21,6 +21,7 @@ async function doorHandleBelow({door, body}) {
 
 	return {note: `worker says: ${workerNote}, ${Sticker().all}; ${lambdaNote}`}
 }
+//ttd march, refactor this to use fetchNetwork23
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered

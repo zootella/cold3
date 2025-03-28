@@ -7,7 +7,7 @@ log,
 say, look,
 checkText,
 Data, randomBetween,
-starts, cut,
+cut,
 fraction, exponent, int, big, deindent, newline,
 hashData, hashText, given,
 } from './level0.js'
@@ -690,7 +690,7 @@ export function validatePhone(raw, limit) {
 	let numerals = onlyNumerals(cropped)
 	let assumedRegion//leave undefined if not US
 	if (numerals.length == 10 ||//assume all 10 digit numbers are US
-		(numerals.length == 11 && starts(numerals, '1')))//or they also typed the 1 at the start
+		(numerals.length == 11 && numerals[0] == '1'))//or they also typed the 1 at the start
 		assumedRegion = 'US'
 
 	let phone = parsePhoneNumberFromString(cropped, assumedRegion)

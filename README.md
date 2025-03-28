@@ -280,3 +280,7 @@ pick one for email; write your test about gmail periods and lowercase names
 it seems these don't do phone numbers, and this does
 https://www.npmjs.com/package/libphonenumber-js
 ```
+
+ttd march
+[]move this into the top of net23.txt, which is about the monorepo generally, and is exhaustive. the narrative and guide and ledger that began here outgrew a readme and created net23.txt
+[]exclude README.txt from the shrinkwrap seal, and make seal generate one with the disk that shows the hash

@@ -652,33 +652,15 @@ and have it return an object of stats and outcomes, one of which is the composed
 
 
 
+^ttd march, bookmark march, making a pass up this file, below is through the comb, above is not yet
 
 
-TODO do you need soft versions of the text functions?
-
-//TODO these throw if anything is out of bounds, maybe add startSoft, endSoft, beyondSoft that instead return shorter or blank
-//bookmark you added this really fast, go through the larger process of actually testing them, and them using them where you need them
-export function startSoft(s, n)  { return clipSoft(s, 0, n) }
-export function clipSoft(s, i, n) {
-	s = s+''//fix everything
-	if (!minInt(i)) i = 0
-	if (!minInt(n)) n = 0
-
-	if (i     > s.length) i = s.length
-	if (i + n > s.length) n = s.length - i
-
-	return clip(s, i, n)
-}
-test(function() {
-	ok(clipSoft('abc', 1, 0) == '')
-	ok(clipSoft('abc', 1, 1) == 'b')
-	ok(clipSoft('abc', 1, 2) == 'bc')
-	ok(clipSoft('abc', 1, 3) == 'bc')
-});
 
 
-/*
-TODO
+
+
+
+
 consider this pattern
 
 checkThing - throws if not
@@ -687,12 +669,6 @@ makeThing - shapes to bring into compliance and returns
 
 then you put all the tests around isThing
 and instead of *Soft here, you use isThing when you don't want an exception
-*/
-
-
-//make Process and Fetch that work node or web worker, vue front or back end
-const Access = (typeof process != 'undefined' && process.env) ? process.env : import.meta.env
-const Fetch = (typeof fetch != 'undefined') ? fetch : (await import('node-fetch')).default
 
 
 
@@ -701,86 +677,6 @@ const Fetch = (typeof fetch != 'undefined') ? fetch : (await import('node-fetch'
 
 
 
-
-== browser fingerprint
-
-the browser key in local stroage can keep the user signed in forever
-but, an attacker could coach a n00b through discord to share it with him
-so also use a browser fingerprint
-you're looking for something script can't affect, and which doesn't change
-even as the device moves geographically and goes through browser and os updates
-
-WebGL Renderer: NVIDIA GeForce GTX 1050 Ti/PCIe/SSE2
-WebGL Vendor: NVIDIA Corporation
-User Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36
-Screen Resolution: 1920x1080
-
-don't do screen resolution because multiple monitors and turning your phone
-add window.location to get https://cold3.cc, make sure there's not a page afterwards
-and add the browser tag
-so you're hashing text like this:
-
-agent:Mozilla/. (Macintosh; Intel Mac OS X __) AppleWebKit/. (KHTML, like Gecko) Chrome/... Safari/.;renderer:NVIDIA GeForce GTX 1050 Ti/PCIe/SSE2;vendor:NVIDIA Corporation;tag:lYPvabMNWoWwlrgkguy0g;
-
-you make and save tag if it's not already there before doing this
-you never send tag over the wire, just the hash
-you never save that hash to disk, just the wire
-yeah, this is a great idea
-keep the user signed in forever, (unless he upgrades his video card)
-but also make it so a reddit coach can't get a n00b victim to look in local storage and share his browser tag
-
-maybe even call it
-account-access-tag-DO-NOT-SHARE
-
-current_session_password: account_access_code_DO_NOT_SHARE_lYPvabMNWoWwlrgkguy0g
-
-what if you did that, except for user agent, you remove all the numerals
-
-also, save it in a global variable so you only have to hash it once on page load, not every time you make a request
-
-async function getBrowserFingerprint() {
-  // Get WebGL Renderer and Vendor
-  const getWebGLFingerprint = () => {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) return null;
-
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!debugInfo) return null;
-
-    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-    const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-
-    return {
-      renderer: renderer,
-      vendor: vendor
-    };
-  };
-
-  // Get User Agent
-  const userAgent = navigator.userAgent;
-
-  // Get Screen Resolution
-  const screenResolution = `${screen.width}x${screen.height}`;
-
-  // Combine all pieces of information
-  const webGLFingerprint = getWebGLFingerprint();
-  if (!webGLFingerprint) return "WebGL information not available";
-
-  const combinedFingerprint = `
-    WebGL Renderer: ${webGLFingerprint.renderer}
-    WebGL Vendor: ${webGLFingerprint.vendor}
-    User Agent: ${userAgent}
-    Screen Resolution: ${screenResolution}
-  `;
-
-  return combinedFingerprint.trim();
-}
-
-// Example usage
-getBrowserFingerprint().then(fingerprint => {
-  log(fingerprint);
-});
 
 
 
@@ -1248,16 +1144,6 @@ will this mean there are cookies now, though?
 
 
 
-== big divide, done
-
-some bike shed
-fraction([1, 2, 3], [4])
-always takes numerator and denomonator arrays, , [1] if you just want to multiply
-always takes js numbers, not strings, not bigints
-checks that they're all numbers and integers
-multiplies top and bottom and then does the division, that part uses bigint so it can go over
-throws if the answer is too big to fit as a regular js integer
-returns an object of answers which include answer and remainder
 
 
 
@@ -1293,79 +1179,6 @@ nuxt deployed to cloudflare
 serverless framework local lambda emulation
 serverless framework deployed to aws lambda
 
->design
-
-we're in the bike shed with this one, but wouldn't it be cool to have
-
-a function you query that tells you where you are
-
-the floppy disk ascii where you set
-name and version, which are available to code everywhere
-
-and then every time you git commit or upload push, a prerun task computes and writes
-####s showing how much code you've written, on the disk
-sha256 hash of all the code you've written, filled in each time
-from the date and hash a simple version slug like v2024aug14h00FF00FF
-
- ____________________
-| |cold3           | |
-|.|________________|H|
-| |________________| |
-| |________________| |
-| |________________| |
-| |________________| |
-| |________________| |
-|                    |
-|    ____________    |
-|   |   |  _     |   |
-|   |   | | |    |   |
-|   |   | |_|    | V |
-|___|___|________|___|
-
-stamp task looks at all the files except .gitignore and diskette* to generate stamp1.js:
-
-export stamp1 = {
-	name: 'cold3',//set by user
-	tick: 456789456789456,//from developtment system
-	files: 456,//from disk
-	bytes: 456789456123,//totaled from disk
-	hash1: 'DSJCBGLG2G5FLB6NFFUM4DQUPQBI7B4ZNWSYUOGC3YKE7UGMCNHQ'//computed from disk
-}
-
-and then looks at stamp1.js to generate disk2.js:
-
-export stamp2 = {
-	(add in the stuff from stamp1, also),
-	hash2: 'QUPQBI7B4DSJCBGLG2G5FLB6NFFUM4DZNWS3YKE7UGMCNHQYUOGC',//computed from stamp1.js
-	seal: '2024aug14_QUPQBI7B'//composed from stamp1.tick and stamp2.hash, like a wax seal over the whole thing
-}
-
-and then code everywhere in all three projects references and shows stamp2.stamp
-
-this is called stamp, as in
-$ npm run stamp
-it doesn't happen automatically, you manually do stamp, deploy, push
-so now you can match a git version on github with what the server shows in cold3.cc/about
-
-this is a pretty cool idea
-
-there are two files so you can put things back, but at a later time, and confirm you get the same stamp1.hash1
-
-simple way to do this
-$ npm run stamp
-does node stamp
-stamp.js loads the library itself
-this is just a regular old fashioned node script
-meant only to run on the development workstation
-
-actually generate a stamp1.txt with hashes, sizes, and paths like:
-DSJCBGLG2G5FLB6NFFUM4DQUPQBI7B4ZNWSYUOGC3YKE7UGMCNHQ 123456 folder/file.js
-DSJCBGLG2G5FLB6NFFUM4DQUPQBI7B4ZNWSYUOGC3YKE7UGMCNHQ 123456 folder/file2.js
-
-so the files in order are:
-stamp1.txt, made from disk
-stamp2.js, made from stamp1
-stamp3.js, made from stamp2
 
 
 
@@ -1377,31 +1190,21 @@ stamp3.js, made from stamp2
 
 
 
-refactor the subtle crypto in library0 so that
-[]key import and export are handled for you (a user doesn't have to first import a key)
-[]functions take and return Data (and are not specific to one form of encoding or another)
-right now you think you'll end up using
--symmetric encryption for getAccess
--signed messages for net23 media access permission
--rsa for nothing
-but you still want them all factored properly
 
 
 
 
 
 
-you could combine sticker and library0
-by pass-through importing all of sticker's exports at the top of library0
-and then importing them from library0 elsewhere
-this note after you defanged circular dependencies from grand
 
 
 
 
 
 
-/*
+
+
+
 ~ security note ~
 
 good security design is always a balance between security and usability
@@ -1426,50 +1229,47 @@ current_session_password: account_access_code_DO_NOT_SHARE_hi1y5ICjnEQLVDKtawm0C
 imagine a n00b user is on a discord server or subreddit dedicated to power users of an instance of the platform, where a sophisticated attacker coaches users into compromising their accounts
 warning language to the n00b may give them pause
 
-(2) browser tag hashed, not sent
-the browser tag is never sent to the server
-the hash is never saved to the disk
-if the user's disk or system is compromised, a rudimentary scanner can recover the browser tag, but must compute the hash
-
-(3) hash is of tag and fingerprint
-rather than hashing the tag alone, details specific to the browser are included in the data hashed
-these details are designed to be specific to the user's device, but unlikely to change
-
-and then later, (2) and (3) didn't work, so falling back to just (1)
-*/
 
 
 
 
-
-
-
-
-
-how you might still use getBrowserAgentRendererAndVendor()
-//webgl render info didn't work for a hashed browser tag, but still include it as a query string
-//show it to the user on their page of where you're signed in and have signed in
-/*
-so, browser tag below didn't work as a fingerprint
-
-but you'll still need stuff like this to verbosely fingerprint:
-the user's browser, as client code sees it, with stuff like the user agent string
-an incoming client request, as a nuxt api handler sees it, with the supposed query string, ip address
-
-totally make the page where the user sees their query string and ip address of their current and previous sessions
-and you can include their webgl nvidia stuff there, also
-*/
 
 
 
 
 
 
-so your plan is to use ECDSA P-256 cryptographic signatures to sign and validate client requests into net23
-but you could also just symmetric encrypt the messages, which would be simpler, you now realize
-because, is it true that in the signature plan, both public and private keys are never revealed?
-the private key, which signs, is kept secret on the worker
-the public key, which verifies, is  kept secret on the lambda
+totally make the page where the user sees their query string and ip address of their current and previous sessions
+and you can include their webgl nvidia stuff there, also
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

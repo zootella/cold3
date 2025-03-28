@@ -1,22 +1,18 @@
 
 
-http://localhost:3000/page2
-
-./site/components/CodeComponent.vue
-./site/server/api/code.js
 
 in scope now:
-[]send code
+[x]send code
 []validate code
 []assign user tag on submit
 []notice a live code after refresh and put up box to get it
-[]limit with trail_table
-[]necessary limitations
-[]additional limitations
+[x]limit with trail_table
+[x]necessary limitations
+[x]additional limitations
 
 in scope soon:
-[]button component
-[]turnstile
+[x]button component
+[x]turnstile
 []email or sms
 []see how :class and class together work
 []get enterkeyhint working and decide about it
@@ -24,11 +20,10 @@ in scope soon:
 
 
 
-ok, next, you put code_table between CodeRequestComponent and sending
 
 
 actually maybe it's
-"Code B 1234 for brand - Don't tell anyone..." no hyphen
+"Code B 1234 for brand - Don't tell anyone..." no hyphen, yes, seeing iphone then offer to copy the code and take just the 1234 part
 and then the box is
 Code B [    ] [Enter] clearly not something you need to type
 because (Code B) is (1234) rather than (Code) is (B 1234)
@@ -45,18 +40,9 @@ so there's a complete flow coming together here
 and it's all based on browser tag
 but that's enough to run it!
 
-so make components to challenge and verify addresses
-
-CodeRequestComponent.vue
-address[] use[t|a] [Send Code]
-
-CodeEnterComponent.vue
-Code [J-    ] [Enter] _I can't find it_
 
 
 
-
-*/
 
 
 
@@ -72,52 +58,34 @@ Check your messages!
 _Correct my number_, _Send a new code_ or _Try another way_
 
 ^and have those count up in time on the page, soft melt to next five second increment
+or actually just say the time it was sent, because that will match the email time
+and you don't have to refresh the duration that counts forward
 
 
 
+more text you could add later to the code email:
+Codes last 20 minutes.
+A browser in 🇺🇸 Akron OH 44321 US requested a code to this address.
+Not you? Visit the site and review your security settings!
+
+and as another feature after that:
+https://www.npmjs.com/package/ua-parser-js 15mm weekly downloads
+"A Chrome browser on a Samsung Galaxy phone"
+"A Firefox browser on a Microsoft Surface tablet"
+"A Safari browser on an Apple iPad tablet"
+"An Edge browser on a Windows laptop"
+"A Chrome browser on a MacBook desktop"
+"A Samsung Internet browser on a Samsung Galaxy Tab tablet"
+"A Brave browser on a Linux desktop"
+"A Chrome browser on a Google Pixel phone"
+and be ready to shorten the sentence rather than saying unknown or default, maybe clearlist common ones so only they show up
+so even if you get "Samsung Internet" from ua parser you just say "A browser" because the user might be using that, but not know it by that brand
+Firefox, Chrome, Safari, "browser"
+iPhone, Samsung, Mac
+phone, tablet, laptop, PC, "device"
+yeah, you could make this complicated
 
 
-
-
-
-
-
-[]per code, dead in 20 minutes
-[x]per code, dead after 4 tries
-[x]per code, dead on issued replacement
-
-[x]per address, can't send another code if there are already 10 in the past 24 hours
-[x]per address, first two codes in 5 days right away, then 5 minutes delay between codes
-[x]per address, first two codes in 5 days length 4, then length codes are 6
-
-[x]per user, first one code in 5 days no prefix, then random letter prefix
-
-b: browser tag
-u: user tag
-t: code tag
-a: address
-code: full correct code
-letter: prefix letter
-
-
-event 1 >>>> can we send a code to address a?
-
-let p = await codePermissionToAddress({userTag, v})//can we send another code now?
-p.isPermitted true
-p.useLength 4 or 6
-p.userCodeCount how many codes we've ever sent this user, the alphabet index
-
-event 2 >>>> send a code to address a
-
-let index = p.userCodeCount
-let code = makeRandomCode(p.useLength)
-actually send it using the email or sms api
-let codeTag = await codeRecordSend({userTag, type, v, index, code})
-
-if this user has a currently live code to that address, we need to invalidate it!
-
-
-event 3 >>>> is this page expecting the user to type in a received code?
 
 
 
@@ -127,30 +95,13 @@ the page will have its own timer for this
 and should probably disappear a minute early, too! (or say 20 minutes but actually it's 25, actually, the grace period)
 
 
-event 4 >>>> the user has entered a code
-
-steps 4a, we need to validate it
-
-steps 4b, and, it's incorrect:
-
-steps 4c, or, it's correct:
 
 
 
 
 
 thinking having stepped away
-- now that you have code_table, should you use that instead of trail_table?
-- you're not just validating the address, you're also checking the person at the device, so for security, you should make it so the catch box only appears on the same browser where the person entered the address to challenge
-
-
-
-
-
-to make a code
-1 let permission = await codePermissionToAddress(addressNormal)//check permission
-2 let codeTag = Tag()//generate identifying tag
-3 let code = randomCode(permission.useLength)
+you're not just validating the address, you're also checking the person at the device, so for security, you should make it so the catch box only appears on the same browser where the person entered the address to challenge
 
 
 
@@ -168,35 +119,6 @@ to make a code
 
 
 
-
-ok, but seriously
-it may be possible to do this all with trail_table
-but way simpler to reason about if you also make code_table
-
-code_table
-
-row_tag
-row_tick
-hide - use to revoke
-
-browser_tag
-user_tag
-code_text "1234" "B1234" "D123456"
-guesses - 0, 1, 2
-
-	store when we've sent a new code to address a
-	when and how many codes we've sent to address a
-
-
-
-//when and how many codes we've sent to address a
-	//from this we can rate limit making a new code, and choose the code prefix presence and length
-	//from this we can tell if a guess is correct or not
-
-store(`${t} wrong guess`)//user entered a guess that's wrong
-	//from this we can count wrong guesses
-store(`${t} dead`)//code killed by one correct guess, a fourth wrong guess, or being replaced by a new code
-	//we have to check this to make sure a code is still live
 
 
 
@@ -236,6 +158,8 @@ server signs user into browser
 
 
 
+
+
 there's going to be another component that receives the code
 when does it show up?
 when this browsertag has a live code
@@ -244,26 +168,7 @@ see if you can do this without involving the user tag
 
 
 
-server receives send code
-has this information
-- browser tag, reported, always present
-- address, reported, always present
-- user tag, derived
 
-derived user tag can be:
-- standard, user is signed into the browser
-- provisional, we're tracking a person at this browser who has entered some information
-- absent
-
-address can be:
-- known and controlled by an existing user
-- known but not controlled
-- never seen before
-
-simpler
-
-user tag is standard, not
-address is controlled, not
 
 standard user signed into this browser, address controlled:
 	a signed in standard user typed another user's address--send no code!
@@ -297,16 +202,6 @@ server sees that code is valid, does three things
 
 
 
-user tag can be present (a user is signed in here) or absent (browser not signed in)
-
-possibilities
-address is
-- never seen it before
-- validated by an existing user
-
-
-
-have we seen this address before
 
 
 
@@ -314,61 +209,83 @@ have we seen this address before
 
 
 
-soon, to make sure you've got the provisional  user tag right
+soon, to make sure you've got the provisional user tag right
 users will type in dob first
 and imagine the flow that starts with credit card number
 
-
-
-
-/*
-1 send a sms (don't deploy) or do but they also have to be signed in using the old system? weird but maybe. or, it doesn't actually send deployed until you remove that, which can be soon
-2 put in limits (code dies in 20min, 4 tries, or sent replacement; two codes rigth away fine; then 5min apart; address limited to 10 messages in 24h or 20h cooldown; )
-3 record in address_table (user enters address, which is Challenged. Proven. Removed.)
-4 generate or tie to user tag, user tag is generated on first address submission so you always have browser tag and user tag
-*/
-
-
-
-	<!-- ttd february, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or not use it at all, to direct the user's attention back to the page, which is probably what you want to do for usability and consistancy. no, it's because you haven't done the enclosing form with submit prevent yet -->
-	<button
-		:disabled="refButtonState != 'green'"
-		:class="refButtonState"
-		@click="clickedSend"
-		class="pushy"
-	>Send Code</button>
-	<!-- how does :class and class together work?! -->
-
-
-	<!-- how does :class and class together work?! -->
+another common path
+the user is lazy, and never enters the code
+they return to the same browser
+they start a "i want back in here" flow on another browser
+you need to solve this without:
+- annoying the user
+- letting the user fat finger their way to a starting mess of two accounts
 
 
 
 
 
 
-first, just do email
-then do the thing where you ask email or phone
-you could make a box that accepts either, but then can't show the number mobile keyboard
-so, separate boxes
+1[x] send a sms
+2[x] put in limits
+3[] record in address_table (user enters address, which is Challenged. Proven. Removed.)
+4[] generate or tie to user tag, user tag is generated on first address submission so you always have browser tag and user tag
 
 
 
 
-async function clickedSend() {
-	//ttd february - doing this right here now but pretty sure it should be in a store? or at least protected with try catch??
 
-	let r = await $fetch('/api/code', {
-		method: 'POST',
-		body: {
-			action: 'Send.',
-			browserTag: helloStore.browserTag,
-			phone: refPhone.value,
-		}
-	})
-	log(look(r))
-	//bookmark february, get those to the backend!
-}
+how does enterkeyhint work now that you have PostButton, and the form is above?
+or, this really doesn't matter because you want to avoid it, to direct the user's attention back to the page, which is where the next question, or the thing the need to fix, will be
+
+<!-- ttd february, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or not use it at all, to direct the user's attention back to the page, which is probably what you want to do for usability and consistancy. no, it's because you haven't done the enclosing form with submit prevent yet -->
+
+
+
+
+
+
+
+
+quick thinking about the actual flow
+common lazy happy path
+user visits site on phone
+Sign Up, Log In separate
+chooses Sign Up
+enters birthday
+E-mail, Phone, other ways, separate
+chooses Email
+enters address
+ignores code
+
+returns next day
+still signed in? yes, because provisional user tied to browser tag
+
+goes to laptop
+chooses Sign In
+enters birthday
+E-mail, Phone, other ways, separate
+chooses Email
+enters address
+(at this oint the system can detect things generally look lazy and clean:)
+- this user is new and low risk
+- the address is only mentioned twice
+so, we sign the user in (now they do have to have a user tag, maybe they got it yesterday on their phone)
+and also repeat the code (maybe they'll enter it now)
+
+hmmm... still thinking and gaming out you need to do here
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -399,7 +316,9 @@ so make sure your rules allow for that
 
 
 
-later, be able to add "Is +1 789 555 1234 still your number? [Yes] [No]" "Is name@example.com still your email? [Yes] [No]"
+later, be able to add
+"Is +1 789 555 1234 still your number? [Yes] [No]"
+"Is name@example.com still your email? [Yes] [No]"
 do that if the haven't validated it in 6 months or whatever, either initial validation, or a later validation for sudo hour or individual destructive transaction permission
 also, if they say no, but that's the only way you have to identify them, what do you do?
 

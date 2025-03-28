@@ -22,3 +22,4 @@ async function doorHandleBelow({door, body}) {
 
 	return {note: `worker says: lambda took ${duration}ms to say: ${lambdaNote}`}
 }
+//ttd march, refactor this to use fetchNetwork23

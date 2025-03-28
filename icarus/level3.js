@@ -135,6 +135,7 @@ export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService
 	let resultAction = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
 	d.finish()//but then log this or return this or something, right now you're just trying out your new Duration object
 	return resultAction
+	//ttd march, you like the warmup, but probably you don't need the "what we are warming up", just call warm to the lambda, and either that will warm up everything, or that can warm up everything, or that will not warm up everything but get things starting to get warm, which is all you need
 
 	/*
 	november

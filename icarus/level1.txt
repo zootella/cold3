@@ -4,24 +4,14 @@
 
 
 
+now you're thinking you're not going to use password at all
+bad, earlier, because users choose weak ones, choose compromised ones, or write them on post it notes
+bad, currently, because tech giants are trying to steal them all into their security key system, and they lead to all kinds of confusing popups
+so then you can probably comment out a lot of sections on several levels, even
+and you don't have to make the password strength meter
 
-
-
-things that fit neatly into the validate pattern
-
-[]email
-[]phone
-[]card
-[x]date
-
-things that are similar, but not a perfect fit to that pattern
-
-name, title, post: including spaces, paragraphs, slugs
-password strength
-action sent to api
-
-[]familiarize yourself with email, phone, card tests, and align with isValid, formNormal, formFormal, formPage
-[]organize the other text validation stuff in level1, like name, title, post, you wrote yesterday
+all in all, this is not as annoying as the magic link thing,
+because that's annoying when the site is constantly logging you out
 
 
 
@@ -29,127 +19,21 @@ action sent to api
 
 
 
-/*
-design teh form
-user name [MyName]
-appear on the page "MyName"
-appear in links [MyName]
-this link also works "myname"
-
-1-42 numbers and letters; -_. ok but not in a row
-
-user changes text in the first box, second box automatically set
-but also, user can edit second box separately
-so accented latin goes unadorned
-and user can type all kanji into the first box and their english translation in the second
-*/
 
 
 
 
-for the name validation rules, you have this note:
-//and research what current popular platforms do--you haven't done enough research for this to design it properly
+
+
+
+for the name validation rules
+research what current popular platforms do--you haven't done enough research for this to design it properly
 which is a really good idea, and you coded it all without doing that
+for isntance, if x allows a name that you do not, that's a problem, as you want useres to be able to take the same name
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-on the front end:
-user types namePagepageName, gets suggestions for routeName and gets to see lookName
-user edits routeName, pageName doesn't change, lookName does
-user sees if what they've got is valid
-
-on the back end:
-validate all three, in the future
-
-validate pageName before saving it in the database, in a distant table
-validate lookName before saving it in the table you're on now
-
-ttd march
-[]user types name, other two are set automatically
-	but then user adjusts route, and that changes look but not name
-[]visitor navigates to route, and route changes to userRoute, capitalizing things for instance
-[]user edits route, but not in a way that changes look, so you don't have to adjust that table
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-these are all single line text boxes
-with text based live feedback
-and then validation, and different forms
-
-[]password
-[]email address
-[]phone number
-[]user name
-[]user identifier user1234
-
-email
-phone
-email or phone, the combination of those two
-password
-
-
-ttd february
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-here's a good first pinia task, maybe
-have log output that shows in /log, and any page, as you click around, can add to
-*/
 
 
 
@@ -244,62 +128,6 @@ function margin(s) {
 exporty({margin});
 
 
-
-
-
-
-
-
-
-
-
-./server/api/message.js ~ just to see how you used the messaging functions
-
-	//this is in place of checking the message and making it safe
-	message = message.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ' ').slice(0, Size.kb).trim()
-	r.network23Response = await fetchNetwork23($fetch, provider+service, '/message', {provider, service, address, message})
-
-provider must be Amazon. or Twilio.
-service must be Email. or Phone.
-based on service, address must validate as email or phone (you don't need to try both of them here)
-message must be not too long and not contain any special characters
-
-toss if doesn't make it through that gauntlet
-then call lambda to send the messaging
-all the database and datadog can be here in the worker, calling the lambda is essentially calling the api
-
-of course there's that first call where you just warm it up, and that's built into fetchNetwork23 providerDotService
-
-and to start
--don't do the warmup thing yet, and
--have the lambda just print out what it would do, to local console
-this is easy and you can do it now
-also, when you're sending locally, aws is already authenticated
-
-[]should that Business Intelligence behind this form be a function in level3.js that both the nuxt page and nuxt api call? (methinks, yes)
-
-
-
-
-
-you sorta came up with a format for enums in data, which is title case, ends with period
-this isn't bad, really--you can easily identify them in code, and can string them together if you need to
-
-
-
-
-
-
-
-so the validations are:
-(1) page, untrusted, as the user types
-(2) page, untrusted, when the user submits
-(3) worker, trusted, what got posted at us
-(4) what the worker sends apis
-(5) katy, before editing the database
-
-the lambdas dont need to validate anything, all that code can be here in the worker
-the lambdas can be really simple and dumb
 
 
 

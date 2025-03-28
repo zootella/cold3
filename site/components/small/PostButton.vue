@@ -78,7 +78,7 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 		}
 	}
 
-}, {immediate: true})
+}, {immediate: true})//run this right away at the start to set things up, before running it again on the first change
 
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {

@@ -551,6 +551,57 @@ lambda serverless framework is local/deployed--run in those two environments
 
 
 
+
+ _                          
+(_) ___ __ _ _ __ _   _ ___ 
+| |/ __/ _` | '__| | | / __|
+| | (_| (_| | |  | |_| \__ \
+|_|\___\__,_|_|   \__,_|___/
+                            
+(moved here from ./icarus/icarus.txt - but maybe it should be there, or at least a note about it in the readme)
+
+
+
+Icarus is a vite little tdd system and test runner for the library functions
+
+commands you used to make this:
+
+https://vitejs.dev/guide/
+$ npm create vite@latest
+chose vue, rather than vanilla or react
+chose javascript, rather than customize with create-vue or nuxt
+$ cd hivite
+$ npm install
+$ npm run dev
+http://localhost:5173
+
+commands to use icarus:
+
+$ cd icarus
+$ npm run icarus
+http://localhost:5173
+
+it works! superfast refresh on:
+-not just this folder, but the library folder alongside
+-not just code changes, but comment and whitespace changes
+
+next steps for this bike shed:
+[]get the test results on the page
+[]get the log output on the page
+refresh replaces those there, instead of scrolling forever downwards
+and if that works, can you not open the dev tools until you want to walk an object with >
+
+[]move these notes up into cold3 readme
+
+
+
+
+
+
+
+
+
+
 										 _                         _           _   
 	___ _ __ ___  __ _| |_ ___   _ __  _ __ ___ (_) ___  ___| |_ 
  / __| '__/ _ \/ _` | __/ _ \ | '_ \| '__/ _ \| |/ _ \/ __| __|

@@ -1,0 +1,80 @@
+
+export default defineNuxtRouteMiddleware((to, from) => {
+	return
+})
+
+/*
+ttd march
+here's where you correct the case of GETs that are routes to user names
+
+*/
+
+
+
+/*
+
+
+
+ttd march
+you've written validate name, and now just need to add the route
+[]user types name, other two are set automatically
+	but then user adjusts route, and that changes look but not name
+[]visitor navigates to route, and route changes to userRoute, capitalizing things for instance
+[]user edits route, but not in a way that changes look, so you don't have to adjust that table
+so the logic in ./site/pages/[part1]/index.vue
+
+wait, should the redirect be in here
+or is there a better place to put it, like nuxt middleware which looks at GETs coming in and can redirect some
+and all that middleware would do is redirect to correct the case of user names in routes
+routeNameGet - from the get request
+routeNameNormal - match found in database
+routeNameFormal - match found in database
+
+you validate routeNameGet to v
+only if all of the following is true
+- v is valid
+(ok, but also didn't change much--you didn't correct it into being valid--you realize now this is a new condition or use case of the validators, a validator with less massaging to help a user; we don't want to correct a user name in a link too much)
+- raw to valid didn't change much, like, the length is the same(?)
+- v.formNormal found as a user in the database
+- raw (where we're going) != v.formformal (so a correction is useful)
+then redirect
+
+make sure an infinite loop is impossible, that once redirected:
+- v will be valid
+- v won't have changed
+- normal will be found in the database
+- raw will match formal this time
+
+
+v.formNormal is found in the database
+i think to be fast and
+
+look at the part that should be the user name, if it's there
+and if lowercased, becomes a user name in the table
+but also, as it came in, is not the 
+and if it is a user name
+
+
+
+yeah, this is a job for nuxt 3 middlwear
+you'll make a file like
+./site/middleware/name.global.js
+
+
+
+raw comes in from the GET
+rawLowercased
+then run that through the validator--is it both valid and unchanged as formNormal?
+then look for rawLowercased in the database--is it there?
+and, is raw and formFormal not the same?
+only then do ydou redirect to formFormal
+
+which comes back through the same gauntlet
+which gets all the way to the end, except now raw will be the same as formformal
+
+
+
+
+
+*/
+
