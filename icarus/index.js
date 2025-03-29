@@ -192,12 +192,8 @@ checkText, hasText, blanket, checkInt, minInt,
 intToText, textToInt,
 checkTextSame, hasTextSame, checkTextOrBlank, hasTextOrBlank,
 newline,
-
-//start, end, beyond, chop, clip,
-//has, starts, ends,
 cut, cutLast,
-//findFirst, findLast,
-//swap, between,
+replaceAll, replaceOne,
 
 Bin, Data,
 base62ToInt, intToBase62,
@@ -221,7 +217,7 @@ correctLength,
 say, look,
 parse, stringo,
 
-replaceAll, replaceOne, parseEnvStyleFileContents,
+parseEnvStyleFileContents,
 sequentialShared, sequentialSeparate,
 ashFetchum,
 

@@ -222,7 +222,7 @@ async function message_TwilioPhone(c) {
 //november, you're doing this as tests now, and can remove this
 export async function snippet2() {
 
-	let cut = 512
+	let limit = 512
 	let o = {}
 	try {
 		o.intro = "hi from snippet2 in persephone; tests cover all of this now, so you should soon delete it"
@@ -231,7 +231,7 @@ export async function snippet2() {
 		//amazon
 		const {SESClient, GetSendQuotaCommand} = await loadAmazonEmail()
 		const mailClient = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
-		o.amazonMail = look(mailClient.config).slice(0, cut)
+		o.amazonMail = look(mailClient.config).slice(0, limit)
 		try {
 			let quota = await mailClient.send(new GetSendQuotaCommand({}))
 			o.amazonMailQuota = quota
@@ -240,15 +240,15 @@ export async function snippet2() {
 		}
 		const {SNSClient} = await loadAmazonPhone()
 		const textClient = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
-		o.amazonText = look(textClient.config).slice(0, cut)
+		o.amazonText = look(textClient.config).slice(0, limit)
 
 		//twilio
 		const _twilio = await loadTwilioPhone()
 		const _sendgrid = await loadTwilioEmail()
-		o.twilioRequired = look(_twilio).slice(0, cut)
-		o.sendgridRequired = look(_sendgrid).slice(0, cut)
+		o.twilioRequired = look(_twilio).slice(0, limit)
+		o.sendgridRequired = look(_sendgrid).slice(0, limit)
 		let twilioClient = _twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
-		o.twilioClient = look(twilioClient).slice(0, cut)
+		o.twilioClient = look(twilioClient).slice(0, limit)
 		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
 
 		//sharp

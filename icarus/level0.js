@@ -371,34 +371,64 @@ test(() => {
 
 export const newline = '\r\n'//we use the Microsoft Windows-style newline, valid on windows, mac, and linux
 
-export function cut(s, t) {
-	const i = s.indexOf(t)
-	if (i == -1) return {found: false, before: s,             after: ''}
-	else         return {found: true,  before: s.slice(0, i), after: s.slice(i + t.length)}
-}
-export function cutLast(s, t) {
-	const i = s.lastIndexOf(t)
-	if (i == -1) return {found: false, before: s,             after: ''}
-	else         return {found: true,  before: s.slice(0, i), after: s.slice(i + t.length)}
-}
-test(() => {
-	let s = 'abcDEFghiDEFjkl'
-	let c1 = cut(s, 'DEF')
-	let c2 = cutLast(s, 'DEF')
-	ok(c1.found && c2.found)
-	ok(c1.before == 'abc' && c1.after == 'ghiDEFjkl')
-	ok(c2.before == 'abcDEFghi' && c2.after == 'jkl')
-	ok(!cutLast(s, 'X').found)
-})
 /*
 ttd march
 []make a note about using .slice and not .substring or .substr
 []have a test that shows .slice safely going off the edge
-[]move replaceOne and replaceAll up into this section
-[]in drawer but maybe restore here, between(s, t1, t2), the function that used to be called parse()
 */
+export function cut(s, t) {
+	checkTextOrBlank(s); checkText(t)
+	const i = s.indexOf(t)
+	if (i == -1) return {found: false, before: s, tag: '', after: ''}
+	else         return {found: true,  before: s.slice(0, i), tag: s.slice(i, i + t.length), after: s.slice(i + t.length)}
+}
+export function cutLast(s, t) {
+	checkTextOrBlank(s); checkText(t)
+	const i = s.lastIndexOf(t)
+	if (i == -1) return {found: false, before: s, tag: '', after: ''}
+	else         return {found: true,  before: s.slice(0, i), tag: s.slice(i, i + t.length), after: s.slice(i + t.length)}
+}
+export function cut2(s, t1, t2) {
+	let c1 = cut(s,        t1)
+	let c2 = cut(c1.after, t2)
+	if (c1.found && c2.found) return {found: true, before: c1.before, tag1: c1.tag, middle: c2.before, tag2: c2.tag, after: c2.after}
+	else return {found: false, before: s, tag1: '', middle: '', tag2: '', after: ''}//both must be found
+}
+test(() => {
+	let s, c
+	s = 'red<a>green<a>blue'
+	c = cut(s,     '<a>'); ok(c.found && c.before == 'red'         && c.tag == '<a>' && c.after == 'green<a>blue')
+	c = cutLast(s, '<a>'); ok(c.found && c.before == 'red<a>green' && c.tag == '<a>' && c.after ==         'blue')
+	//we include tag so you can assemble s from given parts
 
+	c = cut(s,     '<b>'); ok(!c.found && c.before == 'red<a>green<a>blue' && c.tag == '' && c.after == '')
+	c = cutLast(s, '<b>'); ok(!c.found && c.before == 'red<a>green<a>blue' && c.tag == '' && c.after == '')
+	//all before so you can move forward in a loop until after is blank
 
+	c = cut2(s, '<a>', '<a>'); ok(c.found && c.before == 'red' && c.tag1 == '<a>' && c.middle == 'green' && c.tag2 == '<a>' && c.after == 'blue')
+})
+
+export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
+	checkText(tag1); checkText(tag2)
+	return s.split(tag1).join(tag2)
+}
+export function replaceOne(s, tag1, tag2) {//this time, only replace the first one
+	checkText(tag1); checkText(tag2)//replace's behavior only works this way if tag1 is a string!
+	return s.replace(tag1, tag2)
+}
+test(() => {
+	ok(replaceAll('abc', 'd', 'e') == 'abc')//make sure not found doesn't change the string
+	ok(replaceOne('abc', 'd', 'e') == 'abc')
+
+	let s1 = 'ABABthis sentence ABcontains text and tagsAB to find and replaceAB'
+	let s2 = 'CCthis sentence Ccontains text and tagsC to find and replaceC'
+	ok(replaceAll(s1, 'AB', 'C') == s2)
+
+	let size = 6789
+	ok(replaceOne(
+		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
+		'first ‹6789› and second ‹SIZE› later')
+})
 
 
 
@@ -2366,27 +2396,6 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 
 
 
-export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
-	checkText(tag1); checkText(tag2)
-	return s.split(tag1).join(tag2)
-}
-export function replaceOne(s, tag1, tag2) {//this time, only replace the first one
-	checkText(tag1); checkText(tag2)//replace's behavior only works this way if tag1 is a string!
-	return s.replace(tag1, tag2)
-}
-test(() => {
-	ok(replaceAll('abc', 'd', 'e') == 'abc')//make sure not found doesn't change the string
-	ok(replaceOne('abc', 'd', 'e') == 'abc')
-
-	let s1 = 'ABABthis sentence ABcontains text and tagsAB to find and replaceAB'
-	let s2 = 'CCthis sentence Ccontains text and tagsC to find and replaceC'
-	ok(replaceAll(s1, 'AB', 'C') == s2)
-
-	let size = 6789
-	ok(replaceOne(
-		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
-		'first ‹6789› and second ‹SIZE› later')
-})
 
 
 
