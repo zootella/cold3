@@ -2,6 +2,53 @@
 
 
 
+
+
+figured this out, maybe
+a common happy and lazy path
+
+decisions:
+- don't user passwords, because users aren't capable of them, and just recently, your browser and your device both clamor to choose and trap yours in a passkey system
+- don't force a new person to find the code, they might not choose too, theh code might actually not successfully reach them
+
+day 1
+new person navigates browser to site
+browser chooses browser tag
+person enters address
+server assigns user tag, and sends code to address
+page shows code enter box at the top, but also renders inside for that user below; person ignores code enter box
+
+day 2
+person returns to site in same browser
+site is signed in, person has browser tag and user tag
+page notices unverified address, puts up box to send a new code; person ignores it
+
+day 3
+person navigates new device to site
+clicks sign in (or maybe sign up or sign in?! :)
+enters same address (does not require additional matching information, like dob beforehand)
+now, finding the code is required! and when the user does this, there are two positive outcomes:
+- they've validated the address
+- they're signed in on the new device (as well as, still, the first device)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 you are ready to code name-based sign up and sign in
 which will use real tables and functions
 even though it has the following simplifications

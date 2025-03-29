@@ -5,13 +5,6 @@
 
 
 
-
-
-
-
-
-
-
 /*
 trail notes
 you've been doing a great job of making each of these a one screen show!
@@ -32,22 +25,10 @@ you've been doing a great job of making each of these a one screen show!
 do all the text checking you need for the database
 and for validating single-line user input, like a screen name
 not, at this time, the text checking for a user writing a comment
-
-
 */
 
 
 
-/*
-you want to use tag and now as local variables in code
-but they're clashing with tag() and now() as short commonly imported functions
-
-you were thinking makeTag(), but tickNow() is not awesome
-maybe Tag() and Now()
-
-
-
-*/
 
 
 
@@ -115,243 +96,6 @@ moar feature ideas for look
 
 
 
-//maybe wrap json parse and stringify to deal with errors you've encountered
-
-
-
-
-
-//    _                 
-//   (_)___  ___  _ __  
-//   | / __|/ _ \| '_ \ 
-//   | \__ \ (_) | | | |
-//  _/ |___/\___/|_| |_|
-// |__/                 
-
-export function jsonStringify(o) {//watch out for a circular reference
-	/*
-//watch out for a circular reference
-try {
-return JSON.stringify(o, null)//single line
-} catch (e) { return '(circular reference)' }//watch out for circular references
-*/
-}
-
-export function jsonParse(s) {//watch out for a blank body
-	/*
-//watch out for a blank body
-//get the text first, and keep that, too
-
-r.responseText = await response.text()//might be nothing, even on success
-if (r.responseText) r.responseData = JSON.parse(r.responseText)//throws if you give it nothing
-*/
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-2024apr26
-code encoding, some bikeshedding
-
-[x]from separate project entry point, Ctrl+S leads to green or red check on page
-
-level0 ~
-
-[]base16 data
-[]base64 data
-[]base62 data, your code
-[]base62 integer, chatGPT's code
-
-[]round trip check
-[]toss on failure
-[]speed test your base62 with the browser's base64
-
-level1 ~
-
-[]random 1-9
-[]random 0-9
-[]random 0-9 A-Z a-z
-
-not in scope for this first pass:
--page rendered width analysis
--unicode search for narrow accents that still render
--unified chinese base256
-
-
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-2024may16
-dustiest corner of the bike shed
-make sure your log and see plan is good before you go back in there
--get rid of log destinations
--do program an indented deep object sayer
--dont use it when there's a browser inspector which has arrows
-
-
-
-
-*/
-
-
-
-
-/*
-more bikeshedding here, but what if log worked like this
-log(a)
-turns a into text, and prefixes it with the timestamp
-log(a, b)
-not sure anymore
-the thing you forgot when designing this refactor above was that in the browser, you don't want everything text, because the browser inspector has arrows to go deep into nested objects, which you won't code yourself, and which is incredible
-
-
-
-
-*/
-
-
-/*
-moar notes and ideas
-
-instead of see doing lines like
-(string) s "hello"
-all you need is "hello" because quotes mean string
-{object}
-[array]
-"string"
-7 with no punctuation is a number
-true with no punctuation is a boolean
-
-
-you made the separte vite entry point
-but now nuxt localhost:3000/test is working so well you don't need it(?)
-like, it's just as fast
-and you can Ctrl+S library0.js several times in a row and it refreshes each time
-and, the text stays in place on the page, and also scrolls down in the console
-so, what more is there to do here?
-i guess refactor it so you don't have log destinations anymore
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-do encoding at the same time as you do cryptography
-maybe make a little object so you dont have to type Uint8array over and over again
-the object is indelible
-holds some binary data
-and has methods to convert between all these different formats:
-
-text, like a string of cleartext
-length, how long is it in bytes when you look at it as bytes
-base16
-base64, checking roundtrips and whatnot
-
-you create these from:
-text strings
-base16
-base64
-random data, cryptographically secure
-
-following hte model, this should be tiny, it shouldn't be your node project's Data object
-
-
-
-remind yourself of the pattern, but you think you remember it
-and now you can use const!
-
-export function Data(c) {
-	const o = {}
-	o.type = 'Data'//no how do you make that const?
-	const type 
-	
-
-	const function fromText(s) {
-
-	}
-
-	const function base16()
-	const function text()
-
-	return o
-}
-this constructor makes a new data object
-
-have it lazily create and then save the different forms
-understand how utf8 text encoding plays a role with all this, bake that into Data as the default
-
-
-
-
-
-
-
-
-
 server logs
 dog() and log() goes to datadog
 or, figure out your pattern for an api function
@@ -383,14 +127,6 @@ you don't think you're coding any forms that could cause this, but understand it
 
 
 /*
-this one is for birthdates, stored in the database as text like "1980-02-14"
-take the user's input free-form
-allow months as feb, 2, 02, whatever
-allow years 02, 2002, 76, whatever
-figure out what they may mean and put up one or more buttons that snap to
-
-you also need to take a well formatted one, and return the year, month, day as numbers
-
 Date of birth
 You must be 18+
 Enter like YYYYMMDD four digit year, two digit month, two digit day
@@ -408,21 +144,6 @@ Kept private from fans and collaborators
 It'll
 Birthday with 
 that's February 14, 1980
-
-
-have icarus have a little expandable text box where you can live type into a function to test it
-
-
-
-idea for how to get dates the fastest
-worst, by the way, is putting up a calendar clicker for today, asking for a dob
-phone puts up number pad
-instruction text says birthday, YYYYMMDD
-see if you can infer other orders, including shorter orders like 040176
-if they type YYMMDD, YYYYDDMM
-one or two buttons pop up that say "do you mean 2002 Jan 26"
-if it's ambiguous, multiple buttons pop up
-a single backspace clears the whole field, maybe
 */
 
 
@@ -433,7 +154,6 @@ a single backspace clears the whole field, maybe
 
 /*
 //here's a bike shed--write a tight little deindent
-
 
 so you can
 {
@@ -461,198 +181,11 @@ maybe remove that number of things
 like that number of
 
 confirm you don't chop off any nonwhitespace doing this
-
-
 */
 
 
 
 
-
-
-/*
-function f() {
-
-	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-	let census = {}
-	for (let c of alphabet) census[c] = 0
-
-	let duration = 1*Time.second
-	let t = now()
-	let d, b
-	while (now() < t + duration) {
-		d = Data({random: randomBetween(1, 32)})
-		b = d.base62()
-		for (let c of b) census[c]++
-	}
-
-	let s = ''
-	for (let c of alphabet) s += `\r\n${c}\t${census[c]}`
-	log(s)
-
-
-}
-//f()
-
-test(() => {
-
-
-})
-*/
-
-
-
-
-
-
-
-/*
-noop(() => {
-
-	//get some random bytes
-	let b16 = Data({random: 40}).base16()
-	//encode into base62
-	let b62 = arrayToBase62(Data({base16: b16}).array())
-	//and back again
-	let b16a = Data({array: base62ToArray(b62)}).base16()
-	//log to confirm looks good
-	log(b62, b16, b16a)
-
-
-})
-
-
-noop(() => {
-
-	let d = Data({random: 40})
-	let b62 = _arrayToBase62(d.array())
-	log(
-		b62,
-		d.base16(),
-		Data({array: _base62ToArray1(b62)}).base16(),
-		Data({array: _base62ToArray2(b62)}).base16()
-	)
-
-
-})
-
-
-/*
-async function f() {
-	let d, s
-	let size = 50
-	let duration = 4*Time.second
-
-
-	let r1 = 0
-	let t = now()
-	while (now() < t + duration) {
-		d = Data({random: size})
-		s = arrayToBase64(d.array())
-		base64ToArray(s)
-		r1++
-	}
-	log(r1+' base64')
-
-	let r2 = 0
-	t = now()
-	while (now() < t + duration) {
-		d = Data({random: size})
-		s = _arrayToBase62(d.array())
-		_base62ToArray1(s)
-		r2++
-	}
-	log(r2+' base62 to array method 1')
-
-	let r3 = 0
-	t = now()
-	while (now() < t + duration) {
-		d = Data({random: size})
-		s = _arrayToBase62(d.array())
-		_base62ToArray2(s)
-		r3++
-	}
-	log(r3+' base62 to array method 2')
-}
-f()
-*/
-
-
-
-
-
-
-
-
-/*
-async function f2() {
-	let k = await symmetricCreateKey()
-	let b = await symmetricExportKey(k)
-	let k2 = await symmetricImportKey(b)
-	let p = 'a short message, like card info'
-	let c = await encrypt(p, k)
-	let d = await decrypt(c, k)
-	if (d != p) log('decryption mismatch')
-}
-async function f3() {
-	let k = await createKey_new()
-	let b = await exportKey_new(k)
-	let k2 = await importKey_new(b)
-	let p = 'a short message, like card info'
-	let c = await encrypt_new(p, k)
-	let d = await decrypt_new(c, k)
-	if (d.text() != p) log('decryption mismatch')
-}
-async function f() {
-	log('just in a function f')
-	let r1 = 0
-	let t = now()
-	while (now() < t + 4*Time.second) {
-		r1++
-	}
-	log(r1+' empty')
-	let r2 = 0
-	t = now()
-	while (now() < t + 4*Time.second) {
-		await f2()
-		r2++
-	}
-	log(r2+' direct')
-	let r3 = 0
-	t = now()
-	while (now() < t + 4*Time.second) {
-		await f3()
-		r3++
-	}
-	log(r3+' custom')
-}
-f()
-*/
-
-
-
-/*
-improve tiny tests
-
-TODO make this an object that fills up here
-but which is exported, and you can bring into a vue component
-and run tests there and see results
-
-also, get tests to await async tests etc correctly
-this should be pretty easy
-
-also, did you have mustThrow or something before? you need that again; right now you're just skipping writing tests of check* functions
-
-and have it return an object of stats and outcomes, one of which is the composed status line
-*/
-
-
-
-
-
-
-
-^ttd march, bookmark march, making a pass up this file, below is through the comb, above is not yet
 
 
 
@@ -669,10 +202,6 @@ makeThing - shapes to bring into compliance and returns
 
 then you put all the tests around isThing
 and instead of *Soft here, you use isThing when you don't want an exception
-
-
-
-
 
 
 
@@ -1135,20 +664,6 @@ will this mean there are cookies now, though?
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 == nuxt public
 
 []in the nuxt project, get rid of public/favicon.ico
@@ -1178,11 +693,6 @@ nuxt deployed to cloudflare
 
 serverless framework local lambda emulation
 serverless framework deployed to aws lambda
-
-
-
-
-
 
 
 
@@ -1241,27 +751,6 @@ warning language to the n00b may give them pause
 
 totally make the page where the user sees their query string and ip address of their current and previous sessions
 and you can include their webgl nvidia stuff there, also
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

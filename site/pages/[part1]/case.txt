@@ -1,4 +1,47 @@
 
+notes about correcting the case in user routes
+
+
+
+
+no, don't do a 3xx redirect, you can change the route in place!
+
+the underlying browser api is history.replaceState
+the right nuxt api to call is router = useRouter(); router.replace()
+this won't do a 3xx redirect
+this also won't break the Back button
+
+a good place to do this is in middleware, as that affects routes before they reach individual vue files in pages
+but, your worry is that this will add 150ms to every request, as the global middlewear looks for correct user names
+so, you'll try to do it in ./pages/[]
+and, you believe that code here runs, even if the full route is to a post lower, like form 3 below:
+https://cold3.cc/UserName
+https://cold3.cc/UserName/
+https://cold3.cc/UserName/post-title-words-TagTagTagTagTag
+
+and if its difficult, or could make things slower, or less reliable, just don't do it at all
+the necessary feature is that links are not case sensitive, which you easily have
+not that case is corrected when it's wrong, that's a really low priority nice to have
+
+
+
+
+
+
+
+
+
+
+
+previous notes and thinking
+before you realized a real hard 3xx redirect wasn't necessary
+and as you went between middleware and pages
+
+
+
+
+
+//from ./site/middleware/name.global.js
 export default defineNuxtRouteMiddleware((to, from) => {
 	return
 })
@@ -77,4 +120,30 @@ which gets all the way to the end, except now raw will be the same as formformal
 
 
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
