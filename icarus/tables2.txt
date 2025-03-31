@@ -2,86 +2,6 @@
 
 
 
-ok, you really broke it to clear out a bunch of old stuff
-this imagines now you can quickly get it working again
-with your new plan for browser_table and name_table (which does routes)
-
-old flow that leads to functions to isolate, glance at, and delete:
-
-site/stores/helloStore.js
-v
-site/server/api/hello1.js > browserToUser
-site/server/api/hello2.js > authenticateSignGet
-
-site/server/api/authenticate.js
-v
-authenticateSignGet > userToRoute
-authenticateSignUp > routeToUser, routeAdd
-authenticateSignIn > routeToUser
-authenticateSignOut
-
-new functions to write and use instead:
-
-site/server/api/hello1.js > browserToUser
-site/server/api/hello2.js > somethingNew({browserTag}) => {userTag, routeText}
-
-( ~ new stuff on top of that calls down to:)
-browserToUser
-browserSignIn
-browserSignOut
-
-( ~ new stuff on top of that calls down to:)
-getName
-setName
-removeName
-
-
-
-
-
-
-
-2025feb19
-
-## map
-
-
-
-userToRoute,
-routeToUser,
-routeAdd,
-routeRemove,
-routeMove,
-
-browserToUser,
-browserSignIn,
-browserSignOut,
-
-
-
-
-/level1
-
-checkNameNormal(nameNormal) makes sure nameNormal is a valid normalized route that doesn't change when we validate it
-checkNamePage(namePage) makes sure namePage is a valid name for the page that doesn't change when we validate it
-checkName(all three) makes sure that when we validate each of three they don't change, and also, that formal normalizes to normal!
-(maybe put those into a single checkName which acts on what it's given--or maybe that's much harder to reason about)
-
-validateName
-
-
-
-
-
-
-
-
-
-## best thinking so far:
-
-let's see if you can help with this:
-
-```js
 [I] what are the high level functions on top of this?
 
 q1. im a browser with browser tag, what user if any is here? provisional, actual, or super
@@ -109,13 +29,6 @@ row_tag | row_tick | hide | browser_tag | user_tag | level
                                                      1 provisional user signing up or customizing
                                                      2 normal actual signed in user
                                                      3 sudo, just for one hour, and just here
-```
-
-
-## stuff you'll clean up
-
-
-(those sets of functions hanging around from a few weeks ago, list them here)
 
 
 
@@ -124,46 +37,6 @@ row_tag | row_tick | hide | browser_tag | user_tag | level
 
 
 
-
-## notes about that
-
-[]get rid of access_table, it's confusing you
-blow it up. and its functions and endpoints and components, too
-and you don't need the global access password anymore, either
-
-you're pretty sure that duplicate visible cells for browser_tag and user_tag are totally expected
-so that means you won't have any of those unique indices
-
-1 so browserToUser does one query
-but if it gets a user who's sudo, and that sudo is expired, it does two more queries
-2 hide all the expired sudos, everywhere--all Kevin Uxbridge-style
-3 repeat query 1
-that's crazy but you think it'll work well
-[]find the right index to make that really fast, probably just visible, chronological, level 3 rows, regardless of all the tags, yeah, that'll be really fast
-
-
-
-here are some big pices that are about to come together:
--turnstile store
--route table
--user name validation
--nuxt dynamic routes and redirects
--check username form
-and that's all separate from everything that's about to get settled in browser table
-
-
-
-## ui you can make now
-
-not sure how many different components this is
-but it all leads down to browser_table and name_table as you've written them
-also, at this point, all users have pages, this will of course not be the case
-there may be a little bit of the provisional user peeking through here, as you may create the userTag before they actually choose and take a name
-
-maybe try lots of different components, to see what that's like
-harder at this point, but may let each grow to be larger and more complex?
-
-```
 ~ UserInformationComponent
 browser tag: "CnsWynLDKPgorrBcwEQLi"//exactly identifies browser, never changes
 user tag: "07bnKpPvsq56NKKAIqtri"//exactly identifies user, never changes
@@ -192,69 +65,41 @@ You can edit your name as it appears on pages, cards, and links.
 
 ~ UserExitComponent
 [Sign Out] [Permanently Close Account] <--ooh!
-```
 
-do all these use identityStore or something?
-so then you're trying to factor down lower
-components and api endpoints
-stores
-level3
-level2... and so on
 
-for permaclose, you could do a confirmation time, like 1-2min from first click
+
+
+
+
+for permaclose, you could do a confirmation time, like 1-2min from first click for testing
+and then after you test that you set it to 24 hours
 
 also, imagine much later the user wants to change their name, but have a redirect from the old name to the new one, how would you do that?
-
-
-you are not signed in
-
-
-you are identified as:
+that's a reasonable feature request
+and also quite hairy in the table, you now realize!
 
 
 
 
 
-see if you can do this in 25min with chat and tailwind
-text boxes have a thick rounded border
-you can change the color, from red to green
-you can change the stroke, solid or dashed
 
-buttons are solid color, with inverse video text
-you can already change the color
+make browser_table really simple to think about (it's not yet)
+a browser visits for the first time; they get a browser tag
+the person enters the first bit of information; they get a user tag, this user tag isn't signed up yet, it's provisional
+the person provides more information, finishes signing up--pretty sure browser_table doesn't care about that
 
 
 
 
-	/*
-	ttd february
-	stop overloading cell2 -- the strength and permissions of a sign in will be handled elsewhere, most likely
-	make browser_table really simple to think about (it's not yet)
-	a browser visits for the first time; they get a browser tag
-	the person enters the first bit of information; they get a user tag, this user tag isn't signed up yet, it's provisional
-	the person provides more information, finishes signing up--pretty sure browser_table doesn't care about that
-	the user signs out, everywhere--browser_table is all about this
-	a user 
-	*/
-
-
-
-//ttd january - today's new level: self identified users with names that are routes
-/*
-bookmark january
-ok, clicking through these four work
-[]make another pass to be sure
 []see "Taken." get reported back up to the user
 []deal with an exception here telling the page 500--catch those in the page
 []understand where you check what up and down the stack
 []improve the form so you can show it to friends, like gray the buttons until they've entered text for user name that is an acceptable route; very minimal
--
+
 and then what's next? maybe status message in a new table,
 which the user, once signed in, can edit--new component for this
 and then user page at a route that holds that message
 and that's where you figure out how to get nuxt to do mixed root routes, which hopefully is common and easy
-*/
-//determine what user is signed into the given connected browser, and also get their route text (which we're using as user name in this early intermediate stage)
 
 
 
@@ -262,35 +107,6 @@ and that's where you figure out how to get nuxt to do mixed root routes, which h
 
 
 
-
-
-
-
-
-//removed this because now we have name_table, which has routes
-
-//                  _         _        _     _      
-//  _ __ ___  _   _| |_ ___  | |_ __ _| |__ | | ___ 
-// | '__/ _ \| | | | __/ _ \ | __/ _` | '_ \| |/ _ \
-// | | | (_) | |_| | ||  __/ | || (_| | |_) | |  __/
-// |_|  \___/ \__,_|\__\___|  \__\__,_|_.__/|_|\___|
-//                                                  
-
-noop(`sql
--- go between a user's tag and route
-CREATE TABLE route_table (
-	row_tag     CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick    BIGINT                 NOT NULL,
-	hide        BIGINT                 NOT NULL,
-
-	user_tag    CHAR(21)               NOT NULL,
-	route_text  TEXT                   NOT NULL   -- unique working route, normalized to lower case
-);
-
--- quickly find the most recent visible row by user tag, and by route
-CREATE INDEX route1 ON route_table (hide, user_tag,   row_tick DESC);
-CREATE INDEX route2 ON route_table (hide, route_text, row_tick DESC);
-`)
 
 
 //ttd january []confirm that an exception here causes throws up all the way back to the page
@@ -303,17 +119,6 @@ CREATE INDEX route2 ON route_table (hide, route_text, row_tick DESC);
 
 
 
-yeah, you like this pattern
-
-browser_table's functions:
-browser_get
-browser_signIn
-browser_signOut
-
-on name_table, you can see that the three functions you use to query that table are
-name_get
-name_set
-name_delete
 
 
 
@@ -321,8 +126,6 @@ name_delete
 
 
 
-
-```
 lots of states, permissions, roles, and life cycle-stages to think about:
 
 most fundamental level:
@@ -345,7 +148,6 @@ those categories and enumerations, and also, roles:
 - just a fan
 
 and more?! lots ot figure out here as we go from ameoba-stage to small multicelled organism
-```
 
 
 
@@ -364,115 +166,19 @@ because the index that ends row_tick DESC's btree will already make it super fas
 
 maybe there's a level4 - high level application logic
 like teh code that calls down to the level3 functions that are specific to a table, but deal with tables at an application-specific, but still quite granular, level
+level4 could also just be informal level3 overflow, not strict rules like the lower levels
+make level4 whenever if level3 is getting too big
 
 
 
 
 
 
-
-
-
-
-
-validateName
-	/*
-	ttd february
-	on the choose/change your user name form, there'll be two boxes
-	Name: [rawName]
-	      "formPage" will be your name as it appears on pages
-	Link: [rawLink]
-				"formFormal" will be your name as it shows up in links
-	(and the normalized link, which maybe you'll not show?)
-	you think you can use validateName() for both boxes
-	if the user changes text in the name box, then you do v = validateName(rawName), and v.formFormal => Link
-	if the user changes text in the link box, you leave Name alone, and do v = validateName(rawLink)
-
-	yeah you need to see what it's like if you're typing in a box the page is also changing text in
-	but you're pretty sure you can do both boxes with just this one function, as written, which is cool
-	*/
-
-
-
-
-
-
-
-
-
-/*
-bookmark january
-
-no password yet, just a user name you choose
-also for this v0.01 really simple normalization, like only letters numbers and -_.
-purpose here is to make a system where you can easily type in different chrome profiles
-and confirm that it works as you expect
-and the database table records are as you expect
-as a test of your schema and way of reading it
-
+from the "you are who you say you are" user attestation system:
 pretty cool you've separated this concern even from password
 and after this you'll work on (a)hide and (b)delete account
 and also (c)anonymous users who get started leaving data before they sign up
 this seedling is enough to get those three powerful features right
-*/
-
-
-//(in practice, we won't show a browser tag, because sharing those is dangerous, and we likely won't ever send a user tag to the page, because while not sensitive, there is no reason to do so--the server must look this up each time it needs it to get a trusted answer; it's not ok for a browser to state "this is my user tag", rather, the browser does say "this is my browser tag" and then it is the *server* that decides what user, if any, is signed in there)
-
-
-
-
-/*
-ttd february
-is this level complete to use name_table? yes, you think so
-if you want to query by formal name, you normalize it, and then call getName({nameNormal})
-and you could just lowercase it, but should isntead do checkName().formNormal which will throw if not valid, or something--you're just establishing this pattern
-
-well, you have to write these, of course:
-checkNameNormal, checkNamePage, checkName
-*/
-
-
-
-
-
-
-
-function nameRawToNormal(nameRaw) {//ttd february, this is stub for simple demonstration forgiving but secure name-based sign up and sign in
-	let v = validateName(nameRaw)
-	if (!v.isValid) toss('bad raw name', {nameRaw})
-	return v.nameNormal
-}
-
-
-/*
-// <previous draft>
-export async function userToRoute({userTag}) {//given a user tag, find their route
-	let row = await queryTop({table: 'route_table', title: 'user_tag', cell: userTag})
-	return row ? row.route_text : false
-}
-export async function routeToUser({routeText}) {//given a route, find the user tag, or false if vacant
-	let row = await queryTop({table: 'route_table', title: 'route_text', cell: routeText})
-	return row ? row.user_tag : false
-}
-export async function routeAdd({userTag, routeText}) {//create a new user at route; you already confirmed route is vacant
-	await queryAddRow({
-		table: 'route_table',
-		row: {
-			user_tag: userTag,
-			route_text: routeText,
-		}
-	})
-}
-export async function routeRemove({userTag, hideSet}) {//vacate the given user's route
-	await queryHideRows({table: 'route_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
-}
-export async function routeMove({userTag, destinationRouteText}) {//move a user to a different route
-	await routeRemove({userTag})
-	await routeAdd({userTag, routeText: destinationRouteText})
-}
-// </previous draft>
-*/
 
 
 
@@ -484,15 +190,18 @@ export async function routeMove({userTag, destinationRouteText}) {//move a user 
 
 
 
-/*
-ttd march
+
+
+
+
+
+
+
 some tables have functions that only work on them, these are exported
 others only make sense with higher level functions that cover more than one table
 for these, you're using snake_case, and they are *not* exported
-
 well, this pattern is good, but fits more easily with some tables rather than others
 you're keeping it, but not sticking to it 100%
-*/
 
 
 

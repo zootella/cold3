@@ -8,7 +8,7 @@ figured this out, maybe
 a common happy and lazy path
 
 decisions:
-- don't user passwords, because users aren't capable of them, and just recently, your browser and your device both clamor to choose and trap yours in a passkey system
+- don't have passwords at all, because (1) users aren't capable of them, and just recently, (2) your browser and your device both clamor to choose and trap yours in a passkey system (essentially, the recent WebAuthn/CTAP/FIDO2 standard is allowing a google v apple battle of the titans, and users are left helpless in the middle)
 - don't force a new person to find the code, they might not choose too, theh code might actually not successfully reach them
 
 day 1
@@ -36,7 +36,25 @@ now, finding the code is required! and when the user does this, there are two po
 
 
 
+more notes on happy lazy path
+to do the above, you don't need a provisional user level
+the first browser to challenge a never before seen address gets:
+- a new user tag made
+- that user tag is signed into that browser (fully, without expiration)
+- the user tag in address_table has Challenged. that address (and code sent which user ignores, in this scenario)
+then, the person goes to the second device, and enters the same address
+now, they have to verify to be able to use the site (make sure this doesn't put the site into an unusable state, there's a stop trying to sign in button sorta like sign out, or something)
 
+
+
+thoughts about provisional users
+a person at a browser not signed in follows a creator
+ok, so now we save that follow, in a way that if a week later, the same browser returns, it's still there
+and we do this without forcing the user to complete a standard full sign up process
+the way this works is, we make them a new user tag right when they enter the first information
+the way this isn't confusing is: the only way to bring that information into a durable account is to complete a new sign up process on that browser
+if, instead, they sign in as a different existing user, there is no merge, that account they just signed in as loads at that browser, and that account has its own follows, and so on, which is fine
+you haven't fully figured this all out, but you are confident that the solution you find will grow from what you wrote here now
 
 
 
@@ -63,14 +81,6 @@ from this first strand, though, you can code these features
 and you'll be able to code
 []a user hides and unhides themselves
 []a user closes their account
-
-
-
-getting back to the cold forge,
-find the existing tables, functions, and components which you have started building this in
-
-
-
 
 
 
@@ -184,11 +194,11 @@ enters the same email
 your question at this point is not how should you design this
 but rather to observe how other sites deal with this flow
 
--
-
 but now also thinking through this
 maybe sites solve this by adding a password
 and you could solve it by putting dob before email, those two are good enough for a basic user: dob, address, even if unverified
+(later) realized you solve this by requiring the person to enter the code on the second device
+and once they do, they're fully signed up, and signed in on both devices
 
 
 

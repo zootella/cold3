@@ -2,169 +2,17 @@
 
 
 
-	/*
-	ttd february - the hello system
 
-	./plugins/helloPlugin.client.js - runs as soon as the page hits a new tab; calls helloStore.hello1()
-	./stores/helloStore.js - .hello1() fetches to the first endpoint:
-	./server/api/hello1.js - very quickly tells if there's a user at this browser tag or not
-	./server/api/hello2.js - slower nonessential first run on tab tasks, like getting user stage and permissions information, logging the hit; this happens while components are loading and the user is clicking
+./plugins/helloPlugin.client.js - runs as soon as the page hits a new tab; calls helloStore.hello1()
+./stores/helloStore.js - .hello1() fetches to the first endpoint:
+./server/api/hello1.js - very quickly tells if there's a user at this browser tag or not
+./server/api/hello2.js - slower nonessential first run on tab tasks, like getting user stage and permissions information, logging the hit; this happens while components are loading and the user is clicking
 
 
 
 
-	*/
 
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-these are api endpoints, as well as methods on the store
-
-/api/hi1
-is a user signed in or not
-should be able to do in a single ~150ms call to supabase
-necessary very early, as the site will either render brochure-like or feed-like components!
-
-right after that, in the background, call hi2 to do more introductory stuff that doesn't matter as much
-
-/api/hi2
-is a user signed in or not
-what is the user's name
-and the hash or part of their user tag, maybe hash then base16 like user00ff00ff00ff
-([]^write a little helper function for that)
-is the user super authenticated for an hour or less right now (maybe you'll show a dot)
-and record this new hit to our server
-
-
-
-
-
-
-
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-who calls hello2?
-maybe that's an async you don't await in app.vue or something
-
-
-
-/*
-ttd february
-figured out today 2025feb4:
-
--plugin1.server.js would have nothing to do, you can omit it
--plugin2.client.js could get the browser tag, get store1 going, which POSTs to /api/hi1, find out the user name signed in, and then render either the brochure or the feed--all this is always necessary, and must be very fast (single supabase query)
-
-/api/hi1
-
-must be really fast, single query
-
-sends
-- browser tag
-
-server does
-- tells if a user is signed in or not, only
-
-/api/hi2
-
-can be slower, happens in background of loaded components
-
-sends
-- browser tag
-- opengl renderer and vendor
-
-server does
-- tells what user is signed in, just like hi1 did
-- registers a hit with information, maybe do that with a door promise off to the side, even
-- gets the user name
-- figures out if they're within a super permissions hour
-- figures out if they're a creator or just a user, staff, anon user, their role, essentially
-
-done this way, h1 and h2 both happen only once each time a new tab first goes to the site
-not again as the user clicks around
-hi1 is as fast as possible to choose the right components to load
-hi2 can be slower and work in the background while the user is already looking over the site
-*/
-
-
-
-/*
-ttd february
-
-today you added plugins
-[]also add layouts
-they're not a part of the data flow, but they may be useful
-like you might have layouts for
-
+maybe have layouts for:
 brochure, no user is signed in yet
 feed, user consuming content
 panel, user changing their password
@@ -174,7 +22,6 @@ machine, like ping, not meant for users to visit
 
 
 
-*/
 
 
 
@@ -183,96 +30,22 @@ machine, like ping, not meant for users to visit
 
 
 
-
-
-/*
-/api/hi
-needs to be fast, as will delay site delivery
-can't run on hybrid server hydration, as real page must post browser tag
-
-
-first, understand how these do and should run:
-
-app.vue
-index.vue
-
-
-
-im coding a full stack javascript website, as an example to define patterns for my team. the stack we've chosen is nuxt 3, using vue's composition api, and pinia, using pinia's setup stores api. we're deploying to cloudflare pages, and set up the repository with create cloudflare cli and cloudflare wrangler. i added pinia using nuxt's pinia module. all of this is working well.
-
-looking at the project to begin, here are some files:
-
-./app.vue
-./layouts/layout1.vue
-./pages/index.vue
-./stores/store1.js
-
-show me minimal examples for the contents of these, with them all hooked together. then we'll talk about what code runs when, and how to keep things structured correctly for fast page loads, following nuxt best practices and the indended use from official documentation
-
-at a detailed, under-the-hood level, i want to understand how nuxt runs my code
-in the situation of, a new browser navigates to the root domain for the first time
-my understanding is that first code will run on the server, in hybrid rendering
-then, once delivered to the client, code will again run
-
-i have made a pinia store in store1.js
-my intent is to keep this store small and simple, efficient to be fast
-because, the information in this store will be necessary for the first page that is delivered
-
-information in this store can be divided into two categories
-
-first, some information the store contains will be based only on the GET request that came to cloudflare
-for instance, if the url the client requests is:
-https://example.com/CoolUser1999
-on server hydration as a part of hybrid rendering, my code will look up this user by their username, CoolUser1999
-and then deliver a page that includes this user's status, something like "partying like it's 1999"
-the client may be a search engine spider that can download pages but not run javascript
-so, information like this needs to be pre-hydrated
-but also--this flow must be fast, because if it's slow, it will slow down every page load for every type of user and first hit scenario!
-
-the second category is information based on what the browser tells the worker in an initial, immediate POST
-for instance, a browser has a browser tag, which identifies this browser and device to the server
-there may be a user signed-in here--the way we tell that is this:
-1 the browser makes a GET request to the server
-2 the server sends a filled-in page based on information from that GET request
-3 the browser, running code in the page, immediately POSTs to a server endpoint with its browser tag
-4 the server looks up more details based on the ip address and browser tag, and replies to the page
-5 the browser, with information from that POST response, adds information to the components of the page
-
-so that's a standard flow for running nuxt 3 on cloudflare
-(but also, is this summary of what happens correct?)
-then ill ask another question--right now, let's just check and confirm my priors, please
-
-my question is, where in 
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-the point of yoru plugin is, quickly get signed in info into the store and to the user:
 
 1 -- browser GETs to server
+
+get includes creator route--[]work on this new part next!
 
 2 -- server responds with page and store
 
 server can read ip address from connection
 server can read user agent string from headers
 
-3 -- page POSTs to /api/hi
+3 -- page POSTs to /api/hello1
 
 page includes browser tag in body
 page includes browser graphics in body
 
-4 -- /api/hi responds with user and level
+4 -- /api/hello1 responds with user and level
 
 server reads ip address from connection
 server reads user agent string from headers
@@ -284,7 +57,7 @@ server reads time from its trusted clock
 browser tag -> user tag signed in here
 user tag -> user name
 
-
+5 -- page POSTs to /api/hello2
 
 
 
@@ -303,15 +76,30 @@ never send a browser tag to the page!
 
 
 
+thinking about the entire starting flow, you see why cookies may be better:
+1 sent with every request, including the first GET, so saves ~150ms
+2 page code can't read them, so a malicious browser extension can't get the browser tag
+not sure if these two benefits are worth the drawbacks
+- cookie regulation compliance
+- browser cookie cleanup policies
+- expiration dates and renewals
 
-
-
-
-
-
-
-
-
+but looks like is possible, and would use
+nuxt middleware
+and code like this:
+export default defineEventHandler((event) => {
+    const cookieName = 'browser-uuid';
+    const cookies = parseCookies(event);
+    if (!cookies[cookieName]) {
+        const uuid = uuidv4();
+        setCookie(event, cookieName, uuid, {
+            httpOnly: true,  // Prevent access from client-side JavaScript
+            secure: true,    // Ensure it's only sent over HTTPS
+            sameSite: 'Strict', // Prevent cross-site request forgery
+            maxAge: 10 * 365 * 24 * 60 * 60 // Long lifespan (10 years)
+        });
+    }
+});
 
 
 

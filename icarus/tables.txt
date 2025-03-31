@@ -5,28 +5,37 @@
 
 
 
-//how these are settling down is: they are generalized, but assume hide 0 and row_tick ascending false
-//which is fine, and means that maybe really all your tables should have the same starting three columns
-//so that you can use all of these functions on any table
 
 
 
+[I] design
+
+we think of the database as a stack of grids of letters and numbers
+the vibe here is not ORM; it is CSV
+
+tables are ledgers; we append to them
+instead of deleting a row, mark it as hidden
 
 
+database tables:
+1 hold simple, atomic facts (rather than the results of logic examining those facts)
+	example: one row for sent code, another row for entered code
+2 are a ledger that grows, rather than changes
+	example: one row for added email, another later timestamped row for removed email
+3 hold different kinds of data in a column (rather than having different tables for data)
+	example: one table for every way to sign in, that grows as we add new sign-in methods (rather than JOINs between tables about email, sms, x, metamask, etc.)
 
 
+[I] types and names
 
-
-
-/*
 our tables do everthing with just a small handful of postgres types,
 and our conventions for column titles identify what kind of data columns have:
 
 example2_table            table names end _table, lowercase and numerals ok
 
 row_tag         CHAR(21)  a globally unique tag to identify this row
-row_tick        BIGNUM    set when we added the row
-hide            BIGNUM    0 to start, nonzero to ignore this row in regular use
+row_tick        BIGINT    set when we added the row
+hide            BIGINT    0 to start, nonzero to ignore this row in regular use
                           ^ most tables start with these three columns
 
 password_hash   CHAR(52)  52 characters of a sha256 hash value encoded to base32
@@ -34,25 +43,66 @@ user_name_text  TEXT      text which can be blank or long
 
 _tag, _hash, and _text are strings; everything else must be an integer
 a column which can be a tag or blank is _text
-as is a column which can be text or numerals, like settings_table
+as is a column which can be text or numerals
 
-PRIMARY KEY is frequently row_tag, which is guaranteed to have unique tags,
-even though we never query on it
-every column is NOT NULL to make things simpler, generally and for .upsert()
-*/
+all numbers are BIGINT, even if we only planning on storing 0 or 1 there
+BIGINT has a larger range than JavaScript's Number.MAX_SAFE_INTEGER
 
-/*
-to this add:
-using indices, and multicolumn indices, to match common queries and make them fast
-not using foreign keys, which establish constraints between tables, and don't help performance
-*/
+we intentionally avoiding PostgreSQL date, time zone, duration, and UUID types
+ARRAY and JSON might be useful in the future, but are not in use now
+we use cloudflare's clock, Date.now() in a worker, and no clock from Supabase or PostgreSQL
+
+row_tag is the PRIMARY KEY of every table, intentionally avoiding SERIAL,
+and guaranteed unique, even though we never query on it
+all columns are NOT NULL to make things simpler
 
 
 
-concessions, here are the things we're accpeting
-- a call to supabase takes ~100ms, some queries may have a handful of them, and we accept this can make some things the user clicks on take nearly a second to complete, a noticable delay
+[I] features
 
-asumptions, here are the assumptions we're making
+we create indices, including multicolumn indicies,
+that match common queries to make them fast
+there are no foreign key relationships, which establish constraints between tables,
+and don't help performance
+
+
+
+
+[I] intentionally avoiding, simplicity
+
+there is no ORM, avoiding Sequelize, Prisma
+these add complexity and developer learning curve
+some involve vendor tie in, monetary cost, and deplatform risks
+they can only make things slower, not faster, for the user
+they make it harder to count and follow individual queries,
+which is important in our stack where each query costs 150ms
+we're thinking about the database as a grid of text and numbers, not objects
+
+all in all, the idea is to keep our use of the database simple enough that we can
+reason about it as just a grid of text and numbers, and nothing is tied to
+Supabase or PostgreSQL--a migration to SQLite, even, would be easy
+
+
+
+
+
+
+
+
+
+[I] concessions, here are some limitations with this design that we know and accept:
+
+a worker's call to supabase takes ~100ms
+some api handlers may involve a handful of these
+we accept that this can make some user clicks take nearly a second to complete, a noticable delay
+to lesson this impact on the user,
+hello1 and hello2 are split apart,
+and we use Pinia to prefetch and cache data, so that many user clicks, even route changes, are instantaneous
+also, many clicks that involve a lot of queries are about tasks that are either rare, or slow anyway
+like changing your user name (rare), or verifying an address (slow)
+
+[I] assumptions, here are the assumptions we need to make to move forward swiftly with this design:
+
 - the supabase api and workers' connections to supabase will be reliable, and the supabase api is error-free. we assume that if a call succeeds, it did what it said it would, without checking
 - if neighboring lines in a worker make two edits to the database, there won't be a change to the database between them
 - if information in the database enters an unexpected, should-be-impossible state, code is conservative enough that this won't break the app, and later changes could heal the data
@@ -75,41 +125,6 @@ to be able to move forward, a level of trust is needed, expressed in these conce
 
 
 
-
-
-
-
-
-
-
-
-
-facts about postgres and choices about how we're using it:
-we're using BIGINT for every integer, for simplicity, even if we only plan on storing 0 or 1
-indices make queries much faster, and compound indices that match queries are a good idea
-
-
-
-
-we're intentionally avoiding date, duration, and uuid types
-ARRAY and JSON are common; maybe you'll use those, or maybe you'll instead accomplish array-like data with simple tables with multiple rows
-
--also "While PostgreSQL’s query planner is quite sophisticated and can optimize queries using existing indexes, it won’t create new indexes on its own based on query usage."
-
-other supabase things we're not using:
-auto incrementing row number, BIGSERIAL
-Type: "timestamptz" (timestamp with time zone)
-supabase's clock, we always use now from the worker
-
-
-
-in excel and on a piece of paper, the rows have an order, but this isn't the case in postgres
-^put in section about what you've learned about databases in general
-the columns do have an order, but since column titles must be unique, we can ignore it
-and exchanging objects like {title1: 101, title2: 202} back and forth with the supabase api, order doesn't matter
-
-
-
 make sure postgresql has the default utf-8 character encoding with a sql statement like this:
 SELECT pg_encoding_to_char(encoding) AS encoding FROM pg_database WHERE datname = current_database()
 ran this in supabase's sql editor, and the result is "UTF8"
@@ -121,9 +136,14 @@ turning off rls is fine, and common when server code has exclusive access to the
 
 
 
-
-
-
+talk about level3
+where functions are specific to the applications use of
+one table or several
+and below that, level2
+where functions work generally on any table
+to be useful in potentially several places to code above
+all tables start out with the margin columns, even if the table doesn't need or use them
+functions assume those columns and work with them
 
 
 
@@ -162,6 +182,7 @@ and all of this is automatic
 
 so you want to be able to use transactions
 the problem is, the supabase api doesn't include them
+under the hood this may be because the supabase api uses postgrest, and postgrest doesn't support them
 there isn't a way to do two inserts in a single call to the supabase api, either
 even with all the method chaining
 
@@ -179,42 +200,32 @@ but even that should be rare--when performing an audit for a staff member, or so
 
 
 
-imagining how this might grow
-_json, and postgres has a type for this, and if you use it a lot you sorta go into document database land, you've heard. not sure if you want to go there, but there might be a way to go there, and a reason to go there
+
+
 for now you're storing json in _text
 and only in instances where you never need to filter or query on it
 
 another thing we're not doing
 labeling any columns UNIQUE in the schema
 tags are globally unique
-and row_tag column is unique
+and row_tag column is unique, as the PRIMARY KEY must be unique
 but other columns that have tags absolutely have duplicates! multiple rows need to record facts about the same tag, like browser tag or user tag!
 unique makes postgres autoatically make an index
 but we're adding compound indices designed to match common queries by design
 so we don't need more individual indices
 
 
-yes make indices
-no don't use foreign keys, they don't help with query speed
 
 
 
 
 
 
-
-
-^from early notes, for net23.txt
-
-
-
-
-
-supabase
+supabase trello
 []backup and download
 []restore into local postgres
 []restore into supabase
-[]setup automatic backups every 6 hours
+[]setup automatic backups every hour
 []that go to an amazon bucket
 
 
@@ -231,16 +242,13 @@ supabase
 
 
 
-Because CF-Connecting-IP is added by Cloudflare’s edge, it is considered trusted. It tells you the actual IP (IPv4 or IPv6) Cloudflare sees from the client, regardless of any untrusted X-Forwarded-For or other headers the browser might send.
 
 
 
-make sure geolocation is enabled
 
 
 
 
-also you should only register hits onCloud()
 
 
 
@@ -253,87 +261,6 @@ also you should only register hits onCloud()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-demo
-so far in the database
-
-i've been coding for years, but am totally new to databases!
-ive never written a schema before
-
-no jwt - a format for a format, and expiration
-no orm - instead just functions that look at grids of text and numbers
-
-example_table and a demonstration of types
-column title defines type for sanity checking
-
-strategy
-keep things simple and verbose in the database
-keep things really simple in the browser
-handfuls of quick queries in the worker bring it together
-
-tables are ledgers; we append to them
-instead of deleting a row, mark it as hidden
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-don't build wide at this level at thi stime
-rather, sketch out what you'll need for the next list of things, like:
-attestation - this user has proven they control this address, different forms
-governor - the system messaged this address hash this long ago, this many times
-browser - this user tag is signed in with these browser tags
-code - the we texted you this many numbers
-and then the other functions which you may need in the future, list those here in a brief comment, but don't code them
-
-how does sign-in work, separate 
-
-how dose code work, separate 
-
-
-database tables:
-1 hold simple, atomic facts (rather than the results of logic examining those facts)
-	example: one row for sent code, another row for entered code
-2 are a ledger that grows, rather than changes
-	example: one row for added email, another later timestamped row for removed email
-3 hold different kinds of data in a column (rather than having different tables for data)
-	example: one table for every way to sign in, that grows as we add new sign-in methods (rather than JOINs between tables about email, sms, x, metamask, etc.)
 
 first, sketch out on paper what the user does and what the system does through valid flows
 
@@ -360,23 +287,6 @@ a user signs in on desktop
 then on mobile
 returns later and is still signed in
 then signs out of everywhere on desktop
-(what table links a user tag to their browser tags?)
-(when does a user get a user tag? how does this work with anonymous users following a feed and renaming themselves?)
-(what happens when an anonymous user with data signs up or signs in? this is the cart combined problem)
-
-an anonymous user navigates to the site
-their browser gets a browser tag, which is set once, and never changes
-the anonymous user stars a feed and sets a nickname, but does not sign up or sign in
-it's a shared computer. another user navigates to the site and signs in
-they use their account
-they sign out
-the browser goes back to showing the nicnmake of the anonymous user
-a second user signs in
-they user their account
-they sign out
-back to anon user
-that anon user signs up
-their stars and nickname carry into their new account
 
 a signed in user visits a page that shows them
 where they are currently signed in
@@ -389,19 +299,11 @@ with information from the browser's reported query string and geolocation, like 
 
 
 
-first, just think about how the short code table works
-even before you do the lettered and length variations--imagine all the codes are 6 digits long and random
-how does it work that the user has to type it into the same
 
 
 
 
 
-what prevents a user who has just gotten a 1234 code from trying 10,000 times for guaranteed entry?
-turnstile will slow them down
-the code will only last 20 minutes
-should you also put a governor on trying answers for that code (on a hash of the codeTag in the page)?
-yes, and trail_table can do this easily
 
 
 
@@ -449,10 +351,11 @@ this is your current idea of how you get started with user identity
 
 
 
-bookmark march
 
 
 
+you just realized if you don't do password at all
+you don't have to do the forgot password reset password flow
 
 
 
@@ -464,249 +367,26 @@ bookmark march
 
 
 
-every code could be 4 digits, you now realize
-a code only lives 20 minutes or 4 guesses, whichever happens first
-it's tied to the browser hash, so a code stealer can't use it
-import interactions are authenticated with a strong second factor, anyway
 
-you're not sure how to do code B, code C, so on
-because are those specific to the email?
-or the browser?
-but this might make things harder for the user
 
-what if instead it's six digits and the first two are given
-your code is 12-3456
-and prepopulated in the box is 12-
-or lowercase letters, and then they're before the box
 
-ui7855
-gx7588
-and it's clear you can' ttype the letters because they're already there and the box is number only
-yeah, maybe this is a good design
 
-what if it's a single letter, omitting l and o and g
 
-Your code is v9622 from cold3
-and then the box shows the v within the box, but it's fancy css
-yeah, this is better design for the user and for implementation
 
-Code H [1234]
-Your code H is 1234 from cold3. Don't share it with anyone--they could steal your whole account!
-
-
-
-
-
-/*
-[]rename to like:
-
-[]queryDeleteRow - delete one row if it meets the specified criteria
-[]queryDeleteRows - delete all rows that meet the specified criteria
-[]querySetCell - change an existing cell to a new value
-[x]queryAddRows - add several at once
-[x]queryAddRow - add just one of them; these do all the checks first before leading to the same helper
-[]queryCountRows - return the number of rows that meet specified criteria
-[]queryGetRows - get all of them, sorted
-[]queryGetPage - just the desired number, sorted by given title, have limit and offset
-[]queryGetSingleRow - use when you know there's zero or one
-[]queryGetRecentRow - use when there could be many
-
-
-[]queryAddRow – Insert a single new row.
-[]queryAddRows – Insert multiple new rows in bulk.
-[]querySetCell – Update a single column in exactly one row.
-[]querySetCells - update all the cells in a column, like setting their hide to 1
-[]queryUpdateRow – Update multiple columns in exactly one row.
-[]queryUpdateRows – Update one or more columns across all matching rows.
-[]queryDeleteRow – Delete exactly one row matching specified criteria.
-[]queryDeleteRows – Delete all rows matching specified criteria.
-[]queryCountRows – Return the number of rows matching a condition.
-[]queryGetRows – Retrieve all matching rows, possibly filtered, sorted.
-[]queryGetNRows – Retrieve a limited set of matching rows, sorted.
-[]queryGetSingleRow – Retrieve a unique row (or none) matching some condition.
-[]queryGetRecentRow – Retrieve the most recent row (or a small set), usually by a time/tick column.
-[]queryExists – Return a boolean indicating if any row matches a given condition. (Optional but common)
-
-do not try to build out a complete set, there are two many permutations with a single table
-and later when you're doing JOINs the permutations will go geometric
-instead, all of these functions are table-agnostic
-but made quite bespoke to an application use above in level3
-if there's an obvious neighboring use, sure, include it
-yeah, that's fine
-
-
-you'll need a page, database test
-and three buttons, Populate, Query, and Clear
-yeah, this is a good idea, but don't spend more than a day on it
-
-
-delete all the rows older than something
-invalidate all the rows older than something by changing their hide to 2 or something
-
-
-[]make it so snippet doesn't run adn doesn't render cloud; this is only local
-
-
-*/
-
-
-
-
-is this going slow because you don't have automated tests?
-remember that you could code some up in example_table
-
-
-
-
-
-here's how you figur eout the simple universal and correct way to link browser tags and user tags
-make user sign up and sign in with password, only
-have a message the user can see, themselves
-let both anonymous users and signed-in useres see their message
-do you need users to pick unique user names to do this? you think so, and that's fine
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-plan out on paper how username and password-based sign up works
-
-sign up
-sign in
-delete account
-
-browser tag
-user tag
-
-user name
 
 a user has a page and a message they can set
 other users can see this page, but only the user can change it
-you can change your password, but there's no forgot yet
 
 a user's page has a card, which shows their name and when they signed up
 
 a user's page can also have a list of where they're signed in
 
-so from that, tables will probably be
-user_password_table - says when p
-user_access_table
-
-there is a lot here, actually, even with only one way to sign in (name+password)
-you'll figure out how browser tag and user tag are related
-how sign out signs out everywhere
-how pinia? holds the signed-in status, although you might check it every time in the database anyway
 
 
 
 
 
 
-ok, real simple, on paper
-imagine a user is already signed in
-they have browserTag and userTag assigned
-a worker gets a request from a page,
-and the page tells the user that they are signed in, and what their userTag is
-what is the database table that contains that information
-
-row_tag  row_tick  hide  user_tag  browser_tag  signed_in
-
-row tag, tick, hide are all just standard
-user_tag of the user, browser_tag of the browser, signed_in 1 true means that the user is signed in there
-browser_tag of the browser and signed_in 0 false means the user is signed out there, and everywhere else, too
-
-so the worker, given a browser tag, wants to determine which user is signed in here
-it filters on browser tag, looking at rows in descending order
-there could be different users in that row set, of course
-
-so now the worker is looking at a list, most recent first, of:
-
-user_tag  signed_in
-<meaningful>
-
-no rows for this browser tag; nobody is signed in
-
-user_tag  signed_in
-alice     1 <--meaningful
-
-only a single user has ever used this browser, and she's still signed in
-
-user_tag  signed_in
-alice     1 <--meaningful
-alice     0
-alice     1
-
-here, just alice is using this browser, signed in, out, then in again
-alice is signed in here
-
-user_tag  signed_in
-alice     0 <--meaningful
-alice     1
-
-nobody is signed in, alice has previously signed in, but signed out
-this is good, that we still have data of what happened in the past here, because if alice signed up with method X, the sign in form can preference or hint at method X
-
-user_tag  signed_in
-bob       1 <--meaningful
-alice     0
-alice     1
-
-after alice signed in and then out, bob signed in. bob is signed in here
-
-user_tag  signed_in
-alice     1 <--meaningful
-bob       0
-bob       1
-alice     0
-alice     1
-
-alice signs in and out, bob signs in and out, then alice signs in
-
-
-ok, so keeping with the simplification that a sign out signs out everywhere
-looking at this, filtered for one browser, you will run into useres who look signed in here, but somewhere else, they signed out
-you almost need a separate table of sign-outs:
-
-sign_out_table
-row_tick user_tag
-
-so this is just the list of times when alice or bob last signed out
-so here's how you use those?
-you look at the sign-in table for this browser, to get the users who are currently signed in here
-then you go to the signed out table to invalidate sign ins for alice that are older than her most recent sign out
-wow, that's already a quite complex query
 
 you just realized when you're doing the super authentication that only lasts 1 hour, or wahtever, and only exists on one browser, you can do that like this:
 
@@ -716,45 +396,6 @@ alice     1
 
 assuming that the time now is within an hour of the 2 row
 
-ok, back to one table
-here's how the "who is signed in here?" worker figures that out
-filter to just rows about this browser tag
-from that, get all the users who have done something with this browser here
-
-now you have a list of users
-you go back to the table and pull all the rows about all of those users
-
-user_tag  signed_in  browser_tag
-alice     1          here
-alice     1          elsewhere
-bob       0          elsewhere
-bob       1          here
-
-users who are most recently signed in 0 you exclude--it doesn't matter whether they signed out here or elsewhere--they can sign in again
-
-user_tag  signed_in  browser_tag
-alice     1          here
-alice     1          elsewhere
-
-what if there's a separate table of user tag, and when they last signed out
-so from the first table, you look at who's signed in here
-that is, browser tag is here, signed in is >0, you get a list of users
-you go down that list most recent to earlier, looking user by user at sign-outs in the other table. the first one you find who's signe din here and not signed out after that, is signed in here
-
-ok, so that's pretty not simple, and you have hopeful doubt, rather than confidence, about its workign and ramifications
-
-assuming private devices, it's also acceptably low number of round trips
-but omg, you can't do this simple first thing with one query?!
-
-here it is again, one table, a series of queries
-pull all the rows about this browser tag and sign-ins
-from that, you have a list of users who are or have ever signed in here
-
-then do the second query--all sign out records of all of those users, everywhere
-now you're piecing through that in the worker, i guess?
-you go user by user, in order of signed in here
-and then look at that user's most recent sign out, anywhere
-the first signed in here user who doesn't have a more recent signed out, anywhere, is signed in here
 
 
 
@@ -763,32 +404,6 @@ the first signed in here user who doesn't have a more recent signed out, anywher
 
 
 
-what if the ledger design is a mistake?
-what if instead, you should keep an actual unqueryable but free to blather ledger
-and do things in the database by editing
-like a normal DBA
-
-(or, you actually use the row invalidation thing) <--trying this method today
-(or, you have both--a table that gets edited, to be fast and final, and alongside those, tables that are logs essentially, which you use to infer things and audit things--they can grow big and slow)
-
-ok, what's that look like
-there's a table that maps browser tag to user who is signed in here
-there can only be one browser tag, so there's only one user who can be signed in
-when a user signs out, we have to find all the browser tag rows where they are signed in, and sign them out of all of those
-this is a bigger operation than just adding a new row to create a command and record to sign out
-
-
-
-
-
-what if you hide rows as you go
-
-othe ridea is to limit the number of places a user can sign in
-
-but you're feeling better about this design now, though
-
-user_browser_table - tells where users are signed in to what browsers
-user_identification_table - tells how users prove they are who they say they are, with email, sms, metamask, two factor app codes, all that
 
 also, let's design assuming two things
 -supabase api always works
@@ -799,17 +414,6 @@ at this point, those assumptions are necessarily, essentially, to be able to mov
 
 
 
-browser_table
-
-
-
-
-
-
-
-user_stage_table
-user_tag
-stage
 
 records a user's lifecycle
 0 does not actually exist in this table or anywhere else, reserved
@@ -822,19 +426,6 @@ notice how reason for deleting (banned, user left) are also not reflected here
 
 
 
-user_name_table
-user_tag
-name_text - user name rendered, as on a page
-route_text - user name as in a route, all lowercase
-
-links page user name, route user name, and user tag
-records changes to those in ledger format
-
-
-you just realized that in these two, changes are rare
-so you can query the most recent row
-adn don't have to worry about hiding previous rows
-this is actually a lot easier a task than browser_table!
 
 
 
@@ -846,18 +437,12 @@ so both closed and hidden can be done by user or staff
 
 
 
-connect these above and below:
-right now just for users signign up and signin in
-they don't have routes or pages yet
-also, at this point, user names are lowercase routes
 
 
 
 
 
 super permission hour:
-
-
 
 first factor: (fans)
 - browser tag
@@ -873,140 +458,23 @@ second factor: (creators, or a destructive operation)
 
 
 
-imagine you have a multipurpose table:
-
-trail_table
-
-	row_tag
-	row_tick
-	hide
-
-	hash
-
-and indexed on tick and then hash, and hash and then tick, both directions
-
-rows older than 10 days are discarded by a github action cron endpoint
-you can always hash any amount of different things down into a single value
-so you can use this, alone for things that need to be recent, or not recent
-and to figure out if they are recent enough
-or how many times they happened in a time period within the last 10 days
-
-when a user super authenticates, you can hash together their:
-1 browserTag
-2 userTag
-3 ipAddress
-and put it in the trail table
-when seeing if a request has such status, you can search for that hash in the last hour
-
-fancier, more brittle, not much stronger would hash
-1 browserTag
-2 userTag
-3 ipAddress, trusted from cloudflare
-4 user agent string, according to headers browser sent
-6 opengl renderer and vendor, according post body browser sent
-sure, whatever
-
-
-
-
-
-
-
-
-maybe, not all tables are ledger
-settings_table already isnt
-browser_table, which links browser and user tags
-needs to be definitive as it controls returning logins, lots of security there
-needs to be quick as the client plugin will get the info an dthen render one whole set of components or another
-this is hi1
-which needs only to know if a user is signed in here or not
-
-actually, it can do that pretty fast with the current ledger design
-so maybe keep it
 
 when do we create the anonymous user?
 we could when we first see a new browser tag; we'll have a lot of them
 we could instead when a new person first clicks Follow, or sets their nickname
-yeah, you like that better, less clutter in the database
 
 
 
-totally make the api_table
+totally make the service_table
 which is a history and audit of every request and every response to every api
 so you can see what worked and what didn't work
-and 
+and how quickly the api responded
+and how quickly the user was able to complete the task related to the api
+start recording this information even before you have a system that uses it
 
 
 
 
-
-
-
-
-
-
-
-/*
-ttd february
-ok, if you're going to refactor these so querySetCellOrAddRow and queryGetCellOrAddRow and surrounding
-you need to write some tests
-to start quickly, just get node's $ yarn snippet
-you already have $ yarn test running ./test.js
-have that call snippet
-get snippet here
-then break that out into ./test-database.js and $ yarn database
-rename that to testDatabase
-
-most of these tests use example_table, of course
-
-
-
-actually this get or add is already two calls, is only used for settings_table, so just []move it to level3
-*/
-
-
-
-
-
-
-
-
-
-
-this design sketch came together pretty well!:
-
-it's really hard to refactor these without tests
-what if you just had little noop tests beneath each one, you'd turn them on and off individually
-and they'd use example1_table, which is wide, and example2_table, which is narrow
-and i guess each one has a _version which takes
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	/*
-	ttd february, now that you only have 6 query functions, consider the refactor like:
-	let row = await queryTop({table: 'settings_table', cell: {setting_name_text: name}})
-	yeah, looking at that now, maybe not!
-	*/
-
-
-//ttd february, write these ^ maybe also queryUpdateCells, which queryHideRows would use, and then stop exporting getDatabase. oh also, you can sneak a direct database connection into level3 by exporting the test clock, and that's ok, i suppose, except the query check functions are here, and you want to not have to export them, also--yeah, cleanest is not exported is getDatabase, the test clock, all the query check functions--really only touch the database directly in level2!
 
 
 
@@ -1072,17 +540,6 @@ is it signed in as them?
 when, on computer 2, they enter the same dob, we have to give them a user tag
 but then, when they enter also the same sms, do we switch to the existing provisional user tag?
 
-imagine the first account is discarded
-on the second computer, they complete all the steps, so that's their real full user
-that's fine, that's how most sites would do this
-then what happens when they go back to their first device
-the page still says sign up
-they enter their dob and sms
-the server texts a code to that sms, and records a catch box for that browser tag
-they type it in
-the server signs in that browser
-yeah, this is fine, too
-
 
 
 
@@ -1109,16 +566,6 @@ but in a corner case that's more complex than that, it's actually a little weird
 the most common cas when this will happen is it's the same human, who signed up and in disjointedly
 so yeah, you probably should blow away
 
-for logging, you want to have
-hit_text as a final notes column for lots of these
-when a table is about the user tag, exclusively, you can still have the browser tag where they did it in hit_text
-hit_text then includes all the columns of hit_table, but as json
-this is a good idea
-
-
-
-ok, yes, i think we are on the right track
-i did some more thinking along these lines, and will share that now
 
 
 
@@ -1144,32 +591,3 @@ i did some more thinking along these lines, and will share that now
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-fin

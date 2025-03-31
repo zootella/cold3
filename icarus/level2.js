@@ -96,6 +96,16 @@ all your ideas for this
 2 the tests in headerOrigin below, looking for 'x-forwarded-proto' and 'host'))
 3 hardcode wrapper.isCloud true into wrapper.js; this means isCloud is always true, and things don't work developed locally; this is the sure way
 4 if you could find some definitive thing nuxt and serverless framework set, somehow (but you have not found this yet!)
+
+ttd march, chat says this is the way to do this:
+export default defineEventHandler((event) => {
+  if (import.meta.env.DEV) {
+    // Development-specific logic
+  } else {
+    // Production logic (Cloudflare Workers deployment)
+  }
+})
+Nuxt 3 uses Vite to inject immutable flags like import.meta.env.DEV during the build process, replacing them with fixed boolean values. This means your deployed code definitively knows if it’s running in development or production mode. It’s secure because these values are baked into the compiled code and can’t be tampered with at runtime.
 */
 
 //                                            _                                      _   
