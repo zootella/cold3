@@ -84,29 +84,17 @@ export function Sticker() {
 
 	return sticker
 }
+
 export function isLocal(o) { return Sticker().isLocal }
-export function isCloud(o) { return Sticker().isCloud }
-/*
-ttd january--make the two above ironclad, using door properties rather than environment fingerprinting
-and also have them take {uncertain: 'Cloud.'} meaning if not sure, default to cloud or local
-
-ttd march
-all your ideas for this
-1 fuzzy matching of environment fingerprint, what sticker below does not
-2 the tests in headerOrigin below, looking for 'x-forwarded-proto' and 'host'))
-3 hardcode wrapper.isCloud true into wrapper.js; this means isCloud is always true, and things don't work developed locally; this is the sure way
-4 if you could find some definitive thing nuxt and serverless framework set, somehow (but you have not found this yet!)
-
-ttd march, chat says this is the way to do this:
-export default defineEventHandler((event) => {
-  if (import.meta.env.DEV) {
-    // Development-specific logic
-  } else {
-    // Production logic (Cloudflare Workers deployment)
-  }
-})
-Nuxt 3 uses Vite to inject immutable flags like import.meta.env.DEV during the build process, replacing them with fixed boolean values. This means your deployed code definitively knows if it’s running in development or production mode. It’s secure because these values are baked into the compiled code and can’t be tampered with at runtime.
-*/
+export function isCloud(o) { return Sticker().isCloud }//do you ever do {uncertain: 'Local.'}? because you coded the new ones below to always uncertain to cloud
+//ttd march, observe and then switch to these:
+export function isLocal_new() { return !isCloud_new() }
+export function isCloud_new() {//use environment flags the frameworks inject which cannot be altered at runtime
+	if (process?.env?.IS_OFFLINE) return false//serverless-offline is simulating a Lambda function locally
+	if (import.meta?.env?.DEV) return false//Vite is running in development mode
+	if (import.meta?.env?.PROD) return true//Vite built this code for production
+	return true//fallback to production to require secure checks
+}
 
 //                                            _                                      _   
 //  ___  ___ _ __  ___  ___    ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
