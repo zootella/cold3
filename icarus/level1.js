@@ -382,6 +382,7 @@ export function bundleValid(formNormal, formFormal, formPage) {//you really have
 
 
 
+//ttd march, when you let the user choose their Formal and Page names, Formal->Normal must be available, and Page must not collide with Normal, either! this so you can make log in by name, and let the type any of the three forms
 
 
 export function checkName({formPage, formFormal, formNormal}) {

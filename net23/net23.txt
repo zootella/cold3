@@ -150,6 +150,36 @@ isntead, just get it in persephone in the lambda, which will work, first try
 
 
 
+
+
+the floppy disk fill percent, as a metric, is designed to measure developer attention-load
+any files that a human could need to read or write are included: for instance, package.json is included, while yarn.lock is not
+it's not a measure of how little code must be delivred to the user: for that, radio brotli in stats.html
+"you say government should be small," asked a voter to a libertarian. "well then, *how* small should government be?"
+"small enough to drown in a bathtub," answered the candidate
+like a calf on a farm, first, you can kill it, but just weeks later, it can kill you
+software projects brag about a million lines of code, an expert team of a dozen crafting for three years--these should be criticisms, not compliments
+"small enough to fit on a floppy disk" means that
+if everything needed to be reviewed (such as, for security), it wouldn't be that difficult
+if everything needed to be rewritten (such as, for porting to a new platform), it wouldn't take that long
+and you could do these things quickly, and with a small team
+
+the goal here is not to write a lot of code, or to write complex or inventive code
+the goal is to complete the user stories and epics
+writing a small amount of simple code
+to keep that code standard and common, avoiding, except where necessary, extra modules
+avoiding, except where absolutely necessary, platform or provider specific details, and in those cases, factoring them away
+
+"a short script that fits on a floppy disk"
+
+
+
+
+
+
+
+
+
      _         _                    _     _      
  ___| |_ _   _| | ___    __ _ _   _(_) __| | ___ 
 / __| __| | | | |/ _ \  / _` | | | | |/ _` |/ _ \
@@ -1830,6 +1860,53 @@ https://supabase.com/docs/guides/platform/backups
 pro costs $25/month
 
 
+
+2025jan19
+went into supabase dashboard to make test database
+and check settings
+
+https://supabase.com/dashboard/projects
+New project
+
+Organization, only one there
+test1, Project Name
+use their generate link to create a strong password; don't seem to need it later
+east us north virginia, region
+
+security options
+data api and connection string
+public schema for data api
+both of these are default, not sure what they mean, note that says that you can change these afterwards
+
+advanced configuration
+postgres, default, not the other one which is orioledb alpha, whatever that is
+
+top bar, Connect
+App Frameworks, Nuxt
+copy out the url and key
+check out the code for createClient in the next two tabs, also
+
+now you can see
+SUPABASE_URL
+SUPABASE_KEY
+and a code example
+import { createClient } from "@supabase/supabase-js";
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+Settings, Database, SSL Configuration
+Enforce SSL on incoming connections
+Reject non-SSL connections to your database
+turned on
+
+Settings, configuration, API, Data API Settings
+Max rows 1000
+The maximum number of rows returned from a view, table, or stored procedure. Limits payload size for accidental or malicious requests.
+
+Settings, configuration Authentication, User Signups
+turned off
+Allow new users to sign up
+If this is disabled, new users will not be able to sign up to your application.
+correct, because what does that even mean
 
 
 

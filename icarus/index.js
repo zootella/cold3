@@ -29,8 +29,60 @@ change where it is here,
 but then all the code above, which just gets it from icarus, doesn't need to change
 */
 
+/*
+when coding, the axiom is to
+factor everything away from vue files and api handlers, down here, to this icarus library
+that way, those framework specific files stay short enough to fit on one screen
+multiple front end components and api handlers can use the same library code
+exactly the same code runs on the client (to provide keystroke-by-keytroke feedback to the user) and the server (where its validation can be trusted)
+and because it's the same:
+you know it will act the same
+changes to it affect its behavior everywhere it could run (a long list: lambda, worker, ssr hydration, page running on client)
 
 
+code that must be vendor-specific, like doorWorker and doorLambda, still factor down into the library
+here, side-by-side, ctrl+f and select term to highlight show differences and commonalities
+
+switching providers is something to plan for
+new team members getting up to speed, faster on a smaller codebase
+imagine a switch from vue in nuxt to react in next.js: instead of changing lengthy .vue files, most of the code is already down in the library
+imagine a switch from supabase to neon: a thin layer abstracts this away
+imagine a switch from cloudflare pages and amazon lambda to virtual instances
+also, round robin enables multiple providers, and switches in run-time: these will become pluggable
+send email and texts through amazon and twilio
+*/
+
+/*
+within the library, factor everything to the lowest level where it fits
+reasons for this include:
+you can see how much code is maximually portable--depending on the fewest outside modules and platforms
+you only use more modules and services when necessary
+
+modern javascript platform only: ESM, run by Node 20, a current Chromium V8 worker, or a common consumer's web browser
+
+could be run in
+local debug | deployed to production public in the cloud
+x
+front end client page | back end server api endpoint
+x
+(if deployed server) cloudflare worker | amazon lambda
+x
+(if page) ssr hydration | client browser
+
+so, the library code is isomorphic, but modern
+exactly the same code runs on the client and the server
+on the client, it's there to give instant, keystroke by keystroke feedback to the user
+on the server, it's there to validate, be trusted, we can be certain that it hasn't been tampered with
+
+not in icarus are:
+any code that uses any node modules that were written intending to be run on a server by node
+such as: twilio, sharp
+those are in persephone
+so, icarus can't use persephone, but persephone can use icarus
+and, persephone can use tiny tests, and defines more tests that only run in lambda
+*/
+
+//ttd march ^ clean that up into a single tight essay about levels and isomorphic
 
 
 
