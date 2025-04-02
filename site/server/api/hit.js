@@ -11,7 +11,10 @@ async function doorHandleBelow({door, body, action}) {
 	let r = {}
 	r.sticker = Sticker().all
 
-	await documentEnvironment('hit.js nuxt api handler')
+
+	log('hi in hit.js', look(useRuntimeConfig().public.environment3))
+
+	await documentEnvironment('hit.js', useRuntimeConfig)
 
 	let h = await settingReadInt('hits', 0)
 

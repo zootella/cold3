@@ -110,18 +110,50 @@ export function isCloud_new() {//use environment flags the frameworks inject whi
 []cloud page client
 []cloud lambda
 */
-test(() => {
-	documentEnvironment('level2.js test')
-})
-export function documentEnvironment(from) {
-let s = `from ${from}, DOCUMENTING:
-${Sticker().all}
 
-import.meta.env:
-${look(import.meta?.env)}`
-//log(s)
-dog(s)
+
+
+
+test(async () => {
+	await documentEnvironment('level2.js:test')
+})
+export async function documentEnvironment(from, useRuntimeConfig) {
+	/*
+	look for something else
+	*/
+
+
+
+	/*
+	log(`import.meta.env.NODE_ENV: ${import.meta?.env?.NODE_ENV}`)
+	log('import.meta.env:', look(import.meta?.env))
+	*/
+	let s = environment2(from, useRuntimeConfig)
+	log(s)
+//	if (canGetAccess()) await awaitDog(s)
 }
+
+
+export function environment2(from, useRuntimeConfig) {
+	let d3 = typeof useRuntimeConfig == 'function' ? useRuntimeConfig()?.public?.environment3 : 'NoConfig'
+
+	let d = typeof globalThis.useRuntimeConfig == 'function' ? globalThis.useRuntimeConfig()?.public?.environment3 : 'NoConfig'
+	let i = import.meta?.env?.NODE_ENV
+	let p = defined(typeof process) ? process?.env?.NODE_ENV : 'NoProcess'
+	let sticker = Sticker()
+	return `ENV2 ${wrapper.hash.slice(0, 7)} ${sayTick(sticker.now)} ${sticker.core.where} D3:${d3} D:${d} I:${i} P:${p} FROM ${from} ACCESS ${canGetAccess()} TAG ${sticker.tag}`
+}
+
+
+
+
+
+
+
+
+
+
+
 
 //                                            _                                      _   
 //  ___  ___ _ __  ___  ___    ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
@@ -1160,6 +1192,7 @@ async function sendLog_useDatadog(c) {
 	}
 	return await ashFetchum(c, q)
 }
+//ttd april, so you can't just call dog anywhere because there may not be door promises, and there may not be access to secrets. imagining one where you could, it would have to be async, and would just skip datadog if there are no secrets. cat(), if you will. really not sure if this is a good idea or not
 
 //if you change anything that could cause these functions and those they use to even possibly throw, check with simulation mode--but be sure to not call a real API in here, as there won't be an AUDIT saved!
 const cloudLogSimulationMode = false

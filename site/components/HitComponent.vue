@@ -18,9 +18,9 @@ pinia pattern notes:
 async function clickedHit() {
 	await hitStore.incrementHits()
 
-	await documentEnvironment('HitComponent.vue button handler')
+	await documentEnvironment('HitComponent.vue:button')
 }
-await documentEnvironment('HitComponent.vue script setup')
+await documentEnvironment('HitComponent.vue:setup')
 
 </script>
 <template>

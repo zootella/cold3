@@ -1,6 +1,6 @@
 
 import {
-Sticker, log, look, Now, Tag, checkText, checkTag, isCloud_new,
+Sticker, log, look, Now, Tag, checkText, checkTag, isCloud_new, documentEnvironment,
 getBrowserTag, getBrowserGraphics, sequentialShared,
 } from 'icarus'
 import {ref} from 'vue'
