@@ -152,7 +152,7 @@ functions that use parts of the larger application and environment
 */
 export {
 
-Sticker, isLocal, isCloud, senseEnvironment, isLocal_new, isCloud_new, documentEnvironment,
+Sticker, isLocal, isCloud, senseEnvironment,
 canGetAccess, accessWorker, getAccess,
 doorWorker, doorLambda,
 headerGetOne,

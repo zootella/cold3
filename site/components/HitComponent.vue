@@ -3,7 +3,7 @@
 
 import {
 log, look, Now, Tag,
-getBrowserTag, documentEnvironment,
+getBrowserTag,
 } from 'icarus'
 import {ref, reactive, onMounted, watch} from 'vue'
 import {useHitStore} from '~/stores/hitStore'
@@ -17,10 +17,7 @@ pinia pattern notes:
 
 async function clickedHit() {
 	await hitStore.incrementHits()
-
-	await documentEnvironment('HitComponent.vue:button')
 }
-await documentEnvironment('HitComponent.vue:setup')
 
 </script>
 <template>

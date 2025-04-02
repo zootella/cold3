@@ -1,6 +1,6 @@
 
 import {
-Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, documentEnvironment,
+Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
 settingReadInt, settingWrite,
 } from 'icarus'
 
@@ -10,11 +10,6 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
 	r.sticker = Sticker().all
-
-
-	log('hi in hit.js', look(useRuntimeConfig().public.environment3))
-
-	await documentEnvironment('hit.js', useRuntimeConfig)
 
 	let h = await settingReadInt('hits', 0)
 

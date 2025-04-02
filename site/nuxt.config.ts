@@ -39,9 +39,6 @@ export default defineNuxtConfig({
 
 	runtimeConfig: {//added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
 		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
-		public: {//added not for a module
-			environment3: process.dev ? 'Development.' : 'Production.'//be able to see how we were built on both pages and endpoints
-		}
 	},
 	build: {
 		sourcemap: true,//from visualizer; causes rollup to make stats.html
