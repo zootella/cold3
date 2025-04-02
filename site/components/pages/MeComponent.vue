@@ -1,5 +1,10 @@
 <script setup>
 
+import {
+log, look, Now, Time, Limit, validateName,
+Sticker, isCloud_new,
+} from 'icarus'
+import {ref, watch, onMounted} from 'vue'
 
 </script>
 <template>

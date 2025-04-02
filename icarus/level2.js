@@ -90,10 +90,37 @@ export function isCloud(o) { return Sticker().isCloud }//do you ever do {uncerta
 //ttd march, observe and then switch to these:
 export function isLocal_new() { return !isCloud_new() }
 export function isCloud_new() {//use environment flags the frameworks inject which cannot be altered at runtime
-	if (process?.env?.IS_OFFLINE) return false//serverless-offline is simulating a Lambda function locally
+	if (typeof process != 'undefined' && process?.env?.IS_OFFLINE) return false//serverless-offline is simulating a Lambda function locally
 	if (import.meta?.env?.DEV) return false//Vite is running in development mode
 	if (import.meta?.env?.PROD) return true//Vite built this code for production
 	return true//fallback to production to require secure checks
+}
+
+/*
+[]local node (test)
+[]local vite (icarus)
+
+[]local nuxt endpoint
+[]local page server hydrating
+[]local page client
+[]local lambda (persephone), and []after live reload
+
+[]cloud nuxt endpoint
+[]cloud page server hydrating
+[]cloud page client
+[]cloud lambda
+*/
+test(() => {
+	documentEnvironment('level2.js test')
+})
+export function documentEnvironment(from) {
+let s = `from ${from}, DOCUMENTING:
+${Sticker().all}
+
+import.meta.env:
+${look(import.meta?.env)}`
+//log(s)
+dog(s)
 }
 
 //                                            _                                      _   

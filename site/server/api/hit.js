@@ -1,6 +1,6 @@
 
 import {
-Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
+Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, documentEnvironment,
 settingReadInt, settingWrite,
 } from 'icarus'
 
@@ -10,6 +10,8 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
 	r.sticker = Sticker().all
+
+	await documentEnvironment('hit.js nuxt api handler')
 
 	let h = await settingReadInt('hits', 0)
 
