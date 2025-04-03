@@ -55,7 +55,7 @@ export function sayDate(t) {
 //say a tick count like "Fri04:09p39.470s" using the local offset in the wrapper
 export function sayTick(t) {
 	if (!t) return '(not yet)'//don't render 1970jan1 as a time something actually happened
-	let d = new Date(t + (wrapper.local * 3600000))//offset manually, then we'll use UTC methods below
+	let d = new Date(t - wrapper.local)//offset manually, then we'll use UTC methods below
 	let weekday = d.toUTCString().slice(0, 3)
 	let hours = (d.getUTCHours() % 12 || 12).toString().padStart(2, '0')//convert hours 0-23 to 1-12
 	let meridiem = d.getUTCHours() < 12 ? 'a' : 'p'

@@ -1,21 +1,6 @@
-<style scoped>
-</style>
-<template>
-<div class="page-container">
-
-<NavigationComponent note="on feed2" />
-<PostComponent
-	v-for="post in visiblePosts" 
-	:key="post.tag"
-	:post="post"
-	:isStandalone="false"
-	:postAbove="null"
-	:postBelow="null"
-/>
-
-</div>
-</template>
 <script setup>
+
+definePageMeta({layout: 'feed-layout', note: 'on feed2'})
 
 import {
 log, look, Now, Time, sameObject,
@@ -168,3 +153,15 @@ so users who want it can find it, while infinite scroll is always the default
 
 
 </script>
+<template>
+
+<PostComponent
+	v-for="post in visiblePosts" 
+	:key="post.tag"
+	:post="post"
+	:isStandalone="false"
+	:postAbove="null"
+	:postBelow="null"
+/>
+
+</template>

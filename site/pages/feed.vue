@@ -1,5 +1,7 @@
 <script setup>
 
+definePageMeta({layout: 'feed-layout', note: 'on feed'})
+
 import {
 Time, log, look, Now,
 postDatabase
@@ -111,9 +113,8 @@ function bounce2() {//runs 100ms after the start of any group of scroll events
 
 </script>
 <template>
-<div class="page-container">
 
-<NavigationComponent note="on feed" />
+<NavigationBar note="on feed" />
 <PostComponent
 	v-for="post in posts" 
 	:key="post.tag"
@@ -130,7 +131,6 @@ function bounce2() {//runs 100ms after the start of any group of scroll events
 {{ status.line2 }}
 </div>
 
-</div>
 </template>
 <style scoped>
 

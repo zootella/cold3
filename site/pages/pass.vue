@@ -1,9 +1,10 @@
+<script setup>
+
+definePageMeta({layout: 'feed-layout', note: 'on pass'})
+
+</script>
 <template>
-<div class="page-container">
 
-<NavigationComponent note="on pass" />
+<PassPage />
 
-<PassComponent />
-
-</div>
 </template>

@@ -1,9 +1,10 @@
-<template>
-<div class="page-container">
+<script setup>
 
-<NavigationComponent note="on query" />
+definePageMeta({layout: 'feed-layout', note: 'on query'})
+
+</script>
+<template>
 
 <QueryComponent />
 
-</div>
 </template>

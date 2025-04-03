@@ -1,13 +1,13 @@
-<template>
-<div class="page-container">
+<script setup>
 
-<NavigationComponent note="on page3" />
+definePageMeta({layout: 'feed-layout', note: 'on page3'})
+
+</script>
+<template>
 
 <HitComponent />
 <TrailComponent />
 <ValidateNameComponent />
 <StyleComponent />
-<PasswordComponent />
 
-</div>
 </template>

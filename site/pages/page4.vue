@@ -1,10 +1,11 @@
-<template>
-<div class="page-container">
+<script setup>
 
-<NavigationComponent note="on page4" />
+definePageMeta({layout: 'feed-layout', note: 'on page4'})
+
+</script>
+<template>
 
 <CodeRequestComponent />
 <CodeEnterComponent />
 
-</div>
 </template>

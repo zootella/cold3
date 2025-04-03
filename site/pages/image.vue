@@ -1,9 +1,10 @@
+<script setup>
+
+definePageMeta({layout: 'feed-layout', note: 'on image'})
+
+</script>
 <template>
-<div class="page-container">
 
-<NavigationComponent note="on image" />
+<ImagePage />
 
-<ImageComponent />
-
-</div>
 </template>

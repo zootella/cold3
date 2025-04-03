@@ -1,4 +1,4 @@
-<script setup>
+<script setup>//./components/NavigationBar.vue
 
 import {
 Sticker,

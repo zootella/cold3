@@ -1,5 +1,7 @@
 <script setup>
 
+definePageMeta({layout: 'feed-layout', note: 'on test'})
+
 let t = Date.now()
 let {data, error} = await useFetch('/api/ping/ping3', {method: 'POST'})
 let duration = Date.now() - t

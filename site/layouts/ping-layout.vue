@@ -1,9 +1,14 @@
+<script setup>
 
-<!-- layout for machine-readable pages -->
+//layout for machine-readable pages
+
+</script>
 <template>
-	<div>
-		<main>
-			<NuxtPage />
-		</main>
-	</div>
+<div>
+
+<main>
+	<NuxtPage />
+</main>
+
+</div>
 </template>

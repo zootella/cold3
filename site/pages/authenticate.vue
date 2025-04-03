@@ -1,14 +1,10 @@
-
 <script setup>
 
-definePageMeta({layout: 'feed-layout'})
+definePageMeta({layout: 'feed-layout', note: 'on authenticate'})
 
 </script>
 <template>
-<div class="page-container">
 
-<NavigationComponent note="on authenticate" />
-<AuthenticateComponent />
+<AuthenticatePage />
 
-</div>
 </template>

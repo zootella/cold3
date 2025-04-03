@@ -1,5 +1,5 @@
 <template>
 
-<NavigationComponent note="on error" />
+<NavigationBar note="on error" />
 
 </template>

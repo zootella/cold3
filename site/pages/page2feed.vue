@@ -1,5 +1,7 @@
 <script setup>
 
+definePageMeta({layout: 'feed-layout', note: 'on page2feed'})
+
 import { ref } from 'vue'
 
 let dynamicValue = ref('dynamic value') // This makes dynamicValue a reactive reference
@@ -8,9 +10,8 @@ let staticValue = 'static value' // This remains a non-reactive constant
 
 </script>
 <template>
-<div class="page-container">
 
-<NavigationComponent note="on page2" />
+<NavigationBar note="on page2" />
 <SnippetComponent
 	:dynamicProperty="dynamicValue"
 	:staticProperty="staticValue"
@@ -70,9 +71,7 @@ let staticValue = 'static value' // This remains a non-reactive constant
 <li>Item 50</li>
 </ul>
 
-
 <MeasureComponent />
-
 
 <ul>
 <li>Item 1</li>
@@ -127,5 +126,4 @@ let staticValue = 'static value' // This remains a non-reactive constant
 <li>Item 50</li>
 </ul>
 
-</div>
 </template>

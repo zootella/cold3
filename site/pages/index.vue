@@ -1,5 +1,7 @@
 <script setup>
 
+definePageMeta({layout: 'feed-layout', note: 'on index'})
+
 import {
 log, look, Sticker,
 } from 'icarus'
@@ -13,11 +15,7 @@ defineOgImageComponent('NuxtSeo', {
 
 </script>
 <template>
-<div class="page-container">
 
-<NavigationComponent note="on index" />
+<IndexPage />
 
-<IndexComponent />
-
-</div>
 </template>

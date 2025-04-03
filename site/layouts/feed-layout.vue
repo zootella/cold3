@@ -1,14 +1,7 @@
+<script setup>//./layouts/feed-layout.vue
 
-<!-- layout for most uses -->
-<template>
-	<div>
-		<main>
-			<NuxtPage />
-		</main>
-	</div>
-</template>
+//layout for most pages
 
-<script setup>
 /*
 you can have script here, but it seems like it's not a common pattern
 note that you have to name these kebob, like feed-layout, not feedLayout
@@ -27,6 +20,18 @@ panel - user adjusts their account settings
 login - form to sign in
 media - focus on image or video gallery
 
-
 */
+
+const route = useRoute()//we'll get the note from definePageMeta
+
 </script>
+<template>
+<div class="page-container">
+
+<NavigationBar :note="route.meta.note" />
+<main>
+	<NuxtPage />
+</main>
+
+</div>
+</template>

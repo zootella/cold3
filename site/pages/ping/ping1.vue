@@ -1,10 +1,12 @@
+<script setup>
+
+definePageMeta({layout: 'feed-layout', note: 'on test'})
 
 
 
 
 
-
-
+</script>
 <template>
 <div>
 <code>

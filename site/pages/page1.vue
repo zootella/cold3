@@ -1,9 +1,10 @@
-<template>
-<div class="page-container">
+<script setup>//./pages/page1.vue
 
-<NavigationComponent note="on page1" />
+definePageMeta({layout: 'feed-layout', note: 'on page1'})
+
+</script>
+<template>
 
 <NameComponent />
 
-</div>
 </template>

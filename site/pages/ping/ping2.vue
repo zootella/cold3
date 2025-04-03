@@ -1,6 +1,8 @@
 <script setup>
 
-import { Sticker } from 'icarus'
+definePageMeta({layout: 'feed-layout', note: 'on test'})
+
+import {Sticker} from 'icarus'
 
 let note = `script setup says: ${Sticker().all}, ping2done`
 

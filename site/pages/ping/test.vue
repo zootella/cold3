@@ -1,6 +1,8 @@
 <script setup>
 
-import { Sticker, runTests } from 'icarus'
+definePageMeta({layout: 'feed-layout', note: 'on test'})
+
+import {Sticker, runTests} from 'icarus'
 
 /* tiny tests run six places:
 -> ./pages/ping/test.vue      nuxt page, server and client rendered

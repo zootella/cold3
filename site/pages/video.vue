@@ -1,9 +1,10 @@
+<script setup>
+
+definePageMeta({layout: 'feed-layout', note: 'on video'})
+
+</script>
 <template>
-<div class="page-container">
 
-<NavigationComponent note="on video" />
+<VideoPage />
 
-<VideoComponent />
-
-</div>
 </template>

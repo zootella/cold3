@@ -1,9 +1,10 @@
+<script setup>
+
+definePageMeta({layout: 'feed-layout', note: 'on me'})
+
+</script>
 <template>
-<div class="page-container">
 
-<NavigationComponent note="on me" />
+<MePage />
 
-<MeComponent />
-
-</div>
 </template>

@@ -1,10 +1,11 @@
+<script setup>
+
+definePageMeta({layout: 'feed-layout', note: 'on page2'})
+
+</script>
 <template>
-<div class="page-container">
-
-<NavigationComponent note="on page2" />
 
 <NameComponent />
 <NameComponent />
 
-</div>
 </template>

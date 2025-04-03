@@ -1,6 +1,6 @@
 
 import {
-wrapper, sayFloppyDisk, runTests,
+wrapper, sayFloppyDisk, runTests, Time,
 log, look, newline, Data, Now, parse, stringo,
 encrypt,
 } from 'icarus'
@@ -44,7 +44,6 @@ async function seal() {
 	let manifest = await composeWrapper(properties)
 	await affixSeal(properties, manifest)
 }
-seal()
 
 async function placeSecrets() {
 
@@ -133,6 +132,8 @@ async function affixSeal(properties, manifest) {
 	//compose contents for the new wrapper.js
 	let o = {...wrapper}//copy all the properties into a new object
 	o.tick = Now()//update individual properties in the new object
+	o.local = ((new Date()).getTimezoneOffset()) * Time.minute
+	o.cloud = wrapper.cloud
 	o.hash = hash.base32()
 	o.codeFiles = codeFiles
 	o.codeSize = codeSize
@@ -152,3 +153,51 @@ async function affixSeal(properties, manifest) {
 		''
 	)
 }
+
+//                  _       
+//  _ __ ___   __ _(_)_ __  
+// | '_ ` _ \ / _` | | '_ \ 
+// | | | | | | (_| | | | | |
+// |_| |_| |_|\__,_|_|_| |_|
+//                          
+
+async function main() {
+	let argument = process.argv.slice(2)[0]//argument two in, like $ yarn seal set-cloud
+
+	if      (argument == 'set-cloud') await mark(true)
+	else if (argument == 'set-local') await mark(false)
+	else                              await seal()
+}
+await main()
+
+
+
+
+
+
+
+async function mark(setCloud) {
+	//ttd april
+
+
+
+
+let local = ((new Date()).getTimezoneOffset()) * Time.minute
+log(local)
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
