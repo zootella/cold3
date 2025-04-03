@@ -22,7 +22,7 @@ const error2 = ref(null)
 const duration2 = ref(-1)
 const sticker2 = ref('')
 const connection = ref({})//ip address, geographic information, and browser information like user agent string
-const codes = ref(null)//currently live one time codes the person at this browser should find and enter!
+const codes = ref([])//codes this browser could enter, empty array before check or if none
 
 const hello1 = sequentialShared(async () => {
 	try {
@@ -53,8 +53,6 @@ const hello2 = sequentialShared(async () => {
 		user.value = r.user//more robust user object with .browserTag, .userTag, and names like .name.formFormal
 		connection.value = r.connection
 		codes.value = r.codes
-
-		log('just set codes in hello2', look(r.codes))
 
 		duration2.value = Now() - t
 	} catch (e) { error2.value = e }

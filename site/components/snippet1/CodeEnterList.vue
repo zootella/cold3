@@ -11,7 +11,7 @@ const helloStore = useHelloStore()
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeEnterList</i></p>
 
-<p>this browser has ({{helloStore.codes?.length}}) live codes:</p>
+<p>this browser has ({{helloStore.codes.length}}) live codes:</p>
 <div v-for="code in helloStore.codes" :key="code.codeTag">
 	<CodeEnterComponent :code="code" />
 </div>

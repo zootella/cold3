@@ -697,8 +697,8 @@ export async function codeLiveForBrowser({browserTag}) {
 		title1: 'browser_tag', cell1: browserTag,//for this browser
 		title2: 'lives', cell2GreaterThan: 0,//that haven't been guessed to death or otherwise revoked
 	})
+	let codes = []
 	if (rows) {
-		let codes = []
 		for (let row of rows) {
 			codes.push({
 				codeTag: row.row_tag,//the code's tag, also the row tag, letting the page identify the challenge
@@ -708,12 +708,12 @@ export async function codeLiveForBrowser({browserTag}) {
 				addressPage: row.page_text,//the address in the form to show on the page
 				lives: row.lives,//how many guesses remain on this code
 				//note we importantly do not send hash to the page, that's the secret part!
+				correct: false,//the page will set this true in pinia when the user guesses correctly
+				show: true,//the page will use if the user clicks X
 			})
 		}
-		return codes
-	} else {
-		return false//no codes
 	}
+	return codes//return empty if no codes for this browser right now
 }
 
 //the person at browserTag used the box on the page to enter a code, which could be right or wrong
@@ -722,13 +722,13 @@ export async function codeEnter({browserTag, codeTag, codeEntered}) {
 
 	//find the row about it
 	let row = await code_get({codeTag})
-	if (!row) return 'Bad.Error.NotFound.Replace.'
-	if (row.browser_tag != browserTag) return 'Bad.Error.BrowserMismatch.Replace.'//this would be very unusual
+	if (!row || row.browser_tag != browserTag || !row.lives) return {correct: false, lives: 0}//these would be very unusual, like from a tampered-with page
 
-	if (row.row_tick + Code.lifespan20 < now) return 'Bad.Expired.Replace.'//too late
-	if (!row.lives) return 'Bad.Expended.Replace.'//guessed out or revoked by replacement
+	//too late, return lives 0 to tell the page the user needs to request a new code
+	if (row.row_tick + Code.lifespan20 < now) return {correct: false, lives: 0}
 
-	if (secureSameText(row.hash, await hashText(codeTag+codeEntered))) {//correct guess
+	//correct guess
+	if (secureSameText(row.hash, await hashText(codeTag+codeEntered))) {
 
 		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
 		await browserValidatedAddress({
@@ -737,16 +737,15 @@ export async function codeEnter({browserTag, codeTag, codeEntered}) {
 			type: row.type_text,
 			addressNormal: row.normal_text, addressFormal: row.formal_text, addressPage: row.page_text,
 		})
-		return 'Good.Correct.'
+		return {correct: true, lives: 0}
 
-	} else {//wrong guess
+	//wrong guess
+	} else {
 
 		let lives = row.lives - 1
 		await code_set_lives({codeTag, lives})
-		return lives ? 'Bad.Wrong.TryAgain.' : 'Bad.Wrong.Replace.'
+		return {correct: false, lives: lives}//user may be able to guess again
 	}
-
-	//ttd march. instead of a list of tags, the return should probably be an object of outcome, type, remedy, as separate parts, yeah, duh
 }
 
 

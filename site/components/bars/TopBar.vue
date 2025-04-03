@@ -16,6 +16,6 @@ and if there are, then we v-if up
 </script>
 <template>
 
-<CodeEnterList v-show="helloStore.codes" />
+<CodeEnterList v-show="helloStore.codes.length" />
 
 </template>

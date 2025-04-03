@@ -13,7 +13,6 @@ const props = defineProps({
 	code: {type: Object, required: true},
 })
 
-//ttd march, really, this should be at the top of every page, and render into a list of catch boxes for 0+ codes alive
 const refInstruction = ref('example instruction')
 const refCode = ref('')
 const refOutput = ref('example output')
@@ -32,6 +31,19 @@ async function onClick() {
 		codeEntered: onlyNumerals(refCode.value),
 	})
 	log(look(response))
+	props.code.correct = response.didEnter.correct
+	props.code.lives = response.didEnter.lives
+	/*
+	response will be correct: true, false
+	and lives: 0, 1+
+
+	on correct, just say thanks, and disappear in a few seconds or a click
+	on wrong, still lives, say wrong, let them try again
+
+	on wrong, no more lives, say wrong, tell them to request a new code
+
+	and update the pinia store accordingly, removing dead codes from the array? no, setting lives and correct, and then letting this render appropriately!
+	*/
 }
 
 </script>
