@@ -21,7 +21,14 @@ async function doorHandleBelow({door, body}) {
 
 	return {note: `worker says: ${workerNote}, ${Sticker().all}; ${lambdaNote}`}
 }
-//ttd march, refactor this to use fetchNetwork23
+/*
+ttd april, necessary bike shed improvements
+[]refactor to use fetchNet23 or whatever you call that
+[]line up green checks, where, and hashes, this is what you look at
+[]the page should show up even while the tests are rolling in
+[]make a [Run] button which reruns the tests
+[]make a ping6done that only shows with three green checkmarks, and hookup to checkly
+*/
 
 /* tiny tests run six places:
 -- ./pages/ping/test.vue      nuxt page, server and client rendered
