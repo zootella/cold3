@@ -6,6 +6,5 @@ definePageMeta({layout: 'feed-layout', note: 'on page4'})
 <template>
 
 <CodeRequestComponent />
-<CodeEnterComponent />
 
 </template>

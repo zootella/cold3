@@ -19,6 +19,7 @@ useHead(head)
 </script>
 <template>
 
+<TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
 <NuxtLayout>
 	<NuxtPage />
 </NuxtLayout>

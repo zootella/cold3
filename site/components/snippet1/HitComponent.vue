@@ -6,9 +6,8 @@ log, look, Now, Tag,
 getBrowserTag,
 } from 'icarus'
 import {ref, reactive, onMounted, watch} from 'vue'
-import {useHitStore} from '~/stores/hitStore'
-
 const hitStore = useHitStore()
+
 await hitStore.getHits()
 /*
 pinia pattern notes:

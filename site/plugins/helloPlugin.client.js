@@ -5,7 +5,6 @@ import {
 Sticker, log, look, Now, Tag, getBrowserTag, checkText, hasText, awaitDog,
 getBrowserGraphics, awaitLogAlert,
 } from 'icarus'
-import {useHelloStore} from '~/stores/helloStore'
 
 //runs once on the server when a new browser tab GETs, and once again in that browser tab; doesn't run as the user clicks from route to route in the tab, nor when a component POSTs back to an api endpoint
 export default defineNuxtPlugin(async (nuxtApp) => {

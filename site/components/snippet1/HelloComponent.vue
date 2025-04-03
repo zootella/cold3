@@ -5,8 +5,6 @@ log, look, Now, sayTick, newline, Data, Tag, hasText,
 getBrowserTag, isLocal,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
-import {useHelloStore} from '~/stores/helloStore'
-
 const helloStore = useHelloStore()
 
 </script>
@@ -19,7 +17,6 @@ const helloStore = useHelloStore()
 <p>hello2 at {{helloStore.sticker2}} took {{helloStore.duration2}}ms</p>
 <p>user:</p><pre>{{helloStore.user}}</pre>
 <p>connection: <code>{{helloStore.connection}}</code></p>
-<p>codes:</p><pre>{{helloStore.codes}}</pre>
 
 </div>
 </template>

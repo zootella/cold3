@@ -9,9 +9,11 @@ onlyNumerals, Code, hashToLetter,
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()
 
+const props = defineProps({
+	code: {type: Object, required: true},
+})
+
 //ttd march, really, this should be at the top of every page, and render into a list of catch boxes for 0+ codes alive
-const refCodeTag = ref('c2kK42lIV2MThI1VHsTGf')//you need to get this from hello store 2, probably?
-const refLetter = ref('H')//and then you need to hash it down to this with hashToLetter(c.codeTag, Code.alphabet)
 const refInstruction = ref('example instruction')
 const refCode = ref('')
 const refOutput = ref('example output')
@@ -26,7 +28,7 @@ watch([refCode], () => {
 
 async function onClick() {
 	let response = await refButton.value.post('/api/code/enter', {
-		codeTag: refCodeTag.value,//hidden from the user but kept with the form
+		codeTag: props.code.codeTag,//hidden from the user but kept with the form
 		codeEntered: onlyNumerals(refCode.value),
 	})
 	log(look(response))
@@ -37,9 +39,12 @@ async function onClick() {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeEnterComponent</i></p>
 
+<pre>{{code}}</pre>
+<p>code tag: <code>{{code.codeTag}}</code></p>
+
 <p>{{refInstruction}}</p>
 <p>
-	Code {{refLetter}}
+	Code {{code.letter}}
 	<input :maxlength="Limit.input"
 		type="tel" inputmode="numeric" enterkeyhint="Enter"
 		v-model="refCode"

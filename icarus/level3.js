@@ -693,19 +693,26 @@ async function codeSent({browserTag, provider, type, v, permit, code}) {
 //is this browser expecting any codes? needs to run fast!
 export async function codeLiveForBrowser({browserTag}) {
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
-		since: Now() - Code.lifespan20,
-		title1: 'browser_tag', cell1: browserTag,
-		title2: 'lives', cell2GreaterThan: 0,
+		since: Now() - Code.lifespan20,//get not yet expired codes
+		title1: 'browser_tag', cell1: browserTag,//for this browser
+		title2: 'lives', cell2GreaterThan: 0,//that haven't been guessed to death or otherwise revoked
 	})
 	if (rows) {
-		return rows.map(row => ({
-			codeTag:   row.row_tag,//the code's tag, also the row tag, we use with the page to identify the challenge
-			startTick: row.row_tick,//the code's birthday, it lives for 20 minutes from this time
-			addressType: row.type_text,//the type of address, like "Email."
-			addressPage: row.page_text,//the address in the form to show on the page
-			lives: row.lives,//how many guesses remain on this code
-			//note we importantly do not send hash to the page, that's the secret part!
-		}))
+		let codes = []
+		for (let row of rows) {
+			codes.push({
+				codeTag: row.row_tag,//the code's tag, also the row tag, letting the page identify the challenge
+				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
+				startTick: row.row_tick,//the code's birthday, it lives for 20 minutes from this time
+				addressType: row.type_text,//the type of address, like "Email."
+				addressPage: row.page_text,//the address in the form to show on the page
+				lives: row.lives,//how many guesses remain on this code
+				//note we importantly do not send hash to the page, that's the secret part!
+			})
+		}
+		return codes
+	} else {
+		return false//no codes
 	}
 }
 

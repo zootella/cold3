@@ -35,7 +35,10 @@
 
 	/* A global container class if you want consistent margins */
 	.page-container {
-		@apply mx-auto max-w-screen-md p-4; /* centered, medium width, padding */
+		@apply mx-auto max-w-screen-md p-4 pb-0; /* centered, medium width, padding */
+	}
+	.bar-container {
+		@apply mx-auto max-w-screen-md p-4 pb-0; /* same thing for the top and bottom bar */
 	}
 
 	input, textarea, select {
