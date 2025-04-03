@@ -109,12 +109,9 @@ function bounce2() {//runs 100ms after the start of any group of scroll events
 	measure()
 }
 
-
-
 </script>
 <template>
 
-<NavigationBar note="on feed" />
 <PostComponent
 	v-for="post in posts" 
 	:key="post.tag"

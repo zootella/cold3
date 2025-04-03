@@ -2,7 +2,7 @@
 
 import {
 log, look, Now, Time, Limit, validateName,
-Sticker, isCloud_new,
+Sticker,
 } from 'icarus'
 import {ref, watch, onMounted} from 'vue'
 
