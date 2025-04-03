@@ -7,7 +7,7 @@ const refButtonCanSubmit = ref(false)//set to true to let the button be clickabl
 const refButtonInFlight = ref(false)//the button below sets to true while it's working, we can watch
 
 async function onClick() {
-	let response = await refButton.value.post('/api/name', {
+	let result = await refButton.value.post('/api/name', {
 		action: 'SomeAction.',
 		name: refName.value,
 		email: refEmail.value,
@@ -29,9 +29,6 @@ looks like a button; runs a function
 use when this is the last step in a form, and it's time to actually POST to an api endpoint
 and additionally, if necessary, protect the endpoint with cloudflare turnstile on the page and server
 */
-
-//ok, now switch to turnstile on the bottom everywhere
-//then do the promise protection making calls to getToken line up
 
 import {
 log, look, Now, Limit,
@@ -82,7 +79,7 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
-	let result, error, success = true
+	let response, error, success = true
 	let t1 = Now(), t2, t3
 	try {
 		emit('update:inFlight', true)//this lets our parent follow our orange condition
@@ -91,7 +88,7 @@ defineExpose({post: async (path, body) => {
 		}
 		t2 = Now()
 		body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to
-		result = await $fetch(path, {method: 'POST', body})
+		response = await $fetch(path, {method: 'POST', body})
 	} catch (e) {
 		error = e
 		success = false
@@ -99,7 +96,7 @@ defineExpose({post: async (path, body) => {
 		emit('update:inFlight', false)
 	}
 	t3 = Now()
-	let p = {success, result, error, tick: t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
+	let p = {success, response, error, tick: t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
 	if (props.useTurnstile && useTurnstileHere()) {
 		p.durationTurnstile = t2 - t1//how long the button was orange because turnstile wasn't done on the page yet
 		p.durationFetch     = t3 - t2//how long after that the button was orange because of the actual fetch to the server

@@ -701,15 +701,18 @@ export async function codeLiveForBrowser({browserTag}) {
 	if (rows) {
 		for (let row of rows) {
 			codes.push({
+				//note we importantly do not send hash to the page, that's the secret part!
 				codeTag: row.row_tag,//the code's tag, also the row tag, letting the page identify the challenge
 				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
-				startTick: row.row_tick,//the code's birthday, it lives for 20 minutes from this time
 				addressType: row.type_text,//the type of address, like "Email."
 				addressPage: row.page_text,//the address in the form to show on the page
+
+				start: row.row_tick,//when we sent the code
+				duration: row.row_tick + Code.lifespan20 - Now(),//how much longer the user has to guess
 				lives: row.lives,//how many guesses remain on this code
-				//note we importantly do not send hash to the page, that's the secret part!
+
 				correct: false,//the page will set this true in pinia when the user guesses correctly
-				show: true,//the page will use if the user clicks X
+				xed: false,//the page will set true once the user Xed out of the box about this
 			})
 		}
 	}

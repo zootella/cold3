@@ -13,6 +13,8 @@ const props = defineProps({
 	code: {type: Object, required: true},
 })
 
+const refShow = ref(true)
+
 const refInstruction = ref('example instruction')
 const refCode = ref('')
 const refOutput = ref('example output')
@@ -26,16 +28,19 @@ watch([refCode], () => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/api/code/enter', {
+	let r = await refButton.value.post('/api/code/enter', {
 		codeTag: props.code.codeTag,//hidden from the user but kept with the form
 		codeEntered: onlyNumerals(refCode.value),
 	})
-	log(look(response))
-	props.code.correct = response.didEnter.correct
-	props.code.lives = response.didEnter.lives
+	log(look(r))
+	props.code.correct = r.response.didEnter.correct
+	props.code.lives = r.response.didEnter.lives
+
+	log('server tick', r.tick)
 	/*
 	response will be correct: true, false
 	and lives: 0, 1+
+	you can also tell if they guessed this code already, with lives < Code.guesses or whatever
 
 	on correct, just say thanks, and disappear in a few seconds or a click
 	on wrong, still lives, say wrong, let them try again
@@ -46,10 +51,23 @@ async function onClick() {
 	*/
 }
 
+function buzzer() {
+	log('got the buzzer')
+}
+
 </script>
 <template>
-<div class="border border-gray-300 p-2">
+<div class="border border-gray-300 p-2" v-show="refShow">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeEnterComponent</i></p>
+
+<p>
+	we sent the code at
+	<TimeRemaining
+		:start="code.start"
+		:duration="code.duration"
+		@buzzer="buzzer"
+	/>
+</p>
 
 <pre>{{code}}</pre>
 <p>code tag: <code>{{code.codeTag}}</code></p>
