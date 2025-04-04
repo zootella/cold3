@@ -1172,8 +1172,7 @@ function List() {
 
 	return {a, o, add, merge}
 }
-test(() => {
-
+noop(() => {//template for sanity checking:
 	let list = List()
 	list.add([
 		{tick: 3, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
@@ -1187,9 +1186,42 @@ test(() => {
 		{tick: 2, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
 	])
 	log(look(list.a), `lengths are ${list.a.length} and ${Object.keys(list.o).length}`)
+})
+test(() => {//and a rudimentary fuzz buster:
+	function run1(capacity, timeRange) {
+		let list = List()
+		let now = Now()
+		for (let t = 1; t <= capacity; t++) {
+			list.add([{tag: Tag(), tick: randomBetween(now - timeRange, now)}])
+			//this is slow because we're intentionally not giving add sorted records
 
+			//make sure the array has the right number of items
+			ok(list.a.length == t && Object.keys(list.o).length == t)
+			//and that they're sorted by tick, at least
+			for (let i = 0; i < list.a.length - 2; i++) ok(list.a[i].tick >= list.a[i+1].tick)
+		}
+	}
+	function run2(seconds, timeRange, capacity) {
+		let now = Now()
+		let cycles = 0
+		while (Now() < now + (seconds * Time.second)) {
+			run1(capacity, timeRange)
+			cycles++
+		}
+		log(`did ${cycles} cycles with capacity ${capacity} in ${seconds} seconds`)
+	}
+	const seconds = 4
+	const timeRange = Time.minute//like Time.year, or 10 to pile up tick collisions, which are ok
+	run2(seconds, timeRange, 4)//lots of cycles building to a very short array to test all the corners
+	run2(seconds, timeRange, 16)
+	run2(seconds, timeRange, 256)
 
-
+	/*
+	on windows:
+	Fri02:46p58.402s → did 203638 cycles with capacity 4 in 4 seconds
+	Fri02:47p02.412s → did 49579 cycles with capacity 16 in 4 seconds
+	Fri02:47p06.414s → did 1413 cycles with capacity 256 in 4 seconds
+	*/
 })
 
 
@@ -1197,14 +1229,10 @@ test(() => {
 
 
 
-/*
-game plan
-[x]write a really simple example to get the walk function correct
-[x]build up into list
-[x]add a light add which doesn't replace objects if they're tags are already there
-[x]and then merge, the heavy one, which does
-[]write a fuzz tester that includes lots of small lists and random updates
-*/
+
+
+
+
 
 
 
