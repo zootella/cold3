@@ -1087,44 +1087,146 @@ noop(() => {
 
 
 
-
-
-
-
-
-//chat promises List() is correct, and will work great in in a Pinia store
-
 /*
-requirements: List() keeps .a sorted by tick (with tag as a tiebreaker), merges in pre-sorted arrays quickly, and even if .add() gets an array in random order, the resulting .a and .o will be valid (with a sorted and o containing unique records).
+game plan
+[]write a really simple example to get the walk function correct
+[]build up into list
+[]add a light add which doesn't replace objects if they're tags are already there
+[]and then merge, the heavy one, which does
+[]write a fuzz tester that includes lots of small lists and random updates
 */
-function List() {
-	const a = [] // Sorted descending by tick, then ascending by tag
-	const o = {} // Fast lookup by tag
-	let i = 0   // An index we keep around to make the next add fast
 
-	// walk(tick, tag) moves i so that:
-	// • if a record with the given tick and tag exists, then a[i] is that record
-	// • otherwise, i is the correct insertion index for a new record
-	function walk(tick, tag) {
-		// Move forward while the record at a[i] is "greater" than the new record.
-		// "Greater" means either a higher tick, or equal tick and a lower tag.
-		while (i < a.length && (a[i].tick     > tick || (a[i].tick     == tick && a[i].tag     < tag))) i++
-		while (i > 0        && (a[i - 1].tick < tick || (a[i - 1].tick == tick && a[i - 1].tag > tag))) i--
+function List2() {
+	let a = []//an array of objects, sorted by their names
+	let cursor = 0//an internal cursor we move to the correct position, and leave there to be fast next time
+
+	function load(a2) { a = a2 }
+	function walk(name) {
+		log(name)
+		while (cursor < a.length && a[cursor].name     > name) { cursor++; log('dn') }
+		while (cursor > 0        && a[cursor - 1].name < name) { cursor--; log('up') }
+	}
+	function see() {
+		return look({a, cursor})
 	}
 
-	// add(a2) processes each record in the incoming array.
-	// If a record with the same tag exists (o[r.tag] is true), we use locate
-	// to find it and update it in place. Otherwise, we use locate to position i for insertion.
+	return {cursor, a, load, walk, see}
+}
+
+noop(() => {
+	let l = List2()
+	l.load([
+		{name: 'D'},
+		{name: 'B'},
+	])
+	l.walk('E')
+	log(l.see())//at this point, cursor should be 1, because we need to add B at the bottom
+
+})
+
+
+/*
+here, we're implementing a simple sorting algorithm
+a1 is a given array, with records that have r1.tick, a number, and r1.tag, a string
+we have the guarantee that a1 is sorted descending by tick, and then by tag, as a tiebreaker
+we also have the guarantee that tags are universally unique--in a, and in the world
+
+cursor is a given starting insertion point
+we have the guarantee that it is a valid index in a
+
+r2 is a new element that we are looking for the right place for in a1
+it may be in a1 already, if so, then walk must find it
+alternativvely, it may be a new item for a1, if so, then walk must find the correct insertion point for it
+*/
+function walk(a1, cursor, r2) {
+	log('', `walking from ${cursor}`)
+
+	while (cursor < a1.length &&
+		(
+			a1[cursor].tick > r2.tick ||
+			(a1[cursor].tick == r2.tick && a1[cursor].tag >= r2.tag)
+		)) { cursor++; log('dn to '+cursor) }
+	while (cursor > 0 &&
+		(
+			a1[cursor - 1].tick < r2.tick || 
+			(a1[cursor - 1].tick == r2.tick && a1[cursor - 1].tag <= r2.tag)
+		)) { cursor--; log('up to '+cursor) }
+
+	log(`returning cursor ${cursor}`)
+	return cursor
+}
+test(() => {
+	/*
+	[]first, do all the find cases, r2 will be exactly in r1, both the tick and tag will match
+		[]same tick
+		[]different ticks
+	[]then, look at the insert cases, tag will always be not there yet, tick can be anything
+		[]same tick
+		[]different ticks
+
+	all that for a starting list of
+	[x]0
+	[x]1, found it, now find insertion point scanning [x]ticks, different tags
+	[x]2, found it first and second; then insertion points scanning [x]tags, [x]ticks
+	[x]3, found it first/second/third; then insertion points scanning [x]tags, [x]ticks
+	*/
+	let a1 = [
+		{tick: 3, tag: 'F', note: 'no edition'},
+		{tick: 3, tag: 'D', note: 'no edition'},
+		{tick: 3, tag: 'B', note: 'no edition'},
+	]
+
+	let r2 =
+		{tick: 4, tag: 'C', note: 'no edition'}
+
+	let length = a1.length
+	function nudge(length, i) { if (i > length - 1) i = length - 1; if (i < 0) i = 0; return i }
+	Array.from(new Set([
+		nudge(length, 0),
+		nudge(length, 1),
+		nudge(length, Math.floor(length / 2)),
+		nudge(length, length - 2),
+		nudge(length, length - 1)
+	])).forEach(cursor => {
+		walk(a1, cursor, r2)
+	})
+
+})
+
+
+
+
+
+function List() {
+	const a = []
+	const o = {}
+	let i = 0
+
+	function walk(tick, tag) { log('walk')
+		while (i < a.length && (a[i].tick   >= tick || (a[i].tick   == tick && a[i].tag   > tag))) { i++; log('dn to '+i) }
+		while (i > 0        && (a[i-1].tick <= tick || (a[i-1].tick == tick && a[i-1].tag < tag))) { i--; log('up to '+i) }
+		/*
+		in the replace scenario, we know that tick and tag are in the list
+		we also know that a is sorted descending by tick, using tag as a tiebreaker
+		so then all walk has to do is move i, our cursor, to the position in a where the match is
+
+		in the place scenario, we know that tag isn't in the list yet
+		so all walk must do is move i to the correct insertion position for a new item with the given tick and tag
+		*/
+	}
+
 	function add(a2) {
-		if (!Array.isArray(a2)) toss('type', {a2})//we use our project's helper function toss here
+		//if (!Array.isArray(a2)) toss('type', {a2})
 		for (let r2 of a2) {
-			checkInt(r2.tick); checkTag(r2.tag)
+			//checkInt(r2.tick); checkTag(r2.tag)
 			let r1 = o[r2.tag]
-			if (r1) {//r1 and r2 have the same tag (but maybe different ticks!)
+			if (r1) {
 				walk(r1.tick, r1.tag)
-				a.splice(i, 1)//remove the old one
+				log(`remove at ${i}: ${a[i].tag}, ${a[i].edition}`)
+				a.splice(i, 1)
 			}
 			walk(r2.tick, r2.tag)
+			log(`insert at ${i}: ${r2.tag}, ${r2.edition}`)
 			a.splice(i, 0, r2)
 			o[r2.tag] = r2
 		}
@@ -1132,6 +1234,40 @@ function List() {
 
 	return {a, o, add}
 }
+noop(() => {
+
+	let list = List()
+	list.add([
+		{tick: 3, tag: 'B', edition: 'first edition'},
+		{tick: 3, tag: 'A', edition: 'first edition'},
+	])
+	log(look(list.a))
+
+
+
+})
+
+
+noop(() => {
+	log('hi')
+	log(Tag())
+
+	let list = List()
+	list.add([
+		{tick: 5, tag: 'tagtagtagtagtagtagtaA', note: 'first edition'},
+		{tick: 6, tag: 'tagtagtagtagtagtagtaC', note: 'first edition'},
+		{tick: 5, tag: 'tagtagtagtagtagtagtaB', note: 'first edition'},
+	])
+	list.add([
+		{tick: 5, tag: 'tagtagtagtagtagtagtaA', note: 'second edition'},
+		{tick: 6, tag: 'tagtagtagtagtagtagtaC', note: 'second edition'},
+		{tick: 5, tag: 'tagtagtagtagtagtagtaB', note: 'second edition'},
+	])
+	log(look(list))
+
+
+
+})
 
 /*
 a co-worker wrote this quickly. let's figure out what it does, and if it does that correctly! the general idea is this is in the front end, in a pinia store. objects come in from the database, from fetch, and they might be new objects (that we don't have yet) or new versions of existing objects (with new properties that we don't deal with here). the member objects are guaranteed to have .tick, which is a timestamp from Date.now(), and .tag, which is a 21 character uuid from nanoid
