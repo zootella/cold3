@@ -1092,17 +1092,50 @@ noop(() => {
 
 
 
+//chat promises List() is correct, and will work great in in a Pinia store
 
+/*
+requirements: List() keeps .a sorted by tick (with tag as a tiebreaker), merges in pre-sorted arrays quickly, and even if .add() gets an array in random order, the resulting .a and .o will be valid (with a sorted and o containing unique records).
+*/
+function List() {
+	const a = [] // Sorted descending by tick, then ascending by tag
+	const o = {} // Fast lookup by tag
+	let i = 0   // An index we keep around to make the next add fast
 
+	// walk(tick, tag) moves i so that:
+	// • if a record with the given tick and tag exists, then a[i] is that record
+	// • otherwise, i is the correct insertion index for a new record
+	function walk(tick, tag) {
+		// Move forward while the record at a[i] is "greater" than the new record.
+		// "Greater" means either a higher tick, or equal tick and a lower tag.
+		while (i < a.length && (a[i].tick     > tick || (a[i].tick     == tick && a[i].tag     < tag))) i++
+		while (i > 0        && (a[i - 1].tick < tick || (a[i - 1].tick == tick && a[i - 1].tag > tag))) i--
+	}
 
+	// add(a2) processes each record in the incoming array.
+	// If a record with the same tag exists (o[r.tag] is true), we use locate
+	// to find it and update it in place. Otherwise, we use locate to position i for insertion.
+	function add(a2) {
+		if (!Array.isArray(a2)) toss('type', {a2})//we use our project's helper function toss here
+		for (let r2 of a2) {
+			checkInt(r2.tick); checkTag(r2.tag)
+			let r1 = o[r2.tag]
+			if (r1) {//r1 and r2 have the same tag (but maybe different ticks!)
+				walk(r1.tick, r1.tag)
+				a.splice(i, 1)//remove the old one
+			}
+			walk(r2.tick, r2.tag)
+			a.splice(i, 0, r2)
+			o[r2.tag] = r2
+		}
+	}
 
+	return {a, o, add}
+}
 
-
-
-
-
-
-
+/*
+a co-worker wrote this quickly. let's figure out what it does, and if it does that correctly! the general idea is this is in the front end, in a pinia store. objects come in from the database, from fetch, and they might be new objects (that we don't have yet) or new versions of existing objects (with new properties that we don't deal with here). the member objects are guaranteed to have .tick, which is a timestamp from Date.now(), and .tag, which is a 21 character uuid from nanoid
+*/
 
 
 
