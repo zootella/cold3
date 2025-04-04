@@ -1029,9 +1029,6 @@ export function measurePasswordStrength(s) {
 
 
 
-
-
-
 //  _                    _________    ____  _____ ____ _  _    __   _  _    ___  
 // | |__   __ _ ___  ___|___ /___ \  |  _ \|  ___/ ___| || |  / /_ | || |  ( _ ) 
 // | '_ \ / _` / __|/ _ \ |_ \ __) | | |_) | |_ | |   | || |_| '_ \| || |_ / _ \ 
@@ -1087,135 +1084,52 @@ noop(() => {
 
 
 
-/*
-game plan
-[]write a really simple example to get the walk function correct
-[]build up into list
-[]add a light add which doesn't replace objects if they're tags are already there
-[]and then merge, the heavy one, which does
-[]write a fuzz tester that includes lots of small lists and random updates
-*/
 
-function List2() {
-	let a = []//an array of objects, sorted by their names
-	let cursor = 0//an internal cursor we move to the correct position, and leave there to be fast next time
 
-	function load(a2) { a = a2 }
-	function walk(name) {
-		log(name)
-		while (cursor < a.length && a[cursor].name     > name) { cursor++; log('dn') }
-		while (cursor > 0        && a[cursor - 1].name < name) { cursor--; log('up') }
-	}
-	function see() {
-		return look({a, cursor})
-	}
 
-	return {cursor, a, load, walk, see}
-}
 
-noop(() => {
-	let l = List2()
-	l.load([
-		{name: 'D'},
-		{name: 'B'},
-	])
-	l.walk('E')
-	log(l.see())//at this point, cursor should be 1, because we need to add B at the bottom
 
-})
 
+
+
+
+
+//  _ _     _   
+// | (_)___| |_ 
+// | | / __| __|
+// | | \__ \ |_ 
+// |_|_|___/\__|
+//              
 
 /*
-here, we're implementing a simple sorting algorithm
-a1 is a given array, with records that have r1.tick, a number, and r1.tag, a string
-we have the guarantee that a1 is sorted descending by tick, and then by tag, as a tiebreaker
-we also have the guarantee that tags are universally unique--in a, and in the world
+keep a list of records
+each record has .tag, which list keeps unique, and .tick, a timestamp
 
-cursor is a given starting insertion point
-we have the guarantee that it is a valid index in a
+look at (but please don't change!) list.a, sorted recent first,
+and list.o[tag], enabling instant lookups when you already know the tag you want
 
-r2 is a new element that we are looking for the right place for in a1
-it may be in a1 already, if so, then walk must find it
-alternativvely, it may be a new item for a1, if so, then walk must find the correct insertion point for it
+add new records with:
+list.add([]) - brings in records with tags we don't have yet (fast for immutable records)
+list.merge([]) - does that, and also updates objects with tags we do have (necessary for updated records)
+List is designed to be really fast if you .add() a bunch of records we already have!
+
+List's array stays sorted,
+and add() is fast given records that are sorted (probably by the database)
+feeding in unsorted records will work, but not be fast (so don't do that)
+also, List *only grows*, so watch out for that
+
+under the hood: List keeps a single mutable cursor i to avoid a full scan for every add
+there is also no binary search! with everything sorted,
+realizing we're already in or very close to the right spot is faster
+
+ChatGPT says this "is a robust and efficient choice for managing records in your Pinia store,
+integrating smoothly with Vue's reactivity and component update mechanisms."
+but, I am paying the robot money. 🤖 $$$ 😆
 */
-function walk(a1, cursor, r2) {
-	log('', `walking from ${cursor}`)
-
-	while (cursor < a1.length &&
-		(
-			a1[cursor].tick > r2.tick ||
-			(a1[cursor].tick == r2.tick && a1[cursor].tag >= r2.tag)
-		)) { cursor++; log('dn to '+cursor) }
-	while (cursor > 0 &&
-		(
-			a1[cursor - 1].tick < r2.tick || 
-			(a1[cursor - 1].tick == r2.tick && a1[cursor - 1].tag <= r2.tag)
-		)) { cursor--; log('up to '+cursor) }
-
-	log(`returning cursor ${cursor}`)
-	return cursor
-}
-noop(() => {
-	/*
-	[]first, do all the find cases, r2 will be exactly in r1, both the tick and tag will match
-		[]same tick
-		[]different ticks
-	[]then, look at the insert cases, tag will always be not there yet, tick can be anything
-		[]same tick
-		[]different ticks
-
-	all that for a starting list of
-	[x]0
-	[x]1, found it, now find insertion point scanning [x]ticks, different tags
-	[x]2, found it first and second; then insertion points scanning [x]tags, [x]ticks
-	[x]3, found it first/second/third; then insertion points scanning [x]tags, [x]ticks
-	*/
-	let a1 = [
-		{tick: 3, tag: 'F', note: 'no edition'},
-		{tick: 3, tag: 'D', note: 'no edition'},
-		{tick: 3, tag: 'B', note: 'no edition'},
-	]
-
-	let r2 =
-		{tick: 4, tag: 'C', note: 'no edition'}
-
-	let length = a1.length
-	function nudge(length, i) { if (i > length - 1) i = length - 1; if (i < 0) i = 0; return i }
-	Array.from(new Set([
-		nudge(length, 0),
-		nudge(length, 1),
-		nudge(length, Math.floor(length / 2)),
-		nudge(length, length - 2),
-		nudge(length, length - 1)
-	])).forEach(cursor => {
-		walk(a1, cursor, r2)
-	})
-
-})
-
-
-
-
-function addOne(r, merge) {
-
-	let r1 = o[r2.tag]//find
-	if (r1 && merge) {
-		//locate and remove
-		r1 == null
-	}
-	if (!r1) {
-		//add the new one
-	}
-
-}
-
-
-
-
 function List() {
 	const a = []//array of records, sorted descending by tick, using tag as a tiebreaker
 	const o = {}//object of records for instant lookup by known tag
-	let i = 0//an internal cursor we move and keep to merge in sorted additions quickly
+	let i = 0//an internal cursor we move and keep to bring in sorted records quickly
 
 	/*
 	we use walk() both to find existing elements, and to find the correct insertion point for new ones
@@ -1223,64 +1137,54 @@ function List() {
 	if r is new to a, walk() will choose where we should put it--r.tag is not in a in this case
 	walk() keeps i in range, except to indicate a new r should be added last
 	*/
-	function walk(r) {
+	function walk(r) {//move forward first, then back
 		while (i < a.length && (a[i].tick   > r.tick || (a[i].tick   == r.tick && a[i].tag   >= r.tag))) i++
 		while (i > 0        && (a[i-1].tick < r.tick || (a[i-1].tick == r.tick && a[i-1].tag <= r.tag))) i--
 	}
 
 	function add(a2)   { _add(a2, false) }//add records with tags we don't have yet
 	function merge(a2) { _add(a2, true)  }//also bring in new objects for tags we do have
-	function _add(a2, merge) {
-		//if (!Array.isArray(a2)) toss('type', {a2})
+	function _add(a2, replace) {
+		if (!Array.isArray(a2)) toss('type', {a2})
 		for (let r2 of a2) {
-			//checkInt(r2.tick); checkTag(r2.tag)
+			checkInt(r2.tick); checkTag(r2.tag)
 
 			//find
-			let r1 = o[r2.tag]//do we already have a record with this tag?
+			let r = o[r2.tag]//do we already have a record with this tag?
 
 			//remove
-			if (r1 && merge) {//if found and this is a merge, remove the outdated record
-				walk(r1)//move i to the existing record--we know it's in there so walk will find it!
+			if (r && replace) {//if found and this is a merge, remove the outdated record
+				walk(r)//move i to the existing record--we know it's in there so walk will find it!
 				a.splice(i, 1)//at i, remove 1 record
-				r1 = null//indicate removal locally so the insert next happens
+				r = null//indicate removal locally so the insert next happens
 			}
 
 			//insert
-			if (!r1) {//not found to begin with, or found, this is a merge, so removed
+			if (!r) {//not found to begin with, or found, this is a merge, so removed
 				walk(r2)//use walk again to move i to the correct place to add r2
 				a.splice(i, 0, r2)//add the new record to the array
 				o[r2.tag] = r2//add or replace the reference in the object
 			}
 
-			//note how if merge is false and a2 has all existing tags, this quickly does nothing, which is great
+			//note how if merge is false and a2 has no new tags, this quickly does nothing, which is great!
 		}
 	}
 
 	return {a, o, add, merge}
 }
 test(() => {
-	/*
-	ok, before your fuzz buster, you want to repeat simple sanity scans manually here, as you did above
-	always be adding one item, beneath an existing array of
-
-	[x]start with 0
-
-	[]start with 1
-	[]update
-	[]then add, scanning tag and tick
-
-	*/
 
 	let list = List()
 	list.add([
-		{tick: 3, tag: 'F', edition: 'first edition'},
-		{tick: 3, tag: 'D', edition: 'first edition'},
-		{tick: 3, tag: 'B', edition: 'first edition'},
+		{tick: 3, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
+		{tick: 3, tag: 'Diiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
+		{tick: 3, tag: 'Biiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
 	])
+	log('second one:')
 	list.add([
-		{tick: 2, tag: 'B', edition: 'second edition'},
-		{tick: 2, tag: 'D', edition: 'second edition'},
-		{tick: 2, tag: 'F', edition: 'second edition'},
+		{tick: 2, tag: 'Biiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
+		{tick: 2, tag: 'Diiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
+		{tick: 2, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
 	])
 	log(look(list.a), `lengths are ${list.a.length} and ${Object.keys(list.o).length}`)
 
@@ -1289,30 +1193,19 @@ test(() => {
 })
 
 
-noop(() => {
-	log('hi')
-	log(Tag())
-
-	let list = List()
-	list.add([
-		{tick: 5, tag: 'tagtagtagtagtagtagtaA', note: 'first edition'},
-		{tick: 6, tag: 'tagtagtagtagtagtagtaC', note: 'first edition'},
-		{tick: 5, tag: 'tagtagtagtagtagtagtaB', note: 'first edition'},
-	])
-	list.add([
-		{tick: 5, tag: 'tagtagtagtagtagtagtaA', note: 'second edition'},
-		{tick: 6, tag: 'tagtagtagtagtagtagtaC', note: 'second edition'},
-		{tick: 5, tag: 'tagtagtagtagtagtagtaB', note: 'second edition'},
-	])
-	log(look(list))
 
 
 
-})
 
 /*
-a co-worker wrote this quickly. let's figure out what it does, and if it does that correctly! the general idea is this is in the front end, in a pinia store. objects come in from the database, from fetch, and they might be new objects (that we don't have yet) or new versions of existing objects (with new properties that we don't deal with here). the member objects are guaranteed to have .tick, which is a timestamp from Date.now(), and .tag, which is a 21 character uuid from nanoid
+game plan
+[x]write a really simple example to get the walk function correct
+[x]build up into list
+[x]add a light add which doesn't replace objects if they're tags are already there
+[x]and then merge, the heavy one, which does
+[]write a fuzz tester that includes lots of small lists and random updates
 */
+
 
 
 
