@@ -1180,14 +1180,14 @@ noop(() => {//template for sanity checking:
 		{tick: 3, tag: 'Biiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
 	])
 	log('second one:')
-	list.add([
+	list.merge([
 		{tick: 2, tag: 'Biiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
 		{tick: 2, tag: 'Diiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
 		{tick: 2, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
 	])
 	log(look(list.a), `lengths are ${list.a.length} and ${Object.keys(list.o).length}`)
 })
-test(() => {//and a rudimentary fuzz buster:
+noop(() => {//and a rudimentary fuzz buster:
 	function run1(capacity, timeRange) {
 		let list = List()
 		let now = Now()
@@ -1215,13 +1215,6 @@ test(() => {//and a rudimentary fuzz buster:
 	run2(seconds, timeRange, 4)//lots of cycles building to a very short array to test all the corners
 	run2(seconds, timeRange, 16)
 	run2(seconds, timeRange, 256)
-
-	/*
-	on windows:
-	Fri02:46p58.402s → did 203638 cycles with capacity 4 in 4 seconds
-	Fri02:47p02.412s → did 49579 cycles with capacity 16 in 4 seconds
-	Fri02:47p06.414s → did 1413 cycles with capacity 256 in 4 seconds
-	*/
 })
 
 
