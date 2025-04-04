@@ -1370,11 +1370,11 @@ noop(async () => {//see what these objects look like before we stringify and bas
 //            |___/                        
 
 const _formatDate = {//make formatters once, outside the function
-	y: new Intl.DateTimeFormat('default', { year: 'numeric' }),//default locale is the user's browser, or the edge node's locale
-	m: new Intl.DateTimeFormat('default', { month: 'short' }),
-	d: new Intl.DateTimeFormat('default', { day: 'numeric' }),
-	w: new Intl.DateTimeFormat('default', { weekday: 'short' }),
-	t: new Intl.DateTimeFormat('default', { hour: 'numeric', minute: 'numeric' })
+	y: new Intl.DateTimeFormat('default', {year: 'numeric'}),//default locale is the user's browser, or the edge node's locale
+	m: new Intl.DateTimeFormat('default', {month: 'short'}),
+	d: new Intl.DateTimeFormat('default', {day: 'numeric'}),
+	w: new Intl.DateTimeFormat('default', {weekday: 'short'}),
+	t: new Intl.DateTimeFormat('default', {hour: 'numeric', minute: 'numeric'})
 }
 function _composeDate(t) {
 	let d = new Date(t)
@@ -1385,6 +1385,10 @@ function _composeDate(t) {
 		weekday: _formatDate.w.format(d),//like 'Mon'
 		time:    _formatDate.t.format(d)//like '2:17 PM' or '14:17'
 	}
+}
+export function sayTimePage(t) {
+	let p = _composeDate(t)
+	return `${p.time}`
 }
 export function sayWhenPage(t) {//like '2024 May 19 4:20 PM', always in that order, but localized to 12 or 24 hour from browser settings
 	let p = _composeDate(t)

@@ -260,7 +260,7 @@ rsaEncrypt, rsaDecrypt,
 objectToBase62, base62ToObject,
 curveSign, curveVerify,
 
-sayWhenPage, sayWhenFeed,
+sayTimePage, sayWhenPage, sayWhenFeed,
 fraction, exponent, int, big,
 deindent,
 defined,

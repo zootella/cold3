@@ -52,7 +52,9 @@ const hello2 = sequentialShared(async () => {
 		sticker2.value = r.sticker
 		user.value = r.user//more robust user object with .browserTag, .userTag, and names like .name.formFormal
 		connection.value = r.connection
-		codes.value = r.codes
+
+		const codeStore = useCodeStore()//this doesn't work at the top because pinia isn't loaded yet up there
+		codeStore.placeCodes(r.codes)//here, we're shoving starting data into a neighboring store
 
 		duration2.value = Now() - t
 	} catch (e) { error2.value = e }

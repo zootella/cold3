@@ -1,13 +1,12 @@
-<script setup>
+<script setup>//./components/CodeEnterComponent.vue
 
 import {
-log, look, Now, Limit, sayTick, newline, Data, Tag, hasText,
+log, look, Now, Limit, sayTick, newline, Data, Tag, hasText, Time, sayTimePage,
 getBrowserTag, isLocal,
 validatePhone,
 onlyNumerals, Code, hashToLetter,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
-const helloStore = useHelloStore()
 
 const props = defineProps({
 	code: {type: Object, required: true},
@@ -61,12 +60,9 @@ function buzzer() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeEnterComponent</i></p>
 
 <p>
-	we sent the code at
-	<TimeRemaining
-		:start="code.start"
-		:duration="code.duration"
-		@buzzer="buzzer"
-	/>
+	we sent the code at {{sayTimePage(code.tick)}} and it'll last for 20 minutes from then,
+	until {{sayTimePage(code.tick + (20*Time.minute))}}.
+	After that, you'll have to request a new one.
 </p>
 
 <pre>{{code}}</pre>
