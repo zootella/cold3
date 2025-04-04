@@ -1155,7 +1155,7 @@ function walk(a1, cursor, r2) {
 	log(`returning cursor ${cursor}`)
 	return cursor
 }
-test(() => {
+noop(() => {
 	/*
 	[]first, do all the find cases, r2 will be exactly in r1, both the tick and tag will match
 		[]same tick
@@ -1196,52 +1196,93 @@ test(() => {
 
 
 
+function addOne(r, merge) {
 
-function List() {
-	const a = []
-	const o = {}
-	let i = 0
-
-	function walk(tick, tag) { log('walk')
-		while (i < a.length && (a[i].tick   >= tick || (a[i].tick   == tick && a[i].tag   > tag))) { i++; log('dn to '+i) }
-		while (i > 0        && (a[i-1].tick <= tick || (a[i-1].tick == tick && a[i-1].tag < tag))) { i--; log('up to '+i) }
-		/*
-		in the replace scenario, we know that tick and tag are in the list
-		we also know that a is sorted descending by tick, using tag as a tiebreaker
-		so then all walk has to do is move i, our cursor, to the position in a where the match is
-
-		in the place scenario, we know that tag isn't in the list yet
-		so all walk must do is move i to the correct insertion position for a new item with the given tick and tag
-		*/
+	let r1 = o[r2.tag]//find
+	if (r1 && merge) {
+		//locate and remove
+		r1 == null
+	}
+	if (!r1) {
+		//add the new one
 	}
 
-	function add(a2) {
+}
+
+
+
+
+function List() {
+	const a = []//array of records, sorted descending by tick, using tag as a tiebreaker
+	const o = {}//object of records for instant lookup by known tag
+	let i = 0//an internal cursor we move and keep to merge in sorted additions quickly
+
+	/*
+	we use walk() both to find existing elements, and to find the correct insertion point for new ones
+	if r is an element in a, walk() will find its index--r.tag and r.tick match exactly in this case
+	if r is new to a, walk() will choose where we should put it--r.tag is not in a in this case
+	walk() keeps i in range, except to indicate a new r should be added last
+	*/
+	function walk(r) {
+		while (i < a.length && (a[i].tick   > r.tick || (a[i].tick   == r.tick && a[i].tag   >= r.tag))) i++
+		while (i > 0        && (a[i-1].tick < r.tick || (a[i-1].tick == r.tick && a[i-1].tag <= r.tag))) i--
+	}
+
+	function add(a2)   { _add(a2, false) }//add records with tags we don't have yet
+	function merge(a2) { _add(a2, true)  }//also bring in new objects for tags we do have
+	function _add(a2, merge) {
 		//if (!Array.isArray(a2)) toss('type', {a2})
 		for (let r2 of a2) {
 			//checkInt(r2.tick); checkTag(r2.tag)
-			let r1 = o[r2.tag]
-			if (r1) {
-				walk(r1.tick, r1.tag)
-				log(`remove at ${i}: ${a[i].tag}, ${a[i].edition}`)
-				a.splice(i, 1)
+
+			//find
+			let r1 = o[r2.tag]//do we already have a record with this tag?
+
+			//remove
+			if (r1 && merge) {//if found and this is a merge, remove the outdated record
+				walk(r1)//move i to the existing record--we know it's in there so walk will find it!
+				a.splice(i, 1)//at i, remove 1 record
+				r1 = null//indicate removal locally so the insert next happens
 			}
-			walk(r2.tick, r2.tag)
-			log(`insert at ${i}: ${r2.tag}, ${r2.edition}`)
-			a.splice(i, 0, r2)
-			o[r2.tag] = r2
+
+			//insert
+			if (!r1) {//not found to begin with, or found, this is a merge, so removed
+				walk(r2)//use walk again to move i to the correct place to add r2
+				a.splice(i, 0, r2)//add the new record to the array
+				o[r2.tag] = r2//add or replace the reference in the object
+			}
+
+			//note how if merge is false and a2 has all existing tags, this quickly does nothing, which is great
 		}
 	}
 
-	return {a, o, add}
+	return {a, o, add, merge}
 }
-noop(() => {
+test(() => {
+	/*
+	ok, before your fuzz buster, you want to repeat simple sanity scans manually here, as you did above
+	always be adding one item, beneath an existing array of
+
+	[x]start with 0
+
+	[]start with 1
+	[]update
+	[]then add, scanning tag and tick
+
+	*/
 
 	let list = List()
 	list.add([
+		{tick: 3, tag: 'F', edition: 'first edition'},
+		{tick: 3, tag: 'D', edition: 'first edition'},
 		{tick: 3, tag: 'B', edition: 'first edition'},
-		{tick: 3, tag: 'A', edition: 'first edition'},
 	])
-	log(look(list.a))
+	list.add([
+		{tick: 2, tag: 'B', edition: 'second edition'},
+		{tick: 2, tag: 'D', edition: 'second edition'},
+		{tick: 2, tag: 'F', edition: 'second edition'},
+	])
+	log(look(list.a), `lengths are ${list.a.length} and ${Object.keys(list.o).length}`)
 
 
 
