@@ -113,7 +113,9 @@ wrapper
 export {
 
 getBrowserTag,
-urlNetwork23, fetch23, fetchNetwork23, vhsSign,
+urlNetwork23, fetch23, fetchNetwork23,
+Task, Tape,
+vhsSign,
 Code, codeSend, browserToCodes, codeEnter,
 
 /* level 3 query */

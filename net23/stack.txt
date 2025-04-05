@@ -105,6 +105,13 @@ a ledger item would have:
 .request
 .response
 
+you could log an alert to datadog all at once at the end if there is any failure, or if something took too long
+and log to datadog only from the worker, also
+
+not response, but receipt
+
+
+
 
 
 
@@ -115,10 +122,6 @@ right now all you're trying to do is
 []copy up success false
 []test out exceptions to see what to expect
 []keep times in there in a standard way even if you don't use them
-
-
-
-
 
 
 
@@ -159,22 +162,131 @@ export async function codeSend({browserTag, provider, type, v}) {
 
 level3.js, fetch23():
 
-
-
-export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you call this Nuxt defines it, ttd march can we get this from door or a global or something instead?
-	let host = urlNetwork23()
-	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
-	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+export async function fetch23({$fetch, path, body}) {
+...
 	body.warm = true;  let resultWarm   = await $fetch(host+path, {method: 'POST', body})
 	body.warm = false; let resultAction = await $fetch(host+path, {method: 'POST', body})
+...
 	return resultAction
+}
+
+net23/src/message.js:
+
+async function doorHandleBelow({door, body, action}) {
+	let response = {}
+
+	if (body.warm) {
+		await warm(body.provider+body.service)
+	} else {
+		response.result = await sendMessage({
+			provider: body.provider,
+			service: body.service,
+			address: body.address,
+			subjectText: body.subjectText,
+			messageText: body.messageText,
+			messageHtml: body.messageHtml,
+		})
+	}
+
+	return response
+}
+
+net23/persephone/persephone.js
+
+export async function sendMessage({provider, service, address, subjectText, messageText, messageHtml}) {
+...
+		if      (provider == 'Amazon.') { result = await message_AmazonEmail({fromName, fromEmail, toEmail, subjectText, messageText, messageHtml}) }
+	logAudit('message', {provider, service, address, subjectText, messageText, messageHtml, result})
+...
+	return result
 }
 
 
 
 
+what would it look like to pass around a really simple receipt
+
+the door gives you a tape object
+you add to it with tape.add({detail1, detail2, detail3}), there are required details
+you merge it into the resposnse body
 
 
+doorHandleBelow({door, body, action, tape})
+
+
+ok and then how does it work with network 23
+you pass net23 tape
+it doesn't post it to the lambda
+but does merge in the response
+
+this is only a good idea if it means that you can keep the returns from these functions, and api handlers, really simple now, like true or false, even(?!) because tape has all the details
+it means you don't have to buidl up this big deep tree as you go along
+
+ok, see what adding this looks like
+
+
+
+
+and now you realize, you give call a function and have it run it, and automatically catch an error and fail with it
+weird, this is getting complicated like door
+and also stepping on door's toes, somewhat
+code it separate first, or not at all
+
+
+
+Tape holds a list of
+Call objects
+
+let call = Call()//sets t1
+
+
+
+
+
+
+success//looking at the response, not just for an error
+	true to keep going; if false won't keep going
+
+
+	vv optional to also pass in at the end
+
+error, if there was one
+guide//short human readable guidance for the user
+
+	vv set internally:
+
+t1
+t2 == tick
+duration
+tag//identifies this call object
+sticker//sticker where we did the call
+
+
+body
+request
+response
+result
+records
+
+logged
+
+
+call.
+
+
+
+
+ok, you coded up Task and Tape
+and the're small and tight
+keep them that way
+
+next, try to use them to remove code around $fetch and api calls
+leaving the return values just the minimal required for flow
+essentially, see if Task and Tape help you remove a lot of details that most of the time aren't necessary
+
+
+you can use Task both places
+but probably only use Tape on the server
 
 
 
