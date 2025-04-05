@@ -25,16 +25,11 @@ watch([refAddress, refProvider], () => {
 })
 
 async function onClick() {
-	let r = await refButton.value.post('/api/code/send', {
+	let result = await refButton.value.post('/api/code/send', {
 		address: refAddress.value,
 		provider: refProvider.value,
 	})
-	log(look(r))
-	/*
-	ttd april, ok, so here is where you get the r.result back
-	and then you put it directly into the store!
-	maybe, that's all you have to do!! 
-	*/
+	log(look(result))
 }
 
 </script>

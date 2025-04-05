@@ -114,7 +114,7 @@ export {
 
 getBrowserTag,
 urlNetwork23, fetch23, fetchNetwork23, vhsSign,
-Code, codeSend, codeLiveForBrowser, codeEnter,
+Code, codeSend, browserToCodes, codeEnter,
 
 /* level 3 query */
 

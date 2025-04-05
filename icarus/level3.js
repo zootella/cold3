@@ -56,10 +56,44 @@ queryTopSinceMatchGreater,
 
 
 
+/*
+export async function fetch23_new({$fetch, path, body}) {
+	if (!$fetch) toss('must pass $fetch', {$fetch, path, body})
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/name'
+	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
+	let response1, response2, error, success = true
+	let t1, t2, t3
+	t1 = Now()
+	try {
 
+		body.warm = true
+		response1 = await $fetch(host23()+path, {method: 'POST', body})
+		t2 = Now()
 
+		body.warm = false
+		response2 = await $fetch(host23()+path, {method: 'POST', body})
 
+	} catch (e) {
+		error = e
+		success = false
+	}
+	t3 = Now()
+	//here, success means no exception, but really we want success to also mean, net23 said success
+	
+	let result = {success, response1, response2, error, duration: t3-t1, t1, t2, t3}//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
+	if (props.useTurnstile && useTurnstileHere()) {
+		result.durationTurnstile = t2 - t1//how long the button was orange because turnstile wasn't done on the page yet
+		result.durationFetch     = t3 - t2//how long after that the button was orange because of the actual fetch to the server
+	}//ttd march, ok, but get durations the way you want them, also reporting the total time turnstile took to generate the token on the page, not just how much longer the button was orange because of token generation
+	return result
+	/*
+	you get:
+	result                  - our summary from the page's perspective of how the fetch went
+	result.response         - the response body from the server
+	result.response.records - records in List format with .tick and .tag for a pinia store
+	*/
+//}})
 
 
 
@@ -76,6 +110,8 @@ export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you
 	body.warm = false; let resultAction = await $fetch(host+path, {method: 'POST', body})
 	return resultAction
 }
+
+
 
 
 
@@ -115,6 +151,7 @@ const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivit
 export function urlNetwork23(forceCloudLambda) {//where you can find Network 23; no trailing slash
 	return (forceCloudLambda || isCloud({uncertain: 'Cloud.'})) ? resourceCloudNetwork23 : resourceLocalNetwork23
 }
+export const host23 = urlNetwork23//ttd april consider this rename
 export async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService, path, body) {//pass in $fetch which nuxt has imported in site/server/api/caller.js but not here in icarus
 
 	/*
@@ -601,9 +638,7 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 	let userTag = (await demonstrationSignGet({browserTag}))?.userTag
 
 	let permit = await codePermit({v})
-	if (!permit.isPermitted) {
-		return permit//change to api response, not permit response
-	}
+	if (!permit.isPermitted) return {success: false, permit}
 
 	let code = await codeCompose({length: permit.useLength, sticker: true})
 
@@ -615,11 +650,16 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 		messageText: code.messageText,//email body as text, or complete SMS message
 		messageHtml: code.messageHtml,//email body as HTML
 	}
-	let net23 = await fetch23({$fetch, path: '/message', body})//ttd march, other notes about getting the nuxt environment reference $fetch
-	//log(look({net23}))
+	let result23 = await fetch23({$fetch, path: '/message', body})//ttd march, other notes about getting the nuxt environment reference $fetch
+	log(look({result23}))
+
 	//does this throw if it's not successful? does it return a note in the return object?
 
 	await codeSent({browserTag, provider, type, v, permit, code})
+
+	//ttd april, be able to tell if we think the code send worked ok or not
+
+	return {success: true, result23}
 }
 
 //can we send another code to this address now?
@@ -691,7 +731,7 @@ async function codeSent({browserTag, provider, type, v, permit, code}) {
 }
 
 //is this browser expecting any codes? needs to run fast!
-export async function codeLiveForBrowser({browserTag}) {
+export async function browserToCodes({browserTag}) {
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
 		since: Now() - Code.lifespan20,//get not yet expired codes
 		title1: 'browser_tag', cell1: browserTag,//for this browser

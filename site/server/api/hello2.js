@@ -3,7 +3,7 @@ import {
 Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, blanket,
 checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, stringo,
 isCloud, hasText, recordHit, browserToUser,
-codeLiveForBrowser,
+browserToCodes,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -48,7 +48,7 @@ async function doorHandleBelow({door, body}) {
 	//ttd march, trying to do things in parallel with keepPromise, you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome
 
 	//check if this browser is expecting any codes
-	r.codes = await codeLiveForBrowser({browserTag})
+	r.codes = await browserToCodes({browserTag})
 
 	/*
 	/api/hello2

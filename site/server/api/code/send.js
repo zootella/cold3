@@ -5,7 +5,7 @@ doorWorker, getAccess,
 secureSameText, checkPhone,
 demonstrationSignGet, validateEmailOrPhone,
 fetch23,
-Code, codeSend, codeEnter,
+Code, codeSend, codeEnter, browserToCodes,
 checkNumerals,
 } from 'icarus'
 
@@ -13,7 +13,7 @@ export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {useTurnstile: true, workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
-	let r = {}
+	let response = {}
 
 	//first, validate what the untrusted client told us
 	checkTag(body.browserTag)
@@ -29,14 +29,13 @@ async function doorHandleBelow({door, body, action}) {
 	else if (provider == 'T') provider = 'Twilio.'
 	else toss('bad provider', {body, provider})//ttd march, how does this get back to the page? so it can get the message bad provider, rather than just a blank 500? but not the watch, of course! some design to do here
 
-	r.didSend = await codeSend({
+	response.sendResult = await codeSend({
 		browserTag: body.browserTag,
 		provider: provider,
 		type: v.type,
 		v: v,
 	})
+	response.records = await browserToCodes({browserTag: body.browserTag})
 
-	r.message = 'api code, version 2025mar18a'
-	r.note = 'none'
-	return r
+	return response
 }

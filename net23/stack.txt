@@ -1,0 +1,187 @@
+
+
+
+
+
+
+
+
+
+
+omg the stack is as tall as one of those three bread sandwiches
+
+high level goals here:
+[]standardize t1/t2/t3 and result/response/records on all levels
+[]toss at every level of the stack, and understand how higher levels deal
+[]experience non-exceptional failure at every level of the stack, and understand how higher levels deal
+[]make sure that amazon details don't get sent to the page! be verbose in the worker, in datadog, not in the worker's response!
+
+and here's where you clean up
+[]single lambda warm that doesn't take provider or service, it's acting like a monolith
+[]host23 and fetch23, and how tests use them
+[]getting the reference to $fetch where you need it
+
+general patterns:
+
+t1, t2, t3 - always have all three (even if you don't need t2), report duration = t3-t1
+
+result
+  .response
+    .records
+
+[i] the page
+
+PostButton, codeStore, random other components
+$fetch() to the worker below
+
+[ii] the worker
+
+./site/server/api/name.js
+most just finish and return, but some
+fetch23() to the lambda below
+
+[iii] the lambda
+
+./net23/src/message.js
+calls amazon and twilio apis, which have their own exceptions and results
+
+
+page success, page failure, page exception
+worker success, worker failure, worker exception
+lambda success, lambda failure, lambda exception
+
+
+
+
+
+
+first just get it working again
+
+
+
+
+
+
+get things running again
+make a [Spelunk] button that reaches down to lambda
+
+
+
+
+
+
+	/*
+	you get:
+	result                  - our summary from the page's perspective of how the fetch went
+	result.response         - the response body from the server
+	result.response.records - records in List format with .tick and .tag for a pinia store
+	*/
+
+
+
+you built symmetry into door, but realize that thta design may not be optimal
+for instance, it's important if the worker door handle below throws, that we datadog that, and not tell the page all the details
+but the lambda can only be called by the page, so maybe it always returns full details
+and the net23 does the job of logging things, including failures persephone experienced from apis
+or, this is crazy, it's easiest to handle things right wehre they happen, and you've gotten datadog reliable from lambda no problem
+and also, you haven't used supabase from lambda yet, so that's already all on in the worker
+
+
+you find yourself cooking up this idea where passed through the whole handler is an array where operations add reports, like turnstile is a report, a call to amazon is a report
+which means that you don't have this deeply nested thing with sometimes multiple hardcoded responses inside
+but don't do that now, if ever!
+
+
+
+ugh what might the ledger look like
+it woudl only be in the worker, the lambda reports back everything
+a ledger item would have:
+.t1 and .t2 and .duration
+.sticker
+.tag, identifier of the ledger item itself
+.success
+.provider, .service
+.call
+.request
+.response
+
+
+
+
+
+right now all you're trying to do is
+[]chart the existing course
+[]check api results for non success no throw
+[]copy up success false
+[]test out exceptions to see what to expect
+[]keep times in there in a standard way even if you don't use them
+
+
+
+
+
+
+
+CodeRequestComponent.vue:
+
+async function onClick() {
+	let result = await refButton.value.post('/api/code/send', {
+
+PostButton.vue:
+
+defineExpose({post: async (path, body) => {
+...
+		response = await $fetch(path, {method: 'POST', body})
+
+/server/api/send.js:
+
+async function doorHandleBelow({door, body, action}) {
+...
+	response.sendResult = await codeSend({
+		browserTag: body.browserTag,
+		provider: provider,
+		type: v.type,
+		v: v,
+	})
+	response.records = await browserToCodes({browserTag: body.browserTag})
+...
+	return response
+}
+
+level3.js, codeSend():
+
+export async function codeSend({browserTag, provider, type, v}) {
+...
+	let result23 = await fetch23({$fetch, path: '/message', body})//ttd march, other notes about getting the nuxt 
+...
+	return {success: true, result23}
+}
+
+level3.js, fetch23():
+
+
+
+export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you call this Nuxt defines it, ttd march can we get this from door or a global or something instead?
+	let host = urlNetwork23()
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
+	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+	body.warm = true;  let resultWarm   = await $fetch(host+path, {method: 'POST', body})
+	body.warm = false; let resultAction = await $fetch(host+path, {method: 'POST', body})
+	return resultAction
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

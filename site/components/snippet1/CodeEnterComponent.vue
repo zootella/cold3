@@ -27,15 +27,15 @@ watch([refCode], () => {
 })
 
 async function onClick() {
-	let r = await refButton.value.post('/api/code/enter', {
+	let result = await refButton.value.post('/api/code/enter', {
 		codeTag: props.code.codeTag,//hidden from the user but kept with the form
 		codeEntered: onlyNumerals(refCode.value),
 	})
-	log(look(r))
-	props.code.correct = r.response.didEnter.correct
-	props.code.lives = r.response.didEnter.lives
+	log(look(result))
+	props.code.correct = result.response.didEnter.correct
+	props.code.lives = result.response.didEnter.lives
 
-	log('server tick', r.tick)
+	log('server tick', result.tick)
 	/*
 	response will be correct: true, false
 	and lives: 0, 1+
@@ -60,9 +60,8 @@ function buzzer() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeEnterComponent</i></p>
 
 <p>
-	we sent the code at {{sayTimePage(code.tick)}} and it'll last for 20 minutes from then,
-	until {{sayTimePage(code.tick + (20*Time.minute))}}.
-	After that, you'll have to request a new one.
+	we sent the code at {{sayTimePage(code.tick)}} and it'll last for {{Code.lifespan20/Time.minute}} minutes from then,
+	until {{sayTimePage(code.tick + (20*Time.minute))}}. After that, you'll have to request a new one.
 </p>
 
 <pre>{{code}}</pre>

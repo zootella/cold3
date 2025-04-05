@@ -12,7 +12,7 @@ const refButton = ref(null)
 const refButtonCanSubmit = ref(false)
 const refButtonInFlight = ref(false)
 
-const refResponse = ref('')
+const refResult = ref('')
 
 watch([refName], () => {
 
@@ -25,12 +25,12 @@ watch([refName], () => {
 refName.value = 'Name1'//ttd march, so you can hit check immediately to stress test turnstile
 
 async function onClick() {
-	let f = await refButton.value.post('/api/name', {
+	let result = await refButton.value.post('/api/name', {
 		action: 'Check.',
 		name: refName.value,
 	})
-	log(look(f))
-	refResponse.value = f
+	log(look(result))
+	refResult.value = result
 }
 
 </script>
@@ -61,7 +61,7 @@ async function onClick() {
 </div>
 <p>{{refStatus1}}</p>
 <p>valid to submit <i>{{refButtonCanSubmit}}</i>, in flight <i>{{refButtonInFlight}}</i></p>
-<div><pre>{{refResponse}}</pre></div>
+<div>result:<pre>{{refResult}}</pre></div>
 
 </div>
 </template>

@@ -132,6 +132,7 @@ async function message_AmazonEmail(c) {
 		const {SESClient, SendEmailCommand} = await loadAmazonEmail()
 		let client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
 		result = await client.send(new SendEmailCommand(q))
+		if (!result.MessageId) success = false//look for a message id to confirm amazon sent the email
 	} catch (e) { error = e; success = false }
 	let t2 = Now()
 

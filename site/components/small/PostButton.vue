@@ -79,16 +79,18 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
-	let response, error, success = true
-	let t1 = Now(), t2, t3
+
+	body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to; ttd april this will change when the page can't see it and the browser gives it to the server automatically as a, gasp, dreaded cookie
+
+	let response, error, success, t1, t2, t3
+	success = true
+	t1 = Now()
 	try {
 		emit('update:inFlight', true)//this lets our parent follow our orange condition
-		if (props.useTurnstile && useTurnstileHere()) {
-			body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
-		}
+		if (props.useTurnstile && useTurnstileHere()) body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
 		t2 = Now()
-		body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to
 		response = await $fetch(path, {method: 'POST', body})
+		if (!response.success) success = false
 	} catch (e) {
 		error = e
 		success = false
@@ -96,12 +98,9 @@ defineExpose({post: async (path, body) => {
 		emit('update:inFlight', false)
 	}
 	t3 = Now()
-	let p = {success, response, error, tick: t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
-	if (props.useTurnstile && useTurnstileHere()) {
-		p.durationTurnstile = t2 - t1//how long the button was orange because turnstile wasn't done on the page yet
-		p.durationFetch     = t3 - t2//how long after that the button was orange because of the actual fetch to the server
-	}//ttd march, ok, but get durations the way you want them, also reporting the total time turnstile took to generate the token on the page, not just how much longer the button was orange because of token generation
-	return p
+
+	let result = {success, response, error, t1, t2, t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as turnstile gets started early, as soon as we're rendered!; ttd march, ok, but get durations the way you want them, also reporting the total time turnstile took to generate the token on the page, not just how much longer the button was orange because of token generation
+	return result
 }})
 
 //ttd march, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something
