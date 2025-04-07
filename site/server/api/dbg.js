@@ -1,7 +1,7 @@
 
 
 import {
-Sticker, isLocal, isCloud, log, look, urlNetwork23,
+Sticker, isLocal, isCloud, log, look, host23,
 Now, Tag, getAccess, checkText,
 doorWorker,
 } from 'icarus'
@@ -13,7 +13,7 @@ async function doorHandleBelow({door, body}) {
 	let r = {}
 
 	let lambdaResult = await $fetch(
-		urlNetwork23() + '/dlg?' + (new URLSearchParams({
+		host23() + '/dlg?' + (new URLSearchParams({
 			name: body.name,
 			quantity: body.quantity,
 			condition: body.condition,
@@ -37,7 +37,7 @@ net23 lambdas are only called by trusted worker code, all calls are POST, all au
 also, you think the lambda code won't need to use the database; rather the worker does from the net23 result
 */
 /*
-ttd january; below is from before urlNetwork23
+ttd january; below is from before host23
 const _forceCloudLambda = false
 const resourceLocalNetwork23 = 'http://localhost:4000/prod'//check your local Network 23 affliate
 const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivity via satellite

@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorWorker, Now, getAccess, runTests, urlNetwork23,
+Sticker, doorWorker, Now, getAccess, runTests, host23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -10,7 +10,7 @@ async function doorHandleBelow({door, body}) {
 
 	let workerNote = (await runTests()).message
 	let lambdaNote = (await $fetch(
-		urlNetwork23() + '/test',
+		host23() + '/test',
 		{
 			method: 'POST',
 			body: {

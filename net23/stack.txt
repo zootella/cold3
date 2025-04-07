@@ -125,18 +125,18 @@ right now all you're trying to do is
 
 
 
-CodeRequestComponent.vue:
+~~~~ CodeRequestComponent.vue:
 
 async function onClick() {
 	let result = await refButton.value.post('/api/code/send', {
 
-PostButton.vue:
+~~~~ PostButton.vue:
 
 defineExpose({post: async (path, body) => {
 ...
 		response = await $fetch(path, {method: 'POST', body})
 
-/server/api/send.js:
+~~~~ /server/api/send.js:
 
 async function doorHandleBelow({door, body, action}) {
 ...
@@ -151,7 +151,7 @@ async function doorHandleBelow({door, body, action}) {
 	return response
 }
 
-level3.js, codeSend():
+~~~~ level3.js, codeSend():
 
 export async function codeSend({browserTag, provider, type, v}) {
 ...
@@ -160,7 +160,7 @@ export async function codeSend({browserTag, provider, type, v}) {
 	return {success: true, result23}
 }
 
-level3.js, fetch23():
+~~~~ level3.js, fetch23():
 
 export async function fetch23({$fetch, path, body}) {
 ...
@@ -170,7 +170,7 @@ export async function fetch23({$fetch, path, body}) {
 	return resultAction
 }
 
-net23/src/message.js:
+~~~~ net23/src/message.js:
 
 async function doorHandleBelow({door, body, action}) {
 	let response = {}
@@ -287,6 +287,105 @@ essentially, see if Task and Tape help you remove a lot of details that most of 
 
 you can use Task both places
 but probably only use Tape on the server
+
+
+
+
+
+
+
+
+Task
+when did it start?
+when did it finish?
+how long did it take?
+did it succeed?
+did it throw?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+	mandatory to begin
+provider
+service
+
+	optional to begin
+body
+parameters
+
+	automatic to begin
+sticker
+tag
+t1
+logged
+
+	mandatory to end
+success
+
+	optional to end
+error
+guide
+response
+
+	automatic to end
+t2
+duration
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+CodeRequestComponent
+PostButton
+send.js
+level3.js:codeSend
+level2.js:fetch23
+level1.js:Task and Tape
+
+
+
+
+
+
+waht if it's a really light bracket that just does
+
+.title
+.sticker
+.tick
+.done, .duration
+.success
+.error
+
+and then try out putting that around lots of things in the stack
+
+
+
+
+
+
 
 
 

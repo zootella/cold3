@@ -1234,6 +1234,93 @@ noop(() => {//and a rudimentary fuzz buster:
 
 
 
+//  _            _                      _   _                   
+// | |_ __ _ ___| | __   __ _ _ __   __| | | |_ __ _ _ __   ___ 
+// | __/ _` / __| |/ /  / _` | '_ \ / _` | | __/ _` | '_ \ / _ \
+// | || (_| \__ \   <  | (_| | | | | (_| | | || (_| | |_) |  __/
+//  \__\__,_|___/_|\_\  \__,_|_| |_|\__,_|  \__\__,_| .__/ \___|
+//                                                  |_|         
+
+/*
+let task = Task({
+	name: 'doing something'//short and just for staff
+	provider: 'Amazon.'//say the api we're contacting
+	service: 'Email.'
+	requestBody: {}//for a fetch, the body of our POST
+	requestParameters: {}//for an api call, our parameters
+	...//and whatever else you want, specific to what you're doing
+})
+tape.add(task, {
+	success: true//check the details of what happened to confirm success
+	error: e//catch an exception and keep here
+	responseBody: {}//for a fetch, the response body we got back
+	response: {}//for an api call, the api response
+	guide: 'Request a new code to try again'//short message that is ok to send the user
+	result
+	...//and whatever else you want, specific to what you're doing
+})
+*/
+export function Task(task) {
+	checkText(task.name)//only name is required
+	task.tag = Tag()//tag to identify this task
+	task.tick = Now()//start time
+	task.sticker = Sticker()//where we're running to perform this task
+	task.logged = false//flag for you to batch log at the end
+	task.finish = function(more) {//mark this task done, adding more properites about how it concluded
+		Object.assign(task, more)//be careful, as this overwrites anything already in task!
+		if (task.error) task.success = false//if you pin an exception then success is false
+		task.done = Now()//check .done to know it's done, and also when
+		task.duration = task.done - task.tick//how long it took, nice that times are automatic
+	}
+	return task
+}
+export function Tape() {
+	let tasks = []//a tape holds a list of tasks
+	let _success = true; function success() { return _success }//check tape.success() to keep going because no failure
+	function add(task, more) {//add a task to thish tape, providing finishing properties
+		if (!task.success) _success = false//bubble up a failure
+		tasks.push(task)
+	}
+	return {tasks, add, success}
+}
+//^ttd april, ok, so that is really tight and simple, try to keep it like that
+//for instance, don't do the design where you take a function and call it and catch an exception automatically
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

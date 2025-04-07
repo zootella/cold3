@@ -15,6 +15,7 @@ randomBetween,
 } from './level0.js'
 import {
 Tag, Limit, checkTag, checkActions,
+Task, Tape,
 } from './level1.js'
 
 import {getQuery, readBody} from 'h3'
@@ -1759,3 +1760,233 @@ test(() => {
 	//negative zero literal, -0, makes it through, but -0+'' is "0"
 	//and more importantly there is no negative 0 in PostgreSQL's BIGINT; one would get stored as regular zero
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//   __      _       _     ____  _____ 
+//  / _| ___| |_ ___| |__ |___ \|___ / 
+// | |_ / _ \ __/ __| '_ \  __) | |_ \ 
+// |  _|  __/ || (__| | | |/ __/ ___) |
+// |_|  \___|\__\___|_| |_|_____|____/ 
+//                                     
+
+export function host23() {//where you can find Network 23; no trailing slash
+	return (isCloud() ?
+		'https://api.net23.cc' ://our global connectivity via satellite
+		'http://localhost:4000/prod'//or check your local Network 23 affliate
+	)
+}
+
+/*
+export async function fetch23_new({$fetch, path, body}) {
+	if (!$fetch) toss('must pass $fetch', {$fetch, path, body})
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/name'
+	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+
+	let response1, response2, error, success = true
+	let t1, t2, t3
+	t1 = Now()
+	try {
+
+		body.warm = true
+		response1 = await $fetch(host23()+path, {method: 'POST', body})
+		t2 = Now()
+
+		body.warm = false
+		response2 = await $fetch(host23()+path, {method: 'POST', body})
+
+	} catch (e) {
+		error = e
+		success = false
+	}
+	t3 = Now()
+	//here, success means no exception, but really we want success to also mean, net23 said success
+	
+	let result = {success, response1, response2, error, duration: t3-t1, t1, t2, t3}//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as it gets started early, as soon as we're rendered!
+	if (props.useTurnstile && useTurnstileHere()) {
+		result.durationTurnstile = t2 - t1//how long the button was orange because turnstile wasn't done on the page yet
+		result.durationFetch     = t3 - t2//how long after that the button was orange because of the actual fetch to the server
+	}//ttd march, ok, but get durations the way you want them, also reporting the total time turnstile took to generate the token on the page, not just how much longer the button was orange because of token generation
+	return result
+	/*
+	you get:
+	result                  - our summary from the page's perspective of how the fetch went
+	result.response         - the response body from the server
+	result.response.records - records in List format with .tick and .tag for a pinia store
+	*/
+//}})
+
+//ttd march, quick new one
+export async function fetch23({$fetch, path, body}) {//pass in $fetch, where you call this Nuxt defines it, ttd march can we get this from door or a global or something instead?
+	let host = host23()
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
+	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+	body.warm = true;  let resultWarm   = await $fetch(host+path, {method: 'POST', body})
+	body.warm = false; let resultAction = await $fetch(host+path, {method: 'POST', body})
+	return resultAction
+}
+
+/*
+ttd december, figure out how bridge works now that you've got cors done
+write something small and simple which ping4 and test can use, too; right now they're doing this
+and, importantly, because you're building security upon it:
+[]replace Sticker().isCloud with something that isn't based on fuzzy logic!
+
+to begin--don't do the warm thing, either--the errors you were seeing were only for GET, not POST
+well, now you sort of want to do it
+*/
+
+/*
+ttd march
+you don't need forceCloudLambda anymore, you never used it
+use {} for named arguments, of course
+yeah do the warmup
+*/
+
+//  _          _     _              _                     _   ____  _____ 
+// | |__  _ __(_) __| | __ _  ___  | |_ ___    _ __   ___| |_|___ \|___ / 
+// | '_ \| '__| |/ _` |/ _` |/ _ \ | __/ _ \  | '_ \ / _ \ __| __) | |_ \ 
+// | |_) | |  | | (_| | (_| |  __/ | || (_) | | | | |  __/ |_ / __/ ___) |
+// |_.__/|_|  |_|\__,_|\__, |\___|  \__\___/  |_| |_|\___|\__|_____|____/ 
+//                     |___/                                              
+
+/*
+forceCloudLambda false means local worker -> local lambda; cloud worker -> cloud lambda
+forceCloudLambda true  means local worker -> cloud lambda; cloud worker -> cloud lambda
+either way a cloud worker always calls to a cloud lambda, because callign down wouldn't work at all
+*/
+const _forceCloudLambda = false
+const resourceLocalNetwork23 = 'http://localhost:4000/prod'//check your local Network 23 affliate
+const resourceCloudNetwork23 = 'https://api.net23.cc'//or our global connectivity via satellite
+function urlNetwork23(forceCloudLambda) {//where you can find Network 23; no trailing slash
+	return (forceCloudLambda || isCloud({uncertain: 'Cloud.'})) ? resourceCloudNetwork23 : resourceLocalNetwork23
+}
+async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService, path, body) {//pass in $fetch which nuxt has imported in site/server/api/caller.js but not here in icarus
+
+	/*
+	warm is the module that the lambda will use, like "AE" for amazon email
+	if warm is set, then do a first warmup call, right here, before doing teh real call
+	so callers of fetchNetwork23 get that warmup service for free, and don't have to think about it
+	*/
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/door'
+	let access = await getAccess()
+	let host = urlNetwork23(_forceCloudLambda)
+	body.ACCESS_NETWORK_23_SECRET = access.get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+
+	let d = Duration()
+	body.warm = true
+	let resultWarm = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
+
+	body.warm = false
+	let resultAction = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
+	d.finish()//but then log this or return this or something, right now you're just trying out your new Duration object
+	return resultAction
+	//ttd march, you like the warmup, but probably you don't need the "what we are warming up", just call warm to the lambda, and either that will warm up everything, or that can warm up everything, or that will not warm up everything but get things starting to get warm, which is all you need
+
+	/*
+	november
+	[]retry if first one fails, but only once
+	[]record the entire duration so you can see how long the whole two punch thing takes
+	*/
+}
+/*
+since adding sharp to lambdas, you've seen reliability problems!
+like a 500 internal server error that is corrected by hitting refresh in the browser
+and, the cold start is apparent now--a first hit in the morning takes seconds, then after that it's fast
+so make this bridge first hit a wakup endpoint, and then do the real request
+this simple stateless workaround won't slow things down much and is way easier than trying to clean up a failed request will preventing duplicate stateful real world action, like sending the user two text messages instead of one
+
+ok, the flow is
+1 do warm call
+2 if failed, do warm call again
+3 do real call
+
+and log alerts when second warm call fails, meaning you don't try
+or second warm call succeeds, meaning you fixed it but that was weird
+
+but also--you've only seen these reliability problems on GET lambdas, never POST
+you still like calling into a warm lambda, and the code isn't too hard, though
+*/
+
+//move to level0
+function Duration(givenOpenTick) {//a small object to keep tick counts together for durations
+
+	let _openTick, _shutTick, _duration
+	function openTick() { return _openTick }//accessors
+	function shutTick() { return _shutTick }
+	function duration() { return _duration }
+
+	_openTick = givenOpenTick ? givenOpenTick : Now()//use the given start time, or right now
+
+	function finish() {//call a little later when whatever you're timing has finished
+		_shutTick = Now()
+		_duration = _shutTick - _openTick
+	}
+	return {openTick, shutTick, duration, finish}
+}
+//if you do this, have it keep an array with any number of durations, and then a .text() which summarizes gaps on one line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

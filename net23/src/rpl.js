@@ -1,7 +1,7 @@
 
 
 import {
-Sticker, isLocal, isCloud, log, look, urlNetwork23,
+Sticker, isLocal, isCloud, log, look,
 Now, Tag, getAccess, checkText,
 doorLambda,
 } from 'icarus'

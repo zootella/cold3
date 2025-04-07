@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorWorker, Now, getAccess, urlNetwork23,
+Sticker, doorWorker, Now, getAccess, host23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -10,7 +10,7 @@ async function doorHandleBelow({door, body}) {
 
 	let t = Now()
 	let lambdaNote = (await $fetch(
-		urlNetwork23() + '/ping5',
+		host23() + '/ping5',
 		{
 			method: 'POST',
 			body: {
@@ -22,4 +22,4 @@ async function doorHandleBelow({door, body}) {
 
 	return {note: `worker says: lambda took ${duration}ms to say: ${lambdaNote}`}
 }
-//ttd march, refactor this to use fetchNetwork23
+//ttd march, refactor this to use fetch23

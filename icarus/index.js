@@ -113,8 +113,6 @@ wrapper
 export {
 
 getBrowserTag,
-urlNetwork23, fetch23, fetchNetwork23,
-Task, Tape,
 vhsSign,
 Code, codeSend, browserToCodes, codeEnter,
 
@@ -163,6 +161,7 @@ dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 sayFloppyDisk,
+host23, fetch23,
 
 /* level 2 query */
 
@@ -219,8 +218,8 @@ checkCard, validateCard,
 months3, checkDate, validateDate, getPageOffsetMinutes, ageDate,
 
 measurePasswordStrength,
-
 generatePosts, postDatabase,
+Task, Tape,
 
 } from './level1.js'
 

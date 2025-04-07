@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-Sticker, isLocal, isCloud, log, look, urlNetwork23,
+Sticker, isLocal, isCloud, log, look,
 } from 'icarus'
 import {ref, reactive, watch} from 'vue'
 

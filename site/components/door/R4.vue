@@ -1,12 +1,12 @@
 <script setup>
 
 import {
-Sticker, isLocal, isCloud, log, look, urlNetwork23,
+Sticker, isLocal, isCloud, log, look, host23,
 } from 'icarus'
 import {ref, reactive, watch} from 'vue'
 
 const {data, refresh} = useFetch(
-	urlNetwork23() + '/rpl',
+	host23() + '/rpl',
 	{
 		method: 'POST',
 		body: {

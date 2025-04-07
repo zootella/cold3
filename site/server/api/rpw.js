@@ -1,7 +1,7 @@
 
 import {
 Sticker, log, look, Now, Tag, getAccess, checkText,
-doorWorker, urlNetwork23,
+doorWorker, host23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -10,7 +10,7 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door}) {
 
 	let bridge = await $fetch(
-		urlNetwork23() + '/rpl',
+		host23() + '/rpl',
 		{
 			method: 'POST',
 			body: {
