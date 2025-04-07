@@ -77,6 +77,30 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 
 }, {immediate: true})//run this right away at the start to set things up, before running it again on the first change
 
+/*
+//new version using Task, which looks pretty good, actually
+
+// the method that performs the post operation; this is exposed to the parent
+defineExpose({post: async (path, body) => {
+	body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to; ttd april this will change when the page can't see it and the browser gives it to the server automatically as a, gasp, dreaded cookie
+
+	let task = Task({name: 'post'})
+	try {
+		emit('update:inFlight', true)//this lets our parent follow our orange condition
+		if (props.useTurnstile && useTurnstileHere()) {
+			body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
+			task.tick2 = Now()
+		}
+		task.response = await $fetch(path, {method: 'POST', body})
+	} catch (e) {
+		task.error = e
+	} finally {
+		emit('update:inFlight', false)
+	}
+	task.finish()
+	return task
+}})
+*/
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
 

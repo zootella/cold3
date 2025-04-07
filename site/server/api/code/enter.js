@@ -4,7 +4,6 @@ log, look, toss, Tag, checkTag, checkText,
 doorWorker, getAccess,
 secureSameText, checkPhone,
 demonstrationSignGet, validateEmailOrPhone,
-fetch23,
 Code, codeSend, codeEnter,
 checkNumerals,
 } from 'icarus'

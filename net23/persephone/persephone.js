@@ -1,10 +1,9 @@
 
 import {
 Sticker, isCloud, getAccess,
-log, logAudit, look, Now, Size, Data,
+log, logAlert, logAudit, look, Now, Size, Data, Task,
 checkEmail, checkPhone,
 test, ok, replaceAll, replaceOne,
-Task, Tape,
 } from 'icarus'
 
 let module_amazonEmail, module_amazonText, module_twilio, module_sendgrid, module_sharp
@@ -61,14 +60,17 @@ test(async () => {//test that we can use sharp, which relies on native libraries
 	ok(d.base64().startsWith('iVBORw0KGgo'))//headers at the start are the same for every image
 })
 
-export async function warm(providerAndService) {
-	switch (providerAndService) {
+export async function warm({provider, service}) {
+	let task = Task({name: 'warm'})
+	switch (provider+service) {
 		case 'Amazon.Email.': await loadAmazonEmail(); break
 		case 'Amazon.Phone.': await loadAmazonPhone(); break
 		case 'Twilio.Email.': await loadTwilioEmail(); break
 		case 'Twilio.Phone.': await loadTwilioPhone(); break
 		case 'Sharp.':        await loadSharp();       break
 	}
+	task.finish({success: true})
+	return task
 }
 
 //                       _ _                   _                     
@@ -112,6 +114,8 @@ export async function sendMessage({provider, service, address, subjectText, mess
 }
 
 
+//ttd april, with the new pattern, you can get these four into a single large but safe function
+//and you realize, you're already logAudit-ing every api call, win or lose, so maybe that's why you didn't have a logAlert in the catch below (and can remove that when this is one big safe simple function)
 
 
 
@@ -119,54 +123,31 @@ export async function sendMessage({provider, service, address, subjectText, mess
 
 
 
-/*
-export function Task(task) {
-	checkText(task.name)//only name is required
-	task.tag = Tag()//tag to identify this task
-	task.tick = Now()//start time
-	task.sticker = Sticker()//where we're running to perform this task
-	task.logged = false//flag for you to batch log at the end
-	task.finish = function(more) {//mark this task done, adding more properites about how it concluded
-		Object.assign(task, more)//be careful, as this overwrites anything already in task!
-		if (task.error) task.success = false//if you pin an exception then success is false
-		task.done = Now()//check .done to know it's done, and also when
-		task.duration = task.done - task.tick//how long it took, nice that times are automatic
-	}
-	return task
-}
-*/
-
-
-
-
-async function message_AmazonEmail(call) {
+async function message_AmazonEmail(requestParameters) {
 	let access = await getAccess()
-
-	let {fromName, fromEmail, toEmail, subjectText, messageText, messageHtml} = call
 	let request = {
-		Source: `"${fromName}" <${fromEmail}>`,//must be verified email or domain
-		Destination: {ToAddresses: [toEmail]},
+		Source: `"${requestParameters.fromName}" <${requestParameters.fromEmail}>`,//must be verified email or domain
+		Destination: {ToAddresses: [requestParameters.toEmail]},
 		Message: {
-			Subject: {Data: subjectText, Charset: 'UTF-8'},
+			Subject: {Data: requestParameters.subjectText, Charset: 'UTF-8'},
 			Body: {//both plain text and html for multipart/alternative email format
-				Text: {Data: messageText, Charset: 'UTF-8'},
-				Html: {Data: messageHtml, Charset: 'UTF-8'}
+				Text: {Data: requestParameters.messageText, Charset: 'UTF-8'},
+				Html: {Data: requestParameters.messageHtml, Charset: 'UTF-8'}
 			}
 		}
 	}
-	let response, error, success = true
-
-	let t1 = Now()
+	let task = Task({name: 'message', provider: 'Amazon.', service: 'Email.', requestParameters, request})
 	try {
+
 		const {SESClient, SendEmailCommand} = await loadAmazonEmail()
 		let client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
-		response = await client.send(new SendEmailCommand(request))
-		if (!response.MessageId) success = false//look for a message id to confirm amazon sent the email
-	} catch (e) { error = e; success = false }
-	let t2 = Now()
+		task.response = await client.send(new SendEmailCommand(request))
+		if (task.response.MessageId) task.success = true//look for a message id to confirm amazon sent the email
+		//ttd april, do this sort of confirmation to set success for all four of these!
 
-	request.tick = t1
-	return {call, request, p: {success, response, error, tick: t2, duration: t2 - t1}}
+	} catch (e) { task.error = e; logAlert('message', {task}) }
+	task.finish()
+	return task
 }
 
 async function message_TwilioEmail(call) {

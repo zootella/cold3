@@ -161,6 +161,7 @@ dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 sayFloppyDisk,
+Task,
 host23, fetch23,
 
 /* level 2 query */
@@ -219,7 +220,6 @@ months3, checkDate, validateDate, getPageOffsetMinutes, ageDate,
 
 measurePasswordStrength,
 generatePosts, postDatabase,
-Task, Tape,
 
 } from './level1.js'
 

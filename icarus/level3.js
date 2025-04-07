@@ -17,10 +17,10 @@ randomCode, hashToLetter,
 import {
 Tag, Limit, checkTag, checkTagOrBlank, checkName, validateName,
 bundleValid,
-Task, Tape,
 } from './level1.js'
 import {
 getAccess, Sticker, isLocal, isCloud,
+Task,
 host23, fetch23,
 
 /* level 2 query */
@@ -495,16 +495,13 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 		messageText: code.messageText,//email body as text, or complete SMS message
 		messageHtml: code.messageHtml,//email body as HTML
 	}
-	let result23 = await fetch23({$fetch, path: '/message', body})//ttd march, other notes about getting the nuxt environment reference $fetch
-	log(look({result23}))
-
-	//does this throw if it's not successful? does it return a note in the return object?
-
+	let task = await fetch23({path: '/message', body})
+	log("codeSend in the worker got fetch23's task:", look({task}))//ttd april, you can remove this line
+	if (!task.success) toss('task', {task})
 	await codeSent({browserTag, provider, type, v, permit, code})
 
-	//ttd april, be able to tell if we think the code send worked ok or not
-
-	return {success: true, result23}
+	let codes = await browserToCodes({browserTag})
+	return {success: true, codes}
 }
 
 //can we send another code to this address now?

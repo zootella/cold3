@@ -29,14 +29,13 @@ async function onClick() {
 		address: refAddress.value,
 		provider: refProvider.value,
 	})
-	log(look(result))
+	log("CodeRequestComponent's onClick got this result from the post:", look(result))
 }
 
 </script>
 <template>
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeRequestComponent</i></p>
-
 
 <p>
 	<input :maxlength="Limit.input" type="text" v-model="refAddress" placeholder="email or phone" class="w-64" />{{' '}}
