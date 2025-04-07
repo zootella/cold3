@@ -160,7 +160,7 @@ export async function codeSend({browserTag, provider, type, v}) {
 	return {success: true, result23}
 }
 
-~~~~ level3.js, fetch23():
+~~~~ level2.js, fetch23():
 
 export async function fetch23({$fetch, path, body}) {
 ...
@@ -191,7 +191,7 @@ async function doorHandleBelow({door, body, action}) {
 	return response
 }
 
-net23/persephone/persephone.js
+~~~~ net23/persephone/persephone.js
 
 export async function sendMessage({provider, service, address, subjectText, messageText, messageHtml}) {
 ...
@@ -384,7 +384,7 @@ and then try out putting that around lots of things in the stack
 
 
 
-
+[]get Task to not include .error at all unless there is an error!
 
 
 

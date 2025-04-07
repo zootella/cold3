@@ -4,6 +4,7 @@ Sticker, isCloud, getAccess,
 log, logAudit, look, Now, Size, Data,
 checkEmail, checkPhone,
 test, ok, replaceAll, replaceOne,
+Task, Tape,
 } from 'icarus'
 
 let module_amazonEmail, module_amazonText, module_twilio, module_sendgrid, module_sharp
@@ -110,11 +111,39 @@ export async function sendMessage({provider, service, address, subjectText, mess
 	return result
 }
 
-async function message_AmazonEmail(c) {
+
+
+
+
+
+
+
+
+/*
+export function Task(task) {
+	checkText(task.name)//only name is required
+	task.tag = Tag()//tag to identify this task
+	task.tick = Now()//start time
+	task.sticker = Sticker()//where we're running to perform this task
+	task.logged = false//flag for you to batch log at the end
+	task.finish = function(more) {//mark this task done, adding more properites about how it concluded
+		Object.assign(task, more)//be careful, as this overwrites anything already in task!
+		if (task.error) task.success = false//if you pin an exception then success is false
+		task.done = Now()//check .done to know it's done, and also when
+		task.duration = task.done - task.tick//how long it took, nice that times are automatic
+	}
+	return task
+}
+*/
+
+
+
+
+async function message_AmazonEmail(call) {
 	let access = await getAccess()
 
-	let {fromName, fromEmail, toEmail, subjectText, messageText, messageHtml} = c
-	let q = {
+	let {fromName, fromEmail, toEmail, subjectText, messageText, messageHtml} = call
+	let request = {
 		Source: `"${fromName}" <${fromEmail}>`,//must be verified email or domain
 		Destination: {ToAddresses: [toEmail]},
 		Message: {
@@ -125,26 +154,26 @@ async function message_AmazonEmail(c) {
 			}
 		}
 	}
-	let result, error, success = true
+	let response, error, success = true
 
 	let t1 = Now()
 	try {
 		const {SESClient, SendEmailCommand} = await loadAmazonEmail()
 		let client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
-		result = await client.send(new SendEmailCommand(q))
-		if (!result.MessageId) success = false//look for a message id to confirm amazon sent the email
+		response = await client.send(new SendEmailCommand(request))
+		if (!response.MessageId) success = false//look for a message id to confirm amazon sent the email
 	} catch (e) { error = e; success = false }
 	let t2 = Now()
 
-	q.tick = t1
-	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+	request.tick = t1
+	return {call, request, p: {success, response, error, tick: t2, duration: t2 - t1}}
 }
 
-async function message_TwilioEmail(c) {
+async function message_TwilioEmail(call) {
 	let access = await getAccess()
 
-	let { fromName, fromEmail, toEmail, subjectText, messageText, messageHtml } = c
-	let q = {
+	let { fromName, fromEmail, toEmail, subjectText, messageText, messageHtml } = call
+	let request = {
 		from: {name: fromName, email: fromEmail},
 		personalizations: [{to: [{email: toEmail}]}],
 		subject: subjectText,
@@ -153,64 +182,79 @@ async function message_TwilioEmail(c) {
 			{type: 'text/html',  value: messageHtml}
 		]
 	}
-	let result, error, success = true
+	let response, error, success = true
 
 	let t1 = Now()
 	try {
 		const sendgrid = await loadTwilioEmail()
 		sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
-		result = await sendgrid.send(q)
+		response = await sendgrid.send(request)
 	} catch (e) { error = e; success = false }
 	let t2 = Now()
 
-	q.tick = t1
-	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+	request.tick = t1
+	return {call, request, p: {success, response, error, tick: t2, duration: t2 - t1}}
 }
 
-async function message_AmazonPhone(c) {
+async function message_AmazonPhone(call) {
 	let access = await getAccess()
 
-	let {toPhone, messageText} = c
-	let q = {
+	let {toPhone, messageText} = call
+	let request = {
 		PhoneNumber: toPhone,
 		Message: messageText,
 	}
-	let result, error, success = true
+	let response, error, success = true
 
 	let t1 = Now()
 	try {
 		const {SNSClient, PublishCommand} = await loadAmazonPhone()
 		let client = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
-		result = await client.send(new PublishCommand(q))
+		response = await client.send(new PublishCommand(request))
 	} catch (e) { error = e; success = false }
 	let t2 = Now()
 
-	q.tick = t1
-	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+	request.tick = t1
+	return {call, request, p: {success, response, error, tick: t2, duration: t2 - t1}}
 }
 
-async function message_TwilioPhone(c) {
+async function message_TwilioPhone(call) {
 	let access = await getAccess()
 
-	let {toPhone, messageText} = c
-	let q = {
+	let {toPhone, messageText} = call
+	let request = {
 		from: access.get('ACCESS_TWILIO_PHONE'),
 		to: toPhone,
 		body: messageText
 	}
-	let result, error, success = true
+	let response, error, success = true
 
 	let t1 = Now()
 	try {
 		const twilio = await loadTwilioPhone()
 		let client = twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
-		result = await client.messages.create(q)
+		response = await client.messages.create(request)
 	} catch (e) { error = e; success = false }
 	let t2 = Now()
 
-	q.tick = t1
-	return {c, q, p: {success, result, error, tick: t2, duration: t2 - t1}}
+	request.tick = t1
+	return {call, request, p: {success, response, error, tick: t2, duration: t2 - t1}}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
