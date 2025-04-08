@@ -1,7 +1,7 @@
 
 import {
 Sticker, isCloud, getAccess,
-log, logAlert, logAudit, look, Now, Size, Data, Task, hasText,
+log, logAlert, logAudit, look, Now, Size, Data, Task, hasText, headerGetOne,
 checkEmail, checkPhone,
 test, ok, replaceAll, replaceOne,
 } from 'icarus'
@@ -134,7 +134,10 @@ async function sendMessageTwilioEmail(access, task) {
 	const sendgrid = await loadTwilioEmail()
 	sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
 	task.response = await sendgrid.send(task.request)
-	if (task.response.length && task.response[0].statusCode == 202) task.success = true
+	if (
+		task.response.length &&
+		task.response[0].statusCode == 202 &&
+		hasText(headerGetOne(task.response[0].headers, 'x-message-id'))) task.success = true
 }
 async function sendMessageAmazonPhone(access, task) {
 	task.request = {
