@@ -43,6 +43,9 @@ const codes = ref([])//codes this browser could enter, empty array before check 
 const visibleCodes = computed(() => {//from all that, filter to make the array for v-for to show a list on the page
 	return codes.value.filter(code => code.show).reverse()//soonest to expire first
 })
+const codesMerge = (a2) => {
+	mergeRecords(codes.value, a2, codesIndex)
+}
 
 const hello1 = sequentialShared(async () => {
 	try {
@@ -95,7 +98,7 @@ return {
 	connection,
 
 	//codes
-	codes, visibleCodes,
+	codes, visibleCodes, codesMerge,
 }
 
 })

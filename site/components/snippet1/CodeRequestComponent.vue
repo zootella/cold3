@@ -5,6 +5,7 @@ log, look, Now, Limit, sayTick, newline, Data, Tag, hasText,
 validatePhone, validateEmail, validateEmailOrPhone,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
+const helloStore = useHelloStore()
 
 const refButton = ref(null)
 const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
@@ -31,6 +32,7 @@ async function onClick() {
 	})
 	log("CodeRequestComponent's onClick got this task from the post:", look(task))
 	task.response.codes
+	helloStore.codesMerge(task.response.codes)
 
 	//ok, here's where you merge in response.codes
 }
