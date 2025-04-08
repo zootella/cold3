@@ -28,7 +28,7 @@ async function doorHandleBelow({door, body, action}) {
 	ttd april,  maybe it's:
 	result - the page's view of the fetch that happened
 	response - in there, the body the server sent back to us
-	records - in there, the records with .tick and .tag for a List in pinia
+	records - in there, the records with .tick and .tag for a list in pinia
 	*/
 
 	r.message = 'api code, version 2025mar18a'

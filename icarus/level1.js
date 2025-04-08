@@ -1091,61 +1091,51 @@ noop(() => {
 
 
 
-//and now you don't need this, after all!
-export function List_new() {
-	return {
-		a: [],//array of records, sorted by tick descending, using tag as a tiebreaker
+
+
+
+
+
+//  _           _                    __                              _     
+// (_)_ __   __| | _____  __   ___  / _|  _ __ ___  ___ ___  _ __ __| |___ 
+// | | '_ \ / _` |/ _ \ \/ /  / _ \| |_  | '__/ _ \/ __/ _ \| '__/ _` / __|
+// | | | | | (_| |  __/>  <  | (_) |  _| | | |  __/ (_| (_) | | | (_| \__ \
+// |_|_| |_|\__,_|\___/_/\_\  \___/|_|   |_|  \___|\___\___/|_|  \__,_|___/
+//                                                                         
+/*
+the given array a is a list of records, each with a unique .tag
+the array is sorted recent first, using .tick (and tag as a tiebreaker)
+
+arrays of records like this come sorted from the database,
+are kept in Pinia stores through hybrid rendering,
+(which includes stringification across the server->client bridge,
+and then hydration back into reactive state on the client)
+and then get used to drive lists of Vue components on the page with v-for
+either directly, or with filtering through a computed property
+
+to handle them easily and efficiently, while keeping out of Pinia and Vue's way
+make an index around them with let index = indexRecords(refArray.value)
+and then you can addRecords(refArray.value, [possibly new or updated records], index)
+
+addRecords() brings in records with tags we don't have yet (fast for immutable records)
+mergeRecords() does that, and also updates objects with tags we do have (necessary for updated records)
+add is designed to be really fast, and not bother Vue at all, if you add a bunch we already have!
+
+index.o[tag] enables instant lookups when you already know the tag you want
+
+these functions edit a in place, and keep it sorted
+add is fast given records that are sorted (probably by the database)
+feeding in unsorted records will work, but not be fast (so don't do that)
+
+under the hood, index keeps a single mutable cursor i to avoid a full scan for every add
+there is also no binary search! with everything sorted,
+realizing we're already in or very close to the right spot is faster
+*/
+export function indexRecords(a) {//array of records, sorted descending by tick, using tag as a tiebreaker
+	let index = {
 		o: {},//object of records for instant lookup by known tag
 		i: 0,//an internal cursor we move and keep to bring in sorted records quickly
 	}
-}
-export function listAdd(list, a2)   { _listAdd(list, a2, false) }//add records with tags we don't have yet
-export function listMerge(list, a2) { _listAdd(list, a2, true)  }//also bring in new objects for tags we do have
-function _listWalk(list, r) {//move forward first, then back
-	while (list.i < list.a.length && (list.a[list.i].tick   > r.tick || (list.a[list.i].tick   == r.tick && list.a[list.i].tag   >= r.tag))) list.i++
-	while (list.i > 0             && (list.a[list.i-1].tick < r.tick || (list.a[list.i-1].tick == r.tick && list.a[list.i-1].tag <= r.tag))) list.i--
-	/*
-	we use walk() both to find existing elements, and to find the correct insertion point for new ones
-	if r is an element in a, walk() will find its index--r.tag and r.tick match exactly in this case
-	if r is new to a, walk() will choose where we should put it--r.tag is not in a in this case
-	walk() keeps i in range, except to indicate a new r should be added last
-	*/
-}
-function _listAdd(list, a2, replace) {
-	if (!Array.isArray(a2)) toss('type', {a2})
-	for (let r2 of a2) {
-		checkInt(r2.tick); checkTag(r2.tag)
-
-		//find
-		let r = list.o[r2.tag]//do we already have a record with this tag?
-
-		//remove
-		if (r && replace) {//if found and this is a merge, remove the outdated record
-			_listWalk(list, r)//move i to the existing record--we know it's in there so walk will find it!
-			list.a.splice(list.i, 1)//at i, remove 1 record
-			r = null//indicate removal locally so the insert next happens
-		}
-
-		//insert
-		if (!r) {//not found to begin with, or found, this is a merge, so removed
-			_listWalk(list, r2)//use walk again to move i to the correct place to add r2
-			list.a.splice(list.i, 0, r2)//add the new record to the array
-			list.o[r2.tag] = r2//add or replace the reference in the object
-		}
-
-		//note how if merge is false and a2 has no new tags, this quickly does nothing, which is great!
-	}
-}
-
-
-
-
-
-
-
-
-export function indexRecords(a) {
-	let index = {o: {}, i: 0}
 	if (!recordsAreSortedAlready(a)) sortRecords(a)
 	a.forEach(r => index.o[r.tag] = r)//build o to let us quickly look up tags in a
 	return index
@@ -1168,19 +1158,19 @@ function walkRecords(a, r, index) {//move forward first, then back
 	while (index.i < a.length && (a[index.i].tick   > r.tick || (a[index.i].tick   == r.tick && a[index.i].tag   >= r.tag))) index.i++
 	while (index.i > 0        && (a[index.i-1].tick < r.tick || (a[index.i-1].tick == r.tick && a[index.i-1].tag <= r.tag))) index.i--
 	/*
-	we use walk() both to find existing elements, and to find the correct insertion point for new ones
-	if r is an element in a, walk() will find its index--r.tag and r.tick match exactly in this case
-	if r is new to a, walk() will choose where we should put it--r.tag is not in a in this case
-	walk() keeps i in range, except to indicate a new r should be added last
+	we use walk both to find an existing record, and to find the correct insertion point for a new one
+	if r is an element in a, walk will find its index--r.tag and r.tick match exactly in this case
+	if r is new to a, walk will choose where we should put it--r.tag is not in a in this case
+	walk keeps i in range, except to indicate a new r should be added last
 	*/
 }
 function placeRecords({a, a2, index, replace}) {
-	if (!a2) return//ok to call this with nothing to add
+	if (!a2) return//it's fine to call this with nothing to add
 
 	if (!(Array.isArray(a) && Array.isArray(a2) && index && index.o && Number.isInteger(index.i))) toss('type')
 	if (a.length)  { checkInt(a[0].tick);  checkTag(a[0].tag)  }//if the first record is ok they likely all are
 	if (a2.length) { checkInt(a2[0].tick); checkTag(a2[0].tag) }
-	//^quick sanity checks; guard against parameters wrong or missing
+	//^quick sanity checks; guard against mistakes like a missing parameter or incorrectly dereferenced response object
 
 	for (let r2 of a2) {
 
@@ -1204,7 +1194,6 @@ function placeRecords({a, a2, index, replace}) {
 		//note how if merge is false and a2 has no new tags, this quickly does nothing, which is great!
 	}
 }
-
 noop(() => {//template for sanity checking:
 	let a = []
 	let index = indexRecords(a)
@@ -1253,189 +1242,6 @@ noop(() => {//and a rudimentary fuzz buster:
 	run2(seconds, timeRange, 16)
 	run2(seconds, timeRange, 256)
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//  _ _     _   
-// | (_)___| |_ 
-// | | / __| __|
-// | | \__ \ |_ 
-// |_|_|___/\__|
-//              
-/*
-keep a list of records
-each record has .tag, which list keeps unique, and .tick, a timestamp
-
-look at (but please don't change!) list.a, sorted recent first,
-and list.o[tag], enabling instant lookups when you already know the tag you want
-
-add new records with:
-list.add([]) - brings in records with tags we don't have yet (fast for immutable records)
-list.merge([]) - does that, and also updates objects with tags we do have (necessary for updated records)
-List is designed to be really fast if you .add() a bunch of records we already have!
-
-List's array stays sorted,
-and add() is fast given records that are sorted (probably by the database)
-feeding in unsorted records will work, but not be fast (so don't do that)
-also, List *only grows*, so watch out for that
-
-under the hood: List keeps a single mutable cursor i to avoid a full scan for every add
-there is also no binary search! with everything sorted,
-realizing we're already in or very close to the right spot is faster
-
-ChatGPT says this "is a robust and efficient choice for managing records in your Pinia store,
-integrating smoothly with Vue's reactivity and component update mechanisms."
-but, I am paying the robot money. 🤖 $$$ 😆
-*/
-export function List() {
-	const a = []//array of records, sorted descending by tick, using tag as a tiebreaker
-	const o = {}//object of records for instant lookup by known tag
-	let i = 0//an internal cursor we move and keep to bring in sorted records quickly
-
-	/*
-	we use walk() both to find existing elements, and to find the correct insertion point for new ones
-	if r is an element in a, walk() will find its index--r.tag and r.tick match exactly in this case
-	if r is new to a, walk() will choose where we should put it--r.tag is not in a in this case
-	walk() keeps i in range, except to indicate a new r should be added last
-	*/
-	function walk(r) {//move forward first, then back
-		while (i < a.length && (a[i].tick   > r.tick || (a[i].tick   == r.tick && a[i].tag   >= r.tag))) i++
-		while (i > 0        && (a[i-1].tick < r.tick || (a[i-1].tick == r.tick && a[i-1].tag <= r.tag))) i--
-	}
-
-	function add(a2)   { _add(a2, false) }//add records with tags we don't have yet
-	function merge(a2) { _add(a2, true)  }//also bring in new objects for tags we do have
-	function _add(a2, replace) {
-		if (!Array.isArray(a2)) toss('type', {a2})
-		for (let r2 of a2) {
-			checkInt(r2.tick); checkTag(r2.tag)
-
-			//find
-			let r = o[r2.tag]//do we already have a record with this tag?
-
-			//remove
-			if (r && replace) {//if found and this is a merge, remove the outdated record
-				walk(r)//move i to the existing record--we know it's in there so walk will find it!
-				a.splice(i, 1)//at i, remove 1 record
-				r = null//indicate removal locally so the insert next happens
-			}
-
-			//insert
-			if (!r) {//not found to begin with, or found, this is a merge, so removed
-				walk(r2)//use walk again to move i to the correct place to add r2
-				a.splice(i, 0, r2)//add the new record to the array
-				o[r2.tag] = r2//add or replace the reference in the object
-			}
-
-			//note how if merge is false and a2 has no new tags, this quickly does nothing, which is great!
-		}
-	}
-	function hydrated() {//when Pinia is hydrating a store on the page, it'll fill a, but not o
-		if (a.length > Object.keys(o).length) {//if we notice a has more records than o,
-			a.forEach(r => o[r.tag] = r)//rebuild o to match a
-		}
-	}
-
-	return {a, o, add, merge, hydrated}
-}
-noop(() => {//template for sanity checking:
-	let list = List()
-	list.add([
-		{tick: 3, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
-		{tick: 3, tag: 'Diiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
-		{tick: 3, tag: 'Biiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
-	])
-	log('second one:')
-	list.merge([
-		{tick: 2, tag: 'Biiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
-		{tick: 2, tag: 'Diiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
-		{tick: 2, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
-	])
-	log(look(list.a), `lengths are ${list.a.length} and ${Object.keys(list.o).length}`)
-})
-noop(() => {//and a rudimentary fuzz buster:
-	function run1(capacity, timeRange) {
-		let list = List()
-		let now = Now()
-		for (let t = 1; t <= capacity; t++) {
-			list.add([{tag: Tag(), tick: randomBetween(now - timeRange, now)}])
-			//this is slow because we're intentionally not giving add sorted records
-
-			//make sure the array has the right number of items
-			ok(list.a.length == t && Object.keys(list.o).length == t)
-			//and that they're sorted by tick, at least
-			for (let i = 0; i < list.a.length - 2; i++) ok(list.a[i].tick >= list.a[i+1].tick)
-		}
-	}
-	function run2(seconds, timeRange, capacity) {
-		let now = Now()
-		let cycles = 0
-		while (Now() < now + (seconds * Time.second)) {
-			run1(capacity, timeRange)
-			cycles++
-		}
-		log(`did ${cycles} cycles with capacity ${capacity} in ${seconds} seconds`)
-	}
-	const seconds = 4
-	const timeRange = Time.minute//like Time.year, or 10 to pile up tick collisions, which are ok
-	run2(seconds, timeRange, 4)//lots of cycles building to a very short array to test all the corners
-	run2(seconds, timeRange, 16)
-	run2(seconds, timeRange, 256)
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

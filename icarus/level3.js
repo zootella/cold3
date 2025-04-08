@@ -583,7 +583,7 @@ export async function browserToCodes({browserTag}) {
 	if (rows) {
 		for (let row of rows) {
 			codes.push({
-				//prepare records that the page will keep in a List
+				//prepare records that the page will keep in a list
 				tag: row.row_tag,//the code's tag, also the row tag, letting the page identify the challenge
 				tick: row.row_tick,//when we sent the code
 
