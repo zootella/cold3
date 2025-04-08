@@ -1144,33 +1144,43 @@ function _listAdd(list, a2, replace) {
 
 
 
-
-
-
-
-
-
-
-
-
-/*
-//simpler, hopefully, pinia-friendly design which is all helper functions and helper object that acts on simple array a
-
 export function indexRecords(a) {
 	let index = {o: {}, i: 0}
-
-	//also sorts a, yeah
-
+	if (!recordsAreSortedAlready(a)) sortRecords(a)
+	a.forEach(r => index.o[r.tag] = r)//build o to let us quickly look up tags in a
 	return index
 }
-
-export function addRecords(a, a2, index) {
-
+export function hydratedRecords(a, index) {
+	if (a.length > Object.keys(index.o).length) {//if we notice a has more records than o,
+		a.forEach(r => index.o[r.tag] = r)//rebuild o to match a
+		if (!recordsAreSortedAlready(a)) sortRecords(a)//and make sure they're sorted
+	}
 }
-export function mergeRecords(a, a2, index) {
+export function addRecords(a, a2, index)   { placeRecords(a, a2, index, false) }//add records with tags we don't have yet
+export function mergeRecords(a, a2, index) { placeRecords(a, a2, index, true)  }//also bring in new objects for tags we do have
 
+function recordsAreSortedAlready(a) {
+	for (let i = 1; i < a.length; i++) {
+		if (a[i-1].tick < a[i].tick || (a[i-1].tick == a[i].tick && a[i-1].tag < a[i].tag)) {
+			return false
+		}
+	}
+	return true
 }
-function _addRecords(a, a2, index, replace) {
+function sortRecords(a) {
+	a.sort((l, r) => r.tick - l.tick || (r.tag > l.tag ? 1 : -1))
+}
+function walkRecords(a, r, index) {//move forward first, then back
+	while (index.i < a.length && (a[index.i].tick   > r.tick || (a[index.i].tick   == r.tick && a[index.i].tag   >= r.tag))) index.i++
+	while (index.i > 0        && (a[index.i-1].tick < r.tick || (a[index.i-1].tick == r.tick && a[index.i-1].tag <= r.tag))) index.i--
+	/*
+	we use walk() both to find existing elements, and to find the correct insertion point for new ones
+	if r is an element in a, walk() will find its index--r.tag and r.tick match exactly in this case
+	if r is new to a, walk() will choose where we should put it--r.tag is not in a in this case
+	walk() keeps i in range, except to indicate a new r should be added last
+	*/
+}
+function placeRecords(a, a2, index, replace) {
 	for (let r2 of a2) {
 
 		//find
@@ -1178,23 +1188,79 @@ function _addRecords(a, a2, index, replace) {
 
 		//remove
 		if (r && replace) {//if found and this is a merge, remove the outdated record
-			walk(r)//move i to the existing record--we know it's in there so walk will find it!
-			a.splice(i, 1)//at i, remove 1 record
+			walkRecords(a, r, index)//move i to the existing record--we know it's in there so walk will find it!
+			a.splice(index.i, 1)//at i, remove 1 record
 			r = null//indicate removal locally so the insert next happens
 		}
 
 		//insert
 		if (!r) {//not found to begin with, or found, this is a merge, so removed
-			walk(r2)//use walk again to move i to the correct place to add r2
-			a.splice(i, 0, r2)//add the new record to the array
-			o[r2.tag] = r2//add or replace the reference in the object
+			walkRecords(a, r2, index)//use walk again to move i to the correct place to add r2
+			a.splice(index.i, 0, r2)//add the new record to the array
+			index.o[r2.tag] = r2//add or replace the reference in the object
 		}
 
 		//note how if merge is false and a2 has no new tags, this quickly does nothing, which is great!
 	}
-
 }
-*/
+
+noop(() => {//template for sanity checking:
+	let a = []
+	let index = indexRecords(a)
+	let a2 = [
+		{tick: 3, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
+		{tick: 3, tag: 'Diiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
+		{tick: 3, tag: 'Biiiiiiiiiiiiiiiiiiii', edition: 'first edition'},
+	]
+	addRecords(a, a2, index)
+	log('----')
+	a2 = [
+		{tick: 2, tag: 'Biiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
+		{tick: 2, tag: 'Diiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
+		{tick: 2, tag: 'Fiiiiiiiiiiiiiiiiiiii', edition: 'second edition'},
+	]
+	mergeRecords(a, a2, index)
+	log(look(a), `lengths are ${a.length} and ${Object.keys(index.o).length}`)
+})
+noop(() => {//and a rudimentary fuzz buster:
+	function run1(capacity, timeRange) {
+		let a = []
+		let index = indexRecords(a)
+		let now = Now()
+		for (let t = 1; t <= capacity; t++) {
+			addRecords(a, [{tag: Tag(), tick: randomBetween(now - timeRange, now)}], index)
+			//this is slow because we're intentionally not giving add sorted records
+
+			//make sure the array has the right number of items
+			ok(a.length == t && Object.keys(index.o).length == t)
+			//and that they're sorted by tick, at least
+			for (let i = 0; i < a.length - 2; i++) ok(a[i].tick >= a[i+1].tick)
+		}
+	}
+	function run2(seconds, timeRange, capacity) {
+		let now = Now()
+		let cycles = 0
+		while (Now() < now + (seconds * Time.second)) {
+			run1(capacity, timeRange)
+			cycles++
+		}
+		log(`did ${cycles} cycles with capacity ${capacity} in ${seconds} seconds`)
+	}
+	const seconds = 4
+	const timeRange = Time.minute//like Time.year, or 10 to pile up tick collisions, which are ok
+	run2(seconds, timeRange, 4)//lots of cycles building to a very short array to test all the corners
+	run2(seconds, timeRange, 16)
+	run2(seconds, timeRange, 256)
+})
+
+
+
+
+
+
+
+
+
 
 
 

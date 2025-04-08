@@ -221,6 +221,7 @@ months3, checkDate, validateDate, getPageOffsetMinutes, ageDate,
 measurePasswordStrength,
 generatePosts, postDatabase,
 
+indexRecords, hydratedRecords, addRecords, mergeRecords,
 List,
 
 } from './level1.js'
