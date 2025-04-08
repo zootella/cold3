@@ -1,7 +1,7 @@
 
 import {
 Sticker, isCloud, getAccess,
-log, logAlert, logAudit, look, Now, Size, Data, Task,
+log, logAlert, logAudit, look, Now, Size, Data, Task, hasText,
 checkEmail, checkPhone,
 test, ok, replaceAll, replaceOne,
 } from 'icarus'

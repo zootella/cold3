@@ -21,7 +21,7 @@ watch([refAddress, refProvider], () => {
 	else if (v.isValid && v.type == 'Phone.') { refOutput.value = `valid phone ${v.formPage}` }
 	else                                      { refOutput.value = 'type a valid email or phone' }
 
-	refButtonCanSubmit.value = (v.isValid && hasText(refProvider.value))
+	refButtonCanSubmit.value = !!(v.isValid && hasText(refProvider.value))
 })
 
 async function onClick() {
