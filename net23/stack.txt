@@ -755,10 +755,12 @@ observe these three:
 [x]test the other three, happy path
 [x]add success sanity checks to all four
 
-[]use Task in PostButton
-[]add the return codes records to codeStore
+[x]use Task in PostButton
+[x]add the return codes records to codeStore
 
 
+[x]CodeRequestComponent merges in return codes
+[]CodeEnterComponent also works through the store to keep things in sync
 
 
 
