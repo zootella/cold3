@@ -4,13 +4,13 @@ import {
 log, look, Now,
 } from 'icarus'
 import {ref} from 'vue'
-const codeStore = useCodeStore()
+const helloStore = useHelloStore()
 
 //top bar, always there, holds stuff that might appear
 
 </script>
 <template>
 
-<CodeEnterList v-show="codeStore.visibleCodes.length" />
+<CodeEnterList v-show="helloStore.visibleCodes.length" />
 
 </template>

@@ -1142,6 +1142,65 @@ function _listAdd(list, a2, replace) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+/*
+//simpler, hopefully, pinia-friendly design which is all helper functions and helper object that acts on simple array a
+
+export function indexRecords(a) {
+	let index = {o: {}, i: 0}
+
+	//also sorts a, yeah
+
+	return index
+}
+
+export function addRecords(a, a2, index) {
+
+}
+export function mergeRecords(a, a2, index) {
+
+}
+function _addRecords(a, a2, index, replace) {
+	for (let r2 of a2) {
+
+		//find
+		let r = index.o[r2.tag]//do we already have a record with this tag?
+
+		//remove
+		if (r && replace) {//if found and this is a merge, remove the outdated record
+			walk(r)//move i to the existing record--we know it's in there so walk will find it!
+			a.splice(i, 1)//at i, remove 1 record
+			r = null//indicate removal locally so the insert next happens
+		}
+
+		//insert
+		if (!r) {//not found to begin with, or found, this is a merge, so removed
+			walk(r2)//use walk again to move i to the correct place to add r2
+			a.splice(i, 0, r2)//add the new record to the array
+			o[r2.tag] = r2//add or replace the reference in the object
+		}
+
+		//note how if merge is false and a2 has no new tags, this quickly does nothing, which is great!
+	}
+
+}
+*/
+
+
+
+
+
+
 //  _ _     _   
 // | (_)___| |_ 
 // | | / __| __|
