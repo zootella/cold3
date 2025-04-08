@@ -60,6 +60,7 @@ test(async () => {//test that we can use sharp, which relies on native libraries
 	ok(d.base64().startsWith('iVBORw0KGgo'))//headers at the start are the same for every image
 })
 
+//ttd april replace this with a separate endpoint /warm which doesn't do anything, this will do the same thing, you believe, but ask chat
 export async function warm({provider, service}) {
 	let task = Task({name: 'warm'})
 	switch (provider+service) {
@@ -81,156 +82,81 @@ export async function warm({provider, service}) {
 //                                                                   
 
 export async function sendMessage({provider, service, address, subjectText, messageText, messageHtml}) {
-
+	let access = await getAccess()
 	let sticker = ` ${Sticker().all}.${provider}${service}`
 	messageText = replaceOne(messageText, 'STICKER', sticker)
 	messageHtml = replaceOne(messageHtml, 'STICKER', sticker)
-	//ttd, turn sending on or off
-	if (false) {
-		log('hi from persephone send message', look({provider, service, address, subjectText, messageText, messageHtml}))
-		return 'Off.'
-	}
-
-	let result
-	if (service == 'Email.') {
-
-		let access = await getAccess()
-		let fromName = access.get('ACCESS_MESSAGE_BRAND')
-		let fromEmail = access.get('ACCESS_MESSAGE_EMAIL')
-		let toEmail = checkEmail(address).formFormal
-
-		if      (provider == 'Amazon.') { result = await message_AmazonEmail({fromName, fromEmail, toEmail, subjectText, messageText, messageHtml}) }
-		else if (provider == 'Twilio.') { result = await message_TwilioEmail({fromName, fromEmail, toEmail, subjectText, messageText, messageHtml}) }
-
-	} else if (service == 'Phone.') {
-		let toPhone = checkPhone(address).formFormal
-
-		if      (provider == 'Amazon.') { result = await message_AmazonPhone({toPhone, messageText}) }
-		else if (provider == 'Twilio.') { result = await message_TwilioPhone({toPhone, messageText}) }
-	}
-	logAudit('message', {provider, service, address, subjectText, messageText, messageHtml, result})
-	//ttd november if not successfull, log that with logAlert; and probably summarize if successful, to not leak keys. here's where you use look to pick out the important parts of the giant message they give us
-	return result
+	let task = Task({name: 'message', provider, service, parameters: {address, subjectText, messageText, messageHtml}})
+	try {
+		if (service == 'Email.') {
+			task.parameters.fromName = access.get('ACCESS_MESSAGE_BRAND')
+			task.parameters.fromEmail = access.get('ACCESS_MESSAGE_EMAIL')
+			task.parameters.toEmail = checkEmail(address).formFormal
+			if      (provider == 'Amazon.') await sendMessageAmazonEmail(access, task)
+			else if (provider == 'Twilio.') await sendMessageTwilioEmail(access, task)
+		} else if (service == 'Phone.') {
+			task.parameters.toPhone = checkPhone(address).formFormal
+			if      (provider == 'Amazon.') await sendMessageAmazonPhone(access, task)
+			else if (provider == 'Twilio.') await sendMessageTwilioPhone(access, task)
+		}
+	} catch (e) { task.error = e }
+	task.finish()
+	logAudit('message', {task})
+	return task
 }
-
-
-//ttd april, with the new pattern, you can get these four into a single large but safe function
-//and you realize, you're already logAudit-ing every api call, win or lose, so maybe that's why you didn't have a logAlert in the catch below (and can remove that when this is one big safe simple function)
-
-
-
-
-
-
-
-async function message_AmazonEmail(requestParameters) {
-	let access = await getAccess()
-	let request = {
-		Source: `"${requestParameters.fromName}" <${requestParameters.fromEmail}>`,//must be verified email or domain
-		Destination: {ToAddresses: [requestParameters.toEmail]},
+async function sendMessageAmazonEmail(access, task) {
+	task.request = {
+		Source: `"${task.parameters.fromName}" <${task.parameters.fromEmail}>`,//must be verified email or domain
+		Destination: {ToAddresses: [task.parameters.toEmail]},
 		Message: {
-			Subject: {Data: requestParameters.subjectText, Charset: 'UTF-8'},
+			Subject: {Data: task.parameters.subjectText, Charset: 'UTF-8'},
 			Body: {//both plain text and html for multipart/alternative email format
-				Text: {Data: requestParameters.messageText, Charset: 'UTF-8'},
-				Html: {Data: requestParameters.messageHtml, Charset: 'UTF-8'}
+				Text: {Data: task.parameters.messageText, Charset: 'UTF-8'},
+				Html: {Data: task.parameters.messageHtml, Charset: 'UTF-8'}
 			}
 		}
 	}
-	let task = Task({name: 'message', provider: 'Amazon.', service: 'Email.', requestParameters, request})
-	try {
-
-		const {SESClient, SendEmailCommand} = await loadAmazonEmail()
-		let client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
-		task.response = await client.send(new SendEmailCommand(request))
-		if (task.response.MessageId) task.success = true//look for a message id to confirm amazon sent the email
-		//ttd april, do this sort of confirmation to set success for all four of these!
-
-	} catch (e) { task.error = e; logAlert('message', {task}) }
-	task.finish()
-	return task
+	const {SESClient, SendEmailCommand} = await loadAmazonEmail()
+	let client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
+	task.response = await client.send(new SendEmailCommand(task.request))
+	if (hasText(task.response.MessageId)) task.success = true
 }
-
-async function message_TwilioEmail(call) {
-	let access = await getAccess()
-
-	let { fromName, fromEmail, toEmail, subjectText, messageText, messageHtml } = call
-	let request = {
-		from: {name: fromName, email: fromEmail},
-		personalizations: [{to: [{email: toEmail}]}],
-		subject: subjectText,
+async function sendMessageTwilioEmail(access, task) {
+	task.request = {
+		from: {name: task.parameters.fromName, email: task.parameters.fromEmail},
+		personalizations: [{to: [{email: task.parameters.toEmail}]}],
+		subject: task.parameters.subjectText,
 		content: [
-			{type: 'text/plain', value: messageText},
-			{type: 'text/html',  value: messageHtml}
+			{type: 'text/plain', value: task.parameters.messageText},
+			{type: 'text/html',  value: task.parameters.messageHtml}
 		]
 	}
-	let response, error, success = true
-
-	let t1 = Now()
-	try {
-		const sendgrid = await loadTwilioEmail()
-		sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
-		response = await sendgrid.send(request)
-	} catch (e) { error = e; success = false }
-	let t2 = Now()
-
-	request.tick = t1
-	return {call, request, p: {success, response, error, tick: t2, duration: t2 - t1}}
+	const sendgrid = await loadTwilioEmail()
+	sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
+	task.response = await sendgrid.send(task.request)
+	if (task.response.length && task.response[0].statusCode == 202) task.success = true
 }
-
-async function message_AmazonPhone(call) {
-	let access = await getAccess()
-
-	let {toPhone, messageText} = call
-	let request = {
-		PhoneNumber: toPhone,
-		Message: messageText,
+async function sendMessageAmazonPhone(access, task) {
+	task.request = {
+		PhoneNumber: task.parameters.toPhone,
+		Message: task.parameters.messageText,
 	}
-	let response, error, success = true
-
-	let t1 = Now()
-	try {
-		const {SNSClient, PublishCommand} = await loadAmazonPhone()
-		let client = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
-		response = await client.send(new PublishCommand(request))
-	} catch (e) { error = e; success = false }
-	let t2 = Now()
-
-	request.tick = t1
-	return {call, request, p: {success, response, error, tick: t2, duration: t2 - t1}}
+	const {SNSClient, PublishCommand} = await loadAmazonPhone()
+	let client = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
+	task.response = await client.send(new PublishCommand(task.request))
+	if (hasText(task.response.MessageId)) task.success = true
 }
-
-async function message_TwilioPhone(call) {
-	let access = await getAccess()
-
-	let {toPhone, messageText} = call
-	let request = {
+async function sendMessageTwilioPhone(access, task) {
+	task.request = {
 		from: access.get('ACCESS_TWILIO_PHONE'),
-		to: toPhone,
-		body: messageText
+		to: task.parameters.toPhone,
+		body: task.parameters.messageText
 	}
-	let response, error, success = true
-
-	let t1 = Now()
-	try {
-		const twilio = await loadTwilioPhone()
-		let client = twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
-		response = await client.messages.create(request)
-	} catch (e) { error = e; success = false }
-	let t2 = Now()
-
-	request.tick = t1
-	return {call, request, p: {success, response, error, tick: t2, duration: t2 - t1}}
+	const twilio = await loadTwilioPhone()
+	let client = twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
+	task.response = await client.messages.create(task.request)
+	if (hasText(task.response.sid)) task.success = true
 }
-
-
-
-
-
-
-
-
-
-
 
 
 

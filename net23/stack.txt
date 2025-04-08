@@ -749,6 +749,8 @@ observe these three:
 
 
 
+[]just make a separate lambda endpoint which does nothing named warm
+
 []refactor persephone unifying the four
 []test the other three, happy path
 []add success sanity checks to all four
