@@ -7,6 +7,7 @@ validatePhone,
 onlyNumerals, Code, hashToLetter,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
+const helloStore = useHelloStore()
 
 const props = defineProps({
 	code: {type: Object, required: true},

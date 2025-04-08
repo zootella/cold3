@@ -1150,14 +1150,8 @@ export function indexRecords(a) {
 	a.forEach(r => index.o[r.tag] = r)//build o to let us quickly look up tags in a
 	return index
 }
-export function hydratedRecords(a, index) {
-	if (a.length > Object.keys(index.o).length) {//if we notice a has more records than o,
-		a.forEach(r => index.o[r.tag] = r)//rebuild o to match a
-		if (!recordsAreSortedAlready(a)) sortRecords(a)//and make sure they're sorted
-	}
-}
-export function addRecords(a, a2, index)   { placeRecords(a, a2, index, false) }//add records with tags we don't have yet
-export function mergeRecords(a, a2, index) { placeRecords(a, a2, index, true)  }//also bring in new objects for tags we do have
+export function addRecords(a, a2, index)   { placeRecords({a, a2, index, replace: false}) }//add records with tags we don't have yet
+export function mergeRecords(a, a2, index) { placeRecords({a, a2, index, replace: true})  }//also bring in new objects for tags we do have
 
 function recordsAreSortedAlready(a) {
 	for (let i = 1; i < a.length; i++) {
@@ -1180,7 +1174,14 @@ function walkRecords(a, r, index) {//move forward first, then back
 	walk() keeps i in range, except to indicate a new r should be added last
 	*/
 }
-function placeRecords(a, a2, index, replace) {
+function placeRecords({a, a2, index, replace}) {
+	if (!a2) return//ok to call this with nothing to add
+
+	if (!(Array.isArray(a) && Array.isArray(a2) && index && index.o && Number.isInteger(index.i))) toss('type')
+	if (a.length)  { checkInt(a[0].tick);  checkTag(a[0].tag)  }//if the first record is ok they likely all are
+	if (a2.length) { checkInt(a2[0].tick); checkTag(a2[0].tag) }
+	//^quick sanity checks; guard against parameters wrong or missing
+
 	for (let r2 of a2) {
 
 		//find

@@ -2,8 +2,7 @@
 import {
 Sticker, log, look, Now, Tag, checkText, checkTag,
 getBrowserTag, getBrowserGraphics, sequentialShared,
-List,
-indexRecords, hydratedRecords, addRecords, mergeRecords,
+indexRecords, addRecords, mergeRecords,
 } from 'icarus'
 import {ref, watch} from 'vue'
 import {defineStore} from 'pinia'
@@ -25,27 +24,11 @@ const duration2 = ref(-1)
 const sticker2 = ref('')
 const connection = ref({})//ip address, geographic information, and browser information like user agent string
 
-/*
 //codes
-const refCodesListA = ref([])//a ref on the array inside to watch hydration happen
-const _codesList = List()//the List object database, importantly not a ref Pinia would try to serialize
-_codesList.a = refCodesListA.value
-const getCodesList = () => _codesList//a function to let you use it directly
-watch([refCodesListA], () => {//when Pinia fills a, call .hydrated() to wire up o to match 
-	if (_codesList.a.length > Object.keys(_codesList.o).length) _codesList.hydrated()
-})
-const visibleCodes = computed(() => {//from all that, filter to make the array for v-for to show a list on the page
-	return refCodesListA.value.filter(code => code.show).reverse()//soonest to expire first
-})
-*/
-let codesIndex
 const codes = ref([])//codes this browser could enter, empty array before check or if none
-const visibleCodes = computed(() => {//from all that, filter to make the array for v-for to show a list on the page
-	return codes.value.filter(code => code.show).reverse()//soonest to expire first
-})
-const codesMerge = (a2) => {
-	mergeRecords(codes.value, a2, codesIndex)
-}
+const codesMerge = (a2) => mergeRecords(codes.value, a2, codesIndex)
+let codesIndex//our index to merge code records quickly; not a ref, not returned, outside of Pinia's purview
+const visibleCodes = computed(() => codes.value.filter(code => code.show).reverse())//soonest to expire first
 
 const hello1 = sequentialShared(async () => {
 	try {
@@ -77,12 +60,8 @@ const hello2 = sequentialShared(async () => {
 		connection.value = r.connection
 
 		//codes
-		codes.value = r.codes
-		codesIndex = indexRecords(codes.value)
-		/*
-		_codesList.merge(r.codes)//this helper function will add items to _codesList.a!
-		log('in hello store, merged in codes:', look(r.codes), refCodesListA.value.length)//so why, then, immediately after, is refCodesList.a still empty?
-		*/
+		codes.value = r.codes//set the starting array
+		codesIndex = indexRecords(codes.value)//build the index from it
 
 		duration2.value = Now() - t
 	} catch (e) { error2.value = e }

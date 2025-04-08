@@ -31,7 +31,6 @@ async function onClick() {
 		provider: refProvider.value,
 	})
 	log("CodeRequestComponent's onClick got this task from the post:", look(task))
-	task.response.codes
 	helloStore.codesMerge(task.response.codes)
 
 	//ok, here's where you merge in response.codes
