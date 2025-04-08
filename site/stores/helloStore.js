@@ -54,7 +54,8 @@ const hello2 = sequentialShared(async () => {
 		connection.value = r.connection
 
 		const codeStore = useCodeStore()//this doesn't work at the top because pinia isn't loaded yet up there
-		codeStore.placeCodes(r.codes)//here, we're shoving starting data into a neighboring store
+		codeStore.getList().merge(r.codes)//here, we're shoving starting data into a neighboring store, all sideways-like
+		log('ok, we merged', codeStore.refListA.length)
 
 		duration2.value = Now() - t
 	} catch (e) { error2.value = e }

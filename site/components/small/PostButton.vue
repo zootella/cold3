@@ -31,7 +31,7 @@ and additionally, if necessary, protect the endpoint with cloudflare turnstile o
 */
 
 import {
-log, look, Now, Limit,
+log, look, Now, Limit, Task,
 useTurnstileHere,
 } from 'icarus'
 import {ref, onMounted, watch} from 'vue'
@@ -77,54 +77,25 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 
 }, {immediate: true})//run this right away at the start to set things up, before running it again on the first change
 
-/*
-//new version using Task, which looks pretty good, actually
-
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
+
+	//ttd april, 🍪 []change browser tag to a cookie, []make sure the server never leaks back the value to the page!
 	body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to; ttd april this will change when the page can't see it and the browser gives it to the server automatically as a, gasp, dreaded cookie
 
-	let task = Task({name: 'post'})
+	let task = Task({name: 'post', path, request: body})
 	try {
 		emit('update:inFlight', true)//this lets our parent follow our orange condition
 		if (props.useTurnstile && useTurnstileHere()) {
 			body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
-			task.tick2 = Now()
+			task.tick2 = Now()//related, note that task.duration will be how long the button was orange; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
 		}
 		task.response = await $fetch(path, {method: 'POST', body})
-	} catch (e) {
-		task.error = e
-	} finally {
-		emit('update:inFlight', false)
+	} catch (e) { task.error = e } finally {
+		emit('update:inFlight', false)//using a finally block here to make sure we can't leave the button orange
 	}
 	task.finish()
 	return task
-}})
-*/
-// the method that performs the post operation; this is exposed to the parent
-defineExpose({post: async (path, body) => {
-
-	body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to; ttd april this will change when the page can't see it and the browser gives it to the server automatically as a, gasp, dreaded cookie
-
-	let response, error, success, t1, t2, t3
-	success = true
-	t1 = Now()
-	try {
-		emit('update:inFlight', true)//this lets our parent follow our orange condition
-		if (props.useTurnstile && useTurnstileHere()) body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
-		t2 = Now()
-		response = await $fetch(path, {method: 'POST', body})
-		if (!response.success) success = false
-	} catch (e) {
-		error = e
-		success = false
-	} finally {
-		emit('update:inFlight', false)
-	}
-	t3 = Now()
-
-	let result = {success, response, error, t1, t2, t3, duration: t3 - t1, }//duration is how long the button was orange, how long we made the user wait. it's not how long turnstile took on the page, as turnstile gets started early, as soon as we're rendered!; ttd march, ok, but get durations the way you want them, also reporting the total time turnstile took to generate the token on the page, not just how much longer the button was orange because of token generation
-	return result
 }})
 
 //ttd march, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something

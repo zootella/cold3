@@ -749,11 +749,11 @@ observe these three:
 
 
 
-[]just make a separate lambda endpoint which does nothing named warm
+[~]just make a separate lambda endpoint which does nothing named warm
 
-[]refactor persephone unifying the four
-[]test the other three, happy path
-[]add success sanity checks to all four
+[x]refactor persephone unifying the four
+[x]test the other three, happy path
+[x]add success sanity checks to all four
 
 []use Task in PostButton
 []add the return codes records to codeStore

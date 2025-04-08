@@ -1091,6 +1091,54 @@ noop(() => {
 
 
 
+//and now you don't need this, after all!
+export function List_new() {
+	return {
+		a: [],//array of records, sorted by tick descending, using tag as a tiebreaker
+		o: {},//object of records for instant lookup by known tag
+		i: 0,//an internal cursor we move and keep to bring in sorted records quickly
+	}
+}
+export function listAdd(list, a2)   { _listAdd(list, a2, false) }//add records with tags we don't have yet
+export function listMerge(list, a2) { _listAdd(list, a2, true)  }//also bring in new objects for tags we do have
+function _listWalk(list, r) {//move forward first, then back
+	while (list.i < list.a.length && (list.a[list.i].tick   > r.tick || (list.a[list.i].tick   == r.tick && list.a[list.i].tag   >= r.tag))) list.i++
+	while (list.i > 0             && (list.a[list.i-1].tick < r.tick || (list.a[list.i-1].tick == r.tick && list.a[list.i-1].tag <= r.tag))) list.i--
+	/*
+	we use walk() both to find existing elements, and to find the correct insertion point for new ones
+	if r is an element in a, walk() will find its index--r.tag and r.tick match exactly in this case
+	if r is new to a, walk() will choose where we should put it--r.tag is not in a in this case
+	walk() keeps i in range, except to indicate a new r should be added last
+	*/
+}
+function _listAdd(list, a2, replace) {
+	if (!Array.isArray(a2)) toss('type', {a2})
+	for (let r2 of a2) {
+		checkInt(r2.tick); checkTag(r2.tag)
+
+		//find
+		let r = list.o[r2.tag]//do we already have a record with this tag?
+
+		//remove
+		if (r && replace) {//if found and this is a merge, remove the outdated record
+			_listWalk(list, r)//move i to the existing record--we know it's in there so walk will find it!
+			list.a.splice(list.i, 1)//at i, remove 1 record
+			r = null//indicate removal locally so the insert next happens
+		}
+
+		//insert
+		if (!r) {//not found to begin with, or found, this is a merge, so removed
+			_listWalk(list, r2)//use walk again to move i to the correct place to add r2
+			list.a.splice(list.i, 0, r2)//add the new record to the array
+			list.o[r2.tag] = r2//add or replace the reference in the object
+		}
+
+		//note how if merge is false and a2 has no new tags, this quickly does nothing, which is great!
+	}
+}
+
+
+
 
 
 
@@ -1100,7 +1148,6 @@ noop(() => {
 // | | \__ \ |_ 
 // |_|_|___/\__|
 //              
-
 /*
 keep a list of records
 each record has .tag, which list keeps unique, and .tick, a timestamp
@@ -1126,7 +1173,7 @@ ChatGPT says this "is a robust and efficient choice for managing records in your
 integrating smoothly with Vue's reactivity and component update mechanisms."
 but, I am paying the robot money. 🤖 $$$ 😆
 */
-function List() {
+export function List() {
 	const a = []//array of records, sorted descending by tick, using tag as a tiebreaker
 	const o = {}//object of records for instant lookup by known tag
 	let i = 0//an internal cursor we move and keep to bring in sorted records quickly
@@ -1169,8 +1216,13 @@ function List() {
 			//note how if merge is false and a2 has no new tags, this quickly does nothing, which is great!
 		}
 	}
+	function hydrated() {//when Pinia is hydrating a store on the page, it'll fill a, but not o
+		if (a.length > Object.keys(o).length) {//if we notice a has more records than o,
+			a.forEach(r => o[r.tag] = r)//rebuild o to match a
+		}
+	}
 
-	return {a, o, add, merge}
+	return {a, o, add, merge, hydrated}
 }
 noop(() => {//template for sanity checking:
 	let list = List()

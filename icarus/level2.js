@@ -1800,30 +1800,33 @@ test(() => {
 //                    
 
 //Task notes time and duration, where code ran, keeps an error, bundles all that together, and bubbles up success
-export function Task(task) {
+export function Task(task) {//use like let task = Task({name: 'some title'})
 	task.tag = Tag()//tag to identify this task
 	task.tick = Now()//start time
 	task.sticker = Sticker().all//where we're running to perform this task
-	task.finish = function(more) {//mark this task done, adding more properites about how it concluded
-		Object.assign(task, more)//be careful, as this overwrites anything already in task!
-		if (//code using this Task may have set task.response = true; make that false if
-			(task.response && task.response.hasOwnProperty('success') && task.response.success == false) ||//there's a response that isn't successful
-			(task.result   && task.result.hasOwnProperty('success')   && task.result.success   == false) ||//or if we saved a result
-			task.error//or there's an error
-		) {
-			task.success = false
-		} else if (
-			(!task.hasOwnProperty('success')) && (
-				task.response?.success ||
-				task.result?.success
-			)
-		) {
-			task.success = true
-		}
-		task.done = Now()//check .done to know it's done, and also when
-		task.duration = task.done - task.tick//how long it took, nice that times are automatic
-	}
+	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
 	return task
+}
+function _taskFinish(task, more) {//mark this task done, adding more properites about how it concluded
+	Object.assign(task, more)//be careful, as this overwrites anything already in task!
+
+	//(1) detect and surface failure
+	if (//code using this Task may have set task.response = true; override that with false if
+		//(1a) there's a response that isn't successful, or
+		(task.response && task.response.hasOwnProperty('success') && task.response.success == false) ||
+		//(1b) same thing, but we saved it named result instead, or
+		(task.result   && task.result.hasOwnProperty('success')   && task.result.success   == false) ||
+		//(1c) there's an error
+		task.error
+	) { task.success = false } else if (//alternatively, (2) bubble up success
+		(!task.hasOwnProperty('success')) && (//if this task doesn't have success set either way yet, and
+			task.response?.success ||//the response succeeded
+			task.result?.success//or we called it result
+		)
+	) { task.success = true }//mark that success here
+
+	task.done = Now()//check .done to know it's done, and also when
+	task.duration = task.done - task.tick//how long it took, nice that times are automatic
 }
 
 

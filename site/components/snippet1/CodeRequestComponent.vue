@@ -25,11 +25,14 @@ watch([refAddress, refProvider], () => {
 })
 
 async function onClick() {
-	let result = await refButton.value.post('/api/code/send', {
+	let task = await refButton.value.post('/api/code/send', {
 		address: refAddress.value,
 		provider: refProvider.value,
 	})
-	log("CodeRequestComponent's onClick got this result from the post:", look(result))
+	log("CodeRequestComponent's onClick got this task from the post:", look(task))
+	task.response.codes
+
+	//ok, here's where you merge in response.codes
 }
 
 </script>
