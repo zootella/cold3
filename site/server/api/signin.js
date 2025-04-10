@@ -1,6 +1,6 @@
 
 import {
-Sticker, isCloud,
+isCloud,
 log, look, toss, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
@@ -8,7 +8,7 @@ snippetClear, snippetPopulate, snippetQuery2, snippetQuery3,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Hi.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Hi.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}

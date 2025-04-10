@@ -3,11 +3,10 @@ import {
 log, look, Now, Tag,
 doorWorker,
 dog,
-Sticker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('GET', {workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body}) {
 	let r = {}

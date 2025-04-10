@@ -153,7 +153,7 @@ functions that use parts of the larger application and environment
 export {
 
 Sticker, isLocal, isCloud, senseEnvironment,
-canGetAccess, accessWorker, getAccess,
+canGetAccess, getAccess,
 doorWorker, doorLambda,
 headerGetOne,
 keepPromise, awaitDoorPromises,
@@ -243,7 +243,8 @@ toss,
 log, addLogSink, logTo,
 sameObject, sameArray,
 
-checkText, hasText, blanket, checkInt, minInt,
+checkText, hasText, checkInt, minInt,
+toBoolean, toTextOrBlank,
 intToText, textToInt,
 checkTextSame, hasTextSame, checkTextOrBlank, hasTextOrBlank,
 newline,
@@ -286,3 +287,12 @@ given,
 sample1,
 
 } from './level0.js'
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,30 @@
 
+export {
+
+wrapper, Sticker, isLocal, isCloud,
+Now, Time, Size, Limit, newline,
+defined,
+toss, log, look,
+noop, test, ok,
+
+toBoolean, toTextOrBlank,
+checkInt, minInt,
+intToText, textToInt,
+hasText, checkText,
+hasTextOrBlank, checkTextOrBlank,
+
+Tag, hasTag, checkTag, checkTagOrBlank,
+checkHash,
+
+dog, logAudit, logAlert,
+awaitDog, awaitLogAudit, awaitLogAlert,
+
+canGetAccess, getAccess,
+doorWorker, doorLambda,
+Task,
+
+} from 'icarus'
+
 
 
 /*
@@ -14,8 +40,14 @@ export { validateEmail, Tag, Now } from 'icarus'
 With this setup, Nuxt’s auto-import feature will expose these functions throughout your project without the need for explicit import statements. You can then simply call these functions in your page components or server API handlers, streamlining your codebase.
 */
 
+/*
+ttd april, comment this all between:
 
-export {sample1} from 'icarus'
+./icarus/index.js which groups them together for easy import
+./site/composables/useIcarus.js which gets them there already for nuxt page code
+./site/server/plugins/plugin1.js which gets them there already for nuxt server code, and also globalizes useRuntimeConfig
+
+*/
 
 
 

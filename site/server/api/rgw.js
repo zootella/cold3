@@ -1,11 +1,11 @@
 
 import {
-Sticker, log, look, Now, Tag, getAccess, checkText,
+log, look, Now, Tag, getAccess, checkText,
 doorWorker,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('GET', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('GET', {workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door}) {
 

@@ -272,8 +272,6 @@ test(() => {
 	ok(!hasText(7))//non-string
 	ok(!hasText('\r\n'))//nonprinting characters
 })
-//use like blanket(something?.deeper?.maybe) to get the text there or blank--always returns a string!
-export function blanket(r) { return hasText(r) ? r : '' }
 
 export function checkInt(i, m) { if (!minInt(i, m)) toss('bounds', {i, m}) }
 export function minInt(i, m = 0) { // Note (0)
@@ -316,6 +314,11 @@ test(() => {
 	ok(!minInt(0, 1))//doesn't reach the minimum
 	ok(!minInt(3, 5))
 })
+
+//use when you don't just need if truthy, you really need the type boolean
+export function toBoolean(r) { return r ? true : false }
+//use like toTextOrBlank(something?.deeper?.maybe) to get the text there or blank--always returns a string!
+export function toTextOrBlank(r) { return hasText(r) ? r : '' }
 
 export function intToText(i, m = 0) { return _intToText(i, m, true) }//default minimum zero, or pass custom minimum like 1 or -1
 export function textToInt(s, m = 0) { return _textToInt(s, m, true) }
@@ -429,7 +432,6 @@ test(() => {
 		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
 		'first ‹6789› and second ‹SIZE› later')
 })
-
 
 
 
@@ -1924,6 +1926,7 @@ test(() => {
 	ok(correctLength('𝓗') == 1)//our function measures it correctly
 	ok(correctLength('A 𝓗𝓮𝓵𝓵𝓸 is Hello') == 16)
 })
+//ttd april, not using this, remove
 
 
 
@@ -1961,6 +1964,7 @@ test(() => {
 	let o = {};
 	ok(say(o.notThere) == 'undefined')
 })
+//ttd april, not using this, remove
 
 //  _             _    
 // | | ___   ___ | | __
@@ -2573,6 +2577,7 @@ you don't think there's a way to do this in lambda, so instead you Promise.all()
 with that, workers are faster, lambdas the same, well maybe faster because now the fetches can run in parallel
 but there's a code benefit: you could call dog() and logAudit() without having to await them
 */
+//ttd april, not using this, remove; many of these ideas are in Task and fetch23 now, you think? but did not look closely
 
 
 
@@ -2775,18 +2780,3 @@ test(() => {
 export function sample1() {
 	return 'hello from sample1 in icarus level0'
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

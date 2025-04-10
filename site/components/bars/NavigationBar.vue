@@ -1,7 +1,6 @@
 <script setup>//./components/NavigationBar.vue
 
 import {
-Sticker,
 } from 'icarus'
 
 defineProps({note: String})

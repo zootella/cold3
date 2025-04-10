@@ -1,6 +1,6 @@
 
 import {
-Sticker, isCloud,
+isCloud,
 log, look, toss, Now, Tag, getAccess, checkText, textToInt,
 doorWorker,
 dog,
@@ -9,7 +9,7 @@ demonstrationSignGet, demonstrationSignUp, demonstrationSignIn, demonstrationSig
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['DemonstrationSignGet.', 'DemonstrationSignUp.', 'DemonstrationSignIn.', 'DemonstrationSignOut.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['DemonstrationSignGet.', 'DemonstrationSignUp.', 'DemonstrationSignIn.', 'DemonstrationSignOut.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}

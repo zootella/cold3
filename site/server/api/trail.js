@@ -1,12 +1,12 @@
 
 import {
-doorWorker, Sticker, log, look, toss, Now, Tag, getAccess,//ttd february, maybe, *maybe*, now that the project structure has settled down, pick a small repertoire and define them in that thing that means the're available everywhere in nuxt components and endpoints and stores and plugins. but back out again if there's any trouble, just like you did the last time!
+doorWorker, log, look, toss, Now, Tag, getAccess,//ttd february, maybe, *maybe*, now that the project structure has settled down, pick a small repertoire and define them in that thing that means the're available everywhere in nuxt components and endpoints and stores and plugins. but back out again if there's any trouble, just like you did the last time!
 checkTextOrBlank, Time, hashText,
 trailCount, trailRecent, trailAdd,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'Set.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'Set.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}

@@ -3,7 +3,7 @@
 definePageMeta({layout: 'feed-layout', note: 'on index'})
 
 import {
-log, look, Sticker,
+log, look,
 } from 'icarus'
 
 defineOgImageComponent('NuxtSeo', {

@@ -2,7 +2,7 @@
 //this file is ./stores/store1.js
 
 import {
-Sticker, log, look, Now, Tag, checkText, checkTag,
+log, look, Now, Tag, checkText, checkTag,
 getBrowserTag,
 } from 'icarus'
 import {ref} from 'vue'

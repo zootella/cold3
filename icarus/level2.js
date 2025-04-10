@@ -7,7 +7,7 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, hashData, secureSameText, hmacSign,
-parse, stringo, replaceAll, replaceOne, blanket,
+parse, stringo, replaceAll, replaceOne, toTextOrBlank,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
@@ -288,17 +288,6 @@ $ node disk, just shows it, rather than seal which makes it
 //  \__,_|\___\___\___||___/___/
 //                              
 
-let _workerEvent, _useRuntimeConfig
-export function accessWorker() {//alternative version to test globalization before larger refactor
-	if (!_useRuntimeConfig && useRuntimeConfig) _useRuntimeConfig = useRuntimeConfig
-}
-/*
-export function accessWorker({workerEvent, useRuntimeConfig}) {//cloudflare puts secrets in the worker event, not on process.env, and nuxt imports this function useRuntimeConfig into api handlers; save them to look for secrets there later
-	if (!_workerEvent && workerEvent) _workerEvent = workerEvent
-	if (!_useRuntimeConfig && useRuntimeConfig) _useRuntimeConfig = useRuntimeConfig
-}
-*/
-
 export function canGetAccess() {//true if we are server-side code running and can get access to secrets
 	return hasText(access_key())//use access_key() and say if we have the key to decrypt all the secrets
 }
@@ -309,12 +298,8 @@ function access_key() {
 		v = process?.env?.ACCESS_KEY_SECRET
 		if (hasText(v)) key = v
 	}
-	if (!hasText(key) && _workerEvent) {
-		v = _workerEvent?.context?.cloudflare?.env?.ACCESS_KEY_SECRET
-		if (hasText(v)) key = v
-	}
-	if (!hasText(key) && typeof _useRuntimeConfig == 'function') {
-		v = _useRuntimeConfig().ACCESS_KEY_SECRET
+	if (!hasText(key) && typeof useRuntimeConfig == 'function') {
+		v = useRuntimeConfig().ACCESS_KEY_SECRET
 		if (hasText(v)) key = v
 	}
 	return key
@@ -532,7 +517,7 @@ or, amazon has invoked a lambda and sent an event and context for us to respond
 
 //copypasta for a worker api endpoint:
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
 
 //copypasta for a lambda api endpoint:
@@ -545,8 +530,6 @@ then write your code in doorHandleBelow() beneath
 
 export async function doorWorker(method, {
 	workerEvent,//cloudflare event objects
-	useRuntimeConfig, setResponseStatus,//nuxt environment references
-	//^ttd march, can/should we add $fetch here?
 	doorHandleBelow,//your function that runs code specific to the request
 	actions,//a list of acceptable body.action tags, like ['CheckName.', 'TakeName.'] or whatever, so your action if doesn't need an else
 	useTurnstile,//true to protect this api endpoint with cloudflare turnstile; the page must have given us body.turnstileToken
@@ -555,7 +538,7 @@ export async function doorWorker(method, {
 		let door = {}, response, error
 		try {
 
-			door = await doorWorkerOpen({method, workerEvent, useRuntimeConfig})
+			door = await doorWorkerOpen({method, workerEvent})
 			await doorWorkerCheck({door, actions, useTurnstile})
 			response = await doorHandleBelow({door, body: door.body, action: door.body?.action})
 
@@ -601,8 +584,7 @@ so, we use console.error, which won't show up in datadog,
 but should still be findable in the amazon or cloudflare dashboard
 */
 
-async function doorWorkerOpen({method, workerEvent, useRuntimeConfig}) {
-	accessWorker({workerEvent, useRuntimeConfig})
+async function doorWorkerOpen({method, workerEvent}) {
 	let access = await getAccess()
 
 	let door = {}//make door object to bundle everything together about this request we're doing
@@ -802,9 +784,9 @@ export function headerGetOne(headers, name) {
 
 function headerOrigin({workerEvent}) {
 	return (
-		blanket(headerGetOne(workerEvent.req.headers, 'x-forwarded-proto'))
+		toTextOrBlank(headerGetOne(workerEvent.req.headers, 'x-forwarded-proto'))
 		+ '://' +
-		blanket(headerGetOne(workerEvent.req.headers, 'host'))
+		toTextOrBlank(headerGetOne(workerEvent.req.headers, 'host'))
 	)
 	//just in cloudflare, we need the origin like "http://localhost:3000" or "https://cold3.cc"
 	//from chat and observation, we assemble it from two headers
@@ -1862,48 +1844,3 @@ export async function fetch23({path, body}) {
 	let task2 = await $fetch(host23()+path, {method: 'POST', body})
 	return task2
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,13 +1,13 @@
 
 import {
-Sticker, log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, blanket,
+log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, toTextOrBlank,
 checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, stringo,
 isCloud, hasText, recordHit, browserToUser,
 browserToCodes,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body}) {
 	let r = {}
@@ -39,8 +39,8 @@ async function doorHandleBelow({door, body}) {
 		await recordHit({
 			origin: door.origin,
 			browserTag,
-			userTag: blanket(r.user.userTag),//we can't do this first because we need the user tag
-			ipText: blanket(r.connection.ipAddress),
+			userTag: toTextOrBlank(r.user.userTag),//we can't do this first because we need the user tag
+			ipText: toTextOrBlank(r.connection.ipAddress),
 			geographyText: stringo(r.connection.geography),
 			browserText: stringo(r.connection.browser),
 		})

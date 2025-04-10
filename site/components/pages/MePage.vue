@@ -2,7 +2,6 @@
 
 import {
 log, look, Now, Time, Limit, validateName,
-Sticker,
 } from 'icarus'
 import {ref, watch, onMounted} from 'vue'
 

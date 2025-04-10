@@ -1,12 +1,12 @@
 
 import {
-log, look, toss, doorWorker, Sticker, dog, Now,
+log, look, toss, doorWorker, dog, Now,
 checkTurnstileToken,
 validateName, nameCheck,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {useTurnstile: true, actions: ['Check.'], workerEvent, useRuntimeConfig, setResponseStatus, doorHandleBelow})
+	return await doorWorker('POST', {useTurnstile: true, actions: ['Check.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}

@@ -2,7 +2,7 @@
 //this file is ./plugins/plugin1.js
 
 import {
-Sticker, log, look, Now, Tag, getBrowserTag, checkText, hasText, awaitDog,
+log, look, Now, Tag, getBrowserTag, checkText, hasText, awaitDog,
 getBrowserGraphics, awaitLogAlert,
 } from 'icarus'
 

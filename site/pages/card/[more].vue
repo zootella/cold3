@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-log, look, defined, Sticker,
+log, look, defined,
 } from 'icarus'
 
 import { useRoute } from 'vue-router'

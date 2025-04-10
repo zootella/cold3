@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-log, look, Now, Time, Sticker, toss, hasText,
+log, look, Now, Time, toss, hasText,
 useTurnstileHere, sequentialSeparate,
 } from 'icarus'
 import {ref, onMounted} from 'vue'

@@ -1,7 +1,7 @@
 <script setup>//./app.vue
 
 import {
-Sticker, addTurnstileHeadScript,
+addTurnstileHeadScript,
 } from 'icarus'
 
 let head = {
