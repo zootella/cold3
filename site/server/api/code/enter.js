@@ -1,9 +1,6 @@
 
 import {
-secureSameText, checkPhone,
-demonstrationSignGet, validateEmailOrPhone,
-Code, codeSend, codeEnter,
-checkNumerals,
+checkNumerals, codeEnter,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

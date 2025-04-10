@@ -1,6 +1,5 @@
 
 import {
-snippetClear, snippetPopulate, snippetQuery2, snippetQuery3,
 demonstrationSignGet, demonstrationSignUp, demonstrationSignIn, demonstrationSignOut,
 } from 'icarus'
 

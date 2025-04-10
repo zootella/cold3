@@ -1,8 +1,5 @@
 <script setup>
 
-import {
-getBrowserTag,
-} from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 
 </script>

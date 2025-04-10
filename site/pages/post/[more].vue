@@ -1,8 +1,7 @@
 <script setup>
 
 import {
-cutLast,
-postDatabase,
+cutLast, postDatabase,
 } from 'icarus'
 
 import { useRoute } from 'vue-router'

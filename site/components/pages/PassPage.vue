@@ -1,6 +1,6 @@
 <script setup>
 
-import { customAlphabet } from 'nanoid'
+import {customAlphabet} from 'nanoid'
 
 const generator1 = customAlphabet('abcdefghijklmnopqrstuvwxyz', 4)
 const generator2 = customAlphabet('0123456789', 4)

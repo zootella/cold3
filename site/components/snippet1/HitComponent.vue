@@ -1,9 +1,6 @@
 <script setup>
 //this file is ./components/HitComponent.vue
 
-import {
-getBrowserTag,
-} from 'icarus'
 import {ref, reactive, onMounted, watch} from 'vue'
 const hitStore = useHitStore()
 

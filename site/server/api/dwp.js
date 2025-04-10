@@ -1,5 +1,4 @@
 
-
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })

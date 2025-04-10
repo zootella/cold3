@@ -1,8 +1,4 @@
 
-import {
-snippetClear, snippetPopulate, snippetQuery2, snippetQuery3,
-} from 'icarus'
-
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Hi.'], workerEvent, doorHandleBelow})
 })

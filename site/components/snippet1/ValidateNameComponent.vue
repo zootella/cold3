@@ -1,8 +1,6 @@
 <script setup>
 
 import {
-Data,
-getBrowserTag,
 validateName,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'

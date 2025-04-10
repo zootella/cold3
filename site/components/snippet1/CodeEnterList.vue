@@ -1,7 +1,7 @@
 <script setup>//./components/CodeEnterList.vue
 
 import {
-Data, sayPlural,
+sayPlural,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()

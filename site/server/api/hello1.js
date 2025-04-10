@@ -1,6 +1,6 @@
 
 import {
-settingReadInt, settingWrite, browserToUserTag,
+browserToUserTag,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

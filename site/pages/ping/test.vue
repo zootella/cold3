@@ -2,7 +2,9 @@
 
 definePageMeta({layout: 'feed-layout', note: 'on test'})
 
-import {runTests} from 'icarus'
+import {
+runTests
+} from 'icarus'
 
 /* tiny tests run six places:
 -> ./pages/ping/test.vue      nuxt page, server and client rendered

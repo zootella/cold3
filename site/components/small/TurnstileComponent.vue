@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-useTurnstileHere, sequentialSeparate,
+sequentialSeparate,
 } from 'icarus'
 import {ref, onMounted} from 'vue'
 const turnstileStore = useTurnstileStore()

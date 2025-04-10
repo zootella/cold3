@@ -3,8 +3,7 @@
 definePageMeta({layout: 'feed-layout', note: 'on feed2'})
 
 import {
-sameObject,
-generatePosts,
+sameObject, generatePosts,
 } from 'icarus'
 
 //factory settings for infinite scroll

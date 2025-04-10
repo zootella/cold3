@@ -1,10 +1,6 @@
 
 //this file is ./plugins/plugin1.js
 
-import {
-getBrowserGraphics,
-} from 'icarus'
-
 export default defineNuxtPlugin(async (nuxtApp) => {
 
 	const helloStore = useHelloStore()

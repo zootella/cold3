@@ -199,7 +199,7 @@ export function sayFloppyDisk(wrapper) {
 	let date = sayDate(wrapper.tick)
 	let year = date.slice(0, 4)
 	let hash = wrapper.hash.slice(0, 7)
-	let full = Math.round(wrapper.codeSize*100/floppyDiskCapacity)
+	let full = Math.floor(wrapper.codeSize*100/floppyDiskCapacity)
 
 	let line1 = extend(' ', `${wrapper.name} ~ ${hash}`)
 	let line2 = extend('_', `${sayDate(wrapper.tick)}`)

@@ -1,6 +1,5 @@
 
 import {
-checkTurnstileToken,
 validateName, nameCheck,
 } from 'icarus'
 

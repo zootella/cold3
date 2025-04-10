@@ -1,9 +1,7 @@
 <script setup>//./components/CodeEnterComponent.vue
 
 import {
-Data, getBrowserTag,
-validatePhone,
-onlyNumerals, Code, hashToLetter, sayTimePage,
+onlyNumerals, Code, sayTimePage,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()

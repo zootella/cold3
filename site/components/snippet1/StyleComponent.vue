@@ -1,8 +1,5 @@
 <script setup>
 
-import {
-Data, getBrowserTag,
-} from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 
 // For the simple text input control

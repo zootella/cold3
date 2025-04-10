@@ -1,8 +1,4 @@
 
-
-import {
-getBrowserTag,
-} from 'icarus'
 import {ref} from 'vue'
 import {defineStore} from 'pinia'
 

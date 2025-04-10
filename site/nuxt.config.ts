@@ -22,7 +22,7 @@ export default defineNuxtConfig({
 		plugins: [
 			visualizer({//from visualizer
 				filename: './stats.html',
-				template: 'network',//try out "sunburst", "treemap", "network", "raw-data", or "list"
+				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
 				brotliSize: true
 			}),
 			vidstack(),//from vidstack

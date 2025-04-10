@@ -1,8 +1,5 @@
 <script setup>
 
-import {
-validateName,
-} from 'icarus'
 import {ref, watch, onMounted} from 'vue'
 
 </script>
