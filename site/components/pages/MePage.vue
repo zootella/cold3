@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-log, look, Now, Time, Limit, validateName,
+validateName,
 } from 'icarus'
 import {ref, watch, onMounted} from 'vue'
 

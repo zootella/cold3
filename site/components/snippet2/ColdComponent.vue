@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 
-import { ref, reactive, onMounted } from 'vue'
 import {
-log, look, Now, sayTick
+sayTick
 } from 'icarus'
+import {ref, reactive, onMounted} from 'vue'
 
 //ticks
 const t = reactive({

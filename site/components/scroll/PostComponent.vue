@@ -1,8 +1,8 @@
 <script setup>
 
 import {
-log, look, sayWhenPage, sayWhenFeed,
-postDatabase
+sayWhenPage, sayWhenFeed,
+postDatabase,
 } from 'icarus'
 
 let props = defineProps(['post', 'isStandalone', 'postAbove', 'postBelow'])

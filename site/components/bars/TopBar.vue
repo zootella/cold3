@@ -1,8 +1,5 @@
 <script setup>//./components/TopBar.vue
 
-import {
-log, look, Now,
-} from 'icarus'
 import {ref} from 'vue'
 const helloStore = useHelloStore()
 

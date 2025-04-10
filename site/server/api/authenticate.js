@@ -1,9 +1,5 @@
 
 import {
-isCloud,
-log, look, toss, Now, Tag, getAccess, checkText, textToInt,
-doorWorker,
-dog,
 snippetClear, snippetPopulate, snippetQuery2, snippetQuery3,
 demonstrationSignGet, demonstrationSignUp, demonstrationSignIn, demonstrationSignOut,
 } from 'icarus'

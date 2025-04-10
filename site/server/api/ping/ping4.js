@@ -1,6 +1,6 @@
 
 import {
-doorWorker, Now, settingReadInt, textToInt,
+settingReadInt,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

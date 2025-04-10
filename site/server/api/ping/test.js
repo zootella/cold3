@@ -1,6 +1,6 @@
 
 import {
-doorWorker, Now, getAccess, runTests, host23,
+runTests, host23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

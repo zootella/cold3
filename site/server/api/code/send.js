@@ -1,7 +1,5 @@
 
 import {
-log, look, toss, Tag, checkTag, checkText,
-doorWorker, getAccess,
 secureSameText, checkPhone,
 demonstrationSignGet, validateEmailOrPhone,
 Code, codeSend, codeEnter, browserToCodes,

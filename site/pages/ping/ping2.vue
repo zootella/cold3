@@ -2,8 +2,6 @@
 
 definePageMeta({layout: 'feed-layout', note: 'on test'})
 
-import {} from 'icarus'
-
 let note = `script setup says: ${Sticker().all}, ping2done`
 
 </script>

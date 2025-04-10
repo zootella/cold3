@@ -1,8 +1,7 @@
 
 import {
-log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker, toTextOrBlank,
-checkTag, settingReadInt, settingWrite, headerGetOne, hashText, parse, stringo,
-isCloud, hasText, recordHit, browserToUser,
+settingReadInt, settingWrite, headerGetOne, hashText, parse, stringo,
+recordHit, browserToUser,
 browserToCodes,
 } from 'icarus'
 

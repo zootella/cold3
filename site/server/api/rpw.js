@@ -1,7 +1,6 @@
 
 import {
-log, look, Now, Tag, getAccess, checkText,
-doorWorker, host23,
+host23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

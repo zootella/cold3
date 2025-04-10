@@ -3,8 +3,8 @@
 definePageMeta({layout: 'feed-layout', note: 'on feed2'})
 
 import {
-log, look, Now, Time, sameObject,
-generatePosts
+sameObject,
+generatePosts,
 } from 'icarus'
 
 //factory settings for infinite scroll
@@ -12,7 +12,7 @@ const _infinite = {
 
 	//counts of posts
 	bowlful: 100,//start with one bowlful of posts and add more a bowl at a time
-	redline:  20,//fewer than this beyond the leading fold? add more! 
+	redline:  20,//fewer than this beyond the leading fold? add more!
 	horizon: 140,//remove posts beyond this number to save memory
 
 	//times in milliseconds
@@ -134,7 +134,7 @@ after the 4s cooldown, distant posts can become spacers
 it's easy to get to and change properties of individual items in the list:
 
 	<PostOrSpacerComponent
-		v-for="post in visiblePosts" 
+		v-for="post in visiblePosts"
 		:key="post.tag"
 		:show="true" ... />
 
@@ -156,7 +156,7 @@ so users who want it can find it, while infinite scroll is always the default
 <template>
 
 <PostComponent
-	v-for="post in visiblePosts" 
+	v-for="post in visiblePosts"
 	:key="post.tag"
 	:post="post"
 	:isStandalone="false"

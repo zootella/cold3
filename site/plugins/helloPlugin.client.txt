@@ -2,8 +2,7 @@
 //this file is ./plugins/plugin1.js
 
 import {
-log, look, Now, Tag, getBrowserTag, checkText, hasText, awaitDog,
-getBrowserGraphics, awaitLogAlert,
+getBrowserGraphics,
 } from 'icarus'
 
 //runs once on the server when a new browser tab GETs, and once again in that browser tab; doesn't run as the user clicks from route to route in the tab, nor when a component POSTs back to an api endpoint

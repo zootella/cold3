@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-isLocal, isCloud, log, look, host23,
+host23,
 } from 'icarus'
 import {ref, reactive, watch} from 'vue'
 

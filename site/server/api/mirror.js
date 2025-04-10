@@ -1,10 +1,4 @@
 
-import {
-Now, Tag,
-getAccess,
-doorWorker,
-} from 'icarus'
-
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })

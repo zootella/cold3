@@ -1,7 +1,6 @@
 //./server/api/hit.js
 
 import {
-log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
 settingReadInt, settingWrite,
 } from 'icarus'
 

@@ -1,8 +1,7 @@
 <script setup>//./components/CodeEnterComponent.vue
 
 import {
-log, look, Now, Limit, sayTick, newline, Data, Tag, hasText, Time, sayTimePage,
-getBrowserTag, isLocal,
+Data, getBrowserTag,
 validatePhone,
 onlyNumerals, Code, hashToLetter,
 } from 'icarus'

@@ -1,9 +1,5 @@
 <script setup>
 
-import {
-log, look, defined,
-} from 'icarus'
-
 import { useRoute } from 'vue-router'
 
 const route = useRoute()

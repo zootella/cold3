@@ -2,8 +2,7 @@
 //this file is ./plugins/plugin1.js
 
 import {
-log, look, Now, Tag, getBrowserTag, checkText, hasText, awaitDog,
-getBrowserGraphics, awaitLogAlert,
+getBrowserGraphics,
 } from 'icarus'
 
 export default defineNuxtPlugin(async (nuxtApp) => {

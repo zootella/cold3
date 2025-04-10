@@ -1,9 +1,6 @@
 <script setup>
 
-import { ref } from 'vue'
-import {
-log, look, Time
-} from 'icarus'
+import {ref} from 'vue'
 
 const boundingBox = ref(null)//must be reactive, because vue changes it, even if we don't
 

@@ -1,7 +1,6 @@
 <script setup>
 
 import {
-log, look, Now, Tag,
 getBrowserTag,
 } from 'icarus'
 import {ref, reactive, onMounted, watch} from 'vue'
@@ -70,49 +69,3 @@ async function incrementCount(increment1, increment2) {
 
 </div>
 </template>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

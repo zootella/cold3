@@ -31,7 +31,6 @@ and additionally, if necessary, protect the endpoint with cloudflare turnstile o
 */
 
 import {
-log, look, Now, Limit, Task,
 useTurnstileHere,
 } from 'icarus'
 import {ref, onMounted, watch} from 'vue'

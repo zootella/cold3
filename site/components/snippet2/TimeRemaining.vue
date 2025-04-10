@@ -1,7 +1,7 @@
 <script setup>//./components/TimeRemaining.vue
 
 import {
-log, look, Now, Limit, Time, sayPlural,
+sayPlural,
 } from 'icarus'
 import {ref, onMounted, onUnmounted} from 'vue'
 

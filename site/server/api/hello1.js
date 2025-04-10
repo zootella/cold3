@@ -1,7 +1,6 @@
 
 import {
-log, look, Now, Tag, getAccess, checkText, textToInt, doorWorker,
-checkTag, settingReadInt, settingWrite, browserToUserTag,
+settingReadInt, settingWrite, browserToUserTag,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

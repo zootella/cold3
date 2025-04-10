@@ -1,8 +1,7 @@
 <script setup>
 
 import {
-log, look, Now, Limit, sayTick, newline, Data, Tag, hasText,
-validatePhone, validateEmail, validateEmailOrPhone,
+Data, validatePhone, validateEmail, validateEmailOrPhone,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()

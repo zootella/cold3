@@ -1,8 +1,6 @@
 
-//this file is ./stores/store1.js
 
 import {
-log, look, Now, Tag, checkText, checkTag,
 getBrowserTag,
 } from 'icarus'
 import {ref} from 'vue'

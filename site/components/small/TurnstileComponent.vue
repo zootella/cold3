@@ -1,7 +1,6 @@
 <script setup>
 
 import {
-log, look, Now, Time, toss, hasText,
 useTurnstileHere, sequentialSeparate,
 } from 'icarus'
 import {ref, onMounted} from 'vue'
@@ -76,7 +75,7 @@ function step3Render() {
 		{
 			sitekey: ACCESS_TURNSTILE_SITE_KEY_PUBLIC,
 			callback: turnstileCallback,//after we call execute(), turnstile will give this callback the token
-			'error-callback': turnstileErrorCallback,			
+			'error-callback': turnstileErrorCallback,
 			size: 'normal',//todo january, you'll change this to invisible along with changing a setting in the dashboard
 			execution: 'execute',//don't generate a token now; we'll call turnstile.execute() to make the token in a separate step
 		}

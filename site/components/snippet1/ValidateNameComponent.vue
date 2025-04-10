@@ -1,8 +1,8 @@
 <script setup>
 
 import {
-log, look, Now, Limit, sayTick, newline, Data, Tag, hasText,
-getBrowserTag, isLocal,
+Data,
+getBrowserTag,
 validateName,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'

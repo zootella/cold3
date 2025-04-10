@@ -1,6 +1,5 @@
 
 import {
-log, look, Now, Tag, checkText, checkTag,
 getBrowserTag, getBrowserGraphics, sequentialShared,
 indexRecords, addRecords, mergeRecords,
 } from 'icarus'

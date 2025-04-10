@@ -107,7 +107,8 @@ otherwise, the attacker won't bother computing hash values on his client at all,
 
 
 import {
-log, look, Time, hashPassword, Data, Now, sayTick,
+hashPassword, Data,
+sayTick,
 } from 'icarus'
 
 import { ref } from 'vue'

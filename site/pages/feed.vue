@@ -3,7 +3,6 @@
 definePageMeta({layout: 'feed-layout', note: 'on feed'})
 
 import {
-Time, log, look, Now,
 postDatabase
 } from 'icarus'
 
@@ -113,7 +112,7 @@ function bounce2() {//runs 100ms after the start of any group of scroll events
 <template>
 
 <PostComponent
-	v-for="post in posts" 
+	v-for="post in posts"
 	:key="post.tag"
 	:post="post"
 	:isStandalone="false"

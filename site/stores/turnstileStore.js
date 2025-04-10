@@ -1,7 +1,4 @@
 
-import {//./stores/turnstileStore.js
-log, look,
-} from 'icarus'
 import {ref} from 'vue'
 import {defineStore} from 'pinia'
 

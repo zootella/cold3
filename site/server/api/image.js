@@ -1,7 +1,5 @@
 
 import {
-log, look, checkTag, Time,
-doorWorker,
 vhsSign,
 } from 'icarus'
 

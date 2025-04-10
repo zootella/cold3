@@ -2,7 +2,6 @@
 //this file is ./components/HitComponent.vue
 
 import {
-log, look, Now, Tag,
 getBrowserTag,
 } from 'icarus'
 import {ref, reactive, onMounted, watch} from 'vue'

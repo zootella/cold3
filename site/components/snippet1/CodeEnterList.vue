@@ -1,7 +1,7 @@
 <script setup>//./components/CodeEnterList.vue
 
 import {
-log, look, Now, Limit, sayTick, newline, Data, Tag, hasText, sayPlural,
+Data, sayPlural,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()

@@ -1,6 +1,5 @@
 
 import {
-log, look, toss, doorWorker, dog, Now,
 checkTurnstileToken,
 validateName, nameCheck,
 } from 'icarus'

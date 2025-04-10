@@ -1,8 +1,5 @@
 <script setup>
 
-import {
-isLocal, isCloud, log, look,
-} from 'icarus'
 import {ref, reactive, watch} from 'vue'
 
 const {data, refresh} = useFetch(

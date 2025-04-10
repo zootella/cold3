@@ -1,8 +1,5 @@
 
 import {
-log, look, Now, Tag, getAccess, checkText, textToInt,
-doorWorker,
-dog,
 settingReadInt, settingWrite,
 } from 'icarus'
 

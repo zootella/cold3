@@ -1,8 +1,5 @@
 <script setup>//./components/NavigationBar.vue
 
-import {
-} from 'icarus'
-
 defineProps({note: String})
 
 </script>

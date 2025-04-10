@@ -1,8 +1,5 @@
 <script setup>
 
-import {
-log, look,
-} from 'icarus'
 import {ref, reactive, watch, computed} from 'vue'
 import 'vidstack/bundle'
 
