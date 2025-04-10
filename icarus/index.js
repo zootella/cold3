@@ -283,4 +283,6 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 roundDown,
 given,
 
+sample1,
+
 } from './level0.js'

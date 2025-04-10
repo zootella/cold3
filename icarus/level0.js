@@ -2762,3 +2762,31 @@ test(() => {
 	ok(f2({p1: 'A'}) == 3)//and truthy values are detected all ways, of course
 	ok(f2({p1: 720}) == 3)//and truthy values are detected all ways, of course
 })
+
+
+
+
+
+
+
+
+
+
+export function sample1() {
+	return 'hello from sample1 in icarus level0'
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
