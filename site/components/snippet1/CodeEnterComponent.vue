@@ -3,7 +3,7 @@
 import {
 Data, getBrowserTag,
 validatePhone,
-onlyNumerals, Code, hashToLetter,
+onlyNumerals, Code, hashToLetter, sayTimePage,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()
