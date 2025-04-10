@@ -289,10 +289,15 @@ $ node disk, just shows it, rather than seal which makes it
 //                              
 
 let _workerEvent, _useRuntimeConfig
+export function accessWorker() {//alternative version to test globalization before larger refactor
+	if (!_useRuntimeConfig && useRuntimeConfig) _useRuntimeConfig = useRuntimeConfig
+}
+/*
 export function accessWorker({workerEvent, useRuntimeConfig}) {//cloudflare puts secrets in the worker event, not on process.env, and nuxt imports this function useRuntimeConfig into api handlers; save them to look for secrets there later
 	if (!_workerEvent && workerEvent) _workerEvent = workerEvent
 	if (!_useRuntimeConfig && useRuntimeConfig) _useRuntimeConfig = useRuntimeConfig
 }
+*/
 
 export function canGetAccess() {//true if we are server-side code running and can get access to secrets
 	return hasText(access_key())//use access_key() and say if we have the key to decrypt all the secrets
