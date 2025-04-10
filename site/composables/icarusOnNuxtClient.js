@@ -34,6 +34,15 @@ Task,
 
 } from 'icarus'
 
+/*
+ttd april[]check that these are imported from icarus manually in files that use them!
+
+Data
+getBrowserTag
+sayTick
+sayTimePage
+*/
+
 
 
 /*
