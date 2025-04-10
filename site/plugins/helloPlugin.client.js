@@ -8,8 +8,6 @@ getBrowserGraphics, awaitLogAlert,
 
 export default defineNuxtPlugin(async (nuxtApp) => {
 
-	log('hi in hello plugin', look({sample1}))
-
 	const helloStore = useHelloStore()
 	await helloStore.hello1()//$fetch-es to /api/hello1 on first call, does not do that on later calls
 	//await hello1, as a whole bunch of components will render depending on helloStore.userTag or not
