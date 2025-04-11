@@ -348,9 +348,6 @@ maybe put those into a single checkName which acts on what it's given--or maybe 
 */
 
 
-export function liveBox(s) {
-	return
-}
 
 
 
@@ -835,14 +832,15 @@ test(() => {
 	f2('3782 8224 6310 005', '3782 822463 10005', '378282246310005')
 })
 
-//             _ _     _       _             _       _       
-// __   ____ _| (_) __| | __ _| |_ ___    __| | __ _| |_ ___ 
-// \ \ / / _` | | |/ _` |/ _` | __/ _ \  / _` |/ _` | __/ _ \
-//  \ V / (_| | | | (_| | (_| | ||  __/ | (_| | (_| | ||  __/
-//   \_/ \__,_|_|_|\__,_|\__,_|\__\___|  \__,_|\__,_|\__\___|
-//                                                           
+//      _       _          __              _     _            _   _ _         
+//   __| | __ _| |_ ___   / _| ___  _ __  (_) __| | ___ _ __ | |_(_) |_ _   _ 
+//  / _` |/ _` | __/ _ \ | |_ / _ \| '__| | |/ _` |/ _ \ '_ \| __| | __| | | |
+// | (_| | (_| | ||  __/ |  _| (_) | |    | | (_| |  __/ | | | |_| | |_| |_| |
+//  \__,_|\__,_|\__\___| |_|  \___/|_|    |_|\__,_|\___|_| |_|\__|_|\__|\__, |
+//                                                                      |___/ 
 
-//bookmark april
+//date for identity: "19991201" <--> v: {isValid: true, ...} zone from browser
+
 export function checkDate(raw) { let v = validateDate(raw); if (!v.isValid) toss('form', {v}); return v }
 export function validateDate(raw) {
 	let adjusted = onlyNumerals(raw)
@@ -886,12 +884,12 @@ function _ageDate(rawDate_fromUser, offsetMinutes_fromPage, now_fromClock) {//se
 		offsetMinutes_fromPage < zoneMin ||
 		offsetMinutes_fromPage > zoneMax) toss('page offset range', {rawDate_fromUser, date_fromUser, offsetMinutes_fromPage})
 
-	const date_fromPage = new Date(//make a reasonably trusted date for the page
+	const date_fromPage = new Date(//make a reasonably trusted date from the page
 		now_fromClock -//by starting with the trusted server time here where we're running,
 		(offsetMinutes_fromPage*Time.minute)//and moving that by the sanity checked time zone offset the page told us
 	)
 	const year_fromPage  = date_fromPage.getUTCFullYear()
-	const month_fromPage = date_fromPage.getUTCMonth() + 1//add 1 so January isn't 0
+	const month_fromPage = date_fromPage.getUTCMonth()+1//add 1 so January isn't 0
 	const day_fromPage   = date_fromPage.getUTCDate()
 
 	let age = year_fromPage - date_fromUser.year//how many candles will be on the 🎂 this year

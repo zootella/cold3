@@ -198,8 +198,6 @@ functions that use module imports
 */
 export {
 
-liveBox,//move to whichever level you need it!
-
 checkNumerals, onlyNumerals, sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
 Tag, checkTagOrBlank, checkTag, hasTag,
 middleDot, thinSpace,
@@ -236,6 +234,8 @@ helpful javascript functions with no module imports
 */
 export {
 
+liveBox,//move to whichever level you need it!
+
 Time, Size, noop,
 Now, sayDate, sayTick,
 test, ok, runTests,
@@ -264,6 +264,7 @@ rsaEncrypt, rsaDecrypt,
 objectToBase62, base62ToObject,
 curveSign, curveVerify,
 
+tickToDay, dayToTick,
 sayTimePage, sayWhenPage, sayWhenFeed,
 fraction, exponent, int, big,
 deindent,

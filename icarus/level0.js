@@ -21,15 +21,13 @@ Time.day = 24*Time.hour
 Time.week = 7*Time.day
 Time.year = Math.floor(365.25 * Time.day)
 Time.month = Math.floor((Time.year) / 12)
-Time.months = {}
-Time.months.zeroToJan = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-Time.months.oneToJan = ['', ...Time.months.zeroToJan]//alternative where 1 is January and 12 is December
-Time.months.janToZero = {
-	'jan': 0, 'feb': 1, 'mar':  2, 'apr':  3,
-	'may': 4, 'jun': 5, 'jul':  6, 'aug':  7,
-	'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11}
+Time.months = {
+	oneToJan: ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+	janToOne: {
+		'jan': 1, 'feb':  2, 'mar': 3, 'apr':  4, 'may':  5, 'jun':  6,
+		'jul': 7, 'aug':  8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12}
+}
 Object.freeze(Time)//prevents changes and additions
-//bookmark april
 
 export const Size = {}
 Size.b  = 1//one byte
@@ -41,28 +39,27 @@ Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
 
 export const noop = (() => {})//no operation, a function that does nothing
-
-//                    _   _                
-//  ___  __ _ _   _  | |_(_)_ __ ___   ___ 
-// / __|/ _` | | | | | __| | '_ ` _ \ / _ \
-// \__ \ (_| | |_| | | |_| | | | | | |  __/
-// |___/\__,_|\__, |  \__|_|_| |_| |_|\___|
-//            |___/                        
-
 export const Now = Date.now//just a shortcut
 
-//bookmark april
+//      _       _          __                  _         __  __ 
+//   __| | __ _| |_ ___   / _| ___  _ __   ___| |_ __ _ / _|/ _|
+//  / _` |/ _` | __/ _ \ | |_ / _ \| '__| / __| __/ _` | |_| |_ 
+// | (_| | (_| | ||  __/ |  _| (_) | |    \__ \ || (_| |  _|  _|
+//  \__,_|\__,_|\__\___| |_|  \___/|_|    |___/\__\__,_|_| |_|  
+//                                                              
 
-//say a tick count like "2024sep09" in UTC
+//date for staff: t -> "2024sep09" and "Fri04:09p39.470s" zone from wrapper
+
+//say a tick count like "2024sep09" in UTC, for logs and staff
 export function sayDate(t) {
 	let d = new Date(t)
 	let year = d.getUTCFullYear()
-	let month = Time.months.zeroToJan[d.getUTCMonth()].toLowerCase()
+	let month = Time.months.oneToJan[d.getUTCMonth()+1].toLowerCase()
 	let day = d.getUTCDate().toString().padStart(2, '0')
 	return `${year}${month}${day}`
 }
 
-//say a tick count like "Fri04:09p39.470s" using the local offset in the wrapper
+//say a tick count like "Fri04:09p39.470s" using the local offset in the wrapper, for logs and staff
 export function sayTick(t) {
 	if (!t) return '(not yet)'//don't render 1970jan1 as a time something actually happened
 	let d = new Date(t - wrapper.local)//offset manually, then we'll use UTC methods below
@@ -1359,65 +1356,66 @@ noop(async () => {//see what these objects look like before we stringify and bas
 
 
 
-/*
-ttd april
-third thing to do with dates
-
-for dates in routes, you need to go between text like "2024jun5" and the tick count that is
-chat assures me that javascript dates don't do leap seconds
 
 
+export function liveBox(s) {
+}
 
-*/
+//      _       _          __                              _       
+//   __| | __ _| |_ ___   / _| ___  _ __   _ __ ___  _   _| |_ ___ 
+//  / _` |/ _` | __/ _ \ | |_ / _ \| '__| | '__/ _ \| | | | __/ _ \
+// | (_| | (_| | ||  __/ |  _| (_) | |    | | | (_) | |_| | ||  __/
+//  \__,_|\__,_|\__\___| |_|  \___/|_|    |_|  \___/ \__,_|\__\___|
+//                                                                 
 
+//date for route: t <--> "2002feb2" zone UTC
 
-
-
-//[]now you have four month maps. get it so you have only one month map
-
-
-// Convert a UTC tick count to our custom date string (e.g., "2024jan2") for consistent identification  
-function formatUTCDateCustom(t) {
+export function tickToDay(t) {//rounds back to the start of the day t is in
 	checkInt(t)
-
-  const date = new Date(t)// Build a UTC Date to standardize our date components
-  const year = date.getUTCFullYear()// Get the year for the identifier
-  const month = Time.months.zeroToJan[date.getUTCMonth()].toLowerCase()// Map to our custom month name and force lower-case format
-  const day = date.getUTCDate()// Extract the day to complete our date signature
-  return `${year}${month}${day}`// Assemble the custom string for later parsing and logging
+	let date = new Date(t)
+	let year = date.getUTCFullYear()//all UTC
+	let month = Time.months.oneToJan[date.getUTCMonth()+1].toLowerCase()//lowercase like "jan"
+	let day = date.getUTCDate()//day of the month, no starting 0
+	return `${year}${month}${day}`
 }
-
-// Convert a custom date string (e.g., "2024jan2") back to a UTC tick count at the start of that day  
-function parseCustomUTCDate(s) {
-	checkText(s)
-
-  const year = textToInt(s.slice(0, 4))// Retrieve the year from the string to rebuild the date
-  const monthIndex = Time.months.janToZero[s.slice(4, 7)]// Map the standardized month to a 0-indexed value for UTC conversion
-  if (!monthIndex) toss('data', {s})
-  //[]also check the others, of course
-  const day = textToInt(s.slice(7))// Get the day component to complete the date
-  return Date.UTC(year, monthIndex, day)// Convert to a UTC tick count representing the start of that day for consistency
+export function dayToTick(s) {
+	let year = textToInt(s.slice(0, 4)); checkInt(year, 1970)//start of the Unix epoch
+	let month = Time.months.janToOne[s.slice(4, 7)]; if (!month) toss('data', {s})
+	let day = textToInt(s.slice(7)); checkInt(day, 1); if (day > 31) toss('data', {s})
+	return Date.UTC(year, month-1, day)//returns a tick count
 }
-//this would be a great job for testBox, if you can remember what it's actually called
+test(() => {
+	let t1 = 1744387476267//tick within a day
+	let t2 = 1744329600000//tick at the start of that day
+	let s = '2025apr11'
+	ok(tickToDay(t1) == s)
+	ok(tickToDay(t2) == s)
+	ok(dayToTick(s) == t2)
+})
+noop(() => {
+	const durationSeconds = 4
+	const spanYears = 30
+	let checks = 0
+	let now = Now()
+	function f() {
+		let t1 = randomBetween(now-(spanYears*Time.year), now)
+		let s1 = tickToDay(t1)
+		let t2 = dayToTick(s1)
+		let s2 = tickToDay(t2)
+		ok(s1 == s2)
+	}
+	while (Now() < now + (durationSeconds*Time.second)) { f(); checks++ }
+	log(`round tripped ${checks} random dates spanning the past ${spanYears} years in ${durationSeconds} seconds`)
+})
 
-//ok, can we be sure that any tick count which is the start of the day will round trip through s back to the same integer?
-//[]write a little fuzz tester that demonstrates this
+//      _       _          __                                     
+//   __| | __ _| |_ ___   / _| ___  _ __   _ __   __ _  __ _  ___ 
+//  / _` |/ _` | __/ _ \ | |_ / _ \| '__| | '_ \ / _` |/ _` |/ _ \
+// | (_| | (_| | ||  __/ |  _| (_) | |    | |_) | (_| | (_| |  __/
+//  \__,_|\__,_|\__\___| |_|  \___/|_|    | .__/ \__,_|\__, |\___|
+//                                        |_|          |___/      
 
-
-
-
-
-
-
-
-//bookmark april
-
-//                    _   _                
-//  ___  __ _ _   _  | |_(_)_ __ ___   ___ 
-// / __|/ _` | | | | | __| | '_ ` _ \ / _ \
-// \__ \ (_| | |_| | | |_| | | | | | |  __/
-// |___/\__,_|\__, |  \__|_|_| |_| |_|\___|
-//            |___/                        
+//date for page: t -> "2024 May 19 4:20 PM" and "Just now" zone from browser
 
 let _dateFormatters//make date formatters once, and only if we need them
 function getDateFormatters() {
@@ -1445,7 +1443,7 @@ export function sayTimePage(t) {
 	let p = _composeDate(t)
 	return `${p.time}`
 }
-export function sayWhenPage(t) {//like '2024 May 19 4:20 PM', always in that order, but localized to 12 or 24 hour from browser settings
+export function sayWhenPage(t) {//like "2024 May 19 4:20 PM", always in that order, but localized to 12 or 24 hour from browser settings
 	let p = _composeDate(t)
 	return `${p.year} ${p.month} ${p.day} ${p.time}`
 }
@@ -1479,15 +1477,6 @@ noop(() => {
 			${sayWhenFeed(t-(200*Time.day))}  - last year
 		`)
 })
-
-
-
-
-
-
-
-
-
 
 
 
