@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-validateEmailOrPhone,
+validateEmailOrPhone, toBoolean,
 } from 'icarus'
 import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()
@@ -21,16 +21,16 @@ watch([refAddress, refProvider], () => {
 	else if (v.isValid && v.type == 'Phone.') { refOutput.value = `valid phone ${v.formPage}` }
 	else                                      { refOutput.value = 'type a valid email or phone' }
 
-	refButtonCanSubmit.value = !!(v.isValid && hasText(refProvider.value))
+	refButtonCanSubmit.value = toBoolean(v.isValid && hasText(refProvider.value))
 })
 
 async function onClick() {
-	let task = await refButton.value.post('/api/code/send', {
+	let r = await refButton.value.post('/api/code/send', {
 		address: refAddress.value,
 		provider: refProvider.value,
 	})
-	log("CodeRequestComponent's onClick got this task from the post:", look(task))
-	helloStore.codesMerge(task.response.codes)
+	log("CodeRequestComponent's onClick got this r from the post:", look(r))
+	helloStore.codesMerge(r.response.codes)
 
 	//ok, here's where you merge in response.codes
 }

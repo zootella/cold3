@@ -482,7 +482,7 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 	//look up the user tag, even though we're not using it with code yet
 	let userTag = (await demonstrationSignGet({browserTag}))?.userTag
 
-	let permit = await codePermit({v})
+	let permit = await codePermit(v.formNormal)
 	if (!permit.isPermitted) return {success: false, permit}
 
 	let code = await codeCompose({length: permit.useLength, sticker: true})
@@ -505,11 +505,11 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 }
 
 //can we send another code to this address now?
-async function codePermit({v}) {
+async function codePermit(addressNormal) {
 	const now = Now()
 
 	//use the code table to find out how many codes we've sent address
-	let rows = await code_get_address({addressNormal: v.formNormal})//get all the rows about the given address
+	let rows = await code_get_address({addressNormal})//get all the rows about the given address
 	let days5 = rows.filter(row => row.row_tick >= now - Code.days5)//those over the past 5 days
 	let days1 = days5.filter(row => row.row_tick >= now - Code.days1)//those in just the last 24 hours
 	let minutes20 = days1.filter(row => row.row_tick >= now - Code.lifespan20)//past 20 minutes, so could be active still
@@ -589,7 +589,9 @@ export async function browserToCodes({browserTag}) {
 
 				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
 				addressType: row.type_text,//the type of address, like "Email."
-				addressPage: row.page_text,//the address in the form to show on the page
+				addressNormal: row.normal_text,
+				addressFormal: row.formal_text,
+				addressPage:   row.page_text,
 				//note we importantly do not send hash to the page, that's the secret part!
 
 				duration: row.row_tick + Code.lifespan20 - Now(),//how much longer the user has to guess
@@ -605,19 +607,19 @@ export async function browserToCodes({browserTag}) {
 }
 
 //the person at browserTag used the box on the page to enter a code, which could be right or wrong
-export async function codeEnter({browserTag, codeTag, codeEntered}) {
+export async function codeEnter({browserTag, codeTag, codeCandidate}) {
+	log('hi in code enter')
 	let now = Now()
+	let r = {}//response object we'll prepare and return
 
-	//find the row about it
-	let row = await code_get({codeTag})
-	if (!row || row.browser_tag != browserTag || !row.lives) return {correct: false, lives: 0}//these would be very unusual, like from a tampered-with page
+	let row = await code_get({codeTag})//find the row about it
+	if (!row || row.browser_tag != browserTag || !row.lives) {//very unusual, like from a tampered-with page
+		r = {guessCorrect: false, guessAgain: false}
 
-	//too late, return lives 0 to tell the page the user needs to request a new code
-	if (row.row_tick + Code.lifespan20 < now) return {correct: false, lives: 0}
+	} else if (row.row_tick + Code.lifespan20 < now) {//too late, respond with lives 0 to tell the page the user needs to request a new code
+		r = {guessCorrect: false, guessAgain: false}
 
-	//correct guess
-	if (secureSameText(row.hash, await hashText(codeTag+codeEntered))) {
-
+	} else if (secureSameText(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
 		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
 		await browserValidatedAddress({
 			browserTag,
@@ -625,15 +627,17 @@ export async function codeEnter({browserTag, codeTag, codeEntered}) {
 			type: row.type_text,
 			addressNormal: row.normal_text, addressFormal: row.formal_text, addressPage: row.page_text,
 		})
-		return {correct: true, lives: 0}
+		r = {guessCorrect: true, guessAgain: false}
 
-	//wrong guess
-	} else {
+	} else {//wrong guess
 
 		let lives = row.lives - 1
 		await code_set_lives({codeTag, lives})
-		return {correct: false, lives: lives}//user may be able to guess again
+		r = {guessCorrect: false, guessAgain: toBoolean(lives)}//user may be able to guess again on this code
 	}
+	r.codes = await browserToCodes({browserTag})//current records about codes this browser could still enter
+	r.permit = await codePermit(row.normal_text)//information about when we could send another code to the same address
+	return r
 }
 
 
