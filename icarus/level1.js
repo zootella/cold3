@@ -842,10 +842,7 @@ test(() => {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|  \__,_|\__,_|\__\___|
 //                                                           
 
-export const months3 = ['',//Jan at index 1, Dec at 12
-	'Jan', 'Feb', 'Mar', 'Apr',
-	'May', 'Jun', 'Jul', 'Aug',
-	'Sep', 'Oct', 'Nov', 'Dec']
+//bookmark april
 export function checkDate(raw) { let v = validateDate(raw); if (!v.isValid) toss('form', {v}); return v }
 export function validateDate(raw) {
 	let adjusted = onlyNumerals(raw)
@@ -861,7 +858,7 @@ export function validateDate(raw) {
 		isValid: true,
 		formNormal: adjusted,//store in database to record and identify duplicates
 		formFormal: adjusted,//not really used, would be the form we would hand to an API
-		formPage: `${year}-${months3[month]}-${day}`,//form to show to the user on the page
+		formPage: `${year}-${Time.months.oneToJan[month]}-${day}`,//form to show to the user on the page
 		raw,//exactly the string we were given
 		year, month, day,//component information for use by code, these are numbers, not text, for instance
 	}

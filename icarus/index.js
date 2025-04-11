@@ -216,7 +216,7 @@ checkActions,
 checkEmail, validateEmail, validateEmailOrPhone,
 checkPhone, validatePhone,
 checkCard, validateCard,
-months3, checkDate, validateDate, getPageOffsetMinutes, ageDate,
+checkDate, validateDate, getPageOffsetMinutes, ageDate,
 
 measurePasswordStrength,
 generatePosts, postDatabase,
@@ -287,12 +287,3 @@ given,
 sample1,
 
 } from './level0.js'
-
-
-
-
-
-
-
-
-

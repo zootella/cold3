@@ -7,7 +7,6 @@
 ^ you've wired together these three so common Icarus functions are automatically imported
 in Lambda files you still have to import these from Icarus manually, but that's fine because the Lambda side is small
 */
-
 import {
 
 wrapper, Sticker, isLocal, isCloud,
@@ -58,14 +57,18 @@ doorWorker, doorLambda,
 Task,
 
 }
-
 export default defineNitroPlugin((nitroApp) => {
-
 	Object.keys(whatWeImported).forEach((name) => {
 		if (!globalThis[name] && whatWeImported[name]) globalThis[name] = whatWeImported[name]
 	})
 
-	//Nuxt imports these in server api endpoint handler files; pin them to global so icarus files can also reach them; getAccess needs this
+	/*
+	and, also do these next two
+	Nuxt imports useRuntimeConfig and setResponseStatus into files under /server/api
+	but if code there calls down into a function in an icarus file outside of that folder, they're not defined
+	you were passing them around and saving them in a module variable, which was cumbersome
+	instead of that, now we pin them global:
+	*/
 	if (!globalThis.useRuntimeConfig  && typeof useRuntimeConfig  == 'function') globalThis.useRuntimeConfig  = useRuntimeConfig
 	if (!globalThis.setResponseStatus && typeof setResponseStatus == 'function') globalThis.setResponseStatus = setResponseStatus
 })

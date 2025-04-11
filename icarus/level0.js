@@ -21,7 +21,15 @@ Time.day = 24*Time.hour
 Time.week = 7*Time.day
 Time.year = Math.floor(365.25 * Time.day)
 Time.month = Math.floor((Time.year) / 12)
+Time.months = {}
+Time.months.zeroToJan = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+Time.months.oneToJan = ['', ...Time.months.zeroToJan]//alternative where 1 is January and 12 is December
+Time.months.janToZero = {
+	'jan': 0, 'feb': 1, 'mar':  2, 'apr':  3,
+	'may': 4, 'jun': 5, 'jul':  6, 'aug':  7,
+	'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11}
 Object.freeze(Time)//prevents changes and additions
+//bookmark april
 
 export const Size = {}
 Size.b  = 1//one byte
@@ -43,11 +51,13 @@ export const noop = (() => {})//no operation, a function that does nothing
 
 export const Now = Date.now//just a shortcut
 
+//bookmark april
+
 //say a tick count like "2024sep09" in UTC
 export function sayDate(t) {
 	let d = new Date(t)
 	let year = d.getUTCFullYear()
-	let month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][d.getUTCMonth()]
+	let month = Time.months.zeroToJan[d.getUTCMonth()].toLowerCase()
 	let day = d.getUTCDate().toString().padStart(2, '0')
 	return `${year}${month}${day}`
 }
@@ -1349,6 +1359,49 @@ noop(async () => {//see what these objects look like before we stringify and bas
 
 
 
+/*
+ttd april
+third thing to do with dates
+
+for dates in routes, you need to go between text like "2024jun5" and the tick count that is
+chat assures me that javascript dates don't do leap seconds
+
+
+
+*/
+
+
+
+
+//[]now you have four month maps. get it so you have only one month map
+
+
+// Convert a UTC tick count to our custom date string (e.g., "2024jan2") for consistent identification  
+function formatUTCDateCustom(t) {
+	checkInt(t)
+
+  const date = new Date(t)// Build a UTC Date to standardize our date components
+  const year = date.getUTCFullYear()// Get the year for the identifier
+  const month = Time.months.zeroToJan[date.getUTCMonth()].toLowerCase()// Map to our custom month name and force lower-case format
+  const day = date.getUTCDate()// Extract the day to complete our date signature
+  return `${year}${month}${day}`// Assemble the custom string for later parsing and logging
+}
+
+// Convert a custom date string (e.g., "2024jan2") back to a UTC tick count at the start of that day  
+function parseCustomUTCDate(s) {
+	checkText(s)
+
+  const year = textToInt(s.slice(0, 4))// Retrieve the year from the string to rebuild the date
+  const monthIndex = Time.months.janToZero[s.slice(4, 7)]// Map the standardized month to a 0-indexed value for UTC conversion
+  if (!monthIndex) toss('data', {s})
+  //[]also check the others, of course
+  const day = textToInt(s.slice(7))// Get the day component to complete the date
+  return Date.UTC(year, monthIndex, day)// Convert to a UTC tick count representing the start of that day for consistency
+}
+//this would be a great job for testBox, if you can remember what it's actually called
+
+//ok, can we be sure that any tick count which is the start of the day will round trip through s back to the same integer?
+//[]write a little fuzz tester that demonstrates this
 
 
 
@@ -1357,12 +1410,7 @@ noop(async () => {//see what these objects look like before we stringify and bas
 
 
 
-
-
-
-
-
-
+//bookmark april
 
 //                    _   _                
 //  ___  __ _ _   _  | |_(_)_ __ ___   ___ 
@@ -1371,21 +1419,26 @@ noop(async () => {//see what these objects look like before we stringify and bas
 // |___/\__,_|\__, |  \__|_|_| |_| |_|\___|
 //            |___/                        
 
-const _formatDate = {//make formatters once, outside the function
-	y: new Intl.DateTimeFormat('default', {year: 'numeric'}),//default locale is the user's browser, or the edge node's locale
-	m: new Intl.DateTimeFormat('default', {month: 'short'}),
-	d: new Intl.DateTimeFormat('default', {day: 'numeric'}),
-	w: new Intl.DateTimeFormat('default', {weekday: 'short'}),
-	t: new Intl.DateTimeFormat('default', {hour: 'numeric', minute: 'numeric'})
+let _dateFormatters//make date formatters once, and only if we need them
+function getDateFormatters() {
+	if (!_dateFormatters) _dateFormatters = {//undefined for the browser's local time zone; UTC in worker or lambda
+		y: new Intl.DateTimeFormat(undefined, {year: 'numeric'}),
+		m: new Intl.DateTimeFormat(undefined, {month: 'short'}),
+		d: new Intl.DateTimeFormat(undefined, {day: 'numeric'}),
+		w: new Intl.DateTimeFormat(undefined, {weekday: 'short'}),
+		t: new Intl.DateTimeFormat(undefined, {hour: 'numeric', minute: 'numeric'})
+	}
+	return _dateFormatters
 }
 function _composeDate(t) {
 	let d = new Date(t)
+	let f = getDateFormatters()
 	return {
-		year:    _formatDate.y.format(d),//like '2024'
-		month:   _formatDate.m.format(d),//like 'May'
-		day:     _formatDate.d.format(d),//like '20'
-		weekday: _formatDate.w.format(d),//like 'Mon'
-		time:    _formatDate.t.format(d)//like '2:17 PM' or '14:17'
+		year:    f.y.format(d),//like '2024'
+		month:   f.m.format(d),//like 'May'
+		day:     f.d.format(d),//like '20'
+		weekday: f.w.format(d),//like 'Mon'
+		time:    f.t.format(d)//like '2:17 PM' or '14:17'
 	}
 }
 export function sayTimePage(t) {
@@ -1409,19 +1462,22 @@ export function sayWhenFeed(t, n) {//takes a tick in the past, and the tick righ
 	else if (t2.year == n2.year) { return `${t2.month} ${t2.day}` }//same year
 	else { return `${t2.year} ${t2.month} ${t2.day}` }//last year or earlier
 }
-test(() => {
-	//this test doesn't depend on now, but does depend on locale, like 12 or 24 hour clock preference, and time zone location
-	/*
-	let t = 1716229039494
-	ok(sayTick(t) == 'Mon 14h 17m 19.494s')
-	ok(sayWhenPage(t) == '2024 May 20 2:17 PM')
-	ok(sayWhenFeed(t-(  1*Time.minute), t) == 'Just now')//less than 2 minutes old
-	ok(sayWhenFeed(t-(  5*Time.minute), t) == '5m')//past hour
-	ok(sayWhenFeed(t-( 10*Time.hour),   t) == '10h')//less than 24 hours old
-	ok(sayWhenFeed(t-(  5*Time.day),    t) == 'Wed 2:17 PM')//if it's monday, last tuesday or more recent than that
-	ok(sayWhenFeed(t-( 10*Time.day),    t) == 'May 10')//earlier this year
-	ok(sayWhenFeed(t-(200*Time.day),    t) == '2023 Nov 2')//last year
-	*/
+noop(() => {
+	let t = Now()
+		log(`
+			${t}     - integer
+			${sayTick(t)}  - sayTick
+
+			${sayWhenPage(t)}  - sayWhenPage
+			${sayWhenFeed(t)}             - sayWhenFeed
+
+			${sayWhenFeed(t-(1*Time.minute))}     - less than 2 minutes old
+			${sayWhenFeed(t-(5*Time.minute))}           - past hour
+			${sayWhenFeed(t-(10*Time.hour))}          - less than 24 hours old
+			${sayWhenFeed(t-(5*Time.day))}  - a recent day of the week
+			${sayWhenFeed(t-(10*Time.day))}       - earlier this year
+			${sayWhenFeed(t-(200*Time.day))}  - last year
+		`)
 })
 
 
