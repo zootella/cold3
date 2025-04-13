@@ -97,6 +97,23 @@ password page backlog
 */
 
 
+/*
+ttd april
+evolution of thinking of how/if to use passwords in the system
+1 code them normal
+2 don't use them at all, they're compromised by both attackers and google/apple fighting to popups over each other to steal users' with the new Passkey web standards
+3 include them, but only if the user digs to find them
+
+along those lines, what to do about strength and requirements
+as this is buried, ok to be unconventional:
+- always show the password, not hidden, no show button
+- hash on device, and for a long time, like ten seconds on a recent iphone
+- no strength requirements or strength at all
+
+
+*/
+
+
 //yes, this is a factory preset, correctly in the page, which gets sent to the client, where the user can see it
 const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
 const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC = 420//thousands, OWASP recommends 100-500

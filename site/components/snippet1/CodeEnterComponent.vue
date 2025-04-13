@@ -30,75 +30,41 @@ watch([refCodeCandidate], () => {
 })
 
 async function onClick() {
-	let r = await refButton.value.post('/api/code/enter', {
+	let result = await refButton.value.post('/api/code/enter', {
 		codeTag: props.code.tag,//hidden from the user but kept with the form
 		codeCandidate: onlyNumerals(refCodeCandidate.value),
 	})
-	log("CodeEnterComponent's onClick got this r from the post:", look(r))
-	helloStore.codesMerge(r.response.codes)
-
+	log('code enter post result', look(result))
+	helloStore.setCodes(result.response.codes)
 	/*
-	can't find it
-	- just sent it, so wait
-	- sent a minute ago, so actually check
-	- sent two minutes ago, and can
-
-	_i cant find it_
-
-	>just sent
-	wait
-	>sent a minute ago
-	actually check
-
-
-
+	response
+	.success true - correct guess, watch out for .codes to be [] because satisifying a code challenge also kills it!
+	.success false
+		.reason Expired.          - next step for the user is to request a new code
+		.reason Wrong. .lives 1+  - the user can guess again
+		.reason Wrong. .lives 0   - next step for the user is to request a new code
 	*/
-
-	/*
-	if the code the user has been working on expired or was guessed to death, you'll get no code records at all, merge in []
-	and success false, guessAgain false
-
-	what really does CodeEnterComponent do?
-	it's there because the page knows this browser has a code the user could find and enter
-	it's tied to a specific code challenge, it has the code tag and prefix letter
-
-	what's the minimal ui copy here?
-
-	Check your email|texts for the code we sent
-	*/
-
-
-	/*
-	response will be correct: true, false
-	and lives: 0, 1+
-	you can also tell if they guessed this code already, with lives < Code.guesses or whatever
-
-	on correct, just say thanks, and disappear in a few seconds or a click
-	on wrong, still lives, say wrong, let them try again
-
-	on wrong, no more lives, say wrong, tell them to request a new code
-
-	and update the pinia store accordingly, removing dead codes from the array? no, setting lives and correct, and then letting this render appropriately!
-	*/
+	if (result.response.success) {
+		log('reached 1, correct')//[x]
+		//message and close, maybe also auto close
+	} else if (result.response.reason == 'Wrong.' && result.response.lives) {
+		log('reached 2, try again')//[x]
+		//box stays open
+	} else if (result.response.reason == 'Wrong.' && result.response.lives == 0) {
+		log('reached 3, get a new code')//[x]
+		//not sure yet, but for right now, message and close
+	} else {
+		log('SOME OTHER OUTCOME')
+	}
 }
 function clickedCantFind() {
 	log('clicked cant find')
 }
 
-/*
-<p>
-	we sent the code at {{sayTimePage(code.tick)}} and it'll last for {{Code.lifespan20/Time.minute}} minutes from then,
-	until {{sayTimePage(code.tick + (20*Time.minute))}}. After that, you'll have to request a new one.
-</p>
-*/
-
 </script>
 <template>
 <div class="border border-gray-300 p-2" v-show="refShow">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeEnterComponent</i></p>
-
-
-<pre>{{code}}</pre>
 
 <p>{{refInstruction}}</p>
 <p>
@@ -123,39 +89,3 @@ function clickedCantFind() {
 
 </div>
 </template>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

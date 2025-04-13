@@ -6,6 +6,11 @@ const refButton = ref(null)
 const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
 const refButtonInFlight = ref(false)//the button below sets to true while it's working, we can watch
 
+watch([refName], () => {//example where the form is watching the user type a name
+	let v = validateName(refName.value, Limit.name)
+	refButtonCanSubmit.value = toBoolean(v.isValid)//avoid vue's type warning
+})
+
 async function onClick() {
 	let result = await refButton.value.post('/api/name', {
 		action: 'SomeAction.',
@@ -44,7 +49,7 @@ const props = defineProps({
 	useTurnstile: {type: Boolean,  required: true},
 
 	/*ref="refButton"*///is here when you're setting attributes, but is not a property, of course
-	canSubmit:    {type: Boolean,  required: true},
+	canSubmit:    {type: Boolean,  required: true},//can i remove type boolean just on this one, so that code that uses my post button can set a validation result that is simply truthy or falsey, in place of a true boolean?
 	inFlight:     {type: Boolean,  required: true},
 	onClick:      {type: Function, required: true},
 })
@@ -61,7 +66,6 @@ onMounted(async () => {
 })
 
 watch([() => props.canSubmit, () => props.inFlight], () => {
-
 	if (props.inFlight) {
 		refButtonState.value = 'orange'
 		refButtonLabel.value = props.labelFlying
@@ -73,7 +77,6 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 			refButtonState.value = 'gray'
 		}
 	}
-
 }, {immediate: true})//run this right away at the start to set things up, before running it again on the first change
 
 // the method that performs the post operation; this is exposed to the parent
@@ -95,6 +98,11 @@ defineExpose({post: async (path, body) => {
 	}
 	task.finish()
 	return task
+	/*
+	ttd april, things you might change here in just a moment:
+	- if the task is successful, return the response directly
+	- if there's an exception, or the server responded 500, throw right here
+	*/
 }})
 
 //ttd march, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something

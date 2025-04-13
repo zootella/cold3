@@ -6,31 +6,27 @@ validateName,
 import {ref, watch, onMounted} from 'vue'
 
 const refName = ref('')
-const refStatus1 = ref('')
 
 const refButton = ref(null)
 const refButtonCanSubmit = ref(false)
 const refButtonInFlight = ref(false)
 
-const refResult = ref('')
+const refMessage = ref('')
 
 watch([refName], () => {
-
 	let v = validateName(refName.value, Limit.name)
-	if (v.isValid) refStatus1.value = `will check "${v.formNormal}" Normal; "${v.formFormal}" Formal; "${v.formPage}" Page`
-	else refStatus1.value = ''
-
-	refButtonCanSubmit.value = v.isValid
+	refButtonCanSubmit.value = toBoolean(v.isValid)
 })
-refName.value = 'Name1'//ttd march, so you can hit check immediately to stress test turnstile
 
 async function onClick() {
 	let result = await refButton.value.post('/api/name', {
 		action: 'Check.',
 		name: refName.value,
 	})
-	log(look(result))
-	refResult.value = result
+	log('name post result', look(result))
+	refMessage.value = ((result.response.available.isAvailable) ?
+		`✔️ Yes, "${result.response.available.v.formPage}" is available for you to take!` :
+		`❌ Sorry, "${result.response.available.v.formPage}" is already in use.`)
 }
 
 </script>
@@ -38,10 +34,10 @@ async function onClick() {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>NameComponent</i></p>
 
-<p>Check if your desired username is available. Using PostButton with turnstile at the bottom.</p>
+<p>Check if your desired username is available.</p>
 <div>
 	<input
-		:maxlength="Limit.input"
+		:maxlength="Limit.name"
 		type="text"
 		v-model="refName"
 		placeholder="desired user name or route"
@@ -59,9 +55,7 @@ async function onClick() {
 		:onClick="onClick"
 	/>
 </div>
-<p>{{refStatus1}}</p>
-<p>valid to submit <i>{{refButtonCanSubmit}}</i>, in flight <i>{{refButtonInFlight}}</i></p>
-<div>result:<pre>{{refResult}}</pre></div>
+<p>{{refMessage}}</p>
 
 </div>
 </template>

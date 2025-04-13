@@ -25,9 +25,12 @@ const connection = ref({})//ip address, geographic information, and browser info
 
 //codes
 const codes = ref([])//codes this browser could enter, empty array before check or if none
-const codesMerge = (a2) => mergeRecords(codes.value, a2, codesIndex)
-let codesIndex//our index to merge code records quickly; not a ref, not returned, outside of Pinia's purview
+const setCodes = (a2) => {
+	codes.value.splice(0, codes.value.length)
+	if (a2 && a2.length) codes.value.push(...a2)
+}
 const visibleCodes = computed(() => codes.value.filter(code => code.show).reverse())//soonest to expire first
+//^ttd april, change .show to .notFound, and things fail silently; figure out how to catch that error!
 
 const hello1 = sequentialShared(async () => {
 	try {
@@ -59,8 +62,7 @@ const hello2 = sequentialShared(async () => {
 		connection.value = r.connection
 
 		//codes
-		codes.value = r.codes//set the starting array
-		codesIndex = indexRecords(codes.value)//build the index from it
+		setCodes(r.codes)
 
 		duration2.value = Now() - t
 	} catch (e) { error2.value = e }
@@ -76,7 +78,7 @@ return {
 	connection,
 
 	//codes
-	codes, visibleCodes, codesMerge,
+	codes, visibleCodes, setCodes,
 }
 
 })

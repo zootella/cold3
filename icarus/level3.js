@@ -483,10 +483,9 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 	let userTag = (await demonstrationSignGet({browserTag}))?.userTag
 
 	let permit = await codePermit(v.formNormal)
-	if (!permit.isPermitted) return {success: false, permit}
+	if (!permit.success) return permit//return the failed permit directly, bubbling up
 
 	let code = await codeCompose({length: permit.useLength, sticker: true})
-
 	let body = {
 		provider: provider,
 		service: type,
@@ -496,12 +495,10 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 		messageHtml: code.messageHtml,//email body as HTML
 	}
 	let task = await fetch23({path: '/message', body})
-	log("codeSend in the worker got fetch23's task:", look({task}))//ttd april, you can remove this line
 	if (!task.success) toss('task', {task})
 	await codeSent({browserTag, provider, type, v, permit, code})
 
-	let codes = await browserToCodes({browserTag})
-	return {success: true, codes}
+	return {success: true}
 }
 
 //can we send another code to this address now?
@@ -510,33 +507,23 @@ async function codePermit(addressNormal) {
 
 	//use the code table to find out how many codes we've sent address
 	let rows = await code_get_address({addressNormal})//get all the rows about the given address
-	let days5 = rows.filter(row => row.row_tick >= now - Code.days5)//those over the past 5 days
-	let days1 = days5.filter(row => row.row_tick >= now - Code.days1)//those in just the last 24 hours
-	let minutes20 = days1.filter(row => row.row_tick >= now - Code.lifespan20)//past 20 minutes, so could be active still
+	let rowsWeek = rows.filter(row => row.row_tick >= now - Code.week)//those over the past 5 days
+	let rowsDay = rowsWeek.filter(row => row.row_tick >= now - Code.day)//those in just the last 24 hours
+	let rowsLive = rowsDay.filter(row => row.row_tick >= now - Code.expiration)//past 20 minutes, so could be active still
 
-	if (days1.length >= Code.quantity10) {//we've already sent 10 codes to this address in the last 24 hours!
-		return {
-			isPermitted: false,
-			explanation: 'We can only send 10 codes in 24 hours.',
-			whenCanSend: days1[days1.length - 1].row_tick + Code.days1,//when the earliest will receed over the horizon
-		}
+	if (rowsDay.length >= Code.limitHard) {//we've already sent 10 codes to this address in the last 24 hours!
+		return {success: false, reason: 'CoolHard.'}
 	}
 
-	if (days5.length >= Code.quantity2) {//we've sent 2+ codes to this address in the last 5 days
-		let cool = days5[0].row_tick + Code.minutes5//tick when this address cooled down
-		if (now < cool) {//hasn't happened yet
-			return {
-				isPermitted: false,
-				explanation: 'Must wait 5 minutes between codes.',
-				whenCanSend: cool,
-			}
-		}
+	if (rowsWeek.length >= Code.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
+		let cool = rowsWeek[0].row_tick + Code.minutes//tick when this address cooled down
+		if (now < cool) return {success: false, reason: 'CoolSoft.'}//hasn't happened yet
 	}
 
 	return {
-		isPermitted: true,
-		useLength: days5.length < Code.quantity2 ? Code.length4 : Code.length6,
-		aliveCodeTag: (minutes20.length && minutes20[0].lives) ? minutes20[0].row_tag : false,//include the code tag of a code that we sent to this address less than 20 minutes ago, and could still be verified. if you send a replacement code, you have to kill this one
+		success: true,
+		useLength: rowsWeek.length < Code.limitStong ? Code.short : Code.standard,
+		wouldReplace: (rowsLive.length && rowsLive[0].lives) ? rowsLive[0].row_tag : false,//include the code tag of a code that we sent to this address less than 20 minutes ago, and could still be verified. if you send a replacement code, you have to kill this one
 	}
 }
 
@@ -561,45 +548,41 @@ async function codeCompose({length, sticker}) {
 //what it looks like to use these functions to send a code
 async function codeSent({browserTag, provider, type, v, permit, code}) {
 
-	if (permit.aliveCodeTag) {
-		await code_set_lives({codeTag: permit.aliveCodeTag, lives: 0})//invalidate the code this new one will replace
+	if (permit.wouldReplace) {
+		await code_set_lives({codeTag: permit.wouldReplace, lives: 0})//invalidate the code this new one will replace
 	}
 
 	//take care of address_table and maybe also service_table
 	await browserChallengedAddress({browserTag, provider, type, v})
 
 	//record that we sent the new code
-	await code_add({codeTag: code.codeTag, browserTag, provider, type, v, hash: code.hash, lives: Code.guesses4})
+	await code_add({codeTag: code.codeTag, browserTag, provider, type, v, hash: code.hash, lives: Code.guesses})
 }
 
 //is this browser expecting any codes? needs to run fast!
 export async function browserToCodes({browserTag}) {
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
-		since: Now() - Code.lifespan20,//get not yet expired codes
+		since: Now() - Code.expiration,//get not yet expired codes
 		title1: 'browser_tag', cell1: browserTag,//for this browser
 		title2: 'lives', cell2GreaterThan: 0,//that haven't been guessed to death or otherwise revoked
 	})
-	let codes = []
+	let codes = []//from the database rows, prepare records that the page will keep in a list
 	if (rows) {
 		for (let row of rows) {
 			codes.push({
-				//prepare records that the page will keep in a list
 				tag: row.row_tag,//the code's tag, also the row tag, letting the page identify the challenge
 				tick: row.row_tick,//when we sent the code
 
 				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
 				addressType: row.type_text,//the type of address, like "Email."
 				addressNormal: row.normal_text,
-				addressFormal: row.formal_text,
+				addressFormal: row.formal_text,//the address we used with the api
 				addressPage:   row.page_text,
 				//note we importantly do not send hash to the page, that's the secret part!
 
-				duration: row.row_tick + Code.lifespan20 - Now(),//how much longer the user has to guess
 				lives: row.lives,//how many guesses remain on this code
-
-				//ttd april, not sure about these, state for the page
-				correct: false,//the page will set this true in pinia when the user guesses correctly
-				show: true,//the page will set true once the user Xed out of the box about this
+				show: true,//let the page hide a record
+				//^ttd april, you are using show, you are not sure if it should get set here!
 			})
 		}
 	}
@@ -608,18 +591,20 @@ export async function browserToCodes({browserTag}) {
 
 //the person at browserTag used the box on the page to enter a code, which could be right or wrong
 export async function codeEnter({browserTag, codeTag, codeCandidate}) {
-	log('hi in code enter')
 	let now = Now()
-	let r = {}//response object we'll prepare and return
+	let r
 
 	let row = await code_get({codeTag})//find the row about it
-	if (!row || row.browser_tag != browserTag || !row.lives) {//very unusual, like from a tampered-with page
-		r = {guessCorrect: false, guessAgain: false}
+	log('hi in code enter', look({browserTag, codeTag, codeCandidate, row}))
+	if (!row || row.browser_tag != browserTag || !row.lives) {
+		toss('page', {browserTag, codeTag, codeCandidate, row})//very unusual, like from a tampered-with page
+	}
 
-	} else if (row.row_tick + Code.lifespan20 < now) {//too late, respond with lives 0 to tell the page the user needs to request a new code
-		r = {guessCorrect: false, guessAgain: false}
+	if (row.row_tick + Code.expiration < now) {//too late, respond with lives 0 to tell the page the user needs to request a new code
+		return {success: false, reason: 'Expired.', lives: 0}
+	}
 
-	} else if (secureSameText(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
+	if (secureSameText(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
 		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
 		await browserValidatedAddress({
 			browserTag,
@@ -627,17 +612,14 @@ export async function codeEnter({browserTag, codeTag, codeCandidate}) {
 			type: row.type_text,
 			addressNormal: row.normal_text, addressFormal: row.formal_text, addressPage: row.page_text,
 		})
-		r = {guessCorrect: true, guessAgain: false}
+		return {success: true, lives: 0}
 
 	} else {//wrong guess
 
 		let lives = row.lives - 1
 		await code_set_lives({codeTag, lives})
-		r = {guessCorrect: false, guessAgain: toBoolean(lives)}//user may be able to guess again on this code
+		return {success: false, reason: 'Wrong.', lives}//user may be able to guess again on this code
 	}
-	r.codes = await browserToCodes({browserTag})//current records about codes this browser could still enter
-	r.permit = await codePermit(row.normal_text)//information about when we could send another code to the same address
-	return r
 }
 
 
@@ -658,24 +640,41 @@ export async function codeEnter({browserTag, codeTag, codeCandidate}) {
 
 export const Code = {//factory settings for address verification codes
 
-	//for each code
-	lifespan20: 20*Time.minute,//dead in 20 minutes
-	guesses4:   4,             //dead after 4 wrong guesses
-	//also, dead after issued replacement
+	expiration: 20*Time.minute,//For each code: dead in 20 minutes,
+	guesses:    4,             //and dead after 4 wrong guesses. Also, dead after issued replacement
 
-	//for each address
-	quantity10: 10,      //limit 10 codes,
-	days1:      Time.day,//in 24 hours.
+	limitHard: 24,      //For each address: limit 24 codes,
+	day:       Time.day,//in 24 hours.
 
-	quantity2: 2,            //first 2 codes in,
-	days5:     5*Time.day,   //5 days we can issue back to back, then,
-	minutes5:  5*Time.minute,//5 minute delay between sending codes to an address.
+	limitSoft: 2,            //Also, first 2 codes in,
+	week:      5*Time.day,   //5 days we can issue back to back, then,
+	minutes:   1*Time.minute,//1 minute delay between sending codes to an address.
 
-	length4: 4,//first 2 codes in 5 days to an address can be short like "1234"
-	length6: 6,//after that, longer like "123456"
+	limitStong: 1,//First 1 code in 5 days to an address,
+	short:      4,//can be short like "1234".
+	standard:   6,//after that, longer like "123456"
 
-	//derived from code tag
 	alphabet: 'ABCDEFHJKMNPQRTUVWXYZ',//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
+	/*
+	For a 50% chance to guess correctly we need N guesses such that:
+		(1 - p)^N = 0.5   where p = 1/(total possible codes)
+	Using the small-p approximation: ln(1-p) ≈ -p, we get:
+		N ≈ ln(0.5)/(-p) ≈ 0.693 / p
+
+	For 4-digit codes: 
+		p = 1/10000 = 0.0001
+		N ≈ 0.693 / 0.0001 ≈ 6930 guesses
+		With 4 guesses every 5 days:
+			Periods = 6930 / 4 ≈ 1732.5
+			Total time ≈ 1732.5 * 5 days = 8662.5 days ≈ 23.7 years
+
+	For 6-digit codes:
+		p = 1/1000000 = 0.000001
+		N ≈ 0.693 / 0.000001 ≈ 693000 guesses
+		With 4 guesses every hour:
+			Periods = 693000 / 4 ≈ 173250
+			Total time ≈ 173250 hours ≈ 173250/8760 ≈ 19.8 years
+	*/
 }
 Object.freeze(Code)
 
@@ -863,14 +862,17 @@ CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC);  -- is this
 export async function nameCheck({v}) {//ttd march, draft like from the check if your desired name is available, to choose and change a name
 	if (!v.isValid) toss('valid', {v})//you have already done this check, but here too to make sure
 
+	let task = Task({name: 'name check'})
 	let rowNormal = await name_get({nameNormal: v.formNormal})
 	let rowPage   = await name_get({namePage:   v.formPage})
-	return {
+	task.available = {
 		isAvailable: (!rowNormal) && (!rowPage),
 		isAvailableNormal: !rowNormal,
 		isAvailablePage: !rowPage,
 		v,
 	}
+	task.finish()
+	return task
 }
 
 async function name_get({//look up user route and name information by calling with one of these:

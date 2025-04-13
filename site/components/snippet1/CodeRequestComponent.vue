@@ -12,27 +12,36 @@ const refButtonInFlight = ref(false)//the button below sets to true while it's w
 
 const refAddress = ref('')
 const refProvider = ref('')
-const refOutput = ref('')
 
 watch([refAddress, refProvider], () => {
 	let v = validateEmailOrPhone(refAddress.value)
-
-	if      (v.isValid && v.type == 'Email.') { refOutput.value = `valid email ${v.formPage}` }
-	else if (v.isValid && v.type == 'Phone.') { refOutput.value = `valid phone ${v.formPage}` }
-	else                                      { refOutput.value = 'type a valid email or phone' }
-
 	refButtonCanSubmit.value = toBoolean(v.isValid && hasText(refProvider.value))
 })
 
 async function onClick() {
-	let r = await refButton.value.post('/api/code/send', {
+	let result = await refButton.value.post('/api/code/send', {
 		address: refAddress.value,
 		provider: refProvider.value,
 	})
-	log("CodeRequestComponent's onClick got this r from the post:", look(r))
-	helloStore.codesMerge(r.response.codes)
-
-	//ok, here's where you merge in response.codes
+	log('code send post result', look(result))
+	helloStore.setCodes(result.response.codes)
+	/*
+	response
+	.success true - code sent, and there will be a new record about it in the store; this box can disappear
+	.success false - code not sent
+		.reason CoolSoft.
+		.reason CoolHard.
+	*/
+	if (result.response.success) {
+		log('reached 1, code sent successfully, so now this box should hide')//[x]
+	} else if (result.response.reason == 'CoolSoft.') {
+		log('reached 2, cant send a code right now, wait 5 minutes')//[x]
+	} else if (result.response.reason == 'CoolHard.') {
+		log('reached 3, cant send a code right now, wait 24 hours')
+		//all three of these are, the controls switch to a message, and clicking the box closes it
+	} else {
+		log('SOME OTHER OUTCOME')
+	}
 }
 
 </script>
@@ -54,8 +63,6 @@ async function onClick() {
 		:onClick="onClick"
 	/>
 </p>
-
-<p>{{refOutput}}</p>
 
 </div>
 </template>

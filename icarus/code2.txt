@@ -1,0 +1,172 @@
+
+
+essentially, right now, you are learning to distill objects on the server side to return tight meaningful summaries to teh apge
+previously, you were being exhaustive, because you wanted to not miss any detail
+now, it's time to make things easier for yourself
+and also know that you can't leak information to the page
+by combining and discarding details that are not necessary
+
+
+
+
+maybe
+.fault
+
+0 success
+1 Staff.
+	- a code mistake that must be immediately diagnosed and corrected by the development team, eitehr in the code, or because of misbehaving core provider, like cloudflare, lambda, or supabase
+2 Provider.
+	- an api is misbehaving, from a non essential, second tier or expected to be less reliable provider, like twilio, aws ses. includes a slowdown from a core provider, like supabase works, but takes over two seconds, or something
+3 Page.
+	- an error, but from untrusted code, from what the page is telling us, whcih should be impossible, and potentially indicates tampering; a mistake in the code of the page
+4 User.
+	- the user can wait or correct thigns and try again to fix this
+
+^write into net23.txt before you implement or use, even
+is it really just these four? trying to think of another one
+
+
+
+
+Simple next step
+
+Treat small and large cooldown periods as errors on send, you’ll likely turn up limits making them truly exceptional corner cases
+
+Unified signup and login
+Unified email and phone
+Users are authenticated now
+User names are separate and optional
+
+We’ve seen this address at another browser: require verification; outcomes verified and signed in
+Address totally new: challenge address but let them in anyway; new user tag; signed into that browser
+
+Then move on to:
+User lifecycle: hide, suspend, delete
+User profile and page, name, status, route, permission to view, to edit
+User rank: fan, creator, staff, god
+User provisional, full
+
+And do more types for addresses:
+Oauth twitter, google, 
+MetaMask, wallet connect, rainbow, wagmi, trust wallet, Coinbase wallet, Robinhood wallet
+Totp with qr and protocol, mobile detect
+
+Also do on the side:
+Date route pagination replacing infinite scroll scraps
+
+
+
+
+
+
+
+on the flow where a user guesses a code that kills it, either because it's expired now
+or because that was the last change guess, and it was wrong
+what you get back is an object with no records, success false, lives 0
+
+here, see if you can lean on the note
+
+
+you want to collapse these down
+and fine to use success true/false throughout
+and have ".reason" which is enum like "WaitMinutes." "WaitHours."
+
+
+codeSend
+
+success true
+codes
+
+success false
+reason
+	CoolHard.
+	CoolSoft.
+
+
+
+codeEnter
+
+success true (and watch out for codes to be [])
+
+success false
+	reason Expired
+	reason Wrong, lives 1+
+	reason Wrong, lives 0
+
+
+{success: false, reason: 'Error.', lives: 0}
+{success: false, reason: 'Expired.', lives: 0}
+{success: true, reason: 'Correct.', lives: 0}
+{success: false, reason: 'Wrong.', lives}//user may be able to guess again on this code
+and .codes
+
+
+
+
+
+
+
+
+
+
+
+
+
+be able to say
+CoolSoft. "try again in 5 minutes"
+CoolHard. "try again in 24 hours"
+without needing to say exactly when; it'll be sooner than that
+
+
+
+
+
+			reason: 'CoolHard.',
+			explanation: 'We can only send 10 codes in 24 hours.',
+
+				reason: 'CoolSoft.',
+				explanation: 'Must wait 5 minutes between codes.',
+
+
+
+1[]run code request and enter to correct mistakes
+2[]use name to figure out how server errors could bubble up
+and then probably
+3[]change PostButton to throw on server error (no try catch) and collapse up the response (a task that isn't saved)
+
+
+
+
+[]wire it up so if you type a provider that isn't a or t, you simulate different kinds of failure from the worker, like an exception, which should error the page
+
+you are right now, importantly, figuring out how errors of different sources, severity, and remedy, bubble up the page
+
+
+
+
+ok, imagine you request a code to the same address
+you need to not merge in the code records. rather, you need to **replace** the code records. so dead codes go away!
+and the list should be ok because the tags are the same
+
+well, it'll be interesting to see if you ever need list and merge!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

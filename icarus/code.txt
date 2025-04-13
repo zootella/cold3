@@ -380,6 +380,71 @@ function
 
 
 
+	/*
+	can't find it
+	- just sent it, so wait
+	- sent a minute ago, so actually check
+	- sent two minutes ago, and can
+
+	_i cant find it_
+
+	>just sent
+	wait
+	>sent a minute ago
+	actually check
+
+
+
+	*/
+
+	/*
+	if the code the user has been working on expired or was guessed to death, you'll get no code records at all, merge in []
+	and success false, guessAgain false
+
+	what really does CodeEnterComponent do?
+	it's there because the page knows this browser has a code the user could find and enter
+	it's tied to a specific code challenge, it has the code tag and prefix letter
+
+	what's the minimal ui copy here?
+
+	Check your email|texts for the code we sent
+	*/
+
+
+	/*
+	response will be correct: true, false
+	and lives: 0, 1+
+	you can also tell if they guessed this code already, with lives < Code.guesses or whatever
+
+	on correct, just say thanks, and disappear in a few seconds or a click
+	on wrong, still lives, say wrong, let them try again
+
+	on wrong, no more lives, say wrong, tell them to request a new code
+
+	and update the pinia store accordingly, removing dead codes from the array? no, setting lives and correct, and then letting this render appropriately!
+	*/
+
+
+
+
+/*
+<p>
+	we sent the code at {{sayTimePage(code.tick)}} and it'll last for {{Code.lifespan20/Time.minute}} minutes from then,
+	until {{sayTimePage(code.tick + (20*Time.minute))}}. After that, you'll have to request a new one.
+</p>
+*/
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

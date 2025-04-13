@@ -1,6 +1,6 @@
 
 import {
-validateEmailOrPhone, codeSend,
+validateEmailOrPhone, codeSend, browserToCodes,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -22,10 +22,12 @@ async function doorHandleBelow({door, body, action}) {
 	else if (provider == 'T') provider = 'Twilio.'
 	else toss('bad provider', {body, provider})//ttd march, how does this get back to the page? so it can get the message bad provider, rather than just a blank 500? but not the watch, of course! some design to do here
 
-	return await codeSend({
+	let response = await codeSend({
 		browserTag: body.browserTag,
 		provider: provider,
 		type: v.type,
 		v: v,
 	})
+	response.codes = await browserToCodes({browserTag})
+	return response
 }
