@@ -27,6 +27,15 @@ const connection = ref({})//ip address, geographic information, and browser info
 const codes = ref([])//codes this browser could enter, empty array before check or if none
 const setCodes = (a2) => { if (!a2) a2 = []; codes.value = a2 }//ttd april, had trouble replacing the reference to a new array in components, even though that should work; doing that in this store method works fine. the lighter touch would be to clear and repopulate the array. and even that is short of comparing and updating the array only as needed
 
+//notifcations, entirely a system of the page, nothing from the database at all
+const notifications = ref([])
+const addNotification = (message) => {
+	notifications.value.unshift({tag: Tag(), tick: Now(), message})
+}
+const removeNotification = (tag) => {
+	notifications.value = notifications.value.filter(item => item.tag !== tag)
+}
+
 const hello1 = sequentialShared(async () => {
 	try {
 		let t = Now()
@@ -74,6 +83,8 @@ return {
 
 	//codes
 	codes, setCodes,
+	//notifications
+	notifications, addNotification, removeNotification,
 }
 
 })

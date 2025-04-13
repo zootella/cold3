@@ -572,6 +572,7 @@ export async function browserToCodes({browserTag}) {
 			codes.push({
 				tag: row.row_tag,//the code's tag, also the row tag, letting the page identify the challenge
 				tick: row.row_tick,//when we sent the code
+				lives: row.lives,//how many guesses remain on this code
 
 				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
 				addressType: row.type_text,//the type of address, like "Email."
@@ -579,10 +580,6 @@ export async function browserToCodes({browserTag}) {
 				addressFormal: row.formal_text,//the address we used with the api
 				addressPage:   row.page_text,
 				//note we importantly do not send hash to the page, that's the secret part!
-
-				lives: row.lives,//how many guesses remain on this code
-				show: true,//let the page hide a record
-				//^ttd april, you are using show, you are not sure if it should get set here!
 			})
 		}
 	}

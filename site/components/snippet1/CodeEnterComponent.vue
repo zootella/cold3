@@ -10,8 +10,6 @@ const props = defineProps({
 	code: {type: Object, required: true},
 })
 
-const refShow = ref(true)
-
 const refInstruction = ref('')
 const refCodeCandidate = ref('')
 
@@ -58,7 +56,7 @@ const growl = log
 
 </script>
 <template>
-<div class="border border-gray-300 p-2" v-show="refShow">
+<div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CodeEnterComponent</i></p>
 
 <p>{{refInstruction}}</p>

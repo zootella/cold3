@@ -8,6 +8,7 @@ const helloStore = useHelloStore()
 </script>
 <template>
 
-<CodeEnterList v-show="helloStore.codes.length" />
+<NotificationList v-show="helloStore.notifications.length" />
+<CodeEnterList    v-show="helloStore.codes.length"         />
 
 </template>
