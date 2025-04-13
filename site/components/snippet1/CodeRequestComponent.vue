@@ -24,25 +24,22 @@ async function onClick() {
 		provider: refProvider.value,
 	})
 	log('code send post result', look(result))
-	/*
-	response
-	.success true - code sent, and there will be a new record about it in the store; this box can disappear
-	.success false - code not sent
-		.reason CoolSoft.
-		.reason CoolHard.
-	*/
 	if (result.response.success) {
-		log('reached 1, code sent successfully, so now this box should hide')//[x] []hide box controls; no notification necessary
+		//automatically, an enter box will appear
+		//- collapse the controls in this box, as the user doesn't need to use them again
 	} else if (result.response.reason == 'CoolSoft.') {
-		log('reached 2, cant send a code right now, wait 5 minutes')//[x] []notification about wait a minute
+		//automatically, nothing changes
+		//- collapse the controls in this box, as the user can't use them for another minute
+		growl("To keep things secure, we can't send another code to that address right away. Wait one minute, and try again, please.")
 	} else if (result.response.reason == 'CoolHard.') {
-		log('reached 3, cant send a code right now, wait 24 hours')// []notification about wait 24 hours
-		//all three of these are, the controls switch to a message, and clicking the box closes it
-	} else {
-		log('SOME OTHER OUTCOME')
+		//automatically, nothing changes
+		//- collapse the controls in this box, as the user can't use them for another minute
+		growl("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
 	}
 	helloStore.setCodes(result.response.codes)
 }
+
+const growl = log
 
 </script>
 <template>

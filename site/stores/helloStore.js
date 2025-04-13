@@ -25,12 +25,7 @@ const connection = ref({})//ip address, geographic information, and browser info
 
 //codes
 const codes = ref([])//codes this browser could enter, empty array before check or if none
-const setCodes = (a2) => {
-	codes.value.splice(0, codes.value.length)
-	if (a2 && a2.length) codes.value.push(...a2)
-}
-const visibleCodes = computed(() => codes.value.filter(code => code.show).reverse())//soonest to expire first
-//^ttd april, change .show to .notFound, and things fail silently; figure out how to catch that error!
+const setCodes = (a2) => { if (!a2) a2 = []; codes.value = a2 }//ttd april, had trouble replacing the reference to a new array in components, even though that should work; doing that in this store method works fine. the lighter touch would be to clear and repopulate the array. and even that is short of comparing and updating the array only as needed
 
 const hello1 = sequentialShared(async () => {
 	try {
@@ -62,7 +57,7 @@ const hello2 = sequentialShared(async () => {
 		connection.value = r.connection
 
 		//codes
-		setCodes(r.codes)
+		codes.value = r.codes
 
 		duration2.value = Now() - t
 	} catch (e) { error2.value = e }
@@ -78,7 +73,7 @@ return {
 	connection,
 
 	//codes
-	codes, visibleCodes, setCodes,
+	codes, setCodes,
 }
 
 })

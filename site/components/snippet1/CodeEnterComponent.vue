@@ -35,31 +35,26 @@ async function onClick() {
 		codeCandidate: onlyNumerals(refCodeCandidate.value),
 	})
 	log('code enter post result', look(result))
-	/*
-	response
-	.success true - correct guess, watch out for .codes to be [] because satisifying a code challenge also kills it!
-	.success false
-		.reason Expired.          - next step for the user is to request a new code
-		.reason Wrong. .lives 1+  - the user can guess again
-		.reason Wrong. .lives 0   - next step for the user is to request a new code
-	*/
 	if (result.response.success) {
-		log('reached 1, correct')//[x] component will disappear
-		//message and close, maybe also auto close
+		//automatically, this box will disappear on setCodes below
+		growl("✔️ address verified")
 	} else if (result.response.reason == 'Wrong.' && result.response.lives) {
-		log('reached 2, try again')//[x]
-		//box stays open
+		//automatically, nothing changes
+		//-[]box should indicate incorrect guess, clear the field, tell the user to try again
 	} else if (result.response.reason == 'Wrong.' && result.response.lives == 0) {
-		log('reached 3, get a new code')//[x]
-		//not sure yet, but for right now, message and close
-	} else {
-		log('SOME OTHER OUTCOME')
+		//automatically, this box will disappear on setCodes below
+		growl('code incorrect; request a new code to try again')
+	} else if (result.response.reason == 'Expired.') {
+		//automatically, this box will disappear on setCodes below
+		growl('code expired; request a new code to try again')
 	}
 	helloStore.setCodes(result.response.codes)
 }
 function clickedCantFind() {
 	log('clicked cant find')
 }
+
+const growl = log
 
 </script>
 <template>
