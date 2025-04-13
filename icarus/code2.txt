@@ -186,6 +186,41 @@ CodeEnterComponent
 
 
 
+hmm, maybe you code, with chat, a floating notification
+single, gets replaced with another message
+floats over everything
+doesn't respond to a click
+disappears in one second
+and use that now, and then move on
+yeah, you like that idea
+
+
+
+
+
+
+ok, next to do is to
+[]collapse response into result in PostButton, and
+[]have a toss in the worker toss in the page
+leading to the error page
+after log alerting in the worker to datadog
+[]and demonstrate that for yourself with a not "a" or "t" provider code
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

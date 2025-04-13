@@ -35,24 +35,22 @@ async function onClick() {
 	log('code enter post result', look(result))
 	if (result.response.success) {
 		//automatically, this box will disappear on setCodes below
-		growl("✔️ address verified")
+		helloStore.addNotification("✔️ address verified")
 	} else if (result.response.reason == 'Wrong.' && result.response.lives) {
 		//automatically, nothing changes
 		//-[]box should indicate incorrect guess, clear the field, tell the user to try again
 	} else if (result.response.reason == 'Wrong.' && result.response.lives == 0) {
 		//automatically, this box will disappear on setCodes below
-		growl('code incorrect; request a new code to try again')
+		helloStore.addNotification('code incorrect; request a new code to try again')
 	} else if (result.response.reason == 'Expired.') {
 		//automatically, this box will disappear on setCodes below
-		growl('code expired; request a new code to try again')
+		helloStore.addNotification('code expired; request a new code to try again')
 	}
 	helloStore.setCodes(result.response.codes)
 }
 function clickedCantFind() {
 	log('clicked cant find')
 }
-
-const growl = log
 
 </script>
 <template>
