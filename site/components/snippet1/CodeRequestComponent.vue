@@ -24,7 +24,6 @@ async function onClick() {
 		provider: refProvider.value,
 	})
 	log('code send post result', look(result))
-	helloStore.setCodes(result.response.codes)
 	/*
 	response
 	.success true - code sent, and there will be a new record about it in the store; this box can disappear
@@ -33,15 +32,16 @@ async function onClick() {
 		.reason CoolHard.
 	*/
 	if (result.response.success) {
-		log('reached 1, code sent successfully, so now this box should hide')//[x]
+		log('reached 1, code sent successfully, so now this box should hide')//[x] []hide box controls; no notification necessary
 	} else if (result.response.reason == 'CoolSoft.') {
-		log('reached 2, cant send a code right now, wait 5 minutes')//[x]
+		log('reached 2, cant send a code right now, wait 5 minutes')//[x] []notification about wait a minute
 	} else if (result.response.reason == 'CoolHard.') {
-		log('reached 3, cant send a code right now, wait 24 hours')
+		log('reached 3, cant send a code right now, wait 24 hours')// []notification about wait 24 hours
 		//all three of these are, the controls switch to a message, and clicking the box closes it
 	} else {
 		log('SOME OTHER OUTCOME')
 	}
+	helloStore.setCodes(result.response.codes)
 }
 
 </script>

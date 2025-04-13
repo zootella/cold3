@@ -35,7 +35,6 @@ async function onClick() {
 		codeCandidate: onlyNumerals(refCodeCandidate.value),
 	})
 	log('code enter post result', look(result))
-	helloStore.setCodes(result.response.codes)
 	/*
 	response
 	.success true - correct guess, watch out for .codes to be [] because satisifying a code challenge also kills it!
@@ -45,7 +44,7 @@ async function onClick() {
 		.reason Wrong. .lives 0   - next step for the user is to request a new code
 	*/
 	if (result.response.success) {
-		log('reached 1, correct')//[x]
+		log('reached 1, correct')//[x] component will disappear
 		//message and close, maybe also auto close
 	} else if (result.response.reason == 'Wrong.' && result.response.lives) {
 		log('reached 2, try again')//[x]
@@ -56,6 +55,7 @@ async function onClick() {
 	} else {
 		log('SOME OTHER OUTCOME')
 	}
+	helloStore.setCodes(result.response.codes)
 }
 function clickedCantFind() {
 	log('clicked cant find')

@@ -155,7 +155,30 @@ well, it'll be interesting to see if you ever need list and merge!
 
 
 
+ok, you're going to try the "disappears entirely" total synchronization method
+the component dies as soon as you sync the return array
+but right before that, you can create a notification
+so now i guess you're making a notification system that closes on
+- click anywhere in the box
+- any click anywhere in the page, any route change
+- a timeout
 
+
+what should happen
+what happens automatically
+
+CodeRequestComponent
+1 sent successfully
+controls in box should collaps
+2 wait a minute
+notification says wait a minute
+3 wait 24 hours
+notification says wait 24 hours
+
+CodeEnterComponent
+1 correct
+2 wrong, try again
+3 expired wrong limited, request a new code
 
 
 
