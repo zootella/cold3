@@ -1,9 +1,35 @@
 
 import {
-Sticker, isCloud, getAccess,
-log, logAlert, logAudit, look, Now, Size, Data, Task, hasText, headerGetOne,
+
+//import everything that we automatically import in site
+wrapper, Sticker, isLocal, isCloud,
+Now, Time, Size, Limit, newline,
+defined,
+toss, log, look,
+noop, test, ok,
+
+toBoolean, toTextOrBlank,
+checkInt, minInt,
+intToText, textToInt,
+hasText, checkText,
+hasTextOrBlank, checkTextOrBlank,
+
+Tag, hasTag, checkTag, checkTagOrBlank,
+checkHash,
+
+dog, logAudit, logAlert,
+awaitDog, awaitLogAudit, awaitLogAlert,
+
+canGetAccess, getAccess,
+doorWorker, doorLambda,
+Task,
+
+//and also import these references
+Data,
+replaceAll, replaceOne,
+headerGetOne,
 checkEmail, checkPhone,
-test, ok, replaceAll, replaceOne,
+
 } from 'icarus'
 
 /*
@@ -31,6 +57,12 @@ export async function warm({provider, service}) {
 		case 'Sharp.':        await loadSharp();       break
 	}
 	task.finish({success: true})
+
+	notDefined
+	//ttd april, now you'll watch this error make it all the way back up to the page!
+
+
+
 	return task
 }
 

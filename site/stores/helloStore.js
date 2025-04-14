@@ -35,6 +35,16 @@ const addNotification = (message) => {
 const removeNotification = (tag) => {
 	notifications.value = notifications.value.filter(item => item.tag !== tag)
 }
+/*
+ttd april
+the eventual design that is best may also be quite simple:
+there isn't a hello1 and hello2, there's just one hello
+the browser sends the browser tag automatically with every GET and POST, so you have it from the first hit
+a brand new visitor gets a brochure page from hello after a single ~150ms query, which is great
+a returning, signed in, subscribed user's request takes longer, maybe ~500ms
+the page goes from entirely blank to entirely populated for that user
+this may be a better experience than, during 500ms, different parts of the page pop into existance
+*/
 
 const hello1 = sequentialShared(async () => {
 	try {
