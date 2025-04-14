@@ -1,4 +1,4 @@
-
+//./server/api/name.js
 import {
 validateName, nameCheck,
 } from 'icarus'
@@ -6,7 +6,7 @@ validateName, nameCheck,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {useTurnstile: true, actions: ['Check.'], workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 	let v = validateName(body.name)
 	if (!v.isValid) toss('valid', {body, v})
 

@@ -233,6 +233,32 @@ comments in conversational lowercase
 
 
 
+                              
+  ___ _ __ _ __ ___  _ __ ___ 
+ / _ \ '__| '__/ _ \| '__/ __|
+|  __/ |  | | | (_) | |  \__ \
+ \___|_|  |_|  \___/|_|  |___/
+                              
+
+talk about
+- Task as a wrapper
+- unwrapping before passing up to not let things go deeper and deeper
+- exceptions as truly exceptional (summarized below)
+
+treat unexpected exceptions as fatal issues that indicate a bug in the code rather than as a part of normal control flow—the recommended Nuxt 3 configuration and practices shift toward a “fail fast” approach. This means that rather than attempting to recover from errors or provide graceful degradation, you let exceptions bubble up to a global error handler, log them appropriately, and present a clear, interruptive error page to users.
+
+we don't follow nuxt patterns precisely, because we're vendor isomorphic between workers and lambdas
+
+but reading
+https://nuxt.com/docs/getting-started/error-handling
+https://nuxt.com/docs/getting-started/error-handling#error-page
+https://nuxt.com/docs/api/utils/create-error
+
+
+Nuxt 3—with its underlying Nitro engine—mainly expects you to handle server-side errors by letting them bubble up and then catching them using Nitro’s built‐in hooks (like the render:errorMiddleware hook). This is the recommended and most common approach because it captures a wide range of errors that occur during request processing, including those that arise from internal configuration or runtime code that you might not directly control.
+
+
+
 
 
        _ _          _                _         _               _   

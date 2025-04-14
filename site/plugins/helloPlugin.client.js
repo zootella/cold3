@@ -1,5 +1,4 @@
-
-//this file is ./plugins/plugin1.js
+//./plugins/helloPlugin.client.js
 
 export default defineNuxtPlugin(async (nuxtApp) => {
 

@@ -28,25 +28,25 @@ watch([refCodeCandidate], () => {
 })
 
 async function onClick() {
-	let result = await refButton.value.post('/api/code/enter', {
+	let response = await refButton.value.post('/api/code/enter', {
 		codeTag: props.code.tag,//hidden from the user but kept with the form
 		codeCandidate: onlyNumerals(refCodeCandidate.value),
 	})
-	log('code enter post result', look(result))
-	if (result.response.success) {
+	log('code enter post response', look(response))
+	if (response.success) {
 		//automatically, this box will disappear on setCodes below
 		helloStore.addNotification("✔️ address verified")
-	} else if (result.response.reason == 'Wrong.' && result.response.lives) {
+	} else if (response.reason == 'Wrong.' && response.lives) {
 		//automatically, nothing changes
 		//-[]box should indicate incorrect guess, clear the field, tell the user to try again
-	} else if (result.response.reason == 'Wrong.' && result.response.lives == 0) {
+	} else if (response.reason == 'Wrong.' && response.lives == 0) {
 		//automatically, this box will disappear on setCodes below
 		helloStore.addNotification('code incorrect; request a new code to try again')
-	} else if (result.response.reason == 'Expired.') {
+	} else if (response.reason == 'Expired.') {
 		//automatically, this box will disappear on setCodes below
 		helloStore.addNotification('code expired; request a new code to try again')
 	}
-	helloStore.setCodes(result.response.codes)
+	helloStore.setCodes(response.codes)
 }
 function clickedCantFind() {
 	log('clicked cant find')

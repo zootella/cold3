@@ -57,12 +57,6 @@ export async function warm({provider, service}) {
 		case 'Sharp.':        await loadSharp();       break
 	}
 	task.finish({success: true})
-
-	notDefined
-	//ttd april, now you'll watch this error make it all the way back up to the page!
-
-
-
 	return task
 }
 

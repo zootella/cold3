@@ -19,24 +19,24 @@ watch([refAddress, refProvider], () => {
 })
 
 async function onClick() {
-	let result = await refButton.value.post('/api/code/send', {
+	let response = await refButton.value.post('/api/code/send', {
 		address: refAddress.value,
 		provider: refProvider.value,
 	})
-	log('code send post result', look(result))
-	if (result.response.success) {
+	log('code send post response', look(response))
+	if (response.success) {
 		//automatically, an enter box will appear
 		//- collapse the controls in this box, as the user doesn't need to use them again
-	} else if (result.response.reason == 'CoolSoft.') {
+	} else if (response.reason == 'CoolSoft.') {
 		//automatically, nothing changes
 		//- collapse the controls in this box, as the user can't use them for another minute
 		helloStore.addNotification("To keep things secure, we can't send another code to that address right away. Wait one minute, and try again, please.")//ttd april, it may instead make sense to write that into the enter box, letting them choose a different address, or something
-	} else if (result.response.reason == 'CoolHard.') {
+	} else if (response.reason == 'CoolHard.') {
 		//automatically, nothing changes
 		//- collapse the controls in this box, as the user can't use them for another minute
 		helloStore.addNotification("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
 	}
-	helloStore.setCodes(result.response.codes)
+	helloStore.setCodes(response.codes)
 }
 
 </script>

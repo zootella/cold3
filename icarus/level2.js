@@ -1841,6 +1841,38 @@ export async function fetch23({path, body}) {
 	if (!task1.success) toss('task', {task1})
 
 	body.warm = false
-	let task2 = await $fetch(host23()+path, {method: 'POST', body})
+	let task2 = await $fetch(host23()+path, {method: 'POST', body})//a note about exceptions: a 500 from the lambda will cause $fetch to throw, and we intentionally let that exception go upwards to be caught and logged to datadog by door
 	return task2
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

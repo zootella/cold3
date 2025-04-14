@@ -868,7 +868,7 @@ export async function nameCheck({v}) {//ttd march, draft like from the check if 
 		isAvailablePage: !rowPage,
 		v,
 	}
-	task.finish()
+	task.finish({success: true})
 	return task
 }
 

@@ -97,12 +97,10 @@ defineExpose({post: async (path, body) => {
 		emit('update:inFlight', false)//using a finally block here to make sure we can't leave the button orange
 	}
 	task.finish()
-	return task
-	/*
-	ttd april, things you might change here in just a moment:
-	- if the task is successful, return the response directly
-	- if there's an exception, or the server responded 500, throw right here
-	*/
+	log('in post button, we have task.error:', look(task.error))
+	//so throw didn't work, but maybe it will, now
+	if (task.error) throw task.error//we're using exceptions for truly exceptional, should-be-impossible, wake up whoever is on pager duty to fix the code, circumstances; an exception in the worker or lambda will lead to a 500, which will call $fetch to throw. the try/catch/finally block is here to emit inFlight false, but then we want an exception to keep propegating upwards to go to the error page. both the worker and lambda have already logged ALERTs to datadog. the user should refresh the page, complain out of band to staff, and try again
+	return task.response//return the response, discarding the task, so things don't keep getting deeper
 }})
 
 //ttd march, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something

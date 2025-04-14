@@ -19,14 +19,14 @@ watch([refName], () => {
 })
 
 async function onClick() {
-	let result = await refButton.value.post('/api/name', {
+	let response = await refButton.value.post('/api/name', {
 		action: 'Check.',
 		name: refName.value,
 	})
-	log('name post result', look(result))
-	refMessage.value = ((result.response.available.isAvailable) ?
-		`✔️ Yes, "${result.response.available.v.formPage}" is available for you to take!` :
-		`❌ Sorry, "${result.response.available.v.formPage}" is already in use.`)
+	log('name post response', look(response))
+	refMessage.value = ((response.available.isAvailable) ?
+		`✔️ Yes, "${response.available.v.formPage}" is available for you to take!` :
+		`❌ Sorry, "${response.available.v.formPage}" is already in use.`)
 }
 
 </script>
