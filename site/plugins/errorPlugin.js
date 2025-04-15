@@ -3,11 +3,12 @@
 export default defineNuxtPlugin(async (nuxtApp) => {
 
 	//Vue's native error handler catches rendering and lifecycle errors.
-	nuxtApp.vueApp.config.errorHandler = (error, instance, info) => { passError({source: 'VueHandler.', error, instance, info}) }
-	//Nuxt's vue:error hook catches errors within Vue's component system; may overlap with config.errorHandler
-	nuxtApp.hook('vue:error', (error, instance, info) => { passError({source: 'VueHook.', error, instance, info}) })
+	nuxtApp.vueApp.config.errorHandler = (error, instance, info) => { passError({source: 'Vue.', error, instance, info}) }
 	//Nuxt's app:error hook catches broader application errors, such as during SSR or plugin initialization)
-	nuxtApp.hook('app:error', async (error) => { await passError({source: 'NuxtHook.', error}) })//we can't use async await in the other two
+	nuxtApp.hook('app:error', async (error) => { await passError({source: 'Nuxt.', error}) })//we can't use async await in the other two
+
+	//errorspot, also make an errorspot within these plugins that run at the start of every server GET or POST, and also every new tab navigation
+
 
 	/*
 	without registering error handlers, Nuxt 

@@ -14,6 +14,8 @@ const error = ref(null)//error from the server, if the response was not ok
 const duration = ref(0)//how long in milliseconds we waited for the response
 const gotten = ref(false)//our own flag to not bother the api unnecessarily
 
+//errorspot, hitStore is server rendered, and then goes across the bridge, using Pinia's support for hybrid rendering (helloStore does not do this) so you need to make an errorspot here, and see it hit both server and client!
+
 // Actions
 async function getHits() {
 	if (!gotten.value) {

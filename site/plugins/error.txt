@@ -1,0 +1,153 @@
+
+
+
+
+
+                              
+  ___ _ __ _ __ ___  _ __ ___ 
+ / _ \ '__| '__/ _ \| '__/ __|
+|  __/ |  | | | (_) | |  \__ \
+ \___|_|  |_|  \___/|_|  |___/
+                              
+
+talk about
+- Task as a wrapper
+- unwrapping before passing up to not let things go deeper and deeper
+- exceptions as truly exceptional (summarized below)
+
+treat unexpected exceptions as fatal issues that indicate a bug in the code rather than as a part of normal control flow—the recommended Nuxt 3 configuration and practices shift toward a “fail fast” approach. This means that rather than attempting to recover from errors or provide graceful degradation, you let exceptions bubble up to a global error handler, log them appropriately, and present a clear, interruptive error page to users.
+
+we don't follow nuxt patterns precisely, because we're vendor isomorphic between workers and lambdas
+
+but reading
+https://nuxt.com/docs/getting-started/error-handling
+https://nuxt.com/docs/getting-started/error-handling#error-page
+https://nuxt.com/docs/api/utils/create-error
+
+
+Nuxt 3—with its underlying Nitro engine—mainly expects you to handle server-side errors by letting them bubble up and then catching them using Nitro’s built‐in hooks (like the render:errorMiddleware hook). This is the recommended and most common approach because it captures a wide range of errors that occur during request processing, including those that arise from internal configuration or runtime code that you might not directly control.
+
+
+
+
+
+
+
+
+stop trying to register every handler and catch every error
+
+realize that you can't catch errors on the margin of an icarus file
+nor a persephone file
+nor on the margin of a component's script setup; if you try to make one there, things don't even build
+
+do choose some common error locations, you've marked with errorspot, and confirm that errors there are handled the way you want
+- which is, if on the server, to log to datadog, and then make the page error.vue
+- and if, on the client, to log to the browser console.error, make the page error.vue, where there is a button, that uses turnstile, that logs the error to a new /server/src/error.js endpoint
+
+and for errorspot, you have a lot of quick manual testing to do
+each errorspot
+x
+server rendered | client rendered (as part of )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//server
+export default defineNuxtPlugin(async (nuxtApp) => {
+	nuxtApp.hook('app:error', async (error) => {//this should catch errors errors after Nuxt has bootstrapped the application, including SSR, store creation, and other plugin-driven areas
+		try {
+			await awaitLogAlert('nuxt plugin app error', {error, event})
+		} catch (e) {
+			console.error('[OUTER]', e, error, event)//if trying to reach datadog throws, fall back to the simple way
+		}
+	})
+})
+
+
+//client
+export default defineNuxtPlugin((nuxtApp) => {
+	nuxtApp.vueApp.config.errorHandler = (error, instance, info) => {
+		//you've observed a mistake in a computed property function lead here
+		log('error handler 1', look({error, instance, info}))
+
+		//chat is telling me the right way to get the page to error.vue is to throw createError:
+		throw createError({statusCode: 400, source: 'Handler.', error, instance, info, message: 'A runtime error occurred.' })
+	}
+	nuxtApp.hook('vue:error', (error, instance, info) => {
+		//you've observed mistakes in watch and click handlers lead here
+		log('error handler 2', look({error, instance, info}))
+
+		//chat is telling me throwing here could create an infinite loop, and instead this will get the page to error.vue:
+		useError().value = createError({statusCode: 400, source: 'Hook.', error, instance, info, message: 'A runtime error occurred.' })
+	})
+})
+
+
+//ttd april, three more for the client that you're not going to start out with, as they could freak out unnecessarily
+const router = useRouter()
+router.onError((error) => {
+	log('error handler 3', look({error}))
+	nuxtApp.error({statusCode: 400, source: 'Router.', error, message: 'A routing error occurred.'})
+})
+window.addEventListener('error', (event) => {
+	log('error handler 4', look({event}))
+	nuxtApp.error({statusCode: 400, source: 'ScriptError.', event, message: 'A runtime error occurred.' })
+})
+window.addEventListener('unhandledrejection', (event) => {
+	log('error handler 5', look({event}))
+	nuxtApp.error({statusCode: 400, source: 'ScriptPromise.', event, message: 'An unhandled promise rejection occurred.' })
+})
+
+
+
+
+Vue’s Native Error Handler (vueApp.config.errorHandler):
+This is Vue’s built‐in mechanism for catching errors in rendering, lifecycle hooks, and some component code. It’s very low level and gets triggered when Vue itself encounters an exception.
+
+Nuxt’s vue:error Hook:
+This hook is provided by Nuxt and catches errors within the Vue component system. In practice, its scope overlaps strongly with what Vue’s native error handler already does. Many of the errors you’d catch here are also caught by the native config.errorHandler.
+
+Nuxt’s app:error Hook:
+This is a broader hook that catches errors in the application outside of the Vue component lifecycle—for example during SSR rendering or plugin initialization. It gives you access to errors that occur “above” the component system.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
