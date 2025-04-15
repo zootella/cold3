@@ -2,6 +2,15 @@
 
 export default defineNuxtPlugin(async (nuxtApp) => {
 
+	/*
+	errors; summary of findings and decisions:
+	- can't catch errors on the margin; nuxt won't build
+	- can't catch every error
+	- remember that while api endpoints only run on the server, plugins, stores, and components run both places
+	- we're treating exceptions as truly exceptional: the page should go all error, datadog should wake up staff on pager duty
+	- on the server, we can log to datadog directly; on the client, we can post to a logger, protected by a button click and turnstile
+	*/
+
 	//Vue's native error handler catches rendering and lifecycle errors.
 	nuxtApp.vueApp.config.errorHandler = (error, instance, info) => { passError({source: 'Vue.', error, instance, info}) }
 	//Nuxt's app:error hook catches broader application errors, such as during SSR or plugin initialization)
