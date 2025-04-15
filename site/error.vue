@@ -12,7 +12,7 @@ more ideas here
 actually maybe just tell them to refresh
 */
 
-const error = useError();
+const error = useError()
 // You now have access to properties such as:
 // error.message, error.source, error.error, error.info, etc.
 

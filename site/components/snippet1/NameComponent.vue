@@ -16,9 +16,18 @@ const refMessage = ref('')
 watch([refName], () => {
 	let v = validateName(refName.value, Limit.name)
 	refButtonCanSubmit.value = toBoolean(v.isValid)
+	//errorspot, a watch function
+})
+
+const computedName = computed(() => {
+	if (refName.value == 'error') {
+		//errorspot, function for a computed property; type error to make this blow up
+	}
+	return refName.length+''
 })
 
 async function onClick() {
+	//errorspot, a click function
 	let response = await refButton.value.post('/api/name', {
 		action: 'Check.',
 		name: refName.value,
