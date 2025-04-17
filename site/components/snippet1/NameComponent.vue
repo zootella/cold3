@@ -3,7 +3,8 @@
 import {
 validateName,
 } from 'icarus'
-import {ref, watch, onMounted} from 'vue'
+//import {ref, watch} from 'vue'
+log("hi in name comonent, here are some things maybe you don't have to import after all", look({ref, watch, computed}))
 
 const refName = ref('')
 
@@ -16,18 +17,19 @@ const refMessage = ref('')
 watch([refName], () => {
 	let v = validateName(refName.value, Limit.name)
 	refButtonCanSubmit.value = toBoolean(v.isValid)
-	//errorspot, a watch function
+	//[x] errorspot, a watch function
 })
 
 const computedName = computed(() => {
 	if (refName.value == 'error') {
-		//errorspot, function for a computed property; type error to make this blow up
+		//[] errorspot, function for a computed property; type error to make this blow up
+		notDefined
 	}
-	return refName.length+''
+	return refName.value.length+''
 })
 
 async function onClick() {
-	//errorspot, a click function
+	//[] errorspot, a click function
 	let response = await refButton.value.post('/api/name', {
 		action: 'Check.',
 		name: refName.value,
@@ -44,6 +46,7 @@ async function onClick() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>NameComponent</i></p>
 
 <p>Check if your desired username is available.</p>
+<p>also, computed name is: {{computedName}}</p>
 <div>
 	<input
 		:maxlength="Limit.name"

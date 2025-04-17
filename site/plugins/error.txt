@@ -135,6 +135,22 @@ This is a broader hook that catches errors in the application outside of the Vue
 
 
 
+	/*
+	without registering error handlers, Nuxt 
+
+	in our application, we treat all exceptions as critical: the user should be shown the error page; Datadog should wake up the developer on pager duty
+
+	code can run on the client; code can run on the server
+	code can run to create a Pinia store; render a component; handle an API request, or more
+	and, remember the cross tabs! hybrid rendering means 
+	but remember the cross-tabs! hybrid rendering
+	code can run to respond to an API endpoint,
+
+	"on the client"
+
+	*/
+
+
 
 
 

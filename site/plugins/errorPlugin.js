@@ -4,38 +4,26 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
 	/*
 	errors; summary of findings and decisions:
-	- can't catch errors on the margin; nuxt won't build
-	- can't catch every error
+	- you can't catch errors on the margin; nuxt won't build
+	- you can't catch every error; the seams where the platform and framework parts come together are too numerous and arcane
 	- remember that while api endpoints only run on the server, plugins, stores, and components run both places
-	- we're treating exceptions as truly exceptional: the page should go all error, datadog should wake up staff on pager duty
+	- we're treating exceptions as truly exceptional: the page should interrupt the user, going full error; datadog should wake up staff on pager duty
 	- on the server, we can log to datadog directly; on the client, we can post to a logger, protected by a button click and turnstile
+	- an error anywhre in the three layer stack should go up to the page, both posting to datadog and making the page full error
 	*/
 
 	//Vue's native error handler catches rendering and lifecycle errors.
 	nuxtApp.vueApp.config.errorHandler = (error, instance, info) => { passError({source: 'Vue.', error, instance, info}) }
 	//Nuxt's app:error hook catches broader application errors, such as during SSR or plugin initialization)
-	nuxtApp.hook('app:error', async (error) => { await passError({source: 'Nuxt.', error}) })//we can't use async await in the other two
+	nuxtApp.hook('app:error', async (error) => { await passError({source: 'Nuxt.', error}) })//we can't use async await in first one
 
 	//errorspot, also make an errorspot within these plugins that run at the start of every server GET or POST, and also every new tab navigation
 
-
-	/*
-	without registering error handlers, Nuxt 
-
-	in our application, we treat all exceptions as critical: the user should be shown the error page; Datadog should wake up the developer on pager duty
-
-	code can run on the client; code can run on the server
-	code can run to create a Pinia store; render a component; handle an API request, or more
-	and, remember the cross tabs! hybrid rendering means 
-	but remember the cross-tabs! hybrid rendering
-	code can run to respond to an API endpoint,
-
-	"on the client"
-
-	*/
-
 	//weour requirement here is 
 	async function passError(details) {
+
+		log('pass error got: 🚧🚧🚧', look({details}))
+		/*
 		let {error} = details
 
 		if (error._alreadyHandled) return
@@ -45,8 +33,8 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
 			//log the error to datadog
 			try {
-				await awaitLogAlert(/*placeholder for now*/)
-			} catch (e) { console.error(/*placeholder for now*/) }
+				await awaitLogAlert()
+			} catch (e) { console.error() }
 
 			//now, we have to do the same things that nuxt would do before we added this handler! we want errors to bubble up to the error page the same way!!
 
@@ -61,7 +49,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 		} else if (process.client) {
 
 			//log the error to the browser developer tools console
-			console.error(/*placeholder for now*/)
+			console.error()
 
 			//now, we have to do the same things that nuxt would do before we added this handler! we want errors to bubble up to the error page the same way!!
 
@@ -77,5 +65,6 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 			// Navigate to the error page so that the view switches immediately
 			navigateTo('/error')
 		}
+		*/
 	}
 })
