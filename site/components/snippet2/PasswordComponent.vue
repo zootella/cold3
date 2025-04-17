@@ -127,8 +127,6 @@ import {
 hashPassword, Data, sayTick,
 } from 'icarus'
 
-import { ref } from 'vue'
-
 // Define reactive variables
 const inputValue = ref('')
 const outputText = ref('')

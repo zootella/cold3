@@ -1,7 +1,5 @@
 <script setup>
 
-import {ref, reactive, onMounted} from 'vue'
-
 // For the simple text input control
 const textValue = ref("")
 const borderClass = ref("border-gray-400") // default: gray border when empty

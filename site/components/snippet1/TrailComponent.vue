@@ -3,7 +3,6 @@
 import {
 sayTick,
 } from 'icarus'
-import {ref, reactive, onMounted} from 'vue'
 
 const refMessage = ref('')//yeah, there's a benefit to making refs const--if you accidentaly set one, and not its .value, you'll know right away
 const refHash = ref('')

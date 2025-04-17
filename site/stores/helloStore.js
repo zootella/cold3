@@ -3,7 +3,6 @@ import {
 getBrowserTag, getBrowserGraphics, sequentialShared,
 indexRecords, mergeRecords,
 } from 'icarus'
-import {ref, watch} from 'vue'
 import {defineStore} from 'pinia'
 
 export const useHelloStore = defineStore('hello_store', () => {

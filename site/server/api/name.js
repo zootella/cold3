@@ -4,7 +4,7 @@ validateName, nameCheck,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	//[] errorspot, event handler function
+	//[] errorspot, event handler function that gets called only from a page
 	return await doorWorker('POST', {useTurnstile: true, actions: ['Check.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body}) {

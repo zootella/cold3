@@ -1,5 +1,4 @@
 
-import {ref} from 'vue'
 import {defineStore} from 'pinia'
 
 export const useTurnstileStore = defineStore('turnstile_store', () => {

@@ -1,7 +1,5 @@
 <script setup>
 
-import {ref, reactive, watch} from 'vue'
-
 const {data, refresh} = useFetch(
 	'/api/rgw?' + (new URLSearchParams({
 		name: 'r3'

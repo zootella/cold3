@@ -1,7 +1,6 @@
 <script setup>
 //this file is ./components/HitComponent.vue
 
-import {ref, reactive, onMounted, watch} from 'vue'
 const hitStore = useHitStore()
 
 await hitStore.getHits()

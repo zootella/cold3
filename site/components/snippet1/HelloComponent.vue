@@ -1,6 +1,5 @@
 <script setup>
 
-import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()
 
 </script>

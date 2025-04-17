@@ -1,7 +1,5 @@
 <script setup>
 
-import {ref, reactive, onMounted} from 'vue'
-
 let refOutput = ref({})
 
 async function clicked(action) {

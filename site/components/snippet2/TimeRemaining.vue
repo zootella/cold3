@@ -3,7 +3,6 @@
 import {
 sayPlural,
 } from 'icarus'
-import {ref, onMounted, onUnmounted} from 'vue'
 
 let _intervalIdentifier = null
 onMounted(() => {

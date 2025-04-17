@@ -1,6 +1,5 @@
 <script setup>
 
-import {ref, reactive, watch, computed} from 'vue'
 import 'vidstack/bundle'
 
 </script>

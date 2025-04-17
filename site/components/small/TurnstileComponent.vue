@@ -3,7 +3,6 @@
 import {
 sequentialSeparate,
 } from 'icarus'
-import {ref, onMounted} from 'vue'
 const turnstileStore = useTurnstileStore()
 
 const ACCESS_TURNSTILE_SITE_KEY_PUBLIC = '0x4AAAAAAA0P1yzAbb7POlXe'//from the cloudflare dashboard; intentionally public

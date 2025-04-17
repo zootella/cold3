@@ -3,7 +3,6 @@
 import {
 getBrowserTag,
 } from 'icarus'
-import {ref, reactive, onMounted, watch} from 'vue'
 
 let browserTag = ref('')
 onMounted(() => {

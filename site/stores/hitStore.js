@@ -1,5 +1,4 @@
 
-import {ref} from 'vue'
 import {defineStore} from 'pinia'
 
 //unlike helloStore, hitStore is used only one place, HitComponent, and not in any plugins. this lets it demonstrates hybrid rendering: curl gets a page with the current hit count, nothing blinks, and the browser console shows there's  no second fetch at all!

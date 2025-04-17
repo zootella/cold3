@@ -12,10 +12,21 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 	- an error anywhre in the three layer stack should go up to the page, both posting to datadog and making the page full error
 	*/
 
-	//Vue's native error handler catches rendering and lifecycle errors.
-	nuxtApp.vueApp.config.errorHandler = (error, instance, info) => { passError({source: 'Vue.', error, instance, info}) }
-	//Nuxt's app:error hook catches broader application errors, such as during SSR or plugin initialization)
-	nuxtApp.hook('app:error', async (error) => { await passError({source: 'Nuxt.', error}) })//we can't use async await in first one
+	/*
+	errorspot
+	four variations to explore:
+	1 no handlers registered
+	2 handlers registered that take no action
+	3 handlers registered that bubble up
+	4 handlers registered that take over
+	*/
+
+	if (false) {//turn on handler registration
+		//Vue's native error handler catches rendering and lifecycle errors.
+		nuxtApp.vueApp.config.errorHandler = (error, instance, info) => { passError({source: 'Vue.', error, instance, info}) }
+		//Nuxt's app:error hook catches broader application errors, such as during SSR or plugin initialization)
+		nuxtApp.hook('app:error', async (error) => { await passError({source: 'Nuxt.', error}) })//we can't use async await in first one
+	}
 
 	//errorspot, also make an errorspot within these plugins that run at the start of every server GET or POST, and also every new tab navigation
 

@@ -3,7 +3,6 @@
 import {
 getBrowserTag, validateName,
 } from 'icarus'
-import {ref, reactive, onMounted} from 'vue'
 
 const refState = ref(0)//to begin, determining what our browser tag and user tag are
 const refBrowserTag = ref('')//the browser here's tag, read from local storage

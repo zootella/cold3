@@ -4,7 +4,7 @@ import {
 cutLast, postDatabase,
 } from 'icarus'
 
-import { useRoute } from 'vue-router'
+import {useRoute} from 'vue-router'
 
 const route = useRoute()
 let c = cutLast(route.params.more, '-')

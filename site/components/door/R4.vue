@@ -3,7 +3,6 @@
 import {
 host23,
 } from 'icarus'
-import {ref, reactive, watch} from 'vue'
 
 const {data, refresh} = useFetch(
 	host23() + '/rpl',

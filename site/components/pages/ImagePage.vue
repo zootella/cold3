@@ -1,7 +1,5 @@
 <script setup>
 
-import {ref, reactive, watch, computed} from 'vue'
-
 let {data, error} = useFetch('/api/image', {method: 'POST'})
 
 watch([data], () => {

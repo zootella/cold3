@@ -38,7 +38,6 @@ and additionally, if necessary, protect the endpoint with cloudflare turnstile o
 import {
 useTurnstileHere,
 } from 'icarus'
-import {ref, onMounted, watch} from 'vue'
 const helloStore = useHelloStore()
 const turnstileStore = useTurnstileStore()
 

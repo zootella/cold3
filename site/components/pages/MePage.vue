@@ -1,7 +1,5 @@
 <script setup>
 
-import {ref, watch, onMounted} from 'vue'
-
 </script>
 <template>
 <div class="border border-gray-300 p-2">

@@ -3,7 +3,6 @@
 import {
 sayPlural,
 } from 'icarus'
-import {ref, reactive, onMounted} from 'vue'
 const helloStore = useHelloStore()
 
 </script>

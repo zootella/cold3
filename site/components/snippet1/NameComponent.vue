@@ -3,8 +3,6 @@
 import {
 validateName,
 } from 'icarus'
-//import {ref, watch} from 'vue'
-log("hi in name comonent, here are some things maybe you don't have to import after all", look({ref, watch, computed}))
 
 const refName = ref('')
 
@@ -17,13 +15,16 @@ const refMessage = ref('')
 watch([refName], () => {
 	let v = validateName(refName.value, Limit.name)
 	refButtonCanSubmit.value = toBoolean(v.isValid)
-	//[x] errorspot, a watch function
+	if (refName.value == 'error1') {
+		//[x] errorspot, a watch function
+		notDefined//getting .info "watcher callback"
+	}
 })
 
 const computedName = computed(() => {
-	if (refName.value == 'error') {
-		//[] errorspot, function for a computed property; type error to make this blow up
-		notDefined
+	if (refName.value == 'error2') {
+		//[x] errorspot, function for a computed property; type error to make this blow up
+		notDefined//getting .info "component update"; only works if you have computedName in the template below, also, otherwise vue just likely ignores the whole thing. Also, with handlers not registered, you get "Uncaught (in promise)" in Console, and the page keeps running. Also keeps running if you have a handler which does nothing
 	}
 	return refName.value.length+''
 })

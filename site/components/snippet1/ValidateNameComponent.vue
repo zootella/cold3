@@ -3,7 +3,6 @@
 import {
 validateName,
 } from 'icarus'
-import {ref, reactive, onMounted} from 'vue'
 
 const refPageBox   = ref(''); const refPageStatus   = ref('')
 const refFormalBox = ref(''); const refFormalStatus = ref('')
