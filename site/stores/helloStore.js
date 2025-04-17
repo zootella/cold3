@@ -32,7 +32,7 @@ const addNotification = (message) => {
 	notifications.value.unshift({tag: Tag(), tick: Now(), message})
 }
 const removeNotification = (tag) => {
-	notifications.value = notifications.value.filter(item => item.tag !== tag)
+	notifications.value = notifications.value.filter(item => item.tag != tag)
 }
 /*
 ttd april
@@ -43,6 +43,14 @@ a brand new visitor gets a brochure page from hello after a single ~150ms query,
 a returning, signed in, subscribed user's request takes longer, maybe ~500ms
 the page goes from entirely blank to entirely populated for that user
 this may be a better experience than, during 500ms, different parts of the page pop into existance
+
+let's call this design the "quick monolith"
+and, it can still be split into two, the first is everything necessary to completely get th epage ready
+the second one records the hit, as well as documents the speed of the quick monolith, it's log only
+ok, so it is hello1 and hello2, still
+well actually, if you hit the database a lot of times, cloudflare may optimize near there
+and, you can record the duration right in the endpoint
+so yeah, let's go back to quick monolith after all
 */
 
 const hello1 = sequentialShared(async () => {

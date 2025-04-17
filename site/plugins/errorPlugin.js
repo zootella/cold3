@@ -21,7 +21,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 	4 handlers registered that take over
 	*/
 
-	if (false) {//turn on handler registration
+	if (true) {//turn on handler registration
 		//Vue's native error handler catches rendering and lifecycle errors.
 		nuxtApp.vueApp.config.errorHandler = (error, instance, info) => { passError({source: 'Vue.', error, instance, info}) }
 		//Nuxt's app:error hook catches broader application errors, such as during SSR or plugin initialization)
@@ -33,7 +33,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 	//weour requirement here is 
 	async function passError(details) {
 
-		log('pass error got: 🚧🚧🚧', look({details}))
+		log('🚧🚧🚧 pass error got 🚧🚧🚧', look({details}))
 		/*
 		let {error} = details
 

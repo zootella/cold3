@@ -6,21 +6,18 @@ settingReadInt, settingWrite,
 
 export default defineEventHandler(async (workerEvent) => {
 	//[] errorspot, event handler function that gets called from a store on the server, and later from a page; up here,
+
 	return await doorWorker('POST', {actions: ['Get.', 'Increment.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
-	let r = {}
-	r.sticker = Sticker().all
 	//[] errorspot, ...and down here
 
-	let h = await settingReadInt('hits', 0)
-
-	if (action == 'Get.') {
-	} else if (action == 'Increment.') {
-		h++
-		await settingWrite('hits', h)
+	let task = Task({name: 'hit api'})
+	task.hits = await settingReadInt('hits', 0)
+	if (action == 'Increment.') {
+		task.hits++
+		await settingWrite('hits', task.hits)
 	}
-
-	r.hits = h
-	return r
+	task.finish({success: true})
+	return task
 }

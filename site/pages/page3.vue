@@ -5,7 +5,7 @@ definePageMeta({layout: 'feed-layout', note: 'on page3'})
 </script>
 <template>
 
-<HitComponent />
+<NameComponent />
 <TrailComponent />
 <ValidateNameComponent />
 <StyleComponent />

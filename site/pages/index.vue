@@ -12,6 +12,4 @@ defineOgImageComponent('NuxtSeo', {
 </script>
 <template>
 
-<IndexPage />
-
 </template>

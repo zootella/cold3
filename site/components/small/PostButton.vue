@@ -100,6 +100,7 @@ defineExpose({post: async (path, body) => {
 	//so throw didn't work, but maybe it will, now
 	//[] errorspot, post button exposed post function
 	if (task.error) throw task.error//we're using exceptions for truly exceptional, should-be-impossible, wake up whoever is on pager duty to fix the code, circumstances; an exception in the worker or lambda will lead to a 500, which will call $fetch to throw. the try/catch/finally block is here to emit inFlight false, but then we want an exception to keep propegating upwards to go to the error page. both the worker and lambda have already logged ALERTs to datadog. the user should refresh the page, complain out of band to staff, and try again
+	//also, shouldn't it be, if task is not successful, (even if the failure is not caused by an error), you toss?
 	return task.response//return the response, discarding the task, so things don't keep getting deeper
 }})
 
