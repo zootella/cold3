@@ -18,7 +18,7 @@ async function incrementHits() {
 async function _fetchHit(action) {
 	log('hi from hitStore.js 🤎 running ' + Sticker().all)
 	//[]errorspot, server|client X local|cloud X function|margin, above
-	notDefined//client render, comes in through "Vue."; server render, comes in "Vue." and then "Nuxt."
+	//notDefined//client render, comes in through "Vue."; server render, comes in "Vue." and then "Nuxt."
 
 	let task = Task({name: 'hit store fetch'})
 	try {
