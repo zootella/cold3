@@ -22,7 +22,6 @@ const error = useError()
 <template>
 <div class="page-container">
 
-<NavigationBar note="on error" />
 <p><i>this is the nuxt error component</i></p>
 
 </div>

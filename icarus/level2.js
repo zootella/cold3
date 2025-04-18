@@ -1770,7 +1770,7 @@ test(() => {
 //                           
 
 export async function siteError(details) {//details about an error from one of our three Nitro, Nuxt, and Vue registered error handlers
-	log('🚧🚧🚧 pass error got 🚧🚧🚧 on ' + Sticker().all + 'with process.server ' + process.server, look({details}))
+	log(`🚧🚧🚧 pass error got 🚧🚧🚧 on ${Sticker().all} with process ${defined(typeof process) ? 'defined' : 'NOT defined!'}`, look(details))
 	/*
 	which of the six permutations can you see?
 	Nitro. []server

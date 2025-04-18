@@ -5,9 +5,7 @@ settingReadInt, settingWrite,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	//[] errorspot, event handler function that gets called from a store on the server, and later from a page; up here,
-	//notDefined
-
+	//[] errorspot, nonessential but maybe a freebie if you get the nitro handler working
 	return await doorWorker('POST', {actions: ['Get.', 'Increment.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {

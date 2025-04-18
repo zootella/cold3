@@ -8,13 +8,13 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 	//Gets failures during SSR, plugin initialization, and the very first hydrate/mount on the client
 	nuxtApp.hook('app:error', async (error) => {//runs on server and client
-		await siteError({source: 'Nuxt.', error})
+		return await siteError({source: 'Nuxt.', error})
 		//return nothing, and let Nuxt carry on to show error.vue
 	})
 
 	//Gets errors within render functions, lifecycle hooks, setup, watchers, event handlers, and so on
 	nuxtApp.hook('vue:error', async (error, instance, info) => {//runs on server and client
-		await siteError({source: 'Vue.', error, instance, info})
+		return await siteError({source: 'Vue.', error, instance, info})
 		//no rethrow or return, Nuxt will render error.vue
 	})
 	/*

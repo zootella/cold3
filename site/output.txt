@@ -1,0 +1,82 @@
+yarn run v1.22.22
+$ nuxt dev
+[nuxi] Nuxt 3.16.2 with Nitro 2.11.9
+
+  ➜ Local:    http://localhost:3000/
+  ➜ Network:  use --host to expose
+
+[nuxt:tailwindcss] ℹ Using Tailwind CSS from ~/assets/css/tailwind.css
+  ➜ DevTools: press Shift + Option + D in the browser (v2.4.0)
+
+
+ ╭─────────────────────────────────────────────────────────╮
+ │                                                         │
+ │  🔥 Cloudflare context bindings enabled for dev server  │
+ │                                                         │
+ │  Config path: wrangler.toml                             │
+ │  Persist dir: .wrangler/state/v3                        │
+ │                                                         │
+ ╰─────────────────────────────────────────────────────────╯
+
+✔ Vite client built in 25ms
+✔ Vite server built in 403ms
+ℹ page reload virtual:nuxt:%2FUsers%2Fkevin%2FDocuments%2Fcode%2Fcold3%2Fsite%2F.nuxt%2Fcomponents.islands.mjs
+[nitro] ✔ Nuxt Nitro server built in 785ms
+ℹ Vite client warmed up in 49ms
+Using vars defined in .dev.vars
+ℹ Vite server warmed up in 971ms
+✔ Vite server hmr 3 files in 301.923ms
+Fri03:34p22.461s → hi from hitStore.js 🤎 running LocalPageServer.2025apr18.4EEZ5AA.Fri03:34p22.461s
+Fri03:34p22.464s ↓ 
+🚧🚧🚧 pass error got 🚧🚧🚧 on LocalPageServer.2025apr18.4EEZ5AA.Fri03:34p22.463swith process.server true
+{
+  error: ⁅
+    name: "ReferenceError" ‹14›
+    message: "notDefined is not defined" ‹25›
+    stack: ReferenceError: notDefined is not defined
+»at _fetchHit (/Users/kevin/Documents/code/cold3/site/stores/hitStore.js:25:2)
+»at Proxy.getHits (/Users/kevin/Documents/code/cold3/site/stores/hitStore.js:16:25)
+»at Proxy.wrappedAction (file:///Users/kevin/Documents/code/cold3/node_modules/pinia/dist/pinia.mjs:1399:26)
+»at /Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:17:83
+»at withAsyncContext (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3362:19)
+»at setup (/Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:17:67)
+»at _sfc_main.setup (/Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:58:23)
+»at callWithErrorHandling (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19)
+»at setupStatefulComponent (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:7848:25)
+»at setupComponent (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:7809:36) ‹1119›
+  ⁆
+}
+Fri03:34p22.467s ↓ 
+🚧🚧🚧 pass error got 🚧🚧🚧 on LocalPageServer.2025apr18.4EEZ5AA.Fri03:34p22.467swith process.server true
+{
+  error: ⁅
+    name: "Error"
+    message: "notDefined is not defined" ‹25›
+    stack: ReferenceError: notDefined is not defined
+»at _fetchHit (/Users/kevin/Documents/code/cold3/site/stores/hitStore.js:25:2)
+»at Proxy.getHits (/Users/kevin/Documents/code/cold3/site/stores/hitStore.js:16:25)
+»at Proxy.wrappedAction (file:///Users/kevin/Documents/code/cold3/node_modules/pinia/dist/pinia.mjs:1399:26)
+»at /Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:17:83
+»at withAsyncContext (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3362:19)
+»at setup (/Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:17:67)
+»at _sfc_main.setup (/Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:58:23)
+»at callWithErrorHandling (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19)
+»at setupStatefulComponent (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:7848:25)
+»at setupComponent (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:7809:36) ‹1119›
+    cause: ⁅
+      name: "ReferenceError" ‹14›
+      message: "notDefined is not defined" ‹25›
+      stack: ReferenceError: notDefined is not defined
+»at _fetchHit (/Users/kevin/Documents/code/cold3/site/stores/hitStore.js:25:2)
+»at Proxy.getHits (/Users/kevin/Documents/code/cold3/site/stores/hitStore.js:16:25)
+»at Proxy.wrappedAction (file:///Users/kevin/Documents/code/cold3/node_modules/pinia/dist/pinia.mjs:1399:26)
+»at /Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:17:83
+»at withAsyncContext (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3362:19)
+»at setup (/Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:17:67)
+»at _sfc_main.setup (/Users/kevin/Documents/code/cold3/site/components/snippet1/HitComponent.vue:58:23)
+»at callWithErrorHandling (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19)
+»at setupStatefulComponent (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:7848:25)
+»at setupComponent (/Users/kevin/Documents/code/cold3/node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:7809:36) ‹1119›
+    ⁆
+  ⁆
+}
