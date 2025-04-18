@@ -199,9 +199,15 @@ LocalPageClient shows incremented number after you press the hit button
 ok, let's focus on notDefined in hit.js, down in the api endpoint, with both server and then client code reaching it, in those two flows
 
 
+with compon
 
 
 
+here's the behavior you're seeing by default, with a console logging handler reigstered, and not registered
+if the error happens on the page, like you navigate not to a page with the hit directly
+the error happens, leaves the pages in a weird broken state, clicking to a different route works, recoveres from it, never get to the error page
+but if you navigate a tab directly to a route where the error is going to happen on the server
+then the page goes to the error page, which is what you want
 
 
 

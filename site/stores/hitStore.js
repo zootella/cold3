@@ -18,6 +18,7 @@ async function incrementHits() {
 async function _fetchHit(action) {
 	//[]errorspot, server|client X local|cloud X function|margin, above
 	log('hi from hitStore.js 🤎 running ' + Sticker().all)
+	notDefined
 
 	let task = Task({name: 'hit store fetch'})
 	try {

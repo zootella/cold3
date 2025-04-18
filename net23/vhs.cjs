@@ -153,3 +153,11 @@ function test() {
 	console.log(JSON.stringify(response, null, 2))//log out the response object the handler would return to cloudfront
 }
 test()
+
+/*
+ttd april, this is working, but return here and gain complete confidence that both of these things are true
+
+1 the function runs for every delivery from the formation to the browser, not just the first one that brings the file all the way from the bucket
+
+2 files are copied from the bucket to the formation once, on the first function-approved GET, and stored in the formation by their path and name for 30 days or whatever you set. they are not identified in the formation by their path, name, and the query parameters including signature. a second valid GET with the same path and name and a different query string and signature gets the file from the formation, directly, and does not cause a second copy of the file to come from the bucket and be stored in the formation
+*/
