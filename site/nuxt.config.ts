@@ -45,16 +45,6 @@ export default defineNuxtConfig({
 				target: 'esnext',//added to solve error on npm run build about es2019 not including bigint literals
 			},
 		},
-		hooks: {//our customization
-			'render:errorMiddleware': async (error, event) => {//Nuxt's render:errorMiddleware catches all unhandled server errors (from API handlers, SSR, and framework internals) to allow centralized logging/alerting before sending the error response
-				try {
-					await awaitLogAlert('render error middleware', {error, event})
-				} catch (e) {
-					console.error('[OUTER]', e, error, event)//if trying to reach datadog throws, fall back to the simple way
-				}
-			},
-		},
-		//^ttd april, so all that looks good, and you're leaving it in for now, but you can't get it to run either locally or deployed. also, while it should log an error outside of door's catch, it shouldn't be able to log an error at the top of a file
 	},
 	runtimeConfig: {//added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
 		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
