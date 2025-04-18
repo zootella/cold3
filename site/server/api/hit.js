@@ -3,13 +3,14 @@
 import {
 settingReadInt, settingWrite,
 } from 'icarus'
+//[~]errorspot, local won't even start
 
 export default defineEventHandler(async (workerEvent) => {
-	//[] errorspot, nonessential but maybe a freebie if you get the nitro handler working
+	//[x] errorspot, hit downstream on both server and client rendering
 	return await doorWorker('POST', {actions: ['Get.', 'Increment.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action}) {
-	//[] errorspot, ...and down here
+	//[x] errorspot
 
 	let task = Task({name: 'hit api'})
 	task.hits = await settingReadInt('hits', 0)

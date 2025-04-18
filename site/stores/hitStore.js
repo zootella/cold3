@@ -6,7 +6,7 @@ export const useHitStore = defineStore('hit_store', () => {
 const hits = ref(0)
 const duration = ref(-1)
 const sticker = ref('')
-//[]errorspot, margin
+//[x]errorspot
 
 async function getHits() {
 	if (!hits.value) await _fetchHit('Get.')
@@ -17,8 +17,7 @@ async function incrementHits() {
 
 async function _fetchHit(action) {
 	log('hi from hitStore.js 🤎 running ' + Sticker().all)
-	//[]errorspot, server|client X local|cloud X function|margin, above
-	//notDefined//client render, comes in through "Vue."; server render, comes in "Vue." and then "Nuxt."
+	//[x]errorspot, client render, comes in through "Vue."; server render, comes in "Vue." and then "Nuxt."
 
 	let task = Task({name: 'hit store fetch'})
 	try {
@@ -39,54 +38,3 @@ return {
 }
 
 })
-
-
-
-
-
-
-
-
-
-/*
-ttd april, removing gotten from here because, that can't possibly be right
-
-const gotten = ref(false)//our own flag to not bother the api unnecessarily
-//^ttd april, do you need this?!
-
-
-	gotten,//necessary for the store to download correctly after server rendering
-
-*/
-
-
-
-//errorspot, hitStore is server rendered, and then goes across the bridge, using Pinia's support for hybrid rendering (helloStore does not do this) so you need to make an errorspot here, and see it hit both server and client!
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//unlike helloStore, hitStore is used only one place, HitComponent, and not in any plugins. this lets it demonstrates hybrid rendering: curl gets a page with the current hit count, nothing blinks, and the browser console shows there's  no second fetch at all!
-
-
-
-
-
-
-
-

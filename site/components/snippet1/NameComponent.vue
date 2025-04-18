@@ -17,20 +17,21 @@ watch([refName], () => {
 	refButtonCanSubmit.value = toBoolean(v.isValid)
 	if (refName.value == 'error1') {
 		//[x] errorspot, a watch function
-		notDefined//getting .info "watcher callback"
+		notDefined1
 	}
 })
 
 const computedName = computed(() => {
 	if (refName.value == 'error2') {
 		//[x] errorspot, function for a computed property; type error to make this blow up
-		notDefined//getting .info "component update"; only works if you have computedName in the template below, also, otherwise vue just likely ignores the whole thing. Also, with handlers not registered, you get "Uncaught (in promise)" in Console, and the page keeps running. Also keeps running if you have a handler which does nothing
+		notDefined2//getting .info "component update"; only works if you have computedName in the template below, also, otherwise vue just likely ignores the whole thing. Also, with handlers not registered, you get "Uncaught (in promise)" in Console, and the page keeps running. Also keeps running if you have a handler which does nothing
 	}
 	return refName.value.length+''
 })
 
 async function onClick() {
-	//[] errorspot, a click function
+	//[x] errorspot, a click function
+	notDefined3
 	let response = await refButton.value.post('/api/name', {
 		action: 'Check.',
 		name: refName.value,

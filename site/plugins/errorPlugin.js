@@ -16,7 +16,12 @@ export default defineNuxtPlugin((nuxtApp) => {
 })
 
 export async function processError(details) {
-	log(`🚧🚧🚧🚧🚧🚧🚧🚧🚧 process error on ${Sticker().all} with process ${defined(typeof process) ? 'defined' : 'NOT defined!'}`, look(details))
+	let s = `🚧 🚧 🚧 🚧 🚧 ${Sticker().all} `
+	if      (defined(typeof process) && process.server) s += 'process.server'
+	else if (defined(typeof process) && process.client) s += 'process.client'
+	else s += 'PROCESS OTHER OR NOT DEFINED'
+	log(s, look(details))
+
 	if (process.server) {
 		/*
 		on the server, we need to:

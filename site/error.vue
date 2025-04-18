@@ -10,6 +10,10 @@ more ideas here
 
 "there's a mistake that staff needs to fix; but you can try again now to see if you avoid it"
 actually maybe just tell them to refresh
+
+
+
+note that if there's an error in server rendering, things are so broken that we don't get to error.vue at all. the browser gets a static page titled Nuxt with a green glow at the bottom, and you tried to customize that, first with 500.html, then with a nuxt config error handler that used h3 to return a html string, but nothing worked
 */
 
 const error = useError()

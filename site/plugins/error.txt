@@ -427,6 +427,67 @@ above, you can see that i am registering three handlers in my nuxt 3 project
 
 
 
+/*
+ttd april, removing gotten from here because, that can't possibly be right
+
+const gotten = ref(false)//our own flag to not bother the api unnecessarily
+//^ttd april, do you need this?!
+
+
+	gotten,//necessary for the store to download correctly after server rendering
+
+*/
+
+
+
+//errorspot, hitStore is server rendered, and then goes across the bridge, using Pinia's support for hybrid rendering (helloStore does not do this) so you need to make an errorspot here, and see it hit both server and client!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//unlike helloStore, hitStore is used only one place, HitComponent, and not in any plugins. this lets it demonstrates hybrid rendering: curl gets a page with the current hit count, nothing blinks, and the browser console shows there's  no second fetch at all!
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
