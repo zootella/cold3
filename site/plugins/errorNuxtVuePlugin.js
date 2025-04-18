@@ -1,4 +1,4 @@
-// ./plugins/errorNuxtVuePlugin.js
+// ./plugins/errorPlugin.js
 
 import {
 siteError,
@@ -13,8 +13,8 @@ export default defineNuxtPlugin((nuxtApp) => {
 	})
 
 	//3 of 3: Nuxt hook for Vue errors: Catches errors within render functions, lifecycle hooks, setup, watchers, event handlers, and so on
-	nuxtApp.hook('vue:error', async (err, instance, info) => {//runs on server and client
-		await siteError({ source: 'Vue', err, instance, info })
+	nuxtApp.hook('vue:error', async (error, instance, info) => {//runs on server and client
+		await siteError({source: 'Vue.', error, instance, info})
 		//no rethrow or return, Nuxt will render error.vue
 	})
 	/*

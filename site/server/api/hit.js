@@ -6,6 +6,7 @@ settingReadInt, settingWrite,
 
 export default defineEventHandler(async (workerEvent) => {
 	//[] errorspot, event handler function that gets called from a store on the server, and later from a page; up here,
+	notDefined
 
 	return await doorWorker('POST', {actions: ['Get.', 'Increment.'], workerEvent, doorHandleBelow})
 })
