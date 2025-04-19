@@ -11,6 +11,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action}) {
 	//[x] errorspot
+	notDefined100
 
 	let task = Task({name: 'hit api'})
 	task.hits = await settingReadInt('hits', 0)
