@@ -1,14 +1,14 @@
-// ./plugins/errorPlugin.js
+//./plugins/errorPlugin.js
 
 export default defineNuxtPlugin((nuxtApp) => {
 
 	//Gets failures during SSR, plugin initialization, and the very first hydrate/mount on the client
-	nuxtApp.hook('app:error', async (error) => {//runs on server and client
+	nuxtApp.hook('app:error', async (error) => {
 		return await handleError({source: 'Nuxt.', error})
 	})
 
 	//Gets errors within render functions, lifecycle hooks, setup, watchers, event handlers, and so on
-	nuxtApp.hook('vue:error', async (error, instance, info) => {//runs on server and client
+	nuxtApp.hook('vue:error', async (error, instance, info) => {
 		return await handleError({source: 'Vue.', error, instance, info})
 	})
 })
@@ -18,16 +18,17 @@ async function handleError(details) {
 	if (process.server) {
 		try {
 			await awaitLogAlert('error plugin', details)//log the error to datadog, including all details
-		} catch (e) { console.error('[OUTER]', e, details) }//if that process failed as well, fall back to standard error
-		//on the server, return nothing; the response puts the page into the error.vue fatal error state
+		} catch (e) { console.error('[OUTER]', e, details) }//catch an error trying to log the first one; fall back to standard error
+		//on the server, return nothing; the response puts the page into the error.vue state
 	} else if (process.client) {
-		if (useError().value) {
-			log('page already in error state, doing nothing with:', look(details))
+		const errorStore = useErrorStore()//use the error store to save a single error, and only call showError once
+		if (errorStore.details) {
+			log('already put page in error state, doing nothing with:', look(details))
 		} else {
-			console.error('error plugin', details)//only the user can see this, but sometimes the user is staff
-			const errorStore = useErrorStore(); errorStore.add(details)//save the error where error2 will be able to get it
+			console.error('error plugin', details)//only the user can see this, but often the user is staff
+			errorStore.details = details//save the detains in the store for error2 to retrieve it
 			showError({//cause the fatal error state, stopping the whole page, and rendering the simple error.vue
-				statusCode: 400,//show error wants a status code, even though there's no contact wtih the server; we're using 400 Bad Request like the page error could lead to a malformed request
+				statusCode: 400,//status code required, even though there's no HTTP; using 400 malformed request to mark an error entirely on the page
 				statusMessage: 'Page error',
 			})
 		}

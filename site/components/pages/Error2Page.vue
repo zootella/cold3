@@ -6,17 +6,18 @@ getBrowserGraphics,
 const errorStore = useErrorStore()
 
 const refButton = ref(null)
-const refButtonCanSubmit = ref(toBoolean(errorStore.errors.length))
+const refButtonCanSubmit = ref(toBoolean(errorStore.details))
 const refButtonInFlight = ref(false)
-//ttd april, right now this page just has a post button with turnstile to let the user report the error; you could change this to report automatically on page load
+//ttd april, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
 
 async function onClick() {
 	await refButton.value.post('/api/error', {
 		sticker: Sticker().all,
-		errors: errorStore.errors,//here, we *don't* dereference .value!
 		graphics: getBrowserGraphics(),
+		details: errorStore.details,
+		detailsText: look(errorStore.details),//call look here on the page; fetch will stringify details.error to empty {}
 	})
-	errorStore.clear()
+	errorStore.details = null
 	refButtonCanSubmit.value = false
 }
 
@@ -24,9 +25,10 @@ function rootReload() { window.location.replace('/') }//outside of Nuxt routing,
 
 </script>
 <template>
-<div class="page-container text-center">
+<div class="border border-gray-300 p-2">
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>Error2Page</i></p>
 
-<p>error2</p>
+<div class="flex flex-col items-center space-y-2">
 <p>
 	<PostButton
 		labelIdle="Report Error"
@@ -40,6 +42,7 @@ function rootReload() { window.location.replace('/') }//outside of Nuxt routing,
 	/>
 </p>
 <p><Button @click="rootReload">Reload Site</Button></p>
+</div>
 
 </div>
 </template>
