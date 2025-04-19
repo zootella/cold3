@@ -2257,6 +2257,7 @@ function lookSayFunction(f) {
 // | .__/ \__,_|_|  |___/\___|  \__,_|_| |_|\__,_| | .__/|_|  |_|_| |_|\__|
 // |_|                                             |_|                     
 
+export function unloop(o) { return parse(stringo(o)) }//print and then parse to remove circular references, avoiding an error when code that isn't yours stringifies next!
 //you wanted to name these parse and print, but should avoid a conflict window.print, which shows the print preview dialog box, rockin' the 90s
 export const parse = JSON.parse//same as JSON.parse(s), but without having to shout JSON all the time
 export function stringo(o) {//like JSON.stringify(o) but deals with BigInt values, circular references, and doesn't omit Error objects

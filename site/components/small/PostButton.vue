@@ -96,7 +96,7 @@ defineExpose({post: async (path, body) => {
 		emit('update:inFlight', false)//using a finally block here to make sure we can't leave the button orange
 	}
 	task.finish()
-	log('in post button, we have task.error:', look(task.error))
+	//log('in post button, we have task.error:', look(task.error))
 	//so throw didn't work, but maybe it will, now
 
 	//[x]errorspot, caught by Vue., page currently stays alive

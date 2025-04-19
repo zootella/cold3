@@ -1,5 +1,9 @@
 // ./plugins/errorPlugin.js
 
+import {
+unloop,
+} from 'icarus'
+
 export default defineNuxtPlugin((nuxtApp) => {
 
 	//Gets failures during SSR, plugin initialization, and the very first hydrate/mount on the client
@@ -38,8 +42,13 @@ async function processError(details) {
 		*/
 		console.error('error plugin', details)//only the user can see this, but sometimes the user is staff
 
+		const errorStore = useErrorStore()
+		errorStore.add(details)
+
+		/*
 		let currentError = useError()
 		if (!currentError.value) showError({statusCode: 400, statusMessage: 'Page error', data: details})
+		*/
 
 		/*
 		also, in this, ill be interested to see if the route changes to an error route, or stays the same, even if the page is taken over with an error component

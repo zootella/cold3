@@ -274,7 +274,7 @@ defined,
 squareEncode, squareDecode, checkSquare,
 correctLength,
 say, look,
-parse, stringo,
+unloop, parse, stringo,
 
 parseEnvStyleFileContents,
 sequentialShared, sequentialSeparate,
