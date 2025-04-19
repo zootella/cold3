@@ -1,7 +1,7 @@
 <script setup>//./components/Error2Page.vue
 
 import {
-getBrowserGraphics,
+unloop, getBrowserGraphics,
 } from 'icarus'
 const errorStore = useErrorStore()
 
@@ -14,7 +14,7 @@ async function onClick() {
 	await refButton.value.post('/api/error', {
 		sticker: Sticker().all,
 		graphics: getBrowserGraphics(),
-		details: errorStore.details,
+		details: unloop(errorStore.details),
 		detailsText: look(errorStore.details),//call look here on the page; fetch will stringify details.error to empty {}
 	})
 	errorStore.details = null
