@@ -126,8 +126,12 @@ defineExpose({post: async (path, body) => {
 <style scoped>
 
 button.gray        { background-color: gray; }
-button.green       { background-color: green; }
-button.green:hover { background-color: lightgreen; }
+button.green       { background-color: #16a34a; }
+button.green:hover { background-color: #4ade80; }
 button.orange      { background-color: orange; }
+/*
+ttd april, get these in line with the tailwind styles in tailwind.css
+you've set green and hover to match tailwind bg-green-600 and 400, but manually, which is bad
+*/
 
 </style>

@@ -73,8 +73,8 @@
 @layer components {
 	/* A standard button class */
 	.pushy {
-		@apply inline-flex items-center bg-gray-400 text-white px-2 py-1 rounded;
-		@apply hover:bg-blue-700 cursor-pointer;
+		@apply inline-flex items-center bg-green-600 text-white px-2 py-1 rounded;
+		@apply hover:bg-green-400 cursor-pointer;
 		font-family: "Noto Sans", sans-serif;
 	}
 	.pushy:focus {
@@ -91,12 +91,34 @@
 			@apply text-blue-400 bg-transparent;
 		}
 	}
+
+	/* A link that looks & acts like a “pushy” button in every state */
+	.pushy-link,
+	.pushy-link:visited,
+	.pushy-link:hover,
+	.pushy-link:visited:hover,
+	.pushy-link:focus,
+	.pushy-link:visited:focus,
+	.pushy-link:active,
+	.pushy-link:visited:active {
+		@apply inline-flex items-center bg-green-600 text-white no-underline px-2 py-1 rounded;
+		cursor: pointer;
+		font-family: "Noto Sans", sans-serif;
+	}
+	/* hover background (text stays white) */
+	.pushy-link:hover,
+	.pushy-link:visited:hover {
+		@apply bg-green-400;
+	}
+	/* active background */
+	.pushy-link:active,
+	.pushy-link:visited:active {
+		@apply bg-green-700;
+	}
+	/* focus ring */
+	.pushy-link:focus,
+	.pushy-link:visited:focus {
+		@apply outline-none ring-2 ring-blue-500;
+	}
+	/* ttd april ^ clean this up, obviously */
 }
-
-
-
-
-
-
-
-

@@ -469,7 +469,79 @@ const gotten = ref(false)//our own flag to not bother the api unnecessarily
 
 
 
-	
+
+<script setup>//./error.vue
+
+//ttd april, understand errors in nuxt
+//can't use layouts in here the same way, hence the navigation bar and div class below
+
+/*
+more ideas here
+[]a button uses turnstile to POST error information to an error endpoint
+[]and then does a full navigation reset to the root, clearing pinia and everything
+
+"there's a mistake that staff needs to fix; but you can try again now to see if you avoid it"
+actually maybe just tell them to refresh
+
+
+
+note that if there's an error in server rendering, things are so broken that we don't get to error.vue at all. the browser gets a static page titled Nuxt with a green glow at the bottom, and you tried to customize that, first with 500.html, then with a nuxt config error handler that used h3 to return a html string, but nothing worked
+*/
+
+// You now have access to properties such as:
+// error.message, error.source, error.error, error.info, etc.
+
+
+/*
+ok, you can silently turnstile POST
+no, the reason why you can't automatically turnstile post is that could create an infinite loop
+so, there has to be a button
+
+but this is it ok for this error.vue to become quite complex; essentially as complex as the rest of the site?
+since you can useError anywhere, apparently, maybe the button goes to another apge that isn't error.vue, error2.vue, and that page has the fancy stuff
+*/
+
+</script>
+<template>
+<div class="page-container">
+
+<p><i>this is the nuxt error component</i></p>
+<pre>(here, i want to show information about the error on the page, please)</pre>
+
+</div>
+</template>
+
+
+
+
+
+in net23.txt, explain error.vue and error2.vue
+error.vue isn't a route, it's a special vue thing
+you can do more stuff there, but we're intentionally keeping it really simple
+there's a continue... linkt o the error2 page
+which is a full fancy normal page
+and which is where the user, if they click and get through turnstile, can report the error
+so neither the click from error.vue to /error2 is automatic
+nor is the posting of the error. why
+well, imagine something about rendering any page is causing the error
+any page renders, error.vue happens, and things stay put
+a user's click continue goes to error2, causing the error again, and back to error.vue
+without the user click,
+
+ok, well, actually, you could have error2 post the current error automatically
+if anything with showing the page, doing turnstile, or posting the error is what is causing teh error
+then you'll just go back to error.vue, and the user will have to click again
+
+
+
+
+
+
+
+
+
+
+
 
 
 

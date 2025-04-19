@@ -1,14 +1,4 @@
 
-import {
-wrapper, Sticker, isLocal, isCloud,
-Now, Time, Size, Limit, newline,
-defined,
-toss, log, look,
-noop, test, ok,
-
-dog, logAudit, logAlert,
-awaitDog, awaitLogAudit, awaitLogAlert,
-} from 'icarus'//automatic imports haven't happened yet, so we import icarus functions manually
 import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
 import {vite as vidstack} from 'vidstack/plugins'//from vidstack
 

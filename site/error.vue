@@ -1,32 +1,28 @@
-<script setup>//.//error.vue
-
-//ttd april, understand errors in nuxt
-//can't use layouts in here the same way, hence the navigation bar and div class below
+<script setup>
 
 /*
-more ideas here
-[]a button uses turnstile to POST error information to an error endpoint
-[]and then does a full navigation reset to the root, clearing pinia and everything
+ok, im going to keep the tailwind styles, but need to center along with page-container
 
-"there's a mistake that staff needs to fix; but you can try again now to see if you avoid it"
-actually maybe just tell them to refresh
-
-
-
-note that if there's an error in server rendering, things are so broken that we don't get to error.vue at all. the browser gets a static page titled Nuxt with a green glow at the bottom, and you tried to customize that, first with 500.html, then with a nuxt config error handler that used h3 to return a html string, but nothing worked
+also, the button is colliding with the h1?
 */
-
-const error = useError()
-// You now have access to properties such as:
-// error.message, error.source, error.error, error.info, etc.
-
-
 
 </script>
 <template>
-<div class="page-container">
+<div class="page-container text-center">
 
-<p><i>this is the nuxt error component</i></p>
+<p>error.vue</p>
+
+<p>To keep things secure, 
+
+to keep thing secure
+something unexpected happened in the page
+click to report this to staff
+then, refresh to keep going
+
+
+An unexpected event in the code on the page meant that we </p>
+
+<NavigateButton to="/error2">Continue...</NavigateButton>
 
 </div>
 </template>
