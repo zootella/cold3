@@ -201,9 +201,6 @@ export const Limit = Object.freeze({
 	//html form field limits
 	input: 512,//higher ceiling for single line form fields
 	area: 10000,//and for text areas, from twitter DMs and reddit posts
-
-	//errors
-	errors: 3,//the error store on the page fills up with the first few errors; they're big
 })
 export function cropToLimit(s, customLimit, defaultLimit) {
 	let limit = customLimit || defaultLimit//use the default limit if the caller above specified no custom limit

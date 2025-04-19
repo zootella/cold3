@@ -162,8 +162,8 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 sayFloppyDisk,
 
-siteError, fetchum,
 Task,
+fetchum,
 host23, fetch23,
 
 /* level 2 query */

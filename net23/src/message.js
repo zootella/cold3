@@ -1,31 +1,7 @@
 
 import {
-
-//import everything that we automatically import in site
-wrapper, Sticker, isLocal, isCloud,
-Now, Time, Size, Limit, newline,
-defined,
-toss, log, look,
-noop, test, ok,
-
-toBoolean, toTextOrBlank,
-checkInt, minInt,
-intToText, textToInt,
-hasText, checkText,
-hasTextOrBlank, checkTextOrBlank,
-
-Tag, hasTag, checkTag, checkTagOrBlank,
-checkHash,
-
-dog, logAudit, logAlert,
-awaitDog, awaitLogAudit, awaitLogAlert,
-
-canGetAccess, getAccess,
-doorWorker, doorLambda,
-Task,
-
-//and that's everything for the moment
-} from 'icarus'
+Sticker, doorLambda, log, look,
+} from 'icarus'//remember the automatic nuxt icarus imports aren't here on the lambda side
 
 import {
 warm, sendMessage,

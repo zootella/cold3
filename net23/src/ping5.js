@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorLambda,
+Sticker, doorLambda, log, look,
 } from 'icarus'
 
 export const handler = async (lambdaEvent, lambdaContext) => {

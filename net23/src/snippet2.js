@@ -1,6 +1,7 @@
 
 import {
-Sticker, doorLambda, runTests, defined,
+Sticker, doorLambda, log, look,
+runTests, defined,
 } from 'icarus'
 
 import {

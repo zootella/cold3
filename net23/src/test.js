@@ -1,6 +1,7 @@
 
 import {
-Sticker, doorLambda, runTests,
+Sticker, doorLambda, log, look,
+runTests,
 } from 'icarus'
 
 import {//not importing anything, but this lets tests get listed to run below
