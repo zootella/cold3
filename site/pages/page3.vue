@@ -7,6 +7,5 @@ definePageMeta({layout: 'feed-layout', note: 'on page3'})
 
 <TrailComponent />
 <ValidateNameComponent />
-<StyleComponent />
 
 </template>

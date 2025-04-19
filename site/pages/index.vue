@@ -12,4 +12,6 @@ defineOgImageComponent('NuxtSeo', {
 </script>
 <template>
 
+<HelloComponent />
+
 </template>
