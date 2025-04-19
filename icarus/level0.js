@@ -2019,7 +2019,8 @@ test(() => {
 //                     
 
 const lookDepthLimit = 6//this many tabs indented, arrays and objects will be "[⭳⭳⭳] ‹12›"
-const lookLineLengthLimit = 1024//shorten lines of composed text with ... beyond this length
+const lookStringLimit = 2048//shorten lines of composed text with ... beyond this length
+const lookFunctionLimit = 64//shorten lines of function code with ... beyond this length
 const lookKeysOptions = {
 	includeInherited:     false,
 	includeNonEnumerable: false,
@@ -2233,19 +2234,19 @@ function lookSayString(s) {//s is given text
 
 	//compose the display text c like "short" or "long... that ends ellipsis instead of closing quote
 	let c//c is composed to return
-	if (stack)                               c = quotes[0] + m                               + quotes[1]//stack trace
-	else if (m.length < lookLineLengthLimit) c = quotes[0] + m                               + quotes[1]//short enough
-	else                                     c = quotes[0] + m.slice(0, lookLineLengthLimit) + '…'//too long
+	if (stack)                           c = quotes[0] + m                           + quotes[1]//stack trace
+	else if (m.length < lookStringLimit) c = quotes[0] + m                           + quotes[1]//short enough
+	else                                 c = quotes[0] + m.slice(0, lookStringLimit) + '…'//too long
 	return c
 }
 function lookSayFunction(f) {
 	let s = f.toString()
 	let m = s.split('\n').map(line => line.trim()).join(' ¶ ').replace(/\s+/g, ' ').trim()
 	let c
-	if (m.length < lookLineLengthLimit) {
+	if (m.length < lookFunctionLimit) {
 		c = `${m}`
 	} else {
-		c = `${m.slice(0, lookLineLengthLimit)}...`
+		c = `${m.slice(0, lookFunctionLimit)}...`
 	}
 	return c
 }
