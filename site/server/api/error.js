@@ -41,11 +41,7 @@ async function doorHandleBelow({door, body, action}) {
 	}
 
 	let task = Task({name: 'error api'})
-	if (isCloud()) {
-		await awaitLogAlert('reported page error', report)
-	} else {
-		log('cloud would report page error', look(report))//running locally, see what cloud would report to datadog
-	}
+	await awaitLogAlert('reported page error', report)
 	task.finish({success: true})
 	return task
 }

@@ -6,7 +6,6 @@ export const useHitStore = defineStore('hit_store', () => {
 const hits = ref(0)
 const duration = ref(-1)
 const sticker = ref('')
-//[x]errorspot
 
 async function getHits() {
 	if (!hits.value) await _fetchHit('Get.')
@@ -16,9 +15,6 @@ async function incrementHits() {
 }
 
 async function _fetchHit(action) {
-	log('hi from hitStore.js 🤎 running ' + Sticker().all)
-	//[x]errorspot, client render, comes in through "Vue."; server render, comes in "Vue." and then "Nuxt."
-
 	let task = Task({name: 'hit store fetch'})
 	try {
 		task.response = await $fetch('/api/hit', {method: 'POST', body: {action}})

@@ -14,7 +14,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 })
 
 async function handleError(details) {
-	log(`🚧 🚧 🚧 🚧 🚧 ${Sticker().all}`)//ttd april, remove this line when errors have settled down!
+	log(`🚧 🚧 🚧 🚧 🚧 ${Sticker().all} "${details?.error?.message}"`)//ttd april, remove this line when errors have settled down!
 	if (process.server) {
 		try {
 			await awaitLogAlert('error plugin', details)//log the error to datadog, including all details
