@@ -203,7 +203,7 @@ export const Limit = Object.freeze({
 	area: 10000,//and for text areas, from twitter DMs and reddit posts
 
 	//errors
-	errors: 5,//the error store on the page fills up with the first 5 errors
+	errors: 3,//the error store on the page fills up with the first few errors; they're big
 })
 export function cropToLimit(s, customLimit, defaultLimit) {
 	let limit = customLimit || defaultLimit//use the default limit if the caller above specified no custom limit
