@@ -1,6 +1,82 @@
 
 
 
+ok, now you're here to rethink this, as follows:
+
+[1] browser tag in secure private cookie
+sent with every request
+even the very first GET
+can and must keep private from the page
+no change to regulatory requirements
+now there is an expiration: 395 days after their most recent visit
+more secure than local storage because a browser extension cannot see the tag
+
+[2] quick monoloth design
+unify hello1 and hello2 into a single hello
+for a first time visitor, hello will do one database query and the person will have the brochure page in ~150ms
+for a signed-in and subscribed user, hello will do lots of queries, taking more time
+delay_table will record real users' experiences
+all users will go from a blank page to a fully hydrated one
+this will be a better experience than a page that, in several steps, expands into existance
+several steps makes the page look slow; all-at-once hides the delay in the person's internet connection (Verizon's fault, not ours)
+this design expects that the intent is that even for a complex user, this is still fast enough that we do not put a logo or spinner on the page before everything is loaded
+
+
+
+
+
+ok, looking at the sequence diagram now, you thought this was going to be about merging hello1 and hello2
+but really it's going to be about doing everything on the very first GET, and getting rid of hello entirely!
+
+
+
+1 -- browser GETs to server (this is hello0 the very first GET, before a POST to hello1)
+
+right off the bat the server has:
+- browser tag, from a cookie or just now set by middleware
+- requested route, the creator page and card the user wants to see
+- ip address, from connection
+- user agent string, from headers
+
+2 -- server responds with page and store
+
+server writes to delay_table how long we took to prepare the page
+server sends a pretty complete page to the browser, which is awesome, cookies really helped here
+
+3 -- page POSTs to /api/hello
+
+ok, at this point, what can the page say that the server doesn't already know?
+browser graphics, but that's not important to keep as a feature, even, if it complicates this
+
+page never knows browser tag, but browser puts it there again for server to match up
+
+4 -- /api/hello1 responds with user and level
+
+server reads ip address from connection
+server reads user agent string from headers
+server reads browser tag from body (changed to cookie)
+server reads browser graphics from body (may get rid of entirely)
+server reads time from its trusted clock
+
+(now we can look things up)
+browser tag -> user tag signed in here
+user tag -> user name
+
+5 -- page POSTs to /api/hello2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ./plugins/helloPlugin.client.js - runs as soon as the page hits a new tab; calls helloStore.hello1()
