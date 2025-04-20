@@ -738,8 +738,44 @@ async function code_add({codeTag, browserTag, provider, type, v, hash, lives}) {
 
 
 
+//      _      _               _        _     _      
+//   __| | ___| | __ _ _   _  | |_ __ _| |__ | | ___ 
+//  / _` |/ _ \ |/ _` | | | | | __/ _` | '_ \| |/ _ \
+// | (_| |  __/ | (_| | |_| | | || (_| | |_) | |  __/
+//  \__,_|\___|_|\__,_|\__, |  \__\__,_|_.__/|_|\___|
+//                     |___/                         
 
+SQL(`
+-- how long are we taking to do different tasks for the user?
+CREATE TABLE delay_table (
+	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick      BIGINT    NOT NULL,
+	hide          BIGINT    NOT NULL,
 
+	task_text     TEXT      NOT NULL,  -- the kind of task we did, like "Hello."
+	delay         BIGINT    NOT NULL,  -- how many milliseconds it took
+
+	wrapper_hash  CHAR(52)  NOT NULL,
+	origin_text   TEXT      NOT NULL,
+	browser_tag   CHAR(21)  NOT NULL
+);
+
+CREATE INDEX delay1 ON delay_table               (task_text, row_tick DESC) WHERE hide = 0;
+CREATE INDEX delay2 ON delay_table (wrapper_hash, task_text, row_tick DESC) WHERE hide = 0;
+`)
+//ttd april, make this table when you've got unified hello; this is the start of RUM, real user monitoring; you'll use postgres' stats calls here like p95 or whatever
+
+export async function recordDelay({task, delay, origin, browserTag}) {
+	checkText(task); checkInt(delay); checkText(origin); checkTag(browserTag)
+	await queryAddRow({table: 'delay_table', row: {
+		task_text: task,
+		delay: delay,
+
+		wrapper_hash: wrapper.hash,
+		origin_text: origin,
+		browser_tag: browserTag,
+	}})
+}
 
 //                                 _        _        _     _      
 //   _____  ____ _ _ __ ___  _ __ | | ___  | |_ __ _| |__ | | ___ 

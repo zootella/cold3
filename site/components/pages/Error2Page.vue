@@ -23,6 +23,17 @@ async function onClick() {
 
 function rootReload() { window.location.replace('/') }//outside of Nuxt routing, same as the browser's Reload button, and to the domain root
 
+/*
+ttd april
+the user may drag down to refresh on this page--at that point they will have navigated to a new copy of this page that doesn't have an error to report
+so, important to add
+[]if here with nothing to report, do rootReload automatically
+[]if here with something to report, do turnstile and POST, then rootReload, all automated
+you can automate those two without worry about an infinite loop, as
+an error leads to error.vue
+and there, only the user's manual click moves things forward
+*/
+
 </script>
 <template>
 <div class="border border-gray-300 p-2">
