@@ -110,21 +110,10 @@ bookmark april
 
 (previous notes)
 
-
-
-
-
-
-
-
 ./plugins/helloPlugin.client.js - runs as soon as the page hits a new tab; calls helloStore.hello1()
 ./stores/helloStore.js - .hello1() fetches to the first endpoint:
 ./server/api/hello1.js - very quickly tells if there's a user at this browser tag or not
 ./server/api/hello2.js - slower nonessential first run on tab tasks, like getting user stage and permissions information, logging the hit; this happens while components are loading and the user is clicking
-
-
-
-
 
 maybe have layouts for:
 brochure, no user is signed in yet
@@ -132,18 +121,6 @@ feed, user consuming content
 panel, user changing their password
 terms, legal docs like privacy and terms, static and minimal
 machine, like ping, not meant for users to visit
-
-
-
-
-
-
-
-
-
-
-
-
 
 1 -- browser GETs to server
 
@@ -172,13 +149,6 @@ browser tag -> user tag signed in here
 user tag -> user name
 
 5 -- page POSTs to /api/hello2
-
-
-
-
-
-
-
 
 
 

@@ -69,9 +69,7 @@ async function clickedSignOut() {
 </script>
 <template>
 <div class="border border-gray-300 p-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>AuthenticateComponent</i></p>
-
-<p><code>{{refBrowserTag}}</code> browser tag</p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>AuthenticatePage</i></p>
 
 <!-- state 0: determining if there is a user signed in; show no controls yet -->
 
