@@ -8,14 +8,12 @@ browserToCodes,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, headers, browserTag: cookieTag}) {
+async function doorHandleBelow({door, body, headers, browserTag}) {
 	let r = {}
 	r.sticker = Sticker().all//below, stay mindful of the awaits--each one costs us ~150ms!
 
 	//from the browser tag, look up user tag, and information about the user like route and name
-	let browserTag = body.browserTag; checkTag(browserTag)
 	r.user = await browserToUser({browserTag})//in here is browserTag, userTag, and names and routes like name.formFormal
-	r.cookieTag = cookieTag//ttd april, rough before moving browser tag to cookie and keeping it away from the page; you could hash it to show the hash to the page for testing, for example
 
 	//get information from cloudflare about the headers, you'll use these for (1) sudo access and (2) hit log, ttd march
 	r.connection = {

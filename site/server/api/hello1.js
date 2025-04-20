@@ -6,11 +6,10 @@ browserToUserTag,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body}) {
+async function doorHandleBelow({door, body, browserTag}) {
 	let r = {}
 	r.sticker = Sticker().all
 
-	let browserTag = body.browserTag; checkTag(browserTag)
 	r.user = await browserToUserTag({browserTag})
 
 	/*

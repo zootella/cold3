@@ -80,10 +80,6 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
-
-	//ttd april, 🍪 []change browser tag to a cookie, []make sure the server never leaks back the value to the page!
-	body.browserTag = helloStore.browserTag//we always add the browser tag so you don't have to; ttd april this will change when the page can't see it and the browser gives it to the server automatically as a, gasp, dreaded cookie
-
 	let task = Task({name: 'post', path, request: body})
 	try {
 		emit('update:inFlight', true)//this lets our parent follow our orange condition

@@ -112,7 +112,6 @@ wrapper
 */
 export {
 
-getBrowserTag,
 vhsSign,
 Code, codeSend, browserToCodes, codeEnter,
 

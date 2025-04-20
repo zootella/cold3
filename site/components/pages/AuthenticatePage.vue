@@ -1,11 +1,10 @@
 <script setup>
 
 import {
-getBrowserTag, validateName,
+validateName,
 } from 'icarus'
 
 const refState = ref(0)//to begin, determining what our browser tag and user tag are
-const refBrowserTag = ref('')//the browser here's tag, read from local storage
 const refUserTag = ref('')//the user tag of the user who is signed in to this browser right now
 const refUserName = ref('')//the user name of that tag, signed in, according to the server
 const refDesiredUserNameBox = ref('')
@@ -13,14 +12,12 @@ const refReturningUserNameBox = ref('')
 const refMessage = ref('')//status and response message back to the user
 
 onMounted(async () => {//doesn't run on server, even when hydrating
-	refBrowserTag.value = getBrowserTag()//read browser tag from local storage
-	//ttd march, should this instead come from the hello store?
 	await doSignGet()
 })
 
 async function doSignGet() {
 	let r = await $fetch('/api/authenticate', {method: 'POST', body:
-		{action: 'DemonstrationSignGet.', browserTag: refBrowserTag.value}})
+		{action: 'DemonstrationSignGet.'}})
 	if (r.isFound) {//server tells us we've got a user signed into this browser here
 		refState.value = 4
 		refUserTag.value = r.userTag
@@ -33,7 +30,7 @@ async function clickedSignUp() {
 	let v = validateName(refDesiredUserNameBox.value)
 	if (v.isValid) {
 		let r = await $fetch('/api/authenticate', {method: 'POST', body:
-			{action: 'DemonstrationSignUp.', browserTag: refBrowserTag.value, nameNormal: v.formNormal}})
+			{action: 'DemonstrationSignUp.', nameNormal: v.formNormal}})
 		if (r.isSignedUp) {
 			await doSignGet()//ttd march, this shouldn't be another round trip
 		} else {
@@ -48,7 +45,7 @@ async function clickedSignIn() {
 	let v = validateName(refReturningUserNameBox.value)
 	if (v.isValid) {
 		let r = await $fetch('/api/authenticate', {method: 'POST', body:
-			{action: 'DemonstrationSignIn.', browserTag: refBrowserTag.value, nameNormal: v.formNormal}})
+			{action: 'DemonstrationSignIn.', nameNormal: v.formNormal}})
 		if (r.isSignedIn) {
 			await doSignGet()//ttd march, this shouldn't be another round trip
 		} else {
@@ -61,7 +58,7 @@ async function clickedSignIn() {
 
 async function clickedSignOut() {
 	let r = await $fetch('/api/authenticate', {method: 'POST', body:
-		{action: 'DemonstrationSignOut.', browserTag: refBrowserTag.value}})
+		{action: 'DemonstrationSignOut.'}})
 	if (r.isSignedOut) {
 		await doSignGet()//ttd march, should not need another round trip
 	} else {

@@ -68,9 +68,47 @@ user tag -> user name
 
 
 
+wow, this totally changes (for the better) the whole hello system, which is recent, and vast
+mapping out how it works
+
+hello.txt - notes adn guide
+helloPlugin.client.js - runs only on the client, early in the tab's startup, filling
+helloStore.js - this pinia store, which fetches
+hello1.js - from these two endpoints
+hello2.js
+HelloComponent.js - shows stuff on the page from the same store, after the client plugin filled it
+
+ok, for regular old fashioned faster and better GET, all PHP-style, the flow to follow is the hit flow:
+
+page2.vue - GET straight to this page which has
+HitComponent.vue - page component that reads from
+hitStore.js - which fetches to
+hit.js - endpoint
+
+and, of course, all this runs both SSR and CSR, depending on if you GET straight to page2, or start on page1 or index and click over there
+ok, so that's the pattern to understand to build hello0, the cookie and first GET-based system that replaces the whole previous and now legacy hello1 and hello2
+
+bookmark april
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(previous notes)
 
 
 

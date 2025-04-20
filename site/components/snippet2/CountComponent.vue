@@ -1,14 +1,5 @@
 <script setup>
 
-import {
-getBrowserTag,
-} from 'icarus'
-
-let browserTag = ref('')
-onMounted(() => {
-	browserTag.value = getBrowserTag()
-})
-
 let tick = reactive({
 	durationGlobal: '-',
 	durationBrowser: '-'
@@ -59,7 +50,7 @@ async function incrementCount(increment1, increment2) {
 	<button class="pushy" @click="incrementCount(1, 0)">{{ data.countGlobal }} global</button>
 	updated in {{ tick.durationGlobal }}ms, and
 	<button class="pushy" @click="incrementCount(0, 1)">{{ data.countBrowser }} browser</button>
-	updated in {{ tick.durationBrowser }}ms for this browser tagged <i>{{ browserTag }}</i>.
+	updated in {{ tick.durationBrowser }}ms for this browser</i>.
 </p>
 <!-- Display a loading message while the data is being fetched -->
 <p v-else-if="fetching">Loading...</p>
