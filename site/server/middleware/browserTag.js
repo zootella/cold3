@@ -8,7 +8,7 @@ export default defineEventHandler((workerEvent) => {
 
 	let name = securePrefix + nameWarning
 	let options = {
-		domain:   'cold3.cc',//apex domain and subdomains allowed
+		domain:   'cold3.cc',//apex domain and subdomains allowed; ttd april get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
 		path:     '/',//send for all routes
 		httpOnly: true,//page script can't see or change; more secure than local storage! 
 		secure:   true,//only send over HTTPS

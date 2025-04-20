@@ -7,8 +7,7 @@ headerGetOne, browserToUser,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action}) {
-	let headers = door?.workerEvent?.req?.headers//headers from worker; ttd april[]add headers to door alongside action
+async function doorHandleBelow({door, body, action, headers}) {
 	let browserTag = body.browserTag//ttd april will come from browser when you switch to cookie, also put up with action
 	let report = {}
 

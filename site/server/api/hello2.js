@@ -8,26 +8,26 @@ browserToCodes,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body}) {
+async function doorHandleBelow({door, body, headers, browserTag: cookieTag}) {
 	let r = {}
 	r.sticker = Sticker().all//below, stay mindful of the awaits--each one costs us ~150ms!
 
 	//from the browser tag, look up user tag, and information about the user like route and name
 	let browserTag = body.browserTag; checkTag(browserTag)
 	r.user = await browserToUser({browserTag})//in here is browserTag, userTag, and names and routes like name.formFormal
+	r.cookieTag = cookieTag//ttd april, rough before moving browser tag to cookie and keeping it away from the page; you could hash it to show the hash to the page for testing, for example
 
 	//get information from cloudflare about the headers, you'll use these for (1) sudo access and (2) hit log, ttd march
-	let h = door?.workerEvent?.req?.headers
 	r.connection = {
-		ipAddress: headerGetOne(h, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
+		ipAddress: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
 		geography: {
-			country: headerGetOne(h, 'cf-ipcountry'),//this one is always present
-			city:    headerGetOne(h, 'cf-ipcity'),//remaining ones are sometimes present
-			region:  headerGetOne(h, 'cf-region-code'),
-			postal:  headerGetOne(h, 'cf-postal-code'),
+			country: headerGetOne(headers, 'cf-ipcountry'),//this one is always present
+			city:    headerGetOne(headers, 'cf-ipcity'),//remaining ones are sometimes present
+			region:  headerGetOne(headers, 'cf-region-code'),
+			postal:  headerGetOne(headers, 'cf-postal-code'),
 		},
 		browser: {
-			agent:   headerGetOne(h, 'user-agent'),//what the browser told cloudflare
+			agent:   headerGetOne(headers, 'user-agent'),//what the browser told cloudflare
 			renderer: body.browserGraphics.renderer,//what the browser reported from code
 			vendor:   body.browserGraphics.vendor,
 		},

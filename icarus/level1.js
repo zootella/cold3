@@ -143,8 +143,8 @@ export function Tag() {
 }
 
 //make sure a tag is exactly 21 letters and numbers, for the database
-export function checkTagOrBlank(s) { if (s === ''); else checkTag(s) }
-export function checkTag(s) { if (!hasTag(s)) toss('data', {s}) }
+export function checkTagOrBlank(s) { if (s === ''); else checkTag(s); return s }
+export function checkTag(s) { if (!hasTag(s)) toss('data', {s}); return s }//return to pass valid tag through
 export function hasTag(s) {
 	return (
 		typeof s == 'string' &&

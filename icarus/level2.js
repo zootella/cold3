@@ -540,7 +540,13 @@ export async function doorWorker(method, {
 
 			door = await doorWorkerOpen({method, workerEvent})
 			await doorWorkerCheck({door, actions, useTurnstile})
-			response = await doorHandleBelow({door, body: door.body, action: door.body?.action})
+			response = await doorHandleBelow({
+				door,//give our handler the door object, and convenient shortcut access to:
+				body: door.body,
+				action: door.body?.action,
+				headers: door.workerEvent.req.headers,
+				browserTag: checkTag(door.workerEvent.context.browserTag),//the browser tag must always be present; toss if not a valid tag; valid tag passes through
+			})
 
 		} catch (e1) { error = e1 }
 		try {

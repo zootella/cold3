@@ -21,6 +21,7 @@ const error2 = ref(null)
 const duration2 = ref(-1)
 const sticker2 = ref('')
 const connection = ref({})//ip address, geographic information, and browser information like user agent string
+const cookieTag = ref('')
 
 //codes
 const codes = ref([])//codes this browser could enter, empty array before check or if none
@@ -81,6 +82,7 @@ const hello2 = sequentialShared(async () => {
 		sticker2.value = r.sticker
 		user.value = r.user//more robust user object with .browserTag, .userTag, and names like .name.formFormal
 		connection.value = r.connection
+		cookieTag.value = r.cookieTag
 
 		//codes
 		codes.value = r.codes
@@ -96,7 +98,7 @@ return {
 	browserTag, user,
 
 	error2, duration2, sticker2,
-	connection,
+	connection, cookieTag,
 
 	//codes
 	codes, setCodes,
