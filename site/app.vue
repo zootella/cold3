@@ -16,6 +16,17 @@ let head = {
 addTurnstileHeadScript(head)
 useHead(head)
 
+/*
+ttd april
+
+import { useHelloStore } from '~/stores/hello'
+const helloStore = useHelloStore()
+// • Runs exactly once on every full SSR page render
+// • Blocks SSR & client hydration → “all‑at‑once” page
+// • Never runs on API routes or client navigations
+await helloStore.hello0()
+*/
+
 </script>
 <template>
 
