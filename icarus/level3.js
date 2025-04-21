@@ -1115,7 +1115,7 @@ closed by user/by staff; and unclosed?
 export async function browserToUserTag({browserTag}) {//fast for hello1
 	checkTag(browserTag)
 	let user = {}
-	user.browserTag = browserTag//echo back the browser tag we queried to get
+	user.browserTagHash = await hashText(browserTag)//never tell the page its browser tag!
 	let u = await browser_get({browserTag})//always does this one query to be fast
 	if (u) {
 		user.userTag = u.userTag

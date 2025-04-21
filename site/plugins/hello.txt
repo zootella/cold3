@@ -191,6 +191,132 @@ export default defineEventHandler((event) => {
 
 
 
+/*
+ttd april
+the eventual design that is best may also be quite simple:
+there isn't a hello1 and hello2, there's just one hello
+the browser sends the browser tag automatically with every GET and POST, so you have it from the first hit
+a brand new visitor gets a brochure page from hello after a single ~150ms query, which is great
+a returning, signed in, subscribed user's request takes longer, maybe ~500ms
+the page goes from entirely blank to entirely populated for that user
+this may be a better experience than, during 500ms, different parts of the page pop into existance
+
+let's call this design the "quick monolith"
+and, it can still be split into two, the first is everything necessary to completely get th epage ready
+the second one records the hit, as well as documents the speed of the quick monolith, it's log only
+ok, so it is hello1 and hello2, still
+well actually, if you hit the database a lot of times, cloudflare may optimize near there
+and, you can record the duration right in the endpoint
+so yeah, let's go back to quick monolith after all
+*/
+
+
+	/*
+	/api/hello2
+
+	taking more time, give a new tab more information from is browserTag and graphics hardware
+	like the user name
+	stage of teh user, like anonymous, current, suspended, closed
+	permission level of the user, like signed in normally, signed in for an hour of advanced permissions
+	creator or not
+
+	also log a hit, the quarter day unique rows in hit_table
+	browser tag, from body
+	graphics hardware, from body
+	user agent string, from headers, so these are less trustworthy
+	geography, from cloudflare
+	ip address, from cloudflare
+	tick now, from cloudflare, so these are more trustworthy
+
+	hello2 can take more time because the page is running now with loading components while we get this info in parallel
+
+
+		let data = await $fetch('/api/hello2', {method: 'POST', body: {
+		}})
+		sticker2.value = data.sticker
+		userTag.value = data.userTag
+		userName.value = data.userName
+	*/
+
+
+	//ttd march, trying to do things in parallel with keepPromise, you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome
+	//ttd april, you should factor the above block into a function in level3 which you give the headers
+
+	/*
+	/api/hello2
+
+	taking more time, give a new tab more information from is browserTag and graphics hardware
+	like the user name
+	stage of teh user, like anonymous, current, suspended, closed
+	permission level of the user, like signed in normally, signed in for an hour of advanced permissions
+	creator or not
+
+	also log a hit, the quarter day unique rows in hit_table
+	browser tag, from body
+	graphics hardware, from body
+	user agent string, from headers, so these are less trustworthy
+	geography, from cloudflare
+	ip address, from cloudflare
+	tick now, from cloudflare, so these are more trustworthy
+
+	hello2 can take more time because the page is running now with loading components while we get this info in parallel
+
+
+		let data = await $fetch('/api/hello2', {method: 'POST', body: {
+		}})
+		sticker2.value = data.sticker
+		userTag.value = data.userTag
+		userName.value = data.userName
+	*/
+
+
+
+//./plugins/helloPlugin.client.js
+
+export default defineNuxtPlugin(async (nuxtApp) => {
+
+	const helloStore = useHelloStore()
+	await helloStore.hello1()//$fetch-es to /api/hello1 on first call, does not do that on later calls
+	//await hello1, as a whole bunch of components will render depending on helloStore.userTag or not
+	//but don't await this one, just get it started now, when the page hits a new tab, and let it happen in a moment after there are already components on the page
+
+	/*
+	ttd april, all of this will change with the cookie based browser tag, and that's fine
+	also, you're thinking you do a quick monolith single hello, to show the user a complete rendered page all at once, rather than a page that grows and snaps open in more than one step
+	*/
+})
+
+
+
+
+
+
+
+https://nuxt.com/docs/api/composables/use-async-data
+is getting this right why it makes sense to use useAsyncData?
+
+you added this to HitComopnent:
+
+because, before, you were awaiting on the margin, and that seemed to work, but chat says it doesn't work
+and when you did that, the hit component box appears before the hits now
+and you're not sure if you can still see the sticker change from CloudPageServer to CloudPageClient
+
+important:
+[]confirm you can still get the page2 HitComponent "all at once" render experience
+[]confirm you can still get it to change from Local/CloudPageServer to Local/CloudPageClient depending on if you navigate to, or click to, page2
+[]undersatand, once and for all, or perhaps next, where to use $fetch versus useFetch and useAsyncData, now with pinia stores, and so on
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

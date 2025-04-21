@@ -3,6 +3,7 @@ import {defineStore} from 'pinia'
 
 export const useHitStore = defineStore('hit_store', () => {
 
+//not allowed to use await here, either, apparently
 /*
 ttd april
 so here we are in a store which can run on the server, or the client
