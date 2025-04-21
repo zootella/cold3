@@ -33,7 +33,8 @@ async function load() { if (loaded.value) return; loaded.value = true
 		let t = Now()
 		error1.value = null//clear a previous error
 
-		let r = await $fetch('/api/hello1', {method: 'POST', body: {}})
+		const requestFetch = useRequestFetch()//ttd april, bonkers that you have to get the function from a composable, but whatever
+		let r = await requestFetch('/api/hello1', {method: 'POST', body: {}})
 		sticker1.value = r.sticker
 		user.value = r.user
 		codes.value = r.codes

@@ -16,6 +16,10 @@ let head = {
 addTurnstileHeadScript(head)
 useHead(head)
 
+const helloStore = useHelloStore()
+await helloStore.load()
+//^ttd april, get rid of this after you move stuff into main and other stores
+
 const mainStore = useMainStore()
 await mainStore.load()
 /*
@@ -32,10 +36,12 @@ this pattern avoids
 - myriad APIs that look like the "right way" specific solution, like useFetch, useAsyncData, and Pinia's callOnce
 */
 
+/*
+<TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
+*/
 </script>
 <template>
 
-<TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
 <NuxtLayout>
 	<NuxtPage />
 </NuxtLayout>
