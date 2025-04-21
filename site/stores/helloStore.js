@@ -27,7 +27,8 @@ const removeNotification = (tag) => {
 	notifications.value = notifications.value.filter(item => item.tag != tag)
 }
 
-const hello1 = sequentialShared(async () => {
+const loaded = ref(false)
+async function load() { if (loaded.value) return; loaded.value = true
 	try {
 		let t = Now()
 		error1.value = null//clear a previous error
@@ -39,17 +40,15 @@ const hello1 = sequentialShared(async () => {
 
 		duration1.value = Now() - t
 	} catch (e) { error1.value = e }
-})
+}
 
 return {
-	hello1,//call these methods to fetch data
+	loaded, load,
 
 	error1, duration1, sticker1,
 	user,
 
-	//codes
 	codes, setCodes,
-	//notifications
 	notifications, addNotification, removeNotification,
 }
 

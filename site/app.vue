@@ -16,15 +16,20 @@ let head = {
 addTurnstileHeadScript(head)
 useHead(head)
 
+const mainStore = useMainStore()
+await mainStore.load()
 /*
-ttd april
+notes about the "all-at-once" page pattern we found
+await on the margin makes this block on server hydration, which is what we want
+.load() runs exactly once on the server for each tab's first GET
+does run again on the client, but mainStore.loaded true makes that a no-op
+does not run after that as the page POSTs to server endpoints; a plugin like mainPlugin.server.js would!
 
-import { useHelloStore } from '~/stores/hello'
-const helloStore = useHelloStore()
-// • Runs exactly once on every full SSR page render
-// • Blocks SSR & client hydration → “all‑at‑once” page
-// • Never runs on API routes or client navigations
-await helloStore.hello0()
+this pattern avoids
+- warnings in older Nuxt and Vue documentation against using await on the script setup margin
+- putting await in onLoaded(), which would completely break SSR
+- using a server only plugin, which would run on every later POST
+- myriad APIs that look like the "right way" specific solution, like useFetch, useAsyncData, and Pinia's callOnce
 */
 
 </script>

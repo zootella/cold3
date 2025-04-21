@@ -12,12 +12,12 @@ there's already a request, the very first GET, and our middleware ran before we 
 hit.js below will run as the result of our $fetch, and it will have the browser tag
 so you think you can imagine these stores don't need the browser tag, even when they're running on the server, and could get the browser tag
 */
-
+const loaded = ref(false)
 const hits = ref(0)
 const duration = ref(-1)
 const sticker = ref('')
 
-async function getHits() {
+async function getHits() { if (loaded.value) return; loaded.value = true
 	if (!hits.value) await _fetchHit('Get.')
 }
 async function incrementHits() {
@@ -38,7 +38,7 @@ async function _fetchHit(action) {
 }
 
 return {
-	hits,//return to keep in sync
+	loaded, hits,//return to keep in sync
 	duration, sticker,
 	getHits, incrementHits,//return for components to use
 }
