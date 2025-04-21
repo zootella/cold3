@@ -1,6 +1,4 @@
 
-import {defineStore} from 'pinia'
-
 export const useTurnstileStore = defineStore('turnstile_store', () => {
 
 const renderWidget = ref(false)//PostButton sets to true, causing BottomBar to render TurnstileComponent

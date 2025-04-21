@@ -3,9 +3,9 @@ import {
 getBrowserGraphics, sequentialShared,
 indexRecords, mergeRecords,
 } from 'icarus'
-import {defineStore} from 'pinia'
 
 export const useHelloStore = defineStore('hello_store', () => {
+const requestFetch = useRequestFetch()
 
 const error1 = ref(null)
 const duration1 = ref(-1)
@@ -33,7 +33,6 @@ async function load() { if (loaded.value) return; loaded.value = true
 		let t = Now()
 		error1.value = null//clear a previous error
 
-		const requestFetch = useRequestFetch()//ttd april, bonkers that you have to get the function from a composable, but whatever
 		let r = await requestFetch('/api/hello1', {method: 'POST', body: {}})
 		sticker1.value = r.sticker
 		user.value = r.user

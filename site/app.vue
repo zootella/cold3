@@ -36,12 +36,10 @@ this pattern avoids
 - myriad APIs that look like the "right way" specific solution, like useFetch, useAsyncData, and Pinia's callOnce
 */
 
-/*
-<TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
-*/
 </script>
 <template>
 
+<TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
 <NuxtLayout>
 	<NuxtPage />
 </NuxtLayout>

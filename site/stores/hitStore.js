@@ -1,7 +1,6 @@
 
-import {defineStore} from 'pinia'
-
 export const useHitStore = defineStore('hit_store', () => {
+const requestFetch = useRequestFetch()
 
 //not allowed to use await here, either, apparently
 /*
@@ -27,7 +26,7 @@ async function incrementHits() {
 async function _fetchHit(action) {
 	let task = Task({name: 'hit store fetch'})
 	try {
-		task.response = await $fetch('/api/hit', {method: 'POST', body: {action}})
+		task.response = await requestFetch('/api/hit', {method: 'POST', body: {action}})
 	} catch (e) { task.error = e }
 	task.finish()
 	if (!task.success) throw task//following draft pattern from PostButton, but here, why not just not have the try catch?

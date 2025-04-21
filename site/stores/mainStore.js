@@ -2,9 +2,9 @@
 
 import {
 } from 'icarus'
-import {defineStore} from 'pinia'
 
 export const useMainStore = defineStore('main_store', () => {
+const requestFetch = useRequestFetch()//pass the same request context and headers from the real GET through the fake fetch during SSR
 
 const loaded = ref(false)//prevent unnecessary reload on client after hydrated and bridged from server
 async function load() { if (loaded.value) return; loaded.value = true

@@ -45,12 +45,6 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 		options.secure = false
 	}
 
-	if (workerEvent.context.browserTag) {
-		log(`browserTagMiddle found workerEvent.context.browserTag already set to 🍪 ${workerEvent.context.browserTag}!`)
-		//^this never happens
-	} else {
-	}
-
 	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
 	let value, valueTag, browserTag
 	value = getCookie(workerEvent, name)//get the cookie where we may have previously tagged this browser
@@ -62,14 +56,11 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 
 	if (hasTag(valueTag)) {//if the above steps got a valid tag
 		browserTag = valueTag//use the existing browser tag
-		log(`read 🍪 browser tag ${browserTag}`)
 	} else {//otherwise, make and use a new browser tag
 		browserTag = Tag()//create a tag to identify the connected browser
 		value = valueWarning + browserTag//assemble a value for a cookie we'll tell it to set with our eventual response
-		log(`MADE 🍪 browser tag ${browserTag} 🍪 🍪 🍪 🍪 🍪`)
 	}
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
-	log('SETTING COOKIE ALWAYS', look({name, value, options}))
 	setCookie(workerEvent, name, value, options)//set response headers for when we send the response, telling the browser to save this tag for next time
 })
