@@ -66,7 +66,7 @@ queryTopSinceMatchGreater,
 const securePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
 const nameWarning  = 'current_session_password'
 const valueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
-export function tagToCookie(tag) {
+export function composeCookie(tag) {
 
 	let name = nameWarning
 	let options = {//these base options work for local development...
@@ -95,8 +95,9 @@ export function cookieValueToTag(value) {
 		value.startsWith(valueWarning)) {//and prefix is intact,
 
 		let tag = value.slice(-Limit.tag)//slice out the tag at the end of the cookie value
-
-		if (hasTag(tag)) return tag//and check it before we return it
+		if (hasTag(tag)) {//and check it before we return it
+			return tag
+		}
 	}
 	return false//if any of that didn't work, don't throw, just return false
 }
@@ -1161,7 +1162,6 @@ export async function browserToUserTag({browserTag}) {//fast for hello1
 	checkTag(browserTag)
 	let user = {}
 	user.browserTagHash = await hashText(browserTag)//never tell the page its browser tag!
-	user.browserTag = browserTag//ttd april, remove this line, do not tell the page its browser's tag
 	let u = await browser_get({browserTag})//always does this one query to be fast
 	if (u) {
 		user.userTag = u.userTag

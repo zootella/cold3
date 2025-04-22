@@ -112,7 +112,7 @@ wrapper
 */
 export {
 
-tagToCookie, cookieValueToTag,
+composeCookie, cookieValueToTag,
 vhsSign,
 Code, codeSend, browserToCodes, codeEnter,
 

@@ -2,16 +2,14 @@
 import {
 getBrowserGraphics, sequentialShared,
 indexRecords, mergeRecords,
-tagToCookie,
+composeCookie,
 } from 'icarus'
 
 export const useHelloStore = defineStore('hello_store', () => {
-const requestFetch = useRequestFetch()
 
-let context = {}
-if (process.server) context = useNuxtApp()?.ssrContext?.event?.context
-log('unearthed context browser tag: ' + context.browserTag)
-//^new stuff
+let context//get existing context, if any, to use during SSR for the fetch below
+if (process.server) context = useNuxtApp()?.ssrContext?.event?.context//only applicable during SSR
+if (!context) context = {}
 
 const error1 = ref(null)
 const duration1 = ref(-1)
@@ -40,9 +38,7 @@ async function load() { if (loaded.value) return; loaded.value = true
 		error1.value = null//clear a previous error
 
 		let f = {method: 'POST', body: {}}
-		if (context.browserTag) f.headers = {cookie: tagToCookie(context.browserTag).cookieHeaderValue}
-		//^new stuff
-
+		if (context.browserTag) f.headers = {cookie: composeCookie(context.browserTag).cookieHeaderValue}//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
 		let r = await $fetch('/api/hello1', f)
 		sticker1.value = r.sticker
 		user.value = r.user

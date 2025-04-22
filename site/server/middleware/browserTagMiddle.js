@@ -1,5 +1,9 @@
 //./server/middleware/browserTagMiddle.js
 
+import {
+composeCookie, cookieValueToTag,
+} from 'icarus'
+
 //  _                                       _              
 // | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _ 
 // | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |
@@ -26,43 +30,22 @@ mitigated by:
 
 export default defineEventHandler((workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
 
-	const securePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
-	const nameWarning  = 'current_session_password'
-	const valueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
-
-	let name = securePrefix + nameWarning
-	let options = {
-		domain: 'cold3.cc',//apex domain and subdomains allowed; ttd april get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
-		path: '/',//send for all routes
-		httpOnly: true,//page script can't see or change; more secure than local storage! 
-		secure: true,//only send over HTTPS
-		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
-		maxAge: 395*24*60*60//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
-	}
-	if (isLocal()) {//weaken options for local development on http://localhost:3000
-		name = nameWarning//no secure prefix
-		delete options.domain
-		options.secure = false
-	}
-
 	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
 	let value, valueTag, browserTag
-	value = getCookie(workerEvent, name)//get the cookie where we may have previously tagged this browser
-	if (hasText(value) &&//got something,
-		value.length == valueWarning.length+Limit.tag &&//length looks correct,
-		value.startsWith(valueWarning)) {//and prefix is intact,
-		valueTag = value.slice(-Limit.tag)//slice out the tag at the end of the cookie value
-	}
+	value = getCookie(workerEvent, composeCookie().name)//get the cookie where we may have previously tagged this browser
+	valueTag = cookieValueToTag(value)
 
 	if (hasTag(valueTag)) {//if the above steps got a valid tag
 		browserTag = valueTag//use the existing browser tag
-		log(`read 🍪 ${browserTag}`)
+		log(`read ${browserTag} 🍪`)
+
 	} else {//otherwise, make and use a new browser tag
 		browserTag = Tag()//create a tag to identify the connected browser
 		value = valueWarning + browserTag//assemble a value for a cookie we'll tell it to set with our eventual response
-		log(`MADE ${browserTag} 🍪🍪`)
+		log(`made ${browserTag} 🍪🔥🔥🔥`)
 	}
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
-	setCookie(workerEvent, name, value, options)//set response headers for when we send the response, telling the browser to save this tag for next time
+	let cookie = composeCookie(browserTag)
+	setCookie(workerEvent, cookie.name, cookie.value, cookie.options)//set response headers for when we send the response, telling the browser to save this tag for next time
 })
