@@ -124,7 +124,6 @@ snippet3,
 settingReadInt, settingRead, settingWrite,
 recordHit,
 
-browserToUserTag,
 browserToUser,
 
 nameCheck,

@@ -1,7 +1,7 @@
 
 import {
 headerGetOne, stringo,
-recordHit, browserToUser, browserToUserTag,
+recordHit, browserToUser,
 browserToCodes,
 } from 'icarus'
 
@@ -48,9 +48,3 @@ async function doorHandleBelow({door, body, headers, browserTag}) {
 
 	return r
 }
-
-
-
-
-
-

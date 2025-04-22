@@ -63,12 +63,12 @@ queryTopSinceMatchGreater,
 // |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |
 //                                                   |___/ 
 
-const securePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
-const nameWarning  = 'current_session_password'
-const valueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
+const cookieSecurePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
+const cookieNameWarning  = 'current_session_password'
+const cookieValueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
 export function composeCookie(tag) {
 
-	let name = nameWarning
+	let name = cookieNameWarning
 	let options = {//these base options work for local development...
 		path: '/',//send for all routes
 		httpOnly: true,//page script can't see or change; more secure than local storage! 
@@ -76,23 +76,23 @@ export function composeCookie(tag) {
 		maxAge: 395*24*60*60,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
 	}
 	if (isCloud()) {//...strengthen them for cloud deployment
-		name = securePrefix + name
+		name = cookieSecurePrefix + name
 		options.secure = true
 		options.domain = 'cold3.cc'//apex domain and subdomains allowed; ttd april get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
 	}
 
 	let o = {name, options}
 	if (hasTag(tag)) {
-		o.value = `${valueWarning}${tag}`//assemble a value for a cookie we'll tell it to set with our eventual response
-		o.cookieHeaderValue = `${name}=${valueWarning}${tag}`//cookie header value with name and value together
+		o.value = `${cookieValueWarning}${tag}`//assemble a value for a cookie we'll tell it to set with our eventual response
+		o.cookieHeaderValue = `${name}=${cookieValueWarning}${tag}`//cookie header value with name and value together
 	}
 	return o
 }
 export function cookieValueToTag(value) {
 	if (
 		hasText(value) &&//got something,
-		value.length == valueWarning.length+Limit.tag &&//length looks correct,
-		value.startsWith(valueWarning)) {//and prefix is intact,
+		value.length == cookieValueWarning.length+Limit.tag &&//length looks correct,
+		value.startsWith(cookieValueWarning)) {//and prefix is intact,
 
 		let tag = value.slice(-Limit.tag)//slice out the tag at the end of the cookie value
 		if (hasTag(tag)) {//and check it before we return it
@@ -1158,7 +1158,7 @@ closed by user/by staff; and unclosed?
 
 
 //what user, if any, is at the given browser?
-export async function browserToUserTag({browserTag}) {//fast for hello1
+async function browserToUserTag({browserTag}) {//fast for hello1; ttd april, no longer using except below, refactor
 	checkTag(browserTag)
 	let user = {}
 	user.browserTagHash = await hashText(browserTag)//never tell the page its browser tag!

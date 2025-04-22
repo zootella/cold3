@@ -37,12 +37,10 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 
 	if (hasTag(valueTag)) {//if the above steps got a valid tag
 		browserTag = valueTag//use the existing browser tag
-		log(`read ${browserTag} 🍪`)
-
+		//log(`read ${browserTag} 🍪`)
 	} else {//otherwise, make and use a new browser tag
 		browserTag = Tag()//create a tag to identify the connected browser
-		value = valueWarning + browserTag//assemble a value for a cookie we'll tell it to set with our eventual response
-		log(`made ${browserTag} 🍪🔥🔥🔥`)
+		//log(`made ${browserTag} 🍪🔥🔥🔥`)
 	}
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
