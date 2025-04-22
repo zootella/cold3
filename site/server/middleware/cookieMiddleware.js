@@ -1,17 +1,11 @@
-//./server/middleware/browserTagMiddle.js
+//./server/middleware/cookieMiddleware.js
 
 import {
 composeCookie, cookieValueToTag,
 } from 'icarus'
 
-//  _                                       _              
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| |
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |
-//                                                   |___/ 
-
 /*
+notes about the browswer tag, and keeping it in a cookie instead of local storage
 a tag identifies a browser, through multiple different signed-in users, and even before someone has signed up
 we could keep the browser tag in local storage, except then:
 (1) the server doesn't have it from the very first GET; page code has to POST it to the server after loading
@@ -40,7 +34,7 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 		//log(`read ${browserTag} 🍪`)
 	} else {//otherwise, make and use a new browser tag
 		browserTag = Tag()//create a tag to identify the connected browser
-		//log(`made ${browserTag} 🍪🔥🔥🔥`)
+		//log(`made ${browserTag} 🍪🔥`)
 	}
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
