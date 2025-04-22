@@ -2,10 +2,16 @@
 import {
 getBrowserGraphics, sequentialShared,
 indexRecords, mergeRecords,
+tagToCookie,
 } from 'icarus'
 
 export const useHelloStore = defineStore('hello_store', () => {
 const requestFetch = useRequestFetch()
+
+let context = {}
+if (process.server) context = useNuxtApp()?.ssrContext?.event?.context
+log('unearthed context browser tag: ' + context.browserTag)
+//^new stuff
 
 const error1 = ref(null)
 const duration1 = ref(-1)
@@ -33,7 +39,11 @@ async function load() { if (loaded.value) return; loaded.value = true
 		let t = Now()
 		error1.value = null//clear a previous error
 
-		let r = await requestFetch('/api/hello1', {method: 'POST', body: {}})
+		let f = {method: 'POST', body: {}}
+		if (context.browserTag) f.headers = {cookie: tagToCookie(context.browserTag).cookieHeaderValue}
+		//^new stuff
+
+		let r = await $fetch('/api/hello1', f)
 		sticker1.value = r.sticker
 		user.value = r.user
 		codes.value = r.codes

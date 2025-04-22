@@ -26,6 +26,7 @@ async function doorHandleBelow({door, body, headers, browserTag}) {
 		},
 		browser: {
 			agent:   headerGetOne(headers, 'user-agent'),//what the browser told cloudflare
+			//ttd april, here's where you can add back renderer and vendor; and maybe reorganize into .page, .browser, .worker, matching error.js, also
 		},
 	}
 	//record the hit

@@ -56,6 +56,51 @@ queryTopSinceMatchGreater,
 
 
 
+//  _                                       _              
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| |
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |
+//                                                   |___/ 
+
+const securePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
+const nameWarning  = 'current_session_password'
+const valueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
+export function tagToCookie(tag) {
+
+	let name = nameWarning
+	let options = {//these base options work for local development...
+		path: '/',//send for all routes
+		httpOnly: true,//page script can't see or change; more secure than local storage! 
+		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
+		maxAge: 395*24*60*60,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
+	}
+	if (isCloud()) {//...strengthen them for cloud deployment
+		name = securePrefix + name
+		options.secure = true
+		options.domain = 'cold3.cc'//apex domain and subdomains allowed; ttd april get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
+	}
+
+	let o = {name, options}
+	if (hasTag(tag)) {
+		o.value = `${valueWarning}${tag}`//assemble a value for a cookie we'll tell it to set with our eventual response
+		o.cookieHeaderValue = `${name}=${valueWarning}${tag}`//cookie header value with name and value together
+	}
+	return o
+}
+export function cookieValueToTag(value) {
+	if (
+		hasText(value) &&//got something,
+		value.length == valueWarning.length+Limit.tag &&//length looks correct,
+		value.startsWith(valueWarning)) {//and prefix is intact,
+
+		let tag = value.slice(-Limit.tag)//slice out the tag at the end of the cookie value
+
+		if (hasTag(tag)) return tag//and check it before we return it
+	}
+	return false//if any of that didn't work, don't throw, just return false
+}
+
 
 
 
@@ -1116,6 +1161,7 @@ export async function browserToUserTag({browserTag}) {//fast for hello1
 	checkTag(browserTag)
 	let user = {}
 	user.browserTagHash = await hashText(browserTag)//never tell the page its browser tag!
+	user.browserTag = browserTag//ttd april, remove this line, do not tell the page its browser's tag
 	let u = await browser_get({browserTag})//always does this one query to be fast
 	if (u) {
 		user.userTag = u.userTag
