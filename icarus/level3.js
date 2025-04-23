@@ -707,6 +707,8 @@ CREATE TABLE delay_table (
 	d1             BIGINT    NOT NULL,  -- several task defined slots for durations in milliseconds
 	d2             BIGINT    NOT NULL,
 	d3             BIGINT    NOT NULL,
+	d4             BIGINT    NOT NULL,
+	d5             BIGINT    NOT NULL,
 
 	wrapper_hash   CHAR(52)  NOT NULL,
 	origin_text    TEXT      NOT NULL,
@@ -720,13 +722,13 @@ CREATE INDEX delay2 ON delay_table (wrapper_hash, task_text, row_tick DESC) WHER
 `)
 //ttd april, make this table when you've got unified hello; this is the start of RUM, real user monitoring; you'll use postgres' stats calls here like p95 or whatever
 
-export async function recordDelay({task, d1, d2, d3, origin, browserHash, userTag, ipText}) {
+export async function recordDelay({task, d1, d2, d3, d4, d5, origin, browserHash, userTag, ipText}) {
 	checkText(task)
-	checkInt(d1, -1); checkInt(d2, -1); checkInt(d3, -1)
+	checkInt(d1, -1); checkInt(d2, -1); checkInt(d3, -1); checkInt(d4, -1); checkInt(d5, -1)
 	checkText(origin); checkHash(browserHash); checkTagOrBlank(userTag); checkTextOrBlank(ipText);
 	await queryAddRow({table: 'delay_table', row: {
 		task_text: task,
-		d1, d2, d3,
+		d1, d2, d3, d4, d5,
 
 		wrapper_hash: wrapper.hash,
 		origin_text: origin,

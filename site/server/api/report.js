@@ -52,9 +52,9 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 
 		await recordDelay({
 			task: 'Hello.',
-			d1: 5,//ttd april, you'll fill these in with real measured durations next
-			d2: 0,
-			d3: 0,
+			d1: body.d1,//page duration
+			d2: body.d2,//within that, server duration
+			d3: -1, d4: -1, d5: -1,//the delay table has room to grow
 			origin: door.origin,
 			browserHash,
 			userTag: toTextOrBlank(r.browser.user.userTag),
