@@ -4,6 +4,7 @@ import {vite as vidstack} from 'vidstack/plugins'//from vidstack
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+
 	compatibilityDate: '2024-04-03',//from nuxt
 	devtools: {enabled: true},//from nuxt
 	modules: [
@@ -21,7 +22,7 @@ export default defineNuxtConfig({
 		plugins: [
 			visualizer({//from visualizer
 				filename: './stats.html',
-				template: 'list',//try out "sunburst", "treemap", "network", "raw-data", or "list"
+				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
 				brotliSize: true
 			}),
 			vidstack(),//from vidstack

@@ -63,11 +63,11 @@ queryTopSinceMatchGreater,
 // |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |
 //                                                   |___/ 
 
+//ttd april, duplicating this to avoid warning about circular reference without spending more time on it
 const cookieSecurePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
 const cookieNameWarning  = 'current_session_password'
 const cookieValueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
 export function composeCookie(tag) {
-
 	let name = cookieNameWarning
 	let options = {//these base options work for local development...
 		path: '/',//send for all routes
@@ -80,7 +80,6 @@ export function composeCookie(tag) {
 		options.secure = true
 		options.domain = 'cold3.cc'//apex domain and subdomains allowed; ttd april get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
 	}
-
 	let o = {name, options}
 	if (hasTag(tag)) {
 		o.value = `${cookieValueWarning}${tag}`//assemble a value for a cookie we'll tell it to set with our eventual response
@@ -93,7 +92,6 @@ export function cookieValueToTag(value) {
 		hasText(value) &&//got something,
 		value.length == cookieValueWarning.length+Limit.tag &&//length looks correct,
 		value.startsWith(cookieValueWarning)) {//and prefix is intact,
-
 		let tag = value.slice(-Limit.tag)//slice out the tag at the end of the cookie value
 		if (hasTag(tag)) {//and check it before we return it
 			return tag
