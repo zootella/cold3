@@ -30,6 +30,7 @@ const addNotification = (message) => {
 const removeNotification = (tag) => {
 	notifications.value = notifications.value.filter(item => item.tag != tag)
 }
+//ttd april, get rid of these methods now that you understand when to use .value in a store!
 
 const loaded = ref(false)
 async function load() { if (loaded.value) return; loaded.value = true

@@ -348,7 +348,7 @@ are we hiding rows here? maybe for this one, which is lower churn than signing i
 /*
 ttd march
 adding domain_text to browser_table
-browser_tag is from local storage
+browser_hash is from the browser
 and local storage is specific to the device, browser, chrome profile, and host name
 so already you have different local storage for localhost as opposed to cold3.cc
 and that's fine, and you do want browser_table to have a record of what host this browser tag cam from the local storage of
@@ -368,51 +368,51 @@ Exactly! Local storage is scoped specifically to the protocol, port, subdomain, 
 SQL(`
 -- what user is signed into this browser? sign users in and out
 CREATE TABLE browser_table (
-	row_tag      CHAR(21)  NOT NULL PRIMARY KEY,  -- unique tag identifies each row
-	row_tick     BIGINT    NOT NULL,  -- tick when row was added
-	hide         BIGINT    NOT NULL,  -- 0 visible, nonzero ignore
+	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,  -- unique tag identifies each row
+	row_tick      BIGINT    NOT NULL,  -- tick when row was added
+	hide          BIGINT    NOT NULL,  -- 0 visible, nonzero ignore
 
-	browser_tag  CHAR(21)  NOT NULL,  -- the browser a request is from
-	user_tag     CHAR(21)  NOT NULL,  -- the user we've proven is using that browser
-	level        BIGINT    NOT NULL   -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
+	browser_hash  CHAR(52)  NOT NULL,  -- the browser a request is from
+	user_tag      CHAR(21)  NOT NULL,  -- the user we've proven is using that browser
+	level         BIGINT    NOT NULL,  -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
 
-	origin_text  TEXT      NOT NULL,  -- the protocol, port, subdomain, and domain for the the local storage holding browser tag
+	origin_text   TEXT      NOT NULL   -- the protocol, port, subdomain, and domain for the the local storage holding browser tag
 );
 
 -- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser1 ON browser_table (hide, browser_tag, row_tick DESC);  -- filter by browser
-CREATE INDEX browser2 ON browser_table (hide, user_tag,    row_tick DESC);  -- or by user
-CREATE INDEX browser3 ON browser_table (hide, level,       row_tick DESC);  -- quickly find expired super user hours
+CREATE INDEX browser1 ON browser_table (browser_hash, row_tick DESC) WHERE hide = 0;  -- filter by browser
+CREATE INDEX browser2 ON browser_table (user_tag,     row_tick DESC) WHERE hide = 0;  -- or by user
+CREATE INDEX browser3 ON browser_table (level,        row_tick DESC) WHERE hide = 0;  -- quickly find expired super user hours
 `)
 //ttd february, trying the pattern where the group of functions which exclusively touch the table are named example_someThing, as below. if it works well for browser and name tables, then look at expanding to everywhere
 
-async function browser_get({browserTag}) {//what user, if any, is signed in at this browser?
-	checkTag(browserTag)
+async function browser_get({browserHash}) {//what user, if any, is signed in at this browser?
+	checkHash(browserHash)
 	let row = await queryTopEqualGreater({
 		table: 'browser_table',
-		title1: 'browser_tag', cell1: browserTag,
+		title1: 'browser_hash', cell1: browserHash,
 		title2: 'level', cell2GreaterThan: 0,
 	})
-	return row ? {browserTag: row.browser_tag, userTag: row.user_tag, level: row.level, origin: row.origin_text} : false
+	return row ? {browserHash: row.browser_hash, userTag: row.user_tag, level: row.level, origin: row.origin_text} : false
 }
-async function browser_in({browserTag, userTag, level, origin}) {//this user has proven their identity, sign them in here
-	checkTag(browserTag); checkTag(userTag); checkInt(level, 1); checkText(origin)//make sure level is 1+
+async function browser_in({browserHash, userTag, level, origin}) {//this user has proven their identity, sign them in here
+	checkHash(browserHash); checkTag(userTag); checkInt(level, 1); checkText(origin)//make sure level is 1+
 	await queryAddRow({
 		table: 'browser_table',
 		row: {
-			browser_tag: browserTag,
+			browser_hash: browserHash,
 			user_tag: userTag,
 			level,//sign in at level 1 provisional, 2 normal, or 3 start an hour of elevated permissions
 			origin_text: origin,
 		}
 	})
 }
-async function browser_out({browserTag, userTag, hideSet, origin}) {//sign this user out everywhere; browser tag included but doesn't matter; hide reason code is optional for a note different than default 1
-	checkTag(browserTag); checkTag(userTag); checkText(origin)
+async function browser_out({browserHash, userTag, hideSet, origin}) {//sign this user out everywhere; browser tag included but doesn't matter; hide reason code is optional for a note different than default 1
+	checkHash(browserHash); checkTag(userTag); checkText(origin)
 	await queryAddRow({//record that this user's sign-out happened now, and from this browser
 		table: 'browser_table',
 		row: {
-			browser_tag: browserTag,
+			browser_hash: browserHash,
 			user_tag: userTag,
 			level: 0,//level 0 means this row is about the user signing out
 			origin_text: origin,
@@ -456,11 +456,11 @@ async function browser_out({browserTag, userTag, hideSet, origin}) {//sign this 
 
 
 //functions in the code system call these handlers to report that the person at browser tag challenged an address, and we sent a code there, and, possibly, later, entered the correct code, validating that address
-export async function browserChallengedAddress({browserTag, provider, type, v}) {
+export async function browserChallengedAddress({browserHash, provider, type, v}) {
 	//address_table
 	//service_table
 }
-export async function browserValidatedAddress({browserTag, provider, type, v}) {
+export async function browserValidatedAddress({browserHash, provider, type, v}) {
 	//address_table
 	//service_table
 	/*
@@ -474,10 +474,10 @@ export async function browserValidatedAddress({browserTag, provider, type, v}) {
 
 //~~~~ send all the codes!
 
-export async function codeSend({browserTag, provider, type, v}) {//v is the address, valid, containing the three forms
+export async function codeSend({browserHash, provider, type, v}) {//v is the address, valid, containing the three forms
 
 	//look up the user tag, even though we're not using it with code yet
-	let userTag = (await demonstrationSignGet({browserTag}))?.userTag
+	let userTag = (await demonstrationSignGet({browserHash}))?.userTag
 
 	let permit = await codePermit(v.formNormal)
 	if (!permit.success) return permit//return the failed permit directly, bubbling up
@@ -493,7 +493,7 @@ export async function codeSend({browserTag, provider, type, v}) {//v is the addr
 	}
 	let task = await fetch23({path: '/message', body})
 	if (!task.success) toss('task', {task})
-	await codeSent({browserTag, provider, type, v, permit, code})
+	await codeSent({browserHash, provider, type, v, permit, code})
 
 	return {success: true}
 }
@@ -543,24 +543,24 @@ async function codeCompose({length, sticker}) {
 }
 
 //what it looks like to use these functions to send a code
-async function codeSent({browserTag, provider, type, v, permit, code}) {
+async function codeSent({browserHash, provider, type, v, permit, code}) {
 
 	if (permit.wouldReplace) {
 		await code_set_lives({codeTag: permit.wouldReplace, lives: 0})//invalidate the code this new one will replace
 	}
 
 	//take care of address_table and maybe also service_table
-	await browserChallengedAddress({browserTag, provider, type, v})
+	await browserChallengedAddress({browserHash, provider, type, v})
 
 	//record that we sent the new code
-	await code_add({codeTag: code.codeTag, browserTag, provider, type, v, hash: code.hash, lives: Code.guesses})
+	await code_add({codeTag: code.codeTag, browserHash, provider, type, v, hash: code.hash, lives: Code.guesses})
 }
 
 //is this browser expecting any codes? needs to run fast!
-export async function browserToCodes({browserTag}) {
+export async function browserToCodes({browserHash}) {
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
 		since: Now() - Code.expiration,//get not yet expired codes
-		title1: 'browser_tag', cell1: browserTag,//for this browser
+		title1: 'browser_hash', cell1: browserHash,//for this browser
 		title2: 'lives', cell2GreaterThan: 0,//that haven't been guessed to death or otherwise revoked
 	})
 	let codes = []//from the database rows, prepare records that the page will keep in a list
@@ -583,15 +583,15 @@ export async function browserToCodes({browserTag}) {
 	return codes//return empty if no codes for this browser right now
 }
 
-//the person at browserTag used the box on the page to enter a code, which could be right or wrong
-export async function codeEnter({browserTag, codeTag, codeCandidate}) {
+//the person at browserHash used the box on the page to enter a code, which could be right or wrong
+export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 	let now = Now()
 	let r
 
 	let row = await code_get({codeTag})//find the row about it
-	log('hi in code enter', look({browserTag, codeTag, codeCandidate, row}))
-	if (!row || row.browser_tag != browserTag || !row.lives) {
-		toss('page', {browserTag, codeTag, codeCandidate, row})//very unusual, like from a tampered-with page
+	log('hi in code enter', look({browserHash, codeTag, codeCandidate, row}))
+	if (!row || row.browser_hash != browserHash || !row.lives) {
+		toss('page', {browserHash, codeTag, codeCandidate, row})//very unusual, like from a tampered-with page
 	}
 
 	if (row.row_tick + Code.expiration < now) {//too late, respond with lives 0 to tell the page the user needs to request a new code
@@ -601,7 +601,7 @@ export async function codeEnter({browserTag, codeTag, codeCandidate}) {
 	if (secureSameText(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
 		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
 		await browserValidatedAddress({
-			browserTag,
+			browserHash,
 			provider: row.provider_text,
 			type: row.type_text,
 			addressNormal: row.normal_text, addressFormal: row.formal_text, addressPage: row.page_text,
@@ -673,13 +673,13 @@ export const Code = {//factory settings for address verification codes
 Object.freeze(Code)
 
 SQL(`
--- what code like 1234 have we sent to a user to verify their address?
+-- what code like 1234 have we sent to the person at a browser to prove they control that address?
 CREATE TABLE code_table (
 	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,  -- uniquely identifies the row, and also used as the code tag
 	row_tick       BIGINT    NOT NULL,  -- when we sent the code, the start of the code's 20 minute lifetime
 	hide           BIGINT    NOT NULL,  -- not used, instead set lives to 0 below to revoke the code
 
-	browser_tag    CHAR(21)  NOT NULL,  -- the browser that entered, and must verify, the address
+	browser_hash   CHAR(52)  NOT NULL,  -- the browser that entered, and must verify, the address
 
 	provider_text  TEXT      NOT NULL,  -- note we sent the code using "Amazon." or "Twilio."
 	type_text      TEXT      NOT NULL,  -- address type like "Email." or "Phone."
@@ -692,7 +692,7 @@ CREATE TABLE code_table (
 	lives          BIGINT    NOT NULL   -- starts 4 guesses, decrement, or set directly to 0 to invalidate
 );
 
-CREATE INDEX code1 ON code_table (browser_tag,            row_tick DESC) WHERE hide = 0;  -- filter by user
+CREATE INDEX code1 ON code_table (browser_hash,           row_tick DESC) WHERE hide = 0;  -- filter by browser
 CREATE INDEX code2 ON code_table (type_text, normal_text, row_tick DESC) WHERE hide = 0;  -- or by address
 ^ttd march, maybe, change all indices to partial with where hide zero like above
 `)
@@ -701,8 +701,8 @@ async function code_get({codeTag}) {//get the row about a code
 	let rows = await queryGet({table: 'code_table', title: 'row_tag', cell: codeTag})
 	return rows.length ? rows[0] : false
 }
-async function code_get_browser({browserTag}) {//get all the rows about the given browser
-	return await queryGet({table: 'code_table', title: 'browser_tag', cell: browserTag})
+async function code_get_browser({browserHash}) {//get all the rows about the given browser
+	return await queryGet({table: 'code_table', title: 'browser_hash', cell: browserHash})
 }
 async function code_get_address({addressNormal}) {//get all the rows about the given address
 	return await queryGet({table: 'code_table', title: 'normal_text', cell: addressNormal})
@@ -714,10 +714,10 @@ async function code_set_lives({codeTag, lives}) {//set the number of lives, decr
 		titleSet:  'lives',   cellSet: lives,
 	})
 }
-async function code_add({codeTag, browserTag, provider, type, v, hash, lives}) {//make a record to send a new code
+async function code_add({codeTag, browserHash, provider, type, v, hash, lives}) {//make a record to send a new code
 	await queryAddRow({table: 'code_table', row: {
 		row_tag: codeTag,//unique, identifies row and code, so chosen earlier to save a copy
-		browser_tag: browserTag,
+		browser_hash: browserHash,
 		provider_text: provider,
 		type_text: type,
 		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.formPage,
@@ -754,7 +754,9 @@ CREATE TABLE delay_table (
 
 	wrapper_hash  CHAR(52)  NOT NULL,
 	origin_text   TEXT      NOT NULL,
-	browser_tag   CHAR(21)  NOT NULL
+	browser_hash  CHAR(52)  NOT NULL,
+	user_tag      CHAR(21)  NOT NULL,
+	ip_text       TEXT      NOT NULL
 );
 
 CREATE INDEX delay1 ON delay_table               (task_text, row_tick DESC) WHERE hide = 0;
@@ -762,15 +764,15 @@ CREATE INDEX delay2 ON delay_table (wrapper_hash, task_text, row_tick DESC) WHER
 `)
 //ttd april, make this table when you've got unified hello; this is the start of RUM, real user monitoring; you'll use postgres' stats calls here like p95 or whatever
 
-export async function recordDelay({task, delay, origin, browserTag}) {
-	checkText(task); checkInt(delay); checkText(origin); checkTag(browserTag)
+export async function recordDelay({task, delay, origin, browserHash}) {
+	checkText(task); checkInt(delay); checkText(origin); checkHash(browserHash)
 	await queryAddRow({table: 'delay_table', row: {
 		task_text: task,
 		delay: delay,
 
 		wrapper_hash: wrapper.hash,
 		origin_text: origin,
-		browser_tag: browserTag,
+		browser_hash: browserHash,
 	}})
 }
 
@@ -814,7 +816,7 @@ CREATE TABLE hit_table (
 
 	origin_text     TEXT      NOT NULL,  -- Trusted: the origin like "http://localhost:3000" or "https://example.com"
 
-	browser_tag     CHAR(21)  NOT NULL,  -- Reported: the browser that hit us
+	browser_hash    CHAR(52)  NOT NULL,  -- Reported: the browser that hit us
 	user_tag_text   TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
 	ip_text         TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare
 	geography_text  TEXT      NOT NULL,  -- Trusted: geographic information, according to cloudflare
@@ -826,13 +828,13 @@ CREATE TABLE hit_table (
 	CONSTRAINT hit1 UNIQUE (hash)        -- and corresponding constraint to enforce this and make upserts quick
 );
 
-CREATE INDEX hit2 ON hit_table (browser_tag,   row_tick DESC) WHERE hide = 0;
+CREATE INDEX hit2 ON hit_table (browser_hash,  row_tick DESC) WHERE hide = 0;
 CREATE INDEX hit3 ON hit_table (user_tag_text, row_tick DESC) WHERE hide = 0;
 `)
 
-export async function recordHit({origin, browserTag, userTag, ipText, geographyText, browserText}) {
+export async function recordHit({origin, browserHash, userTag, ipText, geographyText, browserText}) {
 	checkText(origin)
-	checkTag(browserTag); checkTagOrBlank(userTag)
+	checkHash(browserHash); checkTagOrBlank(userTag)
 	checkTextOrBlank(ipText); checkTextOrBlank(geographyText); checkTextOrBlank(browserText)
 	checkHash(wrapper.hash)
 
@@ -840,7 +842,7 @@ export async function recordHit({origin, browserTag, userTag, ipText, geographyT
 	let row = {
 		origin_text: origin,
 
-		browser_tag: browserTag,
+		browser_hash: browserHash,
 		user_tag_text: userTag,
 		ip_text: ipText,
 		geography_text: geographyText,
@@ -1158,19 +1160,18 @@ closed by user/by staff; and unclosed?
 
 
 //what user, if any, is at the given browser?
-async function browserToUserTag({browserTag}) {//fast for hello1; ttd april, no longer using except below, refactor
-	checkTag(browserTag)
-	let user = {}
-	user.browserTagHash = await hashText(browserTag)//never tell the page its browser tag!
-	let u = await browser_get({browserTag})//always does this one query to be fast
+async function browserToUserTag({browserHash}) {//fast for hello1; ttd april, no longer using except below, refactor
+	checkHash(browserHash)
+	let user = {browserHash}
+	let u = await browser_get({browserHash})//always does this one query to be fast
 	if (u) {
 		user.userTag = u.userTag
 		user.level = u.level
 	}
 	return user
 }
-export async function browserToUser({browserTag}) {//complete information about a user from multiple queries for hello2
-	let user = await browserToUserTag({browserTag})
+export async function browserToUser({browserHash}) {//complete information about a user from multiple queries for hello2
+	let user = await browserToUserTag({browserHash})
 	if (user.userTag) {//we found a user tag, let's look up its name and more information about it
 		let n = await name_get({userTag: user.userTag})
 		if (n) {
@@ -1185,46 +1186,46 @@ export async function browserToUser({browserTag}) {//complete information about 
 
 
 
-export async function demonstrationSignGet({browserTag}) {
-	checkTag(browserTag)
+export async function demonstrationSignGet({browserHash}) {
+	checkHash(browserHash)
 
-	let b = await browser_get({browserTag})//look for a user at the given browser
+	let b = await browser_get({browserHash})//look for a user at the given browser
 	if (b) {
 		let n = await name_get({userTag: b.userTag})//find that user's name, right now their normalized route identifies them
 		if (n) {
-			return {isFound: true, browserTag, userTag: b.userTag, nameNormal: n.nameNormal, nameFormal: n.nameFormal, namePage: n.namePage}
+			return {isFound: true, browserHash, userTag: b.userTag, nameNormal: n.nameNormal, nameFormal: n.nameFormal, namePage: n.namePage}
 		}
 	}
-	return {isFound: false, browserTag}
+	return {isFound: false, browserHash}
 }
-export async function demonstrationSignUp({browserTag, nameNormal, origin}) {
-	checkTag(browserTag); checkName({formNormal: nameNormal})
+export async function demonstrationSignUp({browserHash, nameNormal, origin}) {
+	checkHash(browserHash); checkName({formNormal: nameNormal})
 
 	let n = await name_get({nameNormal})//confirm route is available in database
-	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserTag, nameNormal}
+	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserHash, nameNormal}
 
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
 	await name_set({userTag, nameNormal, nameFormal: nameNormal, namePage: nameNormal})//ttd january, all the same for now
-	await browser_in({browserTag, userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
-	return {isSignedUp: true, browserTag, userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
+	await browser_in({browserHash, userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
+	return {isSignedUp: true, browserHash, userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
 }
-export async function demonstrationSignIn({browserTag, nameNormal, origin}) {
-	checkTag(browserTag); checkName({formNormal: nameNormal})
+export async function demonstrationSignIn({browserHash, nameNormal, origin}) {
+	checkHash(browserHash); checkName({formNormal: nameNormal})
 
 	let n = await name_get({nameNormal})//in this early simplification before user_table, a user exists by their tag with a route
-	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserTag, nameNormal}
+	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserHash, nameNormal}
 
-	await browser_in({browserTag, userTag: n.userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
-	return {isSignedIn: true, browserTag, userTag: n.userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
+	await browser_in({browserHash, userTag: n.userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
+	return {isSignedIn: true, browserHash, userTag: n.userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
 }
-export async function demonstrationSignOut({browserTag, origin}) {
-	checkTag(browserTag)
+export async function demonstrationSignOut({browserHash, origin}) {
+	checkHash(browserHash)
 
-	let u = await demonstrationSignGet({browserTag})
+	let u = await demonstrationSignGet({browserHash})
 	if (u.isFound) {
-		await browser_out({browserTag, userTag: u.userTag, hideSet: 2, origin})//hide set 2 meaning at user's click we did this
-		return {isSignedOut: true, browserTag, userTag: u.userTag}
+		await browser_out({browserHash, userTag: u.userTag, hideSet: 2, origin})//hide set 2 meaning at user's click we did this
+		return {isSignedOut: true, browserHash, userTag: u.userTag}
 	} else {
-		return {isSignedOut: false, reason: 'NameNotFound.', browserTag}
+		return {isSignedOut: false, reason: 'NameNotFound.', browserHash}
 	}
 }

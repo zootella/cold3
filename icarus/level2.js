@@ -6,7 +6,7 @@ import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
-Data, decrypt, hashData, secureSameText, hmacSign,
+Data, decrypt, hashText, hashData, secureSameText, hmacSign,
 parse, stringo, replaceAll, replaceOne, toTextOrBlank,
 parseEnvStyleFileContents,
 ashFetchum,
@@ -545,7 +545,7 @@ export async function doorWorker(method, {
 				body: door.body,
 				action: door.body?.action,
 				headers: door.workerEvent.req.headers,
-				browserTag: checkTag(door.workerEvent.context.browserTag),//the browser tag must always be present; toss if not a valid tag; valid tag passes through
+				browserHash: await hashText(checkTag(door.workerEvent.context.browserTag)),//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
 			})
 
 		} catch (e1) { error = e1 }

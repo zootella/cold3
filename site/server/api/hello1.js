@@ -8,13 +8,17 @@ browserToCodes,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, headers, browserTag}) {
-	let r = {}
-	r.sticker = Sticker().all
+async function doorHandleBelow({door, body, headers, browserHash}) {
+	let task = Task({name: 'hello'})
 
-	//from the browser tag, look up user tag, and information about the user like route and name
-	r.user = await browserToUser({browserTag})//in here is browserTag, userTag, and names and routes like name.formFormal
+	//look stuff up for this browser
+	task.user  = await browserToUser({browserHash})
+	task.codes = await browserToCodes({browserHash})
+	task.finish({success: true})
+	return task
 
+	/*
+	ttd april, move this to post hit
 	//get information from cloudflare about the headers, you'll use these for (1) sudo access and (2) hit log, ttd march
 	r.connection = {
 		ipAddress: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
@@ -33,7 +37,7 @@ async function doorHandleBelow({door, body, headers, browserTag}) {
 	if (isCloud({uncertain: 'Cloud.'})) {
 		await recordHit({
 			origin: door.origin,
-			browserTag,
+			browserHash,
 			userTag: toTextOrBlank(r.user.userTag),//we can't do this first because we need the user tag
 			ipText: toTextOrBlank(r.connection.ipAddress),
 			geographyText: stringo(r.connection.geography),
@@ -42,9 +46,5 @@ async function doorHandleBelow({door, body, headers, browserTag}) {
 	}
 	//ttd march, trying to do things in parallel with keepPromise, you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome
 	//ttd april, you should factor the above block into a function in level3 which you give the headers
-
-	//check if this browser is expecting any codes
-	r.codes = await browserToCodes({browserTag})
-
-	return r
+	*/
 }

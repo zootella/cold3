@@ -6,7 +6,7 @@ validateEmailOrPhone, codeSend, browserToCodes,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {useTurnstile: true, workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action, browserTag}) {
+async function doorHandleBelow({door, body, action, browserHash}) {
 
 	//first, validate what the untrusted client told us
 	checkText(body.address)
@@ -21,11 +21,11 @@ async function doorHandleBelow({door, body, action, browserTag}) {
 	else toss('bad provider', {body, provider})//ttd march, how does this get back to the page? so it can get the message bad provider, rather than just a blank 500? but not the watch, of course! some design to do here
 
 	let response = await codeSend({
-		browserTag,
+		browserHash,
 		provider: provider,
 		type: v.type,
 		v: v,
 	})
-	response.codes = await browserToCodes({browserTag})
+	response.codes = await browserToCodes({browserHash})
 	return response
 }

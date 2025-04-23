@@ -7,7 +7,7 @@ headerGetOne, browserToUser,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action, headers, browserTag}) {
+async function doorHandleBelow({door, body, action, headers, browserHash}) {
 	let report = {}
 
 	//(1) information script on the page is telling us; least trustworthy
@@ -21,9 +21,9 @@ async function doorHandleBelow({door, body, action, headers, browserTag}) {
 	//(2) information the browser is telling us; more trustworthy
 	report.browser = {
 		agent: headerGetOne(headers, 'user-agent'),
-		user: await browserToUser({browserTag}),//look up what user is signed in to this browser
+		browserHash,
+		user: await browserToUser({browserHash}),//look up what user is signed in to this browser
 	}
-	report.browser.user.browserTag = browserTag//include the browser tag in the user object; careful to never do this in an object that could go back to the page!
 
 	//(3) information cloudflare is telling us; trustworthy
 	report.worker = {
