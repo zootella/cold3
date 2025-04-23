@@ -21,6 +21,38 @@ worker.ip
 worker.geography
 
 
+
+there are three similar here:
+- error, POSTed by the page, rare, exhaustive, goes to datadog not supabase
+- hit, hit_table, POSTed by the page, common, goes to supabase, hashes to coalesce per hour
+- delay, delay_table, POSTed by the page, common, goes to supabase, sunsetted
+
+
+for delay have multiple slots even if you don't use them
+delay1
+delay2
+delay3 (and you can always add slots later)
+-1 means not in use
+Hello.
+delay1 - browser measurement, navigation to start of this post
+delay2 - server measurement echoed by page, how long the server task ran (so 2 is entirely inside 1, and 1 has browser stuff before and after 2! clocks not aligned, so you can't split up well)
+
+
+
+
+actually, you can record a lot in delay_table, because crons will summarize or just drop older than 30d or whatever
+so go crazy, sure, get even 
+and then see if you can have helper functions that work for both error and 
+
+
+
+
+
+
+
+
+
+
 	//(1) information script on the page is telling us; least trustworthy
 	report.page = {
 		graphics:    body.graphics,
