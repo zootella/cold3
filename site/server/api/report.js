@@ -1,50 +1,53 @@
+//./server/api/report.js
 
 import {
+headerGetOne, browserToUser, recordHit,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['PageError.', 'Hello.'], workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, headers, browserHash}) {
-	let task = Task({name: 'report api'})
+async function doorHandleBelow({door, body, action, headers, browserHash}) {
 
-	log('hi in the new report api', look({body}))
-
-/*
-	ttd april, move this to post hit
-	//get information from cloudflare about the headers, you'll use these for (1) sudo access and (2) hit log, ttd march
-	r.connection = {
-		ipAddress: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
-		geography: {
-			country: headerGetOne(headers, 'cf-ipcountry'),//this one is always present
-			city:    headerGetOne(headers, 'cf-ipcity'),//remaining ones are sometimes present
-			region:  headerGetOne(headers, 'cf-region-code'),
-			postal:  headerGetOne(headers, 'cf-postal-code'),
+	let r = {
+		page: {//(1) information script on the page is telling us; least trustworthy
+			sticker:     body.sticker,
+			graphics:    body.graphics,
+			details:     body.details,//error details the untrusted page is reporting; the point of all of this
+			detailsText: body.detailsText,//called look on page because details.error stringifies to {}
 		},
-		browser: {
-			agent:   headerGetOne(headers, 'user-agent'),//what the browser told cloudflare
-			//ttd april, here's where you can add back renderer and vendor; and maybe reorganize into .page, .browser, .worker, matching error.js, also
+		browser: {//(2) information the browser is telling us; more trustworthy
+			agent: headerGetOne(headers, 'user-agent'),
+			browserHash,
+			user: await browserToUser({browserHash}),//look up what user is signed in to this browser
+		},
+		worker: {//(3) information cloudflare is telling us; trustworthy
+			sticker: Sticker().all,
+			//these headers are set by the cloudflare worker, more trusted than information from page script
+			ip: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
+			geography: {
+				country: headerGetOne(headers, 'cf-ipcountry'),//this one is always present
+				city:    headerGetOne(headers, 'cf-ipcity'),//remaining ones are sometimes present
+				region:  headerGetOne(headers, 'cf-region-code'),
+				postal:  headerGetOne(headers, 'cf-postal-code'),
+			},
 		},
 	}
-	//record the hit
-	if (isCloud({uncertain: 'Cloud.'})) {
+	log('hi from report api', look(r), look({action, body}))
+
+	let task = Task({name: 'report api'})
+	if (action == 'PageError.') {
+		await awaitLogAlert('reported page error', r)
+	} else if (action == 'Hello.' && isCloud()) {
 		await recordHit({
 			origin: door.origin,
 			browserHash,
-			userTag: toTextOrBlank(r.user.userTag),//we can't do this first because we need the user tag
-			ipText: toTextOrBlank(r.connection.ipAddress),
-			geographyText: stringo(r.connection.geography),
-			browserText: stringo(r.connection.browser),
+			userTag: toTextOrBlank(r.browser.user.userTag),
+			ipText: toTextOrBlank(r.worker.ip),
+			geographyText: stringo(r.worker.geography),
+			browserText: stringo({agent: r.browser.agent, ...graphics}),//agent is from the browser, graphics renderer and vendor is from the page
 		})
 	}
-	//ttd march, trying to do things in parallel with keepPromise, you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome
-	//ttd april, you should factor the above block into a function in level3 which you give the headers
-*/
-
-
-
-
-
 	task.finish({success: true})
 	return task
 }

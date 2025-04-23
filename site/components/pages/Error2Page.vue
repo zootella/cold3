@@ -11,7 +11,7 @@ const refButtonInFlight = ref(false)
 //ttd april, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
 
 async function onClick() {
-	await refButton.value.post('/api/error', {
+	await refButton.value.post('/api/report', {action: 'PageError.',
 		sticker: Sticker().all,
 		graphics: getBrowserGraphics(),
 		details: unloop(errorStore.details),

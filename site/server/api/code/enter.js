@@ -6,7 +6,7 @@ checkNumerals, codeEnter, browserToCodes,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {useTurnstile: false, workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action, browserHash}) {
+async function doorHandleBelow({door, body, browserHash}) {
 
 	//first, validate what the untrusted client told us
 	checkTag(body.codeTag)

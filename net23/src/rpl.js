@@ -6,7 +6,7 @@ Sticker, doorLambda, log, look,
 export const handler = async (lambdaEvent, lambdaContext) => {
 	return await doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 	let o = {}
 	o.name = 'rpl'
 	o.sticker = Sticker().all

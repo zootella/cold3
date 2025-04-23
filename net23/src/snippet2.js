@@ -16,7 +16,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	you can still easily return and view objects; have the page do <pre>{{look(o)}}</pre>
 	*/
 }
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 	let o = {}
 	try {
 

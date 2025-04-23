@@ -6,7 +6,7 @@ validateEmailOrPhone, codeSend, browserToCodes,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {useTurnstile: true, workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action, browserHash}) {
+async function doorHandleBelow({door, body, browserHash}) {
 
 	//first, validate what the untrusted client told us
 	checkText(body.address)

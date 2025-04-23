@@ -10,7 +10,7 @@ import {//not importing anything, but this lets tests get listed to run below
 export const handler = async (lambdaEvent, lambdaContext) => {
 	return await doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
-async function doorHandleBelow({door, body, action}) {
+async function doorHandleBelow({door, body}) {
 	return {note: `lambda says: ${(await runTests()).message}, ${Sticker().all}`}
 }
 

@@ -49,19 +49,13 @@ async function load() { if (loaded.value) return; loaded.value = true//runs on t
 	} catch (e) { error1.value = e }
 }
 async function mounted() {//runs on the client, only, when app.vue is mounted
-/*
-	await refButton.value.post('/api/error', {
+	let task = Task({name: 'fetch report'})
+	task.response = await $fetch('/api/report', {method: 'POST', body: {action: 'Hello.',
 		sticker: Sticker().all,
 		graphics: getBrowserGraphics(),
-		details: unloop(errorStore.details),
-		detailsText: look(errorStore.details),//call look here on the page; fetch will stringify details.error to empty {}
-	})
-*/
-	let task = Task({name: 'fetch report'})
-	task.response = await $fetch('/api/report', {method: 'POST', body: {
-		graphics: getBrowserGraphics(),
+		//ttd april, here's where you'll add the time information from the start of the browser's GET, and from how long the server told us it was working on load above, careful to pass that one through the pinia nuxt bridge!!
 	}})
-	task.finish({success: true})
+	task.finish({success: true})//ttd april, yeah, make this finish(task, {success: true}) so Task is a POJO you can really use everywhere, maybe call it done() or finished()
 	//hello2 doesn't return anything, and the user can click the page while hello2 is happening
 	//ttd april, ok, so even though hello2 doesn't matter, a good test of error handling is, the page still blows up if it throws or returns not success true
 }
