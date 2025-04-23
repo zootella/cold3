@@ -6,10 +6,6 @@ indexRecords, mergeRecords,
 
 export const useHelloStore = defineStore('hello_store', () => {
 
-let context//get existing context, if any, to use during SSR for the fetch below
-if (process.server) context = useNuxtApp()?.ssrContext?.event?.context//only applicable during SSR
-if (!context) context = {}
-
 const error1 = ref(null)
 const duration1 = ref(-1)
 const sticker1 = ref('')//ttd march probably get rid of these stickers, but keep the durations
@@ -32,12 +28,15 @@ const removeNotification = (tag) => {
 //ttd april, get rid of these methods now that you understand when to use .value in a store!
 
 const loaded = ref(false)
-async function load() { if (loaded.value) return; loaded.value = true
+async function load() { if (loaded.value) return; loaded.value = true//runs on the server first, then a no-op on the client
 	try {
 		let t = Now()
 		error1.value = null//clear a previous error
 
 		let f = {method: 'POST', body: {}}
+		let context//get existing context, if any, to use during SSR for the fetch below
+		if (process.server) context = useNuxtApp()?.ssrContext?.event?.context//only applicable during SSR
+		if (!context) context = {}
 		if (context.browserTag) f.headers = {
 			cookie: `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${context.browserTag}`
 		}//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
@@ -49,9 +48,26 @@ async function load() { if (loaded.value) return; loaded.value = true
 		duration1.value = Now() - t
 	} catch (e) { error1.value = e }
 }
+async function mounted() {//runs on the client, only, when app.vue is mounted
+/*
+	await refButton.value.post('/api/error', {
+		sticker: Sticker().all,
+		graphics: getBrowserGraphics(),
+		details: unloop(errorStore.details),
+		detailsText: look(errorStore.details),//call look here on the page; fetch will stringify details.error to empty {}
+	})
+*/
+	let task = Task({name: 'fetch report'})
+	task.response = await $fetch('/api/report', {method: 'POST', body: {
+		graphics: getBrowserGraphics(),
+	}})
+	task.finish({success: true})
+	//hello2 doesn't return anything, and the user can click the page while hello2 is happening
+	//ttd april, ok, so even though hello2 doesn't matter, a good test of error handling is, the page still blows up if it throws or returns not success true
+}
 
 return {
-	loaded, load,
+	loaded, load, mounted,
 
 	error1, duration1, sticker1,
 	user,

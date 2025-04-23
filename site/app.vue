@@ -18,6 +18,7 @@ useHead(head)
 
 const helloStore = useHelloStore()
 await helloStore.load()
+onMounted(async () => { await helloStore.mounted() })
 //^ttd april, get rid of this after you move stuff into main and other stores
 
 const mainStore = useMainStore()
@@ -35,6 +36,7 @@ this pattern avoids
 - using a server only plugin, which would run on every later POST
 - myriad APIs that look like the "right way" specific solution, like useFetch, useAsyncData, and Pinia's callOnce
 */
+
 
 </script>
 <template>

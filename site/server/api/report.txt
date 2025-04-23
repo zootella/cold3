@@ -1,6 +1,33 @@
 
 
 
+
+
+
+
+
+
+have a single report, called report, that does hits and errors
+it never returns a meaningful response, it's just for staff's info, only
+so then there's no hello2, because that's report
+and there's no erorr endpoint, because that's report, too
+this is
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 both error and hit are going to come from the page
 you like the organization of
 .page
