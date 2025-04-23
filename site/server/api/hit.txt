@@ -1,0 +1,104 @@
+
+
+
+both error and hit are going to come from the page
+you like the organization of
+.page
+.browser
+.worker, separated by trust
+
+these are different enough that you shouldn't try to unify them
+
+graphics (page)
+agent (browser)
+browserTagHash (browser)
+
+page.graphics
+browser.agent
+browser.browserTagHash
+browser.userTag
+worker.ip
+worker.geography
+
+
+	//(1) information script on the page is telling us; least trustworthy
+	report.page = {
+		graphics:    body.graphics,
+	}
+
+	//(2) information the browser is telling us; more trustworthy
+	report.browser = {
+		agent: headerGetOne(headers, 'user-agent'),
+		browserTagHash:,
+		user: await browserToUser({browserTag}),//look up what user is signed in to this browser
+	}
+
+	//(3) information cloudflare is telling us; trustworthy
+	report.worker = {
+		ip: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
+		geography: {
+			country: headerGetOne(headers, 'cf-ipcountry'),//this one is always present
+			city:    headerGetOne(headers, 'cf-ipcity'),//remaining ones are sometimes present
+			region:  headerGetOne(headers, 'cf-region-code'),
+			postal:  headerGetOne(headers, 'cf-postal-code'),
+		},
+	}
+
+
+
+
+
+	//get information from cloudflare about the headers, you'll use these for (1) sudo access and (2) hit log, ttd march
+	r.connection = {
+		ipAddress: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
+		geography: {
+			country: headerGetOne(headers, 'cf-ipcountry'),//this one is always present
+			city:    headerGetOne(headers, 'cf-ipcity'),//remaining ones are sometimes present
+			region:  headerGetOne(headers, 'cf-region-code'),
+			postal:  headerGetOne(headers, 'cf-postal-code'),
+		},
+		browser: {
+			agent:   headerGetOne(headers, 'user-agent'),//what the browser told cloudflare
+			//ttd april, here's where you can add back renderer and vendor; and maybe reorganize into .page, .browser, .worker, matching error.js, also
+		},
+	}
+	//record the hit
+	if (isCloud({uncertain: 'Cloud.'})) {
+		await recordHit({
+			origin: door.origin,
+			browserTag,
+			userTag: toTextOrBlank(r.user.userTag),//we can't do this first because we need the user tag
+			ipText: toTextOrBlank(r.connection.ipAddress),
+			geographyText: stringo(r.connection.geography),
+			browserText: stringo(r.connection.browser),
+		})
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
