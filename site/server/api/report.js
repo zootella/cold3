@@ -1,7 +1,7 @@
 //./server/api/report.js
 
 import {
-headerGetOne, browserToUser, recordHit,
+stringo, headerGetOne, browserToUser, recordHit, recordDelay,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -37,16 +37,32 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 
 	let task = Task({name: 'report api'})
 	if (action == 'PageError.') {
+
 		await awaitLogAlert('reported page error', r)
-	} else if (action == 'Hello.' && isCloud()) {
-		await recordHit({
+
+	} else if (action == 'Hello.') {
+
+		if (isCloud) await recordHit({
 			origin: door.origin,
 			browserHash,
 			userTag: toTextOrBlank(r.browser.user.userTag),
 			ipText: toTextOrBlank(r.worker.ip),
 			geographyText: stringo(r.worker.geography),
-			browserText: stringo({agent: r.browser.agent, ...graphics}),//agent is from the browser, graphics renderer and vendor is from the page
+			browserText: stringo({agent: r.browser.agent, ...r.page.graphics}),//agent is from the browser, graphics renderer and vendor is from the page
 		})
+
+		await recordDelay({
+			task: 'Hello.',
+			d1: 5,//ttd april, you'll fill these in with real measured durations next
+			d2: 0,
+			d3: 0,
+			origin: door.origin,
+			browserHash,
+			userTag: toTextOrBlank(r.browser.user.userTag),
+			ipText: toTextOrBlank(r.worker.ip),
+		})
+
+		//trying to do things like the above two in parallel with keepPromise, you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome
 	}
 	task.finish({success: true})
 	return task

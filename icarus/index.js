@@ -121,7 +121,7 @@ snippetQuery3,
 snippet3,
 
 settingReadInt, settingRead, settingWrite,
-recordHit,
+recordDelay, recordHit,
 
 browserToUser,
 

@@ -699,18 +699,20 @@ async function code_add({codeTag, browserHash, provider, type, v, hash, lives}) 
 SQL(`
 -- how long are we taking to do different tasks for the user?
 CREATE TABLE delay_table (
-	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,
-	row_tick      BIGINT    NOT NULL,
-	hide          BIGINT    NOT NULL,
+	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick       BIGINT    NOT NULL,
+	hide           BIGINT    NOT NULL,
 
-	task_text     TEXT      NOT NULL,  -- the kind of task we did, like "Hello."
-	delay         BIGINT    NOT NULL,  -- how many milliseconds it took
+	task_text      TEXT      NOT NULL,  -- the kind of task we did, like "Hello."
+	d1             BIGINT    NOT NULL,  -- several task defined slots for durations in milliseconds
+	d2             BIGINT    NOT NULL,
+	d3             BIGINT    NOT NULL,
 
-	wrapper_hash  CHAR(52)  NOT NULL,
-	origin_text   TEXT      NOT NULL,
-	browser_hash  CHAR(52)  NOT NULL,
-	user_tag      CHAR(21)  NOT NULL,
-	ip_text       TEXT      NOT NULL
+	wrapper_hash   CHAR(52)  NOT NULL,
+	origin_text    TEXT      NOT NULL,
+	browser_hash   CHAR(52)  NOT NULL,
+	user_tag_text  TEXT      NOT NULL,  -- user tag or blank if none at the browser
+	ip_text        TEXT      NOT NULL
 );
 
 CREATE INDEX delay1 ON delay_table               (task_text, row_tick DESC) WHERE hide = 0;
@@ -718,15 +720,19 @@ CREATE INDEX delay2 ON delay_table (wrapper_hash, task_text, row_tick DESC) WHER
 `)
 //ttd april, make this table when you've got unified hello; this is the start of RUM, real user monitoring; you'll use postgres' stats calls here like p95 or whatever
 
-export async function recordDelay({task, delay, origin, browserHash}) {
-	checkText(task); checkInt(delay); checkText(origin); checkHash(browserHash)
+export async function recordDelay({task, d1, d2, d3, origin, browserHash, userTag, ipText}) {
+	checkText(task)
+	checkInt(d1, -1); checkInt(d2, -1); checkInt(d3, -1)
+	checkText(origin); checkHash(browserHash); checkTagOrBlank(userTag); checkTextOrBlank(ipText);
 	await queryAddRow({table: 'delay_table', row: {
 		task_text: task,
-		delay: delay,
+		d1, d2, d3,
 
 		wrapper_hash: wrapper.hash,
 		origin_text: origin,
 		browser_hash: browserHash,
+		user_tag_text: userTag,
+		ip_text: ipText,
 	}})
 }
 
