@@ -4,17 +4,6 @@ import {vite as vidstack} from 'vidstack/plugins'//from vidstack
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-
-
-	hooks: {
-		'nitro:build:before': (nitro) => {
-			nitro.options.rollupConfig = nitro.options.rollupConfig || {}
-			nitro.options.rollupConfig.output = nitro.options.rollupConfig.output || {}
-			nitro.options.rollupConfig.output.preserveModules = false
-		},
-	},
-
-
 	compatibilityDate: '2024-04-03',//from nuxt
 	devtools: {enabled: true},//from nuxt
 	modules: [
@@ -37,24 +26,12 @@ export default defineNuxtConfig({
 			}),
 			vidstack(),//from vidstack
 		],
-		build: {//our customization
-			rollupOptions: {
-				output: {
-					preserveModules: false,//as a tiny monolith, we do not want a separate deployment file for every source code module
-				},
-			},
-		},
 	},
 	nitro: {
 		preset: 'cloudflare-pages',//from cloudflare
 		esbuild: {
 			options: {
 				target: 'esnext',//added to solve error on npm run build about es2019 not including bigint literals
-			},
-		},
-		rollupConfig: {//our customization
-			output: {
-				preserveModules: false,
 			},
 		},
 	},
