@@ -33,7 +33,6 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 			},
 		},
 	}
-	log('hi from report api', look(r), look({action, body}))
 
 	let task = Task({name: 'report api'})
 	if (action == 'PageError.') {
@@ -42,7 +41,7 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 
 	} else if (action == 'Hello.') {
 
-		if (isCloud) await recordHit({
+		await recordHit({
 			origin: door.origin,
 			browserHash,
 			userTag: toTextOrBlank(r.browser.user.userTag),
