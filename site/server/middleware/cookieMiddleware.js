@@ -1,7 +1,13 @@
 //./server/middleware/cookieMiddleware.js
 
+//  _                                       _              
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| |
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |
+//                                                   |___/ 
+
 /*
-notes about the browswer tag, and keeping it in a cookie instead of local storage
 a tag identifies a browser, through multiple different signed-in users, and even before someone has signed up
 we could keep the browser tag in local storage, except then:
 (1) the server doesn't have it from the very first GET; page code has to POST it to the server after loading
@@ -18,27 +24,6 @@ mitigated by:
 	(4b) because our tag cookie is first‑party, strictly‑necessary for core functionality, marked HttpOnly, Secure, and SameSite=Lax, compliance requires documenting its use in a privacy policy, and does not require explicit user consent
 */
 
-export default defineEventHandler((workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
-
-	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
-	let value, valueTag, browserTag
-	value = getCookie(workerEvent, composeCookie().name)//get the cookie where we may have previously tagged this browser
-	valueTag = cookieValueToTag(value)
-
-	if (hasTag(valueTag)) {//if the above steps got a valid tag
-		browserTag = valueTag//use the existing browser tag
-		//log(`read ${browserTag} 🍪`)
-	} else {//otherwise, make and use a new browser tag
-		browserTag = Tag()//create a tag to identify the connected browser
-		//log(`made ${browserTag} 🍪🔥`)
-	}
-
-	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
-	let cookie = composeCookie(browserTag)
-	setCookie(workerEvent, cookie.name, cookie.value, cookie.options)//set response headers for when we send the response, telling the browser to save this tag for next time
-})
-
-//ttd april, duplicating this to avoid warning about circular reference without spending more time on it
 const cookieSecurePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
 const cookieNameWarning  = 'current_session_password'
 const cookieValueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
@@ -74,3 +59,23 @@ function cookieValueToTag(value) {
 	}
 	return false//if any of that didn't work, don't throw, just return false
 }
+
+export default defineEventHandler((workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
+
+	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
+	let value, valueTag, browserTag
+	value = getCookie(workerEvent, composeCookie().name)//get the cookie where we may have previously tagged this browser
+	valueTag = cookieValueToTag(value)
+
+	if (hasTag(valueTag)) {//if the above steps got a valid tag
+		browserTag = valueTag//use the existing browser tag
+		//log(`read ${browserTag} 🍪`)
+	} else {//otherwise, make and use a new browser tag
+		browserTag = Tag()//create a tag to identify the connected browser
+		//log(`made ${browserTag} 🍪🔥`)
+	}
+
+	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
+	let cookie = composeCookie(browserTag)
+	setCookie(workerEvent, cookie.name, cookie.value, cookie.options)//set response headers for when we send the response, telling the browser to save this tag for next time
+})

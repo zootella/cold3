@@ -38,7 +38,9 @@ async function load() { if (loaded.value) return; loaded.value = true
 		error1.value = null//clear a previous error
 
 		let f = {method: 'POST', body: {}}
-		if (context.browserTag) f.headers = {cookie: composeCookie(context.browserTag).cookieHeaderValue}//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
+		if (context.browserTag) f.headers = {
+			cookie: `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${context.browserTag}`
+		}//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
 		let r = await $fetch('/api/hello1', f)
 		sticker1.value = r.sticker
 		user.value = r.user
@@ -59,40 +61,3 @@ return {
 }
 
 })
-
-//ttd april, duplicating this to avoid warning about circular reference without spending more time on it
-const cookieSecurePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
-const cookieNameWarning  = 'current_session_password'
-const cookieValueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
-function composeCookie(tag) {
-	let name = cookieNameWarning
-	let options = {//these base options work for local development...
-		path: '/',//send for all routes
-		httpOnly: true,//page script can't see or change; more secure than local storage! 
-		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
-		maxAge: 395*24*60*60,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
-	}
-	if (isCloud()) {//...strengthen them for cloud deployment
-		name = cookieSecurePrefix + name
-		options.secure = true
-		options.domain = 'cold3.cc'//apex domain and subdomains allowed; ttd april get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
-	}
-	let o = {name, options}
-	if (hasTag(tag)) {
-		o.value = `${cookieValueWarning}${tag}`//assemble a value for a cookie we'll tell it to set with our eventual response
-		o.cookieHeaderValue = `${name}=${cookieValueWarning}${tag}`//cookie header value with name and value together
-	}
-	return o
-}
-function cookieValueToTag(value) {
-	if (
-		hasText(value) &&//got something,
-		value.length == cookieValueWarning.length+Limit.tag &&//length looks correct,
-		value.startsWith(cookieValueWarning)) {//and prefix is intact,
-		let tag = value.slice(-Limit.tag)//slice out the tag at the end of the cookie value
-		if (hasTag(tag)) {//and check it before we return it
-			return tag
-		}
-	}
-	return false//if any of that didn't work, don't throw, just return false
-}
