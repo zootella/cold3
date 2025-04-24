@@ -160,9 +160,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 sayFloppyDisk,
 
-Task,
-fetchum,
-host23, fetch23,
+Task, fetchWorker, host23, fetchLambda,
 
 /* level 2 query */
 
@@ -276,7 +274,6 @@ makePlain, makeObject, makeText,
 
 parseEnvStyleFileContents,
 sequentialShared, sequentialSeparate,
-ashFetchum,
 
 getBrowserGraphics,
 

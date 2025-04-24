@@ -1,8 +1,4 @@
 
-import {
-host23,
-} from 'icarus'
-
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('GET', {workerEvent, doorHandleBelow})
 })

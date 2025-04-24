@@ -9,7 +9,6 @@ textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
 Data, decrypt, hashData, secureSameText,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
-ashFetchum,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
 randomCode, hashToLetter,
@@ -21,8 +20,7 @@ bundleValid,
 } from './level1.js'
 import {
 getAccess, Sticker, isLocal, isCloud,
-Task,
-host23, fetch23,
+Task, fetchWorker, host23, fetchLambda,
 
 /* level 2 query */
 
@@ -446,7 +444,7 @@ export async function codeSend({browserHash, provider, type, v}) {//v is the add
 		messageText: code.messageText,//email body as text, or complete SMS message
 		messageHtml: code.messageHtml,//email body as HTML
 	}
-	let task = await fetch23({path: '/message', body})
+	let task = await fetchLambda({path: '/message', body})
 	if (!task.success) toss('task', {task})
 	await codeSent({browserHash, provider, type, v, permit, code})
 

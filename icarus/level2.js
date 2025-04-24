@@ -10,7 +10,6 @@ Data, decrypt, hashText, hashData, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
 replaceAll, replaceOne, toTextOrBlank,
 parseEnvStyleFileContents,
-ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 } from './level0.js'
@@ -1123,7 +1122,7 @@ async function sendLog_useDatadog(c) {
 		},
 		body: c.bodyText
 	}
-	return await ashFetchum(c, q)
+	return await fetchProvider(c, q)
 }
 /*
 ttd april
@@ -1782,25 +1781,6 @@ test(() => {
 
 
 
-//     _        _       _____    _       _                     
-//    / \   ___| |__   |  ___|__| |_ ___| |__  _   _ _ __ ___  
-//   / _ \ / __| '_ \  | |_ / _ \ __/ __| '_ \| | | | '_ ` _ \ 
-//  / ___ \\__ \ | | | |  _|  __/ || (__| | | | |_| | | | | | |
-// /_/   \_\___/_| |_| |_|  \___|\__\___|_| |_|\__,_|_| |_| |_|
-//                                                             
-
-/*
-your wrap of $fetch to use it consistantly
-
-*/
-export async function fetchum() {
-
-}
-
-
-
-
-
 
 
 
@@ -1844,12 +1824,73 @@ function _taskFinish(task, more) {//mark this task done, adding more properites 
 
 
 
-//   __      _       _     ____  _____ 
-//  / _| ___| |_ ___| |__ |___ \|___ / 
-// | |_ / _ \ __/ __| '_ \  __) | |_ \ 
-// |  _|  __/ || (__| | | |/ __/ ___) |
-// |_|  \___|\__\___|_| |_|_____|____/ 
-//                                     
+
+
+
+//   __      _       _     
+//  / _| ___| |_ ___| |__  
+// | |_ / _ \ __/ __| '_ \ 
+// |  _|  __/ || (__| | | |
+// |_|  \___|\__\___|_| |_|
+//                         
+
+/*
+[i] a summary of our fetch functions
+
+use fetchWorker in components and stores; it works on both the server and client in hybrid rendering
+use fetchLambda in workers, only; only a worker can use the APIs of Network 23
+use fetchProvider in workers and lambdas; only trusted code can contact third party providers
+
+[ii] what calls what, adding which features
+
+fetchWorker and fetchLambda use Nuxt's $fetch
+fetchProvider uses the browser's native fetch(), so we can use it from both Nuxt and Lambda
+
+$fetch, from Nuxt:
+- knows about Nuxt's hybrid rendering, short circuiting to a function call when a component or store is SSR
+- adds the base URL for API routes
+- integrates with Nuxt's runtime
+
+and calls ofetch, formerly ohmyfetch, https://www.npmjs.com/package/ofetch 1.7 million weekly downloads, which:
+- stringifies and parses the JSON body
+- throws errors for non 2XX response codes
+- allows request and response interceptors, which we're not using
+- has retry and timeout features, which maybe Nuxt uses but we don't directly
+
+which calls the browser's native fetch()
+
+[iii] nearby alternatives that we're *not* using
+
+Nuxt's useFetch and useAsyncData, which returns a toolbox of stuff, reactive data, and loading state
+Nuxt's useRequestFetch and requestFetch, fetch worker forwards the browser tag cookie manually
+multi million download npm libraries, like axios, node-fetch, and superagent
+*/
+
+/*
+ttd april fetch
+ok, so then were are you allowed to call $fetch() and fetch() directly? that's a big grep
+
+where code to start out with is calling $fetch directly:
+- validate turnstile token
+- log to datadog
+- call network 23
+- lots of components
+- PostButton, you've centralized and simplified there a lot, bring that into fetchWorker and call fetchWorker there
+- door example pages like dbg and rpw
+- up pages like ping5 and test
+- stores like helloStore and hitStore
+
+where code to start out with is calling fetch() directly:
+- fetchProvider calls fetch() to work in worker and lambda []maybe import and call ofetch
+
+
+*/
+
+export async function fetchWorker() {
+
+}
+
+
 
 export function host23() {//where you can find Network 23; no trailing slash
 	return (isCloud() ?
@@ -1857,7 +1898,7 @@ export function host23() {//where you can find Network 23; no trailing slash
 		'http://localhost:4000/prod'//or check your local Network 23 affliate
 	)
 }
-export async function fetch23({path, body}) {
+export async function fetchLambda({path, body}) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/name'
 
 	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
@@ -1870,3 +1911,103 @@ export async function fetch23({path, body}) {
 	let task2 = await $fetch(host23()+path, {method: 'POST', body})//a note about exceptions: a 500 from the lambda will cause $fetch to throw, and we intentionally let that exception go upwards to be caught and logged to datadog by door
 	return task2
 }
+
+
+
+
+
+
+
+
+
+
+
+/* previously Ash Fetchum ...gotta fetch 'em all!
+
+fetch() is from the browser, plain vanilla and what all the rest ultimately call down to
+$fetch() is from nuxt, use in page and api code, server and client, but not lambda, obeys middleware and parses for you
+useFetch() is from nuxt, use in page code, does hybrid rendering
+fetchProvider() is our own, parses, measures duration, and catches errors
+
+let r = fetchProvider(  takes...
+	c,  [c]all parameters, everything you used to prepare the request
+	q)  re[q]uest details, what ash will use to call fetch
+r: {                 ...and returns c and q unchanged other than filling in q.tick, and:
+	c,
+	q,
+	p   res[p]onse details, everything that happened as a result of the request
+}
+
+[c]all:
+c might have details like c.name, c.email, c.phoneNumber which you prepared into q.body
+
+re[q]uest:
+q.resource is the url like https://example.com
+q.method is GET or POST
+q.headers is an object of keys and values for fetch
+q.body is already stringified body text, raw and ready for fetch
+
+time:
+q.tick is when we made the request
+p.tick is when we finished reading the response
+p.duration is how long that took
+
+res[p]onse:
+p.success is true if everything looks good as far as ash can tell
+p.response is what fetch returned
+p.bodyText is raw from the wire
+p.body is what we tried to parse that into
+p.error is an exception if thrown
+*/
+export async function fetchProvider(c, q) {
+	let o = {method: q.method, headers: q.headers, body: q.body}
+
+	q.tick = Now()//record when this happened and how long it takes
+	let response, bodyText, body, error, success
+	try {
+		response = await fetch(q.resource, o)
+		bodyText = await response.text()
+		if (response.ok) {
+			success = true
+			if (response.headers?.get('Content-Type')?.includes('application/json')) {
+				body = makeObject(bodyText)//can throw, and then it's the api's fault, not your code here
+			}
+		}
+	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
+	let t = Now()
+
+	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
+}
+/*
+additional fancy features ash can't do yet, but you could add later:
+(1) use axios, which keeps coming up in stackoverflow and chatgpt, and can do timeouts
+fetch is working just fine, but can 52 million weekly npm downloads all be wrong? "¯\_(ツ)_/¯"
+(2) set a give up timeout, using AbortController, setTimeout, and clearTimeout, or just axios
+adding this and setting to like 4 seconds will keep a misbehaving API frm making the user wait
+but also, workers only live 30 seconds max, and you've set lambda to the same, so that should also govern here
+(3) have a fire and forget option, to not wait for the body to arrive, or not wait at all
+you tried this and immediately logs were unreliable because cloudflare and amazon were tearing down early
+the way to do this in a worker is event.waitUntil(p), which looks well designed
+you don't think there's a way to do this in lambda, so instead you Promise.all() to delay sending the response
+with that, workers are faster, lambdas the same, well maybe faster because now the fetches can run in parallel
+but there's a code benefit: you could call dog() and logAudit() without having to await them
+*/
+//ttd april, not using this, remove; many of these ideas are in Task and fetch23 now, you think? but did not look closely
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

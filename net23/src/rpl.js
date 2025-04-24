@@ -2,6 +2,7 @@
 import {
 Sticker, doorLambda, log, look, defined,
 makePlain, makeObject, makeText,
+Task, fetchWorker, host23, fetchLambda,
 } from 'icarus'
 
 export const handler = async (lambdaEvent, lambdaContext) => {

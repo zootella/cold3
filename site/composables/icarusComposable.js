@@ -30,6 +30,6 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 
 canGetAccess, getAccess,
 doorWorker, doorLambda,
-Task,
+Task, fetchWorker, host23, fetchLambda,
 
 } from 'icarus'

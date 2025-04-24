@@ -1,9 +1,5 @@
 <script setup>
 
-import {
-host23,
-} from 'icarus'
-
 const {data, refresh} = useFetch(
 	host23() + '/rgl?' + (new URLSearchParams({
 		name: 'r2'

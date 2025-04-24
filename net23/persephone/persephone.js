@@ -23,7 +23,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 
 canGetAccess, getAccess,
 doorWorker, doorLambda,
-Task,
+Task, fetchWorker, host23, fetchLambda,
 
 //and also import these references
 Data,

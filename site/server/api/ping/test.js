@@ -1,6 +1,6 @@
 
 import {
-runTests, host23,
+runTests,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
