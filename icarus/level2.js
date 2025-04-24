@@ -653,6 +653,7 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 
 	//if the api endpoint code requires cloudflare turnstile, make sure the page sent a valid token
 	if (useTurnstile) {
+		//ttd april, if useTurnstile || door.body.action.includes('Turnstile')
 		await checkTurnstileToken(door.body.turnstileToken)
 	}
 }

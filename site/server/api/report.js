@@ -8,6 +8,16 @@ export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['PageError.', 'Hello.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, headers, browserHash}) {
+	/*
+	ttd april, no,  you can't unify them
+	error is using turnstile (you have to turn that on here)
+	and hello really can't. so you'll have to separate them, or turn off turnstile for error, ugh
+
+	or, you could manually check the turnstile token  here
+	or somethign weirder where you require the token on a whole endpoint, or on an action that ends Turnstile.
+	so then it's PageErrorTurnstile.
+	yeah, it's whacky, but you kinda like that, actually
+	*/
 
 	let r = {
 		page: {//(1) information script on the page is telling us; least trustworthy

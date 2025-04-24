@@ -60,7 +60,7 @@ const emit = defineEmits(['update:inFlight'])
 const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
 
-onMounted(async () => {
+onMounted(async () => {//ttd april, does this need to be async?
 	if (props.useTurnstile && useTurnstileHere()) turnstileStore.renderWidget = true//causes BottomBar to render TurnstileComponent
 })
 
