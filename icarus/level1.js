@@ -10,6 +10,7 @@ Data, randomBetween,
 cut,
 fraction, exponent, int, big, deindent, newline,
 hashData, hashText, given,
+makePlain, makeObject, makeText,
 } from './level0.js'
 
 import {customAlphabet} from 'nanoid'//use to make unique tags

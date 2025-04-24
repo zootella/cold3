@@ -1,7 +1,7 @@
 
 import {
 wrapper, sayFloppyDisk, runTests, Time,
-log, look, newline, Data, Now, parse, stringo,
+log, look, newline, Data, Now,
 encrypt,
 } from 'icarus'
 
@@ -192,12 +192,3 @@ log(local)
 
 
 }
-
-
-
-
-
-
-
-
-

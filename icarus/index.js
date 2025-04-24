@@ -272,7 +272,7 @@ defined,
 squareEncode, squareDecode, checkSquare,
 correctLength,
 say, look,
-unloop, parse, stringo,
+makePlain, makeObject, makeText,
 
 parseEnvStyleFileContents,
 sequentialShared, sequentialSeparate,

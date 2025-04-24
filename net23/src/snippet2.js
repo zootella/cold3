@@ -1,7 +1,8 @@
 
 import {
-Sticker, doorLambda, log, look,
-runTests, defined,
+Sticker, doorLambda, log, look, defined,
+makePlain, makeObject, makeText,
+runTests,
 } from 'icarus'
 
 import {

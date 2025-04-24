@@ -13,6 +13,7 @@ checkInt, minInt,
 intToText, textToInt,
 hasText, checkText,
 hasTextOrBlank, checkTextOrBlank,
+makePlain, makeObject, makeText,
 
 Tag, hasTag, checkTag, checkTagOrBlank,
 checkHash,

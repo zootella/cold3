@@ -1,7 +1,7 @@
 <script setup>//./components/Error2Page.vue
 
 import {
-unloop, getBrowserGraphics,
+getBrowserGraphics,
 } from 'icarus'
 const errorStore = useErrorStore()
 
@@ -14,7 +14,7 @@ async function onClick() {
 	await refButton.value.post('/api/report', {action: 'PageError.',
 		sticker: Sticker().all,
 		graphics: getBrowserGraphics(),
-		details: unloop(errorStore.details),
+		details: makePlain(errorStore.details),//ttd april, this pattern here is weird, instead, have fetchWorker use makePlain on the whole body, so you don't have to duplicate details, or mess with them specifically
 		detailsText: look(errorStore.details),//call look here on the page; fetch will stringify details.error to empty {}
 	})
 	errorStore.details = null

@@ -128,36 +128,7 @@ and then see if you can have helper functions that work for both error and
 			browserTag,
 			userTag: toTextOrBlank(r.user.userTag),//we can't do this first because we need the user tag
 			ipText: toTextOrBlank(r.connection.ipAddress),
-			geographyText: stringo(r.connection.geography),
-			browserText: stringo(r.connection.browser),
+			geographyText: makeText(r.connection.geography),
+			browserText: makeText(r.connection.browser),
 		})
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

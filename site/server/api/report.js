@@ -1,7 +1,7 @@
 //./server/api/report.js
 
 import {
-stringo, headerGetOne, browserToUser, recordHit, recordDelay,
+headerGetOne, browserToUser, recordHit, recordDelay,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -56,8 +56,8 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 			browserHash,
 			userTag: toTextOrBlank(r.browser.user.userTag),
 			ipText: toTextOrBlank(r.worker.ip),
-			geographyText: stringo(r.worker.geography),
-			browserText: stringo({agent: r.browser.agent, ...r.page.graphics}),//agent is from the browser, graphics renderer and vendor is from the page
+			geographyText: makeText(r.worker.geography),
+			browserText: makeText({agent: r.browser.agent, ...r.page.graphics}),//agent is from the browser, graphics renderer and vendor is from the page
 		})
 
 		await recordDelay({

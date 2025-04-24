@@ -5,7 +5,7 @@ wrapper,
 import {
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
-textToInt, hasText, checkText, checkTextOrBlank, newline, deindent, stringo,
+textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
 Data, decrypt, hashData, secureSameText,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
@@ -13,6 +13,7 @@ ashFetchum,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
 randomCode, hashToLetter,
+makePlain, makeObject, makeText,
 } from './level0.js'
 import {
 Tag, Limit, checkTag, checkTagOrBlank, checkName, validateName,
@@ -815,7 +816,7 @@ export async function recordHit({origin, browserHash, userTag, ipText, geography
 	row.hash = await hashText(//compute the hash of (below) and include it in the row we will add if it's unique
 		roundDown(now, Time.hour)//the tick count of the start of the hour now is in
 		+':'+
-		stringo(row))//the values of those cells
+		makeText(row))//the values of those cells
 	row.row_tick = now//add the exact time, note we excluded this from the hash
 	await queryAddRowIfHashUnique({table: 'hit_table', row})
 }

@@ -7,7 +7,8 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, hashText, hashData, secureSameText, hmacSign,
-parse, stringo, replaceAll, replaceOne, toTextOrBlank,
+makePlain, makeObject, makeText,
+replaceAll, replaceOne, toTextOrBlank,
 parseEnvStyleFileContents,
 ashFetchum,
 sameIgnoringCase, sameIgnoringTrailingSlash,
@@ -396,7 +397,7 @@ function redact_prepare(key, secrets) {
 }
 function redact_safe(v) {
 	let o = {name: v}
-	let s = stringo(o)
+	let s = makeText(o)
 	return s.includes(v)//make sure we can still find the value in the stringified object
 }
 test(() => {
@@ -636,7 +637,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
-		door.body = parse(door.bodyText)
+		door.body = makeObject(door.bodyText)
 
 		//authenticate lambda post request: (1) https; (2) origin *omitted*; (3) access code valid
 		checkForwardedSecure(lambdaEvent.headers)
@@ -652,9 +653,10 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 	checkActions({action: door.body?.action, actions})
 
 	//if the api endpoint code requires cloudflare turnstile, make sure the page sent a valid token
-	if (useTurnstile) {
-		//ttd april, if useTurnstile || door.body.action.includes('Turnstile')
+	if (useTurnstile || door?.body?.action?.includes('Turnstile')) {
 		await checkTurnstileToken(door.body.turnstileToken)
+	} else if (door?.body?.turnstileToken) {//notice the coding mistake of a page sending a token the server does not require!
+		toss('code', {message: 'the page posted a turnstile token to a route or action that does not require it'})
 	}
 }
 async function doorLambdaCheck({door, actions}) {
@@ -700,7 +702,7 @@ async function doorLambdaShut(door, response, error) {
 		logAlert('door lambda shut', {body: door.body, response, error})
 		r = null
 	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: stringo(response)}//by comparison, amazon wants it raw
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: makeText(response)}//by comparison, amazon wants it raw
 	}
 	await awaitDoorPromises()
 	return r
@@ -971,7 +973,7 @@ parts of a complete log:
 -title, one or just a few words
 -longer message, composed message that describes easily
 -human readable watch, like from look()
--machine complete watch, like from stringo()'s wrapped stringify
+-machine complete watch, like from makeText()'s wrapped stringify
 -size of all that before you send it to datadog, so you know if this is going to impact your bill
 
 log exceptions at the top of the call stack, not at the bottom
@@ -1097,7 +1099,7 @@ async function prepareLog(status, type, label, headline, watch) {
 
 	//prepare the body
 	let b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
-	let s = stringo(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
+	let s = makeText(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
 	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
 	let size = s.length//byte size of body, this is how datadog bills us
 	s         = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
@@ -1868,35 +1870,3 @@ export async function fetch23({path, body}) {
 	let task2 = await $fetch(host23()+path, {method: 'POST', body})//a note about exceptions: a 500 from the lambda will cause $fetch to throw, and we intentionally let that exception go upwards to be caught and logged to datadog by door
 	return task2
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
