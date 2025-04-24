@@ -9,18 +9,18 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action, headers, browserHash}) {
 	let r = {//assemble an object of what we know, categorized by the source of the information, and keeping in mind its trustworthyness
-		page: {//(1) information script on the page is telling us; least trustworthy
+		page: {//source (1) page: information script on the page is telling us; least trustworthy
 			sticker:     body.sticker,
 			graphics:    body.graphics,
 			details:     body.details,//error details the untrusted page is reporting; the point of all of this
 			detailsText: body.detailsText,//called look on page because details.error stringifies to {}
 		},
-		browser: {//(2) information the browser is telling us; more trustworthy
+		browser: {//source (2) browser: information the browser is telling us; more trustworthy
 			agent: headerGetOne(headers, 'user-agent'),
 			browserHash,
 			user: await browserToUser({browserHash}),//look up what user is signed in to this browser
 		},
-		worker: {//(3) information cloudflare is telling us; trustworthy
+		worker: {//source (3) worker: information cloudflare is telling us; trustworthy
 			sticker: Sticker().all,
 			ip: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
 			geography: {
