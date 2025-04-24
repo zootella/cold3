@@ -11,7 +11,7 @@ const refButtonInFlight = ref(false)
 //ttd april, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
 
 async function onClick() {
-	await refButton.value.post('/api/report', {action: 'PageError.',
+	await refButton.value.post('/api/report', {action: 'PageErrorTurnstile.',
 		sticker: Sticker().all,
 		graphics: getBrowserGraphics(),
 		details: makePlain(errorStore.details),//ttd april, this pattern here is weird, instead, have fetchWorker use makePlain on the whole body, so you don't have to duplicate details, or mess with them specifically

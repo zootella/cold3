@@ -5,21 +5,10 @@ headerGetOne, browserToUser, recordHit, recordDelay,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['PageError.', 'Hello.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['PageErrorTurnstile.', 'Hello.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, headers, browserHash}) {
-	/*
-	ttd april, no,  you can't unify them
-	error is using turnstile (you have to turn that on here)
-	and hello really can't. so you'll have to separate them, or turn off turnstile for error, ugh
-
-	or, you could manually check the turnstile token  here
-	or somethign weirder where you require the token on a whole endpoint, or on an action that ends Turnstile.
-	so then it's PageErrorTurnstile.
-	yeah, it's whacky, but you kinda like that, actually
-	*/
-
-	let r = {
+	let r = {//assemble an object of what we know, categorized by the source of the information, and keeping in mind its trustworthyness
 		page: {//(1) information script on the page is telling us; least trustworthy
 			sticker:     body.sticker,
 			graphics:    body.graphics,
@@ -33,7 +22,6 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 		},
 		worker: {//(3) information cloudflare is telling us; trustworthy
 			sticker: Sticker().all,
-			//these headers are set by the cloudflare worker, more trusted than information from page script
 			ip: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
 			geography: {
 				country: headerGetOne(headers, 'cf-ipcountry'),//this one is always present
@@ -45,7 +33,7 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 	}
 
 	let task = Task({name: 'report api'})
-	if (action == 'PageError.') {
+	if (action == 'PageErrorTurnstile.') {
 
 		await awaitLogAlert('reported page error', r)
 
