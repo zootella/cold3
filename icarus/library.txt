@@ -681,7 +681,7 @@ icarus libarary tests (vite, local, client)
 node library tests (node, local, server)
 
 nuxt server side api code (nuxt, local|deployed, server)
-nuxt client side code running on the server as part of the hydration step (nuxt, local|deployed, server)
+nuxt client side code running on the server as part of the server rendering step (nuxt, local|deployed, server)
 nuxt client side code running on the client (nuxt, local|deployed, client)
 
 serverless framework lambda code running on the server (serverless, local|deployed, server)
@@ -751,27 +751,3 @@ warning language to the n00b may give them pause
 
 totally make the page where the user sees their query string and ip address of their current and previous sessions
 and you can include their webgl nvidia stuff there, also
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1103,7 +1103,7 @@ the given array a is a list of records, each with a unique .tag
 the array is sorted recent first, using .tick (and tag as a tiebreaker)
 
 arrays of records like this come sorted from the database,
-are kept in Pinia stores through hybrid rendering,
+are kept in Pinia stores through universal rendering,
 (which includes stringification across the server->client bridge,
 and then hydration back into reactive state on the client)
 and then get used to drive lists of Vue components on the page with v-for

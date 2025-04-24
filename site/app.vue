@@ -16,16 +16,29 @@ let head = {
 addTurnstileHeadScript(head)
 useHead(head)
 
+/*
+this site uses universal rendering, sometimes called hybrid rendering, and it's great for the user:
+(1) before they click:
+the preview of a link posted to Reddit or shared in WhatsApp contains user generated details
+(including the benefit of server rendering, as offered in 1994 by the original web), *and*
+(2) after they click:
+the page appears all at once, (rather than growing in several quick jerky steps)
+and then clicks from page to page appear instantaneous (seamless SPA transitions using DOM diffing)
+(the benefit of client rendering, as offered in 2005 by AJAX and possibly XMLHttpRequest)
+
+https://nuxt.com/docs/guide/concepts/rendering#universal-rendering
+"similar to traditional server-side rendering performed by PHP"
+"Nuxt runs the JavaScript (Vue.js) code in a server environment and returns a fully rendered HTML page to the browser"
+"Users immediately get the entirety of the initial content of the application, contrary to client-side rendering."
+"The same JavaScript code that once ran on the server runs on the client (browser) again in the background now enabling interactivity"
+"as the content is already present in the HTML document, crawlers can index it"
+*/
 const helloStore = useHelloStore()
 await helloStore.load()
 onMounted(async () => { await helloStore.mounted() })
-//^ttd april, get rid of this after you move stuff into main and other stores
-
-const mainStore = useMainStore()
-await mainStore.load()
 /*
-notes about the "all-at-once" page pattern we found
-await on the margin makes this block on server hydration, which is what we want
+within universal rendering, some notes about this "all-at-once" page pattern we found:
+await on the margin makes this block on server rendering, which is what we want
 .load() runs exactly once on the server for each tab's first GET
 does run again on the client, but mainStore.loaded true makes that a no-op
 does not run after that as the page POSTs to server endpoints; a plugin like mainPlugin.server.js would!
@@ -37,6 +50,9 @@ this pattern avoids
 - myriad APIs that look like the "right way" specific solution, like useFetch, useAsyncData, and Pinia's callOnce
 */
 
+const mainStore = useMainStore()
+await mainStore.load()
+//^ ttd april, deal with names around helloStore and mainStore, there should be only one, not sure which it should be
 
 </script>
 <template>

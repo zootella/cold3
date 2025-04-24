@@ -735,7 +735,7 @@ Notes: (i) The Network 23 Application Programming Interface is exclusively for s
 function checkForwardedSecure(headers) { if (isLocal({uncertain: 'Cloud.'})) return//skip these checks during local development
 	let n = headerCount(headers, 'X-Forwarded-Proto')
 	if (n == 0) {
-		//seeing CloudNuxtServer with headers just {accept, content-type, and host: "localhost"} when $fetch calls an api endpoint to hydrate on the server during hybrid rendering, so making X-Forwarded-Proto required doesn't work
+		//seeing CloudNuxtServer with headers just {accept, content-type, and host: "localhost"} when $fetch calls an api endpoint to render on the server during universal rendering, so making X-Forwarded-Proto required doesn't work
 	} else if (n == 1) {
 		let v = headerGet(headers, 'X-Forwarded-Proto')
 		if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
@@ -1202,7 +1202,7 @@ export async function checkTurnstileToken(token) {
 	if (!useTurnstileHere()) return
 	checkText(token)//before bothering cloudflare, make sure we got some text for token
 	const access = await getAccess()
-	let response = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+	let response = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {//ttd april, move this url into access like datadog
 		//^ttd march, not sure how $fetch is a known reference here, away from the api handler file where nuxt automatically imports it
 		method: 'POST',
 		headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -1837,17 +1837,17 @@ function _taskFinish(task, more) {//mark this task done, adding more properites 
 /*
 [i] a summary of our fetch functions
 
-use fetchWorker in components and stores; it works on both the server and client in hybrid rendering
+use fetchWorker in components and stores; it works on both the server and client in universal rendering
 use fetchLambda in workers, only; only a worker can use the APIs of Network 23
 use fetchProvider in workers and lambdas; only trusted code can contact third party providers
 
+fetchWorker and fetchLambda use Nuxt's $fetch
+fetchProvider uses ofetch, so we can use it from both Nuxt and Lambda
+
 [ii] what calls what, adding which features
 
-fetchWorker and fetchLambda use Nuxt's $fetch
-fetchProvider uses the browser's native fetch(), so we can use it from both Nuxt and Lambda
-
 $fetch, from Nuxt:
-- knows about Nuxt's hybrid rendering, short circuiting to a function call when a component or store is SSR
+- knows about Nuxt's universal rendering, short circuiting to a function call when a component or store is SSR
 - adds the base URL for API routes
 - integrates with Nuxt's runtime
 
@@ -1888,6 +1888,87 @@ where code to start out with is calling fetch() directly:
 
 export async function fetchWorker() {
 
+
+}
+export async function fetchWorkerFeatures() {
+
+	return await $fetch(route, {method:'', body: {}, headers: {}})
+
+}
+/*
+usually POST, could be GET
+usually 
+
+we fetch to the turnstile api only from a worker, so it can use $fetch
+that fetch ues POST, adds headers, and body is URLSearchParams
+
+we fetch to the datadog api from worker and lambda, so it can't use $fetch
+that fetch uses POST, headers, and body is text?!
+
+just have method and headers optional, so you can keep one function call path, and throw in method: 'GET' and headers: {whatever} where you need to
+
+right now turnstile is using $fetch, but you can change that to fetchProvider
+and have fetchProvider use ofetch, which is interesting--you'll have to add it to the lambda, so be careful that doesn't mess up the build
+*/
+
+/*
+icarus $ yarn add oftech, you should identify 1.4.1 which is both current and what is already in the project
+import {ofetch} from 'ofetch'
+
+//(1) post a json body, no additional headers
+const response = await $fetch('/api/posts', {
+	method: 'POST',
+	body: {content: 'This is a test post.'}
+})
+
+//(2) get instead of post, add a header, query string instead of body
+const response = await $fetch('/api/search', {
+	method: 'GET',
+	headers: {'Authorization': `Bearer YOUR_TOKEN`},
+	query: {keyword: 'Nuxt', category: 'framework'}//$fetch will automatically url encode this correctly
+})
+
+//(3) post a plain text body
+const response = await $fetch('/api/message', {
+	method: 'POST',
+	headers: {'Content-Type': 'text/plain'},//override the default JSON headers and ensure the raw string is sent
+	body: 'Hello, this is a plain text message!'
+})
+
+//(4) post a url encoded body, the classic HTML form post from way back
+const response = await $fetch('/api/form-submit', {
+	method: 'POST',
+	headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+	body: new URLSearchParams({name: 'First Last', email: 'first.last@example.com'})
+})
+
+and for ofetch, they're the same--but the route has to be complete, starting "https://example.com/api/whatever", and features around SSR nd interceptors aren't present
+
+so let's say you want to do a feature like
+add POST by default if theres no method yet
+well, that's the only one
+so just do that in both fetchWorker
+ok, so then
+the revenge of Ash Fetchum
+
+
+fetchWorker - passes $fetch, adds browser tag cookie if we're already on the server (only)
+fetchLambda - passes $fetch, adds net23 keycard
+fetchProvider - passes ofetch
+v all call:
+ashFetchum (which is not exported)
+*/
+function ashFetchum(fetcher, url, options) {
+	//fetcher is a function reference to $fetch or ofetch, one of those or the other, only
+	//url can be absolute or relative, if we're using ofetch, it has to be absolute, but all of this will be on the same screen of code
+	//and options are like {method, headers, body, query}
+	/*
+	additional features that ash adds here
+	- set POST if not already set
+	- put a Task around this to record what you used for the call, and how long it took
+	- maybe, catch an exception, even if above you rethrow it in most instances (yeah, you like this, actually)
+	and that's it, actually--have the caller using fetchWorker add headers like content type text plain or x form urlencoded
+	*/
 }
 
 
@@ -1926,7 +2007,7 @@ export async function fetchLambda({path, body}) {
 
 fetch() is from the browser, plain vanilla and what all the rest ultimately call down to
 $fetch() is from nuxt, use in page and api code, server and client, but not lambda, obeys middleware and parses for you
-useFetch() is from nuxt, use in page code, does hybrid rendering
+useFetch() is from nuxt, use in page code, does universal rendering
 fetchProvider() is our own, parses, measures duration, and catches errors
 
 let r = fetchProvider(  takes...
@@ -1993,21 +2074,3 @@ with that, workers are faster, lambdas the same, well maybe faster because now t
 but there's a code benefit: you could call dog() and logAudit() without having to await them
 */
 //ttd april, not using this, remove; many of these ideas are in Task and fetch23 now, you think? but did not look closely
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

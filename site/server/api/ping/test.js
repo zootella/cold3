@@ -43,7 +43,7 @@ ttd april, necessary bike shed improvements
 
 curl: script setup says: ✅ 286 assertions in 35 tests ..., CloudPageServer: Envi.Proc.Scri.Self.Serv.Zulu,           1726687578574
 page: script setup says: ✅ 458 assertions in 41 tests ..., CloudPageClient: Achr.Asaf.Awin.Docu.Doma.Self.Stor.Wind, 1726687559648
-the tags CloudPageServer and CloudPageClient are both there correctly, and it makes sense that hydration can access more tests in the full browser
+the tags CloudPageServer and CloudPageClient are both there correctly, and it makes sense that code can access more tests in the full browser
 
 curl: worker says:       ✅ 286 assertions in 35 tests ..., CloudNuxtServer: Aclo.Envi.Proc.Scri.Self.Zulu,           1726687578966
 page: worker says:       ✅ 456 assertions in 40 tests ..., CloudNuxtServer: Aclo.Envi.Proc.Scri.Self.Zulu,           1726687560371

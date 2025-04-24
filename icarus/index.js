@@ -37,7 +37,7 @@ multiple front end components and api handlers can use the same library code
 exactly the same code runs on the client (to provide keystroke-by-keytroke feedback to the user) and the server (where its validation can be trusted)
 and because it's the same:
 you know it will act the same
-changes to it affect its behavior everywhere it could run (a long list: lambda, worker, ssr hydration, page running on client)
+changes to it affect its behavior everywhere it could run (a long list: lambda, worker, ssr, page running on client)
 
 
 code that must be vendor-specific, like doorWorker and doorLambda, still factor down into the library
@@ -67,7 +67,7 @@ front end client page | back end server api endpoint
 x
 (if deployed server) cloudflare worker | amazon lambda
 x
-(if page) ssr hydration | client browser
+(if page) ssr | client browser
 
 so, the library code is isomorphic, but modern
 exactly the same code runs on the client and the server

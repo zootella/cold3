@@ -21,7 +21,7 @@ you may want to comment this out at the end
 there's also process.env.NODE_ENV != 'production'
 */
 
-//run tests for page, will run on server and then client as part of hybrid rendering
+//run tests for page, will run on server and then client as part of universal rendering
 let note = `script setup says: ${(await runTests()).message}, ${Sticker().all}`
 
 //run tests a third time, by fetching a server api endpoint, will run on server

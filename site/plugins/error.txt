@@ -161,8 +161,8 @@ you've got to add a layer between the calls above and _fetchHit below
 
 	code can run on the client; code can run on the server
 	code can run to create a Pinia store; render a component; handle an API request, or more
-	and, remember the cross tabs! hybrid rendering means 
-	but remember the cross-tabs! hybrid rendering
+	and, remember the cross tabs! universal rendering means 
+	but remember the cross-tabs! universal rendering
 	code can run to respond to an API endpoint,
 
 	"on the client"
@@ -440,7 +440,7 @@ const gotten = ref(false)//our own flag to not bother the api unnecessarily
 
 
 
-//errorspot, hitStore is server rendered, and then goes across the bridge, using Pinia's support for hybrid rendering (helloStore does not do this) so you need to make an errorspot here, and see it hit both server and client!
+//errorspot, hitStore is server rendered, and then goes across the bridge, using Pinia's support for universal rendering (helloStore does not do this) so you need to make an errorspot here, and see it hit both server and client!
 
 
 
@@ -460,7 +460,7 @@ const gotten = ref(false)//our own flag to not bother the api unnecessarily
 
 
 
-//unlike helloStore, hitStore is used only one place, HitComponent, and not in any plugins. this lets it demonstrates hybrid rendering: curl gets a page with the current hit count, nothing blinks, and the browser console shows there's  no second fetch at all!
+//unlike helloStore, hitStore is used only one place, HitComponent, and not in any plugins. this lets it demonstrates universal rendering: curl gets a page with the current hit count, nothing blinks, and the browser console shows there's  no second fetch at all!
 
 
 
@@ -548,48 +548,3 @@ and then tell the user to refresh to start over
 note that the click from error.vue can't be automatic, as that could cause an infinite loop!
 
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
