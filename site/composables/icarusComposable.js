@@ -12,7 +12,8 @@ export {
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined,
-toss, log, look,
+tossTest, tossTask, toss,
+log, look,
 noop, test, ok,
 
 toBoolean, toTextOrBlank,
