@@ -33,7 +33,7 @@ icarus
 		"joi": "^17.13.1",
 		"libphonenumber-js": "^1.11.3",
 		"h3": "^1.13.0",//brought in by Nuxt; listed explicitly so doorWorkerOpen can be in library2.js
-    "ofetch": "^1.4.1",//also brought in by Nuxt; added so fetchProvider can use $fetch from worker and ofetch from lambda
+		"ofetch": "^1.4.1",//also brought in by Nuxt; added so fetchProvider can use $fetch from worker and ofetch from lambda
 
 		3 service
 		"@supabase/supabase-js": "^2.39.8",//supabase works local and deployed x worker and lambda

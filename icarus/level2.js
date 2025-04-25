@@ -1833,13 +1833,6 @@ test(() => {
 	ok(t3.success == true)
 })
 
-
-
-
-
-
-
-
 //   __      _       _     
 //  / _| ___| |_ ___| |__  
 // | |_ / _ \ __/ __| '_ \ 
@@ -1884,17 +1877,17 @@ export async function fetchProvider(c, q) {
 
 
 
-async function callTaskThrow(name, f, ...q) {
-  let task = await callTaskReturn(name, f, ...q)
-  if (!task.success) toss('task', {task})
+async function callTaskThrow(name, f, ...request) {
+	let task = await callTaskReturn(name, f, ...request)
+	if (!task.success) tossTask(task)
 }
-async function callTaskReturn(name, f, ...q) {
-  let task = Task({name, q})
-  try {
-    task.p = await f(...q)
-  } catch (e) { task.error = e }
-  task.finish()
-  return task
+async function callTaskReturn(name, f, ...request) {
+	let task = Task({name, request})
+	try {
+		task.response = await f(...request)
+	} catch (e) { task.error = e }
+	task.finish()
+	return task
 }
 
 
