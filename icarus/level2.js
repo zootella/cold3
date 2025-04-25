@@ -1841,18 +1841,62 @@ test(() => {
 //                         
 
 
-export async function fetchWorker() {}
-export async function fetchWorker_new() {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 
 
+//REMEMBER[]when you switch from fetch23(path, body) it's fetchLambda(url, options = {body})!
+
+export async function fetchWorker_new(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
+	checkRelativeUrl(url)
+	if (!options.method) options.method = 'POST'//allow get, but default to post
+
+	//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
+	let browserTag
+	if (process.server) browserTag = useNuxtApp()?.ssrContext?.event?.context?.browserTag//only applicable during SSR
+	if (browserTag) {
+		if (!options.headers) options.headers = {}
+		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${context.browserTag}`
+	}
+
+	return await callTaskThrow('fetch worker', $fetch, url, options)
 }
-export async function fetchLambda_new() {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
+export async function fetchLambda_new(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
+	checkRelativeUrl(url)
+	options.method = 'POST'//force post
+	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
-
+	body.warm = true;         await callTaskThrow('fetch lambda warm', $fetch, host23()+url, options)
+	body.warm = false; return await callTaskThrow('fetch lambda call', $fetch, host23()+url, options)
 }
-export async function fetchProvider_new() {//from a worker or lambda, fetch to a third-party REST API
+export async function fetchProvider_new(url, options) {//from a worker or lambda, fetch to a third-party REST API
+	checkAbsoluteUrl(url)
+	if (!options.method) options.method = 'POST'
 
+	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
+
+	await callTaskThrow('fetch provider', f, url, options)
 }
+function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
+function checkAbsoluteUrl(url) { checkText(url); URL(url) }//the browser's URL constructor will throw if the given url is not absolute
+//[]test by logging from datadog from both []worker and []lambda
+
+async function callTaskThrow(name, f, ...request) {
+	let task = await callTaskReturn(name, f, ...request)
+	if (!task.success) tossTask(task)
+}
+async function callTaskReturn(name, f, ...request) {
+	let task = Task({name, request})
+	try {
+		task.response = await f(...request)
+	} catch (e) { task.error = e }
+	task.finish()
+	return task
+}
+
+
+
+
+
+
 
 
 export async function fetchProvider(c, q) {
@@ -1877,25 +1921,13 @@ export async function fetchProvider(c, q) {
 
 
 
-async function callTaskThrow(name, f, ...request) {
-	let task = await callTaskReturn(name, f, ...request)
-	if (!task.success) tossTask(task)
-}
-async function callTaskReturn(name, f, ...request) {
-	let task = Task({name, request})
-	try {
-		task.response = await f(...request)
-	} catch (e) { task.error = e }
-	task.finish()
-	return task
-}
 
 
 
 
 
 
-
+export const fetchWorker = fetchWorker_new
 
 
 
