@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorLambda, tossTest, tossTask, toss, log, look, defined,
+Sticker, doorLambda, toss, log, look, defined,
 makePlain, makeObject, makeText,
 Task, fetchWorker_old, fetchLambda_old, fetchProvider_old,
 host23, fetchWorker, fetchLambda, fetchProvider,

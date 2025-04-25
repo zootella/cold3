@@ -11,9 +11,7 @@ import {
 
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
-defined,
-tossTest, tossTask, toss,
-log, look,
+defined, toss, log, look,
 noop, test, ok,
 
 toBoolean, toTextOrBlank,
@@ -39,9 +37,7 @@ const whatWeImported = {//we could import * to avoid duplicating the list, but t
 
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
-defined,
-tossTest, tossTask, toss,
-log, look,
+defined, toss, log, look,
 noop, test, ok,
 
 toBoolean, toTextOrBlank,

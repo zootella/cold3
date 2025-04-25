@@ -4,7 +4,7 @@ wrapper,
 } from './wrapper.js'
 import {
 Time, Now, sayDate, sayTick,
-log, logTo, say, look, defined, noop, test, ok, toss,
+log, logTo, say, look, defined, noop, test, ok, tossTask, toss,
 checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, hashText, hashData, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
@@ -1875,7 +1875,7 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
 	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
 
-	await callTaskThrow('fetch provider', f, url, options)
+	return await callTaskThrow('fetch provider', f, url, options)
 }
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
 function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute

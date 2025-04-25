@@ -84,7 +84,7 @@ const _tests = []//presenting, tiny tests! all you need for blissful TDD, and in
 export function test(f) { _tests.push(f) }
 export function ok(assertion) {
 	if (assertion) _passes++//count another passed assertion
-	else tossTest()//the assertion is false! throw an exception to get the line number and stop the tests
+	else throw new TestError()//the assertion is false! throw an exception to get the line number and stop the tests
 }
 export async function runTests() {
 	_passes = 0
@@ -121,7 +121,6 @@ export async function runTests() {
 //  \__\___/|___/___/
 //                   
 
-export function tossTest() { throw new TestError() }
 export function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
 export function toss(message, watch) { throw new TossError(message, watch) }//use like toss('title', {watch1, watch2}) with watch variables for context
 

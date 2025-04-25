@@ -4,9 +4,7 @@ import {
 //import everything that we automatically import in site
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
-defined,
-tossTest, tossTask, toss,
-log, look,
+defined, toss, log, look,
 noop, test, ok,
 
 toBoolean, toTextOrBlank,
