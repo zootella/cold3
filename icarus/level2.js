@@ -83,6 +83,7 @@ export function Sticker() {
 
 export function isLocal() { return Sticker().isLocal }
 export function isCloud() { return Sticker().isCloud }
+export function isNuxt() { let s = Sticker().all; return (s.includes('Nuxt') || s.includes('Page')) }
 /*
 ttd april
 you never do uncertain local, all uncertainty should go to the cloud
@@ -651,7 +652,7 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 	if (useTurnstile || door?.body?.action?.includes('Turnstile')) {
 		await checkTurnstileToken(door.body.turnstileToken)
 	} else if (door?.body?.turnstileToken) {//notice the coding mistake of a page sending a token the server does not require!
-		toss('code', {message: 'the page posted a turnstile token to a route or action that does not require it'})
+		toss('code', {note: 'the page posted a turnstile token to a route or action that does not require it'})
 	}
 }
 async function doorLambdaCheck({door, actions}) {
@@ -1118,7 +1119,7 @@ async function sendLog_useDatadog(c) {
 		},
 		body: c.bodyText
 	}
-	return await fetchProvider(c, q)
+	return await fetchProvider_old(c, q)
 }
 /*
 ttd april
@@ -1843,9 +1844,9 @@ test(() => {
 
 
 
-//REMEMBER[]when you switch from fetch23(path, body) it's fetchLambda(url, options = {body})!
+//REMEMBER[]when you switch from fetchLambda_old(path, body) it's fetchLambda(url, options = {body})!
 
-export async function fetchWorker_new(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
+export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
 	if (!options.method) options.method = 'POST'//allow get, but default to post
 
@@ -1859,7 +1860,7 @@ export async function fetchWorker_new(url, options) {//from a Pinia store, Vue c
 
 	return await callTaskThrow('fetch worker', $fetch, url, options)
 }
-export async function fetchLambda_new(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
+export async function fetchLambda(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
 	checkRelativeUrl(url)
 	options.method = 'POST'//force post
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
@@ -1867,23 +1868,31 @@ export async function fetchLambda_new(url, options) {//from a Nuxt api handler w
 	body.warm = true;         await callTaskThrow('fetch lambda warm', $fetch, host23()+url, options)
 	body.warm = false; return await callTaskThrow('fetch lambda call', $fetch, host23()+url, options)
 }
-export async function fetchProvider_new(url, options) {//from a worker or lambda, fetch to a third-party REST API
+export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)
 	if (!options.method) options.method = 'POST'
 
 	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
+	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
 
 	await callTaskThrow('fetch provider', f, url, options)
 }
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
 function checkAbsoluteUrl(url) { checkText(url); URL(url) }//the browser's URL constructor will throw if the given url is not absolute
-//[]test by logging from datadog from both []worker and []lambda
 
-async function callTaskThrow(name, f, ...request) {
+//            _ _ 
+//   ___ __ _| | |
+//  / __/ _` | | |
+// | (_| (_| | | |
+//  \___\__,_|_|_|
+//                
+
+//call f(...request), returning a task with task.response f's return
+async function callTaskThrow(name, f, ...request) {//if calling f throws, throw a task with details inside
 	let task = await callTaskReturn(name, f, ...request)
 	if (!task.success) tossTask(task)
 }
-async function callTaskReturn(name, f, ...request) {
+async function callTaskReturn(name, f, ...request) {//return the task result of caling f, task.error if calling f threw
 	let task = Task({name, request})
 	try {
 		task.response = await f(...request)
@@ -1896,7 +1905,9 @@ async function callTaskReturn(name, f, ...request) {
 
 
 
-export async function fetchWorker() {
+
+
+export async function fetchWorker_old() {
 	//this one is brand new, actually, so nothing for the new one to replace
 }
 export function host23() {//where you can find Network 23; no trailing slash
@@ -1905,7 +1916,7 @@ export function host23() {//where you can find Network 23; no trailing slash
 		'http://localhost:4000/prod'//or check your local Network 23 affliate
 	)
 }
-export async function fetchLambda({path, body}) {
+export async function fetchLambda_old({path, body}) {
 	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/name'
 
 	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
@@ -1918,7 +1929,7 @@ export async function fetchLambda({path, body}) {
 	let task2 = await $fetch(host23()+path, {method: 'POST', body})//a note about exceptions: a 500 from the lambda will cause $fetch to throw, and we intentionally let that exception go upwards to be caught and logged to datadog by door
 	return task2
 }
-export async function fetchProvider(c, q) {
+export async function fetchProvider_old(c, q) {
 	let o = {method: q.method, headers: q.headers, body: q.body}
 
 	q.tick = Now()//record when this happened and how long it takes
@@ -1937,29 +1948,3 @@ export async function fetchProvider(c, q) {
 
 	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

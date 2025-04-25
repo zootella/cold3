@@ -20,7 +20,8 @@ bundleValid,
 } from './level1.js'
 import {
 getAccess, Sticker, isLocal, isCloud,
-Task, fetchWorker, host23, fetchLambda,
+Task, fetchWorker_old, fetchLambda_old, fetchProvider_old,
+host23, fetchWorker, fetchLambda, fetchProvider,
 
 /* level 2 query */
 
@@ -444,7 +445,7 @@ export async function codeSend({browserHash, provider, type, v}) {//v is the add
 		messageText: code.messageText,//email body as text, or complete SMS message
 		messageHtml: code.messageHtml,//email body as HTML
 	}
-	let task = await fetchLambda({path: '/message', body})
+	let task = await fetchLambda_old({path: '/message', body})
 	if (!task.success) toss('task', {task})
 	await codeSent({browserHash, provider, type, v, permit, code})
 
