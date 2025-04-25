@@ -1208,7 +1208,6 @@ export async function checkTurnstileToken(token) {
 			response: token,
 		})
 	})
-	dog('looking at a turnstile response in a task', {task})
 	if (!task.response.success) toss('turnstile challenge failed', {task})
 }
 

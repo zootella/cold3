@@ -18,7 +18,6 @@ watch([refName], () => {
 })
 
 async function onClick() {
-	notDefined111//ttd april
 	let response = await refButton.value.post('/api/name', {
 		action: 'Check.',
 		name: refName.value,
