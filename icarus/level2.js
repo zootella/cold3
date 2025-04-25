@@ -1896,10 +1896,20 @@ async function callTaskReturn(name, f, ...request) {//return the task result of 
 	let task = Task({name, request})
 	try {
 		task.response = await f(...request)
+		task.success = true//ttd april, you have no confidence in this
 	} catch (e) { task.error = e }
 	task.finish()
 	return task
 }
+/*
+ttd april
+large problems with this design
+1 you'd like to come in to callTask with an existing task, which already has some properties, beyond just the parameters we're going to call f with
+2 after the response, we need to do some custom steps to determine if
+
+take a big step back and look at what just using Task and fetchProvider might look like, without callTaskThrow and callTaskReturn
+already, with this design, you can't get callTaskThrow into persephone
+*/
 
 
 
