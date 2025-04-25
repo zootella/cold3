@@ -1110,18 +1110,19 @@ async function prepareLog(status, type, label, headline, watch) {
 //log to datadog, fetching to their api
 async function sendLog_useDatadog(c) {
 	let access = await getAccess()
-	let q = {
-		resource: access.get('ACCESS_DATADOG_ENDPOINT'),
+	return await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
 			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
 		},
 		body: c.bodyText
-	}
-	return await fetchProvider_old(c, q)
+	})
 }
 /*
+ttd april, switching to fetch provider, you are no longer getting complete call information c, into the returned task
+so, if that's important, add it somehow, by passing additional stuff that fetchProvider and the others will put into the task
+
 ttd april
 note that dog() is still harder to call than log() because it uses door promises, and needs secrets
 you could write a await cat() which doesn't use door promises, and only tries to use datadog if canGetAccess()
@@ -1199,8 +1200,7 @@ export async function checkTurnstileToken(token) {
 	if (!useTurnstileHere()) return
 	checkText(token)//before bothering cloudflare, make sure we got some text for token
 	const access = await getAccess()
-	let response = await $fetch(access.get('ACCESS_TURNSTILE_URL'), {//ttd april, move this url into access like datadog
-		//^ttd march, not sure how $fetch is a known reference here, away from the api handler file where nuxt automatically imports it
+	let task = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {
 		method: 'POST',
 		headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 		body: new URLSearchParams({
@@ -1208,9 +1208,9 @@ export async function checkTurnstileToken(token) {
 			response: token,
 		})
 	})
-	if (!response.success) toss('turnstile challenge failed', {token, response})
+	dog('looking at a turnstile response in a task', {task})
+	if (!task.response.success) toss('turnstile challenge failed', {task})
 }
-//ttd january--just realized you're using $fetch in level2.js above, but this is technically a violation of isomorphism as level2 is in icarus so these should work for lambda, too! so does that mean you just refactor these three back up to were you call them? or pass in $fetch? or just not worry about this, as it seems to not make the lambda crash!?
 
 
 
@@ -1870,7 +1870,7 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 }
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)
-	if (!options.method) options.method = 'POST'
+	checkText(options.method)//for fetch provider, you have to specify the method
 
 	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
 	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
