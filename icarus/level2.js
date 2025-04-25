@@ -1878,7 +1878,7 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 	await callTaskThrow('fetch provider', f, url, options)
 }
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
-function checkAbsoluteUrl(url) { checkText(url); URL(url) }//the browser's URL constructor will throw if the given url is not absolute
+function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
 
 //            _ _ 
 //   ___ __ _| | |
