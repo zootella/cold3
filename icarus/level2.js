@@ -18,12 +18,8 @@ Tag, Limit, checkTag, checkActions,
 } from './level1.js'
 
 import {getQuery, readBody} from 'h3'
+import {ofetch} from 'ofetch'//Nuxt's $fetch calls ofetch; imported here so a lambda can call it
 import {createClient} from '@supabase/supabase-js'
-
-
-
-
-
 
 
 
@@ -1821,6 +1817,23 @@ function _taskFinish(task, more) {//mark this task done, adding more properites 
 	task.done = Now()//check .done to know it's done, and also when
 	task.duration = task.done - task.tick//how long it took, nice that times are automatic
 }
+test(() => {
+	let t1 = Task({name: 't1'})
+	t1.finish({success: true})
+	ok(t1.tick && t1.done)//tick and done are the start and end times
+
+	let t2 = Task({name: 't2'})
+	t2.response = {success: false}//this task got a response that didn't succeed
+	t2.finish()//finish bubbles up the failure
+	ok(t2.hasOwnProperty('success') && t2.success == false)
+
+	let t3 = Task({name: 't3'})
+	t3.result = {success: true}//success also bubbles up
+	t3.finish()
+	ok(t3.success == true)
+})
+
+
 
 
 

@@ -84,7 +84,7 @@ const _tests = []//presenting, tiny tests! all you need for blissful TDD, and in
 export function test(f) { _tests.push(f) }
 export function ok(assertion) {
 	if (assertion) _passes++//count another passed assertion
-	else toss('test')//the assertion is false! throw an exception to get the line number and stop the tests
+	else tossTest()//the assertion is false! throw an exception to get the line number and stop the tests
 }
 export async function runTests() {
 	_passes = 0
@@ -121,30 +121,46 @@ export async function runTests() {
 //  \__\___/|___/___/
 //                   
 
+export function tossTest() { throw new TestError() }
+export function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
 export function toss(message, watch) { throw new TossError(message, watch) }//use like toss('title', {watch1, watch2}) with watch variables for context
-class TossError extends Error {//custom error to identify it's one of ours, and include watch variables
-	constructor(message, watch) {
-		super(message)
-		this.name = 'TossError'//you have to set this, otherwise it's just "Error"
 
-		//and now add some custom stuff
-		if (watch) this.tossWatch = watch//the object of named watch variables
-		let t = Now()
-		this.tossWhen = sayTick(t)//when this happened
-		this.tossTick = t//same tick as a number
+class TestError extends Error {
+	constructor() {
+		super('test')
+		this.name = 'TestError'//you have to set this, otherwise it's just "Error"
+
+		if (Error.captureStackTrace) Error.captureStackTrace(this, ok)//omit lines in the stack trace above the call to ok(false)
 	}
 }
-
-export function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
 class TaskError extends Error {
-	constructor(task) {//runtime composes e.stack
+	constructor(task) {
 		super(task.name)//task name is e.message
-		this.name = 'TossError'
+		this.name = 'TaskError'
 
 		this.cause = task.error; task.error = '(moved up to .cause)'//avoid a confusing duplicate
 		this.task = task
+
+		if (Error.captureStackTrace) Error.captureStackTrace(this, tossTask)
 	}
 }
+class TossError extends Error {//custom error to identify it's one of ours, and include watch variables
+	constructor(message, watch) {
+		super(message)
+		this.name = 'TossError'
+
+		if (watch) this.watch = watch//the object of named watch variables
+		let t = Now()
+		this.when = sayTick(t)//when this happened
+		this.tick = t//same tick as a number
+
+		if (Error.captureStackTrace) Error.captureStackTrace(this, toss)
+	}
+}
+const _customErrorKeys = [//list the Error properties we expect for look() to find them below
+	'name', 'message', 'stack', 'cause',//standard JavaScript Error properties
+	'task', 'watch', 'when', 'tick',//our custom additions
+]//ttd april, can we instead just list them all?
 
 //  _             
 // | | ___   __ _ 
@@ -2069,7 +2085,6 @@ function lookDeep(o, depth, depthLimit) {//depth is the depth of o, 0 on the mar
 }
 function lookSayLength(n) { return n > 9 ? ` ‹${n}›` : '' }//9 and smaller count them yourself!
 
-const _customErrorKeys = ['name', 'message', 'tossWatch', 'tossWhen', 'tossTick', 'stack', 'cause']
 function lookKeys(o, options) {
 	let keys = []
 	if (o instanceof Error) {//error is a container, but we handle it here as a special case
@@ -2317,8 +2332,8 @@ export function makeText(o) {//like JSON.stringify(o) but deals with BigInt valu
 }
 test(() => {
 	let e = new Error('Title of test error')
-	e.tossWatch = {s: 'sample', n: 7}
-	e.tossWhen = 1050000000000
+	e.watch = {s: 'sample', n: 7}
+	e.when = 1050000000000
 	let o = {value: 'normal value', huge: 12345678901234567890n, error: e, nested: {}}
 	o.nested.self = o//put in two circular references, one in a regular object, the other in the Error object
 	e.cause = o.nested
@@ -2326,9 +2341,9 @@ test(() => {
 	ok(s.includes('"value":"normal value"'))
 	ok(s.includes('"huge":"12345678901234567890"'))
 	ok(s.includes('"error":{"name":"Error","message":"Title of test error"'))//name and message are here, even on iphone
-	ok(s.includes('"tossWatch":{"s":"sample","n":7},"tossWhen":1050000000000'))
+	ok(s.includes('"watch":{"s":"sample","n":7},"when":1050000000000'))
 	ok(s.includes('"stack":'))//noticed that stack on iphone, only, front-end, does not begin with name and message
-	ok(s.includes('"cause":{"self":"CircularReference."}},"nested":"CircularReference."}'))
+	ok(s.includes('"cause":{"self":"CircularReference."}') && s.includes('"nested":"CircularReference."}'))
 })
 test(() => {
 	ok(JSON.stringify() === undefined && makeText() === undefined)//notice it's not the string "undefined"
