@@ -1858,15 +1858,15 @@ export async function fetchWorker(url, options) {//from a Pinia store, Vue compo
 		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${context.browserTag}`
 	}
 
-	return await callTaskThrow('fetch worker', $fetch, url, options)
+	return await $fetch(url, options)//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
 }
 export async function fetchLambda(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
 	checkRelativeUrl(url)
 	options.method = 'POST'//force post
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
-	body.warm = true;         await callTaskThrow('fetch lambda warm', $fetch, host23()+url, options)
-	body.warm = false; return await callTaskThrow('fetch lambda call', $fetch, host23()+url, options)
+	body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; this is also what we want
+	body.warm = false; return await $fetch(host23()+url, options)
 }
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)
@@ -1875,41 +1875,22 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
 	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
 
-	return await callTaskThrow('fetch provider', f, url, options)
-}
-function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
-function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
-
-//            _ _ 
-//   ___ __ _| | |
-//  / __/ _` | | |
-// | (_| (_| | | |
-//  \___\__,_|_|_|
-//                
-
-//call f(...request), returning a task with task.response f's return
-async function callTaskThrow(name, f, ...request) {//if calling f throws, throw a task with details inside
-	let task = await callTaskReturn(name, f, ...request)
-	if (!task.success) tossTask(task)
-}
-async function callTaskReturn(name, f, ...request) {//return the task result of caling f, task.error if calling f threw
-	let task = Task({name, request})
-	try {
-		task.response = await f(...request)
-		task.success = true//ttd april, you have no confidence in this
+	let task = Task({name: 'fetch provider', url, options})
+	try {//(Note 3) but this fetch is to a third-party API, which could misbehave, so we protect our code with a try block!
+		task.response = await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
+		task.success = true
 	} catch (e) { task.error = e }
 	task.finish()
 	return task
 }
-/*
-ttd april
-large problems with this design
-1 you'd like to come in to callTask with an existing task, which already has some properties, beyond just the parameters we're going to call f with
-2 after the response, we need to do some custom steps to determine if
+function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
+function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
 
-take a big step back and look at what just using Task and fetchProvider might look like, without callTaskThrow and callTaskReturn
-already, with this design, you can't get callTaskThrow into persephone
-*/
+
+
+
+
+
 
 
 
