@@ -160,7 +160,8 @@ class TossError extends Error {//custom error to identify it's one of ours, and 
 const _customErrorKeys = [//list the Error properties we expect for look() to find them below
 	'name', 'message', 'stack', 'cause',//standard JavaScript Error properties
 	'task', 'watch', 'when', 'tick',//our custom additions
-]//ttd april, can we instead just list them all?
+	'details', 'info', 'metadata',//common additional property names, and ones we might use in the future
+]//ttd april, even though Error properties are non-enumerable, look() should just use Object.getOwnPropertyNames(e) to find them all, meaning we don't need this white list. do this alongside the better makePlain, and tests for everything
 
 //  _             
 // | | ___   __ _ 

@@ -160,7 +160,8 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 sayFloppyDisk,
 
-Task, fetchWorker, host23, fetchLambda,
+Task, fetchWorker, fetchLambda, fetchProvider,
+host23, fetchWorker_new, fetchLambda_new, fetchProvider_new,
 
 /* level 2 query */
 
