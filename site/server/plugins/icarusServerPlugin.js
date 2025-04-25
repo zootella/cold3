@@ -74,4 +74,5 @@ export default defineNitroPlugin((nitroApp) => {
 	if (!globalThis.useNuxtApp        && typeof useNuxtApp        == 'function') globalThis.useNuxtApp        = useNuxtApp
 	if (!globalThis.useRuntimeConfig  && typeof useRuntimeConfig  == 'function') globalThis.useRuntimeConfig  = useRuntimeConfig
 	if (!globalThis.setResponseStatus && typeof setResponseStatus == 'function') globalThis.setResponseStatus = setResponseStatus
+	//the other one of these is $fetch, of course, but somehow it's already defined in icarus files, so we're not messing with it
 })

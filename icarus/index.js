@@ -237,7 +237,7 @@ liveBox,//move to whichever level you need it!
 Time, Size, noop,
 Now, sayDate, sayTick,
 test, ok, runTests,
-toss,
+toss, tossTask,
 log, addLogSink, logTo,
 sameObject, sameArray,
 

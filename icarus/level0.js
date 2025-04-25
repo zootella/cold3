@@ -125,13 +125,24 @@ export function toss(message, watch) { throw new TossError(message, watch) }//us
 class TossError extends Error {//custom error to identify it's one of ours, and include watch variables
 	constructor(message, watch) {
 		super(message)
-		this.name = 'TossError'
+		this.name = 'TossError'//you have to set this, otherwise it's just "Error"
 
 		//and now add some custom stuff
 		if (watch) this.tossWatch = watch//the object of named watch variables
 		let t = Now()
 		this.tossWhen = sayTick(t)//when this happened
 		this.tossTick = t//same tick as a number
+	}
+}
+
+export function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
+class TaskError extends Error {
+	constructor(task) {//runtime composes e.stack
+		super(task.name)//task name is e.message
+		this.name = 'TossError'
+
+		this.cause = task.error; task.error = '(moved up to .cause)'//avoid a confusing duplicate
+		this.task = task
 	}
 }
 
