@@ -1198,7 +1198,7 @@ export async function checkTurnstileToken(token) {
 	if (!useTurnstileHere()) return
 	checkText(token)//before bothering cloudflare, make sure we got some text for token
 	const access = await getAccess()
-	let response = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {//ttd april, move this url into access like datadog
+	let response = await $fetch(access.get('ACCESS_TURNSTILE_URL'), {//ttd april, move this url into access like datadog
 		//^ttd march, not sure how $fetch is a known reference here, away from the api handler file where nuxt automatically imports it
 		method: 'POST',
 		headers: {'Content-Type': 'application/x-www-form-urlencoded'},
