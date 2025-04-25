@@ -1896,9 +1896,28 @@ async function callTaskReturn(name, f, ...request) {
 
 
 
+export async function fetchWorker() {
+	//this one is brand new, actually, so nothing for the new one to replace
+}
+export function host23() {//where you can find Network 23; no trailing slash
+	return (isCloud() ?
+		'https://api.net23.cc' :    //our global connectivity via satellite,
+		'http://localhost:4000/prod'//or check your local Network 23 affliate
+	)
+}
+export async function fetchLambda({path, body}) {
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/name'
 
+	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
+	body.warm = true
+	let task1 = await $fetch(host23()+path, {method: 'POST', body})//$fetch is here even in a library file
+	if (!task1.success) toss('task', {task1})
 
+	body.warm = false
+	let task2 = await $fetch(host23()+path, {method: 'POST', body})//a note about exceptions: a 500 from the lambda will cause $fetch to throw, and we intentionally let that exception go upwards to be caught and logged to datadog by door
+	return task2
+}
 export async function fetchProvider(c, q) {
 	let o = {method: q.method, headers: q.headers, body: q.body}
 
@@ -1927,32 +1946,12 @@ export async function fetchProvider(c, q) {
 
 
 
-export const fetchWorker = fetchWorker_new
 
 
 
 
 
 
-export function host23() {//where you can find Network 23; no trailing slash
-	return (isCloud() ?
-		'https://api.net23.cc' :    //our global connectivity via satellite,
-		'http://localhost:4000/prod'//or check your local Network 23 affliate
-	)
-}
-export async function fetchLambda({path, body}) {
-	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/name'
-
-	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
-
-	body.warm = true
-	let task1 = await $fetch(host23()+path, {method: 'POST', body})//$fetch is here even in a library file
-	if (!task1.success) toss('task', {task1})
-
-	body.warm = false
-	let task2 = await $fetch(host23()+path, {method: 'POST', body})//a note about exceptions: a 500 from the lambda will cause $fetch to throw, and we intentionally let that exception go upwards to be caught and logged to datadog by door
-	return task2
-}
 
 
 
