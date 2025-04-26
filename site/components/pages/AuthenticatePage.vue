@@ -16,7 +16,7 @@ onMounted(async () => {//doesn't run on server, even when hydrating
 })
 
 async function doSignGet() {
-	let r = await $fetch('/api/authenticate', {method: 'POST', body:
+	let r = await fetchWorker('/api/authenticate', {body:
 		{action: 'DemonstrationSignGet.'}})
 	if (r.isFound) {//server tells us we've got a user signed into this browser here
 		refState.value = 4
@@ -29,7 +29,7 @@ async function doSignGet() {
 async function clickedSignUp() {
 	let v = validateName(refDesiredUserNameBox.value)
 	if (v.isValid) {
-		let r = await $fetch('/api/authenticate', {method: 'POST', body:
+		let r = await fetchWorker('/api/authenticate', {body:
 			{action: 'DemonstrationSignUp.', nameNormal: v.formNormal}})
 		if (r.isSignedUp) {
 			await doSignGet()//ttd march, this shouldn't be another round trip
@@ -44,7 +44,7 @@ async function clickedSignUp() {
 async function clickedSignIn() {
 	let v = validateName(refReturningUserNameBox.value)
 	if (v.isValid) {
-		let r = await $fetch('/api/authenticate', {method: 'POST', body:
+		let r = await fetchWorker('/api/authenticate', {body:
 			{action: 'DemonstrationSignIn.', nameNormal: v.formNormal}})
 		if (r.isSignedIn) {
 			await doSignGet()//ttd march, this shouldn't be another round trip
@@ -57,7 +57,7 @@ async function clickedSignIn() {
 }
 
 async function clickedSignOut() {
-	let r = await $fetch('/api/authenticate', {method: 'POST', body:
+	let r = await fetchWorker('/api/authenticate', {body:
 		{action: 'DemonstrationSignOut.'}})
 	if (r.isSignedOut) {
 		await doSignGet()//ttd march, should not need another round trip

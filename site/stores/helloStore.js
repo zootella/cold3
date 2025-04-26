@@ -52,7 +52,7 @@ async function mounted() {//runs on the client, only, when app.vue is mounted
 	log(`got page duration ${pageDuration.value} and server duration ${serverDuration.value}`)
 
 	let task = Task({name: 'fetch report'})
-	task.response = await $fetch('/api/report', {method: 'POST', body: {action: 'Hello.',
+	task.response = await fetchWorker('/api/report', {body: {action: 'Hello.',
 		sticker: Sticker().all,
 		d1: pageDuration.value,//biggest first
 		d2: serverDuration.value,//details within

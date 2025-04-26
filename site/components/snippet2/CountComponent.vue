@@ -18,14 +18,11 @@ async function incrementCount(increment1, increment2) {
 	try {
 
 		let tick1 = Now()
-		let data2 = await $fetch('/api/count', {
-			method: 'POST',
-			body: {
-				countGlobal: increment1,
-				countBrowser: increment2,
-				message: 'later message'
-			}
-		})
+		let data2 = await fetchWorker('/api/count', {body: {
+			countGlobal: increment1,
+			countBrowser: increment2,
+			message: 'later message'
+		}})
 		let tick2 = Now()
 		//log(`fetch ran in ${tick2 - tick1}ms`)
 		//log('data.value.countGlobal')
