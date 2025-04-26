@@ -446,6 +446,140 @@ test(() => {
 
 
 
+//  _            _    
+// | |_ __ _ ___| | __
+// | __/ _` / __| |/ /
+// | || (_| \__ \   < 
+//  \__\__,_|___/_|\_\
+//                    
+
+//Task notes time and duration, where code ran, keeps an error, bundles all that together, and bubbles up success
+export function Task(task) {//use like let task = Task({name: 'some title'})
+	task.tag = Tag()//tag to identify this task
+	task.tick = Now()//start time
+	task.sticker = Sticker().all//where we're running to perform this task
+	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
+	return task
+}
+function _taskFinish(task, more) {//mark this task done, adding more properites about how it concluded
+	Object.assign(task, more)//be careful, as this overwrites anything already in task!
+
+	//(1) detect and surface failure
+	if (//code using this Task may have set task.response = true; override that with false if
+		//(1a) there's a response that isn't successful, or
+		(task.response && task.response.hasOwnProperty('success') && task.response.success == false) ||
+		//(1b) same thing, but we saved it named result instead, or
+		(task.result   && task.result.hasOwnProperty('success')   && task.result.success   == false) ||
+		//(1c) there's an error
+		task.error
+	) { task.success = false } else if (//alternatively, (2) bubble up success
+		(!task.hasOwnProperty('success')) && (//if this task doesn't have success set either way yet, and
+			task.response?.success ||//the response succeeded
+			task.result?.success//or we called it result
+		)
+	) { task.success = true }//mark that success here
+
+	task.done = Now()//check .done to know it's done, and also when
+	task.duration = task.done - task.tick//how long it took, nice that times are automatic
+}
+test(() => {
+	let t1 = Task({name: 't1'})
+	t1.finish({success: true})
+	ok(t1.tick && t1.done)//tick and done are the start and end times
+
+	let t2 = Task({name: 't2'})
+	t2.response = {success: false}//this task got a response that didn't succeed
+	t2.finish()//finish bubbles up the failure
+	ok(t2.hasOwnProperty('success') && t2.success == false)
+
+	let t3 = Task({name: 't3'})
+	t3.result = {success: true}//success also bubbles up
+	t3.finish()
+	ok(t3.success == true)
+})
+
+//   __      _       _     
+//  / _| ___| |_ ___| |__  
+// | |_ / _ \ __/ __| '_ \ 
+// |  _|  __/ || (__| | | |
+// |_|  \___|\__\___|_| |_|
+//                         
+
+export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
+	checkRelativeUrl(url)
+	if (!options) options = {}//totally fine to call fetchWorker('/hello') with no options; we'll prepare an empty request body
+	if (!options.method) options.method = 'POST'//allow get, but default to post
+	if (!options.body) options.body = {}
+
+	//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
+	let browserTag
+	if (process.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag//only applicable during SSR
+	if (browserTag) {
+		if (!options.headers) options.headers = {}
+		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${browserTag}`
+	}
+
+	options.body = makePlain(options.body)//$fetch automatically stringifies, but would throw on a method or circular reference
+	return await $fetch(url, options)//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
+}
+export async function fetchLambda(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
+	checkRelativeUrl(url)
+	if (!options) options = {}
+	options.method = 'POST'//force post
+	if (!options.body) options.body = {}
+	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+
+	options.body = makePlain(options.body)
+	options.body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
+	options.body.warm = false; return await $fetch(host23()+url, options)
+}
+export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
+	checkAbsoluteUrl(url)
+	checkText(options.method)//must explicitly indicate method
+
+	let f = typeof $fetch == 'function' ? $fetch : ofetch
+	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
+
+	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
+}
+/*
+fetchWorker and fetchLambda talk to your own endpoints; fetchProvider is for third-party APIs, so the pattern is different:
+(1) your own endpoints respond with a task as the body; here, make your own task at the top
+(2) if your own endpoints respond 500, you *want* to keep throwing upwards; here instead, use a try{} block to protect yourself from third-party behavior outside your control
+(3) fetchWorker and fetchLambda use POST by default; here, you must set the method explicitly
+(4) you might need to include some headers
+(5) fetchWorker and fetchLambda call makePlain(body) to avoid stringification exceptions, and can do this because with your own endpoints, the body is always JSON; here, body might be text or multipart form, so you have to call makePlain() if you need to
+(6) examine the response from the third-party API, and set task.success upon proof it worked
+(7) returning the wrapped task matches returning the response body task from one of your own endpoints
+
+let task = Task({name: 'fetch example'})//(1)
+try {//(2)
+	task.response = await fetchProvider(url, {
+		method: 'POST',//(3)
+		headers: {},//(4)
+		body: makePlain(body),//(5)
+	})
+	if (task.response.success && hasText(task.response.otherDetail)) task.success = true//(6)
+} catch (e) { task.error = e }
+task.finish()
+if (!task.success) toss('act apporpriately for a failed result')
+return task//(7)
+*/
+function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
+function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
+export function host23() {//where you can find Network 23; no trailing slash
+	return (isCloud() ?
+		'https://api.net23.cc' :    //our global connectivity via satellite,
+		'http://localhost:4000/prod'//or check your local Network 23 affliate
+	)
+}
+
+
+
+
+
+
+
 
 
 
@@ -597,6 +731,8 @@ async function doorWorkerOpen({method, workerEvent}) {
 	door.workerEvent = workerEvent//save everything they gave us about the request
 
 	door.origin = headerOrigin({workerEvent})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
+	door.ip = headerGetOne(workerEvent.req.headers, 'cf-connecting-ip')
+
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
@@ -651,7 +787,7 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 
 	//if the api endpoint code requires cloudflare turnstile, make sure the page sent a valid token
 	if (useTurnstile || door?.body?.action?.includes('Turnstile')) {
-		await checkTurnstileToken(door.body.turnstileToken)
+		await checkTurnstileToken(door.body.turnstileToken, door.ip)
 	} else if (door?.body?.turnstileToken) {//notice the coding mistake of a page sending a token the server does not require!
 		toss('code', {note: 'the page posted a turnstile token to a route or action that does not require it'})
 	}
@@ -1108,13 +1244,12 @@ async function prepareLog(status, type, label, headline, watch) {
 	return c
 }
 /*
-ttd april, now that you've connected the stack, this logging is too much
+ttd april, refactor and simplify datadog now that it leads down to fetch provider
+
 []get rid of simulation mode
 []rename and collapse sendLog_useDatadog as there is no other sendLog_*
 []c is our call with complete information about our fetch to datadog--nobody cares
-*/
 
-/*
 ttd april, ok, now that you're developing the pattern for how to use fetch Provider, it does just return the response body, you should put it in a try catch, do that, follow the same pattern for your two uses of fetch Provider, which are datadog loggign and turnstile token checking
 
 ttd april, above, fetch Provider is calling makePlain now, so you can and should set body to the object, and you don't need bodytext anymore, but you'll still have to do the dance of makeText just to get its length, and then put that length into just the member were SIZE is
@@ -1217,6 +1352,7 @@ async function sendLog_useDatadog(c) {
 			soon, change this to body: makePlain(body) when you factor out bodyText entirely
 			*/
 		})
+		if (task.response.status == 202) task.success = true
 
 	} catch (e) { task.error = e }
 	task.finish()
@@ -1234,8 +1370,9 @@ export async function checkTurnstileToken(token, ip) {
 		let body = new FormData()
 		body.append('secret',   access.get('ACCESS_TURNSTILE_SECRET'))
 		body.append('response', token)
-//	body.append('remoteip', workerEvent.request.headers.get('cf-connecting-ip'))
-//ttd april, yes, get the ip in here, add checkText(ip) on the top, also
+		dog(`could add ip "${ip}"`)
+		//body.append('remoteip', ip)
+		//ttd april, get the ip as door.ip just on the worker side
 
 		task.response = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {method: 'POST', body})
 		if (task.response.success && hasText(task.response.hostname)) task.success = true//make sure the API response looks good
@@ -1817,175 +1954,5 @@ test(() => {
 
 
 
-//  _            _    
-// | |_ __ _ ___| | __
-// | __/ _` / __| |/ /
-// | || (_| \__ \   < 
-//  \__\__,_|___/_|\_\
-//                    
-
-//Task notes time and duration, where code ran, keeps an error, bundles all that together, and bubbles up success
-export function Task(task) {//use like let task = Task({name: 'some title'})
-	task.tag = Tag()//tag to identify this task
-	task.tick = Now()//start time
-	task.sticker = Sticker().all//where we're running to perform this task
-	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
-	return task
-}
-function _taskFinish(task, more) {//mark this task done, adding more properites about how it concluded
-	Object.assign(task, more)//be careful, as this overwrites anything already in task!
-
-	//(1) detect and surface failure
-	if (//code using this Task may have set task.response = true; override that with false if
-		//(1a) there's a response that isn't successful, or
-		(task.response && task.response.hasOwnProperty('success') && task.response.success == false) ||
-		//(1b) same thing, but we saved it named result instead, or
-		(task.result   && task.result.hasOwnProperty('success')   && task.result.success   == false) ||
-		//(1c) there's an error
-		task.error
-	) { task.success = false } else if (//alternatively, (2) bubble up success
-		(!task.hasOwnProperty('success')) && (//if this task doesn't have success set either way yet, and
-			task.response?.success ||//the response succeeded
-			task.result?.success//or we called it result
-		)
-	) { task.success = true }//mark that success here
-
-	task.done = Now()//check .done to know it's done, and also when
-	task.duration = task.done - task.tick//how long it took, nice that times are automatic
-}
-test(() => {
-	let t1 = Task({name: 't1'})
-	t1.finish({success: true})
-	ok(t1.tick && t1.done)//tick and done are the start and end times
-
-	let t2 = Task({name: 't2'})
-	t2.response = {success: false}//this task got a response that didn't succeed
-	t2.finish()//finish bubbles up the failure
-	ok(t2.hasOwnProperty('success') && t2.success == false)
-
-	let t3 = Task({name: 't3'})
-	t3.result = {success: true}//success also bubbles up
-	t3.finish()
-	ok(t3.success == true)
-})
-
-//   __      _       _     
-//  / _| ___| |_ ___| |__  
-// | |_ / _ \ __/ __| '_ \ 
-// |  _|  __/ || (__| | | |
-// |_|  \___|\__\___|_| |_|
-//                         
-
-export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
-	checkRelativeUrl(url)
-	if (!options) options = {}//totally fine to call fetchWorker('/hello') with no options; we'll prepare an empty request body
-	if (!options.method) options.method = 'POST'//allow get, but default to post
-	if (!options.body) options.body = {}
-
-	//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
-	let browserTag
-	if (process.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag//only applicable during SSR
-	if (browserTag) {
-		if (!options.headers) options.headers = {}
-		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${browserTag}`
-	}
-
-	options.body = makePlain(options.body)//$fetch automatically stringifies, but would throw on a method or circular reference
-	return await $fetch(url, options)//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
-}
-export async function fetchLambda(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
-	checkRelativeUrl(url)
-	if (!options) options = {}
-	options.method = 'POST'//force post
-	if (!options.body) options.body = {}
-	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
-
-	options.body = makePlain(options.body)
-	options.body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
-	options.body.warm = false; return await $fetch(host23()+url, options)
-}
-export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
-	checkAbsoluteUrl(url)
-	checkText(options.method)//must explicitly indicate method
-
-	let f = typeof $fetch == 'function' ? $fetch : ofetch
-	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
-
-	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
-}
-/*
-fetchWorker and fetchLambda talk to your own endpoints; fetchProvider is for third-party APIs, so the pattern is different:
-(1) your own endpoints respond with a task as the body; here, make your own task at the top
-(2) if your own endpoints respond 500, you *want* to keep throwing upwards; here instead, use a try{} block to protect yourself from third-party behavior outside your control
-(3) fetchWorker and fetchLambda use POST by default; here, you must set the method explicitly
-(4) you might need to include some headers
-(5) fetchWorker and fetchLambda call makePlain(body) to avoid stringification exceptions, and can do this because with your own endpoints, the body is always JSON; here, body might be text or multipart form, so you have to call makePlain() if you need to
-(6) examine the response from the third-party API, and set task.success upon proof it worked
-(7) returning the wrapped task matches returning the response body task from one of your own endpoints
-
-let task = Task({name: 'fetch example'})//(1)
-try {//(2)
-	task.response = await fetchProvider(url, {
-		method: 'POST',//(3)
-		headers: {},//(4)
-		body: makePlain(body),//(5)
-	})
-	if (task.response.success && hasText(task.response.otherDetail)) task.success = true//(6)
-} catch (e) { task.error = e }
-task.finish()
-if (!task.success) toss('act apporpriately for a failed result')
-return task//(7)
-*/
-function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
-function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
 
 
-
-
-
-
-
-
-
-
-export async function fetchWorker_old() {
-	//this one is brand new, actually, so nothing for the new one to replace
-}
-export function host23() {//where you can find Network 23; no trailing slash
-	return (isCloud() ?
-		'https://api.net23.cc' :    //our global connectivity via satellite,
-		'http://localhost:4000/prod'//or check your local Network 23 affliate
-	)
-}
-export async function fetchLambda_old({path, body}) {
-	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/name'
-
-	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
-
-	body.warm = true
-	let task1 = await $fetch(host23()+path, {method: 'POST', body})//$fetch is here even in a library file
-	if (!task1.success) toss('task', {task1})
-
-	body.warm = false
-	let task2 = await $fetch(host23()+path, {method: 'POST', body})//a note about exceptions: a 500 from the lambda will cause $fetch to throw, and we intentionally let that exception go upwards to be caught and logged to datadog by door
-	return task2
-}
-export async function fetchProvider_old(c, q) {
-	let o = {method: q.method, headers: q.headers, body: q.body}
-
-	q.tick = Now()//record when this happened and how long it takes
-	let response, bodyText, body, error, success
-	try {
-		response = await fetch(q.resource, o)
-		bodyText = await response.text()
-		if (response.ok) {
-			success = true
-			if (response.headers?.get('Content-Type')?.includes('application/json')) {
-				body = makeObject(bodyText)//can throw, and then it's the api's fault, not your code here
-			}
-		}
-	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
-	let t = Now()
-
-	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
-}

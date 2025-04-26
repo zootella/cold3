@@ -357,7 +357,6 @@ async function sendLog(s) {
 
 
 
-//REMEMBER[]when you switch from fetchLambda_old(path, body) it's fetchLambda(url, options = {body})!
 
 /*
 you want to be able to freely send whatever object back and forth, maybe there are methods in there, maybe hidden things we need to see, maybe circular references
@@ -378,6 +377,63 @@ worker prepares response (here again, makePlain)
 
 
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+async function fetchLambda _old({path, body}) {
+	checkText(path); if (path[0] != '/') toss('data', {path, body})//call this with path like '/name'
+
+	body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
+
+	body.warm = true
+	let task1 = await $fetch(host23()+path, {method: 'POST', body})//$fetch is here even in a library file
+	if (!task1.success) toss('task', {task1})
+
+	body.warm = false
+	let task2 = await $fetch(host23()+path, {method: 'POST', body})//a note about exceptions: a 500 from the lambda will cause $fetch to throw, and we intentionally let that exception go upwards to be caught and logged to datadog by door
+	return task2
+}
+async function fetchProvider _old(c, q) {
+	let o = {method: q.method, headers: q.headers, body: q.body}
+
+	q.tick = Now()//record when this happened and how long it takes
+	let response, bodyText, body, error, success
+	try {
+		response = await fetch(q.resource, o)
+		bodyText = await response.text()
+		if (response.ok) {
+			success = true
+			if (response.headers?.get('Content-Type')?.includes('application/json')) {
+				body = makeObject(bodyText)//can throw, and then it's the api's fault, not your code here
+			}
+		}
+	} catch (e) { error = e; success = false }//no success because error, error.name may be AbortError
+	let t = Now()
+
+	return {c, q, p: {success, response, bodyText, body, error, tick: t, duration: t - q.tick}}//returns p an object of details about the response, so everything we know about the re<q>uest and res<p>onse are in there ;)
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

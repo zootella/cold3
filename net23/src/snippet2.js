@@ -2,8 +2,7 @@
 import {
 Sticker, doorLambda, toss, log, look, defined,
 makePlain, makeObject, makeText,
-Task, fetchWorker_old, fetchLambda_old, fetchProvider_old,
-host23, fetchWorker, fetchLambda, fetchProvider,
+Task, host23, fetchWorker, fetchLambda, fetchProvider,
 runTests,
 } from 'icarus'
 

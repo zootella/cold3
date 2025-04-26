@@ -20,8 +20,7 @@ bundleValid,
 } from './level1.js'
 import {
 getAccess, Sticker, isLocal, isCloud,
-Task, fetchWorker_old, fetchLambda_old, fetchProvider_old,
-host23, fetchWorker, fetchLambda, fetchProvider,
+Task, host23, fetchWorker, fetchLambda, fetchProvider,
 
 /* level 2 query */
 
