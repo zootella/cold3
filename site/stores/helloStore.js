@@ -36,14 +36,9 @@ async function load() { if (loaded.value) return; loaded.value = true//runs on t
 		let t = Now()
 		error1.value = null//clear a previous error
 
-		let f = {method: 'POST', body: {}}
-		let context//get existing context, if any, to use during SSR for the fetch below
-		if (process.server) context = useNuxtApp()?.ssrContext?.event?.context//only applicable during SSR
-		if (!context) context = {}
-		if (context.browserTag) f.headers = {
-			cookie: `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${context.browserTag}`
-		}//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
-		let r = await $fetch('/api/hello1', f)
+		//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
+		//ttd april, move that note into fetch worker
+		let r = await fetchWorker('/api/hello1')
 		sticker1.value = r.sticker
 		user.value = r.user
 		codes.value = r.codes

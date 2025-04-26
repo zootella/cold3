@@ -25,7 +25,7 @@ async function incrementHits() {
 async function _fetchHit(action) {
 	let task = Task({name: 'hit store fetch'})
 	try {
-		task.response = await $fetch('/api/hit', {method: 'POST', body: {action}})
+		task.response = await fetchWorker('/api/hit', {body: {action}})
 	} catch (e) { task.error = e }
 	task.finish()
 	if (!task.success) throw task//following draft pattern from PostButton, but here, why not just not have the try catch?

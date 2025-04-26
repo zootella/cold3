@@ -1877,14 +1877,16 @@ bookmark
 
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
+	if (!options) options = {}//totally fine to call fetchWorker('/hello') with no options; we'll prepare an empty request body
 	if (!options.method) options.method = 'POST'//allow get, but default to post
+	if (!options.body) options.body = {}
 
 	//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
 	let browserTag
-	if (process.server) browserTag = useNuxtApp()?.ssrContext?.event?.context?.browserTag//only applicable during SSR
+	if (process.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag//only applicable during SSR
 	if (browserTag) {
 		if (!options.headers) options.headers = {}
-		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${context.browserTag}`
+		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${browserTag}`
 	}
 
 	options.body = makePlain(options.body)//$fetch automatically stringifies, but would throw on a method or circular reference
@@ -1892,7 +1894,9 @@ export async function fetchWorker(url, options) {//from a Pinia store, Vue compo
 }
 export async function fetchLambda(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
 	checkRelativeUrl(url)
+	if (!options) options = {}
 	options.method = 'POST'//force post
+	if (!options.body) options.body = {}
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
 	options.body = makePlain(options.body)
@@ -1906,7 +1910,7 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
 	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
 
-	options.body = makePlain(options.body)
+	if (options.body) options.body = makePlain(options.body)
 	let task = Task({name: 'fetch provider', url, options})
 	try {//(Note 3) but this fetch is to a third-party API, which could misbehave, so we protect our code with a try block!
 		task.response = await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
