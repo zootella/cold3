@@ -1243,6 +1243,30 @@ async function prepareLog(status, type, label, headline, watch) {
 	c.bodyText = s//c.bodyText is the stringified body of the http request our call to fetch will use
 	return c
 }
+//log to datadog, fetching to their api
+async function sendLog_useDatadog(c) {
+	const access = await getAccess()
+	let task = Task({name: 'fetch datadog'})
+	try {
+
+		task.response = await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
+			},
+			body: c.bodyText,
+			/*
+			ttd april
+			right now, we've pre-stringified; $fetch and ofetch see a string body and won't double stringify it
+			soon, change this to body: makePlain(body) when you factor out bodyText entirely
+			*/
+		})
+		//on success, datadog returns HTTP status 202 and empty body; there's no easy way to see that without dropping down to native fetch
+
+	} catch (e) { task.error = e }
+	task.finish()
+}
 /*
 ttd april, refactor and simplify datadog now that it leads down to fetch provider
 
@@ -1330,34 +1354,6 @@ export function addTurnstileHeadScript(head) {
 	})
 }
 
-
-
-
-//log to datadog, fetching to their api
-async function sendLog_useDatadog(c) {
-	const access = await getAccess()
-	let task = Task({name: 'fetch datadog'})
-	try {
-
-		task.response = await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
-			},
-			body: c.bodyText
-			/*
-			ttd april
-			right now, we've pre-stringified; $fetch and ofetch see a string body and won't double stringify it
-			soon, change this to body: makePlain(body) when you factor out bodyText entirely
-			*/
-		})
-		if (task.response.status == 202) task.success = true
-
-	} catch (e) { task.error = e }
-	task.finish()
-	if (!task.success) console.error('datadog error', look(task))//if datadog is broken, the only one left we can tell is stdout
-}
 //used by trusted code in a worker for a nuxt api handler, to validate a turnstile token submitted with form data from an untrusted user
 export async function checkTurnstileToken(token, ip) {
 	if (!useTurnstileHere()) return
@@ -1385,6 +1381,9 @@ export async function checkTurnstileToken(token, ip) {
 	}
 	//ttd april[]malform the token to see that you get the page to crash, and an audit log about it in datadog
 }
+
+
+
 
 
 
