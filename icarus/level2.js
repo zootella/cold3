@@ -1870,8 +1870,8 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	options.method = 'POST'//force post
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
-	body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; this is also what we want
-	body.warm = false; return await $fetch(host23()+url, options)
+	options.body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
+	options.body.warm = false; return await $fetch(host23()+url, options)
 }
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)
