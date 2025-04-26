@@ -1217,7 +1217,9 @@ export async function checkTurnstileToken(token) {
 			response: token,
 		})
 	})
-	if (!task.response.success) toss('turnstile challenge failed', {task})
+	//ttd april, turning turnstile entirely off for testing!
+	dog('hi from check turnstile token', look(task))
+	//if (!task.response.success) toss('turnstile challenge failed', {task})
 }
 
 
@@ -1914,6 +1916,7 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 	let task = Task({name: 'fetch provider', url, options})
 	try {//(Note 3) but this fetch is to a third-party API, which could misbehave, so we protect our code with a try block!
 		task.response = await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
+		dog('turnstile response', task.response, look(task.response))//bookmark april
 		task.success = true
 	} catch (e) { task.error = e }
 	task.finish()
