@@ -10,5 +10,7 @@ async function doorHandleBelow({door, body}) {
 	let v = validateName(body.name)
 	if (!v.isValid) toss('valid', {body, v})
 
+	dog(`name.js got "${body.name}"`)//ttd april, checking datadog locally
+
 	return await nameCheck({v})
 }

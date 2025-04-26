@@ -115,6 +115,7 @@ Achr Asaf Awin           Docu      Loca                                         
 Achr Asaf Awin      Clie Docu      Loca                     Proc                Self      Stor Wind      >LocalPageClient
 Achr Asaf Awin           Docu Doma                                              Self      Stor Wind      >CloudPageClient
 `
+//ttd april, note that after server refresh, like Ctrl+S in report.js, LocalNuxtServer erroneously becomes LocalNode!
 export function senseEnvironment() {
 	function type(t) { return t != 'undefined' }
 	function text(o) { return typeof o == 'string' && o != '' }
@@ -1199,30 +1200,42 @@ export function addTurnstileHeadScript(head) {
 
 //log to datadog, fetching to their api
 async function sendLog_useDatadog(c) {
-	let access = await getAccess()
-	return await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
-		},
-		body: c.bodyText//$fetch and ofetch see a string body and won't double stringify it
-		//ttd april, fetch Provider doesn't call makePlain(body), so you'll have to here
-	})
+	const access = await getAccess()
+	let task = Task({name: 'fetch datadog'})
+	try {
+
+		task.response = await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
+			},
+			body: c.bodyText
+			/*
+			ttd april
+			right now, we've pre-stringified; $fetch and ofetch see a string body and won't double stringify it
+			soon, change this to body: makePlain(body) when you factor out bodyText entirely
+			*/
+		})
+
+	} catch (e) { task.error = e }
+	task.finish()
+	if (!task.success) console.error('datadog error', look(task))//if datadog is broken, the only one left we can tell is stdout
 }
 //used by trusted code in a worker for a nuxt api handler, to validate a turnstile token submitted with form data from an untrusted user
 export async function checkTurnstileToken(token, ip) {
 	if (!useTurnstileHere()) return
-	checkText(token)//before bothering cloudflare, make sure we got some text for token
+	checkText(token)//; checkText(ip)
 	const access = await getAccess()
 
-	let task = Task({name: 'check turnstile token'})
+	let task = Task({name: 'fetch turnstile'})
 	try {
 
 		let body = new FormData()
 		body.append('secret',   access.get('ACCESS_TURNSTILE_SECRET'))
 		body.append('response', token)
 //	body.append('remoteip', workerEvent.request.headers.get('cf-connecting-ip'))
+//ttd april, yes, get the ip in here, add checkText(ip) on the top, also
 
 		task.response = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {method: 'POST', body})
 		if (task.response.success && hasText(task.response.hostname)) task.success = true//make sure the API response looks good
@@ -1231,26 +1244,11 @@ export async function checkTurnstileToken(token, ip) {
 	task.finish()
 	if (!task.success) {
 		logAudit('turnstile', {token, ip, task})//for third party messaging APIs, we audit success and failure; here just failure
-		toss('turnstile challenge failed', {task})
+		toss('turnstile challenge failed', {token, ip, task})
 	}
-	//ttd april, remove true above, for right now, we'll log all turnstile
-
-	//yes, you should audit not all, but all failed, turnstile api interactions! and then when that's going, intentially break one here, and see how you can see in datadog exactly what you called it with, and exactly what it responded with
-	//ttd april, turning turnstile entirely off for testing!
-	//dog('hi from check turnstile token', look(task))
-	//if (!task.response.success) toss('turnstile challenge failed', {task})
-	//task.response should have task.response.success, task.response.hostname
+	//ttd april[]malform the token to see that you get the page to crash, and an audit log about it in datadog
 }
-export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
-	checkAbsoluteUrl(url)
-	checkText(options.method)//for fetch provider, you have to specify the method
 
-	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
-	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
-
-	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
-}
-//things you should do around your call to fetch Provider: task for your use, try catch block, if passing json call make plain, set success true upon examining well formed response; write a comment up top that shows how to use this
 
 
 
@@ -1878,31 +1876,6 @@ test(() => {
 // |_|  \___|\__\___|_| |_|
 //                         
 
-
-
-
-//REMEMBER[]when you switch from fetchLambda_old(path, body) it's fetchLambda(url, options = {body})!
-
-/*
-you want to be able to freely send whatever object back and forth, maybe there are methods in there, maybe hidden things we need to see, maybe circular references
-so that's what makePlain is about
-also, while $fetch/ofetch will stringify for you, if you set body to a string, they'll leave it alone, so you can use makeText
-and, once you do this, you shouldn't need to do the two copies, one text, one object, that you did with datadog and page error reporting, and that will be great
-
-ok, so let's draw a map
-store, component, worker         <--fetch Worker-->   worker (responds with door)
-									worker         <--fetch Lambda-->   lambda (responds with door)
-									worker, lambda <--fetch Provider--> third party REST API (response not in our control)
-
-around fetchWorker
-page calls fetchWorker, which serializes, calls fetchWorker (here's where you need to call makePlain)
-worker gets body automatically parsed, that's fine
-worker prepares response (here again, makePlain)
-
-
-
-*/
-
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
 	if (!options) options = {}//totally fine to call fetchWorker('/hello') with no options; we'll prepare an empty request body
@@ -1931,10 +1904,40 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	options.body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
 	options.body.warm = false; return await $fetch(host23()+url, options)
 }
+export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
+	checkAbsoluteUrl(url)
+	checkText(options.method)//must explicitly indicate method
+
+	let f = typeof $fetch == 'function' ? $fetch : ofetch
+	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
+
+	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
+}
+/*
+fetchWorker and fetchLambda talk to your own endpoints; fetchProvider is for third-party APIs, so the pattern is different:
+(1) your own endpoints respond with a task as the body; here, make your own task at the top
+(2) if your own endpoints respond 500, you *want* to keep throwing upwards; here instead, use a try{} block to protect yourself from third-party behavior outside your control
+(3) fetchWorker and fetchLambda use POST by default; here, you must set the method explicitly
+(4) you might need to include some headers
+(5) fetchWorker and fetchLambda call makePlain(body) to avoid stringification exceptions, and can do this because with your own endpoints, the body is always JSON; here, body might be text or multipart form, so you have to call makePlain() if you need to
+(6) examine the response from the third-party API, and set task.success upon proof it worked
+(7) returning the wrapped task matches returning the response body task from one of your own endpoints
+
+let task = Task({name: 'fetch example'})//(1)
+try {//(2)
+	task.response = await fetchProvider(url, {
+		method: 'POST',//(3)
+		headers: {},//(4)
+		body: makePlain(body),//(5)
+	})
+	if (task.response.success && hasText(task.response.otherDetail)) task.success = true//(6)
+} catch (e) { task.error = e }
+task.finish()
+if (!task.success) toss('act apporpriately for a failed result')
+return task//(7)
+*/
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
 function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
-
-
 
 
 

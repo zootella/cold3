@@ -357,4 +357,29 @@ async function sendLog(s) {
 
 
 
+//REMEMBER[]when you switch from fetchLambda_old(path, body) it's fetchLambda(url, options = {body})!
+
+/*
+you want to be able to freely send whatever object back and forth, maybe there are methods in there, maybe hidden things we need to see, maybe circular references
+so that's what makePlain is about
+also, while $fetch/ofetch will stringify for you, if you set body to a string, they'll leave it alone, so you can use makeText
+and, once you do this, you shouldn't need to do the two copies, one text, one object, that you did with datadog and page error reporting, and that will be great
+
+ok, so let's draw a map
+store, component, worker         <--fetch Worker-->   worker (responds with door)
+									worker         <--fetch Lambda-->   lambda (responds with door)
+									worker, lambda <--fetch Provider--> third party REST API (response not in our control)
+
+around fetchWorker
+page calls fetchWorker, which serializes, calls fetchWorker (here's where you need to call makePlain)
+worker gets body automatically parsed, that's fine
+worker prepares response (here again, makePlain)
+
+
+
+*/
+
+
+
+
 
