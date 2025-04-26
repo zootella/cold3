@@ -1375,7 +1375,6 @@ export async function checkTurnstileToken(token, ip) {
 		logAudit('turnstile', {token, ip, task})//for third party messaging APIs, we audit success and failure; here just failure
 		toss('turnstile challenge failed', {token, ip, task})
 	}
-	//ttd april[]malform the token to see that you get the page to crash, and an audit log about it in datadog
 }
 
 
