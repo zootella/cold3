@@ -1123,9 +1123,12 @@ async function sendLog_useDatadog(c) {
 			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
 		},
 		body: c.bodyText//$fetch and ofetch see a string body and won't double stringify it
+		//ttd april, fetchProvider doesn't call makePlain(body), so you'll have to here
 	})
 }
 /*
+ttd april, ok, now that you're developing the pattern for how to use fetchProvider, it does just return the response body, you should put it in a try catch, do that, follow the same pattern for your two uses of fetchProvider, which are datadog loggign and turnstile token checking
+
 ttd april, above, fetchProvider is calling makePlain now, so you can and should set body to the object, and you don't need bodytext anymore, but you'll still have to do the dance of makeText just to get its length, and then put that length into just the member were SIZE is
 make this change 1[]here fetching to log to datadog and 2[]in the error path, currently messed up with details and detailsText
 
@@ -1209,21 +1212,36 @@ export async function checkTurnstileToken(token) {
 	if (!useTurnstileHere()) return
 	checkText(token)//before bothering cloudflare, make sure we got some text for token
 	const access = await getAccess()
-	let task = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {
-		method: 'POST',
-		headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-		body: new URLSearchParams({
-			secret: access.get('ACCESS_TURNSTILE_SECRET'),
-			response: token,
-		})
-	})
+
+	let task = Task({name: 'check turnstile token'})
+	try {
+
+		let body = new FormData()//where does this come from?
+		body.append('secret',   access.get('ACCESS_TURNSTILE_SECRET'))
+		body.append('response', token)
+//	body.append('remoteip', workerEvent.request.headers.get('cf-connecting-ip'))
+
+		task.response = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {method: 'POST', body})
+		if (task.response.success) task.success = true
+
+	} catch (e) { task.error = e }
+	//yes, you should audit not all, but all failed, turnstile api interactions! and then when that's going, intentially break one here, and see how you can see in datadog exactly what you called it with, and exactly what it responded with
 	//ttd april, turning turnstile entirely off for testing!
 	dog('hi from check turnstile token', look(task))
 	//if (!task.response.success) toss('turnstile challenge failed', {task})
+	//task.response should have task.response.success, task.response.hostname
 }
 
+export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
+	checkAbsoluteUrl(url)
+	checkText(options.method)//for fetch provider, you have to specify the method
 
+	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
+	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
 
+	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
+}
+//things you should do around your call to fetchProvider: task for your use, try catch block, if passing json call make plain, set success true upon examining well formed response; write a comment up top that shows how to use this
 
 
 
@@ -1864,15 +1882,14 @@ and, once you do this, you shouldn't need to do the two copies, one text, one ob
 
 ok, so let's draw a map
 store, component, worker         <--fetchWorker-->   worker (responds with door)
-                  worker         <--fetchLambda-->   lambda (responds with door)
-                  worker, lambda <--fetchProvider--> third party REST API (response not in our control)
+									worker         <--fetchLambda-->   lambda (responds with door)
+									worker, lambda <--fetchProvider--> third party REST API (response not in our control)
 
 around fetchWorker
 page calls fetchWorker, which serializes, calls fetchWorker (here's where you need to call makePlain)
 worker gets body automatically parsed, that's fine
 worker prepares response (here again, makePlain)
 
-bookmark
 
 
 */
@@ -1905,26 +1922,8 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	options.body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
 	options.body.warm = false; return await $fetch(host23()+url, options)
 }
-export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
-	checkAbsoluteUrl(url)
-	checkText(options.method)//for fetch provider, you have to specify the method
-
-	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
-	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
-
-	if (options.body) options.body = makePlain(options.body)
-	let task = Task({name: 'fetch provider', url, options})
-	try {//(Note 3) but this fetch is to a third-party API, which could misbehave, so we protect our code with a try block!
-		task.response = await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
-		dog('turnstile response', task.response, look(task.response))//bookmark april
-		task.success = true
-	} catch (e) { task.error = e }
-	task.finish()
-	return task//your own worker and lambda endpoints return task as the response; we wrap the third-party response in a task here
-}
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
 function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
-
 
 
 
