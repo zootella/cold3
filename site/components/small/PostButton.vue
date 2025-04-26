@@ -81,6 +81,7 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
 
+
 	/*
 	//ttd april, simpler draft considering the full stack now that you have fetchWorker and nuxt exception handlers
 	let task = Task({name: 'post', path, body})
