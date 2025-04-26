@@ -446,7 +446,7 @@ export async function codeSend({browserHash, provider, type, v}) {//v is the add
 		messageHtml: code.messageHtml,//email body as HTML
 	}
 	let task = await fetchLambda_old({path: '/message', body})
-	if (!task.success) toss('task', {task})
+	if (!task.success) toss('task', {task})//pretty sure you don't need this as 500 will already throw
 	await codeSent({browserHash, provider, type, v, permit, code})
 
 	return {success: true}

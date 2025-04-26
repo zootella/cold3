@@ -271,6 +271,75 @@ already, with this design, you can't get callTaskThrow into persephone
 
 
 
+//smaller, not self important logging
+
+export function dog(...a)                 { keepPromise(awaitDog(...a))                 }//fire and forget forms
+export function logAudit(headline, watch) { keepPromise(awaitLogAudit(headline, watch)) }
+export function logAlert(headline, watch) { keepPromise(awaitLogAlert(headline, watch)) }
+export async function awaitDog(...a) {//await async forms
+	let s = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
+	console.log(s)
+	return await sendLog(s)
+}
+export async function awaitLogAudit(headline, watch) {
+	let s = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
+	console.log(s)
+	return await sendLog(s)//keep an audit trail of every use of third party apis, running both cloud *and* local
+}
+export async function awaitLogAlert(headline, watch) {
+	let s = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
+	console.error(s)
+	if (isCloud()) return await sendLog(s)//only deployed code should log alerts to datadog; local alerts we can see on console error
+}
+async function prepareLog(status, type, label, headline, watch) {
+	let sticker = Sticker()//find out what, where, and when we're running, also makes a tag for this sticker check right now
+	let access = await getAccess()//access secrets to be able to redact them
+	let d = {//this is the object we'll log to datadog
+
+		//datadog required
+		ddsource: sticker.where,//the source of the log
+		service: sticker.where,//the name of the service that created the log, setting the same but this field is required
+		message: '',//description of what happened; very visible in dashboard; required, we'll fill in below
+
+		//datadog reccomended
+		//not sending: hostname: k.where,//hostname where the log came from; not required and additionally redundant
+		status: status,//the severity level of what happened, like "debug", "info", "warn", "error", "critical"
+		tags: [type, 'where:'+sticker.core.where, 'what:'+sticker.what],//set tags to categorize and filter logs, array of "key:value" strings
+
+		//and then add our custom stuff
+		tag: sticker.tag,//tag this log entry so if you see it two places you know it's the same one, not a second identical one
+		when: sayTick(sticker.now),//human readable time local to reader, not computer; the tick number is also logged, in sticker.nowTick
+		sticker: sticker.core,//put not the whole sticker in here, which includes the complete code hash, the tags we found to sense what environment this is, and the tick count now as we're preparing the log object
+		watch: {}//message (datadog required) and watch (our custom property) are the two important ones we fill in below
+	}
+
+	//set the watch object, and compose the message
+	if (headline != '↓') headline = `"${headline}"`//put quotes around a headline
+	d.watch = watch//machine parsable; human readable is later lines of message using look() below
+	d.message = `${sayTick(sticker.now)} [${label}] ${headline} ${sticker.where}.${sticker.what} ${sticker.tag} ‹SIZE›${newline}${look(watch)}`
+
+	/*
+	prepare the body for the fetch
+	we could send two logs in one POST to datadog with [d1, d2]
+	stringify with makeText which can can deal with circular references and look into error objects
+	redact secrets; won't change the length, won't mess up the stringified format for datadog's parse
+	SIZE is the byte size of the body; this is how datadog bills us
+	*/
+	let s = access.redact(makeText([d]))
+	s = replaceOne(s, '‹SIZE›', `‹${s.length}›`)
+	return s
+}
+async function sendLog(s) {
+	const access = await getAccess()
+	return await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
+		},
+		body: s,//$fetch and ofetch won't double-stringify a body that's already a JSON string
+	})
+}
 
 
 

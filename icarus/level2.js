@@ -890,7 +890,7 @@ noop(async () => {//a demonstration of waiting for door promises, success and fa
 		super weird but moving on
 		*/
 	}, durationFast)})
-	let p7 = new Promise((resolve, reject) => { setTimeout(() => { resolve('slow success')       }, durationSlow) })
+	let p7 = new Promise((resolve, reject) => { setTimeout(() => { resolve('slow success') }, durationSlow) })
 
 	//they're all already started and running in parallel; add them to the door promises array
 	keepPromise(p1)//successes
@@ -1106,6 +1106,12 @@ async function prepareLog(status, type, label, headline, watch) {
 	c.bodyText = s//c.bodyText is the stringified body of the http request our call to fetch will use
 	return c
 }
+/*
+ttd april, now that you've connected the stack, this logging is too much
+[]get rid of simulation mode
+[]rename and collapse sendLog_useDatadog as there is no other sendLog_*
+[]c is our call with complete information about our fetch to datadog--nobody cares
+*/
 
 //log to datadog, fetching to their api
 async function sendLog_useDatadog(c) {
@@ -1116,7 +1122,7 @@ async function sendLog_useDatadog(c) {
 			'Content-Type': 'application/json',
 			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
 		},
-		body: c.bodyText
+		body: c.bodyText//$fetch and ofetch see a string body and won't double stringify it
 	})
 }
 /*
