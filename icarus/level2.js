@@ -1183,24 +1183,24 @@ export function dog(...a)                 { keepPromise(awaitDog(...a))         
 export function logAudit(headline, watch) { keepPromise(awaitLogAudit(headline, watch)) }
 export function logAlert(headline, watch) { keepPromise(awaitLogAlert(headline, watch)) }
 export async function awaitDog(...a) {//await async forms
-	let c = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
-	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
-		logTo(console.log, c.body[0].message)
-		return await sendLog_useDatadog(c)
+	let call = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
+	if (cloudLogSimulationMode) { cloudLogSimulation(call) } else {
+		logTo(console.log, call.body[0].message)
+		return await sendLog_useDatadog(call)
 	}
 }
 export async function awaitLogAudit(headline, watch) {
-	let c = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
-	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
-		logTo(console.log, c.body[0].message)
-		return await sendLog_useDatadog(c)//keep an audit trail of every use of third party apis, running both cloud *and* local
+	let call = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
+	if (cloudLogSimulationMode) { cloudLogSimulation(call) } else {
+		logTo(console.log, call.body[0].message)
+		return await sendLog_useDatadog(call)//keep an audit trail of every use of third party apis, running both cloud *and* local
 	}
 }
 export async function awaitLogAlert(headline, watch) {
-	let c = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
-	if (cloudLogSimulationMode) { cloudLogSimulation(c) } else {
-		logTo(console.error, c.body[0].message)
-		let r; if (isCloud({uncertain: 'Cloud.'})) { r = await sendLog_useDatadog(c) }; return r//only log to datadog if from deployed code
+	let call = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
+	if (cloudLogSimulationMode) { cloudLogSimulation(call) } else {
+		logTo(console.error, call.body[0].message)
+		let r; if (isCloud({uncertain: 'Cloud.'})) { r = await sendLog_useDatadog(call) }; return r//only log to datadog if from deployed code
 	}
 }
 async function prepareLog(status, type, label, headline, watch) {
@@ -1238,13 +1238,13 @@ async function prepareLog(status, type, label, headline, watch) {
 	s         = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
 	d.message = replaceOne(d.message, '‹SIZE›', `‹${size}›`)//also get that into the message text for the other sinks
 
-	let c = {}//c is our call with complete information about our fetch to datadog
-	c.body = b//c.body is the http request body, as an object, for our own information
-	c.bodyText = s//c.bodyText is the stringified body of the http request our call to fetch will use
-	return c
+	let call = {}//call is our call with complete information about our fetch to datadog
+	call.body = b//call.body is the http request body, as an object, for our own information
+	call.bodyText = s//call.bodyText is the stringified body of the http request our call to fetch will use
+	return call
 }
 //log to datadog, fetching to their api
-async function sendLog_useDatadog(c) {
+async function sendLog_useDatadog(call) {
 	const access = await getAccess()
 	let task = Task({name: 'fetch datadog'})
 	try {
@@ -1255,7 +1255,7 @@ async function sendLog_useDatadog(c) {
 				'Content-Type': 'application/json',
 				'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
 			},
-			body: c.bodyText,
+			body: call.bodyText,
 			/*
 			ttd april
 			right now, we've pre-stringified; $fetch and ofetch see a string body and won't double stringify it
