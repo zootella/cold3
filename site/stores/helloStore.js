@@ -28,7 +28,11 @@ const addNotification = (message) => {
 const removeNotification = (tag) => {
 	notifications.value = notifications.value.filter(item => item.tag != tag)
 }
-//ttd april, get rid of these methods now that you understand when to use .value in a store!
+/*
+ttd april
+now that you understand it's just helloStore.codes (no .value) when you're using this store outside of this file
+you can probably get rid of setCodes, addNotification, and removeNotification
+*/
 
 const loaded = ref(false)
 async function load() { if (loaded.value) return; loaded.value = true//runs on the server first, then a no-op on the client

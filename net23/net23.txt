@@ -270,6 +270,7 @@ small: fetch to, and use of, unreliable can be made redundant third party APIs, 
 big: the entry point to request handlers for worker and lambda, global error handlers in nuxt, framework-level
 and then, when you catch a small exception, you keep running, and work around it
 and when you catch a big exception, you log it to datadog, and tear down the whole page, error.vue, interrupting the user
+done this way, if you find yourself coding more try blocks, or rethrowing an error, if you find yourself doing any of that as part of expected logic flow, you're doing it wrong. rather, toss exceptions as soon as you encounter an exceptional circumstance, and let them fly all the way up the stack, getting logged to datadog, and closing out the page with error.vue
 
 groups of causes and remedies for errors
 1 (a) it's staff's fault, and the fix will be correcting code and deploying a new version

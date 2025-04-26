@@ -511,9 +511,8 @@ export async function fetchWorker(url, options) {//from a Pinia store, Vue compo
 	if (!options.method) options.method = 'POST'//allow get, but default to post
 	if (!options.body) options.body = {}
 
-	//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
-	let browserTag
-	if (process.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag//only applicable during SSR
+	let browserTag//with universal rendering, we may already be on the server! if so, we must forward the browser tag cookie
+	if (process.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag
 	if (browserTag) {
 		if (!options.headers) options.headers = {}
 		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${browserTag}`
