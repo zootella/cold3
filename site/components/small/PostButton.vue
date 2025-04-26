@@ -80,6 +80,21 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
+
+	/*
+	//ttd april, simpler draft considering the full stack now that you have fetchWorker and nuxt exception handlers
+	let task = Task({name: 'post', path, body})
+	emit('update:inFlight', true)//this lets our parent follow our orange condition
+	if (props.useTurnstile && useTurnstileHere()) {
+		body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
+		task.tick2 = Now()
+	}
+	task.response = await $fetch(path, {method: 'POST', body})//throws on non-2XX; button remains orange but whole page enters error state
+	task.finish({success: true})
+	emit('update:inFlight', false)
+	return task.response//return the response, discarding the task, so things don't keep getting deeper
+	*/
+
 	let task = Task({name: 'post', path, request: body})
 	try {
 		emit('update:inFlight', true)//this lets our parent follow our orange condition
@@ -87,7 +102,7 @@ defineExpose({post: async (path, body) => {
 			body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
 			task.tick2 = Now()//related, note that task.duration will be how long the button was orange; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
 		}
-		task.response = await $fetch(path, {method: 'POST', body})
+		task.response = await fetchWorker(path, {method: 'POST', body})
 	} catch (e) { task.error = e } finally {
 		emit('update:inFlight', false)//using a finally block here to make sure we can't leave the button orange
 	}

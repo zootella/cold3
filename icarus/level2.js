@@ -1126,6 +1126,9 @@ async function sendLog_useDatadog(c) {
 	})
 }
 /*
+ttd april, above, fetchProvider is calling makePlain now, so you can and should set body to the object, and you don't need bodytext anymore, but you'll still have to do the dance of makeText just to get its length, and then put that length into just the member were SIZE is
+make this change 1[]here fetching to log to datadog and 2[]in the error path, currently messed up with details and detailsText
+
 ttd april, switching to fetch provider, you are no longer getting complete call information c, into the returned task
 so, if that's important, add it somehow, by passing additional stuff that fetchProvider and the others will put into the task
 

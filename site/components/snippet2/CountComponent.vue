@@ -18,7 +18,7 @@ async function incrementCount(increment1, increment2) {
 	try {
 
 		let tick1 = Now()
-		let data2 = await $fetch('/api/count', {
+		let data2 = await fetchWorker('/api/count', {
 			method: 'POST',
 			body: {
 				countGlobal: increment1,

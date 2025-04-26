@@ -43,7 +43,7 @@ async function load() { if (loaded.value) return; loaded.value = true//runs on t
 		if (context.browserTag) f.headers = {
 			cookie: `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${context.browserTag}`
 		}//a new tab's GET is causing this all to render on the server, so the fetch below will actually be a function call, and we must include the cookie we got, or have chosen to set, with the browser
-		let r = await $fetch('/api/hello1', f)
+		let r = await fetchWorker('/api/hello1', f)
 		sticker1.value = r.sticker
 		user.value = r.user
 		codes.value = r.codes
@@ -57,7 +57,7 @@ async function mounted() {//runs on the client, only, when app.vue is mounted
 	log(`got page duration ${pageDuration.value} and server duration ${serverDuration.value}`)
 
 	let task = Task({name: 'fetch report'})
-	task.response = await $fetch('/api/report', {method: 'POST', body: {action: 'Hello.',
+	task.response = await fetchWorker('/api/report', {method: 'POST', body: {action: 'Hello.',
 		sticker: Sticker().all,
 		d1: pageDuration.value,//biggest first
 		d2: serverDuration.value,//details within
