@@ -1221,13 +1221,20 @@ export async function checkTurnstileToken(token) {
 		body.append('response', token)
 //	body.append('remoteip', workerEvent.request.headers.get('cf-connecting-ip'))
 
-		task.response = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {method: 'POST', body})
-		if (task.response.success) task.success = true
+		task.url = access.get('ACCESS_TURNSTILE_URL')
+		task.options = {method: 'POST', body}
+		task.response = await fetchProvider(task.url, task.options)
+		if (task.response.success && hasText(task.response.hostname)) task.success = true//make sure the API response looks good
 
 	} catch (e) { task.error = e }
+	task.finish()
+	if (true || !task.success) logAudit('turnstile', {task})//for third party messaging APIs, we audit success and failure; here just failure
+	if (!task.success) toss('turnstile challenge failed', {task})
+	//ttd april, remove true above, for right now, we'll log all turnstile
+
 	//yes, you should audit not all, but all failed, turnstile api interactions! and then when that's going, intentially break one here, and see how you can see in datadog exactly what you called it with, and exactly what it responded with
 	//ttd april, turning turnstile entirely off for testing!
-	dog('hi from check turnstile token', look(task))
+	//dog('hi from check turnstile token', look(task))
 	//if (!task.response.success) toss('turnstile challenge failed', {task})
 	//task.response should have task.response.success, task.response.hostname
 }
