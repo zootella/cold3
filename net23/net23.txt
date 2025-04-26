@@ -233,12 +233,14 @@ comments in conversational lowercase
 
 
 
-                              
-  ___ _ __ _ __ ___  _ __ ___ 
- / _ \ '__| '__/ _ \| '__/ __|
-|  __/ |  | | | (_) | |  \__ \
- \___|_|  |_|  \___/|_|  |___/
-                              
+ _                  _                     _                            
+| |_ _ __ _   _ ___| |_    __ _ _ __   __| |   ___ _ __ _ __ ___  _ __ 
+| __| '__| | | / __| __|  / _` | '_ \ / _` |  / _ \ '__| '__/ _ \| '__|
+| |_| |  | |_| \__ \ |_  | (_| | | | | (_| | |  __/ |  | | | (_) | |   
+ \__|_|   \__,_|___/\__|  \__,_|_| |_|\__,_|  \___|_|  |_|  \___/|_|   
+                                                                       
+
+essay about security, trust, errors, and exceptions
 
 talk about
 - Task as a wrapper
@@ -256,6 +258,45 @@ https://nuxt.com/docs/api/utils/create-error
 
 
 Nuxt 3—with its underlying Nitro engine—mainly expects you to handle server-side errors by letting them bubble up and then catching them using Nitro’s built‐in hooks (like the render:errorMiddleware hook). This is the recommended and most common approach because it captures a wide range of errors that occur during request processing, including those that arise from internal configuration or runtime code that you might not directly control.
+
+design ideas for the errors and exceptions essay
+
+for exceptions specifically, what if you did this
+put try {} catch (e) {} around
+small: fetch to, and use of, unreliable can be made redundant third party APIs, like twilio
+big: the entry point to request handlers for worker and lambda, global error handlers in nuxt, framework-level
+and then, when you catch a small exception, you keep running, and work around it
+and when you catch a big exception, you log it to datadog, and tear down the whole page, error.vue, interrupting the user
+
+groups of causes and remedies for errors
+1 (a) it's staff's fault, and the fix will be correcting code and deploying a new version
+2 (a) it's a third party provider's fault, and that provider is critical, and cannot be made redundant, like cloudflare pages, turnstile, amazon lambda, supabase, they should be waking up people on pager duty, and should fix it in a few hours, and send an apology email to us
+3 (b) it's a third party provider's fault, and that provider is non-critical, and can be made redundant, like twilio, amazon SES and SNS, the fix is the round robin code seeing the interruption and sending use to redundant providers, automatically and immediately, and manually and hours later, staff getting their support on the line, or finding out they have deplatformed us
+3 (c) it's the user's fault, and the fix is them not clicking or typing the wrong thing
+4 (a) it's the user's fault, adn the fix is they need to stop trying to hack us, or remove that malicious chrome extension
+ok, so on these, when do you:
+(a) tear down the whole page to an error message,
+(b) catch an exception and code decides what to do next, routing around it, or
+(c) this shouldn't raise an exception anywhere to begin with at all!
+
+
+trust is in these three zones
+1 page: information script on the page is telling us; least trustworthy
+2 browser: information the browser is telling us; more trustworthy
+3 worker: information cloudflare is telling us; trustworthy
+what does it mean for each to be compromised?
+1 page compromised: the user has a malicious desktop browser extension, or has been coached on reddit to dig into the developer tools, or is a script kiddie themselves, this is likely but should not be widespread
+2 browser compromised: the attacker is using curl or a botnet, this is possible
+3 amazon, cloudflare, or supabase compromised: this should not happen, as these public companies have their share price son the line. also, if it does happen, it is outside of our control
+
+
+what if you do try catch like this
+tight, around every fetch or use of a third party api, like AWS, twilio
+broad, around the whole 
+
+
+pay attention to the cause and the remedy of the error, here are three
+1 a user, 
 
 
 

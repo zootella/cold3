@@ -682,7 +682,7 @@ async function doorWorkerShut(door, response, error) {
 		//^ttd april, trying to make this less verbose so it's useful to read while coding, before and for the longest time, you had the whole door in there
 		r = null//return no response
 	} else {
-		r = response//nuxt will stringify and add status code and headers
+		r = makePlain(response)//nuxt will stringify and add status code and headers, make plain to see into errors and not throw if there's a method or a circular reference!
 	}
 	await awaitDoorPromises()
 	return r
@@ -1851,6 +1851,27 @@ test(() => {
 
 //REMEMBER[]when you switch from fetchLambda_old(path, body) it's fetchLambda(url, options = {body})!
 
+/*
+you want to be able to freely send whatever object back and forth, maybe there are methods in there, maybe hidden things we need to see, maybe circular references
+so that's what makePlain is about
+also, while $fetch/ofetch will stringify for you, if you set body to a string, they'll leave it alone, so you can use makeText
+and, once you do this, you shouldn't need to do the two copies, one text, one object, that you did with datadog and page error reporting, and that will be great
+
+ok, so let's draw a map
+store, component, worker         <--fetchWorker-->   worker (responds with door)
+                  worker         <--fetchLambda-->   lambda (responds with door)
+                  worker, lambda <--fetchProvider--> third party REST API (response not in our control)
+
+around fetchWorker
+page calls fetchWorker, which serializes, calls fetchWorker (here's where you need to call makePlain)
+worker gets body automatically parsed, that's fine
+worker prepares response (here again, makePlain)
+
+bookmark
+
+
+*/
+
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
 	if (!options.method) options.method = 'POST'//allow get, but default to post
@@ -1863,6 +1884,7 @@ export async function fetchWorker(url, options) {//from a Pinia store, Vue compo
 		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${context.browserTag}`
 	}
 
+	options.body = makePlain(options.body)//$fetch automatically stringifies, but would throw on a method or circular reference
 	return await $fetch(url, options)//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
 }
 export async function fetchLambda(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
@@ -1870,6 +1892,7 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	options.method = 'POST'//force post
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
+	options.body = makePlain(options.body)
 	options.body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
 	options.body.warm = false; return await $fetch(host23()+url, options)
 }
@@ -1880,13 +1903,14 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 	let f = typeof $fetch == 'function' ? $fetch : ofetch//ttd april, if $fetch reference breaks in worker, this will work, falling back to ofetch, when really you want to notice and fix the reference! but you'd need isNuxt() or somethign and are today avoiding that rabbit hole
 	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
 
+	options.body = makePlain(options.body)
 	let task = Task({name: 'fetch provider', url, options})
 	try {//(Note 3) but this fetch is to a third-party API, which could misbehave, so we protect our code with a try block!
 		task.response = await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
 		task.success = true
 	} catch (e) { task.error = e }
 	task.finish()
-	return task
+	return task//your own worker and lambda endpoints return task as the response; we wrap the third-party response in a task here
 }
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
 function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
