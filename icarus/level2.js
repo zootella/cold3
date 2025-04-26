@@ -4,7 +4,7 @@ wrapper,
 } from './wrapper.js'
 import {
 Time, Now, sayDate, sayTick,
-log, logTo, say, look, defined, noop, test, ok, tossTask, toss,
+log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
 Data, decrypt, hashText, hashData, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
@@ -1857,38 +1857,3 @@ test(() => {
 	//negative zero literal, -0, makes it through, but -0+'' is "0"
 	//and more importantly there is no negative 0 in PostgreSQL's BIGINT; one would get stored as regular zero
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

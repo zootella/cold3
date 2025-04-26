@@ -121,7 +121,8 @@ export async function runTests() {
 //  \__\___/|___/___/
 //                   
 
-export function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
+//ttd april, not using tossTask or TaskError, get rid of it if you confirm you don't need it
+function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
 export function toss(message, watch) { throw new TossError(message, watch) }//use like toss('title', {watch1, watch2}) with watch variables for context
 
 class TestError extends Error {

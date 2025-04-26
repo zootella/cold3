@@ -80,38 +80,15 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
-
-
-	/*
-	//ttd april, simpler draft considering the full stack now that you have fetchWorker and nuxt exception handlers
-	let task = Task({name: 'post', path, body})
+	let task = Task({name: 'post button', path, body})
 	emit('update:inFlight', true)//this lets our parent follow our orange condition
 	if (props.useTurnstile && useTurnstileHere()) {
 		body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
-		task.tick2 = Now()
+		task.tick2 = Now()//related, note that task.duration will be how long the button was orange; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
 	}
-	task.response = await $fetch(path, {method: 'POST', body})//throws on non-2XX; button remains orange but whole page enters error state
+	task.response = await fetchWorker(path, {body})//throws on non-2XX; button remains orange but whole page enters error state
 	task.finish({success: true})
 	emit('update:inFlight', false)
-	return task.response//return the response, discarding the task, so things don't keep getting deeper
-	*/
-
-	let task = Task({name: 'post', path, request: body})
-	try {
-		emit('update:inFlight', true)//this lets our parent follow our orange condition
-		if (props.useTurnstile && useTurnstileHere()) {
-			body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
-			task.tick2 = Now()//related, note that task.duration will be how long the button was orange; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
-		}
-		task.response = await fetchWorker(path, {body})
-	} catch (e) { task.error = e } finally {
-		emit('update:inFlight', false)//using a finally block here to make sure we can't leave the button orange
-	}
-	task.finish()
-	//log('in post button, we have task.error:', look(task.error))
-	//so throw didn't work, but maybe it will, now
-	if (task.error) throw task.error//we're using exceptions for truly exceptional, should-be-impossible, wake up whoever is on pager duty to fix the code, circumstances; an exception in the worker or lambda will lead to a 500, which will call $fetch to throw. the try/catch/finally block is here to emit inFlight false, but then we want an exception to keep propegating upwards to go to the error page. both the worker and lambda have already logged ALERTs to datadog. the user should refresh the page, complain out of band to staff, and try again
-	//also, shouldn't it be, if task is not successful, (even if the failure is not caused by an error), you toss?
 	return task.response//return the response, discarding the task, so things don't keep getting deeper
 }})
 

@@ -10,7 +10,5 @@ async function doorHandleBelow({door, body}) {
 	let v = validateName(body.name)
 	if (!v.isValid) toss('valid', {body, v})
 
-	dog(`hi from name.js with "${body.name}"`)
-
 	return await nameCheck({v})
 }
