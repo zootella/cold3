@@ -1334,12 +1334,7 @@ test(async () => { if (!cloudLogSimulationMode) return//only run these in simula
 //                                        
 
 export function useTurnstileHere() {
-	return isCloud({uncertain: 'Cloud.'})
-	//todo january, replace with something ironclad that uses door, not fingerprinting. if uncertain, go cloud not local
-	/*
-	if (where({uncertain: 'cloud'}) == 'cloud')
-	maybe this is how you design this
-	*/
+	return isCloud()//it's hard to test turnstile locally as it's looking for deployed ips and hostnames
 }
 
 //used in app.vue to get the turnstile script on the whole site, just in case we need to use it
@@ -1357,8 +1352,11 @@ export function addTurnstileHeadScript(head) {
 //used by trusted code in a worker for a nuxt api handler, to validate a turnstile token submitted with form data from an untrusted user
 export async function checkTurnstileToken(token, ip) {
 	if (!useTurnstileHere()) return
-	checkText(token)//; checkText(ip)
+	checkText(token); checkText(ip)
 	const access = await getAccess()
+
+	//turn this true and deploy to demonstrate turnstile protection
+	if (false) token = 'Extra'+token//add some extra stuff at the start of the token to mess it up
 
 	let task = Task({name: 'fetch turnstile'})
 	try {
@@ -1366,9 +1364,7 @@ export async function checkTurnstileToken(token, ip) {
 		let body = new FormData()
 		body.append('secret',   access.get('ACCESS_TURNSTILE_SECRET'))
 		body.append('response', token)
-		dog(`could add ip "${ip}"`)
-		//body.append('remoteip', ip)
-		//ttd april, get the ip as door.ip just on the worker side
+		body.append('remoteip', ip)
 
 		task.response = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {method: 'POST', body})
 		if (task.response.success && hasText(task.response.hostname)) task.success = true//make sure the API response looks good
