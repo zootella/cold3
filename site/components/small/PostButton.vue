@@ -102,7 +102,7 @@ defineExpose({post: async (path, body) => {
 			body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
 			task.tick2 = Now()//related, note that task.duration will be how long the button was orange; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
 		}
-		task.response = await fetchWorker(path, {method: 'POST', body})
+		task.response = await $fetch(path, {method: 'POST', body})
 	} catch (e) { task.error = e } finally {
 		emit('update:inFlight', false)//using a finally block here to make sure we can't leave the button orange
 	}

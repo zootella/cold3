@@ -16,7 +16,7 @@ async function clicked(action) {
 	if (!hasText(refMessage.value)) refMessage.value = 'yo'
 
 	let t = Now()
-	let r = await fetchWorker('/api/trail', {method: 'POST', body:
+	let r = await $fetch('/api/trail', {method: 'POST', body:
 		{action, message: refMessage.value}})
 	refNow.value = sayTick(t)
 	refDuration.value = Now() - t
