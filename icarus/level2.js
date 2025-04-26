@@ -1183,25 +1183,19 @@ export function dog(...a)                 { keepPromise(awaitDog(...a))         
 export function logAudit(headline, watch) { keepPromise(awaitLogAudit(headline, watch)) }
 export function logAlert(headline, watch) { keepPromise(awaitLogAlert(headline, watch)) }
 export async function awaitDog(...a) {//await async forms
-	let call = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
-	if (cloudLogSimulationMode) { cloudLogSimulation(call) } else {
-		logTo(console.log, call.body[0].message)
-		return await sendLog_useDatadog(call)
-	}
+	let {s, l} = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
+	console.log(isCloud() ? s : l)//always also log to standard out
+	if (canGetAccess()) await sendLog(s)//page code can't log to datadog because we don't have secrets
 }
 export async function awaitLogAudit(headline, watch) {
-	let call = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
-	if (cloudLogSimulationMode) { cloudLogSimulation(call) } else {
-		logTo(console.log, call.body[0].message)
-		return await sendLog_useDatadog(call)//keep an audit trail of every use of third party apis, running both cloud *and* local
-	}
+	let {s, l} = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
+	console.log(isCloud() ? s : l)
+	if (canGetAccess()) await sendLog(s)//keep an audit trail of every use of third party apis, running both cloud *and* local
 }
 export async function awaitLogAlert(headline, watch) {
-	let call = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
-	if (cloudLogSimulationMode) { cloudLogSimulation(call) } else {
-		logTo(console.error, call.body[0].message)
-		let r; if (isCloud({uncertain: 'Cloud.'})) { r = await sendLog_useDatadog(call) }; return r//only log to datadog if from deployed code
-	}
+	let {s, l} = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
+	console.error(isCloud() ? s : l)
+	if (canGetAccess() && isCloud()) await sendLog(s)//only log to datadog if from deployed code
 }
 async function prepareLog(status, type, label, headline, watch) {
 	let sticker = Sticker()//find out what, where, and when we're running, also makes a tag for this sticker check right now
@@ -1231,20 +1225,17 @@ async function prepareLog(status, type, label, headline, watch) {
 	d.message = `${sayTick(sticker.now)} [${label}] ${headline} ${sticker.where}.${sticker.what} ${sticker.tag} ‹SIZE›${newline}${look(watch)}`
 
 	//prepare the body
-	let b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
-	let s = makeText(b)//prepare the body, stringified, s; use our wrapped stringify that can look into error objects!
+	let b, s, size, m, l
+	b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
+	s = makeText(b)//prepare the body, stringified, s; deal with error objects, circular references, and methods
 	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
-	let size = s.length//byte size of body, this is how datadog bills us
-	s         = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
-	d.message = replaceOne(d.message, '‹SIZE›', `‹${size}›`)//also get that into the message text for the other sinks
-
-	let call = {}//call is our call with complete information about our fetch to datadog
-	call.body = b//call.body is the http request body, as an object, for our own information
-	call.bodyText = s//call.bodyText is the stringified body of the http request our call to fetch will use
-	return call
+	size = s.length//byte size of body, this is how datadog bills us
+	s = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
+	m = replaceOne(d.message, '‹SIZE›', `‹${size}›`)
+	l = m+' ➜ 🐶'//just for local output while developing, format onto multiple lines and end with an emoji
+	return {s, l}//return stringified s, and readable for local development l, forms
 }
-//log to datadog, fetching to their api
-async function sendLog_useDatadog(call) {
+async function sendLog(s) {
 	const access = await getAccess()
 	let task = Task({name: 'fetch datadog'})
 	try {
@@ -1255,62 +1246,13 @@ async function sendLog_useDatadog(call) {
 				'Content-Type': 'application/json',
 				'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
 			},
-			body: call.bodyText,
-			/*
-			ttd april
-			right now, we've pre-stringified; $fetch and ofetch see a string body and won't double stringify it
-			soon, change this to body: makePlain(body) when you factor out bodyText entirely
-			*/
+			body: s,//$fetch/ofetch see this JSON string and won't double stringify it
 		})
-		//on success, datadog returns HTTP status 202 and empty body; there's no easy way to see that without dropping down to native fetch
+		//datadog should return HTTP status 202 and empty body on success, but there's no easy way to see that without dropping down to browser fetch
 
 	} catch (e) { task.error = e }
-	task.finish()
+	task.finish()//even though we don't do anything with a failed task, the try block protects our code from the unpredictable behavior of this third-party API we're calling with fetch provider
 }
-/*
-ttd april, refactor and simplify datadog now that it leads down to fetch provider
-
-[]get rid of simulation mode
-[]rename and collapse sendLog_useDatadog as there is no other sendLog_*
-[]c is our call with complete information about our fetch to datadog--nobody cares
-
-ttd april, ok, now that you're developing the pattern for how to use fetch Provider, it does just return the response body, you should put it in a try catch, do that, follow the same pattern for your two uses of fetch Provider, which are datadog loggign and turnstile token checking
-
-ttd april, above, fetch Provider is calling makePlain now, so you can and should set body to the object, and you don't need bodytext anymore, but you'll still have to do the dance of makeText just to get its length, and then put that length into just the member were SIZE is
-make this change 1[]here fetching to log to datadog and 2[]in the error path, currently messed up with details and detailsText
-
-ttd april, switching to fetch provider, you are no longer getting complete call information c, into the returned task
-so, if that's important, add it somehow, by passing additional stuff that fetch Provider and the others will put into the task
-
-ttd april
-note that dog() is still harder to call than log() because it uses door promises, and needs secrets
-you could write a await cat() which doesn't use door promises, and only tries to use datadog if canGetAccess()
-but you're pretty sure this is not a good idea
-*/
-
-//if you change anything that could cause these functions and those they use to even possibly throw, check with simulation mode--but be sure to not call a real API in here, as there won't be an AUDIT saved!
-const cloudLogSimulationMode = false
-test(() => { if (cloudLogSimulationMode) log('WARNING: cloud logging is set to simulation mode, do not deploy like this!') })
-function cloudLogSimulation(c) {
-	log(
-		'', '(1) message for text box in datadog:',                       '', c.body[0].message,
-		'', '(2) body, correctly before size and redactions:',            '', look(c.body),
-		'', '(3) body stringified, this is what fetch sends to datadog:', '', c.bodyText)
-}
-test(async () => { if (!cloudLogSimulationMode) return//only run these in simulation mode
-
-	let a = 'apple'
-	let b = 2
-	let e1, e2
-	try { let o = {}; o.notThere.andBeyond } catch (e) { e1 = e }
-	try { toss('toss note', {a, b, e1})    } catch (e) { e2 = e }
-
-	if (false) await awaitDog('hi', 7)
-	if (false) await awaitLogAudit('audit title',     {a, b})
-	if (false) await awaitLogAlert('alert title', {e1, a, b})
-})
-
-
 
 
 

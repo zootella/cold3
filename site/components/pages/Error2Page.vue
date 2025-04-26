@@ -16,6 +16,7 @@ async function onClick() {
 		graphics: getBrowserGraphics(),
 		details: makePlain(errorStore.details),//ttd april, this pattern here is weird, instead, have fetchWorker use makePlain on the whole body, so you don't have to duplicate details, or mess with them specifically
 		detailsText: look(errorStore.details),//call look here on the page; fetch will stringify details.error to empty {}
+		//ttd april, now that you're using makePlain you shouldn't need detailsText
 	})
 	errorStore.details = null
 	refButtonCanSubmit.value = false
