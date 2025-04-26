@@ -7,7 +7,7 @@ ttd april
 so here we are in a store which can run on the server, or the client
 if it runs on the server, $fetch is actually a function call
 there's already a request, the very first GET, and our middleware ran before we got here
-hit.js below will run as the result of our $fetch, and it will have the browser tag
+hit.js below will run as the result of our fetch, and it will have the browser tag
 so you think you can imagine these stores don't need the browser tag, even when they're running on the server, and could get the browser tag
 */
 const loaded = ref(false)

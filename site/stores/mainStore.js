@@ -8,7 +8,7 @@ export const useMainStore = defineStore('main_store', () => {
 const loaded = ref(false)//prevent unnecessary reload on client after hydrated and bridged from server
 async function load() { if (loaded.value) return; loaded.value = true
 
-	//and down here we'll $fetch from endpoints
+	//and down here we'll fetch from endpoints
 
 }
 
