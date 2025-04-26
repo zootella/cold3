@@ -1113,27 +1113,14 @@ ttd april, now that you've connected the stack, this logging is too much
 []c is our call with complete information about our fetch to datadog--nobody cares
 */
 
-//log to datadog, fetching to their api
-async function sendLog_useDatadog(c) {
-	let access = await getAccess()
-	return await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
-		},
-		body: c.bodyText//$fetch and ofetch see a string body and won't double stringify it
-		//ttd april, fetchProvider doesn't call makePlain(body), so you'll have to here
-	})
-}
 /*
-ttd april, ok, now that you're developing the pattern for how to use fetchProvider, it does just return the response body, you should put it in a try catch, do that, follow the same pattern for your two uses of fetchProvider, which are datadog loggign and turnstile token checking
+ttd april, ok, now that you're developing the pattern for how to use fetch Provider, it does just return the response body, you should put it in a try catch, do that, follow the same pattern for your two uses of fetch Provider, which are datadog loggign and turnstile token checking
 
-ttd april, above, fetchProvider is calling makePlain now, so you can and should set body to the object, and you don't need bodytext anymore, but you'll still have to do the dance of makeText just to get its length, and then put that length into just the member were SIZE is
+ttd april, above, fetch Provider is calling makePlain now, so you can and should set body to the object, and you don't need bodytext anymore, but you'll still have to do the dance of makeText just to get its length, and then put that length into just the member were SIZE is
 make this change 1[]here fetching to log to datadog and 2[]in the error path, currently messed up with details and detailsText
 
 ttd april, switching to fetch provider, you are no longer getting complete call information c, into the returned task
-so, if that's important, add it somehow, by passing additional stuff that fetchProvider and the others will put into the task
+so, if that's important, add it somehow, by passing additional stuff that fetch Provider and the others will put into the task
 
 ttd april
 note that dog() is still harder to call than log() because it uses door promises, and needs secrets
@@ -1207,8 +1194,24 @@ export function addTurnstileHeadScript(head) {
 	})
 }
 
+
+
+
+//log to datadog, fetching to their api
+async function sendLog_useDatadog(c) {
+	let access = await getAccess()
+	return await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
+		},
+		body: c.bodyText//$fetch and ofetch see a string body and won't double stringify it
+		//ttd april, fetch Provider doesn't call makePlain(body), so you'll have to here
+	})
+}
 //used by trusted code in a worker for a nuxt api handler, to validate a turnstile token submitted with form data from an untrusted user
-export async function checkTurnstileToken(token) {
+export async function checkTurnstileToken(token, ip) {
 	if (!useTurnstileHere()) return
 	checkText(token)//before bothering cloudflare, make sure we got some text for token
 	const access = await getAccess()
@@ -1216,20 +1219,20 @@ export async function checkTurnstileToken(token) {
 	let task = Task({name: 'check turnstile token'})
 	try {
 
-		let body = new FormData()//where does this come from?
+		let body = new FormData()
 		body.append('secret',   access.get('ACCESS_TURNSTILE_SECRET'))
 		body.append('response', token)
 //	body.append('remoteip', workerEvent.request.headers.get('cf-connecting-ip'))
 
-		task.url = access.get('ACCESS_TURNSTILE_URL')
-		task.options = {method: 'POST', body}
-		task.response = await fetchProvider(task.url, task.options)
+		task.response = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {method: 'POST', body})
 		if (task.response.success && hasText(task.response.hostname)) task.success = true//make sure the API response looks good
 
 	} catch (e) { task.error = e }
 	task.finish()
-	if (true || !task.success) logAudit('turnstile', {task})//for third party messaging APIs, we audit success and failure; here just failure
-	if (!task.success) toss('turnstile challenge failed', {task})
+	if (!task.success) {
+		logAudit('turnstile', {token, ip, task})//for third party messaging APIs, we audit success and failure; here just failure
+		toss('turnstile challenge failed', {task})
+	}
 	//ttd april, remove true above, for right now, we'll log all turnstile
 
 	//yes, you should audit not all, but all failed, turnstile api interactions! and then when that's going, intentially break one here, and see how you can see in datadog exactly what you called it with, and exactly what it responded with
@@ -1238,7 +1241,6 @@ export async function checkTurnstileToken(token) {
 	//if (!task.response.success) toss('turnstile challenge failed', {task})
 	//task.response should have task.response.success, task.response.hostname
 }
-
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)
 	checkText(options.method)//for fetch provider, you have to specify the method
@@ -1248,7 +1250,7 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 
 	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
 }
-//things you should do around your call to fetchProvider: task for your use, try catch block, if passing json call make plain, set success true upon examining well formed response; write a comment up top that shows how to use this
+//things you should do around your call to fetch Provider: task for your use, try catch block, if passing json call make plain, set success true upon examining well formed response; write a comment up top that shows how to use this
 
 
 
@@ -1888,9 +1890,9 @@ also, while $fetch/ofetch will stringify for you, if you set body to a string, t
 and, once you do this, you shouldn't need to do the two copies, one text, one object, that you did with datadog and page error reporting, and that will be great
 
 ok, so let's draw a map
-store, component, worker         <--fetchWorker-->   worker (responds with door)
-									worker         <--fetchLambda-->   lambda (responds with door)
-									worker, lambda <--fetchProvider--> third party REST API (response not in our control)
+store, component, worker         <--fetch Worker-->   worker (responds with door)
+									worker         <--fetch Lambda-->   lambda (responds with door)
+									worker, lambda <--fetch Provider--> third party REST API (response not in our control)
 
 around fetchWorker
 page calls fetchWorker, which serializes, calls fetchWorker (here's where you need to call makePlain)
