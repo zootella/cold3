@@ -726,10 +726,9 @@ async function doorWorkerOpen({method, workerEvent}) {
 	let access = await getAccess()
 
 	let door = {}//make door object to bundle everything together about this request we're doing
-	door.startTick = Now()//record when we got the request
-	door.tag = Tag()//tag the request for our own records
-	door.workerEvent = workerEvent//save everything they gave us about the request
+	door.task = Task({name: 'door worker'})
 
+	door.workerEvent = workerEvent//save everything they gave us about the request
 	door.origin = headerOrigin({workerEvent})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
 	door.ip = headerGetOne(workerEvent.req.headers, 'cf-connecting-ip')
 
@@ -755,8 +754,8 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	let access = await getAccess()
 
 	let door = {}//our object that bundles together everything about this incoming request
-	door.startTick = Now()//when we got it
-	door.tag = Tag()//our tag for it
+	door.task = Task({name: 'door lambda'})
+
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
 	door.lambdaContext = lambdaContext
 
@@ -807,11 +806,9 @@ async function doorLambdaCheck({door, actions}) {
 }
 
 async function doorWorkerShut(door, response, error) {
-	door.stopTick = Now()//time
-	door.duration = door.stopTick - door.startTick
-	door.response = response//bundle
+	door.response = response
 	door.error = error
-	//^ttd april, maybe use Task in door to bundle this together
+	door.task.finish()
 
 	let r
 	if (error) {//processing this request caused an error
@@ -825,10 +822,9 @@ async function doorWorkerShut(door, response, error) {
 	return r
 }
 async function doorLambdaShut(door, response, error) {
-	door.stopTick = Now()//time
-	door.duration = door.stopTick - door.startTick
-	door.response = response//bundle
+	door.response = response
 	door.error = error
+	door.task.finish()
 
 	let r
 	if (error) {
