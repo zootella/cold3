@@ -89,6 +89,16 @@ ttd april
 you never do uncertain local, all uncertainty should go to the cloud
 you wasted a day back in environment detection, trying to use import.meta.env, which is there, sometimes, after a hot reload
 []the way to make isCloud ironclad is to have seal set wrapper.build
+
+ttd april
+also make sticker simpler
+all you are using is Sticker().all, which should be shorter and different order like YQ7SL24.CloudNuxtServer.Sun10:54a38.399s
+you don't need tag or tick in sticker, as you've got these in Task
+have one function that returns all the details of everything
+and then separate functions which return the common composed forms
+function makeSticker() returns details, but still doesn't include tag and tick
+function Sticker() is just string, replacement for Sticker().all
+and then there's isLocal(), isCloud(), isNuxt()
 */
 
 //                                            _                                      _   
