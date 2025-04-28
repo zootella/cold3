@@ -1119,7 +1119,7 @@ closed by user/by staff; and unclosed?
 
 
 //what user, if any, is at the given browser?
-async function browserToUserTag({browserHash}) {//fast for hello1; ttd april, no longer using except below, refactor
+async function browserToUserTag({browserHash}) {//ttd april, no longer using except below, refactor
 	checkHash(browserHash)
 	let user = {browserHash}
 	let u = await browser_get({browserHash})//always does this one query to be fast
