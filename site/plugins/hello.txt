@@ -16,7 +16,7 @@ unify hello1 and hello2 into a single hello
 for a first time visitor, hello will do one database query and the person will have the brochure page in ~150ms
 for a signed-in and subscribed user, hello will do lots of queries, taking more time
 delay_table will record real users' experiences
-all users will go from a blank page to a fully hydrated one
+all users will go from a blank page to a fully rendered one
 this will be a better experience than a page that, in several steps, expands into existance
 several steps makes the page look slow; all-at-once hides the delay in the person's internet connection (Verizon's fault, not ours)
 this design expects that the intent is that even for a complex user, this is still fast enough that we do not put a logo or spinner on the page before everything is loaded
@@ -324,14 +324,3 @@ even without getAsyncData, you are preventing the page from double-fetching with
 if the empty box flash is a problem, you could also put a v-show or v-if on the root div in the template, too
 it's also possible even with no additional flash protection, when you've got everything in hello0 and hello0 is SSRing a complete page from the first GET, the whole page appears all at once for the user, anyway
 */
-
-
-
-
-
-
-
-
-
-
-

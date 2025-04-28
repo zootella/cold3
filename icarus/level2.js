@@ -470,7 +470,7 @@ export function Task(task) {//use like let task = Task({name: 'some title'})
 	task.sticker = Sticker().all//where we're running to perform this task
 	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
 	return task
-}
+}//ttd april, yeah, make this finish(task, {success: true}) so Task is a POJO you can really use everywhere, maybe call it done() or finished()
 function _taskFinish(task, more) {//mark this task done, adding more properites about how it concluded
 	Object.assign(task, more)//be careful, as this overwrites anything already in task!
 

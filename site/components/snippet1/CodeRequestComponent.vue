@@ -1,9 +1,9 @@
 <script setup>
 
 import {
-validateEmailOrPhone, toBoolean,
+validateEmailOrPhone,
 } from 'icarus'
-const helloStore = useHelloStore()
+const mainStore = useMainStore()
 
 const refButton = ref(null)
 const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
@@ -29,13 +29,13 @@ async function onClick() {
 	} else if (response.reason == 'CoolSoft.') {
 		//automatically, nothing changes
 		//- collapse the controls in this box, as the user can't use them for another minute
-		helloStore.addNotification("To keep things secure, we can't send another code to that address right away. Wait one minute, and try again, please.")//ttd april, it may instead make sense to write that into the enter box, letting them choose a different address, or something
+		mainStore.addNotification("To keep things secure, we can't send another code to that address right away. Wait one minute, and try again, please.")//ttd april, it may instead make sense to write that into the enter box, letting them choose a different address, or something
 	} else if (response.reason == 'CoolHard.') {
 		//automatically, nothing changes
 		//- collapse the controls in this box, as the user can't use them for another minute
-		helloStore.addNotification("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
+		mainStore.addNotification("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
 	}
-	helloStore.codes = response.codes
+	mainStore.codes = response.codes
 }
 
 </script>

@@ -1,5 +1,6 @@
+//./stores/flexStore.js
 
-export const useHitStore = defineStore('hit_store', () => {
+export const useFlexStore = defineStore('flex_store', () => {
 
 //not allowed to use await here, either, apparently
 /*

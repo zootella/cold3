@@ -191,7 +191,7 @@ LocalPageClient shows starting number
 LocalPageClient shows incremented number after you press the hit button
 
 refresh on page2
-LocalPageServer shows starting number (the pinia store hydrated on the server; the hit went across the bridge)
+LocalPageServer shows starting number (the pinia store rendered on the server; the hit went across the bridge)
 LocalPageClient shows incremented number after you press the hit button
 
 

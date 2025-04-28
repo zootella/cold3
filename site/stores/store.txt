@@ -1,0 +1,39 @@
+
+/*
+mainStore 🍍 loads on server, updates on page as user clicks
+flexStore 🍍 loads on server or page, depending on the GETed route, for demonstration in development
+pageStore 🍍 starts empty on server and client at the start, updates on page
+*/
+
+//notes from routeStore.js
+/*
+ttd february
+
+stuff on the page about the user can't be delivered pre-rendered
+because the page has to run to get the browser tag
+and then post that to helloStore
+
+but stuff on the page about the route can
+this is the page, as it appears publicly, related to the user at the link
+so you're imagining routeStore fills out this information
+
+and you can get it started soon, as users will have status messages
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -33,9 +33,9 @@ https://nuxt.com/docs/guide/concepts/rendering#universal-rendering
 "The same JavaScript code that once ran on the server runs on the client (browser) again in the background now enabling interactivity"
 "as the content is already present in the HTML document, crawlers can index it"
 */
-const helloStore = useHelloStore()
-await helloStore.load()
-onMounted(async () => { await helloStore.mounted() })
+const mainStore = useMainStore()
+await mainStore.load()//run store and component code on the server to render everything in response to a new tab's GET; comes with cookie
+onMounted(async () => { await mainStore.mounted() })//run on the page at the start; now you have browser graphics and navigation duration
 /*
 within universal rendering, some notes about this "all-at-once" page pattern we found:
 await on the margin makes this block on server rendering, which is what we want
@@ -49,10 +49,6 @@ this pattern avoids
 - using a server only plugin, which would run on every later POST
 - myriad APIs that look like the "right way" specific solution, like useFetch, useAsyncData, and Pinia's callOnce
 */
-
-const mainStore = useMainStore()
-await mainStore.load()
-//^ ttd april, deal with names around helloStore and mainStore, there should be only one, not sure which it should be
 
 </script>
 <template>

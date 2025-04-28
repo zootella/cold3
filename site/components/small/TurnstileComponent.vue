@@ -3,14 +3,14 @@
 import {
 sequentialSeparate,
 } from 'icarus'
-const turnstileStore = useTurnstileStore()
+const pageStore = usePageStore()
 
 const ACCESS_TURNSTILE_SITE_KEY_PUBLIC = '0x4AAAAAAA0P1yzAbb7POlXe'//from the cloudflare dashboard; intentionally public
 const fresh = 4*Time.minute//cloudflare says a token expires 5 minutes; we don't submit one older than 4
 
 //we begin the process of load+render+execute to get a first token right when the user navigates to the form
 onMounted(() => {//this component has been rendered and inserted into the page's DOM. onMounted *never* runs on the server
-	turnstileStore.getToken = sequentialSeparate(getToken)//save our getToken function into the store where post button can call it, and use promise after many so if a button asks for a token while we're already making one, the second call runs afterwards to make a second token
+	pageStore.getToken = sequentialSeparate(getToken)//save our getToken function into the store where post button can call it, and use promise after many so if a button asks for a token while we're already making one, the second call runs afterwards to make a second token
 	makeToken()//async but we don't need to await; just getting the process started
 })
 

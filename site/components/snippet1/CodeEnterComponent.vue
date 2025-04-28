@@ -3,7 +3,7 @@
 import {
 onlyNumerals, Code, sayTimePage,
 } from 'icarus'
-const helloStore = useHelloStore()
+const mainStore = useMainStore()
 
 const props = defineProps({
 	code: {type: Object, required: true},
@@ -34,18 +34,18 @@ async function onClick() {
 	log('code enter post response', look(response))
 	if (response.success) {
 		//automatically, this box will disappear on setCodes below
-		helloStore.addNotification("✔️ address verified")
+		mainStore.addNotification("✔️ address verified")
 	} else if (response.reason == 'Wrong.' && response.lives) {
 		//automatically, nothing changes
 		//-[]box should indicate incorrect guess, clear the field, tell the user to try again
 	} else if (response.reason == 'Wrong.' && response.lives == 0) {
 		//automatically, this box will disappear on setCodes below
-		helloStore.addNotification('code incorrect; request a new code to try again')
+		mainStore.addNotification('code incorrect; request a new code to try again')
 	} else if (response.reason == 'Expired.') {
 		//automatically, this box will disappear on setCodes below
-		helloStore.addNotification('code expired; request a new code to try again')
+		mainStore.addNotification('code expired; request a new code to try again')
 	}
-	helloStore.codes = response.codes
+	mainStore.codes = response.codes
 }
 function clickedCantFind() {
 	log('clicked cant find')

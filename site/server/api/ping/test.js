@@ -47,7 +47,7 @@ the tags CloudPageServer and CloudPageClient are both there correctly, and it ma
 
 curl: worker says:       ✅ 286 assertions in 35 tests ..., CloudNuxtServer: Aclo.Envi.Proc.Scri.Self.Zulu,           1726687578966
 page: worker says:       ✅ 456 assertions in 40 tests ..., CloudNuxtServer: Aclo.Envi.Proc.Scri.Self.Zulu,           1726687560371
-here, we're fetching an API endpoint, but interestingly, the server hydrated fetch is just like CloudPageServer--so maybe it doesn't really fetch, it just calls?
+here, we're fetching an API endpoint, but interestingly, the server rendered fetch is just like CloudPageServer--so maybe it doesn't really fetch, it just calls?
 
 curl: lambda says:       ✅ 458 assertions in 41 tests ..., CloudLambda:     Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1726687579024
 page: lambda says:       ✅ 458 assertions in 41 tests ..., CloudLambda:     Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1726687560384

@@ -38,8 +38,7 @@ and additionally, if necessary, protect the endpoint with cloudflare turnstile o
 import {
 useTurnstileHere,
 } from 'icarus'
-const helloStore = useHelloStore()
-const turnstileStore = useTurnstileStore()
+const pageStore = usePageStore()
 
 //props
 const props = defineProps({
@@ -61,7 +60,7 @@ const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
 
 onMounted(async () => {//ttd april, does this need to be async?
-	if (props.useTurnstile && useTurnstileHere()) turnstileStore.renderWidget = true//causes BottomBar to render TurnstileComponent
+	if (props.useTurnstile && useTurnstileHere()) pageStore.renderWidget = true//causes BottomBar to render TurnstileComponent
 })
 
 watch([() => props.canSubmit, () => props.inFlight], () => {
@@ -83,7 +82,7 @@ defineExpose({post: async (path, body) => {
 	let task = Task({name: 'post button', path, body})
 	emit('update:inFlight', true)//this lets our parent follow our orange condition
 	if (props.useTurnstile && useTurnstileHere()) {
-		body.turnstileToken = await turnstileStore.getToken()//this can take a few seconds
+		body.turnstileToken = await pageStore.getToken()//this can take a few seconds
 		task.tick2 = Now()//related, note that task.duration will be how long the button was orange; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
 	}
 	task.response = await fetchWorker(path, {body})//throws on non-2XX; button remains orange but whole page enters error state
