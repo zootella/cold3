@@ -22,7 +22,27 @@ and you can get it started soon, as users will have status messages
 
 
 
+flex store notes
+page1 - blank
+page2 - hit component
+then if you refresh on page1, and click to page2:
+- there's a pause on the route change as hit component gets the hit
+- hits from CloudPageClient
+then press the hit button
+- hits from CloudPageClient
+then refresh the browser, page comes all at once
+- hits from CloudPageServer
+then press the hit button
+- hits from CloudPageClient
 
+[]make it so the async only happens if we're already on the server, indicating an initial render
+maybe as simple as:
+if (process.sever) async flexStore.load()
+ok, but then you have to figure out how, if we're already on the client, you load the store not async
+
+and, the whole flow around a hybrid store may be academic, in that:
+(1) you've got mainStore working with universal rendering, it always starts out on the server, and
+(2) pageStore is fine in that it starts out empty on the server and page, and then calls from the page grow it, it just doesn't have a load method
 
 
 

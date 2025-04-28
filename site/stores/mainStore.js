@@ -1,9 +1,4 @@
-//./stores/mainStore.js
-/*
-mainStore - loads on server, updates on page as user clicks
-flexStore - loads on server or page, depending on the GETed route, for demonstration in development
-pageStore - starts empty on server and client at the start, updates on page
-*/
+//./stores/mainStore.js - always renders once and first on the server in universal rendering
 
 import {
 getBrowserGraphics,
@@ -15,6 +10,9 @@ export const useMainStore = defineStore('main_store', () => {
 const error1 = ref(null)
 const duration1 = ref(-1)
 const sticker1 = ref('')//ttd march probably get rid of these stickers, but keep the durations
+//ttd april, with instant toss, you don't need error, you don't need try catch anymore below
+//[]confirm throw in hello1 endpoint blows up the whole stack
+//[]confirm throw in load function blows up the whole stack
 
 const pageDuration = ref(-1)//how long it took for the user from the click here to Vue says app component mounted
 const serverDuration = ref(-1)//within that, how long the server took to get together starting data for the page

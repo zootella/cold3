@@ -1,9 +1,4 @@
-//./stores/pageStore.js
-/*
-mainStore - loads on server, updates on page as user clicks
-flexStore - loads on server or page, depending on the GETed route, for demonstration in development
-pageStore - starts empty on server and client at the start, updates on page
-*/
+//./stores/pageStore.js - does nothing on the server, gains data as the page uses it
 
 export const usePageStore = defineStore('page_store', () => {
 
