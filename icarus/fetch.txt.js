@@ -10,60 +10,6 @@
 // |_|  \___|\__\___|_| |_|
 //                         
 
-/*
-[i] a summary of our fetch functions
-
-use fetchWorker in components and stores; it works on both the server and client in universal rendering
-use fetchLambda in workers, only; only a worker can use the APIs of Network 23
-use fetchProvider in workers and lambdas; only trusted code can contact third party providers
-
-fetchWorker and fetchLambda use Nuxt's $fetch
-fetchProvider uses ofetch, so we can use it from both Nuxt and Lambda
-
-[ii] what calls what, adding which features
-
-$fetch, from Nuxt:
-- knows about Nuxt's universal rendering, short circuiting to a function call when a component or store is SSR
-- adds the base URL for API routes
-- integrates with Nuxt's runtime
-
-and calls ofetch, formerly ohmyfetch, https://www.npmjs.com/package/ofetch 1.7 million weekly downloads, which:
-- stringifies and parses the JSON body
-- throws errors for non 2XX response codes
-- allows request and response interceptors, which we're not using
-- has retry and timeout features, which maybe Nuxt uses but we don't directly
-
-which calls the browser's native fetch()
-
-[iii] nearby alternatives that we're *not* using
-
-Nuxt's useFetch and useAsyncData, which returns a toolbox of stuff, reactive data, and loading state
-Nuxt's useRequestFetch and requestFetch, fetch worker forwards the browser tag cookie manually
-multi million download npm libraries, like axios, node-fetch, and superagent
-*/
-
-
-
-/*
-ttd april fetch
-ok, so then were are you allowed to call $fetch() and fetch() directly? that's a big grep
-
-where code to start out with is calling $fetch directly:
-- validate turnstile token
-- log to datadog
-- call network 23
-- lots of components
-- PostButton, you've centralized and simplified there a lot, bring that into fetchWorker and call fetchWorker there
-- door example pages like dbg and rpw
-- up pages like ping5 and test
-- stores like helloStore and hitStore
-
-where code to start out with is calling fetch() directly:
-- fetchProvider calls fetch() to work in worker and lambda []maybe import and call ofetch
-
-
-*/
-
 
 
 

@@ -514,6 +514,51 @@ test(() => {
 // |  _|  __/ || (__| | | |
 // |_|  \___|\__\___|_| |_|
 //                         
+/*
+[i] a summary of our fetch functions
+
+use fetchWorker in components and stores; works fine on both server and client in universal rendering
+use fetchLambda in workers, only; only a worker can POST to the Application Programming Interfaces of Network 23
+use fetchProvider in workers and lambdas; only trusted code can contact third party providers
+
+fetchWorker and fetchLambda use Nuxt's $fetch
+fetchProvider uses $fetch in a worker and ofetch in a lambda
+
+[ii] how exceptions work with these
+
+all three throw exceptions upwards
+- fetchWorker and fetchLambda call our own code, so we want an exception to continue up the stack
+- your code using a third party API should try { fetchProvider } catch (e) { logAudit(...) }, catching an exception from an endpoint outsidd of our control
+
+[iii] behaviors and protections our fetch functions add
+
+generally:
+- default or mandatory POST method
+- forward browser tag cookie so the server rendering from the very first GET works
+- make the body a POJO so stringification done later doesn't blow up
+fetchLambda:
+- include the Network 23 Secret Access Code
+- warm up the lambda before making the actual request
+fetchProvider:
+- pick which fetch function to call depending on what's available where we're running
+
+[iv] below that, what calls what, adding which features
+
+$fetch, from Nuxt:
+- knows about Nuxt's universal rendering, short circuiting to a function call when a component or store is SSR
+- adds the base URL for API routes
+and calls ofetch, formerly ohmyfetch, https://www.npmjs.com/package/ofetch 1.7 million weekly downloads, which:
+- stringifies and parses the JSON body
+- throws errors for non-2XX response codes
+- has more features Nuxt might be using, like request and response interceptors, and retry and timeout features
+which calls the browser's native fetch()
+
+[v] nearby alternatives in JavaScriptland that we're *not* using
+
+Nuxt's useFetch and useAsyncData, which returns a toolbox of stuff, reactive data, and loading state
+Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the browser tag cookie manually
+other multi million download npm libraries, like axios, node-fetch, ky, and superagent
+*/
 
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
@@ -599,6 +644,8 @@ export function host23() {//where you can find Network 23; no trailing slash
 
 
 /*
+ttd april, clean this up, you're getting most of this now, you may find:
+
 function workerGotInformation(workerEvent) {
 
 	//confirmed by cloudflare
@@ -636,13 +683,6 @@ function lambdaGotInformation(lambdaEvent, lambdaContext) {
 	lambdaContext.awsRequestId//A unique identifier for the request (useful for tracing and debugging).
 }
 */
-
-
-
-
-
-
-
 
 //      _                  
 //   __| | ___   ___  _ __ 
