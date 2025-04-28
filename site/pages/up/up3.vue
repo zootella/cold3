@@ -34,6 +34,7 @@ KEVHNPK CloudPageClient 18ms ✅ 674 assertions in 77 tests on Mon05:47p33.718s
 KEVHNPK CloudNuxtServer 0ms ✅ 674 assertions in 77 tests on Mon05:47p33.824s
 KEVHNPK CloudLambda 322ms ✅ 680 assertions in 81 tests on Mon05:47p34.821s Reload
 
+
 maybe show outer and inner times, as the lambda ran tests for 322ms, but the fourth line takes a full second to arrive, as evidenced by the on times on the right
 
 also, how is 0ms possible? it's not; measure the actual durations correctly for nuxt server render and api handler
