@@ -22,11 +22,11 @@ async function handleError(details) {
 		//on the server, return nothing; the response puts the page into the error.vue state
 	} else if (process.client) {
 		const pageStore = usePageStore()//use the error store to save a single error, and only call showError once
-		if (pageStore.details) {
+		if (pageStore.errorDetails) {
 			log('already put page in error state, doing nothing with:', look(details))
 		} else {
 			console.error('error plugin', details)//only the user can see this, but often the user is staff
-			pageStore.details = details//save the detains in the store for error2 to retrieve it
+			pageStore.errorDetails = details//save the detains in the store for error2 to retrieve it
 			showError({//cause the fatal error state, stopping the whole page, and rendering the simple error.vue
 				statusCode: 400,//status code required, even though there's no HTTP; using 400 malformed request to mark an error entirely on the page
 				statusMessage: 'Page error',

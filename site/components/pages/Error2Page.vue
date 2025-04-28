@@ -6,7 +6,7 @@ getBrowserGraphics,
 const pageStore = usePageStore()
 
 const refButton = ref(null)
-const refButtonCanSubmit = ref(toBoolean(pageStore.details))
+const refButtonCanSubmit = ref(toBoolean(pageStore.errorDetails))
 const refButtonInFlight = ref(false)
 //ttd april, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
 
@@ -14,11 +14,9 @@ async function onClick() {
 	await refButton.value.post('/api/report', {action: 'PageErrorTurnstile.',
 		sticker: Sticker().all,
 		graphics: getBrowserGraphics(),
-		details: makePlain(pageStore.details),//ttd april, this pattern here is weird, instead, have fetchWorker use makePlain on the whole body, so you don't have to duplicate details, or mess with them specifically
-		detailsText: look(pageStore.details),//call look here on the page; fetch will stringify details.error to empty {}
-		//ttd april, now that you're using makePlain you shouldn't need detailsText
+		details: pageStore.errorDetails,
 	})
-	pageStore.details = null
+	pageStore.errorDetails = null
 	refButtonCanSubmit.value = false
 }
 

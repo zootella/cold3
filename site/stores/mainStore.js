@@ -11,16 +11,9 @@ export const useMainStore = defineStore('main_store', () => {
 const pageDuration = ref(-1)//how long it took for the user from the click here to Vue says app component mounted
 const serverDuration = ref(-1)//within that, how long the server took to get together starting data for the page
 
-//user
-const user = ref({})
-
-//codes
+//objects and arrays from the database
+const user = ref({})//information about the user, if any, signed into this browser
 const codes = ref([])//codes this browser could enter, empty array before check or if none
-
-//notifcations, entirely a system of the page, nothing from the database at all
-const notifications = ref([])
-const addNotification = (message) => { notifications.value.unshift({tag: Tag(), tick: Now(), message}) }
-const removeNotification = (tag) => { notifications.value = notifications.value.filter(item => item.tag != tag) }
 
 const loaded = ref(false)//prevent unnecessary reload on client after rendered and bridged from server
 async function load() { if (loaded.value) return; loaded.value = true//runs on the server first, then a no-op on the client
@@ -44,9 +37,7 @@ return {
 	loaded, load, mounted,//return loaded: server call sets true, true value goes over Nuxt Bridge, client call to .load() is a no-op
 	serverDuration, pageDuration,
 
-	user,
-	codes,
-	notifications, addNotification, removeNotification,
+	user, codes,
 }
 
 })

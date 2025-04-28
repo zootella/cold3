@@ -1118,22 +1118,19 @@ closed by user/by staff; and unclosed?
 
 
 //what user, if any, is at the given browser?
-async function browserToUserTag({browserHash}) {//ttd april, no longer using except below, refactor
+export async function browserToUser({browserHash}) {
 	checkHash(browserHash)
 	let user = {browserHash}
 	let u = await browser_get({browserHash})//always does this one query to be fast
 	if (u) {
 		user.userTag = u.userTag
 		user.level = u.level
-	}
-	return user
-}
-export async function browserToUser({browserHash}) {//complete information about a user from multiple queries for hello2
-	let user = await browserToUserTag({browserHash})
-	if (user.userTag) {//we found a user tag, let's look up its name and more information about it
-		let n = await name_get({userTag: user.userTag})
-		if (n) {
-			user.name = bundleValid(n.nameNormal, n.nameFormal, n.namePage)
+
+		if (user.userTag) {//we found a user tag, let's look up its name and more information about it
+			let n = await name_get({userTag: user.userTag})
+			if (n) {
+				user.name = bundleValid(n.nameNormal, n.nameFormal, n.namePage)
+			}
 		}
 	}
 	return user

@@ -13,7 +13,6 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 			sticker:     body.sticker,
 			graphics:    body.graphics,
 			details:     body.details,//error details the untrusted page is reporting; the point of all of this
-			detailsText: body.detailsText,//called look on page because details.error stringifies to {}
 		},
 		browser: {//source (2) browser: information the browser is telling us; more trustworthy
 			agent: headerGetOne(headers, 'user-agent'),

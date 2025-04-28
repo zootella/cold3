@@ -6,7 +6,7 @@ const pageStore = usePageStore()
 <template>
 <div class="bar-container">
 
-<TurnstileComponent v-if="pageStore.renderWidget" class="w-full text-center" />
+<TurnstileComponent v-if="pageStore.renderTurnstileWidget" class="w-full text-center" />
 
 </div>
 </template>

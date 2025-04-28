@@ -10,7 +10,7 @@ const fresh = 4*Time.minute//cloudflare says a token expires 5 minutes; we don't
 
 //we begin the process of load+render+execute to get a first token right when the user navigates to the form
 onMounted(() => {//this component has been rendered and inserted into the page's DOM. onMounted *never* runs on the server
-	pageStore.getToken = sequentialSeparate(getToken)//save our getToken function into the store where post button can call it, and use promise after many so if a button asks for a token while we're already making one, the second call runs afterwards to make a second token
+	pageStore.getTurnstileToken = sequentialSeparate(getToken)//save our getToken function into the store where post button can call it, and use promise after many so if a button asks for a token while we're already making one, the second call runs afterwards to make a second token
 	makeToken()//async but we don't need to await; just getting the process started
 })
 

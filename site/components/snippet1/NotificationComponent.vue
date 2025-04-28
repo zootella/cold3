@@ -3,13 +3,14 @@
 import {
 } from 'icarus'
 const mainStore = useMainStore()
+const pageStore = usePageStore()
 
 const props = defineProps({
 	item: {type: Object, required: true},
 })
 
 function divClick() {
-  mainStore.removeNotification(props.item.tag)
+  pageStore.removeNotification(props.item.tag)
 }
 </script>
 <template>
