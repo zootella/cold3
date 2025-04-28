@@ -2,7 +2,7 @@
 
 const mainStore = useMainStore()
 
-function browserReload() { window.location.reload() }//same as user clicking the browser's Reload button
+function hardReload() { window.location.reload() }//same as user clicking the browser's Reload button
 
 </script>
 <template>
@@ -13,7 +13,7 @@ function browserReload() { window.location.reload() }//same as user clicking the
 	server render took {{mainStore.serverDuration}}ms ⏱️
 	<span v-if="mainStore.pageDuration != -1">
 		{{mainStore.pageDuration}}ms total navigation to mounted
-		{{' '}}<LinkButton @click="browserReload">Reload</LinkButton>
+		{{' '}}<LinkButton @click="hardReload">Reload</LinkButton>
 	</span>
 </p>
 <p>user:</p><pre>{{mainStore.user}}</pre>

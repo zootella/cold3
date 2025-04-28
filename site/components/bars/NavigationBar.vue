@@ -25,6 +25,7 @@ defineProps({note: String})
 <NuxtLink to="/authenticate">authenticate</NuxtLink>{{' '}}
 <NuxtLink to="/me">me</NuxtLink>{{' '}}
 <NuxtLink to="/error2">error2</NuxtLink>{{' '}}
+<NuxtLink to="/up/up3">up3</NuxtLink>{{' '}}
 <i>{{ note }}, {{ Sticker().what }}</i>
 </p>
 

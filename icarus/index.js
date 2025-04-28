@@ -158,7 +158,7 @@ keepPromise, awaitDoorPromises,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
-sayFloppyDisk,
+sayFloppyDisk, runTestsSticker,
 
 Task, host23, fetchWorker, fetchLambda, fetchProvider,
 

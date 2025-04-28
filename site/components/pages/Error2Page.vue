@@ -20,7 +20,7 @@ async function onClick() {
 	refButtonCanSubmit.value = false
 }
 
-function rootReload() { window.location.replace('/') }//outside of Nuxt routing, same as the browser's Reload button, and to the domain root
+function hardReplace() { window.location.replace('/') }//outside of Nuxt routing, same as the browser's Reload button, and to the domain root
 
 /*
 ttd april
@@ -51,7 +51,7 @@ and there, only the user's manual click moves things forward
 		:onClick="onClick"
 	/>
 </p>
-<p><Button @click="rootReload">Reload Site</Button></p>
+<p><Button @click="hardReplace">Reload Site</Button></p>
 </div>
 
 </div>

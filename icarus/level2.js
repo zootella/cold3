@@ -12,6 +12,7 @@ replaceAll, replaceOne, toTextOrBlank,
 parseEnvStyleFileContents,
 sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
+runTests,
 } from './level0.js'
 import {
 Tag, Limit, checkTag, checkActions,
@@ -262,7 +263,12 @@ $ node disk, just shows it, rather than seal which makes it
 
 
 
-
+export async function runTestsSticker() {
+	let results = await runTests()
+	results.sticker = Sticker()
+	results.summary = `${results.sticker.wrapper.hash.slice(0, 7)} ${results.sticker.core.where} ${results.duration}ms ✅ ${results.passes} assertions in ${results.tests} tests on ${sayTick(results.time)}`
+	return results
+}
 
 
 

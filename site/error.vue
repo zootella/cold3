@@ -8,7 +8,7 @@ don't post error details here; it's a good idea to keep this page really simple
 and don't automatically redirect away; if the target repeats the error, you'll be in an infinite loop
 */
 
-function rootReload() { window.location.replace('/') }//outside of Nuxt routing, same as the browser's Reload button, and to the domain root
+function hardReplace() { window.location.replace('/') }//outside of Nuxt routing, same as the browser's Reload button, and to the domain root
 
 </script>
 <template>
@@ -18,7 +18,7 @@ function rootReload() { window.location.replace('/') }//outside of Nuxt routing,
 
 <p><NavigateButton to="/error2">Try to report the error...</NavigateButton></p>
 
-<p><Button @click="rootReload">Reload Site</Button></p>
+<p><Button @click="hardReplace">Reload Site</Button></p>
 
 </div>
 </template>

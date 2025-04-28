@@ -57,6 +57,20 @@ functions:
       - http:
           path: /message
           method: post
+  up2:
+    handler: src/up2.handler
+    timeout: 25
+    events:
+      - http:
+          path: /up2
+          method: post
+  up3:
+    handler: src/up3.handler
+    timeout: 25
+    events:
+      - http:
+          path: /up3
+          method: post
   ping5:
     handler: src/ping5.handler
     timeout: 25
