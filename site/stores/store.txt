@@ -5,6 +5,39 @@ flexStore 🍍 loads on server or page, depending on the GETed route, for demons
 pageStore 🍍 starts empty on server and client at the start, updates on page
 */
 
+
+
+
+
+store organization
+do it by where they'r eused
+
+
+mainStore - loads on server, updates as the user clicks the page
+flexStore - loads on server or client depending on starting route, really just for demonstration while coding
+pageStore - loads only on page
+
+
+
+errorStore -> pageStore
+turnstileStore -> pageStore
+
+helloStore -> mainStore
+routeStore -> mainStore
+
+hitStore -> flexStore
+
+
+
+
+
+
+
+
+
+
+
+
 //notes from routeStore.js
 /*
 ttd february
@@ -19,6 +52,11 @@ so you're imagining routeStore fills out this information
 
 and you can get it started soon, as users will have status messages
 */
+
+
+
+
+
 
 
 
