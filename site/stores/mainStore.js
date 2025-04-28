@@ -7,10 +7,6 @@ indexRecords, mergeRecords,
 
 export const useMainStore = defineStore('main_store', () => {
 
-//ttd april, with instant toss, you don't need error, you don't need try catch anymore below
-//[]confirm throw in load endpoint blows up the whole stack
-//[]confirm throw in load function blows up the whole stack
-
 //durations
 const pageDuration = ref(-1)//how long it took for the user from the click here to Vue says app component mounted
 const serverDuration = ref(-1)//within that, how long the server took to get together starting data for the page
@@ -35,19 +31,13 @@ async function load() { if (loaded.value) return; loaded.value = true//runs on t
 }
 async function mounted() {//runs on the client, only, when app.vue is mounted
 	pageDuration.value = Math.floor(performance.now())//whole milliseconds since the browser began navigating to the site
-	log(`got page duration ${pageDuration.value} and server duration ${serverDuration.value}`)
-
-	let task = Task({name: 'fetch report'})
-	task.response = await fetchWorker('/api/report', {body: {action: 'Hello.',
+	log(`server render took ${serverDuration.value}ms ⏱️ ${pageDuration.value}ms navigation to mounted`)//log to browser console, even deployed
+	await fetchWorker('/api/report', {body: {action: 'Hello.',
 		sticker: Sticker().all,
 		d1: pageDuration.value,//biggest first
 		d2: serverDuration.value,//details within
 		graphics: getBrowserGraphics(),
-		//ttd april, here's where you'll add the time information from the start of the browser's GET, and from how long the server told us it was working on load above, careful to pass that one through the pinia nuxt bridge!!
 	}})
-	task.finish({success: true})
-	//mounted() doesn't return anything, and the user can click the page while mounted() is happening
-	//ttd april, ok, so even though hello2 doesn't matter, a good test of error handling is, the page still blows up if it throws or returns not success true
 }
 
 return {

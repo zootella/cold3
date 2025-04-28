@@ -977,7 +977,7 @@ function headerOrigin({workerEvent}) {
 	)
 	//just in cloudflare, we need the origin like "http://localhost:3000" or "https://cold3.cc"
 	//from chat and observation, we assemble it from two headers
-	//workerEvent.req.url should be useful, but it's just the route, like "/api/hello1", which is the part we don't need!
+	//workerEvent.req.url should be useful, but it's just the route, like "/api/something", which is the part we don't need!
 	//we don't need the origin on the lambda side, and it's likely harder to get, anyway
 }
 
