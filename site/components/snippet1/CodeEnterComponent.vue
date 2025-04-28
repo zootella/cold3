@@ -45,7 +45,7 @@ async function onClick() {
 		//automatically, this box will disappear on setCodes below
 		helloStore.addNotification('code expired; request a new code to try again')
 	}
-	helloStore.setCodes(response.codes)
+	helloStore.codes = response.codes
 }
 function clickedCantFind() {
 	log('clicked cant find')

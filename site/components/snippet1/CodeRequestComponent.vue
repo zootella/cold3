@@ -35,7 +35,7 @@ async function onClick() {
 		//- collapse the controls in this box, as the user can't use them for another minute
 		helloStore.addNotification("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
 	}
-	helloStore.setCodes(response.codes)
+	helloStore.codes = response.codes
 }
 
 </script>

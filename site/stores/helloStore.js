@@ -18,7 +18,7 @@ const user = ref({})//hello1 fills with browserTag and userTag, if there is one;
 
 //codes
 const codes = ref([])//codes this browser could enter, empty array before check or if none
-const setCodes = (a2) => { if (!a2) a2 = []; codes.value = a2 }//ttd april, had trouble replacing the reference to a new array in components, even though that should work; doing that in this store method works fine. the lighter touch would be to clear and repopulate the array. and even that is short of comparing and updating the array only as needed; it's because you were using .vaule wrong, things might work simply now
+//const setCodes = (a2) => { if (!a2) a2 = []; codes.value = a2 }//ttd april, had trouble replacing the reference to a new array in components, even though that should work; doing that in this store method works fine. the lighter touch would be to clear and repopulate the array. and even that is short of comparing and updating the array only as needed; it's because you were using .vaule wrong, things might work simply now
 
 //notifcations, entirely a system of the page, nothing from the database at all
 const notifications = ref([])
@@ -75,7 +75,7 @@ return {
 	user,
 	serverDuration, pageDuration,
 
-	codes, setCodes,
+	codes, /*setCodes,*/
 	notifications, addNotification, removeNotification,
 }
 
