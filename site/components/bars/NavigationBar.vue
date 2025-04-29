@@ -8,6 +8,7 @@ defineProps({note: String})
 
 <p>
 <NuxtLink to="/">index</NuxtLink>{{' - '}}
+<NuxtLink to="/up/up3">up3</NuxtLink>{{' '}}
 <NuxtLink to="/ping/test">test</NuxtLink>{{' '}}
 <NuxtLink to="/door">door</NuxtLink>{{' - '}}
 <NuxtLink to="/image">image</NuxtLink>{{' '}}
@@ -25,7 +26,6 @@ defineProps({note: String})
 <NuxtLink to="/authenticate">authenticate</NuxtLink>{{' '}}
 <NuxtLink to="/me">me</NuxtLink>{{' '}}
 <NuxtLink to="/error2">error2</NuxtLink>{{' '}}
-<NuxtLink to="/up/up3">up3</NuxtLink>{{' '}}
 <i>{{ note }}, {{ Sticker().what }}</i>
 </p>
 

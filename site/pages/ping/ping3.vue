@@ -1,6 +1,6 @@
 <script setup>
 
-definePageMeta({layout: 'feed-layout', note: 'on test'})
+definePageMeta({layout: 'feed-layout', note: 'on ping3'})
 
 let t = Date.now()
 let {data, error} = await useFetch('/api/ping/ping3', {method: 'POST'})

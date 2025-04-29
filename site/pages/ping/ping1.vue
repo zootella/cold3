@@ -1,6 +1,6 @@
 <script setup>
 
-definePageMeta({layout: 'feed-layout', note: 'on test'})
+definePageMeta({layout: 'feed-layout', note: 'on ping1'})
 
 
 
