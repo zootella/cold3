@@ -71,20 +71,6 @@ functions:
       - http:
           path: /up3
           method: post
-  ping5:
-    handler: src/ping5.handler
-    timeout: 25
-    events:
-      - http:
-          path: /ping5
-          method: post
-  test:
-    handler: src/test.handler
-    timeout: 25
-    events:
-      - http:
-          path: /test
-          method: post
 
 package:
   patterns:

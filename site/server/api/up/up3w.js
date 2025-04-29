@@ -7,7 +7,6 @@ export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body}) {
-
 	return {
 		success: true,
 		summary: (await runTestsSticker()).summary,

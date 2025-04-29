@@ -1,8 +1,7 @@
 
 import {
 Sticker, doorLambda, toss, log, look, defined,
-makePlain, makeObject, makeText,
-Task, host23, fetchWorker, fetchLambda, fetchProvider,
+
 } from 'icarus'
 
 import {
@@ -14,5 +13,8 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 }
 async function doorHandleBelow({door, body}) {
 	await warm({})
-	return {success: true, note: `lambda says: ${Sticker().all}, up2done`}
+	return {
+		success: true,
+		note: `lambda says: ${Sticker().all}, up2done`,
+	}
 }
