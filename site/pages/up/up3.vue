@@ -6,16 +6,36 @@ import {
 runTestsSticker,
 } from 'icarus'
 
-const ref1 = useState('up3_ref1', () => '(reload to run tests in server render)')
-onServerPrefetch(async () => { ref1.value = (await runTestsSticker()).summary })
+const summary1 = useState('up3_ref1', () => '(reload to run tests in server render)')
+const duration1 = useState('up3_duration1', () => -1)
+onServerPrefetch(async () => {
+	let t = Now()//server clock
+	summary1.value = (await runTestsSticker()).summary
+	duration1.value = Now() - t
+})
 
-const ref2 = ref(''); async function run2() { ref2.value = (await runTestsSticker()).summary }
-const ref3 = ref(''); async function run3() { ref3.value = (await fetchWorker('/api/up/up3w')).summary }
-const ref4 = ref('...'); async function run4() { ref4.value = (await fetchWorker('/api/up/up3l')).summary }
+const bundle = reactive({
+	summary2: '', summary3: '', summary4: '',
+	duration2: -1, duration3: -1, duration4: -1,
+})
+
+async function run2(t) {
+	bundle.summary2 = (await runTestsSticker()).summary
+	bundle.duration2 = Now() - t
+}
+async function run3(t) {
+	bundle.summary3 = (await fetchWorker('/api/up/up3w')).summary
+	bundle.duration3 = Now() - t
+}
+async function run4(t) {
+	bundle.summary4 = (await fetchWorker('/api/up/up3l')).summary
+	bundle.duration4 = Now() - t
+}
 onMounted(async () => {
-	run2()
-	run3()
-	run4()//no await; start these all in parallel; page updates as results come in
+	let t = Now()//page clock, careful not to mix server and page clocks!
+	run2(t)
+	run3(t)
+	run4(t)//no await; start these all in parallel; page updates as results come in
 })
 
 function hardReload() { window.location.reload() }//same as user clicking the browser's Reload button
@@ -24,9 +44,9 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 <template>
 
 <p><code><a href="up2">{{'<'}}Prev</a> Next{{'>'}}</code></p>
-<p><code>{{ref1}}</code></p>
-<p><code>{{ref2}}</code></p>
-<p><code>{{ref3}}</code></p>
-<p><code>{{ref4}}</code> <LinkButton @click="hardReload">Reload</LinkButton></p>
+<p><code>{{duration1}}ms: {{summary1}}</code></p>
+<p><code>{{bundle.duration2}}ms: {{bundle.summary2}}</code></p>
+<p><code>{{bundle.duration3}}ms: {{bundle.summary3}}</code></p>
+<p><code>{{bundle.duration4 == -1 ? '' : bundle.duration4}}ms: {{bundle.summary4}}</code> <LinkButton @click="hardReload">Reload</LinkButton></p>
 
 </template>
