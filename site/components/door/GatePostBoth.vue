@@ -10,7 +10,7 @@ const {data, refresh} = useFetch(//ttd april, grep useFetch and get rid of it
 	}
 )
 
-
+//ttd april, echoes back the browser tag cookie, so you must redact or omit or remove gate
 
 
 
