@@ -16,10 +16,11 @@ async function doorHandleBelow({door}) {
 
 
 	let r = {}
-	r.name = 'rgw'
+	r.name = 'GateGetWorker.'
 	r.sticker = Sticker().all
 	r.method = door.workerEvent.req.method
 	r.headers = door.workerEvent.req.headers
+	r.success = true
 
 
 	return r

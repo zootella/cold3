@@ -25,29 +25,21 @@ provider:
             - sns:*
 
 functions:
-  snippet2:
-    handler: src/snippet2.handler
+  gate-get-lambda:
+    handler: src/gate-get-lambda.handler
     timeout: 25
     events:
       - http:
-          path: /snippet2
-          method: get #ttd december decide if you're keeping this GET function
-          #omit cors to block requests from pages and allow direct navigation from tabs
-  rgl:
-    handler: src/rgl.handler
-    timeout: 25
-    events:
-      - http:
-          path: /rgl
+          path: /gate-get-lambda
           method: get #ttd december decide if you're keeping this GET function
           cors: true #ttd december for testing you've got cors true here but should probably delete the whole function
           #configure cors simply true to open things up: API Gateway will respond to a page's preflight OPTIONS request, allowing all origins
-  rpl:
-    handler: src/rpl.handler
+  gate-post-lambda:
+    handler: src/gate-post-lambda.handler
     timeout: 25 #let a Lambda run for 25 seconds, up from default 6 second limit, api gateway has maximum possible of 29 seconds
     events:
       - http:
-          path: /rpl
+          path: /gate-post-lambda
           method: post
           #omitting CORS configuration here makes API Gateway not handle the preflight OPTIONS request, and not include Access-Control-Allow* headers in responses. Script on a page in a browser attempting a cross-origin request will fail on OPTIONS, blocking a subsequent POST request. Additionally, if a browser did make such a request, doorLambdaOpen's call to checkOriginOmitted would block it
   message:
@@ -57,6 +49,14 @@ functions:
       - http:
           path: /message
           method: post
+  snippet2:
+    handler: src/snippet2.handler
+    timeout: 25
+    events:
+      - http:
+          path: /snippet2
+          method: get #ttd december decide if you're keeping this GET function
+          #omit cors to block requests from pages and allow direct navigation from tabs
   up2:
     handler: src/up2.handler
     timeout: 25

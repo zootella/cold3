@@ -5,27 +5,23 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door}) {
 
 	let bridge = await $fetch(
-		host23() + '/rpl',
+		host23() + '/gate-post-lambda',
 		{
 			method: 'POST',
 			body: {
-				name: 'rpw',
+				name: 'GatePostWorker.',
 				ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET')
 			}
 		}
 	)
 
 	let r = {}
-	r.name = 'rpw'
+	r.name = 'GatePostWorker.'
 	r.sticker = Sticker().all
 	r.method = door.workerEvent.req.method
 	r.headers = door.workerEvent.req.headers
+	r.success = true
 
 	r.bridge = bridge
 	return r
 }
-
-/*
-ttd december, you've got R1,2,3,4 + dbg,dwp,rgw,rpw, and more in a door cors test mess
-clean all that up now!
-*/

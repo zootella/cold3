@@ -5,9 +5,9 @@ definePageMeta({layout: 'feed-layout', note: 'on door'})
 </script>
 <template>
 
-<R1 />
-<R2 />
-<R3 />
-<R4 />
+<GateGetLambda />
+<GatePostLambda />
+<GateGetWorker />
+<GatePostBoth />
 
 </template>
