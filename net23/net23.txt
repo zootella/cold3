@@ -231,6 +231,32 @@ comments in conversational lowercase
 
 
 
+ _   _                     _                           
+| |_| |__  _ __ ___  ___  | | __ _ _   _  ___ _ __ ___ 
+| __| '_ \| '__/ _ \/ _ \ | |/ _` | | | |/ _ \ '__/ __|
+| |_| | | | | |  __/  __/ | | (_| | |_| |  __/ |  \__ \
+ \__|_| |_|_|  \___|\___| |_|\__,_|\__, |\___|_|  |___/
+                                   |___/               
+
+the club sandwich
+cloudflare workers are great at
+1 really fast with no cold start time
+2 running trusted code that can't be tampered with and has access to secrets
+3 npm imports designed for client side web
+workers really cannot
+4 run a node module that imagines a node server (require, commonjs, long-lived events, deep tree of other node-like
+lambda can do those
+but lambda is slow:
+avg    p95   results from checkly, no-cookie GET and read of static returned page, no client side code runs in these
+1.55s  2.57  ssr page from worker including one supabase query
+4.13s  5.91  ssr page from worker including one supabase query, and two warm requests to lambda
+why not move the whole thing to cloudflare? workers can't run all the modules we need
+why not move the whole thing to amazon? making one out of every 20 first time visitors wait 5.91 seconds to get a brochure page is not acceptable
+hence, the three layer stack, the club sandwich
+
+
+
+
 
 
  _                  _                     _                            
