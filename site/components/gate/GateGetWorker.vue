@@ -1,7 +1,11 @@
 <script setup>
 
+
+
+
+
 const {data, refresh} = useFetch(
-	'/api/gate-get-worker?' + (new URLSearchParams({
+	'/api/gate/gate-get-worker?' + (new URLSearchParams({
 		name: 'GateGetWorker.'
 	})).toString(),
 	{

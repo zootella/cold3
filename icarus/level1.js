@@ -1,5 +1,8 @@
 
-import {
+import {//from wrapper
+wrapper,
+} from './wrapper.js'
+import {//from level0
 Time,
 Now, sayDate, sayTick,
 noop, test, ok, toss, checkInt, hasText, Size,

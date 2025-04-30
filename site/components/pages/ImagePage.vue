@@ -1,6 +1,6 @@
 <script setup>
 
-let {data, error} = useFetch('/api/image', {method: 'POST'})
+let {data, error} = useFetch('/api/image', {method: 'POST'})//ttd april, review useFetch here; you're only using it here and in the gate components
 
 watch([data], () => {
 

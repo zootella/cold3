@@ -1,7 +1,7 @@
 
 import {
 
-//import everything that we automatically import in site
+//autoicarus 1 of 4: persephone
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
@@ -22,7 +22,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 
 canGetAccess, getAccess,
 doorWorker, doorLambda,
-Task, host23, fetchWorker, fetchLambda, fetchProvider,
+Task, fetchWorker, fetchLambda, fetchProvider,
 
 //and also import these references
 Data,

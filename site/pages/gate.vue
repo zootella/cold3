@@ -1,6 +1,6 @@
 <script setup>
 
-definePageMeta({layout: 'feed-layout', note: 'on door'})
+definePageMeta({layout: 'feed-layout', note: 'on gate'})
 
 </script>
 <template>

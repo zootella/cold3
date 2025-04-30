@@ -1,8 +1,8 @@
 
-import {
+import {//from wrapper
 wrapper,
 } from './wrapper.js'
-import {
+import {//from level0
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
@@ -14,7 +14,7 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 runTests,
 } from './level0.js'
-import {
+import {//from level1
 Tag, Limit, checkTag, checkActions,
 } from './level1.js'
 
@@ -561,7 +561,7 @@ which calls the browser's native fetch()
 
 [v] nearby alternatives in JavaScriptland that we're *not* using
 
-Nuxt's useFetch and useAsyncData, which returns a toolbox of stuff, reactive data, and loading state
+Nuxt's useFetch and useAsyncData, which knows about universal rendering and returns reactive data
 Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the browser tag cookie manually
 other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 */

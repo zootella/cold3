@@ -1,14 +1,18 @@
 <script setup>
 
+
+
+
+
 const {data, refresh} = useFetch(
-	host23() + '/gate-get-lambda?' + (new URLSearchParams({
-		name: 'GateGetLambda.'
-	})).toString(),
+	'/api/gate/gate-post-worker',
 	{
-		method: 'GET'
+		method: 'POST',
+		body: {
+			name: 'GatePostWorker.'
+		}
 	}
 )
-
 
 
 
@@ -18,7 +22,7 @@ const {data, refresh} = useFetch(
 <template>
 
 <div>
-GET lambda, block
+POST to worker to lambda, allow both
 <LinkButton @click="refresh">Refresh</LinkButton><pre>{{look(data)}}</pre>
 </div>
 

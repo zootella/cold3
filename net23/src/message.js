@@ -1,8 +1,6 @@
 
 import {
-Sticker, doorLambda, toss, log, look, defined,
-makePlain, makeObject, makeText,
-Task, host23, fetchWorker, fetchLambda, fetchProvider,
+Sticker, doorLambda, toss, log, look, defined, Task,
 } from 'icarus'//remember the automatic nuxt icarus imports aren't here on the lambda side
 
 import {
