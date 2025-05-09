@@ -122,6 +122,7 @@ resources:
       Properties:
         BucketName: vhs-net23-cc
         AccessControl: Private
+    #ttd may, move the buckets from serverless.yml (configuration-as-code) to net23.txt (manual configuration) to keep their contents safe from the automatic teardown; your hopefull expectation is that since they have universally unique names, it'll be easy for the distributions, and perhaps even the access identities and bucket policies, to still reside here
 
     WWWBucketPolicy: #define a policy for a bucket to allow cloudfront access
       Type: AWS::S3::BucketPolicy
