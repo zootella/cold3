@@ -40,3 +40,5 @@ diff*.txt
 
 #miscellaneous
 .DS_Store
+.fleet
+.idea
