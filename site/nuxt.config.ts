@@ -37,7 +37,7 @@ export default defineNuxtConfig({
 		},
 	},
 	runtimeConfig: {//added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
-		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
+		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,//ttd june, report in obsidian from chat about change this to use the nuxt prefix, and set here to blank, as right now this secret gets baked into the server bundle (still secure, but bad form) and doesn't actually get picked up from the dashboard at all! you could confirm by breaking in the dashboard and seeing if things still work
 	},
 	build: {
 		sourcemap: true,//from visualizer; causes rollup to make stats.html
