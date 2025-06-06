@@ -166,6 +166,41 @@ test(() => {
 	checkTagOrBlank('21j3i1DJMw6JPkxYgTt1B')
 })
 
+//ttd june, replace nanoid with this version of tag, and move it to level0
+let _tagMaker//make the tag maker only if we need it, and then reuse it
+export function Tag0() {//generate a new universally unique double-clickable tag of 21 letters and numbers
+	if (!_tagMaker) {
+
+		//copied from nanoid 5.1.5 from ./node_modules/nanoid/index.browser.js
+		let random = bytes => crypto.getRandomValues(new Uint8Array(bytes))
+		let customRandom = (alphabet, defaultSize, getRandom) => {
+			let mask = (2 << Math.log2(alphabet.length - 1)) - 1
+			let step = -~((1.6 * mask * defaultSize) / alphabet.length)
+			return (size = defaultSize) => {
+				let id = ''
+				while (true) {
+					let bytes = getRandom(step)
+					let j = step | 0
+					while (j--) {
+						id += alphabet[bytes[j] & mask] || ''
+						if (id.length >= size) return id
+					}
+				}
+			}
+		}
+		let customAlphabet = (alphabet, size = 21) => customRandom(alphabet, size | 0, random)
+
+		_tagMaker = customAlphabet(
+			//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
+			'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+			Limit.tag)//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
+	}
+	return _tagMaker()
+}
+
+
+
+
 
 
 
