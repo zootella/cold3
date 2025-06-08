@@ -174,6 +174,16 @@ avoiding, except where absolutely necessary, platform or provider specific detai
 
 
 
+net23.cc core engineering values, like a scout's law, also like how Amazon was almost named Relentless
+- Speed (Fast) - most user interactions happen in the blink of an eye or faster
+- Reliability (Reliable) - near 100% uptime
+- Security (Secure) - standard description
+- Scalability (Scalable) - if overnight use grows 10x, in the morning the team has bigger numbers on a dashboard, not error messages on the site and text messages out of band
+- Brevity (Small) - all the code fits on a floppy disk, so new team members can get up to speed quickly, and a total rewrite is always possible
+- Independence (Independent) - not tied to service providers who could impact other values above. second tier is open source frameworks and modules, choosing popular ones, millions of npm downloads, and even there, avoid writing lots of code in framework templates, for instance. also in here is the round robin system of making services redundant, measuring their performance with real useres, and automatically switching away from one that breaks
+- Documentation (Complete) - fully containd and self sufficient bundle of code, comments, code as configuration, and documentation of configuration. favor 1 code, 2 configuration as code, then 3 configuration, and document configuration so a new team member could repeat steps without needing to ask you questions
+- Thrifty (Cheap) - duplicated from scounts law, but grammer is mismatch here. here's where the value lives that even with tens of thousands of users, cloudflare will still cost $5/month and the free tier might work just as well, and supabase will cost $25. we never try to get an AWS startup grant of $1000k because we don't architect infrastructure that will ever spend thousands of dollars
+"Your current list already nails speed, reliability, cost control, minimalism, and autonomy—these additions could refine its philosophy of endurance while maintaining the scout-law-like ethos." thanks copilot
 
 
 
