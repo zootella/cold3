@@ -2686,6 +2686,17 @@ Redirect to a New URL: Redirect visitors requesting one page to another page URL
 
 
 
+                   _   _     
+  ___   __ _ _   _| |_| |__  
+ / _ \ / _` | | | | __| '_ \ 
+| (_) | (_| | |_| | |_| | | |
+ \___/ \__,_|\__,_|\__|_| |_|
+                             
+
+steps to get oauth.cold3.cc
+up on cloudflare
+and as a new workspace in this monorepo that imports icarus
+
 
 
 
