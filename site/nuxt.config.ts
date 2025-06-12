@@ -1,11 +1,11 @@
-
+//./nuxt.config.ts
 import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
 import {vite as vidstack} from 'vidstack/plugins'//from vidstack
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
 
-	compatibilityDate: '2025-05-15',//from nuxt
+	compatibilityDate: '2024-04-03',//from nuxt
 	devtools: {enabled: true},//from nuxt
 	modules: [
 		'nitro-cloudflare-dev',//from cloudflare
@@ -29,11 +29,7 @@ export default defineNuxtConfig({
 		],
 	},
 	nitro: {
-		preset: 'cloudflare_module',//from cloudflare
-		cloudflare: {
-			deployConfig: true,
-			nodeCompat: true,
-		},
+		preset: 'cloudflare-pages',//from cloudflare
 		esbuild: {
 			options: {
 				target: 'esnext',//added to solve error on npm run build about es2019 not including bigint literals
