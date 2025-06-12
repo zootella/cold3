@@ -2693,15 +2693,24 @@ Redirect to a New URL: Redirect visitors requesting one page to another page URL
  \___/ \__,_|\__,_|\__|_| |_|
                              
 
+2025jun12
 steps to get oauth.cold3.cc
 up on cloudflare
 and as a new workspace in this monorepo that imports icarus
 
+https://developers.cloudflare.com/pages/get-started/c3/
+"We recommend using Cloudflare Workers for new projects."
+but ignoring that for now!
 
-
-
-
-
+in the project root folder
+$ yarn create cloudflare --platform=pages
+oauth, in which directory do you wish to create
+framework starter
+sveltekit
+minimal, barebones scaffolding for your app
+no typescript
+all unchecked, add to project
+yarn, package manager
 
 
 
