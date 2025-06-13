@@ -1,4 +1,4 @@
-//./nuxt.config.ts
+
 import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
 import {vite as vidstack} from 'vidstack/plugins'//from vidstack
 

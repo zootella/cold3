@@ -32,10 +32,9 @@
     "@cloudflare/workers-types": "^4.20241004.0",
     "@nuxtjs/tailwindcss": "^6.12.2",
     "nitro-cloudflare-dev": "^0.1.6",
-    "nuxi": "^3.25.1",
     "rollup-plugin-visualizer": "^5.12.0",
     "sharp": "^0.33.5",
-    "wrangler": "^4.20.0"
+    "wrangler": "^3.80.0"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
