@@ -66,13 +66,15 @@ async function listFiles() {
 			'**/.DS_Store',//ignore this bothersome apple computer nonsense from the 1990s
 			'**/.git',
 			'**/.nuxt',
-			'**/.wrangler',
+			'**/.output',
 			'**/.serverless',
+			'**/.wrangler',
 			'**/*.log',
 			'**/*.diff',
 			'**/diff*.txt',
 			'**/dist',
 			'**/node_modules',
+			'**/worker-configuration.d.ts',
 
 			//also leave out the two that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
 			pathWrapperTxt,
