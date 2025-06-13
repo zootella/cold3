@@ -1,0 +1,10 @@
+//in the workspace "repot4", this is the file ./tsconfig.json
+{
+	// https://nuxt.com/docs/guide/concepts/typescript
+	"extends": "./.nuxt/tsconfig.json",
+	"compilerOptions": {
+		"types": [
+			"./worker-configuration.d.ts"
+		]
+	}
+}
