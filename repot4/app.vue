@@ -4,7 +4,7 @@
 <template>
 	<div>
 		<p>
-			hello verson 2025jun13, 19 confirming what works
+			hello verson 2025jun13, 20 confirming what works
 		</p>
 		<NuxtRouteAnnouncer />
 		<NuxtWelcome />
