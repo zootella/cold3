@@ -11,8 +11,9 @@
   },
   "scripts": {
     "local": "serverless offline --reloadHandler",
-    "build": "serverless package",
-    "deploy": "serverless deploy && yarn --cwd ../ run test",
+    "build": "serverless package && yarn size",
+    "size": "ls -lh .serverless/net23.zip",
+    "deploy": "serverless deploy && yarn size && yarn --cwd ../ run test",
     "justdeploy": "serverless deploy --package .serverless",
     "stowaway": "node stowaway.js",
     "www": "aws s3 sync ./www s3://www-net23-cc --delete"

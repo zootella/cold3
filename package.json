@@ -29,6 +29,7 @@
   "dependencies": {
     "icarus": "*"
   },
+  "packageManager": "yarn@1.22.22",
   "devDependencies": {
     "fast-glob": "^3.3.2",
     "rimraf": "^6.0.1"
