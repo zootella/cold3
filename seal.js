@@ -69,6 +69,7 @@ async function listFiles() {
 			'**/.output',
 			'**/.serverless',
 			'**/.wrangler',
+			'**/.yarn',
 			'**/*.log',
 			'**/*.diff',
 			'**/diff*.txt',

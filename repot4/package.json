@@ -5,14 +5,14 @@
 	"version": "0.1.0",
 	"type": "module",
 	"private": true,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zootella/cold3.git"
-  },
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/zootella/cold3.git"
+	},
 	"scripts": {
 		"local": "nuxt dev",
 		"build": "nuxt build",
-    "deploy": "nuxt build && wrangler deploy && yarn --cwd ../ run test",
+		"deploy": "nuxt build && wrangler deploy && yarn workspace w5 run test",
 		"generate": "nuxt generate",
 		"preview": "nuxt build && wrangler dev",
 		"postinstall": "nuxt prepare",

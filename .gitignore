@@ -1,3 +1,5 @@
+# .gitignore
+
 #node
 node_modules
 
@@ -29,8 +31,9 @@ env.js
 card.js
 
 #lock files; forgetting to delete one on a new os would really mess up the build
-package-lock.json
+.yarn
 yarn.lock
+package-lock.json
 
 #logs and diffs
 logs

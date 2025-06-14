@@ -1,37 +1,31 @@
 {
-  "name": "w5",
-  "description": "Coding web2+3 serverless and JAMstack with Vue, Cloudflare, and Lambda",
-  "license": "GPL-3.0-only",
-  "version": "0.1.0",
-  "type": "module",
-  "private": true,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zootella/cold3.git"
-  },
-  "workspaces": {
-    "packages": [
-      "icarus",
-      "net23",
-      "repot4",
-      "site"
-    ],
-    "nohoist": [
-      "net23/**",
-      "net23/**/**"
-    ]
-  },
-  "scripts": {
-    "test": "node test",
-    "seal": "node seal",
-    "powerwash": "rimraf yarn.lock node_modules icarus/node_modules net23/node_modules repot4/node_modules site/node_modules net23/.serverless repot4/.nuxt repot4/.output repot4/.wrangler repot4/dist repot4/worker-configuration.d.ts site/.nuxt site/.output site/.wrangler site/dist site/worker-configuration.d.ts"
-  },
-  "dependencies": {
-    "icarus": "*"
-  },
-  "packageManager": "yarn@1.22.22",
-  "devDependencies": {
-    "fast-glob": "^3.3.2",
-    "rimraf": "^6.0.1"
-  }
+	"name": "w5",
+	"description": "Coding web2+3 serverless and JAMstack with Vue, Cloudflare, and Lambda",
+	"license": "GPL-3.0-only",
+	"version": "0.1.0",
+	"type": "module",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/zootella/cold3.git"
+	},
+	"workspaces": [
+		"icarus",
+		"net23",
+		"repot4",
+		"site"
+	],
+	"scripts": {
+		"test": "node test",
+		"seal": "node seal",
+		"powerwash": "rimraf yarn.lock .yarn node_modules icarus/node_modules net23/node_modules repot4/node_modules site/node_modules net23/.serverless repot4/.nuxt repot4/.output repot4/.wrangler repot4/dist repot4/worker-configuration.d.ts site/.nuxt site/.output site/.wrangler site/dist site/worker-configuration.d.ts"
+	},
+	"dependencies": {
+		"icarus": "*"
+	},
+	"packageManager": "yarn@4.9.2",
+	"devDependencies": {
+		"fast-glob": "^3.3.2",
+		"rimraf": "^6.0.1"
+	}
 }

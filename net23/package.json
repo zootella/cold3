@@ -1,36 +1,36 @@
 {
-  "name": "net23",
-  "description": "Network 23",
-  "license": "GPL-3.0-only",
-  "version": "0.1.0",
-  "type": "module",
-  "private": true,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zootella/cold3.git"
-  },
-  "scripts": {
-    "local": "serverless offline --reloadHandler",
-    "build": "serverless package && yarn size",
-    "size": "ls -lh .serverless/net23.zip",
-    "deploy": "serverless deploy && yarn size && yarn --cwd ../ run test",
-    "justdeploy": "serverless deploy --package .serverless",
-    "stowaway": "node stowaway.js",
-    "www": "aws s3 sync ./www s3://www-net23-cc --delete"
-  },
-  "dependencies": {
-    "icarus": "*",
-    "@supabase/supabase-js": "^2.39.8",
-    "twilio": "^5.3.5",
-    "@sendgrid/mail": "^8.1.4",
-    "sharp": "^0.33.5"
-  },
-  "devDependencies": {
-    "fs-extra": "^11.2.0",
-    "@aws-sdk/client-ses": "^3.682.0",
-    "@aws-sdk/client-sns": "^3.682.0",
-    "serverless": "^4.4.11",
-    "serverless-offline": "^14.3.4",
-    "serverless-domain-manager": "^8.0.0"
-  }
+	"name": "net23",
+	"description": "Network 23",
+	"license": "GPL-3.0-only",
+	"version": "0.1.0",
+	"type": "module",
+	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/zootella/cold3.git"
+	},
+	"scripts": {
+		"local": "serverless offline --reloadHandler",
+		"build": "serverless package && yarn size",
+		"size": "ls -lh .serverless/net23.zip",
+		"deploy": "serverless deploy && yarn size && yarn workspace w5 run test",
+		"justdeploy": "serverless deploy --package .serverless",
+		"stowaway": "node stowaway.js",
+		"www": "aws s3 sync ./www s3://www-net23-cc --delete"
+	},
+	"dependencies": {
+		"@sendgrid/mail": "^8.1.4",
+		"@supabase/supabase-js": "^2.39.8",
+		"icarus": "*",
+		"sharp": "^0.33.5",
+		"twilio": "^5.3.5"
+	},
+	"devDependencies": {
+		"@aws-sdk/client-ses": "^3.682.0",
+		"@aws-sdk/client-sns": "^3.682.0",
+		"fs-extra": "^11.2.0",
+		"serverless": "^4.4.11",
+		"serverless-domain-manager": "^8.0.0",
+		"serverless-offline": "^14.3.4"
+	}
 }
