@@ -20,17 +20,17 @@
   },
   "dependencies": {
     "icarus": "*",
-    "@supabase/supabase-js": "^2.39.8",
-    "twilio": "^5.3.5",
-    "@sendgrid/mail": "^8.1.4",
-    "sharp": "^0.33.5"
+    "@supabase/supabase-js": "2",
+    "twilio": "5",
+    "@sendgrid/mail": "8",
+    "sharp": "0"
   },
   "devDependencies": {
-    "fs-extra": "^11.2.0",
-    "@aws-sdk/client-ses": "^3.682.0",
-    "@aws-sdk/client-sns": "^3.682.0",
-    "serverless": "^4.4.11",
-    "serverless-offline": "^14.3.4",
-    "serverless-domain-manager": "^8.0.0"
+    "fs-extra": "11",
+    "@aws-sdk/client-ses": "3",
+    "@aws-sdk/client-sns": "3",
+    "serverless": "4",
+    "serverless-offline": "14",
+    "serverless-domain-manager": "8"
   }
 }
