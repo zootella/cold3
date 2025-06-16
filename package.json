@@ -24,7 +24,7 @@
   "scripts": {
     "test": "node test",
     "seal": "node seal",
-    "powerwash": "rimraf yarn.lock node_modules icarus/node_modules net23/node_modules repot4/node_modules site/node_modules net23/.serverless repot4/.nuxt repot4/.output repot4/.wrangler repot4/dist repot4/worker-configuration.d.ts site/.nuxt site/.output site/.wrangler site/dist site/worker-configuration.d.ts"
+    "powerwash": "rimraf yarn.lock .yarn node_modules icarus/node_modules net23/node_modules repot4/node_modules site/node_modules net23/.serverless repot4/.nuxt repot4/.output repot4/.wrangler repot4/dist repot4/worker-configuration.d.ts site/.nuxt site/.output site/.wrangler site/dist site/worker-configuration.d.ts"
   },
   "dependencies": {
     "icarus": "*"
