@@ -4,7 +4,7 @@
 <template>
 	<div>
 		<p>
-			hello verson 2025jun13, 26 back to carrot versions
+			hello verson 2025jun13, 28 with icarus
 		</p>
 		<NuxtRouteAnnouncer />
 		<NuxtWelcome />
