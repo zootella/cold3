@@ -2521,6 +2521,59 @@ can you define a global card, which then gets overridden with a user page or pos
 
 
 
+
+                   _   _
+  ___   __ _ _   _| |_| |__
+ / _ \ / _` | | | | __| '_ \
+| (_) | (_| | |_| | |_| | | |
+ \___/ \__,_|\__,_|\__|_| |_|
+
+
+2025jun12
+steps to get oauth.cold3.cc
+up on cloudflare
+and as a new workspace in this monorepo that imports icarus
+
+https://developers.cloudflare.com/pages/get-started/c3/
+"We recommend using Cloudflare Workers for new projects. For existing Pages projects, see our migration guide and compatibility matrix."
+https://developers.cloudflare.com/workers/static-assets/migration-guides/migrate-from-pages/
+sure, starting this without the platform pages flag
+https://developers.cloudflare.com/pages/framework-guides/deploy-a-svelte-kit-site/
+https://developers.cloudflare.com/workers/framework-guides/web-apps/svelte/
+
+in the project root folder
+$ yarn create cloudflare
+oauth, in which directory do you wish to create
+framework starter
+sveltekit
+minimal, barebones scaffolding for your app
+no typescript
+all unchecked, add to project
+yarn, package manager
+no git, you're in an existing git repository
+no deploy, we'll do that in a moment
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       _                 _  __                 _      __                  _   _             
   ___| | ___  _   _  __| |/ _|_ __ ___  _ __ | |_   / _|_   _ _ __   ___| |_(_) ___  _ __  
  / __| |/ _ \| | | |/ _` | |_| '__/ _ \| '_ \| __| | |_| | | | '_ \ / __| __| |/ _ \| '_ \ 
