@@ -17,6 +17,7 @@ jspm_packages
 dist
 size
 stats*.html
+worker-configuration.d.ts
 
 #sveltekit
 .vercel
