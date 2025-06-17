@@ -5,14 +5,14 @@
 	"version": "0.1.0",
 	"type": "module",
 	"private": true,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zootella/cold3.git"
-  },
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/zootella/cold3.git"
+	},
 	"scripts": {
 		"local": "nuxt dev",
 		"build": "nuxt build",
-    "deploy": "nuxt build && wrangler deploy && yarn --cwd ../ run test",
+		"deploy": "nuxt build && wrangler deploy && yarn --cwd ../ run test",
 		"generate": "nuxt generate",
 		"preview": "nuxt build && wrangler dev",
 		"postinstall": "nuxt prepare",
@@ -21,7 +21,7 @@
 	"dependencies": {
 		"@pinia/nuxt": "^0.11.1",
 		"@unhead/vue": "^2.0.5",
-    "icarus": "*",
+		"icarus": "*",
 		"nuxt": "^3.17.5",
 		"nuxt-og-image": "5.1.6",
 		"pinia": "^3.0.3",

@@ -7,7 +7,6 @@ jspm_packages
 
 #cloudflare
 .wrangler
-.dev.vars
 
 #nuxt
 .output
@@ -19,10 +18,22 @@ dist
 size
 stats*.html
 
+#sveltekit
+.vercel
+.netlify
+.svelte-kit
+build
+
+#vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
 #secrets
 .env
 .env.*
 *.env
+.dev.vars
+.dev.vars*
 *.vars
 *.vars.*
 env.js
@@ -39,7 +50,8 @@ logs
 *.diff
 diff*.txt
 
-#miscellaneous
+#os and other
 .DS_Store
+Thumbs.db
 .fleet
 .idea
