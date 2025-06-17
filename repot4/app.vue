@@ -4,7 +4,7 @@
 <template>
 	<div>
 		<p>
-			hello verson 2025jun13, 29 with sveltekit alongside
+			hello verson 2025jun13, 30
 		</p>
 		<NuxtRouteAnnouncer />
 		<NuxtWelcome />
