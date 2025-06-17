@@ -1,5 +1,5 @@
 //in the workspace "repot4", this is the file ./wrangler.jsonc
-//the console says "Remember to rerun 'wrangler types' after you change your wrangler.json file." and you've put that loop into the $ yarn powerwash, install, retype loop of commands
+//the console says "Remember to rerun 'wrangler types' after you change your wrangler.json file." and you've put that loop into the $ yarn powerwash, install, retype loop of commands; but chat says this affects only local development, and not deployment or running in production, so you've removed and ignored the file from git
 /**
  * For more details on how to configure Wrangler, refer to:
  * https://developers.cloudflare.com/workers/wrangler/configuration/

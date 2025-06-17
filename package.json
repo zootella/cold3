@@ -13,6 +13,7 @@
 		"packages": [
 			"icarus",
 			"net23",
+			"oauth",
 			"repot4",
 			"site"
 		],

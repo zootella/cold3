@@ -55,6 +55,12 @@ async function placeSecrets() {
 	fs.copyFile('.env', 'net23/.env')//lambda uses regular .env, and automatically deploys to amazon
 	fs.copyFile('.env', 'site/.dev.vars')//cloudflare wants it named .dev.vars instead, and only for local; you have to also set the secret key in the dashboard
 	fs.copyFile('.env', 'site/.env')//also put it here
+
+	//ttd june, more for the repot and oauth workspaces
+	fs.copyFile('.env', 'repot4/.env')
+	fs.copyFile('.env', 'repot4/.dev.vars')
+	fs.copyFile('.env', 'oauth/.env')
+	fs.copyFile('.env', 'oauth/.dev.vars')
 }
 
 async function listFiles() {
