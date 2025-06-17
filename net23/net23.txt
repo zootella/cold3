@@ -2553,6 +2553,24 @@ yarn, package manager
 no git, you're in an existing git repository
 no deploy, we'll do that in a moment
 
+$ yarn local
+$ yarn build
+$ yarn deploy
+
+cloudflare dashboard
+workers and pages, oauth, settings
+domains and routes
+here, by the way, is where you can see and disable the subdomains cloudflare gives your site that end workers.dev 
+add, custom domain
+oauth.cold3.cc
+now the box has three rows, Type are:
+workers.dev    oauth. ... .workers.dev    Disable
+Preview URLs   *-oauth. ... .workers.dev  Disable
+Custom domain  oauth.cold3.cc             Edit, Delete
+and the domain works:
+https://oauth.cold3.cc/
+also confirmed that http -> https in chrome and firefox
+
 
 
 
