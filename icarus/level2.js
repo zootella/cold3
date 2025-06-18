@@ -306,13 +306,17 @@ export function canGetAccess() {//true if we are server-side code running and ca
 	return hasText(access_key())//use access_key() and say if we have the key to decrypt all the secrets
 }
 
-function access_key() {
+function access_key(environment) {
 	let key, v
-	if (!hasText(key) && defined(typeof process)) {
+	if (!hasText(key) && environment) {//caller gave us the environment variables object, like SvelteKit does
+		v = environment.ACCESS_KEY_SECRET
+		if (hasText(v)) key = v
+	}
+	if (!hasText(key) && defined(typeof process)) {//environment variables are on process.env, like node or running locally
 		v = process?.env?.ACCESS_KEY_SECRET
 		if (hasText(v)) key = v
 	}
-	if (!hasText(key) && typeof useRuntimeConfig == 'function') {
+	if (!hasText(key) && typeof useRuntimeConfig == 'function') {//Nuxt has defined its useRuntimeConfig() function
 		v = useRuntimeConfig().ACCESS_KEY_SECRET
 		if (hasText(v)) key = v
 	}
@@ -320,12 +324,12 @@ function access_key() {
 }
 
 let _access//single module instance
-export async function getAccess() {
-	if (!_access) _access = await access_load()//create once on first call here
+export async function getAccess(environment) {//pass in the object like process.env, if you have it
+	if (!_access) _access = await access_load(environment)//create once on first call here
 	return _access
 }
-async function access_load() {
-	let key = access_key(); checkText(key)//use access_key() and throw if we don't have the key to decrypt all the secrets
+async function access_load(environment) {
+	let key = access_key(environment); checkText(key)//use access_key() and throw if we don't have the key to decrypt all the secrets
 	let decrypted = await decrypt(Data({base62: key}), Data({base62: wrapper.secrets}))
 	let secrets = parseEnvStyleFileContents(decrypted)
 	let redactions//parts of secrets to look for and replacements to redact them with

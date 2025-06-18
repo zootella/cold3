@@ -2,7 +2,36 @@
 /*
 in the [oauth.cold3.cc] [SvelteKit] workspace using [@auth/sveltekit],
 this is the file ./src/routes/continue/[provider]/+page.svelte
+*/
 
+import {
+
+//autoicarus, manual for sveltekit, ttd june leave here only what you need rather than keeping the whole block
+wrapper, Sticker, isLocal, isCloud,
+Now, Time, Size, Limit, newline,
+defined, toss, log, look,
+noop, test, ok,
+
+toBoolean, toTextOrBlank,
+checkInt, minInt,
+intToText, textToInt,
+hasText, checkText,
+hasTextOrBlank, checkTextOrBlank,
+makePlain, makeObject, makeText,
+
+Tag, hasTag, checkTag, checkTagOrBlank,
+checkHash,
+
+dog, logAudit, logAlert,
+awaitDog, awaitLogAudit, awaitLogAlert,
+
+canGetAccess, getAccess,
+doorWorker, doorLambda,
+Task, fetchWorker, fetchLambda, fetchProvider,
+
+} from 'icarus'
+
+/*
 this page shows no content at all; our goal is it's invisible to the user
 */
 

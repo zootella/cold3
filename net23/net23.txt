@@ -544,6 +544,28 @@ and those are the steps to get a brand new mac ready to develop, build and deplo
 
 
 
+note about ./package.json
+	"packageManager": "yarn@1.22.22",
+and on mac, yarn 4 installed globally
+corepack enabled, only have to do this once per system
+and then corepack sees the package manager key
+
+$ cold3 % cd ..
+$ code % yarn --version
+4.9.2
+$ code % cd cold3
+$ cold3 % yarn --version
+1.22.22
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -682,6 +704,32 @@ and then see test results on the route /tests, TODO!
 (and add more)
 nuxt really is local/deployed x client/server--can you run tests in all four environments?
 lambda serverless framework is local/deployed--run in those two environments
+
+
+
+
+
+
+
+
+
+
+                        _       
+ ___  ___  ___ _ __ ___| |_ ___ 
+/ __|/ _ \/ __| '__/ _ \ __/ __|
+\__ \  __/ (__| | |  __/ |_\__ \
+|___/\___|\___|_|  \___|\__|___/
+                                
+
+ttd june
+move in stuff from readme to here
+talk about how seal copies values down into the different workspaces
+mention you have to change Text to Secret in the cloudflare dashboard
+
+
+
+
+
 
 
 
@@ -2571,6 +2619,7 @@ and the domain works:
 https://oauth.cold3.cc/
 also confirmed that http -> https in chrome and firefox
 
+from there it's all in the code files checked into github, you think
 
 
 

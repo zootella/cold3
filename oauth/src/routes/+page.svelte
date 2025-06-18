@@ -4,11 +4,32 @@ in the [oauth.cold3.cc] [SvelteKit] repo using [@auth/sveltekit],
 this is the file ./src/routes/+page.svelte
 */
 
-/*
-ttd june, move this down into the head section below
-filled in with the google site verification code for oauth.cold3.cc
-<meta name="google-site-verification" content="" />
-*/
+import {
+
+//autoicarus, manual for sveltekit, ttd june leave here only what you need rather than keeping the whole block
+wrapper, Sticker, isLocal, isCloud,
+Now, Time, Size, Limit, newline,
+defined, toss, log, look,
+noop, test, ok,
+
+toBoolean, toTextOrBlank,
+checkInt, minInt,
+intToText, textToInt,
+hasText, checkText,
+hasTextOrBlank, checkTextOrBlank,
+makePlain, makeObject, makeText,
+
+Tag, hasTag, checkTag, checkTagOrBlank,
+checkHash,
+
+dog, logAudit, logAlert,
+awaitDog, awaitLogAudit, awaitLogAlert,
+
+canGetAccess, getAccess,
+doorWorker, doorLambda,
+Task, fetchWorker, fetchLambda, fetchProvider,
+
+} from 'icarus'
 
 /*
 ttd june, make this page do a client side redirect to cold3.cc
@@ -16,6 +37,11 @@ all it needs to do is show google the site verification code
 users shouldn't go here
 */
 
+/*
+ttd june, move this down into the head section below
+filled in with the google site verification code for oauth.cold3.cc
+<meta name="google-site-verification" content="" />
+*/
 </script>
 <svelte:head>
 
@@ -23,9 +49,10 @@ users shouldn't go here
 <div>
 
 <h1>Welcome to SvelteKit</h1>
-<p>This HTML comes from a file at <code>./src/routes/+page.svelte</code></p>
 <p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
-<p>SvelteKit site on Cloudflare Workers to host <i>oauth.cold3.cc</i>, deployment number: v3</p>
+<p>SvelteKit site on Cloudflare Workers to host <i>oauth.cold3.cc</i></p>
+<p>This HTML comes from a file at <code>./src/routes/+page.svelte</code><br />
+where <i>Sticker().all</i> says <code>{Sticker().all}</code></p>
 
 <h2>List</h2>
 <p>List configured OAuth providers at <a href="/auth/providers">/auth/providers</a> and then</p>
