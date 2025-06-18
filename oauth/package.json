@@ -14,7 +14,7 @@
 		"build": "vite build",
 		"preview": "yarn run build && wrangler dev",
 		"prepare": "svelte-kit sync || echo ''",
-		"deploy": "yarn run build && wrangler deploy"
+		"deploy": "vite build && wrangler deploy && yarn --cwd ../ run test"
 	},
 	"dependencies": {
 		"@auth/sveltekit": "^1.9.2",
