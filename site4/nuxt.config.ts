@@ -1,63 +1,64 @@
 //in the workspace "site4", this is the file ./nuxt.config.ts
-// https://nuxt.com/docs/api/configuration/nuxt-config
 
 let configuration = {}//configuration object we'll populate, submit, and export
+configuration.modules = []
 
-configuration.compatibilityDate = '2025-06-10'//Nitro uses this date when building; sets runtime behavior and polyfills
-configuration.devtools = {enabled: true}
+//for nuxt and nitro
+configuration.compatibilityDate = '2025-06-02'//pin nitro and other nuxt modules to follow this date of behavior to include or avoid breaking changes
+configuration.devtools = {enabled: true}//enable the nuxt devtools extension in the browser when running locally
+
+//for cloudflare workers
+configuration.modules.push('nitro-cloudflare-dev')//enable local development with a miniflare wrangler development proxy
 configuration.nitro = {
-	preset: "cloudflare_module",//note the underscore not hyphen, choosing Nitro's new better preset for Cloudflare
+	preset: "cloudflare_module",//tell nitro to build for cloudflare workers
 	cloudflare: {
-		deployConfig: true,
-		nodeCompat: true,//ttd june, omitted node compatibility in wrangler.jsonc, but here we're setting to true?
+		deployConfig: true,//tell nitro to generate wrangler.jsonc from ours
+		nodeCompat: true,//bundle in compatability polyfills for crypto, buffer, stream, and the other node modules; this is about node compatability at build time
 	},
 }
-configuration.modules = []
-configuration.modules.push('nitro-cloudflare-dev')
+
+//added to solve error on npm run build about es2019 not including bigint literals
+configuration.nitro.esbuild = {
+	options: {target: 'esnext'},
+}
+
+//added so we a template can find <SomeComponent /> with SomeComponent.vue organized into a subfolder in the components folder
+configuration.components = {
+	dirs: [{path: '~/components', pathPrefix: false}],
+}
+
+//added for secrets
+configuration.runtimeConfig = {
+	ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
+	//ttd june, change this to NUXT_ACCESS_KEY_SECRET in secret files, and here as accessKeySecret, and then it'll not be built into the server bundle, always come from the dashboard, and useRuntimeConfig().accessKeySecret is how you get it
+}
+
+//for tailwind
 configuration.modules.push('@nuxtjs/tailwindcss')
+configuration.tailwindcss = {cssPath: '~/assets/css/tailwind.css'}
+
+//for pinia
 configuration.modules.push('@pinia/nuxt')
+
+//for nuxt-og-image
 configuration.modules.push('nuxt-og-image')
 
 export default defineNuxtConfig(configuration)
 
-/* for sorting components into subfolders
 
-	//our customization
-	components: {
-		dirs: [
-			{
-				path: '~/components',
-				pathPrefix: false,//let a template find <SomeComponent /> as you move SomeComponent.vue into and between subfolders of the components folder
-			},
-		],
-	},
+
+/*
+ttd june, notes about secrets, above
+
+added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
+
+//ttd june, report in obsidian from chat about change this to use the nuxt prefix, and set here to blank, as right now this secret gets baked into the server bundle (still secure, but bad form) and doesn't actually get picked up from the dashboard at all! you could confirm by breaking in the dashboard and seeing if things still work
+
 */
 
-/* for secrets, you'll likely need this right away
 
-	runtimeConfig: {//added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
-		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,//ttd june, report in obsidian from chat about change this to use the nuxt prefix, and set here to blank, as right now this secret gets baked into the server bundle (still secure, but bad form) and doesn't actually get picked up from the dashboard at all! you could confirm by breaking in the dashboard and seeing if things still work
-	},
-*/
+// https://nuxt.com/docs/api/configuration/nuxt-config
 
-/* for bigint, hopefully bigint tests will run and you just omit this fix
-
-	nitro: {
-		esbuild: {
-			options: {
-				target: 'esnext',//added to solve error on npm run build about es2019 not including bigint literals
-			},
-		},
-	},
-*/
-
-/* for tailwind, use the new pattern from the separate repo
-
-	//from tailwind
-	tailwindcss: {
-		cssPath: '~/assets/css/tailwind.css',
-	},
-*/
 
 /* for ogimage
 

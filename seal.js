@@ -57,10 +57,12 @@ async function placeSecrets() {
 	fs.copyFile('.env', 'site/.env')//also put it here
 
 	//ttd june, more for the repot and oauth workspaces
-	fs.copyFile('.env', 'repot4/.env')
-	fs.copyFile('.env', 'repot4/.dev.vars')
 	fs.copyFile('.env', 'oauth/.env')
 	fs.copyFile('.env', 'oauth/.dev.vars')
+	fs.copyFile('.env', 'site4/.env')
+	fs.copyFile('.env', 'site4/.dev.vars')
+	fs.copyFile('.env', 'repot4/.env')
+	fs.copyFile('.env', 'repot4/.dev.vars')
 }
 
 async function listFiles() {

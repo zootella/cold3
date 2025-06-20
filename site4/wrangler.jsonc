@@ -1,50 +1,68 @@
 //in the workspace "site4", this is the file ./wrangler.jsonc
+{
+	//tell editor wrangler's json schema for autocomplete and validation
+	"$schema": "node_modules/wrangler/config-schema.json",
+
+	//cloudflare uses this name to set the url that ends workers.dev
+	"name": "site4",
+
+	//apply cloudflare runtime features and fixes from before, but not those made after, this date
+	"compatibility_date": "2025-06-02",
+
+	//use compatability polyfills for crypto, buffer, stream, and the other node modules; this is about node compatability at runtime
+	"compatibility_flags": ["nodejs_compat"],
+
+	//retain logs in the dashboard
+	"observability": {"enabled": true},
+
+	//choose worker servers farther from users but closer to supabase if cloudflare senses that this will make things faster for users overall
+	"placement": {"mode": "smart"},
+
+	//followed nuxt-og-image instructions to make a cache for the card pngs; to set this up, you made a new KV store in the cloudflare dashboard, got the id, and pasted it here
+	"kv_namespaces": [
+		{
+			"binding": "OG_IMAGE_CACHE",
+			"id": "ee95a879988944c2a7eb9521e62eb102"
+		}
+	]
+}
+
+
+
 //the console says "Remember to rerun 'wrangler types' after you change your wrangler.json file." and you've put that loop into the $ yarn powerwash, install, retype loop of commands; but chat says this affects only local development, and not deployment or running in production, so you've removed and ignored the file from git
 //ttd june, lots of scaffolded comments here
 /**
  * For more details on how to configure Wrangler, refer to:
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
-{
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "site4",//cloudflare uses this name to set the url that ends workers.dev
-	"main": "./.output/server/index.mjs",
-	"compatibility_date": "2025-06-10",//Cloudflare uses this date at deploy time; selects compatibility flags and runtime changes
-	//note that "compatibility_flags": ["nodejs_compat"] is intentionally omitted until something makes us turn that on
-	"assets": {
-		"binding": "ASSETS",
-		"directory": "./.output/public/"
-	},
-
-	/*
-	The Observability setting allows you to automatically ingest, store, filter, and analyze logging
-	data emitted from Cloudflare Workers directly from your Cloudflare Worker’s dashboard.
-	When set to true on a Worker, logs for the Worker are persisted.
-	*/
-	"observability": {
-		"enabled": true
-	},
-
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
 	 */
-	"placement": {
-		"mode": "smart"
-	},
-
 	/**
 	 * Bindings
 	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
 	 * databases, object storage, AI inference, real-time communication and more.
 	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
 	 */
-	"kv_namespaces": [
-		{
-			"binding": "OG_IMAGE_CACHE",//to set this up, you made a new KV store in the cloudflare dashboard
-			"id": "ee95a879988944c2a7eb9521e62eb102"//got this id, and pasted it here
-		}
-	]
+	/*
+	these were here from scaffolding, but then this warning below, and chat, says to remove them, ttd june
+
+	WARN  [cloudflare] Wrangler config main is overridden and will be ignored. nitro 11:28:09 AM
+	WARN  [cloudflare] Wrangler config assets is overridden and will be ignored. nitro 11:28:09 AM
+
+	"main": "./.output/server/index.mjs",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./.output/public/"
+	},
+	*/
+
+	/*
+	The Observability setting allows you to automatically ingest, store, filter, and analyze logging
+	data emitted from Cloudflare Workers directly from your Cloudflare Worker’s dashboard.
+	When set to true on a Worker, logs for the Worker are persisted.
+	*/
 
 	/**
 	 * Environment Variables
@@ -67,4 +85,3 @@
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	 */
 	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
-}
