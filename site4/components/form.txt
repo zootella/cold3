@@ -1,0 +1,34 @@
+
+
+
+
+
+
+stuff you'll figure out here
+[x]can you make <PostButton /> and <TurnstilePostButton /> that are easy to use, reduce code duplication, and take care of themselves?
+[x]how should vue components communicate? the framework provides many different ways. can you use await, or do you have to wire up events and listeners?
+[x]how does a form work when there are multiple steps?
+[]does icarus have form-wide validation functions, like validateSomeForm(), which both the vue component and api handler can use?
+[]how do exceptions work? can you toss in an api handler, catch around $fetch, and still show a message to the user?
+[]are you going to use <form @submit.prevent="">?
+[]are you going to use <input enterkeyhint="">?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,70 @@
+//in the workspace "site4", this is the file ./wrangler.jsonc
+//the console says "Remember to rerun 'wrangler types' after you change your wrangler.json file." and you've put that loop into the $ yarn powerwash, install, retype loop of commands; but chat says this affects only local development, and not deployment or running in production, so you've removed and ignored the file from git
+//ttd june, lots of scaffolded comments here
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "site4",//cloudflare uses this name to set the url that ends workers.dev
+	"main": "./.output/server/index.mjs",
+	"compatibility_date": "2025-06-10",//Cloudflare uses this date at deploy time; selects compatibility flags and runtime changes
+	//note that "compatibility_flags": ["nodejs_compat"] is intentionally omitted until something makes us turn that on
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./.output/public/"
+	},
+
+	/*
+	The Observability setting allows you to automatically ingest, store, filter, and analyze logging
+	data emitted from Cloudflare Workers directly from your Cloudflare Worker’s dashboard.
+	When set to true on a Worker, logs for the Worker are persisted.
+	*/
+	"observability": {
+		"enabled": true
+	},
+
+	/**
+	 * Smart Placement
+	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
+	 */
+	"placement": {
+		"mode": "smart"
+	},
+
+	/**
+	 * Bindings
+	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
+	 * databases, object storage, AI inference, real-time communication and more.
+	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+	 */
+	"kv_namespaces": [
+		{
+			"binding": "OG_IMAGE_CACHE",//to set this up, you made a new KV store in the cloudflare dashboard
+			"id": "ee95a879988944c2a7eb9521e62eb102"//got this id, and pasted it here
+		}
+	]
+
+	/**
+	 * Environment Variables
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+	 */
+	// "vars": { "MY_VARIABLE": "production_value" },
+	/**
+	 * Note: Use secrets to store sensitive data.
+	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 */
+
+	/**
+	 * Static Assets
+	 * https://developers.cloudflare.com/workers/static-assets/binding/
+	 */
+	// "assets": { "directory": "./public/", "binding": "ASSETS" },
+
+	/**
+	 * Service Bindings (communicate between multiple Workers)
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
+	 */
+	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+}
