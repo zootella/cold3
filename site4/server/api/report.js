@@ -10,9 +10,9 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door, body, action, headers, browserHash}) {
 	let r = {//assemble an object of what we know, categorized by the source of the information, and keeping in mind its trustworthyness
 		page: {//source (1) page: information script on the page is telling us; least trustworthy
-			sticker:     body.sticker,
-			graphics:    body.graphics,
-			details:     body.details,//error details the untrusted page is reporting; the point of all of this
+			sticker:  body.sticker,
+			graphics: body.graphics,
+			details:  body.details,//error details the untrusted page is reporting; the point of all of this
 		},
 		browser: {//source (2) browser: information the browser is telling us; more trustworthy
 			agent: headerGetOne(headers, 'user-agent'),

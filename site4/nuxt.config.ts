@@ -1,7 +1,11 @@
 //in the workspace "site4", this is the file ./nuxt.config.ts
 
+import {vite as vidstack} from 'vidstack/plugins'
+
 let configuration = {}//configuration object we'll populate, submit, and export
 configuration.modules = []
+configuration.vue = {compilerOptions: {}}
+configuration.vite = {plugins: []}//set up empty structure to fill below
 
 //for nuxt and nitro
 configuration.compatibilityDate = '2025-06-02'//pin nitro and other nuxt modules to follow this date of behavior to include or avoid breaking changes
@@ -42,6 +46,23 @@ configuration.modules.push('@pinia/nuxt')
 
 //for nuxt-og-image
 configuration.modules.push('nuxt-og-image')
+configuration.site = {
+	name: 'cold3.cc',
+	url: 'https://cold3.cc',//ogimage needs site's deployed domain to set absolute urls in the cards
+}
+configuration.ogImage = {
+	defaults: {
+		cacheMaxAgeSeconds: 20*60,//20 minutes in seconds; default if omitted is 3 days
+	},
+	runtimeCacheStorage: {
+		driver: 'cloudflare-kv-binding',
+		binding: 'OG_IMAGE_CACHE',
+	},
+}
+
+//for vidstack
+configuration.vue.compilerOptions.isCustomElement = (tag) => tag.startsWith('media-')
+configuration.vite.plugins.push(vidstack())
 
 export default defineNuxtConfig(configuration)
 
@@ -60,40 +81,7 @@ added for getAccess; nuxt promises these will be available on the server side, a
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
 
-/* for ogimage
 
-	site: {//from ogimage
-		url: 'https://cold3.cc',//ogimage needs site's deployed domain to set absolute urls in the cards
-		name: 'cold3.cc',
-	},
-
-	//from ogimage
-	ogImage: {
-		defaults: {
-			cacheMaxAgeSeconds: 20*60,//20 minutes in seconds; default if you omit this is 3 days
-		},
-		runtimeCacheStorage: {
-			driver: 'cloudflare-kv-binding',
-			binding: 'OG_IMAGE_CACHE',
-		},
-	},
-*/
-
-/* for vidstack, add this back from current guide
-
-	import {vite as vidstack} from 'vidstack/plugins'//from vidstack
-
-	vue: {
-		compilerOptions: {
-			isCustomElement: (tag) => tag.startsWith('media-'),//from vidstack
-		},
-	},
-	vite: {
-		plugins: [
-			vidstack(),//from vidstack
-		],
-	},
-*/
 
 /* for visualizer, use the built-in visualizer instead
 
