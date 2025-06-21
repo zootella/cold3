@@ -1,87 +1,61 @@
-//in the workspace "site4", this is the file ./wrangler.jsonc
+//./wrangler.jsonc
 {
-	//tell editor wrangler's json schema for autocomplete and validation
-	"$schema": "node_modules/wrangler/config-schema.json",
-
-	//cloudflare uses this name to set the url that ends workers.dev
+	//name this deployed application in the Cloudflare dashboard for Workers & Pages
 	"name": "site4",
 
-	//apply cloudflare runtime features and fixes from before, but not those made after, this date
+	//only apply Cloudflare runtime features and fixes from before this date
 	"compatibility_date": "2025-06-02",
 
-	//use compatability polyfills for crypto, buffer, stream, and the other node modules; this is about node compatability at runtime
+	//use compatability polyfills for core Node modules; this is about node compatability at *runtime*
 	"compatibility_flags": ["nodejs_compat"],
 
 	//retain logs in the dashboard
 	"observability": {"enabled": true},
 
-	//choose worker servers farther from users but closer to supabase if cloudflare senses that this will make things faster for users overall
+	//choose Worker servers farther from users but closer to Supabase if this improves speed overall; https://developers.cloudflare.com/workers/configuration/smart-placement/
 	"placement": {"mode": "smart"},
 
-	//followed nuxt-og-image instructions to make a cache for the card pngs; to set this up, you made a new KV store in the cloudflare dashboard, got the id, and pasted it here
+	//followed nuxt-og-image instructions to make a cache for the card PNGs; to set this up, you made a new KV store in the Cloudflare dashboard, and pasted its id here
 	"kv_namespaces": [
 		{
 			"binding": "OG_IMAGE_CACHE",
 			"id": "ee95a879988944c2a7eb9521e62eb102"
 		}
-	]
+	],
+
+	//tell our code editor Wrangler's JSON schema for autocomplete and validation
+	"$schema": "node_modules/wrangler/config-schema.json"
 }
 
+/*
+from this file after $ cloudflare create:
+For more details on how to configure Wrangler, refer to
+https://developers.cloudflare.com/workers/wrangler/configuration
 
+Types: the console says "Remember to rerun 'wrangler types' after you change your wrangler.json file."
+https://developers.cloudflare.com/workers/languages/typescript/#generate-types
+but this affects only local development, not build, deploy, or running in production
+you've still got $ yarn retype to generate worker-configuration.d.ts
+but have set powerwash to delete it, and git to ignore it
 
-//the console says "Remember to rerun 'wrangler types' after you change your wrangler.json file." and you've put that loop into the $ yarn powerwash, install, retype loop of commands; but chat says this affects only local development, and not deployment or running in production, so you've removed and ignored the file from git
-//ttd june, lots of scaffolded comments here
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
-	/**
-	 * Smart Placement
-	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
-	 */
-	/**
-	 * Bindings
-	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-	 * databases, object storage, AI inference, real-time communication and more.
-	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
-	 */
-	/*
-	these were here from scaffolding, but then this warning below, and chat, says to remove them, ttd june
+main and assets: scaffolded starting file has properties below, but then console says "WARN  [cloudflare] Wrangler config main is overridden and will be ignored. nitro 11:28:09 AM" so these are omitted
+"main": "./.output/server/index.mjs",
+"assets": {
+	"binding": "ASSETS",
+	"directory": "./.output/public/"
+},
+https://developers.cloudflare.com/workers/static-assets/binding/
 
-	WARN  [cloudflare] Wrangler config main is overridden and will be ignored. nitro 11:28:09 AM
-	WARN  [cloudflare] Wrangler config assets is overridden and will be ignored. nitro 11:28:09 AM
+Bindings: allow your Worker to interact with resources on the Cloudflare Developer Platform, including databases, object storage, AI inference, real-time communication and more
+https://developers.cloudflare.com/workers/runtime-apis/bindings/
+we're only using a KV store for nuxt-og-image
+https://developers.cloudflare.com/kv/
 
-	"main": "./.output/server/index.mjs",
-	"assets": {
-		"binding": "ASSETS",
-		"directory": "./.output/public/"
-	},
-	*/
+Service Bindings: (communicate between multiple Workers), not using
+https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 
-	/*
-	The Observability setting allows you to automatically ingest, store, filter, and analyze logging
-	data emitted from Cloudflare Workers directly from your Cloudflare Worker’s dashboard.
-	When set to true on a Worker, logs for the Worker are persisted.
-	*/
-
-	/**
-	 * Environment Variables
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-	 */
-	// "vars": { "MY_VARIABLE": "production_value" },
-	/**
-	 * Note: Use secrets to store sensitive data.
-	 * https://developers.cloudflare.com/workers/configuration/secrets/
-	 */
-
-	/**
-	 * Static Assets
-	 * https://developers.cloudflare.com/workers/static-assets/binding/
-	 */
-	// "assets": { "directory": "./public/", "binding": "ASSETS" },
-
-	/**
-	 * Service Bindings (communicate between multiple Workers)
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-	 */
-	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+Environment Variables: not using; scaffold comments also say:
+Note: Use secrets to store sensitive data
+https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+https://developers.cloudflare.com/workers/configuration/secrets/
+*/

@@ -1,32 +1,38 @@
-//in the workspace "site4", this is the file ./nuxt.config.ts
+//./nuxt.config.ts
 
 import {vite as vidstack} from 'vidstack/plugins'
 
-let configuration = {}//configuration object we'll populate, submit, and export
-configuration.modules = []
-configuration.vue = {compilerOptions: {}}
-configuration.vite = {plugins: []}//set up empty structure to fill below
-
-//for nuxt and nitro
-configuration.compatibilityDate = '2025-06-02'//pin nitro and other nuxt modules to follow this date of behavior to include or avoid breaking changes
-configuration.devtools = {enabled: true}//enable the nuxt devtools extension in the browser when running locally
-
-//for cloudflare workers
-configuration.modules.push('nitro-cloudflare-dev')//enable local development with a miniflare wrangler development proxy
-configuration.nitro = {
-	preset: "cloudflare_module",//tell nitro to build for cloudflare workers
-	cloudflare: {
-		deployConfig: true,//tell nitro to generate wrangler.jsonc from ours
-		nodeCompat: true,//bundle in compatability polyfills for crypto, buffer, stream, and the other node modules; this is about node compatability at build time
+//configuration object we'll populate, submit, and export the result
+const configuration = {
+	modules: [],//set up empty structure to fill below
+	vue: {
+		compilerOptions: {},
+	},
+	vite: {
+		plugins: [],
 	},
 }
 
-//added to solve error on npm run build about es2019 not including bigint literals
+//for Nuxt and Nitro
+configuration.compatibilityDate = '2025-06-02'//pin Nitro and other Nuxt modules to follow this date of behavior to include (or avoid) breaking changes
+configuration.devtools = {enabled: true}//enable the Nuxt devtools extension in the browser when running locally
+
+//for Cloudflare Workers
+configuration.modules.push('nitro-cloudflare-dev')//run locally with a Miniflare Wrangler development proxy
+configuration.nitro = {
+	preset: "cloudflare_module",//tell Nitro to build for Cloudflare Workers
+	cloudflare: {
+		deployConfig: true,//tell Nitro to generate Wrangler settings from its defaults and our wrangler.jsonc file
+		nodeCompat: true,//bundle in compatability polyfills for core Node modules; this is about Node compatability at *build* time
+	},
+}
+
+//added to solve error on npm run build about ES2019 not including BigInt literals
 configuration.nitro.esbuild = {
 	options: {target: 'esnext'},
 }
 
-//added so we a template can find <SomeComponent /> with SomeComponent.vue organized into a subfolder in the components folder
+//added so we a template can find <SomeComponent /> with SomeComponent.vue organized into a subfolder of the components folder
 configuration.components = {
 	dirs: [{path: '~/components', pathPrefix: false}],
 }
@@ -40,6 +46,7 @@ configuration.runtimeConfig = {
 //for tailwind
 configuration.modules.push('@nuxtjs/tailwindcss')
 configuration.tailwindcss = {cssPath: '~/assets/css/tailwind.css'}
+//ttd june, rename this file to match more common scaffolding
 
 //for pinia
 configuration.modules.push('@pinia/nuxt')
@@ -48,7 +55,7 @@ configuration.modules.push('@pinia/nuxt')
 configuration.modules.push('nuxt-og-image')
 configuration.site = {
 	name: 'cold3.cc',
-	url: 'https://cold3.cc',//ogimage needs site's deployed domain to set absolute urls in the cards
+	url: 'https://cold3.cc',//needs site's deployed domain to link the cards in the page meta tags with absolute URLs
 }
 configuration.ogImage = {
 	defaults: {
@@ -66,24 +73,13 @@ configuration.vite.plugins.push(vidstack())
 
 export default defineNuxtConfig(configuration)
 
-
-
 /*
-ttd june, notes about secrets, above
-
-added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
-
-//ttd june, report in obsidian from chat about change this to use the nuxt prefix, and set here to blank, as right now this secret gets baked into the server bundle (still secure, but bad form) and doesn't actually get picked up from the dashboard at all! you could confirm by breaking in the dashboard and seeing if things still work
-
+notes from $ cloudflare create
+https://nuxt.com/docs/api/configuration/nuxt-config
 */
 
-
-// https://nuxt.com/docs/api/configuration/nuxt-config
-
-
-
-
-/* for visualizer, use the built-in visualizer instead
+/*
+ttd june, previous visualizer; now there's a built-in one, but you still need a place to say treemap or sunburst
 
 	import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
 
@@ -101,10 +97,3 @@ added for getAccess; nuxt promises these will be available on the server side, a
 		sourcemap: true,//from visualizer; causes rollup to make stats.html
 	},
 */
-
-
-
-
-
-
-
