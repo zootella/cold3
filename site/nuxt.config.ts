@@ -1,23 +1,88 @@
+//./nuxt.config.ts
 
-import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
-import {vite as vidstack} from 'vidstack/plugins'//from vidstack
+import {vite as vidstack} from 'vidstack/plugins'
 
-// https://nuxt.com/docs/api/configuration/nuxt-config
-export default defineNuxtConfig({
-
-	compatibilityDate: '2024-04-03',//from nuxt
-	devtools: {enabled: true},//from nuxt
-	modules: [
-		'nitro-cloudflare-dev',//from cloudflare
-		'@pinia/nuxt',//from pinia
-		'@nuxtjs/tailwindcss',//from tailwind
-		'nuxt-og-image',//from ogimage
-	],
+//configuration object we'll populate, submit, and export the result
+const configuration = {
+	modules: [],//set up empty structure to fill below
 	vue: {
-		compilerOptions: {
-			isCustomElement: (tag) => tag.startsWith('media-'),//from vidstack
-		},
+		compilerOptions: {},
 	},
+	vite: {
+		plugins: [],
+	},
+}
+
+//for Nuxt and Nitro
+configuration.compatibilityDate = '2025-06-02'//pin Nitro and other Nuxt modules to follow this date of behavior to include (or avoid) breaking changes
+configuration.devtools = {enabled: true}//enable the Nuxt devtools extension in the browser when running locally
+
+//for Cloudflare Workers
+configuration.modules.push('nitro-cloudflare-dev')//run locally with a Miniflare Wrangler development proxy
+configuration.nitro = {
+	preset: "cloudflare_module",//tell Nitro to build for Cloudflare Workers
+	cloudflare: {
+		deployConfig: true,//tell Nitro to generate Wrangler settings from its defaults and our wrangler.jsonc file
+		nodeCompat: true,//bundle in compatability polyfills for core Node modules; this is about Node compatability at *build* time
+	},
+}
+
+//added to solve error on npm run build about ES2019 not including BigInt literals
+configuration.nitro.esbuild = {
+	options: {target: 'esnext'},
+}
+
+//added so we a template can find <SomeComponent /> with SomeComponent.vue organized into a subfolder of the components folder
+configuration.components = {
+	dirs: [{path: '~/components', pathPrefix: false}],
+}
+
+//added for secrets
+configuration.runtimeConfig = {
+	ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
+	//ttd june, change this to NUXT_ACCESS_KEY_SECRET in secret files, and here as accessKeySecret, and then it'll not be built into the server bundle, always come from the dashboard, and useRuntimeConfig().accessKeySecret is how you get it
+}
+
+//for tailwind
+configuration.modules.push('@nuxtjs/tailwindcss')
+configuration.tailwindcss = {cssPath: '~/assets/css/tailwind.css'}
+//ttd june, rename this file to match more common scaffolding
+
+//for pinia
+configuration.modules.push('@pinia/nuxt')
+
+//for nuxt-og-image
+configuration.modules.push('nuxt-og-image')
+configuration.site = {
+	name: 'cold3.cc',
+	url: 'https://cold3.cc',//needs site's deployed domain to link the cards in the page meta tags with absolute URLs
+}
+configuration.ogImage = {
+	defaults: {
+		cacheMaxAgeSeconds: 20*60,//20 minutes in seconds; default if omitted is 3 days
+	},
+	runtimeCacheStorage: {
+		driver: 'cloudflare-kv-binding',
+		binding: 'OG_IMAGE_CACHE',
+	},
+}
+
+//for vidstack
+configuration.vue.compilerOptions.isCustomElement = (tag) => tag.startsWith('media-')
+configuration.vite.plugins.push(vidstack())
+
+export default defineNuxtConfig(configuration)
+
+/*
+notes from $ cloudflare create
+https://nuxt.com/docs/api/configuration/nuxt-config
+*/
+
+/*
+ttd june, previous visualizer; now there's a built-in one, but you still need a place to say treemap or sunburst
+
+	import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
+
 	vite: {
 		plugins: [
 			visualizer({//from visualizer
@@ -25,51 +90,10 @@ export default defineNuxtConfig({
 				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
 				brotliSize: true
 			}),
-			vidstack(),//from vidstack
 		],
 	},
-	nitro: {
-		preset: 'cloudflare-pages',//from cloudflare
-		esbuild: {
-			options: {
-				target: 'esnext',//added to solve error on npm run build about es2019 not including bigint literals
-			},
-		},
-	},
-	runtimeConfig: {//added for getAccess; nuxt promises these will be available on the server side, and never exposed to a client
-		ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,//ttd june, report in obsidian from chat about change this to use the nuxt prefix, and set here to blank, as right now this secret gets baked into the server bundle (still secure, but bad form) and doesn't actually get picked up from the dashboard at all! you could confirm by breaking in the dashboard and seeing if things still work
-	},
+
 	build: {
 		sourcemap: true,//from visualizer; causes rollup to make stats.html
 	},
-	site: {//from ogimage
-		url: 'https://cold3.cc',//ogimage needs site's deployed domain to set absolute urls in the cards
-		name: 'cold3.cc',
-	},
-
-	//from ogimage
-	ogImage: {
-		defaults: {
-			cacheMaxAgeSeconds: 20*60,//20 minutes in seconds; default if you omit this is 3 days
-		},
-		runtimeCacheStorage: {
-			driver: 'cloudflare-kv-binding',
-			binding: 'OG_IMAGE_CACHE',
-		},
-	},
-
-	//from tailwind
-	tailwindcss: {
-		cssPath: '~/assets/css/tailwind.css',
-	},
-
-	//our customization
-	components: {
-		dirs: [
-			{
-				path: '~/components',
-				pathPrefix: false,//let a template find <SomeComponent /> as you move SomeComponent.vue into and between subfolders of the components folder
-			},
-		],
-	},
-})
+*/

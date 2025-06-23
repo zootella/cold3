@@ -25,7 +25,7 @@
 	"scripts": {
 		"test": "node test",
 		"seal": "node seal",
-		"powerwash": "rimraf .yarn yarn.lock package-lock.json node_modules icarus/node_modules net23/node_modules oauth/node_modules repot4/node_modules site/node_modules site4/node_modules oauth/.wrangler repot4/.wrangler site/.wrangler site4/.wrangler oauth/worker-configuration.d.ts repot4/worker-configuration.d.ts site/worker-configuration.d.ts site4/worker-configuration.d.ts net23/.serverless oauth/.svelte-kit repot4/.nuxt repot4/.output repot4/.wrangler repot4/dist site/.nuxt site/.output site/.wrangler site/dist site4/.nuxt site4/.output site4/.wrangler site4/dist"
+		"powerwash": "rimraf .yarn yarn.lock package-lock.json node_modules icarus/node_modules net23/node_modules oauth/node_modules repot4/node_modules site/node_modules site3/node_modules site4/node_modules oauth/.wrangler repot4/.wrangler site/.wrangler site3/.wrangler site4/.wrangler oauth/worker-configuration.d.ts repot4/worker-configuration.d.ts site/worker-configuration.d.ts site3/worker-configuration.d.ts site4/worker-configuration.d.ts net23/.serverless oauth/.svelte-kit repot4/.nuxt repot4/.output repot4/.wrangler repot4/dist site/.nuxt site/.output site/.wrangler site/dist site3/.nuxt site3/.output site3/.wrangler site3/dist site4/.nuxt site4/.output site4/.wrangler site4/dist"
 	},
 	"dependencies": {
 		"icarus": "*"
