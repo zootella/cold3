@@ -8,7 +8,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "repot4",//cloudflare uses this name to set the url that ends workers.dev
 	"main": "./.output/server/index.mjs",
-	"compatibility_date": "2025-06-10",//Cloudflare uses this date at deploy time; selects compatibility flags and runtime changes
+	"compatibility_date": "2025-06-02",//Cloudflare uses this date at deploy time; selects compatibility flags and runtime changes
 	//note that "compatibility_flags": ["nodejs_compat"] is intentionally omitted until something makes us turn that on
 	"assets": {
 		"binding": "ASSETS",

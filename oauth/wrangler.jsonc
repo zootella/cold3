@@ -3,7 +3,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "oauth",
 	"main": ".svelte-kit/cloudflare/_worker.js",
-	"compatibility_date": "2025-06-10",
+	"compatibility_date": "2025-06-02",
 	//note that "compatibility_flags": ["nodejs_compat"] is intentionally omitted until something makes us turn that on
 	"assets": {
 		"binding": "ASSETS",

@@ -1,7 +1,7 @@
 //in the workspace "repot4", this is the file ./nuxt.config.ts
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-	compatibilityDate: '2025-06-10',//Nitro uses this date when building; sets runtime behavior and polyfills
+	compatibilityDate: '2025-06-02',//Nitro uses this date when building; sets runtime behavior and polyfills
 	devtools: {
 		enabled: true,
 	},
