@@ -30,6 +30,7 @@ import {createClient} from '@supabase/supabase-js'
 
 
 
+
 export function isLocal() { return !wrapper.cloud }
 export function isCloud() { return  wrapper.cloud }
 
@@ -101,21 +102,21 @@ function Sticker() is just string, replacement for Sticker().all
 //sense the environment and report fingerprint details like:
 //"CloudLambda:Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1725904754597, vYYYYmmmDl"
 //the insanity that follows is you trying to be able to sense what and where is running us
-const _senseEnvironmentVersion = 2//second version, if you change how this works at all, increment!
+const _senseEnvironmentVersion = 3//if you change how this works at all, increment!
 const _senseEnvironment = `
-Aclo Clie Docu Doma Loca Eigh Glob Lamb Node Proc Regi Requ Scri Self Serv Stor Wind Zulu >Determining
-                         Eigh Glob      Node Proc                                         >LocalNode
-          Docu      Loca                                         Self      Stor Wind      >LocalVite
-                         Eigh Glob      Node Proc Regi                                    >LocalLambda
-                         Eigh Glob Lamb Node Proc Regi                               Zulu >CloudLambda
-                         Eigh Glob      Node Proc                     Serv                >LocalNuxtServer
-Aclo                          Glob      Node Proc      Requ      Self                Zulu >CloudNuxtServer
-                         Eigh Glob      Node Proc      Requ           Serv                >LocalPageServer
-                              Glob      Node Proc      Requ      Self Serv           Zulu >CloudPageServer
-     Clie Docu      Loca      Glob           Proc                Self      Stor Wind      >LocalPageClient
-          Docu Doma           Glob                               Self      Stor Wind      >CloudPageClient
+Aclo Clie Docu Doma Loca Eigh Fetc Glob Lamb Node Proc Regi Requ Scri Self Serv Stor Wind Zulu >Determining
+                         Eigh      Glob      Node Proc                                         >LocalNode
+          Docu      Loca                                              Self      Stor Wind      >LocalVite
+                         Eigh      Glob      Node Proc Regi                                    >LocalLambda
+                         Eigh      Glob Lamb Node Proc Regi                               Zulu >CloudLambda
+                         Eigh Fetc Glob      Node Proc                                         >LocalNuxtServer
+Aclo                               Glob      Node Proc      Requ      Self                Zulu >CloudNuxtServer
+                         Eigh      Glob      Node Proc      Requ           Serv                >LocalPageServer
+                                   Glob      Node Proc      Requ      Self Serv           Zulu >CloudPageServer
+     Clie Docu      Loca           Glob           Proc                Self      Stor Wind      >LocalPageClient
+          Docu Doma                Glob                               Self      Stor Wind      >CloudPageClient
 `
-//ttd june, note that after server refresh, like Ctrl+S in an api file, LocalNuxtServer erroneously becomes LocalNode! this is because it loses Serv, making its fingerprint match exactly; you don't have an idea as to how to fix this yet
+//note that LocalNuxtServer has Serv before a hot reload; Fetc lets us distinguish it from LocalNode
 export function senseEnvironment() {
 	function type(t) { return t != 'undefined' }
 	function text(o) { return typeof o == 'string' && o != '' }
@@ -153,6 +154,7 @@ export function senseEnvironment() {
 	if (type(typeof self))          a.push('Self')
 	if (type(typeof localStorage))  a.push('Stor')
 	if (type(typeof importScripts)) a.push('Scri')
+	if (type(typeof $fetch))        a.push('Fetc')//nuxt defines $fetch even in library files
 	a = a.sort()//alphebetize the list
 	let s = a.join('.')
 
