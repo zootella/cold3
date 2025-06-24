@@ -14,7 +14,7 @@ const configuration = {
 }
 
 //for Nuxt and Nitro
-configuration.compatibilityDate = '2025-06-02'//pin Nitro and other Nuxt modules to follow this date of behavior to include (or avoid) breaking changes
+configuration.compatibilityDate = '2025-06-10'//pin Nitro and other Nuxt modules to follow this date of behavior to include (or avoid) breaking changes
 configuration.devtools = {enabled: true}//enable the Nuxt devtools extension in the browser when running locally
 
 //for Cloudflare Workers

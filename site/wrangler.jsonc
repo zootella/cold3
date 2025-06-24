@@ -4,7 +4,7 @@
 	"name": "site4",
 
 	//only apply Cloudflare runtime features and fixes from before this date
-	"compatibility_date": "2025-06-02",
+	"compatibility_date": "2025-06-10",
 
 	//use compatability polyfills for core Node modules; this is about node compatability at *runtime*
 	"compatibility_flags": ["nodejs_compat"],
