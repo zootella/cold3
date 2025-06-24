@@ -30,6 +30,8 @@ import {createClient} from '@supabase/supabase-js'
 
 
 
+export function isLocal() { return !wrapper.cloud }
+export function isCloud() { return  wrapper.cloud }
 
 //      _          _       _                                    _   _      _             
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 
@@ -66,7 +68,6 @@ export function Sticker() {
 
 	sticker.core.where = environment.title//about where we're running
 	sticker.core.whereTags = environment.tagsArray
-	sticker.core.isCloud = environment.title.includes('Cloud')//true if deployed, false if running locally
 
 	//based on that information we've already included, compose some text for easy reading
 	let saySealedHash = wrapper.hash.slice(0, 7)
@@ -75,31 +76,19 @@ export function Sticker() {
 	sticker.what  =                       saySealedWhen+'.'+saySealedHash
 	sticker.all   = environment.title+'.'+saySealedWhen+'.'+saySealedHash+'.'+sayTick(now)
 
-	//and for easy checking
-	sticker.isCloud = environment.title.includes('Cloud')
-	sticker.isLocal = environment.title.includes('Local')
-
 	return sticker
 }
 
-export function isLocal() { return Sticker().isLocal }
-export function isCloud() { return Sticker().isCloud }
 export function isNuxt() { let s = Sticker().all; return (s.includes('Nuxt') || s.includes('Page')) }
 /*
 ttd april
-you never do uncertain local, all uncertainty should go to the cloud
-you wasted a day back in environment detection, trying to use import.meta.env, which is there, sometimes, after a hot reload
-[]the way to make isCloud ironclad is to have seal set wrapper.build
-
-ttd april
-also make sticker simpler
+make sticker simpler
 all you are using is Sticker().all, which should be shorter and different order like YQ7SL24.CloudNuxtServer.Sun10:54a38.399s
 you don't need tag or tick in sticker, as you've got these in Task
 have one function that returns all the details of everything
 and then separate functions which return the common composed forms
 function makeSticker() returns details, but still doesn't include tag and tick
 function Sticker() is just string, replacement for Sticker().all
-and then there's isLocal(), isCloud(), isNuxt()
 */
 
 //                                            _                                      _   
@@ -112,33 +101,33 @@ and then there's isLocal(), isCloud(), isNuxt()
 //sense the environment and report fingerprint details like:
 //"CloudLambda:Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1725904754597, vYYYYmmmDl"
 //the insanity that follows is you trying to be able to sense what and where is running us
-const _senseEnvironmentVersion = 1//first version, if you change how this works at all, increment!
+const _senseEnvironmentVersion = 2//second version, if you change how this works at all, increment!
 const _senseEnvironment = `
-							 Aclo Clie Docu Doma Loca           Lamb Node Proc Regi Requ Scri Self Serv Stor      Zulu >Determining
-																				Eigh Glob      Node Proc                                         >LocalNode
-Achr Asaf Awin           Docu      Loca                                         Self      Stor Wind      >LocalVite
-																				Eigh Glob      Node Proc Regi                                    >LocalLambda
-																				Eigh Glob Lamb Node Proc Regi                               Zulu >CloudLambda
-																				Eigh Glob      Node Proc                     Serv                >LocalNuxtServer
-							 Aclo                                         Proc           Scri Self                Zulu >CloudNuxtServer
-																				Eigh Glob      Node Proc      Requ           Serv                >LocalPageServer
-																														Proc           Scri Self Serv           Zulu >CloudPageServer
-Achr Asaf Awin      Clie Docu      Loca                     Proc                Self      Stor Wind      >LocalPageClient
-Achr Asaf Awin           Docu Doma                                              Self      Stor Wind      >CloudPageClient
+Aclo Clie Docu Doma Loca Eigh Glob Lamb Node Proc Regi Requ Scri Self Serv Stor Wind Zulu >Determining
+                         Eigh Glob      Node Proc                                         >LocalNode
+          Docu      Loca                                         Self      Stor Wind      >LocalVite
+                         Eigh Glob      Node Proc Regi                                    >LocalLambda
+                         Eigh Glob Lamb Node Proc Regi                               Zulu >CloudLambda
+                         Eigh Glob      Node Proc                     Serv                >LocalNuxtServer
+Aclo                          Glob      Node Proc      Requ      Self                Zulu >CloudNuxtServer
+                         Eigh Glob      Node Proc      Requ           Serv                >LocalPageServer
+                              Glob      Node Proc      Requ      Self Serv           Zulu >CloudPageServer
+     Clie Docu      Loca      Glob           Proc                Self      Stor Wind      >LocalPageClient
+          Docu Doma           Glob                               Self      Stor Wind      >CloudPageClient
 `
-//ttd april, note that after server refresh, like Ctrl+S in report.js, LocalNuxtServer erroneously becomes LocalNode!
+//ttd june, note that after server refresh, like Ctrl+S in an api file, LocalNuxtServer erroneously becomes LocalNode! this is because it loses Serv, making its fingerprint match exactly; you don't have an idea as to how to fix this yet
 export function senseEnvironment() {
 	function type(t) { return t != 'undefined' }
 	function text(o) { return typeof o == 'string' && o != '' }
 	let a = []
 	if ((new Date()).getTimezoneOffset() === 0)  a.push('Zulu')//deployed environments are in utc
 	if (type(typeof process)) {                  a.push('Proc')//has process object iself
-		if (text(process?.versions?.v8))                  a.push('Eigh')//v8 version
-		if (text(process?.versions?.node))                a.push('Node')//node version
-		if (text(process?.env?.AWS_EXECUTION_ENV))        a.push('Lamb')//amazon
-		if (text(process?.env?.AWS_REGION))               a.push('Regi')
-		if (process?.client)                              a.push('Clie')//nuxt client
-		if (process?.server)                              a.push('Serv')//nuxt server
+		if (text(process?.versions?.v8))           a.push('Eigh')//v8 version
+		if (text(process?.versions?.node))         a.push('Node')//node version
+		if (text(process?.env?.AWS_EXECUTION_ENV)) a.push('Lamb')//amazon
+		if (text(process?.env?.AWS_REGION))        a.push('Regi')
+		if (process?.client)                       a.push('Clie')//nuxt client
+		if (process?.server)                       a.push('Serv')//nuxt server
 	}
 	if (type(typeof navigator) && text(navigator?.userAgent)) {//start tags from the user agent with A
 		if (navigator.userAgent.includes('Android'))    a.push('Aand')
@@ -193,7 +182,6 @@ todo, more of these you're hearing about later
 and after all that, you find out (but have not yet confirmed) that you can look for
 process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'production'
 */
-
 
 
 
@@ -921,7 +909,7 @@ Notes: (i) The Network 23 Application Programming Interface is exclusively for s
 (iv) all site APIs are POST; we block GET entirely
 (v) similarly, there are no GET lambdas; note that this whole grid is for api.net23.cc; vhs.net23.cc is the cloudfront function which does its own checks of the method and origin and referer headers
 */
-function checkForwardedSecure(headers) { if (isLocal({uncertain: 'Cloud.'})) return//skip these checks during local development
+function checkForwardedSecure(headers) { if (isLocal()) return//skip these checks during local development
 	let n = headerCount(headers, 'X-Forwarded-Proto')
 	if (n == 0) {
 		//seeing CloudNuxtServer with headers just {accept, content-type, and host: "localhost"} when $fetch calls an api endpoint to render on the server during universal rendering, so making X-Forwarded-Proto required doesn't work
@@ -939,7 +927,7 @@ function checkOriginOmittedOrValid(headers, access) {
 function checkOriginOmitted(headers) {
 	if (headerCount(headers, 'Origin')) toss('origin must not be present', {headers})
 }
-function checkOriginValid(headers, access) { if (isLocal({uncertain: 'Cloud.'})) return//skip these checks during local development
+function checkOriginValid(headers, access) { if (isLocal()) return//skip these checks during local development
 	let n = headerCount(headers, 'Origin')
 	if (n != 1) toss('origin header missing or multiple', {n, headers})
 	let v = headerGet(headers, 'Origin')

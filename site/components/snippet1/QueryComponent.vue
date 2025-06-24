@@ -3,7 +3,7 @@
 let refOutput = ref({})
 
 async function clicked(action) {
-	if (isLocal({uncertain: 'Cloud.'})) {//running locally for certain
+	if (isLocal()) {//running locally for certain
 		refOutput.value = await fetchWorker('/api/query', {method: 'POST', body: {action}})
 		log(refOutput.value.result)
 	} else {//possibly or definitely deployed to cloud
@@ -23,7 +23,7 @@ async function clicked(action) {
 	<button class="pushy" @click="clicked('Query3.')">Query 3</button>
 </div>
 
-<pre>{{ refOutput }}</pre>
+<pre>{{refOutput}}</pre>
 
 </div>
 </template>

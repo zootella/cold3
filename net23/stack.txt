@@ -538,8 +538,6 @@ export function getFetch() {
 /*
 ttd december, figure out how bridge works now that you've got cors done
 write something small and simple which ping4 and test can use, too; right now they're doing this
-and, importantly, because you're building security upon it:
-[]replace Sticker().isCloud with something that isn't based on fuzzy logic!
 
 to begin--don't do the warm thing, either--the errors you were seeing were only for GET, not POST
 well, now you sort of want to do it
@@ -761,19 +759,3 @@ observe these three:
 
 [x]CodeRequestComponent merges in return codes
 []CodeEnterComponent also works through the store to keep things in sync
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
