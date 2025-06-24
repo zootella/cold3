@@ -173,9 +173,7 @@ async function affixSeal(properties, manifest) {
 //                            
 
 async function mark(setCloud) {
-	let o = {...wrapper}//copy all the properties into a new object
-	o.tick = Now()//update individual properties in the new object
-	o.local = ((new Date()).getTimezoneOffset()) * Time.minute
+	let o = {...wrapper}
 	o.cloud = setCloud
 	await writeWrapper(o)
 }
