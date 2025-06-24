@@ -5,7 +5,7 @@ log, addLogSink, look, newline,
 awaitLogAlert,
 } from 'icarus'
 
-import { promises as fs } from 'fs'
+import {promises as fs} from 'fs'
 import dotenv from 'dotenv'
 
 async function main() {

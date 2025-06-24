@@ -12,9 +12,11 @@
 	"scripts": {
 		"local": "vite dev",
 		"build": "vite build",
-		"preview": "yarn run build && wrangler dev",
+		"preview": "yarn build && wrangler dev",
 		"prepare": "svelte-kit sync || echo ''",
-		"deploy": "vite build && wrangler deploy && yarn --cwd ../ run test"
+		"deploybefore": "yarn --cwd ../ seal set-cloud",
+		"deployafter": "yarn --cwd ../ seal set-local && yarn --cwd ../ test",
+		"deploy": "yarn deploybefore && yarn build && wrangler deploy && yarn deployafter"
 	},
 	"dependencies": {
 		"@auth/sveltekit": "^1.9.2",

@@ -5,7 +5,7 @@ log, look, newline, Data, Now,
 encrypt,
 } from 'icarus'
 
-import { promises as fs } from 'fs'
+import {promises as fs} from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import glob from 'fast-glob'
@@ -109,6 +109,14 @@ async function composeWrapper(properties) {
 	return manifest//also return the file contents as we'll hash them next
 }
 
+async function writeWrapper(o) {
+
+	//write the given object to the file wrapper.js in icarus, ready for running JavaScript code to import
+	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`
+	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
+	await fs.writeFile(pathWrapperJs, s)
+}
+
 const envSecretFileName = '.env.local'//our file of secrets to encrypt
 async function affixSeal(properties, manifest) {
 
@@ -145,11 +153,9 @@ async function affixSeal(properties, manifest) {
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
 	o.secrets = cipherData.base62()
-	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`
-	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
-	await fs.writeFile(pathWrapperJs, s)
+	await writeWrapper(o)
 
 	//output a summary to the shrinkwrapper
 	log(
@@ -157,6 +163,21 @@ async function affixSeal(properties, manifest) {
 		(await runTests()).message,//also run tests
 		''
 	)
+}
+
+//                       _    
+//  _ __ ___   __ _ _ __| | __
+// | '_ ` _ \ / _` | '__| |/ /
+// | | | | | | (_| | |  |   < 
+// |_| |_| |_|\__,_|_|  |_|\_\
+//                            
+
+async function mark(setCloud) {
+	let o = {...wrapper}//copy all the properties into a new object
+	o.tick = Now()//update individual properties in the new object
+	o.local = ((new Date()).getTimezoneOffset()) * Time.minute
+	o.cloud = setCloud
+	await writeWrapper(o)
 }
 
 //                  _       
@@ -174,26 +195,3 @@ async function main() {
 	else                              await seal()
 }
 await main()
-
-
-
-
-
-
-
-async function mark(setCloud) {
-	//ttd april
-
-
-
-
-let local = ((new Date()).getTimezoneOffset()) * Time.minute
-log(local)
-
-
-
-
-
-
-
-}

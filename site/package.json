@@ -12,7 +12,9 @@
 	"scripts": {
 		"local": "nuxt dev",
 		"build": "nuxt build",
-		"deploy": "nuxt build && wrangler deploy && yarn --cwd ../ run test",
+		"deploybefore": "yarn --cwd ../ seal set-cloud",
+		"deployafter": "yarn --cwd ../ seal set-local && yarn --cwd ../ test",
+		"deploy": "yarn deploybefore && yarn build && wrangler deploy && yarn deployafter",
 		"generate": "nuxt generate",
 		"preview": "nuxt build && wrangler dev",
 		"postinstall": "nuxt prepare",
