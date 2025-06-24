@@ -756,16 +756,83 @@ so you're going to leave this as is without researching or experimenting further
 \__ \  __/ (__| | |  __/ |_\__ \
 |___/\___|\___|_|  \___|\__|___/
                                 
+demonstrated facts about using secrets in nuxt deploying to cloudflare workers, 2025jun
+
+[i] the intended Nuxt pattern
+
+the intended Nuxt way to deal with secrets is to:
+- prefix them NUXT_
+- identify them in nuxt.config.ts runtimeConfig
+- retrieve them through useRuntimeConfig()
+and this works for Nuxt, but does not work for Nuxt on Cloudflare:
+https://github.com/nitrojs/nitro/issues/2468
+
+[ii] the only working solution
+
+the only way to get the secret from the dashboard is to read it from the event object that comes in with the request
+
+//first, Nuxt way, doesn't work on Cloudflare
+export default defineEventHandler((event) => {
+	const {example1Secret} = useRuntimeConfig()
+
+//instead, second, Cloudflare way, does work in Nuxt (and also SvelteKit)
+export default defineEventHandler((event) => {
+	const e = event.context.cloudflare?.env
+	const s2 = e?.EXAMPLE2_SECRET
+
+and, you've confirmed that done this way, not only do you get the secret from the dashboard
+but you can change the value on the dashboard, and the site gets it
+without building and deploying a new bundle--indicating the secret comes from the dashboard and is not baked in!
+
+[iii] baking them in securely by accident
+
+before, you thought secrets were coming from the dashboard, but really they get backed into the server bundle here
+in nuxt.config.ts
+defineNuxtConfig({
+	runtimeConfig: {
+		MY_KEY_SECRET: process.env.MY_KEY_SECRET,
+	}
+})
+coded that way, at build time, the secret value gets copied from .env into the server bundle
+this doesn't mean it leaked, as the server bundle is still private, but seems like bad form
+it does mean this works without anything set on the dashboard, and also updating the dashboard doesn't matter
+the Nuxt pattern to correct this is to instead do
+        myKeySecret: '',//and then name this NUXT_MY_KEY_SECRET in the .env and .dev.vars files
+and then at run time Nuxt sees the NUXT_ prefix and loads the value in, local from a dot file, deployed from the dashboard
+and then in Nuxt on the server you get it with useRuntimeConfig()
+so lots of distracting chat on following this Nuxt pattern which works, just not on Cloudflare!
+
+[iv] the two secrets files
+
+the common pattern for Nuxt on Cloudflare is to duplicate your secrets files:
+./.env
+./.dev.vars
+scripts in package.json are:
+	"scripts": {
+		"build": "nuxt build",
+		"local": "nuxt dev",
+		"preview": "yarn build && wrangler dev",
+$ yarn local   --> runs "nuxt dev"     on http://localhost:3000, which should get secrets from .env
+$ yarn preview --> runs "wrangler dev" on http://localhost:8787, which should get secrets from .dev.vars
+according to documentation and chat
+but getting secrets from the event object, the only way to get them from the dashboard
+means that running locally either way they come from .dev.vars
+so we'll leave .env around, but note that it's never used
+
+
+ttd june
+based on that, in summary
+we're still baking the secret into the server bundle, which lets getAccess() with no event work
+we did add the event object to getAccess(workerEvent) in doorWorkerOpen, letting a dashboard value in
+but are not relying upon that entirely
+
+
+
 
 ttd june
 move in stuff from readme to here
 talk about how seal copies values down into the different workspaces
 mention you have to change Text to Secret in the cloudflare dashboard
-
-
-
-
-
 
 
 

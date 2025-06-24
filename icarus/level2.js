@@ -771,6 +771,8 @@ but should still be findable in the amazon or cloudflare dashboard
 
 async function doorWorkerOpen({method, workerEvent}) {
 	let access = await getAccess()
+	//let access = await getAccess(workerEvent?.context?.cloudflare?.env)
+	//^ttd june, alternatively, this is how you would get the secret value from the dashboard
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.task = Task({name: 'door worker'})

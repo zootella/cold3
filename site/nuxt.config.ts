@@ -39,8 +39,7 @@ configuration.components = {
 
 //added for secrets
 configuration.runtimeConfig = {
-	ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,
-	//ttd june, change this to NUXT_ACCESS_KEY_SECRET in secret files, and here as accessKeySecret, and then it'll not be built into the server bundle, always come from the dashboard, and useRuntimeConfig().accessKeySecret is how you get it
+	ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,//this securely bakes the access key into the server bundle; ttd june
 }
 
 //for tailwind
