@@ -292,34 +292,37 @@ export async function runTestsSticker() {
 //  \__,_|\___\___\___||___/___/
 //                              
 
+/*
+call accessKey(environment) in cloudflare to save the access key from the dashboard; this is synchronous
+await getAccess() to get a secret; this you have to await because the first time, it decrypts the secrets
+*/
+let _key, _access//module instance variables that are only set once, and may persist between calls in here, or even between requests
+export       function accessKey(environment) { if (!hasText(_key)) { _key    = accessKey_once(environment) } return _key    }
+export async function getAccess(environment) { if (!_access)       { _access = getAccess_once(environment) } return _access }
+
 export function canGetAccess() {//true if we are server-side code running and can get access to secrets
-	return hasText(access_key())//use access_key() and say if we have the key to decrypt all the secrets
+	return hasText(accessKey_once())//use access_key() and say if we have the key to decrypt all the secrets
 }
 
-function access_key(environment) {
-	let key, v
-	if (!hasText(key) && environment) {//caller gave us the environment variables object, like SvelteKit does
-		v = environment.ACCESS_KEY_SECRET
-		if (hasText(v)) key = v
+function accessKey_once(environment) {//look for the access key three places
+	let k1, k2//k1 is found key text, k2 is a possible candidate
+	if (!hasText(k1) && environment) {//first, in the passed in environment object, for cloudflare workers
+		k2 = environment.ACCESS_KEY_SECRET
+		if (hasText(k2)) k1 = k2
 	}
-	if (!hasText(key) && defined(typeof process)) {//environment variables are on process.env, like node or running locally
-		v = process?.env?.ACCESS_KEY_SECRET
-		if (hasText(v)) key = v
+	if (!hasText(k1) && defined(typeof process)) {//second in the normal place, for local node or amazon lambda
+		k2 = process?.env?.ACCESS_KEY_SECRET
+		if (hasText(k2)) k1 = k2
 	}
-	if (!hasText(key) && typeof useRuntimeConfig == 'function') {//Nuxt has defined its useRuntimeConfig() function
-		v = useRuntimeConfig().ACCESS_KEY_SECRET
-		if (hasText(v)) key = v
+	if (!hasText(k1) && typeof useRuntimeConfig == 'function') {//and third the Nuxt way, which doesn't work right now with cloudflare
+		k2 = useRuntimeConfig().ACCESS_KEY_SECRET
+		if (hasText(k2)) k1 = k2
 	}
-	return key
+	return k1
 }
 
-let _access//single module instance
-export async function getAccess(environment) {//pass in the object like process.env, if you have it
-	if (!_access) _access = await access_load(environment)//create once on first call here
-	return _access
-}
-async function access_load(environment) {
-	let key = access_key(environment); checkText(key)//use access_key() and throw if we don't have the key to decrypt all the secrets
+async function getAccess_once(environment) {
+	let key = accessKey_once(environment); checkText(key)//toss if we don't have the key to decrypt all the secrets
 	let decrypted = await decrypt(Data({base62: key}), Data({base62: wrapper.secrets}))
 	let secrets = parseEnvStyleFileContents(decrypted)
 	let redactions//parts of secrets to look for and replacements to redact them with
@@ -560,6 +563,10 @@ Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the bro
 other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 */
 
+const cookieSecurePrefix = '__Secure-'//duplicated from cookieMiddleware.js, ttd june
+const cookieNameWarning  = 'current_session_password'
+const cookieValueWarning = 'account_access_code_DO_NOT_SHARE_'
+
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
 	if (!options) options = {}//totally fine to call fetchWorker('/hello') with no options; we'll prepare an empty request body
@@ -570,7 +577,7 @@ export async function fetchWorker(url, options) {//from a Pinia store, Vue compo
 	if (process.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag
 	if (browserTag) {
 		if (!options.headers) options.headers = {}
-		options.headers.cookie = `${isCloud() ? '__Secure-' : ''}current_session_password=account_access_code_DO_NOT_SHARE_${browserTag}`
+		options.headers.cookie = `${isCloud() ? cookieSecurePrefix : ''}${cookieNameWarning}=${cookieValueWarning}${browserTag}`
 	}
 
 	options.body = makePlain(options.body)//$fetch automatically stringifies, but would throw on a method or circular reference
@@ -773,8 +780,6 @@ but should still be findable in the amazon or cloudflare dashboard
 
 async function doorWorkerOpen({method, workerEvent}) {
 	let access = await getAccess()
-	//let access = await getAccess(workerEvent?.context?.cloudflare?.env)
-	//^ttd june, alternatively, this is how you would get the secret value from the dashboard
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.task = Task({name: 'door worker'})

@@ -37,11 +37,6 @@ configuration.components = {
 	dirs: [{path: '~/components', pathPrefix: false}],
 }
 
-//added for secrets
-configuration.runtimeConfig = {
-	ACCESS_KEY_SECRET: process.env.ACCESS_KEY_SECRET,//this securely bakes the access key into the server bundle; ttd june
-}
-
 //for tailwind
 configuration.modules.push('@nuxtjs/tailwindcss')
 configuration.tailwindcss = {cssPath: '~/assets/css/tailwind.css'}

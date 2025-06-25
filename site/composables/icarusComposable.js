@@ -9,7 +9,7 @@ in Lambda files you still have to import these from Icarus manually, but that's 
 */
 export {
 
-//autoicarus 2 of 4: nuxt client
+//manual icarus import block for nuxt client
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
@@ -28,7 +28,7 @@ checkHash,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 
-canGetAccess, getAccess,
+accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 

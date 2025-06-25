@@ -1,7 +1,7 @@
 
 import {
 
-//autoicarus 1 of 4: persephone
+//manual icarus import block for persephone
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
@@ -20,7 +20,7 @@ checkHash,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 
-canGetAccess, getAccess,
+accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 

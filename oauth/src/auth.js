@@ -2,7 +2,7 @@
 
 import {
 
-//autoicarus, manual for sveltekit, ttd june leave here only what you need rather than keeping the whole block
+//manual icarus import block for sveltekit
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
@@ -21,7 +21,7 @@ checkHash,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 
-canGetAccess, getAccess,
+accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 
@@ -371,37 +371,3 @@ letting our code associate this browser with our user who we know controls that 
 
 There's more that can happen, like PKCE, but this describes a real, albeit simple, flow
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

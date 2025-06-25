@@ -6,7 +6,7 @@ this is the file ./src/routes/continue/[provider]/+page.svelte
 
 import {
 
-//autoicarus, manual for sveltekit, ttd june leave here only what you need rather than keeping the whole block
+//manual icarus import block for sveltekit
 wrapper, Sticker, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
@@ -25,7 +25,7 @@ checkHash,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 
-canGetAccess, getAccess,
+accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 
