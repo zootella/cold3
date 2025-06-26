@@ -31,6 +31,32 @@ import {createClient} from '@supabase/supabase-js'
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function isLocal() { return !wrapper.cloud }
 export function isCloud() { return  wrapper.cloud }
 
@@ -294,7 +320,7 @@ export async function runTestsSticker() {
 
 /*
 call accessKey(environment) in cloudflare to save the access key from the dashboard; this is synchronous
-await getAccess() to get a secret; this you have to await because the first time, it decrypts the secrets
+await getAccess() to get a secret; must await to decrypt the secrets the first time
 */
 let _key, _access//module instance variables that are only set once, and may persist between calls in here, or even between requests
 export       function accessKey(environment) { if (!hasText(_key)) { _key    = accessKey_once(environment) } return _key    }
@@ -322,7 +348,8 @@ function accessKey_once(environment) {//look for the access key three places
 }
 
 async function getAccess_once(environment) {
-	let key = accessKey_once(environment); checkText(key)//toss if we don't have the key to decrypt all the secrets
+	let key = accessKey_once(environment)
+	if (!hasText(key)) toss('no access key')
 	let decrypted = await decrypt(Data({base62: key}), Data({base62: wrapper.secrets}))
 	let secrets = parseEnvStyleFileContents(decrypted)
 	let redactions//parts of secrets to look for and replacements to redact them with
