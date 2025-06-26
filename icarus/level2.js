@@ -323,8 +323,8 @@ call accessKey(environment) in cloudflare to save the access key from the dashbo
 await getAccess() to get a secret; must await to decrypt the secrets the first time
 */
 let _key, _access//module instance variables that are only set once, and may persist between calls in here, or even between requests
-export       function accessKey(environment) { if (!hasText(_key)) { _key    = accessKey_once(environment) } return _key    }
-export async function getAccess(environment) { if (!_access)       { _access = getAccess_once(environment) } return _access }
+export       function accessKey(environment) { if (!hasText(_key)) { _key    =       accessKey_once(environment) } return _key    }
+export async function getAccess(environment) { if (!_access)       { _access = await getAccess_once(environment) } return _access }
 
 export function canGetAccess() {//true if we are server-side code running and can get access to secrets
 	return hasText(accessKey_once())//use access_key() and say if we have the key to decrypt all the secrets
