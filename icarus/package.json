@@ -16,7 +16,6 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"nanoid": "^5.0.7",
 		"credit-card-type": "^10.0.0",
 		"joi": "^17.13.1",
 		"libphonenumber-js": "^1.11.3",
@@ -25,6 +24,7 @@
 		"@supabase/supabase-js": "^2.39.8"
 	},
 	"devDependencies": {
+		"nanoid": "^5.0.7",
 		"rfc4648": "^1.5.3",
 		"@vitejs/plugin-vue": "^5.0.4",
 		"vite": "^6.2.6",

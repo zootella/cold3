@@ -9,6 +9,7 @@ noop, test, ok, toss, checkInt, hasText, Size,
 log,
 say, look,
 checkText,
+tagLength, Tag, checkTagOrBlank, checkTag, hasTag,
 Data, randomBetween,
 cut,
 fraction, exponent, int, big, deindent, newline,
@@ -16,7 +17,6 @@ hashData, hashText, given,
 makePlain, makeObject, makeText,
 } from './level0.js'
 
-import {customAlphabet} from 'nanoid'//use to make unique tags
 import Joi from 'joi'//use to validate email and card
 import creditCardType from 'credit-card-type'//use to validate card
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone
@@ -133,80 +133,6 @@ function _number4(n, power, units) {
 
 
 
-//  _              
-// | |_ __ _  __ _ 
-// | __/ _` |/ _` |
-// | || (_| | (_| |
-//  \__\__,_|\__, |
-//           |___/ 
-
-//generate a new universally unique double-clickable tag of 21 letters and numbers
-export function Tag() {
-	const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-	return customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
-}
-
-//make sure a tag is exactly 21 letters and numbers, for the database
-export function checkTagOrBlank(s) { if (s === ''); else checkTag(s); return s }
-export function checkTag(s) { if (!hasTag(s)) toss('data', {s}); return s }//return to pass valid tag through
-export function hasTag(s) {
-	return (
-		typeof s == 'string' &&
-		s.length == Limit.tag &&
-		/^[0-9A-Za-z]+$/.test(s)
-	)
-}
-test(() => {
-	ok( hasTag('AgKxru95C7jFp5iPuK9O7'))
-	ok(!hasTag('AgKxru95C7jFp5iPuK9O7b'))//too long
-	ok(!hasTag('AgKxru95C7jFp5iPuK9_7'))//invalid character
-
-	ok(!hasTag(''))
-	checkTagOrBlank('')
-	checkTagOrBlank('21j3i1DJMw6JPkxYgTt1B')
-})
-
-//ttd june, replace nanoid with this version of tag, and move it to level0
-let _tagMaker//make the tag maker only if we need it, and then reuse it
-export function Tag0() {//generate a new universally unique double-clickable tag of 21 letters and numbers
-	if (!_tagMaker) {
-
-		//copied from nanoid 5.1.5 from ./node_modules/nanoid/index.browser.js
-		let random = bytes => crypto.getRandomValues(new Uint8Array(bytes))
-		let customRandom = (alphabet, defaultSize, getRandom) => {
-			let mask = (2 << Math.log2(alphabet.length - 1)) - 1
-			let step = -~((1.6 * mask * defaultSize) / alphabet.length)
-			return (size = defaultSize) => {
-				let id = ''
-				while (true) {
-					let bytes = getRandom(step)
-					let j = step | 0
-					while (j--) {
-						id += alphabet[bytes[j] & mask] || ''
-						if (id.length >= size) return id
-					}
-				}
-			}
-		}
-		let customAlphabet = (alphabet, size = 21) => customRandom(alphabet, size | 0, random)
-
-		_tagMaker = customAlphabet(
-			//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-			'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-			Limit.tag)//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
-	}
-	return _tagMaker()
-}
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -229,7 +155,7 @@ test(() => {
 export const Limit = Object.freeze({
 
 	//program types
-	tag: 21,//tags are exactly 21 characters, like "JhpmKdxqPtxv6zXZWglBL"
+	tag: tagLength,//tags are exactly 21 characters, like "JhpmKdxqPtxv6zXZWglBL"
 	hash: 52,//a sha256 hash value in base32 without padding is exactly 52 characters, like "FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA"
 
 	//user submission limits
@@ -1058,6 +984,29 @@ export function measurePasswordStrength(s) {
 
 
 
+//                          _     _ 
+//  _ __   __ _ _ __   ___ (_) __| |
+// | '_ \ / _` | '_ \ / _ \| |/ _` |
+// | | | | (_| | | | | (_) | | (_| |
+// |_| |_|\__,_|_| |_|\___/|_|\__,_|
+//                                  
+/*
+https://www.npmjs.com/package/nanoid
+https://github.com/ai/nanoid
+https://zelark.github.io/nano-id-cc/ collision calculator
+*/
+//import {customAlphabet} from 'nanoid'//only available in icarus
+noop(() => {
+	//here's what your Tag() function looked like before you extracted the implementation from nanoid to move it down to level0
+	function nanoidTag() {
+		const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
+		return customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
+	}
+	for (let i = 0; i < 20; i++) log(`${nanoidTag()} from nanoid and ${Tag()} from Tag()`)//sanity check that they look the same
+})
+
+
+
 
 
 
@@ -1087,7 +1036,7 @@ and this fuzz tester confirms they work the same as the module
 using pad false and loose true
 but Data will do a round-trip check
 */
-//import { base32 } from 'rfc4648'//only available in icarus
+//import {base32} from 'rfc4648'//only available in icarus
 function cycle4648(size) {
 	let d = Data({random: size})
 	let s1 = base32.stringify(d.array(), {pad: false})

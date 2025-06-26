@@ -197,7 +197,6 @@ functions that use module imports
 export {
 
 checkNumerals, onlyNumerals, sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
-Tag, checkTagOrBlank, checkTag, hasTag,
 middleDot, thinSpace,
 Limit, cropToLimit,
 trimLines, trimLine,
@@ -252,6 +251,7 @@ replaceAll, replaceOne,
 Bin, Data,
 base62ToInt, intToBase62,
 
+Tag, checkTagOrBlank, checkTag, hasTag,
 randomBetweenLight, randomBetween, randomCode, hashToLetter,
 secureSameText, secureSameData,
 checkHash, hashData, hashText,

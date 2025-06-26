@@ -864,6 +864,64 @@ test(() => {
 
 
 
+//  _              
+// | |_ __ _  __ _ 
+// | __/ _` |/ _` |
+// | || (_| | (_| |
+//  \__\__,_|\__, |
+//           |___/ 
+
+export const tagLength = 21//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
+let _tagMaker//make the tag maker only if we need it, and then reuse it
+export function Tag() {//generate a new universally unique double-clickable tag of 21 letters and numbers
+	if (!_tagMaker) {
+
+		//copied from nanoid 5.1.5 from ./node_modules/nanoid/index.browser.js
+		let random = bytes => crypto.getRandomValues(new Uint8Array(bytes))
+		let customRandom = (alphabet, defaultSize, getRandom) => {
+			let mask = (2 << Math.log2(alphabet.length - 1)) - 1
+			let step = -~((1.6 * mask * defaultSize) / alphabet.length)
+			return (size = defaultSize) => {
+				let id = ''
+				while (true) {
+					let bytes = getRandom(step)
+					let j = step | 0
+					while (j--) {
+						id += alphabet[bytes[j] & mask] || ''
+						if (id.length >= size) return id
+					}
+				}
+			}
+		}
+		let customAlphabet = (alphabet, size = 21) => customRandom(alphabet, size | 0, random)
+
+		_tagMaker = customAlphabet(
+			//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
+			'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+			tagLength)
+	}
+	return _tagMaker()
+}
+
+//make sure a tag is exactly 21 letters and numbers, for the database
+export function checkTagOrBlank(s) { if (s === ''); else checkTag(s); return s }
+export function checkTag(s) { if (!hasTag(s)) toss('data', {s}); return s }//return to pass valid tag through
+export function hasTag(s) {
+	return (
+		typeof s == 'string' &&
+		s.length == tagLength &&
+		/^[0-9A-Za-z]+$/.test(s)
+	)
+}
+test(() => {
+	ok( hasTag('AgKxru95C7jFp5iPuK9O7'))
+	ok(!hasTag('AgKxru95C7jFp5iPuK9O7b'))//too long
+	ok(!hasTag('AgKxru95C7jFp5iPuK9_7'))//invalid character
+
+	ok(!hasTag(''))
+	checkTagOrBlank('')
+	checkTagOrBlank('21j3i1DJMw6JPkxYgTt1B')
+})
 
 
 

@@ -6,6 +6,7 @@ import {//from level0
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
+Tag, checkTagOrBlank, checkTag,
 Data, decrypt, hashData, secureSameText,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
@@ -15,7 +16,7 @@ randomCode, hashToLetter,
 makePlain, makeObject, makeText,
 } from './level0.js'
 import {//from level1
-Tag, Limit, checkTag, checkTagOrBlank, checkName, validateName,
+Limit, checkName, validateName,
 bundleValid,
 } from './level1.js'
 import {//from level2

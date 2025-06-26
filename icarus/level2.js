@@ -6,6 +6,7 @@ import {//from level0
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
+Tag, checkTag,
 Data, decrypt, hashText, hashData, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
 replaceAll, replaceOne, toTextOrBlank,
@@ -15,7 +16,7 @@ randomBetween,
 runTests,
 } from './level0.js'
 import {//from level1
-Tag, Limit, checkTag, checkActions,
+Limit, checkActions,
 } from './level1.js'
 
 import {getQuery, readBody} from 'h3'
