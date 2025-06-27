@@ -82,7 +82,7 @@ export function stickerParts() {
 	sticker.found = e.tags  //"Achr.Asaf.Docu.Loca.Self.Stor.Wind" tags we sensed
 	sticker.where = e.title //"LocalVite" from those, where we think this is we're running
 
-  //"LocalVite.2025jun26.PKM3EYY.Fri10:21a59.370s.9GkRWuj1CU2ButpEh0lly", or assemble the parts above how you want
+	//"LocalVite.2025jun26.PKM3EYY.Fri10:21a59.370s.9GkRWuj1CU2ButpEh0lly", or assemble the parts above how you want
 	sticker.all = [sticker.where, sticker.sealedText, sticker.hashText, sticker.nowText, sticker.tag].join('.')
 	return sticker
 }
@@ -455,9 +455,10 @@ test(() => {
 
 //Task notes time and duration, where code ran, keeps an error, bundles all that together, and bubbles up success
 export function Task(task) {//use like let task = Task({name: 'some title'})
-	task.tag = Tag()//tag to identify this task
-	task.tick = Now()//start time
-	task.sticker = Sticker()//where we're running to perform this task
+	let sticker = stickerParts()
+	task.tag = sticker.tag//tag to identify this task
+	task.tick = sticker.now//start time
+	task.sticker = sticker.all//where we're running to perform this task
 	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
 	return task
 }//ttd april, yeah, make this finish(task, {success: true}) so Task is a POJO you can really use everywhere, maybe call it done() or finished()
