@@ -48,6 +48,8 @@ import {createClient} from '@supabase/supabase-js'
 
 
 
+
+
 //                  _                                      _   
 //   ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
 //  / _ \ '_ \ \ / / | '__/ _ \| '_ \| '_ ` _ \ / _ \ '_ \| __|
@@ -58,8 +60,6 @@ import {createClient} from '@supabase/supabase-js'
 //is this code deployed to the Internet, or are we running locally? important things use this so it's hard-coded into wrapper
 export function isLocal() { return !wrapper.cloud }
 export function isCloud() { return  wrapper.cloud }
-
-//called deep in a library function, where are we running? we use fuzzy logic chaos theory and other 90s buzzwords
 
 //generate some text that answers when, what, where, which, or make your own from the detected, wrapped, and generated parts of that
 export function Sticker() { return stickerParts().all }//like "LocalVite.2025jun25.EBH2D52.Wed04:28p30.414s.9GkRWuj1CU2ButpEh0lly"
@@ -87,73 +87,7 @@ export function stickerParts() {
 	return sticker
 }
 
-
-
-
-
-
-
-
-
-//      _          _       _                                    _   _      _             
-//  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 
-// / __| '_ \| '__| | '_ \| |/ /\ \ /\ / / '__/ _` | '_ \  / __| __| |/ __| |/ / _ \ '__|
-// \__ \ | | | |  | | | | |   <  \ V  V /| | | (_| | |_) | \__ \ |_| | (__|   <  __/ |   
-// |___/_| |_|_|  |_|_| |_|_|\_\  \_/\_/ |_|  \__,_| .__/  |___/\__|_|\___|_|\_\___|_|   
-//                                                 |_|                                   
-
-function old_Sticker() {
-
-	//gather information for the sticker we're making
-	let now = Now()
-	let tag = Tag()
-	let environment = senseEnvironment()
-
-	//prepare the sticker object we will return
-	let sticker = {}
-
-	//include the wrapper
-	sticker.wrapper = wrapper
-
-	//include the tick now, and a tag to uniquely identify this call to sticker right now
-	sticker.now = now
-	sticker.tag = tag
-
-	//include core information to log or parse later
-	sticker.core = {}
-
-	sticker.core.callTick = now//about this call to get the sticker right now
-	sticker.core.callTag  = tag
-
-	sticker.core.sealedHash = wrapper.hash//about what's running
-	sticker.core.sealedWhen = wrapper.tick
-
-	sticker.core.where = environment.title//about where we're running
-	sticker.core.whereTags = environment.tagsArray
-
-	//based on that information we've already included, compose some text for easy reading
-	let saySealedHash = wrapper.hash.slice(0, 7)
-	let saySealedWhen = sayDate(wrapper.tick)
-	sticker.where = environment.title
-	sticker.what  =                       saySealedWhen+'.'+saySealedHash
-	sticker.all   = environment.title+'.'+saySealedWhen+'.'+saySealedHash+'.'+sayTick(now)
-
-	return sticker
-}
-
-export function isNuxt() { let s = Sticker(); return (s.includes('Nuxt') || s.includes('Page')) }
-//ttd june, get rid of isNuxt entirely
-
-//                                            _                                      _   
-//  ___  ___ _ __  ___  ___    ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
-// / __|/ _ \ '_ \/ __|/ _ \  / _ \ '_ \ \ / / | '__/ _ \| '_ \| '_ ` _ \ / _ \ '_ \| __|
-// \__ \  __/ | | \__ \  __/ |  __/ | | \ V /| | | | (_) | | | | | | | | |  __/ | | | |_ 
-// |___/\___|_| |_|___/\___|  \___|_| |_|\_/ |_|_|  \___/|_| |_|_| |_| |_|\___|_| |_|\__|
-//                                                                                       
-
-//sense the environment and report fingerprint details like:
-//"CloudLambda:Eigh.Envi.Glob.Lamb.Node.Proc.Regi.Zulu, 1725904754597, vYYYYmmmDl"
-//the insanity that follows is you trying to be able to sense what and where is running us
+//deep in a library function, where are we running? use fuzzy logic chaos theory and other 90s buzzwords to figure it out
 const _senseEnvironmentVersion = 3//if you change how this works at all, increment!
 const _senseEnvironment = `
 Aclo Clie Docu Doma Loca Eigh Fetc Glob Lamb Node Proc Regi Requ Scri Self Serv Stor Wind Zulu >Determining
@@ -651,8 +585,7 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 	checkAbsoluteUrl(url)
 	checkText(options.method)//must explicitly indicate method
 
-	let f = typeof $fetch == 'function' ? $fetch : ofetch
-	if (isNuxt() && typeof $fetch != 'function') toss('environment', {note: "environment looks like nuxt but we don't have $fetch"})
+	let f = typeof $fetch == 'function' ? $fetch : ofetch//nuxt and nitro define $fetch; elsewhere fall back to ofetch which matches
 
 	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
 }

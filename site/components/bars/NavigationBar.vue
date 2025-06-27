@@ -12,6 +12,7 @@ const sticker = stickerParts()
 <NuxtLink to="/">index</NuxtLink>{{' - '}}
 <NuxtLink to="/up/up3">test</NuxtLink>{{' '}}
 <NuxtLink to="/image">image</NuxtLink>{{' '}}
+<a href="https://oauth.cold3.cc/">oauth</a>{{' '}}
 <NuxtLink to="/video">video</NuxtLink>{{' - '}}
 <NuxtLink to="/page1">page1</NuxtLink>{{' '}}
 <NuxtLink to="/page2">page2</NuxtLink>{{' '}}
