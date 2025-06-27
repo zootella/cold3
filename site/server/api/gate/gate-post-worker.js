@@ -21,7 +21,7 @@ async function doorHandleBelow({door}) {
 
 	let r = {}
 	r.name = 'GatePostWorker.'
-	r.sticker = Sticker().all
+	r.sticker = Sticker()
 	r.method = door.workerEvent.req.method
 	r.headers = makePlain(door.workerEvent.req.headers); delete r.headers.cookie//make plain to copy the object and delete the browser tag cookie from the copy. Never leak the browser tag to the page!
 	r.success = true

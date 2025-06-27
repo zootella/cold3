@@ -10,7 +10,7 @@ in Lambda files you still have to import these from Icarus manually, but that's 
 import {
 
 //manual icarus import block for nuxt server import
-wrapper, Sticker, isLocal, isCloud,
+wrapper, Sticker, stickerParts, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,
@@ -36,7 +36,7 @@ Task, fetchWorker, fetchLambda, fetchProvider,
 const whatWeImported = {//we could import * to avoid duplicating the list, but that would make things harder on the tree shaker; ESM doesn't have a way to import a dynamic list (which makes sense) nor a way to get a list that was imported
 
 //manual icarus import block for nuxt server globalize
-wrapper, Sticker, isLocal, isCloud,
+wrapper, Sticker, stickerParts, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,

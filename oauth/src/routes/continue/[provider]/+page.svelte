@@ -7,7 +7,7 @@ this is the file ./src/routes/continue/[provider]/+page.svelte
 import {
 
 //manual icarus import block for sveltekit
-wrapper, Sticker, isLocal, isCloud,
+wrapper, Sticker, stickerParts, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,

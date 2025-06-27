@@ -13,7 +13,7 @@ export function Task(task) {
 	checkText(task.name)//only name is required
 	task.tag = Tag()//tag to identify this task
 	task.tick = Now()//start time
-	task.sticker = Sticker()//where we're running to perform this task
+	task.sticker = stickerParts()//where we're running to perform this task
 	task.logged = false//flag for you to batch log at the end
 	task.finish = function(more) {//mark this task done, adding more properites about how it concluded
 		Object.assign(task, more)//be careful, as this overwrites anything already in task!

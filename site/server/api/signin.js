@@ -4,7 +4,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let r = {}
-	r.sticker = Sticker().all
+	r.sticker = Sticker()
 
 	switch (action) {
 		case 'Hi.': r.result = 'hello back to you'; break;

@@ -10,7 +10,7 @@ in Lambda files you still have to import these from Icarus manually, but that's 
 export {
 
 //manual icarus import block for nuxt client
-wrapper, Sticker, isLocal, isCloud,
+wrapper, Sticker, stickerParts, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,

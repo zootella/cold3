@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorLambda, toss, log, look, defined,
+Sticker, stickerParts, doorLambda, toss, log, look, defined, Task,
 runTests, runTestsSticker,
 } from 'icarus'
 

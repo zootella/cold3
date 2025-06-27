@@ -4,7 +4,7 @@ definePageMeta({layout: 'feed-layout', note: 'on index'})
 
 defineOgImageComponent('NuxtSeo', {
 	title: `🍺 cold3.cc`,
-	description: Sticker().all,
+	description: Sticker(),
 	theme: '#ff00ff',
 	colorMode: 'light',
 })

@@ -7,7 +7,7 @@ this is the file ./src/routes/+page.svelte
 import {
 
 //manual icarus import block for sveltekit
-wrapper, Sticker, isLocal, isCloud,
+wrapper, Sticker, stickerParts, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,
@@ -52,7 +52,7 @@ filled in with the google site verification code for oauth.cold3.cc
 <p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
 <p>SvelteKit site on Cloudflare Workers to host <i>oauth.cold3.cc</i></p>
 <p>This HTML comes from a file at <code>./src/routes/+page.svelte</code><br />
-where <i>Sticker().all</i> says <code>{Sticker().all}</code></p>
+where <i>Sticker()</i> says <code>{Sticker()}</code></p>
 
 <h2>List</h2>
 <p>List configured OAuth providers at <a href="/auth/providers">/auth/providers</a> and then</p>

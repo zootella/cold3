@@ -7,7 +7,7 @@ let more = route.params.more
 
 defineOgImageComponent('NuxtSeo', {
 	title: `this is a card for "${more}"`,
-	description: Sticker().all,
+	description: Sticker(),
 	theme: '#ff00ff',
 	colorMode: 'light'
 })

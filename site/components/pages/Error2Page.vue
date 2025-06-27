@@ -12,7 +12,7 @@ const refButtonInFlight = ref(false)
 
 async function onClick() {
 	await refButton.value.post('/api/report', {action: 'PageErrorTurnstile.',
-		sticker: Sticker().all,
+		sticker: Sticker(),
 		graphics: getBrowserGraphics(),
 		details: pageStore.errorDetails,
 	})

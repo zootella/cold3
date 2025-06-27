@@ -11,7 +11,7 @@ async function doorHandleBelow({door, body}) {
 	r.headers = door.workerEvent.req.headers
 	r.accessLength = access.get('ACCESS_PASSWORD_SECRET').length
 	r.tag = Tag()
-	r.sayEnvironment = Sticker().all
+	r.sayEnvironment = Sticker()
 
 	return r
 }

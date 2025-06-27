@@ -2,6 +2,8 @@
 
 defineProps({note: String})
 
+const sticker = stickerParts()
+
 </script>
 <template>
 <div>
@@ -24,7 +26,7 @@ defineProps({note: String})
 <NuxtLink to="/authenticate">authenticate</NuxtLink>{{' '}}
 <NuxtLink to="/me">me</NuxtLink>{{' '}}
 <NuxtLink to="/error2">error2</NuxtLink>{{' '}}
-<i>{{ note }}, {{ Sticker().what }}</i>
+<i>{{note}}, {{sticker.sealedText}}.{{sticker.hashText}}</i>
 </p>
 
 </div>

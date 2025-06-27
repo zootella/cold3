@@ -9,7 +9,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
-	r.sticker = Sticker().all
+	r.sticker = Sticker()
 
 	checkTextOrBlank(body.message)
 	let h = await hashText(body.message)

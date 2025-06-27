@@ -48,18 +48,52 @@ import {createClient} from '@supabase/supabase-js'
 
 
 
+//                  _                                      _   
+//   ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
+//  / _ \ '_ \ \ / / | '__/ _ \| '_ \| '_ ` _ \ / _ \ '_ \| __|
+// |  __/ | | \ V /| | | | (_) | | | | | | | | |  __/ | | | |_ 
+//  \___|_| |_|\_/ |_|_|  \___/|_| |_|_| |_| |_|\___|_| |_|\__|
+//                                                             
 
-
-
-
-
-
-
-
-
-
+//is this code deployed to the Internet, or are we running locally? important things use this so it's hard-coded into wrapper
 export function isLocal() { return !wrapper.cloud }
 export function isCloud() { return  wrapper.cloud }
+
+//called deep in a library function, where are we running? we use fuzzy logic chaos theory and other 90s buzzwords
+
+//generate some text that answers when, what, where, which, or make your own from the detected, wrapped, and generated parts of that
+export function Sticker() { return stickerParts().all }//like "LocalVite.2025jun25.EBH2D52.Wed04:28p30.414s.9GkRWuj1CU2ButpEh0lly"
+export function stickerParts() {
+	let sticker = {}
+
+	//from wrapper
+	sticker.sealed     = wrapper.tick             //1750962934957, when the shrinkwrap was sealed
+	sticker.sealedText = sayDate(wrapper.tick)    //"2025jun26", the UTC day that tick happened in
+	sticker.hash       = wrapper.hash             //"PKM3EYYNZLNJHSQLOI67R6BLEY77EUNDDLQV2MX6PJ3RLX2BS5GQ" ‹52›
+	sticker.hashText   = wrapper.hash.slice(0, 7) //"PKM3EYY" just the start of the wrapper hash
+
+	//about this Sticker we're making right now
+	sticker.tag     = Tag()                //"9GkRWuj1CU2ButpEh0lly" a Sticker includes a new unique tag which may be useful
+	sticker.now     = Now()                //1751041319370 and a tick right now to go along with it
+	sticker.nowText = sayTick(sticker.now) //"Fri10:21a59.370s"
+
+	//from environment detection
+	let e = senseEnvironment()
+	sticker.found = e.tags  //"Achr.Asaf.Docu.Loca.Self.Stor.Wind" tags we sensed
+	sticker.where = e.title //"LocalVite" from those, where we think this is we're running
+
+  //"LocalVite.2025jun26.PKM3EYY.Fri10:21a59.370s.9GkRWuj1CU2ButpEh0lly", or assemble the parts above how you want
+	sticker.all = [sticker.where, sticker.sealedText, sticker.hashText, sticker.nowText, sticker.tag].join('.')
+	return sticker
+}
+
+
+
+
+
+
+
+
 
 //      _          _       _                                    _   _      _             
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___| |_(_) ___| | _____ _ __ 
@@ -68,7 +102,7 @@ export function isCloud() { return  wrapper.cloud }
 // |___/_| |_|_|  |_|_| |_|_|\_\  \_/\_/ |_|  \__,_| .__/  |___/\__|_|\___|_|\_\___|_|   
 //                                                 |_|                                   
 
-export function Sticker() {
+function old_Sticker() {
 
 	//gather information for the sticker we're making
 	let now = Now()
@@ -81,7 +115,7 @@ export function Sticker() {
 	//include the wrapper
 	sticker.wrapper = wrapper
 
-	//include the tick now, and a tag to uniquely identify this call to Sticker() right now
+	//include the tick now, and a tag to uniquely identify this call to sticker right now
 	sticker.now = now
 	sticker.tag = tag
 
@@ -107,17 +141,8 @@ export function Sticker() {
 	return sticker
 }
 
-export function isNuxt() { let s = Sticker().all; return (s.includes('Nuxt') || s.includes('Page')) }
-/*
-ttd april
-make sticker simpler
-all you are using is Sticker().all, which should be shorter and different order like YQ7SL24.CloudNuxtServer.Sun10:54a38.399s
-you don't need tag or tick in sticker, as you've got these in Task
-have one function that returns all the details of everything
-and then separate functions which return the common composed forms
-function makeSticker() returns details, but still doesn't include tag and tick
-function Sticker() is just string, replacement for Sticker().all
-*/
+export function isNuxt() { let s = Sticker(); return (s.includes('Nuxt') || s.includes('Page')) }
+//ttd june, get rid of isNuxt entirely
 
 //                                            _                                      _   
 //  ___  ___ _ __  ___  ___    ___ _ ____   _(_)_ __ ___  _ __  _ __ ___   ___ _ __ | |_ 
@@ -279,11 +304,11 @@ $ node disk, just shows it, rather than seal which makes it
 
 
 
-
+//ttd june
 export async function runTestsSticker() {
 	let results = await runTests()
-	results.sticker = Sticker()
-	results.summary = `${results.sticker.wrapper.hash.slice(0, 7)} ${results.sticker.core.where} ${results.duration}ms ✅ ${results.passes} assertions in ${results.tests} tests on ${sayTick(results.time)}`
+	let sticker = stickerParts()
+	results.summary = `${sticker.hashText} ${sticker.where} ${results.duration}ms ✅ ${results.passes} assertions in ${results.tests} tests on ${sayTick(results.time)}`
 	return results
 }
 
@@ -498,7 +523,7 @@ test(() => {
 export function Task(task) {//use like let task = Task({name: 'some title'})
 	task.tag = Tag()//tag to identify this task
 	task.tick = Now()//start time
-	task.sticker = Sticker().all//where we're running to perform this task
+	task.sticker = Sticker()//where we're running to perform this task
 	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
 	return task
 }//ttd april, yeah, make this finish(task, {success: true}) so Task is a POJO you can really use everywhere, maybe call it done() or finished()
@@ -1278,7 +1303,7 @@ export async function awaitLogAlert(headline, watch) {
 	if (canGetAccess() && isCloud()) await sendLog(s)//only log to datadog if from deployed code
 }
 async function prepareLog(status, type, label, headline, watch) {
-	let sticker = Sticker()//find out what, where, and when we're running, also makes a tag for this sticker check right now
+	let sticker = stickerParts()//find out what, where, and when we're running, also makes a tag for this sticker check right now
 	let access = await getAccess()//access secrets to be able to redact them
 	let d = {//this is the object we'll log to datadog
 
@@ -1290,19 +1315,19 @@ async function prepareLog(status, type, label, headline, watch) {
 		//datadog reccomended
 		//not sending: hostname: k.where,//hostname where the log came from; not required and additionally redundant
 		status: status,//the severity level of what happened, like "debug", "info", "warn", "error", "critical"
-		tags: [type, 'where:'+sticker.core.where, 'what:'+sticker.what],//set tags to categorize and filter logs, array of "key:value" strings
+		tags: [type, 'where:'+sticker.where, 'what:'+sticker.sealedText+sticker.hashText],//set tags to categorize and filter logs, array of "key:value" strings
 
 		//and then add our custom stuff
 		tag: sticker.tag,//tag this log entry so if you see it two places you know it's the same one, not a second identical one
 		when: sayTick(sticker.now),//human readable time local to reader, not computer; the tick number is also logged, in sticker.nowTick
-		sticker: sticker.core,//put not the whole sticker in here, which includes the complete code hash, the tags we found to sense what environment this is, and the tick count now as we're preparing the log object
+		sticker: sticker,//put the whole sticker in here, which includes the complete code hash, the tags we found to sense what environment this is, and the tick count now as we're preparing the log object
 		watch: {}//message (datadog required) and watch (our custom property) are the two important ones we fill in below
 	}
 
 	//set the watch object, and compose the message
 	if (headline != '↓') headline = `"${headline}"`//put quotes around a headline
 	d.watch = watch//machine parsable; human readable is later lines of message using look() below
-	d.message = `${sayTick(sticker.now)} [${label}] ${headline} ${sticker.where}.${sticker.what} ${sticker.tag} ‹SIZE›${newline}${look(watch)}`
+	d.message = `${sayTick(sticker.now)} [${label}] ${headline} ${sticker.where}.${sticker.sealedText}.${sticker.hashText} ${sticker.tag} ‹SIZE›${newline}${look(watch)}`
 
 	//prepare the body
 	let b, s, size, m, l

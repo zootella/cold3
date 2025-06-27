@@ -18,7 +18,7 @@ async function doorHandleBelow({door, body, action}) {
 		case 'Query3.':   result = await snippetQuery3();   break;
 	}
 
-	r.sticker = Sticker().all
+	r.sticker = Sticker()
 	r.result = result
 	return r
 }

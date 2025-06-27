@@ -2,7 +2,7 @@
 import {
 
 //manual icarus import block for persephone
-wrapper, Sticker, isLocal, isCloud,
+wrapper, Sticker, stickerParts, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,
@@ -69,7 +69,7 @@ export async function warm({provider, service}) {
 
 export async function sendMessage({provider, service, address, subjectText, messageText, messageHtml}) {
 	let access = await getAccess()
-	let sticker = ` ${Sticker().all}.${provider}${service}`
+	let sticker = ` ${Sticker()}.${provider}${service}`
 	messageText = replaceOne(messageText, 'STICKER', sticker)
 	messageHtml = replaceOne(messageHtml, 'STICKER', sticker)
 	let task = Task({name: 'message', provider, service, parameters: {address, subjectText, messageText, messageHtml}})

@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorLambda, toss, log, look, defined, Task,
+Sticker, stickerParts, doorLambda, toss, log, look, defined, Task,
 runTests, runTestsSticker,
 } from 'icarus'
 
@@ -15,6 +15,6 @@ async function doorHandleBelow({door, body}) {
 	await warm({})
 	return {
 		success: true,
-		note: `lambda says: ${Sticker().all}, up2done`,
+		note: `lambda says: ${Sticker()}, up2done`,
 	}
 }

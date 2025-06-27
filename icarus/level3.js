@@ -20,7 +20,7 @@ Limit, checkName, validateName,
 bundleValid,
 } from './level1.js'
 import {//from level2
-getAccess, Sticker, isLocal, isCloud,
+getAccess, Sticker, stickerParts, isLocal, isCloud,
 Task, fetchWorker, fetchLambda, fetchProvider,
 
 /* level 2 query */

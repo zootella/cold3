@@ -24,9 +24,13 @@ async function load() { if (loaded.value) return; loaded.value = true//runs on t
 }
 async function mounted() {//runs on the client, only, when app.vue is mounted
 	pageDuration.value = Math.floor(performance.now())//whole milliseconds since the browser began navigating to the site
+	console.log(
+		'%cSecurity warning: DO NOT PASTE anything in here. Anyone telling you to is trying to steal your account!',
+		'font-family: monospace; font-size: 20px; color: white; background: #ff4f00; padding: 12px; border-radius: 16px;'
+	)
 	log(`server render took ${serverDuration.value}ms ⏱️ ${pageDuration.value}ms navigation to mounted`)//log to browser console, even deployed
 	await fetchWorker('/api/report', {body: {action: 'Hello.',
-		sticker: Sticker().all,
+		sticker: Sticker(),
 		d1: pageDuration.value,//biggest first
 		d2: serverDuration.value,//details within
 		graphics: getBrowserGraphics(),

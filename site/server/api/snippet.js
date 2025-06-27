@@ -4,7 +4,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body}) {
 	let r = {}
-	r.note = `worker snippet says: ${Sticker().all}, v2024oct24a`
+	r.note = `worker snippet says: ${Sticker()}, v2024oct24a`
 
 	return r
 }

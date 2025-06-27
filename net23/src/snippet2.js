@@ -1,6 +1,6 @@
 
 import {
-Sticker, doorLambda, toss, log, look, defined, Task,
+Sticker, stickerParts, doorLambda, toss, log, look, defined, Task,
 runTests,
 } from 'icarus'
 
@@ -21,7 +21,7 @@ async function doorHandleBelow({door, body}) {
 	try {
 
 		o.message = 'hi from net23 snippet2, using door and require!'
-		o.sticker = Sticker().all
+		o.sticker = Sticker()
 		if (defined(typeof process)) {
 			o.processArch = process.arch
 			o.processPlatform = process.platform

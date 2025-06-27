@@ -20,7 +20,7 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 			user: await browserToUser({browserHash}),//look up what user is signed in to this browser
 		},
 		worker: {//source (3) worker: information cloudflare is telling us; trustworthy
-			sticker: Sticker().all,
+			sticker: Sticker(),
 			ip: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
 			geography: {
 				country: headerGetOne(headers, 'cf-ipcountry'),//this one is always present
