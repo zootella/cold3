@@ -79,8 +79,8 @@ export function stickerParts() {
 
 	//from environment detection
 	let e = senseEnvironment()
-	sticker.found = e.tags  //"Achr.Asaf.Docu.Loca.Self.Stor.Wind" tags we sensed
-	sticker.where = e.title //"LocalVite" from those, where we think this is we're running
+	sticker.found = e.found //"Achr.Asaf.Docu.Loca.Self.Stor.Wind" tags we sensed
+	sticker.where = e.where //"LocalVite" from those, where we think this is we're running
 
 	//"LocalVite.2025jun26.PKM3EYY.Fri10:21a59.370s.9GkRWuj1CU2ButpEh0lly", or assemble the parts above how you want
 	sticker.all = [sticker.where, sticker.sealedText, sticker.hashText, sticker.nowText, sticker.tag].join('.')
@@ -103,7 +103,7 @@ Aclo                               Glob      Node Proc      Requ      Self      
           Docu Doma                Glob                               Self      Stor Wind      >CloudPageClient
 `
 //note that LocalNuxtServer has Serv before a hot reload; Fetc lets us distinguish it from LocalNode
-export function senseEnvironment() {
+function senseEnvironment() {
 	function type(t) { return t != 'undefined' }
 	function text(o) { return typeof o == 'string' && o != '' }
 	let a = []
@@ -163,13 +163,19 @@ export function senseEnvironment() {
 	for (const [k, v] of Object.entries(scores)) {
 		if (v > winningScore) { winningScore = v; winningTitle = k }
 	}
-	return {senseEnvironmentVersion: _senseEnvironmentVersion, tagsArray: a, tags: s, title: winningTitle }
+	return {version: _senseEnvironmentVersion, found: s, where: winningTitle}
 }
 /*
 todo, more of these you're hearing about later
 and after all that, you find out (but have not yet confirmed) that you can look for
 process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'production'
 */
+
+
+
+
+
+
 
 
 
