@@ -25,15 +25,14 @@
 	"scripts": {
 		"test": "node test",
 		"seal": "node seal",
-		"upgrade-wash": "yarn wash && rimraf yarn.lock",
-		"wash": "rimraf .yarn package-lock.json node_modules icarus/node_modules net23/node_modules oauth/node_modules site/node_modules oauth/.wrangler site/.wrangler oauth/worker-configuration.d.ts site/worker-configuration.d.ts net23/.serverless oauth/.svelte-kit site/.nuxt site/.output site/.wrangler site/dist"
+		"upgrade-wash": "yarn wash && npx rimraf yarn.lock",
+		"wash": "npx rimraf .yarn package-lock.json node_modules icarus/node_modules net23/node_modules oauth/node_modules site/node_modules oauth/.wrangler site/.wrangler oauth/worker-configuration.d.ts site/worker-configuration.d.ts net23/.serverless oauth/.svelte-kit site/.nuxt site/.output site/.wrangler site/dist"
 	},
 	"dependencies": {
 		"icarus": "*"
 	},
 	"packageManager": "yarn@1.22.22",
 	"devDependencies": {
-		"fast-glob": "^3.3.2",
-		"rimraf": "^6.0.1"
+		"fast-glob": "^3.3.2"
 	}
 }
