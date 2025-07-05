@@ -108,6 +108,13 @@ but yarn preview still works, and deploy still works
 went in circles with chat all day trying solutions, mostly here, below
 ended up reverting to yarn.local from this morning, which works
 
+---
+ℹ Error: self is not defined
+
+ ⁃ (/Users/kevin/Documents/code/cold3/node_modules/joi/dist/joi-browser.min.js:3:3)
+ ⁃ at ViteNodeRunner.runModule (/Users/kevin/Documents/code/cold3/node_modules/vite-node/dist/client.mjs:397:10)
+---
+
 //solution attempt (1c)
 //added to solve "Error: self is not defined" when running locally
 const list1 = [
