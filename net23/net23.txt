@@ -590,6 +590,32 @@ installing on win|mac with a lockfile from the other has got to be an invitation
 
 
 
+in package.json, three ways to specify a module version:
+
+"^1.2.3" (carrot)
+ "1"     (desired)
+"^1.0.0" (hack)
+
+all are valid patterns according to semantic versioning, https://semver.org/
+carrot is what you get by default
+it means that every time you do a powerwash, you get versions at or above those listed in package.json
+so the version numbers in package.json don't really mean anything--they're antique and irrelevant to what you're actually running
+the idea about how all this is supposed to work is then the lockfile pins and documents the exact versions
+and then you go and yarn update module by module
+
+but in practice, you want to update everything at once, and frequently get all current modules
+if there's a problem, you want to know about it and resolve it, rather than
+so your powerwash script does this, by deleting the lockfile
+also, you didn't check the lockfile into git, because if you accidentally installed on windows from a lockfile made on mac, or the reverse, surely that would create a lot of phantom problems until you remembered you should powerwash
+
+ok, so now if that's the workflow, powerwash all the time
+you don't want to have full nonsensical versions in package.json
+you tried switching to just "1", which, so long as a module never moves to a lower version number (you have not heard of this) is the same
+testing that out, it all worked fine, except there was a really weird bug with lambda deployed where tests passed, but it couldn't tell you how many there were (you could try to reproduce this)
+
+or, after that, you thought you could fake it with the third pattern, labeled (hack) above, where
+it would be nice to look at package.json files and reason about them without being distracted by minor and patch version numbers that don't really tell us anything
+
 
 
 
