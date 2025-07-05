@@ -564,6 +564,35 @@ $ cold3 % yarn --version
 
 
 
+ _            _     __ _ _      
+| | ___   ___| | __/ _(_) | ___ 
+| |/ _ \ / __| |/ / |_| | |/ _ \
+| | (_) | (__|   <|  _| | |  __/
+|_|\___/ \___|_|\_\_| |_|_|\___|
+                                
+
+
+we're on yarn classic, 1.22.22, because yarn
+- is easy and short to type (unlike npm which also makes you type run)
+- invented workspaces (unlike npm which added them)
+- 4 didn't work at all, even just on mac!
+
+yarn.lock, about to switch to this treatment:
+- .gitignore stops ignoring it; let yarn.lock into the git repo (this is the change, 2025jul)
+- seal disk omits it from the human readable code size total
+- seal hash includes it in the hash manifest
+- powerwash still deletes it; yarn powerwash && yarn install to update all modules
+
+this is fine, except if you switch back to windows, you have to powerwash!
+installing on win|mac with a lockfile from the other has got to be an invitation for unnecessary errors and weirdnesses
+
+
+
+
+
+
+
+
 
 
 
@@ -665,6 +694,7 @@ set README.md, LICENSE, and .gitignore
 in package.json, rename dev to local
 git add, commit, push
 yarn build, local, and deploy
+
 
 
 

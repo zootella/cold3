@@ -42,7 +42,6 @@ card.js
 
 #lock files; forgetting to delete one on a new os would really mess up the build
 .yarn
-yarn.lock
 package-lock.json
 
 #logs and diffs
