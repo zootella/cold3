@@ -98,7 +98,7 @@ ttd june, previous visualizer; now there's a built-in one, but you still need a 
 
 
 /*
-notes from 2025jul5, lost a full day
+notes from 2025jul5, lost a full day, ttd july
 
 you did powerwash
 and then there's an error about joi trying to use self
