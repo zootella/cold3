@@ -560,6 +560,10 @@ $ cold3 % yarn --version
 
 
 
+also need to do this for the root scripts wash and upgrade-wash to work:
+$ npm install -g rimraf
+before this, it was a mess as you couldn't double call it because it would delete itself
+
 
 
 
