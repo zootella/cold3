@@ -23,8 +23,36 @@ import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate ph
 
 
 
+/*
+ttd july
+get rid of joi, as it's big and old
 
+zod will be fine for email
+alongside credit card type, roll your own luhn check:
 
+function luhnCheck(number) {
+	// 1. Strip non-digits, split into array, reverse for idx-based doubling
+	const digits = number
+		.replace(/\D/g, '')
+		.split('')
+		.reverse()
+		.map(d => Number(d));
+
+	// 2. Sum with Luhn doubling on every second digit
+	const sum = digits.reduce((acc, digit, idx) => {
+		if (idx % 2 === 1) {
+			const doubled = digit * 2;
+			// subtract 9 if >9 (same as summing the two digits)
+			return acc + (doubled > 9 ? doubled - 9 : doubled);
+		}
+		return acc + digit;
+	}, 0);
+
+	// 3. Valid if total ends in zero
+	return sum % 10 === 0;
+}
+
+*/
 
 
 
