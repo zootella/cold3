@@ -196,6 +196,8 @@ functions that use module imports
 */
 export {
 
+liveBox,//move to whichever level you need it!
+
 checkNumerals, onlyNumerals, sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
 Limit, cropToLimit,
@@ -230,8 +232,6 @@ indexRecords, addRecords, mergeRecords,
 helpful javascript functions with no module imports
 */
 export {
-
-liveBox,//move to whichever level you need it!
 
 Time, Size, noop,
 Now, sayDate, sayTick,

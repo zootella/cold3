@@ -30,7 +30,6 @@ icarus
 		2 utility
 		"nanoid": "^5.0.7",
 		"credit-card-type": "^10.0.0",
-		"joi": "^17.13.1",
 		"libphonenumber-js": "^1.11.3",
 		"h3": "^1.13.0",//brought in by Nuxt; listed explicitly so doorWorkerOpen can be in library2.js
 		"ofetch": "^1.4.1",//also brought in by Nuxt; added so fetchProvider can use $fetch from worker and ofetch from lambda

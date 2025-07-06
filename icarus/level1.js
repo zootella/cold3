@@ -17,45 +17,15 @@ hashData, hashText, given,
 makePlain, makeObject, makeText,
 } from './level0.js'
 
-import Joi from 'joi'//use to validate email and card
-import creditCardType from 'credit-card-type'//use to validate card
-import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone
+import {z as zod} from 'zod'//use to validate email
+import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
+import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
 
 
 
-/*
-ttd july
-get rid of joi, as it's big and old
 
-zod will be fine for email
-alongside credit card type, roll your own luhn check:
-
-function luhnCheck(number) {
-	// 1. Strip non-digits, split into array, reverse for idx-based doubling
-	const digits = number
-		.replace(/\D/g, '')
-		.split('')
-		.reverse()
-		.map(d => Number(d));
-
-	// 2. Sum with Luhn doubling on every second digit
-	const sum = digits.reduce((acc, digit, idx) => {
-		if (idx % 2 === 1) {
-			const doubled = digit * 2;
-			// subtract 9 if >9 (same as summing the two digits)
-			return acc + (doubled > 9 ? doubled - 9 : doubled);
-		}
-		return acc + digit;
-	}, 0);
-
-	// 3. Valid if total ends in zero
-	return sum % 10 === 0;
+export function liveBox(s) {
 }
-
-*/
-
-
-
 
 
 
@@ -525,20 +495,15 @@ test(() => {
 notes about validation
 
 modules you found:
-joi has 9 million downloads and installs 6 packages
+zod has 32 million downloads and is standalone
 credit-card-type has half a million downloads and installs 1 package
 libphonenumber-js has 5 million downloads and installs 1 package
-
-current limitations in email:
--joi has a built in TLD whitelist, but some error meant you turned off that check
 
 current limitations in phone:
 -you're assuming US rather than telling libphonenumber what country to fit to
 
 current limitations in card:
--joi validates the card, but can't group digits
 -credit-card-type groups digits, and detects type from what the user has typed so far
-(ttd february, so why are you using both joi and credit-card-type? maybe just use credit-card-type)
 
 data forms:
 -raw, what the user put in the box
@@ -576,8 +541,13 @@ and return an object like {isValid, formNormal, formFormal, formPage, raw, other
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|  \___|_| |_| |_|\__,_|_|_|
 //                                                                
 
+let _zodEmail//standard pattern to make once on first use for any number of uses; doesn't hold state
+function zodEmail() {
+	if (!_zodEmail) _zodEmail = zod.string().email()//make a zod schema to only accept strings that look like valid email addresses
+	return _zodEmail
+}
+
 const periodIgnorers = ['gmail.com', 'googlemail.com', 'proton.me', 'protonmail.com', 'pm.me', 'protonmail.ch']//these providers, gmail and protonmail, deliver mail addressed to first.last@gmail.com to the user firstlast@gmail.com
-const _email = Joi.string().email({tlds: {allow: false}}).required()//no list of true TLDs
 export function checkEmail(raw, limit) { let v = validateEmail(raw, limit); if (!v.isValid) toss('form', {v}); return v }
 export function validateEmail(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
@@ -587,8 +557,8 @@ export function validateEmail(raw, limit) {
 	don't touch space in the middle
 	*/
 	let formFormal = cropped.trim()
-	let j1 = _email.validate(formFormal)
-	if (j1.error) return {formFormal, raw, cropped, j1}//isValid not true on these early returns
+	let j1 = zodEmail().safeParse(formFormal)
+	if (!j1.success) return {formFormal, raw, cropped, j1}//isValid not true on these early returns
 
 	/* (2) presented step for email
 	leave the name the same, but lowercase the domain
@@ -597,8 +567,8 @@ export function validateEmail(raw, limit) {
 	*/
 	let p = cut(formFormal, "@")
 	let formPage = p.before + "@" + p.after.toLowerCase()
-	let j2 = _email.validate(formPage)
-	if (j2.error) return {formFormal, formPage, raw, cropped, j2}
+	let j2 = zodEmail().safeParse(formPage)
+	if (!j2.success) return {formFormal, formPage, raw, cropped, j2}
 
 	/* (3) normalized step for email
 	here, we want to prevent MrMorgan@example.com from creating a second account as mrmorgan@example.com
@@ -610,8 +580,8 @@ export function validateEmail(raw, limit) {
 	name = cut(name, '+').before//name+spam@example.com is really name@example.com
 	if (periodIgnorers.includes(domain)) name = name.replace(/\./g, '')//first.last@gmail.com is really firstlast@gmail.com
 	let formNormal = name + "@" + domain
-	let j3 = _email.validate(formNormal)
-	if (j3.error) return {formFormal, formPage, formNormal, raw, cropped, j3}
+	let j3 = zodEmail().safeParse(formNormal)
+	if (!j3.success) return {formFormal, formPage, formNormal, raw, cropped, j3}
 
 	return {isValid: true, formNormal, formFormal, formPage, raw, cropped}
 }
@@ -635,7 +605,7 @@ test(() => {
 	ok(!validateEmail('first.last@example.com.').isValid)
 	ok(!validateEmail('first.last@example').isValid)
 
-	//joi doesn't like edge dots in name, either. this one you weren't even sure about
+	//no edge dots in name, either; this one you weren't even sure about
 	ok(!validateEmail('.name@example.com').isValid)
 	ok(!validateEmail('name.@example.com').isValid)
 
@@ -739,14 +709,12 @@ test(() => {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|  \___\__,_|_|  \__,_|
 //                                                           
 
-const _card = Joi.string().creditCard().required()
-export function checkCard(raw, limit) {}//ttd february, you never added this one
+export function checkCard(raw, limit) { let v = validateCard(raw, limit); if (!v.isValid) toss('form', {v}); return v }
 export function validateCard(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
 
 	/* (1) adjusted step for credit card number
-	just numerals, removing spaces, dots, dashes
-	/* (2) this is the normalized form
+	just numerals, removing spaces, dots, dashes; this is the normalized form
 	*/
 	let formNormal = onlyNumerals(cropped)
 
@@ -768,16 +736,16 @@ export function validateCard(raw, limit) {
 	}
 	if (onlyNumerals(formPage) != formNormal) return {formNormal, formPage, raw, cropped, cardType, note: 'round trip mismatch'}
 
-	/* (4) use joi to validate at the end
+	/* (4) make sure the length is correct and check the last digit with Luhn
 	*/
-	let j1 = _card.validate(formNormal)//Joi will do the Luhn check, which credit-card-type can't do, so that's why we use both
-	if (j1.error) return {formNormal, formPage, raw, cropped, cardType, j1}
+	if (!cardType[0].lengths.includes(formNormal.length)) return {formNormal, formPage, raw, cropped, cardType, note: 'bad length'}
+	if (!isLuhn(formNormal)) return {formNormal, formPage, raw, cropped, cardType, note: 'bad luhn'}
 
 	return {isValid: true, formNormal, formPage, raw, cropped, cardType}//also return the detected type information
 }
 test(() => {
 
-	//chatgpt's list of valid international credit card numbers
+	//some valid international credit card numbers from chat
 	ok(validateCard('4111 1111 1111 1111').isValid) // Visa
 	ok(validateCard('5555 5555 5555 4444').isValid) // MasterCard
 	ok(validateCard('3782 822463 10005').isValid) // American Express (Amex)
@@ -787,10 +755,10 @@ test(() => {
 	ok(validateCard('6759 6498 2643 8453').isValid) // Maestro (Popular in Europe)
 	ok(validateCard('4000 0566 5566 5556').isValid) // Carte Bancaire (Popular in France)
 	ok(validateCard('6304 0000 0000 0000').isValid) // Laser (Previously popular in Ireland)
+	ok(validateCard('6200 0000 0000 0005').isValid) // China UnionPay (Popular in China)
 	ok(validateCard('6071 7980 0000 0000').isValid) // NPS Pridnestrovie (Popular in Transnistria)
 
-	//should be valid, and from the same list, but joi doesn't like them, which is fine, i guess
-	ok(!validateCard('6211 1111 1111 1111').isValid) // China UnionPay (Popular in China)
+	//more that should be valid, but braintree doesn't like them
 	ok(!validateCard('5067 9900 0000 0000 0009').isValid) // Elo (Popular in Brazil)
 	ok(!validateCard('6062 8288 0000 0000').isValid) // Hipercard (Popular in Brazil)
 	ok(!validateCard('6071 9811 0000 0000').isValid) // RuPay (Popular in India)
@@ -823,6 +791,32 @@ test(() => {
 	f2('4111 1111 1111 1111\r\n', '4111 1111 1111 1111', '4111111111111111')
 	f2('3782 822463 10005',  '3782 822463 10005', '378282246310005')
 	f2('3782 8224 6310 005', '3782 822463 10005', '378282246310005')
+})
+
+function isLuhn(s) {
+	checkNumerals(s)//make sure s is one or more numerals
+	const digits = s.split('').reverse().map(d => Number(d))//turn s like "12345" into [5, 4, 3, 2, 1]
+	let sum = 0
+	for (let i = 0; i < digits.length; i++) {
+		let digit = digits[i]
+		if (i % 2 === 1) {//for the inner stripe color digits
+			digit = digit * 2//double
+			if (digit > 9) digit -= 9//if there are two digits like 12 sum them like 3
+		}
+		sum += digit
+	}
+	return sum % 10 == 0//if ends with a 0 Hans Peter Luhn says looks good
+}
+test(() => {
+	ok(isLuhn('0'))//single zero passes
+	ok(isLuhn('79927398713'))//classic test vector
+	ok(isLuhn('4539578763621486'))//valid visa
+	ok(isLuhn('5555555555554444'))//mastercard
+	ok(isLuhn('378282246310005'))//don't leave home without it
+
+	ok(!isLuhn('79927398714'))//classic vector with bad check digit
+	ok(!isLuhn('4539578763621487'))//visa with last digit off
+	ok(!isLuhn('1234567812345678'))//random 16-digit fails
 })
 
 //      _       _          __              _     _            _   _ _         
