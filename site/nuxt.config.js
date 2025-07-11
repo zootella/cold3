@@ -1,4 +1,4 @@
-//./nuxt.config.ts
+//./nuxt.config.js
 
 import {vite as vidstack} from 'vidstack/plugins'
 
@@ -39,7 +39,7 @@ configuration.components = {
 
 //for tailwind
 configuration.modules.push('@nuxtjs/tailwindcss')
-configuration.tailwindcss = {cssPath: '~/assets/css/tailwind.css'}
+configuration.tailwindcss = {cssPath: '~/assets/css/main.css'}
 //ttd june, rename this file to match more common scaffolding
 
 //for pinia
