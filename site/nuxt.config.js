@@ -39,7 +39,7 @@ configuration.components = {
 
 //for tailwind
 configuration.modules.push('@nuxtjs/tailwindcss')
-configuration.tailwindcss = {cssPath: '~/assets/css/style.css'}//tell the @nuxtjs/tailwindcss module to use our custom style.css as the tailwind entry file; the module will process it (generate utilities, purge unused styles) and auto-inject it into Nuxt’s global css
+configuration.tailwindcss = {cssPath: '~/assets/css/style.css'}
 
 //for pinia
 configuration.modules.push('@pinia/nuxt')
