@@ -3,14 +3,11 @@
 import {vite as vidstack} from 'vidstack/plugins'
 
 //configuration object we'll populate, submit, and export the result
-const configuration = {
-	modules: [],//set up empty structure to fill below
-	vue: {
-		compilerOptions: {},
-	},
-	vite: {
-		plugins: [],
-	},
+const configuration = {//set up empty structure to fill below
+	modules: [],
+	vue: {compilerOptions: {}},
+	vite: {plugins: []},
+	app: {head: {link: []}},
 }
 
 //for Nuxt and Nitro
@@ -40,6 +37,17 @@ configuration.components = {
 //for tailwind
 configuration.modules.push('@nuxtjs/tailwindcss')
 configuration.tailwindcss = {cssPath: '~/assets/css/style.css'}
+
+//for google fonts
+configuration.app.head.link.push({
+	rel: 'stylesheet',
+	href: 'https://fonts.googleapis.com/css2?' + (
+					'family=Noto+Sans:ital,wght@0,400;1,400;0,700;1,700' +
+		'&family=Noto+Sans+Mono:ital,wght@0,400;1,400;0,700;1,700' +
+						'&family=Roboto:ital,wght@0,400;1,400;0,500;1,500' +//note 500, tailwind semibold
+		'&display=swap' +
+		'&subset=latin,latin-ext')//just basic latin characters
+})
 
 //for pinia
 configuration.modules.push('@pinia/nuxt')
