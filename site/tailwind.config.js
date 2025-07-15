@@ -1,7 +1,7 @@
 //./tailwind.config.js - our control panel for adjusting and augmenting tailwind's defaults
 
 import defaultTheme from 'tailwindcss/defaultTheme'
-//import forms from '@tailwindcss/forms'
+import forms from '@tailwindcss/forms'
 
 export default {
 
