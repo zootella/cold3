@@ -1,27 +1,40 @@
 /* ./assets/css/style.css, made to get styles to actually cascade, like a whole sheet of them ;) */
 
-/* 1. Tell the browser that for "Noto Sans" font-family,
-	 use the locally installed Noto Sans (if available). */
+@font-face { /*yes, it's correct for font-face to go at the top, above the tailwind directives section below*/
+	font-family: 'Diatype Rounded';
+	src: url('/fonts/ABCDiatypeRounded-Regular-Trial.woff2') format('woff2');
+	font-weight: 400; /* this file is one weight; regular is 400 */
+	font-display: swap; /* show text with a fallback font until the browser loads this custom font */
+}
 @font-face {
-	font-family: 'Noto Sans';
-	src: local('Noto Sans'), local('NotoSans-Regular');
-	font-weight: 400;
-	font-style: normal;
+	font-family: "Lemon Wide";
+	src: url('/fonts/Lemon-Wide.woff2') format('woff2');
+	font-weight: 400; /*ttd july, not sure if name and weight are correct for the given woff2 file*/
+	font-display: swap; /* show text with a fallback font until the browser loads this custom font */
 }
 
-/* ttd march, in the single team page, this came up as main.css? and the fonts are simpler? see if that pattern is better than the one that grew here */
+/* tailwind directives; when tailwind builds our css, it replaces these three with the generated stylesheet in these three layers */
+@tailwind base;       /* "preflight" resets + any base-layer styles */
+@tailwind components; /* component classes (e.g. form styles, if you enabled the forms plugin) */
+@tailwind utilities;  /* all the utility classes (e.g. .text-center, .mt-4, etc.) */
 
-/* 2. Same idea for Noto Sans Mono */
-@font-face {
-	font-family: 'Noto Sans Mono';
-	src: local('Noto Sans Mono'), local('NotoSansMono-Regular');
-	font-weight: 400;
-	font-style: normal;
-}
+/*
+ok, below is from this repository earlier--i suspect that some of this is wrong, or not necessary
+my goals are:
+- keep things correct and working
+- keep things standard and expected to patterns for my stack
+- keep things simple
+and specifically to:
+- choose a font for default common html tags and form elements
+- be able to choose a font for a component by naming a tailwind class
+and in either use case, the font may have come from
+- linked, like to google fonts
+- packaged, like a .woff2 file
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+also, after the teammate coded the below, we found out about a package called, i think tailwind forms
+so if much of below is not necessary if we bring in tailwind forms, then let's do things that way, please
+
+*/
 
 @layer base {
 	html, body {

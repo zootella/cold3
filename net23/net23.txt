@@ -2238,6 +2238,53 @@ correct, because what does that even mean
 |_|  \___/|_| |_|\__|___/
                          
 
+in the example below,
+- Roboto is linked from the web
+- Lemon is packaged
+and we want to use both kinds
+- to set the face of fundamental html tags like <p> and <code>
+- upon request with a tailwind class like "font-myname"
+
+[./public/fonts/Lemon-Wide.woff2] put your packaged fonts here
+
+[./nuxt.config.js] link web hosted fonts here
+
+configuration.app.head.link.push({
+	rel: 'stylesheet',
+	href: (
+		'https://fonts.googleapis.com/css2?'
+		+ '&family=Roboto:ital,wght@0,400;1,400;0,500;1,500'
+		+ '&display=swap'
+		+ '&subset=latin,latin-ext'
+	)
+})
+
+[./assets/css/style.css] define packaged fonts here
+
+@font-face {
+	font-family: "Lemon Wide";
+	src: url('/fonts/Lemon-Wide.woff2') format('woff2');
+	font-weight: 400;
+	font-display: swap;
+}
+
+[./tailwind.config.js] style default tags and create tailwind classes here
+
+theme: {
+	extend: {
+		fontFamily: {
+			sans:   ['"Noto Sans"',      ...defaultTheme.fontFamily.sans],
+			mono:   ['"Noto Sans Mono"', ...defaultTheme.fontFamily.mono],
+
+			roboto: ['"Roboto"',         ...defaultTheme.fontFamily.sans],
+		},
+	},
+},
+
+
+
+notes on getting the .woff2 files
+
 https://abcdinamo.com/typefaces/diatype-rounded
 entered name and email to download the free trial zip
 

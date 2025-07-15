@@ -19,19 +19,22 @@ export default {
 	theme: {
 		extend: {
 			fontFamily: {//you can confirm these work by adding 'Papyrus' to the start of any list, lol
+
+				//first, define default overrides; what fonts should show up for existing HTML tags like <p> and <code>
 				sans: [
-//					'"Ginto Rounded"',//packaged font
-					'"Noto Sans"',//custom google font
+					'"Diatype Rounded"',//packaged font
+					'"Noto Sans"',//linked font
 					...defaultTheme.fontFamily.sans,//all the default system fallbacks
 				],
 				mono: [
 					'"Noto Sans Mono"',
 					...defaultTheme.fontFamily.mono,
 				],
-				roboto: [
-					'Roboto',
-					...defaultTheme.fontFamily.sans,
-				],
+
+				//second, setup named utilities, like "font-name", from the property names below
+				roboto:  ['"Roboto"',          ...defaultTheme.fontFamily.sans],
+				diatype: ['"Diatype Rounded"', ...defaultTheme.fontFamily.sans],
+				lemon:   ['"Lemon Wide"',      ...defaultTheme.fontFamily.sans],
 			},
 		},
 	},
@@ -43,17 +46,6 @@ export default {
 
 	//here also is where we could add future flags and experimental features
 }
-
-
-
-
-
-
-/*
-ttd july
-until now, cold3 didn't have a tailwind.config.js file at all?!
-so the things you've done it it elsewhere, you never needed to do in 
-*/
 
 
 
