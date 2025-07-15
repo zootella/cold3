@@ -15,6 +15,11 @@ export default {
 		'./plugins/**/*.{js,ts}',
 	],
 
+	//register custom utilities or extra pseudo-classes
+	plugins: [
+		forms,//normalize and styles form controls to inherit site typography and match Tailwind defaults
+	],
+
 	//default theme customizations and extensions
 	theme: {
 		extend: {
@@ -38,13 +43,6 @@ export default {
 			},
 		},
 	},
-
-	//register custom utilities or extra pseudo-classes
-	plugins: [
-//		forms,//normalize and styles form controls to inherit site typography and match Tailwind defaults
-	],
-
-	//here also is where we could add future flags and experimental features
 }
 
 

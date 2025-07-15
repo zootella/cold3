@@ -34,6 +34,7 @@
 	},
 	"devDependencies": {
 		"@nuxtjs/tailwindcss": "^6.14.0",
+		"@tailwindcss/forms": "^0.5.10",
 		"nitro-cloudflare-dev": "^0.2.2",
 		"nitropack": "^2.11.12",
 		"nuxi": "^3.25.1",
