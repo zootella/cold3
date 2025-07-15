@@ -2231,7 +2231,30 @@ correct, because what does that even mean
 
 
 
+  __             _       
+ / _| ___  _ __ | |_ ___ 
+| |_ / _ \| '_ \| __/ __|
+|  _| (_) | | | | |_\__ \
+|_|  \___/|_| |_|\__|___/
+                         
 
+https://abcdinamo.com/typefaces/diatype-rounded
+entered name and email to download the free trial zip
+
+https://www.behance.net/gallery/182528277/Lemon-Typeface-18-Styles-Variable-Regular-Free
+https://rajputrajesh-448.gumroad.com/l/Lemon9
+entered email to download the free trial zip
+inside the email, picked the woff2 in the web-tt folder, chat says this is the one optimized for web rendering
+
+./assets/fonts/Lemon-Wide.woff2 is where you put the file
+./assets/css/style.css is where you bring it in
+
+ttd july, right now just trying to bring two in; more to do with type later:
+- non english alphabet characters
+- italic face, avoid the browser's default slant
+- maybe variable width; you've gotten working, but the file is 300kb instead of 60kb
+- variants, like lemon's superwides and diatype's alternate numbers and letters
+- licensing, purchase, watermark of identity in the file, those issues
 
 
 

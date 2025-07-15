@@ -130,6 +130,7 @@ async function affixSeal(properties, manifest) {
 			!f.path.endsWith('.gif') &&
 			!f.path.endsWith('.jpg') &&
 			!f.path.endsWith('.png') &&
+			!f.path.endsWith('.woff2') &&
 			!(f.path.includes('stats') && f.path.endsWith('.html'))) {
 			codeFiles++; codeSize += f.size
 		}
