@@ -18,33 +18,9 @@
 @tailwind components; /* component classes (e.g. form styles, if you enabled the forms plugin) */
 @tailwind utilities;  /* all the utility classes (e.g. .text-center, .mt-4, etc.) */
 
-/*
-ok, below is from this repository earlier--i suspect that some of this is wrong, or not necessary
-my goals are:
-- keep things correct and working
-- keep things standard and expected to patterns for my stack
-- keep things simple
-and specifically to:
-- choose a font for default common html tags and form elements
-- be able to choose a font for a component by naming a tailwind class
-and in either use case, the font may have come from
-- linked, like to google fonts
-- packaged, like a .woff2 file
-
-also, after the teammate coded the below, we found out about a package called, i think tailwind forms
-so if much of below is not necessary if we bring in tailwind forms, then let's do things that way, please
-
-*/
-
 @layer base {
 	html, body {
 		@apply bg-white text-gray-800 font-sans;
-		font-family: "Noto Sans", sans-serif;
-		margin: 0; /* Tailwind doesn't reset margin on html/body by default */
-
-		/* ttd january, trying to get cleartype back with chat, but this fix isn't working; addendum: the next day, it is working now!? */
-		-webkit-font-smoothing: subpixel-antialiased;
-		-moz-osx-font-smoothing: auto;
 	}
 
 	/* A global container class if you want consistent margins */
@@ -55,15 +31,8 @@ so if much of below is not necessary if we bring in tailwind forms, then let's d
 		@apply mx-auto max-w-screen-md p-4 pb-0; /* same thing for the top and bottom bar */
 	}
 
-	input, textarea, select {
-		@apply border border-gray-300 rounded px-2 py-1;
-		@apply focus:outline-none focus:ring-2 focus:ring-blue-500;
-		font-family: "Noto Sans", sans-serif;
-	}
-
 	pre, code {
 		@apply font-mono text-sm text-gray-400 font-bold;
-		font-family: "Noto Sans Mono", monospace;
 	}
 
 	a               { @apply text-blue-600 underline; }
@@ -76,11 +45,6 @@ so if much of below is not necessary if we bring in tailwind forms, then let's d
 	button:disabled {
 		@apply cursor-default;
 	}
-
-	/* Don't show the blue ring on focused input boxes; our own border will show focus tyvm! */
-	input:focus {
-		box-shadow: none !important;
-	}
 }
 
 /* Components layer: define reusable classes for buttons, etc. */
@@ -89,7 +53,6 @@ so if much of below is not necessary if we bring in tailwind forms, then let's d
 	.pushy {
 		@apply inline-flex items-center bg-green-600 text-white px-2 py-1 rounded;
 		@apply hover:bg-green-400 cursor-pointer;
-		font-family: "Noto Sans", sans-serif;
 	}
 	.pushy:focus {
 		@apply outline-none ring-2 ring-blue-500;
@@ -98,7 +61,6 @@ so if much of below is not necessary if we bring in tailwind forms, then let's d
 	/* A button that looks and acts like a link */
 	.linky {
 		@apply bg-transparent border-none p-0 text-blue-600 underline cursor-pointer;
-		font-family: "Noto Sans", sans-serif;
 		
 		/* We override any base button hover styles with transparent background */
 		&:hover {
@@ -117,7 +79,6 @@ so if much of below is not necessary if we bring in tailwind forms, then let's d
 	.pushy-link:visited:active {
 		@apply inline-flex items-center bg-green-600 text-white no-underline px-2 py-1 rounded;
 		cursor: pointer;
-		font-family: "Noto Sans", sans-serif;
 	}
 	/* hover background (text stays white) */
 	.pushy-link:hover,
