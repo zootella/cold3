@@ -15,8 +15,6 @@ defineOgImageComponent('NuxtSeo', {
 </script>
 <template>
 
-<NavigationBar note="on card" />
-
 <p>this is a page for "{{ more }}"</p>
 
 </template>

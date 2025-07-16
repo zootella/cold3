@@ -30,7 +30,6 @@ if (index < postDatabase.chronology.length - 1) below = postDatabase.chronology[
 </script>
 <template>
 
-<NavigationBar note="on post" />
 <PostComponent
 	:key="post.tag"
 	:post="post"

@@ -7,7 +7,6 @@ let staticValue = 'static value' // This remains a non-reactive constant
 </script>
 <template>
 
-<NavigationBar note="on page2" />
 <SnippetComponent
 	:dynamicProperty="dynamicValue"
 	:staticProperty="staticValue"
