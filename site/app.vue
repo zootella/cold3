@@ -53,10 +53,8 @@ this pattern avoids
 </script>
 <template>
 
-<div class="page-container"><!-- choosing where to style layout; here, or in the layouts folder -->
-	<TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
-	<NuxtLayout><NuxtPage /></NuxtLayout><!-- app.vue is the only place NuxtPage appears; layouts all have main/slot/main -->
-	<BottomBar /><!-- will contain the single global invisible turnstile widget after a PostButton needs it -->
-</div>
+<TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
+<NuxtLayout><NuxtPage /></NuxtLayout><!-- app.vue is the only place NuxtPage appears; layouts all have main/slot/main -->
+<BottomBar /><!-- will contain the single global invisible turnstile widget after a PostButton needs it -->
 
 </template>

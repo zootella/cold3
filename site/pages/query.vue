@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'cold-layout', note: 'on query'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on query'})
 
 </script>
 <template>

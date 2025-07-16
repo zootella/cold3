@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'cold-layout', note: 'on post'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on post'})
 
 import {
 cutLast, postDatabase,

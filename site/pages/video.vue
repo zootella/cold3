@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'cold-layout', note: 'on video'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on video'})
 
 </script>
 <template>

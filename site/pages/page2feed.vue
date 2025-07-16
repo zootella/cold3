@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'cold-layout', note: 'on page2feed'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on page2feed'})
 
 let dynamicValue = ref('dynamic value') // This makes dynamicValue a reactive reference
 let staticValue = 'static value' // This remains a non-reactive constant

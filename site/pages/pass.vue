@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'cold-layout', note: 'on pass'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on pass'})
 
 </script>
 <template>

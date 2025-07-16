@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'cold-layout', note: 'on feed2'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on feed2'})
 
 import {
 sameObject, generatePosts,

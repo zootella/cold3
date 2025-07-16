@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'cold-layout', note: 'on index'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on index'})
 
 defineOgImageComponent('NuxtSeo', {
 	title: `🍺 cold3.cc`,

@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'cold-layout', note: 'on pages'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on pages'})
 
 const route = useRoute()
 const part1 = route.params.part1

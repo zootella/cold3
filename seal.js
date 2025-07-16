@@ -125,13 +125,13 @@ async function affixSeal(properties, manifest) {
 	for (let f of properties) {
 		totalFiles++; totalSize += f.size
 		if (
-			!f.path.endsWith('package-lock.json') &&
+			!f.path.endsWith('package-lock.json') &&//lockfiles
 			!f.path.endsWith('yarn.lock') &&
-			!f.path.endsWith('.gif') &&
+			!f.path.endsWith('.gif') &&//images
 			!f.path.endsWith('.jpg') &&
 			!f.path.endsWith('.png') &&
-			!f.path.endsWith('.woff2') &&
-			!(f.path.includes('stats') && f.path.endsWith('.html'))) {
+			!f.path.endsWith('.woff2') &&//fonts
+			!(f.path.includes('stats') && f.path.endsWith('.html'))) {//bundle statistics
 			codeFiles++; codeSize += f.size
 		}
 	}
