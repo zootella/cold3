@@ -1,4 +1,4 @@
-<script setup>//./components/TermsDocument.vue - vue component to hold lengthy terms text and internal styling and wrapping rules
+<script setup>
 
 /*
 notes about a component that contains a long document
