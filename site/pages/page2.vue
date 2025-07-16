@@ -1,6 +1,4 @@
-<script setup>
-
-definePageMeta({layout: 'feed-layout', note: 'on page2'})
+<script setup> definePageMeta({layout: 'cold-layout', note: 'on page2'})
 
 </script>
 <template>

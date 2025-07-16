@@ -1,6 +1,4 @@
-<script setup>
-
-definePageMeta({layout: 'feed-layout', note: 'on image'})
+<script setup> definePageMeta({layout: 'cold-layout', note: 'on image'})
 
 </script>
 <template>

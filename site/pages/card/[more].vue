@@ -1,4 +1,4 @@
-<script setup>
+<script setup> definePageMeta({layout: 'cold-layout', note: 'on card'})
 
 import {useRoute} from 'vue-router'//ttd april, is this import already automatic though?
 

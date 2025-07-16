@@ -20,13 +20,12 @@ panel - user adjusts their account settings
 login - form to sign in
 media - focus on image or video gallery
 
+
 */
 
 </script>
 <template>
 
-<main>
-	<slot />
-</main>
+<main><slot /></main><!-- layouts all have main/slot/main; app.vue is the only place NuxtPage appears -->
 
 </template>

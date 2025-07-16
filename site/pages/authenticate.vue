@@ -1,6 +1,4 @@
-<script setup>
-
-definePageMeta({layout: 'feed-layout', note: 'on authenticate'})
+<script setup> definePageMeta({layout: 'cold-layout', note: 'on authenticate'})
 
 </script>
 <template>

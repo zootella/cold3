@@ -1,6 +1,4 @@
-<script setup>
-
-definePageMeta({layout: 'feed-layout', note: 'on up3'})
+<script setup> definePageMeta({layout: 'cold-layout', note: 'on up3'})
 
 import {
 runTestsSticker,

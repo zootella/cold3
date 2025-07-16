@@ -27,9 +27,7 @@
 	.page-container {
 		@apply mx-auto max-w-screen-md p-4 pb-0; /* centered, medium width, padding */
 	}
-	.bar-container {
-		@apply mx-auto max-w-screen-md p-4 pb-0; /* same thing for the top and bottom bar */
-	}
+
 
 	pre, code {
 		@apply font-mono text-sm text-gray-400 font-bold;

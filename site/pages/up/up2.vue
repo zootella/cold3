@@ -1,6 +1,4 @@
-<script setup>
-
-definePageMeta({layout: 'feed-layout', note: 'on up2'})
+<script setup> definePageMeta({layout: 'cold-layout', note: 'on up2'})
 
 const note2     = useState('up2_ref2',      () => '(reload to fetch lambda in server render)')
 const duration2 = useState('up2_duration2', () => -1)
