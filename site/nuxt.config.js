@@ -34,6 +34,18 @@ configuration.components = {
 	dirs: [{path: '~/components', pathPrefix: false}],
 }
 
+/*
+ttd july, next for the remaining repot tasks, get a visualizer working
+
+	build: {
+		analyze: {//added for visualizer; enable Nuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood
+			template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
+			brotliSize: true,//current browsers downloading from Cloudflare will use Brotli compression
+		},
+	},
+	analyzeDir: 'size',//added for visualizer; put the report files in a folder named "size" rather than .nuxt/analyze
+*/
+
 //for tailwind
 configuration.modules.push('@nuxtjs/tailwindcss')
 configuration.tailwindcss = {cssPath: '~/assets/css/style.css'}

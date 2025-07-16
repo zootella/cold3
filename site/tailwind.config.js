@@ -36,7 +36,7 @@ export default {
 					...defaultTheme.fontFamily.mono,
 				],
 
-				//second, setup named utilities, like "font-name", from the property names below
+				//second, setup named utilities, like "font-roboto" and "font-lemon", from the property names below
 				roboto:  ['"Roboto"',          ...defaultTheme.fontFamily.sans],
 				diatype: ['"Diatype Rounded"', ...defaultTheme.fontFamily.sans],
 				lemon:   ['"Lemon Wide"',      ...defaultTheme.fontFamily.sans],
@@ -44,15 +44,3 @@ export default {
 		},
 	},
 }
-
-
-
-//ttd july, also deal with layouts, get that pattern into cold3, even though you haven't found a great or necessary use for them
-
-
-
-
-
-
-
-

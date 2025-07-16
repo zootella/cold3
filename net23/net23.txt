@@ -2300,7 +2300,7 @@ ttd july, right now just trying to bring two in; more to do with type later:
 - non english alphabet characters
 - italic face, avoid the browser's default slant
 - maybe variable width; you've gotten working, but the file is 300kb instead of 60kb
-- variants, like lemon's superwides and diatype's alternate numbers and letters
+- variants, like lemon's superwides and diatype's alternate alternate y, a, q, 4, and others
 - licensing, purchase, watermark of identity in the file, those issues
 
 
