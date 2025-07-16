@@ -1,4 +1,4 @@
-//./stores/pageStore.js - does nothing on the server, gains data as the page uses it
+//./stores/page.js - does nothing on the server, gains data as the page uses it
 
 export const usePageStore = defineStore('page', () => {
 

@@ -1,11 +1,11 @@
-//./stores/mainStore.js - always renders once and first on the server in universal rendering
+//./stores/main.js - always renders once and first on the server in universal rendering
 
 import {
 getBrowserGraphics,
 indexRecords, mergeRecords,
 } from 'icarus'
 
-export const useMainStore = defineStore('main', () => {
+export const useMainStore = defineStore('main', () => {//important to follow the one word naming convention for auto imports to work
 
 //durations
 const pageDuration = ref(-1)//how long it took for the user from the click here to Vue says app component mounted

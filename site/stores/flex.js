@@ -1,4 +1,4 @@
-//./stores/flexStore.js - demonstration of a store that renders first on the server or client, depending on if a component needs it
+//./stores/flex.js - demonstration of a store that renders first on the server or client, depending on if a component needs it
 
 export const useFlexStore = defineStore('flex', () => {
 
