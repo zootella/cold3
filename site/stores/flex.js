@@ -1,6 +1,6 @@
 //./stores/flexStore.js - demonstration of a store that renders first on the server or client, depending on if a component needs it
 
-export const useFlexStore = defineStore('flex_store', () => {
+export const useFlexStore = defineStore('flex', () => {
 
 const loaded = ref(false)
 const hits = ref(0)

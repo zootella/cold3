@@ -5,7 +5,7 @@ getBrowserGraphics,
 indexRecords, mergeRecords,
 } from 'icarus'
 
-export const useMainStore = defineStore('main_store', () => {
+export const useMainStore = defineStore('main', () => {
 
 //durations
 const pageDuration = ref(-1)//how long it took for the user from the click here to Vue says app component mounted

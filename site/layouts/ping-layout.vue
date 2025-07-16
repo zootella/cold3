@@ -1,14 +1,10 @@
-<script setup>
-
-//layout for machine-readable pages
+<script setup>//./layouts/ping-layout.vue - layout for machine-readable pages
 
 </script>
 <template>
-<div>
 
 <main>
-	<NuxtPage />
+	<slot />
 </main>
 
-</div>
 </template>

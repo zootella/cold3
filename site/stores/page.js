@@ -1,6 +1,6 @@
 //./stores/pageStore.js - does nothing on the server, gains data as the page uses it
 
-export const usePageStore = defineStore('page_store', () => {
+export const usePageStore = defineStore('page', () => {
 
 //turnstile
 const renderTurnstileWidget = ref(false)//PostButton sets to true, causing BottomBar to render TurnstileComponent
