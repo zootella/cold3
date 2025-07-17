@@ -27,7 +27,7 @@
 	.page-container {
 		@apply mx-auto max-w-screen-md p-4 pb-0; /* centered, medium width, padding */
 	}
-
+	/* ^ttd july, you realize now you should probably move this into ./layouts/column-layout.vue */
 
 	pre, code {
 		@apply font-mono text-sm text-gray-400 font-bold;
@@ -47,6 +47,8 @@
 
 /* Components layer: define reusable classes for buttons, etc. */
 @layer components {
+	/* ttd july, you realize now instad of defining these styles here (globally, so that they're available everywhere) and using them in many different components, you should move these into the pushy and linky components, and then use those components everywhere. there might be styles that you want to set once globally and cascade down into several different components, but these are not them, you now suspect */
+
 	/* A standard button class */
 	.pushy {
 		@apply inline-flex items-center bg-green-600 text-white px-2 py-1 rounded;

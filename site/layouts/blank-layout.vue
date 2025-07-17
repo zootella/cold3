@@ -1,4 +1,4 @@
-<script setup>//./layouts/blank-layout.vue - to name a layout that doesn't do anything, so that maybe you switch to one that does, later
+<script setup>//./layouts/blank-layout.vue - no structural style container or persistant components
 
 </script>
 <template>

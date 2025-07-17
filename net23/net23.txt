@@ -2231,6 +2231,90 @@ correct, because what does that even mean
 
 
 
+ _        _ _          _           _ 
+| |_ __ _(_) |_      _(_)_ __   __| |
+| __/ _` | | \ \ /\ / / | '_ \ / _` |
+| || (_| | | |\ V  V /| | | | | (_| |
+ \__\__,_|_|_| \_/\_/ |_|_| |_|\__,_|
+                                     
+
+https://tailwindcss.nuxtjs.org/getting-started/installation
+$ yarn add -D @nuxtjs/tailwindcss
+$ yarn list --pattern tailwindcss
+├─ @nuxtjs/tailwindcss@6.14.0
+└─ tailwindcss@3.4.17
+so as expected, we get tailwind 3, even though the current version of tailwind is 4
+
+//and added to nuxt.config.js:
+configuration.modules.push('@nuxtjs/tailwindcss')
+configuration.tailwindcss = {cssPath: '~/assets/css/style.css'}
+
+
+
+ _                         _   
+| | __ _ _   _  ___  _   _| |_ 
+| |/ _` | | | |/ _ \| | | | __|
+| | (_| | |_| | (_) | |_| | |_ 
+|_|\__,_|\__, |\___/ \__,_|\__|
+         |___/                 
+
+inner to outer, top to bottom, here's how page layout and the component tree works:
+
+./components/MyComponent.vue
+./components/MyPage.vue
+
+limit component styles to setting interior structure, not page layout
+
+./pages/page2.vue
+./pages/index.vue
+
+pages define routes
+index isn't fundamental like app.vue is, it just defines the root route
+every page should choose a layout with script starting definePageMeta({layout: 'some-layout'})
+
+./layouts/default.vue
+./layouts/blank-layout.vue
+./layouts/column-layout.vue
+
+<template>
+	<div class="page-container">
+		<NavigationBar :note="route.meta.note" />
+		<main><slot /></main>
+	</div>
+</template>
+
+layouts must all contain main/slot/main
+a page that doesn't choose a layout gets default
+in layouts, you can style outer page structure with div class page-container
+you can also include persistant components, like NavigationBar
+
+./app.vue - universal structural wrapper, tags NuxtLayout/NuxtPage, top and bottom bar components like notifications, turnstile
+
+<template>
+	<TopBar />
+	<NuxtLayout><NuxtPage /></NuxtLayout>
+	<BottomBar />
+</template>
+
+app.vue is the only place where NuxtLayout and NuxtPage appear
+both layout files and app.vue can have the same stuff
+the difference is a page chooses one layout or another, while app.vue is always at the bottom, everywhere
+
+./assets/css/style.css
+
+tailwind's global stylesheet with custom utilities, component styles, or base resets
+don't put layout styles in here, you think
+rather it's good for styles common to parts of many components
+
+./tailwind.config.js
+./nuxt.config.js
+
+configuration files that also don't do anything with structural layout
+
+
+
+
+
   __             _       
  / _| ___  _ __ | |_ ___ 
 | |_ / _ \| '_ \| __/ __|
@@ -2303,6 +2387,20 @@ ttd july, right now just trying to bring two in; more to do with type later:
 - variants, like lemon's superwides and diatype's alternate alternate y, a, q, 4, and others
 - licensing, purchase, watermark of identity in the file, those issues
 
+
+
+
+
+
+                                                  _       
+  ___ ___  _ __ ___  _ __   ___  _ __   ___ _ __ | |_ ___ 
+ / __/ _ \| '_ ` _ \| '_ \ / _ \| '_ \ / _ \ '_ \| __/ __|
+| (_| (_) | | | | | | |_) | (_) | | | |  __/ | | | |_\__ \
+ \___\___/|_| |_| |_| .__/ \___/|_| |_|\___|_| |_|\__|___/
+                    |_|                                   
+
+ttd july, when you choose a component library,
+how does that interact with what you've already done with tailwind, layout classes, and style classes
 
 
 

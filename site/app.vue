@@ -54,7 +54,7 @@ this pattern avoids
 <template>
 
 <TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
-<NuxtLayout><NuxtPage /></NuxtLayout><!-- app.vue is the only place NuxtPage appears; layouts all have main/slot/main -->
+<NuxtLayout><NuxtPage /></NuxtLayout>
 <BottomBar /><!-- will contain the single global invisible turnstile widget after a PostButton needs it -->
 
 </template>
