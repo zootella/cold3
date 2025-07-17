@@ -6,8 +6,6 @@
 //3 service
 //4 framework
 
-//ttd july, before experimenting with zeroing out minor and patch like ^2.0.0
-
 //./package.json
 {
 	"name": "w5",
@@ -121,7 +119,7 @@
 		"icarus": "*",
 
 		//2 utility
-		"nuxt-og-image": "5.1.6",//added to make social share cards; works with cloudflare KV to cache them
+		"nuxt-og-image": "5.1.6",//added to make social share cards; works with cloudflare KV to cache them; note that there's no carrot here!
 		"@unhead/vue": "^2.0.5",
 		"unstorage": "^1.15.0",
 		"vidstack": "^1.12.13",//ttd july, did these come from og image or vidstack or elsewhere? new from the repot
