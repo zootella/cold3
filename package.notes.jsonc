@@ -6,6 +6,8 @@
 //3 service
 //4 framework
 
+//ttd july, before experimenting with zeroing out minor and patch like ^2.0.0
+
 //./package.json
 {
 	"name": "w5",
