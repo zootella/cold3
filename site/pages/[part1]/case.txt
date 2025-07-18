@@ -1,4 +1,32 @@
 
+
+
+
+
+notes about how nuxt does dynamic routes
+
+
+./pages/static1/index.vue
+./pages/static1/[more].vue
+
+./pages/static2/index.vue
+./pages/static2/[...more].vue
+
+when do these get called? let's right a simple correct guide here, showing how to correctly capture different routes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 notes about correcting the case in user routes
 
 

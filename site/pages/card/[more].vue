@@ -1,20 +1,94 @@
-<script setup> definePageMeta({layout: 'column-layout', note: 'on card'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on card'})//./pages/card/[more].vue
 
-import {useRoute} from 'vue-router'//ttd april, is this import already automatic though?
+import {
+randomCode,
+} from 'icarus'
+const _route = useRoute()
+const _site = useSiteConfig()
 
-const route = useRoute()
-let more = route.params.more
+/*
+notes about the nuxt-og-image module on cloudflare workers
+
+https://nuxt.com/modules/og-image
+https://nuxtseo.com/docs/og-image/getting-started/introduction
+
+https://github.com/nuxt-modules/og-image
+https://www.npmjs.com/package/nuxt-og-image - 41k weekly downloads, low
+
+$ yarn run nuxi module add og-image
+
++++ b/nuxt.config.ts
+-  modules: ["nitro-cloudflare-dev"]
++  modules: ["nitro-cloudflare-dev", "nuxt-og-image"]
+
++++ b/package.json
+ 	"dependencies": {
++		"nuxt-og-image": "5.1.6",
++		"@unhead/vue": "^2.0.5",
++		"unstorage": "^1.15.0",
+ 	},
+
+used the nuxi module install instead of installing manually
+edits nuxt config to add the module
+pins the module version, only place we've got no carrot!
+and also brings in those two peer dependencies, unhead and unstorage
+*/
+
+let name1 = _route.params.more//from the route after "card"; property name is more because this file is named [more].vue
+let name2 = name1.replace(/\d+$/, '') + randomCode(4)//compose an alternate one to link to
+/*
+if this link is like either of these:
+http://localhost:3000/card/example1
+https://cold3.cc/card/example1
+then name1 will be "example1"
+
+in _route.params.more, the property is called "more" because this file is name [more].vue
+we also compose a neighboring name, name2, to link there, replacing any random numbers at the end
+*/
+
+let sticker = stickerParts()
+let stickerText = [sticker.where, sticker.sealedText, sticker.hashText].join('.')
 
 defineOgImageComponent('NuxtSeo', {
-	title: `this is a card for "${more}"`,
-	description: Sticker(),
+	title: `card for "${name1}"`,
+	description: stickerText,
 	theme: '#ff00ff',
 	colorMode: 'light'
 })
 
+
+const refSource = ref('')
+const refDelay = ref(-1)//how many milliseconds it took to generate the new image, or deliver it from the cache
+let whenMounted
+
+onMounted(async () => {//only runs in browser, because document doesn't exist on server render
+	whenMounted = Now()
+
+	let s = document.querySelector('meta[property="og:image"]')?.getAttribute('content') || ''
+	if (isLocal()) {
+		let u = new URL(s)
+		u.protocol = 'http'
+		u.host = 'localhost:3000'
+		s = u.toString()
+	}
+	refSource.value = s
+})
+
+function onImageLoad() {
+	refDelay.value = Now() - whenMounted
+}
+
+function hardReload() { window.location.reload() }//same as user clicking the browser's Reload button
+
 </script>
 <template>
 
-<p>this is a page for "{{ more }}"</p>
+<p>
+	image delivered to page in {{refDelay}}ms;
+	<LinkButton @click="hardReload">Browser reload</LinkButton>; or link to a
+	<NuxtLink :to="name2">different random page</NuxtLink>
+</p>
+<p><code>{{refSource}}</code></p>
+<p><img :src="refSource" @load="onImageLoad" /></p>
 
 </template>

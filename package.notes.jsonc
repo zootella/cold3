@@ -119,9 +119,9 @@
 		"icarus": "*",
 
 		//2 utility
-		"nuxt-og-image": "5.1.6",//added to make social share cards; works with cloudflare KV to cache them; note that there's no carrot here!
+		"nuxt-og-image": "5.1.6",
 		"@unhead/vue": "^2.0.5",
-		"unstorage": "^1.15.0",
+		"unstorage": "^1.15.0",//nuxi module add og-image brings in these three, with no carrot on the module itself
 		"vidstack": "^1.12.13",//ttd july, did these come from og image or vidstack or elsewhere? new from the repot
 
 		//4 framework
