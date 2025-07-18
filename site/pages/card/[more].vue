@@ -32,6 +32,18 @@ used the nuxi module install instead of installing manually
 edits nuxt config to add the module
 pins the module version, only place we've got no carrot!
 and also brings in those two peer dependencies, unhead and unstorage
+
+testing this out local and deployed, here's are your observations
+
+you're seeing three speeds:
+3244ms new image the worker had to generate
+552ms that same route in a new browser; here you think it's coming from the cloudflare KV cache
+2ms a browser refresh quickly gets the image from the browser cache
+
+there seems to be a local cache, as locally you occasionally see a really old hashed card
+
+the card is new and correct only for the first hit, not later if you navigate around the site
+this is ok, you suppose, as these cards appear for non-browser clients, which only do a first hit
 */
 
 let name1 = _route.params.more//from the route after "card"; property name is more because this file is named [more].vue
