@@ -31,7 +31,7 @@ async function mounted() {//runs on the client, only, when app.vue is mounted
 		`font-family: monospace; font-size: 20px; ${c} padding: 12px; border-radius: 16px;`
 	)
 	pageDuration.value = Math.floor(performance.now())//whole milliseconds since the browser began navigating to the site
-	log(`server render took ${serverDuration.value}ms ⏱️ ${pageDuration.value}ms navigation to mounted running ${w}`)//log to browser console, even deployed
+	log(`server render took ${serverDuration.value}ms ⏱️ ${pageDuration.value}ms navigation to mounted 🧾 ${w}`)//log to browser console, even deployed
 	await fetchWorker('/api/report', {body: {action: 'Hello.',
 		sticker: Sticker(),
 		d1: pageDuration.value,//biggest first
