@@ -44,6 +44,11 @@ there seems to be a local cache, as locally you occasionally see a really old ha
 
 the card is new and correct only for the first hit, not later if you navigate around the site
 this is ok, you suppose, as these cards appear for non-browser clients, which only do a first hit
+essentially, you're observing that it works like this:
+when the tab loads, the meta tags that lead to the card are set
+so if you start on the home page, you get the home card, even if you then navigate to the card page
+if you do a browser reload, that's the tab loading, so you get a new card
+you're seeing this behavior running both locally and deployed, also
 */
 
 let name1 = _route.params.more//from the route after "card"; property name is more because this file is named [more].vue
