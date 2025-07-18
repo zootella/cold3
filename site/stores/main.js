@@ -23,12 +23,15 @@ async function load() { if (loaded.value) return; loaded.value = true//runs on t
 	serverDuration.value = r.duration//save the duration measured by the server (well, in SSR this is the server, too, but still)
 }
 async function mounted() {//runs on the client, only, when app.vue is mounted
-	pageDuration.value = Math.floor(performance.now())//whole milliseconds since the browser began navigating to the site
+	let p = stickerParts()
+	let w = `${p.sealedText}.${p.hashText}.${isCloud() ? 'Cloud' : 'Local'}`
+	let c = isCloud() ? 'color: white; background: #ff00ff;' : 'color: #bf00ff; background: #ceff00;'
 	console.log(
-		'%cSecurity warning: DO NOT PASTE anything in here. Anyone telling you to is trying to steal your account!',
-		'font-family: monospace; font-size: 20px; color: white; background: #ff4f00; padding: 12px; border-radius: 16px;'
+		`%cSecurity warning: DO NOT PASTE anything in here. Anyone telling you to is trying to steal your account! ${w}`,
+		`font-family: monospace; font-size: 20px; ${c} padding: 12px; border-radius: 16px;`
 	)
-	log(`server render took ${serverDuration.value}ms ⏱️ ${pageDuration.value}ms navigation to mounted`)//log to browser console, even deployed
+	pageDuration.value = Math.floor(performance.now())//whole milliseconds since the browser began navigating to the site
+	log(`server render took ${serverDuration.value}ms ⏱️ ${pageDuration.value}ms navigation to mounted running ${w}`)//log to browser console, even deployed
 	await fetchWorker('/api/report', {body: {action: 'Hello.',
 		sticker: Sticker(),
 		d1: pageDuration.value,//biggest first
