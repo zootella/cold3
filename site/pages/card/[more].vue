@@ -67,7 +67,7 @@ let sticker = stickerParts()
 let stickerText = [sticker.where, sticker.sealedText, sticker.hashText].join('.')
 
 defineOgImageComponent('NuxtSeo', {
-	title: `card for "${name1}"`,
+	title: `💦 dynamic card for ${name1}`,
 	description: stickerText,
 	theme: '#ff00ff',
 	colorMode: 'light'
