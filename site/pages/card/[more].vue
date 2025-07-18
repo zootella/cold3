@@ -52,7 +52,6 @@ you're seeing this behavior running both locally and deployed, also
 */
 
 let name1 = _route.params.more//from the route after "card"; property name is more because this file is named [more].vue
-let name2 = name1.replace(/\d+$/, '') + randomCode(4)//compose an alternate one to link to
 /*
 if this link is like either of these:
 http://localhost:3000/card/example1
@@ -95,6 +94,16 @@ function onImageLoad() {
 	refDelay.value = Now() - whenMounted
 }
 
+function randomPage() {
+	let name2 = name1.replace(/\d+$/, '') + randomCode(4)//compose an alternate one to link to
+	navigateTo({
+		name: _route.name,
+		params: {
+			more: name2,
+		},
+	})
+}
+
 function hardReload() { window.location.reload() }//same as user clicking the browser's Reload button
 
 </script>
@@ -103,7 +112,7 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 <p>
 	image delivered to page in {{refDelay}}ms;
 	<LinkButton @click="hardReload">Browser reload</LinkButton>; or link to a
-	<NuxtLink :to="name2">different random page</NuxtLink>
+	<LinkButton @click="randomPage">different random page</LinkButton>
 </p>
 <p><code>{{refSource}}</code></p>
 <p><img :src="refSource" @load="onImageLoad" /></p>
