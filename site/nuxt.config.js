@@ -2,8 +2,16 @@
 
 import {vite as vidstack} from 'vidstack/plugins'
 
-//configuration object we'll populate, submit, and export the result
-const configuration = {//set up empty structure to fill below
+/*
+$ cloudflare create
+scaffolded file linked
+https://nuxt.com/docs/api/configuration/nuxt-config
+
+configuration object we'll populate, submit, and export the result
+replaced common declarative structure with this imperitive pattern
+to be able to group subject areas together and comment them out individually for testing
+*/
+const configuration = {
 	modules: [],
 	vue: {compilerOptions: {}},
 	vite: {plugins: []},
@@ -13,6 +21,44 @@ const configuration = {//set up empty structure to fill below
 //for Nuxt and Nitro
 configuration.compatibilityDate = '2025-06-10'//pin Nitro and other Nuxt modules to follow this date of behavior to include (or avoid) breaking changes
 configuration.devtools = {enabled: true}//enable the Nuxt devtools extension in the browser when running locally
+
+//for build analysis and visualization
+if (false) configuration.build = {
+	analyze: {//enable Nuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood
+		template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
+		brotliSize: true,//current browsers downloading from Cloudflare will use Brotli compression
+	},
+}
+if (false) configuration.analyzeDir = 'size'//put the report files in a folder named "size" rather than .nuxt/analyze
+/*
+ttd july, visualizer is the last thing in the repot
+
+from newer scaffolding test:
+
+	build: {
+		analyze: {//added for visualizer; enable Nuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood
+			template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
+			brotliSize: true,//current browsers downloading from Cloudflare will use Brotli compression
+		},
+	},
+	analyzeDir: 'size',//added for visualizer; put the report files in a folder named "size" rather than .nuxt/analyze
+
+from before the repot:
+
+	import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
+	vite: {
+		plugins: [
+			visualizer({//from visualizer
+				filename: './stats.html',
+				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
+				brotliSize: true
+			}),
+		],
+	},
+	build: {
+		sourcemap: true,//from visualizer; causes rollup to make stats.html
+	},
+*/
 
 //for Cloudflare Workers
 configuration.modules.push('nitro-cloudflare-dev')//run locally with a Miniflare Wrangler development proxy
@@ -33,18 +79,6 @@ configuration.nitro.esbuild = {
 configuration.components = {
 	dirs: [{path: '~/components', pathPrefix: false}],
 }
-
-/*
-ttd july, next for the remaining repot tasks, get a visualizer working
-
-	build: {
-		analyze: {//added for visualizer; enable Nuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood
-			template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
-			brotliSize: true,//current browsers downloading from Cloudflare will use Brotli compression
-		},
-	},
-	analyzeDir: 'size',//added for visualizer; put the report files in a folder named "size" rather than .nuxt/analyze
-*/
 
 //for tailwind
 configuration.modules.push('@nuxtjs/tailwindcss')
@@ -85,28 +119,3 @@ configuration.vue.compilerOptions.isCustomElement = (tag) => tag.startsWith('med
 configuration.vite.plugins.push(vidstack())
 
 export default defineNuxtConfig(configuration)
-
-/*
-notes from $ cloudflare create
-https://nuxt.com/docs/api/configuration/nuxt-config
-*/
-
-/*
-ttd june, previous visualizer; now there's a built-in one, but you still need a place to say treemap or sunburst
-
-	import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
-
-	vite: {
-		plugins: [
-			visualizer({//from visualizer
-				filename: './stats.html',
-				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
-				brotliSize: true
-			}),
-		],
-	},
-
-	build: {
-		sourcemap: true,//from visualizer; causes rollup to make stats.html
-	},
-*/
