@@ -2830,9 +2830,217 @@ https://esbuild.github.io/
 
 
 
+																								_                         _     
+	___  _ __   ___ _ __     __ _ _ __ __ _ _ __ | |__     ___ __ _ _ __ __| |___ 
+ / _ \| '_ \ / _ \ '_ \   / _` | '__/ _` | '_ \| '_ \   / __/ _` | '__/ _` / __|
+| (_) | |_) |  __/ | | | | (_| | | | (_| | |_) | | | | | (_| (_| | | | (_| \__ \
+ \___/| .__/ \___|_| |_|  \__, |_|  \__,_| .__/|_| |_|  \___\__,_|_|  \__,_|___/
+			|_|                 |___/          |_|                                    
 
+open graph cards appear easy, but are hard--the server, instead of the browser, must render
+they're also important--they're a new user's first experience with the site, right before they first click in
 
+[i] scaffolding
 
+https://nuxt.com/modules/og-image
+https://nuxtseo.com/docs/og-image/getting-started/introduction
+
+https://github.com/nuxt-modules/og-image
+https://www.npmjs.com/package/nuxt-og-image - 41k weekly downloads, low
+
+$ yarn run nuxi module add og-image
+
++++ b/nuxt.config.ts
+-  modules: ["nitro-cloudflare-dev"]
++  modules: ["nitro-cloudflare-dev", "nuxt-og-image"]
+
++++ b/package.json
+	"dependencies": {
++		"nuxt-og-image": "5.1.6",
++		"@unhead/vue": "^2.0.5",
++		"unstorage": "^1.15.0",
+	},
+
+used the nuxi module install instead of installing manually
+edits nuxt config to add the module
+pins the module version, only place we've got no carrot!
+and also brings in those two peer dependencies, unhead and unstorage
+
+[ii] code configuration
+
+./nuxt.config.ts
+push the module
+have to tell it the site name and url
+name and connect the KV store
+
+./wrangler.jsonc
+paste in the KV store id from the dashboard
+
+[iii] dashboard configuration
+
+dashboard clicking steps were:
+cloudflare dashboard, workers and pages, KV, create a namespace
+OG_IMAGE_CACHE, name
+then the dashboard generates an id, pasted that into wrangler.toml
+
+to see current keys and values in the dashboard:
+Account Home, Storage & Databases, KV
+KV stores are listed top level in the cloudflare account,
+rather than within a Domains or Workers & Pages listing
+
+[iv] notes, observations, issues, and things to do later
+
+## how this works
+
+1 whatsapp GETs the link to our site that has appeared in the user's chat
+2 nuxt renders the page on the server side, including the meta tags that have the image url
+3 whatsapp requests the image url
+4 nuxt renders the image on the server side, painting and compressing a png file
+
+nuxt is the cloudflare worker running nuxt, nuxt og image, and our code written in that framework
+whatsapp is either that app on the user's phone, or likely a backend server running on behalf of the whatsapp user
+
+## example
+
+example URLs, meta tags, KV key, and KV value:
+
+http://localhost:3000/__og-image__/image/og.png
+https://cold3.cc/__og-image__/image/og.png
+
+<meta property="og:image" content="https://cold3.cc/__og-image__/image/card/name1174/og.png">
+<meta property="og:image:type" content="image/png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://cold3.cc/__og-image__/image/card/name1174/og.png">
+<meta name="twitter:image:src" content="https://cold3.cc/__og-image__/image/card/name1174/og.png">
+<meta property="og:image:width" content="1200">
+<meta name="twitter:image:width" content="1200">
+<meta property="og:image:height" content="600">
+<meta name="twitter:image:height" content="600">
+
+5.1.6:card:name4557:gfIYtMskgaEe-yswRu2I4daKEdykNZs3S37l1UwuwZg
+
+{
+	"value": "iVBORw0KGgoAAAANS ... 1TNcAAAAASUVORK5CYII=",//around 160 KB of base64 text
+	"headers": {
+		"Vary": "accept-encoding, host",
+		"etag": "W/\"cfXhjA5NzE0681Cn-hbLoVBsvpGl933mVb8G4fWtFVI\"",
+		"last-modified": "Sat, 19 Jul 2025 19:14:32 GMT",
+		"cache-control": "public, s-maxage=1200, stale-while-revalidate"
+	},
+	"expiresAt": 1752953672593
+}
+
+## image generation on the edge
+
+surprisingly, cloudflare workers gives nuxt og image all it needs to make a PNG
+SVG is also an option, but client apps like whatsapp can't uniformly show that format
+JPG is also an option for the module, but the worker can't make those
+
+but how does the worker make the png? some early chatting identified maybe
+https://github.com/vercel/satori renders the SVG, and then
+https://github.com/thx/resvg-js converts SVG -> PNG, all on the worker
+
+in the test cards, there's a huge gradient which looks hard for PNG to compress
+but you haven't tried getting a source JPG to render into the card, which you'll need
+it may be that net23 will have to save a PNG of a picture,
+and then hopefully nuxt og image running still entirely in the worker can compose the PNG into the card
+
+ttd july, test out getting a ug image like a photograph from net23 into a card
+
+## observed speeds
+
+you're seeing three speeds:
+3244ms new image the worker had to generate
+552ms that same route in a new browser; here you think it's coming from the cloudflare KV cache
+2ms a browser refresh quickly gets the image from the browser cache
+
+if a post is very popular, you want to deliver the card instantly to thousands of followers
+but also, if a user edits their post, they want the card to immediately show the edited information
+
+## observed generation behavior from initial server render only
+
+the card is new and correct only for the first hit, not later if you navigate around the site
+this is ok, you suppose, as these cards appear for non-browser clients, which only do a first hit
+essentially, you're observing that it works like this:
+when the tab loads, the meta tags that lead to the card are set
+so if you start on the home page, you get the home card, even if you then navigate to the card page
+if you do a browser reload, that's the tab loading, so you get a new card
+you're seeing this behavior running both locally and deployed, also
+
+## site routes versus user routes
+
+for v1, you want three cards:
+- home card, on the root route and other site-specific settings
+- user card, about the user's profile as a whole
+- post card, about a user's single post
+
+to begin, you've just cards in these two code files:
+
+./pages/index.vue
+./pages/card/[more].vue
+
+so you need to figure out how to get module use and nuxt routing together propertly to make the 3 cards
+can you define a global card, which then gets overridden with a user page or post card?
+
+ttd july configure routes and cards to generate site, profile, and post cards
+
+## light and dark color modes
+
+defineOgImageComponent accepts the property:
+	colorMode: 'light'
+but pretty sure that there's no way to know the user's phone's light/dark mode setting
+the request to get the card doesn't come from the phone's browser
+nor even from the whatsapp running on the user's phone
+but rather from a meta server running the whatsapp backend for that user!
+
+## hashing and caching
+
+how does the module decide when to generate a new image?
+you can see the card hash in the KV store key, at the end
+and chat says that's a hash of all the properties defineOgImageComponent() got to make the card
+but the URL has just the route, and it works
+
+also, early on, you tried the ?purge flag, like
+https://cold3.cc/__og-image__/image/og.png?purge
+but it doesn't always regenerate the image
+
+## cache expiration woes
+
+even though you've set 20 minute expiration
+and see that in the KV store values
+you can also see that the KV store is keeping everything forever
+
+chat is saying the fix is to monkey patch the nitro driver:
+
+export default defineNitroPlugin((nitroApp) => {
+	const kvDriver = nitroApp.storage.getDriver('cloudflare-kv-binding')
+	const originalPut = kvDriver.put.bind(kvDriver)
+	kvDriver.put = (key, body) =>
+		// now passes a 1200s TTL to KV
+		originalPut(key, body, { expirationTtl: 60 * 20 })
+})
+
+but before you do that, perhaps
+- an updated version of nuxt og image will do this
+- cloudflare will add an expiration setting on the dashboard
+
+or, to just kill the old ones more easily manually, perhaps
+- wrangler will allow a delete * you can just periodically run
+- or there will be a way to do that in the dashboard
+
+right now the dashboard only has a button to delete the whole store
+which is still useful to clear out a big old one,
+but you'd have to do a new deployment right after with the replacement KV store's id in wrangler.jsonc
+
+wrangler's kv api is really minimal, but you can do this to count them:
+$ npx wrangler kv key list --binding=OG_IMAGE_CACHE --remote | jq 'length'
+
+even with the cache being eternal, you can still edit a post and get a new card
+because when you change any of the define og image component properties
+you get a new hash, and a new png, and a new KV store item
+which also of course sticks around forever
+
+ttd july get the kv store to throw away old cards instead of keeping them all forever
 
                    _   _
   ___   __ _ _   _| |_| |__

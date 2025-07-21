@@ -17,10 +17,7 @@
 
 	//followed nuxt-og-image instructions to make a cache for the card PNGs; to set this up, you made a new KV store in the Cloudflare dashboard, and pasted its id here
 	"kv_namespaces": [
-		{
-			"binding": "OG_IMAGE_CACHE",
-			"id": "ee95a879988944c2a7eb9521e62eb102"
-		}
+		{"binding": "OG_IMAGE_CACHE", "id": "ee95a879988944c2a7eb9521e62eb102"}
 	],
 
 	//tell our code editor Wrangler's JSON schema for autocomplete and validation

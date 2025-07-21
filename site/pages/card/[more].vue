@@ -7,15 +7,6 @@ const _route = useRoute()
 const _site = useSiteConfig()
 
 let name1 = _route.params.more//from the route after "card"; property name is more because this file is named [more].vue
-/*
-if this link is like either of these:
-http://localhost:3000/card/example1
-https://cold3.cc/card/example1
-then name1 will be "example1"
-
-in _route.params.more, the property is called "more" because this file is name [more].vue
-we also compose a neighboring name, name2, to link there, replacing any random numbers at the end
-*/
 
 let sticker = stickerParts()
 let stickerText = [sticker.where, sticker.sealedText, sticker.hashText].join('.')
