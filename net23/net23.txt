@@ -562,8 +562,13 @@ $ cold3 % yarn --version
 
 also need to do this for the root scripts wash and upgrade-wash to work:
 $ npm install -g rimraf
+https://www.npmjs.com/package/rimraf 106mm
 before this, it was a mess as you couldn't double call it because it would delete itself
 
+another one
+$ npm install -g open
+https://www.npmjs.com/package/open 51mm
+also note that there is a yarn global install, but you are using npm for global instead
 
 
 
@@ -726,6 +731,75 @@ git add, commit, push
 yarn build, local, and deploy
 
 
+
+
+
+~~ notes from the 2025jul repot prompted by wrangler 3->4 and cloudflare pages->workers
+
+cloudflare create without pages flag, to use that the new way
+current version of nuxt, which is still 3
+add nuxi to use that in yarn, going to get 3
+current version of wrangler, which is now 4
+
+https://developers.cloudflare.com/pages/get-started/c3/
+https://developers.cloudflare.com/workers/static-assets/migration-guides/migrate-from-pages/
+https://developers.cloudflare.com/workers/static-assets/migration-guides/migrate-from-pages/#compatibility-matrix
+
+$ yarn create cloudflare (note no pages flag, choosing the workers option)
+repot4, name
+framework starter
+nuxt
+none, official modules
+no, git version control
+no, deploy application
+
+choosing to align the compatability dates
+
+local, build, deploy, all work
+in cloudflare dashboard, added the subdomain
+
+$ yarn add -D nuxi
+$ yarn nuxi --version, 3.25.1
+note how nuxi and wrangler are installed globally and in the project
+and all the versions are the same
+
+ok, next, let's add the modules and plugins, specifically
+- icarus
+- pinia
+- tailwind
+- vidstack
+- nuxt og image, which may include sharp? (it didn't)
+
+## pinia
+
+"nitro-cloudflare-dev", "@nuxtjs/tailwindcss", "@pinia/nuxt"
+ 	"dependencies": {
++		"@pinia/nuxt": "0.11.1",
++		"pinia": "^3.0.3",
+
+pinia went up a whole version number, so watch out for that
+
+## tailwind
+
+https://tailwindcss.nuxtjs.org/
+$ yarn nuxi module add tailwindcss
+
+ok so what that did, other than messin gup your indentation
+"@nuxtjs/tailwindcss"
+				modules: ["nitro-cloudflare-dev", "@nuxtjs/tailwindcss"],
+	"dependencies": {
+		"@nuxtjs/tailwindcss": "7.0.0-beta.0",
+so backed out of that and installed it manually to get the previous, not beta, version
+
+## vidstack
+
+$ yarn add vidstack@next
+otherwise you get a 0. version
+
+## nuxt og image
+
+$ yarn run nuxi module add og-image
+that and complete notes in the cards section below
 
 
 
@@ -897,9 +971,60 @@ mention you have to change Text to Secret in the cloudflare dashboard
 
 
 
+ttd july
+seeing how big wrapper is in the size/client.html report
+and seeing icarus/wrapper.js is 2.69 KB compressed just 91%
+and big even alongside level0.js and TermsDocument.vue
+
+for these reasons:
+- client bundle size
+- defense in depth
+- general appearances
+see if you can get what's currently the 3 KB wrapper.secrets
+into a file that full stack js icarus code still indescrementantly references
+but which doesn't end up making it into the svelte or nuxt front end bundles
+
+possible general strategy to do this
+move the encrypted secrets string to a separate file alongside wrapper:
+./icarus/wrapper.js
+./icarus/secrets.js
+but then there's something that runs everywhere but finds nxut and svelte front end, like
+if (process.server) secrets.vault = 'all the encrypted secrets'
+except you also have to find that for sveltekit, which could be hard/brittle
+
+and also have a tag like SECRETS_VAULT_MARKER alongside those
+and then confirm that you can see, and then not see, it view source, essentially
 
 
 
+
+
+
+     _ _             _         
+ ___(_) |_ ___   ___(_)_______ 
+/ __| | __/ _ \ / __| |_  / _ \
+\__ \ | ||  __/ \__ \ |/ /  __/
+|___/_|\__\___| |___/_/___\___|
+                               
+see how big the nuxt site is, and what's contributing to its size
+uses nNuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood
+https://www.npmjs.com/package/rollup-plugin-visualizer
+
+$ cd site
+$ yarn size
+
+file:///.../site/size/client.html
+file:///.../site/size/nitro.html
+
+in site/nuxt.config.js try out "sunburst", "treemap", "network", "raw-data", or "list" options
+
+takeaways looking at the treemaps after the 2025jul repot
+both are really small: 296 KB client; 4.77 MB server
+framework modules are lean enough that you can see your own code as sizeable, like the icarus levels
+blocky non-code include the terms document and wrapper encrypted secrets
+vidstack and nuxt-og-image are big
+
+git ignores the output reports; seal lists them in wrapper.txt; disk doesn't count them as human readable
 
  _                          
 (_) ___ __ _ _ __ _   _ ___ 
@@ -2856,9 +2981,9 @@ $ yarn run nuxi module add og-image
 
 +++ b/package.json
 	"dependencies": {
-+		"nuxt-og-image": "5.1.6",
-+		"@unhead/vue": "^2.0.5",
-+		"unstorage": "^1.15.0",
++		"nuxt-og-image": "5.1.6",  https://www.npmjs.com/package/nuxt-og-image  ⚠️ 42k weekly downloads 
++		"@unhead/vue": "^2.0.5",   https://www.npmjs.com/package/@unhead/vue    🆗 986k 
++		"unstorage": "^1.15.0",    https://www.npmjs.com/package/unstorage      🆗 2mm
 	},
 
 used the nuxi module install instead of installing manually

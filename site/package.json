@@ -11,6 +11,7 @@
 	},
 	"scripts": {
 		"local": "nuxt dev",
+		"size": "nuxi analyze --no-serve && open ./size/client.html && open ./size/nitro.html",
 		"build": "nuxt build",
 		"deploy-before": "yarn --cwd ../ seal set-cloud",
 		"deploy-after": "yarn --cwd ../ seal set-local && yarn --cwd ../ test",

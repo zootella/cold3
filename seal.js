@@ -76,6 +76,7 @@ async function listFiles() {
 			'**/*.diff',
 			'**/diff*.txt',
 			'**/dist',
+			'**/.vite-inspect',//git ignores site/size, but wrapper lists site/size/client.html and the other two in there
 			'**/node_modules',
 			'**/worker-configuration.d.ts',
 
@@ -131,7 +132,7 @@ async function affixSeal(properties, manifest) {
 			!f.path.endsWith('.jpg') &&
 			!f.path.endsWith('.png') &&
 			!f.path.endsWith('.woff2') &&//fonts
-			!(f.path.includes('stats') && f.path.endsWith('.html'))) {//bundle statistics
+			!f.path.includes('site/size/')) {//rollup visualizer reports
 			codeFiles++; codeSize += f.size
 		}
 	}

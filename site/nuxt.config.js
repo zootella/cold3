@@ -23,42 +23,13 @@ configuration.compatibilityDate = '2025-06-10'//pin Nitro and other Nuxt modules
 configuration.devtools = {enabled: true}//enable the Nuxt devtools extension in the browser when running locally
 
 //for build analysis and visualization
-if (false) configuration.build = {
+configuration.build = {
 	analyze: {//enable Nuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood
 		template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
 		brotliSize: true,//current browsers downloading from Cloudflare will use Brotli compression
 	},
 }
-if (false) configuration.analyzeDir = 'size'//put the report files in a folder named "size" rather than .nuxt/analyze
-/*
-ttd july, visualizer is the last thing in the repot
-
-from newer scaffolding test:
-
-	build: {
-		analyze: {//added for visualizer; enable Nuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood
-			template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
-			brotliSize: true,//current browsers downloading from Cloudflare will use Brotli compression
-		},
-	},
-	analyzeDir: 'size',//added for visualizer; put the report files in a folder named "size" rather than .nuxt/analyze
-
-from before the repot:
-
-	import {visualizer} from 'rollup-plugin-visualizer'//from visualizer; $ yarn build to make stats.html
-	vite: {
-		plugins: [
-			visualizer({//from visualizer
-				filename: './stats.html',
-				template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
-				brotliSize: true
-			}),
-		],
-	},
-	build: {
-		sourcemap: true,//from visualizer; causes rollup to make stats.html
-	},
-*/
+configuration.analyzeDir = 'size'//put the report files in a folder named "size" rather than .nuxt/analyze
 
 //for Cloudflare Workers
 configuration.modules.push('nitro-cloudflare-dev')//run locally with a Miniflare Wrangler development proxy
