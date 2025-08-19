@@ -34,7 +34,7 @@ configuration.analyzeDir = 'size'//put the report files in a folder named "size"
 //for Cloudflare Workers
 configuration.modules.push('nitro-cloudflare-dev')//run locally with a Miniflare Wrangler development proxy
 configuration.nitro = {
-	preset: "cloudflare_module",//tell Nitro to build for Cloudflare Workers
+	preset: 'cloudflare_module',//tell Nitro to build for Cloudflare Workers
 	cloudflare: {
 		deployConfig: true,//tell Nitro to generate Wrangler settings from its defaults and our wrangler.jsonc file
 		nodeCompat: true,//bundle in compatability polyfills for core Node modules; this is about Node compatability at *build* time

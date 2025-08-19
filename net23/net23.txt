@@ -133,6 +133,49 @@ instead of videojs, vidstack formerly plyr
 
 
 
+
+
+
+# NPM Module Selection Guidelines
+
+## The #2 Rule: Why Second Place Often Wins
+
+When selecting from popular open-source options, the second-most popular choice frequently offers the best balance for our needs. These modules are mainstream enough that AI tools and community resources can reliably help with questions, yet they often benefit from more modern architecture than the top-ranked alternatives. The #1 option typically positions itself as the "industry standard" or "default choice," while #2 usually targets developers seeking simplicity—resulting in cleaner, more efficient designs that integrate faster.
+
+There's even a cosmetic benefit: unstyled #1 components look generic because they're widely recognized as unmodified defaults, while unstyled #2 components can appear custom-designed for your app.
+
+**Examples**: Vue over React, Vidstack (formerly Plyr) over Video.js
+
+## Download Volume: Mainstream but Not Bloated
+
+We target modules with hundreds of thousands to low millions of weekly downloads—popular enough to be well-supported, but not so dominant that they've accumulated years of legacy bloat. Modules with only 5-digit download counts risk leading us into dependency hell with niche, potentially abandoned packages.
+
+## Isomorphic Compatibility: Browser-First Wins
+
+Our Icarus library runs everywhere JavaScript can run: Cloudflare Workers, AWS Lambda, browsers, and local development environments. This creates a critical selection criterion: **modules designed for browsers typically work everywhere, while Node-specific modules often fail on Cloudflare Workers**—even with Node compatibility flags enabled.
+
+We prioritize small, simple, recently-authored modules over older packages built when Node and browser environments were distinctly separate ecosystems. When service providers force us to use bloated, Node-specific SDKs (like Twilio's API), we retreat to Lambda rather than waste time fighting compatibility issues on Cloudflare.
+
+**Rule of thumb**: If it was designed browser-first, it'll work in our full stack. If it was designed Node-first, it probably won't work on Cloudflare, regardless of what the documentation promises.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 that's one of three module aphorisms:
 - pick the second most popular module for the task
 - find a module, unless you could code it yourself in just a screenful
