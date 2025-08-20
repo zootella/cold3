@@ -123,6 +123,8 @@
 		"@unhead/vue": "^2.0.5",
 		"unstorage": "^1.15.0",//nuxi module add og-image brings in these three, with no carrot on the module itself
 		"vidstack": "^1.12.13",//ttd july, did these come from og image or vidstack or elsewhere? new from the repot
+		"otpauth": "^9.4.1",//added for otp, works with but does not include qrcode below; comes with base32 encoding utility
+		"qrcode": "^1.5.4",//added for qr codes, your own code uses alongside otpauth
 
 		//4 framework
 		"@pinia/nuxt": "^0.11.1",
