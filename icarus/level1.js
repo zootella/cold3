@@ -1086,7 +1086,24 @@ noop(() => {
 })
 
 
+//ttd august, replace rfc4648 with this
+/*
 
+Looking at your dependencies, you did NOT get a base32 encoder as a separate package. However, you're in luck - otpauth includes Base32 encoding/decoding built-in!
+From otpauth's internals, it exports Base32 utilities that you can use directly:
+
+import { Secret } from 'otpauth';
+
+// Base32 encode
+const base32String = Secret.fromUTF8('hello world').base32;
+
+// Base32 decode
+const decoded = Secret.fromBase32('NBSWY3DPEB3W64TMMQ').utf8;
+
+[]run that alongside your existing one, confirm it's the same
+
+
+*/
 
 
 
