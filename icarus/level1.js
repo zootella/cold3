@@ -1055,13 +1055,13 @@ turn on this fuzz tester to use the base32 implementation that comes with otpaut
 */
 import {Secret as otpSecret} from 'otpauth'//found base32 encoding in the module for OTP QR codes
 function cycle4648(size) {
-	let d = Data({random: size})
-	let s2 = d.base32()//we've written our own implementation of base32 encoding into Data
-	let s3 = otpSecret.fromHex(d.base16()).base32//confirm it matches the behavior in the popular otpauth module
-	ok(s2 == s3)
-	let d2 = Data({base32: s2})
-	let d3 = Data({array: otpSecret.fromBase32(s3).bytes})
-	ok(d2.base16() == d3.base16())
+	let d0 = Data({random: size})
+	let s1 = d0.base32()//we've written our own implementation of base32 encoding into Data
+	let s2 = otpSecret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
+	ok(s1 == s2)
+	let d1 = Data({base32: s1})
+	let d2 = Data({array: otpSecret.fromBase32(s2).bytes})
+	ok(d1.base16() == d2.base16())
 }
 function runFor(m, f) {
 	let n = Now()
