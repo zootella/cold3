@@ -27,7 +27,13 @@ first part is what it does; last part is what it looks like
 
 
 
+ttd august
+make sure you type things to bring up the right mobile keyboard!
+you've been using number pad, but there's also email and url!
 
+<input type="tel" />    <!-- triggers number pad -->
+<input type="email" />  <!-- triggers email keyboard -->
+<input type="url" />    <!-- triggers URL keyboard with .com key -->
 
 
 
