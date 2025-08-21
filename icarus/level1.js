@@ -1058,15 +1058,28 @@ and this fuzz tester confirms they work the same as the module
 using pad false and loose true
 but Data will do a round-trip check
 */
-//import {base32} from 'rfc4648'//only available in icarus
+import {base32} from 'rfc4648'//only available in icarus
+import {Secret as otpSecret} from 'otpauth'//from the otpauth module
 function cycle4648(size) {
+	let d = Data({random: size})
+	let s2 = d.base32()
+	let s3 = otpSecret.fromHex(d.base16()).base32
+	ok(s2 == s3)
+	let d2 = Data({base32: s2})
+	let d3 = Data({array: otpSecret.fromBase32(s3).bytes})
+	ok(d2.base16() == d3.base16())
+}
+
+function cycle4648_old(size) {
 	let d = Data({random: size})
 	let s1 = base32.stringify(d.array(), {pad: false})
 	let s2 = d.base32()
-	ok(s1 == s2)
+	let s3 = otpSecret.fromHex(d.base16()).base32//works now
+	ok(s1 == s2 && s2 == s3)
 	let d1 = Data({array: base32.parse(s1, {loose: true})})
 	let d2 = Data({base32: s2})
-	ok(d1.base16() == d2.base16())
+	let d3 = Data({array: otpSecret.fromBase32(s3).bytes})//is this still correct?
+	ok(d1.base16() == d2.base16() && d2.base16() == d3.base16())
 }
 function runFor(m, f) {
 	let n = Now()
@@ -1074,7 +1087,7 @@ function runFor(m, f) {
 	while (Now() < n + m) { cycles++; f() }
 	return cycles
 }
-noop(() => {
+test(() => {
 	function f1() { let size = 32;                     cycle4648(size) }//size of hash value
 	function f2() { let size = randomBetween(1, 8);    cycle4648(size) }//short
 	function f3() { let size = randomBetween(1, 1024); cycle4648(size) }//longer
@@ -1085,25 +1098,6 @@ noop(() => {
 	log(look({cycles1, cycles2, cycles3}))
 })
 
-
-//ttd august, replace rfc4648 with this
-/*
-
-Looking at your dependencies, you did NOT get a base32 encoder as a separate package. However, you're in luck - otpauth includes Base32 encoding/decoding built-in!
-From otpauth's internals, it exports Base32 utilities that you can use directly:
-
-import { Secret } from 'otpauth';
-
-// Base32 encode
-const base32String = Secret.fromUTF8('hello world').base32;
-
-// Base32 decode
-const decoded = Secret.fromBase32('NBSWY3DPEB3W64TMMQ').utf8;
-
-[]run that alongside your existing one, confirm it's the same
-
-
-*/
 
 
 
