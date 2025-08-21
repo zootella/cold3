@@ -43,8 +43,7 @@
 	"devDependencies": {
 
 		//2 utility
-		"nanoid": "^5.0.7",
-		"rfc4648": "^1.5.3",//these two for icarus fuzz tests you can release from noop
+		"nanoid": "^5.0.7",//for icarus fuzz tests you can release from noop
 
 		//4 framework
 		"@vitejs/plugin-vue": "^5.0.4",

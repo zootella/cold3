@@ -1041,45 +1041,27 @@ noop(() => {
 // |_.__/ \__,_|___/\___|____/_____| |_| \_\_|   \____|  |_|  \___/   |_|  \___/ 
 //                                                                               
 /*
-base32
 to store sha256 hash values in the database in a column typed CHAR(52)
-you want something short, and double-clickable, and length independent of data
+you want something (a) brief, (b) double-clickable, and (c) length determined by byte size not value
 AI4APBJZISGTL4DOOJRKYPSACN4YSR55NVOJDZCKGXFKEX4AEJHQ, for example
 
-https://www.npmjs.com/package/rfc4648
-~1 million weekly downloads
-installed into icarus, and not the nuxt project
+base16 has (b) and (c) but not (a)
+base64 has (a) and (c) but not (b)
+base62 has (a) and (b) but not (c), and is also our invention rather than an established standard
+base32 has (b) and (c) like base16 while being much shorter
 
-but Data is in level0
-using that module would require elevating Data to level1
-so you're bringing your own short functions
-and this fuzz tester confirms they work the same as the module
-
-using pad false and loose true
-but Data will do a round-trip check
+Data() has short zero dependency implementations of base16, 32, 62, and 64
+turn on this fuzz tester to use the base32 implementation that comes with otpauth to confirm our base32 implementation matches
 */
-import {base32} from 'rfc4648'//only available in icarus
-import {Secret as otpSecret} from 'otpauth'//from the otpauth module
+import {Secret as otpSecret} from 'otpauth'//found base32 encoding in the module for OTP QR codes
 function cycle4648(size) {
 	let d = Data({random: size})
-	let s2 = d.base32()
-	let s3 = otpSecret.fromHex(d.base16()).base32
+	let s2 = d.base32()//we've written our own implementation of base32 encoding into Data
+	let s3 = otpSecret.fromHex(d.base16()).base32//confirm it matches the behavior in the popular otpauth module
 	ok(s2 == s3)
 	let d2 = Data({base32: s2})
 	let d3 = Data({array: otpSecret.fromBase32(s3).bytes})
 	ok(d2.base16() == d3.base16())
-}
-
-function cycle4648_old(size) {
-	let d = Data({random: size})
-	let s1 = base32.stringify(d.array(), {pad: false})
-	let s2 = d.base32()
-	let s3 = otpSecret.fromHex(d.base16()).base32//works now
-	ok(s1 == s2 && s2 == s3)
-	let d1 = Data({array: base32.parse(s1, {loose: true})})
-	let d2 = Data({base32: s2})
-	let d3 = Data({array: otpSecret.fromBase32(s3).bytes})//is this still correct?
-	ok(d1.base16() == d2.base16() && d2.base16() == d3.base16())
 }
 function runFor(m, f) {
 	let n = Now()
@@ -1087,17 +1069,18 @@ function runFor(m, f) {
 	while (Now() < n + m) { cycles++; f() }
 	return cycles
 }
-test(() => {
-	function f1() { let size = 32;                     cycle4648(size) }//size of hash value
-	function f2() { let size = randomBetween(1, 8);    cycle4648(size) }//short
-	function f3() { let size = randomBetween(1, 1024); cycle4648(size) }//longer
+noop(() => {
+	function f1() { let size = 32;                     cycle4648(size) }//a sha256 hash value is 32 bytes (256 bits) 52 base32 characters
+	function f2() { let size = 20;                     cycle4648(size) }//a standard TOTP secret is 20 bytes (160 bits) 32 base32 characters
+	function f3() { let size = randomBetween(1, 8);    cycle4648(size) }//short
+	function f4() { let size = randomBetween(1, 1024); cycle4648(size) }//longer
 
 	let cycles1 = runFor(1*Time.second, f1)
 	let cycles2 = runFor(1*Time.second, f2)
 	let cycles3 = runFor(1*Time.second, f3)
-	log(look({cycles1, cycles2, cycles3}))
+	let cycles4 = runFor(1*Time.second, f4)
+	log(look({cycles1, cycles2, cycles3, cycles4}))
 })
-
 
 
 

@@ -28,7 +28,6 @@
 	"devDependencies": {
 		"@vitejs/plugin-vue": "^5.0.4",
 		"nanoid": "^5.0.7",
-		"rfc4648": "^1.5.3",
 		"vite": "^6.2.6",
 		"vue": "^3.5.16",
 		"vue-router": "^4.5.1"
