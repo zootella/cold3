@@ -1,6 +1,5 @@
 <script setup>//./components/QrComponent.vue
 
-import { ref } from 'vue'
 import QRCode from 'qrcode'
 
 const addressRef = ref('')//input, user pastes in URL to make a QR code from it
@@ -44,13 +43,12 @@ async function generate() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>QrComponent</i></p>
 
 <div>
-	<input @keyup.enter="generate" v-model="addressRef" type="url" class="w-96" placeholder="Paste URL here" />{{' '}}
-	<Button @click="generate">Create QR Code</Button>
+	<input @input="generate" v-model="addressRef" type="url" class="w-full" placeholder="Paste URL here" />
 
 	<div v-if="errorRef"><pre>{{errorRef}}</pre></div>
 
 	<div class="py-4"><p>method 1: img src PNG, {{method1.length}} characters:</p><img v-if="method1" :src="method1" /></div>
-	<div class="py-4"><p>method 2: raw SVG, {{method2.length}} characters:</p><div v-if="method2" v-html="method2"></div></div>
+	<div class="py-4"><p>method 2: raw SVG,     {{method2.length}} characters:</p><div v-if="method2" v-html="method2"></div></div>
 	<div class="py-4"><p>method 3: img src SVG, {{method3.length}} characters:</p><img v-if="method3" :src="method3" /></div>
 
 	<!-- note that we're using v-html safely in method2 above, but it is considered potentially unsafe! -->
