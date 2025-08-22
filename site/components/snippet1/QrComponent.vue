@@ -1,6 +1,8 @@
 <script setup>//./components/QrComponent.vue
 
-import QRCode from 'qrcode'
+import {
+} from 'icarus'
+//import QRCode from 'qrcode'//(A) an import up here breaks ssr in the web worker!
 
 const addressRef = ref('')//input, user pastes in URL to make a QR code from it
 const errorRef = ref('')//output, or error information trying to generate it
@@ -10,6 +12,8 @@ const method2 = ref('')//raw svg tag delivered with v-html
 const method3 = ref('')//img src svg
 
 async function generate() {
+  const QRCode = await import('qrcode')//(B) my expectation is moving it here will be no different!
+
 	errorRef.value = ''
 	method1.value = ''
 	method2.value = ''
