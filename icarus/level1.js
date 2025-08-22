@@ -49,7 +49,7 @@ notes about imports:
 
 
 
-test(async () => {
+noop(async () => {
 	const url = 'https://anthropic.com'
 
 	const module1 = await import('qrcode')//champion, blows up in web worker, though
@@ -80,11 +80,6 @@ test(async () => {
 })
 
 
-
-/*
-const mod = await import('pkg')
-const lib = mod.default || mod
-*/
 
 export function liveBox(s) {
 }

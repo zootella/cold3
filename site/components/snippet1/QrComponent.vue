@@ -23,14 +23,13 @@ good:
 bad:
 - commonjs still, author hasn't updated to esm
 
-so my first question is this: is there a difference between doing the import at A or B?
-what happens during the build? the server render? upon user input?
-(as written, B doesn't run until user input, but something got the module built into the client bundle--these sorts of considerations)
-let's be rigorous, detailed, specific and correct!
+current idea as to choices
+- use svg not png
+- use qrcode-generator not qrcode
+- reason to put in icarus is so you can have a test that confirms its there
+- or just keep in site only
+[]clean up imports of otpauth, qrcode, and qrcode-generator in lots of different package.json files!
 */
-
-//import QRCode from 'qrcode'//(A) an import up here breaks ssr in the web worker!
-import QRCodeGenerator from 'qrcode-generator'//(C) alternative module we're evaluating
 
 const addressRef = ref('')//input, user pastes in URL to make a QR code from it
 const errorRef = ref('')//output, or error information trying to generate it
@@ -41,29 +40,30 @@ const method3 = ref('')//qrcode: img src svg
 const method4 = ref('')//qrcode-generator: img src svg
 
 async function generate() {
-	log(look(QRCodeGenerator))//look at the static import
-
-  const QRCode = await import('qrcode')//(B) my expectation is moving it here will be no different!
-  //(D) alternatively, we could do a dynamic import of qrcode-generator
+	const module1 = await import('qrcode')
+	const module2 = await import('qrcode-generator')
 
 	errorRef.value = ''
 	method1.value = ''
 	method2.value = ''
 	method3.value = ''
+	method4.value = ''
 	let address = addressRef.value.trim()
 	if (address) {
 		try {
 			const width = 256//units of natural pixels of generated raster image
 			const margin = 2//units of QR code blocks!
 
-			method1.value = await QRCode.toDataURL(address, {width, margin})
-			method2.value = await QRCode.toString(address, {type: 'svg', width, margin})//width sets SVG's internal coordinate precision; vector graphics will scale sharply to any size
+			method1.value = await module1.toDataURL(address, {width, margin})
+			method2.value = await module1.toString(address, {type: 'svg', width, margin})//width sets SVG's internal coordinate precision; vector graphics will scale sharply to any size
 			method3.value = `data:image/svg+xml;base64,${btoa(method2.value)}`
 
+			let svg4 = await generate4(module2, address)
+			method4.value = `data:image/svg+xml;base64,${btoa(svg4)}`
+
 			log(look({
-				method1: method1.value,
-				method2: method2.value,
-				method3: method3.value,
+				svg2: method2.value,
+				svg4,
 			}))
 		} catch (e) {
 			errorRef.value = `Caught error ${e}`
@@ -71,6 +71,35 @@ async function generate() {
 	} else {
 		errorRef.value = 'Cannot generate from blank'
 	}
+}
+function generate4(module2, address) {
+	
+	// Create QR code
+	const qr = module2.qrcode(0, 'L')  // Type 0 (auto), Error correction L
+	qr.addData(address)
+	qr.make()
+	
+	// Build SVG
+	const modules = qr.getModuleCount()
+	const cellSize = 8
+	const margin = 16  // 2 QR blocks * 8 pixels
+	const size = modules * cellSize + margin * 2
+	
+	let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`
+	svg += `<rect width="${size}" height="${size}" fill="white"/>`
+	
+	for (let row = 0; row < modules; row++) {
+		for (let col = 0; col < modules; col++) {
+			if (qr.isDark(row, col)) {
+				const x = margin + col * cellSize
+				const y = margin + row * cellSize
+				svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="black"/>`
+			}
+		}
+	}
+	svg += '</svg>'
+
+	return svg
 }
 
 </script>
@@ -83,9 +112,10 @@ async function generate() {
 
 	<div v-if="errorRef"><pre>{{errorRef}}</pre></div>
 
-	<div class="py-4"><p>method 1: img src PNG, {{method1.length}} characters:</p><img v-if="method1" :src="method1" /></div>
-	<div class="py-4"><p>method 2: raw SVG,     {{method2.length}} characters:</p><div v-if="method2" v-html="method2"></div></div>
-	<div class="py-4"><p>method 3: img src SVG, {{method3.length}} characters:</p><img v-if="method3" :src="method3" /></div>
+	<div class="py-4"><p>method 1: img src PNG,      {{method1.length}} characters:</p><img v-if="method1" :src="method1" /></div>
+	<div class="py-4"><p>method 2: raw SVG,          {{method2.length}} characters:</p><div v-if="method2" v-html="method2"></div></div>
+	<div class="py-4"><p>method 3: img src SVG,      {{method3.length}} characters:</p><img v-if="method3" :src="method3" /></div>
+	<div class="py-4"><p>method 4: qrcode-generator, {{method4.length}} characters:</p><img v-if="method4" :src="method4" /></div>
 
 	<!-- note that we're using v-html safely in method2 above, but it is considered potentially unsafe! -->
 </div>
