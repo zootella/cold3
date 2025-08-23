@@ -1,20 +1,18 @@
 <script setup>
 
-import {customAlphabet} from 'nanoid'
-
-const generator1 = customAlphabet('abcdefghijklmnopqrstuvwxyz', 4)
-const generator2 = customAlphabet('0123456789', 4)
-function generateSingle() {
-	let s = generator1() + generator2()
-	let s2 = s.charAt(0).toUpperCase() + s.slice(1);
-	return s2
-}
-
 function generateAll() {
 	const quantity = 200
 	let s = ''
-	for (let i = 0; i < quantity; i++) s += generateSingle() + ', '
-	return s + " all generated locally"
+	for (let i = 0; i < quantity; i++) s += generateOne() + ', '
+	return s + ' all generated locally'
+}
+function generateOne() {
+	return roll(_a).toUpperCase() + roll(_a) + roll(_a) + roll(_a) + roll(_0) + roll(_0) + roll(_0) + roll(_0)
+}
+const _a = 'abcdefghijklmnopqrstuvwxyz'
+const _0 = '0123456789'
+function roll(alphabet) {
+	return alphabet.charAt(Math.floor(Math.random() * alphabet.length))
 }
 let output = generateAll()
 
@@ -22,11 +20,7 @@ let output = generateAll()
 <template>
 <div>
 
-<p>{{ output }}</p>
+<p>{{output}}</p>
 
 </div>
 </template>
-<style scoped>
-
-
-</style>

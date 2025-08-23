@@ -17,67 +17,23 @@ hashData, hashText, given,
 makePlain, makeObject, makeText,
 } from './level0.js'
 
-//this is from the top of a js file in a library that gets imported all over a complex monorepo, to be built into node, browser, and web worker environments
-
 import {z as zod} from 'zod'//use to validate email
 import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
-//^(1) keeping these static, as most users will encounter their use, and existing functions that use them are not async
 
-let module_QrCode
-async function importQrCode() {
-	if (!module_QrCode) module_QrCode = await import('qrcode')
-	return module_QrCode
-}
-let module_QrCodeGenerator
-async function importQrCodeGenerator() {
-	if (!module_QrCodeGenerator) module_QrCodeGenerator = await import('qrcode-generator')
-	return module_QrCodeGenerator
-}
-//^(2) importing these dynamically, as use is already async and most user flows won't encounter
-
-//and (3) note there are two more below, nanoid and otpauth, which we uncomment locally and temporarily for fuzz testing
-
+//ttd august, if you remove the blank line above, Vite's parser freaks out, which is super weird
 /*
 notes about imports:
-- modules promise isomorphic but then don't deliver: test in node, browser, and web worker SSR, the most limited environment of the three
-- some of these are commonjs, and then you have to look for default
+- modules promise isomorphic but then don't deliver: test in node, browser, and web worker SSR
+- some of these are still CommonJS, and then you have to look for .default
 - static imports above mean functions that use these don't have to be async, but the initial bundle size is larger
 - switching some to dynamic could save bundle size, but would spread async up the call tree
 - code for a dynamic import must still name the module as a string literal argument, otherwise the bundler won't know to include it!
+- two more import statements below, nanoid and otpauth, which we uncomment locally and temporarily for fuzz testing
 */
 
 
 
-noop(async () => {
-	const url = 'https://anthropic.com'
-
-	const module1 = await import('qrcode')//champion, blows up in web worker, though
-	const module2 = await import('qrcode-generator')//challenger, zero depdency and isomorphic
-
-	let png1 = await module1.toDataURL(url)
-	let svg1 = await module1.toString(url, { type: 'svg' })
-
-	const q2 = module2(0, 'L')
-	q2.addData(url)
-	q2.make()
-
-	const box = q2.getModuleCount()
-	let svg2 = `<svg xmlns="http://www.w3.org/2000/svg" width="${box * 4}" height="${box * 4}">`
-	for (let r = 0; r < box; r++) {
-		for (let c = 0; c < box; c++) {
-			if (q2.isDark(r, c)) {
-				svg2 += `<rect x="${c * 4}" y="${r * 4}" width="4" height="4"/>`
-			}
-		}
-	}
-	svg2 += '</svg>'
-
-	ok(png1)
-	ok(svg1)
-	ok(svg2)
-	log(look({png1, svg1, svg2}))
-})
 
 
 
@@ -1069,8 +1025,8 @@ export function measurePasswordStrength(s) {
 // |_|  \__,_/___/___|  \___\___/|_| |_| |_| .__/ \__,_|_|  |_|___/\___/|_| |_|___/
 //                                         |_|                                     
 
-//import {customAlphabet} from 'nanoid'//only available in icarus
-//import {Secret as otpSecret} from 'otpauth'//found base32 encoding in the module for OTP QR codes
+//import {customAlphabet} from 'nanoid'//you'd have to install this then git reset --hard HEAD
+//import {Secret as otpSecret} from 'otpauth'//found base32 encoding in the module for OTP QR codes, but installed in site4 not icarus now
 //^uncomment these and then change noop to test below to try them out
 
 /*

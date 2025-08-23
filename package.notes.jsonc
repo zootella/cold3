@@ -30,8 +30,6 @@
 		"credit-card-type": "^10.0.0",
 		"libphonenumber-js": "^1.11.3",
 		"zod": "^3.25.74",
-		"otpauth": "^9.4.1",//added for otp, works with but does not include qrcode below; comes with base32 encoding utility
-		"qrcode": "^1.5.4",//added for qr codes, your own code uses alongside otpauth
 
 		//3 service
 		"@supabase/supabase-js": "^2.39.8",//supabase works local | deployed × worker | lambda
@@ -43,7 +41,6 @@
 	"devDependencies": {
 
 		//2 utility
-		"nanoid": "^5.0.7",//for icarus fuzz tests you can release from noop
 
 		//4 framework
 		"@vitejs/plugin-vue": "^5.0.4",
@@ -124,6 +121,8 @@
 		"@unhead/vue": "^2.0.5",
 		"unstorage": "^1.15.0",//nuxi module add og-image brings in these three, with no carrot on the module itself
 		"vidstack": "^1.12.13",//ttd july, did these come from og image or vidstack or elsewhere? new from the repot
+		"otpauth": "^9.4.1",//added for otp, works with but does not include qrcode below; comes with base32 encoding utility
+		"qrcode": "^1.5.4",//added for qr codes, your own code uses alongside otpauth
 
 		//4 framework
 		"@pinia/nuxt": "^0.11.1",
