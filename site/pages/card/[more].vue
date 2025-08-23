@@ -26,7 +26,7 @@ onMounted(async () => {//only runs in browser, because document doesn't exist on
 	whenMounted = Now()//start time of the page waiting for the image to arrive
 
 	let s = document.querySelector('meta[property="og:image"]')?.getAttribute('content') || ''
-	if (isLocal()) {
+	if (s && isLocal()) {//if we navigate here from a route that didn't set a card, s will be blank
 		let u = new URL(s)
 		u.protocol = 'http'
 		u.host = 'localhost:3000'
