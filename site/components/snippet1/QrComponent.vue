@@ -1,5 +1,22 @@
 <script setup>//./components/QrComponent.vue
 
+//                             _      
+//   __ _ _ __    ___ ___   __| | ___ 
+//  / _` | '__|  / __/ _ \ / _` |/ _ \
+// | (_| | |    | (_| (_) | (_| |  __/
+//  \__, |_|     \___\___/ \__,_|\___|
+//     |_|                            
+
+/*
+https://www.denso-wave.com/en/technology/vol1.html
+the blocks are called "modules"
+
+https://www.npmjs.com/package/qrcode
+https://github.com/soldair/node-qrcode
+
+https://otpauth.molinero.dev/
+*/
+
 const addressRef = ref('')//input, user pastes in URL to make a QR code from it
 const errorRef = ref('')//output, or error information trying to generate it
 
@@ -8,7 +25,6 @@ const method2 = ref('')//raw svg tag delivered with v-html
 const method3 = ref('')//img src svg
 
 async function generate() {
-	const qrcode_module = await import('qrcode')//dynamic to keep qrcode out of the initial bundle, and because a server render of a component which imports qrcode in script setup will throw, sending 500 to a tab's first navigation ☢️
 
 	errorRef.value = ''
 	method1.value = ''
@@ -16,12 +32,11 @@ async function generate() {
 	method3.value = ''
 	let address = addressRef.value.trim()
 	if (address) {
-		try {
-			const width = 256//units of natural pixels of generated raster image
-			const margin = 2//units of QR code blocks!
+		try {//most likely error is server render somehow gets in here, and import qrcode throws because web worker doesn't have canvas ☢️
+			const qrcode_module = await import('qrcode')//dynamic import also keeps qrcode out of the initial bundle; most users won't use it ⚖️
 
-			method1.value = await qrcode_module.toDataURL(address, {width, margin})
-			method2.value = await qrcode_module.toString(address, {type: 'svg', width, margin})//width sets SVG's internal coordinate precision; vector graphics will scale sharply to any size
+			method1.value = await qrcode_module.toDataURL(address, {width: 256, margin: 2})//width doesn't matter for SVG; 
+			method2.value = await qrcode_module.toString(address, {type: 'svg', width: 256, margin: 2})//width doesn't really matter for SVG; margin of 2 QR "module" lengths
 			method3.value = `data:image/svg+xml;base64,${btoa(method2.value)}`
 
 			log(look({
@@ -36,6 +51,8 @@ async function generate() {
 		errorRef.value = 'Cannot generate from blank'
 	}
 }
+
+
 
 </script>
 <template>
