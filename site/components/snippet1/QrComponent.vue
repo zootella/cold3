@@ -8,14 +8,47 @@
 //     |_|                            
 
 /*
-https://www.denso-wave.com/en/technology/vol1.html
-the blocks are called "modules"
+https://www.denso-wave.com/en/technology/vol1.html - from 1994 🇯🇵; the blocks are called "modules"
 
-https://www.npmjs.com/package/qrcode
+https://www.npmjs.com/package/qrcode - leader with 3 million weekly downloads
 https://github.com/soldair/node-qrcode
 
-https://otpauth.molinero.dev/
+https://otpauth.molinero.dev/ - common choice for users of the otpauth module
 */
+
+onMounted(async () => {//will not run in SSR
+	await generate()
+})
+
+const addressRef = ref('')//input, user pastes in URL to make a QR code from it
+const imageRef = ref('')//img src svg
+async function generate() {
+	imageRef.value = await _generate(addressRef.value)
+}
+
+async function _generate(url) {//url to turn into a QR code, can be "ok" but should be like "https://..." or "otpauth://"
+	let svg//svg of the QR code, either from the qrcode module, or our default placeholder if there was a problem
+	let toa//base64 of the svg markup, for the data url for the img src tag
+
+	if (hasText(url) && process.client) {//only try this if we were given text and we're running in a browser
+		try {//most likely error is server render somehow gets in here, and import qrcode throws because web worker doesn't have canvas ☢️
+
+			const qrcode_module = await import('qrcode')//dynamic import also keeps qrcode out of the initial bundle; most users won't use it ⚖️
+			svg = await qrcode_module.toString(url.trim(), {type: 'svg', width: 256, margin: 2})//width doesn't really matter for SVG; margin of 2 QR "module" lengths
+
+		} catch (e) {}//discarding these errors because we don't have a way to report client errors without erroring the whole tab
+	}
+	if (!hasText(svg)) svg = placeholder//recover from error with placeholder
+
+	try {//unlikely but possible error here is there's non-ASCII in the svg somehow, which btoa() can't handle
+
+		toa = btoa(svg)
+
+	} catch (e) {}
+	if (!hasText(toa)) toa = btoa(placeholder)//recover from error with placeholder
+
+	return 'data:image/svg+xml;base64,'+toa
+}
 
 const placeholder = `
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 25 25" shape-rendering="crispEdges">
@@ -38,38 +71,6 @@ const placeholder = `
 </svg>
 `
 
-/*
-guard against
-1 blank input
-2 process.client
-if those are ok then try import and toString
-if exception 3
-or 4 svg is blank somehow from module
-123 use placeholder, otherwise use svg from qrcode
-
-
-*/
-
-const addressRef = ref('')//input, user pastes in URL to make a QR code from it
-const imageRef = ref('')//img src svg
-
-onMounted(async () => {//will not run in SSR
-	await generate()
-})
-
-async function generate() {
-
-	let svg = placeholder
-	try {//most likely error is server render somehow gets in here, and import qrcode throws because web worker doesn't have canvas ☢️
-
-		const qrcode_module = await import('qrcode')//dynamic import also keeps qrcode out of the initial bundle; most users won't use it ⚖️
-		svg = await qrcode_module.toString(addressRef.value.trim(), {type: 'svg', width: 256, margin: 2})//width doesn't really matter for SVG; margin of 2 QR "module" lengths
-
-	} catch (e) { log(e) }
-
-	imageRef.value = `data:image/svg+xml;base64,${btoa(svg)}`//we don't worry about btoa throwing because svg is ASCII only
-}
-
 </script>
 <template>
 <div class="border border-gray-300 p-2 bg-gray-100">
@@ -80,7 +81,6 @@ async function generate() {
 
 	<div class="py-4"><p>qrcode img src SVG, {{imageRef.length}} characters:</p><img v-if="imageRef" :src="imageRef" /></div>
 
-	<!-- note that we're using v-html safely in method2 above, but it is considered potentially unsafe! -->
 </div>
 
 </div>
