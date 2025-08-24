@@ -1,4 +1,4 @@
-<script setup>//./components/QrComponent.vue
+<script setup>//./components/QrDemo.vue
 
 //                             _      
 //   __ _ _ __    ___ ___   __| | ___ 

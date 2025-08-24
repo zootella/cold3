@@ -19,6 +19,7 @@ defineOgImageComponent('NuxtSeo', {
 })
 
 const refSource = ref('')
+const refFound = ref('')
 const refDelay = ref(-1)//how many milliseconds it took to generate the new image, or deliver it from the cache
 let whenMounted
 
@@ -32,7 +33,14 @@ onMounted(async () => {//only runs in browser, because document doesn't exist on
 		u.host = 'localhost:3000'
 		s = u.toString()
 	}
-	refSource.value = s
+	log(look(s))
+	if (hasText(s)) {
+		refSource.value = s
+		refFound.value = s
+	} else {
+		refSource.value = s
+		refFound.value = 'no meta og image content; this tab probably first GETed a route without a card'
+	}
 })
 
 function onImageLoad() {
@@ -50,11 +58,14 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 <template>
 
 <p>
-	image delivered to page in {{refDelay}}ms;
+	(1) meta og image delivered to page in {{refDelay}}ms;
 	<LinkButton @click="hardReload">Browser reload</LinkButton>; or link to a
 	<LinkButton @click="randomPage">different random page</LinkButton>
 </p>
-<p><code>{{refSource}}</code></p>
+<p><code>{{refFound}}</code></p>
 <p><img :src="refSource" @load="onImageLoad" /></p>
+<p>(2) also on this page is the qr code demo:</p>
+
+<QrDemo />
 
 </template>
