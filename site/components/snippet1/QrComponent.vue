@@ -17,42 +17,58 @@ https://github.com/soldair/node-qrcode
 https://otpauth.molinero.dev/
 */
 
-const addressRef = ref('')//input, user pastes in URL to make a QR code from it
-const errorRef = ref('')//output, or error information trying to generate it
+const placeholder = `
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 25 25" shape-rendering="crispEdges">
+	<rect fill="#ffffff" width="25" height="25"/>
 
-const method1 = ref('')//img src png
-const method2 = ref('')//raw svg tag delivered with v-html
-const method3 = ref('')//img src svg
+	<rect fill="#000000" x="2" y="2" width="7" height="1"/>
+	<rect fill="#000000" x="2" y="3" width="1" height="5"/>
+	<rect fill="#000000" x="2" y="8" width="7" height="1"/>
+	<rect fill="#000000" x="8" y="3" width="1" height="5"/>
+
+	<rect fill="#000000" x="16" y="2" width="7" height="1"/>
+	<rect fill="#000000" x="16" y="3" width="1" height="5"/>
+	<rect fill="#000000" x="16" y="8" width="7" height="1"/>
+	<rect fill="#000000" x="22" y="3" width="1" height="5"/>
+
+	<rect fill="#000000" x="2" y="16" width="7" height="1"/>
+	<rect fill="#000000" x="2" y="17" width="1" height="5"/>
+	<rect fill="#000000" x="2" y="22" width="7" height="1"/>
+	<rect fill="#000000" x="8" y="17" width="1" height="5"/>
+</svg>
+`
+
+/*
+guard against
+1 blank input
+2 process.client
+if those are ok then try import and toString
+if exception 3
+or 4 svg is blank somehow from module
+123 use placeholder, otherwise use svg from qrcode
+
+
+*/
+
+const addressRef = ref('')//input, user pastes in URL to make a QR code from it
+const imageRef = ref('')//img src svg
+
+onMounted(async () => {//will not run in SSR
+	await generate()
+})
 
 async function generate() {
 
-	errorRef.value = ''
-	method1.value = ''
-	method2.value = ''
-	method3.value = ''
-	let address = addressRef.value.trim()
-	if (address) {
-		try {//most likely error is server render somehow gets in here, and import qrcode throws because web worker doesn't have canvas ☢️
-			const qrcode_module = await import('qrcode')//dynamic import also keeps qrcode out of the initial bundle; most users won't use it ⚖️
+	let svg = placeholder
+	try {//most likely error is server render somehow gets in here, and import qrcode throws because web worker doesn't have canvas ☢️
 
-			method1.value = await qrcode_module.toDataURL(address, {width: 256, margin: 2})//width doesn't matter for SVG; 
-			method2.value = await qrcode_module.toString(address, {type: 'svg', width: 256, margin: 2})//width doesn't really matter for SVG; margin of 2 QR "module" lengths
-			method3.value = `data:image/svg+xml;base64,${btoa(method2.value)}`
+		const qrcode_module = await import('qrcode')//dynamic import also keeps qrcode out of the initial bundle; most users won't use it ⚖️
+		svg = await qrcode_module.toString(addressRef.value.trim(), {type: 'svg', width: 256, margin: 2})//width doesn't really matter for SVG; margin of 2 QR "module" lengths
 
-			log(look({
-				method1: method1.value,
-				method2: method2.value,
-				method3: method3.value,
-			}))
-		} catch (e) {
-			errorRef.value = `Caught error ${e}`
-		}
-	} else {
-		errorRef.value = 'Cannot generate from blank'
-	}
+	} catch (e) { log(e) }
+
+	imageRef.value = `data:image/svg+xml;base64,${btoa(svg)}`//we don't worry about btoa throwing because svg is ASCII only
 }
-
-
 
 </script>
 <template>
@@ -62,11 +78,7 @@ async function generate() {
 <div>
 	<input @input="generate" v-model="addressRef" type="url" class="w-full" placeholder="Paste URL here" />
 
-	<div v-if="errorRef"><pre>{{errorRef}}</pre></div>
-
-	<div class="py-4"><p>method 1: img src PNG,      {{method1.length}} characters:</p><img v-if="method1" :src="method1" /></div>
-	<div class="py-4"><p>method 2: raw SVG,          {{method2.length}} characters:</p><div v-if="method2" v-html="method2"></div></div>
-	<div class="py-4"><p>method 3: img src SVG,      {{method3.length}} characters:</p><img v-if="method3" :src="method3" /></div>
+	<div class="py-4"><p>qrcode img src SVG, {{imageRef.length}} characters:</p><img v-if="imageRef" :src="imageRef" /></div>
 
 	<!-- note that we're using v-html safely in method2 above, but it is considered potentially unsafe! -->
 </div>
