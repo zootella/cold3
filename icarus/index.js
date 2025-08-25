@@ -215,6 +215,8 @@ checkPhone, validatePhone,
 checkCard, validateCard,
 checkDate, validateDate, getPageOffsetMinutes, ageDate,
 
+browserIsBesideAppStore, getBrowserGraphics,
+
 measurePasswordStrength,
 generatePosts, postDatabase,
 
@@ -274,8 +276,6 @@ makePlain, makeObject, makeText,
 
 parseEnvStyleFileContents,
 sequentialShared, sequentialSeparate,
-
-getBrowserGraphics,
 
 sameIgnoringCase, sameIgnoringTrailingSlash,
 

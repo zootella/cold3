@@ -7,7 +7,7 @@ Time,
 Now, sayDate, sayTick,
 noop, test, ok, toss, checkInt, hasText, Size,
 log,
-say, look,
+say, look, defined,
 checkText,
 tagLength, Tag, checkTagOrBlank, checkTag, hasTag,
 Data, randomBetween,
@@ -20,6 +20,7 @@ makePlain, makeObject, makeText,
 import {z as zod} from 'zod'//use to validate email
 import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
+import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
 
 //ttd august, if you remove the blank line above, Vite's parser freaks out, which is super weird
 /*
@@ -1006,6 +1007,60 @@ export function measurePasswordStrength(s) {
 	}
 	return o
 }
+
+
+
+
+
+
+
+
+
+
+
+
+//      _            _          
+//   __| | _____   _(_) ___ ___ 
+//  / _` |/ _ \ \ / / |/ __/ _ \
+// | (_| |  __/\ V /| | (_|  __/
+//  \__,_|\___| \_/ |_|\___\___|
+//                              
+
+//true if our best guess is we're running in a browser on a mobile device (smartphone or tablet) with a mobile app store (the iOS App Store or Google Play), where the user has installed or can install an authenticator app (like Google or Microsoft Authenticator, Authy by Twilio, Duo Mobile by Cisco, or others), false on desktop, laptop, Chromebook, or server
+export function browserIsBesideAppStore() {
+	return isMobile({//use npm is-mobile, 667k weekly downloads, safe to run anywhere (returns false on server)
+		tablet: true,//sort tablets as mobile (they have app stores)
+		featureDetect: true,//count touch points to correctly classify an iPad in desktop mode as a tablet, mobile, beside app store, true
+	})
+}
+
+//returns an object like {renderer: "ANGLE (Intel, Intel(R) UHD Graphics 630 ... Direct3D11 vs_5_0 ps_5_0, D3D11)", vendor:"Google Inc. (Intel)"}
+export function getBrowserGraphics() {
+	let p = {}
+	if (defined(typeof document)) {
+		let e = document.createElement('canvas')//make a HTML5 <canvas> tag element; doesn't append it to the DOM
+		let c = e.getContext('webgl') || e.getContext('experimental-webgl')
+		if (c) {
+			let x = c.getExtension('WEBGL_debug_renderer_info')
+			if (x) {
+				p.renderer = c.getParameter(x.UNMASKED_RENDERER_WEBGL)
+				p.vendor   = c.getParameter(x.UNMASKED_VENDOR_WEBGL)
+			}
+		}
+	}
+	return p
+}
+
+test(() => {
+	browserIsBesideAppStore()
+	getBrowserGraphics()
+	//the answers only make sense when called in a browser tab, but make sure they're safe to call everywhere, like lambda, nuxt server render in cloudflare web worker, and so on
+})
+
+
+
+
+
 
 
 
