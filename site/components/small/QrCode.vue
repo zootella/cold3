@@ -80,7 +80,8 @@ const placeholder = `
 .myLightOnly {
 	color-scheme: light only; /* prevent dimming and grayscaling on a phone's aggressive dark mode */
 	filter: none !important;
-	opacity: 1 !important; /* !important means, this rule wins no matter what */
+	opacity: 1 !important; /* !important means, make this CSS rule win over others */
 }
+/* ttd august, testing on a fancy galaxy phone, dark mode, Samsung Internet app: a white background page is black, and the QR code is gray and dim (still scans right away from an iPhone, though). Chrome on the same phone doesn't do this. Added styles above to try to cut through this super aggressive dark mode, unsuccessfully. Android devices will redirect to the otpauth URL rather than showing it as a QR code anyway, of course */
 
 </style>
