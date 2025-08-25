@@ -2647,12 +2647,124 @@ ttd march, maybe
 
 
 
+//ttd august, is mobile
+/*
+
+function isMobile1() {
+  if (typeof window === 'undefined') return false; // SSR safety for Nuxt
+  return window.innerWidth <= 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+}
+
+function isMobile2() {
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+  return /android|iphone|ipad|ipod|mobile/i.test(ua);
+}
+
+function isMobile3() {
+  if (typeof window === 'undefined') return false;
+
+  const width = window.innerWidth;
+  const touch = navigator.maxTouchPoints > 0;
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+
+  const uaMatch = /android|iphone|ipad|ipod|mobile/i.test(ua);
+
+  return (width <= 768 && touch) || (uaMatch && touch);
+}
+
+
+im coding front-end js for a consumer website
+we can assume that my users have recent devices, like laptops, PCs, phones, and tablets
+i need to differentiate between devices for a 2FA flow
+if the user is on a smartphone or tablet, their authenticator app is likely on the same device, so i need to redirect with otpauth:
+if the user is on a desktop or laptop, their authenticator app is likely on a differen device, so i need to show a qr code
+i understand that this code won't work 100% of the time, and am looking for a simple best possible best guess, following current patterns and conventions--surely thousands of teams have encountered this very same problem!
+i need to write simple modern js which is safe to run anywhere (checks if something is defined before dereferencing it) but only needs to work when running on client
+
+ok, so i am comparing two options
+(1) the first is my own code, shown below, which uses several signals
+(2) the second is the popular npm module is-mobile, i've extracted its code for us to compare side by side, and which uses just the navigator user agent string
+
+(1)
+
+function isMobile() {
+  // SSR safety
+  if (typeof window === 'undefined' || !navigator) return false;
+  
+  const ua = navigator.userAgent || '';
+  
+  // Signal 1: Check for mobile/tablet indicators
+  // "Mobi" catches "Mobile", "Mobi", etc. in iPhone, Android phones, and others
+  const mobileUA = /Mobi|Android|iPad/i.test(ua);
+  
+  // Signal 2: Touch capability (using modern pointer check first)
+  const hasTouch = window.matchMedia?.('(pointer: coarse)')?.matches || 
+                   navigator.maxTouchPoints > 0 || 
+                   'ontouchstart' in window;
+  
+  // Signal 3: Screen size (actual device screen, not browser window)
+  const smallScreen = Math.min(screen.width, screen.height) < 768;
+  
+  // Decision logic:
+  // 1. If UA explicitly says mobile/tablet, trust it
+  if (mobileUA) return true;
+  
+  // 2. Touch + small screen = mobile device (catches iPad Safari and others)
+  if (hasTouch && smallScreen) return true;
+  
+  // 3. Desktop or laptop
+  return false;
+}
+
+(2)
+
+'use strict'
+
+module.exports = isMobile
+module.exports.isMobile = isMobile
+module.exports.default = isMobile
+
+const mobileRE = /(android|bb\d+|meego).+mobile|armv7l|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|redmi|series[46]0|samsungbrowser.*mobile|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i
+const notMobileRE = /CrOS/
+
+const tabletRE = /android|ipad|playbook|silk/i
+
+function isMobile (opts) {
+  if (!opts) opts = {}
+  let ua = opts.ua
+  if (!ua && typeof navigator !== 'undefined') ua = navigator.userAgent
+  if (ua && ua.headers && typeof ua.headers['user-agent'] === 'string') {
+    ua = ua.headers['user-agent']
+  }
+  if (typeof ua !== 'string') return false
+
+  let result =
+    (mobileRE.test(ua) && !notMobileRE.test(ua)) ||
+    (!!opts.tablet && tabletRE.test(ua))
+
+  if (
+    !result &&
+    opts.tablet &&
+    opts.featureDetect &&
+    navigator &&
+    navigator.maxTouchPoints > 1 &&
+    ua.indexOf('Macintosh') !== -1 &&
+    ua.indexOf('Safari') !== -1
+  ) {
+    result = true
+  }
+
+  return result
+}
+
+so my questions are
+should i use my own code, or use is-mobile?
+does adding signals beyond user agent parsing improve a detector? or are there reasons that is-mobile uses only navigator user agent parsing?
 
 
 
 
-
-
+*/
 
 
 
