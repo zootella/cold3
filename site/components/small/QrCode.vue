@@ -72,6 +72,15 @@ const placeholder = `
 </script>
 <template>
 
-<img v-if="sourceRef" :src="sourceRef" />
+<img v-if="sourceRef" :src="sourceRef" class="myLightOnly" />
 
 </template>
+<style scoped>
+
+.myLightOnly {
+	color-scheme: light only; /* prevent dimming and grayscaling on a phone's aggressive dark mode */
+	filter: none !important;
+	opacity: 1 !important; /* !important means, this rule wins no matter what */
+}
+
+</style>
