@@ -8,8 +8,6 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body}) {
 
-	log(look({Secret, TOTP}))//first just sanity check that we've got the api imported!
-
 	/*
 // Server: Generate secret
 const secret = Secret.fromRandom()
@@ -27,5 +25,8 @@ const isValid = totp.validate({ token: userEnteredCode, window: 1 })
 
 	*/
 
-	return {}
+	return {
+		sticker: Sticker(),
+		looked: look({Secret, TOTP}),
+	}
 }
