@@ -3,6 +3,7 @@
 </script>
 <template>
 
+<OtpDemo />
 <CodeRequestComponent />
 <NameComponent />
 
