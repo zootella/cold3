@@ -12,7 +12,7 @@
 	"scripts": {
 		"local": "serverless offline --reloadHandler",
 		"build": "serverless package && yarn size",
-		"size": "ls -la .serverless/net23.zip",
+		"size": "node -e \"let fs=require('fs'); let b=fs.statSync('.serverless/net23.zip').size; console.log('serverless bundle net23.zip is '+b.toLocaleString()+' bytes')\"",
 		"deploy-before": "yarn stowaway && yarn --cwd ../ seal set-cloud",
 		"deploy-after": "yarn --cwd ../ seal set-local && yarn --cwd ../ test && yarn size",
 		"deploy": "yarn deploy-before && serverless deploy && yarn deploy-after",
