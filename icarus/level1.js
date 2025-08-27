@@ -43,7 +43,9 @@ export function liveBox(s) {
 
 
 
-
+test(() => {
+	log(Tag())
+})
 
 
 
