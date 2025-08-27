@@ -36,6 +36,29 @@ notes about imports:
 
 
 
+import {Secret as otpauth_Secret, TOTP as otpauth_TOTP} from 'otpauth'
+test(async () => {
+
+	//alice, a user at sitebrand.com, sets up two factor authentication. first, on the server:
+	let label = 'alice@gmail.com'
+	let issuer = 'sitebrand.com'//end up in authenticator app through QR code, but don't get hashed
+	let secret = new otpauth_Secret({size: 20})//20 bytes standard and secure; longer would make QR code denser
+	let totp = new otpauth_TOTP({secret, label, issuer, algorithm: 'SHA1', digits: 6, period: 30})//6 digit codes that last 30 seconds
+	let manual = secret.base32//the "shared secret" in plaintext; shared between the server's database and the user's authenticator app
+	let uri = totp.toString()//the secret in a otpauth:// URL that the server sends to the page for the user's authenticator app to scan
+	ok(manual.length == 32)
+	ok(uri.includes(manual))
+
+//	log(look({label, issuer, secret, totp, manual, uri}))
+
+
+
+
+
+
+})
+
+
 
 
 export function liveBox(s) {
@@ -43,9 +66,6 @@ export function liveBox(s) {
 
 
 
-test(() => {
-	log(Tag())
-})
 
 
 

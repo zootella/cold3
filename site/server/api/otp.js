@@ -26,14 +26,14 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 
-	let label = 'alice-addams@example.com'//identifies the user and the user's enrollment; use email or username (note for later, what will we use? so we identify users by nanoid, like "jS88ShfXDfZvxrQZJdxhK", we obviously don't show that to the user much, but it's not a secret (they may sometimes see it in urls, for instance), and they can change their email, or have two emails. note to ask about this later. does this show up in the authenticator app? if we used email, and then they changed their email, would they still be able to get in, concerns like this and others. so we want to be simple and standard and secure here--what's the right way to code this flow for a site that identifies users by a UUID??)
-	let issuer = 'BobsSiteName'//service identifier that identifies this enrollment in the user's authenticator app; identifies us, the website the user is authenticating to
-	//i think this stuff won't come directly from the page, but rather at this point be trusted valid identity the server knows based on the user at the page's existing first-factor authentication. for instance, we know that the cookie their browser sent means that user Alice is signed in on the page right now
+	let label = 'user@example.com'
+	let issuer = 'cold3.cc'
+	//label and issuer get into the user's authenticator app through the QR code, but do not get hashed
 
 	if (action == 'Create1.') {
 
-		let secret = new Secret({//create a new random secret for this user's TOTP enrollment (which will live and be shared between two places, the user's authenticator app, and the server's database)
-			size: 20,//20 bytes = 160 bits of entropy for the shared secret (shared by whom? the server and the user's authenticator app, is my guess??) (also, if i make this bigger, does the qr code become more dense?), 32 base32 characters in the otpauth: URL and QR code
+		let secret = new Secret({//create a new random secret for this user's TOTP enrollment
+			size: 20,//20 bytes = 160 bits of entropy for the shared secret
 		})
 		let totp = new TOTP({//compute HMAC-SHA1(secret, counter) and truncate the hash value to ?? bytes
 			secret,
@@ -113,6 +113,26 @@ const totp = new TOTP({ secret })
 const isValid = totp.validate({ token: userEnteredCode, window: 1 })
 
 	*/
+
+
+
+/*
+out of band to do
+[] rate limiting, using turnstile and also trail table
+[] one time backup codes, going to leave these out for now but make a note about them
+[] accepting previous and next codes in case the user's phone clock is a little off
+*/
+
+
+
+
+
+
+
+
+
+
+
 
 	log('hi from the worker, also')
 
