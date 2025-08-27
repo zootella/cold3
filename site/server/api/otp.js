@@ -1,7 +1,6 @@
 //./server/api/otp.js
 import {
 } from 'icarus'
-import {Secret, TOTP} from 'otpauth'//importing here, not in icarus, as only a nuxt server endpoint needs otpauth, ttd august
 
 //  _        _         
 // | |_ ___ | |_ _ __  
@@ -26,6 +25,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 
+/*
 	let label = 'user@example.com'
 	let issuer = 'cold3.cc'
 	//label and issuer get into the user's authenticator app through the QR code, but do not get hashed
@@ -53,7 +53,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		3. Truncate hash to 4 bytes using dynamic offset
 		4. Convert to 6-digit number (modulo 10^6)
 		*/
-
+/*
 		let manual = secret.base32//the shared secret in plaintext
 		let uri = totp.toString()//same thing in a otpauth:// URL that we'll show on the page just this once, during enrollment, as a QR code
 		//these two things we'll send back to the page, i think

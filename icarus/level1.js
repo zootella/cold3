@@ -1102,16 +1102,13 @@ test(() => {
 // |_|  \__,_/___/___|  \___\___/|_| |_| |_| .__/ \__,_|_|  |_|___/\___/|_| |_|___/
 //                                         |_|                                     
 
-//import {customAlphabet} from 'nanoid'//you'd have to install this then git reset --hard HEAD
-//import {Secret as otpSecret} from 'otpauth'//found base32 encoding in the module for OTP QR codes, but installed in site4 not icarus now
-//^uncomment these and then change noop to test below to try them out
-
 /*
 Goo-idz!
 https://www.npmjs.com/package/nanoid
 https://github.com/ai/nanoid
 https://zelark.github.io/nano-id-cc/ collision calculator
 */
+//import {customAlphabet} from 'nanoid'//you'd have to install this then git reset --hard HEAD
 noop(() => {
 	//here's what your Tag() function looked like before you extracted the implementation from nanoid to move it down to level0
 	function nanoidTag() {
@@ -1143,10 +1140,10 @@ turn on this fuzz tester to use the base32 implementation that comes with otpaut
 function cycle4648(size) {
 	let d0 = Data({random: size})
 	let s1 = d0.base32()//we've written our own implementation of base32 encoding into Data
-	let s2 = otpSecret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
+	let s2 = otpauth_Secret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
 	ok(s1 == s2)
 	let d1 = Data({base32: s1})
-	let d2 = Data({array: otpSecret.fromBase32(s2).bytes})
+	let d2 = Data({array: otpauth_Secret.fromBase32(s2).bytes})
 	ok(d1.base16() == d2.base16())
 }
 function runFor(m, f) {

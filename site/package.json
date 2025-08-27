@@ -27,7 +27,6 @@
 		"icarus": "*",
 		"nuxt": "^3.17.5",
 		"nuxt-og-image": "5.1.6",
-		"otpauth": "^9.4.1",
 		"pinia": "^3.0.3",
 		"qrcode": "^1.5.4",
 		"unstorage": "^1.15.0",
