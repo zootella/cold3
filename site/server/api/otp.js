@@ -138,6 +138,5 @@ out of band to do
 
 	return {
 		sticker: Sticker(),
-		looked: look({Secret, TOTP}),
 	}
 }
