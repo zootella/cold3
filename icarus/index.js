@@ -216,6 +216,7 @@ checkCard, validateCard,
 checkDate, validateDate, getPageOffsetMinutes, ageDate,
 
 browserIsBesideAppStore, getBrowserGraphics,
+otpEnroll, otpIsValid, otp_guard_wrong_guesses, otp_guard_horizon,
 
 measurePasswordStrength,
 generatePosts, postDatabase,

@@ -41,104 +41,6 @@ notes about imports:
 
 
 
-//        __       __  ____  _____  ___    _        _         
-//  _ __ / _| ___ / /_|___ \|___ / ( _ )  | |_ ___ | |_ _ __  
-// | '__| |_ / __| '_ \ __) | |_ \ / _ \  | __/ _ \| __| '_ \ 
-// | |  |  _| (__| (_) / __/ ___) | (_) | | || (_) | |_| |_) |
-// |_|  |_|  \___|\___/_____|____/ \___/   \__\___/ \__| .__/ 
-//                                                     |_|    
-
-const otp_size = 20//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
-const otp_algorithm = 'SHA1'//SHA1-HMAC is what authenticator apps expect
-const otp_digits = 6//6 digit codes, what users are used to
-const otp_period = 30//30 second refresh, also what users are used to
-const otp_window = 1//permit codes from the previous and next 1 time periods to work with clock synchronization and user delay
-
-export function otpEnroll({label, issuer}) {
-	let secret = new otpauth_Secret({size: otp_size})
-	let totp = new otpauth_TOTP({secret, label, issuer, algorithm: otp_algorithm, digits: otp_digits, period: otp_period})
-	let secret32 = secret.base32
-	let uri = totp.toString()
-	return {secret32, uri}
-}
-export function otpIsValid({secret32, code}) {
-	let secret = otpauth_Secret.fromBase32(secret32)
-	let totp = new otpauth_TOTP({secret, algorithm: otp_algorithm, digits: otp_digits, period: otp_period})
-	let delta = totp.validate({token: code, window: otp_window})
-	return delta !== null//⚠️ strict comparison operators are compulsory here, as validate returns Number values like -1, 0, or 1 indicating which time period a valid code matched to!
-}
-test(() => {
-	let t1 = performance.now()
-	let {secret32, uri} = otpEnroll({label: 'User @somename', issuer: 'ExampleProvider'})
-	let code = testPhone(secret32)
-	ok(otpIsValid({secret32, code}))
-	let duration = performance.now() - t1//you are seeing this take almost a millisecond on a fast mac; hopefully it'll be ok in cloudflare workers
-
-	function testPhone(secret32) {//we don't export a function to generate codes because only the user's phone ever does that!
-		let secret = otpauth_Secret.fromBase32(secret32)
-		let totp = new otpauth_TOTP({secret, algorithm: otp_algorithm, digits: otp_digits, period: otp_period})
-		return totp.generate()
-	}
-})
-
-//to code the above, we first put the otpauth module's API through its paces...
-test(() => {//notice no async! otpauth doesn't use the subtle library, and HMAC-SHA1 is fast enough, apparently
-	let timestamp = Now()//starting now, we'll simulate times in the future with otpauth in this test
-	function alicesPhone(timestamp) { return totp.generate({timestamp: timestamp + 5*Time.second}) }//placeholder for codes from alice's authenticator app; the otpauth module can generate codes even though it doesn't in the normal flow; alice's clock is 5 seconds fast
-
-	//alice, a user at bobshardware.com, sets up two factor authentication. first, on the server:
-	let label = 'alice@gmail.com'
-	let issuer = 'bobshardware.com'//label and issuer end up in authenticator app through QR code, but don't get hashed
-	let secret = new otpauth_Secret({size: 20})//20 bytes standard and secure; longer would make QR code denser
-	let totp = new otpauth_TOTP({secret, label, issuer, algorithm: 'SHA1', digits: 6, period: 30})//6 digit codes that last 30 seconds
-	let secret32 = secret.base32//the "shared secret" in plaintext; shared between the server's database and the user's authenticator app
-	let uri = totp.toString()//the secret in a otpauth:// URL that the server sends to the page for the user's authenticator app to scan
-	ok(secret32.length == 32)//coincidence that the secret in base32 also has length 32
-	ok(uri.includes(secret32))
-
-	//alice scans the QR code with her authenticator app, which shows the current code
-	let code1 = alicesPhone(timestamp)
-	ok(code1.length == 6)
-	timestamp += 20*Time.second//alice takes 20 seconds getting from her phone back to her PC
-
-	//alice types the first code into the page, and the server validates it
-	let delta = totp.validate({timestamp, token: code1, window: 1})//window 1 allows current, previous, or upcoming 30 second codes to pass
-	ok(delta !== null)//0 means exact match, current time period; Piett is silent
-	let database = secret32//alice has successfully finished enrollment; at this point we mark alice enrolled and save her secret
-
-	let mistake = code1.slice(0, -1) + ((+code1.slice(-1) + 1) % 10)//increment the last digit to generate a wrong code
-	let deltaMistake = totp.validate({timestamp, token: mistake, window: 0})//narrow the window to keep this deterministic!
-	ok(deltaMistake === null)//i don't agree with otpmodule's design choice to identify 0 as valid and null as invalid!
-
-	//alice returns the next day, and generates the code for now
-	timestamp += Time.day
-	let code2 = alicesPhone(timestamp)
-
-	//the server validates it
-	let secret2 = otpauth_Secret.fromBase32(database)//load the shared secret like "VIDTLZGHOZOABXG4MQSE6RCJ37WQATQY" for alice from the database
-	let totp2 = new otpauth_TOTP({secret: secret2, algorithm: 'SHA1', digits: 6, period: 30})
-	let delta2 = totp2.validate({timestamp, token: code2, window: 1})
-	ok(delta2 !== null)//alice is legit
-
-	timestamp += 35*Time.second//if alice took 35 seconds to get from her phone back to her PC, the code still checks out
-	let delta3 = totp2.validate({timestamp, token: code2, window: 1})
-	ok(delta3 === -1)//Piett
-	timestamp += 60*Time.second
-	let delta4 = totp2.validate({timestamp, token: code2, window: 1})
-	ok(delta4 === null)//but a 95 second old code has expired
-})
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1162,6 +1064,150 @@ test(() => {
 	getBrowserGraphics()
 	//the answers only make sense when called in a browser tab, but make sure they're safe to call everywhere, like lambda, nuxt server render in cloudflare web worker, and so on
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+//        __       __  ____  _____  ___    _        _         
+//  _ __ / _| ___ / /_|___ \|___ / ( _ )  | |_ ___ | |_ _ __  
+// | '__| |_ / __| '_ \ __) | |_ \ / _ \  | __/ _ \| __| '_ \ 
+// | |  |  _| (__| (_) / __/ ___) | (_) | | || (_) | |_| |_) |
+// |_|  |_|  \___|\___/_____|____/ \___/   \__\___/ \__| .__/ 
+//                                                     |_|    
+
+const otp_size = 20//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
+const otp_algorithm = 'SHA1'//SHA1-HMAC is what authenticator apps expect
+const otp_digits = 6//6 digit codes, what users are used to
+const otp_period = 30//30 second refresh, also what users are used to
+const otp_window = 1//permit codes from the previous and next 1 time periods to work with clock synchronization and user delay
+
+export function otpEnroll({label, issuer}) {
+	let secret = new otpauth_Secret({size: otp_size})
+	let totp = new otpauth_TOTP({secret, label, issuer, algorithm: otp_algorithm, digits: otp_digits, period: otp_period})
+	let secret32 = secret.base32
+	let uri = totp.toString()
+	return {secret32, uri}
+}
+export function otpIsValid({secret32, code}) {
+	let secret = otpauth_Secret.fromBase32(secret32)
+	let totp = new otpauth_TOTP({secret, algorithm: otp_algorithm, digits: otp_digits, period: otp_period})
+	let delta = totp.validate({token: code, window: otp_window})
+	return delta !== null//⚠️ strict comparison operators are compulsory here, as validate returns Number values like -1, 0, or 1 indicating which time period a valid code matched to!
+}
+test(() => {
+	let t1 = performance.now()
+	let {secret32, uri} = otpEnroll({label: 'User @somename', issuer: 'ExampleProvider'})
+	let code = testPhone(secret32)
+	ok(otpIsValid({secret32, code}))
+	let duration = performance.now() - t1//you are seeing this take almost a millisecond on a fast mac; hopefully it'll be ok in cloudflare workers
+
+	function testPhone(secret32) {//we don't export a function to generate codes because only the user's phone ever does that!
+		let secret = otpauth_Secret.fromBase32(secret32)
+		let totp = new otpauth_TOTP({secret, algorithm: otp_algorithm, digits: otp_digits, period: otp_period})
+		return totp.generate()
+	}
+})
+
+//to code the above, we first put the otpauth module's API through its paces...
+test(() => {//notice no async! otpauth doesn't use the subtle library, and HMAC-SHA1 is fast enough, apparently
+	let timestamp = Now()//starting now, we'll simulate times in the future with otpauth in this test
+	function alicesPhone(timestamp) { return totp.generate({timestamp: timestamp + 5*Time.second}) }//placeholder for codes from alice's authenticator app; the otpauth module can generate codes even though it doesn't in the normal flow; alice's clock is 5 seconds fast
+
+	//alice, a user at bobshardware.com, sets up two factor authentication. first, on the server:
+	let label = 'alice@gmail.com'
+	let issuer = 'bobshardware.com'//label and issuer end up in authenticator app through QR code, but don't get hashed
+	let secret = new otpauth_Secret({size: 20})//20 bytes standard and secure; longer would make QR code denser
+	let totp = new otpauth_TOTP({secret, label, issuer, algorithm: 'SHA1', digits: 6, period: 30})//6 digit codes that last 30 seconds
+	let secret32 = secret.base32//the "shared secret" in plaintext; shared between the server's database and the user's authenticator app
+	let uri = totp.toString()//the secret in a otpauth:// URL that the server sends to the page for the user's authenticator app to scan
+	ok(secret32.length == 32)//coincidence that the secret in base32 also has length 32
+	ok(uri.includes(secret32))
+
+	//alice scans the QR code with her authenticator app, which shows the current code
+	let code1 = alicesPhone(timestamp)
+	ok(code1.length == 6)
+	timestamp += 20*Time.second//alice takes 20 seconds getting from her phone back to her PC
+
+	//alice types the first code into the page, and the server validates it
+	let delta = totp.validate({timestamp, token: code1, window: 1})//window 1 allows current, previous, or upcoming 30 second codes to pass
+	ok(delta !== null)//0 means exact match, current time period; Piett is silent
+	let database = secret32//alice has successfully finished enrollment; at this point we mark alice enrolled and save her secret
+
+	let mistake = code1.slice(0, -1) + ((+code1.slice(-1) + 1) % 10)//increment the last digit to generate a wrong code
+	let deltaMistake = totp.validate({timestamp, token: mistake, window: 0})//narrow the window to keep this deterministic!
+	ok(deltaMistake === null)//i don't agree with otpmodule's design choice to identify 0 as valid and null as invalid!
+
+	//alice returns the next day, and generates the code for now
+	timestamp += Time.day
+	let code2 = alicesPhone(timestamp)
+
+	//the server validates it
+	let secret2 = otpauth_Secret.fromBase32(database)//load the shared secret like "VIDTLZGHOZOABXG4MQSE6RCJ37WQATQY" for alice from the database
+	let totp2 = new otpauth_TOTP({secret: secret2, algorithm: 'SHA1', digits: 6, period: 30})
+	let delta2 = totp2.validate({timestamp, token: code2, window: 1})
+	ok(delta2 !== null)//alice is legit
+
+	timestamp += 35*Time.second//if alice took 35 seconds to get from her phone back to her PC, the code still checks out
+	let delta3 = totp2.validate({timestamp, token: code2, window: 1})
+	ok(delta3 === -1)//Piett
+	timestamp += 60*Time.second
+	let delta4 = totp2.validate({timestamp, token: code2, window: 1})
+	ok(delta4 === null)//but a 95 second old code has expired
+})
+
+/*
+RFC6238 TOTP is fantastic in that it is not tied to an Internet connection, a service provider, or even a software vendor
+it's strong yet usable security provided by pure cryptography, at its best
+
+code entry must be supplemented by a rate limiting method,
+as an attacker who gets to the code guess box could quickly try all million possibilities
+consider a simple guard that only allows N guesses in a time period P--how do we choose N and P?
+lower N is more secure, but a sloppy user is inconvenienced by locking their own account
+longer P is more secure, but makes an attack to send intentional wrong guesses to lock the user's account more impactful
+
+so what's the equation?
+S = B/P = ln(0.5) / ln(1 - (3 * N/1000000))
+- 0.5 is 50% chance of guessing correctly
+- 1000000 is total possible 6 digit codes
+- 3 is number of targets a guess can match for previous, current, next time windows
+the attacker is limited to N guesses every P period time, creating a guard that breaks in B lifetime
+guard strength is S = B/P, the system breaks after this many time period durations
+let's plug in some N guesses to calculate the resulting S strength multiplier
+N  4 guesses: S 57761 (/365.25 for a P of 24 hours = 158 years to break)
+N  6 guesses: S 38507 (105 years) 📌 we're going to pick this one
+N 12 guesses: S 19253 (52 years, allowing more guesses means a shorter lifetime to break)
+
+also solved the same equation holding break time constant at 100 years which is 36525 days
+to be able to go between N guesses allowed in P_days time period
+P_days = 36525 * ln(1 - (3 * N / 1000000)) / ln(0.5)
+N = (1000000 / 3) * (1 - e^(P_days * ln(0.5) / 36525))
+played around with those in wolfram alpha; more guesses fit in longer time periods
+*/
+export const otp_guard_wrong_guesses = 6//only let a first factor authenticated user enter 6 wrong code guesses
+export const otp_guard_horizon = Time.day//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess
+//ttd august, also, not doing backup codes in this scope; they're commonly implemented by products using rfc6238 but not part of that standard
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
