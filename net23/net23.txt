@@ -281,6 +281,8 @@ in comments, double quotes
 comments in conversational lowercase
 
 
+Got it! That's a thoughtful convention - using const as a semantic signal rather than just "this doesn't get reassigned." So const becomes meaningful documentation that says "this is fundamentally immutable/fixed" (like configuration, imports, factory presets) rather than just "this variable happens to not change in this function."
+
 
 
 

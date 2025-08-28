@@ -37,11 +37,13 @@ notes about imports:
 
 
 import {Secret as otpauth_Secret, TOTP as otpauth_TOTP} from 'otpauth'
-test(async () => {
+test(() => {//notice no async! otpauth doesn't use the subtle library, and HMAC-SHA1 is fast enough, apparently
+	let epoch = Now()//starting now, we'll simulate times in the future with otpauth in this test
+	function alicesPhone(epoch) { return totp.generate({epoch: epoch + 5*Time.second}) }//placeholder for codes from alice's authenticator app; the otpauth module can generate codes even though it doesn't in the normal flow; alice's clock is 5 seconds fast
 
-	//alice, a user at sitebrand.com, sets up two factor authentication. first, on the server:
+	//alice, a user at bobshardware.com, sets up two factor authentication. first, on the server:
 	let label = 'alice@gmail.com'
-	let issuer = 'sitebrand.com'//end up in authenticator app through QR code, but don't get hashed
+	let issuer = 'bobshardware.com'//label and issuer end up in authenticator app through QR code, but don't get hashed
 	let secret = new otpauth_Secret({size: 20})//20 bytes standard and secure; longer would make QR code denser
 	let totp = new otpauth_TOTP({secret, label, issuer, algorithm: 'SHA1', digits: 6, period: 30})//6 digit codes that last 30 seconds
 	let manual = secret.base32//the "shared secret" in plaintext; shared between the server's database and the user's authenticator app
@@ -49,14 +51,33 @@ test(async () => {
 	ok(manual.length == 32)
 	ok(uri.includes(manual))
 
-//	log(look({label, issuer, secret, totp, manual, uri}))
+	//alice scans the QR code with her authenticator app, which shows the current code
+	let code1 = alicesPhone(epoch)
+	ok(code1.length == 6)
+	epoch += 20*Time.second//alice takes 20 seconds getting from her phone back to her PC
 
+	//alice types the first code into the page, and the server validates it
+	let delta = totp.validate({epoch, token: code1, window: 1})//window 1 allows current, previous, or upcoming 30 second codes to pass
+	ok(delta === 0)//0 means exact match, current time period; Piett is silent
+	let database = manual//alice has successfully finished enrollment; at this point we mark alice enrolled and save her secret
 
+	let mistake = code1.slice(0, -1) + ((+code1.slice(-1) + 1) % 10)//increment the last digit to generate a wrong code
+	let deltaMistake = totp.validate({epoch, token: mistake, window: 0})
+	ok(deltaMistake === null)//i don't agree with otpmodule's design choice to identify 0 as valid and null as invalid!
 
+	//alice returns the next day, and generates the code for now
+	epoch += Time.day
+	let code2 = alicesPhone(epoch)
+	epoch += 20*Time.second
 
-
-
+	//the server validates it
+	let secret2 = otpauth_Secret.fromBase32(database)//load the shared secret like "VIDTLZGHOZOABXG4MQSE6RCJ37WQATQY" for alice from the database
+	let totp2 = new otpauth_TOTP({secret: secret2, algorithm: 'SHA1', digits: 6, period: 30})
+	let delta2 = totp2.validate({epoch, token: code2, window: 1})
+	ok(delta2 === 0)//alice is legit
 })
+
+
 
 
 
