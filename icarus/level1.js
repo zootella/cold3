@@ -120,10 +120,10 @@ test(() => {//notice no async! otpauth doesn't use the subtle library, and HMAC-
 	let delta2 = totp2.validate({timestamp, token: code2, window: 1})
 	ok(delta2 !== null)//alice is legit
 
-	timestamp += 35*Time.second//if alice took 30 seconds to get from her phone back to her PC, the code still checks out
+	timestamp += 35*Time.second//if alice took 35 seconds to get from her phone back to her PC, the code still checks out
 	let delta3 = totp2.validate({timestamp, token: code2, window: 1})
 	ok(delta3 === -1)//Piett
-	timestamp += 60*Time.minute
+	timestamp += 60*Time.second
 	let delta4 = totp2.validate({timestamp, token: code2, window: 1})
 	ok(delta4 === null)//but a 95 second old code has expired
 })
