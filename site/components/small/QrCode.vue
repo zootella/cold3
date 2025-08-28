@@ -12,8 +12,6 @@ https://www.denso-wave.com/en/technology/vol1.html - from 1994 🇯🇵; the blo
 
 https://www.npmjs.com/package/qrcode - leader with 3 million weekly downloads
 https://github.com/soldair/node-qrcode
-
-https://otpauth.molinero.dev/ - common choice for users of the otpauth module
 */
 
 const sourceRef = ref('')//img src data URL of btoa'ed SVG
