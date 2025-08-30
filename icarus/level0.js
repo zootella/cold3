@@ -1262,6 +1262,8 @@ export async function hmacSign(secretData, messageText) {//given shared secret k
 test(async () => {
 	//log(Data({random: 32}).base16())//uncomment to generate secure random secret to share and store securely
 
+	log('hi, this is going to be useful for rfc3268, too')
+
 	let sharedSecretData = Data({base16: 'f9b9079fa7021b0c67f26de8758cde5b02e1944dade0e9041d00e808a4b21cc7'})//example shared secret both sides have secure
 	let signature = await hmacSign(sharedSecretData, 'example message')
 	ok(signature.size() == 32)//hmac hashes are 32 bytes
