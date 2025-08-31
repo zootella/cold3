@@ -88,7 +88,7 @@ export async function vhsSign(path, expiration) {
 }
 async function _vhsSign(secret, path, now, expiration, seed) {//so we've factored out this core for testing, below
 	let message = `path=${encodeURIComponent(path)}&tick=${now+expiration}&seed=${seed}`
-	let hash = await hmacSign(secret, message)
+	let hash = await hmacSign('SHA-256', secret, Data({text: message}))
 	let query = `${message}&hash=${encodeURIComponent(hash.base64())}`
 	return query
 }

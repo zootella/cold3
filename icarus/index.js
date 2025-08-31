@@ -216,7 +216,7 @@ checkCard, validateCard,
 checkDate, validateDate, getPageOffsetMinutes, ageDate,
 
 browserIsBesideAppStore, getBrowserGraphics,
-otpEnroll, otpIsValid, otp_guard_wrong_guesses, otp_guard_horizon,
+otpEnroll, otpIsValid,
 
 measurePasswordStrength,
 generatePosts, postDatabase,
@@ -264,6 +264,7 @@ hmacSign,
 rsaEncrypt, rsaDecrypt,
 objectToBase62, base62ToObject,
 curveSign, curveVerify,
+totpEnroll, totpValidate, totpGenerate, otp_guard_wrong_guesses, otp_guard_horizon,
 
 tickToDay, dayToTick,
 sayTimePage, sayWhenPage, sayWhenFeed,

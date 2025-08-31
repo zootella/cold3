@@ -1237,18 +1237,18 @@ test(async () => {
 // |_| |_|_| |_| |_|\__,_|\___|
 //                             
 
-export async function hmacSign(secretData, messageText) {//given shared secret key should be 32 bytes of random data
+export async function hmacSign(hashAlgorithm, secretData, messageData) {//given shared secret key should be 32 bytes of random data
 	let key = await crypto.subtle.importKey(
 		'raw',
 		secretData.array(),
-		{name: 'HMAC', hash: {name: 'SHA-256'}},//the keyed-Hash Message Authentication Code, by Mihir Bellare, Ran Canetti, and Hugo Krawczyk in their 1997 RFC 2104
+		{name: 'HMAC', hash: {name: hashAlgorithm}},//the keyed-Hash Message Authentication Code, by Mihir Bellare, Ran Canetti, and Hugo Krawczyk in their 1997 RFC 2104
 		false,//not extractable
 		['sign']
 	)
 	let b = await crypto.subtle.sign(
 		'HMAC',
 		key,
-		Data({text: messageText}).array()
+		messageData.array()
 	)/*
 	.------------------------.
 	|\\////////       90 min |
@@ -1262,10 +1262,8 @@ export async function hmacSign(secretData, messageText) {//given shared secret k
 test(async () => {
 	//log(Data({random: 32}).base16())//uncomment to generate secure random secret to share and store securely
 
-	log('hi, this is going to be useful for rfc3268, too')
-
 	let sharedSecretData = Data({base16: 'f9b9079fa7021b0c67f26de8758cde5b02e1944dade0e9041d00e808a4b21cc7'})//example shared secret both sides have secure
-	let signature = await hmacSign(sharedSecretData, 'example message')
+	let signature = await hmacSign('SHA-256', sharedSecretData, Data({text: 'example message'}))
 	ok(signature.size() == 32)//hmac hashes are 32 bytes
 	ok(signature.base16() == '1b8f8b63c8bacedebe05f030e05f325c185cb8fe771abcb07987688e823928b4')
 	ok(signature.base64() == 'G4+LY8i6zt6+BfAw4F8yXBhcuP53GryweYdojoI5KLQ=')
@@ -1274,7 +1272,7 @@ test(async () => {
 	let tick = '1733765298051'
 	let seed = 'gFpzqGE3YVZkpazvNC9hQ'//we're throwing in a random seed, probably unnecessarily
 	let message = `path=${encodeURIComponent(path)}&tick=${tick}&seed=${seed}`//compose a query string
-	ok((await hmacSign(sharedSecretData, message)).base64() == 'qDOJXeFRSZLnuI5mm+YnZ9lIBCr87y/yA7vyXxfGqTc=')
+	ok((await hmacSign('SHA-256', sharedSecretData, Data({text: message}))).base64() == 'qDOJXeFRSZLnuI5mm+YnZ9lIBCr87y/yA7vyXxfGqTc=')
 })
 
 //                 
@@ -1433,6 +1431,189 @@ noop(async () => {//see what these objects look like before we stringify and bas
 	let exportedPrivateKey = await curve_exportKey(keys.privateKey)
 	log(look({keys, exportedPublicKey, exportedPrivateKey}))
 })
+
+//        __       __  ____  _____  ___    _        _         
+//  _ __ / _| ___ / /_|___ \|___ / ( _ )  | |_ ___ | |_ _ __  
+// | '__| |_ / __| '_ \ __) | |_ \ / _ \  | __/ _ \| __| '_ \ 
+// | |  |  _| (__| (_) / __/ ___) | (_) | | || (_) | |_| |_) |
+// |_|  |_|  \___|\___/_____|____/ \___/   \__\___/ \__| .__/ 
+//                                                     |_|    
+
+const totp_size = 20//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
+const totp_algorithm = 'SHA1'//SHA1-HMAC is what authenticator apps expect
+const totp_code_length = 6//6 digit codes, what users are used to
+const totp_period_seconds = 30//30 second refresh, also what users are used to
+const totp_window = 1//permit codes from the previous and next 1 time periods to work with clock synchronization and user delay
+
+export async function totpEnroll({label, issuer, addHashLabel}) {
+	let secret = totpSecret()
+	let uri = await totpUri({secret, label, issuer, addHashLabel})
+	let title = ''
+	let hashLabel = ''//ttd august, also return what the user will see in the app for us to store in the database, and the 3 digit secret hash prefix
+	return {secret, uri, title, hashLabel}
+}
+function totpSecret() { return Data({random: totp_size}) }
+
+export async function totpValidate(secret, code) { return await totpValidateClock(secret, code, Now()) }
+async function totpValidateClock(secret, code, now) {
+	for (let i = -totp_window; i <= totp_window; i++) {//our window is 1, so we'll loop 3 times
+		let t = now + (i * totp_period_seconds * Time.second)
+		let correct = await totpGenerate(secret, t)
+		if (code == correct) return true
+	}
+	return false//no match found
+}
+test(async () => {
+	let secret = Data({base32: '77ODUCNGUB3JHWN2MTPBSC5ZFD6YJHQW'})
+	let t = 1756599008818
+	let code = '844422'//starting with a matching secret, time, and resulting code
+
+	ok(code == await totpGenerate(secret, t))//confirm that's what we generate
+
+	ok(!(await totpValidateClock(secret, code, t - (60*Time.second))))//60 seconds early or late, no longer valid
+	ok((await totpValidateClock(secret, code, t - (30*Time.second))))//30 seconds early or late, still valid
+	ok((await totpValidateClock(secret, code, t)))//perfect clock synchronization
+	ok((await totpValidateClock(secret, code, t + (30*Time.second))))
+	ok(!(await totpValidateClock(secret, code, t + (60*Time.second))))
+})
+
+export async function totpGenerate(secret, t) {//exported to demonstrate a complete flow; in actual use the site never calls this
+	let counterData = totpCounter(t)
+	let signatureData = await hmacSign('SHA-1', secret, counterData)
+	return totpTruncate(signatureData, totp_code_length)
+}
+test(async () => {
+	let secret = Data({text: '12345678901234567890'})
+	ok(await totpGenerate(secret, 59000)         == '287082')
+	ok(await totpGenerate(secret, 1234567890000) == '005924')//test vectors from the RFC are 8 digits; looking at just the first 6 is fine
+
+	let d = Data({base32: 'AKXFF73AHHKW2WREOTTXIGCFAXFQV4QP'})
+	let t = 1756593477167
+	ok((await totpGenerate(d, t))                    == '585017')
+	ok((await totpGenerate(d, t + ( 1*Time.second))) == '585017')//one second later is still in the same time period
+	ok((await totpGenerate(d, t + (30*Time.second))) == '691316')//while 30 seconds later must be in the next period
+	ok((await totpGenerate(d, t + (60*Time.second))) == '546345')
+	ok((await totpGenerate(d, t + (90*Time.second))) == '857364')
+})
+
+//Enroll and Validate are all the server needs; Secret, ValidateClock, and especially Generate are exported for testing and demonstration
+
+function totpCounter(t) {//given a number of milliseconds since the start of 1970, generate the 4 counter bytes for RFC6238 hashing
+	let period = Math.floor(t / (totp_period_seconds * Time.second))
+	let array = new Uint8Array(8)
+	let view = new DataView(array.buffer)
+	view.setUint32(4, period, false)//store in last 4 bytes, big-endian
+	return Data({array})
+}
+test(() => {
+	function f(t, b16) { ok(totpCounter(t).base16() == b16) }
+	f(1756586162508,  '00000000037d7228')//from now
+	f(59000,          '0000000000000001')//from RFC 6238 Appendix B
+	f(1111111109000,  '00000000023523ec')  
+	f(1111111111000,  '00000000023523ed')
+	f(1234567890000,  '000000000273ef07')
+	f(2000000000000,  '0000000003f940aa')
+	f(20000000000000, '0000000027bc86aa')
+})
+
+function totpTruncate(signatureData, codeLength) {//hmac signature data
+	let array = signatureData.array()
+	let offset = array[array.length - 1] & 0x0f//use last byte's bottom 4 bits as offset
+	let code = (
+		((array[offset] & 0x7f) << 24) |//clear top bit of first byte, shift 24
+		((array[offset + 1] & 0xff) << 16) |//keep all bits, shift 16
+		((array[offset + 2] & 0xff) << 8) |//keep all bits, shift 8
+		(array[offset + 3] & 0xff)//keep all bits, no shift
+	) % Math.pow(10, codeLength)//modulo by 10^codeLength to get final code
+	return code.toString().padStart(codeLength, '0')//convert to string with leading zeros
+}
+test(async () => {
+	async function f(secret, counter, expected) {
+		let signatureData = await hmacSign('SHA-1', secret, Data({base16: counter}))
+		ok(totpTruncate(signatureData, 8) == expected)
+	}
+	let secret = Data({text: '12345678901234567890'})//also from the appendix
+	await f(secret, '0000000000000001', '94287082')
+	await f(secret, '00000000023523ec', '07081804')
+	await f(secret, '00000000023523ed', '14050471')
+	await f(secret, '000000000273ef07', '89005924')
+	await f(secret, '0000000003f940aa', '69279037')
+	await f(secret, '0000000027bc86aa', '65353130')
+})
+
+async function totpUri({secret, label, issuer, addHashLabel}) {//make the otpauth://totp/... URI for the redirect or QR code
+	checkText(label); checkText(issuer)
+	if (label.includes(':') || issuer.includes(':')) toss('colon reserved', {label, issuer})
+
+	if (addHashLabel) {
+		let secretHash = await hashText(secret.base32())
+		label += ` [${secretHash.slice(0, 3)}]`//suffix their user name with letters that identify the secret like " [ABC]"; we could show this beside the code box to help the user find the right enrollment in their authenticator app
+	}
+
+	let params = new URLSearchParams({
+		secret: secret.base32(),
+		algorithm: totp_algorithm,
+		digits: totp_code_length.toString(),
+		period: totp_period_seconds.toString(),
+		issuer: issuer,
+	})
+	return `otpauth://totp/${encodeURIComponent(`${issuer}:${label}`)}?${params}`
+}
+test(async () => {
+	let secret = Data({base16: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'})
+	ok(await totpUri({secret, label: 'alice@example.com', issuer: 'TestCorp'}) =='otpauth://totp/TestCorp%3Aalice%40example.com?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=TestCorp')
+	ok(await totpUri({secret, label: '@_Alice-Jones_ [HI] <tag>', issuer: 'examplesite.com'}) == 'otpauth://totp/examplesite.com%3A%40_Alice-Jones_%20%5BHI%5D%20%3Ctag%3E?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com')
+
+	let uri = (await totpEnroll({label: '@alice.jones', issuer: 'examplesite.com'})).uri
+	ok(uri.startsWith('otpauth://totp/examplesite.com%3A%40alice.jones?secret='))
+	ok(uri.endsWith('&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com'))
+
+	uri = (await totpEnroll({label: 'Alice', issuer: 'ExampleSite', addHashLabel: true})).uri
+	//log out uri to see a demo of the secret hash in braces like ...%20%5B---%5D?...
+})
+
+/*
+RFC6238 TOTP is fantastic in that it is not tied to an Internet connection, a service provider, or even a software vendor
+it's strong yet usable security provided by pure cryptography, at its best
+
+code entry must be supplemented by a rate limiting method,
+as an attacker who gets to the code guess box could quickly try all million possibilities
+consider a simple guard that only allows N guesses in a time period P--how do we choose N and P?
+lower N is more secure, but a sloppy user is inconvenienced by locking their own account
+longer P is more secure, but makes an attack to send intentional wrong guesses to lock the user's account more impactful
+
+so what's the equation?
+S = B/P = ln(0.5) / ln(1 - (3 * N/1000000))
+- 0.5 is 50% chance of guessing correctly
+- 1000000 is total possible 6 digit codes
+- 3 is number of targets a guess can match for previous, current, next time windows
+the attacker is limited to N guesses every P period time, creating a guard that breaks in B lifetime
+guard strength is S = B/P, the system breaks after this many time period durations
+let's plug in some N guesses to calculate the resulting S strength multiplier
+N  4 guesses: S 57761 (/365.25 for a P of 24 hours = 158 years to break)
+N  6 guesses: S 38507 (105 years) 📌 we're going to pick this one
+N 12 guesses: S 19253 (52 years, allowing more guesses means a shorter lifetime to break)
+
+also solved the same equation holding break time constant at 100 years which is 36525 days
+to be able to go between N guesses allowed in P_days time period
+P_days = 36525 * ln(1 - (3 * N / 1000000)) / ln(0.5)
+N = (1000000 / 3) * (1 - e^(P_days * ln(0.5) / 36525))
+played around with those in wolfram alpha; more guesses fit in longer time periods
+*/
+export const otp_guard_wrong_guesses = 6//only let a first factor authenticated user enter 6 wrong code guesses
+export const otp_guard_horizon = Time.day//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess
+//ttd august, also, not doing backup codes in this scope; they're commonly implemented by products using rfc6238 but not part of that standard
+
+
+
+
+
+
+
+
+
+
+
 
 
 

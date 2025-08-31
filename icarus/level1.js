@@ -1073,15 +1073,7 @@ test(() => {
 
 
 
-
-
-
-//        __       __  ____  _____  ___    _        _         
-//  _ __ / _| ___ / /_|___ \|___ / ( _ )  | |_ ___ | |_ _ __  
-// | '__| |_ / __| '_ \ __) | |_ \ / _ \  | __/ _ \| __| '_ \ 
-// | |  |  _| (__| (_) / __/ ___) | (_) | | || (_) | |_| |_) |
-// |_|  |_|  \___|\___/_____|____/ \___/   \__\___/ \__| .__/ 
-//                                                     |_|    
+//ttd august, this becomes a fuzz test!
 
 const otp_size = 20//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
 const otp_algorithm = 'SHA1'//SHA1-HMAC is what authenticator apps expect
@@ -1162,38 +1154,6 @@ test(() => {//notice no async! otpauth doesn't use the subtle library, and HMAC-
 	let delta4 = totp2.validate({timestamp, token: code2, window: 1})
 	ok(delta4 === null)//but a 95 second old code has expired
 })
-
-/*
-RFC6238 TOTP is fantastic in that it is not tied to an Internet connection, a service provider, or even a software vendor
-it's strong yet usable security provided by pure cryptography, at its best
-
-code entry must be supplemented by a rate limiting method,
-as an attacker who gets to the code guess box could quickly try all million possibilities
-consider a simple guard that only allows N guesses in a time period P--how do we choose N and P?
-lower N is more secure, but a sloppy user is inconvenienced by locking their own account
-longer P is more secure, but makes an attack to send intentional wrong guesses to lock the user's account more impactful
-
-so what's the equation?
-S = B/P = ln(0.5) / ln(1 - (3 * N/1000000))
-- 0.5 is 50% chance of guessing correctly
-- 1000000 is total possible 6 digit codes
-- 3 is number of targets a guess can match for previous, current, next time windows
-the attacker is limited to N guesses every P period time, creating a guard that breaks in B lifetime
-guard strength is S = B/P, the system breaks after this many time period durations
-let's plug in some N guesses to calculate the resulting S strength multiplier
-N  4 guesses: S 57761 (/365.25 for a P of 24 hours = 158 years to break)
-N  6 guesses: S 38507 (105 years) 📌 we're going to pick this one
-N 12 guesses: S 19253 (52 years, allowing more guesses means a shorter lifetime to break)
-
-also solved the same equation holding break time constant at 100 years which is 36525 days
-to be able to go between N guesses allowed in P_days time period
-P_days = 36525 * ln(1 - (3 * N / 1000000)) / ln(0.5)
-N = (1000000 / 3) * (1 - e^(P_days * ln(0.5) / 36525))
-played around with those in wolfram alpha; more guesses fit in longer time periods
-*/
-export const otp_guard_wrong_guesses = 6//only let a first factor authenticated user enter 6 wrong code guesses
-export const otp_guard_horizon = Time.day//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess
-//ttd august, also, not doing backup codes in this scope; they're commonly implemented by products using rfc6238 but not part of that standard
 
 
 
