@@ -1445,17 +1445,14 @@ const totp_code_length = 6//6 digit codes, what users are used to
 const totp_period_seconds = 30//30 second refresh, also what users are used to
 const totp_window = 1//permit codes from the previous and next 1 time periods to work with clock synchronization and user delay
 
-export async function totpEnroll({label, issuer, addHashLabel}) {
+export async function totpEnroll({label, issuer, addIdentifier}) {
 	let secret = totpSecret()
-	let uri = await totpUri({secret, label, issuer, addHashLabel})
-	let title = ''
-	let hashLabel = ''//ttd august, also return what the user will see in the app for us to store in the database, and the 3 digit secret hash prefix
-	return {secret, uri, title, hashLabel}
+	return await totpEnrollGivenSecret({secret, label, issuer, addIdentifier})
 }
 function totpSecret() { return Data({random: totp_size}) }
 
-export async function totpValidate(secret, code) { return await totpValidateClock(secret, code, Now()) }
-async function totpValidateClock(secret, code, now) {
+export async function totpValidate(secret, code) { return await totpValidateGivenTime(secret, code, Now()) }
+async function totpValidateGivenTime(secret, code, now) {
 	for (let i = -totp_window; i <= totp_window; i++) {//our window is 1, so we'll loop 3 times
 		let t = now + (i * totp_period_seconds * Time.second)
 		let correct = await totpGenerate(secret, t)
@@ -1470,11 +1467,11 @@ test(async () => {
 
 	ok(code == await totpGenerate(secret, t))//confirm that's what we generate
 
-	ok(!(await totpValidateClock(secret, code, t - (60*Time.second))))//60 seconds early or late, no longer valid
-	ok((await totpValidateClock(secret, code, t - (30*Time.second))))//30 seconds early or late, still valid
-	ok((await totpValidateClock(secret, code, t)))//perfect clock synchronization
-	ok((await totpValidateClock(secret, code, t + (30*Time.second))))
-	ok(!(await totpValidateClock(secret, code, t + (60*Time.second))))
+	ok(!(await totpValidateGivenTime(secret, code, t - (60*Time.second))))//60 seconds early or late, no longer valid
+	ok((await totpValidateGivenTime(secret, code, t - (30*Time.second))))//30 seconds early or late, still valid
+	ok((await totpValidateGivenTime(secret, code, t)))//perfect clock synchronization
+	ok((await totpValidateGivenTime(secret, code, t + (30*Time.second))))
+	ok(!(await totpValidateGivenTime(secret, code, t + (60*Time.second))))
 })
 
 export async function totpGenerate(secret, t) {//exported to demonstrate a complete flow; in actual use the site never calls this
@@ -1498,7 +1495,7 @@ test(async () => {
 
 //Enroll and Validate are all the server needs; Secret, ValidateClock, and especially Generate are exported for testing and demonstration
 
-function totpCounter(t) {//given a number of milliseconds since the start of 1970, generate the 4 counter bytes for RFC6238 hashing
+function totpCounter(t) {//given a number of milliseconds since the start of 1970, generate the 8 bytes to hash
 	let period = Math.floor(t / (totp_period_seconds * Time.second))
 	let array = new Uint8Array(8)
 	let view = new DataView(array.buffer)
@@ -1541,14 +1538,15 @@ test(async () => {
 	await f(secret, '0000000027bc86aa', '65353130')
 })
 
-async function totpUri({secret, label, issuer, addHashLabel}) {//make the otpauth://totp/... URI for the redirect or QR code
+
+async function totpEnrollGivenSecret({secret, label, issuer, addIdentifier}) {//make the otpauth://totp/... URI for the redirect or QR code
 	checkText(label); checkText(issuer)
 	if (label.includes(':') || issuer.includes(':')) toss('colon reserved', {label, issuer})
 
-	if (addHashLabel) {
-		let secretHash = await hashText(secret.base32())
-		label += ` [${secretHash.slice(0, 3)}]`//suffix their user name with letters that identify the secret like " [ABC]"; we could show this beside the code box to help the user find the right enrollment in their authenticator app
-	}
+	//extra stuff beyond standard and common implementation to help the user find the right listing
+	let identifier = await totpSecretIdentifier(secret)
+	if (addIdentifier) label += ` [${identifier}]`//the page could tell the user to look for the listing marked "...[ABC]"
+	let title = `${issuer}: ${label}`//or the title of the listing in Google Authenticator; others are similar
 
 	let params = new URLSearchParams({
 		secret: secret.base32(),
@@ -1557,19 +1555,29 @@ async function totpUri({secret, label, issuer, addHashLabel}) {//make the otpaut
 		period: totp_period_seconds.toString(),
 		issuer: issuer,
 	})
-	return `otpauth://totp/${encodeURIComponent(`${issuer}:${label}`)}?${params}`
+	let uri = `otpauth://totp/${encodeURIComponent(`${issuer}:${label}`)}?${params}`
+	return {secret: secret.base32(), identifier, title, uri}
 }
+export async function totpSecretIdentifier(secret) { return (await hashText(secret.base32())).slice(0, 3) }
 test(async () => {
 	let secret = Data({base16: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'})
-	ok(await totpUri({secret, label: 'alice@example.com', issuer: 'TestCorp'}) =='otpauth://totp/TestCorp%3Aalice%40example.com?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=TestCorp')
-	ok(await totpUri({secret, label: '@_Alice-Jones_ [HI] <tag>', issuer: 'examplesite.com'}) == 'otpauth://totp/examplesite.com%3A%40_Alice-Jones_%20%5BHI%5D%20%3Ctag%3E?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com')
+	ok((await totpEnrollGivenSecret({secret, label: 'alice@example.com', issuer: 'TestCorp'})).uri == 'otpauth://totp/TestCorp%3Aalice%40example.com?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=TestCorp')
+	ok((await totpEnrollGivenSecret({secret, label: '@_Alice-Jones_ [HI] <tag>', issuer: 'examplesite.com'})).uri == 'otpauth://totp/examplesite.com%3A%40_Alice-Jones_%20%5BHI%5D%20%3Ctag%3E?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com')
 
 	let uri = (await totpEnroll({label: '@alice.jones', issuer: 'examplesite.com'})).uri
 	ok(uri.startsWith('otpauth://totp/examplesite.com%3A%40alice.jones?secret='))
 	ok(uri.endsWith('&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com'))
 
-	uri = (await totpEnroll({label: 'Alice', issuer: 'ExampleSite', addHashLabel: true})).uri
-	//log out uri to see a demo of the secret hash in braces like ...%20%5B---%5D?...
+	let enrollment = await totpEnrollGivenSecret({
+		secret: Data({base32: 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR'}),//server generates and shares with user at enrollment
+		label: 'Alice',//server composes from user name, route, or email
+		issuer: 'ExampleSite',
+		addIdentifier: true,//for this example, we're doing the [ABC] thing
+	})
+	ok(enrollment.secret == 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR')//stays in the database to validate future codes
+	ok(enrollment.title == 'ExampleSite: Alice [25I]')//these we could send to the page safely later on
+	ok(enrollment.identifier == '25I')
+	ok(enrollment.uri == 'otpauth://totp/ExampleSite%3AAlice%20%5B25I%5D?secret=SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR&algorithm=SHA1&digits=6&period=30&issuer=ExampleSite')//shown to the user once to set things up; contains the shared secret (this is how we share it)!
 })
 
 /*
