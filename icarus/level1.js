@@ -1068,7 +1068,22 @@ test(() => {
 
 
 
+import {totpGenerate} from 'icarus'
 
+async function cycle6238() {
+	let d = Data({random: 20})//random shared secret for a totp enrollment
+	let t = randomBetween(0, 100*Time.year)//random timestamp between 1970 and 2070
+
+	let code1 = await totpGenerate(d, t)
+	let code2 = (new otpauth_TOTP({secret: otpauth_Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})
+	ok(code1 == code2)
+}
+test(async () => {
+	let cycles = await runFor(4*Time.second, cycle6238)
+	log(cycles)
+})
+
+//do the speed comparison, too
 
 
 
@@ -1235,22 +1250,22 @@ function cycle4648(size) {
 	let d2 = Data({array: otpauth_Secret.fromBase32(s2).bytes})
 	ok(d1.base16() == d2.base16())
 }
-function runFor(m, f) {
+async function runFor(m, f) {
 	let n = Now()
 	let cycles = 0
-	while (Now() < n + m) { cycles++; f() }
+	while (Now() < n + m) { cycles++; await f() }
 	return cycles
 }
-noop(() => {
+noop(async () => {
 	function f1() { let size = 32;                     cycle4648(size) }//a sha256 hash value is 32 bytes (256 bits) 52 base32 characters
 	function f2() { let size = 20;                     cycle4648(size) }//a standard TOTP secret is 20 bytes (160 bits) 32 base32 characters
 	function f3() { let size = randomBetween(1, 8);    cycle4648(size) }//short
 	function f4() { let size = randomBetween(1, 1024); cycle4648(size) }//longer
 
-	let cycles1 = runFor(1*Time.second, f1)
-	let cycles2 = runFor(1*Time.second, f2)
-	let cycles3 = runFor(1*Time.second, f3)
-	let cycles4 = runFor(1*Time.second, f4)
+	let cycles1 = await runFor(1*Time.second, f1)
+	let cycles2 = await runFor(1*Time.second, f2)
+	let cycles3 = await runFor(1*Time.second, f3)
+	let cycles4 = await runFor(1*Time.second, f4)
 	log(look({cycles1, cycles2, cycles3, cycles4}))
 })
 
