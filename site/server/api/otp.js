@@ -1,6 +1,7 @@
 //./server/api/otp.js
 import {
-otpEnroll, otpIsValid, otp_guard_wrong_guesses, otp_guard_horizon,
+//otpEnroll, otpIsValid, otp_guard_wrong_guesses, otp_guard_horizon,
+totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, otp_guard_wrong_guesses, otp_guard_horizon,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -23,6 +24,6 @@ otp todo list
 
 	return {
 		sticker: Sticker(),
-		imported: look({otpEnroll, otpIsValid, otp_guard_wrong_guesses, otp_guard_horizon}),
+//		imported: look({otpEnroll, otpIsValid, otp_guard_wrong_guesses, otp_guard_horizon}),
 	}
 }

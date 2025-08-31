@@ -15,12 +15,12 @@ cut,
 fraction, exponent, int, big, deindent, newline,
 hashData, hashText, given,
 makePlain, makeObject, makeText,
+totpGenerate,
 } from './level0.js'
 
 import {z as zod} from 'zod'//use to validate email
 import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
-import {Secret as otpauth_Secret, TOTP as otpauth_TOTP} from 'otpauth'//use for authenticator app codes
 import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
 
 //ttd august, if you remove the blank line above, Vite's parser freaks out, which is super weird
@@ -1068,26 +1068,121 @@ test(() => {
 
 
 
-import {totpGenerate} from 'icarus'
 
-async function cycle6238() {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//   __                                                      _                     
+//  / _|_   _ ________   ___ ___  _ __ ___  _ __   __ _ _ __(_)___  ___  _ __  ___ 
+// | |_| | | |_  /_  /  / __/ _ \| '_ ` _ \| '_ \ / _` | '__| / __|/ _ \| '_ \/ __|
+// |  _| |_| |/ / / /  | (_| (_) | | | | | | |_) | (_| | |  | \__ \ (_) | | | \__ \
+// |_|  \__,_/___/___|  \___\___/|_| |_| |_| .__/ \__,_|_|  |_|___/\___/|_| |_|___/
+//                                         |_|                                     
+
+/*
+to run these fuzz comparisons:
+1. in the monorepo project root, run $ yarn add -W nanoid otpauth
+2. change noop to test below on the fuzz test you want to try out
+3. run the fuzz test with Node using $ yarn test
+4. undo changes with $ git reset --hard HEAD
+*/
+async function fuzzImports() {
+	//rollup and vite have crazy preprocessors that freak out if code looks like it's going to import something that isn't there; even if that code never runs! 🤯 the pattern below looks weird, but is effective at hiding from the preprocessor
+	const hide1 = 'nanoid';  const {customAlphabet} = await import(hide1)
+	const hide2 = 'otpauth'; const {Secret, TOTP}   = await import(hide2)
+	return {customAlphabet, Secret, TOTP}
+}
+
+/*
+Goo-idz!
+https://www.npmjs.com/package/nanoid
+https://github.com/ai/nanoid
+https://zelark.github.io/nano-id-cc/ collision calculator
+*/
+noop(async () => { const fuzz = await fuzzImports()
+	//here's what your Tag() function looked like before you extracted the implementation from nanoid to move it down to level0
+	function nanoidTag() {
+		const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
+		return fuzz.customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
+	}
+	for (let i = 0; i < 20; i++) log(`${nanoidTag()} from nanoid and ${Tag()} from Tag()`)//sanity check that they look the same
+})
+
+/*
+RFC4648: base32 character encoding
+
+to store sha256 hash values in the database in a column typed CHAR(52)
+you want something (a) brief, (b) double-clickable, and (c) length determined by byte size not value
+AI4APBJZISGTL4DOOJRKYPSACN4YSR55NVOJDZCKGXFKEX4AEJHQ, for example
+
+base16 has (b) and (c) but not (a)
+base64 has (a) and (c) but not (b)
+base62 has (a) and (b) but not (c), and is also our invention rather than an established standard
+base32 has (b) and (c) like base16 while being much shorter
+
+Data() has short zero dependency implementations of base16, 32, 62, and 64
+turn on this fuzz tester to use the base32 implementation that comes with otpauth to confirm our base32 implementation matches
+*/
+async function cycle4648(size) { const fuzz = await fuzzImports()
+	let d0 = Data({random: size})
+	let s1 = d0.base32()//we've written our own implementation of base32 encoding into Data
+	let s2 = fuzz.Secret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
+	ok(s1 == s2)
+	let d1 = Data({base32: s1})
+	let d2 = Data({array: fuzz.Secret.fromBase32(s2).bytes})
+	ok(d1.base16() == d2.base16())
+}
+noop(async () => {
+	async function f1() { let size = 32;                     await cycle4648(size) }//a sha256 hash value is 32 bytes (256 bits) 52 base32 characters
+	async function f2() { let size = 20;                     await cycle4648(size) }//a standard TOTP secret is 20 bytes (160 bits) 32 base32 characters
+	async function f3() { let size = randomBetween(1, 8);    await cycle4648(size) }//short
+	async function f4() { let size = randomBetween(1, 1024); await cycle4648(size) }//longer
+
+	let cycles1 = await runFor(1*Time.second, f1)
+	let cycles2 = await runFor(1*Time.second, f2)
+	let cycles3 = await runFor(1*Time.second, f3)
+	let cycles4 = await runFor(1*Time.second, f4)
+	log(look({cycles1, cycles2, cycles3, cycles4}))
+})
+async function runFor(m, f) {
+	let n = Now()
+	let cycles = 0
+	while (Now() < n + m) { cycles++; await f() }
+	return cycles
+}
+
+/*
+RFC6238: time-based one-time password
+*/
+async function cycle6238() { const fuzz = await fuzzImports()
 	let d = Data({random: 20})//random shared secret for a totp enrollment
 	let t = randomBetween(0, 100*Time.year)//random timestamp between 1970 and 2070
 
-	let code1 = await totpGenerate(d, t)
-	let code2 = (new otpauth_TOTP({secret: otpauth_Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})
-	ok(code1 == code2)
+	let code1 = await totpGenerate(d, t)//our custom implementation in level0 which uses the js subtle api, which calls to native code
+	let code2 = (new fuzz.TOTP({secret: fuzz.Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})//same thing, using the npm otpauth module, 638k weekly downloads, but brings its own javascript implementation of crypto primitives, :(
+	ok(code1 == code2)//make sure that our implementation matches what the popular module would compute!
 }
-test(async () => {
+noop(async () => {
 	let cycles = await runFor(4*Time.second, cycle6238)
 	log(cycles)
 })
 
-//do the speed comparison, too
-
-
-
-
+/*
 //ttd august, this becomes a fuzz test!
 
 const otp_size = 20//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
@@ -1169,106 +1264,7 @@ test(() => {//notice no async! otpauth doesn't use the subtle library, and HMAC-
 	let delta4 = totp2.validate({timestamp, token: code2, window: 1})
 	ok(delta4 === null)//but a 95 second old code has expired
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//   __                                                      _                     
-//  / _|_   _ ________   ___ ___  _ __ ___  _ __   __ _ _ __(_)___  ___  _ __  ___ 
-// | |_| | | |_  /_  /  / __/ _ \| '_ ` _ \| '_ \ / _` | '__| / __|/ _ \| '_ \/ __|
-// |  _| |_| |/ / / /  | (_| (_) | | | | | | |_) | (_| | |  | \__ \ (_) | | | \__ \
-// |_|  \__,_/___/___|  \___\___/|_| |_| |_| .__/ \__,_|_|  |_|___/\___/|_| |_|___/
-//                                         |_|                                     
-
-/*
-Goo-idz!
-https://www.npmjs.com/package/nanoid
-https://github.com/ai/nanoid
-https://zelark.github.io/nano-id-cc/ collision calculator
 */
-//import {customAlphabet} from 'nanoid'//you'd have to install this then git reset --hard HEAD
-noop(() => {
-	//here's what your Tag() function looked like before you extracted the implementation from nanoid to move it down to level0
-	function nanoidTag() {
-		const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-		return customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
-	}
-	for (let i = 0; i < 20; i++) log(`${nanoidTag()} from nanoid and ${Tag()} from Tag()`)//sanity check that they look the same
-})
-
-//        __      _  _    __   _  _    ___    _                    _________  
-//  _ __ / _| ___| || |  / /_ | || |  ( _ )  | |__   __ _ ___  ___|___ /___ \ 
-// | '__| |_ / __| || |_| '_ \| || |_ / _ \  | '_ \ / _` / __|/ _ \ |_ \ __) |
-// | |  |  _| (__|__   _| (_) |__   _| (_) | | |_) | (_| \__ \  __/___) / __/ 
-// |_|  |_|  \___|  |_|  \___/   |_|  \___/  |_.__/ \__,_|___/\___|____/_____|
-//                                                                            
-/*
-to store sha256 hash values in the database in a column typed CHAR(52)
-you want something (a) brief, (b) double-clickable, and (c) length determined by byte size not value
-AI4APBJZISGTL4DOOJRKYPSACN4YSR55NVOJDZCKGXFKEX4AEJHQ, for example
-
-base16 has (b) and (c) but not (a)
-base64 has (a) and (c) but not (b)
-base62 has (a) and (b) but not (c), and is also our invention rather than an established standard
-base32 has (b) and (c) like base16 while being much shorter
-
-Data() has short zero dependency implementations of base16, 32, 62, and 64
-turn on this fuzz tester to use the base32 implementation that comes with otpauth to confirm our base32 implementation matches
-*/
-function cycle4648(size) {
-	let d0 = Data({random: size})
-	let s1 = d0.base32()//we've written our own implementation of base32 encoding into Data
-	let s2 = otpauth_Secret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
-	ok(s1 == s2)
-	let d1 = Data({base32: s1})
-	let d2 = Data({array: otpauth_Secret.fromBase32(s2).bytes})
-	ok(d1.base16() == d2.base16())
-}
-async function runFor(m, f) {
-	let n = Now()
-	let cycles = 0
-	while (Now() < n + m) { cycles++; await f() }
-	return cycles
-}
-noop(async () => {
-	function f1() { let size = 32;                     cycle4648(size) }//a sha256 hash value is 32 bytes (256 bits) 52 base32 characters
-	function f2() { let size = 20;                     cycle4648(size) }//a standard TOTP secret is 20 bytes (160 bits) 32 base32 characters
-	function f3() { let size = randomBetween(1, 8);    cycle4648(size) }//short
-	function f4() { let size = randomBetween(1, 1024); cycle4648(size) }//longer
-
-	let cycles1 = await runFor(1*Time.second, f1)
-	let cycles2 = await runFor(1*Time.second, f2)
-	let cycles3 = await runFor(1*Time.second, f3)
-	let cycles4 = await runFor(1*Time.second, f4)
-	log(look({cycles1, cycles2, cycles3, cycles4}))
-})
-
 
 
 

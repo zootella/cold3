@@ -1439,11 +1439,26 @@ noop(async () => {//see what these objects look like before we stringify and bas
 // |_|  |_|  \___|\___/_____|____/ \___/   \__\___/ \__| .__/ 
 //                                                     |_|    
 
+//RFC 6238 defines TOTP for short-lived one-time passwords using synchronized device clocks, enabling two-factor authentication using authenticator apps that operate offline, aren't tied to a provider or centralized account system, and offer secure, portable verification
+//npm otpauth is popular and works in a web worker, but brings its own javascript implementation of cryptographic primitives, so instead Claude and me coded the specification on top of the native subtle library in a single screenful of code, below
+
 const totp_size = 20//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
 const totp_algorithm = 'SHA1'//SHA1-HMAC is what authenticator apps expect
 const totp_code_length = 6//6 digit codes, what users are used to
 const totp_period_seconds = 30//30 second refresh, also what users are used to
 const totp_window = 1//permit codes from the previous and next 1 time periods to work with clock synchronization and user delay
+
+/*
+Enroll                🟢 make the qr code for the user to scan to set up their authenticator app
+> Secret              make the shared secret for totp
+> EnrollGivenSecret   factored for testing, do the work of the enrollment given the random secret
+  > SecretIdentifier  🟢 show the user text like "[X2B]" hashed from the secret
+Validate              🟢 determine if a code is valid for a secret right now
+> ValidateGivenTime   factored for testing, determine if a code is valid for the given secret and time
+  > Generate          ☢️ exported only for demonstration and testing! generate the same code the authenticator app does
+    > Counter         following rfc6238, turn a time into bytes to hash
+    > Truncate        following rfc6238, turn a hash into the short code of numerals
+*/
 
 export async function totpEnroll({label, issuer, addIdentifier}) {
 	let secret = totpSecret()
@@ -1493,8 +1508,6 @@ test(async () => {
 	ok((await totpGenerate(d, t + (90*Time.second))) == '857364')
 })
 
-//Enroll and Validate are all the server needs; Secret, ValidateClock, and especially Generate are exported for testing and demonstration
-
 function totpCounter(t) {//given a number of milliseconds since the start of 1970, generate the 8 bytes to hash
 	let period = Math.floor(t / (totp_period_seconds * Time.second))
 	let array = new Uint8Array(8)
@@ -1513,7 +1526,7 @@ test(() => {
 	f(20000000000000, '0000000027bc86aa')
 })
 
-function totpTruncate(signatureData, codeLength) {//hmac signature data
+function totpTruncate(signatureData, codeLength) {//hmac signature data, takes code length 8 to test against vectors from the RFC
 	let array = signatureData.array()
 	let offset = array[array.length - 1] & 0x0f//use last byte's bottom 4 bits as offset
 	let code = (
