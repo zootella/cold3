@@ -1,4 +1,4 @@
-<script setup>//./components/OtpDemo.vue
+<script setup>//./components/TotpDemo.vue
 
 import {
 browserIsBesideAppStore,
@@ -9,10 +9,11 @@ const refButtonCanSubmit = ref(true)
 const refButtonInFlight = ref(false)
 
 async function onClick() {
-	let response = await refButton.value.post('/api/otp', {
-		action: 'Create1.',
+	let response = await refButton.value.post('/api/totp', {
+		action: 'Enroll1.',
 	})
-	log('otp post response', look(response))
+	log('totp post response', look(response))
+	addressRef.value = response.uri
 }
 
 const addressRef = ref('')//input, user pastes in URL to make a QR code from it
@@ -20,7 +21,7 @@ const addressRef = ref('')//input, user pastes in URL to make a QR code from it
 </script>
 <template>
 <div class="border border-gray-300 p-2 bg-gray-100">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>OtpDemo</i></p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TotpDemo</i></p>
 
 <input v-model="addressRef" type="url" class="w-full" placeholder="Paste URL here" />
 <div class="py-4 flex items-start space-x-4">
@@ -31,8 +32,8 @@ const addressRef = ref('')//input, user pastes in URL to make a QR code from it
 			{{browserIsBesideAppStore() ? '📲 ✅ YES' : '💻 🚫 NO'}}
 		</p><!-- we'd probably actually call browserIsBesideAppStore() in code that runs onMounted -->
 		<PostButton
-			labelIdle="Setup1"
-			labelFlying="Setup1ing..."
+			labelIdle="Enroll1"
+			labelFlying="Enroll1ing..."
 			:useTurnstile="true"
 
 			ref="refButton"

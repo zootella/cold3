@@ -1635,6 +1635,27 @@ export const otp_guard_horizon = Time.day//every 24 hours, to make an attacker s
 
 
 
+test(async () => {
+	let secret = Data({base32: 'E77KX2Q54TI3KAHUT6LMQPUWFFG6CP4M'})
+	let t = Now()
+
+log(`
+
+Enter your code for "cold3.cc ... [${await totpSecretIdentifier(secret)}]"
+
+${await totpGenerate(secret, t - (30*Time.second))} previous
+${await totpGenerate(secret, t)} current
+${await totpGenerate(secret, t + (30*Time.second))} upcoming
+`)
+
+})
+
+
+
+
+
+
+
 
 
 

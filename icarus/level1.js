@@ -30,7 +30,7 @@ notes about imports:
 - some of these are still CommonJS, and then you have to look for .default
 - static imports above mean functions that use these don't have to be async, but the initial bundle size is larger
 - switching some to dynamic could save bundle size, but would spread async up the call tree
-- code for a dynamic import must still name the module as a string literal argument, otherwise the bundler won't know to include it!
+- code for a dynamic import must name the module as a string literal argument, otherwise the bundler won't know to include it!
 */
 
 
