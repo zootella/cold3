@@ -24,7 +24,7 @@ function redirect() {
 let interval
 onMounted(() => { interval = setInterval(repeater, 66) })
 onUnmounted(() => { if (interval) clearInterval(interval) })
-async function repeater() {
+async function repeater() { if (!enrollment) return
 	let secret = Data({base32: enrollment.secret})
 
 	let t = Now()
@@ -76,7 +76,7 @@ const refCodeTime = ref('')
         <p><code>{{refCodeTime}}</code></p>
         <p>
         	Above and beyond the standard implementation, we can tell the user,
-        	<i>look for the listing marked "[{{enrollment.identifier}}]"</i>
+        	<i>the listing you're looking for is marked "[{{enrollment.identifier}}]"</i>
         </p>
       </div>
     </div>

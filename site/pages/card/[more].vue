@@ -57,14 +57,19 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 </script>
 <template>
 
-<p>
-	(1) meta og image delivered to page in {{refDelay}}ms;
-	<LinkButton @click="hardReload">Browser reload</LinkButton>; or link to a
-	<LinkButton @click="randomPage">different random page</LinkButton>
-</p>
-<p><code>{{refFound}}</code></p>
-<p><img :src="refSource" @load="onImageLoad" /></p>
-<p>(2) also on this page is the qr code demo:</p>
+<p>Three image tests on this page: (1) signed media URLs, (2) social cards, and (3) QR codes:</p>
+
+<VhsDemo />
+
+<div>
+	<p>
+		meta og image delivered to page in {{refDelay}}ms;
+		<LinkButton @click="hardReload">Browser reload</LinkButton>; or link to a
+		<LinkButton @click="randomPage">different random page</LinkButton>
+	</p>
+	<p><code>{{refFound}}</code></p>
+	<p><img :src="refSource" @load="onImageLoad" /></p>
+</div>
 
 <QrDemo />
 
