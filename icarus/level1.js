@@ -1096,15 +1096,12 @@ test(() => {
 
 /*
 to run these fuzz comparisons:
-1. in the monorepo project root, run $ yarn add -W nanoid otpauth
-2. change noop to test below on the fuzz test you want to try out
-3. run the fuzz test with Node using $ yarn test
-4. undo changes with $ git reset --hard HEAD
+- run tests in Node with $ yarn test, the modules are installed as development dependencies in the project root
+- switch individual tests on with noop <--> test
 */
 async function fuzzImports() {
-	//rollup and vite have crazy preprocessors that freak out if code looks like it's going to import something that isn't there; even if that code never runs! 🤯 the pattern below looks weird, but is effective at hiding from the preprocessor
-	const hide1 = 'nanoid';  const {customAlphabet} = await import(hide1)
-	const hide2 = 'otpauth'; const {Secret, TOTP}   = await import(hide2)
+	const {customAlphabet} = await import(/* @vite-ignore */ 'nanoid')
+	const {Secret, TOTP}   = await import(/* @vite-ignore */ 'otpauth')//magic comment to calm the aggressive preprocessor 🤯
 	return {customAlphabet, Secret, TOTP}
 }
 
