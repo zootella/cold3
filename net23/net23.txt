@@ -3450,6 +3450,84 @@ Redirect to a New URL: Redirect visitors requesting one page to another page URL
 
 
 
+              _    _____
+__      _____| |__|___ /
+\ \ /\ / / _ \ '_ \ |_ \
+ \ V  V /  __/ |_) |__) |
+  \_/\_/ \___|_.__/____/
+
+Party like it's 2021
+
+[i] not invited
+
+alchemy-sdk (because node specific, because not needed because why?)
+ethers.js (say why, i think because viem replaces it)
+ttd september, list all surrounding popular related and say why, like because newer replacemnt, because 
+
+
+[i] module roster
+
+viem
+https://www.npmjs.com/package/viem
+1.9mm weekly downloads
+** Low-level Ethereum interface providing pure JS functions for blockchain operations - the foundation everything else builds on
+
+@wagmi/core
+https://www.npmjs.com/package/@wagmi/core
+366k weekly downloads
+** Adds wallet connection abstractions and multi-chain support on top of viem - handles account management without UI framework dependencies
+
+@wagmi/connectors
+https://www.npmjs.com/package/@wagmi/connectors
+364k weekly downloads
+** Pre-built wallet connectors for MetaMask, WalletConnect, Coinbase Wallet, etc - without this you'd have to implement each wallet's connection protocol yourself
+
+@wagmi/vue
+https://www.npmjs.com/package/@wagmi/vue
+5k ⚠️ warning, low download count!
+** Vue composables that make wagmi/core reactive - provides useAccount(), useBalance(), etc. Warning: low adoption suggests most Vue devs use wagmi/core directly
+
+@tanstack/vue-query
+https://www.npmjs.com/package/@tanstack/vue-query
+272k weekly downloads
+** Required dependency for @wagmi/vue - handles async state management, caching, and request deduplication. You're adding this solely because @wagmi/vue depends on it
+
+[i] added where
+
+added to icarus ~ chat promises these will work everywhere javascript can run:
+added to icarus and site ~ these also must work in the limited web worker environment, of course, in a nuxt api endpoint or server render:
+
+
+[i] api keys
+
+server key protected as secret
+client key protected by domain name and headers
+
+pattern to detect server render and use the secret key
+
+
+
+
+
+
+and here are some things not on this list:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
