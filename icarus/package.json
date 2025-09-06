@@ -17,11 +17,13 @@
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.39.8",
+		"@wagmi/core": "^2.20.3",
 		"credit-card-type": "^10.0.0",
 		"h3": "^1.13.0",
 		"is-mobile": "^5.0.0",
 		"libphonenumber-js": "^1.11.3",
 		"ofetch": "^1.4.1",
+		"viem": "^2.37.3",
 		"zod": "^3.25.74"
 	},
 	"devDependencies": {
