@@ -32,7 +32,6 @@
 		"nuxt": "^3.17.5",
 		"nuxt-og-image": "5.1.6",
 		"pinia": "^3.0.3",
-		"pino-pretty": "^13.1.1",
 		"qrcode": "^1.5.4",
 		"unstorage": "^1.15.0",
 		"vidstack": "^1.12.13",
@@ -46,6 +45,7 @@
 		"nitro-cloudflare-dev": "^0.2.2",
 		"nitropack": "^2.11.12",
 		"nuxi": "^3.25.1",
+		"pino-pretty": "^13.1.1",
 		"wrangler": "^4.20.0"
 	}
 }
