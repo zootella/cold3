@@ -6,6 +6,22 @@
 //3 service
 //4 framework
 
+/*
+//ttd september
+//added to icarus
+
+		"viem": "^2.37.3",
+		"@wagmi/core": "^2.20.3",
+
+//added to site
+
+		"viem": "^2.37.3",
+		"@wagmi/core": "^2.20.3",
+		"@wagmi/connectors": "^5.9.9",
+		"@wagmi/vue": "^0.2.5",
+		"@tanstack/vue-query": "^5.87.1",
+*/
+
 //./package.json
 {
 	"name": "w5",

@@ -3,4 +3,6 @@
 </script>
 <template>
 
+<WalletDemo />
+
 </template>
