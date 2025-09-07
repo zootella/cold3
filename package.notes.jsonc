@@ -141,7 +141,7 @@
 	"devDependencies": {
 
 		//2 utility
-		"pino-pretty": "^13.1.1", // Makes Nuxt's Pino logger output readable in dev - not related to Web3 stack
+		"pino-pretty": "^13.1.1",//added to fix build error caused by wagmi connectors bringing in walletconnect and wanting pino
 
 		//3 service
 		"wrangler": "^4.20.0",
