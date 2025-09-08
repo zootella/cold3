@@ -3458,11 +3458,6 @@ __      _____| |__|___ /
 
 Party like it's 2021
 
-[i] not invited
-
-alchemy-sdk (because node specific, because not needed because why?)
-ethers.js (say why, i think because viem replaces it)
-ttd september, list all surrounding popular related and say why, like because newer replacemnt, because 
 
 
 [i] module roster
@@ -3482,6 +3477,8 @@ https://www.npmjs.com/package/@wagmi/connectors
 364k weekly downloads
 ** Pre-built wallet connectors for MetaMask, WalletConnect, Coinbase Wallet, etc - without this you'd have to implement each wallet's connection protocol yourself
 
+(this is probably all you'll end up using, but also trying out)
+
 @wagmi/vue
 https://www.npmjs.com/package/@wagmi/vue
 5k ⚠️ warning, low download count!
@@ -3492,36 +3489,10 @@ https://www.npmjs.com/package/@tanstack/vue-query
 272k weekly downloads
 ** Required dependency for @wagmi/vue - handles async state management, caching, and request deduplication. You're adding this solely because @wagmi/vue depends on it
 
-[i] added where
-
-added to icarus ~ chat promises these will work everywhere javascript can run:
-added to icarus and site ~ these also must work in the limited web worker environment, of course, in a nuxt api endpoint or server render:
-
-
-[i] api keys
-
-server key protected as secret
-client key protected by domain name and headers
-
-pattern to detect server render and use the secret key
-
-
-
-
-
-
-and here are some things not on this list:
-
-
-
-
-
-
-
-
-
-
-
+other early decisions:
+- coding in component but will move to composable or store
+- importing modules on margin (for tree shaking) but only using on mounted (alchemy key won't work ssr)
+- single alchemy key revealed but protected by domain name (won't work ssr)
 
 
 
