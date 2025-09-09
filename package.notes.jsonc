@@ -33,6 +33,7 @@
 		"libphonenumber-js": "^1.11.3",
 		"zod": "^3.25.74",
 		"is-mobile": "^5.0.0",//runs fine everywhere, but only makes sense running from browser client
+		"viem": "^2.37.3",//in icarus as well as site to validate ethereum addresses
 
 		//3 service
 		"@supabase/supabase-js": "^2.39.8",//supabase works local | deployed × worker | lambda
