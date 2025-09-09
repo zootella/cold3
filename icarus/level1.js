@@ -76,6 +76,9 @@ and the entire private HD (Hierarchical Deterministic) key is:
 
 ${look(account.getHdKey())}
 `)
+	let seeds = ''
+	for (let i = 0; i < 100; i++) seeds += newline + generateMnemonic(english)
+	log(seeds)
 })
 
 

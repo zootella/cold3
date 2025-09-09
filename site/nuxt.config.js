@@ -25,7 +25,7 @@ configuration.devtools = {enabled: true}//enable the Nuxt devtools extension in 
 //for build analysis and visualization
 configuration.build = {
 	analyze: {//enable Nuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood
-		template: 'treemap',//try out "sunburst", "treemap", "network", "raw-data", or "list"
+		template: 'treemap',//try out "treemap", "sunburst", "network", "raw-data", or "list"; note these only affect client.html
 		brotliSize: true,//current browsers downloading from Cloudflare will use Brotli compression
 	},
 }
