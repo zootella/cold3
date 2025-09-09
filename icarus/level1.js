@@ -51,6 +51,8 @@ test(() => {
 	let s3 = getAddress(s2)//restores case checksum; getAddress does throw on not valid
 	ok(s1 == s3)
 
+	//back at head, is net23.zip still reasonable?
+
 })
 
 
