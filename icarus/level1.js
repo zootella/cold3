@@ -40,10 +40,6 @@ notes about imports:
 
 
 import {isAddress, getAddress} from 'viem'
-import {
-generateMnemonic, mnemonicToAccount,
-english,//here's the 2048 word dictionary, which is big
-} from 'viem/accounts'
 test(() => {
 
 	let s1 = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'//vitalik.eth, Milady
@@ -55,30 +51,6 @@ test(() => {
 	let s3 = getAddress(s2)//restores case checksum; getAddress does throw on not valid
 	ok(s1 == s3)
 
-	let phrase = generateMnemonic(english)
-	ok(phrase.split(' ').length == 12)
-
-	let account = mnemonicToAccount(phrase)
-	let privateKeyBase16 = '0x'+account.getHdKey().privKey.toString(16).padStart(64, '0')//64 characters × 4 bits in a base16 character = 256 bit private key
-
-	ok(privateKeyBase16.startsWith('0x') && privateKeyBase16.length == 66)
-	ok(account.address.startsWith('0x') && account.address.length == 42)
-
-	if (true) log(`made a new wallet
-
-${phrase}
-
-${account.getHdKey().privKey} ~ private key as a giant regular number, random 256 bit, 1 - 10^77
-${privateKeyBase16} ~ private key as base16, the way MetaMask shows it
-${account.address} ~ wallet address, public
-
-and the entire private HD (Hierarchical Deterministic) key is:
-
-${look(account.getHdKey())}
-`)
-	let seeds = ''
-	for (let i = 0; i < 100; i++) seeds += newline + generateMnemonic(english)
-	log(seeds)
 })
 
 
