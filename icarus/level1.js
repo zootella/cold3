@@ -52,6 +52,7 @@ test(() => {
 	ok(s1 == s3)
 
 	//back at head, is net23.zip still reasonable?
+	//after upgrade wash to fix net23, previously there was a 19mb zip that doesn't work!
 
 })
 
