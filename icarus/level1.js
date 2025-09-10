@@ -40,7 +40,7 @@ no change in imports between this comparison, and net23.zip is 31mb, whatever
 you want to see the nuxt bundles change as you import and use seed phrases
 
 1 before mention: L2A, nitro root 4.95mb, client root brotli 336kb
-2 during mention: W03, (where is the dictionary? how much bigger are things?)
+2 during mention: WO3, nitro root 5.26mb, client root brotli 387kb, english.js is about a third of terms document
 3 deletd mention: (did it go back to the way it was before?)
 */
 
@@ -66,6 +66,7 @@ test(() => {
 
 })
 
+/*
 import {generateMnemonic, mnemonicToAccount, english} from 'viem/accounts'
 test(() => {
 
@@ -78,7 +79,7 @@ test(() => {
 	ok(privateKeyBase16.startsWith('0x') && privateKeyBase16.length == 66)
 	ok(account.address.startsWith('0x') && account.address.length == 42)
 })
-
+*/
 
 
 
