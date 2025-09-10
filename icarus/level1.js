@@ -41,7 +41,7 @@ you want to see the nuxt bundles change as you import and use seed phrases
 
 1 before mention: L2A, nitro root 4.95mb, client root brotli 336kb
 2 during mention: WO3, nitro root 5.26mb, client root brotli 387kb, english.js is about a third of terms document
-3 deletd mention: (did it go back to the way it was before?)
+3 deletd mention: KBA, yes, went back to exactly the same as l2a!
 */
 
 
@@ -58,30 +58,41 @@ test(() => {
 	let s3 = getAddress(s2)//restores case checksum; getAddress does throw on not valid
 	ok(s1 == s3)
 
-	log
-
-	//back at head, is net23.zip still reasonable?
-	//after upgrade wash to fix net23, previously there was a 19mb zip that doesn't work!
-	//yes, viem and ox correctly(?) add 10mb to net23.zip, leaving that as it is for now
 
 })
 
 /*
-import {generateMnemonic, mnemonicToAccount, english} from 'viem/accounts'
-test(() => {
+here's the code to make seed phrases and get their private key number, code, and wallet address
+uncommenting this grows nitro 4.95->5.26mb, and client brotli 336->387kb
 
+in monorepo root $ find . -name english.js
+./node_modules/@scure/bip39/esm/wordlists/english.js
+found this path looking at client.html from site $ yarn size
+
+in site workspace $ grep -rl "blouse" .
+./.output/server/wasm/index_bg-dd4dd8881e2df4e6.wasm
+./.output/server/chunks/nitro/nitro.mjs
+./.output/public/_nuxt/NTRf4ox-.js
+./.output/public/_nuxt/entry.js
+chose a bip39 word that isn't likely written into code or comments, even across hundreds of npm modules
+but it's hard to open or search within these files to see the list; they're more than just minified
+
+in summary, if you need to deal with seed phrases, it's right here in viem
+but it's correct to leave this commented because it does make the client bundle 1.15x
+*/
+/*
+import {generateMnemonic, mnemonicToAccount, english} from 'viem/accounts'//import right on the margin to help tree shaking
+test(() => {
 	let phrase = generateMnemonic(english)
 	ok(phrase.split(' ').length == 12)
 
 	let account = mnemonicToAccount(phrase)
-	let privateKeyBase16 = '0x'+account.getHdKey().privKey.toString(16).padStart(64, '0')//64 characters × 4 bits in a base16 character = 256 bit private key
+	let private16 = '0x'+account.getHdKey().privKey.toString(16).padStart(64, '0')//64 characters × 4 bits in a base16 character = 256 bit private key
 
-	ok(privateKeyBase16.startsWith('0x') && privateKeyBase16.length == 66)
+	ok(private16.startsWith('0x') && private16.length == 66)
 	ok(account.address.startsWith('0x') && account.address.length == 42)
 })
 */
-
-
 
 
 
