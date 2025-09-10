@@ -22,6 +22,7 @@ import {z as zod} from 'zod'//use to validate email
 import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
 import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
+import {getAddress as viem_getAddress} from 'viem'
 
 //ttd august, if you remove the blank line above, Vite's parser freaks out, which is super weird
 /*
@@ -35,69 +36,17 @@ notes about imports:
 
 
 
-/*
-no change in imports between this comparison, and net23.zip is 31mb, whatever
-you want to see the nuxt bundles change as you import and use seed phrases
 
-1 before mention: L2A, nitro root 4.95mb, client root brotli 336kb
-2 during mention: WO3, nitro root 5.26mb, client root brotli 387kb, english.js is about a third of terms document
-3 deletd mention: KBA, yes, went back to exactly the same as l2a!
-*/
-
-
-
-import {isAddress, getAddress} from 'viem'
-test(() => {
-
-	let s1 = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'//vitalik.eth, Milady
-	let s2 = s1.toLowerCase()
-
-	ok(isAddress(s1))
-	ok(isAddress(s2))//both are valid; isAddress never throws
-
-	let s3 = getAddress(s2)//restores case checksum; getAddress does throw on not valid
-	ok(s1 == s3)
-
-
-})
-
-/*
-here's the code to make seed phrases and get their private key number, code, and wallet address
-uncommenting this grows nitro 4.95->5.26mb, and client brotli 336->387kb
-
-in monorepo root $ find . -name english.js
-./node_modules/@scure/bip39/esm/wordlists/english.js
-found this path looking at client.html from site $ yarn size
-
-in site workspace $ grep -rl "blouse" .
-./.output/server/wasm/index_bg-dd4dd8881e2df4e6.wasm
-./.output/server/chunks/nitro/nitro.mjs
-./.output/public/_nuxt/NTRf4ox-.js
-./.output/public/_nuxt/entry.js
-chose a bip39 word that isn't likely written into code or comments, even across hundreds of npm modules
-but it's hard to open or search within these files to see the list; they're more than just minified
-
-in summary, if you need to deal with seed phrases, it's right here in viem
-but it's correct to leave this commented because it does make the client bundle 1.15x
-*/
-/*
-import {generateMnemonic, mnemonicToAccount, english} from 'viem/accounts'//import right on the margin to help tree shaking
-test(() => {
-	let phrase = generateMnemonic(english)
-	ok(phrase.split(' ').length == 12)
-
-	let account = mnemonicToAccount(phrase)
-	let private16 = '0x'+account.getHdKey().privKey.toString(16).padStart(64, '0')//64 characters × 4 bits in a base16 character = 256 bit private key
-
-	ok(private16.startsWith('0x') && private16.length == 66)
-	ok(account.address.startsWith('0x') && account.address.length == 42)
-})
-*/
 
 
 
 export function liveBox(s) {
 }
+
+
+
+
+
 
 
 
@@ -1000,7 +949,98 @@ test(() => {
 	ok(_ageDate('19800601', 0, Date.parse('2002-12-31T23:59:59.999Z')) == 22)//end of the year
 })
 
+//             _ _     _       _                       _ _      _   
+// __   ____ _| (_) __| | __ _| |_ ___  __      ____ _| | | ___| |_ 
+// \ \ / / _` | | |/ _` |/ _` | __/ _ \ \ \ /\ / / _` | | |/ _ \ __|
+//  \ V / (_| | | | (_| | (_| | ||  __/  \ V  V / (_| | | |  __/ |_ 
+//   \_/ \__,_|_|_|\__,_|\__,_|\__\___|   \_/\_/ \__,_|_|_|\___|\__|
+//                                                                  
 
+export function validateWallet(raw) {//validate ethereum wallet address
+	let t = raw.trim()//t for trimmed
+
+	let r40//r for raw; we'll clip out the 40 base16 numerals from the raw text we were given
+	if      (t.length == 42 && t.slice(0, 2).toLowerCase() == '0x') r40 = t.slice(2, 42)//allow "0X" start
+	else if (t.length == 40)                                        r40 = t
+	else return {isValid: false, raw}
+
+	if (!/^[0-9a-fA-F]+$/.test(r40)) return {isValid: false, raw}//any value 40 0s through 40 fs is a valid Ethereum address
+
+	let c//c for checksum corrected
+	try {
+		c = viem_getAddress(('0x'+r40).toLowerCase())
+	} catch (e) { return {isValid: false, raw} }//checks above should make throwing not possible, but just in case
+	let c40 = c.slice(2, 42)//clip out the checksum case-corrected base16 characters
+
+	//at this point the address is valid
+	let v = {isValid: true, formNormal: c, formFormal: c, formPage: c, raw}//all the forms are the same
+	if (r40 == r40.toUpperCase() || r40 == r40.toLowerCase()) { v.rawCaseUniform = true } else { v.rawCaseMixed = true }
+	if (r40 == c40) { v.checksumConfirmed = true } else { v.checksumCorrected = true }
+	if (v.rawCaseMixed && v.checksumCorrected) v.checksumWarning = true//important warning if the given address contains a checksum that's wrong!
+	return v
+}
+test(() => {
+	ok(validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045').isValid)//vitalik.eth, Milady
+	ok(validateWallet('0xd8da6bf26964af9d7eed9e03e53415d37aa96045').isValid)//lowercased ok, this is common
+	ok(validateWallet('0XD8DA6BF26964AF9D7EED9E03E53415D37AA96045').isValid)//uppercased even including "0X" ok
+	ok(validateWallet(  'd8da6bf26964af9d7eed9e03e53415d37aa96045').isValid)//no prefix also ok
+
+	ok(validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\r\n').isValid)//edge space is fine
+	ok(validateWallet('  0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045  ').isValid)
+	ok(!validateWallet('0x d8dA6BF26964aF9D7eEd9e03E53415D37aA96045').isValid)//interior space is not
+
+	ok(!validateWallet('').isValid)//blank
+	ok(!validateWallet('bad').isValid)//random wrong other string
+
+	ok(  validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').isValid)//good
+	ok(  !validateWallet('xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').isValid)//not enough prefix
+	ok(!validateWallet('00xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').isValid)//too much prefix
+
+	ok(!validateWallet('0xdeadbeefHeadbeefdeadbeefdeadbeefdeadbeef').isValid)//bad base16 digit
+	ok(!validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbe').isValid)//too short
+	ok(!validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefef').isValid)//too long
+
+	let v1 = validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')//checksum correct
+	let v2 = validateWallet('0xd8da6BF26964aF9D7eEd9e03E53415D37aA96045')//checksum mistake!
+	let v3 = validateWallet('0xd8da6bf26964af9d7eed9e03e53415d37aa96045')//lowercased input
+	let v4 = validateWallet('0xD8DA6BF26964AF9D7EED9E03E53415D37AA96045')//uppercased input
+
+	ok(v1.isValid && v2.isValid && v3.isValid && v4.isValid)//all are valid
+	ok(v2.checksumWarning)//important checksum warning
+	ok(!v1.checksumWarning && !v3.checksumWarning && !v4.checksumWarning)//others don't need that warning
+})
+/*
+here's the code to make seed phrases and get their private key number, code, and wallet address
+uncommenting this grows nitro 4.95->5.26mb, and client brotli 336->387kb
+
+in monorepo root $ find . -name english.js
+./node_modules/@scure/bip39/esm/wordlists/english.js
+found this path looking at client.html from site $ yarn size
+
+in site workspace $ grep -rl "blouse" .
+./.output/server/wasm/index_bg-dd4dd8881e2df4e6.wasm
+./.output/server/chunks/nitro/nitro.mjs
+./.output/public/_nuxt/NTRf4ox-.js
+./.output/public/_nuxt/entry.js
+chose a bip39 word that isn't likely written into code or comments, even across hundreds of npm modules
+but it's hard to open or search within these files to see the list; they're more than just minified
+
+in summary, if you need to deal with seed phrases, it's right here in viem
+but it's correct to leave this commented because it does make the client bundle 1.15x
+*/
+/*
+import {generateMnemonic, mnemonicToAccount, english} from 'viem/accounts'//import right on the margin to help tree shaking
+test(() => {
+	let phrase = generateMnemonic(english)
+	ok(phrase.split(' ').length == 12)
+
+	let account = mnemonicToAccount(phrase)
+	let private16 = '0x'+account.getHdKey().privKey.toString(16).padStart(64, '0')//64 characters × 4 bits in a base16 character = 256 bit private key
+
+	ok(private16.startsWith('0x') && private16.length == 66)
+	ok(account.address.startsWith('0x') && account.address.length == 42)
+})
+*/
 
 
 
