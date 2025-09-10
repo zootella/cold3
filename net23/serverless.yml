@@ -108,6 +108,8 @@ package:
     # @supabase
     # axios
 
+    # adding viem to icarus so level1 can validate Ethereum addresses caused the zip to grow 10mb; unzipped it's 16mb viem and 5mb ox; ttd september leaving this as is even though lambda won't ever need to deal with blockchain
+
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization
     #before our first serverless deploy, staff performed manual steps to get the domain and ssl certificate, and put the ARN of the certificate in the .env file, referenced below

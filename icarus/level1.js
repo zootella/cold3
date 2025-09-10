@@ -53,6 +53,7 @@ test(() => {
 
 	//back at head, is net23.zip still reasonable?
 	//after upgrade wash to fix net23, previously there was a 19mb zip that doesn't work!
+	//yes, viem and ox correctly(?) add 10mb to net23.zip, leaving that as it is for now
 
 })
 
