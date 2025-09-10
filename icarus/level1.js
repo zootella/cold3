@@ -35,7 +35,14 @@ notes about imports:
 
 
 
+/*
+no change in imports between this comparison, and net23.zip is 31mb, whatever
+you want to see the nuxt bundles change as you import and use seed phrases
 
+1 before mention: L2A, nitro root 4.95mb, client root brotli 336kb
+2 during mention: W03, (where is the dictionary? how much bigger are things?)
+3 deletd mention: (did it go back to the way it was before?)
+*/
 
 
 
@@ -51,15 +58,26 @@ test(() => {
 	let s3 = getAddress(s2)//restores case checksum; getAddress does throw on not valid
 	ok(s1 == s3)
 
+	log
+
 	//back at head, is net23.zip still reasonable?
 	//after upgrade wash to fix net23, previously there was a 19mb zip that doesn't work!
 	//yes, viem and ox correctly(?) add 10mb to net23.zip, leaving that as it is for now
 
 })
 
+import {generateMnemonic, mnemonicToAccount, english} from 'viem/accounts'
+test(() => {
 
+	let phrase = generateMnemonic(english)
+	ok(phrase.split(' ').length == 12)
 
+	let account = mnemonicToAccount(phrase)
+	let privateKeyBase16 = '0x'+account.getHdKey().privKey.toString(16).padStart(64, '0')//64 characters × 4 bits in a base16 character = 256 bit private key
 
+	ok(privateKeyBase16.startsWith('0x') && privateKeyBase16.length == 66)
+	ok(account.address.startsWith('0x') && account.address.length == 42)
+})
 
 
 
