@@ -3497,6 +3497,17 @@ other early decisions:
 
 
 
+https://dashboard.alchemy.com/
+create new app
+cold3page, Name
+Identity, use case
+Ethereum, picked only one chain in the choose chains step
+Node API, picked only one servive in the next step, claude says this is all that's necessary for erc20 and nfts
+now you get the dashboard, fourth tab Settings
+Allowlist, Domain, Restrict to specific domains
+add two, note there's no https or port, Add, Save
+cold3.cc
+localhost
 
 
 

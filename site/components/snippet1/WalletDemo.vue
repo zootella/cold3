@@ -41,14 +41,28 @@ async function snippet1() {
 const blockRef = ref('Loading...')
 const timeRef = ref('...')
 
+const refButton = ref(null); const refButtonCanSubmit = ref(true); const refButtonInFlight = ref(false)
+async function onButton() {
+	let response = await refButton.value.post('/api/wallet', {
+		action: 'Prove.',
+	})
+	log(look(response))
+}
+
 </script>
 <template>
-<div class="border border-gray-300 p-2">
+<div class="border border-gray-300 p-2 space-y-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>WalletDemo</i></p>
 
 <p>Current Ethereum block number <code>{{blockRef}}</code> at <code>{{timeRef}}</code></p>
-<p>There's a new block every 12 seconds</p>
 <Button @click="snippet1">Check again</Button>
+
+<div>
+	<PostButton
+		labelIdle="Perform" labelFlying="Performing..." :useTurnstile="false"
+		ref="refButton" :canSubmit="refButtonCanSubmit" v-model:inFlight="refButtonInFlight" :onClick="onButton"
+	/>
+</div>
 
 </div>
 </template>
