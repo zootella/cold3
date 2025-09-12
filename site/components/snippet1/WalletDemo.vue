@@ -32,14 +32,29 @@ async function snippet1() {
 		transports: {[mainnet.id]: http(alchemyUrl)},
 	})
 
+	//get the current ethereum block number
 	let n = await getBlockNumber(alchemyConfiguration)
 	blockRef.value = sayGroupDigits(n+'')
+	timeRef.value = sayTick(Now())//there's a new block every 12 seconds
 
-	timeRef.value = sayTick(Now())
+	//to get the ETH price right now, we'll read a chainlink oracle contract
+	let b = await readContract(alchemyConfiguration, {
+		address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',//updates hourly, or when ETH moves >0.5%
+		abi: [{
+			inputs: [],
+			name: 'latestAnswer',
+			outputs: [{type: 'int256'}],
+			stateMutability: 'view',
+			type: 'function',
+		}],
+		functionName: 'latestAnswer',
+	})
+	priceRef.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
 }
 
 const blockRef = ref('Loading...')
-const timeRef = ref('...')
+const priceRef = ref('')
+const timeRef = ref('')
 
 const refButton = ref(null); const refButtonCanSubmit = ref(true); const refButtonInFlight = ref(false)
 async function onButton() {
@@ -54,7 +69,7 @@ async function onButton() {
 <div class="border border-gray-300 p-2 space-y-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>WalletDemo</i></p>
 
-<p>Current Ethereum block number <code>{{blockRef}}</code> at <code>{{timeRef}}</code></p>
+<p>Current Ethereum price <code>${{priceRef}}</code> and block number <code>{{blockRef}}</code> at <code>{{timeRef}}</code>. There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.</p>
 <Button @click="snippet1">Check again</Button>
 
 <div>
