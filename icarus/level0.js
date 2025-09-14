@@ -2735,27 +2735,91 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 
 
 
+//  _                  
+// | | _____ _   _ ___ 
+// | |/ / _ \ | | / __|
+// |   <  __/ |_| \__ \
+// |_|\_\___|\__, |___/
+//           |___/     
+
+export function parseKeyFile(contents) {//given file contents, split and prepare into public and secret blocks
+	let publicBlock = ''
+	let secretBlock = ''
+	let lines = contents.split(/\r?\n/)//works with both windows style \r\n and mac and server style just \n
+	for (let line of lines) {
+		let c = cut2(line, '==', '==')
+		if (c.found && c.before == '' && hasText(c.middle) && hasText(c.after)) {
+			let tags = c.middle.split(',').map(tag => tag.trim()).sort()
+			if (tags.includes('public')) { publicBlock += `==${tags.join(',')}==${c.after.trim()}\n` }
+			else                         { secretBlock += `==${tags.join(',')}==${c.after.trim()}\n` }
+		}
+	}
+	return {publicBlock, secretBlock}
+}
+export function parseKeyBlock(block) {//given a public or secret block, parse into a list for easy lookups
+	let list = []
+	let lines = block.split(/\r?\n/)
+	for (let line of lines) {
+		let c = cut2(line, '==', '==')
+		if (c.found && c.before == '' && hasText(c.middle) && hasText(c.after)) {
+			let tags = c.middle.trim()
+			let value = c.after.trim()
+			list.push([tags, value])
+		}
+	}
+	return list
+}
+export function lookupKey(list, search) {//look up the value in list from search tags like "tag1, tag2"
+	let find = search.split(',').map(tag => tag.trim()).sort()
+	for (let [k, v] of list) {
+		let tags = k.split(',').map(tag => tag.trim()).sort()
+		if (find.length == tags.length && find.every((tag, i) => tag == tags[i])) return v
+	}
+	return false//not found
+}
+export function listAllKeyValues(list) { return list.map(([k, v]) => v) }//make an array of just the values
+
+test(() => {
+let contents = `
+here's an example key file
+a comment is just a line that *doesn't* begin with double equals!
+
+== key1         == value1
+== key1, key2   == value2
+== key1, public == value3
+== key4, public == value4`
+
+	let blocks = parseKeyFile(contents)
+	ok(blocks.publicBlock.includes('value3') && blocks.publicBlock.includes('value4'))
+	ok(blocks.secretBlock.includes('value1') && blocks.secretBlock.includes('value2'))
+	ok(!blocks.publicBlock.includes('value1'))
+	ok(!blocks.publicBlock.includes('value2'))//important to make sure can't leak!
+})
+test(() => {
+let contents = `
+== tag1             == value1
+== tag2, tag3       == value2
+== tag4, public     == value4
+== with space, tag2 == value5`
+
+	let blocks = parseKeyFile(contents)
+	let list = parseKeyBlock(blocks.publicBlock+blocks.secretBlock)//fine to just add blocks together because they always end \n
+
+	ok(lookupKey(list, 'tag1')       == 'value1')//basic use
+	ok(lookupKey(list, 'tag2, tag3') == 'value2')//two tags, both required, order doesn't matter
+	ok(lookupKey(list, 'tag3, tag2') == 'value2')
+	ok(lookupKey(list, 'tag2, with space') == 'value5')//tags can have spaces, note order still doesn't matter
+
+	ok(!lookupKey(list, 'tag2'))//not found because must specify all identifying tags
+	ok(!lookupKey(list, 'tag3'))
+	ok(!lookupKey(list, 'tag5'))//not in use at all
+})
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//ttd september, from much earlier, didn't even have a heading
 export function parseEnvStyleFileContents(s) {
 	let lines = s.split(/\r?\n/)
 	let o = {}
@@ -2768,7 +2832,7 @@ export function parseEnvStyleFileContents(s) {
 				let v = line.slice(e+1)//value is everything on the line after the first equals
 				if (k.length) {//key name must exist
 					o[k] = v
-				}``
+				}
 			}
 		}
 	})
@@ -2785,6 +2849,16 @@ let o = parseEnvStyleFileContents(s)
 ok(o.key1 == 'value1')
 ok(o['TRUE_MATH'] == '2+2=4')
 })
+
+
+
+
+
+
+
+
+
+
 
 
 

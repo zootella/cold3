@@ -119,6 +119,7 @@ async function writeWrapper(o) {
 }
 
 const envSecretFileName = '.env.local'//our file of secrets to encrypt
+const envPublicFileName = '.env.keys'//ttd september, upcoming format with public and secret keys defined together and separated
 async function affixSeal(properties, manifest) {
 
 	//total up the files, counting those that are something we wrote or created, versus everything
@@ -144,6 +145,10 @@ async function affixSeal(properties, manifest) {
 	let envSecretContents = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
 	let cipherData = await encrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), envSecretContents)
 
+	//encode the public factory presets and client bundle keys in .env.public
+	let envPublicContents = await fs.readFile(envPublicFileName, 'utf8')
+	let publicData = Data({text: envPublicContents})
+
 	//compose contents for the new wrapper.js
 	let o = {...wrapper}//copy all the properties into a new object
 	o.tick = Now()//update individual properties in the new object
@@ -155,6 +160,7 @@ async function affixSeal(properties, manifest) {
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
 	o.secrets = cipherData.base62()
+	o.public = publicData.base62()
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)

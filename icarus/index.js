@@ -276,6 +276,7 @@ correctLength,
 say, look,
 makePlain, makeObject, makeText,
 
+parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
 parseEnvStyleFileContents,
 sequentialShared, sequentialSeparate,
 
