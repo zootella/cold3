@@ -2750,7 +2750,7 @@ export function parseKeyFile(contents) {//given file contents, split and prepare
 		if (c.found && c.before == '' && hasText(c.middle) && hasText(c.after)) {
 			let t = c.middle.split(',').map(tag => tag.trim()).sort()//array of tags
 			let l = `==${t.join(',')}==${c.after.trim()}\n`//line composed for block
-			if (t.includes('public') && t.includes('page')) { o.publicBlock += l } else { o.secretBlock += l }//reveal the line only if it is both acceptable (tagged public), and necessary (tagged page), to do so
+			if (t.includes('public') && t.includes('page') && !t.includes('secret')) { o.publicBlock += l } else { o.secretBlock += l }//reveal the line only if it is both acceptable (tagged public), and necessary (tagged page), to do so
 		}
 	}
 	return o
