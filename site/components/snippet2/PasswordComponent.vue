@@ -124,7 +124,7 @@ otherwise, the attacker won't bother computing hash values on his client at all,
 
 
 import {
-hashPassword, Data, sayTick,
+publicKeys, hashPassword, Data, sayTick,
 } from 'icarus'
 
 // Define reactive variables
@@ -139,6 +139,9 @@ function myFunction1() {
 
 // Called when the submit button is clicked
 async function myFunction2() {
+	const Key = publicKeys()
+	let example1 = Key('page, public, example')
+	log('example one is:', example1)
 
 	let t = Now()
 	let h = await hashPassword(ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC, Data({base32: ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC}), inputValue.value)

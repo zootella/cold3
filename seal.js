@@ -1,8 +1,9 @@
 
 import {
 wrapper, sayFloppyDisk, runTests, Time,
-log, look, newline, Data, Now,
+log, look, newline, Data, Now, Tag,
 encrypt,
+parseKeyFile,
 } from 'icarus'
 
 import {promises as fs} from 'fs'
@@ -119,7 +120,7 @@ async function writeWrapper(o) {
 }
 
 const envSecretFileName = '.env.local'//our file of secrets to encrypt
-const envPublicFileName = '.env.keys'//ttd september, upcoming format with public and secret keys defined together and separated
+const envKeysFileName = '.env.keys'//ttd september, upcoming format with public and secret keys defined together and separated
 async function affixSeal(properties, manifest) {
 
 	//total up the files, counting those that are something we wrote or created, versus everything
@@ -143,11 +144,13 @@ async function affixSeal(properties, manifest) {
 
 	//encrypt the secrets in .env.local
 	let envSecretContents = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
-	let cipherData = await encrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), envSecretContents)
+	let cipherData1 = await encrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), envSecretContents)
 
-	//encode the public factory presets and client bundle keys in .env.public
-	let envPublicContents = await fs.readFile(envPublicFileName, 'utf8')
-	let publicData = Data({text: envPublicContents})
+	//ttd september, new system for page keys like alchemy, not yet running any actual secrets through here
+	let envKeysContents = await fs.readFile(envKeysFileName, 'utf8')
+	let blocks = parseKeyFile(envKeysContents)
+	let cipherData2 = await encrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), Tag()+Tag()+Tag()+Tag()+'\n'+blocks.secretBlock)
+	let publicData2 = Data({text: blocks.publicBlock})
 
 	//compose contents for the new wrapper.js
 	let o = {...wrapper}//copy all the properties into a new object
@@ -159,8 +162,9 @@ async function affixSeal(properties, manifest) {
 	o.codeSize = codeSize
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
-	o.secrets = cipherData.base62()
-	o.public = publicData.base62()
+	o.secrets    = cipherData1.base62()//current system for server secrets
+	o.secretKeys = cipherData2.base62()//put new system in place, haven't moved any actual secrets over yet
+	o.publicKeys = publicData2.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)

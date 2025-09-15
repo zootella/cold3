@@ -10,6 +10,7 @@ Tag, checkTag,
 Data, decrypt, hashText, hashData, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
 replaceAll, replaceOne, toTextOrBlank,
+parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
 parseEnvStyleFileContents,
 sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
@@ -269,6 +270,35 @@ export async function runTestsSticker() {
 
 
 
+
+
+//  _                  
+// | | _____ _   _ ___ 
+// | |/ / _ \ | | / __|
+// |   <  __/ |_| \__ \
+// |_|\_\___|\__, |___/
+//           |___/     
+
+/*
+const Key = await secretKeys() - get public keys and secrets; only works on a server!
+const Key = publicKeys() - call from anywhere to get just the public keys and factory presents
+Key('tag1, tag2, tag3') - lookup the key by specifying all of its tags, order doesn't matter, tags can have spaces!
+*/
+export async function secretKeys() {//on the server, get all the keys
+	//ttd september, at some point refactor getAccess() below into this system; []use redact during seal to confirm wrapper does not contain secrets!
+}
+export function publicKeys() {//on the page, get only keys that can and must be revealed
+	if (!_loadedPublicKeys) { _loadedPublicKeys = true
+		_keys.push(...parseKeyBlock(Data({base62: wrapper.publicKeys}).text()))
+	}
+	return _Key
+}
+function _Key(search) {//not exported; get Key() from calling one of the functions above
+	let value = lookupKey(_keys, search)
+	if (!hasText(value)) toss('key not found')//every key lookup must succeed
+	return value
+}
+let _keys = [], _loadedPublicKeys, _loadedSecretKeys
 
 
 

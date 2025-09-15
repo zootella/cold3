@@ -2743,18 +2743,17 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 //           |___/     
 
 export function parseKeyFile(contents) {//given file contents, split and prepare into public and secret blocks
-	let publicBlock = ''
-	let secretBlock = ''
+	let o = {publicBlock: '', secretBlock: ''}
 	let lines = contents.split(/\r?\n/)//works with both windows style \r\n and mac and server style just \n
 	for (let line of lines) {
 		let c = cut2(line, '==', '==')
 		if (c.found && c.before == '' && hasText(c.middle) && hasText(c.after)) {
-			let tags = c.middle.split(',').map(tag => tag.trim()).sort()
-			if (tags.includes('public')) { publicBlock += `==${tags.join(',')}==${c.after.trim()}\n` }
-			else                         { secretBlock += `==${tags.join(',')}==${c.after.trim()}\n` }
+			let t = c.middle.split(',').map(tag => tag.trim()).sort()//array of tags
+			let l = `==${t.join(',')}==${c.after.trim()}\n`//line composed for block
+			if (t.includes('public') && t.includes('page')) { o.publicBlock += l } else { o.secretBlock += l }//reveal the line only if it is both acceptable (tagged public), and necessary (tagged page), to do so
 		}
 	}
-	return {publicBlock, secretBlock}
+	return o
 }
 export function parseKeyBlock(block) {//given a public or secret block, parse into a list for easy lookups
 	let list = []
@@ -2784,10 +2783,10 @@ let contents = `
 here's an example key file
 a comment is just a line that *doesn't* begin with double equals!
 
-== key1         == value1
-== key1, key2   == value2
-== key1, public == value3
-== key4, public == value4`
+== key1               == value1
+== key1, key2         == value2
+== key1, public, page == value3
+== key4, public, page == value4`
 
 	let blocks = parseKeyFile(contents)
 	ok(blocks.publicBlock.includes('value3') && blocks.publicBlock.includes('value4'))
@@ -2797,10 +2796,10 @@ a comment is just a line that *doesn't* begin with double equals!
 })
 test(() => {
 let contents = `
-== tag1             == value1
-== tag2, tag3       == value2
-== tag4, public     == value4
-== with space, tag2 == value5`
+== tag1               == value1
+== tag2, tag3         == value2
+== tag4, public, page == value4
+== with space, tag2   == value5`
 
 	let blocks = parseKeyFile(contents)
 	let list = parseKeyBlock(blocks.publicBlock+blocks.secretBlock)//fine to just add blocks together because they always end \n
