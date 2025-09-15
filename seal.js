@@ -2,8 +2,7 @@
 import {
 wrapper, sayFloppyDisk, runTests, Time,
 log, look, newline, Data, Now, Tag,
-encrypt,
-parseKeyFile,
+parseKeyFile, randomBetween, encrypt,
 } from 'icarus'
 
 import {promises as fs} from 'fs'
@@ -149,7 +148,9 @@ async function affixSeal(properties, manifest) {
 	//ttd september, new system for page keys like alchemy, not yet running any actual secrets through here
 	let envKeysContents = await fs.readFile(envKeysFileName, 'utf8')
 	let blocks = parseKeyFile(envKeysContents)
-	let cipherData2 = await encrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), Tag()+Tag()+Tag()+Tag()+'\n'+blocks.secretBlock)
+	let cipherData2 = await encrypt(
+		Data({base62: process.env.ACCESS_KEY_SECRET}),
+		Data({random: randomBetween(64, 128)}).base62()+'\n'+blocks.secretBlock)//additional salt is pure security theater
 	let publicData2 = Data({text: blocks.publicBlock})
 
 	//compose contents for the new wrapper.js
