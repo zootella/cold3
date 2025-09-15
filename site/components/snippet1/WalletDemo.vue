@@ -1,7 +1,7 @@
 <script setup>//./components/WalletDemo.vue
 
 import {
-sayTick, sayGroupDigits,
+publicKeys, sayTick, sayGroupDigits,
 } from 'icarus'
 
 import {createPublicClient, http, parseEther, formatEther, parseAbi} from 'viem'
@@ -13,7 +13,8 @@ readContract, writeContract, waitForTransaction, getBalance,
 import {injected, metaMask, walletConnect} from '@wagmi/connectors'
 import {useAccount, useBalance, useConnect, useDisconnect} from '@wagmi/vue'//imports are at the top level for tree shaking to work properly, but we'll only use these on mounted as alchemy will only reply to a browser that sends headers from the allowed domain
 
-const alchemyUrl = 'https://eth-mainnet.g.alchemy.com/v2/P8bKnB4lgVr76TQ08iani'//looks like a secret, but must be shipped with client bundle. ok because (a) metamask is only in the browser, and must talk to alchemy directly, (b) domain restrictions protect this key, and (c) everyone else does it this way. google maps api keys work this way
+const Key = publicKeys()
+const alchemyUrl = Key('alchemy, url, public, page')//the alchemy api key looks like a secret, but must be shipped with client bundle. this is both ok and required because (a) metamask is only in the browser, and must talk to alchemy directly, (b) domain restrictions protect this key, and (c) everyone else does it this way. google maps api keys work this way
 let alchemyConfiguration//will make once when needed to use multiple times
 
 onMounted(async () => {

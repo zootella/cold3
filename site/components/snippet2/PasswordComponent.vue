@@ -114,9 +114,6 @@ as this is buried, ok to be unconventional:
 */
 
 
-//yes, this is a factory preset, correctly in the page, which gets sent to the client, where the user can see it
-const ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC = 'KYDVVYTN3OV6R2RJXEPOHAM2BA'//16 random bytes is 26 base32 characters
-const ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC = 420//thousands, OWASP recommends 100-500
 /*
 todo remember when comparing *even password hashes* on the server to use your fancy new secureSameText(s1, s2)
 otherwise, the attacker won't bother computing hash values on his client at all, and will just guess forward the hash value--he'll never get the password, but will gain access to the account!
@@ -127,27 +124,26 @@ import {
 publicKeys, hashPassword, Data, sayTick,
 } from 'icarus'
 
-// Define reactive variables
-const inputValue = ref('')
-const outputText = ref('')
+const Key = publicKeys()
+const salt = Data({base32: Key('password hashing, choice 1, salt, public, page')})
+const iterations = textToInt(Key('password hashing, choice 1, iterations, public, page'))
+//yes, these are factory presets, acceptable and necessary to include in the client bundle for script on the page, ok to reveal pubicly
+
+const refInput = ref('')
+const refOutput = ref('')
 
 // Called with every character typed
-function myFunction1() {
-
-	outputText.value = `${inputValue.value.length} charcters`
+function onTyping() {
+	refOutput.value = `${refInput.value.length} charcters`
 }
 
 // Called when the submit button is clicked
-async function myFunction2() {
-	const Key = publicKeys()
-	let example1 = Key('page, public, example')
-	log('example one is:', example1)
-
+async function onEnter() {
 	let t = Now()
-	let h = await hashPassword(ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC, Data({base32: ACCESS_PASSWORD_HASHING_SALT_CHOICE_1_PUBLIC}), inputValue.value)
+	let h = await hashPassword(iterations, salt, refInput.value)
 	let duration = Now() - t
 
-	outputText.value = `${h.base32()} hashed from ${ACCESS_PASSWORD_HASHING_ITERATIONS_CHOICE_1_PUBLIC} thousand iterations in ${duration}ms on ${sayTick(t)}`
+	refOutput.value = `${h.base32()} hashed from ${iterations} thousand iterations in ${duration}ms on ${sayTick(t)}`
 }
 
 </script>
@@ -155,11 +151,9 @@ async function myFunction2() {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordComponent</i></p>
 
-<form @submit.prevent="myFunction2">
-	<input type="text" v-model="inputValue" @input="myFunction1" placeholder="Type something..." />{{' '}}
-	<button class="pushy" type="submit">Submit</button>
-	<p>{{ outputText }}</p>
-</form>
+<input type="text" v-model="refInput" @input="onTyping" placeholder="Type something..." @keyup.enter="onEnter" />{{' '}}
+<Button @click="onEnter">Submit</button>
+<p>{{refOutput}}</p>
 
 </div>
 </template>
