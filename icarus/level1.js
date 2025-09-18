@@ -956,6 +956,7 @@ test(() => {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|   \_/\_/ \__,_|_|_|\___|\__|
 //                                                                  
 
+export function checkWallet(raw) { let v = validateWallet(raw); if (!v.isValid) toss('form', {v}); return v }
 export function validateWallet(raw) {//validate ethereum wallet address
 	let t = raw.trim()//t for trimmed
 

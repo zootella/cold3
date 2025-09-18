@@ -214,7 +214,7 @@ checkEmail, validateEmail, validateEmailOrPhone,
 checkPhone, validatePhone,
 checkCard, validateCard,
 checkDate, validateDate, getPageOffsetMinutes, ageDate,
-validateWallet,
+checkWallet, validateWallet,
 
 browserIsBesideAppStore, getBrowserGraphics,
 

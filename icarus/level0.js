@@ -289,17 +289,17 @@ test(() => {
 /*    \ \  `.`.      |   */  // meaning it's not blank, and not just space
 /*     \ \   `.`.    |   */  export function checkText(s) {
 /*      \ \    `.`.  |   */    if (!hasText(s)) toss('type', {s})
-/*       \ \     `.`.|   */  }
-/*        \ \      `.`.  */  export function hasText(s) {
-/*         \ \     ,^-'  */    return (
-/*          \ \    |     */      typeof s == 'string' &&
-/*           `.`.  |     */      s.length &&
-/*              .`.|     */      s.trim() != ''
-/*               `._>    */    )
-/*                       */  }
-/*       g o o d w i n   */  test(() => {
-/*                       */    ok(hasText('a'))
-/*************************/  
+/*       \ \     `.`.|   */    return s//pass the text through
+/*        \ \      `.`.  */  }
+/*         \ \     ,^-'  */  export function hasText(s) {
+/*          \ \    |     */    return (
+/*           `.`.  |     */      typeof s == 'string' &&
+/*              .`.|     */      s.length &&
+/*               `._>    */      s.trim() != ''
+/*                       */    )
+/*       g o o d w i n   */  }
+/*                       */  test(() => {
+/*************************/    ok(hasText('a'))
 
 	ok(!hasText())//nothing
 	ok(!hasText(''))//empty string
