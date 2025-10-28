@@ -1068,7 +1068,7 @@ pages, components, and api handlers should be really short
 
 run tests in...
 
-(1) Node 20
+(1) Node
 $ cd ./library
 $ node test.js
 test results are logged out

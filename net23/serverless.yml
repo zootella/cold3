@@ -10,7 +10,7 @@ plugins:
 provider:
   name: aws
   region: us-east-1 #Lambda@Edge requires North Virginia
-  runtime: nodejs20.x #as of 2024jul, Node 16 is deprecated, and 18 and 20 are current; ttd october, take this to node 22 like the rest of the project!
+  runtime: nodejs22.x #as of 2024jul, Node 16 is deprecated, and 18 and 20 are current; ttd october, take this to node 22 like the rest of the project!
   architecture: arm64 #choose Amazon's custom Graviton2 chip for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to default x86_64
   stage: prod #set production by default, as this script includes resources like buckets
   environment: #name variables in .env file here so they are on process.env for the Lambda code
