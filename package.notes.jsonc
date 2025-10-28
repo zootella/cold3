@@ -121,7 +121,7 @@
 		"icarus": "*",
 
 		//2 utility
-		"nuxt-og-image": "5.1.6",
+		"nuxt-og-image": "^5.1.6",//trying out letting this go higher than exactly 5.1.6 after seeing that a new scaffold did so
 		"@unhead/vue": "^2.0.5",
 		"unstorage": "^1.15.0",//nuxi module add og-image brings in these three, with no carrot on the module itself
 		"vidstack": "^1.12.13",//ttd july, did these come from og image or vidstack or elsewhere? new from the repot
