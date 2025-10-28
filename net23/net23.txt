@@ -617,6 +617,59 @@ also note that there is a yarn global install, but you are using npm for global 
 
 
 
+== mac development workstation seasonal maintance, 2025oct
+
+bottom to top, the stack is:
+brew - linux style os package manager
+nvm - switches and isolates node versions; always enabled once installed
+node - comes with npm and corepack
+corepack - use to manage yarn; comes with node but starts off, we turn it on and keep it on in every nvm node version
+yarn - make 1 classic available from corepack, and any version from a package.json packageManager field
+
+global things and where we get and keep them:
+awscli@2 - install with brew
+yarn @1 - keep within corepack; do not install with brew or npm!
+wrangler @4 - install with npm, isolated to a nvm node version
+serverless @4 - install with npm, isolated to a nvm node version
+rimraf - install globally so wash scripts work when node modules is already cleared
+
+$ brew update       //update homebrew itself
+$ brew upgrade nvm
+$ brew outdated     //see which packages could be upgraded
+$ brew upgrade      //upgrade everything, optional
+
+$ brew install awscli     //install the aws cli globally with brew, not npm or yarn
+$ aws --version, 2.31.23
+
+$ nvm list              //which node versions nvm has installed ready to switch to
+$ nvm install 22        //add a new one to that list
+$ nvm current           //what node is currently globally use on this box
+$ nvm use 22            //change this terminal session to a specific node version
+$ nvm alias default 22  //have all terminal sessions start with this node version
+$ nvm use               //same thing but reads the version from the project's .nvmrc file
+
+our yarn goals are:
+- keep it within corepack, *not* npm or homebrew
+- have version 1 available outside a project folder with a package.json (not modern v4, but then don't use it: scaffold with npm)
+- a package.json file can specify a particular yarn version
+
+$ corepack prepare yarn@1.22.22 --activate  //do once setting up a new box; persists across node versions
+$ brew list yarn         //see if homebrew has a yarn version, which would be bad
+$ brew uninstall yarn    //remove if found
+$ npm list -g yarn       //another place yarn can be is npm's globals; you have to do this for each nvm node version!
+$ npm uninstall -g yarn
+
+$ nvm use 22       //after switching to a new node version,
+$ corepack enable  //make sure corepack is on; the enabled state persists and is per node version
+$ which yarn       //you'll get a path like /Users/name/.nvm/versions/node/v22.21.0/bin/yarn
+$ yarn --version   //another way to check yarn is ok; corepack disable and yarn is not found!
+
+$ npm install -g wrangler@4 serverless@4 rimraf  //do this for each node version; use npm not yarn for globals
+
+
+
+
+
 
  _            _     __ _ _      
 | | ___   ___| | __/ _(_) | ___ 
@@ -845,6 +898,156 @@ otherwise you get a 0. version
 
 $ yarn run nuxi module add og-image
 that and complete notes in the cards section below
+
+
+
+
+
+== nuxt scaffolding steps, 2025oct
+
+first, context as to why we're here:
+upgrade wash created an error which you can solve by taking node 20->22
+did this first with the nuxt project; serverless.yml is still on 20
+but these are general useful scaffolding steps you've needed before now
+
+lighter weight than a full repot, the goal here is to quickly scaffold the nuxt project
+imagining you were following getting started installation steps from current documentation today
+reasons you frequently want to do this:
+- confirm core flow works, like dev, build, deploy
+- see what versions of modules you get
+- look at project file structure
+- look at config files and default values
+
+modules that are a part of or tied to nuxt are here, like pinia, tailwind, og image, vidstack
+really anything where the getting started installation page has framework-specific steps
+other front end modules that can break in workers, like qrcode, viem, wagmi core, don't need to be here
+
+note that these steps use npm not yarn, because
+it's the default for getting started installation pages
+it's confusing to follow yarn steps when they might mean classic or berry
+you can delete node_modules and lockfiles and switch to yarn afterwards
+the scaffolded module versions and default settings files won't be different had you switched to yarn early
+
+(0) starting environment
+
+$ nvm current         "22", using 22 for this test today 2025oct28
+$ node --version      "22"
+$ npm --version       "10", intentionally didn't update
+$ yarn --version      "1.22.22", available globally from corepack
+$ wrangler --version  "4", installed globally with npm in the context of this node version in nvm
+
+(1) cloudflare workers with nuxt and vue
+https://developers.cloudflare.com/workers/framework-guides/web-apps/more-web-frameworks/nuxt/
+https://nuxt.com/docs/4.x/getting-started/installation
+
+$ npm create cloudflare@latest
+oct28a, name
+framework starter
+Nuxt
+no official modules (and none we need below are in their list!)
+no git
+no deploy (even in real scaffolding we'll do these two things afterwards)
+
+$ cd oct28a
+$ npm run build
+$ npm run dev
+
+	"dependencies": {
+		"nuxt": "^4.2.0",
+		"vue": "^3.5.22",
+		"vue-router": "^4.6.3"
+	},
+	"devDependencies": {
+		"nitro-cloudflare-dev": "^0.2.2",
+		"nitropack": "^2.12.9",
+		"wrangler": "^4.45.1"
+	}
+	^results from running through these steps 2025oct28; cold3 is current except nuxt has gone to 4!
+
+>>> 2025oct28
+
+(2) nuxi
+install nuxi locally so you can see its version number
+you still have to use npx to run it, but npx will use the local copy rather than global or temporary download
+
+$ npm install -D nuxi
+$ npx nuxi --version
+
+	"devDependencies": {
+		"nuxi": "^3.29.3",
+
+(3) pinia
+https://nuxt.com/modules/pinia
+https://pinia.vuejs.org/getting-started.html
+
+$ npm install pinia @pinia/nuxt
+
+	"dependencies": {
+		"pinia": "^3.0.3",
+		"@pinia/nuxt": "^0.11.2",
+
+(4) nuxt og image
+https://nuxt.com/modules/og-image
+
+$ npx nuxi module add og-image
+
+	"dependencies": {
+		"nuxt-og-image": "^5.1.12",
+		"@unhead/vue": "^2.0.19",
+		"unstorage": "^1.17.1",
+	^brings along two peer dependencies, but regular carrots on all three this time
+
+(5) tailwind
+https://nuxt.com/modules/tailwindcss
+
+$ npx nuxi module add tailwindcss
+$ npm list tailwindcss
+
+	"dependencies": {
+		"@nuxtjs/tailwindcss": "^6.14.0",
+	^but then $ npm list tailwindcss shows that the version of tailwind it brought is "tailwindcss@3.4.18"
+
+(6) vidstack
+https://vidstack.io/docs/player/getting-started/installation/vue/?bundler=nuxt&provider=video&styling=default-layout
+
+$ npm install vidstack@next
+
+	"dependencies": {
+		"vidstack": "^1.12.13",
+
+in summary, scaffolding 2025oct28, cold3 is up to date and behind as follows:
+
+on 2025oct28 start of day
+
+cold3   today   module
+----    ----    ----
+22      22      node
+1       1       yarn
+
+3  !=   4       nuxt
+3       3       nuxi
+3       3       vue
+4       4       vue-router
+
+0.2.2   0.2.2   nitro-cloudflare-dev
+2       2       nitropack
+4       4       wrangler
+
+3       3       pinia
+0.11.1  0.11.2  @pinia/nuxt, note version 0 so pinned to 0.11.x
+
+5       5       nuxt-og-image
+2       2       @unhead/vue
+1       1       unstorage
+
+6       6       @nuxtjs/tailwindcss
+3       3       actual tailwindcss
+
+1       1       vidstack
+
+ok, so everything is still current except for nuxt
+and you can wait ~6m to let the ecosystem catch up with nuxt 4 before you deal with it
+
 
 
 
