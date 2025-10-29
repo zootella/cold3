@@ -27,4 +27,16 @@ that alternative is cleaner but more cumbersome
 as a future third method, you could also configure a docker container with permissions to deploy
 */
 
+/*
+ttd october
+the whole docker thing was overkill just to get npm to download the right prebuilt binaries
+claude found a way to install them into a temporary folder
+
+$ npm install --os=linux --cpu=arm64 --libc=glibc sharp
+$ cat package.json
+
+to confirm  you get the right version
+(continue on here with instructions to setup)
+*/
+
 await fs.copy('../../stowaway', 'node_modules/@img', {overwrite: false})
