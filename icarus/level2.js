@@ -249,7 +249,11 @@ $ node disk, just shows it, rather than seal which makes it
 export async function runTestsSticker() {
 	let results = await runTests()
 	let sticker = stickerParts()
-	results.summary = `${sticker.hashText} ${sticker.where} ${results.duration}ms ✅ ${results.passes} assertions in ${results.tests} tests on ${sayTick(results.time)}`
+	if (results.success) {
+		results.summary = `${sticker.hashText} ${sticker.where} ${results.duration}ms ✅ ${results.passes} assertions in ${results.tests} tests on ${sayTick(results.time)}`
+	} else {
+		results.summary = `${sticker.hashText} ${sticker.where} ❌ ${results.message}`
+	}
 	return results
 }
 

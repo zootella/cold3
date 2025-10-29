@@ -98,6 +98,7 @@ export async function runTests() {
 		} catch (e) {
 			console.error(e)//also send a red message to the browser inspector
 			return {
+				success: false,
 				time:    t,
 				error:   e,
 				message: `${look(e)}${newline}on ${sayTick(t)}` 
@@ -106,6 +107,7 @@ export async function runTests() {
 	}
 	let duration = Now() - t
 	return {
+		success:  true,
 		time:     t,
 		passes:   _passes,
 		tests:    _tests.length,
