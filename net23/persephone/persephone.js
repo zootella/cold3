@@ -213,7 +213,7 @@ test(async () => {//test that we can use sharp, which relies on native libraries
 	const b = await sharp({//make an image
 		create: {
 			width: 42, height: 42, channels: 4,//small square
-			background: {r: 255, g: 0, b: 255, alpha: 1}//hot pink like it's 1988
+			background: '#ff00ff',//hot pink like it's 1988
 		}
 	}).png().toBuffer()//render it as PNG; returns a Node Buffer, which is a subclass of Uint8Array
 	let d = Data({array: b})
