@@ -2,29 +2,86 @@
 import fs from 'fs-extra'
 
 /*
+     _
+ ___| |__   __ _ _ __ _ __
+/ __| '_ \ / _` | '__| '_ \
+\__ \ | | | (_| | |  | |_) |
+|___/_| |_|\__,_|_|  | .__/
+                     |_|
 
-the stowaway method:
+https://www.npmjs.com/package/sharp
+https://github.com/lovell/sharp
+https://sharp.pixelplumbing.com/
+https://github.com/libvips/libvips
 
-manually chuck the linux binaries into net23's node modules @img folder
-yarn add, remove, install will find them and chuck them overboard,
-so after running yarn, so you have to stow them away again
-serverless.yml's exclude keeps the mac or windows binaries out of the zip,
-but lets the stowaways through
+sharp is a high-performance node image processing module
+some javascript wraps libvips, a native module in C
+it works windows/mac/linux but the native binaries are platform-specific
 
+here are easy manual steps to get the binaries for lambda
+this is node 22, amazon linux 2023, and amazon's graviton chip
 
-*/
+~/Documents/code/cold3/net23
+~/Documents/code/stowaway
 
-/*
-the node module sharp, which can resize and watermark images, relies heavily on platform-specific native libraries
-yarn install on windows gets the windows ones; on mac, the mac ones
-to work deployed to lambda, we need the ones for linux on amazon's graviton chip
+		make a new empty stowaway folder alongside the cold3 monorepo folder
+
+$ mkdir stowaway
+$ cd stowaway
+$ npm install --os=linux --cpu=arm64 --libc=glibc sharp@0.34.4
+
+		install sharp for amazon linux into the empty folder
+
+$ cat package.json
+$ ls -la node_modules/@img
+$ find node_modules/@img -ls
+$ sha256sum <path>
+
+		check the version you got in package.json
+		find the ~16mb libvips binary, and hash it
+
+$ cd ../cold3
+$ yarn wash
+$ yarn install
+
+		the stowaway script won't overwrite, so wash node modules empty to let it copy in a new version
+
+$ cd net23
+$ ls -la node_modules/@img
+drwxr-xr-x@ colour
+drwxr-xr-x@ sharp-darwin-arm64
+drwxr-xr-x@ sharp-libvips-darwin-arm64
+
+		before stowaway, you've got colour and the darwin editions, because we did this on a mac
+
+$ yarn stowaway
+$ ls -la node_modules/@img
+total 0
+drwxr-xr-x@ colour
+drwxr-xr-x@ sharp-darwin-arm64
+drwxr-xr-x@ sharp-libvips-darwin-arm64
+drwxr-xr-x@ sharp-libvips-linux-arm64
+drwxr-xr-x@ sharp-linux-arm64
+
+		stowaway copied in the linux versions
+		local development works with different platform versions side-by-side
+
+things to note:
+- the stowaway script doesn't overwrite, so yarn wash to get actually new versions in
+- yarn add anywhere will find and remove the additional modules, so stowaway runs for every deploy
+- serverless.yml builds net23.zip picking colour and the two linux folders by name, and excluding everything else
+
+     _                                         
+ ___| |_ _____      ____ ___      ____ _ _   _ 
+/ __| __/ _ \ \ /\ / / _` \ \ /\ / / _` | | | |
+\__ \ || (_) \ V  V / (_| |\ V  V / (_| | |_| |
+|___/\__\___/ \_/\_/ \__,_| \_/\_/ \__,_|\__, |
+                                         |___/ 
 
 use this script to copy sharp native libraries for linux alongside the windows or mac ones in @img
-you got the linux libraries from the docker container
 this sneaks them into the serverless package zip
 yarn will find them and throw them back overboard, so manually run $ yarn stowaway after add or install!
 
-example:
 $ yarn install   ~ corrects modules for the computer we're coding on
 $ yarn stowaway  ~ adds linux sharp binaries alongside ones yarn put there for local development
 $ yarn build     ~ serverless package makes net23.zip, taking the ones for linux by name
@@ -37,20 +94,6 @@ $ yarn deploy    ~ serverless deploy (importantly skipping package first)
 },
 justdeploy is for when you've made the zip in the docker container, copied it out, and deploy that
 that alternative is cleaner but more cumbersome
-as a future third method, you could also configure a docker container with permissions to deploy
 */
 
-/*
-ttd october
-the whole docker thing was overkill just to get npm to download the right prebuilt binaries
-claude found a way to install them into a temporary folder
-
-$ npm install --os=linux --cpu=arm64 --libc=glibc sharp
-$ cat package.json
-
-to confirm  you get the right version
-(continue on here with instructions to setup)
-
-*/
-
-await fs.copy('../../stowaway/node_modules/@img', 'node_modules/@img', {overwrite: false})//false to not copy the 16mb file unnecessarily on every deploy; but this means if stowaway has new files, you must do yarn wash beforehand to copy them
+await fs.copy('../../stowaway/node_modules/@img', 'node_modules/@img', {overwrite: false})
