@@ -216,6 +216,7 @@ test(async () => {//test that we can use sharp, which relies on native libraries
 		}
 	}).png().toBuffer()//render it as PNG; returns a Node Buffer, which is a subclass of Uint8Array
 	let d = Data({array: b})
+	ok(false)//temporary break to prove it's working without this, ttd october
 	ok(d.base64().startsWith('iVBORw0KGgo'))//headers at the start are the same for every image
 })
 
