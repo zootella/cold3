@@ -2969,7 +2969,8 @@ you want yarn to get stuff specific to that new platform, not a yarn.lock genera
 
 
 
-
+2025oct, claude found a much easier way to get the right sharp binaries
+check out new instructions in net23/stowaway.js
 
 
    ____  _                    __              _ _                  

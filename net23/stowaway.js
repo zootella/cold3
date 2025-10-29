@@ -2,6 +2,19 @@
 import fs from 'fs-extra'
 
 /*
+
+the stowaway method:
+
+manually chuck the linux binaries into net23's node modules @img folder
+yarn add, remove, install will find them and chuck them overboard,
+so after running yarn, so you have to stow them away again
+serverless.yml's exclude keeps the mac or windows binaries out of the zip,
+but lets the stowaways through
+
+
+*/
+
+/*
 the node module sharp, which can resize and watermark images, relies heavily on platform-specific native libraries
 yarn install on windows gets the windows ones; on mac, the mac ones
 to work deployed to lambda, we need the ones for linux on amazon's graviton chip
@@ -40,4 +53,4 @@ to confirm  you get the right version
 
 */
 
-await fs.copy('../../stowaway', 'node_modules/@img', {overwrite: false})
+await fs.copy('../../stowaway/node_modules/@img', 'node_modules/@img', {overwrite: false})//false to not copy the 16mb file unnecessarily on every deploy; but this means if stowaway has new files, you must do yarn wash beforehand to copy them
