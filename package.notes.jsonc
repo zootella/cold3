@@ -63,7 +63,7 @@
 		"icarus": "*",
 
 		//2 utility
-		"sharp": "^0.33.5",//needs native modules, bundle in amazon linux docker container or use the stowaway script
+		"sharp": "^0.34.4",//needs native modules that get into net23.zip with the stowaway.js script
 
 		//3 service
 		"@supabase/supabase-js": "^2.39.8",//only used by icarus; here so yarn nohoist lets serverless package it into the zip

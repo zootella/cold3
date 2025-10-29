@@ -10,7 +10,7 @@ plugins:
 provider:
   name: aws
   region: us-east-1 #Lambda@Edge requires North Virginia
-  runtime: nodejs22.x #as of 2024jul, Node 16 is deprecated, and 18 and 20 are current; ttd october, take this to node 22 like the rest of the project!
+  runtime: nodejs22.x #updated 2025oct, Node 22 on Amazon Linux 2023 and good until 2027apr30, https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
   architecture: arm64 #choose Amazon's custom Graviton2 chip for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to default x86_64
   stage: prod #set production by default, as this script includes resources like buckets
   environment: #name variables in .env file here so they are on process.env for the Lambda code
@@ -85,7 +85,7 @@ package:
     - '!node_modules/@img/**' #take just the sharp native binaries for amazon linux graviton arm64
     - 'node_modules/@img/sharp-libvips-linux-arm64/**' #outside the docker container, remember to yarn stowaway so these are there!
     - 'node_modules/@img/sharp-linux-arm64/**' #there is another pair with names like "linuxmusl" for Alpine Linux which you don't need
-    - 'node_modules/@img/colour/**' #also include @img/colour in the zip; just javascript without native binaries but in the @img folder
+    - 'node_modules/@img/colour/**' #regular javascript @img/colour module also in the folder
 
     #even now on the current v4, serverless' package task is pretty broken
     #without nohoist in the root package.json, net23.zip will be empty!
