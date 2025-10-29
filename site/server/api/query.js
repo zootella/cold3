@@ -8,7 +8,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action}) {
 	let r = {}
-	if (isCloud({uncertain: 'Cloud.'})) toss('where', {door})//this endpoint is only for local development
+	if (isCloud()) toss('where', {door})//this endpoint is only for local development
 
 	let result
 	switch (action) {

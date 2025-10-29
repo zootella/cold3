@@ -174,8 +174,8 @@ And wisdom to know the difference.
 
 
 
-test(async () => {//deployed, make sure we're running in Node 20 on Amazon Linux on their Graviton chip, as serverless.yml requested
-	if (isCloud({uncertain: 'Cloud.'})) ok(process.version.startsWith('v22.') && process.platform == 'linux' && process.arch == 'arm64')
+test(() => {//deployed, make sure we're running in Node 20 on Amazon Linux on their Graviton chip, as serverless.yml requested
+	if (isCloud()) ok(process.version.startsWith('v22.') && process.platform == 'linux' && process.arch == 'arm64')
 })
 test(async () => {//test amazon modules load and appear ready
 	let access = await getAccess()
