@@ -85,6 +85,7 @@ package:
     - '!node_modules/@img/**' #take just the sharp native binaries for amazon linux graviton arm64
     - 'node_modules/@img/sharp-libvips-linux-arm64/**' #outside the docker container, remember to yarn stowaway so these are there!
     - 'node_modules/@img/sharp-linux-arm64/**' #there is another pair with names like "linuxmusl" for Alpine Linux which you don't need
+    - 'node_modules/@img/colour/**' #also include @img/colour in the zip; just javascript without native binaries but in the @img folder
 
     #even now on the current v4, serverless' package task is pretty broken
     #without nohoist in the root package.json, net23.zip will be empty!
