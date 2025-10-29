@@ -37,6 +37,7 @@ $ cat package.json
 
 to confirm  you get the right version
 (continue on here with instructions to setup)
+
 */
 
 await fs.copy('../../stowaway', 'node_modules/@img', {overwrite: false})
