@@ -253,7 +253,6 @@ userToAddresses - given a user, get the addresses we've challenged and validated
 so returns an array of addresses, different types, events collapsed to be most recent 3 or 4
 */
 
-//bookmark
 
 
 export async function addressToUser({type, formNormal}) {
@@ -937,7 +936,7 @@ CREATE TABLE profile_table (
 	hide          BIGINT                 NOT NULL,
 
 	user_tag      CHAR(21)               NOT NULL,
-	profile_text  TEXT                   NOT NULL,  -- printed object so you can add properties without changing schema; you never need to index by one
+	profile_text  TEXT                   NOT NULL   -- printed object so you can add properties without changing schema; you never need to index by one
 );
 
 `)
@@ -961,9 +960,71 @@ CREATE TABLE profile_table (
 
 //service_table, complete record of our interactions with third-party services, to instrument them, and later, round robin them
 
-//here's where you record what you send apis, and what you got back
-//and how fast they are, how reliable they are
-//how quickly users can complete tasks with them, all of that leads into robin
+SQL(`
+-- are these third party services working properly, and helping users complete high-level tasks quickly and reliably?
+CREATE TABLE service_table (
+	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick       BIGINT    NOT NULL,
+	hide           BIGINT    NOT NULL,
+
+	-- about the user and what they started or finished
+	browser_hash   CHAR(52)  NOT NULL,
+	user_tag       CHAR(21)  NOT NULL,
+	event_text     TEXT      NOT NULL,
+
+	-- about the address, if one is involved, like email or phone or credit card
+	type_text      TEXT      NOT NULL,
+	address0_text  TEXT      NOT NULL,
+	address1_text  TEXT      NOT NULL,
+	address2_text  TEXT      NOT NULL,
+
+	-- about the third party service provider, what we told them, their response or what happened right now
+	provider_text  TEXT      NOT NULL,
+	service_text   TEXT      NOT NULL,
+	request_text   TEXT      NOT NULL,
+	response_text  TEXT      NOT NULL,
+	error_text     TEXT      NOT NULL,
+
+	-- and space for additional notes
+	note1_text     TEXT      NOT NULL,
+	note2_text     TEXT      NOT NULL,
+	note3_text     TEXT      NOT NULL
+);
+
+CREATE INDEX service1 ON service_table (hide, user_tag,                 row_tick DESC);
+CREATE INDEX service2 ON service_table (hide, type_text, address0_text, row_tick DESC);
+`)
+/*
+here's where you record what you send apis, and what you got back
+and how fast they are, how reliable they are
+how quickly users can complete tasks with them, all of that leads into robin
+(^wrote that much earlier, just as part of naming service_table)
+
+ttd october, notes about service_table, AUDIT logs, and the round Robin system
+this is just a rought sketch; you made this table but don't have any code that writes to it yet
+
+this table is more like a log or a data lake than the others
+you can start making records here long before there's a round robin system that uses it in real time
+and before that, a staff page that shows twilio is faster than amazon or the reverse will query from here
+
+you'd prefer tables only have user tag, not that and browser hash, but suspect there will be records right before a person at a browser gets a user tag, or something
+you suspect you'll  need
+you added browser hash and user tag
+
+event_text should be a tag like "Challenged.", "Validated." and so on
+ideally the event will be at the user-level, like the user started or completed some task they understand
+but maybe some of these will also need to drop down to a lower level where it's just about something between the worker and provider
+
+like all the tables, the design idea is to keep this granular
+if the provider never responds, that'll be one record without a second record
+
+added two indexes as a starting point but you have no idea how you'll query this
+and only queries that load to a user interaction, like avoiding a emailer that broke an hour ago, need to be fast
+*/
+
+//ttd october, where you are currently logging to datadog as an AUDIT, also write here
+
+
 
 //bookmark
 
