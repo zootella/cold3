@@ -241,7 +241,7 @@ async function address_add({userTag, type, v, event}) {//v is the result of a va
 	await queryAddRow({table: 'address_table', row: {
 		user_tag: userTag,
 		type_text: type,
-		address0_text: v.f0, address1_text: v.f1, address2_text: v.fromPage,
+		address0_text: v.f0, address1_text: v.f1, address2_text: v.f2,
 		event: event,
 	}})
 }
@@ -528,7 +528,7 @@ export async function browserToCodes({browserHash}) {
 				addressType: row.type_text,//the type of address, like "Email."
 				address0: row.address0_text,
 				address1: row.address1_text,//the address we used with the api
-				addressPage:   row.address2_text,
+				address2: row.address2_text,
 				//note we importantly do not send hash to the page, that's the secret part!
 			})
 		}
@@ -557,7 +557,7 @@ export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 			browserHash,
 			provider: row.provider_text,
 			type: row.type_text,
-			address0: row.address0_text, address1: row.address1_text, addressPage: row.address2_text,
+			address0: row.address0_text, address1: row.address1_text, address2: row.address2_text,
 		})
 		return {success: true, lives: 0}
 
@@ -861,7 +861,7 @@ export async function nameCheck({v}) {//ttd march, draft like from the check if 
 	task.available = {
 		isAvailable: (!row0) && (!row2),
 		isAvailable0: !row0,
-		isAvailablePage: !row2,
+		isAvailable2: !row2,
 		v,
 	}
 	task.finish({success: true})

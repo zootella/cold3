@@ -427,11 +427,11 @@ export function checkName({f2, f1, f0}) {
 	if (message != 'Ok.') toss(message, {f2, f1, f0})
 }
 function _checkName({f2, f1, f0}) {
-	let validPage, valid1, valid0
+	let valid2, valid1, valid0
 	if (given(f2)) {//remember that blank strings, while not valid, are falsey!
-		validPage = validateName(f2, Limit.name)
-		if (!validPage.formPageIsValid) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
-		if (validPage.f2 != f2) return 'page form round trip mismatch'
+		valid2 = validateName(f2, Limit.name)
+		if (!valid2.f2ok) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
+		if (valid2.f2 != f2) return 'page form round trip mismatch'
 	}
 	if (given(f1)) {
 		valid1 = validateName(f1, Limit.name)
@@ -473,8 +473,8 @@ export function validateName(raw, limit) {//raw text from either the first (page
 	let f1 = slug(cropped)//"Tokyo-Girl" working and correct route for links
 	let f0 = f1.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
 	let isValid = hasText(f2) && hasText(f1) && hasText(f0) && !reservedRoutes.includes(f0)
-	let formPageIsValid = hasText(f2)
-	return {isValid, f0, f1, f2, formPageIsValid, raw, cropped}
+	let f2ok = hasText(f2)
+	return {isValid, f0, f1, f2, f2ok, raw, cropped}
 }
 test(() => {
 	function f(raw, normal, formal, page) {
