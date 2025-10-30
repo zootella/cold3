@@ -241,7 +241,7 @@ async function address_add({userTag, type, v, event}) {//v is the result of a va
 	await queryAddRow({table: 'address_table', row: {
 		user_tag: userTag,
 		type_text: type,
-		address0_text: v.formNormal, address1_text: v.formFormal, address2_text: v.fromPage,
+		address0_text: v.f0, address1_text: v.formFormal, address2_text: v.fromPage,
 		event: event,
 	}})
 }
@@ -255,7 +255,7 @@ so returns an array of addresses, different types, events collapsed to be most r
 
 
 
-export async function addressToUser({type, formNormal}) {
+export async function addressToUser({type, f0}) {
 	//the query you need is all rows that are visible that match those two cells
 	/*
 	let's say we query all the rows about that address, it's type and normalized form
@@ -434,7 +434,7 @@ export async function codeSend({browserHash, provider, type, v}) {//v is the add
 	//look up the user tag, even though we're not using it with code yet
 	let userTag = (await demonstrationSignGet({browserHash}))?.userTag
 
-	let permit = await codePermit(v.formNormal)
+	let permit = await codePermit(v.f0)
 	if (!permit.success) return permit//return the failed permit directly, bubbling up
 
 	let code = await codeCompose({length: permit.useLength, sticker: true})
@@ -673,7 +673,7 @@ async function code_add({codeTag, browserHash, provider, type, v, hash, lives}) 
 		browser_hash: browserHash,
 		provider_text: provider,
 		type_text: type,
-		address0_text: v.formNormal, address1_text: v.formFormal, address2_text: v.formPage,
+		address0_text: v.f0, address1_text: v.formFormal, address2_text: v.formPage,
 		hash,
 		lives,
 	}})
@@ -856,7 +856,7 @@ export async function nameCheck({v}) {//ttd march, draft like from the check if 
 	if (!v.isValid) toss('valid', {v})//you have already done this check, but here too to make sure
 
 	let task = Task({name: 'name check'})
-	let rowNormal = await name_get({nameNormal: v.formNormal})
+	let rowNormal = await name_get({nameNormal: v.f0})
 	let rowPage   = await name_get({namePage:   v.formPage})
 	task.available = {
 		isAvailable: (!rowNormal) && (!rowPage),
@@ -875,7 +875,7 @@ async function name_get({//look up user route and name information by calling wi
 }) {
 	let row
 	if      (given(userTag))    { checkTag(userTag);                   row = await queryTop({table: 'name_table', title: 'user_tag',   cell: userTag})    }
-	else if (given(nameNormal)) { checkName({formNormal: nameNormal}); row = await queryTop({table: 'name_table', title: 'name0_text', cell: nameNormal}) }
+	else if (given(nameNormal)) { checkName({f0: nameNormal}); row = await queryTop({table: 'name_table', title: 'name0_text', cell: nameNormal}) }
 	else if (given(namePage))   { checkName({formPage:   namePage});   row = await queryTop({table: 'name_table', title: 'name2_text', cell: namePage})   }
 	else { toss('use', {userTag, nameNormal, namePage}) }
 
@@ -887,7 +887,7 @@ async function name_get({//look up user route and name information by calling wi
 //setName() does not make sure the names it sets are available--you've already done that before calling here!
 //there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
 async function name_set({userTag, nameNormal, nameFormal, namePage}) {
-	checkTag(userTag); checkName({formNormal: nameNormal, formFormal: nameFormal, formPage: namePage})
+	checkTag(userTag); checkName({f0: nameNormal, formFormal: nameFormal, formPage: namePage})
 	await name_delete({userTag})//replace an existing row about this user with a new one:
 	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: nameNormal, name1_text: nameFormal, name2_text: namePage}})
 }
@@ -1219,7 +1219,7 @@ export async function demonstrationSignGet({browserHash}) {
 	return {isFound: false, browserHash}
 }
 export async function demonstrationSignUp({browserHash, nameNormal, origin}) {
-	checkHash(browserHash); checkName({formNormal: nameNormal})
+	checkHash(browserHash); checkName({f0: nameNormal})
 
 	let n = await name_get({nameNormal})//confirm route is available in database
 	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserHash, nameNormal}
@@ -1230,7 +1230,7 @@ export async function demonstrationSignUp({browserHash, nameNormal, origin}) {
 	return {isSignedUp: true, browserHash, userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
 }
 export async function demonstrationSignIn({browserHash, nameNormal, origin}) {
-	checkHash(browserHash); checkName({formNormal: nameNormal})
+	checkHash(browserHash); checkName({f0: nameNormal})
 
 	let n = await name_get({nameNormal})//in this early simplification before user_table, a user exists by their tag with a route
 	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserHash, nameNormal}

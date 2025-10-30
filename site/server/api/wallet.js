@@ -15,7 +15,7 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door, body, action, browserHash}) {
 	if (action == 'Prove1.') {//page requests nonce to prove it controlls address
 
-		let address = checkWallet(body.address).formNormal//make sure the page gave us a good wallet address, and correct the case checksum
+		let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
 		let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
 		let message = composeMessage(nonce)
 
@@ -27,7 +27,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	} else if (action == 'Prove2.') {//page calls back with signature of the nonce we gave it
 
 		//first, just make sure what the page sent us looks correct
-		let address = checkWallet(body.address).formNormal
+		let address = checkWallet(body.address).f0
 		let nonce = checkTag(body.nonce)//the page echos back the nonce; we must still be sure it's the same one as from before!
 		let signature = checkText(body.signature)//signature looks like 0x followed by 130 or 132 base16 characters
 		let message = checkText(body.message)//should be the same message we sent; must contain the nonce

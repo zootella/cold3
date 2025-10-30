@@ -413,9 +413,9 @@ add that check to the other checkSomething editions
 
 
 //a cheat to bundle the validation trio into a v object, when it's from the database, so you don't need to check it
-export function bundleValid(formNormal, formFormal, formPage) {//you really have to get the order right!
-	checkText(formNormal); checkText(formFormal); checkText(formPage)//sanity check, even though you don't know what these are or what's valid for them, bundle, at least, needs them all to be something
-	return {isValid: true, formNormal, formFormal, formPage}
+export function bundleValid(f0, formFormal, formPage) {//you really have to get the order right!
+	checkText(f0); checkText(formFormal); checkText(formPage)//sanity check, even though you don't know what these are or what's valid for them, bundle, at least, needs them all to be something
+	return {isValid: true, f0, formFormal, formPage}
 }
 //ttd march, is this a good idea? you're tried of typing out the three forms everywhere, and v could mean object from validate function
 
@@ -426,11 +426,11 @@ export function bundleValid(formNormal, formFormal, formPage) {//you really have
 //ttd march, when you let the user choose their Formal and Page names, Formal->Normal must be available, and Page must not collide with Normal, either! this so you can make log in by name, and let the type any of the three forms
 
 
-export function checkName({formPage, formFormal, formNormal}) {
-	let message = _checkName({formPage, formFormal, formNormal})
-	if (message != 'Ok.') toss(message, {formPage, formFormal, formNormal})
+export function checkName({formPage, formFormal, f0}) {
+	let message = _checkName({formPage, formFormal, f0})
+	if (message != 'Ok.') toss(message, {formPage, formFormal, f0})
 }
-function _checkName({formPage, formFormal, formNormal}) {
+function _checkName({formPage, formFormal, f0}) {
 	let validPage, validFormal, validNormal
 	if (given(formPage)) {//remember that blank strings, while not valid, are falsey!
 		validPage = validateName(formPage, Limit.name)
@@ -442,55 +442,55 @@ function _checkName({formPage, formFormal, formNormal}) {
 		if (!validFormal.isValid) return 'formal form not valid'
 		if (validFormal.formFormal != formFormal) return 'formal form round trip mismatch'
 	}
-	if (given(formNormal)) {
-		validNormal = validateName(formNormal, Limit.name)
+	if (given(f0)) {
+		validNormal = validateName(f0, Limit.name)
 		if (!validNormal.isValid) return 'normal form not valid'
-		if (validNormal.formNormal != formNormal) return 'normal form round trip mismatch'
+		if (validNormal.f0 != f0) return 'normal form round trip mismatch'
 	}
-	if (given(formFormal) && given(formNormal)) {//after checking all given forms individually, also make sure formal normalizes into normal
-		if (validFormal.formNormal != formNormal) return 'round trip mismatch between normal and formal forms'
+	if (given(formFormal) && given(f0)) {//after checking all given forms individually, also make sure formal normalizes into normal
+		if (validFormal.f0 != f0) return 'round trip mismatch between normal and formal forms'
 	}
 	return 'Ok.'
 }
 test(() => {
 	//example use
-	ok(_checkName({formPage: 'My Name', formFormal: 'My-Name', formNormal: 'my-name'}) == 'Ok.')//all valid and happen to match
-	ok(_checkName({formPage: '2B', formFormal: 'TwoB', formNormal: 'twob'}) == 'Ok.')//all valid, with formal is custom from page
+	ok(_checkName({formPage: 'My Name', formFormal: 'My-Name', f0: 'my-name'}) == 'Ok.')//all valid and happen to match
+	ok(_checkName({formPage: '2B', formFormal: 'TwoB', f0: 'twob'}) == 'Ok.')//all valid, with formal is custom from page
 
 	ok(_checkName({formPage: ''})   != 'Ok.')//make sure blank is identified as not valid
 	ok(_checkName({formFormal: ''}) != 'Ok.')
-	ok(_checkName({formNormal: ''}) != 'Ok.')
+	ok(_checkName({f0: ''}) != 'Ok.')
 
 	ok(_checkName({formPage:   ' '}) == 'page form not valid')//cannot be made valid, not ok
 	ok(_checkName({formPage:   ' Untrimmed'}) == 'page form round trip mismatch')//have to be made valid, also not ok
 	ok(_checkName({formFormal: 'Has Space'})  == 'formal form round trip mismatch')
-	ok(_checkName({formNormal: 'Uppercase'})  == 'normal form round trip mismatch')
+	ok(_checkName({f0: 'Uppercase'})  == 'normal form round trip mismatch')
 
 	//below, all four forms are valid individually...
-	ok(_checkName({formFormal: 'Name-1', formNormal: 'name-1'}) == 'Ok.')//...and together
-	ok(_checkName({formFormal: 'Name-1', formNormal: 'name-2'}) != 'Ok.')//...but not together!
+	ok(_checkName({formFormal: 'Name-1', f0: 'name-1'}) == 'Ok.')//...and together
+	ok(_checkName({formFormal: 'Name-1', f0: 'name-2'}) != 'Ok.')//...but not together!
 })
 const reservedRoutes = ['about', 'account', 'admin', 'administrator', 'app', 'ban', 'billing', 'blog', 'community', 'config', 'contact', 'creator', 'dashboard', 'developer', 'dm', 'e', 'f', 'fan', 'faq', 'feed', 'feedback', 'forum', 'help', 'home', 'i', 'legal', 'login', 'logout', 'manage', 'me', 'messages', 'moderator', 'my', 'notifications', 'official', 'privacy', 'profile', 'q', 'qr', 'register', 'report', 'root', 'search', 'settings', 'shop', 'signin', 'signout', 'signup', 'staff', 'status', 'store', 'subscribe', 'support', 'system', 'terms', 'unsubscribe', 'user', 'verify']//profile pages are on the root route; prevent a user from clashing with a utility or brochure page!
 export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let cropped = cropToLimit(raw, limit, Limit.name)
 	let formPage = trimLine(cropped)//"東京❤️女の子" valid for display on the page
 	let formFormal = slug(cropped)//"Tokyo-Girl" working and correct route for links
-	let formNormal = formFormal.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
-	let isValid = hasText(formPage) && hasText(formFormal) && hasText(formNormal) && !reservedRoutes.includes(formNormal)
+	let f0 = formFormal.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
+	let isValid = hasText(formPage) && hasText(formFormal) && hasText(f0) && !reservedRoutes.includes(f0)
 	let formPageIsValid = hasText(formPage)
-	return {isValid, formNormal, formFormal, formPage, formPageIsValid, raw, cropped}
+	return {isValid, f0, formFormal, formPage, formPageIsValid, raw, cropped}
 }
 test(() => {
 	function f(raw, normal, formal, page) {
 		let v = validateName(raw)
-		ok(v.formNormal == normal)
+		ok(v.f0 == normal)
 		ok(v.formFormal == formal)
 		ok(v.formPage   == page)
 	}
 	let v = validateName('2 Rainbows 🌈🌈 4U ')//raw text from user that starts with number, contains emoji, and has an extra space at the end
 	ok(v.formPage == '2 Rainbows 🌈🌈 4U')//text to display on the page, trimmed
 	ok(v.formFormal == 'Rainbows-4U')//chosen route, case preserved
-	ok(v.formNormal == 'rainbows-4u')//normalized route to confirm unique and then reserve--both of these routes work
+	ok(v.f0 == 'rainbows-4u')//normalized route to confirm unique and then reserve--both of these routes work
 
 	ok(!validateName('Terms').isValid)//format is valid, but normal form is reserved
 })
@@ -504,16 +504,16 @@ test(() => {
 
 export function validateTitle(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
-	let formNormal = trimLine(cropped)
-	if (!hasText(formNormal)) return {formNormal, raw, cropped}
-	return {isValid: true, formNormal, raw, cropped}
+	let f0 = trimLine(cropped)
+	if (!hasText(f0)) return {f0, raw, cropped}
+	return {isValid: true, f0, raw, cropped}
 }
 
 export function validatePost(raw, limit) {//returns an array of paragraphs
 	let cropped = cropToLimit(raw, limit, Limit.post)
 	let lines = trimLines(cropped)
 	if (!hasText(lines.text)) return {raw, cropped}
-	return {isValid: true, formNormal: lines.text, lines, raw, cropped}//normal form is single string with \n at the end of each line, also including lines, the array, which will be useful if this is going to get rendered into <p> tags or something on a web page
+	return {isValid: true, f0: lines.text, lines, raw, cropped}//normal form is single string with \n at the end of each line, also including lines, the array, which will be useful if this is going to get rendered into <p> tags or something on a web page
 }
 
 
@@ -594,10 +594,10 @@ data forms:
 
 guaranteed data pathway:
 raw -> formFormal -> formPage
-									-> formNormal
+									-> f0
 
 email example:
-formNormal, nee normalized: 'bobfrank@gmail.com',   heaviest changes, store in database to prevent a duplicate
+f0, nee normalized: 'bobfrank@gmail.com',   heaviest changes, store in database to prevent a duplicate
 formFormal, nee adjusted:   'Bob.Frank@GMAIL.COM',  light changes to pass validation; give to APIs
 formPage,   nee presented:  'Bob.Frank@gmail.com',  heavier formatting, show back to the user on the page
 raw:                        ' Bob.Frank@GMAIL.COM', what the user typed
@@ -606,13 +606,13 @@ and so what do you pass to the email or credit card API?
 formFormal, in case the user's weird way of writing it actually matters
 the log of exactly what you told the api records formFormal
 
-keep formFormal and formNormal in the database
-formNormal to quickly detect a duplicate
+keep formFormal and f0 in the database
+f0 to quickly detect a duplicate
 formFormal for a later repeat use with an API
 and when composing text for the page, do formFormal -> formPage
 
 uniformly, these validation functions take raw text from the user's keystrokes
-and return an object like {isValid, formNormal, formFormal, formPage, raw, otherPartsOrDetails, ...}
+and return an object like {isValid, f0, formFormal, formPage, raw, otherPartsOrDetails, ...}
 */
 
 //             _ _     _       _                              _ _ 
@@ -660,11 +660,11 @@ export function validateEmail(raw, limit) {
 	let domain = p.after.toLowerCase()
 	name = cut(name, '+').before//name+spam@example.com is really name@example.com
 	if (periodIgnorers.includes(domain)) name = name.replace(/\./g, '')//first.last@gmail.com is really firstlast@gmail.com
-	let formNormal = name + "@" + domain
-	let j3 = zodEmail().safeParse(formNormal)
-	if (!j3.success) return {formFormal, formPage, formNormal, raw, cropped, j3}
+	let f0 = name + "@" + domain
+	let j3 = zodEmail().safeParse(f0)
+	if (!j3.success) return {formFormal, formPage, f0, raw, cropped, j3}
 
-	return {isValid: true, formNormal, formFormal, formPage, raw, cropped}
+	return {isValid: true, f0, formFormal, formPage, raw, cropped}
 }
 test(() => {
 
@@ -691,12 +691,12 @@ test(() => {
 	ok(!validateEmail('name.@example.com').isValid)
 
 	//four forms when valid
-	function f(raw, formFormal, formPage, formNormal) {
+	function f(raw, formFormal, formPage, f0) {
 		let v = validateEmail(raw)
 		ok(v.isValid)
 		ok(v.formFormal == formFormal)
 		ok(v.formPage == formPage)
-		ok(v.formNormal == formNormal)
+		ok(v.f0 == f0)
 	}
 	//lowercasing to keep working, make pretty, and detect a duplicate
 	f(' Name@Example.com ', 'Name@Example.com', 'Name@example.com', 'name@example.com')
@@ -738,24 +738,24 @@ export function validatePhone(raw, limit) {
 	let phone = parsePhoneNumberFromString(cropped, assumedRegion)
 	if (!phone || !phone.isValid()) return {raw, cropped, assumedRegion, phone}
 
-	let formNormal = phone.format('E.164')//as established by the International Telecommunication Union
-	let formFormal = formNormal//use E.164 with APIs, also
+	let f0 = phone.format('E.164')//as established by the International Telecommunication Union
+	let formFormal = f0//use E.164 with APIs, also
 	let formPage = phone.formatInternational()//prettier, with spaces, for the user to see on the page
-	if (!hasText(formNormal) || !hasText(formPage)) return {formNormal, formFormal, formPage, raw, cropped, assumedRegion, phone}
+	if (!hasText(f0) || !hasText(formPage)) return {f0, formFormal, formPage, raw, cropped, assumedRegion, phone}
 
-	return {isValid: true, formNormal, formFormal, formPage, raw, cropped, assumedRegion, phone}
+	return {isValid: true, f0, formFormal, formPage, raw, cropped, assumedRegion, phone}
 }
 test(() => {
 	ok(!validatePhone('').isValid)//blank
 	ok(!validatePhone('5551234').isValid)//local
 	ok(!validatePhone('pizza').isValid)//nonsense
 
-	function f(country, formNormal, raw, formPage) {
+	function f(country, f0, raw, formPage) {
 		let v = validatePhone(raw)
 		ok(v.isValid)
 		ok(v.phone.country == country)
 		ok(v.formPage == formPage)
-		ok(v.formNormal == formNormal)
+		ok(v.f0 == f0)
 	}
 
 	//common typing
@@ -797,32 +797,32 @@ export function validateCard(raw, limit) {
 	/* (1) adjusted step for credit card number
 	just numerals, removing spaces, dots, dashes; this is the normalized form
 	*/
-	let formNormal = onlyNumerals(cropped)
+	let f0 = onlyNumerals(cropped)
 
 	/* (3) intermediate step for a number the user hasn't finished typing yet
 	use braintree's credit-card-type module to get the type
 	this module also tells you how to group the numerals
 	*/
-	let cardType = creditCardType(formNormal)//from npm credit-card-type
-	if (!cardType.length) return {formNormal, raw, cropped, cardType, note: 'no type'}//cardType should be an array of at least one possible type
+	let cardType = creditCardType(f0)//from npm credit-card-type
+	if (!cardType.length) return {f0, raw, cropped, cardType, note: 'no type'}//cardType should be an array of at least one possible type
 	let gaps = cardType[0].gaps//go with first identified type, but know that there can be several
 	let gap = 0//index in the array of gaps
 	let formPage = ''
-	for (let i = 0; i < formNormal.length; i++) {//loop for each numeral
+	for (let i = 0; i < f0.length; i++) {//loop for each numeral
 		if (gap < gaps.length && i == gaps[gap]) {//weve reached a gap position
 			formPage += ' '//add a gap
 			gap++//watch for the next gap
 		}
-		formPage += formNormal[i]//bring in this numeral
+		formPage += f0[i]//bring in this numeral
 	}
-	if (onlyNumerals(formPage) != formNormal) return {formNormal, formPage, raw, cropped, cardType, note: 'round trip mismatch'}
+	if (onlyNumerals(formPage) != f0) return {f0, formPage, raw, cropped, cardType, note: 'round trip mismatch'}
 
 	/* (4) make sure the length is correct and check the last digit with Luhn
 	*/
-	if (!cardType[0].lengths.includes(formNormal.length)) return {formNormal, formPage, raw, cropped, cardType, note: 'bad length'}
-	if (!isLuhn(formNormal)) return {formNormal, formPage, raw, cropped, cardType, note: 'bad luhn'}
+	if (!cardType[0].lengths.includes(f0.length)) return {f0, formPage, raw, cropped, cardType, note: 'bad length'}
+	if (!isLuhn(f0)) return {f0, formPage, raw, cropped, cardType, note: 'bad luhn'}
 
-	return {isValid: true, formNormal, formPage, raw, cropped, cardType}//also return the detected type information
+	return {isValid: true, f0, formPage, raw, cropped, cardType}//also return the detected type information
 }
 test(() => {
 
@@ -860,11 +860,11 @@ test(() => {
 	f('3782 822', 'American Express')
 
 	//four forms when valid
-	function f2(raw, formPage, formNormal) {
+	function f2(raw, formPage, f0) {
 		let v = validateCard(raw)
 		ok(v.isValid)
 		ok(v.formPage == formPage)
-		ok(v.formNormal == formNormal)
+		ok(v.f0 == f0)
 	}
 	f2('4111 1111 1111 1111',     '4111 1111 1111 1111', '4111111111111111')
 	f2('4111111111111111',        '4111 1111 1111 1111', '4111111111111111')
@@ -922,7 +922,7 @@ export function validateDate(raw) {
 			day   <    1 || day   >   31) return {isValid: false, raw, year, month, day}
 	return {//return an object with properties to match our validation pattern
 		isValid: true,
-		formNormal: adjusted,//store in database to record and identify duplicates
+		f0: adjusted,//store in database to record and identify duplicates
 		formFormal: adjusted,//not really used, would be the form we would hand to an API
 		formPage: `${year}-${Time.months.oneToJan[month]}-${day}`,//form to show to the user on the page
 		raw,//exactly the string we were given
@@ -1035,7 +1035,7 @@ export function validateWallet(raw) {//validate ethereum wallet address
 	let c40 = c.slice(2, 42)//clip out the checksum case-corrected base16 characters
 
 	//at this point the address is valid
-	let v = {isValid: true, formNormal: c, formFormal: c, formPage: c, raw}//all the forms are the same
+	let v = {isValid: true, f0: c, formFormal: c, formPage: c, raw}//all the forms are the same
 	if (r40 == r40.toUpperCase() || r40 == r40.toLowerCase()) { v.rawCaseUniform = true } else { v.rawCaseMixed = true }
 	if (r40 == c40) { v.checksumConfirmed = true } else { v.checksumCorrected = true }
 	if (v.rawCaseMixed && v.checksumCorrected) v.checksumWarning = true//important warning if the given address contains a checksum that's wrong!

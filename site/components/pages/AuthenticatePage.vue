@@ -30,7 +30,7 @@ async function clickedSignUp() {
 	let v = validateName(refDesiredUserNameBox.value)
 	if (v.isValid) {
 		let r = await fetchWorker('/api/authenticate', {body:
-			{action: 'DemonstrationSignUp.', nameNormal: v.formNormal}})
+			{action: 'DemonstrationSignUp.', nameNormal: v.f0}})
 		if (r.isSignedUp) {
 			await doSignGet()//ttd march, this shouldn't be another round trip
 		} else {
@@ -45,7 +45,7 @@ async function clickedSignIn() {
 	let v = validateName(refReturningUserNameBox.value)
 	if (v.isValid) {
 		let r = await fetchWorker('/api/authenticate', {body:
-			{action: 'DemonstrationSignIn.', nameNormal: v.formNormal}})
+			{action: 'DemonstrationSignIn.', nameNormal: v.f0}})
 		if (r.isSignedIn) {
 			await doSignGet()//ttd march, this shouldn't be another round trip
 		} else {
