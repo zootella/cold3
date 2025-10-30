@@ -324,8 +324,8 @@ SQL(`
 -- what user is signed into this browser? sign users in and out
 CREATE TABLE browser_table (
 	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,  -- unique tag identifies each row
-	row_tick      BIGINT    NOT NULL,  -- tick when row was added
-	hide          BIGINT    NOT NULL,  -- 0 visible, nonzero ignore
+	row_tick      BIGINT    NOT NULL,              -- tick when row was added
+	hide          BIGINT    NOT NULL,              -- 0 visible, nonzero ignore
 
 	browser_hash  CHAR(52)  NOT NULL,  -- the browser a request is from
 	user_tag      CHAR(21)  NOT NULL,  -- the user we've proven is using that browser
@@ -629,8 +629,8 @@ SQL(`
 -- what code like 1234 have we sent to the person at a browser to prove they control that address?
 CREATE TABLE code_table (
 	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,  -- uniquely identifies the row, and also used as the code tag
-	row_tick       BIGINT    NOT NULL,  -- when we sent the code, the start of the code's 20 minute lifetime
-	hide           BIGINT    NOT NULL,  -- not used, instead set lives to 0 below to revoke the code
+	row_tick       BIGINT    NOT NULL,              -- when we sent the code, the start of the code's 20 minute lifetime
+	hide           BIGINT    NOT NULL,              -- not used, instead set lives to 0 below to revoke the code
 
 	browser_hash   CHAR(52)  NOT NULL,  -- the browser that entered, and must verify, the address
 
@@ -748,13 +748,13 @@ export async function recordDelay({task, d1, d2, d3, d4, d5, origin, browserHash
 SQL(`
 -- example table for demonstration, practice, and testing
 CREATE TABLE example_table (
-	row_tag    CHAR(21)  PRIMARY KEY  NOT NULL,  -- unique tag identifies each row
-	row_tick   BIGINT                 NOT NULL,  -- tick when row was added
-	hide       BIGINT                 NOT NULL,  -- 0 visible, nonzero ignore this row
+	row_tag    CHAR(21)  NOT NULL PRIMARY KEY,  -- unique tag identifies each row
+	row_tick   BIGINT    NOT NULL,              -- tick when row was added
+	hide       BIGINT    NOT NULL,              -- 0 visible, nonzero ignore this row
 
-	name_text  TEXT                   NOT NULL,  -- example holding any text including blank
-	hits       BIGINT                 NOT NULL,  -- examle holding any integer
-	some_hash  CHAR(52)               NOT NULL   -- example holding hash values
+	name_text  TEXT      NOT NULL,  -- example holding any text including blank
+	hits       BIGINT    NOT NULL,  -- examle holding any integer
+	some_hash  CHAR(52)  NOT NULL   -- example holding hash values
 );
 
 CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get visible rows, sorted recent first, quickly
@@ -825,30 +825,31 @@ export async function recordHit({origin, browserHash, userTag, ipText, geography
 // |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
 //                                                     
 
+//bookmark
 SQL(`
 -- go between a user's tag, route, and name as it appears on the page
 CREATE TABLE name_table (
-	row_tag      CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick     BIGINT                 NOT NULL,
-	hide         BIGINT                 NOT NULL,
+	row_tag     CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick    BIGINT    NOT NULL,
+	hide        BIGINT    NOT NULL,
 
-	user_tag     CHAR(21)               NOT NULL,
+	user_tag    CHAR(21)  NOT NULL,
 
-	normal_text  TEXT                   NOT NULL,  -- like "user-name", route lowercased to check unique
-	formal_text  TEXT                   NOT NULL,  -- like "User-Name", route with case the user chose
-	page_text    TEXT                   NOT NULL   -- like "User Name", the user's name for pages and cards
+	name0_text  TEXT      NOT NULL,  -- like "user-name", route lowercased to check unique
+	name1_text  TEXT      NOT NULL,  -- like "User-Name", route with case the user chose
+	name2_text  TEXT      NOT NULL   -- like "User Name", the user's name for pages and cards
 );
 
 -- indices to ensure unique values in these columns among visible rows, for defense-in-depth, as setName() prevents duplicates first
-CREATE UNIQUE INDEX name1 ON name_table (user_tag)    WHERE hide = 0;
-CREATE UNIQUE INDEX name2 ON name_table (normal_text) WHERE hide = 0;
-CREATE UNIQUE INDEX name3 ON name_table (formal_text) WHERE hide = 0;
-CREATE UNIQUE INDEX name4 ON name_table (page_text)   WHERE hide = 0;
+CREATE UNIQUE INDEX name1 ON name_table (user_tag)   WHERE hide = 0;
+CREATE UNIQUE INDEX name2 ON name_table (name0_text) WHERE hide = 0;
+CREATE UNIQUE INDEX name3 ON name_table (name1_text) WHERE hide = 0;
+CREATE UNIQUE INDEX name4 ON name_table (name2_text) WHERE hide = 0;
 
 -- indices to make queries fast
-CREATE INDEX name5 ON name_table (hide, user_tag,    row_tick DESC);  -- look up a user's route and name by their tag
-CREATE INDEX name6 ON name_table (hide, normal_text, row_tick DESC);  -- what user is at this route? is it taken?
-CREATE INDEX name7 ON name_table (hide, page_text,   row_tick DESC);  -- is this page name taken?
+CREATE INDEX name5 ON name_table (hide, user_tag,   row_tick DESC);  -- look up a user's route and name by their tag
+CREATE INDEX name6 ON name_table (hide, name0_text, row_tick DESC);  -- what user is at this route? is it taken?
+CREATE INDEX name7 ON name_table (hide, name2_text, row_tick DESC);  -- is this page name taken?
 `)
 
 export async function nameCheck({v}) {//ttd march, draft like from the check if your desired name is available, to choose and change a name
@@ -873,13 +874,13 @@ async function name_get({//look up user route and name information by calling wi
 	namePage,//a user name, like we're seeing if it's available
 }) {
 	let row
-	if      (given(userTag))    { checkTag(userTag);                   row = await queryTop({table: 'name_table', title: 'user_tag',    cell: userTag})    }
-	else if (given(nameNormal)) { checkName({formNormal: nameNormal}); row = await queryTop({table: 'name_table', title: 'normal_text', cell: nameNormal}) }
-	else if (given(namePage))   { checkName({formPage:   namePage});   row = await queryTop({table: 'name_table', title: 'page_text',   cell: namePage})   }
+	if      (given(userTag))    { checkTag(userTag);                   row = await queryTop({table: 'name_table', title: 'user_tag',   cell: userTag})    }
+	else if (given(nameNormal)) { checkName({formNormal: nameNormal}); row = await queryTop({table: 'name_table', title: 'name0_text', cell: nameNormal}) }
+	else if (given(namePage))   { checkName({formPage:   namePage});   row = await queryTop({table: 'name_table', title: 'name2_text', cell: namePage})   }
 	else { toss('use', {userTag, nameNormal, namePage}) }
 
 	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
-	return {userTag: row.user_tag, nameNormal: row.normal_text, nameFormal: row.formal_text, namePage: row.page_text}
+	return {userTag: row.user_tag, nameNormal: row.name0_text, nameFormal: row.name1_text, namePage: row.name2_text}
 }
 
 //set the given normal, formal, and page names for the given user
@@ -888,7 +889,7 @@ async function name_get({//look up user route and name information by calling wi
 async function name_set({userTag, nameNormal, nameFormal, namePage}) {
 	checkTag(userTag); checkName({formNormal: nameNormal, formFormal: nameFormal, formPage: namePage})
 	await name_delete({userTag})//replace an existing row about this user with a new one:
-	await queryAddRow({table: 'name_table', row: {user_tag: userTag, normal_text: nameNormal, formal_text: nameFormal, page_text: namePage}})
+	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: nameNormal, name1_text: nameFormal, name2_text: namePage}})
 }
 
 //remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
@@ -931,12 +932,12 @@ async function name_delete({userTag, hideSet}) {//hide reason code optional
 SQL(`
 -- stuff on the user's profile page that doesn't need to be unique or indexed
 CREATE TABLE profile_table (
-	row_tag       CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick      BIGINT                 NOT NULL,
-	hide          BIGINT                 NOT NULL,
+	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick      BIGINT    NOT NULL,
+	hide          BIGINT    NOT NULL,
 
-	user_tag      CHAR(21)               NOT NULL,
-	profile_text  TEXT                   NOT NULL   -- printed object so you can add properties without changing schema; you never need to index by one
+	user_tag      CHAR(21)  NOT NULL,
+	profile_text  TEXT      NOT NULL   -- printed object so you can add properties without changing schema; you never need to index by one
 );
 
 `)
@@ -1026,7 +1027,6 @@ and only queries that load to a user interaction, like avoiding a emailer that b
 
 
 
-//bookmark
 
 
 
@@ -1045,12 +1045,12 @@ and only queries that load to a user interaction, like avoiding a emailer that b
 SQL(`
 -- settings for the application as a whole
 CREATE TABLE settings_table (
-	row_tag             CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick            BIGINT                 NOT NULL,
-	hide                BIGINT                 NOT NULL,  -- standard starting three present for consistancy, but not used
+	row_tag             CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick            BIGINT    NOT NULL,
+	hide                BIGINT    NOT NULL,  -- standard starting three present for consistancy, but not used
 
-	setting_name_text   TEXT                   NOT NULL,  -- the name of the setting kept by this row
-	setting_value_text  TEXT                   NOT NULL   -- the value of that named setting, you have to store a number as text
+	setting_name_text   TEXT      NOT NULL,  -- the name of the setting kept by this row
+	setting_value_text  TEXT      NOT NULL   -- the value of that named setting, you have to store a number as text
 );
 
 CREATE UNIQUE INDEX settings1 ON settings_table (setting_name_text) WHERE hide = 0;  -- among visible rows, setting names must be unique
@@ -1094,11 +1094,11 @@ export async function settingWrite(name, value) {
 SQL(`
 -- a thing that may be happening recently, is it too late? too soon? too frequent?
 CREATE TABLE trail_table (
-	row_tag   CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick  BIGINT                 NOT NULL,
-	hide      BIGINT                 NOT NULL,  -- not used, in the future we might hide old rows, or actually delete them!
+	row_tag   CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick  BIGINT    NOT NULL,
+	hide      BIGINT    NOT NULL,  -- not used, in the future we might hide old rows, or actually delete them!
 
-	hash      CHAR(52)               NOT NULL   -- the hash of the message about the event that happened on row tick
+	hash      CHAR(52)  NOT NULL   -- the hash of the message about the event that happened on row tick
 );
 
 CREATE INDEX trail1 ON trail_table (hide,       row_tick DESC);  -- hide or delete old rows quickly
@@ -1141,12 +1141,12 @@ export async function trailAddHashes({now, hashes}) {//an array of several hashe
 SQL(`
 -- does this user exist? have they finished signing up? are they a creator? are they staff? is their account hidden or closed?
 CREATE TABLE user_table (
-	row_tag       CHAR(21)  PRIMARY KEY  NOT NULL,
-	row_tick      BIGINT                 NOT NULL,
-	hide          BIGINT                 NOT NULL,
+	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick      BIGINT    NOT NULL,
+	hide          BIGINT    NOT NULL,
 
-	user_tag      CHAR(21)               NOT NULL,
-	stage         BIGINT                 NOT NULL,  -- 0 not used, 1 provisional, 2 normal, 
+	user_tag      CHAR(21)  NOT NULL,
+	stage         BIGINT    NOT NULL   -- 0 not used, 1 provisional, 2 normal, 
 );
 
 here is where you figure out, in this table? in the same column?
