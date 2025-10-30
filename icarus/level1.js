@@ -372,8 +372,8 @@ because different types have different rules for how the input text resolves to 
 database tables must store all three
 triads of columns have titles like address0_text, address1_text, and address2_text
 
-AI found sets of equivalent length names like save/send/show/hide, normal/formal/visual, and reserve/working/display
-but ok/in/f0/f1/f2 are shortest, readily identifiable in code and schema, and learnable
+AI found sets of equivalent length names like good/save/send/show/hide, normal/formal/visual, and reserve/working/display
+but ok/in/f0/f1/f2/f3 are shortest, extensible, readily identifiable in code and schema, and learnable
 */
 
 
