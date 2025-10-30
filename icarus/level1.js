@@ -368,6 +368,10 @@ also returned is v.in, the same string we were given,
 and other properties specific to the data type and validation process, like types, parts, and errors
 v.f3, if present, is the "hide" form, f2 redacted to let the user identify without disclosing
 
+because different types have different rules for how the input text resolves to the three forms,
+database tables must store all three
+triads of columns have titles like address0_text, address1_text, and address2_text
+
 AI found sets of equivalent length names like save/send/show/hide, normal/formal/visual, and reserve/working/display
 but ok/in/f0/f1/f2 are shortest, readily identifiable in code and schema, and learnable
 */

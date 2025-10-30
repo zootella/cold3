@@ -215,22 +215,22 @@ not (maybe totally new, maybe mentioned but not validated yet)
 SQL(`
 -- has a user proven they control an address?
 CREATE TABLE address_table (
-	row_tag      CHAR(21)  NOT NULL PRIMARY KEY,
-	row_tick     BIGINT    NOT NULL,
-	hide         BIGINT    NOT NULL,
+	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick       BIGINT    NOT NULL,
+	hide           BIGINT    NOT NULL,
 
-	user_tag     CHAR(21)  NOT NULL,  -- the user who has mentioned, controls, or removed an address
+	user_tag       CHAR(21)  NOT NULL,  -- the user who has mentioned, controls, or removed an address
 
-	type_text    TEXT      NOT NULL,  -- what type of address this is, like "Email." or "Phone."
-	normal_text  TEXT      NOT NULL,  -- normalized form of address, to match as unique
-	formal_text  TEXT      NOT NULL,  -- formal form of address, to send messages
-	page_text    TEXT      NOT NULL,  -- page form of address, to show the user
+	type_text      TEXT      NOT NULL,  -- what type of address this is, like "Email." or "Phone."
+	address0_text  TEXT      NOT NULL,  -- normalized form of address, to match as unique
+	address1_text  TEXT      NOT NULL,  -- formal form of address, to send messages
+	address2_text  TEXT      NOT NULL,  -- page form of address, to show the user
 
-	event        BIGINT    NOT NULL   -- 2 mentioned, 3 challenged, 4 validated, 1 removed
+	event          BIGINT    NOT NULL   -- 2 mentioned, 3 challenged, 4 validated, 1 removed
 );
 
-CREATE INDEX address1 ON address_table (hide, user_tag,               row_tick DESC);  -- filter by user
-CREATE INDEX address2 ON address_table (hide, type_text, normal_text, row_tick DESC);  -- or by address
+CREATE INDEX address1 ON address_table (hide, user_tag,                 row_tick DESC);  -- filter by user
+CREATE INDEX address2 ON address_table (hide, type_text, address0_text, row_tick DESC);  -- or by address
 `)
 
 export async function addressRemoved({userTag, type, v})    { await address_add({userTag, type, v, event: 1}) }
@@ -241,7 +241,7 @@ async function address_add({userTag, type, v, event}) {//v is the result of a va
 	await queryAddRow({table: 'address_table', row: {
 		user_tag: userTag,
 		type_text: type,
-		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.fromPage,
+		address0_text: v.formNormal, address1_text: v.formFormal, address2_text: v.fromPage,
 		event: event,
 	}})
 }
@@ -252,6 +252,8 @@ so returns a user tag and ownership level 3 or 4, or falsey if the address is av
 userToAddresses - given a user, get the addresses we've challenged and validated, that have not been removed
 so returns an array of addresses, different types, events collapsed to be most recent 3 or 4
 */
+
+//bookmark
 
 
 export async function addressToUser({type, formNormal}) {
@@ -963,6 +965,7 @@ CREATE TABLE profile_table (
 //and how fast they are, how reliable they are
 //how quickly users can complete tasks with them, all of that leads into robin
 
+//bookmark
 
 
 
