@@ -337,6 +337,63 @@ maybe put those into a single checkName which acts on what it's given--or maybe 
 
 
 
+//ttd october, a big refactor but one you've thought about
+/*
+            _               __  ___            __ _            __ ____  
+__   _____ | | __   __   __/ _|/ _ \   __   __/ _/ |   __   __/ _|___ \ 
+\ \ / / _ \| |/ /   \ \ / / |_| | | |  \ \ / / |_| |   \ \ / / |_  __) |
+ \ V / (_) |   < _   \ V /|  _| |_| |   \ V /|  _| |_   \ V /|  _|/ __/ 
+  \_(_)___/|_|\_( )   \_(_)_|  \___( )   \_(_)_| |_( )   \_(_)_| |_____|
+                |/                 |/              |/                   
+
+the validate functions here transform input text from trusted and untrusted sources into a consistant set of forms
+they sanitize, clean up, and accept or reject input using defined rules specific to the data type's requirements and conventions
+
+if (v.ok) then alongside will always be three forms: 🧛
+v.f0 form zero is the "save" form, normalized to find, sort, and reserve, blocking duplicates
+v.f1 form one is the "send" form, canonical to use with external software like the Twilio API or a HTML link
+v.f2 form two is the "show" form, visual for pages and cards
+
+for instance, a gmail address:
+v.f0 "bobsmith@gmail.com"  gmail ignores periods, so the normalized form removes them to prevent a second signup by bob
+v.f1 "Bob.SMITH@gmail.com" for the twilio API, stay close to what bob typed just in case capitalization matters on his email server
+v.f2 "Bob.SMITH@gmail.com" lots of times forms are the same, but we always include all three
+
+or a user name:
+v.f0 "alice-v3" lowercased to reserve this user name for alice
+v.f1 "Alice-v3" here the API is the browser's location bar and web links; a navigation to f0 could redirect to f1
+v.f2 "Alice ❤️" spaces and emoji work fine on cards and pages
+
+also returned is v.in, the same string we were given,
+and other properties specific to the data type and validation process, like types, parts, and errors
+v.f3, if present, is the "hide" form, f2 redacted to let the user identify without disclosing
+
+AI found sets of equivalent length names like save/send/show/hide, normal/formal/visual, and reserve/working/display
+but ok/in/f0/f1/f2 are shortest, readily identifiable in code and schema, and learnable
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 ^ttd february, so, do you need this? next make the choose/change your user name and route form to figure that out
 wait--should checkRoute, for instance, also validate that as given, it doesn't change to normal?!
