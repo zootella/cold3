@@ -21,7 +21,7 @@ async function doSignGet() {
 	if (r.isFound) {//server tells us we've got a user signed into this browser here
 		refState.value = 4
 		refUserTag.value = r.userTag
-		refUserName.value = r.nameNormal
+		refUserName.value = r.name0
 	} else {//server tells us, no user is signed in here based on our browser tag
 		refState.value = 1
 	}
@@ -30,7 +30,7 @@ async function clickedSignUp() {
 	let v = validateName(refDesiredUserNameBox.value)
 	if (v.isValid) {
 		let r = await fetchWorker('/api/authenticate', {body:
-			{action: 'DemonstrationSignUp.', nameNormal: v.f0}})
+			{action: 'DemonstrationSignUp.', name0: v.f0}})
 		if (r.isSignedUp) {
 			await doSignGet()//ttd march, this shouldn't be another round trip
 		} else {
@@ -45,7 +45,7 @@ async function clickedSignIn() {
 	let v = validateName(refReturningUserNameBox.value)
 	if (v.isValid) {
 		let r = await fetchWorker('/api/authenticate', {body:
-			{action: 'DemonstrationSignIn.', nameNormal: v.f0}})
+			{action: 'DemonstrationSignIn.', name0: v.f0}})
 		if (r.isSignedIn) {
 			await doSignGet()//ttd march, this shouldn't be another round trip
 		} else {

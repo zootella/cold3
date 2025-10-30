@@ -10,10 +10,10 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	let r = {}
 
 	switch (action) {
-		case 'DemonstrationSignGet.': r = await demonstrationSignGet({origin: door.origin, browserHash                             }); break;
-		case 'DemonstrationSignUp.':  r = await demonstrationSignUp( {origin: door.origin, browserHash, nameNormal: body.nameNormal}); break;
-		case 'DemonstrationSignIn.':  r = await demonstrationSignIn( {origin: door.origin, browserHash, nameNormal: body.nameNormal}); break;
-		case 'DemonstrationSignOut.': r = await demonstrationSignOut({origin: door.origin, browserHash                             }); break;
+		case 'DemonstrationSignGet.': r = await demonstrationSignGet({origin: door.origin, browserHash                   }); break;
+		case 'DemonstrationSignUp.':  r = await demonstrationSignUp( {origin: door.origin, browserHash, name0: body.name0}); break;
+		case 'DemonstrationSignIn.':  r = await demonstrationSignIn( {origin: door.origin, browserHash, name0: body.name0}); break;
+		case 'DemonstrationSignOut.': r = await demonstrationSignOut({origin: door.origin, browserHash                   }); break;
 	}
 
 	return r

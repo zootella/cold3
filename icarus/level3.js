@@ -856,7 +856,7 @@ export async function nameCheck({v}) {//ttd march, draft like from the check if 
 	if (!v.isValid) toss('valid', {v})//you have already done this check, but here too to make sure
 
 	let task = Task({name: 'name check'})
-	let rowNormal = await name_get({nameNormal: v.f0})
+	let rowNormal = await name_get({name0: v.f0})
 	let rowPage   = await name_get({namePage:   v.formPage})
 	task.available = {
 		isAvailable: (!rowNormal) && (!rowPage),
@@ -870,26 +870,26 @@ export async function nameCheck({v}) {//ttd march, draft like from the check if 
 
 async function name_get({//look up user route and name information by calling with one of these:
 	userTag,//a user's tag, like we're showing information about that user, or
-	nameNormal,//a normalized route, like we're filling a request to that route, or
+	name0,//a normalized route, like we're filling a request to that route, or
 	namePage,//a user name, like we're seeing if it's available
 }) {
 	let row
 	if      (given(userTag))    { checkTag(userTag);                   row = await queryTop({table: 'name_table', title: 'user_tag',   cell: userTag})    }
-	else if (given(nameNormal)) { checkName({f0: nameNormal}); row = await queryTop({table: 'name_table', title: 'name0_text', cell: nameNormal}) }
+	else if (given(name0)) { checkName({f0: name0}); row = await queryTop({table: 'name_table', title: 'name0_text', cell: name0}) }
 	else if (given(namePage))   { checkName({formPage:   namePage});   row = await queryTop({table: 'name_table', title: 'name2_text', cell: namePage})   }
-	else { toss('use', {userTag, nameNormal, namePage}) }
+	else { toss('use', {userTag, name0, namePage}) }
 
 	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
-	return {userTag: row.user_tag, nameNormal: row.name0_text, nameFormal: row.name1_text, namePage: row.name2_text}
+	return {userTag: row.user_tag, name0: row.name0_text, nameFormal: row.name1_text, namePage: row.name2_text}
 }
 
 //set the given normal, formal, and page names for the given user
 //setName() does not make sure the names it sets are available--you've already done that before calling here!
 //there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
-async function name_set({userTag, nameNormal, nameFormal, namePage}) {
-	checkTag(userTag); checkName({f0: nameNormal, formFormal: nameFormal, formPage: namePage})
+async function name_set({userTag, name0, nameFormal, namePage}) {
+	checkTag(userTag); checkName({f0: name0, formFormal: nameFormal, formPage: namePage})
 	await name_delete({userTag})//replace an existing row about this user with a new one:
-	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: nameNormal, name1_text: nameFormal, name2_text: namePage}})
+	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: name0, name1_text: nameFormal, name2_text: namePage}})
 }
 
 //remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
@@ -1194,7 +1194,7 @@ export async function browserToUser({browserHash}) {
 		if (user.userTag) {//we found a user tag, let's look up its name and more information about it
 			let n = await name_get({userTag: user.userTag})
 			if (n) {
-				user.name = bundleValid(n.nameNormal, n.nameFormal, n.namePage)
+				user.name = bundleValid(n.name0, n.nameFormal, n.namePage)
 			}
 		}
 	}
@@ -1213,30 +1213,30 @@ export async function demonstrationSignGet({browserHash}) {
 	if (b) {
 		let n = await name_get({userTag: b.userTag})//find that user's name, right now their normalized route identifies them
 		if (n) {
-			return {isFound: true, browserHash, userTag: b.userTag, nameNormal: n.nameNormal, nameFormal: n.nameFormal, namePage: n.namePage}
+			return {isFound: true, browserHash, userTag: b.userTag, name0: n.name0, nameFormal: n.nameFormal, namePage: n.namePage}
 		}
 	}
 	return {isFound: false, browserHash}
 }
-export async function demonstrationSignUp({browserHash, nameNormal, origin}) {
-	checkHash(browserHash); checkName({f0: nameNormal})
+export async function demonstrationSignUp({browserHash, name0, origin}) {
+	checkHash(browserHash); checkName({f0: name0})
 
-	let n = await name_get({nameNormal})//confirm route is available in database
-	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserHash, nameNormal}
+	let n = await name_get({name0})//confirm route is available in database
+	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserHash, name0}
 
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	await name_set({userTag, nameNormal, nameFormal: nameNormal, namePage: nameNormal})//ttd january, all the same for now
+	await name_set({userTag, name0, nameFormal: name0, namePage: name0})//ttd january, all the same for now
 	await browser_in({browserHash, userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
-	return {isSignedUp: true, browserHash, userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
+	return {isSignedUp: true, browserHash, userTag, name: name0, name0}//just for testing; we won't send user tags to pages
 }
-export async function demonstrationSignIn({browserHash, nameNormal, origin}) {
-	checkHash(browserHash); checkName({f0: nameNormal})
+export async function demonstrationSignIn({browserHash, name0, origin}) {
+	checkHash(browserHash); checkName({f0: name0})
 
-	let n = await name_get({nameNormal})//in this early simplification before user_table, a user exists by their tag with a route
-	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserHash, nameNormal}
+	let n = await name_get({name0})//in this early simplification before user_table, a user exists by their tag with a route
+	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserHash, name0}
 
 	await browser_in({browserHash, userTag: n.userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
-	return {isSignedIn: true, browserHash, userTag: n.userTag, name: nameNormal, nameNormal}//just for testing; we won't send user tags to pages
+	return {isSignedIn: true, browserHash, userTag: n.userTag, name: name0, name0}//just for testing; we won't send user tags to pages
 }
 export async function demonstrationSignOut({browserHash, origin}) {
 	checkHash(browserHash)

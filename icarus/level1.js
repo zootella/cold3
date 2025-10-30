@@ -319,7 +319,7 @@ test(() => {
 
 //ttd february
 /*
-checkNameNormal(nameNormal) makes sure nameNormal is a valid normalized route that doesn't change when we validate it
+checkNameNormal(name0) makes sure name0 is a valid normalized route that doesn't change when we validate it
 checkNamePage(namePage) makes sure namePage is a valid name for the page that doesn't change when we validate it
 checkName(all three) makes sure that when we validate each of three they don't change, and also, that formal normalizes to normal!
 
