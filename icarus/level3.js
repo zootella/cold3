@@ -527,7 +527,7 @@ export async function browserToCodes({browserHash}) {
 				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
 				addressType: row.type_text,//the type of address, like "Email."
 				address0: row.address0_text,
-				addressFormal: row.address1_text,//the address we used with the api
+				address1: row.address1_text,//the address we used with the api
 				addressPage:   row.address2_text,
 				//note we importantly do not send hash to the page, that's the secret part!
 			})
@@ -557,7 +557,7 @@ export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 			browserHash,
 			provider: row.provider_text,
 			type: row.type_text,
-			address0: row.address0_text, addressFormal: row.address1_text, addressPage: row.address2_text,
+			address0: row.address0_text, address1: row.address1_text, addressPage: row.address2_text,
 		})
 		return {success: true, lives: 0}
 

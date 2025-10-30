@@ -423,7 +423,7 @@ export function bundleValid(f0, f1, formPage) {//you really have to get the orde
 
 
 
-//ttd march, when you let the user choose their Formal and Page names, Formal->name0 must be available, and Page must not collide with name0, either! this so you can make log in by name, and let the type any of the three forms
+//ttd march, when you let the user choose their forms 1 and 2 names, name1->name0 must be available, and name2 must not collide with name0, either! this so you can make log in by name, and let the type any of the three forms
 
 
 export function checkName({formPage, f1, f0}) {
@@ -431,16 +431,16 @@ export function checkName({formPage, f1, f0}) {
 	if (message != 'Ok.') toss(message, {formPage, f1, f0})
 }
 function _checkName({formPage, f1, f0}) {
-	let validPage, validFormal, valid0
+	let validPage, valid1, valid0
 	if (given(formPage)) {//remember that blank strings, while not valid, are falsey!
 		validPage = validateName(formPage, Limit.name)
 		if (!validPage.formPageIsValid) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
 		if (validPage.formPage != formPage) return 'page form round trip mismatch'
 	}
 	if (given(f1)) {
-		validFormal = validateName(f1, Limit.name)
-		if (!validFormal.isValid) return 'formal form not valid'
-		if (validFormal.f1 != f1) return 'formal form round trip mismatch'
+		valid1 = validateName(f1, Limit.name)
+		if (!valid1.isValid) return 'formal form not valid'
+		if (valid1.f1 != f1) return 'formal form round trip mismatch'
 	}
 	if (given(f0)) {
 		valid0 = validateName(f0, Limit.name)
@@ -448,7 +448,7 @@ function _checkName({formPage, f1, f0}) {
 		if (valid0.f0 != f0) return 'normal form round trip mismatch'
 	}
 	if (given(f1) && given(f0)) {//after checking all given forms individually, also make sure formal normalizes into normal
-		if (validFormal.f0 != f0) return 'round trip mismatch between normal and formal forms'
+		if (valid1.f0 != f0) return 'round trip mismatch between normal and formal forms'
 	}
 	return 'Ok.'
 }
