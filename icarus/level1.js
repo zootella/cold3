@@ -320,14 +320,10 @@ test(() => {
 //ttd february
 /*
 checkName0(name0) makes sure name0 is a valid normalized route that doesn't change when we validate it
-checkNamePage(namePage) makes sure namePage is a valid name for the page that doesn't change when we validate it
+checkName2(name2) makes sure name2 is a valid name for the page that doesn't change when we validate it
 checkName(all three) makes sure that when we validate each of three they don't change, and also, that formal normalizes to normal!
 
 maybe put those into a single checkName which acts on what it's given--or maybe that's much harder to reason about
-*/
-
-/*
-
 */
 
 
