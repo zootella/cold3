@@ -8,7 +8,7 @@ const refButtonInFlight = ref(false)//the button below sets to true while it's w
 
 watch([refName], () => {//example where the form is watching the user type a name
 	let v = validateName(refName.value, Limit.name)
-	refButtonCanSubmit.value = toBoolean(v.isValid)//avoid vue's type warning
+	refButtonCanSubmit.value = toBoolean(v.ok)//avoid vue's type warning
 })
 
 async function onClick() {

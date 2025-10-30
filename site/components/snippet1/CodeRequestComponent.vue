@@ -15,7 +15,7 @@ const refProvider = ref('')
 
 watch([refAddress, refProvider], () => {
 	let v = validateEmailOrPhone(refAddress.value)
-	refButtonCanSubmit.value = toBoolean(v.isValid && hasText(refProvider.value))
+	refButtonCanSubmit.value = toBoolean(v.ok && hasText(refProvider.value))
 })
 
 async function onClick() {

@@ -20,7 +20,7 @@ watch([refName2Box], () => {//the top box controls the lower one
 })
 watch([refName1Box], () => {//which is also independently editable
 	let v = validateName(refName1Box.value, Limit.name)
-	if (v.isValid) {
+	if (v.ok) {
 		refStatus1.value = v.f1//set the status here
 	} else {
 		refStatus1.value = `(not valid yet, keep typing...)`

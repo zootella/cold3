@@ -13,7 +13,7 @@ async function doorHandleBelow({door, body, browserHash}) {
 	checkText(body.provider)
 
 	let v = validateEmailOrPhone(body.address)
-	if (!v.isValid) toss('bad address', {body, v})
+	if (!v.ok) toss('bad address', {body, v})
 
 	let provider = body.provider.trim().toUpperCase().slice(0, 1)
 	if      (provider == 'A') provider = 'Amazon.'

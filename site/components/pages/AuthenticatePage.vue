@@ -28,7 +28,7 @@ async function doSignGet() {
 }
 async function clickedSignUp() {
 	let v = validateName(refDesiredUserNameBox.value)
-	if (v.isValid) {
+	if (v.ok) {
 		let r = await fetchWorker('/api/authenticate', {body:
 			{action: 'DemonstrationSignUp.', name0: v.f0}})
 		if (r.isSignedUp) {
@@ -43,7 +43,7 @@ async function clickedSignUp() {
 
 async function clickedSignIn() {
 	let v = validateName(refReturningUserNameBox.value)
-	if (v.isValid) {
+	if (v.ok) {
 		let r = await fetchWorker('/api/authenticate', {body:
 			{action: 'DemonstrationSignIn.', name0: v.f0}})
 		if (r.isSignedIn) {

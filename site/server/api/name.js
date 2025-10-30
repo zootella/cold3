@@ -8,7 +8,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body}) {
 	let v = validateName(body.name)
-	if (!v.isValid) toss('valid', {body, v})
+	if (!v.ok) toss('valid', {body, v})
 
 	return await nameCheck({v})
 }

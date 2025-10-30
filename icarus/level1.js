@@ -411,7 +411,7 @@ add that check to the other checkSomething editions
 //a cheat to bundle the validation trio into a v object, when it's from the database, so you don't need to check it
 export function bundleValid(f0, f1, f2) {//you really have to get the order right!
 	checkText(f0); checkText(f1); checkText(f2)//sanity check, even though you don't know what these are or what's valid for them, bundle, at least, needs them all to be something
-	return {isValid: true, f0, f1, f2}
+	return {ok: true, f0, f1, f2}
 }
 //ttd march, is this a good idea? you're tried of typing out the three forms everywhere, and v could mean object from validate function
 
@@ -427,24 +427,24 @@ export function checkName({f2, f1, f0}) {
 	if (message != 'Ok.') toss(message, {f2, f1, f0})
 }
 function _checkName({f2, f1, f0}) {
-	let valid2, valid1, valid0
+	let v2, v1, v0
 	if (given(f2)) {//remember that blank strings, while not valid, are falsey!
-		valid2 = validateName(f2, Limit.name)
-		if (!valid2.f2ok) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
-		if (valid2.f2 != f2) return 'page form round trip mismatch'
+		v2 = validateName(f2, Limit.name)
+		if (!v2.f2ok) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
+		if (v2.f2 != f2) return 'page form round trip mismatch'
 	}
 	if (given(f1)) {
-		valid1 = validateName(f1, Limit.name)
-		if (!valid1.isValid) return 'formal form not valid'
-		if (valid1.f1 != f1) return 'formal form round trip mismatch'
+		v1 = validateName(f1, Limit.name)
+		if (!v1.ok) return 'formal form not valid'
+		if (v1.f1 != f1) return 'formal form round trip mismatch'
 	}
 	if (given(f0)) {
-		valid0 = validateName(f0, Limit.name)
-		if (!valid0.isValid) return 'normal form not valid'
-		if (valid0.f0 != f0) return 'normal form round trip mismatch'
+		v0 = validateName(f0, Limit.name)
+		if (!v0.ok) return 'normal form not valid'
+		if (v0.f0 != f0) return 'normal form round trip mismatch'
 	}
 	if (given(f1) && given(f0)) {//after checking all given forms individually, also make sure formal normalizes into normal
-		if (valid1.f0 != f0) return 'round trip mismatch between normal and formal forms'
+		if (v1.f0 != f0) return 'round trip mismatch between normal and formal forms'
 	}
 	return 'Ok.'
 }
@@ -472,9 +472,9 @@ export function validateName(raw, limit) {//raw text from either the first (page
 	let f2 = trimLine(cropped)//"東京❤️女の子" valid for display on the page
 	let f1 = slug(cropped)//"Tokyo-Girl" working and correct route for links
 	let f0 = f1.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
-	let isValid = hasText(f2) && hasText(f1) && hasText(f0) && !reservedRoutes.includes(f0)
+	let k = hasText(f2) && hasText(f1) && hasText(f0) && !reservedRoutes.includes(f0)
 	let f2ok = hasText(f2)
-	return {isValid, f0, f1, f2, f2ok, raw, cropped}
+	return {ok: k, f0, f1, f2, f2ok, raw, cropped}
 }
 test(() => {
 	function f(raw, normal, formal, page) {
@@ -488,7 +488,7 @@ test(() => {
 	ok(v.f1 == 'Rainbows-4U')//chosen route, case preserved
 	ok(v.f0 == 'rainbows-4u')//normalized route to confirm unique and then reserve--both of these routes work
 
-	ok(!validateName('Terms').isValid)//format is valid, but normal form is reserved
+	ok(!validateName('Terms').ok)//format is valid, but normal form is reserved
 })
 
 //  _   _ _   _                        _                   _   
@@ -502,14 +502,14 @@ export function validateTitle(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
 	let f0 = trimLine(cropped)
 	if (!hasText(f0)) return {f0, raw, cropped}
-	return {isValid: true, f0, raw, cropped}
+	return {ok: true, f0, raw, cropped}
 }
 
 export function validatePost(raw, limit) {//returns an array of paragraphs
 	let cropped = cropToLimit(raw, limit, Limit.post)
 	let lines = trimLines(cropped)
 	if (!hasText(lines.text)) return {raw, cropped}
-	return {isValid: true, f0: lines.text, lines, raw, cropped}//normal form is single string with \n at the end of each line, also including lines, the array, which will be useful if this is going to get rendered into <p> tags or something on a web page
+	return {ok: true, f0: lines.text, lines, raw, cropped}//normal form is single string with \n at the end of each line, also including lines, the array, which will be useful if this is going to get rendered into <p> tags or something on a web page
 }
 
 
@@ -608,7 +608,7 @@ f1 for a later repeat use with an API
 and when composing text for the page, do f1 -> f2
 
 uniformly, these validation functions take raw text from the user's keystrokes
-and return an object like {isValid, f0, f1, f2, raw, otherPartsOrDetails, ...}
+and return an object like {ok, f0, f1, f2, raw, otherPartsOrDetails, ...}
 */
 
 //             _ _     _       _                              _ _ 
@@ -625,7 +625,7 @@ function zodEmail() {
 }
 
 const periodIgnorers = ['gmail.com', 'googlemail.com', 'proton.me', 'protonmail.com', 'pm.me', 'protonmail.ch']//these providers, gmail and protonmail, deliver mail addressed to first.last@gmail.com to the user firstlast@gmail.com
-export function checkEmail(raw, limit) { let v = validateEmail(raw, limit); if (!v.isValid) toss('form', {v}); return v }
+export function checkEmail(raw, limit) { let v = validateEmail(raw, limit); if (!v.ok) toss('form', {v}); return v }
 export function validateEmail(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
 
@@ -635,7 +635,7 @@ export function validateEmail(raw, limit) {
 	*/
 	let f1 = cropped.trim()
 	let j1 = zodEmail().safeParse(f1)
-	if (!j1.success) return {f1, raw, cropped, j1}//isValid not true on these early returns
+	if (!j1.success) return {f1, raw, cropped, j1}//ok not true on these early returns
 
 	/* (2) presented step for email
 	leave the name the same, but lowercase the domain
@@ -660,36 +660,36 @@ export function validateEmail(raw, limit) {
 	let j3 = zodEmail().safeParse(f0)
 	if (!j3.success) return {f1, f2, f0, raw, cropped, j3}
 
-	return {isValid: true, f0, f1, f2, raw, cropped}
+	return {ok: true, f0, f1, f2, raw, cropped}
 }
 test(() => {
 
 	//sanity check
-	ok(!validateEmail('').isValid)
-	ok(validateEmail('name@example.com').isValid)
-	ok(validateEmail(' First.Last@EXAMPLE.COM\r\n').isValid)
+	ok(!validateEmail('').ok)
+	ok(validateEmail('name@example.com').ok)
+	ok(validateEmail(' First.Last@EXAMPLE.COM\r\n').ok)
 
 	//mistakes
-	ok(!validateEmail('name#example.com').isValid)//spaces
-	ok(!validateEmail('first last@example.com').isValid)//spaces
-	ok(!validateEmail('first.last@example com').isValid)
-	ok(!validateEmail('first@last@example.com').isValid)//two ats
+	ok(!validateEmail('name#example.com').ok)//spaces
+	ok(!validateEmail('first last@example.com').ok)//spaces
+	ok(!validateEmail('first.last@example com').ok)
+	ok(!validateEmail('first@last@example.com').ok)//two ats
 
 	//dots
-	ok(validateEmail('first.last@department.example.com').isValid)//correct
-	ok(!validateEmail('first.last@example..com').isValid)
-	ok(!validateEmail('first.last@.example.com').isValid)
-	ok(!validateEmail('first.last@example.com.').isValid)
-	ok(!validateEmail('first.last@example').isValid)
+	ok(validateEmail('first.last@department.example.com').ok)//correct
+	ok(!validateEmail('first.last@example..com').ok)
+	ok(!validateEmail('first.last@.example.com').ok)
+	ok(!validateEmail('first.last@example.com.').ok)
+	ok(!validateEmail('first.last@example').ok)
 
 	//no edge dots in name, either; this one you weren't even sure about
-	ok(!validateEmail('.name@example.com').isValid)
-	ok(!validateEmail('name.@example.com').isValid)
+	ok(!validateEmail('.name@example.com').ok)
+	ok(!validateEmail('name.@example.com').ok)
 
 	//four forms when valid
 	function f(raw, f1, f2, f0) {
 		let v = validateEmail(raw)
-		ok(v.isValid)
+		ok(v.ok)
 		ok(v.f1 == f1)
 		ok(v.f2 == f2)
 		ok(v.f0 == f0)
@@ -709,8 +709,8 @@ test(() => {
 
 //probably won't have these; instead should be part of the theorized validate form as a whole system? ttd march
 export function validateEmailOrPhone(raw) {
-	let vEmail = validateEmail(raw); if (vEmail.isValid) { vEmail.type = 'Email.'; return vEmail }
-	let vPhone = validatePhone(raw); if (vPhone.isValid) { vPhone.type = 'Phone.'; return vPhone }
+	let vEmail = validateEmail(raw); if (vEmail.ok) { vEmail.type = 'Email.'; return vEmail }
+	let vPhone = validatePhone(raw); if (vPhone.ok) { vPhone.type = 'Phone.'; return vPhone }
 	return {email: vEmail, phone: vPhone}//not valid as either
 }
 
@@ -721,7 +721,7 @@ export function validateEmailOrPhone(raw) {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___| | .__/|_| |_|\___/|_| |_|\___|
 //                                      |_|                           
 
-export function checkPhone(raw, limit) { let v = validatePhone(raw, limit); if (!v.isValid) toss('form', {v}); return v }
+export function checkPhone(raw, limit) { let v = validatePhone(raw, limit); if (!v.ok) toss('form', {v}); return v }
 export function validatePhone(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
 
@@ -739,16 +739,16 @@ export function validatePhone(raw, limit) {
 	let f2 = phone.formatInternational()//prettier, with spaces, for the user to see on the page
 	if (!hasText(f0) || !hasText(f2)) return {f0, f1, f2, raw, cropped, assumedRegion, phone}
 
-	return {isValid: true, f0, f1, f2, raw, cropped, assumedRegion, phone}
+	return {ok: true, f0, f1, f2, raw, cropped, assumedRegion, phone}
 }
 test(() => {
-	ok(!validatePhone('').isValid)//blank
-	ok(!validatePhone('5551234').isValid)//local
-	ok(!validatePhone('pizza').isValid)//nonsense
+	ok(!validatePhone('').ok)//blank
+	ok(!validatePhone('5551234').ok)//local
+	ok(!validatePhone('pizza').ok)//nonsense
 
 	function f(country, f0, raw, f2) {
 		let v = validatePhone(raw)
-		ok(v.isValid)
+		ok(v.ok)
 		ok(v.phone.country == country)
 		ok(v.f2 == f2)
 		ok(v.f0 == f0)
@@ -785,7 +785,7 @@ test(() => {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|  \___\__,_|_|  \__,_|
 //                                                           
 
-export function checkCard(raw, limit) { let v = validateCard(raw, limit); if (!v.isValid) toss('form', {v}); return v }
+export function checkCard(raw, limit) { let v = validateCard(raw, limit); if (!v.ok) toss('form', {v}); return v }
 export function validateCard(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
 
@@ -817,37 +817,37 @@ export function validateCard(raw, limit) {
 	if (!cardType[0].lengths.includes(f0.length)) return {f0, f2, raw, cropped, cardType, note: 'bad length'}
 	if (!isLuhn(f0)) return {f0, f2, raw, cropped, cardType, note: 'bad luhn'}
 
-	return {isValid: true, f0, f2, raw, cropped, cardType}//also return the detected type information
+	return {ok: true, f0, f2, raw, cropped, cardType}//also return the detected type information
 }
 test(() => {
 
 	//some valid international credit card numbers from chat
-	ok(validateCard('4111 1111 1111 1111').isValid) // Visa
-	ok(validateCard('5555 5555 5555 4444').isValid) // MasterCard
-	ok(validateCard('3782 822463 10005').isValid) // American Express (Amex)
-	ok(validateCard('6011 1111 1111 1117').isValid) // Discover
-	ok(validateCard('3566 1111 1111 1113').isValid) // JCB (Popular in Japan)
-	ok(validateCard('3056 9309 0259 04').isValid) // Diners Club International
-	ok(validateCard('6759 6498 2643 8453').isValid) // Maestro (Popular in Europe)
-	ok(validateCard('4000 0566 5566 5556').isValid) // Carte Bancaire (Popular in France)
-	ok(validateCard('6304 0000 0000 0000').isValid) // Laser (Previously popular in Ireland)
-	ok(validateCard('6200 0000 0000 0005').isValid) // China UnionPay (Popular in China)
-	ok(validateCard('6071 7980 0000 0000').isValid) // NPS Pridnestrovie (Popular in Transnistria)
+	ok(validateCard('4111 1111 1111 1111').ok) // Visa
+	ok(validateCard('5555 5555 5555 4444').ok) // MasterCard
+	ok(validateCard('3782 822463 10005').ok) // American Express (Amex)
+	ok(validateCard('6011 1111 1111 1117').ok) // Discover
+	ok(validateCard('3566 1111 1111 1113').ok) // JCB (Popular in Japan)
+	ok(validateCard('3056 9309 0259 04').ok) // Diners Club International
+	ok(validateCard('6759 6498 2643 8453').ok) // Maestro (Popular in Europe)
+	ok(validateCard('4000 0566 5566 5556').ok) // Carte Bancaire (Popular in France)
+	ok(validateCard('6304 0000 0000 0000').ok) // Laser (Previously popular in Ireland)
+	ok(validateCard('6200 0000 0000 0005').ok) // China UnionPay (Popular in China)
+	ok(validateCard('6071 7980 0000 0000').ok) // NPS Pridnestrovie (Popular in Transnistria)
 
 	//more that should be valid, but braintree doesn't like them
-	ok(!validateCard('5067 9900 0000 0000 0009').isValid) // Elo (Popular in Brazil)
-	ok(!validateCard('6062 8288 0000 0000').isValid) // Hipercard (Popular in Brazil)
-	ok(!validateCard('6071 9811 0000 0000').isValid) // RuPay (Popular in India)
-	ok(!validateCard('6370 0028 0000 0000').isValid) // Interac (Popular in Canada)
-	ok(!validateCard('5019 5555 5555 5555').isValid) // Dankort (Popular in Denmark)
-	ok(!validateCard('5610 0000 0000 0000').isValid) // Bankcard (Popular in Australia)
-	ok(!validateCard('2200 0000 0000 0000').isValid) // Mir (Popular in Russia)
-	ok(!validateCard('4779 9990 0000 0000').isValid) // Zimswitch (Popular in Zimbabwe)
+	ok(!validateCard('5067 9900 0000 0000 0009').ok) // Elo (Popular in Brazil)
+	ok(!validateCard('6062 8288 0000 0000').ok) // Hipercard (Popular in Brazil)
+	ok(!validateCard('6071 9811 0000 0000').ok) // RuPay (Popular in India)
+	ok(!validateCard('6370 0028 0000 0000').ok) // Interac (Popular in Canada)
+	ok(!validateCard('5019 5555 5555 5555').ok) // Dankort (Popular in Denmark)
+	ok(!validateCard('5610 0000 0000 0000').ok) // Bankcard (Popular in Australia)
+	ok(!validateCard('2200 0000 0000 0000').ok) // Mir (Popular in Russia)
+	ok(!validateCard('4779 9990 0000 0000').ok) // Zimswitch (Popular in Zimbabwe)
 
 	//get the type soon as the user is typing, even when it's not valid yet
 	function a(partial, type) {
 		let v = validateCard(partial)
-		ok(!v.isValid)//not valid yet
+		ok(!v.ok)//not valid yet
 		ok(v.cardType[0].niceType == type)//name of first possible type identified
 	}
 	a('4111', 'Visa')
@@ -857,7 +857,7 @@ test(() => {
 	//four forms when valid
 	function b(raw, f2, f0) {
 		let v = validateCard(raw)
-		ok(v.isValid)
+		ok(v.ok)
 		ok(v.f2 == f2)
 		ok(v.f0 == f0)
 	}
@@ -902,21 +902,21 @@ test(() => {
 //  \__,_|\__,_|\__\___| |_|  \___/|_|    |_|\__,_|\___|_| |_|\__|_|\__|\__, |
 //                                                                      |___/ 
 
-//date for identity: "19991201" <--> v: {isValid: true, ...} zone from browser
+//date for identity: "19991201" <--> v: {ok: true, ...} zone from browser
 
-export function checkDate(raw) { let v = validateDate(raw); if (!v.isValid) toss('form', {v}); return v }
+export function checkDate(raw) { let v = validateDate(raw); if (!v.ok) toss('form', {v}); return v }
 export function validateDate(raw) {
 	let adjusted = onlyNumerals(raw)
 	adjusted = cropToLimit(adjusted, undefined, 8)//"YYYYMMDD" is 8 characters
-	if (adjusted.length != 8) return {isValid: false, raw}
+	if (adjusted.length != 8) return {ok: false, raw}
 	let year  = parseInt(adjusted.slice(0, 4), 10)
 	let month = parseInt(adjusted.slice(4, 6), 10)
 	let day   = parseInt(adjusted.slice(6, 8), 10)
 	if (year  < 1869 || year  > 9999 ||//sanity check bounds for a current date of birth
 			month <    1 || month >   12 ||
-			day   <    1 || day   >   31) return {isValid: false, raw, year, month, day}
+			day   <    1 || day   >   31) return {ok: false, raw, year, month, day}
 	return {//return an object with properties to match our validation pattern
-		isValid: true,
+		ok: true,
 		f0: adjusted,//store in database to record and identify duplicates
 		f1: adjusted,//not really used, would be the form we would hand to an API
 		f2: `${year}-${Time.months.oneToJan[month]}-${day}`,//form to show to the user on the page
@@ -926,7 +926,7 @@ export function validateDate(raw) {
 }
 test(() => {
 	let v = validateDate('20030525')
-	ok(v.isValid && v.year == 2003 && v.month == 5 && v.day == 25)
+	ok(v.ok && v.year == 2003 && v.month == 5 && v.day == 25)
 })
 
 const zoneMax = (-12)*(-60)//the Howland Islands are UTC-12, times 60 minutes and flip sign to match JavaScript's .getTimezoneOffset
@@ -1012,57 +1012,57 @@ test(() => {
 //   \_/ \__,_|_|_|\__,_|\__,_|\__\___|   \_/\_/ \__,_|_|_|\___|\__|
 //                                                                  
 
-export function checkWallet(raw) { let v = validateWallet(raw); if (!v.isValid) toss('form', {v}); return v }
+export function checkWallet(raw) { let v = validateWallet(raw); if (!v.ok) toss('form', {v}); return v }
 export function validateWallet(raw) {//validate ethereum wallet address
 	let t = raw.trim()//t for trimmed
 
 	let r40//r for raw; we'll clip out the 40 base16 numerals from the raw text we were given
 	if      (t.length == 42 && t.slice(0, 2).toLowerCase() == '0x') r40 = t.slice(2, 42)//allow "0X" start
 	else if (t.length == 40)                                        r40 = t
-	else return {isValid: false, raw}
+	else return {ok: false, raw}
 
-	if (!/^[0-9a-fA-F]+$/.test(r40)) return {isValid: false, raw}//any value 40 0s through 40 fs is a valid Ethereum address
+	if (!/^[0-9a-fA-F]+$/.test(r40)) return {ok: false, raw}//any value 40 0s through 40 fs is a valid Ethereum address
 
 	let c//c for checksum corrected
 	try {
 		c = viem_getAddress(('0x'+r40).toLowerCase())
-	} catch (e) { return {isValid: false, raw} }//checks above should make throwing not possible, but just in case
+	} catch (e) { return {ok: false, raw} }//checks above should make throwing not possible, but just in case
 	let c40 = c.slice(2, 42)//clip out the checksum case-corrected base16 characters
 
 	//at this point the address is valid
-	let v = {isValid: true, f0: c, f1: c, f2: c, raw}//all the forms are the same
+	let v = {ok: true, f0: c, f1: c, f2: c, raw}//all the forms are the same
 	if (r40 == r40.toUpperCase() || r40 == r40.toLowerCase()) { v.rawCaseUniform = true } else { v.rawCaseMixed = true }
 	if (r40 == c40) { v.checksumConfirmed = true } else { v.checksumCorrected = true }
 	if (v.rawCaseMixed && v.checksumCorrected) v.checksumWarning = true//important warning if the given address contains a checksum that's wrong!
 	return v
 }
 test(() => {
-	ok(validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045').isValid)//vitalik.eth, Milady
-	ok(validateWallet('0xd8da6bf26964af9d7eed9e03e53415d37aa96045').isValid)//lowercased ok, this is common
-	ok(validateWallet('0XD8DA6BF26964AF9D7EED9E03E53415D37AA96045').isValid)//uppercased even including "0X" ok
-	ok(validateWallet(  'd8da6bf26964af9d7eed9e03e53415d37aa96045').isValid)//no prefix also ok
+	ok(validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045').ok)//vitalik.eth, Milady
+	ok(validateWallet('0xd8da6bf26964af9d7eed9e03e53415d37aa96045').ok)//lowercased ok, this is common
+	ok(validateWallet('0XD8DA6BF26964AF9D7EED9E03E53415D37AA96045').ok)//uppercased even including "0X" ok
+	ok(validateWallet(  'd8da6bf26964af9d7eed9e03e53415d37aa96045').ok)//no prefix also ok
 
-	ok(validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\r\n').isValid)//edge space is fine
-	ok(validateWallet('  0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045  ').isValid)
-	ok(!validateWallet('0x d8dA6BF26964aF9D7eEd9e03E53415D37aA96045').isValid)//interior space is not
+	ok(validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\r\n').ok)//edge space is fine
+	ok(validateWallet('  0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045  ').ok)
+	ok(!validateWallet('0x d8dA6BF26964aF9D7eEd9e03E53415D37aA96045').ok)//interior space is not
 
-	ok(!validateWallet('').isValid)//blank
-	ok(!validateWallet('bad').isValid)//random wrong other string
+	ok(!validateWallet('').ok)//blank
+	ok(!validateWallet('bad').ok)//random wrong other string
 
-	ok(  validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').isValid)//good
-	ok(  !validateWallet('xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').isValid)//not enough prefix
-	ok(!validateWallet('00xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').isValid)//too much prefix
+	ok(  validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').ok)//good
+	ok(  !validateWallet('xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').ok)//not enough prefix
+	ok(!validateWallet('00xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef').ok)//too much prefix
 
-	ok(!validateWallet('0xdeadbeefHeadbeefdeadbeefdeadbeefdeadbeef').isValid)//bad base16 digit
-	ok(!validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbe').isValid)//too short
-	ok(!validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefef').isValid)//too long
+	ok(!validateWallet('0xdeadbeefHeadbeefdeadbeefdeadbeefdeadbeef').ok)//bad base16 digit
+	ok(!validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbe').ok)//too short
+	ok(!validateWallet('0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefef').ok)//too long
 
 	let v1 = validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')//checksum correct
 	let v2 = validateWallet('0xd8da6BF26964aF9D7eEd9e03E53415D37aA96045')//checksum mistake!
 	let v3 = validateWallet('0xd8da6bf26964af9d7eed9e03e53415d37aa96045')//lowercased input
 	let v4 = validateWallet('0xD8DA6BF26964AF9D7EED9E03E53415D37AA96045')//uppercased input
 
-	ok(v1.isValid && v2.isValid && v3.isValid && v4.isValid)//all are valid
+	ok(v1.ok && v2.ok && v3.ok && v4.ok)//all are valid
 	ok(v2.checksumWarning)//important checksum warning
 	ok(!v1.checksumWarning && !v3.checksumWarning && !v4.checksumWarning)//others don't need that warning
 })

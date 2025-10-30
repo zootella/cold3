@@ -121,7 +121,7 @@ test(async () => {
 export function validateMessageForm() {
 
 }
-//ttd february--so the idea here is, then for a form, you bundle the verification of multiple fields into a single object. does that work with different steps? this is just a sketch at this point, but you like the concept of getting standard "whole form is good to go" logic in one place, for client and server, rather than in Vue handlers above. (you really like that idea) as well as having a standard .isValid for a whole form, rather than just a bunch of individual form field valid flags
+//ttd february--so the idea here is, then for a form, you bundle the verification of multiple fields into a single object. does that work with different steps? this is just a sketch at this point, but you like the concept of getting standard "whole form is good to go" logic in one place, for client and server, rather than in Vue handlers above. (you really like that idea) as well as having a standard .ok for a whole form, rather than just a bunch of individual form field valid flags
 
 
 
@@ -853,7 +853,7 @@ CREATE INDEX name7 ON name_table (hide, name2_text, row_tick DESC);  -- is this 
 `)
 
 export async function nameCheck({v}) {//ttd march, draft like from the check if your desired name is available, to choose and change a name
-	if (!v.isValid) toss('valid', {v})//you have already done this check, but here too to make sure
+	if (!v.ok) toss('valid', {v})//you have already done this check, but here too to make sure
 
 	let task = Task({name: 'name check'})
 	let row0 = await name_get({name0: v.f0})

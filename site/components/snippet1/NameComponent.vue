@@ -14,7 +14,7 @@ const refMessage = ref('')
 
 watch([refName], () => {
 	let v = validateName(refName.value, Limit.name)
-	refButtonCanSubmit.value = toBoolean(v.isValid)
+	refButtonCanSubmit.value = toBoolean(v.ok)
 })
 
 async function onClick() {
