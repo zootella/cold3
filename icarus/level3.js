@@ -452,11 +452,11 @@ export async function codeSend({browserHash, provider, type, v}) {//v is the add
 }
 
 //can we send another code to this address now?
-async function codePermit(addressNormal) {
+async function codePermit(address0) {
 	const now = Now()
 
 	//use the code table to find out how many codes we've sent address
-	let rows = await code_get_address({addressNormal})//get all the rows about the given address
+	let rows = await code_get_address({address0})//get all the rows about the given address
 	let rowsWeek = rows.filter(row => row.row_tick >= now - Code.week)//those over the past 5 days
 	let rowsDay = rowsWeek.filter(row => row.row_tick >= now - Code.day)//those in just the last 24 hours
 	let rowsLive = rowsDay.filter(row => row.row_tick >= now - Code.expiration)//past 20 minutes, so could be active still
@@ -526,7 +526,7 @@ export async function browserToCodes({browserHash}) {
 
 				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
 				addressType: row.type_text,//the type of address, like "Email."
-				addressNormal: row.address0_text,
+				address0: row.address0_text,
 				addressFormal: row.address1_text,//the address we used with the api
 				addressPage:   row.address2_text,
 				//note we importantly do not send hash to the page, that's the secret part!
@@ -557,7 +557,7 @@ export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 			browserHash,
 			provider: row.provider_text,
 			type: row.type_text,
-			addressNormal: row.address0_text, addressFormal: row.address1_text, addressPage: row.address2_text,
+			address0: row.address0_text, addressFormal: row.address1_text, addressPage: row.address2_text,
 		})
 		return {success: true, lives: 0}
 
@@ -657,8 +657,8 @@ async function code_get({codeTag}) {//get the row about a code
 async function code_get_browser({browserHash}) {//get all the rows about the given browser
 	return await queryGet({table: 'code_table', title: 'browser_hash', cell: browserHash})
 }
-async function code_get_address({addressNormal}) {//get all the rows about the given address
-	return await queryGet({table: 'code_table', title: 'address0_text', cell: addressNormal})
+async function code_get_address({address0}) {//get all the rows about the given address
+	return await queryGet({table: 'code_table', title: 'address0_text', cell: address0})
 }
 
 async function code_set_lives({codeTag, lives}) {//set the number of lives, decrement on wrong guess or 0 to revoke
