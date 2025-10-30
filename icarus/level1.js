@@ -413,9 +413,9 @@ add that check to the other checkSomething editions
 
 
 //a cheat to bundle the validation trio into a v object, when it's from the database, so you don't need to check it
-export function bundleValid(f0, f1, formPage) {//you really have to get the order right!
-	checkText(f0); checkText(f1); checkText(formPage)//sanity check, even though you don't know what these are or what's valid for them, bundle, at least, needs them all to be something
-	return {isValid: true, f0, f1, formPage}
+export function bundleValid(f0, f1, f2) {//you really have to get the order right!
+	checkText(f0); checkText(f1); checkText(f2)//sanity check, even though you don't know what these are or what's valid for them, bundle, at least, needs them all to be something
+	return {isValid: true, f0, f1, f2}
 }
 //ttd march, is this a good idea? you're tried of typing out the three forms everywhere, and v could mean object from validate function
 
@@ -426,16 +426,16 @@ export function bundleValid(f0, f1, formPage) {//you really have to get the orde
 //ttd march, when you let the user choose their forms 1 and 2 names, name1->name0 must be available, and name2 must not collide with name0, either! this so you can make log in by name, and let the type any of the three forms
 
 
-export function checkName({formPage, f1, f0}) {
-	let message = _checkName({formPage, f1, f0})
-	if (message != 'Ok.') toss(message, {formPage, f1, f0})
+export function checkName({f2, f1, f0}) {
+	let message = _checkName({f2, f1, f0})
+	if (message != 'Ok.') toss(message, {f2, f1, f0})
 }
-function _checkName({formPage, f1, f0}) {
+function _checkName({f2, f1, f0}) {
 	let validPage, valid1, valid0
-	if (given(formPage)) {//remember that blank strings, while not valid, are falsey!
-		validPage = validateName(formPage, Limit.name)
+	if (given(f2)) {//remember that blank strings, while not valid, are falsey!
+		validPage = validateName(f2, Limit.name)
 		if (!validPage.formPageIsValid) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
-		if (validPage.formPage != formPage) return 'page form round trip mismatch'
+		if (validPage.f2 != f2) return 'page form round trip mismatch'
 	}
 	if (given(f1)) {
 		valid1 = validateName(f1, Limit.name)
@@ -454,15 +454,15 @@ function _checkName({formPage, f1, f0}) {
 }
 test(() => {
 	//example use
-	ok(_checkName({formPage: 'My Name', f1: 'My-Name', f0: 'my-name'}) == 'Ok.')//all valid and happen to match
-	ok(_checkName({formPage: '2B', f1: 'TwoB', f0: 'twob'}) == 'Ok.')//all valid, with formal is custom from page
+	ok(_checkName({f2: 'My Name', f1: 'My-Name', f0: 'my-name'}) == 'Ok.')//all valid and happen to match
+	ok(_checkName({f2: '2B', f1: 'TwoB', f0: 'twob'}) == 'Ok.')//all valid, with formal is custom from page
 
-	ok(_checkName({formPage: ''})   != 'Ok.')//make sure blank is identified as not valid
+	ok(_checkName({f2: ''}) != 'Ok.')//make sure blank is identified as not valid
 	ok(_checkName({f1: ''}) != 'Ok.')
 	ok(_checkName({f0: ''}) != 'Ok.')
 
-	ok(_checkName({formPage:   ' '}) == 'page form not valid')//cannot be made valid, not ok
-	ok(_checkName({formPage:   ' Untrimmed'}) == 'page form round trip mismatch')//have to be made valid, also not ok
+	ok(_checkName({f2: ' '}) == 'page form not valid')//cannot be made valid, not ok
+	ok(_checkName({f2: ' Untrimmed'}) == 'page form round trip mismatch')//have to be made valid, also not ok
 	ok(_checkName({f1: 'Has Space'})  == 'formal form round trip mismatch')
 	ok(_checkName({f0: 'Uppercase'})  == 'normal form round trip mismatch')
 
@@ -473,22 +473,22 @@ test(() => {
 const reservedRoutes = ['about', 'account', 'admin', 'administrator', 'app', 'ban', 'billing', 'blog', 'community', 'config', 'contact', 'creator', 'dashboard', 'developer', 'dm', 'e', 'f', 'fan', 'faq', 'feed', 'feedback', 'forum', 'help', 'home', 'i', 'legal', 'login', 'logout', 'manage', 'me', 'messages', 'moderator', 'my', 'notifications', 'official', 'privacy', 'profile', 'q', 'qr', 'register', 'report', 'root', 'search', 'settings', 'shop', 'signin', 'signout', 'signup', 'staff', 'status', 'store', 'subscribe', 'support', 'system', 'terms', 'unsubscribe', 'user', 'verify']//profile pages are on the root route; prevent a user from clashing with a utility or brochure page!
 export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let cropped = cropToLimit(raw, limit, Limit.name)
-	let formPage = trimLine(cropped)//"東京❤️女の子" valid for display on the page
+	let f2 = trimLine(cropped)//"東京❤️女の子" valid for display on the page
 	let f1 = slug(cropped)//"Tokyo-Girl" working and correct route for links
 	let f0 = f1.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
-	let isValid = hasText(formPage) && hasText(f1) && hasText(f0) && !reservedRoutes.includes(f0)
-	let formPageIsValid = hasText(formPage)
-	return {isValid, f0, f1, formPage, formPageIsValid, raw, cropped}
+	let isValid = hasText(f2) && hasText(f1) && hasText(f0) && !reservedRoutes.includes(f0)
+	let formPageIsValid = hasText(f2)
+	return {isValid, f0, f1, f2, formPageIsValid, raw, cropped}
 }
 test(() => {
 	function f(raw, normal, formal, page) {
 		let v = validateName(raw)
 		ok(v.f0 == normal)
 		ok(v.f1 == formal)
-		ok(v.formPage   == page)
+		ok(v.f2   == page)
 	}
 	let v = validateName('2 Rainbows 🌈🌈 4U ')//raw text from user that starts with number, contains emoji, and has an extra space at the end
-	ok(v.formPage == '2 Rainbows 🌈🌈 4U')//text to display on the page, trimmed
+	ok(v.f2 == '2 Rainbows 🌈🌈 4U')//text to display on the page, trimmed
 	ok(v.f1 == 'Rainbows-4U')//chosen route, case preserved
 	ok(v.f0 == 'rainbows-4u')//normalized route to confirm unique and then reserve--both of these routes work
 
@@ -593,14 +593,14 @@ data forms:
 -normalized, boiled down all the way to store in the database, and notice a duplicate
 
 guaranteed data pathway:
-raw -> f1 -> formPage
-									-> f0
+raw -> f1 -> f2
+         \-> f0
 
 email example:
 f0, nee normalized: 'bobfrank@gmail.com',   heaviest changes, store in database to prevent a duplicate
 f1, nee adjusted:   'Bob.Frank@GMAIL.COM',  light changes to pass validation; give to APIs
-formPage,   nee presented:  'Bob.Frank@gmail.com',  heavier formatting, show back to the user on the page
-raw:                        ' Bob.Frank@GMAIL.COM', what the user typed
+f2, nee presented:  'Bob.Frank@gmail.com',  heavier formatting, show back to the user on the page
+raw:                ' Bob.Frank@GMAIL.COM', what the user typed
 
 and so what do you pass to the email or credit card API?
 f1, in case the user's weird way of writing it actually matters
@@ -609,10 +609,10 @@ the log of exactly what you told the api records f1
 keep f1 and f0 in the database
 f0 to quickly detect a duplicate
 f1 for a later repeat use with an API
-and when composing text for the page, do f1 -> formPage
+and when composing text for the page, do f1 -> f2
 
 uniformly, these validation functions take raw text from the user's keystrokes
-and return an object like {isValid, f0, f1, formPage, raw, otherPartsOrDetails, ...}
+and return an object like {isValid, f0, f1, f2, raw, otherPartsOrDetails, ...}
 */
 
 //             _ _     _       _                              _ _ 
@@ -647,9 +647,9 @@ export function validateEmail(raw, limit) {
 	TomStoppard@SpeedOfArt.net is used to seeing his domain flattened
 	*/
 	let p = cut(f1, "@")
-	let formPage = p.before + "@" + p.after.toLowerCase()
-	let j2 = zodEmail().safeParse(formPage)
-	if (!j2.success) return {f1, formPage, raw, cropped, j2}
+	let f2 = p.before + "@" + p.after.toLowerCase()
+	let j2 = zodEmail().safeParse(f2)
+	if (!j2.success) return {f1, f2, raw, cropped, j2}
 
 	/* (3) normalized step for email
 	here, we want to prevent MrMorgan@example.com from creating a second account as mrmorgan@example.com
@@ -662,9 +662,9 @@ export function validateEmail(raw, limit) {
 	if (periodIgnorers.includes(domain)) name = name.replace(/\./g, '')//first.last@gmail.com is really firstlast@gmail.com
 	let f0 = name + "@" + domain
 	let j3 = zodEmail().safeParse(f0)
-	if (!j3.success) return {f1, formPage, f0, raw, cropped, j3}
+	if (!j3.success) return {f1, f2, f0, raw, cropped, j3}
 
-	return {isValid: true, f0, f1, formPage, raw, cropped}
+	return {isValid: true, f0, f1, f2, raw, cropped}
 }
 test(() => {
 
@@ -691,11 +691,11 @@ test(() => {
 	ok(!validateEmail('name.@example.com').isValid)
 
 	//four forms when valid
-	function f(raw, f1, formPage, f0) {
+	function f(raw, f1, f2, f0) {
 		let v = validateEmail(raw)
 		ok(v.isValid)
 		ok(v.f1 == f1)
-		ok(v.formPage == formPage)
+		ok(v.f2 == f2)
 		ok(v.f0 == f0)
 	}
 	//lowercasing to keep working, make pretty, and detect a duplicate
@@ -740,10 +740,10 @@ export function validatePhone(raw, limit) {
 
 	let f0 = phone.format('E.164')//as established by the International Telecommunication Union
 	let f1 = f0//use E.164 with APIs, also
-	let formPage = phone.formatInternational()//prettier, with spaces, for the user to see on the page
-	if (!hasText(f0) || !hasText(formPage)) return {f0, f1, formPage, raw, cropped, assumedRegion, phone}
+	let f2 = phone.formatInternational()//prettier, with spaces, for the user to see on the page
+	if (!hasText(f0) || !hasText(f2)) return {f0, f1, f2, raw, cropped, assumedRegion, phone}
 
-	return {isValid: true, f0, f1, formPage, raw, cropped, assumedRegion, phone}
+	return {isValid: true, f0, f1, f2, raw, cropped, assumedRegion, phone}
 }
 test(() => {
 	ok(!validatePhone('').isValid)//blank
@@ -754,7 +754,7 @@ test(() => {
 		let v = validatePhone(raw)
 		ok(v.isValid)
 		ok(v.phone.country == country)
-		ok(v.formPage == f2)
+		ok(v.f2 == f2)
 		ok(v.f0 == f0)
 	}
 
@@ -806,22 +806,22 @@ export function validateCard(raw, limit) {
 	if (!cardType.length) return {f0, raw, cropped, cardType, note: 'no type'}//cardType should be an array of at least one possible type
 	let gaps = cardType[0].gaps//go with first identified type, but know that there can be several
 	let gap = 0//index in the array of gaps
-	let formPage = ''
+	let f2 = ''
 	for (let i = 0; i < f0.length; i++) {//loop for each numeral
 		if (gap < gaps.length && i == gaps[gap]) {//weve reached a gap position
-			formPage += ' '//add a gap
+			f2 += ' '//add a gap
 			gap++//watch for the next gap
 		}
-		formPage += f0[i]//bring in this numeral
+		f2 += f0[i]//bring in this numeral
 	}
-	if (onlyNumerals(formPage) != f0) return {f0, formPage, raw, cropped, cardType, note: 'round trip mismatch'}
+	if (onlyNumerals(f2) != f0) return {f0, f2, raw, cropped, cardType, note: 'round trip mismatch'}
 
 	/* (4) make sure the length is correct and check the last digit with Luhn
 	*/
-	if (!cardType[0].lengths.includes(f0.length)) return {f0, formPage, raw, cropped, cardType, note: 'bad length'}
-	if (!isLuhn(f0)) return {f0, formPage, raw, cropped, cardType, note: 'bad luhn'}
+	if (!cardType[0].lengths.includes(f0.length)) return {f0, f2, raw, cropped, cardType, note: 'bad length'}
+	if (!isLuhn(f0)) return {f0, f2, raw, cropped, cardType, note: 'bad luhn'}
 
-	return {isValid: true, f0, formPage, raw, cropped, cardType}//also return the detected type information
+	return {isValid: true, f0, f2, raw, cropped, cardType}//also return the detected type information
 }
 test(() => {
 
@@ -849,28 +849,28 @@ test(() => {
 	ok(!validateCard('4779 9990 0000 0000').isValid) // Zimswitch (Popular in Zimbabwe)
 
 	//get the type soon as the user is typing, even when it's not valid yet
-	function f(partial, type) {
+	function a(partial, type) {
 		let v = validateCard(partial)
 		ok(!v.isValid)//not valid yet
 		ok(v.cardType[0].niceType == type)//name of first possible type identified
 	}
-	f('4111', 'Visa')
-	f('55', 'Mastercard')//braintree says not internally capitalized
-	f('3782 822', 'American Express')
+	a('4111', 'Visa')
+	a('55', 'Mastercard')//braintree says not internally capitalized
+	a('3782 822', 'American Express')
 
 	//four forms when valid
-	function f2(raw, formPage, f0) {
+	function b(raw, f2, f0) {
 		let v = validateCard(raw)
 		ok(v.isValid)
-		ok(v.formPage == formPage)
+		ok(v.f2 == f2)
 		ok(v.f0 == f0)
 	}
-	f2('4111 1111 1111 1111',     '4111 1111 1111 1111', '4111111111111111')
-	f2('4111111111111111',        '4111 1111 1111 1111', '4111111111111111')
-	f2('4111-1111-1111-1111',     '4111 1111 1111 1111', '4111111111111111')
-	f2('4111 1111 1111 1111\r\n', '4111 1111 1111 1111', '4111111111111111')
-	f2('3782 822463 10005',  '3782 822463 10005', '378282246310005')
-	f2('3782 8224 6310 005', '3782 822463 10005', '378282246310005')
+	b('4111 1111 1111 1111',     '4111 1111 1111 1111', '4111111111111111')
+	b('4111111111111111',        '4111 1111 1111 1111', '4111111111111111')
+	b('4111-1111-1111-1111',     '4111 1111 1111 1111', '4111111111111111')
+	b('4111 1111 1111 1111\r\n', '4111 1111 1111 1111', '4111111111111111')
+	b('3782 822463 10005',  '3782 822463 10005', '378282246310005')
+	b('3782 8224 6310 005', '3782 822463 10005', '378282246310005')
 })
 
 function isLuhn(s) {
@@ -923,7 +923,7 @@ export function validateDate(raw) {
 		isValid: true,
 		f0: adjusted,//store in database to record and identify duplicates
 		f1: adjusted,//not really used, would be the form we would hand to an API
-		formPage: `${year}-${Time.months.oneToJan[month]}-${day}`,//form to show to the user on the page
+		f2: `${year}-${Time.months.oneToJan[month]}-${day}`,//form to show to the user on the page
 		raw,//exactly the string we were given
 		year, month, day,//component information for use by code, these are numbers, not text, for instance
 	}
@@ -1034,7 +1034,7 @@ export function validateWallet(raw) {//validate ethereum wallet address
 	let c40 = c.slice(2, 42)//clip out the checksum case-corrected base16 characters
 
 	//at this point the address is valid
-	let v = {isValid: true, f0: c, f1: c, formPage: c, raw}//all the forms are the same
+	let v = {isValid: true, f0: c, f1: c, f2: c, raw}//all the forms are the same
 	if (r40 == r40.toUpperCase() || r40 == r40.toLowerCase()) { v.rawCaseUniform = true } else { v.rawCaseMixed = true }
 	if (r40 == c40) { v.checksumConfirmed = true } else { v.checksumCorrected = true }
 	if (v.rawCaseMixed && v.checksumCorrected) v.checksumWarning = true//important warning if the given address contains a checksum that's wrong!

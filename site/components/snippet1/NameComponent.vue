@@ -24,8 +24,8 @@ async function onClick() {
 	})
 	log('name post response', look(response))
 	refMessage.value = ((response.available.isAvailable) ?
-		`✅ Yes, "${response.available.v.formPage}" is available for you to take!` :
-		`❌ Sorry, "${response.available.v.formPage}" is already in use.`)
+		`✅ Yes, "${response.available.v.f2}" is available for you to take!` :
+		`❌ Sorry, "${response.available.v.f2}" is already in use.`)
 }
 
 </script>

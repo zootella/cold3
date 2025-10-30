@@ -12,7 +12,7 @@ watch([refName2Box], () => {//the top box controls the lower one
 	let v = validateName(refName2Box.value, Limit.name)
 	log(look({input: refName2Box.value, v}))
 	if (v.formPageIsValid) {
-		refStatus2.value = v.formPage//set the status here
+		refStatus2.value = v.f2//set the status here
 		refName1Box.value = v.f1//and the contents of the box below
 	} else {
 		refStatus2.value = `(not valid yet, keep typing...)`

@@ -673,7 +673,7 @@ async function code_add({codeTag, browserHash, provider, type, v, hash, lives}) 
 		browser_hash: browserHash,
 		provider_text: provider,
 		type_text: type,
-		address0_text: v.f0, address1_text: v.f1, address2_text: v.formPage,
+		address0_text: v.f0, address1_text: v.f1, address2_text: v.f2,
 		hash,
 		lives,
 	}})
@@ -857,7 +857,7 @@ export async function nameCheck({v}) {//ttd march, draft like from the check if 
 
 	let task = Task({name: 'name check'})
 	let row0 = await name_get({name0: v.f0})
-	let rowPage   = await name_get({namePage:   v.formPage})
+	let rowPage   = await name_get({namePage:   v.f2})
 	task.available = {
 		isAvailable: (!row0) && (!rowPage),
 		isAvailable0: !row0,
@@ -876,7 +876,7 @@ async function name_get({//look up user route and name information by calling wi
 	let row
 	if      (given(userTag))    { checkTag(userTag);                   row = await queryTop({table: 'name_table', title: 'user_tag',   cell: userTag})    }
 	else if (given(name0)) { checkName({f0: name0}); row = await queryTop({table: 'name_table', title: 'name0_text', cell: name0}) }
-	else if (given(namePage))   { checkName({formPage:   namePage});   row = await queryTop({table: 'name_table', title: 'name2_text', cell: namePage})   }
+	else if (given(namePage))   { checkName({f2:   namePage});   row = await queryTop({table: 'name_table', title: 'name2_text', cell: namePage})   }
 	else { toss('use', {userTag, name0, namePage}) }
 
 	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
@@ -887,7 +887,7 @@ async function name_get({//look up user route and name information by calling wi
 //setName() does not make sure the names it sets are available--you've already done that before calling here!
 //there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
 async function name_set({userTag, name0, name1, namePage}) {
-	checkTag(userTag); checkName({f0: name0, f1: name1, formPage: namePage})
+	checkTag(userTag); checkName({f0: name0, f1: name1, f2: namePage})
 	await name_delete({userTag})//replace an existing row about this user with a new one:
 	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: name0, name1_text: name1, name2_text: namePage}})
 }
