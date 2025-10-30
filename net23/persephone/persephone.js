@@ -77,11 +77,11 @@ export async function sendMessage({provider, service, address, subjectText, mess
 		if (service == 'Email.') {
 			task.parameters.fromName = access.get('ACCESS_MESSAGE_BRAND')
 			task.parameters.fromEmail = access.get('ACCESS_MESSAGE_EMAIL')
-			task.parameters.toEmail = checkEmail(address).formFormal
+			task.parameters.toEmail = checkEmail(address).f1//form 1 is the correct form to send to APIs
 			if      (provider == 'Amazon.') await sendMessageAmazonEmail(access, task)
 			else if (provider == 'Twilio.') await sendMessageTwilioEmail(access, task)
 		} else if (service == 'Phone.') {
-			task.parameters.toPhone = checkPhone(address).formFormal
+			task.parameters.toPhone = checkPhone(address).f1
 			if      (provider == 'Amazon.') await sendMessageAmazonPhone(access, task)
 			else if (provider == 'Twilio.') await sendMessageTwilioPhone(access, task)
 		}

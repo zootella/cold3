@@ -241,7 +241,7 @@ async function address_add({userTag, type, v, event}) {//v is the result of a va
 	await queryAddRow({table: 'address_table', row: {
 		user_tag: userTag,
 		type_text: type,
-		address0_text: v.f0, address1_text: v.formFormal, address2_text: v.fromPage,
+		address0_text: v.f0, address1_text: v.f1, address2_text: v.fromPage,
 		event: event,
 	}})
 }
@@ -441,7 +441,7 @@ export async function codeSend({browserHash, provider, type, v}) {//v is the add
 	await fetchLambda('/message', {body: {
 		provider: provider,
 		service: type,
-		address: v.formFormal,
+		address: v.f1,
 		subjectText: code.subjectText,//email subject
 		messageText: code.messageText,//email body as text, or complete SMS message
 		messageHtml: code.messageHtml,//email body as HTML
@@ -673,7 +673,7 @@ async function code_add({codeTag, browserHash, provider, type, v, hash, lives}) 
 		browser_hash: browserHash,
 		provider_text: provider,
 		type_text: type,
-		address0_text: v.f0, address1_text: v.formFormal, address2_text: v.formPage,
+		address0_text: v.f0, address1_text: v.f1, address2_text: v.formPage,
 		hash,
 		lives,
 	}})
@@ -887,7 +887,7 @@ async function name_get({//look up user route and name information by calling wi
 //setName() does not make sure the names it sets are available--you've already done that before calling here!
 //there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
 async function name_set({userTag, name0, nameFormal, namePage}) {
-	checkTag(userTag); checkName({f0: name0, formFormal: nameFormal, formPage: namePage})
+	checkTag(userTag); checkName({f0: name0, f1: nameFormal, formPage: namePage})
 	await name_delete({userTag})//replace an existing row about this user with a new one:
 	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: name0, name1_text: nameFormal, name2_text: namePage}})
 }

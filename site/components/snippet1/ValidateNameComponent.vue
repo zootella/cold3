@@ -13,7 +13,7 @@ watch([refPageBox], () => {//the top box controls the lower one
 	log(look({input: refPageBox.value, v}))
 	if (v.formPageIsValid) {
 		refPageStatus.value = v.formPage//set the status here
-		refFormalBox.value = v.formFormal//and the contents of the box below
+		refFormalBox.value = v.f1//and the contents of the box below
 	} else {
 		refPageStatus.value = `(not valid yet, keep typing...)`
 	}
@@ -21,7 +21,7 @@ watch([refPageBox], () => {//the top box controls the lower one
 watch([refFormalBox], () => {//which is also independently editable
 	let v = validateName(refFormalBox.value, Limit.name)
 	if (v.isValid) {
-		refFormalStatus.value = v.formFormal//set the status here
+		refFormalStatus.value = v.f1//set the status here
 	} else {
 		refFormalStatus.value = `(not valid yet, keep typing...)`
 	}
