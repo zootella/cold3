@@ -526,9 +526,9 @@ export async function browserToCodes({browserHash}) {
 
 				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
 				addressType: row.type_text,//the type of address, like "Email."
-				addressNormal: row.normal_text,
-				addressFormal: row.formal_text,//the address we used with the api
-				addressPage:   row.page_text,
+				addressNormal: row.address0_text,
+				addressFormal: row.address1_text,//the address we used with the api
+				addressPage:   row.address2_text,
 				//note we importantly do not send hash to the page, that's the secret part!
 			})
 		}
@@ -557,7 +557,7 @@ export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 			browserHash,
 			provider: row.provider_text,
 			type: row.type_text,
-			addressNormal: row.normal_text, addressFormal: row.formal_text, addressPage: row.page_text,
+			addressNormal: row.address0_text, addressFormal: row.address1_text, addressPage: row.address2_text,
 		})
 		return {success: true, lives: 0}
 
@@ -636,18 +636,18 @@ CREATE TABLE code_table (
 
 	provider_text  TEXT      NOT NULL,  -- note we sent the code using "Amazon." or "Twilio."
 	type_text      TEXT      NOT NULL,  -- address type like "Email." or "Phone."
-	normal_text    TEXT      NOT NULL,  -- address in the three forms, we'll use normal to find and page to show
-	formal_text    TEXT      NOT NULL,
-	page_text      TEXT      NOT NULL,
+	address0_text  TEXT      NOT NULL,  -- address in the three forms, we'll use normal to find and page to show
+	address1_text  TEXT      NOT NULL,
+	address2_text  TEXT      NOT NULL,
 
 	hash           CHAR(52)  NOT NULL,  -- the hash of the code tag followed by the 4 or 6 numeral code
 
 	lives          BIGINT    NOT NULL   -- starts 4 guesses, decrement, or set directly to 0 to invalidate
 );
 
-CREATE INDEX code1 ON code_table (browser_hash,           row_tick DESC) WHERE hide = 0;  -- filter by browser
-CREATE INDEX code2 ON code_table (type_text, normal_text, row_tick DESC) WHERE hide = 0;  -- or by address
-^ttd march, maybe, change all indices to partial with where hide zero like above
+CREATE INDEX code1 ON code_table (browser_hash,             row_tick DESC) WHERE hide = 0;  -- filter by browser
+CREATE INDEX code2 ON code_table (type_text, address0_text, row_tick DESC) WHERE hide = 0;  -- or by address
+-- ^ttd march, maybe, change all indices to partial with where hide zero like above
 `)
 
 async function code_get({codeTag}) {//get the row about a code
@@ -658,7 +658,7 @@ async function code_get_browser({browserHash}) {//get all the rows about the giv
 	return await queryGet({table: 'code_table', title: 'browser_hash', cell: browserHash})
 }
 async function code_get_address({addressNormal}) {//get all the rows about the given address
-	return await queryGet({table: 'code_table', title: 'normal_text', cell: addressNormal})
+	return await queryGet({table: 'code_table', title: 'address0_text', cell: addressNormal})
 }
 
 async function code_set_lives({codeTag, lives}) {//set the number of lives, decrement on wrong guess or 0 to revoke
@@ -673,7 +673,7 @@ async function code_add({codeTag, browserHash, provider, type, v, hash, lives}) 
 		browser_hash: browserHash,
 		provider_text: provider,
 		type_text: type,
-		normal_text: v.formNormal, formal_text: v.formFormal, page_text: v.formPage,
+		address0_text: v.formNormal, address1_text: v.formFormal, address2_text: v.formPage,
 		hash,
 		lives,
 	}})
