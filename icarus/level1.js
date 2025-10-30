@@ -319,7 +319,7 @@ test(() => {
 
 //ttd february
 /*
-checkNameNormal(name0) makes sure name0 is a valid normalized route that doesn't change when we validate it
+checkName0(name0) makes sure name0 is a valid normalized route that doesn't change when we validate it
 checkNamePage(namePage) makes sure namePage is a valid name for the page that doesn't change when we validate it
 checkName(all three) makes sure that when we validate each of three they don't change, and also, that formal normalizes to normal!
 
@@ -423,7 +423,7 @@ export function bundleValid(f0, formFormal, formPage) {//you really have to get 
 
 
 
-//ttd march, when you let the user choose their Formal and Page names, Formal->Normal must be available, and Page must not collide with Normal, either! this so you can make log in by name, and let the type any of the three forms
+//ttd march, when you let the user choose their Formal and Page names, Formal->name0 must be available, and Page must not collide with name0, either! this so you can make log in by name, and let the type any of the three forms
 
 
 export function checkName({formPage, formFormal, f0}) {
@@ -431,7 +431,7 @@ export function checkName({formPage, formFormal, f0}) {
 	if (message != 'Ok.') toss(message, {formPage, formFormal, f0})
 }
 function _checkName({formPage, formFormal, f0}) {
-	let validPage, validFormal, validNormal
+	let validPage, validFormal, valid0
 	if (given(formPage)) {//remember that blank strings, while not valid, are falsey!
 		validPage = validateName(formPage, Limit.name)
 		if (!validPage.formPageIsValid) return 'page form not valid'//page form can be valid, but not validate into the other two; they can be separate
@@ -443,9 +443,9 @@ function _checkName({formPage, formFormal, f0}) {
 		if (validFormal.formFormal != formFormal) return 'formal form round trip mismatch'
 	}
 	if (given(f0)) {
-		validNormal = validateName(f0, Limit.name)
-		if (!validNormal.isValid) return 'normal form not valid'
-		if (validNormal.f0 != f0) return 'normal form round trip mismatch'
+		valid0 = validateName(f0, Limit.name)
+		if (!valid0.isValid) return 'normal form not valid'
+		if (valid0.f0 != f0) return 'normal form round trip mismatch'
 	}
 	if (given(formFormal) && given(f0)) {//after checking all given forms individually, also make sure formal normalizes into normal
 		if (validFormal.f0 != f0) return 'round trip mismatch between normal and formal forms'
@@ -750,11 +750,11 @@ test(() => {
 	ok(!validatePhone('5551234').isValid)//local
 	ok(!validatePhone('pizza').isValid)//nonsense
 
-	function f(country, f0, raw, formPage) {
+	function f(country, f0, raw, f2) {
 		let v = validatePhone(raw)
 		ok(v.isValid)
 		ok(v.phone.country == country)
-		ok(v.formPage == formPage)
+		ok(v.formPage == f2)
 		ok(v.f0 == f0)
 	}
 
@@ -762,7 +762,6 @@ test(() => {
 	f('US', '+14155552671',   '4155552671', '+1 415 555 2671')
 	f('US', '+14155552671',  '14155552671', '+1 415 555 2671')
 	f('US', '+14155552671', '+14155552671', '+1 415 555 2671')
-	//forms ^Normal & Formal; ^raw;          ^Page, in this test, above and below in that order
 
 	//extra characters, still valid
 	f('US', '+14155552671',   '415 555 2671',     '+1 415 555 2671')

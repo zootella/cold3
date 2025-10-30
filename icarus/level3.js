@@ -856,11 +856,11 @@ export async function nameCheck({v}) {//ttd march, draft like from the check if 
 	if (!v.isValid) toss('valid', {v})//you have already done this check, but here too to make sure
 
 	let task = Task({name: 'name check'})
-	let rowNormal = await name_get({name0: v.f0})
+	let row0 = await name_get({name0: v.f0})
 	let rowPage   = await name_get({namePage:   v.formPage})
 	task.available = {
-		isAvailable: (!rowNormal) && (!rowPage),
-		isAvailableNormal: !rowNormal,
+		isAvailable: (!row0) && (!rowPage),
+		isAvailable0: !row0,
 		isAvailablePage: !rowPage,
 		v,
 	}
