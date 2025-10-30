@@ -880,16 +880,16 @@ async function name_get({//look up user route and name information by calling wi
 	else { toss('use', {userTag, name0, namePage}) }
 
 	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
-	return {userTag: row.user_tag, name0: row.name0_text, nameFormal: row.name1_text, namePage: row.name2_text}
+	return {userTag: row.user_tag, name0: row.name0_text, name1: row.name1_text, namePage: row.name2_text}
 }
 
 //set the given normal, formal, and page names for the given user
 //setName() does not make sure the names it sets are available--you've already done that before calling here!
 //there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
-async function name_set({userTag, name0, nameFormal, namePage}) {
-	checkTag(userTag); checkName({f0: name0, f1: nameFormal, formPage: namePage})
+async function name_set({userTag, name0, name1, namePage}) {
+	checkTag(userTag); checkName({f0: name0, f1: name1, formPage: namePage})
 	await name_delete({userTag})//replace an existing row about this user with a new one:
-	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: name0, name1_text: nameFormal, name2_text: namePage}})
+	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: name0, name1_text: name1, name2_text: namePage}})
 }
 
 //remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
@@ -1194,7 +1194,7 @@ export async function browserToUser({browserHash}) {
 		if (user.userTag) {//we found a user tag, let's look up its name and more information about it
 			let n = await name_get({userTag: user.userTag})
 			if (n) {
-				user.name = bundleValid(n.name0, n.nameFormal, n.namePage)
+				user.name = bundleValid(n.name0, n.name1, n.namePage)
 			}
 		}
 	}
@@ -1213,7 +1213,7 @@ export async function demonstrationSignGet({browserHash}) {
 	if (b) {
 		let n = await name_get({userTag: b.userTag})//find that user's name, right now their normalized route identifies them
 		if (n) {
-			return {isFound: true, browserHash, userTag: b.userTag, name0: n.name0, nameFormal: n.nameFormal, namePage: n.namePage}
+			return {isFound: true, browserHash, userTag: b.userTag, name0: n.name0, name1: n.name1, namePage: n.namePage}
 		}
 	}
 	return {isFound: false, browserHash}
@@ -1225,7 +1225,7 @@ export async function demonstrationSignUp({browserHash, name0, origin}) {
 	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserHash, name0}
 
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	await name_set({userTag, name0, nameFormal: name0, namePage: name0})//ttd january, all the same for now
+	await name_set({userTag, name0, name1: name0, namePage: name0})//ttd january, all the same for now
 	await browser_in({browserHash, userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
 	return {isSignedUp: true, browserHash, userTag, name: name0, name0}//just for testing; we won't send user tags to pages
 }
