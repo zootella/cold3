@@ -360,7 +360,7 @@ v.f0 "alice-v3" lowercased to reserve this user name for alice
 v.f1 "Alice-v3" here the API is the browser's location bar and web links; a navigation to f0 could redirect to f1
 v.f2 "Alice ❤️" spaces and emoji work fine on cards and pages
 
-also returned is v.in, the same string we were given,
+also returned is v.raw, the same string we were given,
 and other properties specific to the data type and validation process, like types, parts, and errors
 v.f3, if present, is the "hide" form, f2 redacted to let the user identify without disclosing
 
@@ -369,7 +369,7 @@ database tables must store all three
 triads of columns have titles like address0_text, address1_text, and address2_text
 
 AI found sets of equivalent length names like good/save/send/show/hide, normal/formal/visual, and reserve/working/display
-but ok/in/f0/f1/f2/f3 are shortest, extensible, readily identifiable in code and schema, and learnable
+but ok/raw/f0/f1/f2/f3 are shortest, extensible, readily identifiable in code and schema, and learnable
 */
 
 
