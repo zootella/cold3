@@ -270,7 +270,7 @@ tickToDay, dayToTick,
 sayTimePage, sayWhenPage, sayWhenFeed,
 fraction, exponent, int, big,
 deindent,
-defined,
+defined, given,
 squareEncode, squareDecode, checkSquare,
 correctLength,
 say, look,
@@ -283,7 +283,6 @@ sequentialShared, sequentialSeparate,
 sameIgnoringCase, sameIgnoringTrailingSlash,
 
 roundDown,
-given,
 
 sample1,
 

@@ -2036,20 +2036,15 @@ but that's probably all you need
 
 
 
-
-
-
-
-
-//      _       __ _                _   _                           __ 
-//   __| | ___ / _(_)_ __   ___  __| | | |_ _   _ _ __   ___  ___  / _|
-//  / _` |/ _ \ |_| | '_ \ / _ \/ _` | | __| | | | '_ \ / _ \/ _ \| |_ 
-// | (_| |  __/  _| | | | |  __/ (_| | | |_| |_| | |_) |  __/ (_) |  _|
-//  \__,_|\___|_| |_|_| |_|\___|\__,_|  \__|\__, | .__/ \___|\___/|_|  
-//                                          |___/|_|                   
+//                  _       __ _                _ 
+//  _   _ _ __   __| | ___ / _(_)_ __   ___  __| |
+// | | | | '_ \ / _` |/ _ \ |_| | '_ \ / _ \/ _` |
+// | |_| | | | | (_| |  __/  _| | | | |  __/ (_| |
+//  \__,_|_| |_|\__,_|\___|_| |_|_| |_|\___|\__,_|
+//                                                
 
 //use always with typeof, like "defined(typeof x)"
-export function defined(t) { return t != 'undefined' }
+export function defined(t) { return t != 'undefined' }//use like if (defined(typeof x))
 test(() => {
 	/*
 	let's say you're dealing with a in your code
@@ -2095,6 +2090,82 @@ test(() => {
 	v1 = o2?.d1?.d2//works fine, but only if you are sure o2 is defined
 	if (defined(typeof o1)) v1 = o1?.d1?.d2//runs fine, this is the proper use
 })
+
+//it's important to always remember to use if (given(p)) not if (p) when detecting if you got passed a named dereferenced parameter!
+export function given(r) { return r !== undefined }
+test(() => {
+	function f({p1}) {//consider this function that follows the pattern of taking named, frequently optional, parameteres. this is a helpful pattern, and you're using it more and more. but you have to be careful discerning a parameter omitted, and a parameter passed but with a falsey value!!!
+		let found = 0
+		if (p1) found++//you can't do this! if p1 is a given, but blank, string "", it's falsey so we will think we weren't passed anything!
+		if (given(p1)) found++//instead, use the given() helper function, which can find it
+		return found//how many times we found the given parameter
+	}
+
+	//using given() is necessary for strings
+	ok(f({}) == 0)//actually not given
+	ok(f({p1: ''}) == 1)//giving value blank: if (p1) can't find it, but if (given(p1)) can, so use that
+	ok(f({p1: 'v'}) == 2)//if does work if it's not blank
+
+	//that's really all you need to do: just remember if (given(p)); everything below is just going deeper into how javascript works...
+
+	//note that empty arrays and objects, unlike strings, are truthy, so if() and given() both can find them
+	ok(f({p1: []}) == 2)
+	ok(f({p1: {}}) == 2)
+
+	//given() is necessary for not just strings, but other possibly passed parameters with falsey values, like boolean, number, and null
+	ok(f({p1: false}) == 1)
+	ok(f({p1: 0})     == 1)
+	ok(f({p1: null})  == 1)//1 here indicates if(given(p1)) could find p1 and if(p1) erroneously could not!
+
+	//so, that's likely all we need here, but to explore further...
+	//note that, after dereferencing, there is no way to distinguish between a passed value undefined and an omitted parameter
+	let p1//leave undefined
+	let p2 = 'B'
+	ok(f({p1, p2}) == 0)//passed, but not defined: neither if() nor given() can find it
+	ok(f({    p2}) == 0)//no way to tell the line above apart from this one
+
+	//so let's say we ran into a situation where we *really* needed to do that
+	//inherent to destructuring, there’s no way to distinguish between an omitted property and one that’s been set to undefined
+	//so don't destructure right away; get a reference to the given object c to examine, and then in the next line destructure it:
+	function f2(c) {//get the given object as c, first
+		const {p1} = c//and destructure in the first line, rather than in the zeroth line
+		let found = 0
+		if ('p1' in c) found++//now you can use the in operator on c with "p1", the name of a parameter we're looking for
+		if (given(p1)) found++//second most severe method, good enough for blank strings, at least
+		if (p1)        found++//third most, not good enough
+		return found
+	}
+	ok(f2({}) == 0)//actually omitted, finding p1 0 times here is correct
+
+	//in these examples, only the in operator is able to find p1
+	ok(f2({p1})            == 1)//mentioned and undefined
+	ok(f2({p1: undefined}) == 1)//set to undefined, only the in operator can find it
+
+	//making things a little easier, in and given both work for these present, but falsey, parameters
+	ok(f2({p1: 0})     == 2)//falsey values additionally detected by our given() helper function
+	ok(f2({p1: false}) == 2)
+	ok(f2({p1: null})  == 2)
+	ok(f2({p1: ''})    == 2)//the important-to-detect given blank string that lead us here!
+
+	//empty arrays and objects aren't falsey, so now three methods: in, given, and if, all find p1
+	ok(f2({p1: []}) == 3)//empty objects and arrays work with just if()
+	ok(f2({p1: {}}) == 3)
+
+	//and, of course, if the value isn't falsey, everybody finds it
+	ok(f2({p1: 'A'}) == 3)//and truthy values are detected all ways, of course
+	ok(f2({p1: 720}) == 3)//and truthy values are detected all ways, of course
+})
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3014,72 +3085,6 @@ test(() => {
 
 
 
-
-
-//it's important to always remember to use if (given(p)) not if (p) when detecting if you got passed a named dereferenced parameter!
-export function given(r) { return r !== undefined }
-test(() => {
-	function f({p1}) {//consider this function that follows the pattern of taking named, frequently optional, parameteres. this is a helpful pattern, and you're using it more and more. but you have to be careful discerning a parameter omitted, and a parameter passed but with a falsey value!!!
-		let found = 0
-		if (p1) found++//you can't do this! if p1 is a given, but blank, string "", it's falsey so we will think we weren't passed anything!
-		if (given(p1)) found++//instead, use the given() helper function, which can find it
-		return found//how many times we found the given parameter
-	}
-
-	//using given() is necessary for strings
-	ok(f({}) == 0)//actually not given
-	ok(f({p1: ''}) == 1)//giving value blank: if (p1) can't find it, but if (given(p1)) can, so use that
-	ok(f({p1: 'v'}) == 2)//if does work if it's not blank
-
-	//that's really all you need to do: just remember if (given(p)); everything below is just going deeper into how javascript works...
-
-	//note that empty arrays and objects, unlike strings, are truthy, so if() and given() both can find them
-	ok(f({p1: []}) == 2)
-	ok(f({p1: {}}) == 2)
-
-	//given() is necessary for not just strings, but other possibly passed parameters with falsey values, like boolean, number, and null
-	ok(f({p1: false}) == 1)
-	ok(f({p1: 0})     == 1)
-	ok(f({p1: null})  == 1)//1 here indicates if(given(p1)) could find p1 and if(p1) erroneously could not!
-
-	//so, that's likely all we need here, but to explore further...
-	//note that, after dereferencing, there is no way to distinguish between a passed value undefined and an omitted parameter
-	let p1//leave undefined
-	let p2 = 'B'
-	ok(f({p1, p2}) == 0)//passed, but not defined: neither if() nor given() can find it
-	ok(f({    p2}) == 0)//no way to tell the line above apart from this one
-
-	//so let's say we ran into a situation where we *really* needed to do that
-	//inherent to destructuring, there’s no way to distinguish between an omitted property and one that’s been set to undefined
-	//so don't destructure right away; get a reference to the given object c to examine, and then in the next line destructure it:
-	function f2(c) {//get the given object as c, first
-		const {p1} = c//and destructure in the first line, rather than in the zeroth line
-		let found = 0
-		if ('p1' in c) found++//now you can use the in operator on c with "p1", the name of a parameter we're looking for
-		if (given(p1)) found++//second most severe method, good enough for blank strings, at least
-		if (p1)        found++//third most, not good enough
-		return found
-	}
-	ok(f2({}) == 0)//actually omitted, finding p1 0 times here is correct
-
-	//in these examples, only the in operator is able to find p1
-	ok(f2({p1})            == 1)//mentioned and undefined
-	ok(f2({p1: undefined}) == 1)//set to undefined, only the in operator can find it
-
-	//making things a little easier, in and given both work for these present, but falsey, parameters
-	ok(f2({p1: 0})     == 2)//falsey values additionally detected by our given() helper function
-	ok(f2({p1: false}) == 2)
-	ok(f2({p1: null})  == 2)
-	ok(f2({p1: ''})    == 2)//the important-to-detect given blank string that lead us here!
-
-	//empty arrays and objects aren't falsey, so now three methods: in, given, and if, all find p1
-	ok(f2({p1: []}) == 3)//empty objects and arrays work with just if()
-	ok(f2({p1: {}}) == 3)
-
-	//and, of course, if the value isn't falsey, everybody finds it
-	ok(f2({p1: 'A'}) == 3)//and truthy values are detected all ways, of course
-	ok(f2({p1: 720}) == 3)//and truthy values are detected all ways, of course
-})
 
 
 
