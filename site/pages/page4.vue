@@ -4,6 +4,7 @@
 <template>
 
 <TotpDemo />
+<TotpDemo1 />
 <CodeRequestComponent />
 <NameComponent />
 

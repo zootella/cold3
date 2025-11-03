@@ -2,19 +2,97 @@
 
 import {
 sayTick, Data,
-totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, otp_guard_wrong_guesses, otp_guard_horizon,
+totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants,
 browserIsBesideAppStore,
 } from 'icarus'
 
-log('hi in totp demo', look(Key('totp, issuer, public, page')))
+/*
+ok, here we have all the pieces, now it's time to get the flow complete and correct with some parts happening on the server
+and, we can use trail table to do everything without needing a new database table!
+
+remember that user and issuer text don't actually do anything other than go through the uri into the authenticator app!
+
+from memory, faster than chat
+user clicks generate on page
+server picks secret for user, saves proof of it
+server sends secret to page
+page shows qr code to user
+user scans qr with authenticator app
+user enters current code to page and submits to server
+server answers yes valid or no not valid
+
+ok, on the setup flow
+the server can bounce the secret back onto the page, saving its hash in 
+and then on first validation, the page posts
+why doesn't this let the page tamper with or choose the secret? because only the true secret has the hash record
+so you think the setup flow doesn't need any custom database
+
+on the second factor later flow
+the secret necessarily remains secret on the server
+the user is already signed in with a first factor,
+so the server knows if they have a totp enrollment, and what their secret is
+this does take another table, which i guess will map user tag to totp enrollment
+or, there might be a user validation table that has a totp column,
+or lots of rows about a user that show how the
+yeah, it's going to be that
+
+ok so for otp email and sms, you had to make a separate table
+because of all the rules around timing and expiration and duplicates
+here you don't because it's simpler
+
+
+
+
+
+
+
+you can do totp using existing database tables, which is great
+
+
+trail table:
+- holds proof that the server made a secret during enrollment
+- enforces rate limit to shield brute force attacks
+authenticate table:
+- maps user tag to secret with type tag like "Totp."
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+here you don't because the secret is too long to guess even at full speed
+
+
+type-variable 
+
+in this demo, we're just doing the setup flow
+
+
+
+why can't the
+
+
+
+user enters code from 
+page knows 
+
+*/
 
 const refLabel = ref('user.name@example.com')
-const refIssuer = ref('cold3.cc')
 const refUri = ref('')
 
 let enrollment
 async function generate() {
-	enrollment = await totpEnroll({label: refLabel.value, issuer: refIssuer.value, addIdentifier: true})
+	enrollment = await totpEnroll({label: refLabel.value, issuer: Key('totp, issuer, public, page'), addIdentifier: true})
 	refUri.value = enrollment.uri
 	//ttd august2025, this demo is all client side, an actual implementation of totp would never call generate, and would create and keep the secret on the server side. you've made /api/totp as the start of the real implementation!
 }
@@ -41,16 +119,59 @@ const refCodeHere = ref('')
 const refCodeNext = ref('')
 const refCodeTime = ref('')
 
+
+
+
+
+
+
+
+
+const refButton5 = ref(null)
+const refButton5CanSubmit = ref(true)//set to true to let the button be clickable, the button below is watching
+const refButton5InFlight = ref(false)//the button below sets to true while it's working, we can watch
+
+async function onClick5() {
+	let result = await refButton5.value.post('/api/totp', {
+		action: 'Enroll1.',
+	})
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </script>
 <template>
 <div class="border border-gray-300 p-2 bg-gray-100 space-y-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TotpDemo</i></p>
 
+<div>
+	<PostButton
+		labelIdle="Snippet" labelFlying="Snippeting..." :useTurnstile="false"
+		ref="refButton5" :canSubmit="refButton5CanSubmit" v-model:inFlight="refButton5InFlight" :onClick="onClick5"
+	/>
+</div>
+
 <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-2 items-center">
-	<div></div><p>Generate a new RFC6238 TOTP enrollment</p>
+	<p>Generate a new RFC6238 TOTP enrollment</p>
 	<p class="text-right m-0">User:</p><input v-model="refLabel" class="px-2 py-2 border border-gray-300 rounded" />
-	<p class="text-right m-0">Issuer:</p><input v-model="refIssuer" class="px-2 py-2 border border-gray-300 rounded" />
-	<div></div><Button @click="generate" class="justify-self-start">Generate</Button>
+	<Button @click="generate" class="justify-self-start">Generate</Button>
 </div>
 
 <p>

@@ -1091,6 +1091,22 @@ export async function settingWrite(name, value) {
 //  \__|_|  \__,_|_|_|  \__\__,_|_.__/|_|\___|
 //                                            
 
+/*
+ttd november, ok, a useful higher level api onto trail table would be like
+*/
+export async function trailAddText(s) {//hashes s and adds a new record now for it
+	await trailAdd({
+		now: Now(),
+		hash: await hashText(s),
+	})
+}
+export async function trailCountHorizon(horizon, s) {//counts how many such records exist in the last horizon milliseconds
+	return await trailCount({
+		hash: await hashText(s),
+		since: Now() - horizon,
+	})
+}
+
 SQL(`
 -- a thing that may be happening recently, is it too late? too soon? too frequent?
 CREATE TABLE trail_table (
@@ -1194,7 +1210,7 @@ export async function browserToUser({browserHash}) {
 		if (user.userTag) {//we found a user tag, let's look up its name and more information about it
 			let n = await name_get({userTag: user.userTag})
 			if (n) {
-				user.name = bundleValid(n.name0, n.name1, n.name2)
+				user.name = bundleValid({f0: n.name0, f1: n.name1, f2: n.name2})
 			}
 		}
 	}

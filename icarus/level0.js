@@ -1623,12 +1623,20 @@ P_days = 36525 * ln(1 - (3 * N / 1000000)) / ln(0.5)
 N = (1000000 / 3) * (1 - e^(P_days * ln(0.5) / 36525))
 played around with those in wolfram alpha; more guesses fit in longer time periods
 */
-export const otp_guard_wrong_guesses = 6//only let a first factor authenticated user enter 6 wrong code guesses
-export const otp_guard_horizon = Time.day//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess
+export const totp_guard_wrong_guesses = 6//only let a first factor authenticated user enter 6 wrong code guesses
+export const totp_guard_horizon = Time.day//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess
 //ttd august2025, also, not doing backup codes in this scope; they're commonly implemented by products using rfc6238 but not part of that standard
 
-
-
+export const totpConstants = {
+	secretSize: totp_size,//20 bytes; secrets are strings in base 32
+	algorithm: totp_algorithm,
+	codeLength: totp_code_length,//6 numerals, codes are strings
+	period: totp_period_seconds,
+	window: totp_window,
+	guardWrongGuesses: totp_guard_wrong_guesses,//block guessing on a secret after 6 wrong guesses
+	guardHorizon: totp_guard_horizon,//in the past 24 hours, in milliseconds
+}
+Object.freeze(totpConstants)
 
 
 

@@ -409,11 +409,12 @@ add that check to the other checkSomething editions
 
 
 //a cheat to bundle the validation trio into a v object, when it's from the database, so you don't need to check it
-export function bundleValid(f0, f1, f2) {//you really have to get the order right!
+export function bundleValid({f0, f1, f2}) {
 	checkText(f0); checkText(f1); checkText(f2)//sanity check, even though you don't know what these are or what's valid for them, bundle, at least, needs them all to be something
-	return {ok: true, f0, f1, f2}
+	return {ok: true, f0, f1, f2, bundled: true}//ok true means treat it as valid, but also bundled true indicates didn't pass through a validate function
 }
 //ttd march2025, is this a good idea? you're tried of typing out the three forms everywhere, and v could mean object from validate function
+//essentially, you find yourself using this when the three forms come from a database table, and you want to send them into code that also works with a v object from a validate function, so, that sounds reasonable
 
 
 

@@ -16,7 +16,7 @@ async function doorHandleBelow({door, body, action}) {
 	r.hash = h
 
 	if (action == 'Get.') {
-		r.count = await trailCount({hash: h, since: Now() - 30*Time.second})
+		r.count = await trailCount({hash: h, since: Now() - (30*Time.second)})
 		r.recent = await trailRecent({hash: h})
 	} else if (action == 'Set.') {
 		await trailAdd({hash: h})
