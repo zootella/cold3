@@ -1,6 +1,5 @@
 
 import {
-hashText,
 trailCount, trailRecent, trailAdd,
 } from 'icarus'
 
@@ -12,14 +11,12 @@ async function doorHandleBelow({door, body, action}) {
 	r.sticker = Sticker()
 
 	checkTextOrBlank(body.message)
-	let h = await hashText(body.message)
-	r.hash = h
 
 	if (action == 'Get.') {
-		r.count = await trailCount({hash: h, since: Now() - (30*Time.second)})
-		r.recent = await trailRecent({hash: h})
+		r.count = await trailCount(body.message, 30*Time.second)
+		r.recent = await trailRecent(body.message)
 	} else if (action == 'Set.') {
-		await trailAdd({hash: h})
+		await trailAdd(body.message)
 	}
 
 	return r

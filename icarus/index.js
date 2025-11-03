@@ -132,10 +132,7 @@ demonstrationSignUp,
 demonstrationSignIn,
 demonstrationSignOut,
 
-trailCount,
-trailRecent,
-trailAdd,
-trailAddHashes,
+trailRecent, trailCount, trailGet, trailAdd,
 
 } from './level3.js'
 

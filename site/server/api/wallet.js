@@ -6,7 +6,7 @@ trailAdd, trailCount,
 import {verifyMessage} from 'viem'
 
 function composeMessage(nonce) { return `Add your wallet with an instant, zero-gas signature of code ${nonce}` }//ttd september2025, siwe opensea ens maybe have much longer messages with more stuff like uri, mainnet id, timestamp; see what the happy path looks like and what those other common providers have made familiar
-function composeTrail(address, nonce) { return `challenged ethereum wallet address ${address} nonce ${nonce}` }
+function composeTrailChallenged(address, nonce) { return `challenged ethereum wallet address ${address} nonce ${nonce}` }
 
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {useTurnstile: false, actions: ['Prove.'], workerEvent, doorHandleBelow})
@@ -19,7 +19,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
 		let message = composeMessage(nonce)
 
-		await trailAdd({hash: await hashText(composeTrail(address, nonce))})
+		await trailAdd(composeTrailChallenged(address, nonce))
 		//^ok, claude, should we add to the trail the hash of the address and nonce, and not the message? or should nonce be replaced by message in the text we hash and record on the trail, to cover them both? is there a difference in security here?
 
 		return {action, address, nonce, message}
@@ -63,8 +63,8 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	}
 
-	if (false) await trailAdd({hash})//make a record of the given hash right now
-	if (false) await trailCount({hash: '', since: 20*Time.minute})//count how many records we have for hash in the last 20 minutes
+	if (false) await trailAdd(message)//make a record of the given hash right now
+	if (false) await trailCount(message, 20*Time.minute)//count how many records we have for hash in the last 20 minutes
 	//^claude, on the server side, i'll use these two helper functions to be sure the page hasn't tampered with the nonce. i think i know how to do this, but introducting them here so you can see how i fit them in
 
 	return {

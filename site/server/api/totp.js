@@ -45,17 +45,14 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			issuer: Key('totp, issuer, public, page'),
 			addIdentifier: true,
 		})
-		await trailAdd({hash: totpHashEnrollment({browserHash: browserHash, userTag: user.userTag, secret: enrollment.secret})})
+		await trailAdd(composeTrailEnrollment({browserHash: browserHash, userTag: user.userTag, secret: enrollment.secret}))
 		log(look(enrollment))
 		return {isEnrolled: false, provisionalEnrollment: enrollment}
 
 	} else if (action == 'Enroll2.') {
 
-		let found = await trailGet({
-			hash: totpHashEnrollment({browserHash: browserHash, userTag: user.userTag, secret: body.secret}),
-			since: Now() - (20*Time.minute),
-		})//ttd november, 20 bytes and 20 minutes should probably be defined in level 0 with the cryptography, or something?
-		if (found != 1) return {isEnrolled: false, reason: 'BadSecret.'}//the page needs to echo back the same secret we told made for it in enrollment step 1; if we can't find it, it is either expired or worse, tampered with or fictitious
+		let n = await trailCount(composeTrailEnrollment({browserHash: browserHash, userTag: user.userTag, secret: body.secret}), 20*Time.minute)//ttd november, 20 bytes and 20 minutes should probably be defined in level 0 with the cryptography, or something?
+		if (n != 1) return {isEnrolled: false, reason: 'BadSecret.'}//the page needs to echo back the same secret we told made for it in enrollment step 1; if we can't find it, it is either expired or worse, tampered with or fictitious
 
 		let valid = totpValidate(body.secret, body.code)
 		if (!valid) return {isEnrolled: false, reason: 'BadCode.'}
@@ -90,7 +87,7 @@ async function totpValidateRateLimit(secret, code) {
 	//is this totp secret too hot for another guess right now?
 	/*
 
-	let wrongGuesses = await trailCount({hash: , since: Now() - ())
+	let wrongGuesses = await trailCount(message, horizon)
 
 
 	let valid = await totpValidate(secret, code)
@@ -100,25 +97,9 @@ async function totpValidateRateLimit(secret, code) {
 }
 
 
-async function totpHashEnrollment({browserHash, userTag, secret}) {
-	let message = `totp provisional enrollment for user tag ${userTag} at browser hash ${browserHash} generated secret base 32 ${secret}`
-	log(message)
-	return await hashText(message)
+function composeTrailEnrollment({browserHash, userTag, secret}) {
+	return `totp provisional enrollment for user tag ${userTag} at browser hash ${browserHash} generated secret base 32 ${secret}`
 }
-async function totpHashWrongGuess({secret}) {
-	let message = `totp wrong guess on secret base 32 ${secret}`
-	log(message)
-	return await hashText(message)
+async function composeTrailWrongGuess({secret}) {
+	return `totp wrong guess on secret base 32 ${secret}`
 }
-
-
-
-
-
-
-
-
-
-
-
-

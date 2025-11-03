@@ -4,6 +4,7 @@
 <template>
 
 <PasswordDemo />
+<TrailDemo />
 <TrailComponent />
 <ValidateNameComponent />
 

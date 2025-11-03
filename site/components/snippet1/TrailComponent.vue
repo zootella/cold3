@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-sayTick,
+sayTick, hashText,
 } from 'icarus'
 
 const refMessage = ref('')//yeah, there's a benefit to making refs const--if you accidentaly set one, and not its .value, you'll know right away
@@ -16,12 +16,12 @@ async function clicked(action) {
 	if (!hasText(refMessage.value)) refMessage.value = 'yo'
 
 	let t = Now()
-	let r = await fetchWorker('/api/trail', {method: 'POST', body:
-		{action, message: refMessage.value}})
+	let r = await fetchWorker('/api/trail', {method: 'POST', body: {action, message: refMessage.value}})
+	//^leaving this component around because you refactored it to use PostButton in TrailDemo, and wow, it's a lot more complicated! and the button doesn't even turn orange as fast as you can click it, either. so maybe you won't use it all the time? or will have a SimplePostButton or something, ttd november
 	refNow.value = sayTick(t)
 	refDuration.value = Now() - t
 
-	refHash.value = r.hash
+	refHash.value = await hashText(refMessage.value)//api doesn't return hash anymore so we duplicate computing the hash here on the page
 	let s = ''
 	if (action == 'Get.') {
 		s = `${r.count} records in the last 30 seconds`

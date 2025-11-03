@@ -1091,21 +1091,10 @@ export async function settingWrite(name, value) {
 //  \__|_|  \__,_|_|_|  \__\__,_|_.__/|_|\___|
 //                                            
 
-/*
-ttd november, ok, a useful higher level api onto trail table would be like
-*/
-export async function trailAddText(s) {//hashes s and adds a new record now for it
-	await trailAdd({
-		now: Now(),
-		hash: await hashText(s),
-	})
-}
-export async function trailCountHorizon(horizon, s) {//counts how many such records exist in the last horizon milliseconds
-	return await trailCount({
-		hash: await hashText(s),
-		since: Now() - horizon,
-	})
-}
+export async function trailRecent(message)         { return await trail_recent({hash: await hashText(message),                       }) }
+export async function trailCount(message, horizon) { return await trail_count({ hash: await hashText(message), since: Now() - horizon}) }
+export async function trailGet(message, horizon)   { return await trail_get({   hash: await hashText(message), since: Now() - horizon}) }
+export async function trailAdd(message)            {        await trail_add({   hash: await hashText(message), now:   Now()          }) }
 
 SQL(`
 -- a thing that may be happening recently, is it too late? too soon? too frequent?
@@ -1122,26 +1111,26 @@ CREATE INDEX trail2 ON trail_table (hide, hash, row_tick DESC);  -- get time sor
 `)
 
 //get the tick count of the most recent record about hash, 0 if none found
-export async function trailRecent({hash}) {
+async function trail_recent({hash}) {
 	checkHash(hash)
 	let row = await queryTop({table: 'trail_table', title: 'hash', cell: hash})
 	return row ? row.row_tick : 0
 }
 //count how many records we have for hash since the given tick time in the past
-export async function trailCount({hash, since}) {
+async function trail_count({hash, since}) {
 	checkHash(hash); checkInt(since)
 	return await queryCountSince({table: 'trail_table', title: 'hash', cell: hash, since})
 }
 //get the rows for hash since the given tick time in the past
-export async function trailGet({hash, since}) {
+async function trail_get({hash, since}) {
 	checkHash(hash); checkInt(since)
 	return await queryGet({table: 'trail_table', title: 'hash', cell: hash, since})
 }
 //make a new record of the given hash right now
-export async function trailAdd({now, hash}) {//optionally call Now() and pass it in, if you need it
-	await trailAddHashes({now, hashes: [hash]})
+async function trail_add({now, hash}) {//optionally call Now() and pass it in, if you need it
+	await trail_add_many({now, hashes: [hash]})
 }
-export async function trailAddHashes({now, hashes}) {//an array of several hashes, all at the same time
+async function trail_add_many({now, hashes}) {//an array of several hashes, all at the same time
 	if (!now) now = Now()
 	hashes.forEach(hash => checkHash(hash))
 	await queryAddRows({table: 'trail_table', rows: hashes.map(hash => ({row_tick: now, hash: hash}))})
