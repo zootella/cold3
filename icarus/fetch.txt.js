@@ -172,7 +172,7 @@ you don't think there's a way to do this in lambda, so instead you Promise.all()
 with that, workers are faster, lambdas the same, well maybe faster because now the fetches can run in parallel
 but there's a code benefit: you could call dog() and logAudit() without having to await them
 */
-//ttd april, not using this, remove; many of these ideas are in Task and fetch23 now, you think? but did not look closely
+//ttd april2025, not using this, remove; many of these ideas are in Task and fetch23 now, you think? but did not look closely
 
 
 
@@ -218,27 +218,3 @@ worker prepares response (here again, makePlain)
 
 
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

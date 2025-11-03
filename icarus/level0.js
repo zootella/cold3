@@ -123,7 +123,7 @@ export async function runTests() {
 //  \__\___/|___/___/
 //                   
 
-//ttd april, not using tossTask or TaskError, get rid of it if you confirm you don't need it
+//ttd april2025, not using tossTask or TaskError, get rid of it if you confirm you don't need it
 function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
 export function toss(message, watch) { throw new TossError(message, watch) }//use like toss('title', {watch1, watch2}) with watch variables for context
 
@@ -163,7 +163,7 @@ const _customErrorKeys = [//list the Error properties we expect for look() to fi
 	'name', 'message', 'stack', 'cause',//standard JavaScript Error properties
 	'task', 'watch', 'when', 'tick',//our custom additions
 	'details', 'info', 'metadata',//common additional property names, and ones we might use in the future
-]//ttd april, even though Error properties are non-enumerable, look() should just use Object.getOwnPropertyNames(e) to find them all, meaning we don't need this white list. do this alongside the better makePlain, and tests for everything
+]//ttd april2025, even though Error properties are non-enumerable, look() should just use Object.getOwnPropertyNames(e) to find them all, meaning we don't need this white list. do this alongside the better makePlain, and tests for everything
 
 //  _             
 // | | ___   __ _ 
@@ -377,7 +377,7 @@ test(() => {
 	ok(textToInt('1') == 1)
 })
 
-//todo, up here at the near goodwin level, trying out four more to go with checkText and hasText above:
+//ttd september2024, up here at the near goodwin level, trying out four more to go with checkText and hasText above:
 export function checkTextSame(s1, s2) { if (!hasTextSame(s)) toss('same', {s1, s2}) }
 export function hasTextSame(s1, s2) { return hasText(s1) && hasText(s2) && (s1 === s2) }
 export function checkTextOrBlank(s) { if (!hasTextOrBlank(s)) toss('type', {s}) }
@@ -412,7 +412,7 @@ test(() => {
 export const newline = '\r\n'//we use the Microsoft Windows-style newline, valid on windows, mac, and linux
 
 /*
-ttd march
+ttd march2025
 []make a note about using .slice and not .substring or .substr
 []have a test that shows .slice safely going off the edge
 */
@@ -1625,7 +1625,7 @@ played around with those in wolfram alpha; more guesses fit in longer time perio
 */
 export const otp_guard_wrong_guesses = 6//only let a first factor authenticated user enter 6 wrong code guesses
 export const otp_guard_horizon = Time.day//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess
-//ttd august, also, not doing backup codes in this scope; they're commonly implemented by products using rfc6238 but not part of that standard
+//ttd august2025, also, not doing backup codes in this scope; they're commonly implemented by products using rfc6238 but not part of that standard
 
 
 
@@ -2333,7 +2333,7 @@ test(() => {
 	ok(correctLength('𝓗') == 1)//our function measures it correctly
 	ok(correctLength('A 𝓗𝓮𝓵𝓵𝓸 is Hello') == 16)
 })
-//ttd april, not using this, remove
+//ttd april2025, not using this, remove
 
 
 
@@ -2371,7 +2371,7 @@ test(() => {
 	let o = {};
 	ok(say(o.notThere) == 'undefined')
 })
-//ttd april, not using this, remove
+//ttd april2025, not using this, remove
 
 //  _             _    
 // | | ___   ___ | | __
@@ -2620,7 +2620,7 @@ function lookSayFunction(f) {
 // |_|                                             |_|                     
 
 /*
-ttd april on makePlain, makeObject, makeText
+ttd april2025 on makePlain, makeObject, makeText
 - new first time actually good naming
 - added to automatic imports
 - if dollar fetch json stringifies a body, and there's an object with a method in there, it blows up
@@ -2784,7 +2784,7 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 
 
 
-//ttd february, get rid of these, just have print
+//ttd february2025, get rid of these, just have print
 
 
 
@@ -2891,7 +2891,7 @@ let contents = `
 
 
 
-//ttd september, from much earlier, didn't even have a heading
+//ttd september2025, from much earlier, didn't even have a heading
 export function parseEnvStyleFileContents(s) {
 	let lines = s.split(/\r?\n/)
 	let o = {}
@@ -2974,14 +2974,14 @@ export function sequentialSeparate(f) {
 	let g = function(...a) {
 		const r = p.then(() => f(...a))//make a new promise that waits for the previous one to finish
 		p = r.catch(() => {})//update the chain, catch errors so one doesn't break future calls
-		//ttd march, ok, but should you log these errors? or make the call that requested it, throw it at that guy?
+		//ttd march2025, ok, but should you log these errors? or make the call that requested it, throw it at that guy?
 		return r
 	}
 	return g
 }
 
 /*
-ttd march, maybe
+ttd march2025, maybe
 []refactor promise stuff from door shut into functions here
 []refactor primise stuff from turnstile component into functions here
 []write generalized tests for these functions, even if they're not automated
@@ -3046,7 +3046,7 @@ test(() => {
 
 
 /*
-ttd february
+ttd february2025
 
 write a helper function which takes a hash value
 and turns it into text like "user00ff00ff00ff"

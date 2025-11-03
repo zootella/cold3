@@ -30,7 +30,7 @@ __   _(_)_ __| |_ _   _  ___  ___
                                   
 start out up here with design document
 the requirements i set, the choices i made, and the reasoning behind them
-TODO, but notes follow
+ttd october2024, but notes follow
 
 values, requirements
 
@@ -790,7 +790,7 @@ $ npx nuxi add myapi
 https://developers.cloudflare.com/pages/get-started/c3/
 $ yarn create cloudflare
 
-ttd february
+ttd february2025
 
 get just enough to generate stats.html
 and to deploy to a pages.dev domain
@@ -1081,7 +1081,7 @@ and then see test results on the home route
 (3) Nuxt
 $ cd ./
 $ npm run local
-and then see test results on the route /tests, TODO!
+and then see test results on the route /tests, ttd february2025!
 
 (and add more)
 nuxt really is local/deployed x client/server--can you run tests in all four environments?
@@ -1202,7 +1202,7 @@ means that running locally either way they come from .dev.vars
 so we'll leave .env around, but note that it's never used
 
 
-ttd june
+ttd june2025
 based on that, in summary
 we're still baking the secret into the server bundle, which lets getAccess() with no event work
 we did add the event object to getAccess(workerEvent) in doorWorkerOpen, letting a dashboard value in
@@ -1211,7 +1211,7 @@ but are not relying upon that entirely
 
 
 
-ttd june
+ttd june2025
 move in stuff from readme to here
 talk about how seal copies values down into the different workspaces
 mention you have to change Text to Secret in the cloudflare dashboard
@@ -1219,7 +1219,7 @@ mention you have to change Text to Secret in the cloudflare dashboard
 
 
 
-ttd july
+ttd july2025
 seeing how big wrapper is in the size/client.html report
 and seeing icarus/wrapper.js is 2.69 KB compressed just 91%
 and big even alongside level0.js and TermsDocument.vue
@@ -1331,7 +1331,7 @@ and if that works, can you not open the dev tools until you want to walk an obje
  \___|_|  \___|\__,_|\__\___| | .__/|_|  \___// |\___|\___|\__|
 															|_|           |__/               
 
-[]todo january, in vmware windows and a new mac silicon user, set up project from scratch to check and minimize these notes. divide "create project" into two sections: "prepare workstation" which has stuff like brew and yarn and wrangler and serverless, all the global stuff, and "repot the plant" with stuff like cloudflare create and serverless' create
+[]ttd january2025, in vmware windows and a new mac silicon user, set up project from scratch to check and minimize these notes. divide "create project" into two sections: "prepare workstation" which has stuff like brew and yarn and wrangler and serverless, all the global stuff, and "repot the plant" with stuff like cloudflare create and serverless' create
 sorta also in this section is how to set it up in docker; that's a new workstation
 also on this list is stuff where you authenticate, like github, aws cli, cloudflare
 
@@ -1696,7 +1696,7 @@ cloudflare says "Avoid DNS resolution issues caused by DNSSEC; Find the DNSSEC s
 namecheap dashboard, dnssec is off
 is dnssec on for cold3.cc? no! you found the start of the flow in cloudflare, websites, cold3.cc, dns, settings, first box is dnssec
 https://developers.cloudflare.com/dns/dnssec/
-TODO add dnssec to cold3.cc as practice and then ever.fans as production, following steps in cloudflare and namecheap
+ttd july2024 add dnssec to cold3.cc as practice and then ever.fans as production, following steps in cloudflare and namecheap
 
 namecheap, ef---.ll-, before changes:
 nameservers is set to Namecheap BasicDNS
@@ -1757,7 +1757,7 @@ all the tests worked, except nothere@ef---.ll- didn't bounce, but whatever
 
 now at last you go back to the amazon steps
 you configured aws at mail.ef---.ll-
-you think later you can configure twilio at mail2.ef---.ll-, TODO
+you think later you can configure twilio at mail2.ef---.ll-, ttd july2024
 
 aws dashboard, ses
 yellow note saying im in the sandbox
@@ -2753,7 +2753,7 @@ inside the email, picked the woff2 in the web-tt folder, chat says this is the o
 ./assets/fonts/Lemon-Wide.woff2 is where you put the file
 ./assets/css/style.css is where you bring it in
 
-ttd july, right now just trying to bring two in; more to do with type later:
+ttd july2025, right now just trying to bring two in; more to do with type later:
 - non english alphabet characters
 - italic face, avoid the browser's default slant
 - maybe variable width; you've gotten working, but the file is 300kb instead of 60kb
@@ -2772,7 +2772,7 @@ ttd july, right now just trying to bring two in; more to do with type later:
  \___\___/|_| |_| |_| .__/ \___/|_| |_|\___|_| |_|\__|___/
                     |_|                                   
 
-ttd july, when you choose a component library,
+ttd july2025, when you choose a component library,
 how does that interact with what you've already done with tailwind, layout classes, and style classes
 
 
@@ -3319,7 +3319,7 @@ but you haven't tried getting a source JPG to render into the card, which you'll
 it may be that net23 will have to save a PNG of a picture,
 and then hopefully nuxt og image running still entirely in the worker can compose the PNG into the card
 
-ttd july, test out getting a ug image like a photograph from net23 into a card
+ttd july2025, test out getting a ug image like a photograph from net23 into a card
 
 ## observed speeds
 
@@ -3356,7 +3356,7 @@ to begin, you've just cards in these two code files:
 so you need to figure out how to get module use and nuxt routing together propertly to make the 3 cards
 can you define a global card, which then gets overridden with a user page or post card?
 
-ttd july configure routes and cards to generate site, profile, and post cards
+ttd july2025 configure routes and cards to generate site, profile, and post cards
 
 ## light and dark color modes
 
@@ -3415,7 +3415,7 @@ because when you change any of the define og image component properties
 you get a new hash, and a new png, and a new KV store item
 which also of course sticks around forever
 
-ttd july get the kv store to throw away old cards instead of keeping them all forever
+ttd july2025 get the kv store to throw away old cards instead of keeping them all forever
 
                    _   _
   ___   __ _ _   _| |_| |__

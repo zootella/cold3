@@ -4,7 +4,7 @@ import {
 publicKeys, sayTick, sayGroupDigits,
 } from 'icarus'
 
-//ttd october, returning here
+//ttd october2025, returning here
 
 import {createPublicClient, http, parseEther, formatEther, parseAbi} from 'viem'
 import {mainnet, polygon} from 'viem/chains'

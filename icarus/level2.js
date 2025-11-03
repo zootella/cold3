@@ -167,7 +167,7 @@ function senseEnvironment() {
 	return {version: _senseEnvironmentVersion, found: s, where: winningTitle}
 }
 /*
-todo, more of these you're hearing about later
+ttd november2024, more of these you're hearing about later
 and after all that, you find out (but have not yet confirmed) that you can look for
 process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'production'
 */
@@ -232,12 +232,12 @@ tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
 `
 	log(markdown)
 })
-//ttd march, you got this into yarn test and seal, next it could go into README.md
+//ttd march2025, you got this into yarn test and seal, next it could go into README.md
 /*
 $ node disk, just shows it, rather than seal which makes it
 */
 //ok, total vanity, but here's the ascii disk in a readme.md for github
-//ttd november, disk: exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
+//ttd november2024, disk: exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
 
 
 
@@ -245,7 +245,7 @@ $ node disk, just shows it, rather than seal which makes it
 
 
 
-//ttd june
+//ttd june2025
 export async function runTestsSticker() {
 	let results = await runTests()
 	let sticker = stickerParts()
@@ -289,7 +289,7 @@ const Key = publicKeys() - call from anywhere to get just the public keys and fa
 Key('tag1, tag2, tag3') - lookup the key by specifying all of its tags, order doesn't matter, tags can have spaces!
 */
 export async function secretKeys() {//on the server, get all the keys
-	//ttd september, at some point refactor getAccess() below into this system; []use redact during seal to confirm wrapper does not contain secrets!
+	//ttd september2025, at some point refactor getAccess() below into this system; []use redact during seal to confirm wrapper does not contain secrets!
 }
 export function publicKeys() {//on the page, get only keys that can and must be revealed
 	if (!_loadedPublicKeys) { _loadedPublicKeys = true
@@ -501,7 +501,7 @@ export function Task(task) {//use like let task = Task({name: 'some title'})
 	task.sticker = sticker.all//where we're running to perform this task
 	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
 	return task
-}//ttd april, yeah, make this finish(task, {success: true}) so Task is a POJO you can really use everywhere, maybe call it done() or finished()
+}//ttd april2025, yeah, make this finish(task, {success: true}) so Task is a POJO you can really use everywhere, maybe call it done() or finished()
 function _taskFinish(task, more) {//mark this task done, adding more properites about how it concluded
 	Object.assign(task, more)//be careful, as this overwrites anything already in task!
 
@@ -591,7 +591,7 @@ Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the bro
 other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 */
 
-const cookieSecurePrefix = '__Secure-'//duplicated from cookieMiddleware.js, ttd june
+const cookieSecurePrefix = '__Secure-'//duplicated from cookieMiddleware.js, ttd june2025
 const cookieNameWarning  = 'current_session_password'
 const cookieValueWarning = 'account_access_code_DO_NOT_SHARE_'
 
@@ -678,7 +678,7 @@ export function host23() {//where you can find Network 23; no trailing slash
 
 
 /*
-ttd april, clean this up, you're getting most of this now, you may find:
+ttd april2025, clean this up, you're getting most of this now, you may find:
 
 function workerGotInformation(workerEvent) {
 
@@ -896,7 +896,7 @@ async function doorWorkerShut(door, response, error) {
 	let r
 	if (error) {//processing this request caused an error
 		logAlert('door worker shut', {body: door.body, response, error})//tell staff about it
-		//^ttd april, trying to make this less verbose so it's useful to read while coding, before and for the longest time, you had the whole door in there
+		//^ttd april2025, trying to make this less verbose so it's useful to read while coding, before and for the longest time, you had the whole door in there
 		r = null//return no response
 	} else {
 		r = makePlain(response)//nuxt will stringify and add status code and headers, make plain to see into errors and not throw if there's a method or a circular reference!
@@ -1050,7 +1050,7 @@ export function keepPromise(p) {//instead of awaiting p, add it here to keep goi
 		.then(result => ({success: true, result}))
 		.catch(error => ({success: false, error})))//wrap the promise so we can get its result or error, and to prevent it from throwing
 }
-//v TODO remove export when count2 is using door properly
+//v ttd october2024 remove export when count2 is using door properly
 export async function awaitDoorPromises(door) {//takes door just to log it
 	let results = []
 	if (_doorPromises.length) {//we've got some promises to wait for
@@ -1577,7 +1577,7 @@ export async function snippet2() {
 	})
 	log(look(r))
 }
-//^ttd february, these you can probably get rid of now that you have makeClock tests
+//^ttd february2025, these you can probably get rid of now that you have makeClock tests
 
 //count how many rows have cellFind under titleFind, including hidden
 export async function queryCountRows({table, titleFind, cellFind, clock}) { const {Now, Tag, database, context} = await getClock(clock)

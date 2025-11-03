@@ -4,7 +4,7 @@
 const flexStore = useFlexStore()
 await flexStore.getHits()
 /*
-ttd april
+ttd april2025
 this whole store where it renders on server if on the page for a first GET, and on the client if clicked into later
 is academic, isn't something you're going to actually use
 but another idea here is:

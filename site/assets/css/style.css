@@ -9,7 +9,7 @@
 @font-face {
 	font-family: "Lemon Wide";
 	src: url('/fonts/Lemon-Wide.woff2') format('woff2');
-	font-weight: 400; /*ttd july, not sure if name and weight are correct for the given woff2 file*/
+	font-weight: 400; /*ttd july2025, not sure if name and weight are correct for the given woff2 file*/
 	font-display: swap; /* show text with a fallback font until the browser loads this custom font */
 }
 
@@ -27,7 +27,7 @@
 	.page-container {
 		@apply mx-auto max-w-screen-md p-4 pb-0; /* centered, medium width, padding */
 	}
-	/* ^ttd july, you realize now you should probably move this into ./layouts/column-layout.vue */
+	/* ^ttd july2025, you realize now you should probably move this into ./layouts/column-layout.vue */
 
 	pre, code {
 		@apply font-mono text-sm text-gray-400 font-bold;
@@ -47,7 +47,7 @@
 
 /* Components layer: define reusable classes for buttons, etc. */
 @layer components {
-	/* ttd july, you realize now instad of defining these styles here (globally, so that they're available everywhere) and using them in many different components, you should move these into the pushy and linky components, and then use those components everywhere. there might be styles that you want to set once globally and cascade down into several different components, but these are not them, you now suspect */
+	/* ttd july2025, you realize now instad of defining these styles here (globally, so that they're available everywhere) and using them in many different components, you should move these into the pushy and linky components, and then use those components everywhere. there might be styles that you want to set once globally and cascade down into several different components, but these are not them, you now suspect */
 
 	/* A standard button class */
 	.pushy {
@@ -95,5 +95,5 @@
 	.pushy-link:visited:focus {
 		@apply outline-none ring-2 ring-blue-500;
 	}
-	/* ttd april ^ clean this up, obviously */
+	/* ttd april2025 ^ clean this up, obviously */
 }

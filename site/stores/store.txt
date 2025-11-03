@@ -7,7 +7,7 @@ pageStore 🍍 starts empty on server and client at the start, updates on page
 
 
 /*
-ttd april, more to explore with universal rendering
+ttd april2025, more to explore with universal rendering
 
 figure out how SSR spreads out
 the flow where, all in the same GET, all on the server, several fetches load items into arrays
@@ -34,7 +34,7 @@ causing more data to fill into main store, or another store, and this process to
 
 
 
-ttd april
+ttd april2025
 figure out using index
 try using it for codes right now, actually
 confirmed codes can use
@@ -82,7 +82,7 @@ hitStore -> flexStore
 
 //notes from routeStore.js
 /*
-ttd february
+ttd february2025
 
 stuff on the page about the user can't be delivered pre-rendered
 because the page has to run to get the browser tag
@@ -132,19 +132,10 @@ and, the whole flow around a hybrid store may be academic, in that:
 //from flexStore.js
 //not allowed to use await here, either, apparently
 /*
-ttd april
+ttd april2025
 so here we are in a store which can run on the server, or the client
 if it runs on the server, $fetch is actually a function call
 there's already a request, the very first GET, and our middleware ran before we got here
 hit.js below will run as the result of our fetch, and it will have the browser tag
 so you think you can imagine these stores don't need the browser tag, even when they're running on the server, and could get the browser tag
 */
-
-
-
-
-
-
-
-
-

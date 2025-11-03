@@ -32,8 +32,8 @@ functions:
     events:
       - http:
           path: /gate-get-lambda
-          method: get #ttd december decide if you're keeping this GET function
-          cors: true #ttd december for testing you've got cors true here but should probably delete the whole function
+          method: get #ttd december2024 decide if you're keeping this GET function
+          cors: true #ttd december2024 for testing you've got cors true here but should probably delete the whole function
           #configure cors simply true to open things up: API Gateway will respond to a page's preflight OPTIONS request, allowing all origins
   gate-post-lambda:
     handler: src/gate-post-lambda.handler
@@ -56,7 +56,7 @@ functions:
     events:
       - http:
           path: /snippet2
-          method: get #ttd december decide if you're keeping this GET function
+          method: get #ttd december2024 decide if you're keeping this GET function
           #omit cors to block requests from pages and allow direct navigation from tabs
   up2:
     handler: src/up2.handler
@@ -110,7 +110,7 @@ package:
     # @supabase
     # axios
 
-    # adding viem to icarus so level1 can validate Ethereum addresses caused the zip to grow 10mb; unzipped it's 16mb viem and 5mb ox; ttd september leaving this as is even though lambda won't ever need to deal with blockchain
+    # adding viem to icarus so level1 can validate Ethereum addresses caused the zip to grow 10mb; unzipped it's 16mb viem and 5mb ox; ttd september2025 leaving this as is even though lambda won't ever need to deal with blockchain
 
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization
@@ -126,7 +126,7 @@ resources:
       Properties:
         BucketName: vhs-net23-cc
         AccessControl: Private
-    #ttd may, move the buckets from serverless.yml (configuration-as-code) to net23.txt (manual configuration) to keep their contents safe from the automatic teardown; your hopefull expectation is that since they have universally unique names, it'll be easy for the distributions, and perhaps even the access identities and bucket policies, to still reside here
+    #ttd may2025, move the buckets from serverless.yml (configuration-as-code) to net23.txt (manual configuration) to keep their contents safe from the automatic teardown; your hopefull expectation is that since they have universally unique names, it'll be easy for the distributions, and perhaps even the access identities and bucket policies, to still reside here
 
     WWWBucketPolicy: #define a policy for a bucket to allow cloudfront access
       Type: AWS::S3::BucketPolicy

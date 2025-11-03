@@ -32,7 +32,7 @@ async function clickedSignUp() {
 		let r = await fetchWorker('/api/authenticate', {body:
 			{action: 'DemonstrationSignUp.', name0: v.f0}})
 		if (r.isSignedUp) {
-			await doSignGet()//ttd march, this shouldn't be another round trip
+			await doSignGet()//ttd march2025, this shouldn't be another round trip
 		} else {
 			refMessage.value = r.reason//probably NameTaken.
 		}
@@ -47,7 +47,7 @@ async function clickedSignIn() {
 		let r = await fetchWorker('/api/authenticate', {body:
 			{action: 'DemonstrationSignIn.', name0: v.f0}})
 		if (r.isSignedIn) {
-			await doSignGet()//ttd march, this shouldn't be another round trip
+			await doSignGet()//ttd march2025, this shouldn't be another round trip
 		} else {
 			refMessage.value = r.reason
 		}
@@ -60,7 +60,7 @@ async function clickedSignOut() {
 	let r = await fetchWorker('/api/authenticate', {body:
 		{action: 'DemonstrationSignOut.'}})
 	if (r.isSignedOut) {
-		await doSignGet()//ttd march, should not need another round trip
+		await doSignGet()//ttd march2025, should not need another round trip
 	} else {
 		refMessage.value = r.reason
 	}

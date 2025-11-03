@@ -38,7 +38,7 @@ function composeCookie(tag) {
 	if (isCloud()) {//...strengthen them for cloud deployment
 		name = cookieSecurePrefix + name
 		options.secure = true
-		options.domain = 'cold3.cc'//apex domain and subdomains allowed; ttd april get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
+		options.domain = 'cold3.cc'//apex domain and subdomains allowed; ttd april2025 get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
 	}
 	let o = {name, options}
 	if (hasTag(tag)) {

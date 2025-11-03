@@ -121,7 +121,7 @@ function validatePassword(e) {
 		<!-- eye closed -->
 		<svg v-if="!eye" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="h-5 w-5 text-gray-500">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a10.05 10.05 0 012.641-4.24M9.878 9.878a3 3 0 104.243 4.243M15 12a3 3 0 01-4.243-4.243M3 3l18 18" />
-			<!-- ttd march, this is all from chat, there's a second pupil arc in this you should find and omit -->
+			<!-- ttd march2025, this is all from chat, there's a second pupil arc in this you should find and omit -->
 		</svg>
 
 		<!-- eye open -->

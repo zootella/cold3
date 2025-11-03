@@ -46,7 +46,7 @@ async function loadTwilioPhone() { if (!module_twilio)      module_twilio      =
 async function loadSharp()       { if (!module_sharp)       module_sharp       = (await import('sharp')).default;          return module_sharp       }
 //^the last three were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
 
-//ttd april replace this with a separate endpoint /warm which doesn't do anything, this will do the same thing, you believe, but ask chat
+//ttd april2025 replace this with a separate endpoint /warm which doesn't do anything, this will do the same thing, you believe, but ask chat
 export async function warm({provider, service}) {
 	let task = Task({name: 'warm'})
 	switch (provider+service) {
@@ -219,7 +219,7 @@ test(async () => {//test that we can use sharp, which relies on native libraries
 	ok(d.base64().startsWith('iVBORw0KGgo'))//headers at the start are the same for every image
 })
 
-//ttd november, before the automated tests above, here's the code that would throw and let you see the exception in a regular valid 200 OK from the lambda back to the worker's POST, which would return it back up to the page. keeping this around because this is the pattern to let you see what's going on in a presently/hopefully temporarily broken lambda
+//ttd november2024, before the automated tests above, here's the code that would throw and let you see the exception in a regular valid 200 OK from the lambda back to the worker's POST, which would return it back up to the page. keeping this around because this is the pattern to let you see what's going on in a presently/hopefully temporarily broken lambda
 export async function snippet2() {
 
 	let limit = 512

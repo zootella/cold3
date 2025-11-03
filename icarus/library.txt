@@ -46,7 +46,7 @@ or maybe this isn't the right way to do things
 
 
 /*
-TODO be able to manually run all the tests these places:
+ttd june2024 be able to manually run all the tests these places:
 [x]icarus, vite
 []nuxt, local, client-side
 []nuxt, local, server-side, emulated worker

@@ -54,7 +54,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 				return true
 				/*
-				let proof = ''//todo, we'll bundle and sign the proof of identity to send it back to the main site, which has the database connection
+				let proof = ''//ttd june2025, we'll bundle and sign the proof of identity to send it back to the main site, which has the database connection
 				return 'https://cold3.cc/oauth-done?proof='+proof//instead of a separate redirect() method alongside signIn(), which should do the same thing
 				*/
 			},
@@ -74,7 +74,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 
 /*
-ttd june
+ttd june2025
 so you don't need any of the below, you do get the raw result in signIn as profile, and the normalized as user!
 
 	//google, https://console.cloud.google.com/apis/credentials
@@ -158,20 +158,20 @@ so you don't need any of the below, you do get the raw result in signIn as profi
 
 
 			/*
-			ttd june, i think we don't need any of this anymore
+			ttd june2025, i think we don't need any of this anymore
 
 			//Auth calls this once after the person as the browser is back from the provider, and our server has proof they control a social media account
 			async jwt({account, profile, token}) {//token is the current JWT object, empty on first sign-in; profile is the normalized user profile Auth mapped from the raw JSON response from the provider, with our additions above
 				try {
 					if (profile && account) proofHasArrived(token, profile, account)//check profile and account so our code runs only at the end of successful oauth flow, not on a session check or malicious hit to /api/auth/session
-				} catch (e) { console.error(e) }//ttd june, hook this into datadog when you have that; here's another entrypoint from framework code to your code that you should isolate and protect in the normal way
+				} catch (e) { console.error(e) }//ttd june2025, hook this into datadog when you have that; here's another entrypoint from framework code to your code that you should isolate and protect in the normal way
 				return token//Auth expects our jwt() function to always return the token object it gives us
 			},
-			//ttd june, more common unhappy path is user says no to twitter, just closes the tab; be able to see those unfinished flows in the database as they will go 100% if the provider breaks or turns us off, too!
+			//ttd june2025, more common unhappy path is user says no to twitter, just closes the tab; be able to see those unfinished flows in the database as they will go 100% if the provider breaks or turns us off, too!
 
-			//ttd june, signIn lets us look at the profile object and return a redirect route; won't need this later, probably
+			//ttd june2025, signIn lets us look at the profile object and return a redirect route; won't need this later, probably
 
-			/* ttd june, to get details on the query string, we're using signIn(), and don't need redirect()
+			/* ttd june2025, to get details on the query string, we're using signIn(), and don't need redirect()
 			//Auth calls this right afterwards asking us where we should send the user who is finished
 			async redirect({
 				url,//Auth gives us our callbackUrl from the starting link like "/api/auth/signin/twitter?callbackUrl=/whatever"
@@ -246,7 +246,7 @@ https://github.com/nextauthjs/next-auth/pull/10684
 which is lower level than being React or Next or Nuxt-specific
 but still at a level where we get modules that know about specific providers
 
-(ttd june, and then that didn't work, so we got NextAuth working in Next.js, and then Auth.js for SvelteKit working, and have made a completely separate website with sveltekit at a subdomain and are working on the links there and back)
+(ttd june2025, and then that didn't work, so we got NextAuth working in Next.js, and then Auth.js for SvelteKit working, and have made a completely separate website with sveltekit at a subdomain and are working on the links there and back)
 
 another thing that made the search difficult is most of these solutions
 want to be your whole user identity and user management system

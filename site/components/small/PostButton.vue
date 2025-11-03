@@ -59,7 +59,7 @@ const emit = defineEmits(['update:inFlight'])
 const refButtonState = ref('gray')
 const refButtonLabel = ref(props.labelIdle)
 
-onMounted(async () => {//ttd april, does this need to be async?
+onMounted(async () => {//ttd april2025, does this need to be async?
 	if (props.useTurnstile && useTurnstileHere()) pageStore.renderTurnstileWidget = true//causes BottomBar to render TurnstileComponent
 })
 
@@ -91,7 +91,7 @@ defineExpose({post: async (path, body) => {
 	return task.response//return the response, discarding the task, so things don't keep getting deeper
 }})
 
-//ttd march, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something
+//ttd march2025, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something
 </script>
 <template>
 
@@ -110,7 +110,7 @@ button.green       { background-color: #16a34a; }
 button.green:hover { background-color: #4ade80; }
 button.orange      { background-color: orange; }
 /*
-ttd april, get these in line with the tailwind styles in tailwind.css
+ttd april2025, get these in line with the tailwind styles in tailwind.css
 you've set green and hover to match tailwind bg-green-600 and 400, but manually, which is bad
 */
 

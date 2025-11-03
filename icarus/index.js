@@ -7,7 +7,7 @@
 //                                                                         |___/ 
 
 /*
-ttd, rename from library to level
+ttd december2024, rename from library to level
 each level rests on lower levels
 
 level3 - (application) application logic
@@ -82,7 +82,7 @@ so, icarus can't use persephone, but persephone can use icarus
 and, persephone can use tiny tests, and defines more tests that only run in lambda
 */
 
-//ttd march ^ clean that up into a single tight essay about levels and isomorphic
+//ttd march2025 ^ clean that up into a single tight essay about levels and isomorphic
 
 
 

@@ -5,12 +5,12 @@ trailAdd, trailCount,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 
-function composeMessage(nonce) { return `Add your wallet with an instant, zero-gas signature of code ${nonce}` }//ttd september, siwe opensea ens maybe have much longer messages with more stuff like uri, mainnet id, timestamp; see what the happy path looks like and what those other common providers have made familiar
+function composeMessage(nonce) { return `Add your wallet with an instant, zero-gas signature of code ${nonce}` }//ttd september2025, siwe opensea ens maybe have much longer messages with more stuff like uri, mainnet id, timestamp; see what the happy path looks like and what those other common providers have made familiar
 function composeTrail(address, nonce) { return `challenged ethereum wallet address ${address} nonce ${nonce}` }
 
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {useTurnstile: false, actions: ['Prove.'], workerEvent, doorHandleBelow})
-	//^ttd september, do wallet interactions need turnstile? totp and email, absolutely, but here you think maybe not, and don't want to tarnish the experience in any way for savy and influential web3 users
+	//^ttd september2025, do wallet interactions need turnstile? totp and email, absolutely, but here you think maybe not, and don't want to tarnish the experience in any way for savy and influential web3 users
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 	if (action == 'Prove1.') {//page requests nonce to prove it controlls address
@@ -72,14 +72,3 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		sticker: Sticker(),
 	}
 }
-
-
-
-
-
-
-
-
-
-
-

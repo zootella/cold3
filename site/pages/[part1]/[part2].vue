@@ -4,7 +4,7 @@ const route = useRoute()
 const part1 = route.params.part1
 const part2 = route.params.part2
 
-//ttd february, nested dynamic segments for user and post pages
+//ttd february2025, nested dynamic segments for user and post pages
 
 </script>
 <template>

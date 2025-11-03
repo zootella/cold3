@@ -85,7 +85,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
 })
 
 /*
-ttd march
+ttd march2025
 here's where you correct the case of GETs that are routes to user names
 
 */
@@ -96,7 +96,7 @@ here's where you correct the case of GETs that are routes to user names
 
 
 
-ttd march
+ttd march2025
 you've written validate name, and now just need to add the route
 []user types name, other two are set automatically
 	but then user adjusts route, and that changes look but not name
@@ -158,30 +158,3 @@ which gets all the way to the end, except now raw will be the same as formformal
 
 
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

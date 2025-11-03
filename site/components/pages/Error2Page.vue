@@ -8,7 +8,7 @@ const pageStore = usePageStore()
 const refButton = ref(null)
 const refButtonCanSubmit = ref(toBoolean(pageStore.errorDetails))
 const refButtonInFlight = ref(false)
-//ttd april, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
+//ttd april2025, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
 
 async function onClick() {
 	await refButton.value.post('/api/report', {action: 'PageErrorTurnstile.',
@@ -23,7 +23,7 @@ async function onClick() {
 function hardReplace() { window.location.replace('/') }//outside of Nuxt routing, same as the browser's Reload button, and to the domain root
 
 /*
-ttd april
+ttd april2025
 the user may drag down to refresh on this page--at that point they will have navigated to a new copy of this page that doesn't have an error to report
 so, important to add
 []if here with nothing to report, do rootReload automatically

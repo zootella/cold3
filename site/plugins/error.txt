@@ -97,7 +97,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 })
 
 
-//ttd april, three more for the client that you're not going to start out with, as they could freak out unnecessarily
+//ttd april2025, three more for the client that you're not going to start out with, as they could freak out unnecessarily
 const router = useRouter()
 router.onError((error) => {
 	log('error handler 3', look({error}))
@@ -130,7 +130,7 @@ This is a broader hook that catches errors in the application outside of the Vue
 /*
 hitStore.js
 
-ttd february important
+ttd february2025 important
 ok, but if a whole bunch of components show up on the page all at once
 and they all call into getHits at the same time
 coded this way, there will be a flurry of overlapping and identical fetch calls
@@ -428,10 +428,10 @@ above, you can see that i am registering three handlers in my nuxt 3 project
 
 
 /*
-ttd april, removing gotten from here because, that can't possibly be right
+ttd april2025, removing gotten from here because, that can't possibly be right
 
 const gotten = ref(false)//our own flag to not bother the api unnecessarily
-//^ttd april, do you need this?!
+//^ttd april2025, do you need this?!
 
 
 	gotten,//necessary for the store to download correctly after server rendering
@@ -472,7 +472,7 @@ const gotten = ref(false)//our own flag to not bother the api unnecessarily
 
 <script setup>//./error.vue
 
-//ttd april, understand errors in nuxt
+//ttd april2025, understand errors in nuxt
 //can't use layouts in here the same way, hence the navigation bar and div class below
 
 /*

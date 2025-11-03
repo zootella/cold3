@@ -16,7 +16,7 @@ onMounted(() => {//this component has been rendered and inserted into the page's
 
 //the form using us calls here to get a token that's already been made, or make one and return it
 async function getToken() {
-	//ttd march, use sequentialSeparate here
+	//ttd march2025, use sequentialSeparate here
 	if (hasText(token.text)) {//we're holding a token
 		if (Now() < token.tick + fresh) {//and it's still fresh
 			return exportToken()//return it
@@ -75,7 +75,7 @@ function step3Render() {
 			sitekey: ACCESS_TURNSTILE_SITE_KEY_PUBLIC,
 			callback: turnstileCallback,//after we call execute(), turnstile will give this callback the token
 			'error-callback': turnstileErrorCallback,
-			size: 'normal',//todo january, you'll change this to invisible along with changing a setting in the dashboard
+			size: 'normal',//ttd january2025, you'll change this to invisible along with changing a setting in the dashboard
 			execution: 'execute',//don't generate a token now; we'll call turnstile.execute() to make the token in a separate step
 		}
 	)

@@ -29,7 +29,7 @@ const logText = ref("");
 await doFetch();
 async function doFetch() {
 	t.tick3 = Now();
-	const r = await useFetch("/api/mirror", {method: 'POST'});//ttd april, this whole component is super old and doesn't follow current patterns
+	const r = await useFetch("/api/mirror", {method: 'POST'});//ttd april2025, this whole component is super old and doesn't follow current patterns
 	t.tick4 = Now();
 	t.duration34 = t.tick4 - t.tick3;
 	logToBox(`fetched message "${r.data.value.message}", access length "${r.data.value.accessLength}", tag "${r.data.value.tag}", tick "${r.data.value.serverTick}", say environment "${r.data.value.sayEnvironment}"`);

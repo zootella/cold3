@@ -14,11 +14,11 @@ let enrollment
 async function generate() {
 	enrollment = await totpEnroll({label: refLabel.value, issuer: refIssuer.value, addIdentifier: true})
 	refUri.value = enrollment.uri
-	//ttd august, this demo is all client side, an actual implementation of totp would never call generate, and would create and keep the secret on the server side. you've made /api/totp as the start of the real implementation!
+	//ttd august2025, this demo is all client side, an actual implementation of totp would never call generate, and would create and keep the secret on the server side. you've made /api/totp as the start of the real implementation!
 }
 
 function redirect() {
-	window.location.href = enrollment.uri//ttd august, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
+	window.location.href = enrollment.uri//ttd august2025, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
 }
 
 let interval

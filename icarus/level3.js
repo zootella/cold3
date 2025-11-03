@@ -121,7 +121,7 @@ test(async () => {
 export function validateMessageForm() {
 
 }
-//ttd february--so the idea here is, then for a form, you bundle the verification of multiple fields into a single object. does that work with different steps? this is just a sketch at this point, but you like the concept of getting standard "whole form is good to go" logic in one place, for client and server, rather than in Vue handlers above. (you really like that idea) as well as having a standard .ok for a whole form, rather than just a bunch of individual form field valid flags
+//ttd february2025--so the idea here is, then for a form, you bundle the verification of multiple fields into a single object. does that work with different steps? this is just a sketch at this point, but you like the concept of getting standard "whole form is good to go" logic in one place, for client and server, rather than in Vue handlers above. (you really like that idea) as well as having a standard .ok for a whole form, rather than just a bunch of individual form field valid flags
 
 
 
@@ -202,7 +202,7 @@ export async function snippet3() {
 //                                                              
 
 //--this user mentioned, or proved they can read messages sent to, this address
-//address_table, ttd february
+//address_table, ttd february2025
 
 /*
 simplest question to answer: is this address
@@ -301,7 +301,7 @@ are we hiding rows here? maybe for this one, which is lower churn than signing i
 
 
 /*
-ttd march
+ttd march2025
 adding domain_text to browser_table
 browser_hash is from the browser
 and local storage is specific to the device, browser, chrome profile, and host name
@@ -339,7 +339,7 @@ CREATE INDEX browser1 ON browser_table (browser_hash, row_tick DESC) WHERE hide 
 CREATE INDEX browser2 ON browser_table (user_tag,     row_tick DESC) WHERE hide = 0;  -- or by user
 CREATE INDEX browser3 ON browser_table (level,        row_tick DESC) WHERE hide = 0;  -- quickly find expired super user hours
 `)
-//ttd february, trying the pattern where the group of functions which exclusively touch the table are named example_someThing, as below. if it works well for browser and name tables, then look at expanding to everywhere
+//ttd february2025, trying the pattern where the group of functions which exclusively touch the table are named example_someThing, as below. if it works well for browser and name tables, then look at expanding to everywhere
 
 async function browser_get({browserHash}) {//what user, if any, is signed in at this browser?
 	checkHash(browserHash)
@@ -647,7 +647,7 @@ CREATE TABLE code_table (
 
 CREATE INDEX code1 ON code_table (browser_hash,             row_tick DESC) WHERE hide = 0;  -- filter by browser
 CREATE INDEX code2 ON code_table (type_text, address0_text, row_tick DESC) WHERE hide = 0;  -- or by address
--- ^ttd march, maybe, change all indices to partial with where hide zero like above
+-- ^ttd march2025, maybe, change all indices to partial with where hide zero like above
 `)
 
 async function code_get({codeTag}) {//get the row about a code
@@ -852,7 +852,7 @@ CREATE INDEX name6 ON name_table (hide, name0_text, row_tick DESC);  -- what use
 CREATE INDEX name7 ON name_table (hide, name2_text, row_tick DESC);  -- is this page name taken?
 `)
 
-export async function nameCheck({v}) {//ttd march, draft like from the check if your desired name is available, to choose and change a name
+export async function nameCheck({v}) {//ttd march2025, draft like from the check if your desired name is available, to choose and change a name
 	if (!v.ok) toss('valid', {v})//you have already done this check, but here too to make sure
 
 	let task = Task({name: 'name check'})
@@ -927,7 +927,7 @@ async function name_delete({userTag, hideSet}) {//hide reason code optional
 // |_|                                                   
 
 //--user name and route are in route_table, this is for the stuff beyond that like status message and avatar image
-//ttd february, make profile_table
+//ttd february2025, make profile_table
 
 SQL(`
 -- stuff on the user's profile page that doesn't need to be unique or indexed
@@ -1001,7 +1001,7 @@ and how fast they are, how reliable they are
 how quickly users can complete tasks with them, all of that leads into robin
 (^wrote that much earlier, just as part of naming service_table)
 
-ttd october, notes about service_table, AUDIT logs, and the round Robin system
+ttd october2025, notes about service_table, AUDIT logs, and the round Robin system
 this is just a rought sketch; you made this table but don't have any code that writes to it yet
 
 this table is more like a log or a data lake than the others
@@ -1023,7 +1023,7 @@ added two indexes as a starting point but you have no idea how you'll query this
 and only queries that load to a user interaction, like avoiding a emailer that broke an hour ago, need to be fast
 */
 
-//ttd october, where you are currently logging to datadog as an AUDIT, also write here
+//ttd october2025, where you are currently logging to datadog as an AUDIT, also write here
 
 
 
@@ -1225,7 +1225,7 @@ export async function demonstrationSignUp({browserHash, name0, origin}) {
 	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserHash, name0}
 
 	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	await name_set({userTag, name0, name1: name0, name2: name0})//ttd january, all the same for now
+	await name_set({userTag, name0, name1: name0, name2: name0})//ttd january2025, all the same for now
 	await browser_in({browserHash, userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
 	return {isSignedUp: true, browserHash, userTag, name: name0, name0}//just for testing; we won't send user tags to pages
 }

@@ -98,7 +98,7 @@ password page backlog
 
 
 /*
-ttd april
+ttd april2025
 evolution of thinking of how/if to use passwords in the system
 1 code them normal
 2 don't use them at all, they're compromised by both attackers and google/apple fighting to popups over each other to steal users' with the new Passkey web standards
@@ -115,7 +115,7 @@ as this is buried, ok to be unconventional:
 
 
 /*
-todo remember when comparing *even password hashes* on the server to use your fancy new secureSameText(s1, s2)
+ttd november2024 remember when comparing *even password hashes* on the server to use your fancy new secureSameText(s1, s2)
 otherwise, the attacker won't bother computing hash values on his client at all, and will just guess forward the hash value--he'll never get the password, but will gain access to the account!
 */
 

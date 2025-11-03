@@ -119,7 +119,7 @@ async function writeWrapper(o) {
 }
 
 const envSecretFileName = '.env.local'//our file of secrets to encrypt
-const envKeysFileName = '.env.keys'//ttd september, upcoming format with public and secret keys defined together and separated
+const envKeysFileName = '.env.keys'//ttd september2025, upcoming format with public and secret keys defined together and separated
 async function affixSeal(properties, manifest) {
 
 	//total up the files, counting those that are something we wrote or created, versus everything
@@ -145,7 +145,7 @@ async function affixSeal(properties, manifest) {
 	let envSecretContents = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
 	let cipherData1 = await encrypt(Data({base62: process.env.ACCESS_KEY_SECRET}), envSecretContents)
 
-	//ttd september, new system for page keys like alchemy, not yet running any actual secrets through here
+	//ttd september2025, new system for page keys like alchemy, not yet running any actual secrets through here
 	let envKeysContents = await fs.readFile(envKeysFileName, 'utf8')
 	let blocks = parseKeyFile(envKeysContents)
 	let cipherData2 = await encrypt(

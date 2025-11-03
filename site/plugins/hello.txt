@@ -192,7 +192,7 @@ export default defineEventHandler((event) => {
 
 
 /*
-ttd april
+ttd april2025
 the eventual design that is best may also be quite simple:
 there isn't a hello1 and hello2, there's just one hello
 the browser sends the browser tag automatically with every GET and POST, so you have it from the first hit
@@ -239,8 +239,8 @@ so yeah, let's go back to quick monolith after all
 	*/
 
 
-	//ttd march, trying to do things in parallel with keepPromise, you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome
-	//ttd april, you should factor the above block into a function in level3 which you give the headers
+	//ttd march2025, trying to do things in parallel with keepPromise, you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome
+	//ttd april2025, you should factor the above block into a function in level3 which you give the headers
 
 	/*
 	/api/hello2
@@ -281,7 +281,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 	//but don't await this one, just get it started now, when the page hits a new tab, and let it happen in a moment after there are already components on the page
 
 	/*
-	ttd april, all of this will change with the cookie based browser tag, and that's fine
+	ttd april2025, all of this will change with the cookie based browser tag, and that's fine
 	also, you're thinking you do a quick monolith single hello, to show the user a complete rendered page all at once, rather than a page that grows and snaps open in more than one step
 	*/
 })
@@ -313,8 +313,8 @@ important:
 
 
 
-//ttd april, technically probably not ok to use await here?!
-//ttd april, you asked chat if await is ok on the margin here, and it said no! but when you changed to below, now an empty box renders before filling, which is distracting, and you can't see the sticker from the server when you refresh at page2 anymore! figure out the right way to do this, before you use it for hello0 and everything, maybe through simplicity in the quick monolith, maybe with getAsyncData()
+//ttd april2025, technically probably not ok to use await here?!
+//ttd april2025, you asked chat if await is ok on the margin here, and it said no! but when you changed to below, now an empty box renders before filling, which is distracting, and you can't see the sticker from the server when you refresh at page2 anymore! figure out the right way to do this, before you use it for hello0 and everything, maybe through simplicity in the quick monolith, maybe with getAsyncData()
 /*
 onMounted(async () => {
 	await hitStore.getHits()

@@ -238,7 +238,7 @@ you need to solve this without:
 how does enterkeyhint work now that you have PostButton, and the form is above?
 or, this really doesn't matter because you want to avoid it, to direct the user's attention back to the page, which is where the next question, or the thing the need to fix, will be
 
-<!-- ttd february, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or not use it at all, to direct the user's attention back to the page, which is probably what you want to do for usability and consistancy. no, it's because you haven't done the enclosing form with submit prevent yet -->
+<!-- ttd february2025, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or not use it at all, to direct the user's attention back to the page, which is probably what you want to do for usability and consistancy. no, it's because you haven't done the enclosing form with submit prevent yet -->
 
 
 
@@ -433,19 +433,3 @@ function
 	until {{sayTimePage(code.tick + (20*Time.minute))}}. After that, you'll have to request a new one.
 </p>
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

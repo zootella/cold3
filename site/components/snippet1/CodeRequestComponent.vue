@@ -30,7 +30,7 @@ async function onClick() {
 	} else if (response.reason == 'CoolSoft.') {
 		//automatically, nothing changes
 		//- collapse the controls in this box, as the user can't use them for another minute
-		pageStore.addNotification("To keep things secure, we can't send another code to that address right away. Wait one minute, and try again, please.")//ttd april, it may instead make sense to write that into the enter box, letting them choose a different address, or something
+		pageStore.addNotification("To keep things secure, we can't send another code to that address right away. Wait one minute, and try again, please.")//ttd april2025, it may instead make sense to write that into the enter box, letting them choose a different address, or something
 	} else if (response.reason == 'CoolHard.') {
 		//automatically, nothing changes
 		//- collapse the controls in this box, as the user can't use them for another minute

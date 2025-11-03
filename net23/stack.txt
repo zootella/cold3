@@ -197,7 +197,7 @@ async function doorHandleBelow({door, body, action}) {
 
 export async function codeSend({browserTag, provider, type, v}) {
 ...
-	let result23 = await fetch23({$fetch, path: '/message', body})//ttd march, other notes about getting the nuxt 
+	let result23 = await fetch23({$fetch, path: '/message', body})//ttd march2025, other notes about getting the nuxt 
 ...
 	return {success: true, result23}
 }
@@ -500,7 +500,7 @@ if (tape.ok())
 
 	
 
-	//ttd april, be able to tell if we think the code send worked ok or not
+	//ttd april2025, be able to tell if we think the code send worked ok or not
 
 
 
@@ -515,7 +515,7 @@ if (tape.ok())
 
 
 
-//ttd march, other notes about getting the nuxt environment reference $fetch
+//ttd march2025, other notes about getting the nuxt environment reference $fetch
 
 
 
@@ -536,7 +536,7 @@ export function getFetch() {
 
 
 /*
-ttd december, figure out how bridge works now that you've got cors done
+ttd december2024, figure out how bridge works now that you've got cors done
 write something small and simple which ping4 and test can use, too; right now they're doing this
 
 to begin--don't do the warm thing, either--the errors you were seeing were only for GET, not POST
@@ -544,7 +544,7 @@ well, now you sort of want to do it
 */
 
 /*
-ttd march
+ttd march2025
 you don't need forceCloudLambda anymore, you never used it
 use {} for named arguments, of course
 yeah do the warmup
@@ -588,7 +588,7 @@ async function fetchNetwork23(nuxtDollarFetchFunction, providerDotService, path,
 	let resultAction = await nuxtDollarFetchFunction(host+path, {method: 'POST', body})
 	d.finish()//but then log this or return this or something, right now you're just trying out your new Duration object
 	return resultAction
-	//ttd march, you like the warmup, but probably you don't need the "what we are warming up", just call warm to the lambda, and either that will warm up everything, or that can warm up everything, or that will not warm up everything but get things starting to get warm, which is all you need
+	//ttd march2025, you like the warmup, but probably you don't need the "what we are warming up", just call warm to the lambda, and either that will warm up everything, or that can warm up everything, or that will not warm up everything but get things starting to get warm, which is all you need
 
 	/*
 	november
@@ -691,7 +691,7 @@ export function Tape() {
 	return {tasks, finish, success}
 }
 */
-//^ttd april, ok, so that is really tight and simple, try to keep it like that
+//^ttd april2025, ok, so that is really tight and simple, try to keep it like that
 //for instance, don't do the design where you take a function and call it and catch an exception automatically
 
 

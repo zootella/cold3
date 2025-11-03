@@ -107,7 +107,7 @@ and then see if you can have helper functions that work for both error and
 
 
 
-	//get information from cloudflare about the headers, you'll use these for (1) sudo access and (2) hit log, ttd march
+	//get information from cloudflare about the headers, you'll use these for (1) sudo access and (2) hit log, ttd march2025
 	r.connection = {
 		ipAddress: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
 		geography: {
@@ -118,7 +118,7 @@ and then see if you can have helper functions that work for both error and
 		},
 		browser: {
 			agent:   headerGetOne(headers, 'user-agent'),//what the browser told cloudflare
-			//ttd april, here's where you can add back renderer and vendor; and maybe reorganize into .page, .browser, .worker, matching error.js, also
+			//ttd april2025, here's where you can add back renderer and vendor; and maybe reorganize into .page, .browser, .worker, matching error.js, also
 		},
 	}
 	//record the hit

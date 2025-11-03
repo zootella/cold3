@@ -24,7 +24,7 @@ and test on both mobile platforms, every browser!
 */
 
 function measure() {
-	if (!(window && document)) return//todo, figure out how to guard this better
+	if (!(window && document)) return//ttd may2024, figure out how to guard this better
 
 	let divs = document.querySelectorAll('.post-class')
 	let countAbove = 0, countBelow = 0, countWithin = 0//within means entirely or partially visible

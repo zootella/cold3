@@ -32,13 +32,13 @@ Task, fetchWorker, fetchLambda, fetchProvider,
 } from 'icarus'
 
 /*
-ttd june, make this page do a client side redirect to cold3.cc
+ttd june2025, make this page do a client side redirect to cold3.cc
 all it needs to do is show google the site verification code
 users shouldn't go here
 */
 
 /*
-ttd june, move this down into the head section below
+ttd june2025, move this down into the head section below
 filled in with the google site verification code for oauth.cold3.cc
 <meta name="google-site-verification" content="" />
 */

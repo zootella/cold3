@@ -30,7 +30,7 @@ also, how is 0ms possible? it's not; measure the actual durations correctly for 
 
 //test.js
 /*
-ttd april, necessary bike shed improvements
+ttd april2025, necessary bike shed improvements
 []refactor to use fetchNet23 or whatever you call that
 []line up green checks, where, and hashes, this is what you look at
 []the page should show up even while the tests are rolling in
@@ -77,18 +77,8 @@ amazon is totally separate from nuxt so these sorta have to be the same
 */
 
 /*
-TODO note to remove tests from production
+ttd april2025 note to remove tests from production
 does including tiny tests in nuxt mean the whole bundle, even in production, is unnecessarily larger?
 you may want to comment this out at the end
 there's also process.env.NODE_ENV != 'production'
 */
-
-
-
-
-
-
-
-
-
-

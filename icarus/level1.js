@@ -24,7 +24,7 @@ import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate ph
 import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
 import {getAddress as viem_getAddress} from 'viem'
 
-//ttd august, if you remove the blank line above, Vite's parser freaks out, which is super weird
+//ttd august2025, if you remove the blank line above, Vite's parser freaks out, which is super weird
 /*
 notes about imports:
 - modules promise isomorphic but then don't deliver: test in node, browser, and web worker SSR
@@ -232,7 +232,7 @@ test(() => {
 	ok(trimLines('\nA\n\nB\n').lines.length == 2)
 
 	//add some tests to confirm no blank lines, and .text ends \n
-	//ttd february
+	//ttd february2025
 })
 
 //trim space from the ends of s, and coalesce multiple whitespace characters
@@ -317,7 +317,7 @@ test(() => {
 // |_| |_|\__,_|_| |_| |_|\___|  \__,_|_| |_|\__,_| |_|  \___/ \__,_|\__\___|
 //                                                                           
 
-//ttd february
+//ttd february2025
 /*
 checkName0(name0) makes sure name0 is a valid normalized route that doesn't change when we validate it
 checkName2(name2) makes sure name2 is a valid name for the page that doesn't change when we validate it
@@ -333,7 +333,7 @@ maybe put those into a single checkName which acts on what it's given--or maybe 
 
 
 
-//ttd october, a big refactor but one you've thought about
+//ttd october2025, a big refactor but one you've thought about
 /*
             _               __  ___            __ _            __ ____  
 __   _____ | | __   __   __/ _|/ _ \   __   __/ _/ |   __   __/ _|___ \ 
@@ -395,13 +395,13 @@ but ok/raw/f0/f1/f2/f3 are shortest, extensible, readily identifiable in code an
 
 
 /*
-^ttd february, so, do you need this? next make the choose/change your user name and route form to figure that out
+^ttd february2025, so, do you need this? next make the choose/change your user name and route form to figure that out
 wait--should checkRoute, for instance, also validate that as given, it doesn't change to normal?!
 yes, it should--both check that the given text can be made valid and normal, and that the given text is alerady valid and normal
 add that check to the other checkSomething editions
 */
-//ttd february, you also need to block this list
-//ttd february, maybe make these passed limits compulsory so below is simpler, and calls here are explicit; you have to say it in the html after all
+//ttd february2025, you also need to block this list
+//ttd february2025, maybe make these passed limits compulsory so below is simpler, and calls here are explicit; you have to say it in the html after all
 
 
 
@@ -413,13 +413,13 @@ export function bundleValid(f0, f1, f2) {//you really have to get the order righ
 	checkText(f0); checkText(f1); checkText(f2)//sanity check, even though you don't know what these are or what's valid for them, bundle, at least, needs them all to be something
 	return {ok: true, f0, f1, f2}
 }
-//ttd march, is this a good idea? you're tried of typing out the three forms everywhere, and v could mean object from validate function
+//ttd march2025, is this a good idea? you're tried of typing out the three forms everywhere, and v could mean object from validate function
 
 
 
 
 
-//ttd march, when you let the user choose their forms 1 and 2 names, name1->name0 must be available, and name2 must not collide with name0, either! this so you can make log in by name, and let the type any of the three forms
+//ttd march2025, when you let the user choose their forms 1 and 2 names, name1->name0 must be available, and name2 must not collide with name0, either! this so you can make log in by name, and let the type any of the three forms
 
 
 export function checkName({f2, f1, f0}) {
@@ -707,7 +707,7 @@ test(() => {
 	f('a.b+spam@proton.me', 'a.b+spam@proton.me', 'a.b+spam@proton.me', 'ab@proton.me')
 })
 
-//probably won't have these; instead should be part of the theorized validate form as a whole system? ttd march
+//probably won't have these; instead should be part of the theorized validate form as a whole system? ttd march2025
 export function validateEmailOrPhone(raw) {
 	let vEmail = validateEmail(raw); if (vEmail.ok) { vEmail.type = 'Email.'; return vEmail }
 	let vPhone = validatePhone(raw); if (vPhone.ok) { vPhone.type = 'Phone.'; return vPhone }

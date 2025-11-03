@@ -26,7 +26,7 @@
 	@apply text-gray-700 decoration-gray-500;
 }
 .myText a {
-	@apply text-gray-700 decoration-gray-500; /* ttd july, should not need to repeat, but necessary to overwrite style.css a, you think */
+	@apply text-gray-700 decoration-gray-500; /* ttd july2025, should not need to repeat, but necessary to overwrite style.css a, you think */
 }
 .myTop {
 	@apply max-w-3xl mx-auto px-2 py-8;

@@ -54,7 +54,7 @@ and we don't really need this at all because it's likely NuxtLink from some foot
 	;
 }
 .myTerms a {
-	@apply text-gray-800 decoration-gray-500; /* ttd july, if you stop styling a in style.css, you think you can remove this */
+	@apply text-gray-800 decoration-gray-500; /* ttd july2025, if you stop styling a in style.css, you think you can remove this */
 	word-break: break-word; /* don't let a long linked url make the columns wider */
 }
 .myTerms strong {

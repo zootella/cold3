@@ -11,7 +11,7 @@ if (part1 == name1) {//exact match
 	//render the page below
 } else if (request0 == name0) {//working match
 	navigateTo(`/${name1}`, {redirectCode: 301})//functional match, but we can correct the case
-	//ttd march, actually, don't do a redirect here, do that in ./site/middleware/name.global.js
+	//ttd march2025, actually, don't do a redirect here, do that in ./site/middleware/name.global.js
 } else {//no match
 	throw createError({statusCode: 404, statusMessage: 'Not Found'})
 }

@@ -24,7 +24,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	}
 
 /*
-ttd august, things to actually implement totp
+ttd august2025, things to actually implement totp
 [x]hook up to the qr code and test in popular ios and android authenticator apps
 []test the client side redirect if we're on mobile, do that the same way as oauth, probably, ask Claude
 []store secret temporarily for user before they validate to confirm their enrollment
