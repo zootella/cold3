@@ -119,12 +119,19 @@ ttd november2024 remember when comparing *even password hashes* on the server to
 otherwise, the attacker won't bother computing hash values on his client at all, and will just guess forward the hash value--he'll never get the password, but will gain access to the account!
 */
 
+/*
+ttd november
+crazy unnecessary optimization idea so that the number of iterations is chosen by the speed of the user's device where they set their password
+to set a password, it does units of 100k iterations until the last one brings the total delay above a half second
+ok and then how does that work? the server stores the iteration count with the password, i suppose, and tells the page this
+yeah, that is pretty cool, because it scales forward as moore's law keeps mooring
+
+*/
 
 import {
-publicKeys, hashPassword, Data, sayTick,
+hashPassword, Data, sayTick,
 } from 'icarus'
 
-const Key = publicKeys()
 const salt = Data({base32: Key('password hashing, choice 1, salt, public, page')})
 const iterations = textToInt(Key('password hashing, choice 1, iterations, public, page'))
 //yes, these are factory presets, acceptable and necessary to include in the client bundle for script on the page, ok to reveal pubicly
@@ -149,7 +156,7 @@ async function onEnter() {
 </script>
 <template>
 <div class="border border-gray-300 p-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordComponent</i></p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordDemo</i></p>
 
 <input type="text" v-model="refInput" @input="onTyping" placeholder="Type something..." @keyup.enter="onEnter" />{{' '}}
 <Button @click="onEnter">Submit</Button>

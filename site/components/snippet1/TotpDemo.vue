@@ -6,6 +6,8 @@ totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, otp_guard_wrong_gu
 browserIsBesideAppStore,
 } from 'icarus'
 
+log('hi in totp demo', look(Key('totp, issuer, public, page')))
+
 const refLabel = ref('user.name@example.com')
 const refIssuer = ref('cold3.cc')
 const refUri = ref('')

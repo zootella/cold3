@@ -288,10 +288,10 @@ const Key = await secretKeys() - get public keys and secrets; only works on a se
 const Key = publicKeys() - call from anywhere to get just the public keys and factory presents
 Key('tag1, tag2, tag3') - lookup the key by specifying all of its tags, order doesn't matter, tags can have spaces!
 */
-export async function secretKeys() {//on the server, get all the keys
+async function secretKeys() {//on the server, get all the keys
 	//ttd september2025, at some point refactor getAccess() below into this system; []use redact during seal to confirm wrapper does not contain secrets!
 }
-export function publicKeys() {//on the page, get only keys that can and must be revealed
+function publicKeys() {//on the page, get only keys that can and must be revealed
 	if (!_loadedPublicKeys) { _loadedPublicKeys = true
 		_keys.push(...parseKeyBlock(Data({base62: wrapper.publicKeys}).text()))
 	}
@@ -304,6 +304,18 @@ function _Key(search) {//not exported; get Key() from calling one of the functio
 }
 let _keys = [], _loadedPublicKeys, _loadedSecretKeys
 
+/*
+ttd november
+new design idea for this
+autoimported function Key() is the same everywhere
+to be able to get secret ones, you have to first call await decryptKeys()
+and of course that only works on the server, throws elsewhere
+and Key() throws if you ask for one it doesn't have, so any server one that's not on the server
+*/
+export function Key(search) {//placeholder letting you use the new design before you code it
+	const k = publicKeys()
+	return k(search)
+}
 
 
 

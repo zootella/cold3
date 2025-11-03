@@ -25,7 +25,7 @@ checkHash,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 
-accessKey, canGetAccess, getAccess,
+Key, accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 

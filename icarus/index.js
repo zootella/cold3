@@ -151,7 +151,7 @@ functions that use parts of the larger application and environment
 export {
 
 Sticker, stickerParts, isLocal, isCloud,
-secretKeys, publicKeys, accessKey, canGetAccess, getAccess,
+Key, accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 headerGetOne,
 keepPromise, awaitDoorPromises,

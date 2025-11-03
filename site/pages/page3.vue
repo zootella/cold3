@@ -3,7 +3,7 @@
 </script>
 <template>
 
-<PasswordComponent />
+<PasswordDemo />
 <TrailComponent />
 <ValidateNameComponent />
 
