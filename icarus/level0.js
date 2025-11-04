@@ -1628,13 +1628,20 @@ export const totp_guard_horizon = Time.day//every 24 hours, to make an attacker 
 //ttd august2025, also, not doing backup codes in this scope; they're commonly implemented by products using rfc6238 but not part of that standard
 
 export const totpConstants = {
+
+	//about the totp standard and our typical use of it
 	secretSize: totp_size,//20 bytes; secrets are strings in base 32
 	algorithm: totp_algorithm,
 	codeLength: totp_code_length,//6 numerals, codes are strings
 	period: totp_period_seconds,
 	window: totp_window,
+
+	//presets we chose for rate limiting protection
 	guardWrongGuesses: totp_guard_wrong_guesses,//block guessing on a secret after 6 wrong guesses
 	guardHorizon: totp_guard_horizon,//in the past 24 hours, in milliseconds
+
+	//beyond those, our choices that affect the user experience
+	enrollmentExpiration: 20*Time.minute,//the user can stay on the enroll page for 20 minutes before moving forward, but not longer
 }
 Object.freeze(totpConstants)
 

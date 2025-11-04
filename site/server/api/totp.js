@@ -1,6 +1,6 @@
 //./server/api/totp.js
 import {
-browserToUser, trailAdd, hashText,
+browserToUser, trailAdd, trailCount,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants,
 } from 'icarus'
 
@@ -14,11 +14,10 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 
-	return {isEnrolled: false, reason: 'not implemented yet, ttd november'}//throwing so doing nothing for this deploy, ttd november
+	//this only works if there's a user signed in at this browser, ttd november
+	const userTag = (await browserToUser({browserHash})).userTag; checkTag(userTag)
 
-	let user = await browserToUser({browserHash})
-	log(look(user))
-	checkTag(user.userTag)
+
 
 	//first step in an endpoint, validate that the page told us what's required and it looks well formed, at least
 	if (action == 'Enroll1.') {
@@ -27,14 +26,20 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	} else if (action == 'Enroll2.') {
 		//to validate a provisional enrollment, page must echo back the same secret we chose for it, and the current code
 
-		if (Data({base32: body.secret}).size != 20) toss('body')//20 byte totp secret in base32
-		if (body.code.length != 6) toss('body')//6 numeral totp code, a string, can start zero
-		checkNumerals(body.code)
+		if (Data({base32: body.secret}).size != totpConstants.secretSize) toss('body')//20 byte totp secret in base32
+		checkNumerals(body.code); if (body.code.length != totpConstants.codeLength) toss('body')//6 numeral totp code, a string, can start zero
 
 	} else if (action == 'Validate2.') {
+		//to authenticate a code, the page sends the code; we already know the secret for this uer, and must keep it secret
+
+		checkNumerals(body.code); if (body.code.length != totpConstants.codeLength) toss('body')//6 numeral totp code, a string, can start zero
+
 	} else if (action == 'Remove2.') {
+		//right now removing an enrollment is available to the idenified user without an additional step here, ttd november
 	}
 	//with sanity check validation done, on to the work of the endpoint
+
+
 
 	if (action == 'Enroll1.') {
 		//ttd november, ok, but need to add now, is this user already enrolled?
@@ -45,27 +50,58 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			issuer: Key('totp, issuer, public, page'),
 			addIdentifier: true,
 		})
-		await trailAdd(composeTrailEnrollment({browserHash: browserHash, userTag: user.userTag, secret: enrollment.secret}))
-		log(look(enrollment))
-		return {isEnrolled: false, provisionalEnrollment: enrollment}
+		await trailAdd(composeTrailEnrollment({browserHash, userTag, secret: enrollment.secret}))
+		return {outcome: 'Candidate.', provisionalEnrollment: enrollment}
 
 	} else if (action == 'Enroll2.') {
 
-		let n = await trailCount(composeTrailEnrollment({browserHash: browserHash, userTag: user.userTag, secret: body.secret}), 20*Time.minute)//ttd november, 20 bytes and 20 minutes should probably be defined in level 0 with the cryptography, or something?
-		if (n != 1) return {isEnrolled: false, reason: 'BadSecret.'}//the page needs to echo back the same secret we told made for it in enrollment step 1; if we can't find it, it is either expired or worse, tampered with or fictitious
+		let n = await trailCount(composeTrailEnrollment({browserHash, userTag, secret: body.secret}), totpConstants.enrollmentExpiration)
+		if (n != 1) return {outcome: 'BadSecret.'}//expired provisional enrollment secret, the user should start a new enrollment
+		//➡️ here at the server, making it here is proof the page did not create or tamper with the secret during enrollment
 
-		let valid = totpValidate(body.secret, body.code)
-		if (!valid) return {isEnrolled: false, reason: 'BadCode.'}
+		let valid = await totpValidate(body.secret, body.code)
+		if (!valid) return {outcome: 'BadCode.'}//incorrect code during enrollment, the user can guess again as many times as they want, actually
 
 		//here's where you actually need to associate the validated enrollment with the user, in authenticate_table or whatever, which you can actually make right now
-
-		return {isEnrolled: true}
+		await authenticateStepPlaceholder()
+		return {outcome: 'Enrolled.'}
 
 	} else if (action == 'Validate.') {
+
+		//look up this user's totp secret, they will have one if enrolled
+		await secret = await totpUserToSecret(userTag)
+		if (!secret) toss('totp secret not found to validate a code', {userTag})//very unusual, so we throw to stop the server and break the page
+
+		//protect guesses on this secret from a brute force attack, which would succeed quickly
+		let n = await trailCount(composeTrailWrongGuess({secret}), totpConstants.guardHorizon)
+		if (n >= totpConstants.guardWrongGuesses) return {outcome: 'Later.'}
+
+		//validate the page's guess
+		let valid = await totpValidate(secret, body.code)
+		if (valid) {
+
+			//correct, make a note on the server (ttd november), and tell the page
+			await authenticateStepPlaceholder()
+			return {outcome: 'Correct.'}
+
+		} else {
+
+			//or, wrong guess, make a note in the trail, and tell the page
+			await trailAdd(composeTrailWrongGuess({secret}))
+			return {outcome: 'Wrong.'}
+		}
+
 	} else if (action == 'Remove.') {
 		//ttd november, should the remove flow require second factor validation? maybe, but not at this level
 
+		//look up this user's totp secret, they will have one if enrolled
+		await secret = await totpUserToSecret(userTag)
+		if (!secret) toss('totp secret not found to remove enrollment', {userTag})
+
+		return {outcome: 'Removed.'}
 	}
+
+
 
 /*
 ttd august2025, things to actually implement totp
@@ -79,6 +115,11 @@ ttd august2025, things to actually implement totp
 	return {
 		sticker: Sticker(),
 	}
+}
+
+
+async function authenticateStepPlaceholder() {
+
 }
 
 
