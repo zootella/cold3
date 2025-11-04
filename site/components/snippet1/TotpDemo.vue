@@ -19,33 +19,20 @@ function redirect() {
 	window.location.href = enrollment.uri//ttd august2025, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
 }
 
-let interval
-onMounted(() => { interval = setInterval(repeater, 66) })
-onUnmounted(() => { if (interval) clearInterval(interval) })
-async function repeater() { if (!enrollment) return
-	let secret = Data({base32: enrollment.secret})
-
-	let t = Now()
-	refCodePrev.value = await totpGenerate(secret, t - (30*Time.second))
-	refCodeHere.value = await totpGenerate(secret, t)
-	refCodeNext.value = await totpGenerate(secret, t + (30*Time.second))
-	refCodeTime.value = sayTick(t)
-}
-
-const refCodePrev = ref('')
-const refCodeHere = ref('')
-const refCodeNext = ref('')
-const refCodeTime = ref('')
-
-const refButton5 = ref(null)
-const refButton5CanSubmit = ref(true)//set to true to let the button be clickable, the button below is watching
-const refButton5InFlight = ref(false)//the button below sets to true while it's working, we can watch
+const refButton5 = ref(null); const refButton5CanSubmit = ref(true); const refButton5InFlight = ref(false)
 
 async function onClick5() {
 	let response = await refButton5.value.post('/api/totp', {
 		action: 'Enroll1.',
 	})
 	log('response from enroll 1', look(response))
+	if (response.outcome == 'Candidate.') {
+		if (browserIsBesideAppStore()) {//on a phone, redirect to authenticator app
+			
+		} else {//on desktop, show the qr code
+			refUri.value = response.enrollment.uri
+		}
+	}
 }
 
 </script>
@@ -66,33 +53,21 @@ async function onClick5() {
 	<Button @click="generate" class="justify-self-start">Generate</Button>
 </div>
 
-<p>Is this a phone or tablet with an authenticator app or app store? {{browserIsBesideAppStore() ? '📲 ✅ YES' : '💻 🚫 NO'}}</p>
+<p>Default will beIs this a phone or tablet with an authenticator app or app store? {{browserIsBesideAppStore() ? '📲 ✅ YES' : '💻 🚫 NO'}}</p>
 
 <div v-if="refUri" class="space-y-2">
 	<p>Generated enrollment information:</p>
-  <pre class="whitespace-pre-wrap break-words">{{enrollment}}</pre>
-  <p>On mobile, we'll automatically: <Button @click="redirect">Redirect to the default authenticator app</Button></p>
-  <p>On desktop, we'll show a QR code:</p>
-  
-  <div class="flex justify-center py-2">
-    <div class="flex items-center gap-4">
-      <div class="flex-shrink-0">
-        <QrCode :address="refUri" />
-      </div>
-      
-      <div class="space-y-2">
-      	<p>The server and authenticator app share the secret, and use it with the time to generate matching codes:</p>
-        <p><code>{{refCodePrev}}</code> previous code</p>
-        <p><code>{{refCodeHere}}</code> current code</p>
-        <p><code>{{refCodeNext}}</code> upcoming code</p>
-        <p><code>{{refCodeTime}}</code></p>
-        <p>
-        	Above and beyond the standard implementation, we can tell the user,
-        	<i>the listing you're looking for is marked "[{{enrollment.identifier}}]"</i>
-        </p>
-      </div>
-    </div>
-  </div>
+	<pre class="whitespace-pre-wrap break-words">{{enrollment}}</pre>
+	<p>On mobile, we'll automatically: <Button @click="redirect">Redirect to the default authenticator app</Button></p>
+	<p>On desktop, we'll show a QR code:</p>
+	
+	<div class="flex justify-center py-2">
+		<div class="flex items-center gap-4">
+			<div class="flex-shrink-0">
+				<QrCode :address="refUri" />
+			</div>
+		</div>
+	</div>
 </div>
 
 </div>

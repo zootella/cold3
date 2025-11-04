@@ -146,6 +146,9 @@ function onTyping() {
 
 // Called when the submit button is clicked
 async function onEnter() {
+	if (!hasText(refInput.value)) refInput.value = 'password12345'
+	let password = refInput.value
+
 	let t = Now()
 	let h = await hashPassword(iterations, salt, refInput.value)
 	let duration = Now() - t
