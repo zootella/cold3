@@ -3,6 +3,6 @@
 </script>
 <template>
 
-<HitComponent />
+<WalletDemo />
 
 </template>

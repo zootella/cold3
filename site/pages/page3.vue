@@ -3,8 +3,6 @@
 </script>
 <template>
 
-<PasswordDemo />
-<TrailDemo />
-<ValidateNameComponent />
+<p><i>This page is intentionally left blank</i></p>
 
 </template>

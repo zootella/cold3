@@ -3,6 +3,7 @@
 </script>
 <template>
 
-<WalletDemo />
+<AuthenticateDemo />
+<TotpDemo />
 
 </template>

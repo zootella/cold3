@@ -3,9 +3,12 @@
 </script>
 <template>
 
-<TotpDemo />
+<PasswordDemo />
+<HitComponent />
+<TrailDemo />
+<NameComponent />
+<ValidateNameComponent />
 <TotpDemo1 />
 <CodeRequestComponent />
-<NameComponent />
 
 </template>
