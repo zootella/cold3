@@ -89,7 +89,7 @@ test(() => {
 	ok(sayPlural(2) == 's')//like "2 carrots"
 })
 
-//group digits like "12,345"
+//group digits like "12,345"; ttd november omg renamem to comma() because you can nenver remember it
 export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
 	if (!thousandsSeparator) thousandsSeparator = ','
 	let minus = ''

@@ -1,11 +1,12 @@
 <script setup>
 
 import {
-hashPassword, Data, sayTick,
+hashText, hashPassword, hashPasswordMeasureSpeed, Data, sayTick, sayGroupDigits,
 } from 'icarus'
 
-const salt = Data({base32: Key('password hashing, choice 1, salt, public, page')})
-const iterations = textToInt(Key('password hashing, choice 1, iterations, public, page'))
+const saltData = Data({base32: Key('password hashing, choice 1, salt, public, page')})
+const minimumCycles = textToInt(Key('password hashing, choice 1, iterations, public, page'))
+const targetDuration = 420//a little less than half a second
 //yes, these are factory presets, acceptable and necessary to include in the client bundle for script on the page, ok to reveal pubicly
 
 const refInput = ref('')
@@ -18,14 +19,18 @@ function onTyping() {
 
 // Called when the submit button is clicked
 async function onEnter() {
-	if (!hasText(refInput.value)) refInput.value = 'password12345'
-	let password = refInput.value
+	if (!hasText(refInput.value)) refInput.value = 'hello'
+	let passwordText = refInput.value
 
+	//basic first method with a uniform number of cycles
 	let t = Now()
-	let h = await hashPassword(iterations, salt, refInput.value)
+	let h = await hashPassword(minimumCycles, saltData, passwordText)
 	let duration = Now() - t
 
-	refOutput.value = `${h.base32()} hashed from ${iterations} thousand iterations in ${duration}ms on ${sayTick(t)}`
+	//as a possible alternative beyond that, trying out detecting how many cycles we should require
+	let targetCycles = await hashPasswordMeasureSpeed(saltData, passwordText, minimumCycles, targetDuration)
+
+	refOutput.value = `${h.base32()} hashed from ${sayGroupDigits(minimumCycles+'')} cycles in ${duration}ms on ${sayTick(t)}. To spend ${targetDuration}ms, target ${sayGroupDigits(targetCycles+'')} cycles.`
 }
 
 </script>

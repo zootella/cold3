@@ -1105,19 +1105,24 @@ test(async () => {
 // | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_|
 // |_|                                          
 
-export async function hashPassword(thousandsOfIterations, saltData, passwordText) {
+export async function hashPassword(iterations, saltData, passwordText) {
+	let passwordData = Data({text: passwordText})//Data uses normalization Form C, canonical composition so if the user comes back and enters the same characters but somehow with a different composition, there won't be a mismatch
+	let passwordHash = await hashData(passwordData)//short passwords might hash faster; to not indicate a shorter password with a bigger cycle number, do a regular sha256 sum, making long and short passwords all the exact same hash value length
+	return await hashPassword2(iterations, saltData, passwordHash)
+}
+async function hashPassword2(iterations, saltData, messageData) {//helper function which does PBKDF2
 
 	//first, format the password text as key material for PBKDF2
 	let materia = await crypto.subtle.importKey(
 		'raw',
-		Data({text: passwordText}).array(),//Data uses normalization Form C, canonical composition so if the user comes back and enters the same characters but somehow with a different composition, the hashes match and we grant them access
+		messageData.array(),
 		{name: 'PBKDF2'},//the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
 		false,//not extractable
 		['deriveBits', 'deriveKey'])
 
 	//second, derive the key using PBKDF2 with the given salt and number of iterations
 	let derived = await crypto.subtle.deriveKey(
-		{name: 'PBKDF2', salt: saltData.array(), iterations: thousandsOfIterations*1000, hash: 'SHA-256'},
+		{name: 'PBKDF2', salt: saltData.array(), iterations, hash: 'SHA-256'},
 		materia,
 		{name: 'AES-GCM', length: 256},//256 bit derived key length
 		true,//extractable
@@ -1129,12 +1134,36 @@ test(async () => {//this is twice as slow as all your other tests, combined!
 
 	let howToMakeASalt = Data({random: 16}).base32()//here's how you make a salt
 
-	const salt = '774GOUNJC2OSI3X76LCZLPTPZQ'//and the one we'll use below
-	const thousandsOfIterations = 2//100+ for production, this is for a quick test
-	let password = '12345'//this is not a great password
-	let h = await hashPassword(thousandsOfIterations, Data({base32: salt}), password)
+	//test PBKDF2 directly in not exported hashPassword2
+	const saltData = Data({base32: '774GOUNJC2OSI3X76LCZLPTPZQ'})//and the one we'll use below
+	const iterations = 2000//100+ for production, this is for a quick test
+	let passwordText = '12345'//this is not a great password
+	let h = await hashPassword2(iterations, saltData, Data({text: passwordText}))
 	ok(h.base32() == 'J7SRY4JEKVNQF3DSFFDP2J6ECKJBOFEIBIMCZ7RVQNIJL5THSATA')
+
+	//and above that, hashPassword which does SHA256 first so cycle number indicates device speed, but not password length
+	h = await hashPassword(iterations, saltData, passwordText)
+	ok(h.base32() == 'JYZRLFJITM3H42TKI2CQER2G6CSO3BURQPOLDZEAN5TSUU7PPCXQ')//coincidence both start J here; they are not the same!
 })
+
+//measure how fast the processor here (in use, the user's device with a browser running the page) can do PBKDF2
+//provide any salt and password to calculate how many cycles you must require to take up the target duration milliseconds
+export async function hashPasswordMeasureSpeed(saltData, passwordText, minimumCycles, targetDuration) {
+
+	//warm up PBKDF2 so a cold start doesn't affect our speed test, next
+	await hashPassword(minimumCycles, saltData, passwordText)//use given minimum cycles as a single small bundle size, here for warmup...
+
+	//stopwatch how fast the processor here can do one small batch of cycles
+	let t = performance.now()//returns float for sub-millisecond accuracy
+	await hashPassword(minimumCycles, saltData, passwordText)//...and here, for the stopwatch race
+	let testDuration = performance.now() - t
+	if (testDuration == 0) d = 1//astonishingly fast computer can complete one batch in no time at all? imagine 1ms to avoid divide by zero
+
+	//at that speed, how many cycles do we need to use up a target time of 420 milliseconds?
+	let cycles = Math.round(targetDuration * minimumCycles / testDuration)
+	if (cycles < minimumCycles) cycles = minimumCycles//...and lastly, to enforce the given mandatory minimum
+	return cycles//around 5 million on a reasonable computer in 2025, but the point of this is we scale with Moore's Law! 🏎️🖥️
+}
 
 //                                     _        _      
 //  ___ _   _ _ __ ___  _ __ ___   ___| |_ _ __(_) ___ 
