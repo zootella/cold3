@@ -1645,6 +1645,15 @@ export const totpConstants = {
 }
 Object.freeze(totpConstants)
 
+//make sure codes and secret from the page are present and look ok with these helper functions
+export function checkTotpSecret(secret) {//a totp secret is 20 bytes encoded in base 32 like "X7C25WC6CUCF77BO7BOCVUHAZ553UKYA"
+	if (Data({base32: body.secret}).size != totpConstants.secretSize) toss('check', {secret})//data performs round trip check
+}
+export function checkTotpCode(code) {//code is a string of 6 numerals that can start 0 like "012345"
+	checkNumerals(body.code)
+	if (body.code.length != totpConstants.codeLength) toss('check', {code})
+}
+
 
 
 

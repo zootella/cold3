@@ -2,7 +2,7 @@
 
 import {
 sayTick, Data,
-totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants,
+totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 browserIsBesideAppStore,
 } from 'icarus'
 
@@ -14,7 +14,6 @@ let enrollment
 async function generate() {
 	enrollment = await totpEnroll({label: refLabel.value, issuer: refIssuer.value, addIdentifier: true})
 	refUri.value = enrollment.uri
-	//ttd august2025, this demo is all client side, an actual implementation of totp would never call generate, and would create and keep the secret on the server side. you've made /api/totp as the start of the real implementation!
 }
 
 function redirect() {

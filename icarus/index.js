@@ -261,7 +261,7 @@ hmacSign,
 rsaEncrypt, rsaDecrypt,
 objectToBase62, base62ToObject,
 curveSign, curveVerify,
-totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants,
+totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 
 tickToDay, dayToTick,
 sayTimePage, sayWhenPage, sayWhenFeed,

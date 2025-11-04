@@ -1,146 +1,110 @@
 //./server/api/totp.js
 import {
 browserToUser, trailAdd, trailCount,
-totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants,
+totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {useTurnstile: false, actions: [//ttd november, confirm that turnstile is not necessary here, as secrets are too long to guess even at full speed
-		'Enroll1.',//first step of enrollment flow, we give the page what it needs to create the second factor
-		'Enroll2.',//second step of enrollment flow, we validate the first code the user generates
-		'Validate.',//later, the user is just signing in, we validate the code they entered
-		'Remove.',//the user wants to remove their second factor, perhaps because they want to change it or set it up again after that
-	], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Enroll1.', 'Enroll2.', 'Validate.', 'Remove.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 
-	//this only works if there's a user signed in at this browser, ttd november
-	const userTag = (await browserToUser({browserHash})).userTag; checkTag(userTag)
+	//make sure there's a user signed in (first factor) to the browser that posted at us
+	const user = await browserToUser({browserHash})
+	if (user.level < 2) return {outcome: 'BadUser.'}
+	const userTag = user.userTag; checkTag(userTag)
 
+	const secret = await credentialTotpGet(userTag)//and the current enrollment status is correct for the requested action step
+	if (action == 'Enroll1.' || action == 'Enroll2.') { if (secret) return {outcome: 'BadAlreadyEnrolled.'} }
+	else if (action == 'Validate.' || action == 'Remove.') { if (!secret) return {outcome: 'BadNotEnrolled.'} }//ttd november, once in place, these should probably be toss 500 rather than return bad, unlike the plausible bad flows below which are correct to return rather than throw
 
+	if (secret) checkTotpSecret(secret)
+	if (action == 'Enroll2.' || action == 'Validate.') checkTotpCode(body.code)
 
-	//first step in an endpoint, validate that the page told us what's required and it looks well formed, at least
+	//first step of enrollment flow; the user at browser wants to setup totp as a second factor
+	//here at the server, we make sure they're not already enrolled, and generate a new random secret for the qr code
 	if (action == 'Enroll1.') {
-		//page doesn't send any additional details in enrollment step 1
 
-	} else if (action == 'Enroll2.') {
-		//to validate a provisional enrollment, page must echo back the same secret we chose for it, and the current code
-
-		if (Data({base32: body.secret}).size != totpConstants.secretSize) toss('body')//20 byte totp secret in base32
-		checkNumerals(body.code); if (body.code.length != totpConstants.codeLength) toss('body')//6 numeral totp code, a string, can start zero
-
-	} else if (action == 'Validate2.') {
-		//to authenticate a code, the page sends the code; we already know the secret for this uer, and must keep it secret
-
-		checkNumerals(body.code); if (body.code.length != totpConstants.codeLength) toss('body')//6 numeral totp code, a string, can start zero
-
-	} else if (action == 'Remove2.') {
-		//right now removing an enrollment is available to the idenified user without an additional step here, ttd november
-	}
-	//with sanity check validation done, on to the work of the endpoint
-
-
-
-	if (action == 'Enroll1.') {
-		//ttd november, ok, but need to add now, is this user already enrolled?
-
-		//create a new provisional enrollment for this user, this creates enrollment.secret
-		let enrollment = await totpEnroll({
+		let enrollment = await totpEnroll({//make a new provisional enrollment; this generates enrollment.secret
 			label: '@'+user.name.f1,//ttd november, simplified for demo
 			issuer: Key('totp, issuer, public, page'),
 			addIdentifier: true,
 		})
-		await trailAdd(composeTrailEnrollment({browserHash, userTag, secret: enrollment.secret}))
-		return {outcome: 'Candidate.', provisionalEnrollment: enrollment}
+		await trailAdd(
+			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${enrollment.secret}`
+		)
+		return {outcome: 'Candidate.', enrollment}
 
+	//second step of enrollment flow; the user has scanned the qr code and knows the current code
+	//we make sure the code is correct, and create their enrollment
 	} else if (action == 'Enroll2.') {
 
-		let n = await trailCount(composeTrailEnrollment({browserHash, userTag, secret: body.secret}), totpConstants.enrollmentExpiration)
-		if (n != 1) return {outcome: 'BadSecret.'}//expired provisional enrollment secret, the user should start a new enrollment
-		//➡️ here at the server, making it here is proof the page did not create or tamper with the secret during enrollment
+		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
+		if (Data({base32: body.secret}).size != totpConstants.secretSize) toss('body')
+		let n = await trailCount(
+			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${body.secret}`
+		)
+		if (n != 1) return {outcome: 'BadSecret.'}//➡️ passing this check is proof it's the real secret from step 1!
 
+		//make sure the user can generate a valid code
 		let valid = await totpValidate(body.secret, body.code)
-		if (!valid) return {outcome: 'BadCode.'}//incorrect code during enrollment, the user can guess again as many times as they want, actually
+		if (!valid) return {outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the page still has the secret at this point!
 
-		//here's where you actually need to associate the validated enrollment with the user, in authenticate_table or whatever, which you can actually make right now
-		await authenticateStepPlaceholder()
+		//save this new enrollment for this user
+		await credentialTotpCreate({userTag, secret})
 		return {outcome: 'Enrolled.'}
 
+	//having previously enrolled, the user is signing in with totp
+	//here on the server, we validate the code
 	} else if (action == 'Validate.') {
 
-		//look up this user's totp secret, they will have one if enrolled
-		await secret = await totpUserToSecret(userTag)
-		if (!secret) toss('totp secret not found to validate a code', {userTag})//very unusual, so we throw to stop the server and break the page
-
 		//protect guesses on this secret from a brute force attack, which would succeed quickly
-		let n = await trailCount(composeTrailWrongGuess({secret}), totpConstants.guardHorizon)
+		let n = await trailCount(
+			`TOTP wrong guess on Secret ${secret}`,
+			totpConstants.guardHorizon
+		)
 		if (n >= totpConstants.guardWrongGuesses) return {outcome: 'Later.'}
 
 		//validate the page's guess
 		let valid = await totpValidate(secret, body.code)
-		if (valid) {
+		if (valid) {//guess at code from page is correct
 
-			//correct, make a note on the server (ttd november), and tell the page
-			await authenticateStepPlaceholder()
+			await credentialTotpValidated(userTag)
 			return {outcome: 'Correct.'}
 
-		} else {
+		} else {//guess at code from page is wrong
 
-			//or, wrong guess, make a note in the trail, and tell the page
-			await trailAdd(composeTrailWrongGuess({secret}))
+			await trailAdd(
+				`TOTP wrong guess on Secret ${secret}`
+			)
 			return {outcome: 'Wrong.'}
 		}
 
+	//an enrolled user wants to remove their totp enrollment, likely to setup a different one
+	//right now we make this available without additional verification, ttd november
 	} else if (action == 'Remove.') {
-		//ttd november, should the remove flow require second factor validation? maybe, but not at this level
 
-		//look up this user's totp secret, they will have one if enrolled
-		await secret = await totpUserToSecret(userTag)
-		if (!secret) toss('totp secret not found to remove enrollment', {userTag})
-
+		await credentialTotpRemove(userTag)
 		return {outcome: 'Removed.'}
 	}
-
-
-
-/*
-ttd august2025, things to actually implement totp
-[x]hook up to the qr code and test in popular ios and android authenticator apps
-[]test the client side redirect if we're on mobile, do that the same way as oauth, probably, ask Claude
-[]store secret temporarily for user before they validate to confirm their enrollment
-[]add rate limiting using trail table and the strong and usable presets you spent all day on
-*/
-
-
-	return {
-		sticker: Sticker(),
-	}
-}
-
-
-async function authenticateStepPlaceholder() {
-
 }
 
 
 
-async function totpValidateRateLimit(secret, code) {
-	//is this totp secret too hot for another guess right now?
-	/*
-
-	let wrongGuesses = await trailCount(message, horizon)
-
-
-	let valid = await totpValidate(secret, code)
-	if (valid)
-	*/
-
+async function credentialTotpRemove(userTag) {
+	log(`ttd november 🎃 remove totp enrollment for user ${userTag}`)
+}
+async function credentialTotpCreate(userTag, secret) {
+	log(`ttd november 🎃 enroll user ${userTag} in totp with secret ${secret}`)
+}
+async function credentialTotpGet(userTag) {
+	log(`ttd november 🎃 for this to work we need to get a totp enrollment secret, if any, for user ${userTag}`)
+}
+async function credentialTotpValidated(userTag) {
+	log(`ttd november 🎃 user ${userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
 }
 
 
-function composeTrailEnrollment({browserHash, userTag, secret}) {
-	return `totp provisional enrollment for user tag ${userTag} at browser hash ${browserHash} generated secret base 32 ${secret}`
-}
-async function composeTrailWrongGuess({secret}) {
-	return `totp wrong guess on secret base 32 ${secret}`
-}
+
+
+

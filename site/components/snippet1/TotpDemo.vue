@@ -2,90 +2,9 @@
 
 import {
 sayTick, Data,
-totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants,
+totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 browserIsBesideAppStore,
 } from 'icarus'
-
-/*
-ok, here we have all the pieces, now it's time to get the flow complete and correct with some parts happening on the server
-and, we can use trail table to do everything without needing a new database table!
-
-remember that user and issuer text don't actually do anything other than go through the uri into the authenticator app!
-
-from memory, faster than chat
-user clicks generate on page
-server picks secret for user, saves proof of it
-server sends secret to page
-page shows qr code to user
-user scans qr with authenticator app
-user enters current code to page and submits to server
-server answers yes valid or no not valid
-
-ok, on the setup flow
-the server can bounce the secret back onto the page, saving its hash in 
-and then on first validation, the page posts
-why doesn't this let the page tamper with or choose the secret? because only the true secret has the hash record
-so you think the setup flow doesn't need any custom database
-
-on the second factor later flow
-the secret necessarily remains secret on the server
-the user is already signed in with a first factor,
-so the server knows if they have a totp enrollment, and what their secret is
-this does take another table, which i guess will map user tag to totp enrollment
-or, there might be a user validation table that has a totp column,
-or lots of rows about a user that show how the
-yeah, it's going to be that
-
-ok so for otp email and sms, you had to make a separate table
-because of all the rules around timing and expiration and duplicates
-here you don't because it's simpler
-
-
-
-
-
-
-
-you can do totp using existing database tables, which is great
-
-
-trail table:
-- holds proof that the server made a secret during enrollment
-- enforces rate limit to shield brute force attacks
-authenticate table:
-- maps user tag to secret with type tag like "Totp."
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-here you don't because the secret is too long to guess even at full speed
-
-
-type-variable 
-
-in this demo, we're just doing the setup flow
-
-
-
-why can't the
-
-
-
-user enters code from 
-page knows 
-
-*/
 
 const refLabel = ref('user.name@example.com')
 const refUri = ref('')
@@ -94,7 +13,6 @@ let enrollment
 async function generate() {
 	enrollment = await totpEnroll({label: refLabel.value, issuer: Key('totp, issuer, public, page'), addIdentifier: true})
 	refUri.value = enrollment.uri
-	//ttd august2025, this demo is all client side, an actual implementation of totp would never call generate, and would create and keep the secret on the server side. you've made /api/totp as the start of the real implementation!
 }
 
 function redirect() {
@@ -119,42 +37,16 @@ const refCodeHere = ref('')
 const refCodeNext = ref('')
 const refCodeTime = ref('')
 
-
-
-
-
-
-
-
-
 const refButton5 = ref(null)
 const refButton5CanSubmit = ref(true)//set to true to let the button be clickable, the button below is watching
 const refButton5InFlight = ref(false)//the button below sets to true while it's working, we can watch
 
 async function onClick5() {
-	let result = await refButton5.value.post('/api/totp', {
+	let response = await refButton5.value.post('/api/totp', {
 		action: 'Enroll1.',
 	})
+	log('response from enroll 1', look(response))
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 </script>
 <template>
@@ -174,10 +66,7 @@ async function onClick5() {
 	<Button @click="generate" class="justify-self-start">Generate</Button>
 </div>
 
-<p>
-	Is this a phone or tablet with an authenticator app or app store?
-	{{browserIsBesideAppStore() ? '📲 ✅ YES' : '💻 🚫 NO'}}
-</p>
+<p>Is this a phone or tablet with an authenticator app or app store? {{browserIsBesideAppStore() ? '📲 ✅ YES' : '💻 🚫 NO'}}</p>
 
 <div v-if="refUri" class="space-y-2">
 	<p>Generated enrollment information:</p>
