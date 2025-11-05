@@ -147,3 +147,53 @@ yeah, you should hash the secret
 
 
 
+
+
+
+test(async () => {//bookmark, ttd november
+	log('how easy will it be to use your stuff later when you need it?')
+
+
+
+	let keyData = Data({base62: 'HyjDgmvdYCH6p9y35PvyPjtrWRuUSoOnS3YsAcpbp48'})//example of what you'll get from secret server keys
+	let totpSecretData = Data({base32: 'O4K6UBYMLK7U75V2JVCQJ7ZR3XZTG2JV'})//example of a totp secret we generated for a provisional enrollment
+
+	let cipherData = await encryptData(keyData, totpSecretData)
+	let decryptedData = await decryptData(keyData, cipherData)
+
+	log(totpSecretData.base32(), cipherData.base62(), decryptedData.base32())
+
+
+	/*
+	ok, so your totp can encrypt the access.get('ACCESS_TOTP_SECRET') which is base62
+	and return that to the page
+	it can keep it in a 20min cookie
+	and is not as sensitive as the actual secret
+
+	and all this to deal with a refresh that may not be common
+	for a feature most users won't touch
+	and to avoid making a database table
+	in a stack that really goes against the grain of a session object
+	*/
+
+
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

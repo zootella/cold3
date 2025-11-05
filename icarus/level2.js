@@ -7,7 +7,7 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
 Tag, checkTag,
-Data, decrypt, hashText, hashData, secureSameText, hmacSign,
+Data, decryptData, hashText, hashData, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
 replaceAll, replaceOne, toTextOrBlank,
 parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
@@ -362,7 +362,7 @@ function accessKey_once(environment) {//look for the access key three places
 async function getAccess_once(environment) {
 	let key = accessKey_once(environment)
 	if (!hasText(key)) toss('no access key')
-	let decrypted = await decrypt(Data({base62: key}), Data({base62: wrapper.secrets}))
+	let decrypted = (await decryptData(Data({base62: key}), Data({base62: wrapper.secrets}))).text()
 	let secrets = parseEnvStyleFileContents(decrypted)
 	let redactions//parts of secrets to look for and replacements to redact them with
 	return {

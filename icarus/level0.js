@@ -1172,21 +1172,6 @@ export async function hashPasswordMeasureSpeed(saltData, passwordText, minimumCy
 // |___/\__, |_| |_| |_|_| |_| |_|\___|\__|_|  |_|\___|
 //      |___/                                          
 
-test(async () => {
-	log('how easy will it be to use your stuff later when you need it?')
-
-
-
-	let keyData = Data({base62: 'HyjDgmvdYCH6p9y35PvyPjtrWRuUSoOnS3YsAcpbp48'})//example of what you'll get from secret server keys
-	let totpSecretData = Data({base32: 'O4K6UBYMLK7U75V2JVCQJ7ZR3XZTG2JV'})//example of a totp secret we generated for a provisional enrollment
-
-//	let cipherData = await encrypt(keyData, )
-
-
-
-
-})
-
 const symmetric_strength = 256//256-bit AES, only slightly slower than 128, and the strongest ever
 const symmetric_vector_size = 12//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 
@@ -1195,15 +1180,16 @@ async function createKey() {
 	let keyData = await symmetric_exportKey(key)
 	return keyData
 }
-export async function encrypt(keyData, plainText) {
+export async function encryptText(keyData, plainText) { return await encryptData(keyData, Data({text: plainText})) }
+export async function encryptData(keyData, plainData) {
 	let key = await symmetric_importKey(keyData)
-	let cipherData = await symmetric_encrypt(key, Data({text: plainText}))
+	let cipherData = await symmetric_encrypt(key, plainData)
 	return cipherData
 }
-export async function decrypt(keyData, cipherData) {
+export async function decryptData(keyData, cipherData) {
 	let key = await symmetric_importKey(keyData)
 	let plainData = await symmetric_decrypt(key, cipherData)
-	return plainData.text()
+	return plainData
 }
 noop(async () => {//here's how you make new keys to store one in .env and cloudflare secrets
 	let s = ''
@@ -1213,8 +1199,8 @@ noop(async () => {//here's how you make new keys to store one in .env and cloudf
 test(async () => {
 	let plainText = 'hello, this is a short message'
 	let keyData = await createKey()
-	let cipherData = await encrypt(keyData, plainText)
-	let decryptedText = await decrypt(keyData, cipherData)
+	let cipherData = await encryptText(keyData, plainText)
+	let decryptedText = (await decryptData(keyData, cipherData)).text()
 	ok(decryptedText == plainText)
 })
 
