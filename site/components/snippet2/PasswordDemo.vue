@@ -7,6 +7,7 @@ hashText, hashPassword, hashPasswordMeasureSpeed, Data, sayTick, sayGroupDigits,
 const saltData = Data({base32: Key('password hashing, choice 1, salt, public, page')})
 const minimumCycles = textToInt(Key('password hashing, choice 1, iterations, public, page'))
 const targetDuration = 420//a little less than half a second
+//ttd november, maybe move either cycles here, or duration to key, not sure
 //yes, these are factory presets, acceptable and necessary to include in the client bundle for script on the page, ok to reveal pubicly
 
 const refInput = ref('')
