@@ -32,6 +32,7 @@ async function onEnter() {
 	let targetCycles = await hashPasswordMeasureSpeed(saltData, passwordText, minimumCycles, targetDuration)
 
 	refOutput.value = `${h.base32()} hashed from ${sayGroupDigits(minimumCycles+'')} cycles in ${duration}ms on ${sayTick(t)}. To spend ${targetDuration}ms, target ${sayGroupDigits(targetCycles+'')} cycles.`
+	//ttd november, on a really cheap 5yo android tablet, works, but hits the minimum; testing good to use this as the method!
 }
 
 </script>

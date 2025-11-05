@@ -1172,6 +1172,21 @@ export async function hashPasswordMeasureSpeed(saltData, passwordText, minimumCy
 // |___/\__, |_| |_| |_|_| |_| |_|\___|\__|_|  |_|\___|
 //      |___/                                          
 
+test(async () => {
+	log('how easy will it be to use your stuff later when you need it?')
+
+
+
+	let keyData = Data({base62: 'HyjDgmvdYCH6p9y35PvyPjtrWRuUSoOnS3YsAcpbp48'})//example of what you'll get from secret server keys
+	let totpSecretData = Data({base32: 'O4K6UBYMLK7U75V2JVCQJ7ZR3XZTG2JV'})//example of a totp secret we generated for a provisional enrollment
+
+//	let cipherData = await encrypt(keyData, )
+
+
+
+
+})
+
 const symmetric_strength = 256//256-bit AES, only slightly slower than 128, and the strongest ever
 const symmetric_vector_size = 12//12 byte initialization vector for AES-GCM, random for each encryption and kept plain with the ciphertext
 
@@ -1182,7 +1197,7 @@ async function createKey() {
 }
 export async function encrypt(keyData, plainText) {
 	let key = await symmetric_importKey(keyData)
-	let cipherData = await symmetric_encrypt(key, plainText)
+	let cipherData = await symmetric_encrypt(key, Data({text: plainText}))
 	return cipherData
 }
 export async function decrypt(keyData, cipherData) {
@@ -1212,9 +1227,9 @@ async function symmetric_exportKey(key) {//do this once per application instance
 async function symmetric_importKey(keyData) {//do this once per script run, not every time a function that needs it is called!
 	return await crypto.subtle.importKey('raw', keyData.array(), {name: 'AES-GCM', length: symmetric_strength}, true, ['encrypt', 'decrypt'])
 }
-async function symmetric_encrypt(key, plainText) {
+async function symmetric_encrypt(key, plainData) {
 	let vector = Data({random: symmetric_vector_size})//every encrypt operation has its own initialization vector of 12 secure random bytes
-	let cipher = Data({buffer: await crypto.subtle.encrypt({name: 'AES-GCM', iv: vector.array()}, key, Data({text: plainText}).array())})
+	let cipher = Data({buffer: await crypto.subtle.encrypt({name: 'AES-GCM', iv: vector.array()}, key, plainData.array())})
 	let storeBin = Bin(vector.size() + cipher.size())
 	storeBin.add(vector)//it's ok to keep the initialization vector with the cipher bytes, pack them together for storage
 	storeBin.add(cipher)
@@ -1239,7 +1254,7 @@ test(async () => {
 
 	//encrypt a short message
 	let p = 'a short message'//plaintext p, a string
-	let c = await symmetric_encrypt(keyImported, p)//ciphertext c, a Data
+	let c = await symmetric_encrypt(keyImported, Data({text: p}))//ciphertext c, a Data
 	let d = await symmetric_decrypt(keyImported, c)//decrypted plaintext d, a Data
 	ok(p == d.text())//we got the same message back out again!
 })
@@ -1251,7 +1266,7 @@ test(async () => {
 
 	//test it encrypting and decrypting
 	let p = "Another message, let's make this one a little bit longer. There's important stuff to keep safe in here, no doubt!"
-	let c = await symmetric_encrypt(key, p)
+	let c = await symmetric_encrypt(key, Data({text: p}))
 	let d = await symmetric_decrypt(key, c)
 	ok(p == d.text())
 
@@ -1493,7 +1508,9 @@ Validate              🟢 determine if a code is valid for a secret right now
 
 export async function totpEnroll({label, issuer, addIdentifier}) {
 	let secret = totpSecret()
-	return await totpEnrollGivenSecret({secret, label, issuer, addIdentifier})
+	let enrollment = await totpEnrollGivenSecret({secret, label, issuer, addIdentifier})
+	enrollment.secretHash = (await hashData(secret)).base32()//also include hash of secret as a convenience
+	return enrollment
 }
 function totpSecret() { return Data({random: totp_size}) }
 

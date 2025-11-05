@@ -31,7 +31,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			addIdentifier: true,
 		})
 		await trailAdd(
-			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${enrollment.secret}`
+			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given hashed Secret ${enrollment.secretHash}`
 		)
 		return {outcome: 'Candidate.', enrollment}
 
@@ -42,7 +42,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
 		if (Data({base32: body.secret}).size != totpConstants.secretSize) toss('body')
 		let n = await trailCount(
-			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${body.secret}`
+			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given hashed Secret ${body.secretHash}`
 		)
 		if (n != 1) return {outcome: 'BadSecret.'}//➡️ passing this check is proof it's the real secret from step 1!
 

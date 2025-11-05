@@ -126,6 +126,12 @@ ttd august2025, things to actually implement totp
 
 
 
+Enroll1
+page requests i want to enroll
+server generates secret, hashAdd(browserHash, userTag, secret)
+server returns 
+
+yeah, you should hash the secret 
 
 
 
@@ -134,6 +140,7 @@ ttd august2025, things to actually implement totp
 
 
 
+			//ttd november, if the phone tombstones the page before the user flips back here from their authenticator app, the flow won't work. claude thinks this is rare. user workaround is to try again, or try from desktop. implementation fix is to make a totp table (as you did for email and sms, ugh), or save a note in a client side cookie that only lives for 20 minutes (a new location for state, and you don't know for this to work, the phone will
 
 
 
