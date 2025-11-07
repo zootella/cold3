@@ -6,6 +6,16 @@ totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, che
 browserIsBesideAppStore,
 } from 'icarus'
 
+//the page might refresh between enrollment steps 1 and 2; save the provisional secret encrypted by the server in a 20 minute cookie 🍪⌛
+const refCookie = useCookie('totpTemporary', {
+	maxAge: totpConstants.enrollmentExpiration / Time.second,//the browser will delete this cookie 20 minutes after we last set .value
+	sameSite: 'strict',//browser will include cookie in requests to our server only, which doesn't read it, this is the most restrictive setting, there isn't one for "don't send it at all"
+	secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
+	path: '/',//we could restrict to certain routes, but this is simpler
+	httpOnly: false,//true would mean page script couldn't read it
+	//leaving out domain, so cookie will only be readable at the same domain it's set, localhost or cold3.cc, no subdomains
+})
+
 const refEnrollButton = ref(null); const refEnrollEnabled = ref(true); const refEnrollInFlight = ref(false)
 const refUri = ref('')
 
@@ -25,16 +35,10 @@ async function onEnroll() {
 
 
 
-//between enrollment steps 1 and 2, we need to remember the secret, but flipping to the authenticator app could cause a refresh
 
-const totpEnrollSecret = useCookie('totpTemporary', {//make a client side cookie so this component can save a temporary note that survives an accidental page refresh
-  maxAge: totpConstants.enrollmentExpiration / Time.second,//tell the browser to delete the value 20 minutes after we set it
-  sameSite: 'strict',// Don't send on cross-site requests (CSRF protection)
-  secure: true,           // HTTPS only
-  path: '/',              // Available throughout your app
-  httpOnly: false,        // ⚠️ Must be false so JavaScript can read it
-  // domain: undefined    // Default: current domain only
-})
+
+
+
 
 
 /*
@@ -47,7 +51,7 @@ while the user is
 
 
 
-
+//ttd november, when you do Key(), you can go around and replace literal 'cold3.cc' with Key('domain, public, page') which is a lot better
 
 
 

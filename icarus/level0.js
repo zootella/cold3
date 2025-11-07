@@ -1180,7 +1180,6 @@ async function createKey() {
 	let keyData = await symmetric_exportKey(key)
 	return keyData
 }
-export async function encryptText(keyData, plainText) { return await encryptData(keyData, Data({text: plainText})) }
 export async function encryptData(keyData, plainData) {
 	let key = await symmetric_importKey(keyData)
 	let cipherData = await symmetric_encrypt(key, plainData)
@@ -1199,7 +1198,7 @@ noop(async () => {//here's how you make new keys to store one in .env and cloudf
 test(async () => {
 	let plainText = 'hello, this is a short message'
 	let keyData = await createKey()
-	let cipherData = await encryptText(keyData, plainText)
+	let cipherData = await encryptData(keyData, Data({text: plainText}))
 	let decryptedText = (await decryptData(keyData, cipherData)).text()
 	ok(decryptedText == plainText)
 })
