@@ -16,51 +16,60 @@ const refCookie = useCookie('totpTemporary', {
 	//leaving out domain, so cookie will only be readable at the same domain it's set, localhost or cold3.cc, no subdomains
 })
 
-const refEnrollButton = ref(null); const refEnrollEnabled = ref(true); const refEnrollInFlight = ref(false)
+onMounted(() => {
+
+	if (hasText(refCookie.value)) {
+		log('component loaded with stored cookie! 🍪🔔🔔🔔', refCookie.value)
+		//in this case, we need to move right to step 2, ttd november
+	}
+
+	//you might need a store that keeps state like
+	/*
+	not signed in
+	signed in and not enrolled
+	enrolled
+
+	and maybe this store is where you deal with the cookie and the refresh between enrollment steps
+	*/
+})
+
 const refUri = ref('')
+const refCode = ref('')
+const refEnrollButton   = ref(null); const refEnrollEnabled   = ref(true); const refEnrollInFlight   = ref(false)
+const refValidateButton = ref(null); const refValidateEnabled = ref(true); const refValidateInFlight = ref(false)
 
 async function onEnroll() {
 	let response = await refEnrollButton.value.post('/api/totp', {action: 'Enroll1.'})
 	log('response from enroll 1', look(response))
 	if (response.outcome == 'Candidate.') {
-		//in a moment we'll send the user to their authenticator app, after which they'll return to the page. they might do a nervous swipe refresh, or the phone or browser might tombstone the page. for step 2 to work, this component has to ugh you're going to have to symmetric encrypt the secret and store that in the 20min cookie. the browser might tombstonebefore we send the user to their authentithe user 
+
+		log('previous and next client cookie values', refCookie.value, response.enrollment.secretCipher62)
+		refCookie.value = response.enrollment.secretCipher62
 
 		if (browserIsBesideAppStore()) {//on a phone, redirect to authenticator app
 			window.location.href = response.enrollment.uri//ttd november, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
 		} else {//on desktop, show the qr code
 			refUri.value = response.enrollment.uri
 		}
+	} else {
+		//bad response that isn't a 500
 	}
 }
 
-
-
-
-
-
-
-
-
-/*
-the user will return in a moment from their authenticator app, but what happens if they refresh? the browser could tombstone
-while the user is 
-*/
-
-
-
-
-
-
-//ttd november, when you do Key(), you can go around and replace literal 'cold3.cc' with Key('domain, public, page') which is a lot better
-
-
-
-
-
-
-
-
-
+async function onValidate() {
+	let response = await refValidateButton.value.post('/api/totp', {
+		action: 'Enroll2.',
+		secretCipher62: refCookie.value,
+		code: refCode.value
+	})
+	log('response from enroll 2', look(response))
+	if (response.outcome == 'Enrolled.') {
+		refCookie.value = null//clear the cookie
+		//success handling
+	} else {
+		//bad response that isn't a 500 (maybe make either success or 500 to not have to mess with stuff here!)
+	}
+}
 
 
 </script>
@@ -83,6 +92,38 @@ while the user is
 			</div>
 		</div>
 	</div>
+
+	<!-- hi claude, here, i need an input box for the user to enter the current code, and a button to validate it -->
+
+
+
+
+
+	<div class="space-y-2">
+		<p class="text-sm">Enter the 6-digit code from your authenticator app:</p>
+		<input 
+			v-model="refCode" 
+			type="text" 
+			inputmode="numeric"
+			maxlength="6"
+			placeholder="000000"
+			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
+		/>
+		<PostButton
+			labelIdle="Validate Code" labelFlying="Validating..." :useTurnstile="false"
+			ref="refValidateButton" :canSubmit="refValidateEnabled" v-model:inFlight="refValidateInFlight" :onClick="onValidate"
+		/>
+	</div>
+
+
+
+
+
+
+
+
+
+
 </div>
 
 </div>

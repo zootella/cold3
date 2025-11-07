@@ -1494,7 +1494,6 @@ Validate              🟢 determine if a code is valid for a secret right now
 export async function totpEnroll({label, issuer, addIdentifier}) {
 	let secret = totpSecret()
 	let enrollment = await totpEnrollGivenSecret({secret, label, issuer, addIdentifier})
-	enrollment.secretHash = (await hashData(secret)).base32()//also include hash of secret as a convenience
 	return enrollment
 }
 function totpSecret() { return Data({random: totp_size}) }
@@ -1690,6 +1689,40 @@ export function checkTotpCode(code) {//code is a string of 6 numerals that can s
 
 
 
+
+
+//ttd november, move check numerals down here from level 1
+
+
+
+export function checkNumerals(s, length) {//s must be one or many numerals, optional required length
+	if (!isNumerals(s, length)) toss('valid', {s})
+}
+export function isNumerals(s, length) {//true if s is not blank and only numerals 0-9, can start 0
+	if (!hasText(s)) return false//blank or not a string
+	if (!/^\d+$/.test(s)) return false//not all numerals
+	if (length && s.length != length) return false//required length wrong
+	return true
+}
+export function takeNumerals(s) {//remove all characters but the numerals 0-9
+	return s.replace(/[^0-9]/g, '')
+}
+test(() => {
+	ok(!isNumerals())
+	ok(!isNumerals(''))
+	ok(isNumerals('0'))
+	ok(!isNumerals('0 '))
+
+	ok(isNumerals('123', 3))
+	ok(!isNumerals('123', 4))
+	ok(!isNumerals('', 0))//length is correct, but is numerals needs non-blank
+
+	ok(takeNumerals('') == '')
+	ok(takeNumerals('A') == '')
+	ok(takeNumerals('0123456789') == '0123456789')
+	ok(takeNumerals('  012345\t6789\r\n') == '0123456789')
+	ok(takeNumerals(' 0123456789 一二三 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ .-_ 🌴? yes ') == '0123456789')
+})
 
 
 
