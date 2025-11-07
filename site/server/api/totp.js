@@ -1,7 +1,7 @@
 //./server/api/totp.js
 import {
 browserToUser, trailAdd, trailCount,
-Data, encryptData, decryptData,
+checkNumerals, Data, encryptData, decryptData,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 } from 'icarus'
 
@@ -53,12 +53,13 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
 		let n = await trailCount(
-			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${secret}`
+			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${secret}`,
+			totpConstants.enrollmentExpiration
 		)
 		if (n != 1) return {outcome: 'BadSecret.'}//➡️ passing this check is proof it's the real secret from step 1!
 
 		//make sure the user can generate a valid code
-		let valid = await totpValidate(secret, body.code)
+		let valid = await totpValidate(Data({base32: secret}), body.code)
 		if (!valid) return {outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the page still has the secret at this point!
 
 		//save this new enrollment for this user
@@ -102,6 +103,17 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 async function credentialTotpRemove({userTag}) {
 	log(`ttd november 🎃 remove totp enrollment for user ${userTag}`)
 }
@@ -114,8 +126,3 @@ async function credentialTotpGet({userTag}) {
 async function credentialTotpValidated({userTag}) {
 	log(`ttd november 🎃 user ${userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
 }
-
-
-
-
-

@@ -6,6 +6,7 @@ import {//from level0
 Time,
 Now, sayDate, sayTick,
 noop, test, ok, toss, checkInt, hasText, Size,
+checkNumerals, takeNumerals,
 log,
 say, look, defined,
 checkText,
@@ -58,20 +59,6 @@ export function liveBox(s) {
 // \__ \ (_| | |_| | | | | | |_| | | | | | | |_) |  __/ |  \__ \
 // |___/\__,_|\__, | |_| |_|\__,_|_| |_| |_|_.__/ \___|_|  |___/
 //            |___/                                             
-
-export function checkNumerals(s) {//s must be one or many numerals
-	checkText(s)
-	if (onlyNumerals(s) != s) toss('validation mismatch', {s})
-}
-//remove all characters but the numerals 0-9
-export function onlyNumerals(s) { return s.replace(/[^0-9]/g, '') }
-test(() => {
-	ok(onlyNumerals('') == '')
-	ok(onlyNumerals('A') == '')
-	ok(onlyNumerals('0123456789') == '0123456789')
-	ok(onlyNumerals('  012345\t6789\r\n') == '0123456789')
-	ok(onlyNumerals(' 0123456789 一二三 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ .-_ 🌴? yes ', '0123456789'))
-})
 
 //use to say "5 things" like `${n} thing${sayPlural(n)}`
 export function sayPlural(i) {
@@ -720,7 +707,7 @@ export function checkPhone(raw, limit) { let v = validatePhone(raw, limit); if (
 export function validatePhone(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
 
-	let numerals = onlyNumerals(cropped)
+	let numerals = takeNumerals(cropped)
 	let assumedRegion//leave undefined if not US
 	if (numerals.length == 10 ||//assume all 10 digit numbers are US
 		(numerals.length == 11 && numerals[0] == '1'))//or they also typed the 1 at the start
@@ -787,7 +774,7 @@ export function validateCard(raw, limit) {
 	/* (1) adjusted step for credit card number
 	just numerals, removing spaces, dots, dashes; this is the normalized form
 	*/
-	let f0 = onlyNumerals(cropped)
+	let f0 = takeNumerals(cropped)
 
 	/* (3) intermediate step for a number the user hasn't finished typing yet
 	use braintree's credit-card-type module to get the type
@@ -805,7 +792,7 @@ export function validateCard(raw, limit) {
 		}
 		f2 += f0[i]//bring in this numeral
 	}
-	if (onlyNumerals(f2) != f0) return {f0, f2, raw, cropped, cardType, note: 'round trip mismatch'}
+	if (takeNumerals(f2) != f0) return {f0, f2, raw, cropped, cardType, note: 'round trip mismatch'}
 
 	/* (4) make sure the length is correct and check the last digit with Luhn
 	*/
@@ -901,7 +888,7 @@ test(() => {
 
 export function checkDate(raw) { let v = validateDate(raw); if (!v.ok) toss('form', {v}); return v }
 export function validateDate(raw) {
-	let adjusted = onlyNumerals(raw)
+	let adjusted = takeNumerals(raw)
 	adjusted = cropToLimit(adjusted, undefined, 8)//"YYYYMMDD" is 8 characters
 	if (adjusted.length != 8) return {ok: false, raw}
 	let year  = parseInt(adjusted.slice(0, 4), 10)

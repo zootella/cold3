@@ -1,7 +1,7 @@
 <script setup>//./components/CodeEnterComponent.vue
 
 import {
-onlyNumerals, Code, sayTimePage,
+takeNumerals, Code, sayTimePage,
 } from 'icarus'
 const mainStore = useMainStore()
 const pageStore = usePageStore()
@@ -24,13 +24,13 @@ else                                         method = 'messages'
 refInstruction.value = `Check your ${method} for the code we sent`
 
 watch([refCodeCandidate], () => {
-	refButtonCanSubmit.value = toBoolean(hasText(onlyNumerals(refCodeCandidate.value)))//clickable after even the first number, intentionally
+	refButtonCanSubmit.value = toBoolean(hasText(takeNumerals(refCodeCandidate.value)))//clickable after even the first number, intentionally
 })
 
 async function onClick() {
 	let response = await refButton.value.post('/api/code/enter', {
 		codeTag: props.code.tag,//hidden from the user but kept with the form
-		codeCandidate: onlyNumerals(refCodeCandidate.value),
+		codeCandidate: takeNumerals(refCodeCandidate.value),
 	})
 	log('code enter post response', look(response))
 	if (response.success) {

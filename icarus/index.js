@@ -195,7 +195,7 @@ export {
 
 liveBox,//move to whichever level you need it!
 
-checkNumerals, onlyNumerals, sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
+sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
 Limit, cropToLimit,
 trimLines, trimLine,
@@ -244,6 +244,7 @@ checkText, hasText, checkInt, minInt,
 toBoolean, toTextOrBlank,
 intToText, textToInt,
 checkTextSame, hasTextSame, checkTextOrBlank, hasTextOrBlank,
+checkNumerals, isNumerals, takeNumerals,
 newline,
 cut, cutLast,
 replaceAll, replaceOne,

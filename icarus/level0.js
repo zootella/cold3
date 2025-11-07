@@ -377,7 +377,6 @@ test(() => {
 	ok(textToInt('1') == 1)
 })
 
-//ttd september2024, up here at the near goodwin level, trying out four more to go with checkText and hasText above:
 export function checkTextSame(s1, s2) { if (!hasTextSame(s)) toss('same', {s1, s2}) }
 export function hasTextSame(s1, s2) { return hasText(s1) && hasText(s2) && (s1 === s2) }
 export function checkTextOrBlank(s) { if (!hasTextOrBlank(s)) toss('type', {s}) }
@@ -401,6 +400,37 @@ test(() => {
 	ok(hasTextSame('a', 'a'))
 	ok(!hasTextSame('a', 'b'))
 })
+
+export function checkNumerals(s, length) {//s must be one or many numerals, optional required length
+	if (!isNumerals(s, length)) toss('valid', {s})
+}
+export function isNumerals(s, length) {//true if s is not blank and only numerals 0-9, can start 0
+	if (!hasText(s)) return false//blank or not a string
+	if (!/^\d+$/.test(s)) return false//not all numerals
+	if (length && s.length != length) return false//required length wrong
+	return true
+}
+export function takeNumerals(s) {//remove all characters but the numerals 0-9
+	return s.replace(/[^0-9]/g, '')
+}
+test(() => {
+	ok(!isNumerals())
+	ok(!isNumerals(''))
+	ok(isNumerals('0'))
+	ok(!isNumerals('0 '))
+
+	ok(isNumerals('123', 3))
+	ok(!isNumerals('123', 4))
+	ok(!isNumerals('', 0))//length is correct, but is numerals needs non-blank
+
+	ok(takeNumerals('') == '')
+	ok(takeNumerals('A') == '')
+	ok(takeNumerals('0123456789') == '0123456789')
+	ok(takeNumerals('  012345\t6789\r\n') == '0123456789')
+	ok(takeNumerals(' 0123456789 一二三 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ .-_ 🌴? yes ') == '0123456789')
+})
+
+
 
 //  _            _   
 // | |_ _____  _| |_ 
@@ -469,6 +499,10 @@ test(() => {
 		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
 		'first ‹6789› and second ‹SIZE› later')
 })
+
+
+
+
 
 
 
@@ -1583,7 +1617,6 @@ test(async () => {
 	await f(secret, '0000000027bc86aa', '65353130')
 })
 
-
 async function totpEnrollGivenSecret({secret, label, issuer, addIdentifier}) {//make the otpauth://totp/... URI for the redirect or QR code
 	checkText(label); checkText(issuer)
 	if (label.includes(':') || issuer.includes(':')) toss('colon reserved', {label, issuer})
@@ -1677,56 +1710,15 @@ Object.freeze(totpConstants)
 
 //make sure codes and secret from the page are present and look ok with these helper functions
 export function checkTotpSecret(secret) {//a totp secret is 20 bytes encoded in base 32 like "X7C25WC6CUCF77BO7BOCVUHAZ553UKYA"
-	if (Data({base32: body.secret}).size != totpConstants.secretSize) toss('check', {secret})//data performs round trip check
+	if (Data({base32: secret}).size() != totpConstants.secretSize) toss('check', {secret})//data performs round trip check
 }
 export function checkTotpCode(code) {//code is a string of 6 numerals that can start 0 like "012345"
-	checkNumerals(body.code)
-	if (body.code.length != totpConstants.codeLength) toss('check', {code})
-}
-
-
-
-
-
-
-
-
-//ttd november, move check numerals down here from level 1
-
-
-
-export function checkNumerals(s, length) {//s must be one or many numerals, optional required length
-	if (!isNumerals(s, length)) toss('valid', {s})
-}
-export function isNumerals(s, length) {//true if s is not blank and only numerals 0-9, can start 0
-	if (!hasText(s)) return false//blank or not a string
-	if (!/^\d+$/.test(s)) return false//not all numerals
-	if (length && s.length != length) return false//required length wrong
-	return true
-}
-export function takeNumerals(s) {//remove all characters but the numerals 0-9
-	return s.replace(/[^0-9]/g, '')
+	checkNumerals(code, totpConstants.codeLength)
 }
 test(() => {
-	ok(!isNumerals())
-	ok(!isNumerals(''))
-	ok(isNumerals('0'))
-	ok(!isNumerals('0 '))
-
-	ok(isNumerals('123', 3))
-	ok(!isNumerals('123', 4))
-	ok(!isNumerals('', 0))//length is correct, but is numerals needs non-blank
-
-	ok(takeNumerals('') == '')
-	ok(takeNumerals('A') == '')
-	ok(takeNumerals('0123456789') == '0123456789')
-	ok(takeNumerals('  012345\t6789\r\n') == '0123456789')
-	ok(takeNumerals(' 0123456789 一二三 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ .-_ 🌴? yes ') == '0123456789')
+	checkTotpSecret('X7C25WC6CUCF77BO7BOCVUHAZ553UKYA')
+	checkTotpCode('012345')//sanity check that these don't throw
 })
-
-
-
-
 
 
 

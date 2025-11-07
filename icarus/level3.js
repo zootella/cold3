@@ -1096,7 +1096,7 @@ export async function trailCount(message, horizon) { trailLook('trailCount',  me
 export async function trailGet(message, horizon)   { trailLook('trailGet',    message); return await trail_get({   hash: await hashText(message), since: Now() - horizon}) }
 export async function trailAdd(message)            { trailLook('trailAdd',    message);        await trail_add({   hash: await hashText(message), now:   Now()          }) }
 async function trailLook(title, message) {
-	log(`${title} 🏕️`, await hashText(message), message)//ttd november, see them going in to sanity check
+	log(`${title} 🏕️ hash ${await hashText(message)} of message:`, `"${message}"`)//ttd november, see them going in to sanity check
 }
 
 SQL(`
