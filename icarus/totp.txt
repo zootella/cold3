@@ -184,6 +184,33 @@ test(async () => {//bookmark, ttd november
 
 
 
+	//you might need a store that keeps state like
+	/*
+	not signed in
+	signed in and not enrolled
+	enrolled
+
+	and maybe this store is where you deal with the cookie and the refresh between enrollment steps
+	*/
+
+
+
+
+ok, try to keep it in the component for now
+what is the state
+you show up at a page with this component, and it posts to ask the server what's up
+server could say
+
+
+
+credential_table
+means that you don't need to encrypt secrets, use a client cookie
+or use trail table to prove a secret is echoed back correctly
+in here will be Challenged, which you think you can use as provisional
+and a status check query in totp.js can pull everything for this user about totp
+and figure out  how to respond from there, yeah
+
+ok, leave it for now, but get ready to not use it
 
 
 
@@ -191,8 +218,25 @@ test(async () => {//bookmark, ttd november
 
 
 
+/*
+about credential table
+ttd november, go light on this as it may be a bad idea
+all you need now is for totp to be able to tell if the user is enrolled, to add and remove enrollments
+maybe it's good that you've kept provisional enrollment out of here, using the client cookie encrypted secret and trail table
+*/
 
 
+/*
+ok, now you just need to decide how you're going to use credential table for totp
+
+really simple to right now answer the questions
+is this user using totp? if so, what's their secret?
+and, enroll in totp
+and, remove enrollment
+
+
+
+*/
 
 
 

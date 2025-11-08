@@ -1,4 +1,4 @@
-<script setup>
+<script setup>//TrailComponent.vue - older simpler version before PostButton
 
 import {
 sayTick, hashText,

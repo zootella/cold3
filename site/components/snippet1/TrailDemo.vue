@@ -1,4 +1,4 @@
-<script setup>
+<script setup>//TrailDemo.vue - updated with PostButton
 
 import {
 sayTick, hashText,

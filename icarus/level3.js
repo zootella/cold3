@@ -194,6 +194,96 @@ export async function snippet3() {
 	log("hi from snippet 3")
 }
 
+
+
+
+
+
+
+
+
+
+
+//                    _            _   _       _   _        _     _      
+//   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| | | |_ __ _| |__ | | ___ 
+//  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | | __/ _` | '_ \| |/ _ \
+// | (__| | |  __/ (_| |  __/ | | | |_| | (_| | | | || (_| | |_) | |  __/
+//  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \__\__,_|_.__/|_|\___|
+//                                                                       
+
+//totp: a user can have a single verified enrollment or nothing; k1 is the shared secret key which generates codes
+export async function credentialTotpGet({userTag}) {//is this user doing totp?
+	let row = await queryTop({table: 'credential_table', title: 'type_text', cell: 'Totp.'})
+	if (row && row.event == 4) return row.k1_text//yes, return their totp secret in base32
+	return false//no current enrollment
+}
+export async function credentialTotpCreate({userTag, secret}) {//enroll the user in totp
+	await credentialSet({userTag, type: 'Totp.', event: 4, k1: secret})
+}
+export async function credentialTotpRemove({userTag}) {//remove totp for this user
+	await credentialSet({userTag, type: 'Totp.', event: 1})
+}
+
+SQL(`
+-- how can a user sign in? is what they just said valid to sign them in?
+CREATE TABLE credential_table (
+	row_tag    CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick   BIGINT    NOT NULL,
+	hide       BIGINT    NOT NULL,
+
+	user_tag   CHAR(21)  NOT NULL,  -- the user who has mentioned, controls, or removed a credential, like an address
+	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Oauth.", "Ethereum.", "Totp.", "Password." or others
+	event      BIGINT    NOT NULL,  -- 2 mentioned, 3 challenged, 4 validated, 1 removed
+
+	-- if this credential is a name or address, like email, phone, oauth, web3 wallet, store the validated forms here:
+	f0_text    TEXT      NOT NULL,  -- normalized form of address or name, to match as unique
+	f1_text    TEXT      NOT NULL,  -- formal form of address, to send messages
+	f2_text    TEXT      NOT NULL,  -- page form of address, to show the user
+
+	-- alternatively or additionally, a credential of this type may have some tag, hash, secret key, or something else, maybe just a note:
+	k1_text    TEXT      NOT NULL,
+	k2_text    TEXT      NOT NULL,
+	k3_text    TEXT      NOT NULL,
+	k4_text    TEXT      NOT NULL
+);
+
+CREATE INDEX credential1 ON credential_table (hide, user_tag,           row_tick DESC);  -- filter by user
+CREATE INDEX credential2 ON credential_table (hide, type_text, f0_text, row_tick DESC);  -- or by address
+`)
+//ttd november, should event be a tag instead of a number? it's a litle arcane
+
+export async function credentialGet({userTag}) {//get all the credential information about the given user
+	//ttd november
+}
+export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', k1 = '', k2 = '', k3 = '', k4 = ''}) {
+	checkTag(userTag); checkText(type); checkInt(event, 1)//these three are required, everything else is optional
+	checkTextOrBlank(f0); checkTextOrBlank(f1); checkTextOrBlank(f2)
+	checkTextOrBlank(k1); checkTextOrBlank(k2); checkTextOrBlank(k3); checkTextOrBlank(k4)
+	await queryAddRow({table: 'credential_table', row: {
+		user_tag: userTag,
+		type_text: type,
+		event: event,
+		f0_text: f0, f1_text: f1, f2_text: f2,
+		k1_text: k1, k2_text: k2, k3_text: k3, k4_text: k4,
+	}})
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //            _     _                     _        _     _      
 //   __ _  __| | __| |_ __ ___  ___ ___  | |_ __ _| |__ | | ___ 
 //  / _` |/ _` |/ _` | '__/ _ \/ __/ __| | __/ _` | '_ \| |/ _ \
@@ -203,6 +293,7 @@ export async function snippet3() {
 
 //--this user mentioned, or proved they can read messages sent to, this address
 //address_table, ttd february2025
+//actually don't use; instead do this in credential table above, ttd november
 
 /*
 simplest question to answer: is this address

@@ -16,21 +16,40 @@ const refCookie = useCookie('totpTemporary', {
 	//leaving out domain, so cookie will only be readable at the same domain it's set, localhost or cold3.cc, no subdomains
 })
 
-onMounted(() => {
+onMounted(async () => {
 
 	if (hasText(refCookie.value)) {
 		log('component loaded with stored cookie! 🍪🔔🔔🔔', refCookie.value)
 		//in this case, we need to move right to step 2, ttd november
 	}
 
-	//you might need a store that keeps state like
-	/*
-	not signed in
-	signed in and not enrolled
-	enrolled
 
-	and maybe this store is where you deal with the cookie and the refresh between enrollment steps
+	let response = await fetchWorker('/api/totp', {body: {action: 'Status.'}})
+	log('response from Status.', look(response))
+	/*
+	possibilities at the start:
+	- no user signed in
+	- user with existing enrollment (controls to remove enrollment)
+	- no user enrollment, cookie has provisional secret (controls to validate provisional enrollment)
+	- no user enrollment (controls to enroll)
+
+	different states of controls:
+	- no enrollment (controls to start)
+	- provisional enrollment (controls to validate and complete)
+	- current enrollment (controls to remove)
 	*/
+
+	/*
+	ttd november, bookmark next:
+	split totp demo into two controls
+	TotpEnrollDemo
+	TotpValidateDemo
+
+	and validate is easy, it just says not enrolled, or there's a box and the [ABC] code, and then it says correct or not
+	*/
+
+
+
 })
 
 const refUri = ref('')
@@ -92,11 +111,6 @@ async function onValidate() {
 			</div>
 		</div>
 	</div>
-
-	<!-- hi claude, here, i need an input box for the user to enter the current code, and a button to validate it -->
-
-
-
 
 
 	<div class="space-y-2">
