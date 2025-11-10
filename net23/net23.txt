@@ -286,6 +286,33 @@ Got it! That's a thoughtful convention - using const as a semantic signal rather
 
 
 
+Comments shouldn't just restate code - i++ doesn't need "increment i".
+Instead, comments should explain *intent* and *context*:
+why we're incrementing,
+what it represents in the larger algorithm,
+and what's happening under the hood that isn't obvious from the syntax.
+
+The best comments turn code into a story:
+they explain the problem being solved, why this approach was chosen, what trade-offs were made,
+and what's happening at lower levels of abstraction that might surprise or inform future modifications.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  _   _                     _                           
 | |_| |__  _ __ ___  ___  | | __ _ _   _  ___ _ __ ___ 
 | __| '_ \| '__/ _ \/ _ \ | |/ _` | | | |/ _ \ '__/ __|
