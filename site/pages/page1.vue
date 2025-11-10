@@ -4,6 +4,8 @@
 <template>
 
 <AuthenticateDemo />
+<PasswordChange />
+<PasswordChallenge />
 <TotpDemo />
 
 </template>

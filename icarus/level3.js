@@ -200,7 +200,31 @@ export async function snippet3() {
 
 
 
+/*
+ttd november
+lots of things you can think of as credentials, and move and handle here, many entirely
 
+[]totp codes
+[]email and sms addresses
+[]traditional passwords
+[]user names, those are reserved on the site, and owned by a single user
+[]oauth accounts
+[]ethereum address
+*/
+
+
+
+export async function credentialPasswordGet({userTag}) {
+	let row = await queryTop({table: 'credential_table', title: 'type_text', cell: 'Password.'})
+	if (row && row.event == 4) return {hash: row.k1_text, cycles: textToInt(row.k2_text)}//yes, return their password hash in base32
+	return false//no current password
+}
+export async function credentialPasswordCreate({userTag, hash, cycles}) {
+	await credentialSet({userTag, type: 'Password.', event: 4, k1: hash, k2: cycles+''})
+}
+export async function credentialPasswordRemove({userTag}) {
+	await credentialSet({userTag, type: 'Password.', event: 1})
+}
 
 
 
@@ -215,7 +239,7 @@ export async function snippet3() {
 export async function credentialTotpGet({userTag}) {//is this user doing totp?
 	let row = await queryTop({table: 'credential_table', title: 'type_text', cell: 'Totp.'})
 	if (row && row.event == 4) return row.k1_text//yes, return their totp secret in base32
-	return false//no current enrollment
+	return false//no current totp enrollment
 }
 export async function credentialTotpCreate({userTag, secret}) {//enroll the user in totp
 	await credentialSet({userTag, type: 'Totp.', event: 4, k1: secret})
@@ -232,7 +256,7 @@ CREATE TABLE credential_table (
 	hide       BIGINT    NOT NULL,
 
 	user_tag   CHAR(21)  NOT NULL,  -- the user who has mentioned, controls, or removed a credential, like an address
-	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Oauth.", "Ethereum.", "Totp.", "Password." or others
+	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Twitter.", "Ethereum.", "Totp.", "Password." or others
 	event      BIGINT    NOT NULL,  -- 2 mentioned, 3 challenged, 4 validated, 1 removed
 
 	-- if this credential is a name or address, like email, phone, oauth, web3 wallet, store the validated forms here:
@@ -282,7 +306,7 @@ export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 
 
 
 
-
+//ttd november, you think that address_table can be completely moved into credential_table
 
 //            _     _                     _        _     _      
 //   __ _  __| | __| |_ __ ___  ___ ___  | |_ __ _| |__ | | ___ 
@@ -909,6 +933,8 @@ export async function recordHit({origin, browserHash, userTag, ipText, geography
 	await queryAddRowIfHashUnique({table: 'hit_table', row})
 }
 
+//ttd november, you think that you can entirely move name_table -> credential_table
+
 //                               _        _     _      
 //  _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
 // | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
@@ -1348,3 +1374,20 @@ export async function demonstrationSignOut({browserHash, origin}) {
 		return {isSignedOut: false, reason: 'NameNotFound.', browserHash}
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

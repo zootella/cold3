@@ -94,6 +94,9 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (valid) {//guess at code from page is correct
 
 			log(`ttd november 🎃 user ${userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
+			await trailAdd(
+				`TOTP validation on Secret ${secret}`//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
+			)
 			return {outcome: 'Correct.'}
 
 		} else {//guess at code from page is wrong

@@ -134,7 +134,8 @@ demonstrationSignOut,
 
 trailRecent, trailCount, trailGet, trailAdd,
 
-credentialTotpRemove, credentialTotpCreate, credentialTotpGet,
+credentialPasswordGet, credentialPasswordCreate, credentialPasswordRemove,
+credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 credentialGet, credentialSet,
 
 } from './level3.js'
