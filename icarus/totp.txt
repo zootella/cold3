@@ -241,3 +241,47 @@ and, remove enrollment
 
 
 
+
+you're worried you're going ot make a mistake with trailAdd where you are hashing something like
+`Some mistake where you ${x} but it's not a string`
+so, test this out, if you had it a Data, for instance
+one way to allow template literals but still detect this is to throw if you get [Object object] or whatever they come up as
+or Promise, like have some not allowed terms
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
