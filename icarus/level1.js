@@ -19,13 +19,26 @@ makePlain, makeObject, makeText,
 totpGenerate,
 } from './level0.js'
 
+//from npm
 import {z as zod} from 'zod'//use to validate email
 import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
 import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
 import {getAddress as viem_getAddress} from 'viem'
 
-//ttd august2025, if you remove the blank line above, Vite's parser freaks out, which is super weird
+//from node
+let module_node
+async function loadNode() {//for calls from lambda and local node testing; don't call from web worker or page, will throw
+	if (!module_node) {
+		module_node = {
+			fs:     await import('node:fs'),
+			stream: await import('node:stream'),
+			//note that crypto is not here because Node exposes it under crypto.subtle matching the browser API
+		}
+	}
+	return module_node
+}
+
 /*
 notes about imports:
 - modules promise isomorphic but then don't deliver: test in node, browser, and web worker SSR
@@ -71,6 +84,7 @@ test(() => {
 })
 
 //group digits like "12,345"; ttd november omg renamem to comma() because you can nenver remember it
+export function commas(s, thousandsSeparator) { return sayGroupDigits(s+'', thousandsSeparator) }
 export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
 	if (!thousandsSeparator) thousandsSeparator = ','
 	let minus = ''
@@ -316,12 +330,12 @@ maybe put those into a single checkName which acts on what it's given--or maybe 
 
 //ttd october2025, a big refactor but one you've thought about
 /*
-            _               __  ___            __ _            __ ____  
+						_               __  ___            __ _            __ ____  
 __   _____ | | __   __   __/ _|/ _ \   __   __/ _/ |   __   __/ _|___ \ 
 \ \ / / _ \| |/ /   \ \ / / |_| | | |  \ \ / / |_| |   \ \ / / |_  __) |
  \ V / (_) |   < _   \ V /|  _| |_| |   \ V /|  _| |_   \ V /|  _|/ __/ 
-  \_(_)___/|_|\_( )   \_(_)_|  \___( )   \_(_)_| |_( )   \_(_)_| |_____|
-                |/                 |/              |/                   
+	\_(_)___/|_|\_( )   \_(_)_|  \___( )   \_(_)_| |_( )   \_(_)_| |_____|
+								|/                 |/              |/                   
 
 the validate functions here transform input text from trusted and untrusted sources into a consistant set of forms
 they sanitize, clean up, and accept or reject input using defined rules specific to the data type's requirements and conventions
@@ -572,7 +586,7 @@ data forms:
 
 guaranteed data pathway:
 raw -> f1 -> f2
-         \-> f0
+				 \-> f0
 
 email example:
 f0, nee normalized: 'bobfrank@gmail.com',   heaviest changes, store in database to prevent a duplicate
@@ -1307,6 +1321,92 @@ noop(async () => {
 	let cycles = await runFor(4*Time.second, cycle6238)
 	log(cycles)
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//idea here is you can call this from node
+noop(async () => { await nodeSnippet() })//turn this on when running tests with node local on the command line with $ yarn test
+async function nodeSnippet() {
+	const node = await loadNode()
+
+	//hash a big file with $ yarn test ~/Downloads/big.mov
+	let name = process.argv[2]
+	let size = node.fs.statSync(name).size
+	log(`Hashing "${name}" (${size} bytes)...`)
+
+	let stream = Readable.toWeb(node.stream.createReadStream(name))//node has a function that converts the classic Node-style stream to a modern isomorphic WHATWG stream
+
+	let hash = await hashStream({
+		stream,
+		size,
+		onProgress: (status) => {
+			let percent = (status.hashedSize / status.totalSize) * 100
+			process.stdout.write(`\r${percent.toFixed(1)}% `)
+		}
+	})
+	log(`\nHashed ${hash.pieceHash16} in ${hash.duration}ms (${Math.round(hash.totalSize / hash.duration)} bytes/ms)`)
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+//file hashing protocol presets
+const hash_seed_text = 'Fuji'
+const hash_piece_size = 4*Size.mb//4 MB hashes in an animation frame, uploads in a second over a cable modem, and has a hash list smaller than the piece size for files under 500 GB 🗄️
+const hash_tip_size = 4*Size.kb//4 KB is an NTFS cluster and sector and an APFS block to keep reading from hard drives as fast as possible 💽
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
