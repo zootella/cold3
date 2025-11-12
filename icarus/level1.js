@@ -1598,13 +1598,6 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 		//hash the summary of the file in the bin
 		signal?.throwIfAborted()
 		status.pieceHash = Data({buffer: await crypto.subtle.digest("SHA-256", bin.array())})
-
-		status.pieceHash = await hashData(Data({array: bin.array()}))
-
-		status.pieceHash = await Data({array: bin.array()}).hash()
-		status.pieceHash = await DataArray(bin.array()).hash()
-
-
 		status.updateTime = Now()
 		status.duration = status.updateTime - status.startTime
 		onProgress?.(status)
