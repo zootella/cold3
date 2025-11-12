@@ -506,13 +506,85 @@ test(() => {
 
 
 
+function checkSizeStartEnd(size, start, end) { if (!okSizeStartEnd(size, start, end)) toss('bounds', {size, start, end}) }
+function checkSizeStartLength(size, start, length) { if (!okSizeStartLength(size, start, length)) toss('bounds', {size, start, length}) }
+function okSizeStartEnd(size, start, end) {
+	return (
+		(size > 0) &&//we don't allow empty arrays or buffers
+		(start >= 0) &&//start zero bytes in or more
+		(start < size) &&//but not so far as to not be able to clip out at least the last byte
+		(end > start) &&//start to end must clip out at least one byte
+		(end <= size)//end can reach the end of the size, but cannot go beyond that
+	)
+}
+function okSizeStartLength(size, start, length) {
+	return (
+		(size > 0) &&//we don't allow empty arrays or buffers
+		(start >= 0) &&//start zero bytes in or more
+		(start < size) &&//but not so far as to not be able to clip out at least the last byte
+		(length > 0) &&//length must clip out at least one byte
+		(start + length <= size)//range can reach the end of size, but cannot go beyond that
+	)
+}
+test(() => {
+	let size = 3
+
+	//most javascript apis take start and end measured from zero at the start
+	ok(okSizeStartEnd(size, 0, 1))//start
+	ok(okSizeStartEnd(size, 0, 3))//whole thing
+	ok(okSizeStartEnd(size, 2, 3))//end
+
+	ok(!okSizeStartEnd(size, 1, 1))//empty clip
+	ok(!okSizeStartEnd(size, 2, 4))//extends beyond end
+	ok(!okSizeStartEnd(size, 3, 4))//entirely beyond end
+
+	//sometimes there's a current api that instead wants a count of bytes at the starting index, though!
+	ok(okSizeStartLength(size, 0, 1))//start
+	ok(okSizeStartLength(size, 0, 3))//whole thing
+	ok(okSizeStartLength(size, 2, 1))//end
+
+	ok(!okSizeStartLength(size, 1, 0))//empty clip
+	ok(!okSizeStartLength(size, 2, 2))//extends beyond end
+	ok(!okSizeStartLength(size, 3, 1))//entirely beyond end
+})
 
 
 
+test(() => {
 
+	//demonstration of javascript arrays and buffers through clipping while intentionally choosing viewing or copying
+	let text = 'ABCDEFGHIJKL'//12 letters
+	let size = 12
+	let encoder = new TextEncoder()
+	let a = encoder.encode(text)//turn the text into bytes; makes a buffer and returns an array that looks at the buffer
+	let b = a.buffer//get a reference to the underlying buffer
 
+	ok(a instanceof Uint8Array)
+	ok(b instanceof ArrayBuffer)
 
+	ok(a.length == 12)
+	ok(a.byteLength == 12)//arrays have .length and .byteLength
+	ok(b.byteLength == 12)//buffers only have .byteLength
 
+	//(1) on the array a, view DEF in the array without copying those three bytes
+	let a1view = a.subarray(3, 6)
+
+	//(2) on the array a, get DEF copied from the array, intentionally making a single additional copy of those three bytes
+	let a2copy = a.slice(3, 6)
+
+	//(3) on the buffer b, view DEF in the buffer without copying those three bytes
+	let a3view = new Uint8Array(b, 3, 3)//js api design inconsistancy, instead of start, end it's start, length
+
+	//(4) on the buffer b, get DEF copied from the buffer, intentionally making a single additional copy of those three bytes
+	let b4copy = b.slice(3, 6)//create a new buffer with a copy of the data
+	let a4copy = new Uint8Array(b4copy)//clip an array around that, this step doesn't copy anything again
+
+	ok(a1view instanceof Uint8Array)
+	ok(a2copy instanceof Uint8Array)
+	ok(a3view instanceof Uint8Array)
+	ok(b4copy instanceof ArrayBuffer)
+	ok(a4copy instanceof Uint8Array)
+})
 
 //      _       _        
 //   __| | __ _| |_ __ _ 
@@ -530,11 +602,9 @@ export function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds che
 	let _buffer = new ArrayBuffer(_capacity)
 	let _array = new Uint8Array(_buffer)//view on the buffer that does unsigned 8 bit numbers like 0x00 through 0xff
 
-	let b = { type: 'Bin' }//note the type
+	let b = {type: 'Bin'}//note the type
 	b.capacity = function() { return _capacity }//how many bytes it can hold
 	b.size = function() { return _size }//how many bytes it does hold
-	b.array = function() { return new Uint8Array(_buffer, 0, _size) }//clip a uint8array around the data in our bin
-	b.data = function() { return Data({array: b.array()}) }//wrap in Data to view, clip, and convert
 	b.add = function(p) {
 		if (typeof p == 'number') {
 			checkInt(p, 0); if (p > 255) toss('value', {b, p})
@@ -545,6 +615,21 @@ export function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds che
 			_array.set(p.array(), _size); _size += p.size()
 		} else { toss('type', {p}) }
 	}
+
+	//Bin's .array(), .data(), and .clipView() do not copy bytes; use them to always see the current contents of _buffer
+	b.array = function() { return new Uint8Array(_buffer, 0, _size) }
+	b.data = function() { return Data({array: b.array()}) }
+	b.clipView = function(start, end) {
+		checkSizeStartEnd(_size, start, end)
+		return Data({array: new Uint8Array(_buffer, start, end - start)})//most js apis take (start, end), but here it's (start, length)!
+	}
+	//alternatively, use .clipCopy() when _buffer could change, and want the data as it is right now 🪏
+	b.clipCopy = function(start, end) {
+		checkSizeStartEnd(_size, start, end)
+		return Data({array: new Uint8Array(_buffer.slice(start, end))})//slice copies the bytes, and the array constructor clips a view around that copy
+	}
+
+	b.hash = async function() { return await b.data().hash() }
 	return b
 }
 
@@ -563,7 +648,7 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 	else { toss('type', {p}) }
 
 	//methods
-	let d = { type: 'Data' }//note the type
+	let d = {type: 'Data'}//note the type
 	d.size   = function() { return _array.length }//size in bytes
 	d.array  = function() { return _array        }
 	d.text   = function() { if (_text)   { return _text;  } else { _text   = arrayToText(_array,   true); return _text   } }
@@ -575,10 +660,19 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 		checkInt(i); if (i >= _array.length) toss('bounds', {d, i})
 		return _array[i]
 	}
-	d.clip = function(i, n) {//from index i, clip out a new Data of n bytes
-		checkInt(i, 0); checkInt(n, 1); if (i + n > _array.length) toss('bounds', {d, i, n})
-		return Data({array: _array.slice(i, i + n)})
+
+	//Data's .array() and .clipView() do not copy bytes; use them to be fast when you know the buffer beneath won't change
+	d.clipView = function(start, end) {
+		checkSizeStartEnd(_array.length, start, end)
+		return Data({array: _array.subarray(start, end)})
 	}
+	//alternatively, use .clipCopy() when you know the buffer beneath could change, and want the data as it is right now 🪏
+	d.clipCopy = function(start, end) {
+		checkSizeStartEnd(_array.length, start, end)
+		return Data({array: _array.slice(start, end)})
+	}
+
+	d.hash = async function() { return await hashData(d) }
 	return d
 }
 
@@ -1035,7 +1129,7 @@ noop(() => {//this might be slow, actually, but should be ok for individual one 
 export async function hashToLetter(s, alphabet) {
 	checkText(s); checkText(alphabet)
 
-	let d = await hashData(Data({text: s}))
+	let d = await Data({text: s}).hash()
 	let v = new DataView(d.array().buffer)//from Data's array, get the buffer, we'll use just the first 4 bytes
 	let u = v.getUint32(0, false)//big endian, the Internet's default, but doesn't really matter here
 	let i = u % alphabet.length//modulo down to index in range
@@ -1130,6 +1224,7 @@ test(async () => {
 	ok(d2.base16() == '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')//found on the web
 	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
 	ok(d2.base32().length == hashLength)
+	ok((await Data({text: 'hello'}).hash()).base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//hash method with await is somewhat clumsy, ttd november
 })
 
 //                                            _ 
@@ -1141,7 +1236,7 @@ test(async () => {
 
 export async function hashPassword(iterations, saltData, passwordText) {
 	let passwordData = Data({text: passwordText})//Data uses normalization Form C, canonical composition so if the user comes back and enters the same characters but somehow with a different composition, there won't be a mismatch
-	let passwordHash = await hashData(passwordData)//short passwords might hash faster; to not indicate a shorter password with a bigger cycle number, do a regular sha256 sum, making long and short passwords all the exact same hash value length
+	let passwordHash = await passwordData.hash()//short passwords might hash faster; to not indicate a shorter password with a bigger cycle number, do a regular sha256 sum, making long and short passwords all the exact same hash value length
 	return await hashPassword2(iterations, saltData, passwordHash)
 }
 async function hashPassword2(iterations, saltData, messageData) {//helper function which does PBKDF2
@@ -1255,8 +1350,8 @@ async function symmetric_encrypt(key, plainData) {
 	return storeBin.data()
 }
 async function symmetric_decrypt(key, storeData) {//stored data that is initialization vector followed by cipher bytes
-	let vector = storeData.clip(0, symmetric_vector_size)//unpack
-	let cipher = storeData.clip(symmetric_vector_size, storeData.size() - symmetric_vector_size)
+	let vector = storeData.clipView(0, symmetric_vector_size)//unpack
+	let cipher = storeData.clipView(symmetric_vector_size, storeData.size())
 	return Data({buffer: await crypto.subtle.decrypt({name: 'AES-GCM', iv: vector.array()}, key, cipher.array())})
 }
 test(async () => {

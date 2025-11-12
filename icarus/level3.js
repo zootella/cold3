@@ -7,7 +7,7 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank, newline, deindent,
 Tag, checkTagOrBlank, checkTag,
-Data, decryptData, hashData, secureSameText,
+Data, decryptData, secureSameText,
 replaceAll, replaceOne,
 parseEnvStyleFileContents,
 hmacSign,
@@ -1374,20 +1374,3 @@ export async function demonstrationSignOut({browserHash, origin}) {
 		return {isSignedOut: false, reason: 'NameNotFound.', browserHash}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

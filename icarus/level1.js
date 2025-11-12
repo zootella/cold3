@@ -14,7 +14,7 @@ tagLength, Tag, checkTagOrBlank, checkTag, hasTag,
 Data, randomBetween,
 cut,
 fraction, exponent, int, big, deindent, newline,
-hashData, hashText, given,
+hashText, given,
 makePlain, makeObject, makeText,
 totpGenerate,
 } from './level0.js'
@@ -196,7 +196,7 @@ test(async () => {
 	f('𝕏', 2, 4)
 
 	ok(Tag().length == Limit.tag)//program types
-	ok((await hashData(Data({random: 4}))).base32().length == Limit.hash)
+	ok((await Data({random: 4}).hash()).base32().length == Limit.hash)
 })
 test(() => {
 	let limit; ok(cropToLimit('123456', limit, 5) == '12345')//limit not set, so goes to the required given default
