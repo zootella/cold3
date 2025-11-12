@@ -1477,6 +1477,12 @@ async function nodeSnippet() {
 }
 
 
+/*
+hashFileTips - quick, takes file object, works in node, page, *not* lambda, calculates Tips hash
+hashFileStream - through, takes stream, works in node, lambda, and page, calculates Tips and Pieces hash
+*/
+
+
 
 export async function hashFileTips({file, size}) {//works in local node testing and browser page with uppy, but not in lambda node!
 	if(!(file && size > 0 && file.size == size)) toss('bounds', {file, size})//file is a JavaScript File object, which extends Blob
@@ -1525,11 +1531,12 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 	bin.add(title)
 
 	//our conveyor belt for hashing bytes then sliding them forward 🏗️
-	let belt = {
-		capacity: hash_piece_size * 2,//double-wide to hold one full piece and up to all of the next one
-		array: new Uint8Array(hash_piece_size * 2),//this method allocates a buffer once and uses it for the whole file!
-		fill: 0,//the belt has .fill bytes of data in it, measured from the start; data bytes are 0 up to belt.fill
-	}
+	let belt = {}
+	belt.capacity = Math.min(
+		2 * hash_piece_size,//double-wide to hold one full piece and up to all of the next one
+		size)//or sized to fit all of a smaller file
+	belt.array = new Uint8Array(belt.capacity)//this method allocates a buffer once and uses it for the whole file!
+	belt.fill = 0//the belt has .fill bytes of data in it, measured from the start; data bytes are 0 up to belt.fill
 
 	const reader = stream.getReader()
 	try {
@@ -1591,6 +1598,13 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 		//hash the summary of the file in the bin
 		signal?.throwIfAborted()
 		status.pieceHash = Data({buffer: await crypto.subtle.digest("SHA-256", bin.array())})
+
+		status.pieceHash = await hashData(Data({array: bin.array()}))
+
+		status.pieceHash = await Data({array: bin.array()}).hash()
+		status.pieceHash = await DataArray(bin.array()).hash()
+
+
 		status.updateTime = Now()
 		status.duration = status.updateTime - status.startTime
 		onProgress?.(status)
