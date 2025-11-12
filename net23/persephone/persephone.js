@@ -9,7 +9,7 @@ noop, test, ok,
 
 toBoolean, toTextOrBlank,
 checkInt, minInt,
-intToText, textToInt,
+intToText, textToInt, commas,
 hasText, checkText,
 hasTextOrBlank, checkTextOrBlank,
 makePlain, makeObject, makeText,

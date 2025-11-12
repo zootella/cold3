@@ -199,7 +199,7 @@ export {
 
 liveBox,//move to whichever level you need it!
 
-sayPlural, sayGroupDigits, sayHugeInteger, saySize4, sayNumber4,
+sayPlural, commas, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
 Limit, cropToLimit,
 trimLines, trimLine,

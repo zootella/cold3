@@ -83,9 +83,8 @@ test(() => {
 	ok(sayPlural(2) == 's')//like "2 carrots"
 })
 
-//group digits like "12,345"; ttd november omg renamem to comma() because you can nenver remember it
-export function commas(s, thousandsSeparator) { return sayGroupDigits(s+'', thousandsSeparator) }
-export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
+export function commas(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
+	s += ''//turn numbers into strings
 	if (!thousandsSeparator) thousandsSeparator = ','
 	let minus = ''
 	if (s.startsWith('-')) { minus = '-'; s = s.slice(1) }//deal with negative numbers
@@ -97,11 +96,11 @@ export function sayGroupDigits(s, thousandsSeparator) {//pass comma, period, or 
 	return minus+s
 }
 test(() => {
-	ok(sayGroupDigits('') == '')
-	ok(sayGroupDigits('1234') == '1234')
-	ok(sayGroupDigits('12345') == '12,345')
-	ok(sayGroupDigits('-50') == '-50')
-	ok(sayGroupDigits('-70800') == '-70,800')
+	ok(commas('') == '')
+	ok(commas('1234') == '1234')
+	ok(commas('12345') == '12,345')
+	ok(commas('-50') == '-50')
+	ok(commas('-70800') == '-70,800')
 })
 
 //say a huge integer like "802 billion"
@@ -113,7 +112,7 @@ export function sayHugeInteger(i) {
 		b /= 1000n
 		u++
 	}
-	return `${sayGroupDigits(b+'')}${_magnitudes[u]} year${sayPlural(i)}`
+	return `${commas(b)}${_magnitudes[u]} year${sayPlural(i)}`
 }
 
 // Describe big sizes and counts in four digits or less
@@ -1346,7 +1345,114 @@ noop(async () => {
 
 
 
-//idea here is you can call this from node
+
+//  _               _        __ _ _           
+// | |__   __ _ ___| |__    / _(_) | ___  ___ 
+// | '_ \ / _` / __| '_ \  | |_| | |/ _ \/ __|
+// | | | | (_| \__ \ | | | |  _| | |  __/\__ \
+// |_| |_|\__,_|___/_| |_| |_| |_|_|\___||___/
+//                                            
+
+//file hashing protocol presets; introducing the "Fuji" system 🗻
+const hash_seed_text = 'Fuji'//simple and readable seed to keep hash values distinct from those from other protocols or names here
+const hash_piece_size = 4*Size.mb//4 MB hashes in ~10ms around the frequency of page animation frames, uploads in under a second over a 40 Mbps cable modem, and keeps the hash value list smaller than the piece size for files under 500 GB 🗄️
+const hash_tip_size = 4*Size.kb//4 KB matches the cluster and sector size on Windows NTFS and the block size on Mac APFS so hard drive reads can be as fast as possible 💽
+const hash_value_size = 32//a SHA-256 hash value is 32 bytes
+
+function hashFileMeasure({file, unit}) {//given a file size, compute measurements about tips and pieces 📏
+	if (!(file >= 1 && unit >= 1)) toss('bounds')//both the file size and piece size must be 1 or more bytes
+	let o = {file, unit}
+
+	o.pieces = Math.ceil(file / unit)//total number of pieces
+	o.complete = Math.floor(file / unit)//quantity of complete pieces
+	o.fragment = file % unit//byte size of last piece if it is a fragment
+
+	o.stripes = []
+	if (file > 4 * unit) {
+
+		//place indicies
+		o.first = 0
+		o.middle = Math.floor(file / (2 * unit)) * unit//byte index of middle piece
+		o.penultimate = (o.pieces - 2) * unit//second to last piece, must always be complete
+		o.last = (o.pieces - 1) * unit//last piece, can be complete, likely a fragment
+
+		//calculate sizes
+		o.lastSize = o.fragment || unit//how big the last stripe is
+		o.stripeSize = (3 * unit) + o.lastSize//how many bytes we'll hash through all four stripes
+
+		//build stripes
+		o.stripes.push([o.first, unit])//first and middle never touch
+		if (o.middle + unit == o.penultimate) {//but middle and penultimate can
+			o.stripes.push([o.middle, unit + unit + o.lastSize])//and penultimate and last always do
+		} else {
+			o.stripes.push([o.middle, unit])//middle with space before and after
+			o.stripes.push([o.penultimate, unit + o.lastSize])
+		}
+
+	} else {
+		o.all = true//file size is 4 units or less, so just hash the whole thing
+		o.stripeSize = file
+		o.stripes.push([0, file])
+	}
+	return o
+}
+test(() => {
+	function f(file, expected) {
+		let o = hashFileMeasure({unit: 4, file})
+		let s = `${o.file} ${o.pieces}|${o.complete}|${o.fragment} ` + (o.all ? `all` : `${o.first}|${o.middle}|${o.penultimate}|${o.last}`)
+		ok(s == expected.replace(/\s+/g, ' ').replace(/\| /g, '|'))//condense formatting space in given expected strings
+	}
+	//file size is just before, ... exactly at, or ................ one byte beyond the unit lines
+	f(15, '15  4| 3|3 all');        f(16, '16  4| 4|0 all');        f(17, '17  5| 4|1 0| 8|12|16')
+	f(19, '19  5| 4|3 0| 8|12|16'); f(20, '20  5| 5|0 0| 8|12|16'); f(21, '21  6| 5|1 0| 8|16|20')
+	f(23, '23  6| 5|3 0| 8|16|20'); f(24, '24  6| 6|0 0|12|16|20'); f(25, '25  7| 6|1 0|12|20|24')
+	f(27, '27  7| 6|3 0|12|20|24'); f(28, '28  7| 7|0 0|12|20|24'); f(29, '29  8| 7|1 0|12|24|28')
+	f(31, '31  8| 7|3 0|12|24|28'); f(32, '32  8| 8|0 0|16|24|28'); f(33, '33  9| 8|1 0|16|28|32')
+	f(35, '35  9| 8|3 0|16|28|32'); f(36, '36  9| 9|0 0|16|28|32'); f(37, '37 10| 9|1 0|16|32|36')
+	f(39, '39 10| 9|3 0|16|32|36'); f(40, '40 10|10|0 0|20|32|36'); f(41, '41 11|10|1 0|20|36|40')
+	f(43, '43 11|10|3 0|20|36|40'); f(44, '44 11|11|0 0|20|36|40'); f(45, '45 12|11|1 0|20|40|44')
+})
+test(() => {
+	function v(file, unit) {//hash stripe visualizer
+		let o = hashFileMeasure({unit, file})
+		if (o.all) {
+			return 'A'.repeat(file)
+		} else {
+			let s = ''
+			for (let i = 0; i < file; i++) {
+				if      (i >= o.first       && i < o.first       + unit      ) s += 'F'
+				else if (i >= o.middle      && i < o.middle      + unit      ) s += 'M'
+				else if (i >= o.penultimate && i < o.penultimate + unit      ) s += 'P'
+				else if (i >= o.last        && i < o.last        + o.lastSize) s += 'L'
+				else s += '.'//represents a byte not hashed
+			}
+			return s
+		}
+	}
+	function f(file, expected) {
+		let s = v(file, 2)
+		ok(s == expected)
+	}
+	f( 1, 'A')
+	f( 2, 'AA')
+	f( 7, 'AAAAAAA')
+	f( 8, 'AAAAAAAA')
+	f( 9, 'FF..MMPPL')
+	f(10, 'FF..MMPPLL')
+	f(11, 'FF..MM..PPL')
+	f(12, 'FF....MMPPLL')//intentionally, the middle stripe stays forward to get away from a potentially large media header
+	f(13, 'FF....MM..PPL')
+	f(14, 'FF....MM..PPLL')
+	f(15, 'FF....MM....PPL')
+})
+
+
+
+
+
+
+
+
 noop(async () => { await nodeSnippet() })//turn this on when running tests with node local on the command line with $ yarn test
 async function nodeSnippet() {
 	const node = await loadNode()
@@ -1354,10 +1460,10 @@ async function nodeSnippet() {
 	//hash a big file with $ yarn test ~/Downloads/big.mov
 	let name = process.argv[2]
 	let size = node.fs.statSync(name).size
+	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//node has a function that converts the classic Node-style stream to a modern isomorphic WHATWG stream
+
 	log(`Hashing "${name}" (${size} bytes)...`)
-
-	let stream = Readable.toWeb(node.stream.createReadStream(name))//node has a function that converts the classic Node-style stream to a modern isomorphic WHATWG stream
-
+	/*
 	let hash = await hashStream({
 		stream,
 		size,
@@ -1367,26 +1473,165 @@ async function nodeSnippet() {
 		}
 	})
 	log(`\nHashed ${hash.pieceHash16} in ${hash.duration}ms (${Math.round(hash.totalSize / hash.duration)} bytes/ms)`)
-
-
-
-
-
-
-
-
-
-
-
+	*/
 }
 
 
 
-//file hashing protocol presets
-const hash_seed_text = 'Fuji'
-const hash_piece_size = 4*Size.mb//4 MB hashes in an animation frame, uploads in a second over a cable modem, and has a hash list smaller than the piece size for files under 500 GB 🗄️
-const hash_tip_size = 4*Size.kb//4 KB is an NTFS cluster and sector and an APFS block to keep reading from hard drives as fast as possible 💽
+export async function hashFileTips({file, size}) {//works in local node testing and browser page with uppy, but not in lambda node!
+	if(!(file && size > 0 && file.size == size)) toss('bounds', {file, size})//file is a JavaScript File object, which extends Blob
 
+	//baesd on the file size, pick stripes at the start, middle, and end for us to hash quickly
+	let m = hashFileMeasure({file: size, unit: hash_tip_size})
+	let status = {
+		startTime: Now(),
+		updateTime: Now(),//when we last changed anything here
+		measurements: m,//include this, too
+		totalSize: size,
+		hashedSize: 0,//haven't hashed anything yet; we don't have a progress callback that might look, but still
+	}
+
+	//for tip hashing, the summary we'll hash is the title followed by stripes of file data (hashing file data, not hashes)
+	let title = Data({text: `${hash_seed_text}.Tips.SHA256.4KB.${size}.`})//different sized files hash differently even with identical content in the sampled regions
+	let bin = Bin(title.size() + m.stripeSize)
+	bin.add(title)
+	for (let [start, length] of m.stripes) {
+		bin.add(Data({buffer: await file.slice(start, start + length).arrayBuffer()}))
+	}
+
+	//hash the summary of the file in the bin
+	status.tipHash = Data({buffer: await crypto.subtle.digest("SHA-256", bin.array())})
+	status.hashedSize = m.stripeSize
+	status.updateTime = Now()
+	status.duration = status.updateTime - status.startTime
+	return status
+}
+
+export async function hashFileStream({stream, size, onProgress, signal}) {//works everywhere, local and lambda node, and uppy page
+	signal?.throwIfAborted()
+	if (!(stream && size > 0)) toss('bounds', {stream, size})
+
+	let m = hashFileMeasure({file: size, unit: hash_piece_size})
+	let status = {//object we'll give to the progress callback, and also return
+		startTime: Now(),
+		updateTime: Now(),//when we last changed anything here
+		hashedSize: 0,
+		totalSize: size,
+	}
+
+	//for piece hashing, the summary we'll hash is the title followed by hashes of pieces of file data (hashing hashes, not file data)
+	let title = Data({text: `${hash_seed_text}.Pieces.SHA256.4MB.${size}.`})
+	let bin = Bin(title.size() + (hash_value_size * m.pieces))
+	bin.add(title)
+
+	//our conveyor belt for hashing bytes then sliding them forward 🏗️
+	let belt = {
+		capacity: hash_piece_size * 2,//double-wide to hold one full piece and up to all of the next one
+		array: new Uint8Array(hash_piece_size * 2),//this method allocates a buffer once and uses it for the whole file!
+		fill: 0,//the belt has .fill bytes of data in it, measured from the start; data bytes are 0 up to belt.fill
+	}
+
+	const reader = stream.getReader()
+	try {
+		while (true) {//loop while boxes of data arrive from the stream
+			signal?.throwIfAborted()
+			let r = await reader.read()//wait for the stream to give us something
+
+			//a new delivery of bytes from the stream has arrived! 📦
+			let box = {
+				done: r.done,//true if this is the last box from the stream
+				array: r.value,//the data bytes, a Uint8Array
+				size: r.value?.length || 0,//could be any size; the stream picks this, not us!
+				index: 0,//we move this index over the bytes in the box as we process them; remaining data starts at box.index and goes beyond
+			}
+
+			if (box.array) {//the stream gave us a box with data inside
+				while (box.index < box.size) {//loop to get through them
+
+					//copy a shovelful of bytes from the box to our belt
+					let shovel = Math.min(//how many can we shovel over right now?
+						box.size - box.index,//not more that remain for us to take from this delivery
+						belt.capacity - belt.fill)//nor more than we have space left in our conveyor belt buffer
+					belt.array.set(//into belt...
+						box.array.subarray(box.index, box.index + shovel),//...copy shovel quantity bytes from box at index...
+						belt.fill)//...to belt at its fill position
+					belt.fill += shovel//there are more bytes of stream data in belt now
+					box.index += shovel//and we've moved past them in the box
+
+					//if the belt has enough data at the start to hash
+					while (belt.fill >= hash_piece_size) {//hash the first half; if the stream filled 8mb all at once this loop will run twice!
+						let piece = belt.array.subarray(0, hash_piece_size);//subarray doesn't allocate or copy anything
+						signal?.throwIfAborted()
+						bin.add(Data({buffer: await crypto.subtle.digest("SHA-256", piece)}))//4mb takes ~10ms, frequency like animation frames
+						status.hashedSize += piece.length
+						status.updateTime = Now()
+						onProgress?.(status)
+
+						//slide the second half of the conveyor belt buffer to the start
+						let beyond = belt.fill - hash_piece_size//how many bytes of data are on the belt beyond the first half we just hashed
+						if (beyond > 0) belt.array.copyWithin(0, hash_piece_size, belt.fill)//this calls down to C's memmove, and is very fast
+						belt.fill = beyond
+					}
+				}
+			}
+			if (box.done) break
+		}
+
+		//most files will end with a fragment piece smaller than 4kb
+		if (belt.fill > 0) {
+			let piece = belt.array.subarray(0, belt.fill)
+			signal?.throwIfAborted()
+			bin.add(Data({buffer: await crypto.subtle.digest("SHA-256", piece)}))
+			status.hashedSize += piece.length
+			status.updateTime = Now()
+			onProgress?.(status)
+		}
+		if (status.hashedSize != status.totalSize) toss('bounds', {status, note: 'stream length different from file size'})
+
+		//hash the summary of the file in the bin
+		signal?.throwIfAborted()
+		status.pieceHash = Data({buffer: await crypto.subtle.digest("SHA-256", bin.array())})
+		status.updateTime = Now()
+		status.duration = status.updateTime - status.startTime
+		onProgress?.(status)
+		return status
+
+	} finally {//try with no catch so an exception in here throws upwards into caller
+		reader.releaseLock()//but before we leave, success or exception, we always release the file lock
+	}
+}
+
+/*
+//from claude for tomorrow--yes we can do isomorphic automated tests with fake local file object that have streams!
+//have short quick ones runs all the time, and bigger ones that span multiple 4MB pieces as noop<->test manual runners to switch on after major changes
+test(async () => {
+	// Create test data - "hello" as bytes
+	let bytes = new Uint8Array([0x68, 0x65, 0x6c, 0x6c, 0x6f])
+	let size = bytes.length
+	
+	// Create a File object for hashFileTips
+	let file = new File([bytes], "hello.txt", {type: "text/plain"})
+	
+	// Create a ReadableStream for hashFileStream
+	let stream = new ReadableStream({
+		start(controller) {
+			controller.enqueue(bytes)
+			controller.close()
+		}
+	})
+	
+	// Test tip hasher
+	let tipResult = await hashFileTips({file, size})
+	ok(tipResult.tipHash.base32() == 'EXPECTED_TIP_HASH_HERE')
+	
+	// Test stream hasher
+	let streamResult = await hashFileStream({stream, size})
+	ok(streamResult.pieceHash.base32() == 'EXPECTED_PIECE_HASH_HERE')
+	
+	log(`Tip hash: ${tipResult.tipHash.base32()}`)
+	log(`Piece hash: ${streamResult.pieceHash.base32()}`)
+})
+*/
 
 
 

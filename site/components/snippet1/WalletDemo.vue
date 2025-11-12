@@ -1,7 +1,7 @@
 <script setup>//./components/WalletDemo.vue
 
 import {
-sayTick, sayGroupDigits,
+sayTick,
 } from 'icarus'
 
 //ttd october2025, returning here
@@ -36,7 +36,7 @@ async function snippet1() {
 
 	//get the current ethereum block number
 	let n = await getBlockNumber(alchemyConfiguration)
-	blockRef.value = sayGroupDigits(n+'')
+	blockRef.value = commas(n)
 	timeRef.value = sayTick(Now())//there's a new block every 12 seconds
 
 	//to get the ETH price right now, we'll read a chainlink oracle contract
