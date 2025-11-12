@@ -1171,9 +1171,10 @@ test(() => {
 //                        
 
 //compute the 32 byte SHA-256 hash value of data
-const hashLength = 52//a sha256 hash value encoded to base32 without padding is 52 characters
+const hash_size = 32//the hash value is 32 bytes
+const hash_length = 52//which is 52 characters in base 32 without padding
 export function checkHash(s) {
-	checkText(s); if (s.length != hashLength) toss('data', {s})
+	checkText(s); if (s.length != hash_length) toss('data', {s})
 	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
 }
 export async function hashText(s) {//convenience function which goes text encoder to base 32
@@ -1196,7 +1197,7 @@ test(async () => {
 	let d2 = await hashData(Data({text: 'hello'}))
 	ok(d2.base16() == '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')//found on the web
 	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
-	ok(d2.base32().length == hashLength)
+	ok(d2.base32().length == hash_length)
 	ok((await Data({text: 'hello'}).hash()).base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//hash method with await is somewhat clumsy, ttd november
 })
 

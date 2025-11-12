@@ -11,7 +11,7 @@ log,
 say, look, defined,
 checkText,
 tagLength, Tag, checkTagOrBlank, checkTag, hasTag,
-Data, randomBetween,
+Bin, Data, randomBetween,
 cut,
 fraction, exponent, int, big, deindent, newline,
 hashText, given,
@@ -1340,12 +1340,6 @@ noop(async () => {
 
 
 
-
-
-
-
-
-
 //  _               _        __ _ _           
 // | |__   __ _ ___| |__    / _(_) | ___  ___ 
 // | '_ \ / _` / __| '_ \  | |_| | |/ _ \/ __|
@@ -1355,9 +1349,13 @@ noop(async () => {
 
 //file hashing protocol presets; introducing the "Fuji" system 🗻
 const hash_seed_text = 'Fuji'//simple and readable seed to keep hash values distinct from those from other protocols or names here
-const hash_piece_size = 4*Size.mb//4 MB hashes in ~10ms around the frequency of page animation frames, uploads in under a second over a 40 Mbps cable modem, and keeps the hash value list smaller than the piece size for files under 500 GB 🗄️
-const hash_tip_size = 4*Size.kb//4 KB matches the cluster and sector size on Windows NTFS and the block size on Mac APFS so hard drive reads can be as fast as possible 💽
+const hash_piece_size = 4*Size.mb//4 MiB hashes in ~10ms around the frequency of page animation frames, uploads in under a second over a typical cable modem, and keeps the buffer of hash values smaller than this for files under 500 GB 🗄️
+const hash_tip_size = 4*Size.kb//4 KiB matches the cluster and sector size on Windows NTFS and the block size on Mac APFS so hard drive reads can be as fast as possible 💽
 const hash_value_size = 32//a SHA-256 hash value is 32 bytes
+test(() => {
+	ok(hash_piece_size == 4_194_304)
+	ok(hash_tip_size == 4096)
+})
 
 function hashFileMeasure({file, unit}) {//given a file size, compute measurements about tips and pieces 📏
 	if (!(file >= 1 && unit >= 1)) toss('bounds')//both the file size and piece size must be 1 or more bytes
@@ -1446,48 +1444,10 @@ test(() => {
 	f(15, 'FF....MM....PPL')
 })
 
-
-
-
-
-
-
-
-noop(async () => { await nodeSnippet() })//turn this on when running tests with node local on the command line with $ yarn test
-async function nodeSnippet() {
-	const node = await loadNode()
-
-	//hash a big file with $ yarn test ~/Downloads/big.mov
-	let name = process.argv[2]
-	let size = node.fs.statSync(name).size
-	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//node has a function that converts the classic Node-style stream to a modern isomorphic WHATWG stream
-
-	log(`Hashing "${name}" (${size} bytes)...`)
-	/*
-	let hash = await hashStream({
-		stream,
-		size,
-		onProgress: (status) => {
-			let percent = (status.hashedSize / status.totalSize) * 100
-			process.stdout.write(`\r${percent.toFixed(1)}% `)
-		}
-	})
-	log(`\nHashed ${hash.pieceHash16} in ${hash.duration}ms (${Math.round(hash.totalSize / hash.duration)} bytes/ms)`)
-	*/
-}
-
-
-/*
-hashFileTips - quick, takes file object, works in node, page, *not* lambda, calculates Tips hash
-hashFileStream - through, takes stream, works in node, lambda, and page, calculates Tips and Pieces hash
-*/
-
-
-
 export async function hashFileTips({file, size}) {//works in local node testing and browser page with uppy, but not in lambda node!
 	if(!(file && size > 0 && file.size == size)) toss('bounds', {file, size})//file is a JavaScript File object, which extends Blob
 
-	//baesd on the file size, pick stripes at the start, middle, and end for us to hash quickly
+	//based on the file size, pick stripes at the start, middle, and end for us to hash quickly
 	let m = hashFileMeasure({file: size, unit: hash_tip_size})
 	let status = {
 		startTime: Now(),
@@ -1498,7 +1458,7 @@ export async function hashFileTips({file, size}) {//works in local node testing 
 	}
 
 	//for tip hashing, the summary we'll hash is the title followed by stripes of file data (hashing file data, not hashes)
-	let title = Data({text: `${hash_seed_text}.Tips.SHA256.4KB.${size}.`})//different sized files hash differently even with identical content in the sampled regions
+	let title = Data({text: `${hash_seed_text}.Tips.SHA256.4KiB.${size}.`})//different sized files hash differently even with identical content in the sampled regions
 	let bin = Bin(title.size() + m.stripeSize)
 	bin.add(title)
 	for (let [start, length] of m.stripes) {
@@ -1506,7 +1466,7 @@ export async function hashFileTips({file, size}) {//works in local node testing 
 	}
 
 	//hash the summary of the file in the bin
-	status.tipHash = Data({buffer: await crypto.subtle.digest("SHA-256", bin.array())})
+	status.tipHash = await bin.hash()
 	status.hashedSize = m.stripeSize
 	status.updateTime = Now()
 	status.duration = status.updateTime - status.startTime
@@ -1526,7 +1486,7 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 	}
 
 	//for piece hashing, the summary we'll hash is the title followed by hashes of pieces of file data (hashing hashes, not file data)
-	let title = Data({text: `${hash_seed_text}.Pieces.SHA256.4MB.${size}.`})
+	let title = Data({text: `${hash_seed_text}.Pieces.SHA256.4MiB.${size}.`})
 	let bin = Bin(title.size() + (hash_value_size * m.pieces))
 	bin.add(title)
 
@@ -1567,10 +1527,9 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 
 					//if the belt has enough data at the start to hash
 					while (belt.fill >= hash_piece_size) {//hash the first half; if the stream filled 8mb all at once this loop will run twice!
-						let piece = belt.array.subarray(0, hash_piece_size);//subarray doesn't allocate or copy anything
 						signal?.throwIfAborted()
-						bin.add(Data({buffer: await crypto.subtle.digest("SHA-256", piece)}))//4mb takes ~10ms, frequency like animation frames
-						status.hashedSize += piece.length
+						bin.add(await Data({array: belt.array}).clipView(0, hash_piece_size).hash())//4mib hashes in ~10ms, frequency like animation frames
+						status.hashedSize += hash_piece_size
 						status.updateTime = Now()
 						onProgress?.(status)
 
@@ -1584,12 +1543,11 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 			if (box.done) break
 		}
 
-		//most files will end with a fragment piece smaller than 4kb
+		//most files will end with a fragment piece smaller than a full piece
 		if (belt.fill > 0) {
-			let piece = belt.array.subarray(0, belt.fill)
 			signal?.throwIfAborted()
-			bin.add(Data({buffer: await crypto.subtle.digest("SHA-256", piece)}))
-			status.hashedSize += piece.length
+			bin.add(await Data({array: belt.array}).clipView(0, belt.fill).hash())
+			status.hashedSize += belt.fill
 			status.updateTime = Now()
 			onProgress?.(status)
 		}
@@ -1597,7 +1555,7 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 
 		//hash the summary of the file in the bin
 		signal?.throwIfAborted()
-		status.pieceHash = Data({buffer: await crypto.subtle.digest("SHA-256", bin.array())})
+		status.pieceHash = await bin.hash()
 		status.updateTime = Now()
 		status.duration = status.updateTime - status.startTime
 		onProgress?.(status)
@@ -1608,43 +1566,99 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 	}
 }
 
-/*
-//from claude for tomorrow--yes we can do isomorphic automated tests with fake local file object that have streams!
-//have short quick ones runs all the time, and bigger ones that span multiple 4MB pieces as noop<->test manual runners to switch on after major changes
-test(async () => {
-	// Create test data - "hello" as bytes
-	let bytes = new Uint8Array([0x68, 0x65, 0x6c, 0x6c, 0x6f])
-	let size = bytes.length
-	
-	// Create a File object for hashFileTips
-	let file = new File([bytes], "hello.txt", {type: "text/plain"})
-	
-	// Create a ReadableStream for hashFileStream
-	let stream = new ReadableStream({
+test(async () => {//simulate a file (1) with objects that work like the real files that come from (2) local Node reading the development workstation hard drive, (3) Uppy on the page receiving a drag-and-drop, and (4) Node on AWS Lambda reading the content body from an S3 bucket; this test, a sanity check, must run everwhere icarus does, and take less than a millisecond!
+
+	let d = Data({text: 'hello'})//same as if you save the 5 bytes "hello" in a file named hello.txt on disk, bucket, or dragged to page
+	let file = new Blob([d.array()], {type: 'text/plain'})
+	file.name = 'hello.txt'
+	file.lastModified = Now()
+	let stream = new ReadableStream({//our simulated stream is over the array, doesn't use the file object
 		start(controller) {
-			controller.enqueue(bytes)
+			controller.enqueue(d.array())//send all the data at once
 			controller.close()
 		}
 	})
-	
-	// Test tip hasher
-	let tipResult = await hashFileTips({file, size})
-	ok(tipResult.tipHash.base32() == 'EXPECTED_TIP_HASH_HERE')
-	
-	// Test stream hasher
-	let streamResult = await hashFileStream({stream, size})
-	ok(streamResult.pieceHash.base32() == 'EXPECTED_PIECE_HASH_HERE')
-	
-	log(`Tip hash: ${tipResult.tipHash.base32()}`)
-	log(`Piece hash: ${streamResult.pieceHash.base32()}`)
+
+	ok(file.size == d.size())//our fake file has the correct size
+	let h1 = await hashFileTips({file, size: file.size})
+	let h2 = await hashFileStream({stream, size: file.size})
+	ok(h1.tipHash.base32() == 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ')
+	ok(h2.pieceHash.base32() == 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q')
 })
+
+/*
+bookmark
+test1[]use the noop/test below to hash the real local node file hello.txt and confirm you get the same results
+test2[]write a still simulated, but takes longer test like above which does files a little over 4kb and 4mb
+code3[]code into hashFileStream the tip hash
 */
 
 
 
 
+noop(async () => {//change noop->test and then do a manual test like $ yarn test ~/Downloads/hello.txt
+	const node = await loadNode()
+
+	let name = process.argv[2]
+	let size = node.fs.statSync(name).size
+	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//node has a function that converts the classic Node-style stream to a modern isomorphic WHATWG stream
+
+	log(`Hashing "${name}" (${commas(size)} bytes)...`)
+	let hash = await hashFileStream({
+		stream,
+		size,
+		onProgress: (hash) => {
+			let percent = (hash.hashedSize / hash.totalSize) * 100
+			process.stdout.write(`\r${percent.toFixed(1)}% `)
+		}
+	})
+	log(`\nHashed ${hash.pieceHash.base32()} in ${commas(hash.duration)}ms (${commas(Math.round(hash.totalSize / hash.duration))} bytes/ms)`)
+})
 
 
+
+noop(async () => { await nodeSnippet() })//turn this on when running tests with node local on the command line with $ yarn test
+async function nodeSnippet() {
+	const node = await loadNode()
+
+	//hash a big file with $ yarn test ~/Downloads/big.mov
+	let name = process.argv[2]
+	let size = node.fs.statSync(name).size
+	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//node has a function that converts the classic Node-style stream to a modern isomorphic WHATWG stream
+
+	log(`Hashing "${name}" (${size} bytes)...`)
+	/*
+	let hash = await hashStream({
+		stream,
+		size,
+		onProgress: (status) => {
+			let percent = (status.hashedSize / status.totalSize) * 100
+			process.stdout.write(`\r${percent.toFixed(1)}% `)
+		}
+	})
+	log(`\nHashed ${hash.pieceHash16} in ${hash.duration}ms (${Math.round(hash.totalSize / hash.duration)} bytes/ms)`)
+	*/
+}
+
+
+/*
+hashFileTips - quick, takes file object, works in node, page, *not* lambda, calculates Tips hash
+hashFileStream - through, takes stream, works in node, lambda, and page, calculates Tips and Pieces hash
+
+we'll test as follows
+- local node tests using real files with paths like ~/Downloads/5mb.mov; these are noop/test and manual, and can take seconds
+- automated tiny tests using fake literal objects made right here in code; these need to be really fast
+
+likely, when uploading:
+- from desktop, the page will give the file from uppy to hashFileStream to compute both the tip and piece hashes
+- from mobile, the page will give the file from uppy to hashFileTips to compute just the tip hashes (phone battery is the concern)
+and then the receiving lambda will:
+- use hashFileStream
+
+
+
+
+*/
 
 
 
