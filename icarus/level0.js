@@ -506,85 +506,6 @@ test(() => {
 
 
 
-function checkSizeStartEnd(size, start, end) { if (!okSizeStartEnd(size, start, end)) toss('bounds', {size, start, end}) }
-function checkSizeStartLength(size, start, length) { if (!okSizeStartLength(size, start, length)) toss('bounds', {size, start, length}) }
-function okSizeStartEnd(size, start, end) {
-	return (
-		(size > 0) &&//we don't allow empty arrays or buffers
-		(start >= 0) &&//start zero bytes in or more
-		(start < size) &&//but not so far as to not be able to clip out at least the last byte
-		(end > start) &&//start to end must clip out at least one byte
-		(end <= size)//end can reach the end of the size, but cannot go beyond that
-	)
-}
-function okSizeStartLength(size, start, length) {
-	return (
-		(size > 0) &&//we don't allow empty arrays or buffers
-		(start >= 0) &&//start zero bytes in or more
-		(start < size) &&//but not so far as to not be able to clip out at least the last byte
-		(length > 0) &&//length must clip out at least one byte
-		(start + length <= size)//range can reach the end of size, but cannot go beyond that
-	)
-}
-test(() => {
-	let size = 3
-
-	//most javascript apis take start and end measured from zero at the start
-	ok(okSizeStartEnd(size, 0, 1))//start
-	ok(okSizeStartEnd(size, 0, 3))//whole thing
-	ok(okSizeStartEnd(size, 2, 3))//end
-
-	ok(!okSizeStartEnd(size, 1, 1))//empty clip
-	ok(!okSizeStartEnd(size, 2, 4))//extends beyond end
-	ok(!okSizeStartEnd(size, 3, 4))//entirely beyond end
-
-	//sometimes there's a current api that instead wants a count of bytes at the starting index, though!
-	ok(okSizeStartLength(size, 0, 1))//start
-	ok(okSizeStartLength(size, 0, 3))//whole thing
-	ok(okSizeStartLength(size, 2, 1))//end
-
-	ok(!okSizeStartLength(size, 1, 0))//empty clip
-	ok(!okSizeStartLength(size, 2, 2))//extends beyond end
-	ok(!okSizeStartLength(size, 3, 1))//entirely beyond end
-})
-
-
-
-test(() => {
-
-	//demonstration of javascript arrays and buffers through clipping while intentionally choosing viewing or copying
-	let text = 'ABCDEFGHIJKL'//12 letters
-	let size = 12
-	let encoder = new TextEncoder()
-	let a = encoder.encode(text)//turn the text into bytes; makes a buffer and returns an array that looks at the buffer
-	let b = a.buffer//get a reference to the underlying buffer
-
-	ok(a instanceof Uint8Array)
-	ok(b instanceof ArrayBuffer)
-
-	ok(a.length == 12)
-	ok(a.byteLength == 12)//arrays have .length and .byteLength
-	ok(b.byteLength == 12)//buffers only have .byteLength
-
-	//(1) on the array a, view DEF in the array without copying those three bytes
-	let a1view = a.subarray(3, 6)
-
-	//(2) on the array a, get DEF copied from the array, intentionally making a single additional copy of those three bytes
-	let a2copy = a.slice(3, 6)
-
-	//(3) on the buffer b, view DEF in the buffer without copying those three bytes
-	let a3view = new Uint8Array(b, 3, 3)//js api design inconsistancy, instead of start, end it's start, length
-
-	//(4) on the buffer b, get DEF copied from the buffer, intentionally making a single additional copy of those three bytes
-	let b4copy = b.slice(3, 6)//create a new buffer with a copy of the data
-	let a4copy = new Uint8Array(b4copy)//clip an array around that, this step doesn't copy anything again
-
-	ok(a1view instanceof Uint8Array)
-	ok(a2copy instanceof Uint8Array)
-	ok(a3view instanceof Uint8Array)
-	ok(b4copy instanceof ArrayBuffer)
-	ok(a4copy instanceof Uint8Array)
-})
 
 //      _       _        
 //   __| | __ _| |_ __ _ 
@@ -675,6 +596,58 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 	d.hash = async function() { return await hashData(d) }
 	return d
 }
+
+function checkSizeStartEnd(size, start, end) { if (!okSizeStartEnd(size, start, end)) toss('bounds', {size, start, end}) }
+function okSizeStartEnd(size, start, end) {
+	return (
+		(size > 0) &&//we don't allow empty arrays or buffers
+		(start >= 0) &&//start zero bytes in or more
+		(start < size) &&//but not so far as to not be able to clip out at least the last byte
+		(end > start) &&//start to end must clip out at least one byte
+		(end <= size)//end can reach the end of the size, but cannot go beyond that
+	)
+}
+test(() => {
+	let size = 3
+	ok(okSizeStartEnd(size, 0, 1))//start
+	ok(okSizeStartEnd(size, 0, 3))//whole thing
+	ok(okSizeStartEnd(size, 2, 3))//end
+
+	ok(!okSizeStartEnd(size, 1, 1))//empty clip
+	ok(!okSizeStartEnd(size, 2, 4))//extends beyond end
+	ok(!okSizeStartEnd(size, 3, 4))//entirely beyond end
+})
+
+test(() => {//demonstration of javascript arrays and buffers through clipping while intentionally choosing viewing or copying
+	let text = 'ABCDEFGHIJKL'//12 letters
+	let size = 12
+	let encoder = new TextEncoder()
+	let a = encoder.encode(text)//turn the text into bytes; makes a buffer and returns an array that looks at the buffer
+	let b = a.buffer//get a reference to the underlying buffer
+	ok(a instanceof Uint8Array)
+	ok(b instanceof ArrayBuffer)
+
+	ok(a.length == 12)
+	ok(a.byteLength == 12)//arrays have .length and .byteLength
+	ok(b.byteLength == 12)//buffers only have .byteLength
+	let {start, end, length} = {start: 3, end: 6, length: 3}//most js apis take (start, end) but some take (start, length)
+
+	//(1) array, view
+	let a1 = a.subarray(start, end)
+	//(2) array, copy
+	let a2 = a.slice(start, end)//array slice makes a copy
+	//(3) buffer, view
+	let a3 = new Uint8Array(b, start, length)//note length here, not end
+	//(4) buffer, copy
+	let b4 = b.slice(start, end)//buffer slice makes a copy
+	let a4 = new Uint8Array(b4)//array constructor clips a new view around the given buffer
+
+	ok(a1 instanceof Uint8Array)
+	ok(a2 instanceof Uint8Array)
+	ok(a3 instanceof Uint8Array)
+	ok(a4 instanceof Uint8Array)//array methods subarray and slice and array constructor make arrays
+	ok(b4 instanceof ArrayBuffer)//buffer slice produces a buffer
+})
 
 //private helper functions, use methods in Data which call down here
 let _textEncoder, _textDecoder//make once and use many times, saves no state between uses
