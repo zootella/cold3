@@ -1568,6 +1568,11 @@ export async function hashFileStream({stream, size, onProgress, signal}) {//work
 
 test(async () => {//simulate a file (1) with objects that work like the real files that come from (2) local Node reading the development workstation hard drive, (3) Uppy on the page receiving a drag-and-drop, and (4) Node on AWS Lambda reading the content body from an S3 bucket; this test, a sanity check, must run everwhere icarus does, and take less than a millisecond!
 
+	//correct answers
+	const correctTip32 = 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ'
+	const correctPiece32 = 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q'
+
+	//simulation text file "hello.txt" with contents the five bytes "hello" no terminator
 	let d = Data({text: 'hello'})//same as if you save the 5 bytes "hello" in a file named hello.txt on disk, bucket, or dragged to page
 	let file = new Blob([d.array()], {type: 'text/plain'})
 	file.name = 'hello.txt'
@@ -1579,11 +1584,21 @@ test(async () => {//simulate a file (1) with objects that work like the real fil
 		}
 	})
 
-	ok(file.size == d.size())//our fake file has the correct size
+	//smoke test the file and stream hashers
+	ok(file.size == d.size())//our fake file knows its size
 	let h1 = await hashFileTips({file, size: file.size})
 	let h2 = await hashFileStream({stream, size: file.size})
-	ok(h1.tipHash.base32() == 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ')
-	ok(h2.pieceHash.base32() == 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q')
+	ok(h1.tipHash.base32() == correctTip32)
+	ok(h2.pieceHash.base32() == correctPiece32)
+
+	//confirm matching results when performing the hashing by hand ✏️
+	ok((await hashText('Fuji.Tips.SHA256.4KiB.5.hello')) == correctTip32)//tip hash is of file data
+	let d1 = Data({text: 'Fuji.Pieces.SHA256.4MiB.5.'})
+	let d2 = await Data({text: 'hello'}).hash()//piece hash is of piece hashes
+	let bin = Bin(d1.size() + d2.size())
+	bin.add(d1)
+	bin.add(d2)
+	ok((await bin.hash()).base32() == correctPiece32)
 })
 
 /*
@@ -1591,6 +1606,19 @@ bookmark
 test1[]use the noop/test below to hash the real local node file hello.txt and confirm you get the same results
 test2[]write a still simulated, but takes longer test like above which does files a little over 4kb and 4mb
 code3[]code into hashFileStream the tip hash
+
+
+
+
+
+
+
+
+
+
+
+
+
 */
 
 
