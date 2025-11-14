@@ -1338,229 +1338,11 @@ noop(async () => {
 
 
 
-//  _               _        __ _ _           
-// | |__   __ _ ___| |__    / _(_) | ___  ___ 
-// | '_ \ / _` / __| '_ \  | |_| | |/ _ \/ __|
-// | | | | (_| \__ \ | | | |  _| | |  __/\__ \
-// |_| |_|\__,_|___/_| |_| |_| |_|_|\___||___/
-//                                            
-
-//file hashing protocol presets; introducing the "Fuji" system 🗻
-const hash_seed_text = 'Fuji'//simple and readable seed to keep hash values distinct from those from other protocols or names here
-const hash_piece_size = 4*Size.mb//4 MiB hashes in ~10ms around the frequency of page animation frames, uploads in under a second over a typical cable modem, and keeps the buffer of hash values smaller than this for files under 500 GB 🗄️
-const hash_tip_size = 4*Size.kb//4 KiB matches the cluster and sector size on Windows NTFS and the block size on Mac APFS so hard drive reads can be as fast as possible 💽
-
-//a new simple protocol that can hash huge files on both the server and the page; introducing the "Fuji" system 🗻
-const hashProtocolPieces = {title: 'Fuji.Pieces.SHA256.4MiB.', size: 4*Size.mb}; Object.freeze(hashProtocolPieces)
-const hashProtocolTips   = {title: 'Fuji.Tips.SHA256.4KiB.',   size: 4*Size.kb}; Object.freeze(hashProtocolTips)
-const hash_value_size = 32//a SHA-256 hash value is 32 bytes
-test(() => { ok(hashProtocolPieces.size == 4_194_304); ok(hashProtocolTips.size == 4096) })
-/*
-4 MiB hashes in ~10ms around the frequency of page animation frames,
-uploads in under a second over a typical cable modem, and
-keeps the buffer of hash values smaller than this for files under 500 GB 🗄️
-4 KiB matches the cluster and sector size on Windows NTFS and the block size on Mac APFS,
-so hard drive reads can be as fast as possible 💽
-*/
-
-export async function hashFile({file, size, protocolTips}) {//works in local node testing and browser page with uppy, but not in lambda node!
-	if(!(file && size > 0 && file.size == size)) toss('bounds', {file, size})//file is a JavaScript File object, which extends Blob
-
-	//based on the file size, pick stripes at the start, middle, and end for us to hash quickly
-	let measureTips = hashFileMeasure({file: size, unit: hash_tip_size})
-	let status = {
-		startTime: Now(),
-		updateTime: Now(),//when we last changed anything here
-		measureTips: measureTips,//include this, too
-		totalSize: size,
-		hashedSize: 0,//haven't hashed anything yet; we don't have a progress callback that might look, but still
-	}
-
-	//for tip hashing, the summary we'll hash is the title followed by stripes of file data (hashing file data, not hashes)
-	let title = Data({text: `${hash_seed_text}.Tips.SHA256.4KiB.${size}.`})//different sized files hash differently even with identical content in the sampled regions
-	let bin = Bin(title.size() + measureTips.stripeSize)
-	bin.add(title)
-	for (let [start, length] of measureTips.stripes) {
-		bin.add(Data({buffer: await file.slice(start, start + length).arrayBuffer()}))
-	}
-
-	//hash the summary of the file in the bin
-	status.tipHash = await bin.hash()
-	status.hashedSize = measureTips.stripeSize
-	status.updateTime = Now()
-	status.duration = status.updateTime - status.startTime
-	return status
-}
-
-export async function hashStream({stream, size, protocolPieces, protocolTips, onProgress, signal}) {//works everywhere, local and lambda node, and uppy page
-	signal?.throwIfAborted()
-	if (!(stream && size > 0)) toss('bounds', {stream, size})
-
-	let measurePieces = hashFileMeasure({file: size, unit: hash_piece_size})//measurements for the piece hash
-	let measureTips = hashFileMeasure({file: size, unit: hash_tip_size})//and for the tip hash, which we'll peek for through the stream
-	let status = {//object we'll give to the progress callback, and also return
-		startTime: Now(),
-		updateTime: Now(),//when we last changed anything here
-		measurePieces: measurePieces,
-		measureTips: measureTips,
-		hashedSize: 0,
-		totalSize: size,
-	}
-
-	//for the pieces hash, the summary we'll hash is the title followed by hashes of pieces of file data (hashing hashes, not file data)
-	let piecesTitle = Data({text: `${hash_seed_text}.Pieces.SHA256.4MiB.${size}.`})
-	let piecesBin = Bin(piecesTitle.size() + (hash_value_size * measurePieces.pieces))//space for title followed by hashes of every piece
-	piecesBin.add(piecesTitle)
-
-	//for for the tips hash, the summary we'll hash is the title followed by stripes of file data (hashing file data, not hashes)
-	let tipsTitle = Data({text: `${hash_seed_text}.Tips.SHA256.4KiB.${size}.`})
-	let tipsBin = Bin(tipsTitle.size() + measureTips.stripeSize)//space for title followed by the start, middle, and end stripes of data
-	tipsBin.add(tipsTitle)
-
-	//our conveyor belt for hashing bytes then sliding them forward 🏗️
-	let belt = {}
-	belt.capacity = Math.min(
-		2 * hash_piece_size,//double-wide to hold one full piece and up to all of the next one
-		size)//or sized to fit all of a smaller file
-	belt.array = new Uint8Array(belt.capacity)//this method allocates a buffer once and uses it for the whole file!
-	belt.fill = 0//the belt has .fill bytes of data in it, measured from the start; data bytes are 0 up to belt.fill
-
-	const reader = stream.getReader()
-	let address = 0//how far into the stream each box that arrives is
-	try {
-		while (true) {//loop while boxes of data arrive from the stream
-			signal?.throwIfAborted()
-			let r = await reader.read()//wait for the stream to give us something
-
-			//a new delivery of bytes from the stream has arrived! 📦
-			let box = {
-				done: r.done,//true if this is the last box from the stream
-				array: r.value,//the data bytes, a Uint8Array
-				size: r.value?.length || 0,//could be any size; the stream picks this, not us!
-				address: address,//how far into the stream this box starts
-				index: 0,//we move this index over the bytes in the box as we process them; remaining data starts at box.index and goes beyond
-			}
-			address += box.size//move the stream index past this box to set the location for the next one
-
-			if (box.array && box.array.length) {//the stream gave us a box with data inside
-
-				//first, for the tip hash, we don't have random access through the file, but we do through this box!
-				let overlaps = hashStripeOverlap([box.address, box.address + box.size], measureTips.stripes)
-				if (overlaps) {//find overlaps, the 1-3 stripes in the stream we should add to assemble the file data for the tip hash
-					for (let [start, end] of overlaps) {
-						tipsBin.add(Data({array: box.array.subarray(start - box.address, end - box.address)}))
-					}
-				}
-
-				//second, for the piece hash, shovel bytes from the box into the belt until the box is empty
-				while (box.index < box.size) {//loop to get through them
-
-					//copy a shovelful of bytes from the box to our belt
-					let shovel = Math.min(//how many can we shovel over right now?
-						box.size - box.index,//not more that remain for us to take from this delivery
-						belt.capacity - belt.fill)//nor more than we have space left in our conveyor belt buffer
-					belt.array.set(//into belt...
-						box.array.subarray(box.index, box.index + shovel),//...copy shovel quantity bytes from box at index...
-						belt.fill)//...to belt at its fill position
-					belt.fill += shovel//there are more bytes of stream data in belt now
-					box.index += shovel//and we've moved past them in the box
-
-					//if the belt has enough data at the start to hash
-					while (belt.fill >= hash_piece_size) {//hash the first half; if the stream filled 8mb all at once this loop will run twice!
-						signal?.throwIfAborted()
-						piecesBin.add(await Data({array: belt.array}).clipView(0, hash_piece_size).hash())//4mib hashes in ~10ms, frequency like animation frames
-						status.hashedSize += hash_piece_size
-						status.updateTime = Now()
-						onProgress?.(status)
-
-						//slide the second half of the conveyor belt buffer to the start
-						let beyond = belt.fill - hash_piece_size//how many bytes of data are on the belt beyond the first half we just hashed
-						if (beyond > 0) belt.array.copyWithin(0, hash_piece_size, belt.fill)//this calls down to C's memmove, and is very fast
-						belt.fill = beyond
-					}
-				}
-			}
-			if (box.done) break
-		}
-
-		//most files will end with a fragment piece smaller than a full piece
-		if (belt.fill > 0) {
-			signal?.throwIfAborted()
-			piecesBin.add(await Data({array: belt.array}).clipView(0, belt.fill).hash())
-			status.hashedSize += belt.fill
-			status.updateTime = Now()
-			onProgress?.(status)
-		}
-		if (status.hashedSize != status.totalSize) toss('bounds', {status, note: 'stream length different from file size'})
-
-		//hash the summary of the file in the bin
-		signal?.throwIfAborted()
-		status.pieceHash = await piecesBin.hash()
-		status.tipHash = await tipsBin.hash()
-		status.updateTime = Now()
-		status.duration = status.updateTime - status.startTime
-		onProgress?.(status)
-		return status
-
-	} finally {//try with no catch so an exception in here throws upwards into caller
-		reader.releaseLock()//but before we leave, success or exception, we always release the file lock
-	}
-}
-
-test(async () => {//simulate a file (1) with objects that work like the real files that come from (2) local Node reading the development workstation hard drive, (3) Uppy on the page receiving a drag-and-drop, and (4) Node on AWS Lambda reading the content body from an S3 bucket; this test, a sanity check, must run everwhere icarus does, and take less than a millisecond!
-
-	//correct answers
-	const correctTip32 = 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ'
-	const correctPiece32 = 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q'
-
-	//simulation text file "hello.txt" with contents the five bytes "hello" no terminator
-	let d = Data({text: 'hello'})//same as if you save the 5 bytes "hello" in a file named hello.txt on disk, bucket, or dragged to page
-	let file = new Blob([d.array()], {type: 'text/plain'})
-	file.name = 'hello.txt'
-	file.lastModified = Now()
-	let stream = new ReadableStream({//our simulated stream is over the array, doesn't use the file object
-		start(controller) {
-			controller.enqueue(d.array())//send all the data at once
-			controller.close()
-		}
-	})
-
-	//smoke test the file and stream hashers
-	ok(file.size == d.size())//our fake file knows its size
-	let h1 = await hashFile({file, size: file.size})
-	let h2 = await hashStream({stream, size: file.size})
-	ok(h1.tipHash.base32() == correctTip32)
-	ok(h2.pieceHash.base32() == correctPiece32)
-
-	//confirm matching results when performing the hashing by hand ✏️
-	ok((await hashText('Fuji.Tips.SHA256.4KiB.5.hello')) == correctTip32)//tip hash is of file data
-	let d1 = Data({text: 'Fuji.Pieces.SHA256.4MiB.5.'})
-	let d2 = await Data({text: 'hello'}).hash()//piece hash is of piece hashes
-	let bin = Bin(d1.size() + d2.size())
-	bin.add(d1)
-	bin.add(d2)
-	ok((await bin.hash()).base32() == correctPiece32)
-})
-
-/*
-bookmark
-test1[]use the noop/test below to hash the real local node file hello.txt and confirm you get the same results
-test2[]write a still simulated, but takes longer test like above which does files a little over 4kb and 4mb
-code3[]code into hashStream the tip hash
 
 
 
 
 
-
-
-
-hashFileWhatever({file, size, protocol})
-
-
-
-
-*/
 
 
 
@@ -1782,11 +1564,204 @@ test(() => {
 export function liveBox(s) {
 }
 
+//  _               _        __ _ _           
+// | |__   __ _ ___| |__    / _(_) | ___  ___ 
+// | '_ \ / _` / __| '_ \  | |_| | |/ _ \/ __|
+// | | | | (_| \__ \ | | | |  _| | |  __/\__ \
+// |_| |_|\__,_|___/_| |_| |_| |_|_|\___||___/
+//                                            
 
+//a new simple protocol that can hash huge files on both the server and the page; introducing the "Fuji" system 🗻
+const hashProtocolPieces = {title: 'Fuji.Pieces.SHA256.4MiB.', size: 4*Size.mb}; Object.freeze(hashProtocolPieces)
+const hashProtocolTips   = {title: 'Fuji.Tips.SHA256.4KiB.',   size: 4*Size.kb}; Object.freeze(hashProtocolTips)
+const hash_value_size = 32//a SHA-256 hash value is 32 bytes
+test(() => { ok(hashProtocolPieces.size == 4_194_304); ok(hashProtocolTips.size == 4096) })
+/*
+4 MiB hashes in ~10ms similar to the frequency of page animation frames,
+uploads in under a second over a typical cable modem, and
+keeps the index of hash values smaller than the piece size for files under 500 GB 🗄️
+4 KiB matches the cluster and sector size on Windows NTFS and the block size on Mac APFS,
+so hard drive reads can be as fast as possible 💽
+*/
 
+export async function hashFile({file, size, protocolTips}) {//works in local node testing and browser page with uppy, but not in lambda node!
+	if(!(file && size > 0 && file.size == size)) toss('bounds', {file, size})//file is a JavaScript File object, which extends Blob
 
+	//based on the file size, pick stripes at the start, middle, and end for us to hash quickly
+	let measureTips = hashFileMeasure({file: size, unit: protocolTips.size})
+	let status = {
+		startTime: Now(),
+		updateTime: Now(),//when we last changed anything here
+		measureTips: measureTips,//include this, too
+		totalSize: size,
+		hashedSize: 0,//haven't hashed anything yet; we don't have a progress callback that might look, but still
+	}
 
+	//for tip hashing, the summary we'll hash is the title followed by stripes of file data (hashing file data, not hashes)
+	let title = Data({text: `${protocolTips.title}${size}.`})//different sized files hash differently even with identical content in the sampled regions
+	let bin = Bin(title.size() + measureTips.stripeSize)
+	bin.add(title)
+	for (let [start, length] of measureTips.stripes) {
+		bin.add(Data({buffer: await file.slice(start, start + length).arrayBuffer()}))
+	}
 
+	//hash the summary of the file in the bin
+	status.tipHash = await bin.hash()
+	status.hashedSize = measureTips.stripeSize
+	status.updateTime = Now()
+	status.duration = status.updateTime - status.startTime
+	return status
+}
+
+export async function hashStream({stream, size, protocolPieces, protocolTips, onProgress, signal}) {//works everywhere, local and lambda node, and uppy page
+	signal?.throwIfAborted()
+	if (!(stream && size > 0)) toss('bounds', {stream, size})
+
+	let measurePieces = hashFileMeasure({file: size, unit: protocolPieces.size})//measurements for the piece hash
+	let measureTips = hashFileMeasure({file: size, unit: protocolTips.size})//and for the tip hash, which we'll peek for through the stream
+	let status = {//object we'll give to the progress callback, and also return
+		startTime: Now(),
+		updateTime: Now(),//when we last changed anything here
+		measurePieces: measurePieces,
+		measureTips: measureTips,
+		hashedSize: 0,
+		totalSize: size,
+	}
+
+	//for the pieces hash, the summary we'll hash is the title followed by hashes of pieces of file data (hashing hashes, not file data)
+	let piecesTitle = Data({text: `${protocolPieces.title}${size}.`})
+	let piecesBin = Bin(piecesTitle.size() + (hash_value_size * measurePieces.pieces))//space for title followed by hashes of every piece
+	piecesBin.add(piecesTitle)
+
+	//for for the tips hash, the summary we'll hash is the title followed by stripes of file data (hashing file data, not hashes)
+	let tipsTitle = Data({text: `${protocolTips.title}${size}.`})
+	let tipsBin = Bin(tipsTitle.size() + measureTips.stripeSize)//space for title followed by the start, middle, and end stripes of data
+	tipsBin.add(tipsTitle)
+
+	//our conveyor belt for hashing bytes then sliding them forward 🏗️
+	let belt = {}
+	belt.capacity = Math.min(
+		2 * protocolPieces.size,//double-wide to hold one full piece and up to all of the next one
+		size)//or sized to fit all of a smaller file
+	belt.array = new Uint8Array(belt.capacity)//this method allocates a buffer once and uses it for the whole file!
+	belt.fill = 0//the belt has .fill bytes of data in it, measured from the start; data bytes are 0 up to belt.fill
+
+	const reader = stream.getReader()
+	let address = 0//how far into the stream each box that arrives is
+	try {
+		while (true) {//loop while boxes of data arrive from the stream
+			signal?.throwIfAborted()
+			let r = await reader.read()//wait for the stream to give us something
+
+			//a new delivery of bytes from the stream has arrived! 📦
+			let box = {}
+			if (r.value?.length) {
+				box.data = Data({array: r.value})
+				box.shoveled = 0//we move this index over the bytes in the box as we process them; remaining data starts at box.shoveled
+				box.stripe = [address, address + box.data.size()]//where in the stream this box of data is
+				address += box.data.size()//move address past this box to use to mark the start of the next one
+			}
+
+			if (box.data) {//the stream gave us a box with data inside
+
+				//first, for the tip hash, we don't have random access through the file, but we do through this box!
+				let overlaps = hashStripeOverlap(box.stripe, measureTips.stripes)
+				if (overlaps) {//find overlaps, the 1-3 stripes in the stream we should add to assemble the file data for the tip hash
+					for (let [start, end] of overlaps) {
+						tipsBin.add(box.data.clipView(start - box.stripe[0], end - box.stripe[0]))
+					}
+				}
+
+				//second, for the piece hash, shovel bytes from the box into the belt until the box is empty
+				while (box.shoveled < box.data.size()) {//loop to get through them
+
+					//copy a shovelful of bytes from the box to our belt 🪏
+					let shovel = Math.min(//how many can we shovel over right now?
+						box.data.size() - box.shoveled,//not more that remain for us to take from this delivery
+						belt.capacity - belt.fill)//nor more than we have space left in our conveyor belt buffer
+					belt.array.set(//into belt...
+						box.data.clipView(box.shoveled, box.shoveled + shovel).array(),//...copy shovel quantity bytes from box at index...
+						belt.fill)//...to belt at its fill position
+					belt.fill += shovel//there are more bytes of stream data in belt now
+					box.shoveled += shovel//and we've moved past them in the box
+
+					//if the belt has enough data at the start to hash
+					while (belt.fill >= protocolPieces.size) {//hash the first half; if the stream filled 8mb all at once this loop will run twice!
+						signal?.throwIfAborted()
+						piecesBin.add(await Data({array: belt.array}).clipView(0, protocolPieces.size).hash())//4mib hashes in ~10ms, frequency like animation frames
+						status.hashedSize += protocolPieces.size
+						status.updateTime = Now()
+						onProgress?.(status)
+
+						//slide the second half of the conveyor belt buffer to the start
+						let beyond = belt.fill - protocolPieces.size//how many bytes of data are on the belt beyond the first half we just hashed
+						if (beyond > 0) belt.array.copyWithin(0, protocolPieces.size, belt.fill)//this calls down to C's memmove, and is very fast
+						belt.fill = beyond
+					}
+				}
+			}
+			if (r.done) break
+		}
+
+		//most files will end with a fragment piece smaller than a full piece
+		if (belt.fill > 0) {
+			signal?.throwIfAborted()
+			piecesBin.add(await Data({array: belt.array}).clipView(0, belt.fill).hash())
+			status.hashedSize += belt.fill
+			status.updateTime = Now()
+			onProgress?.(status)
+		}
+		if (status.hashedSize != status.totalSize) toss('bounds', {status, note: 'stream length different from file size'})
+
+		//hash the summary of the file in the bin
+		signal?.throwIfAborted()
+		status.pieceHash = await piecesBin.hash()
+		status.tipHash = await tipsBin.hash()
+		status.updateTime = Now()
+		status.duration = status.updateTime - status.startTime
+		onProgress?.(status)
+		return status
+
+	} finally {//try with no catch so an exception in here throws upwards into caller
+		reader.releaseLock()//but before we leave, success or exception, we always release the file lock
+	}
+}
+
+test(async () => {//simulate a file (1) with objects that work like the real files that come from (2) local Node reading the development workstation hard drive, (3) Uppy on the page receiving a drag-and-drop, and (4) Node on AWS Lambda reading the content body from an S3 bucket; this test, a sanity check, must run everwhere icarus does, and take less than a millisecond!
+
+	//correct answers
+	const correctPiece32 = 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q'
+	const correctTip32   = 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ'
+
+	//simulation text file "hello.txt" with contents the five bytes "hello" no terminator
+	let d = Data({text: 'hello'})//same as if you save the 5 bytes "hello" in a file named hello.txt on disk, bucket, or dragged to page
+	let file = new Blob([d.array()], {type: 'text/plain'})
+	file.name = 'hello.txt'
+	file.lastModified = Now()
+	let stream = new ReadableStream({//our simulated stream is over the array, doesn't use the file object
+		start(controller) {
+			controller.enqueue(d.array())//send all the data at once
+			controller.close()
+		}
+	})
+
+	//smoke test the file and stream hashers
+	ok(file.size == d.size())//our fake file knows its size
+	let h1 = await hashFile({file,     size: file.size, protocolTips: hashProtocolTips})
+	let h2 = await hashStream({stream, size: file.size, protocolTips: hashProtocolTips, protocolPieces: hashProtocolPieces})
+	ok(h1.tipHash.base32() == correctTip32)//tip hash from file slicing
+	ok(h2.tipHash.base32() == correctTip32)//tip hash from stream peeking
+	ok(h2.pieceHash.base32() == correctPiece32)//piece hash from stream processing
+
+	//confirm matching results when performing the hashing by hand ✏️
+	ok((await hashText('Fuji.Tips.SHA256.4KiB.5.hello')) == correctTip32)//tip hash is of file data
+	let d1 = Data({text: 'Fuji.Pieces.SHA256.4MiB.5.'})
+	let d2 = await Data({text: 'hello'}).hash()//piece hash is of piece hashes
+	let bin = Bin(d1.size() + d2.size())
+	bin.add(d1)
+	bin.add(d2)
+	ok((await bin.hash()).base32() == correctPiece32)
+})
 
 noop(async () => {//change noop->test and then do a manual test like $ yarn test ~/Downloads/hello.txt
 	const node = await loadNode()
@@ -1799,38 +1774,58 @@ noop(async () => {//change noop->test and then do a manual test like $ yarn test
 	let hash = await hashStream({
 		stream,
 		size,
+		protocolPieces: hashProtocolPieces,
+		protocolTips: hashProtocolTips,
 		onProgress: (hash) => {
 			let percent = (hash.hashedSize / hash.totalSize) * 100
 			process.stdout.write(`\r${percent.toFixed(1)}% `)
 		}
 	})
-	log(`\nHashed ${hash.pieceHash.base32()} in ${commas(hash.duration)}ms (${commas(Math.round(hash.totalSize / hash.duration))} bytes/ms)`)
+	log(`
+
+${hash.pieceHash.base32()} piece hash
+${hash.tipHash.base32()} tip hash
+Summed ${saySize4(size)} in ${commas(hash.duration)}ms (${commas(Math.round(hash.totalSize / hash.duration))} bytes/ms)
+`)
 })
 
 
 
-noop(async () => { await nodeSnippet() })//turn this on when running tests with node local on the command line with $ yarn test
-async function nodeSnippet() {
-	const node = await loadNode()
 
-	//hash a big file with $ yarn test ~/Downloads/big.mov
-	let name = process.argv[2]
-	let size = node.fs.statSync(name).size
-	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//node has a function that converts the classic Node-style stream to a modern isomorphic WHATWG stream
 
-	log(`Hashing "${name}" (${size} bytes)...`)
-	/*
-	let hash = await hashStream({
-		stream,
-		size,
-		onProgress: (status) => {
-			let percent = (status.hashedSize / status.totalSize) * 100
-			process.stdout.write(`\r${percent.toFixed(1)}% `)
-		}
-	})
-	log(`\nHashed ${hash.pieceHash16} in ${hash.duration}ms (${Math.round(hash.totalSize / hash.duration)} bytes/ms)`)
-	*/
-}
+
+
+
+
+
+
+/*
+bookmark
+test1[]use the noop/test below to hash the real local node file hello.txt and confirm you get the same results
+test2[]write a still simulated, but takes longer test like above which does files a little over 4kb and 4mb
+code3[x]code into hashStream the tip hash
+
+
+
+
+
+
+
+
+hashFileWhatever({file, size, protocol})
+
+
+
+
+*/
+
+
+
+
+
+
+
+
 
 /*
 two hashing algorithms
