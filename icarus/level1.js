@@ -1355,7 +1355,7 @@ noop(async () => {
 // |_| |_|\__,_|___/_| |_| |___/\__|_|  |_| .__/ \___||___/
 //                                        |_|              
 
-function hashFileMeasure({file, unit, protocol}) {//given a file size, compute measurements about tips and pieces 📏
+function hashMeasure({file, unit, protocol}) {//given a file size, compute measurements about tips and pieces 📏
 	if (!(file >= 1 && unit >= 1)) toss('bounds')//both the file size and piece size must be 1 or more bytes
 	let o = {file, unit}
 
@@ -1376,13 +1376,13 @@ function hashFileMeasure({file, unit, protocol}) {//given a file size, compute m
 		o.lastSize = o.fragment || unit//how big the last stripe is
 		o.stripeSize = (3 * unit) + o.lastSize//how many bytes we'll hash through all four stripes
 
-		//build stripes
-		o.stripes.push([o.first, unit])//first and middle never touch
+		//build stripes; they are all [start, end] both measured from the start of the file, not start and length
+		o.stripes.push([o.first, o.first + unit])//first and middle never touch
 		if (o.middle + unit == o.penultimate) {//but middle and penultimate can
-			o.stripes.push([o.middle, unit + unit + o.lastSize])//and penultimate and last always do
+			o.stripes.push([o.middle, o.middle + unit + unit + o.lastSize])//and penultimate and last always do
 		} else {
-			o.stripes.push([o.middle, unit])//middle with space before and after
-			o.stripes.push([o.penultimate, unit + o.lastSize])
+			o.stripes.push([o.middle, o.middle + unit])//middle with space before and after
+			o.stripes.push([o.penultimate, o.penultimate + unit + o.lastSize])
 		}
 
 	} else {
@@ -1394,7 +1394,7 @@ function hashFileMeasure({file, unit, protocol}) {//given a file size, compute m
 }
 test(() => {
 	function f(file, expected) {
-		let o = hashFileMeasure({unit: 4, file})
+		let o = hashMeasure({unit: 4, file})
 		let s = `${o.file} ${o.pieces}|${o.complete}|${o.fragment} ` + (o.all ? `all` : `${o.first}|${o.middle}|${o.penultimate}|${o.last}`)
 		ok(s == expected.replace(/\s+/g, ' ').replace(/\| /g, '|'))//condense formatting space in given expected strings
 	}
@@ -1410,7 +1410,7 @@ test(() => {
 })
 test(() => {
 	function v(file, unit) {//hash stripe visualizer
-		let o = hashFileMeasure({unit, file})
+		let o = hashMeasure({unit, file})
 		if (o.all) {
 			return 'A'.repeat(file)
 		} else {
@@ -1588,7 +1588,7 @@ export async function hashFile({file, size, protocolTips}) {//works in local nod
 	if(!(file && size > 0 && file.size == size)) toss('bounds', {file, size})//file is a JavaScript File object, which extends Blob
 
 	//based on the file size, pick stripes at the start, middle, and end for us to hash quickly
-	let measureTips = hashFileMeasure({file: size, unit: protocolTips.size})
+	let measureTips = hashMeasure({file: size, unit: protocolTips.size})
 	let status = {
 		startTime: Now(),
 		updateTime: Now(),//when we last changed anything here
@@ -1601,8 +1601,8 @@ export async function hashFile({file, size, protocolTips}) {//works in local nod
 	let title = Data({text: `${protocolTips.title}${size}.`})//different sized files hash differently even with identical content in the sampled regions
 	let bin = Bin(title.size() + measureTips.stripeSize)
 	bin.add(title)
-	for (let [start, length] of measureTips.stripes) {
-		bin.add(Data({buffer: await file.slice(start, start + length).arrayBuffer()}))
+	for (let [start, end] of measureTips.stripes) {
+		bin.add(Data({buffer: await file.slice(start, end).arrayBuffer()}))
 	}
 
 	//hash the summary of the file in the bin
@@ -1617,8 +1617,8 @@ export async function hashStream({stream, size, protocolPieces, protocolTips, on
 	signal?.throwIfAborted()
 	if (!(stream && size > 0)) toss('bounds', {stream, size})
 
-	let measurePieces = hashFileMeasure({file: size, unit: protocolPieces.size})//measurements for the piece hash
-	let measureTips = hashFileMeasure({file: size, unit: protocolTips.size})//and for the tip hash, which we'll peek for through the stream
+	let measurePieces = hashMeasure({file: size, unit: protocolPieces.size})//measurements for the piece hash
+	let measureTips = hashMeasure({file: size, unit: protocolTips.size})//and for the tip hash, which we'll peek for through the stream
 	let status = {//object we'll give to the progress callback, and also return
 		startTime: Now(),
 		updateTime: Now(),//when we last changed anything here
@@ -1669,7 +1669,7 @@ export async function hashStream({stream, size, protocolPieces, protocolTips, on
 				let overlaps = hashStripeOverlap(box.stripe, measureTips.stripes)
 				if (overlaps) {//find overlaps, the 1-3 stripes in the stream we should add to assemble the file data for the tip hash
 					for (let [start, end] of overlaps) {
-						tipsBin.add(box.data.clipView(start - box.stripe[0], end - box.stripe[0]))
+						tipsBin.add(box.data.clipView(start - box.stripe[0], end - box.stripe[0]))//subtract box address to clip in data
 					}
 				}
 
@@ -1728,23 +1728,57 @@ export async function hashStream({stream, size, protocolPieces, protocolTips, on
 	}
 }
 
-function simulateFile(d) {//make a simulated file for testing with the contents of data d
-	let file = new Blob([d.array()], {type: 'text/plain'})
+
+
+
+
+function mulberry32(seed) {
+  return function() {
+    let t = seed += 0x6D2B79F5
+    t = Math.imul(t ^ t >>> 15, t | 1)
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61)
+    return (t ^ t >>> 14) >>> 0
+  }
+}
+function seededBytes(seed, length) {
+  const rng = mulberry32(seed)
+  const bytes = new Uint8Array(length)
+  for (let i = 0; i < length; i++) {
+    if (i % 4 === 0) {
+      var value = rng()
+    }
+    bytes[i] = (value >>> ((i % 4) * 8)) & 0xFF
+  }
+  return bytes
+}
+test(() => {
+
+	let data = Data({array: seededBytes(12345, 100)})
+	log(data.base16())
+
+
+})
+
+
+
+
+function simulateFile(data) {//make a simulated file for testing with the given data
+	let file = new Blob([data.array()], {type: 'text/plain'})
 	file.name = 'simulated.bin'
 	file.lastModified = Now()
 	let stream = new ReadableStream({//our simulated stream is over the array, doesn't use the file object
 		start(controller) {
-			controller.enqueue(d.array())//send all the data at once
+			controller.enqueue(data.array())//send all the data at once
 			controller.close()
 		}
 	})
-	return {data: d, file, stream}
+	return {data, file, stream}
 }
 test(async () => {//simulate a file (1) with objects that work like the real files that come from (2) local Node reading the development workstation hard drive, (3) Uppy on the page receiving a drag-and-drop, and (4) Node on AWS Lambda reading the content body from an S3 bucket; this test, a sanity check, must run everwhere icarus does, and take less than a millisecond!
 
 	//correct answers
-	const correctPiece32 = 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q'
 	const correctTip32   = 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ'
+	const correctPiece32 = 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q'
 
 	//same as if you save the 5 bytes "hello" in a file named hello.txt on disk, bucket, or dragged to page
 	let {data, file, stream} = simulateFile(Data({text: 'hello'}))
@@ -1767,20 +1801,41 @@ test(async () => {//simulate a file (1) with objects that work like the real fil
 	ok((await bin.hash()).base32() == correctPiece32)
 })
 test(async () => {
+	let r, s, f, h1, h2, p, t
 
-	const testProtocol = {title: 'Test.Both.SHA256.4B.', size: 4}//piece size is 4 bytes
-	let s, simulated, h1, h2
+	//let's do some tests with the same algorithms, but with the piece size the same and way down to just 4 bytes
+	r = {title: 'Test.Both.SHA256.4B.', size: 4}
 
-	s = 'FFFF....MMMMppppL'
-	simulated = simulateFile(Data({text: s}))
-	h1 = await hashFile({file: simulated.file, size: simulated.data.size(), protocolTips: testProtocol})
-	h2 = await hashStream({stream: simulated.stream, size: simulated.data.size(), protocolTips: testProtocol, protocolPieces: testProtocol})
+	t = 'A6RAKFDY2XTFTXIXY443GJPPQOE7IEDWXCAKQ2DCYEIRRFQK3PBQ'
+	p = 'HWRHKCB5OSVGTA365HAK22CMPTURM3DJY6553YQCJE7YCW5YQFEA'//correct answers
+	s = 'FFFF....MMMMppppL'//file contents
+	f = simulateFile(Data({text: s}))
+	h1 = await hashFile({file: f.file, size: f.data.size(), protocolTips: r})
+	h2 = await hashStream({stream: f.stream, size: f.data.size(), protocolTips: r, protocolPieces: r})
+	ok(h1.tipHash.base32() == t)
+	ok(h2.tipHash.base32() == t)
+	ok(h2.pieceHash.base32() == p)
 
-	log(h1.tipHash.base32())//LQIJFQTWGBKRGRWUXMJIMSXRWIGS35R4RNVEGDCLHYIGLJDK7BFA
-	log(h2.tipHash.base32())//MM6KTP6CEQ55L533WZRBT3YSU2G7CHVGWCXD2EDZSN4ARMA5FG4Q <--huge problem, these should be the same!
-	log(h2.pieceHash.base32())//CK2L5CEIK44LYP6BQJTTUH47X6XUXEKUJYEJ3C6XXPRBPS7TLFLA
+	s = 'FFFF!!!!MMMMppppL'//now we change just the part of the file the tip hasher can't see
+	p = 'Z3SVWY6BAOECTYAS7UXMNH7RIXL63ZD6KYHG73HKBOSZUWOAKCJQ'//the piece hash will be different...
+	f = simulateFile(Data({text: s}))
+	h1 = await hashFile({file: f.file, size: f.data.size(), protocolTips: r})
+	h2 = await hashStream({stream: f.stream, size: f.data.size(), protocolTips: r, protocolPieces: r})
+	ok(h1.tipHash.base32() == t)
+	ok(h2.tipHash.base32() == t)//...but the tip hash will be the same
+	ok(h2.pieceHash.base32() == p)
 
 
+/*
+	log(h1.tipHash.base32() )
+	log(h2.tipHash.base32() )
+	log(h2.pieceHash.base32() )
+	log(look({
+		h1t: h1.measureTips,
+		h2t: h2.measureTips,
+		h2p: h2.measurePieces,
+	}))
+*/
 
 
 
