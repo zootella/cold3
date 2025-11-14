@@ -1342,6 +1342,47 @@ noop(async () => {
 
 
 
+async function cycleHashMeasure(unitMax, fileMax) {
+
+	let file = randomBetween(1, fileMax)
+	let unit = randomBetween(1, unitMax)
+	let m = hashMeasure({file, unit})
+
+	let striped = 0
+	for (let [start, end] of m.stripes) {
+		striped += end - start
+	}
+	ok(m.stripeSize == striped)
+
+	// Check 2: All stripe endpoints are within file bounds
+	for (let [start, end] of m.stripes) {
+		ok(start >= 0 && start < file, `start ${start} out of bounds`)
+		ok(end > 0 && end <= file, `end ${end} out of bounds`)
+		ok(start < end, `inverted range [${start}, ${end}]`)
+	}
+	
+	// Check 3: Stripes don't overlap (unless intentionally merged)
+	for (let i = 0; i < m.stripes.length - 1; i++) {
+		let [, end1] = m.stripes[i]
+		let [start2, ] = m.stripes[i + 1]
+		ok(end1 <= start2, `stripes ${i} and ${i+1} overlap: ${end1} > ${start2}`)
+	}
+	
+	// Check 4: Verify indices match expectations when defined
+	if (!m.all) {
+		ok(m.first === 0, 'first should be 0')
+		ok(m.last === (m.pieces - 1) * unit, 'last index wrong')
+	}
+}
+test(() => {
+})
+test(async () => {
+
+	let cycles1 = await runFor(1*Time.second, () => { cycleHashMeasure(4, 64)})
+	let cycles2 = await runFor(1*Time.second, () => { cycleHashMeasure(1, 4)})
+	let cycles3 = await runFor(1*Time.second, () => { cycleHashMeasure(4*Size.kb, 20*Size.mb)})
+	log(cycles1, cycles2, cycles3)
+})
 
 
 
@@ -1355,7 +1396,7 @@ noop(async () => {
 // |_| |_|\__,_|___/_| |_| |___/\__|_|  |_| .__/ \___||___/
 //                                        |_|              
 
-function hashMeasure({file, unit, protocol}) {//given a file size, compute measurements about tips and pieces 📏
+function hashMeasure({file, unit}) {//given a file size, compute measurements about tips and pieces 📏
 	if (!(file >= 1 && unit >= 1)) toss('bounds')//both the file size and piece size must be 1 or more bytes
 	let o = {file, unit}
 
@@ -1390,6 +1431,8 @@ function hashMeasure({file, unit, protocol}) {//given a file size, compute measu
 		o.stripeSize = file
 		o.stripes.push([0, file])
 	}
+	//ttd november bookmark, add a self check here to make sure the sum of spans in stripes == .stripeSize!
+	//and then have a fuzz tester where you just measure small file and unit and protocol settings
 	return o
 }
 test(() => {
@@ -1602,6 +1645,7 @@ export async function hashFile({file, size, protocolTips}) {//works in local nod
 	let bin = Bin(title.size() + measureTips.stripeSize)
 	bin.add(title)
 	for (let [start, end] of measureTips.stripes) {
+		//ttd november bookmark, bounds check start, end, size!
 		bin.add(Data({buffer: await file.slice(start, end).arrayBuffer()}))
 	}
 
