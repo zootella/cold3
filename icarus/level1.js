@@ -1655,11 +1655,12 @@ export async function hashStream({stream, size, protocolPieces, protocolTips, on
 
 			//a new delivery of bytes from the stream has arrived! 📦
 			let box = {}
-			if (r.value?.length) {
+			if (r.value?.length) {//testing in local node, boxes come in 64kib at a time, the belt holds 128 of that size
 				box.data = Data({array: r.value})
 				box.shoveled = 0//we move this index over the bytes in the box as we process them; remaining data starts at box.shoveled
 				box.stripe = [address, address + box.data.size()]//where in the stream this box of data is
-				address += box.data.size()//move address past this box to use to mark the start of the next one
+
+				address += box.data.size()//outside the box, move address past this box to use to mark the start of the next one
 			}
 
 			if (box.data) {//the stream gave us a box with data inside
@@ -1727,16 +1728,9 @@ export async function hashStream({stream, size, protocolPieces, protocolTips, on
 	}
 }
 
-test(async () => {//simulate a file (1) with objects that work like the real files that come from (2) local Node reading the development workstation hard drive, (3) Uppy on the page receiving a drag-and-drop, and (4) Node on AWS Lambda reading the content body from an S3 bucket; this test, a sanity check, must run everwhere icarus does, and take less than a millisecond!
-
-	//correct answers
-	const correctPiece32 = 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q'
-	const correctTip32   = 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ'
-
-	//simulation text file "hello.txt" with contents the five bytes "hello" no terminator
-	let d = Data({text: 'hello'})//same as if you save the 5 bytes "hello" in a file named hello.txt on disk, bucket, or dragged to page
+function simulateFile(d) {//make a simulated file for testing with the contents of data d
 	let file = new Blob([d.array()], {type: 'text/plain'})
-	file.name = 'hello.txt'
+	file.name = 'simulated.bin'
 	file.lastModified = Now()
 	let stream = new ReadableStream({//our simulated stream is over the array, doesn't use the file object
 		start(controller) {
@@ -1744,9 +1738,19 @@ test(async () => {//simulate a file (1) with objects that work like the real fil
 			controller.close()
 		}
 	})
+	return {data: d, file, stream}
+}
+test(async () => {//simulate a file (1) with objects that work like the real files that come from (2) local Node reading the development workstation hard drive, (3) Uppy on the page receiving a drag-and-drop, and (4) Node on AWS Lambda reading the content body from an S3 bucket; this test, a sanity check, must run everwhere icarus does, and take less than a millisecond!
+
+	//correct answers
+	const correctPiece32 = 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q'
+	const correctTip32   = 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ'
+
+	//same as if you save the 5 bytes "hello" in a file named hello.txt on disk, bucket, or dragged to page
+	let {data, file, stream} = simulateFile(Data({text: 'hello'}))
 
 	//smoke test the file and stream hashers
-	ok(file.size == d.size())//our fake file knows its size
+	ok(file.size == data.size())//our fake file knows its size
 	let h1 = await hashFile({file,     size: file.size, protocolTips: hashProtocolTips})
 	let h2 = await hashStream({stream, size: file.size, protocolTips: hashProtocolTips, protocolPieces: hashProtocolPieces})
 	ok(h1.tipHash.base32() == correctTip32)//tip hash from file slicing
@@ -1761,6 +1765,30 @@ test(async () => {//simulate a file (1) with objects that work like the real fil
 	bin.add(d1)
 	bin.add(d2)
 	ok((await bin.hash()).base32() == correctPiece32)
+})
+test(async () => {
+
+	const testProtocol = {title: 'Test.Both.SHA256.4B.', size: 4}//piece size is 4 bytes
+	let s, simulated, h1, h2
+
+	s = 'FFFF....MMMMppppL'
+	simulated = simulateFile(Data({text: s}))
+	h1 = await hashFile({file: simulated.file, size: simulated.data.size(), protocolTips: testProtocol})
+	h2 = await hashStream({stream: simulated.stream, size: simulated.data.size(), protocolTips: testProtocol, protocolPieces: testProtocol})
+
+	log(h1.tipHash.base32())//LQIJFQTWGBKRGRWUXMJIMSXRWIGS35R4RNVEGDCLHYIGLJDK7BFA
+	log(h2.tipHash.base32())//MM6KTP6CEQ55L533WZRBT3YSU2G7CHVGWCXD2EDZSN4ARMA5FG4Q <--huge problem, these should be the same!
+	log(h2.pieceHash.base32())//CK2L5CEIK44LYP6BQJTTUH47X6XUXEKUJYEJ3C6XXPRBPS7TLFLA
+
+
+
+
+
+
+
+
+
+
 })
 
 noop(async () => {//change noop->test and then do a manual test like $ yarn test ~/Downloads/hello.txt
