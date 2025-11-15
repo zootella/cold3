@@ -253,7 +253,7 @@ newline,
 cut, cutLast,
 replaceAll, replaceOne,
 
-Bin, Data,
+Bin, Data, checkSizeStartEnd, mulberryData,
 base62ToInt, intToBase62,
 
 Tag, checkTagOrBlank, checkTag, hasTag,

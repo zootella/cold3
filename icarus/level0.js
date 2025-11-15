@@ -550,7 +550,10 @@ export function Bin(capacity) {//a Bin wraps ArrayBuffer for type and bounds che
 		return Data({array: new Uint8Array(_buffer.slice(start, end))})//slice copies the bytes, and the array constructor clips a view around that copy
 	}
 
-	b.hash = async function() { return await b.data().hash() }
+	b.hash = async function() {
+		if (_size != _capacity) toss('bounds', {b, _size, _capacity})//prevent a mistake in predicting how much data we'll hash
+		return await b.data().hash()//if you want to hash current contents, just do await bin.data().hash; bin.hash() requires full!
+	}
 	return b
 }
 
@@ -597,7 +600,7 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 	return d
 }
 
-function checkSizeStartEnd(size, start, end) { if (!okSizeStartEnd(size, start, end)) toss('bounds', {size, start, end}) }
+export function checkSizeStartEnd(size, start, end) { if (!okSizeStartEnd(size, start, end)) toss('bounds', {size, start, end}) }
 function okSizeStartEnd(size, start, end) {
 	return (
 		(size > 0) &&//we don't allow empty arrays or buffers
@@ -1029,7 +1032,23 @@ test(() => {
 
 
 
-
+//given an integer seed like 12345 and a byte size, make random-looking but deterministic and repeatable data
+export function mulberryData({seed, size}) {
+	function rng() {//Mulberry32 is a well-known small PRNG by Tommy Ettinger from 2018
+		seed += 0x6D2B79F5
+		let t = seed
+		t = Math.imul(t ^ t >>> 15, t | 1)
+		t ^= t + Math.imul(t ^ t >>> 7, t | 61)
+		return (t ^ t >>> 14) >>> 0
+	}
+	const a = new Uint8Array(size)
+	let v = 0
+	for (let i = 0; i < size; i++) {
+		if (i % 4 === 0) v = rng()//generate a new 32-bit value every 4 bytes
+		a[i] = (v >>> ((i % 4) * 8)) & 0xFF//extract the appropriate byte from the 32-bit value
+	}
+	return Data({array: a})
+}
 
 
 

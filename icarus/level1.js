@@ -11,7 +11,7 @@ log,
 say, look, defined,
 checkText,
 tagLength, Tag, checkTagOrBlank, checkTag, hasTag,
-Bin, Data, randomBetween,
+Bin, Data, checkSizeStartEnd, randomBetween, mulberryData,
 cut,
 fraction, exponent, int, big, deindent, newline,
 hashText, given,
@@ -117,11 +117,11 @@ export function sayHugeInteger(i) {
 export function saySize4(n)   { return _number4(n, 1024, [' bytes', ' KB', ' MB', ' GB', ' TB', ' PB', ' EB', ' ZB', ' YB']) }
 export function sayNumber4(n) { return _number4(n, 1000, ['',       ' K',  ' M',  ' B',  ' T',  ' P',  ' E',  ' Z',  ' Y'])  }
 function _number4(n, power, units) {
-	var u = 0 // Start on the first unit
-	var d = 1 // Which has a value of 1 each
+	let u = 0 // Start on the first unit
+	let d = 1 // Which has a value of 1 each
 	while (u < units.length) { // Loop to larger units until we can say n in four digits or less
 
-		var w = Math.floor(n / d) // Find out how many of the current unit we have
+		let w = Math.floor(n / d) // Find out how many of the current unit we have
 		if (w <= 9999) return w + units[u] // Four digits or less, use this unit
 
 		u++ // Move to the next larger unit
@@ -1290,13 +1290,13 @@ noop(async () => {
 	async function f3() { let size = randomBetween(1, 8);    await cycle4648(size) }//short
 	async function f4() { let size = randomBetween(1, 1024); await cycle4648(size) }//longer
 
-	let cycles1 = await runFor(1*Time.second, f1)
-	let cycles2 = await runFor(1*Time.second, f2)
-	let cycles3 = await runFor(1*Time.second, f3)
-	let cycles4 = await runFor(1*Time.second, f4)
+	let cycles1 = await testCycle(1*Time.second, f1)
+	let cycles2 = await testCycle(1*Time.second, f2)
+	let cycles3 = await testCycle(1*Time.second, f3)
+	let cycles4 = await testCycle(1*Time.second, f4)
 	log(look({cycles1, cycles2, cycles3, cycles4}))
 })
-async function runFor(m, f) {
+async function testCycle(m, f) {
 	let n = Now()
 	let cycles = 0
 	while (Now() < n + m) { cycles++; await f() }
@@ -1315,7 +1315,7 @@ async function cycle6238() { const fuzz = await fuzzImports()
 	ok(code1 == code2)//make sure that our implementation matches what the popular module would compute!
 }
 noop(async () => {
-	let cycles = await runFor(4*Time.second, cycle6238)
+	let cycles = await testCycle(4*Time.second, cycle6238)
 	log(cycles)
 })
 
@@ -1342,59 +1342,14 @@ noop(async () => {
 
 
 
-async function cycleHashMeasure(unitMax, fileMax) {
-
-	let file = randomBetween(1, fileMax)
-	let unit = randomBetween(1, unitMax)
-	let m = hashMeasure({file, unit})
-
-	let striped = 0
-	for (let [start, end] of m.stripes) {
-		striped += end - start
-	}
-	ok(m.stripeSize == striped)
-
-	// Check 2: All stripe endpoints are within file bounds
-	for (let [start, end] of m.stripes) {
-		ok(start >= 0 && start < file, `start ${start} out of bounds`)
-		ok(end > 0 && end <= file, `end ${end} out of bounds`)
-		ok(start < end, `inverted range [${start}, ${end}]`)
-	}
-	
-	// Check 3: Stripes don't overlap (unless intentionally merged)
-	for (let i = 0; i < m.stripes.length - 1; i++) {
-		let [, end1] = m.stripes[i]
-		let [start2, ] = m.stripes[i + 1]
-		ok(end1 <= start2, `stripes ${i} and ${i+1} overlap: ${end1} > ${start2}`)
-	}
-	
-	// Check 4: Verify indices match expectations when defined
-	if (!m.all) {
-		ok(m.first === 0, 'first should be 0')
-		ok(m.last === (m.pieces - 1) * unit, 'last index wrong')
-	}
-}
-test(() => {
-})
-test(async () => {
-
-	let cycles1 = await runFor(1*Time.second, () => { cycleHashMeasure(4, 64)})
-	let cycles2 = await runFor(1*Time.second, () => { cycleHashMeasure(1, 4)})
-	let cycles3 = await runFor(1*Time.second, () => { cycleHashMeasure(4*Size.kb, 20*Size.mb)})
-	log(cycles1, cycles2, cycles3)
-})
 
 
-
-
-
-
-//  _               _           _        _                 
-// | |__   __ _ ___| |__    ___| |_ _ __(_)_ __   ___  ___ 
-// | '_ \ / _` / __| '_ \  / __| __| '__| | '_ \ / _ \/ __|
-// | | | | (_| \__ \ | | | \__ \ |_| |  | | |_) |  __/\__ \
-// |_| |_|\__,_|___/_| |_| |___/\__|_|  |_| .__/ \___||___/
-//                                        |_|              
+//  _               _                                               
+// | |__   __ _ ___| |__    _ __ ___   ___  __ _ ___ _   _ _ __ ___ 
+// | '_ \ / _` / __| '_ \  | '_ ` _ \ / _ \/ _` / __| | | | '__/ _ \
+// | | | | (_| \__ \ | | | | | | | | |  __/ (_| \__ \ |_| | | |  __/
+// |_| |_|\__,_|___/_| |_| |_| |_| |_|\___|\__,_|___/\__,_|_|  \___|
+//                                                                  
 
 function hashMeasure({file, unit}) {//given a file size, compute measurements about tips and pieces 📏
 	if (!(file >= 1 && unit >= 1)) toss('bounds')//both the file size and piece size must be 1 or more bytes
@@ -1431,8 +1386,6 @@ function hashMeasure({file, unit}) {//given a file size, compute measurements ab
 		o.stripeSize = file
 		o.stripes.push([0, file])
 	}
-	//ttd november bookmark, add a self check here to make sure the sum of spans in stripes == .stripeSize!
-	//and then have a fuzz tester where you just measure small file and unit and protocol settings
 	return o
 }
 test(() => {
@@ -1607,12 +1560,12 @@ test(() => {
 export function liveBox(s) {
 }
 
-//  _               _        __ _ _           
-// | |__   __ _ ___| |__    / _(_) | ___  ___ 
-// | '_ \ / _` / __| '_ \  | |_| | |/ _ \/ __|
-// | | | | (_| \__ \ | | | |  _| | |  __/\__ \
-// |_| |_|\__,_|___/_| |_| |_| |_|_|\___||___/
-//                                            
+//  _               _        __ _ _                        _       _                            
+// | |__   __ _ ___| |__    / _(_) | ___    __ _ _ __   __| |  ___| |_ _ __ ___  __ _ _ __ ___  
+// | '_ \ / _` / __| '_ \  | |_| | |/ _ \  / _` | '_ \ / _` | / __| __| '__/ _ \/ _` | '_ ` _ \ 
+// | | | | (_| \__ \ | | | |  _| | |  __/ | (_| | | | | (_| | \__ \ |_| | |  __/ (_| | | | | | |
+// |_| |_|\__,_|___/_| |_| |_| |_|_|\___|  \__,_|_| |_|\__,_| |___/\__|_|  \___|\__,_|_| |_| |_|
+//                                                                                              
 
 //a new simple protocol that can hash huge files on both the server and the page; introducing the "Fuji" system 🗻
 const hashProtocolPieces = {title: 'Fuji.Pieces.SHA256.4MiB.', size: 4*Size.mb}; Object.freeze(hashProtocolPieces)
@@ -1641,17 +1594,17 @@ export async function hashFile({file, size, protocolTips}) {//works in local nod
 	}
 
 	//for tip hashing, the summary we'll hash is the title followed by stripes of file data (hashing file data, not hashes)
-	let title = Data({text: `${protocolTips.title}${size}.`})//different sized files hash differently even with identical content in the sampled regions
-	let bin = Bin(title.size() + measureTips.stripeSize)
-	bin.add(title)
+	let tipsTitle = Data({text: `${protocolTips.title}${size}.`})//different sized files hash differently even with identical tips
+	let tipsBin = Bin(tipsTitle.size() + measureTips.stripeSize)
+	tipsBin.add(tipsTitle)
 	for (let [start, end] of measureTips.stripes) {
-		//ttd november bookmark, bounds check start, end, size!
-		bin.add(Data({buffer: await file.slice(start, end).arrayBuffer()}))
+		checkSizeStartEnd(size, start, end)
+		tipsBin.add(Data({buffer: await file.slice(start, end).arrayBuffer()}))
 	}
 
 	//hash the summary of the file in the bin
-	status.tipHash = await bin.hash()
-	status.hashedSize = measureTips.stripeSize
+	status.tipHash = await tipsBin.hash()
+	status.hashedSize = measureTips.stripeSize//we actually hashed more because of the title, but don't count this as to speed
 	status.updateTime = Now()
 	status.duration = status.updateTime - status.startTime
 	return status
@@ -1772,60 +1725,52 @@ export async function hashStream({stream, size, protocolPieces, protocolTips, on
 	}
 }
 
+//  _               _       _            _   
+// | |__   __ _ ___| |__   | |_ ___  ___| |_ 
+// | '_ \ / _` / __| '_ \  | __/ _ \/ __| __|
+// | | | | (_| \__ \ | | | | ||  __/\__ \ |_ 
+// |_| |_|\__,_|___/_| |_|  \__\___||___/\__|
+//                                           
 
-
-
-
-function mulberry32(seed) {
-  return function() {
-    let t = seed += 0x6D2B79F5
-    t = Math.imul(t ^ t >>> 15, t | 1)
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61)
-    return (t ^ t >>> 14) >>> 0
-  }
-}
-function seededBytes(seed, length) {
-  const rng = mulberry32(seed)
-  const bytes = new Uint8Array(length)
-  for (let i = 0; i < length; i++) {
-    if (i % 4 === 0) {
-      var value = rng()
-    }
-    bytes[i] = (value >>> ((i % 4) * 8)) & 0xFF
-  }
-  return bytes
-}
-test(() => {
-
-	let data = Data({array: seededBytes(12345, 100)})
-	log(data.base16())
-
-
-})
-
-
-
-
-function simulateFile(data) {//make a simulated file for testing with the given data
-	let file = new Blob([data.array()], {type: 'text/plain'})
+//simulate file and stream objects like real ones that come from the local disk, s3, or uppy
+function testFile(data) {
+	let file = new Blob([data.array()], {type: 'application/octet-stream'})
 	file.name = 'simulated.bin'
 	file.lastModified = Now()
-	let stream = new ReadableStream({//our simulated stream is over the array, doesn't use the file object
+	let stream = new ReadableStream({
 		start(controller) {
-			controller.enqueue(data.array())//send all the data at once
+			let i = 0
+			while (i < data.size()) {
+				let b = randomBetween(16*Size.kb, 256*Size.kb)//most boxes from the stream will be 64kib, but here we simulate a full variety
+				let j = Math.min(i + b, data.size())
+				controller.enqueue(data.clipView(i, j).array())
+				i = j
+			}
 			controller.close()
 		}
 	})
 	return {data, file, stream}
 }
-test(async () => {//simulate a file (1) with objects that work like the real files that come from (2) local Node reading the development workstation hard drive, (3) Uppy on the page receiving a drag-and-drop, and (4) Node on AWS Lambda reading the content body from an S3 bucket; this test, a sanity check, must run everwhere icarus does, and take less than a millisecond!
+//given a mulberry seed, file size, and hashing protocol instructions, hash the file and stream, comparing and returning the results
+async function testHashFile({seed, size, protocolPieces, protocolTips}) {
+	let data = mulberryData({seed, size})
+	let f = testFile(data)
+	let hashedFile = await hashFile({file: f.file, size: f.data.size(), protocolTips})
+	let hashedStream = await hashStream({stream: f.stream, size: f.data.size(), protocolTips, protocolPieces})
+	ok(hashedFile.tipHash.base32() == hashedStream.tipHash.base32())
+	//^importantly, make sure we get the same tip hash from slicing the file and peeking at the stream!
+	return ({seed, size, protocolPieces, protocolTips, hashedFile, hashedStream})
+}
+
+//leave on: smoke test hashing the file "hello"
+test(async () => {
 
 	//correct answers
 	const correctTip32   = 'BSOEFHWYKUFE2ZEYFGKAE2X4IZXTXXCDJZQ2YRGKLMAETUJDTIHQ'
 	const correctPiece32 = 'AD4G5U6L4LJC4DYUIUSFRIYHH5KMRVHCLOQQAKAPNNPFCRAUIV3Q'
 
 	//same as if you save the 5 bytes "hello" in a file named hello.txt on disk, bucket, or dragged to page
-	let {data, file, stream} = simulateFile(Data({text: 'hello'}))
+	let {data, file, stream} = testFile(Data({text: 'hello'}))
 
 	//smoke test the file and stream hashers
 	ok(file.size == data.size())//our fake file knows its size
@@ -1844,6 +1789,7 @@ test(async () => {//simulate a file (1) with objects that work like the real fil
 	bin.add(d2)
 	ok((await bin.hash()).base32() == correctPiece32)
 })
+//leave on: demonstration of tip hash only hitting the tips, and piece hash covering everything
 test(async () => {
 	let r, s, f, h1, h2, p, t
 
@@ -1853,7 +1799,7 @@ test(async () => {
 	t = 'A6RAKFDY2XTFTXIXY443GJPPQOE7IEDWXCAKQ2DCYEIRRFQK3PBQ'
 	p = 'HWRHKCB5OSVGTA365HAK22CMPTURM3DJY6553YQCJE7YCW5YQFEA'//correct answers
 	s = 'FFFF....MMMMppppL'//file contents
-	f = simulateFile(Data({text: s}))
+	f = testFile(Data({text: s}))
 	h1 = await hashFile({file: f.file, size: f.data.size(), protocolTips: r})
 	h2 = await hashStream({stream: f.stream, size: f.data.size(), protocolTips: r, protocolPieces: r})
 	ok(h1.tipHash.base32() == t)
@@ -1862,41 +1808,100 @@ test(async () => {
 
 	s = 'FFFF!!!!MMMMppppL'//now we change just the part of the file the tip hasher can't see
 	p = 'Z3SVWY6BAOECTYAS7UXMNH7RIXL63ZD6KYHG73HKBOSZUWOAKCJQ'//the piece hash will be different...
-	f = simulateFile(Data({text: s}))
+	f = testFile(Data({text: s}))
 	h1 = await hashFile({file: f.file, size: f.data.size(), protocolTips: r})
 	h2 = await hashStream({stream: f.stream, size: f.data.size(), protocolTips: r, protocolPieces: r})
 	ok(h1.tipHash.base32() == t)
 	ok(h2.tipHash.base32() == t)//...but the tip hash will be the same
 	ok(h2.pieceHash.base32() == p)
-
-
-/*
-	log(h1.tipHash.base32() )
-	log(h2.tipHash.base32() )
-	log(h2.pieceHash.base32() )
-	log(look({
-		h1t: h1.measureTips,
-		h2t: h2.measureTips,
-		h2p: h2.measurePieces,
-	}))
-*/
-
-
-
-
-
-
-
-
 })
 
-noop(async () => {//change noop->test and then do a manual test like $ yarn test ~/Downloads/hello.txt
-	const node = await loadNode()
+//turn on: demonstration with small files and tiny random protocol piece sizes
+noop(async () => {
+	let protocolPieces = {title: 'Test.Pieces.SHA256.9B.', size: randomBetween(10, 20)}
+	let protocolTips   = {title: 'Test.Tips.SHA256.9B.', size: randomBetween(5, 15)}
+	let seed = randomBetween(420, 6969)
+	let size = randomBetween(1, 2000)
+	let {hashedFile, hashedStream} = await testHashFile({seed, size, protocolPieces, protocolTips})
+	log(`small files and pieces
+${seed} seed and ${size} size
+${protocolPieces.size} byte pieces and ${protocolTips.size} byte tips, all chosen randomly
 
+${hashedFile.tipHash.base32()} tip hash from file slicing
+${hashedStream.tipHash.base32()} tip hash from stream peeking, must be the same!
+${hashedStream.pieceHash.base32()} piece hash from stream
+`)
+	ok(hashedFile.tipHash.base32() == hashedStream.tipHash.base32())
+})
+//turn on: fuzz testing random tiny files with tiny random piece sizes, and realistic files with actual piece sizes
+noop(async () => {
+	let cycles1 = await testCycle(4*Time.second, async () => {//small files and tiny block sizes
+		await testHashFile({
+			seed: randomBetween(420, 6969),
+			size: randomBetween(1, 500),
+			protocolPieces: {title: 'Test.Pieces.SHA256.10-20B.', size: randomBetween(10, 20)},
+			protocolTips: {title: 'Test.Tips.SHA256.5-15B.', size: randomBetween(5, 15)},
+		})
+	})
+	let cycles2 = await testCycle(4*Time.second, async () => {//realistic files and protocol block sizes
+		await testHashFile({
+			seed: randomBetween(420, 6969),
+			size: randomBetween(1, 20*Size.mb),
+			protocolPieces: hashProtocolPieces,
+			protocolTips: hashProtocolTips,
+		})
+	})//only able to get a few dozen of these even on a fast new Mac
+	log(cycles1, cycles2)
+})
+//turn on: run in local node and takes ~40s; automated test with realistic file sizes and actual block sizes
+noop(async () => {
+	async function f(tip, piece, seed, size) {
+		let {hashedFile, hashedStream} = await testHashFile({seed, size, protocolPieces: hashProtocolPieces, protocolTips: hashProtocolTips})
+		ok(hashedFile.tipHash.base32() == tip)
+		ok(hashedStream.tipHash.base32() == tip)
+		ok(hashedStream.pieceHash.base32() == piece)
+		log(`hashed to expected test vectors: ${saySize4(size)}`)
+	}
+	log('small files 📕 (4)')
+	await f('AMYQHWDMVF3VL53SZUKK7Q5RAW6VSEEOPLNX6IQ3ALOC5XFURA4A', 'CPJS4X3PANIYH2ZLJQD3UZPW5EVNRVLH2KEMGAB3WI7JQBHXH5EQ', 2862, 51187)
+	await f('MWK5MHONGJQYDXRNGAYPPNJPRVNIJXPXTW2FR7M5WVAFNH77KO5Q', 'UBV4ETJPZLZART3UXGUDTUT67GZKBSJALIK5O5YQCD7OLPPJOWRA', 3518, 177797)
+	await f('2TKO5PBE74VSTTRYKCDEF2KV35WAASJADKED76VMVX66444I7RWQ', 'ICJNIKS2PW4YOKFR62EIT2RVE4EKEDUFOOWRBVGEEDEUYDMZY2VQ', 2203, 6754)
+	await f('3IK3MMRBSUXKMKVTY4YUCJWZAJUTUQGDLNWBVIUZCZMAY5X3EYDA', '5LDT2E4IG6OMPSEKCDT6676DFQIIY7T6Z4LCOMGGDO75P225JQFQ', 943, 132393)
+	log('medium files 🖼️ (4)')
+	await f('VWRSG24XQKGZK2I2U77JZNUNK2BDTLXUUPAUN2NTUPTINTCT5WBQ', '6YXR7CGK5TV7QO4HZUT3W6F3CIX4O6IY7WCPZWDP7ACWLLJDGNYA', 1145, 28148451)
+	await f('3UHG26C6MLS3DDNBQIEPWKI23P7TBXTLW36ENWYOFTDSLMOS2MRA', 'I464HASPP45J62P4IC3ANMDWMJKWGLSKBTJQGYLD4PQ5KQIPFEJQ', 6317, 5911493)
+	await f('FI5OSG7AGTDWIC7EGIOCT4RHUZ3ML2K4JALXH4F2SNMHSQKA666Q', '63TIRHGUKSBOI54P6BPFW56GVCOIKXGWVQEDY353P6S4MX7YZIMA', 927, 6427647)
+	await f('PGLRDZOHYXW6MTTQ4RQX5GSJM3TVNURKREKJYM73VTIDOJXR5TQA', '7RU4CHSZ6LD22FEGFVBNF4IDNEWBFCKK6QZSGZNF5YSXAP4GBASA', 1096, 19708296)
+	log('big files 📹 (4)...')
+	await f('XTOKZZBBTN3EHKHNZFYT55CDZHP33NAHTAL2OLBFDQUVF7HJTZPA', 'EJOSKBIJDV4ZIRVUYSQXOJXU7JU2YSTGIS4PPYUX5K53B3CM3XOQ', 778, 387949882)
+	await f('FBTSGC4JZHWSL7L5HHAP7K26BQVIIXT2BFOWQZSKU5KUIM25GANQ', 'COSQGIS5MWFTSVWQXKG2EHQKOQ5JIZA7MRBDUYLJMFWIMWSAJO7Q', 767, 1769800008)
+	await f('6Q542GBQQJ7BOE6PHTCXVN2JAHCI6BFLFWJ5UUJP7X7O6XGEBIAQ', '5A5KZL546N4C73EEKLCDE3XT5CRSXYFCUOGPDH35SOARXBD6TGSA', 707, 467851037)
+	await f('AJMLQ7IVP5R7XXC2VXVQ2744QH2DULKPKETHBXW4UIBH67UBXPMA', 'ZQE2JBMTUZY7WBHI2MWED4GG3YDCVCQDXOE3FNIDVV2Y5VZT2JXA', 5860, 2827821563)
+})
+//turn on: code you used to create test vectors above
+noop(async () => {
+	let {seed, size, hashedFile, hashedStream} = await testHashFile({
+		seed: randomBetween(420, 6969),
+		size: randomBetween(1, 9*Size.mb),//set the desired size range here
+		protocolPieces: hashProtocolPieces,
+		protocolTips: hashProtocolTips})
+	log(`realistic files and actual pieces
+${seed} seed
+${size} size (${saySize4(size)})
+
+${hashedFile.tipHash.base32()} tip hash from file slicing
+${hashedStream.tipHash.base32()} tip hash from stream peeking, must be the same!
+${hashedStream.pieceHash.base32()} piece hash from stream
+`)
+	ok(hashedFile.tipHash.base32() == hashedStream.tipHash.base32())
+})
+
+//turn on: try out on the command line with real files $ yarn test ~/Downloads/big.mov
+noop(async () => {
+	const node = await loadNode()
 	let name = process.argv[2]
 	let size = node.fs.statSync(name).size
-	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//node has a function that converts the classic Node-style stream to a modern isomorphic WHATWG stream
-
+	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//convert from Node-style stream to isomorphic WHATWG stream
 	log(`Hashing "${name}" (${commas(size)} bytes)...`)
 	let hash = await hashStream({
 		stream,
@@ -1904,8 +1909,8 @@ noop(async () => {//change noop->test and then do a manual test like $ yarn test
 		protocolPieces: hashProtocolPieces,
 		protocolTips: hashProtocolTips,
 		onProgress: (hash) => {
-			let percent = (hash.hashedSize / hash.totalSize) * 100
-			process.stdout.write(`\r${percent.toFixed(1)}% `)
+			let percent = (hash.hashedSize / hash.totalSize)*100
+			process.stdout.write(`\r${percent.toFixed(1)}%... `)
 		}
 	})
 	log(`
@@ -1913,7 +1918,7 @@ noop(async () => {//change noop->test and then do a manual test like $ yarn test
 ${hash.pieceHash.base32()} piece hash
 ${hash.tipHash.base32()} tip hash
 Summed ${saySize4(size)} in ${commas(hash.duration)}ms (${commas(Math.round(hash.totalSize / hash.duration))} bytes/ms)
-`)
+`)//seeing ~950k+ on your Mac
 })
 
 
@@ -1923,85 +1928,6 @@ Summed ${saySize4(size)} in ${commas(hash.duration)}ms (${commas(Math.round(hash
 
 
 
-
-
-
-/*
-bookmark
-test1[]use the noop/test below to hash the real local node file hello.txt and confirm you get the same results
-test2[]write a still simulated, but takes longer test like above which does files a little over 4kb and 4mb
-code3[x]code into hashStream the tip hash
-
-
-
-
-
-
-
-
-hashFileWhatever({file, size, protocol})
-
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-/*
-two hashing algorithms
-1 Tip: fast, snapshot of just the ends and middle
-2 Piece: slower, covers the whole file
-
-four runtime environments (two test, two production)
-1 tiny tests: automatic, must run quickly, everywhere, small simulated files
-2 local node: manual, huge real files
-3 lambda reading content body from s3
-4 browser page with uppy
-
-two hashing functions
-1 hashFile
-- gets a js file object from a tiny test, local node, or uppy (lambda won't get one from s3!)
-- runs quickly
-- computes the tip hash, only
-2 hashStream: gets a js stream from a tiny test, local node, uppy, or lambda (all four can do this)
-- runs in seconds, through rather than quick
-- computes the piece hash, only
-
-are the details of this summary correct? lambda can't call hashFile to compute the tip hash
-
-
-
-
-
-
-*/
-
-
-/*
-hashFile - quick, takes file object, works in node, page, *not* lambda, calculates Tips hash
-hashStream - through, takes stream, works in node, lambda, and page, calculates Tips and Pieces hash
-
-we'll test as follows
-- local node tests using real files with paths like ~/Downloads/5mb.mov; these are noop/test and manual, and can take seconds
-- automated tiny tests using fake literal objects made right here in code; these need to be really fast
-
-likely, when uploading:
-- from desktop, the page will give the file from uppy to hashStream to compute both the tip and piece hashes
-- from mobile, the page will give the file from uppy to hashFile to compute just the tip hashes (phone battery is the concern)
-and then the receiving lambda will:
-- use hashStream
-
-
-
-
-*/
 
 
 
