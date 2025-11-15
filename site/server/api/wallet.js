@@ -5,9 +5,6 @@ trailAdd, trailCount,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 
-function composeMessage(nonce) { return `Add your wallet with an instant, zero-gas signature of code ${nonce}` }//ttd september2025, siwe opensea ens maybe have much longer messages with more stuff like uri, mainnet id, timestamp; see what the happy path looks like and what those other common providers have made familiar
-function composeTrailChallenged(address, nonce) { return `challenged ethereum wallet address ${address} nonce ${nonce}` }
-
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {useTurnstile: false, actions: ['Prove.'], workerEvent, doorHandleBelow})
 	//^ttd september2025, do wallet interactions need turnstile? totp and email, absolutely, but here you think maybe not, and don't want to tarnish the experience in any way for savy and influential web3 users
@@ -17,11 +14,10 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
 		let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
-		let message = composeMessage(nonce)
-
-		await trailAdd(composeTrailChallenged(address, nonce))
-		//^ok, claude, should we add to the trail the hash of the address and nonce, and not the message? or should nonce be replaced by message in the text we hash and record on the trail, to cover them both? is there a difference in security here?
-
+		let message = `Add your wallet with an instant, zero-gas signature of code ${nonce}`//metamask will show this to the user so we're keeping it short and non-scary; examples from opensea are much longer with uri, mainnet id, timestamp, ttd november
+		await trailAdd(
+			`Challenged Ethereum Wallet Address ${address} with Nonce ${nonce}`
+		)
 		return {action, address, nonce, message}
 
 	} else if (action == 'Prove2.') {//page calls back with signature of the nonce we gave it

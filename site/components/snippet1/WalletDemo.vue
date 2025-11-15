@@ -4,7 +4,7 @@ import {
 sayTick,
 } from 'icarus'
 
-//ttd october2025, returning here
+//ttd november, returning here
 
 import {createPublicClient, http, parseEther, formatEther, parseAbi} from 'viem'
 import {mainnet, polygon} from 'viem/chains'
@@ -61,7 +61,7 @@ const timeRef = ref('')
 const refButton = ref(null); const refButtonCanSubmit = ref(true); const refButtonInFlight = ref(false)
 async function onButton() {
 	let response = await refButton.value.post('/api/wallet', {
-		action: 'Prove.',
+		action: 'Prove1.',
 	})
 	log(look(response))
 }

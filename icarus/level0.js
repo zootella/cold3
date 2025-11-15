@@ -2155,9 +2155,6 @@ test(() => {
 
 //moar to organize later
 
-
-
-
 export function deindent(s) {
 	s = s.trim()//remove spaces, tabs, and \r and \n characters from the start and end
 	let a = splitLines(s)//split into an array of lines
@@ -2193,6 +2190,81 @@ remove the whitespace from the first line from all the other lines
 this flattens every line against the margin
 but that's probably all you need
 */
+
+test(() => {//calls to trail are like trailAdd(`Thing ${s} just happened`) assuming s is the correct string; but if it's an object or promise js will just call .toString() on it, trailAdd will add a row with a hash, and then we won't be able to find that hash later! so we must guard against this, as it's quite possible and would be difficult to spot!
+	//first, let's just obvserve how things can go wrong with js template literals
+
+	let s = 'hi'
+	let i = 19
+	let f = 10/3
+	let o = {n: 7}
+	let a = ['a', 'b']
+	let p = Promise.resolve('done')//born resolved, but to get done you have to await p
+	let u = undefined
+	let n = null
+	ok(`string: ${s} and int: ${i} are ok; float: ${f}, object: ${o}, array: ${a}, promise: ${p}, undefined: ${u}, and null: ${n} would make a mess` == 'string: hi and int: 19 are ok; float: 3.3333333333333335, object: [object Object], array: a,b, promise: [object Promise], undefined: undefined, and null: null would make a mess')
+})
+
+/*
+ttd november, ok, so for trailAdd etc claude is reccomending a tagged template literal
+if you do this, you could make another one, margin``, which does the deindent
+claude could probably write that pretty well, just provide the test cases and let it go to town
+*/
+function trail(strings, ...values) {//strings is not lines, it's the literal text pieces between the ${} interpolations.
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i]
+    // ONLY strings allowed, nothing else
+    if (typeof v != 'string') {
+      toss('type', {strings, values})
+    }
+    // Also require non-empty strings
+    if (v == '') {
+      toss('blank', {strings, values})
+    }
+  }
+  // Build the string
+  return strings.reduce((result, str, i) => 
+    result + str + (i < values.length ? values[i] : ''), ''
+  )
+}
+
+function margin(strings, ...values) {
+	//here's the deindenter
+}
+noop(() => {
+
+	ok(margin`
+		a
+		b
+			c (three tabs become two spaces)
+		d
+	` == `a
+b
+  c (three tabs become two spaces)
+d
+`)//essentially, this is what you want--no blank line at the start, one terminator at the end, normalize whitespace that begins each line with tabs -> 2 spaces, then measure how many spaces begin the first line and remove up to that many, not more, from each line
+//have it never fail, work correctly when you use it correctly, and not go too crazy trying to fix things when  you use it not correctly, then it's just important that it doesn't change anything outside the whitespace. so if use is nontraditional, like it starts with something other than a newline, it just doesn't fix that part
+//oh also it makes newlines \r\n regardless of what they were at the start
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
