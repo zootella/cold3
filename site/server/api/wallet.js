@@ -6,8 +6,7 @@ trailAdd, trailCount,
 import {verifyMessage} from 'viem'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {useTurnstile: false, actions: ['Prove.'], workerEvent, doorHandleBelow})
-	//^ttd september2025, do wallet interactions need turnstile? totp and email, absolutely, but here you think maybe not, and don't want to tarnish the experience in any way for savy and influential web3 users
+	return await doorWorker('POST', {actions: ['Prove1.', 'Prove2.'], workerEvent, doorHandleBelow})//wallet addresses are so long we don't need turnstile
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 	if (action == 'Prove1.') {//page requests nonce to prove it controlls address
@@ -16,7 +15,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
 		let message = `Add your wallet with an instant, zero-gas signature of code ${nonce}`//metamask will show this to the user so we're keeping it short and non-scary; examples from opensea are much longer with uri, mainnet id, timestamp, ttd november
 		await trailAdd(
-			`Challenged Ethereum Wallet Address ${address} with Nonce ${nonce}`
+			`Ethereum challenged Wallet Address ${address} with Nonce ${nonce}`
 		)
 		return {action, address, nonce, message}
 

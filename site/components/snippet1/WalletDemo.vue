@@ -58,12 +58,57 @@ const blockRef = ref('Loading...')
 const priceRef = ref('')
 const timeRef = ref('')
 
-const refButton = ref(null); const refButtonCanSubmit = ref(true); const refButtonInFlight = ref(false)
-async function onButton() {
-	let response = await refButton.value.post('/api/wallet', {
+//here's the wallet connect and prove address flow...
+
+const refAddress = ref(null)
+const refIsConnected = ref(false)
+
+async function onConnectWallet() {
+	try {
+		const result = await connect(alchemyConfiguration, {connector: injected()})
+		const account = getAccount(alchemyConfiguration)
+		
+		refAddress.value = account.address
+		refIsConnected.value = account.isConnected
+		
+		log(`Connected address ${account.address}`)
+	} catch (e) {
+		console.error('Connection failed:', e)
+	}
+}
+async function onDisconnectWallet() {
+	await disconnect(alchemyConfiguration)
+	refAddress.value = null
+	refIsConnected.value = false
+}
+
+const refProveButton = ref(null); const refProveEnabled = ref(true); const refProveInFlight = ref(false)
+async function onProve() {
+	let response1 = await refProveButton.value.post('/api/wallet', {
 		action: 'Prove1.',
+		address: refAddress.value,
 	})
-	log(look(response))
+	log(look(response1))
+
+	/* coming soon...
+	let {address, nonce, message} = response1
+	
+	// Step 2: Ask MetaMask to sign the message
+	let signature = await signMessage(alchemyConfiguration, {
+		message,
+	})
+	log('Got signature:', signature)
+	
+	// Step 3: Send signature to server for verification
+	let response2 = await refProveButton.value.post('/api/wallet', {
+		action: 'Prove2.',
+		address,
+		nonce,
+		message,
+		signature,
+	})
+	log('Prove2 response:', look(response2))
+	*/
 }
 
 </script>
@@ -74,10 +119,15 @@ async function onButton() {
 <p>Current Ethereum price <code>${{priceRef}}</code> and block number <code>{{blockRef}}</code> at <code>{{timeRef}}</code>. There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.</p>
 <Button @click="snippet1">Check again</Button>
 
-<div>
+<div v-if="!refIsConnected">
+	<Button @click="onConnectWallet">Connect Wallet</Button>
+</div>
+<div v-else>
+	<p>Connected: <code>{{refAddress}}</code></p>
+	<Button @click="onDisconnectWallet">Disconnect Wallet</Button>
 	<PostButton
-		labelIdle="Perform" labelFlying="Performing..." :useTurnstile="false"
-		ref="refButton" :canSubmit="refButtonCanSubmit" v-model:inFlight="refButtonInFlight" :onClick="onButton"
+		labelIdle="Prove Ownership" labelFlying="Proving..." :useTurnstile="false"
+		ref="refProveButton" :canSubmit="refProveEnabled" v-model:inFlight="refProveInFlight" :onClick="onProve"
 	/>
 </div>
 
