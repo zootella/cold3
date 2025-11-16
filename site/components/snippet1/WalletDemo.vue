@@ -6,20 +6,26 @@ sayTick,
 
 //ttd november, returning here
 
-import {createPublicClient, http, parseEther, formatEther, parseAbi} from 'viem'
-import {mainnet, polygon} from 'viem/chains'
-import {
-createConfig, getBlockNumber, connect, disconnect, getAccount,
-readContract, writeContract, waitForTransaction, getBalance,
-} from '@wagmi/core'
-import {injected, metaMask, walletConnect} from '@wagmi/connectors'
-import {useAccount, useBalance, useConnect, useDisconnect} from '@wagmi/vue'//imports are at the top level for tree shaking to work properly, but we'll only use these on mounted as alchemy will only reply to a browser that sends headers from the allowed domain
+//dynamic imports to avoid SSR bundling - these only load in browser
+let viem, viem_chains, wagmi_core, wagmi_connectors
+async function dynamicImport() {
+	if (wagmi_core) return
+	/*
+	[wagmi_core, viem, viem_chains, wagmi_connectors] = await Promise.all([
+		import('viem'),
+		import('viem/chains'),
+		import('@wagmi/core'),
+		import('@wagmi/connectors'),
+	])
+	*/
+}
 
 const alchemyUrl = Key('alchemy, url, public, page')//the alchemy api key looks like a secret, but must be shipped with client bundle. this is both ok and required because (a) metamask is only in the browser, and must talk to alchemy directly, (b) domain restrictions protect this key, and (c) everyone else does it this way. google maps api keys work this way
 let alchemyConfiguration//will make once when needed to use multiple times
 
 onMounted(async () => {
 	try {
+		await dynamicImport()
 		await snippet1()
 	} catch (e) {//following project patterns, it's correct to protect our code from this third party api with this try here
 		console.error(e)
@@ -28,19 +34,19 @@ onMounted(async () => {
 })
 
 async function snippet1() {
-
-	if (!alchemyConfiguration) alchemyConfiguration = createConfig({
-		chains: [mainnet],
-		transports: {[mainnet.id]: http(alchemyUrl)},
+/*
+	if (!alchemyConfiguration) alchemyConfiguration = wagmi_core.createConfig({
+		chains: [viem_chains.mainnet],
+		transports: {[viem_chains.mainnet.id]: viem.http(alchemyUrl)},
 	})
 
 	//get the current ethereum block number
-	let n = await getBlockNumber(alchemyConfiguration)
+	let n = await wagmi_core.getBlockNumber(alchemyConfiguration)
 	blockRef.value = commas(n)
 	timeRef.value = sayTick(Now())//there's a new block every 12 seconds
 
 	//to get the ETH price right now, we'll read a chainlink oracle contract
-	let b = await readContract(alchemyConfiguration, {
+	let b = await wagmi_core.readContract(alchemyConfiguration, {
 		address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',//updates hourly, or when ETH moves >0.5%
 		abi: [{
 			inputs: [],
@@ -52,6 +58,7 @@ async function snippet1() {
 		functionName: 'latestAnswer',
 	})
 	priceRef.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
+	*/
 }
 
 const blockRef = ref('Loading...')
@@ -64,22 +71,26 @@ const refAddress = ref(null)
 const refIsConnected = ref(false)
 
 async function onConnectWallet() {
+	/*
 	try {
-		const result = await connect(alchemyConfiguration, {connector: injected()})
-		const account = getAccount(alchemyConfiguration)
-		
+		const result = await wagmi_core.connect(alchemyConfiguration, {connector: wagmi_connectors.injected()})
+		const account = wagmi_core.getAccount(alchemyConfiguration)
+
 		refAddress.value = account.address
 		refIsConnected.value = account.isConnected
-		
+
 		log(`Connected address ${account.address}`)
 	} catch (e) {
 		console.error('Connection failed:', e)
 	}
+	*/
 }
 async function onDisconnectWallet() {
-	await disconnect(alchemyConfiguration)
+	/*
+	await wagmi_core.disconnect(alchemyConfiguration)
 	refAddress.value = null
 	refIsConnected.value = false
+	*/
 }
 
 const refProveButton = ref(null); const refProveEnabled = ref(true); const refProveInFlight = ref(false)
@@ -92,13 +103,13 @@ async function onProve() {
 
 	/* coming soon...
 	let {address, nonce, message} = response1
-	
+
 	// Step 2: Ask MetaMask to sign the message
-	let signature = await signMessage(alchemyConfiguration, {
+	let signature = await wagmi_core.signMessage(alchemyConfiguration, {
 		message,
 	})
 	log('Got signature:', signature)
-	
+
 	// Step 3: Send signature to server for verification
 	let response2 = await refProveButton.value.post('/api/wallet', {
 		action: 'Prove2.',
