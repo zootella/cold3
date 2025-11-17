@@ -1273,7 +1273,7 @@ move the encrypted secrets string to a separate file alongside wrapper:
 ./icarus/wrapper.js
 ./icarus/secrets.js
 but then there's something that runs everywhere but finds nxut and svelte front end, like
-if (process.server) secrets.vault = 'all the encrypted secrets'
+if (process server) secrets.vault = 'all the encrypted secrets'
 except you also have to find that for sveltekit, which could be hard/brittle
 
 and also have a tag like SECRETS_VAULT_MARKER alongside those

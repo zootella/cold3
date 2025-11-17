@@ -22,7 +22,7 @@ you can see client, client from: navigate page1, click to page2, press Hit butto
 you can see server, client from: navigate page2, press Hit button
 but the navigate to page2 is bad because there's a pause as the margin await holds rendering on the client
 so experiment with:
-if (process.server) await flexStore.load(); else flexStore.load()
+if (process server) await flexStore.load(); else flexStore.load()
 but also, this is largely academic, as mainStore and pageStore will probably do everything you need
 */
 

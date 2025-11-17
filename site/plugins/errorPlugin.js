@@ -15,12 +15,12 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 async function handleError(details) {
 	log(`🚧 🚧 🚧 🚧 🚧 ${Sticker()} "${details?.error?.message}"`)//ttd april2025, remove this line when errors have settled down!
-	if (process.server) {
+	if (process.server) {//change process.server -> import.meta.server, ttd november
 		try {
 			await awaitLogAlert('error plugin', details)//log the error to datadog, including all details
 		} catch (e) { console.error('[OUTER]', e, details) }//catch an error trying to log the first one; fall back to standard error
 		//on the server, return nothing; the response puts the page into the error.vue state
-	} else if (process.client) {
+	} else if (process.client) {//change process.client -> import.meta.client, ttd november
 		const pageStore = usePageStore()//use the error store to save a single error, and only call showError once
 		if (pageStore.errorDetails) {
 			log('already put page in error state, doing nothing with:', look(details))

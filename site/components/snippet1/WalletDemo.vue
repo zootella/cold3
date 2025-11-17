@@ -11,7 +11,7 @@ async function dynamicImport() {
 			import('viem'),
 			import('viem/chains'),
 			import('@wagmi/core'),
-			import('@wagmi/connectors'),
+			import('@wagmi/connectors'),//these are huge, and also don't work in a web worker; regular imports break the deploy to cloudflare
 		])
 	}
 }

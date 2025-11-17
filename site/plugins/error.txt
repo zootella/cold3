@@ -264,7 +264,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 		if (error._alreadyHandled) return
 		error._alreadyHandled = true//mark so we skip it if we see it here again!
 
-		if (process.server) {
+		if (process server) {
 
 			//log the error to datadog
 			try {
@@ -281,7 +281,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 				}
 			}
 
-		} else if (process.client) {
+		} else if (process client) {
 
 			//log the error to the browser developer tools console
 			console.error()
