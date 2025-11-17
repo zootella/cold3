@@ -4,20 +4,16 @@ import {
 sayTick,
 } from 'icarus'
 
-//ttd november, returning here
-
-//dynamic imports to avoid SSR bundling - these only load in browser
 let viem, viem_chains, wagmi_core, wagmi_connectors
 async function dynamicImport() {
-	if (wagmi_core) return
-	/*
-	[wagmi_core, viem, viem_chains, wagmi_connectors] = await Promise.all([
-		import('viem'),
-		import('viem/chains'),
-		import('@wagmi/core'),
-		import('@wagmi/connectors'),
-	])
-	*/
+	if (import.meta.client) {//tree shake viem and wagmi out of the server build entirely
+		[viem, viem_chains, wagmi_core, wagmi_connectors] = await Promise.all([
+			import('viem'),
+			import('viem/chains'),
+			import('@wagmi/core'),
+			import('@wagmi/connectors'),
+		])
+	}
 }
 
 const alchemyUrl = Key('alchemy, url, public, page')//the alchemy api key looks like a secret, but must be shipped with client bundle. this is both ok and required because (a) metamask is only in the browser, and must talk to alchemy directly, (b) domain restrictions protect this key, and (c) everyone else does it this way. google maps api keys work this way
@@ -34,7 +30,6 @@ onMounted(async () => {
 })
 
 async function snippet1() {
-/*
 	if (!alchemyConfiguration) alchemyConfiguration = wagmi_core.createConfig({
 		chains: [viem_chains.mainnet],
 		transports: {[viem_chains.mainnet.id]: viem.http(alchemyUrl)},
@@ -58,7 +53,6 @@ async function snippet1() {
 		functionName: 'latestAnswer',
 	})
 	priceRef.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
-	*/
 }
 
 const blockRef = ref('Loading...')
@@ -71,7 +65,6 @@ const refAddress = ref(null)
 const refIsConnected = ref(false)
 
 async function onConnectWallet() {
-	/*
 	try {
 		const result = await wagmi_core.connect(alchemyConfiguration, {connector: wagmi_connectors.injected()})
 		const account = wagmi_core.getAccount(alchemyConfiguration)
@@ -83,14 +76,11 @@ async function onConnectWallet() {
 	} catch (e) {
 		console.error('Connection failed:', e)
 	}
-	*/
 }
 async function onDisconnectWallet() {
-	/*
 	await wagmi_core.disconnect(alchemyConfiguration)
 	refAddress.value = null
 	refIsConnected.value = false
-	*/
 }
 
 const refProveButton = ref(null); const refProveEnabled = ref(true); const refProveInFlight = ref(false)
