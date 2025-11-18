@@ -364,7 +364,7 @@ export async function decryptKeys(name, environments) {
 	if (_keys_new) return//only run once
 	_keys_new = []
 
-	log(`👋 hi in decryptKeys from ${name} at ${Sticker()}`)
+	dog(`👋 hi in decryptKeys from ${name} at ${Sticker()}`)
 /*
 	//get public keys from the wrapper, these are available everywhere, many are needed on pages
 	pushKeys(_keys, parseKeyBlock(Data({base62: wrapper.publicKeys}).text()))
