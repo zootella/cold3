@@ -57,7 +57,6 @@ async function placeSecrets() {
 	fs.copyFile('.env', 'oauth/.dev.vars')
 	fs.copyFile('.env', 'site/.env')//also put it here
 	fs.copyFile('.env', 'site/.dev.vars')//cloudflare wants it named .dev.vars instead, and only for local; you have to also set the secret key in the dashboard
-	//^ttd november, going to edit these manually from notes now
 }
 
 async function listFiles() {
@@ -144,19 +143,20 @@ async function affixSeal(properties, manifest) {
 
 	//encrypt the secrets in .env.local
 	let envSecretContents = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
-	let cipherData1 = await encryptData(
+	let encryptedData = await encryptData(
 		Data({base62: process.env.ACCESS_KEY_SECRET}),
 		Data({text: envSecretContents})
 	)
 
-	//ttd september2025, new system for page keys like alchemy, not yet running any actual secrets through here
+	//ttd november, new system for page keys like alchemy, not yet running any actual secrets through here
+	const prefix = 14
 	let envKeysContents = await fs.readFile(envKeysFileName, 'utf8')
 	let blocks = parseKeyFile(envKeysContents)
-	let cipherData2 = await encryptData(
-		Data({base62: process.env.ACCESS_KEY_SECRET}),
-		Data({text: (Data({random: randomBetween(64, 128)}).base62())+'\n'+blocks.secretBlock})
-	)//additional salt is pure security theater
-	let publicData2 = Data({text: blocks.publicBlock})
+	let cipherData = await encryptData(
+		Data({base62: process.env.SECRET_KEY_U1.slice(prefix)}),//key data is beyond tracer prefix
+		Data({text: blocks.secretBlock})
+	)//encrypt the secret keys; server code will be able to decryypt them
+	let publicData = Data({text: blocks.publicBlock})//encode the public keys; client and server code will use them
 
 	//compose contents for the new wrapper.js
 	let o = {...wrapper}//copy all the properties into a new object
@@ -168,9 +168,9 @@ async function affixSeal(properties, manifest) {
 	o.codeSize = codeSize
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
-	o.secrets    = cipherData1.base62()//current system for server secrets
-	o.secretKeys = cipherData2.base62()//put new system in place, haven't moved any actual secrets over yet
-	o.publicKeys = publicData2.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
+	o.secrets = encryptedData.base62()//current system for server secrets
+	o.vaultU = cipherData.base62()//put new system in place, haven't moved any actual secrets over yet
+	o.plain = publicData.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)

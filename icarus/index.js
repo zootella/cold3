@@ -242,7 +242,7 @@ Now, sayDate, sayTick,
 test, ok, runTests,
 toss,
 log, addLogSink, logTo,
-sameObject, sameArray, isObject,
+sameObject, sameArray,
 
 checkText, hasText, checkInt, minInt,
 toBoolean, toTextOrBlank,

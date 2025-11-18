@@ -243,28 +243,6 @@ test(() => {
 	ok(!sameArray([2, 4, 6, 8], [2, 4, 6]))//different length
 })
 
-export function isObject(o) {//true if o is something we could look for properties on
-	return o?.constructor === Object//must be a plain object literal, or created with new Object()
-}
-test(() => {
-	ok(isObject({}))
-	ok(isObject({k: 'v'}))
-
-	ok(!isObject())
-	ok(!isObject(null))
-	ok(!isObject(undefined))
-	ok(!isObject(5))
-	ok(!isObject(''))
-	ok(!isObject('hi'))
-
-	ok(!isObject([]))
-	ok(!isObject([{}, {}]))
-
-	ok(!isObject(new Date()))
-	ok(!isObject(new Map()))
-	ok(!isObject(/regex/))
-})
-
 
 
 
@@ -3082,7 +3060,7 @@ export function parseKeyFile(contents) {//given file contents, split and prepare
 		if (c.found && c.before == '' && hasText(c.middle) && hasText(c.after)) {
 			let t = c.middle.split(',').map(tag => tag.trim()).sort()//array of tags
 			let l = `==${t.join(',')}==${c.after.trim()}\n`//line composed for block
-			if (t.includes('public') && t.includes('page') && !t.includes('secret')) { o.publicBlock += l } else { o.secretBlock += l }//reveal the line only if it is both acceptable (tagged public), and necessary (tagged page), to do so
+			if (t.includes('public') && !t.includes('server') && !t.includes('secret')) { o.publicBlock += l } else { o.secretBlock += l }
 		}
 	}
 	return o

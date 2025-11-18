@@ -9,13 +9,14 @@ plugins:
 
 provider:
   name: aws
-  region: us-east-1 #Lambda@Edge required North Virginia, but we're doing permissioned media with CloudFront Functions instead anyway
+  region: us-east-1
   runtime: nodejs22.x #updated 2025oct, Node 22 on Amazon Linux 2023 and good until 2027apr30, https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
   architecture: arm64 #choose Amazon's custom Graviton2 chip for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to default x86_64
   stage: prod #set production by default, as this script includes resources like buckets
-  environment: #name variables in .env file here so they are on process.env for the Lambda code
+  environment: #build these secret values from the local .env file into the server bundle
     ACCESS_KEY_SECRET:         ${env:ACCESS_KEY_SECRET}
-    ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE} #promises not to change through automatic renewals; The ACM certificate ARN identifies which certificate to use, but doesn't grant any permissions by itself, so it would be acceptable to reveal this ARN. But, including it here might look like a leaked secret, so we keep it in env for now, ttd november; working on this today
+    SECRET_KEY_U1:             ${env:SECRET_KEY_U1}
+    ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE} #promises not to change through automatic renewals; not sensitive or a secret but looks like one
   iam: #grant the identity role that runs the lambda functions additional permissions
     role:
       statements:

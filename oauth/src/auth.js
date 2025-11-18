@@ -8,7 +8,7 @@ Now, Time, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,
 
-toBoolean, toTextOrBlank, isObject,
+toBoolean, toTextOrBlank,
 checkInt, minInt,
 intToText, textToInt, commas,
 hasText, checkText,
@@ -45,17 +45,17 @@ import redditProvider  from '@auth/sveltekit/providers/reddit'
 
 export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 	let sources = []
-	if (defined(typeof process) && isObject(process.env)) {
+	if (defined(typeof process) && process.env) {
 		sources.push({note: '300: process.env', environment: process.env})
 	}
-	if (isObject(event?.platform?.env)) {
+	if (event?.platform?.env) {
 		sources.push({note: '310: event.platform.env', environment: event?.platform?.env})
 	}
 	/*
 	if (hasText(SECRET_KEY_S1)) {
 		sources.push({note: '320: $env/static/private', environment: {SECRET_KEY_S1}})//wrap it back into an object
 	}
-	if (isObject(env)) {
+	if (env) {
 		sources.push({note: '330: $env/dynamic/private', environment: env})
 	}
 	*/
