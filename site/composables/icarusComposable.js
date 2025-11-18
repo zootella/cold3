@@ -15,7 +15,7 @@ Now, Time, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,
 
-toBoolean, toTextOrBlank,
+toBoolean, toTextOrBlank, isObject,
 checkInt, minInt,
 intToText, textToInt, commas,
 hasText, checkText,

@@ -57,6 +57,7 @@ async function placeSecrets() {
 	fs.copyFile('.env', 'oauth/.dev.vars')
 	fs.copyFile('.env', 'site/.env')//also put it here
 	fs.copyFile('.env', 'site/.dev.vars')//cloudflare wants it named .dev.vars instead, and only for local; you have to also set the secret key in the dashboard
+	//^ttd november, going to edit these manually from notes now
 }
 
 async function listFiles() {

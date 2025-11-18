@@ -152,7 +152,7 @@ functions that use parts of the larger application and environment
 export {
 
 Sticker, stickerParts, isLocal, isCloud,
-Key, accessKey, canGetAccess, getAccess,
+Key, decryptKeys, accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 headerGetOne,
 keepPromise, awaitDoorPromises,
@@ -242,7 +242,7 @@ Now, sayDate, sayTick,
 test, ok, runTests,
 toss,
 log, addLogSink, logTo,
-sameObject, sameArray,
+sameObject, sameArray, isObject,
 
 checkText, hasText, checkInt, minInt,
 toBoolean, toTextOrBlank,

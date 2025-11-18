@@ -7,8 +7,8 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline, deindent,
 Tag, checkTag,
-Data, decryptData, hashText, secureSameText, hmacSign,
-makePlain, makeObject, makeText,
+Data, encryptData, decryptData, hashText, secureSameText, hmacSign,
+isObject, makePlain, makeObject, makeText,
 replaceAll, replaceOne, toTextOrBlank,
 parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
 parseEnvStyleFileContents,
@@ -316,6 +316,145 @@ export function Key(search) {//placeholder letting you use the new design before
 	const k = publicKeys()
 	return k(search)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//<new key area>
+
+/*
+bookmark overnight
+1[]see if things are working and fix them, you wrote a lot of new stuff alongside Key(), and deleted .dev.vars everywhere
+2[]refactor early Key() implementation to this new one
+3[]set the five secret keys everywhere they should go
+4[]use xray to see if you can see the access key and the new 5 secret keys in the deployment pipeline
+...
+*/
+
+//ttd november, new
+export function Key_new(search) {
+	let value = lookupKey(_keys_new, search)
+	if (!hasText(value)) toss('key not found')//every key lookup must succeed
+	return value
+}
+let _keys_new
+export async function decryptKeys(name, environments) {
+	if (_keys_new) return//only run once
+	_keys_new = []
+
+	log(`👋 hi in decryptKeys from ${name} at ${Sticker()}`)
+/*
+	//get public keys from the wrapper, these are available everywhere, many are needed on pages
+	pushKeys(_keys, parseKeyBlock(Data({base62: wrapper.publicKeys}).text()))
+
+	//search the given environments for secret keys, and decrypt all the vaults we can
+	if (defined(typeof process)) environments.push(process.env)//add regular process.env to the given list of env-like objects
+	let keys = {
+		SECRET_KEY_A1: '',
+		SECRET_KEY_S1: '', SECRET_KEY_S0: '',
+		SECRET_KEY_N1: '', SECRET_KEY_N0: '',//these are the decrypting keys we're looking for across the environments
+	}
+	const prefix = 'SecretValueXX_'//example prefix for a secret value; we just need the length, 14
+	for (let environment of environments) {
+		if (environment) {
+			for (let key in keys) {
+				if (!hasText(keys[key]) && hasText(environment[key]) && environment[key].length > prefix.length) {
+					keys[key] = environment[key].slice(prefix.length)//take the base62 encoded secret beyond the prefix tracer
+				}
+			}
+		}
+	}
+	if (hasText(keys.SECRET_KEY_A1)) {
+		pushKeys(_keys, parseKeyBlock(await decryptVaultSingle(wrapper.vaultA, keys.SECRET_KEY_A1)))
+	}
+	if (hasText(keys.SECRET_KEY_S1) && hasText(keys.SECRET_KEY_S0)) {
+		pushKeys(_keys, parseKeyBlock(await decryptVaultDouble(wrapper.vaultS, keys.SECRET_KEY_S1, keys.SECRET_KEY_S0)))
+	}
+	if (hasText(keys.SECRET_KEY_N1) && hasText(keys.SECRET_KEY_N0)) {
+		pushKeys(_keys, parseKeyBlock(await decryptVaultDouble(wrapper.vaultN, keys.SECRET_KEY_N1, keys.SECRET_KEY_N0)))
+	}
+*/
+}
+async function encryptVaultSingle(clear, key1) {
+	return (await encryptData(Data({base62: key1}), Data({text: clear}))).base62()
+}
+async function decryptVaultSingle(vault, key1) {
+	return (await decryptData(Data({base62: key1}), Data({base62: vault}))).text()
+}
+async function encryptVaultDouble(clear, key1, key0) {
+	let envelope = await encryptData(Data({base62: key0}), Data({text: clear}))//key 0 encrypts inner envelope
+	return (await encryptData(Data({base62: key1}), envelope)).base62()
+}
+async function decryptVaultDouble(vault, key1, key0) {
+	let envelope = await decryptData(Data({base62: key1}), Data({base62: vault}))
+	return (await decryptData(Data({base62: key0}), envelope)).text()//inner envelope decrypts with key 0
+}
+function pushKeys(keys, block) {
+	keys.push(...parseKeyBlock(block))
+	//you could check if keys already has a line from parse key block
+}
+noop(async () => {
+	let key1 = 'BbLytDiXXZY7KLrK6nBKEdHpCdqYvM0O0T1VTfxSTnb'
+	let key0 = 'QnulqTt58NC00Ev71Bz8ibOsctEijrrkjRYdLsYwWziI'
+
+	let clear = 'example message\r\nsecond line\r\n'
+	let vault = await encryptVaultSingle(clear, key1)
+	let clear2 = await decryptVaultSingle(vault, key1)
+//	log(clear, vault, clear2)
+	ok(clear == clear2)
+
+	let vault2 = await encryptVaultDouble(clear, key1, key0)
+	let clear22 = await decryptVaultDouble(vault2, key1, key0)
+	log(clear, vault2, clear22)
+	ok(clear == clear22)
+/*
+export async function encryptData(keyData, plainData) {
+export async function decryptData(keyData, cipherData) {
+*/
+})
+
+//</new key area>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -818,6 +957,26 @@ but should still be findable in the amazon or cloudflare dashboard
 */
 
 async function doorWorkerOpen({method, workerEvent}) {
+	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
+	if (defined(typeof process) && isObject(process.env)) {
+		sources.push({note: '100: process.env', environment: process.env})
+	}
+	if (isObject(workerEvent.context?.cloudflare?.env)) {
+		sources.push({note: '110: workerEvent.context.cloudflare.env', environment: workerEvent.context.cloudflare.env})
+	}
+	if (isObject(workerEvent.context?.env)) {
+		sources.push({note: '120: workerEvent.context.env', environment: workerEvent.context.env})
+	}
+	if (isObject(workerEvent.platform?.env)) {
+		sources.push({note: '130: workerEvent.platform.env', environment: workerEvent.platform.env})
+	}
+	if (typeof useRuntimeConfig == 'function') {
+		let c = useRuntimeConfig(workerEvent)
+		if (isObject(c)) {
+			sources.push({note: '140: useRuntimeConfig(workerEvent)', environment: c})
+		}
+	}
+	await decryptKeys('nuxt worker', sources)
 	let access = await getAccess()
 
 	let door = {}//make door object to bundle everything together about this request we're doing
@@ -846,6 +1005,11 @@ async function doorWorkerOpen({method, workerEvent}) {
 	return door
 }
 async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
+	let sources = []//unlike the cloudflare code above, the lambda event and context objects do not contain environment variables
+	if (defined(typeof process) && isObject(process.env)) {
+		sources.push({note: '200: process.env', environment: process.env})
+	}
+	await decryptKeys('lambda', sources)
 	let access = await getAccess()
 
 	let door = {}//our object that bundles together everything about this incoming request

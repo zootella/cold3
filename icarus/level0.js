@@ -243,6 +243,28 @@ test(() => {
 	ok(!sameArray([2, 4, 6, 8], [2, 4, 6]))//different length
 })
 
+export function isObject(o) {//true if o is something we could look for properties on
+	return o?.constructor === Object//must be a plain object literal, or created with new Object()
+}
+test(() => {
+	ok(isObject({}))
+	ok(isObject({k: 'v'}))
+
+	ok(!isObject())
+	ok(!isObject(null))
+	ok(!isObject(undefined))
+	ok(!isObject(5))
+	ok(!isObject(''))
+	ok(!isObject('hi'))
+
+	ok(!isObject([]))
+	ok(!isObject([{}, {}]))
+
+	ok(!isObject(new Date()))
+	ok(!isObject(new Map()))
+	ok(!isObject(/regex/))
+})
+
 
 
 
@@ -499,6 +521,9 @@ test(() => {
 		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
 		'first ‹6789› and second ‹SIZE› later')
 })
+
+
+
 
 
 
