@@ -31,6 +31,7 @@ decryptKeys,
 } from 'icarus'
 
 /*
+//ttd november, researched but not tested, how to inject a secret into the sveltekit server bundle
 import {SECRET_KEY_S1}  from '$env/static/private'//read static value built into server bundle when we deployed to cloudflare
 import {env} from '$env/dynamic/private'//read dynamic value from .env when running locally
 */
@@ -44,6 +45,7 @@ import twitchProvider  from '@auth/sveltekit/providers/twitch'
 import redditProvider  from '@auth/sveltekit/providers/reddit'
 
 export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
+	const access = await getAccess(event.platform.env)//give getAccess() the environment variable object like process.env
 	let sources = []
 	if (defined(typeof process) && process.env) {
 		sources.push({note: '300: process.env', environment: process.env})
@@ -52,6 +54,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 		sources.push({note: '310: event.platform.env', environment: event?.platform?.env})
 	}
 	/*
+	//ttd november, additional possible key sources from above
 	if (hasText(SECRET_KEY_S1)) {
 		sources.push({note: '320: $env/static/private', environment: {SECRET_KEY_S1}})//wrap it back into an object
 	}
@@ -60,7 +63,6 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 	}
 	*/
 	await decryptKeys('sveltekit worker', sources)
-	const access = await getAccess(event.platform.env)//give getAccess() the environment variable object like process.env
 
 	let authOptions = {
 		providers: [

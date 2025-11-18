@@ -301,7 +301,6 @@ function loadKeys() {
 }
 
 export async function decryptKeys(sender, sources) {
-	log('hi in decrypt keys')
 	if (_alreadyDecrypted) return; _alreadyDecrypted = true
 
 	const name = 'SECRET_KEY_U1'
@@ -366,6 +365,7 @@ export async function decryptKeys(name, environments) {
 
 }
 */
+/*
 async function encryptVaultSingle(clear, key1) {
 	return (await encryptData(Data({base62: key1}), Data({text: clear}))).base62()
 }
@@ -394,11 +394,14 @@ noop(async () => {
 	let clear22 = await decryptVaultDouble(vault2, key1, key0)
 	log(clear, vault2, clear22)
 	ok(clear == clear22)
+*/
 /*
 export async function encryptData(keyData, plainData) {
 export async function decryptData(keyData, cipherData) {
 */
+/*
 })
+*/
 
 //</new key area>
 
@@ -464,7 +467,6 @@ function accessKey_once(environment) {//look for the access key three places
 }
 
 async function getAccess_once(environment) {
-	log('hi in get access once')
 	let key = accessKey_once(environment)
 	if (!hasText(key)) toss('no access key')
 	let decrypted = (await decryptData(Data({base62: key}), Data({base62: wrapper.secrets}))).text()
@@ -972,13 +974,8 @@ async function doorWorkerOpen({method, workerEvent}) {
 }
 async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	let sources = []//unlike the cloudflare code above, the lambda event and context objects do not contain environment variables
-
-	log('hi', defined(typeof process), process.env)//hi, true, false
-
-
 	if (defined(typeof process) && process.env) {
 		sources.push({note: '200: process.env', environment: process.env})
-		log('added process env in door lambda open, weird if it wouldnt')
 	}
 	await decryptKeys('lambda', sources)
 	let access = await getAccess()
