@@ -9,7 +9,7 @@ plugins:
 
 provider:
   name: aws
-  region: us-east-1 #Lambda@Edge requires North Virginia
+  region: us-east-1 #Lambda@Edge required North Virginia, but we're doing permissioned media with CloudFront Functions instead anyway
   runtime: nodejs22.x #updated 2025oct, Node 22 on Amazon Linux 2023 and good until 2027apr30, https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
   architecture: arm64 #choose Amazon's custom Graviton2 chip for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to default x86_64
   stage: prod #set production by default, as this script includes resources like buckets
