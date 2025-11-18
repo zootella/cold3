@@ -275,6 +275,7 @@ export async function runTestsSticker() {
 
 
 
+//<new key area>
 
 //  _                  
 // | | _____ _   _ ___ 
@@ -283,27 +284,36 @@ export async function runTestsSticker() {
 // |_|\_\___|\__, |___/
 //           |___/     
 
+export function Key(search) {//placeholder letting you use the new design before you code it
+	log(`hi in Key, you're looking for "${search}"`)
+
+	loadKeys()
+
+	let value = lookupKey(_keys, search)
+	if (!hasText(value)) toss('key not found')//every key lookup must succeed
+	return value
+}
+let _keys = [], _alreadyLoaded, _alreadyDecrypted//only decrypt once, on door open; only load public once, on first search with Key()
+
+function loadKeys() {
+	if (_alreadyLoaded) return; _alreadyLoaded = true
+
+	_keys.push(...parseKeyBlock(Data({base62: wrapper.publicKeys}).text()))
+}
+
+export async function decryptKeys(name, environments) {
+	if (_alreadyDecrypted) return; _alreadyDecrypted = true
+
+	dog(`👋 hi in decryptKeys from ${name} at ${Sticker()}`)
+}
+
+//notes and ttd november from first version of Key, which you're now changing and simplifying
 /*
 const Key = await secretKeys() - get public keys and secrets; only works on a server!
 const Key = publicKeys() - call from anywhere to get just the public keys and factory presents
 Key('tag1, tag2, tag3') - lookup the key by specifying all of its tags, order doesn't matter, tags can have spaces!
 */
-async function secretKeys() {//on the server, get all the keys
-	//ttd september2025, at some point refactor getAccess() below into this system; []use redact during seal to confirm wrapper does not contain secrets!
-}
-function publicKeys() {//on the page, get only keys that can and must be revealed
-	if (!_loadedPublicKeys) { _loadedPublicKeys = true
-		_keys.push(...parseKeyBlock(Data({base62: wrapper.publicKeys}).text()))
-	}
-	return _Key
-}
-function _Key(search) {//not exported; get Key() from calling one of the functions above
-	let value = lookupKey(_keys, search)
-	if (!hasText(value)) toss('key not found')//every key lookup must succeed
-	return value
-}
-let _keys = [], _loadedPublicKeys, _loadedSecretKeys
-
+//ttd september2025, at some point refactor getAccess() below into this system; []use redact during seal to confirm wrapper does not contain secrets!
 /*
 ttd november
 new design idea for this
@@ -312,37 +322,6 @@ to be able to get secret ones, you have to first call await decryptKeys()
 and of course that only works on the server, throws elsewhere
 and Key() throws if you ask for one it doesn't have, so any server one that's not on the server
 */
-export function Key(search) {//placeholder letting you use the new design before you code it
-	const k = publicKeys()
-	return k(search)
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//<new key area>
 
 /*
 bookmark overnight
@@ -354,18 +333,12 @@ bookmark overnight
 */
 
 //ttd november, new
-export function Key_new(search) {
-	let value = lookupKey(_keys_new, search)
-	if (!hasText(value)) toss('key not found')//every key lookup must succeed
-	return value
-}
+/*
 let _keys_new
 export async function decryptKeys(name, environments) {
 	if (_keys_new) return//only run once
 	_keys_new = []
 
-	dog(`👋 hi in decryptKeys from ${name} at ${Sticker()}`)
-/*
 	//get public keys from the wrapper, these are available everywhere, many are needed on pages
 	pushKeys(_keys, parseKeyBlock(Data({base62: wrapper.publicKeys}).text()))
 
@@ -395,8 +368,8 @@ export async function decryptKeys(name, environments) {
 	if (hasText(keys.SECRET_KEY_N1) && hasText(keys.SECRET_KEY_N0)) {
 		pushKeys(_keys, parseKeyBlock(await decryptVaultDouble(wrapper.vaultN, keys.SECRET_KEY_N1, keys.SECRET_KEY_N0)))
 	}
-*/
 }
+*/
 async function encryptVaultSingle(clear, key1) {
 	return (await encryptData(Data({base62: key1}), Data({text: clear}))).base62()
 }

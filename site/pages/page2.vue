@@ -4,5 +4,6 @@
 <template>
 
 <WalletDemo />
+<PasswordDemo />
 
 </template>
