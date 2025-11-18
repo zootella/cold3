@@ -310,7 +310,7 @@ export async function decryptKeys(sender, sources) {
 		let places = []
 		for (let source of sources) {
 			let v = source.environment?.[name]
-			if (hasText(v)) places.push(`hash ${(await hashText(v)).slice(0, 3)} length ${v.length} at ${source.note}`)
+			if (hasText(v)) places.push(`${(await hashText(v)).slice(0, 3)}‹${v.length}› ${isLocal() ? 'local' : 'cloud'} ${source.note}`)
 		}
 		let s = `Key found ${places.length} places by ${sender} at ${Sticker()}`+newline
 		if (places.length) s += places.join(newline)
