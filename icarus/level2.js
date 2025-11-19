@@ -305,7 +305,7 @@ export async function decryptKeys(sender, sources) {
 	const name = 'SECRET_KEY_U1'
 	const prefix = 14
 
-	if (true) {//see where we're finding the key across local|cloud × lambda|nuxt|sveltekit
+	if (false) {//see where we're finding the key across local|cloud × lambda|nuxt|sveltekit
 		let places = []
 		for (let source of sources) {
 			let v = source.environment?.[name]
@@ -829,7 +829,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	}//seeing 100 both local and cloud; local makes sense, but not sure if cloud is coming from bundle or dashboard, ttd november
 	if (workerEvent.context?.cloudflare?.env) {
 		sources.push({note: '110: workerEvent.context.cloudflare.env', environment: workerEvent.context.cloudflare.env})
-	}//seeing 110 sometimes local only, sometimes both
+	}//seeing 110 local always and cloud sometimes, which is super weird
 	if (workerEvent.context?.env) {
 		sources.push({note: '120: workerEvent.context.env', environment: workerEvent.context.env})
 	}//seeing 120 never 
