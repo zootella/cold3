@@ -1608,12 +1608,12 @@ const totp_window = 1//permit codes from the previous and next 1 time periods to
 Enroll                🟢 make the qr code for the user to scan to set up their authenticator app
 > Secret              make the shared secret for totp
 > EnrollGivenSecret   factored for testing, do the work of the enrollment given the random secret
-  > SecretIdentifier  🟢 show the user text like "[X2B]" hashed from the secret
+	> SecretIdentifier  🟢 show the user text like "[X2B]" hashed from the secret
 Validate              🟢 determine if a code is valid for a secret right now
 > ValidateGivenTime   factored for testing, determine if a code is valid for the given secret and time
-  > Generate          ☢️ exported only for demonstration and testing! generate the same code the authenticator app does
-    > Counter         following rfc6238, turn a time into bytes to hash
-    > Truncate        following rfc6238, turn a hash into the short code of numerals
+	> Generate          ☢️ exported only for demonstration and testing! generate the same code the authenticator app does
+		> Counter         following rfc6238, turn a time into bytes to hash
+		> Truncate        following rfc6238, turn a hash into the short code of numerals
 */
 
 export async function totpEnroll({label, issuer, addIdentifier}) {
@@ -2154,50 +2154,29 @@ test(() => {
 
 
 
+//  _                             _   _                       _       _         _ _ _                 _     
+// | |_ __ _  __ _  __ _  ___  __| | | |_ ___ _ __ ___  _ __ | | __ _| |_ ___  | (_) |_ ___ _ __ __ _| |___ 
+// | __/ _` |/ _` |/ _` |/ _ \/ _` | | __/ _ \ '_ ` _ \| '_ \| |/ _` | __/ _ \ | | | __/ _ \ '__/ _` | / __|
+// | || (_| | (_| | (_| |  __/ (_| | | ||  __/ | | | | | |_) | | (_| | ||  __/ | | | ||  __/ | | (_| | \__ \
+//  \__\__,_|\__, |\__, |\___|\__,_|  \__\___|_| |_| |_| .__/|_|\__,_|\__\___| |_|_|\__\___|_|  \__,_|_|___/
+//           |___/ |___/                               |_|                                                  
 
+//custom tagged template literal function; use like trail`A message for ${name} about ${thing}`
+//just like the default template literal, with an additional check to require non-blank strings
+//important for being sure you're hashing the text you think you are hashing (you can't tell from looking at the hash value!)
+export function trail(words, ...fields) {//strings is not lines, it's the literal text pieces between the ${} interpolations.
+	for (let field of fields) checkText(field)
 
-//moar to organize later
-
-export function deindent(s) {
-	s = s.trim()//remove spaces, tabs, and \r and \n characters from the start and end
-	let a = splitLines(s)//split into an array of lines
-	a = a.map(line => line.trim())//trim each line
-	return a.join(newline)//combine back into a string with each line ending \r\n for windows or unix
+	//fill in the blanks to build the string the same way javascript does
+	let s = words[0]
+	for (let i = 0; i < fields.length; i++) s += fields[i] + words[i + 1]
+	return s
 }
-/*
-function trimNewlineCharacters(s) {
-	return s.replace(/^[\r\n]+|[\r\n]+$/g, '')//remove any and all \r and \n from the start and end of s
-}
-*/
-function splitLines(s) {
-	return s.split(/\r\n|\n/)
-}
-/*
-test(() => {
-	ok(trimNewlineCharacters('AB') == 'AB')
-	ok(trimNewlineCharacters('A\r\nB') == 'A\r\nB')//windows uses \r\n
-	ok(trimNewlineCharacters('A\nB') == 'A\nB')//the rest of the modern world uses just \n
-	ok(trimNewlineCharacters('\r\nA\r\nB\r\n\r\n') == 'A\r\nB')
-	ok(trimNewlineCharacters('\nA\nB\n\n') == 'A\nB')
-})
-*/
-test(() => {
-	ok(splitLines('')+'' == '')
-	ok(splitLines('A\nB')+'' == 'A,B')
-	ok(splitLines('A\n\nB')+'' == 'A,,B')
-})
-/*
-here's one-hour deindent
-the fancier feature you thought of that this doesn't do is
-remove the whitespace from the first line from all the other lines
-this flattens every line against the margin
-but that's probably all you need
-*/
-
 test(() => {//calls to trail are like trailAdd(`Thing ${s} just happened`) assuming s is the correct string; but if it's an object or promise js will just call .toString() on it, trailAdd will add a row with a hash, and then we won't be able to find that hash later! so we must guard against this, as it's quite possible and would be difficult to spot!
-	//first, let's just obvserve how things can go wrong with js template literals
 
+	//first, let's just obvserve how things can go wrong with js template literals
 	let s = 'hi'
+	let b = ''//blank
 	let i = 19
 	let f = 10/3
 	let o = {n: 7}
@@ -2205,50 +2184,75 @@ test(() => {//calls to trail are like trailAdd(`Thing ${s} just happened`) assum
 	let p = Promise.resolve('done')//born resolved, but to get done you have to await p
 	let u = undefined
 	let n = null
-	ok(`string: ${s} and int: ${i} are ok; float: ${f}, object: ${o}, array: ${a}, promise: ${p}, undefined: ${u}, and null: ${n} would make a mess` == 'string: hi and int: 19 are ok; float: 3.3333333333333335, object: [object Object], array: a,b, promise: [object Promise], undefined: undefined, and null: null would make a mess')
+	ok(`string: ${s} blank: ${b} and int: ${i} are ok for a trail message; float: ${f}, object: ${o}, array: ${a}, promise: ${p}, undefined: ${u}, and null: ${n} would make a mess` == 'string: hi blank:  and int: 19 are ok for a trail message; float: 3.3333333333333335, object: [object Object], array: a,b, promise: [object Promise], undefined: undefined, and null: null would make a mess')
+
+	//sanity check our trail custom tagged template literal function
+	ok(trail`` == '')
+	ok(trail`${'a'}` == 'a')
+	let name1 = 'Alice'
+	let name2 = 'Bob'
+	ok(trail`Hello ${name1} and ${name2}` == 'Hello Alice and Bob')
+
+	//play around with watching it throw if you pass it blank or a non string
+	if (false) trail`here ${name2} put in something ${p} that blows up from above`
 })
 
-/*
-ttd november, ok, so for trailAdd etc claude is reccomending a tagged template literal
-if you do this, you could make another one, margin``, which does the deindent
-claude could probably write that pretty well, just provide the test cases and let it go to town
-*/
-function trail(strings, ...values) {//strings is not lines, it's the literal text pieces between the ${} interpolations.
-  for (let i = 0; i < values.length; i++) {
-    const v = values[i]
-    // ONLY strings allowed, nothing else
-    if (typeof v != 'string') {
-      toss('type', {strings, values})
-    }
-    // Also require non-empty strings
-    if (v == '') {
-      toss('blank', {strings, values})
-    }
-  }
-  // Build the string
-  return strings.reduce((result, str, i) => 
-    result + str + (i < values.length ? values[i] : ''), ''
-  )
-}
+//be able to indent multiline string literals with code so they don't mess up overall readability!
+export function deindent(words, ...fields) {
+	if (!Array.isArray(words)) toss('type', {words, fields})//you probably called this like a function
 
-function margin(strings, ...values) {
-	//here's the deindenter
-}
-noop(() => {
+	let s = words[0]//fill in the blanks like `Name: ${name}` does
+	for (let i = 0; i < fields.length; i++) s += String(fields[i]) + words[i + 1]
 
-	ok(margin`
-		a
-		b
-			c (three tabs become two spaces)
-		d
-	` == `a
-b
-  c (three tabs become two spaces)
-d
-`)//essentially, this is what you want--no blank line at the start, one terminator at the end, normalize whitespace that begins each line with tabs -> 2 spaces, then measure how many spaces begin the first line and remove up to that many, not more, from each line
-//have it never fail, work correctly when you use it correctly, and not go too crazy trying to fix things when  you use it not correctly, then it's just important that it doesn't change anything outside the whitespace. so if use is nontraditional, like it starts with something other than a newline, it just doesn't fix that part
-//oh also it makes newlines \r\n regardless of what they were at the start
+	let lines = s.replace(/\r\n|\r|\n/g, '\n')//temporarily normalize newlines to just \n
+		.split('\n')//split into lines
+		.map(line => line.replace(/^[ \t]+/, match => match.replace(/\t/g, '  ')).trimEnd())//replace tabs at the start with two spaces
+		.join('\n')
+		.replace(/^\n+|\n+$/g, '')//remove blank lines from the start and end; blank lines in the middle stay
+		.split('\n')
+
+	let indent = 0//determine how many spaces indent the first line
+	if (lines.length > 0) indent = (lines[0].match(/^( *)/))[1].length
+	lines = lines.map(line => {//remove up to that many spaces from each line
+		let remove = 0
+		while (remove < indent && remove < line.length && line[remove] == ' ') remove++
+		return line.slice(remove)
+	})
+
+	return lines.join(newline) + newline//reassemble lines with trailing newlines
+}
+test(() => {//sanity check
+	let name1 = 'Alice'
+	let name2 = 'Bob'
+	ok(deindent`Hello ${name1} and ${name2}` == 'Hello Alice and Bob\r\n')
+
+	//now you can indent a multiline string with the surrounding code
+	let s1 = deindent`
+		1. Introduction
+		2. Summary of Purpose
+			2a. Detail about Particular Purpose
+		3. Action Plan
+	`
+	//rather than having to do this
+	let s2 = deindent`1. Introduction
+2. Summary of Purpose
+	2a. Detail about Particular Purpose
+3. Action Plan
+`
+	//and they're the same!
+	ok(s1 == s2)
 })
+noop(() => {//play around with deindent
+	function f(s) { log(`${newline}↓${newline}${s}↑`) }//newlines so you can see output between vertical arrows
+	f(deindent`
+		A
+			B
+		C
+	`)
+})
+//ttd november, ok now at last you've got deindent finished in the bike shed, you could look around to see where you can use it to improve code readability
+
+
 
 
 
@@ -3318,6 +3322,9 @@ test(() => {
 
 
 
+export function liveBox(s) {//move to another level by moving this, as well as the export in index.js
+	//return s.length
+}
 
 
 

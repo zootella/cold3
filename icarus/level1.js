@@ -13,10 +13,11 @@ checkText,
 tagLength, Tag, checkTagOrBlank, checkTag, hasTag,
 Bin, Data, checkSizeStartEnd, randomBetween, mulberryData,
 cut,
-fraction, exponent, int, big, deindent, newline,
+fraction, exponent, int, big, newline,
 hashText, given,
 makePlain, makeObject, makeText,
 totpGenerate,
+trail, deindent,
 } from './level0.js'
 
 //from npm
@@ -1557,8 +1558,6 @@ test(() => {
 	round('.XX...XXXX')
 })
 
-export function liveBox(s) {
-}
 
 //  _               _        __ _ _                        _       _                            
 // | |__   __ _ ___| |__    / _(_) | ___    __ _ _ __   __| |  ___| |_ _ __ ___  __ _ _ __ ___  

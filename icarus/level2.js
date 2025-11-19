@@ -5,7 +5,7 @@ wrapper,
 import {//from level0
 Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
-checkInt, hasText, checkText, newline, deindent,
+checkInt, hasText, checkText, newline,
 Tag, checkTag,
 Data, encryptData, decryptData, hashText, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
@@ -15,6 +15,7 @@ parseEnvStyleFileContents,
 sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 runTests,
+trail, deindent,
 } from './level0.js'
 import {//from level1
 Limit, checkActions,

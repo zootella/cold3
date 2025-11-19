@@ -14,6 +14,7 @@ intToText, textToInt, commas,
 hasText, checkText,
 hasTextOrBlank, checkTextOrBlank,
 makePlain, makeObject, makeText,
+trail, deindent,
 
 Tag, hasTag, checkTag, checkTagOrBlank,
 checkHash,

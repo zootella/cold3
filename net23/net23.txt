@@ -413,6 +413,15 @@ pay attention to the cause and the remedy of the error, here are three
 
 
 
+Exception Handling Design Guideline
+- Use try/catch to protect against third-party API failures only. Examples: Twilio SMS calls on Lambda, Alchemy/MetaMask calls in the browser.
+- Never use exceptions for control flow within our own code. Our code should be correct - if an exception occurs in our code, it indicates a bug we need to fix, not an expected condition to handle.
+- Let unexpected exceptions bubble up. Nuxt's client and server-wide error handlers catch these, report them, and show users a "Please refresh and try again, or contact us on Discord" message. This deliberate crash surfaces bugs quickly rather than masking them.
+- Result: Exceptions are rare. When they do occur, they're truly exceptional - either third-party service failures (handled locally with try/catch) or bugs in our code (caught globally, reported, and fixed).
+
+
+
+
 
        _ _          _                _         _               _   
   __ _(_) |_    ___| |__   ___  __ _| |_   ___| |__   ___  ___| |_ 

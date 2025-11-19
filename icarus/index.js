@@ -197,8 +197,6 @@ functions that use module imports
 */
 export {
 
-liveBox,//move to whichever level you need it!
-
 sayPlural, commas, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
 Limit, cropToLimit,
@@ -252,6 +250,7 @@ checkNumerals, isNumerals, takeNumerals,
 newline,
 cut, cutLast,
 replaceAll, replaceOne,
+trail, deindent,
 
 Bin, Data, checkSizeStartEnd, mulberryData,
 base62ToInt, intToBase62,
@@ -271,7 +270,6 @@ totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, che
 tickToDay, dayToTick,
 sayTimePage, sayWhenPage, sayWhenFeed,
 fraction, exponent, int, big,
-deindent,
 defined, given,
 squareEncode, squareDecode, checkSquare,
 correctLength,
@@ -287,5 +285,7 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 roundDown,
 
 sample1,
+
+liveBox,//move to whichever level you need it!
 
 } from './level0.js'

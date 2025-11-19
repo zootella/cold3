@@ -152,36 +152,6 @@ that's February 14, 1980
 
 
 
-/*
-//here's a bike shed--write a tight little deindent
-
-so you can
-{
-	{
-		s = `
-		first list
-		second line
-		third line
-		`
-	}
-}
-
-and what you get is
-`first line
-second line
-third line
-`
-
-so it removes the leading newline
-keeps the other newlines the same
-and removes whatever space is at the start of the first line
-from all the other lines
-
-maybe remove that number of things
-like that number of
-
-confirm you don't chop off any nonwhitespace doing this
-*/
 
 
 
