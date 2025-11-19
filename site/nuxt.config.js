@@ -22,13 +22,6 @@ const configuration = {
 configuration.compatibilityDate = '2025-06-10'//pin Nitro and other Nuxt modules to follow this date of behavior to include (or avoid) breaking changes
 configuration.devtools = {enabled: true}//enable the Nuxt devtools extension in the browser when running locally
 
-//for key
-/*
-configuration.runtimeConfig = {
-	SECRET_KEY_N1: process.env.SECRET_KEY_N1//intentionally build into server bundle
-}
-*/
-
 //for build analysis and visualization
 configuration.build = {
 	analyze: {//enable Nuxt’s built-in analyzer, which uses Rollup Plugin Visualizer under the hood

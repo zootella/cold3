@@ -38,25 +38,10 @@ import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
 const pathWrapperTxt = 'wrapper.txt'
 const pathWrapperJs  = 'icarus/wrapper.js'
 async function seal() {
-	await placeSecrets()
 	let list = await listFiles()
 	let properties = await hashFiles(list)
 	let manifest = await composeWrapper(properties)
 	await affixSeal(properties, manifest)
-}
-
-async function placeSecrets() {
-
-	//you've already placed these secret files in the project root:
-	fs.access('.env')//throws if not found
-	fs.access('.env.local')
-
-	//copy them down where workspaces need them
-	fs.copyFile('.env', 'net23/.env')//lambda uses regular .env, and automatically deploys to amazon
-	fs.copyFile('.env', 'oauth/.env')
-	fs.copyFile('.env', 'oauth/.dev.vars')
-	fs.copyFile('.env', 'site/.env')//also put it here
-	fs.copyFile('.env', 'site/.dev.vars')//cloudflare wants it named .dev.vars instead, and only for local; you have to also set the secret key in the dashboard
 }
 
 async function listFiles() {
@@ -142,10 +127,10 @@ async function affixSeal(properties, manifest) {
 	let hash = Data({array: crypto.createHash('sha256').update(manifest).digest()})
 
 	//encrypt the secrets in .env.local
-	let envSecretContents = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
-	let encryptedData = await encryptData(
+	let legacy_plain = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
+	let legacy_cipher = await encryptData(
 		Data({base62: process.env.ACCESS_KEY_SECRET}),
-		Data({text: envSecretContents})
+		Data({text: legacy_plain})
 	)
 
 	//ttd november, new system for page keys like alchemy, not yet running any actual secrets through here
@@ -168,9 +153,9 @@ async function affixSeal(properties, manifest) {
 	o.codeSize = codeSize
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
-	o.secrets = encryptedData.base62()//current system for server secrets
-	o.vaultU = cipherData.base62()//put new system in place, haven't moved any actual secrets over yet
-	o.plain = publicData.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
+	o.secrets = legacy_cipher.base62()//current system for server secrets
+	o.secretKeys = cipherData.base62()//put new system in place, haven't moved any actual secrets over yet
+	o.publicKeys = publicData.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)

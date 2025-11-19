@@ -49,10 +49,10 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 	let sources = []
 	if (defined(typeof process) && process.env) {
 		sources.push({note: '300: process.env', environment: process.env})
-	}
+	}//seeing 300 cloud, only
 	if (event?.platform?.env) {
 		sources.push({note: '310: event.platform.env', environment: event?.platform?.env})
-	}
+	}//seeing 310 both, local and cloud
 	/*
 	//ttd november, additional possible key sources from above
 	if (hasText(SECRET_KEY_S1)) {

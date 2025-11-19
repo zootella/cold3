@@ -275,7 +275,6 @@ export async function runTestsSticker() {
 
 
 
-//<new key area>
 
 //  _                  
 // | | _____ _   _ ___ 
@@ -296,7 +295,7 @@ let _keys = [], _alreadyLoaded, _alreadyDecrypted//only decrypt once, on door op
 function loadKeys() {
 	if (_alreadyLoaded) return; _alreadyLoaded = true
 
-	let block = Data({base62: wrapper.plain}).text()
+	let block = Data({base62: wrapper.publicKeys}).text()
 	_keys.push(...parseKeyBlock(block))
 }
 
@@ -310,7 +309,7 @@ export async function decryptKeys(sender, sources) {
 		let places = []
 		for (let source of sources) {
 			let v = source.environment?.[name]
-			if (hasText(v)) places.push(`${(await hashText(v)).slice(0, 3)}‹${v.length}› ${isLocal() ? 'local' : 'cloud'} ${source.note}`)
+			if (hasText(v)) places.push(`${isLocal() ? 'local' : 'cloud'} ${source.note} found ${(await hashText(v)).slice(0, 2)}‹${v.length}›`)
 		}
 		let s = `Key found ${places.length} places by ${sender} at ${Sticker()}`+newline
 		if (places.length) s += places.join(newline)
@@ -324,111 +323,9 @@ export async function decryptKeys(sender, sources) {
 	}
 	if (!hasText(key)) return//give up here; looking for a Key() will throw soon after
 
-	let block = (await decryptData(Data({base62: key.slice(prefix)}), Data({base62: wrapper.vaultU}))).text()
+	let block = (await decryptData(Data({base62: key.slice(prefix)}), Data({base62: wrapper.secretKeys}))).text()
 	_keys.push(...parseKeyBlock(block))
 }
-
-
-
-
-//notes and ttd november from first version of Key, which you're now changing and simplifying
-/*
-const Key = await secretKeys() - get public keys and secrets; only works on a server!
-const Key = publicKeys() - call from anywhere to get just the public keys and factory presents
-Key('tag1, tag2, tag3') - lookup the key by specifying all of its tags, order doesn't matter, tags can have spaces!
-*/
-//ttd september2025, at some point refactor getAccess() below into this system; []use redact during seal to confirm wrapper does not contain secrets!
-/*
-ttd november
-new design idea for this
-autoimported function Key() is the same everywhere
-to be able to get secret ones, you have to first call await decryptKeys()
-and of course that only works on the server, throws elsewhere
-and Key() throws if you ask for one it doesn't have, so any server one that's not on the server
-*/
-
-/*
-bookmark overnight
-1[]see if things are working and fix them, you wrote a lot of new stuff alongside Key(), and deleted .dev.vars everywhere
-2[]refactor early Key() implementation to this new one
-3[]set the five secret keys everywhere they should go
-4[]use xray to see if you can see the access key and the new 5 secret keys in the deployment pipeline
-...
-*/
-
-//ttd november, new
-/*
-let _keys_new
-export async function decryptKeys(name, environments) {
-	if (_keys_new) return//only run once
-	_keys_new = []
-
-}
-*/
-/*
-async function encryptVaultSingle(clear, key1) {
-	return (await encryptData(Data({base62: key1}), Data({text: clear}))).base62()
-}
-async function decryptVaultSingle(vault, key1) {
-	return (await decryptData(Data({base62: key1}), Data({base62: vault}))).text()
-}
-async function encryptVaultDouble(clear, key1, key0) {
-	let envelope = await encryptData(Data({base62: key0}), Data({text: clear}))//key 0 encrypts inner envelope
-	return (await encryptData(Data({base62: key1}), envelope)).base62()
-}
-async function decryptVaultDouble(vault, key1, key0) {
-	let envelope = await decryptData(Data({base62: key1}), Data({base62: vault}))
-	return (await decryptData(Data({base62: key0}), envelope)).text()//inner envelope decrypts with key 0
-}
-noop(async () => {
-	let key1 = 'BbLytDiXXZY7KLrK6nBKEdHpCdqYvM0O0T1VTfxSTnb'
-	let key0 = 'QnulqTt58NC00Ev71Bz8ibOsctEijrrkjRYdLsYwWziI'
-
-	let clear = 'example message\r\nsecond line\r\n'
-	let vault = await encryptVaultSingle(clear, key1)
-	let clear2 = await decryptVaultSingle(vault, key1)
-//	log(clear, vault, clear2)
-	ok(clear == clear2)
-
-	let vault2 = await encryptVaultDouble(clear, key1, key0)
-	let clear22 = await decryptVaultDouble(vault2, key1, key0)
-	log(clear, vault2, clear22)
-	ok(clear == clear22)
-*/
-/*
-export async function encryptData(keyData, plainData) {
-export async function decryptData(keyData, cipherData) {
-*/
-/*
-})
-*/
-
-//</new key area>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //                              
 //   __ _  ___ ___ ___  ___ ___ 
@@ -925,27 +822,27 @@ but should still be findable in the amazon or cloudflare dashboard
 */
 
 async function doorWorkerOpen({method, workerEvent}) {
+	let access = await getAccess()
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
 		sources.push({note: '100: process.env', environment: process.env})
-	}
+	}//seeing 100 both local and cloud; local makes sense, but not sure if cloud is coming from bundle or dashboard, ttd november
 	if (workerEvent.context?.cloudflare?.env) {
 		sources.push({note: '110: workerEvent.context.cloudflare.env', environment: workerEvent.context.cloudflare.env})
-	}
+	}//seeing 110 local only; the workerEvent object is huge both local and cloud, but you're only seeing secrets in the local one
 	if (workerEvent.context?.env) {
 		sources.push({note: '120: workerEvent.context.env', environment: workerEvent.context.env})
-	}
+	}//seeing 120 never 
 	if (workerEvent.platform?.env) {
 		sources.push({note: '130: workerEvent.platform.env', environment: workerEvent.platform.env})
-	}
+	}//seeing 130 never
 	if (typeof useRuntimeConfig == 'function') {
 		let c = useRuntimeConfig(workerEvent)
 		if (c) {
-			sources.push({note: '140: useRuntimeConfig(workerEvent)', environment: c})
+			sources.push({note: '140: useRuntimeConfig(workerEvent)', environment: c})//seeing flow reach here local and cloud
 		}
-	}
+	}//seeing 140 never, which is ironic as this is the correct Nuxt way to do things! ttd november
 	await decryptKeys('nuxt worker', sources)
-	let access = await getAccess()
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.task = Task({name: 'door worker'})
@@ -973,12 +870,12 @@ async function doorWorkerOpen({method, workerEvent}) {
 	return door
 }
 async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
+	let access = await getAccess()
 	let sources = []//unlike the cloudflare code above, the lambda event and context objects do not contain environment variables
 	if (defined(typeof process) && process.env) {
 		sources.push({note: '200: process.env', environment: process.env})
-	}
+	}//seeing 200 both local and cloud; must be built into server bundle because there is no dashboard source
 	await decryptKeys('lambda', sources)
-	let access = await getAccess()
 
 	let door = {}//our object that bundles together everything about this incoming request
 	door.task = Task({name: 'door lambda'})
