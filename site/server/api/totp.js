@@ -1,6 +1,7 @@
 //./server/api/totp.js
 import {
-browserToUser, trailAdd, trailCount,
+browserToUser,
+trailRecent, trailCount, trailGet, trailAdd,
 checkNumerals, Data, encryptData, decryptData,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
@@ -51,7 +52,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		enrollment.secretCipher62 = (await encryptData(keyData, Data({base32: enrollment.secret}))).base62()
 
 		await trailAdd(
-			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${enrollment.secret}`
+			trail`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${enrollment.secret}`
 		)
 		return {outcome: 'Candidate.', enrollment}
 
@@ -65,7 +66,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
 		let n = await trailCount(
-			`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${secret}`,
+			trail`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${secret}`,
 			totpConstants.enrollmentExpiration
 		)
 		if (n != 1) return {outcome: 'BadSecret.'}//➡️ passing this check is proof it's the real secret from step 1!
@@ -84,7 +85,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		//protect guesses on this secret from a brute force attack, which would succeed quickly
 		let n = await trailCount(
-			`TOTP wrong guess on Secret ${secret}`,
+			trail`TOTP wrong guess on Secret ${secret}`,
 			totpConstants.guardHorizon
 		)
 		if (n >= totpConstants.guardWrongGuesses) return {outcome: 'Later.'}
@@ -95,14 +96,14 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 			log(`ttd november 🎃 user ${userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
 			await trailAdd(
-				`TOTP validation on Secret ${secret}`//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
+				trail`TOTP validation on Secret ${secret}`//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
 			)
 			return {outcome: 'Correct.'}
 
 		} else {//guess at code from page is wrong
 
 			await trailAdd(
-				`TOTP wrong guess on Secret ${secret}`
+				trail`TOTP wrong guess on Secret ${secret}`
 			)
 			return {outcome: 'Wrong.'}
 		}
@@ -115,11 +116,3 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		return {outcome: 'Removed.'}
 	}
 }
-
-
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 //./server/api/wallet.js
 import {
 checkWallet, validateWallet,
-trailAdd, trailCount,
+trailRecent, trailCount, trailGet, trailAdd,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 
@@ -15,7 +15,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
 		let message = `Add your wallet with an instant, zero-gas signature of code ${nonce}`//metamask will show this to the user so we're keeping it short and non-scary; examples from opensea are much longer with uri, mainnet id, timestamp, ttd november
 		await trailAdd(
-			`Ethereum challenged Wallet Address ${address} with Nonce ${nonce}`
+			trail`Ethereum challenged Wallet Address ${address} with Nonce ${nonce}`
 		)
 		return {action, address, nonce, message}
 

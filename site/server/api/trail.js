@@ -1,6 +1,6 @@
 
 import {
-trailCount, trailRecent, trailAdd,
+trailRecent, trailCount, trailGet, trailAdd,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

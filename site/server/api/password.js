@@ -1,6 +1,7 @@
 //./server/api/totp.js
 import {
-browserToUser, trailAdd, secureSameText,
+browserToUser, secureSameText,
+trailRecent, trailCount, trailGet, trailAdd,
 credentialPasswordGet, credentialPasswordCreate, credentialPasswordRemove,
 } from 'icarus'
 
@@ -34,14 +35,14 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (valid) {
 
 			await trailAdd(//maybe use later to detect a stale password, ttd november
-				`Password validation on hash ${password.hash}`
+				trail`Password validation on hash ${password.hash}`
 			)
 			return {outcome: 'Correct.'}
 
 		} else {
 
 			await trailAdd(//maybe use later to rate limit wrong guesses, ttd november
-				`Password wrong guess on hash ${password.hash}`
+				trail`Password wrong guess on hash ${password.hash}`
 			)
 			return {outcome: 'Wrong.'}
 		}
