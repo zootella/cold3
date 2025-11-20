@@ -36,35 +36,27 @@ onMounted(async () => {
 
 	//load wagmi
 	await dynamicImport()//dynamic import wallet modules here on the page to work with the user's wallet
-	if (!_wagmiConfig) {
-		_wagmiConfig = wagmi_core.createConfig({//wagmi will use alchemy to reach Ethereum
-			chains: [viem_chains.mainnet],
-			transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy, url, public, page'))},//alchemy api key looks like a secret, but must be shipped with client bundle. this is both ok and required because (a) metamask is only in the browser, and must talk to alchemy directly, (b) domain restrictions protect this key, and (c) everyone else does it this way. google maps api keys work this way
-		})
-		refWagmiLoaded.value = true
-	}
+	_wagmiConfig = wagmi_core.createConfig({chains: [viem_chains.mainnet], transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy, url, public, page'))}})//configure wagmi to use Alchemy to reach Ethereum; alchemy key necessarily client side
+	refWagmiLoaded.value = true
 	_wagmiWatch = wagmi_core.watchAccount(_wagmiConfig, {
-		onChange(account) {
+		onChange(account) {//bring in account after watch account on change
 			refConnectedAddress.value = account.address
 			refIsConnected.value = account.isConnected
 		}
 	})
 
-	await onQuotes()//get current eth price and block number; uses alchemy but the user doesn't have to have a wallet
+	//get current eth price and block number; uses alchemy but the user doesn't have to have a wallet
+	await onQuotes()
 
 	try {
 
-		//have wagmi look in previous notes it made for itself in local storage about a wallet connection we should restore
-		await wagmi_core.reconnect(_wagmiConfig)//survives tab refresh because wagmi uses browser localStorage @wagmi/core.store
-
-		//update the page with current wallet state
-		const account = wagmi_core.getAccount(_wagmiConfig)
+		//have wagmi restore a wallet the user connected here before route change or tab refresh
+		await wagmi_core.reconnect(_wagmiConfig)//wagmi keeps notes about this in localStorage @wagmi/core.store
+		let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after reconnect
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 
-	} catch (e) {
-		log('⛔ on mounted caught:', e)//TODO soon, for each of these, click what you need to to make them happen, and decide how the page should recover gracefully! some may indicate a problem so severe that we should let it bubble upwards, where it will crash the page into the "chat with the team on Discord" crash state; choosing that as is appropriate is ok, too
-	}
+	} catch (e) { log('⛔ on mounted caught:', e) }
 })
 onUnmounted(() => {
 	if (_wagmiWatch) _wagmiWatch()
@@ -81,50 +73,34 @@ async function onQuotes() {
 		//to get the ETH price right now, we'll read a chainlink oracle contract
 		let b = await wagmi_core.readContract(_wagmiConfig, {
 			address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',//updates hourly, or when ETH moves >0.5%
-			abi: [{
-				inputs: [],
-				name: 'latestAnswer',
-				outputs: [{type: 'int256'}],
-				stateMutability: 'view',
-				type: 'function',
-			}],
+			abi: [{inputs: [], name: 'latestAnswer', outputs: [{type: 'int256'}], stateMutability: 'view', type: 'function'}],
 			functionName: 'latestAnswer',
 		})
 		refEtherPrice.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
 
-	} catch (e) {
-		log('⛔ on quotes caught:', e)
-	}
+	} catch (e) { log('⛔ on quotes caught:', e) }
 }
 
 async function onConnect() {
 	try {
 
-		const result = await wagmi_core.connect(_wagmiConfig, {connector: wagmi_connectors.injected()})
-
-		const account = wagmi_core.getAccount(_wagmiConfig)
+		let result = await wagmi_core.connect(_wagmiConfig, {connector: wagmi_connectors.injected()})
+		let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after connect
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 
-		log(`Connected address ${account.address}`)
-
-	} catch (e) {
-		log('⛔ on connect caught:', e)
-	}
+	} catch (e) { log('⛔ on connect caught:', e) }
 }
 
 async function onDisconnect() {
 	try {
 
 		await wagmi_core.disconnect(_wagmiConfig)
-
-		const account = wagmi_core.getAccount(_wagmiConfig)
+		let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after disconnect
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 
-	} catch (e) {
-		log('⛔ on disconnect caught:', e)
-	}
+	} catch (e) { log('⛔ on disconnect caught:', e) }
 }
 
 async function onProve() {
@@ -156,9 +132,7 @@ async function onProve() {
 		log('Prove2 response:', look(response2))
 		*/
 
-	} catch (e) {
-		log('⛔ on prove caught:', e)
-	}
+	} catch (e) { log('⛔ on prove caught:', e) }
 }
 
 </script>
