@@ -104,35 +104,26 @@ async function onDisconnect() {
 }
 
 async function onProve() {
-	let response1 = await refProveButton.value.post('/api/wallet', {
-		action: 'Prove1.',
-		address: refConnectedAddress.value,
-	})
-	log(look(response1))//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
+	let {nonce, message} = await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
 
+	let signature
 	try {
+		//have metamask ask the user to sign the message
+		signature = await wagmi_core.signMessage(_wagmiConfig, {message})
+	} catch (e) { log('⛔ wagmi sign message threw; expected when user declines signature request', e) }
+	if (signature) {
 
-		/* coming soon...
-		let {address, nonce, message} = response1
+		log('signature looks like', look(signature))//what should this look like, coming from wagmi? and should we check it ourselves, or just send it to the server to check??
 
-		// Step 2: Ask MetaMask to sign the message
-		let signature = await wagmi_core.signMessage(_wagmiConfig, {
-			message,
-		})
-		log('Got signature:', signature)
-
-		// Step 3: Send signature to server for verification
-		let response2 = await refProveButton.value.post('/api/wallet', {
-			action: 'Prove2.',
-			address,
-			nonce,
-			message,
-			signature,
-		})
+		//and send the signature to trusted code on the server
+		let response2 = await refProveButton.value.post('/api/wallet', {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature})
 		log('Prove2 response:', look(response2))
-		*/
 
-	} catch (e) { log('⛔ on prove caught:', e) }
+	} else {
+		//user declied signature, not happy path but not rare either
+
+
+	}
 }
 
 </script>
