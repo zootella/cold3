@@ -1608,12 +1608,12 @@ const totp_window = 1//permit codes from the previous and next 1 time periods to
 Enroll                🟢 make the qr code for the user to scan to set up their authenticator app
 > Secret              make the shared secret for totp
 > EnrollGivenSecret   factored for testing, do the work of the enrollment given the random secret
-	> SecretIdentifier  🟢 show the user text like "[X2B]" hashed from the secret
+- > SecretIdentifier  🟢 show the user text like "[X2B]" hashed from the secret
 Validate              🟢 determine if a code is valid for a secret right now
 > ValidateGivenTime   factored for testing, determine if a code is valid for the given secret and time
-	> Generate          ☢️ exported only for demonstration and testing! generate the same code the authenticator app does
-		> Counter         following rfc6238, turn a time into bytes to hash
-		> Truncate        following rfc6238, turn a hash into the short code of numerals
+- > Generate          ☢️ exported only for demonstration and testing! generate the same code the authenticator app does
+- - > Counter         following rfc6238, turn a time into bytes to hash
+- - > Truncate        following rfc6238, turn a hash into the short code of numerals
 */
 
 export async function totpEnroll({label, issuer, addIdentifier}) {

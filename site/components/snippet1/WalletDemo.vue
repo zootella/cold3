@@ -20,6 +20,7 @@ const refBlockNumber = ref('Loading...')//current Ethereum block number,
 const refEtherPrice = ref('')//$ETH price,
 const refTimePulled = ref('')//and the time when we pulled those quotes
 
+const refWagmiLoaded = ref(false)
 const refConnectedAddress = ref(null)//wallet address the user connected,
 const refIsConnected = ref(false)//true if a wallet address is connected
 //at this point, we haven't added the user story where the user proves to the server they can sign with that address
@@ -35,10 +36,13 @@ onMounted(async () => {
 
 	//load wagmi
 	await dynamicImport()//dynamic import wallet modules here on the page to work with the user's wallet
-	if (!_wagmiConfig) _wagmiConfig = wagmi_core.createConfig({//wagmi will use alchemy to reach Ethereum
-		chains: [viem_chains.mainnet],
-		transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy, url, public, page'))},//alchemy api key looks like a secret, but must be shipped with client bundle. this is both ok and required because (a) metamask is only in the browser, and must talk to alchemy directly, (b) domain restrictions protect this key, and (c) everyone else does it this way. google maps api keys work this way
-	})
+	if (!_wagmiConfig) {
+		_wagmiConfig = wagmi_core.createConfig({//wagmi will use alchemy to reach Ethereum
+			chains: [viem_chains.mainnet],
+			transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy, url, public, page'))},//alchemy api key looks like a secret, but must be shipped with client bundle. this is both ok and required because (a) metamask is only in the browser, and must talk to alchemy directly, (b) domain restrictions protect this key, and (c) everyone else does it this way. google maps api keys work this way
+		})
+		refWagmiLoaded.value = true
+	}
 	_wagmiWatch = wagmi_core.watchAccount(_wagmiConfig, {
 		onChange(account) {
 			refConnectedAddress.value = account.address
@@ -67,7 +71,6 @@ onUnmounted(() => {
 })
 
 async function onQuotes() {
-	if (!_wagmiConfig) return//wagmi not loaded yet
 	try {
 
 		//get the current ethereum block number
@@ -164,10 +167,10 @@ async function onProve() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>WalletDemo</i></p>
 
 <p>Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code>. There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.</p>
-<Button @click="onQuotes">Check again</Button>
+<Button @click="onQuotes" :disabled="!refWagmiLoaded">Check again</Button>
 
 <div v-if="!refIsConnected">
-	<Button @click="onConnect">Connect Wallet</Button>
+	<Button @click="onConnect" :disabled="!refWagmiLoaded">Connect Wallet</Button>
 </div>
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
