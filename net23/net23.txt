@@ -299,7 +299,14 @@ and what's happening at lower levels of abstraction that might surprise or infor
 
 
 
-
+modern js style is to use const absolutely everywhere you can, === everywhere
+here, we don't do that
+if something is const, that means it's important that it does not and cannot change
+likewise, if you see value and type comparison, that highlights that here, type or type coersion matters
+When reading through the codebase:
+== or != → "Simple value comparison, types are already known/guaranteed"
+=== or !== → "⚠️ Pay attention here - type coercion matters in this spot"
+It's like syntax highlighting but for developer attention. The strict operators become a visual flag that says "this is one of those tricky JavaScript spots where 0, false, '', null, or undefined might be involved and we need to be careful."
 
 
 
