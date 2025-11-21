@@ -3,6 +3,8 @@
 </script>
 <template>
 
-<p><i>This page is intentionally left blank</i></p>
+<TrailDemo1 />
+<TrailDemo2 />
+<TrailDemo3 />
 
 </template>

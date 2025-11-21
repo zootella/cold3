@@ -16,8 +16,12 @@ also isn't this what useState() is about?
 current behavior here is good, except if you click into a route that has the hit component, the POST interrupts the navigation, which is bad
 */
 
+const refState = ref('green')
+
 async function clickedHit() {
+	refState.value = 'orange'
 	await flexStore.incrementHits()
+	refState.value = 'green'
 }
 
 </script>
@@ -25,7 +29,7 @@ async function clickedHit() {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>HitComponent</i></p>
 
-<button class="pushy" @click="clickedHit()">Hit</button>
+<TriButton :state="refState" @click="clickedHit()">Hit</TriButton>
 {{flexStore.hits}} hits in {{flexStore.duration}}ms from {{flexStore.sticker}}
 
 </div>

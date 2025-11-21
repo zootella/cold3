@@ -1,6 +1,7 @@
 
 import {
 trailRecent, trailCount, trailGet, trailAdd,
+hashText,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -10,7 +11,8 @@ async function doorHandleBelow({door, body, action}) {
 	let r = {}
 	r.sticker = Sticker()
 
-	checkTextOrBlank(body.message)
+	checkText(body.message)
+	r.hash = await hashText(body.message)
 
 	if (action == 'Get.') {
 		r.count = await trailCount(body.message, 30*Time.second)

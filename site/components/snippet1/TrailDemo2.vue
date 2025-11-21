@@ -1,4 +1,4 @@
-<script setup>//TrailDemo.vue - updated with PostButton
+<script setup>//TrailDemo2.vue - updated with PostButton
 
 import {
 sayTick, hashText,
@@ -39,7 +39,7 @@ async function onClick(action) {
 </script>
 <template>
 <div class="border border-gray-300 p-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TrailDemo</i></p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TrailDemo2</i></p>
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="any message, blank becomes yo" class="w-96" />{{' '}}

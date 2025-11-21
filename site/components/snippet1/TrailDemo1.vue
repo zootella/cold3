@@ -1,4 +1,4 @@
-<script setup>//TrailComponent.vue - older simpler version before PostButton
+<script setup>//TrailDemo1.vue - regular HTML <button>
 
 import {
 sayTick, hashText,
@@ -17,7 +17,7 @@ async function clicked(action) {
 
 	let t = Now()
 	let r = await fetchWorker('/api/trail', {method: 'POST', body: {action, message: refMessage.value}})
-	//^leaving this component around because you refactored it to use PostButton in TrailDemo, and wow, it's a lot more complicated! and the button doesn't even turn orange as fast as you can click it, either. so maybe you won't use it all the time? or will have a SimplePostButton or something, ttd november
+	//^leaving this component around because you refactored it to use PostButton in TrailDemo2, and wow, it's a lot more complicated! and the button doesn't even turn orange as fast as you can click it, either. so maybe you won't use it all the time? or will have a SimplePostButton or something, ttd november
 	refNow.value = sayTick(t)
 	refDuration.value = Now() - t
 
@@ -33,7 +33,7 @@ async function clicked(action) {
 </script>
 <template>
 <div class="border border-gray-300 p-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TrailComponent</i></p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TrailDemo1</i></p>
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="any message, blank becomes yo" class="w-96" />{{' '}}

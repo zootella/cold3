@@ -49,14 +49,14 @@ ttd november
 ok, in an evening with claude, you duplicated PostButton to this new ImprovedPostButton, which should be easy to use in both simple applications and those which require lots of features
 
 right now there are three types of buttons in the front end:
-1. <button> regular HTML with onClick and fetchWorker (example, TrailComponent)
-2. <PostButton />, which you started using, but is quite complex (example, TrailDemo)
+1. <button> regular HTML with onClick and fetchWorker (example, TrailDemo1)
+2. <PostButton />, which you started using, but is quite complex (example, TrailDemo2)
 3. <ImprovedPostButton />, here, which should be an easier migration path from button, and also a drop in replacement for PostButton
 
 ok, so this code was written and checked by ai, but has not actually run yet, even in a smoke test
 so go carefully, switching button and PostButton to ImprovedPostButton one component at a time, testing everything
 []but then the goal is to have eliminated button and PostButton, because everywhere it's ImprovedPostButton
-[]and then get rid of PostButton and TrailComponent
+[]and then get rid of PostButton and TrailDemo1
 []and then rename ImprovedPostButton -> PostButton
 */
 
@@ -113,7 +113,7 @@ defineExpose({post: async (path, body) => {
 	task.finish({success: true})
 	refInFlight.value = false
 	emit('update:inFlight', false)
-	return task//ttd november, different than PostButton which returns task.response, throwing away task, but TrailDemo does want to say how long the task took! and will be simpler if that can be a feature here! also returning the task sets up .response as the name, rather than letting the caller alternate between response and result. it's the response body, so deliver it named that way
+	return task//ttd november, different than PostButton which returns task.response, throwing away task, but TrailDemo2 does want to say how long the task took! and will be simpler if that can be a feature here! also returning the task sets up .response as the name, rather than letting the caller alternate between response and result. it's the response body, so deliver it named that way
 }})
 
 //ttd march2025, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something

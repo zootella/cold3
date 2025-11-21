@@ -19,7 +19,7 @@ and making things easier, not harder, where it is used
 */
 
 const props = defineProps({
-	state: {type: String, default: 'gray'}
+	state: {type: String, default: 'green'}
 })
 
 const emit = defineEmits(['click'])
@@ -38,9 +38,19 @@ const emit = defineEmits(['click'])
 </template>
 <style scoped>
 
-button.gray        { background-color: gray;    }
-button.green       { background-color: #16a34a; }
-button.green:hover { background-color: #4ade80; }
-button.orange      { background-color: orange;  }
+button {
+	@apply inline-flex items-center text-white px-2 py-1 rounded cursor-pointer;
+}
+button:focus-visible {
+	@apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+button:disabled {
+	@apply cursor-default;
+}
+
+button.gray        { @apply bg-gray-400; }
+button.green       { @apply bg-green-600; }
+button.green:hover { @apply bg-green-400; }
+button.orange      { @apply bg-orange-500; }
 
 </style>

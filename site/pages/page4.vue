@@ -5,7 +5,6 @@
 
 <PasswordDemo />
 <HitComponent />
-<TrailDemo />
 <NameComponent />
 <ValidateNameComponent />
 <TotpDemo1 />
