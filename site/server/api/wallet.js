@@ -47,3 +47,18 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		return {outcome: 'Proven.'}//tell the page they succeeded
 	}
 }
+
+/*
+ok, you just realized an even simpler and faster way
+1 slowest way: make a table with readable details about the address and nonce
+2 current way: as you only need proof of message, not readable message, hash to trail table
+3 better way (candidate): encrypt message here for later, open sealed envelope, which means that we the server must have sealed it for ourselves a moment ago
+
+you did this in totp because you did need to read the message
+and were able to switch from trail table to that
+but now you realize you can also do the same upgrade here, even though you don't need to read the message
+you just need to decrypt it, and by being able to do so, know that you sent it
+
+
+but
+*/

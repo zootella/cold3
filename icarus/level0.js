@@ -1812,6 +1812,118 @@ test(() => {
 	checkTotpCode('012345')//sanity check that these don't throw
 })
 
+//  _               _                   _     
+// | |__   __ _ ___| |__   ___ __ _ ___| |__  
+// | '_ \ / _` / __| '_ \ / __/ _` / __| '_ \ 
+// | | | | (_| \__ \ | | | (_| (_| \__ \ | | |
+// |_| |_|\__,_|___/_| |_|\___\__,_|___/_| |_|
+//                                            
+// https://en.wikipedia.org/wiki/Hashcash
+
+const hash_cash_pepper = 'Fuji'//prevent 🌈 table attacks
+const hash_cash_size = 16//bytes
+const hash_cash_difficulty = 14//leading 0 bits
+const hash_cash_expiration = 4*Time.second
+
+let hashCashSet = new Set()//box of valid tickets taken for best effort prevention of double-spends
+const hash_cash_set_capacity = 10_000//each isolate has max 128mib memory ⛅ a Set of 10k ~22 character strings take ~1mib of heap
+
+//the page takes time to mine a valid ticket for the server, to spec and with a recent timestamp now
+async function hashCashMine({pepper, size, difficulty, now}) {
+	let nonce = Data({random: size})//page quickly makes its own challenge...
+	let solution = 0
+	let began = Now()//keep track of how long this takes us
+	while (true) {//...but then has to do real work to solve it
+		let ticket = `${solution}.${pepper}.${nonce.base62()}.${now}.${difficulty}`
+		let array = (await Data({text: ticket}).hash()).array()
+		if (countLeadingZeros(array) >= difficulty) return {ticket, duration: Now() - began}//mined a winning ticket!
+		solution++//try again
+		if (solution % 10_000 == 0) await new Promise(resolve => setTimeout(resolve, 0))//let the browser's main thread breathe while the page is mining a solution
+	}
+}
+//the server quickly validates a ticket like "21671.Fuji.DxmepKZiqdtINERQvAHXrj.1763757228065.14"
+async function hashCashValidate({ticket, now}) {
+	let parts = ticket.split('.')
+	if (parts.length != 5) return false
+	let [solutionText, pepper, nonceText, birthdayText, difficultyText] = parts
+
+	//solution must be a 0+ integer
+	let solution = textToInt(solutionText)//this does a round trip check
+
+	//pepper must be present and correct to our specification
+	if (pepper != hash_cash_pepper) return false
+
+	//nonce size must be to spec
+	let nonce = Data({base62: nonceText})//and valid base62, this does a round trip check
+	if (nonce.size() != hash_cash_size) return false
+	if (hashCashSet.has(nonce.base62())) return false//ooh, a page tried to use the same ticket again!
+
+	//ticket must not be expired
+	let birthday = textToInt(birthdayText)//when the page says they made the ticket, page clock not trusted or synchronized!
+	if (birthday < now - hash_cash_expiration || birthday > now + hash_cash_expiration) return false//now from trusted server clock
+
+	//difficulty must be to spec
+	let difficulty = textToInt(difficultyText)
+	if (difficulty != hash_cash_difficulty) return false
+
+	//and ticket must be winning
+	let hash = await Data({text: `${solution}.${pepper}.${nonce.base62()}.${birthday}.${difficulty}`}).hash()
+	let valid = countLeadingZeros(hash.array()) >= difficulty//sufficiently strong; some tickets will be stronger than required!
+	if (valid) {//manage the ticket box 🎟️ don't let a page spam the box with tickets that aren't valid!
+		hashCashSet.add(nonce.base62())//put the used nonce in the box, short strings like "ogyvFOlYjZBj6xOrVtilmO"
+		if (hashCashSet.size > hash_cash_set_capacity) hashCashSet = new Set()//toss out a full box way before it weighs down this isolate
+	}
+	return valid
+}
+test(async () => {
+	let now = Now()//outside this demonstration, the page and server clocks won't be synchronized
+	let {ticket, duration} = await hashCashMine({//page must do work to make a winning ticket to the server's stated requirements
+		pepper: hash_cash_pepper,
+		size: hash_cash_size,
+		now,
+		difficulty: 14,//14 and 15 almost all quick, 16 some meaty, 17 several seconds difficult; easy to roll an outlier, though
+	})
+	let valid = await hashCashValidate({ticket, now})
+	log(look({now, ticket, duration, valid}))
+	/*
+	ttd november, but to use this you'd have to add the bucket of easy puzzles improvement:
+	Generate N=10 independent nonces and mine them in parallel at easier difficulty (reduce by ~log₂(N) bits). Take the first 10 solutions that complete and abort the rest using AbortController - just check signal?.aborted in your tight loop and return null when cancelled. This works because you're racing independent attempts: fast winners finish while unlucky slow ones get cancelled, giving much tighter timing variance.
+	With N=10, your variance drops ~3x: instead of "50% chance of 2x longer/shorter", you get "50% chance of ~20% longer/shorter". For 1 second target with N=10 proofs, use difficulty=10 for individual proofs (vs difficulty=14 for a single proof). Each proof averages ~10ms, so 10 proofs ≈ 100ms total with predictable timing.
+	*/
+})
+function countLeadingZeros(array) {//count how many 0 bits the given array starts with
+	let zeros = 0
+	for (let i = 0; i < array.length * 8; i++) {//loop for each bit
+		let byte = Math.floor(i / 8)//get byte and bit indices
+		let bit = 7 - (i % 8)//within each byte, scan from most to least significant bit
+		if ((array[byte] & (1 << bit)) != 0) return zeros//found a 1; return our accumulated total
+		zeros++//found a 0; count it and move forward
+	}
+	return zeros//the array is all 0s, actually
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
