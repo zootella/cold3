@@ -4,7 +4,7 @@ import {
 sayTick, hashText,
 } from 'icarus'
 
-const refMessage = ref('')
+const refMessage = ref('yo')
 const refHash = ref('')
 const refDuration = ref(0)
 const refResults = ref('')
@@ -12,7 +12,7 @@ const refCount = ref(0)
 const refRecent = ref(0)
 const refNow = ref('')
 
-const refState = ref('gray')
+const refState = ref('green')
 
 watch([refMessage, refState], () => {
 	if      (refState.value == 'gray'  && hasText(refMessage.value))  { refState.value = 'green' }
@@ -54,7 +54,7 @@ async function clicked(action) {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TrailDemo3</i></p>
 
 <p>
-	<input type="text" v-model="refMessage" placeholder="any message, blank becomes yo" class="w-96" />{{' '}}
+	<input type="text" v-model="refMessage" placeholder="message to hash" class="w-96" />{{' '}}
 	<TriButton :state="refState" @click="clicked('Get.')">Search</TriButton>{{' '}}
 	<TriButton :state="refState" @click="clicked('Set.')">Record</TriButton>
 </p>

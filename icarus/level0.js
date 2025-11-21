@@ -1211,6 +1211,7 @@ test(() => {
 })
 test(async () => {
 	ok((await hashText('example')) == 'KDMFRYEYL3GH6YCBRKXQZRNLLB7UFQSXBKEEBFNJ5DGKZUHWKROA')
+	ok((await hashText('hi'))      == 'R5BUGRTER5VZNX4J3WUQDRIXNMIKNWBZMHOTYGWIRNM3FXBSPKSA')//🍔
 })
 test(async () => {
 	let d = Data({random: 500})//hash 500 random bytes, different every time we run the test
