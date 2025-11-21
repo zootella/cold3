@@ -23,7 +23,7 @@ const refTimePulled = ref('')//and the time when we pulled those quotes
 const refWagmiLoaded = ref(false)
 const refConnectedAddress = ref(null)//wallet address the user connected,
 const refIsConnected = ref(false)//true if a wallet address is connected
-//at this point, we haven't added the user story where the user proves to the server they can sign with that address
+const refInstructionalMessage = ref('')
 
 const refProveButton = ref(null)
 const refProveEnabled = ref(true)
@@ -56,7 +56,7 @@ onMounted(async () => {
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 
-	} catch (e) { log('⛔ on mounted caught:', e) }
+	} catch (e) { log('⛔ on mounted caught:', look(e)); throw e }//should not happen, crash the page during testing
 })
 onUnmounted(() => {
 	if (_wagmiWatch) _wagmiWatch()
@@ -78,7 +78,7 @@ async function onQuotes() {
 		})
 		refEtherPrice.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
 
-	} catch (e) { log('⛔ on quotes caught:', e) }
+	} catch (e) { log('⛔ on quotes caught:', look(e)); throw e }//should not happen, crash the page during testing
 }
 
 async function onConnect() {
@@ -89,7 +89,15 @@ async function onConnect() {
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 
-	} catch (e) { log('⛔ on connect caught:', e) }
+	} catch (e) {
+		if (e.name == 'ProviderNotFoundError') {
+			refInstructionalMessage.value = 'Provider not found error; instructions to get metamask'
+
+		} else if (e.name == 'UserRejectedRequestError') {
+			refInstructionalMessage.value = 'User rejected request error; instructions to try again'
+
+		} else { log('⛔ on connect caught:', look(e)); throw e }
+	}
 }
 
 async function onDisconnect() {
@@ -100,20 +108,20 @@ async function onDisconnect() {
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 
-	} catch (e) { log('⛔ on disconnect caught:', e) }
+	} catch (e) { log('⛔ on disconnect caught:', look(e)) }
 }
 
 async function onProve() {
 	let {nonce, message} = await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
 
+	//ttd november, so another example of parent needs to start button into orange in flight state, or in this instance keep it that way while execution is awaiting signMessage, which would prevent two simultaneous taps
+
 	let signature
 	try {
 		//have metamask ask the user to sign the message
 		signature = await wagmi_core.signMessage(_wagmiConfig, {message})
-	} catch (e) { log('⛔ wagmi sign message threw; expected when user declines signature request', e) }
+	} catch (e) { log('⛔ wagmi sign message threw; expected when user declines signature request', look(e)) }
 	if (signature) {
-
-		log('signature looks like', look(signature))//what should this look like, coming from wagmi? and should we check it ourselves, or just send it to the server to check??
 
 		//and send the signature to trusted code on the server
 		let response2 = await refProveButton.value.post('/api/wallet', {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature})
@@ -145,6 +153,7 @@ async function onProve() {
 		ref="refProveButton" :canSubmit="refProveEnabled" v-model:inFlight="refProveInFlight" :onClick="onProve"
 	/>
 </div>
+<p>{{refInstructionalMessage}}</p>
 
 </div>
 </template>
