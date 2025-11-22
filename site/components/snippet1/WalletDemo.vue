@@ -112,7 +112,7 @@ async function onDisconnect() {
 }
 
 async function onProve() {
-	let {nonce, message} = await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
+	let {nonce, message, envelope} = await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
 
 	//ttd november, so another example of parent needs to start button into orange in flight state, or in this instance keep it that way while execution is awaiting signMessage, which would prevent two simultaneous taps
 
@@ -124,7 +124,7 @@ async function onProve() {
 	if (signature) {
 
 		//and send the signature to trusted code on the server
-		let response2 = await refProveButton.value.post('/api/wallet', {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature})
+		let response2 = await refProveButton.value.post('/api/wallet', {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature, envelope})
 		log('Prove2 response:', look(response2))
 
 	} else {
