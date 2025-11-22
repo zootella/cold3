@@ -65,6 +65,8 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (!((letter.userTag == userTag) &&
 			(letter.browserHash == browserHash) &&
 			(Now() < letter.dated + totpConstants.enrollmentExpiration))) return {outcome: 'BadSecret.'}//➡️ passing this check is proof it's the real secret from step 1!
+		//ttd november, here's where checkTimeWindow() and checkSameText() and safefill`` would be helpful new helper functions
+		//and put it into .message like before's trail`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${secret}`,
 
 		//make sure the user can generate a valid code
 		let valid = await totpValidate(Data({base32: secret}), body.code)
