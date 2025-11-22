@@ -2,6 +2,7 @@
 import {
 checkWallet, validateWallet,
 trailRecent, trailCount, trailGet, trailAdd,
+checkNumerals, Data, encryptSymmetric,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 
@@ -58,6 +59,9 @@ you did this in totp because you did need to read the message
 and were able to switch from trail table to that
 but now you realize you can also do the same upgrade here, even though you don't need to read the message
 you just need to decrypt it, and by being able to do so, know that you sent it
+
+		enrollment.envelope = (await encryptData(keyData, Data({base32: enrollment.secret}))).base62()
+		secret = (await decryptData(keyData, Data({base62: body.envelope}))).base32()
 
 
 but

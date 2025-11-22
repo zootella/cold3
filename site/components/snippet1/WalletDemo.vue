@@ -36,7 +36,7 @@ onMounted(async () => {
 
 	//load wagmi
 	await dynamicImport()//dynamic import wallet modules here on the page to work with the user's wallet
-	_wagmiConfig = wagmi_core.createConfig({chains: [viem_chains.mainnet], transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy, url, public, page'))}})//configure wagmi to use Alchemy to reach Ethereum; alchemy key necessarily client side
+	_wagmiConfig = wagmi_core.createConfig({chains: [viem_chains.mainnet], transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy, url, public'))}})//configure wagmi to use Alchemy to reach Ethereum; alchemy key necessarily client side
 	refWagmiLoaded.value = true
 	_wagmiWatch = wagmi_core.watchAccount(_wagmiConfig, {
 		onChange(account) {//bring in account after watch account on change

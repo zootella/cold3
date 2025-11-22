@@ -287,6 +287,7 @@ export async function runTestsSticker() {
 export function Key(search) {
 	loadKeys()
 
+	checkText(search)
 	let value = lookupKey(_keys, search)
 	if (!hasText(value)) toss('key not found')//every key lookup must succeed
 	return value

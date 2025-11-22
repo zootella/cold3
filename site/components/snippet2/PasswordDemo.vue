@@ -4,9 +4,9 @@ import {
 hashText, hashPassword, hashPasswordMeasureSpeed, Data, sayTick,
 } from 'icarus'
 
-const saltData = Data({base32: Key('password, salt, public, page')})
-const minimumCycles = textToInt(Key('password, iterations, public, page'))
-const targetDuration = textToInt(Key('password, duration, public, page'))
+const saltData = Data({base62: Key('password, salt, public')})
+const minimumCycles = textToInt(Key('password, iterations, public'))
+const targetDuration = textToInt(Key('password, duration, public'))
 
 const refInput = ref('')
 const refOutput = ref('')

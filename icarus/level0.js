@@ -1387,6 +1387,42 @@ test(async () => {
 	ok(p == d2.text())
 })
 
+//even more convenient with key storage, methods, type conversion, and stringification
+export function encryptSymmetric(key62) {
+	let keyData = Data({base62: key62})//note we keep the key in this factory function enclosure, *not* the returned object
+	let o = {}
+	o.encryptData = async function(clearData) { return await encryptData(keyData, clearData) }
+	o.decryptData = async function(cipherData) { return await decryptData(keyData, cipherData) }
+
+	o.encryptText = async function(clearText) { return (await encryptData(keyData, Data({text: clearText}))).base62() }
+	o.decryptText = async function(cipher62) { return (await decryptData(keyData, Data({base62: cipher62}))).text() }
+
+	o.encryptObject = async function(clearObject) { return (await encryptData(keyData, Data({text: makeText(clearObject)}))).base62() }
+	o.decryptObject = async function(cipher62) { return makeObject((await decryptData(keyData, Data({base62: cipher62}))).text()) }
+	return o
+}
+test(async () => {
+	let symmetric = encryptSymmetric('gemwW4cZwMbk6AAxHrptx3W1UZMV3IRF0pZhPwiQmIN')//example key only the server knows
+	let letter, envelope, opened
+
+	letter = 'hello'//the server writes a note
+	envelope = await symmetric.encryptText(letter)//seals it in an envelope and gives the envelope to the page
+	opened = await symmetric.decryptText(envelope)//gets it back from the page (which couldn't read it) and opens it
+	ok(letter == opened)
+
+	letter = {//or the server has more to remember
+		explanation: "Sealing information on the server to open in the next request. The page will hold the ciphertext, but won't be able to known these contents. And, our ability to reopen the envelope indicates we authored and sealed it, too.",
+		dated: Now(),//but watch out for a replay attack! always include the time from the trusted server clock; an attacker could replay the envelope, but not know or change a date written inside
+		number: 7,
+		validated: true,
+		users: ['Alice', 'Bob'],
+	}
+	envelope = await symmetric.encryptObject(letter)
+	opened = await symmetric.decryptObject(envelope)
+	ok(opened.number == 7)
+	ok(opened.users.length == 2 && opened.users[1] == 'Bob')
+})
+
 //  _                          
 // | |__  _ __ ___   __ _  ___ 
 // | '_ \| '_ ` _ \ / _` |/ __|
@@ -1875,8 +1911,8 @@ async function hashCashValidate({ticket, now}) {
 	}
 	return valid
 }
-test(async () => {
-	let now = Now()//outside this demonstration, the page and server clocks won't be synchronized
+noop(async () => {
+	let now = Now()//outside this demonstration, the page and server clocks won't be synchronized, of course
 	let {ticket, duration} = await hashCashMine({//page must do work to make a winning ticket to the server's stated requirements
 		pepper: hash_cash_pepper,
 		size: hash_cash_size,
@@ -3246,6 +3282,7 @@ let contents = `
 
 
 //ttd september2025, from much earlier, didn't even have a heading
+//ttd november, likely you can get rid of this when you do getAccess -> Key
 export function parseEnvStyleFileContents(s) {
 	let lines = s.split(/\r?\n/)
 	let o = {}
@@ -3438,6 +3475,53 @@ test(() => {
 export function liveBox(s) {//move to another level by moving this, as well as the export in index.js
 	//return s.length
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

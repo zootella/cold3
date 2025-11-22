@@ -62,8 +62,8 @@ async function onEnroll() {
 	log('response from enroll 1', look(response))
 	if (response.outcome == 'Candidate.') {
 
-		log('previous and next client cookie values', refCookie.value, response.enrollment.secretCipher62)
-		refCookie.value = response.enrollment.secretCipher62
+		log('previous and next client cookie values', refCookie.value, response.enrollment.envelope)
+		refCookie.value = response.enrollment.envelope
 
 		if (browserIsBesideAppStore()) {//on a phone, redirect to authenticator app
 			window.location.href = response.enrollment.uri//ttd november, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
@@ -78,7 +78,7 @@ async function onEnroll() {
 async function onValidate() {
 	let response = await refValidateButton.value.post('/api/totp', {
 		action: 'Enroll2.',
-		secretCipher62: refCookie.value,
+		envelope: refCookie.value,
 		code: refCode.value
 	})
 	log('response from enroll 2', look(response))

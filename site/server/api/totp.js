@@ -2,7 +2,7 @@
 import {
 browserToUser,
 trailRecent, trailCount, trailGet, trailAdd,
-checkNumerals, Data, encryptData, decryptData,
+checkNumerals, Data, encryptSymmetric,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 } from 'icarus'
@@ -27,8 +27,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	}
 
 	//get the key we the server use to protect provisional totp secrets while, during enrollment, the page has them in temporary cookies
-	const access = await getAccess()
-	let keyData = Data({base62: access.get('ACCESS_TOTP_SECRET')})
+	const symmetric = encryptSymmetric(Key('envelope, secret'))
 
 	//make sure there's a user signed in (first factor) to the browser that posted at us
 	if (user.level < 2) return {outcome: 'BadUser.'}
@@ -45,15 +44,12 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		let enrollment = await totpEnroll({//make a new provisional enrollment; this generates enrollment.secret
 			label: '@'+user.name.f1,//ttd november, simplified for demo
-			issuer: Key('totp, issuer, public, page'),
+			issuer: Key('domain, public'),
 			addIdentifier: true,
-			keyData,
 		})
-		enrollment.secretCipher62 = (await encryptData(keyData, Data({base32: enrollment.secret}))).base62()
-
-		await trailAdd(
-			trail`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${enrollment.secret}`
-		)
+		enrollment.envelope = await symmetric.encryptObject({
+			dated: Now(), userTag, browserHash, secret: enrollment.secret,
+		})
 		return {outcome: 'Candidate.', enrollment}
 
 	//second step of enrollment flow; the user has scanned the qr code and knows the current code
@@ -61,15 +57,14 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	} else if (action == 'Enroll2.') {
 
 		//decrypt the secret from the page, possibly via a cookie through a refresh
-		secret = (await decryptData(keyData, Data({base62: body.secretCipher62}))).base32()
+		let letter = await symmetric.decryptObject(body.envelope)
+		let secret = letter.secret
 		checkTotpSecret(secret)
 
 		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
-		let n = await trailCount(
-			trail`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${secret}`,
-			totpConstants.enrollmentExpiration
-		)
-		if (n != 1) return {outcome: 'BadSecret.'}//➡️ passing this check is proof it's the real secret from step 1!
+		if (!((letter.userTag == userTag) &&
+			(letter.browserHash == browserHash) &&
+			(Now() < letter.dated + totpConstants.enrollmentExpiration))) return {outcome: 'BadSecret.'}//➡️ passing this check is proof it's the real secret from step 1!
 
 		//make sure the user can generate a valid code
 		let valid = await totpValidate(Data({base32: secret}), body.code)
