@@ -379,6 +379,8 @@ test(() => {
 
 export function checkTextSame(s1, s2) { if (!hasTextSame(s)) toss('same', {s1, s2}) }
 export function hasTextSame(s1, s2) { return hasText(s1) && hasText(s2) && secureSameText(s1, s2) }
+//^both must be strings with text and the same, and includes time-safe comparison to protect from server timing attack
+
 export function checkTextOrBlank(s) { if (!hasTextOrBlank(s)) toss('type', {s}) }
 export function hasTextOrBlank(s) { return typeof s == 'string' }
 test(() => {
@@ -2310,21 +2312,21 @@ test(() => {
 //  \__\__,_|\__, |\__, |\___|\__,_|  \__\___|_| |_| |_| .__/|_|\__,_|\__\___| |_|_|\__\___|_|  \__,_|_|___/
 //           |___/ |___/                               |_|                                                  
 
-//custom tagged template literal function; use like trail`A message for ${name} about ${thing}`
+//custom tagged template literal function; use like safefill`A message for ${name} about ${thing}`
 //just like the default template literal, with an additional check to require non-blank strings
 //important for being sure you're hashing the text you think you are hashing (you can't tell from looking at the hash value!)
 export function safefill(words, ...fields) {//strings is not lines, it's the literal text pieces between the ${} interpolations.
-	for (let field of fields) {
-		checkText(field)//must be string that is not blank and does not trim to blank, and...
-		if (field.trim() != field) toss('check', {words, fields})//must not start or end with whitepsace
-		if (/[\r\n\t]|  /.test(field)) toss('check', {words, fields})//must not have tabs, newlines, or double spaces
-		if (field == '[object Object]') toss('check', {words, fields})//must not look like an object incorrectly turned into a string
-		if (field == '[object Promise]') toss('check', {words, fields})
-	}
-
-	//fill in the blanks to build the string the same way javascript does
-	let s = words[0]
+	for (let field of fields) checkSafeFill(field)
+	let s = words[0]//fill in the blanks to build the string the same way javascript does
 	for (let i = 0; i < fields.length; i++) s += fields[i] + words[i + 1]
+	return checkSafeFill(s)//make sure the finished text also passes, blocks blank template, essentially
+}
+function checkSafeFill(s) {
+	checkText(s)//must be string that is not blank and does not trim to blank, and...
+	if (s.trim() != s) toss('check', {s})//must not start or end with whitepsace
+	if (/[\r\n\t]|  /.test(s)) toss('check', {s})//must not have tabs, newlines, or double spaces
+	if (s == '[object Object]') toss('check', {s})//must not look like an object incorrectly turned into a string
+	if (s == '[object Promise]') toss('check', {s})
 	return s
 }
 test(() => {//calls to trail are like trailAdd(`Thing ${s} just happened`) assuming s is the correct string; but if it's an object or promise js will just call .toString() on it, trailAdd will add a row with a hash, and then we won't be able to find that hash later! so we must guard against this, as it's quite possible and would be difficult to spot!
@@ -2342,8 +2344,8 @@ test(() => {//calls to trail are like trailAdd(`Thing ${s} just happened`) assum
 	ok(`string: ${s} blank: ${b} and int: ${i} are ok for a trail message; float: ${f}, object: ${o}, array: ${a}, promise: ${p}, undefined: ${u}, and null: ${n} would make a mess` == 'string: hi blank:  and int: 19 are ok for a trail message; float: 3.3333333333333335, object: [object Object], array: a,b, promise: [object Promise], undefined: undefined, and null: null would make a mess')
 
 	//sanity check our trail custom tagged template literal function
-	ok(safefill`` == '')
-	ok(safefill`${'a'}` == 'a')
+	ok(safefill`W` == 'W')//only word
+	ok(safefill`${'S'}` == 'S')//only space
 	let name1 = 'Alice'
 	let name2 = 'Bob'
 	ok(safefill`Hello ${name1} and ${name2}` == 'Hello Alice and Bob')
