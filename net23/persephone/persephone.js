@@ -13,7 +13,7 @@ intToText, textToInt, commas,
 hasText, checkText,
 hasTextOrBlank, checkTextOrBlank,
 makePlain, makeObject, makeText,
-trail, deindent,
+safefill, deindent,
 
 Tag, hasTag, checkTag, checkTagOrBlank,
 checkHash,

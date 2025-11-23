@@ -15,7 +15,7 @@ parseEnvStyleFileContents,
 sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 runTests,
-trail, deindent,
+safefill, deindent,
 } from './level0.js'
 import {//from level1
 Limit, checkActions,

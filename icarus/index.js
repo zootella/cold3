@@ -250,7 +250,7 @@ checkNumerals, isNumerals, takeNumerals,
 newline,
 cut, cutLast,
 replaceAll, replaceOne,
-trail, deindent,
+safefill, deindent,
 
 Bin, Data, checkSizeStartEnd, mulberryData,
 base62ToInt, intToBase62,

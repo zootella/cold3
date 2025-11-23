@@ -17,7 +17,7 @@ fraction, exponent, int, big, newline,
 hashText, given,
 makePlain, makeObject, makeText,
 totpGenerate,
-trail, deindent,
+safefill, deindent,
 } from './level0.js'
 
 //from npm
