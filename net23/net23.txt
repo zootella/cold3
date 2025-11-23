@@ -313,6 +313,59 @@ It's like syntax highlighting but for developer attention. The strict operators 
 
 
 
+ _                        _                            _ _                                     
+| |__   __ _ ___  ___  __| |  ___  ___  ___ _   _ _ __(_) |_ _   _    ___  ___ ___  __ _ _   _ 
+| '_ \ / _` / __|/ _ \/ _` | / __|/ _ \/ __| | | | '__| | __| | | |  / _ \/ __/ __|/ _` | | | |
+| |_) | (_| \__ \  __/ (_| | \__ \  __/ (__| |_| | |  | | |_| |_| | |  __/\__ \__ \ (_| | |_| |
+|_.__/ \__,_|___/\___|\__,_| |___/\___|\___|\__,_|_|  |_|\__|\__, |  \___||___/___/\__,_|\__, |
+                                                             |___/                       |___/ 
+
+(notes to clean up, chat will add detail and draft tight prose)
+
+net23, essay on security
+
+not in bounds
+mistake in subtle crypto library
+mistake with https itself, cloudflare
+compromise of secure systems of amazon, cloudflare, supabase
+user's computer is fundamentally compromised, rooted, keylogger
+(an attack scenario that relies on things in this category is discarded; we can't protect the user in these situations; the user has larger problems everywhere in these situations)
+
+completely in bounds
+a mistake in code we control puts users or our system at risk
+(completely in bounds attack scenarios; we need to correct a flaw in these scenarios)
+
+partially in bounds
+user has malicious chrome extension
+user is being coached by attacker to follow instructions in devtools
+(here, we do make choices to keep things secure, if possible, for users compromised in this way; many are)
+
+based on that, we make a fundamental reasonable foundational assumption:
+
+assumption
+malicious code cannot get the broserTag in the http only cookie
+in an endpoint, we can trust the browserHash, informatino from the database
+we cannot and do not trust the contents of the posted body; it could come from our unaltered client code, it could alternatively come from that code modified arbitrarily by injected script or a malware chrome extension
+
+also, a note on
+defense in depth
+not too deep
+because then things rapidly become complex
+harder to audit
+if they change, hard to see if redundant protection is now necessary
+simple and secure is the ethos
+
+common on the web, but banned here
+any server state between requests; there is no session object here, no redis, we're not using cloudflare kv as it represents greater vendor lock-in; the only durable state between requests is the database, and we use it sparringly
+any cookie that woudl require a cookie warning
+
+and jwt
+nearly ubiquitous on the web
+fails our security model, the malicious chrome extension sees the jwt come in a resononse, body, posts it to the attacker's server, replicates the authenticated session
+so, on our ban list is jwts and the jwt like authentication exchange
+
+
+
 
 
 
