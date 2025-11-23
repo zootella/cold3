@@ -1,7 +1,7 @@
 //./server/api/wallet.js
 import {
 checkWallet, validateWallet,
-encryptSymmetric,
+encryptSymmetric, hasTextSame,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 
@@ -14,12 +14,11 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
 		let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
-		let message = trail`Add your wallet with an instant, zero-gas signature of code ${nonce}`//keepin copy short and non-scary for MetaMask's tiny little window
+		let message = safefill`Add your wallet with an instant, zero-gas signature of code ${nonce}`//keepin copy short and non-scary for MetaMask's tiny little window
 
 		let envelope = await symmetric.encryptObject({
 			dated: Now(),
-			message:
-			trail`Sent ${browserHash} with wallet ${address} nonce ${nonce} in ${message} to sign`
+			message: safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`,
 		})
 		return {message, nonce, envelope}
 
@@ -34,11 +33,14 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//confirm (1) the page has given us back the same real valid nonce and message we gave it in step 1 above
 		let letter = await symmetric.decryptObject(body.envelope)
 		if ((letter.dated + (20*Time.minute)) < Now()) return {outcome: 'BadMessage.'}//expired
-		if (letter.message !=
-			trail`Sent ${browserHash} with wallet ${address} nonce ${nonce} in ${message} to sign`) return {outcome: 'BadMessage.'}
+		if (!hasTextSame(
+			letter.message,
+			safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`)) {
+			return {outcome: 'BadMessage.'}
+		}
 
 		//confirm (2) the message contains the nonce
-		if (!message.includes(nonce)) return {outcome: 'BadMessage.'}//not really possible if its on the trail, but checking anyway
+		if (!message.includes(nonce)) return {outcome: 'BadMessage.'}//not possible at this point, but included for completeness
 
 		//confirm (3) the signature is of the message, and (4) the address created the signature
 		let valid = await verifyMessage({address, message, signature})//viem confirms those two things for us

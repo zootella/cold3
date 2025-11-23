@@ -35,14 +35,14 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (valid) {
 
 			await trailAdd(//maybe use later to detect a stale password, ttd november
-				trail`Password validation on hash ${password.hash}`
+				safefill`Password validation on hash ${password.hash}`
 			)
 			return {outcome: 'Correct.'}
 
 		} else {
 
 			await trailAdd(//maybe use later to rate limit wrong guesses, ttd november
-				trail`Password wrong guess on hash ${password.hash}`
+				safefill`Password wrong guess on hash ${password.hash}`
 			)
 			return {outcome: 'Wrong.'}
 		}

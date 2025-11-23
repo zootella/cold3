@@ -2,7 +2,7 @@
 import {
 browserToUser,
 trailRecent, trailCount, trailGet, trailAdd,
-checkNumerals, Data, encryptSymmetric,
+checkNumerals, Data, encryptSymmetric, hasTextSame,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 } from 'icarus'
@@ -48,7 +48,10 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			addIdentifier: true,
 		})
 		enrollment.envelope = await symmetric.encryptObject({
-			dated: Now(), userTag, browserHash, secret: enrollment.secret,
+			dated: Now(),
+			secret: enrollment.secret,
+			message:
+			safefill`TOTP enrollment: browser ${browserHash}, user ${userTag}, secret ${enrollment.secret}`,
 		})
 		return {outcome: 'Candidate.', enrollment}
 
@@ -62,11 +65,12 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		checkTotpSecret(secret)
 
 		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
-		if (!((letter.userTag == userTag) &&
-			(letter.browserHash == browserHash) &&
-			(Now() < letter.dated + totpConstants.enrollmentExpiration))) return {outcome: 'BadSecret.'}//➡️ passing this check is proof it's the real secret from step 1!
-		//ttd november, here's where checkTimeWindow() and checkSameText() and safefill`` would be helpful new helper functions
-		//and put it into .message like before's trail`TOTP Provisional Enrollment for User ${userTag} at Browser ${browserHash} given Secret ${secret}`,
+		if (letter.dated + totpConstants.enrollmentExpiration < Now()) return {outcome: 'BadSecret.'}//expired
+		if (!hasTextSame(
+			letter.message,
+			safefill`TOTP enrollment: browser ${browserHash}, user ${userTag}, secret ${secret}`)) {
+			return {outcome: 'BadSecret.'}
+		}//➡️ passing this check is proof it's the real secret from step 1!
 
 		//make sure the user can generate a valid code
 		let valid = await totpValidate(Data({base32: secret}), body.code)
@@ -82,7 +86,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		//protect guesses on this secret from a brute force attack, which would succeed quickly
 		let n = await trailCount(
-			trail`TOTP wrong guess on Secret ${secret}`,
+			safefill`TOTP wrong guess: secret ${secret}`,
 			totpConstants.guardHorizon
 		)
 		if (n >= totpConstants.guardWrongGuesses) return {outcome: 'Later.'}
@@ -93,14 +97,14 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 			log(`ttd november 🎃 user ${userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
 			await trailAdd(
-				trail`TOTP validation on Secret ${secret}`//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
+				safefill`TOTP right guess: secret ${secret}`//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
 			)
 			return {outcome: 'Correct.'}
 
 		} else {//guess at code from page is wrong
 
 			await trailAdd(
-				trail`TOTP wrong guess on Secret ${secret}`
+				safefill`TOTP wrong guess: secret ${secret}`
 			)
 			return {outcome: 'Wrong.'}
 		}
