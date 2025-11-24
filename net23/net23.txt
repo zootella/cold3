@@ -320,7 +320,7 @@ It's like syntax highlighting but for developer attention. The strict operators 
 |_.__/ \__,_|___/\___|\__,_| |___/\___|\___|\__,_|_|  |_|\__|\__, |  \___||___/___/\__,_|\__, |
                                                              |___/                       |___/ 
 
-(notes to clean up, chat will add detail and draft tight prose)
+(notes to clean up, chat will add detail and draft tight prose) ttd november
 
 net23, essay on security
 
@@ -363,6 +363,18 @@ and jwt
 nearly ubiquitous on the web
 fails our security model, the malicious chrome extension sees the jwt come in a resononse, body, posts it to the attacker's server, replicates the authenticated session
 so, on our ban list is jwts and the jwt like authentication exchange
+
+titles for paragraphs:
+no security through obscurity
+complexity is a weapon of the enemy
+only attack scenarios that are in bounds, please
+if the user's box is fundamentally hosed, we can't help them
+malware browser extensions are unfortunately common
+attackers find n00bs on discord and reddit to coach into following malicious instructions
+our primitives are standard, current, and secure
+we trust the http only cookie, and assume the posted body is compromised
+defense in depth can confuse defense
+
 
 
 

@@ -61,9 +61,11 @@ where <i>Sticker()</i> says <code>{Sticker()}</code></p>
 <h2>Start flow with GET (doesn't work)</h2>
 <p><a href="/auth/signin/google">Continue with Google</a></p>
 <p><a href="/auth/signin/twitter">Continue with Twitter</a></p>
+<p><a href="/auth/signin/discord">Continue with Discord</a></p>
 
 <h2>Start flow with POST (does work, but we need to start from cold3.cc, not from here!</h2>
 <div><form method="POST" action="/auth/signin/google"><button type="submit">Continue with Google</button></form></div>
 <div><form method="POST" action="/auth/signin/twitter"><button type="submit">Continue with Twitter</button></form></div>
+<div><form method="POST" action="/auth/signin/discord"><button type="submit">Continue with Discord</button></form></div>
 
 </div>

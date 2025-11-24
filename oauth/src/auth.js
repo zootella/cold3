@@ -70,7 +70,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 			googleProvider({clientId:  access.get('ACCESS_AUTH_GOOGLE_ID'),  clientSecret: access.get('ACCESS_AUTH_GOOGLE_SECRET')}),
 			twitterProvider({clientId: access.get('ACCESS_AUTH_TWITTER_ID'), clientSecret: access.get('ACCESS_AUTH_TWITTER_SECRET')}),
 			githubProvider({clientId:  access.get('ACCESS_AUTH_GITHUB_ID'),  clientSecret: access.get('ACCESS_AUTH_GITHUB_SECRET')}),
-			discordProvider({clientId: access.get('ACCESS_AUTH_DISCORD_ID'), clientSecret: access.get('ACCESS_AUTH_DISCORD_SECRET')}),
+			discordProvider({clientId: Key('oauth, discord, id'), clientSecret: Key('oauth, discord, secret')}),
 		],
 		trustHost: true,//trust the incoming request's Host and X-Forwarded-Host headers to work with Cloudflare's reverse proxy
 		callbacks: {
