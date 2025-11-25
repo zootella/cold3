@@ -1,8 +1,4 @@
-<script>//./src/routes/continue/[provider]/+page.svelte ~ workaround to turn a GET here to a POST that begins the oauth flow
-/*
-in the [oauth.cold3.cc] [SvelteKit] workspace using [@auth/sveltekit],
-this is the file ./src/routes/continue/[provider]/+page.svelte
-*/
+<script>//./src/routes/continue/[provider]/+page.svelte ~ authenticates a GET from the nuxt site to POST into the auth.js oauth flow
 
 import {
 wrapper, Sticker, stickerParts, isLocal, isCloud,
@@ -15,6 +11,15 @@ Key, decryptKeys, accessKey, canGetAccess, getAccess,
 
 /*
 this page shows no content at all; our goal is it's invisible to the user
+
+ok, but find out from chat
+how can we write some trusted code here that always runs on the server
+and has access to the query string
+because it needs to authenticate the envelope before allowing the post
+auth will only accept a post from this domain
+and this page will only create a post if there's a valid link from the apex, essentially
+
+meaning, we've recorded the start of an oauth flow for that browser tag
 */
 
 import {onMount} from 'svelte'

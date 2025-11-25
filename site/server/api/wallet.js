@@ -32,8 +32,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		//confirm (1) the page has given us back the same real valid nonce and message we gave it in step 1 above
 		let letter = await symmetric.decryptObject(body.envelope)
-		if ((letter.dated + (20*Time.minute)) < Now()) return {outcome: 'BadMessage.'}//expired
-		//ttd november, move this 20min to Limit.enrollmentExpiration; also use in place of totpConstants.enrollmentExpiration
+		if ((letter.dated + Limit.expiration) < Now()) return {outcome: 'BadMessage.'}//expired
 		if (!hasTextSame(
 			letter.message,
 			safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`)) {

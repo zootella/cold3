@@ -1832,9 +1832,6 @@ export const totpConstants = {
 	//presets we chose for rate limiting protection
 	guardWrongGuesses: totp_guard_wrong_guesses,//block guessing on a secret after 6 wrong guesses
 	guardHorizon: totp_guard_horizon,//in the past 24 hours, in milliseconds
-
-	//beyond those, our choices that affect the user experience
-	enrollmentExpiration: 20*Time.minute,//the user can stay on the enroll page for 20 minutes before moving forward, but not longer
 }
 Object.freeze(totpConstants)
 

@@ -65,7 +65,8 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		checkTotpSecret(secret)
 
 		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
-		if (letter.dated + totpConstants.enrollmentExpiration < Now()) return {outcome: 'BadSecret.'}//expired
+		//ttd november, going to changen to Limit.expiration which is the same 20min, but with more of a unified and user focus
+		if (letter.dated + Limit.expiration < Now()) return {outcome: 'BadSecret.'}//expired
 		if (!hasTextSame(
 			letter.message,
 			safefill`TOTP enrollment: browser ${browserHash}, user ${userTag}, secret ${secret}`)) {

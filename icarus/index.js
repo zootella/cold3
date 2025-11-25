@@ -161,8 +161,8 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 sayFloppyDisk, runTestsSticker,
 
-Task, origin23, fetchWorker, fetchLambda, fetchProvider,
-originOauth,
+Task, fetchWorker, fetchLambda, fetchProvider,
+origin23, originOauth, originApex,
 
 /* level 2 query */
 

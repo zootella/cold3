@@ -679,14 +679,12 @@ export function origin23() {//where you can find Network 23; no trailing slash
 		'http://localhost:4000/prod'//or check your local Network 23 affliate
 	)
 }
+export function originOauth() { return isCloud() ? `https://oauth.${Key('domain, public')}` : `http://localhost:5173` }//vite port
+export function originApex()  { return isCloud() ? `https://${Key('domain, public')}`       : `http://localhost:3000` }//nitro port
+//similarly, the sveltekit site for oauth has these origins for cloud and local, and the main Nuxt site is at the apex domain
+//serverless framework's default port is 3000, but we customized to 4000; Nuxt has Nitro's default 3000; SvelteKit has Vite's default 5173, same as vite running icarus
 
-//similarly, the sveltekit site for oauth has these origins, cloud and local
-export function originOauth() {
-	return (isCloud() ?
-		`https://oauth.${Key('domain, public')}` :
-		`http://localhost:5173`
-	)
-}
+
 
 
 
