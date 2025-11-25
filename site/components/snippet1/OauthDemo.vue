@@ -1,4 +1,4 @@
-<script setup>//./components/OauthDemo.vue
+<script setup>//./components/OauthDemo.vue ~ on the oauth trail, nuxt component
 
 import {
 originOauth,
@@ -6,15 +6,29 @@ originOauth,
 
 const origin = originOauth()//will be "https://oauth.cold3.cc" cloud, or "http://localhost:5173" local
 
+async function clicked(provider) {
+
+	if      (provider == 'google')  { refGoogle.value = 'orange'; refTwitter.value = 'gray';   refDiscord.value = 'gray' }
+	else if (provider == 'twitter') { refGoogle.value = 'gray';   refTwitter.value = 'orange'; refDiscord.value = 'gray' }
+	else if (provider == 'discord') { refGoogle.value = 'gray';   refTwitter.value = 'gray';   refDiscord.value = 'orange' }
+	//ttd november, ok so that's awful, but leaving alone for now because this test is about the oauth flow, not component factoring in forms
+
+	let response = await fetchWorker('/api/oauth', {method: 'POST', body: {action: 'OauthStart.'}})
+	window.location.href = `${originOauth()}/continue/${provider}?envelope=${response.envelope}`//encoding? base62 don't need no stinkin' encoding 👒
+}
+
+const refGoogle  = ref('green')
+const refTwitter = ref('green')
+const refDiscord = ref('green')
+
 </script>
 <template>
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>OauthDemo</i></p>
 
-<p><a :href="origin+'/continue/google'">Continue with Google</a></p>
-<p><a :href="origin+'/continue/twitter'">Continue with Twitter</a></p>
-<p><a :href="origin+'/continue/discord'">Continue with Discord</a>, to begin, this is the only one that works</p>
-<!-- ttd november, you'll need to make these look like buttons that match the nuxt components; you could use nuxt's NuxtLink or your LinkButton here, but claude says for a different origin, NuxtLink just becomes this with rel noopener noreferrer; actually maybe do use that if it also gets you matching styles; you've definitely seen sites where their oauth buttons don't match anything else, and now you see why this is easy to not get right --> 
+<div><TriButton :state="refGoogle"  @click="clicked('google')">Continue with Google</TriButton></div>
+<div><TriButton :state="refTwitter" @click="clicked('twitter')">Continue with 𝕏</TriButton></div>
+<div><TriButton :state="refDiscord" @click="clicked('discord')">Continue with Discord</TriButton> test flow here</div>
 
 </div>
 </template>
