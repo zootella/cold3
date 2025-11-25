@@ -14,7 +14,6 @@ import twitchProvider  from '@auth/sveltekit/providers/twitch'
 import redditProvider  from '@auth/sveltekit/providers/reddit'
 
 export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
-	const access = await getAccess(event.platform.env)//give getAccess() the environment variable object like process.env
 	let sources = []
 	if (defined(typeof process) && process.env) {
 		sources.push({note: '300: process.env', environment: process.env})
