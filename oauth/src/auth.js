@@ -81,6 +81,11 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 				return true
 				/*
+				ttd november, going to use envelope, key to bundle this all together
+				and then going to return the url and put the encrypted base62 in the query string, actually
+				so over here cookies die quickly and things are completely stateless
+				*/
+				/*
 				let proof = ''//ttd june2025, we'll bundle and sign the proof of identity to send it back to the main site, which has the database connection
 				return 'https://cold3.cc/oauth-done?proof='+proof//instead of a separate redirect() method alongside signIn(), which should do the same thing
 				*/

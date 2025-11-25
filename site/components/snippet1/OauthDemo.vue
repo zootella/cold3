@@ -14,6 +14,7 @@ const origin = originOauth()//will be "https://oauth.cold3.cc" cloud, or "http:/
 <p><a :href="origin+'/continue/google'">Continue with Google</a></p>
 <p><a :href="origin+'/continue/twitter'">Continue with Twitter</a></p>
 <p><a :href="origin+'/continue/discord'">Continue with Discord</a>, to begin, this is the only one that works</p>
+<!-- ttd november, you'll need to make these look like buttons that match the nuxt components; you could use nuxt's NuxtLink or your LinkButton here, but claude says for a different origin, NuxtLink just becomes this with rel noopener noreferrer; actually maybe do use that if it also gets you matching styles; you've definitely seen sites where their oauth buttons don't match anything else, and now you see why this is easy to not get right --> 
 
 </div>
 </template>
