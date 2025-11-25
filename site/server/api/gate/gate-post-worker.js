@@ -1,6 +1,6 @@
 
 import {
-host23,
+origin23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -9,7 +9,7 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door}) {
 
 	let bridge = await $fetch(
-		host23() + '/gate-post-lambda',
+		origin23() + '/gate-post-lambda',
 		{
 			method: 'POST',
 			body: {

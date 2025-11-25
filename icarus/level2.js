@@ -637,8 +637,8 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
 	options.body = makePlain(options.body)
-	options.body.warm = true;         await $fetch(host23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
-	options.body.warm = false; return await $fetch(host23()+url, options)
+	options.body.warm = true;         await $fetch(origin23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
+	options.body.warm = false; return await $fetch(origin23()+url, options)
 }
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)
@@ -673,10 +673,18 @@ return task//(7)
 */
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
 function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
-export function host23() {//where you can find Network 23; no trailing slash
+export function origin23() {//where you can find Network 23; no trailing slash
 	return (isCloud() ?
 		'https://api.net23.cc' :    //our global connectivity via satellite,
 		'http://localhost:4000/prod'//or check your local Network 23 affliate
+	)
+}
+
+//similarly, the sveltekit site for oauth has these origins, cloud and local
+export function originOauth() {
+	return (isCloud() ?
+		`https://oauth.${Key('domain, public')}` :
+		`http://localhost:5173`
 	)
 }
 

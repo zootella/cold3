@@ -1,11 +1,11 @@
 <script setup>
 
 import {
-host23,
+origin23,
 } from 'icarus'
 
 const {data, refresh} = useFetch(
-	host23() + '/gate-post-lambda',
+	origin23() + '/gate-post-lambda',
 	{
 		method: 'POST',
 		body: {

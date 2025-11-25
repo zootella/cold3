@@ -1,4 +1,4 @@
-<script>
+<script>//./src/routes/+page.svelte
 /*
 in the [oauth.cold3.cc] [SvelteKit] repo using [@auth/sveltekit],
 this is the file ./src/routes/+page.svelte

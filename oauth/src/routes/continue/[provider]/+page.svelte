@@ -1,4 +1,4 @@
-<script>
+<script>//./src/routes/continue/[provider]/+page.svelte ~ workaround to turn a GET here to a POST that begins the oauth flow
 /*
 in the [oauth.cold3.cc] [SvelteKit] workspace using [@auth/sveltekit],
 this is the file ./src/routes/continue/[provider]/+page.svelte

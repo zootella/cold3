@@ -1,11 +1,11 @@
 <script setup>
 
 import {
-host23,
+origin23,
 } from 'icarus'
 
 const {data, refresh} = useFetch(
-	host23() + '/gate-get-lambda?' + (new URLSearchParams({
+	origin23() + '/gate-get-lambda?' + (new URLSearchParams({
 		name: 'GateGetLambda.'
 	})).toString(),
 	{

@@ -60,7 +60,7 @@ high level goals here:
 
 and here's where you clean up
 []single lambda warm that doesn't take provider or service, it's acting like a monolith
-[]host23 and fetch23, and how tests use them
+[]origin23 and fetch23, and how tests use them
 []getting the reference to $fetch where you need it
 
 general patterns:

@@ -3,6 +3,7 @@
 </script>
 <template>
 
+<OauthDemo />
 <WalletDemo />
 
 </template>

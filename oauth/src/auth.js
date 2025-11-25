@@ -1,4 +1,4 @@
-//in the [oauth.cold3.cc] [SvelteKit] workspace using [@auth/sveltekit], this is the file ./src/auth.js
+//./src/auth.js ~ configuration for @auth/sveltekit
 
 import {
 

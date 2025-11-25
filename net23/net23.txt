@@ -3656,6 +3656,8 @@ from there it's all in the code files checked into github, you think
 
 
 
+ttd november, going to move oauth notes here now that you've got the flow working with sveltekit and discord
+bookmark
 
 
 
