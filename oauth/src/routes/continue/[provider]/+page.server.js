@@ -4,7 +4,7 @@ import {
 Now, Limit,
 defined, toss, checkInt,
 Key, decryptKeys,
-symmetricEncrypt,
+encryptSymmetric,
 originApex,
 } from 'icarus'
 import {redirect} from '@sveltejs/kit'
@@ -22,7 +22,7 @@ export async function load(event) {
 		await decryptKeys('sveltekit worker', sources)
 
 		let envelope = event.url.searchParams.get('envelope')
-		let symmetric = symmetricEncrypt(Key('envelope, secret'))
+		let symmetric = encryptSymmetric(Key('envelope, secret'))
 		let letter = await symmetric.decryptObject(envelope)
 		checkInt(letter.dated)
 		if (letter.dated + Limit.handoff < Now()) toss('expired')
