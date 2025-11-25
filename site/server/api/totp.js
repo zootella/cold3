@@ -21,7 +21,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	//status check on component load
 	if (action == 'Status.') {
-		if (user && user.level < 2) return {outcome: 'StatusNoUser.'}
+		if (!user || user.level < 2) return {outcome: 'StatusNoUser.'}
 		if (secret) return {outcome: 'StatusEnrolled.'}
 		return {outcome: 'StatusNotEnrolled.'}
 	}

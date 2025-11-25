@@ -5,31 +5,12 @@ this is the file ./src/routes/continue/[provider]/+page.svelte
 */
 
 import {
-
-//manual icarus import block for sveltekit
 wrapper, Sticker, stickerParts, isLocal, isCloud,
 Now, Time, Size, Limit, newline,
 defined, toss, log, look,
-noop, test, ok,
-
-toBoolean, toTextOrBlank,
-checkInt, minInt,
-intToText, textToInt, commas,
 hasText, checkText,
-hasTextOrBlank, checkTextOrBlank,
-makePlain, makeObject, makeText,
-safefill, deindent,
-
 Tag, hasTag, checkTag, checkTagOrBlank,
-checkHash,
-
-dog, logAudit, logAlert,
-awaitDog, awaitLogAudit, awaitLogAlert,
-
-Key, accessKey, canGetAccess, getAccess,
-doorWorker, doorLambda,
-Task, fetchWorker, fetchLambda, fetchProvider,
-
+Key, decryptKeys, accessKey, canGetAccess, getAccess,
 } from 'icarus'
 
 /*
