@@ -35,39 +35,33 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 		callbacks: {
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
-				log('🏀 hi from Auth.js signIn() handler', look({account, profile, user}))
 
 				//seal up all the details about the user's completed oauth flow in an ecrypted envelope only our servers can open
 				let symmetric = encryptSymmetric(Key('envelope, secret'))
 				let envelope = await symmetric.encryptObject({dated: Now(), action: 'OauthDone.', account, profile, user})
 
-				//stash it in a cookie for redirect() below
-				event.cookies.set('temporary_envelope_oauth', envelope, {//yep, another 🍪
-					path: '/',
-					httpOnly: true,
-					secure: isCloud(),
-					sameSite: 'lax',
-					maxAge: 60,//seconds, plenty to last between this call to signIn() and the call to redirect() that happens next
-				})//are these settings all correct for our temporary cookie to be read only by this code in this file? are these settings correct for how cookies work in SvelteKit?
-
-				let redirectUrl = `${originApex()}/oauth-done?envelope=${envelope}`
-				log('🏀 signIn returning redirect URL:', redirectUrl)
-				return redirectUrl
+				let url = `${originApex()}/oauth-done?envelope=${envelope}`
+				log('🏀 hi from Auth.js signIn() handler', look({account, profile, user, url}))
+				return url
 			},
+			/*
+			ok, to get the redirect to work, we had to
+			1 have signIn above return the url to go to at the end, rather than just true, and
+			2 define redirect below to check and return it!
+			both of those things, it seems
 
-			async redirect({url, baseUrl}) {//Auth calls after successful sign in
+			url is like
+			"https://cold3.cc/oauth-done?envelope=ySB6EZ1..." or
+			"http://localhost:3000/oauth-done?envelope=ySB6EZ1..."
+			what we had signIn() above return
+			
+			baseUrl is like
+			"https://oauth.cold3.cc" or
+			"http://localhost:5173" the root route of this site
+			*/
+			async redirect({url, baseUrl}) {//Auth calls after successful sign in; url is from above, baseUrl is this site
 				log('🥎 hi from Auth.js redirect() handler', look({url, baseUrl}))
-
-				let envelope = event.cookies.get('temporary_envelope_oauth')
-				if (envelope) {
-					log('🥎 yes envelope:', envelope, originApex())
-
-					event.cookies.delete('temporary_envelope_oauth', {path: '/'})
-					return `${originApex()}/oauth-done?envelope=${envelope}`
-				} else {
-					log('🥎 no envelope')
-				}
-				return baseUrl
+				return url//return the url we made, telling Auth that yes, it's ok and what we want
 			},
 		},
 		session: {
