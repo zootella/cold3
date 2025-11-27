@@ -36,32 +36,16 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
 
-				//seal up all the details about the user's completed oauth flow in an ecrypted envelope only our servers can open
+				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
 				let symmetric = encryptSymmetric(Key('envelope, secret'))
 				let envelope = await symmetric.encryptObject({dated: Now(), action: 'OauthDone.', account, profile, user})
 
 				let url = `${originApex()}/oauth-done?envelope=${envelope}`
-				log('🏀 hi from Auth.js signIn() handler', look({account, profile, user, url}))
+				log('Auth.js signIn() handler', look({account, profile, user, url}), `url length ${url.length}`)//claude thinks no provider will give us objects that get close to cloudflare's url length limit of 16,000 characters, which is great; see how big google and others are, ttd november
 				return url
 			},
-			/*
-			ok, to get the redirect to work, we had to
-			1 have signIn above return the url to go to at the end, rather than just true, and
-			2 define redirect below to check and return it!
-			both of those things, it seems
-
-			url is like
-			"https://cold3.cc/oauth-done?envelope=ySB6EZ1..." or
-			"http://localhost:3000/oauth-done?envelope=ySB6EZ1..."
-			what we had signIn() above return
-			
-			baseUrl is like
-			"https://oauth.cold3.cc" or
-			"http://localhost:5173" the root route of this site
-			*/
-			async redirect({url, baseUrl}) {//Auth calls after successful sign in; url is from above, baseUrl is this site
-				log('🥎 hi from Auth.js redirect() handler', look({url, baseUrl}))
-				return url//return the url we made, telling Auth that yes, it's ok and what we want
+			async redirect({url, baseUrl}) {//url is what we composed above, baseUrl is the root of this site
+				return url//this looks like it doesn't do anything, but is us telling Auth yes, really go to url, even to a different subdomain
 			},
 		},
 		session: {
