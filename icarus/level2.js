@@ -781,7 +781,8 @@ export async function doorWorker(method, {
 			await doorWorkerCheck({door, actions, useTurnstile})
 			response = await doorHandleBelow({
 				door,//give our handler the door object, and convenient shortcut access to:
-				body: door.body,
+				query: door.query,//query string from a GET request
+				body: door.body,//content body from a POST
 				action: door.body?.action,
 				headers: door.workerEvent.req.headers,
 				browserHash: await hashText(checkTag(door.workerEvent.context.browserTag)),//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
@@ -862,10 +863,12 @@ async function doorWorkerOpen({method, workerEvent}) {
 	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
-		door.body = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
+		door.query = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
 
-		//authenticate worker get request: (0) block entirely!
-		toss('worker get not in use', {door})
+		//authenticate worker get request: (a) https; (b) origin omitted; (c) referer omitted or correct
+		checkForwardedSecure(workerEvent.req.headers)
+		checkOriginOmitted(workerEvent.req.headers)//browser navigation GETs do not send origin header
+		checkReferer(workerEvent.req.headers, originOauth())//referer must be omitted or from oauth.cold3.cc
 
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
@@ -991,7 +994,7 @@ POST |  1 https                         1 https
 Notes: (i) The Network 23 Application Programming Interface is exclusively for server to server communication; no pages allowed
 (ii) the worker and lambda have shared a secret securely stored in both server environments
 (iii) valid only would allow page access, but we must also allow omitted for SSR to work
-(iv) all site APIs are POST; we block GET entirely
+(iv) all site APIs are POST; we block GET entirely (except for getting the envelope back from the oauth site, ttd november update this guide)
 (v) similarly, there are no GET lambdas; note that this whole grid is for api.net23.cc; vhs.net23.cc is the cloudfront function which does its own checks of the method and origin and referer headers
 */
 function checkForwardedSecure(headers) { if (isLocal()) return//skip these checks during local development
@@ -1018,6 +1021,25 @@ function checkOriginValid(headers, access) { if (isLocal()) return//skip these c
 	let v = headerGet(headers, 'Origin')
 	let allowed = access.get('ACCESS_ORIGIN_URL')
 	if (v != allowed) toss('origin not allowed', {n, v, allowed, headers})
+}
+function checkReferer(headers, required) { if (isLocal()) return
+	let n = headerCount(headers, 'Referer')
+	if (n == 0) {
+		//omitted referer header is fine
+	} else if (n == 1) {
+		let referer = headerGetOne(headers, 'Referer')
+		if (
+			referer == required ||//such as exactly "https://oauth.cold3.cc"
+			referer.startsWith(required+'/')//or    "https://oauth.cold3.cc/some/route"
+			//very importantly we thus do not allow "https://oauth.cold3.attacker.cc"
+		) {
+			//expected referer from oauth subdomain
+		} else {
+			toss('referer not allowed', {headers, required})
+		}
+	} else {
+		toss('headers malformed with multiple referer', {n, headers, required})
+	}
 }
 
 function headerCount(headers, name) {

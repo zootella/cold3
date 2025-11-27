@@ -35,8 +35,10 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
 
-				log('proof has arrived ✉️', look({account, profile, user}))
-				return true//ttd november, we'll return an envelope to the nuxt site
+				//seal up all the details about the user's completed oauth flow
+				let symmetric = encryptSymmetric(Key('envelope, secret'))
+				let envelope = await symmetric.encryptObject({dated: Now(), action: 'OauthDone.', account, profile, user})
+				return `${originApex()}/oauth-done?envelope=${envelope}`//and return them, and the user, to the main site with a GET
 			},
 		},
 		session: {

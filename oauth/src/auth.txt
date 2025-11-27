@@ -246,6 +246,30 @@ in researching this now, also found this similar rant:
 https://www.better-auth.com/docs/comparison
 */
 
+/*
+Yes, it's reasonable. The complexity is real but it's concentrated in this handoff code you're writing now. Once it works:
+
+Adding a new OAuth provider = one line in the providers array
+SvelteKit handles all OAuth quirks (PKCE, OAuth 1 vs 2, provider-specific nonsense)
+Nuxt receives clean proof: "this browserHash proved they control discord:userId"
+
+The alternatives:
+Wait for Auth.js Nuxt integration - "Open PR" status since your notes suggest that's been slow. Could be months or never.
+Use @auth/core directly in Nuxt - You tried this, it didn't work.
+Implement OAuth manually per provider - Each provider is different. Discord uses OAuth2, Twitter used OAuth1 (now OAuth2 with quirks), Google has its own flows. This is ongoing maintenance as providers change things.
+Use a different library - You found better-auth.com. Could be worth evaluating, but it's newer, less proven, and you'd be starting over.
+Your architecture - Subdomain handles OAuth complexity, encrypted envelope carries proof across, main site receives it. The envelope system is actually elegant: cryptographic proof that your server vouches for this OAuth completion, with TTL, tamper-evident.
+The chutes and ladders you're building today become invisible infrastructure tomorrow. The signup flow will feel simple to users: click Discord → authorize → land on dashboard, signed in.
+*/
+
+
+
+
+
+
+
+
+
 
 
 
