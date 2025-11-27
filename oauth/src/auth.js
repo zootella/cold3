@@ -1,8 +1,9 @@
 //./src/auth.js ~ on the oauth trail, Auth.js configuration and handlers
 
 import {
-defined, toss, log, look,
+defined, toss, log, look, Now,
 Key, decryptKeys,
+encryptSymmetric, originApex,
 } from 'icarus'
 
 import {SvelteKitAuth} from '@auth/sveltekit'
@@ -34,12 +35,19 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 		callbacks: {
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
+				log('hi from auth signIn', look({account, profile, user}))
 
 				//seal up all the details about the user's completed oauth flow
 				let symmetric = encryptSymmetric(Key('envelope, secret'))
 				let envelope = await symmetric.encryptObject({dated: Now(), action: 'OauthDone.', account, profile, user})
 				return `${originApex()}/oauth-done?envelope=${envelope}`//and return them, and the user, to the main site with a GET
+
+				//ok, but in proper and expected use of Auth.js with auth sveltekit, is this the right way to do a concluding redirect?
 			},
+
+			async redirect({url, baseUrl}) {//Auth calls after successful sign in
+
+			}
 		},
 		session: {
 			maxAge: 900,//15 minutes in seconds; intending us to identify our user with this cookie, Auth's default is 30 days

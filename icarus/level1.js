@@ -179,7 +179,7 @@ export const Limit = Object.freeze({
 	area: 10000,//and for text areas, from twitter DMs and reddit posts
 
 	//times and timeouts related to both cryptography and the user experience
-	handoff: 2*Time.second,//for a server to server handoff, allow only envelopes sealed just a moment ago
+	handoff: 4*Time.second,//for a server to server handoff, allow only envelopes sealed just a moment ago
 	expiration: 20*Time.minute,//for user interactions that take them away from the site, allow the user to walk away and come back
 })
 export function cropToLimit(s, customLimit, defaultLimit) {
