@@ -7,7 +7,7 @@ browserIsBesideAppStore,
 } from 'icarus'
 
 //the page might refresh between enrollment steps 1 and 2; save the provisional secret encrypted by the server in a 20 minute cookie 🍪⌛
-const refCookie = useCookie('totpTemporary', {
+const refCookie = useCookie('temporary_envelope_totp', {
 	maxAge: Limit.expiration / Time.second,//the browser will delete this cookie 20 minutes after we last set .value; cookies are timed in seconds not milliseconds
 	sameSite: 'strict',//browser will include cookie in requests to our server only, which doesn't read it, this is the most restrictive setting, there isn't one for "don't send it at all"
 	secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
