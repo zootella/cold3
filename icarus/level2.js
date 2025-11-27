@@ -950,7 +950,7 @@ async function doorWorkerShut(door, response, error) {
 		logAlert('door worker shut', {body: door.body, response, error})//tell staff about it
 		//^ttd april2025, trying to make this less verbose so it's useful to read while coding, before and for the longest time, you had the whole door in there
 		r = null//return no response
-	} else {
+	} else if (door.method == 'POST') {
 		r = makePlain(response)//nuxt will stringify and add status code and headers, make plain to see into errors and not throw if there's a method or a circular reference!
 	}
 	await awaitDoorPromises()
