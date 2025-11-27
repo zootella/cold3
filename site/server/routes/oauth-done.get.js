@@ -8,7 +8,6 @@ export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('GET', {workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, query, browserHash}) {
-	log('HI FROM OUR FIRST GET IN NUXT!!!!')
 
 	let symmetric = encryptSymmetric(Key('envelope, secret'))
 	let letter = await symmetric.decryptObject(query.envelope)

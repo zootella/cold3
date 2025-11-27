@@ -35,7 +35,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 		callbacks: {
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
-				log('hi from Auth.js signIn() handler', look({account, profile, user}))
+				log('🏀 hi from Auth.js signIn() handler', look({account, profile, user}))
 
 				//seal up all the details about the user's completed oauth flow in an ecrypted envelope only our servers can open
 				let symmetric = encryptSymmetric(Key('envelope, secret'))
@@ -50,28 +50,22 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 					maxAge: 60,//seconds, plenty to last between this call to signIn() and the call to redirect() that happens next
 				})//are these settings all correct for our temporary cookie to be read only by this code in this file? are these settings correct for how cookies work in SvelteKit?
 
-/*
-				//tell Auth.js that things look good and we can allow sign in
-				log('signIn complete, cookie set, returning true')
-				return true
-*/
-
 				let redirectUrl = `${originApex()}/oauth-done?envelope=${envelope}`
-				log('signIn returning redirect URL:', redirectUrl)
+				log('🏀 signIn returning redirect URL:', redirectUrl)
 				return redirectUrl
 			},
 
 			async redirect({url, baseUrl}) {//Auth calls after successful sign in
-				log('hi from Auth.js redirect() handler', look({url, baseUrl}))
+				log('🥎 hi from Auth.js redirect() handler', look({url, baseUrl}))
 
 				let envelope = event.cookies.get('temporary_envelope_oauth')
 				if (envelope) {
-					log('yes envelope:', envelope, originApex())
+					log('🥎 yes envelope:', envelope, originApex())
 
 					event.cookies.delete('temporary_envelope_oauth', {path: '/'})
 					return `${originApex()}/oauth-done?envelope=${envelope}`
 				} else {
-					log('no envelope')
+					log('🥎 no envelope')
 				}
 				return baseUrl
 			},
