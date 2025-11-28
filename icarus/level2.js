@@ -936,9 +936,7 @@ async function doorLambdaCheck({door, actions}) {
 			door.body.ACCESS_NETWORK_23_SECRET,
 			(await getAccess()).get('ACCESS_NETWORK_23_SECRET')
 		)) toss('bad access code', {door})
-	}
-
-	//^ttd november, going to remove this check for a moment, and then later, switch this to envelope
+	}//going to replace ACCESS_NETWORK_23_SECRET with body.envelope which doorLambdaOpen decrypts and checks .sealed is within Limit.handoffLambda, ttd november 
 }
 
 async function doorWorkerShut(door, response, error) {
