@@ -937,6 +937,8 @@ async function doorLambdaCheck({door, actions}) {
 			(await getAccess()).get('ACCESS_NETWORK_23_SECRET')
 		)) toss('bad access code', {door})
 	}
+
+	//^ttd november, going to remove this check for a moment, and then later, switch this to envelope
 }
 
 async function doorWorkerShut(door, response, error) {
