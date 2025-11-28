@@ -865,10 +865,9 @@ async function doorWorkerOpen({method, workerEvent}) {
 	if (method == 'GET') {
 		door.query = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
 
-		//authenticate worker get request: (a) https; (b) origin omitted; (c) referer omitted or correct
+		//authenticate worker get request: (1) https; (2) origin omitted
 		checkForwardedSecure(workerEvent.req.headers)
 		checkOriginOmitted(workerEvent.req.headers)//browser navigation GETs do not send origin header
-		checkReferer(workerEvent.req.headers, originOauth())//referer must be omitted or from oauth.cold3.cc
 
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
@@ -900,7 +899,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		door.body = lambdaEvent.queryStringParameters
 
 		//authenticate lambda get request: (0) block entirely!
-		toss('lambda get not in use', {door})
+		toss('lambda get not in use', {door})//when you do uploads, you'll probably need to add requests for signed URLs to upload to S3 here, ttd november
 
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
@@ -1021,25 +1020,6 @@ function checkOriginValid(headers, access) { if (isLocal()) return//skip these c
 	let v = headerGet(headers, 'Origin')
 	let allowed = access.get('ACCESS_ORIGIN_URL')
 	if (v != allowed) toss('origin not allowed', {n, v, allowed, headers})
-}
-function checkReferer(headers, required) { if (isLocal()) return
-	let n = headerCount(headers, 'Referer')
-	if (n == 0) {
-		//omitted referer header is fine
-	} else if (n == 1) {
-		let referer = headerGetOne(headers, 'Referer')
-		if (
-			referer == required ||//such as exactly "https://oauth.cold3.cc"
-			referer.startsWith(required+'/')//or    "https://oauth.cold3.cc/some/route"
-			//very importantly we thus do not allow "https://oauth.cold3.attacker.cc"
-		) {
-			//expected referer from oauth subdomain
-		} else {
-			toss('referer not allowed', {headers, required})
-		}
-	} else {
-		toss('headers malformed with multiple referer', {n, headers, required})
-	}
 }
 
 function headerCount(headers, name) {
