@@ -324,6 +324,7 @@ export async function decryptKeys(sender, sources) {
 		if (hasText(v)) key = v//save a good value as the found key; it's fine that multiple hits overwrite
 	}
 	if (!hasText(key)) return//give up here; looking for a Key() will throw soon after
+	//ttd november, actually, no, if you can't find the decryption key, throw here, so you can see the error as key not found, rather than key request failed. a call into decryptKeys must succeed, essentially
 
 	let block = (await decryptData(Data({base62: key.slice(prefix)}), Data({base62: wrapper.secretKeys}))).text()
 	_keys.push(...parseKeyBlock(block))
@@ -784,9 +785,14 @@ export async function doorWorker(method, {
 				query: door.query,//query string from a GET request
 				body: door.body,//content body from a POST
 				action: door.body?.action,
+				letter: 'ttd november',//see below
 				headers: door.workerEvent.req.headers,
 				browserHash: await hashText(checkTag(door.workerEvent.context.browserTag)),//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
 			})
+			/*
+			ttd november, get body, query, and envelope in here, for GET and POST, worker and lambda
+			if query or body has envelope, decrypt it here, check its expiration here, then send letter to doorHandleBelow
+			*/
 
 		} catch (e1) { error = e1 }
 		try {
@@ -852,6 +858,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 		}
 	}//seeing 140 never, which is ironic as this is the correct Nuxt way to do things! ttd november
 	await decryptKeys('nuxt worker', sources)
+	//ttd november, simpler and longer error numbers and single line reporting
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.task = Task({name: 'door worker'})
@@ -886,6 +893,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		sources.push({note: '200: process.env', environment: process.env})
 	}//seeing 200 both local and cloud; must be built into server bundle because there is no dashboard source
 	await decryptKeys('lambda', sources)
+	//ttd november, simpler and longer error numbers and single line reporting
 
 	let door = {}//our object that bundles together everything about this incoming request
 	door.task = Task({name: 'door lambda'})

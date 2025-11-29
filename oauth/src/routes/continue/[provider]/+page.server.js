@@ -19,7 +19,8 @@ export async function load(event) {
 		if (event?.platform?.env) {
 			sources.push({note: '5010: event.platform.env', environment: event?.platform?.env})
 		}//seeing 5010 both, local and cloud (confirm, ttd november)
-		await decryptKeys('sveltekit worker', sources)
+		await decryptKeys('sveltekit worker continue', sources)
+		//ttd november, simpler and longer error numbers and single line reporting
 
 		let envelope = event.url.searchParams.get('envelope')
 		let symmetric = encryptSymmetric(Key('envelope, secret'))

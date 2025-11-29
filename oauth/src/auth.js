@@ -22,7 +22,8 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 	if (event?.platform?.env) {
 		sources.push({note: '310: event.platform.env', environment: event?.platform?.env})
 	}//seeing 310 both, local and cloud
-	await decryptKeys('sveltekit worker', sources)
+	await decryptKeys('sveltekit worker auth', sources)
+	//ttd november, simpler and longer error numbers and single line reporting
 
 	let authOptions = {
 		providers: [
