@@ -180,10 +180,11 @@ export const Limit = Object.freeze({
 
 	//times and timeouts related to both cryptography and the user experience
 	handoff: 4*Time.second,//for a server to server handoff, allow only envelopes sealed just a moment ago
-	expiration: 20*Time.minute,//for user interactions that take them away from the site, allow the user to walk away and come back
-	//ttd november, splitting handoff into a fast one for between workers, and a slower one for worker and lambda
+
+	expirationUser: 20*Time.minute,//for user interactions that take them away from the site, allow the user to walk away and come back
 	handoffWorker: 2*Time.second,
 	handoffLambda: 8*Time.second,
+	//ttd november, splitting handoff into a fast one for between workers, and a slower one for worker and lambda
 })
 export function cropToLimit(s, customLimit, defaultLimit) {
 	let limit = customLimit || defaultLimit//use the default limit if the caller above specified no custom limit

@@ -2,7 +2,7 @@
 import {
 browserToUser,
 trailRecent, trailCount, trailGet, trailAdd,
-checkNumerals, Data, encryptSymmetric, hasTextSame,
+checkNumerals, Data, encryptSymmetric, isExpired, hasTextSame,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 } from 'icarus'
@@ -10,7 +10,7 @@ credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Status.', 'Enroll1.', 'Enroll2.', 'Validate.', 'Remove.'], workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action, browserHash}) {
+async function doorHandleBelow({door, browserHash, body, action, letter}) {
 
 	//collect information from the database
 	let user, userTag, secret
@@ -48,7 +48,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			addIdentifier: true,
 		})
 		enrollment.envelope = await symmetric.encryptObject({
-			dated: Now(),
+			expiration: Now() + Limit.expirationUser,
 			secret: enrollment.secret,
 			message:
 			safefill`TOTP enrollment: browser ${browserHash}, user ${userTag}, secret ${enrollment.secret}`,
@@ -60,13 +60,12 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	} else if (action == 'Enroll2.') {
 
 		//decrypt the secret from the page, possibly via a cookie through a refresh
-		let letter = await symmetric.decryptObject(body.envelope)
 		let secret = letter.secret
 		checkTotpSecret(secret)
 
 		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
-		//ttd november, going to changen to Limit.expiration which is the same 20min, but with more of a unified and user focus
-		if (letter.dated + Limit.expiration < Now()) return {outcome: 'BadSecret.'}//expired
+		//ttd november, going to changen to Limit.expirationUser which is the same 20min, but with more of a unified and user focus
+		if (isExpired(letter.expiration)) return {outcome: 'BadSecret.'}//user walked away
 		if (!hasTextSame(
 			letter.message,
 			safefill`TOTP enrollment: browser ${browserHash}, user ${userTag}, secret ${secret}`)) {

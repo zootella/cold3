@@ -1,14 +1,14 @@
 //./server/api/wallet.js
 import {
 checkWallet, validateWallet,
-encryptSymmetric, hasTextSame,
+encryptSymmetric, isExpired, hasTextSame,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Prove1.', 'Prove2.'], workerEvent, doorHandleBelow})//wallet addresses are so long we don't need turnstile
 })
-async function doorHandleBelow({door, body, action, browserHash}) {
+async function doorHandleBelow({door, browserHash, body, action, letter}) {
 	const symmetric = encryptSymmetric(Key('envelope, secret'))
 	if (action == 'Prove1.') {//page requests nonce to prove it controlls address
 
@@ -17,7 +17,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		let message = safefill`Add your wallet with an instant, zero-gas signature of code ${nonce}`//keepin copy short and non-scary for MetaMask's tiny little window
 
 		let envelope = await symmetric.encryptObject({
-			dated: Now(),
+			expiration: Now() + Limit.expirationUser,
 			message: safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`,
 		})
 		return {message, nonce, envelope}
@@ -31,8 +31,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		let signature = checkText(body.signature)//signature looks like 0x followed by 130 or 132 base16 characters
 
 		//confirm (1) the page has given us back the same real valid nonce and message we gave it in step 1 above
-		let letter = await symmetric.decryptObject(body.envelope)
-		if ((letter.dated + Limit.expiration) < Now()) return {outcome: 'BadMessage.'}//expired
+		if (isExpired(letter.expiration)) return {outcome: 'BadMessage.'}//user walked away
 		if (!hasTextSame(
 			letter.message,
 			safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`)) {

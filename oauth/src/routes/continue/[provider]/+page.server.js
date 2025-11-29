@@ -4,7 +4,7 @@ import {
 Now, Limit,
 defined, toss, checkInt,
 Key, decryptKeys,
-encryptSymmetric,
+openEnvelope, isExpired,
 originApex,
 } from 'icarus'
 import {redirect} from '@sveltejs/kit'
@@ -12,21 +12,18 @@ import {redirect} from '@sveltejs/kit'
 export async function load(event) {
 	try {
 
-		let sources = []
+		let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 		if (defined(typeof process) && process.env) {
-			sources.push({note: '5000: process.env', environment: process.env})
-		}//seeing 5000 cloud, only (confirm)
+			sources.push({note: 'a10', environment: process.env})
+		}//seeing a10 cloud only (you expect, have not observed, ttd november)
 		if (event?.platform?.env) {
-			sources.push({note: '5010: event.platform.env', environment: event?.platform?.env})
-		}//seeing 5010 both, local and cloud (confirm, ttd november)
-		await decryptKeys('sveltekit worker continue', sources)
-		//ttd november, simpler and longer error numbers and single line reporting
+			sources.push({note: 'a20', environment: event?.platform?.env})
+		}//seeing a20 both local and cloud (you expect, have not observed, ttd november)
+		await decryptKeys('svelte', sources)
 
-		let envelope = event.url.searchParams.get('envelope')
-		let symmetric = encryptSymmetric(Key('envelope, secret'))
-		let letter = await symmetric.decryptObject(envelope)
-		checkInt(letter.dated)
-		if (letter.dated + Limit.handoff < Now()) toss('expired')
+		let letter = await openEnvelope(event.url.searchParams.get('envelope'))
+		if (letter.action != 'OauthContinue.') toss('envelope has wrong action')
+		if (isExpired(letter.expired)) toss('expired')
 
 		return {}//GET looks good to start the oauth flow; in sveltekit return nothing or an empty object to deliver the page
 

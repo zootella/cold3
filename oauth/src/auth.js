@@ -15,15 +15,14 @@ import twitchProvider  from '@auth/sveltekit/providers/twitch'
 import redditProvider  from '@auth/sveltekit/providers/reddit'
 
 export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
-	let sources = []
+	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
-		sources.push({note: '300: process.env', environment: process.env})
-	}//seeing 300 cloud, only
+		sources.push({note: 'b10', environment: process.env})
+	}//seeing b10 cloud only
 	if (event?.platform?.env) {
-		sources.push({note: '310: event.platform.env', environment: event?.platform?.env})
-	}//seeing 310 both, local and cloud
-	await decryptKeys('sveltekit worker auth', sources)
-	//ttd november, simpler and longer error numbers and single line reporting
+		sources.push({note: 'b20', environment: event?.platform?.env})
+	}//seeing b20 both local and cloud
+	await decryptKeys('auth', sources)
 
 	let authOptions = {
 		providers: [
@@ -39,7 +38,11 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
 				let symmetric = encryptSymmetric(Key('envelope, secret'))
-				let envelope = await symmetric.encryptObject({dated: Now(), action: 'OauthDone.', account, profile, user})
+				let envelope = await symmetric.encryptObject({
+					action: 'OauthDone.',
+					expiration: Now() + Limit.handoffWorker,
+					account, profile, user,
+				})
 
 				let url = `${originApex()}/oauth-done?envelope=${envelope}`
 				log('Auth.js signIn() handler', look({account, profile, user, url}), `url length ${url.length}`)//claude thinks no provider will give us objects that get close to cloudflare's url length limit of 16,000 characters, which is great; see how big google and others are, ttd november

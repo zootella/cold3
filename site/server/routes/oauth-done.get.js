@@ -1,18 +1,19 @@
 //./server/routes/oauth-done.get.js
 
 import {
-encryptSymmetric,
+encryptSymmetric, isExpired,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('GET', {workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, query, browserHash}) {
+async function doorHandleBelow({door, browserHash, query, letter}) {
+	if (letter.action != 'OauthDone.') toss('envelope has wrong action')
+	if (isExpired(letter.expiration)) toss('expired')
 
-	let symmetric = encryptSymmetric(Key('envelope, secret'))
-	let letter = await symmetric.decryptObject(query.envelope)
-	log('ok, got the letter from the sveltekit side here in nuxt at last!!', look(letter))
-	//ttd november, obviously check that the letter isn't expired beyond Limit.handoff 2 seconds
+	log('letter arrived in worker 📩', look(letter))
+	//now we'll save the proven credential in the database
+	//and below, choose what route to send the user to, ttd november
 
 	return sendRedirect(door.workerEvent, '/', 302)
 }

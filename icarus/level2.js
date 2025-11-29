@@ -3,7 +3,7 @@ import {//from wrapper
 wrapper,
 } from './wrapper.js'
 import {//from level0
-Time, Now, sayDate, sayTick,
+Time, Now, sayDate, sayTick, isExpired,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline,
 Tag, checkTag,
@@ -307,14 +307,13 @@ export async function decryptKeys(sender, sources) {
 	const name = 'SECRET_KEY_U1'
 	const prefix = 14
 
-	if (false) {//see where we're finding the key across local|cloud × lambda|nuxt|sveltekit
+	if (true) {//switch on to see where we're finding the key across local|cloud × lambda|nuxt|sveltekit
+		let s = `Key found by ${isLocal() ? 'local' : 'cloud'} ${sender} @`
 		let places = []
 		for (let source of sources) {
 			let v = source.environment?.[name]
-			if (hasText(v)) places.push(`${isLocal() ? 'local' : 'cloud'} ${source.note} found ${(await hashText(v)).slice(0, 2)}‹${v.length}›`)
+			if (hasText(v)) s += ' ' + source.note
 		}
-		let s = `Key found ${places.length} places by ${sender} at ${Sticker()}`+newline
-		if (places.length) s += places.join(newline)
 		await awaitDog(s)
 	}
 
@@ -323,8 +322,7 @@ export async function decryptKeys(sender, sources) {
 		let v = source.environment?.[name]
 		if (hasText(v)) key = v//save a good value as the found key; it's fine that multiple hits overwrite
 	}
-	if (!hasText(key)) return//give up here; looking for a Key() will throw soon after
-	//ttd november, actually, no, if you can't find the decryption key, throw here, so you can see the error as key not found, rather than key request failed. a call into decryptKeys must succeed, essentially
+	if (!hasText(key)) toss(`key not found by ${sender} in ${sources.length} sources`)
 
 	let block = (await decryptData(Data({base62: key.slice(prefix)}), Data({base62: wrapper.secretKeys}))).text()
 	_keys.push(...parseKeyBlock(block))
@@ -637,9 +635,16 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	if (!options.body) options.body = {}
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
+	let symmetric = symmetricEncrypt(Key('envelope, secret'))
 	options.body = makePlain(options.body)
-	options.body.warm = true;         await $fetch(origin23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
-	options.body.warm = false; return await $fetch(origin23()+url, options)
+
+	options.body.warm = true
+	options.body.envelope = await symmetric.encryptObject({action: 'Network23.', expiration: Now() + Limit.handoffLambda})
+	await $fetch(origin23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
+
+	options.body.warm = false
+	options.body.envelope = await symmetric.encryptObject({action: 'Network23.', expiration: Now() + Limit.handoffLambda})
+	return await $fetch(origin23()+url, options)
 }
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)
@@ -785,14 +790,10 @@ export async function doorWorker(method, {
 				query: door.query,//query string from a GET request
 				body: door.body,//content body from a POST
 				action: door.body?.action,
-				letter: 'ttd november',//see below
+				letter: door.letter,
 				headers: door.workerEvent.req.headers,
 				browserHash: await hashText(checkTag(door.workerEvent.context.browserTag)),//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
 			})
-			/*
-			ttd november, get body, query, and envelope in here, for GET and POST, worker and lambda
-			if query or body has envelope, decrypt it here, check its expiration here, then send letter to doorHandleBelow
-			*/
 
 		} catch (e1) { error = e1 }
 		try {
@@ -815,7 +816,13 @@ export async function doorLambda(method, {
 
 			door = await doorLambdaOpen({method, lambdaEvent, lambdaContext})
 			await doorLambdaCheck({door, actions})
-			response = await doorHandleBelow({door, body: door.body, action: door.body?.action})
+			response = await doorHandleBelow({
+				door,
+				body: door.body,
+				action: door.body?.action,
+
+				letter: door.letter,//ttd november, you'll refactor so the body is the letter and the action comes from that
+			})
 
 		} catch (e) { error = e }
 		try {
@@ -840,25 +847,22 @@ async function doorWorkerOpen({method, workerEvent}) {
 	let access = await getAccess()
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
-		sources.push({note: '100: process.env', environment: process.env})
-	}//seeing 100 both local and cloud; local makes sense, but not sure if cloud is coming from bundle or dashboard, ttd november
+		sources.push({note: 'c10', environment: process.env})
+	}//seeing c10 both local and cloud; local makes sense, but not sure if cloud is coming from bundle or dashboard, ttd november
 	if (workerEvent.context?.cloudflare?.env) {
-		sources.push({note: '110: workerEvent.context.cloudflare.env', environment: workerEvent.context.cloudflare.env})
-	}//seeing 110 local always and cloud sometimes, which is super weird
+		sources.push({note: 'c20', environment: workerEvent.context.cloudflare.env})
+	}//seeing c20 local always and cloud sometimes, which is super weird
 	if (workerEvent.context?.env) {
-		sources.push({note: '120: workerEvent.context.env', environment: workerEvent.context.env})
-	}//seeing 120 never 
+		sources.push({note: 'c30', environment: workerEvent.context.env})
+	}//seeing c30 never 
 	if (workerEvent.platform?.env) {
-		sources.push({note: '130: workerEvent.platform.env', environment: workerEvent.platform.env})
-	}//seeing 130 never
+		sources.push({note: 'c40', environment: workerEvent.platform.env})
+	}//seeing c40 never
 	if (typeof useRuntimeConfig == 'function') {
 		let c = useRuntimeConfig(workerEvent)
-		if (c) {
-			sources.push({note: '140: useRuntimeConfig(workerEvent)', environment: c})//seeing flow reach here local and cloud
-		}
-	}//seeing 140 never, which is ironic as this is the correct Nuxt way to do things! ttd november
-	await decryptKeys('nuxt worker', sources)
-	//ttd november, simpler and longer error numbers and single line reporting
+		if (c) sources.push({note: 'c50', environment: c})//seeing flow reach here local and cloud
+	}//seeing c50 never, which is ironic as this is the correct Nuxt way to do things!
+	await decryptKeys('worker', sources)
 
 	let door = {}//make door object to bundle everything together about this request we're doing
 	door.task = Task({name: 'door worker'})
@@ -871,6 +875,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	door.method = method//save the method
 	if (method == 'GET') {
 		door.query = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
+		if (door?.query?.envelope) door.letter = await openEnvelope(door?.query?.envelope)
 
 		//authenticate worker get request: (1) https; (2) origin omitted
 		checkForwardedSecure(workerEvent.req.headers)
@@ -878,6 +883,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
+		if (door?.body?.envelope) door.letter = await openEnvelope(door?.body?.envelope)
 
 		//authenticate worker post request: (1) https; (2) origin omitted or valid
 		checkForwardedSecure(workerEvent.req.headers)
@@ -890,10 +896,9 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	let access = await getAccess()
 	let sources = []//unlike the cloudflare code above, the lambda event and context objects do not contain environment variables
 	if (defined(typeof process) && process.env) {
-		sources.push({note: '200: process.env', environment: process.env})
-	}//seeing 200 both local and cloud; must be built into server bundle because there is no dashboard source
+		sources.push({note: 'd10', environment: process.env})
+	}//seeing d10 both local and cloud; must be built into server bundle because there is no dashboard source
 	await decryptKeys('lambda', sources)
-	//ttd november, simpler and longer error numbers and single line reporting
 
 	let door = {}//our object that bundles together everything about this incoming request
 	door.task = Task({name: 'door lambda'})
@@ -904,7 +909,8 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	if (method != lambdaEvent.httpMethod) toss('method mismatch', {method, door})
 	door.method = method
 	if (method == 'GET') {
-		door.body = lambdaEvent.queryStringParameters
+		door.query = lambdaEvent.queryStringParameters
+		if (door?.query?.envelope) door.letter = await openEnvelope(door?.query?.envelope)
 
 		//authenticate lambda get request: (0) block entirely!
 		toss('lambda get not in use', {door})//when you do uploads, you'll probably need to add requests for signed URLs to upload to S3 here, ttd november
@@ -912,6 +918,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = makeObject(door.bodyText)
+		if (door?.body?.envelope) door.letter = await openEnvelope(door?.body?.envelope)//required; will throw if missing in check below
 
 		//authenticate lambda post request: (1) https; (2) origin *omitted*; (3) access code valid
 		checkForwardedSecure(lambdaEvent.headers)
@@ -935,7 +942,12 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 }
 async function doorLambdaCheck({door, actions}) {
 
-	//check the page's requested action
+	//workers must include an encrypted envelope as proof of their identity,
+	if (!door.letter)                       toss('envelope missing',      {door})
+	if (door.letter.action != 'Network23.') toss('envelope action wrong', {door})//and it must be the right kind,
+	if (isExpired(door.letter.expiration))  toss('envelope expired',      {door})//and recent
+
+	//check the worker's requested action
 	checkActions({action: door.body?.action, actions})
 
 	//check that the worker sent the lambda the valid Network 23 access key
@@ -1204,6 +1216,13 @@ noop(() => {//first, a demonstration of a promise race
 
 
 
+//standardize server to server encrypted envelope, same worker and lambda, get and post
+async function openEnvelope(envelope) {
+	if (!envelope) toss('missing envelope', {envelope})//throws on no envelope,
+	let symmetric = decryptSymmetric(Key('envelope, secret'))
+	let letter = await symmetric.decryptObject(envelope)
+	checkInt(letter.expiration, 1)//and no expiration, but YOU have to call isExpired(letter.expiration) to check the expiration date yourself!
+}
 
 
 

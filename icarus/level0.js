@@ -434,6 +434,49 @@ test(() => {
 
 
 
+
+
+//is the time now beyond the given tick count expiration date? 🥛 and check we always get a valid number
+export function isExpired(t) {//false if t is in the future, true if t is in the past, toss if t undefined or zero
+	checkInt(t, 1)
+	return t < Now()
+}
+test(() => {
+	ok(!isExpired(Now() + Time.second))
+	ok(isExpired(Now() - Time.second))//normal use
+
+	if (false) {//manually confirm these all throw
+		let o = {}
+		ok(isExpired(o?.expiration))
+		ok(isExpired())
+		ok(isExpired(undefined))
+		ok(isExpired(null))
+		ok(isExpired(false))//different kinds of not there
+		ok(isExpired(true))
+	}
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //  _            _   
 // | |_ _____  _| |_ 
 // | __/ _ \ \/ / __|
@@ -1414,7 +1457,7 @@ test(async () => {
 
 	letter = {//or the server has more to remember
 		explanation: "Sealing information on the server to open in the next request. The page will hold the ciphertext, but won't be able to known these contents. And, our ability to reopen the envelope indicates we authored and sealed it, too.",
-		dated: Now(),//but watch out for a replay attack! always include the time from the trusted server clock; an attacker could replay the envelope, but not know or change a date written inside
+		expiration: Now() + (2*Time.second),//but watch out for a replay attack! always include an expiration time from the trusted server clock; an attacker could replay the envelope, but not know or change the date written inside
 		number: 7,
 		validated: true,
 		users: ['Alice', 'Bob'],

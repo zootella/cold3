@@ -8,15 +8,15 @@ import {verifyMessage} from 'viem'
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['OauthStart.', 'OauthDone.'], workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, body, action, browserHash}) {
+async function doorHandleBelow({door, browserHash, body, action, letter}) {
 	const symmetric = encryptSymmetric(Key('envelope, secret'))
 	if (action == 'OauthStart.') {
 
 		return {
-			outcome: 'Continue.',//probably won't read this
+			outcome: 'OauthContinue.',//the page probably won't read this
 			envelope: await symmetric.encryptObject({
-				dated: Now(),//only part that matters
-				tag: Tag(),//just filler
+				action: 'OauthContinue.',//unique action prevents a page from replaying an envelope to the sveltekit endpoint
+				expiration: Now() + Limit.handoffWorker,
 			})
 		}
 
