@@ -1,6 +1,6 @@
 
 import {
-origin23,
+encryptSymmetric, origin23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -14,7 +14,8 @@ async function doorHandleBelow({door}) {
 			method: 'POST',
 			body: {
 				name: 'GatePostWorker.',
-				ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET')
+				ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET'),//ttd november, will replace ACCESS_NETWORK_23_SECRET secret here with "Network23." envelope below:
+				envelope: await encryptSymmetric(Key('envelope, secret')).encryptObject({action: 'Network23.', expiration: Now() + Limit.handoffLambda}),
 			}
 		}
 	)

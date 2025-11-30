@@ -9,7 +9,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, browserHash, query, letter}) {
 	if (letter.action != 'OauthDone.') toss('envelope has wrong action')
-	if (isExpired(letter.expiration)) toss('expired')
+	if (isExpired(letter.expiration)) toss('expired')//oauth envelope done: expiration check [4]
 
 	log('letter arrived in worker 📩', look(letter))
 	//now we'll save the proven credential in the database

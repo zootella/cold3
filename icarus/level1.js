@@ -178,13 +178,10 @@ export const Limit = Object.freeze({
 	input: 512,//higher ceiling for single line form fields
 	area: 10000,//and for text areas, from twitter DMs and reddit posts
 
-	//times and timeouts related to both cryptography and the user experience
-	handoff: 4*Time.second,//for a server to server handoff, allow only envelopes sealed just a moment ago
-
-	expirationUser: 20*Time.minute,//for user interactions that take them away from the site, allow the user to walk away and come back
-	handoffWorker: 2*Time.second,
-	handoffLambda: 8*Time.second,
-	//ttd november, splitting handoff into a fast one for between workers, and a slower one for worker and lambda
+	//times and timeouts related to server communication and the user experience
+	expirationUser: 20*Time.minute,//for interactions that involve manual steps, allow the user to walk away and come back
+	handoffWorker: 2*Time.second,//for worker to worker server requests and redirects, a tight window
+	handoffLambda: 8*Time.second,//wider for worker to lambda, where there's a different clock and a several-second cold start
 })
 export function cropToLimit(s, customLimit, defaultLimit) {
 	let limit = customLimit || defaultLimit//use the default limit if the caller above specified no custom limit

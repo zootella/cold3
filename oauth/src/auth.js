@@ -40,7 +40,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 				let symmetric = encryptSymmetric(Key('envelope, secret'))
 				let envelope = await symmetric.encryptObject({
 					action: 'OauthDone.',
-					expiration: Now() + Limit.handoffWorker,
+					expiration: Now() + Limit.handoffWorker,//oauth envelope done: expiration set [3]
 					account, profile, user,
 				})
 

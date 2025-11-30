@@ -23,7 +23,7 @@ export async function load(event) {
 
 		let letter = await openEnvelope(event.url.searchParams.get('envelope'))
 		if (letter.action != 'OauthContinue.') toss('envelope has wrong action')
-		if (isExpired(letter.expired)) toss('expired')
+		if (isExpired(letter.expiration)) toss('expired')//oauth envelope start: expiration check [2]
 
 		return {}//GET looks good to start the oauth flow; in sveltekit return nothing or an empty object to deliver the page
 

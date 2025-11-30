@@ -15,8 +15,8 @@ async function doorHandleBelow({door, browserHash, body, action, letter}) {
 		return {
 			outcome: 'OauthContinue.',//the page probably won't read this
 			envelope: await symmetric.encryptObject({
-				action: 'OauthContinue.',//unique action prevents a page from replaying an envelope to the sveltekit endpoint
-				expiration: Now() + Limit.handoffWorker,
+				action: 'OauthContinue.',//block a cross-use replay attack, like a page gets a totp or wallet envelope and plays it here
+				expiration: Now() + Limit.handoffWorker,//oauth envelope start: expiration set [1]
 			})
 		}
 
