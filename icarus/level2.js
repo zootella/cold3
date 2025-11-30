@@ -7,7 +7,7 @@ Time, Now, sayDate, sayTick, isExpired,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, newline,
 Tag, checkTag,
-Data, encryptData, decryptData, hashText, secureSameText, hmacSign,
+Data, encryptSymmetric, encryptData, decryptData, hashText, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
 replaceAll, replaceOne, toTextOrBlank,
 parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
@@ -635,7 +635,7 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	if (!options.body) options.body = {}
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
-	let symmetric = symmetricEncrypt(Key('envelope, secret'))
+	let symmetric = encryptSymmetric(Key('envelope, secret'))
 	options.body = makePlain(options.body)
 
 	options.body.warm = true
@@ -818,10 +818,10 @@ export async function doorLambda(method, {
 			await doorLambdaCheck({door, actions})
 			response = await doorHandleBelow({
 				door,
+				query: door.query,//lambda GET not in use, but here for the future, ttd november
 				body: door.body,
 				action: door.body?.action,
-
-				letter: door.letter,//ttd november, you'll refactor so the body is the letter and the action comes from that
+				letter: door.letter,
 			})
 
 		} catch (e) { error = e }
@@ -854,7 +854,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	}//seeing c20 local always and cloud sometimes, which is super weird
 	if (workerEvent.context?.env) {
 		sources.push({note: 'c30', environment: workerEvent.context.env})
-	}//seeing c30 never 
+	}//seeing c30 never
 	if (workerEvent.platform?.env) {
 		sources.push({note: 'c40', environment: workerEvent.platform.env})
 	}//seeing c40 never
@@ -1217,11 +1217,12 @@ noop(() => {//first, a demonstration of a promise race
 
 
 //standardize server to server encrypted envelope, same worker and lambda, get and post
-async function openEnvelope(envelope) {
+export async function openEnvelope(envelope) {
 	if (!envelope) toss('missing envelope', {envelope})//throws on no envelope,
-	let symmetric = decryptSymmetric(Key('envelope, secret'))
+	let symmetric = encryptSymmetric(Key('envelope, secret'))
 	let letter = await symmetric.decryptObject(envelope)
 	checkInt(letter.expiration, 1)//and no expiration, but YOU have to call isExpired(letter.expiration) to check the expiration date yourself!
+	return letter
 }
 
 

@@ -163,6 +163,7 @@ sayFloppyDisk, runTestsSticker,
 
 Task, fetchWorker, fetchLambda, fetchProvider,
 origin23, originOauth, originApex,
+openEnvelope,
 
 /* level 2 query */
 

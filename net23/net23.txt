@@ -1422,7 +1422,31 @@ ttd november
 
 
 
+in decryptKeys, you can switch on logging to see where where running code, both local and deployed, is actually finding the key
+here's a summary of results from 2025nov with serverless framework 4, nuxt 3, and sveltekit 2
 
+observed running...                 local    cloud    notes
+--------------------------------    -----    -----    -----
+sveltekit on cloudflare workers
+a10 process.env                     (haven't observed yet, but expect the same as b, ttd november)
+a20 event.platform.env
+
+auth.js handlers in sveltekit on cloudflare workers
+b10 process.env                     -        cloud     
+b20 event.platform.env              local    cloud     
+
+nuxt on cloudflare workers
+c10 process.env                     local    cloud     local makes sense; not sure if cloud comes from server bundle or dashboard
+c20 event.context.cloudflare.env    local    ?????     usually, cloud c20 is absent, but shows up sometimes; super weird
+c30 event.context.env               -        -         never seen
+c40 event.platform.env              -        -         never seen
+c50 useRuntimeConfig(event)         -        -         never seen, ironic as this is the correct Nuxt way to do secrets!
+
+serverless framework on aws lambda
+d10 process.env                     local    cloud     always, wouldn't work otherwise, unusual place where amazon is simpler
+
+additional secret stores not in use yet are SvelteKit's $env/static/private and $env/dynamic/private
+and AWS Secrets Manager, which would incur more code, cost, and delay, and less reliability
 
 
 
@@ -3601,6 +3625,82 @@ you get a new hash, and a new png, and a new KV store item
 which also of course sticks around forever
 
 ttd july2025 get the kv store to throw away old cards instead of keeping them all forever
+
+                     _
+  ___ _ ____   _____| | ___  _ __   ___
+ / _ \ '_ \ \ / / _ \ |/ _ \| '_ \ / _ \
+|  __/ | | \ V /  __/ | (_) | |_) |  __/
+ \___|_| |_|\_/ \___|_|\___/| .__/ \___|
+                            |_|
+
+the encrypted envelope, holding a pojo letter, is a useful pattern
+Key('envelope, secret') produces the symmetric key, which is available on
+all three servers (nuxt worker on cloudflare, sveltekit worker on cloudflare, serverless framework lambda on amazon)
+
+servers send envelopes to each other to pass self-authenticated messages
+additionally, the page holds an envelope to continue server context (totp and wallet flows)
+
+the standard symmetric encryption means there aren't concerns  about authenticity, secrecy, or tampering
+envelope replay is something each use of them needs to consider carefully, though!
+
+encryption is faster than database calls
+and envelopes are stateless and standalone
+without them, we'd have to have sveltekit write to the database
+and have database tables with provisional notes during totp and wallet enrollment (as we did have to do with the complex and derpy email and sms one time codes, regretably)
+
+envelope data is encoded in base62, where the compact, only letters and numerals format really shines
+short strings move through content bodies, the query string, and cookies
+and we never have to worry about escaping and unescaping!
+
+code is like this:
+
+let symmetric = encryptSymmetric(Key('')
+let letter = {
+	action: 'EnvelopeTitle.',//unique titles prevent replaying a valid envelope about something else
+	expires: Now() + Limit.handoff,//required, and always set and checked by a trusted server clock
+}
+let envelope = await symmetric.encryptObject(letter)
+let letter = await openEnvelope(envelope)//which uses symmetric.decrytpObject(envelope)
+if (isExpired(letter.expiration) toss('expired')
+
+places to see (and check) envelope in action:
+
+(1) lambda (envelope sealed by nuxt worker, opened by lambda)
+in level2, doorWorkerOpen and doorLambdaOpen call openEnvelope if the body or query string has one
+doorLambdaCheck requires a letter in the body with action "Network23."
+calling net23, the worker sets an expiration Limit.handoffLambda 8 seconds later, allowing for the cold start
+
+(2) wallet (envelope sealed by nuxt worker, held by page, opened by worker)
+wallet.js seals an envelope with the nonce for the user's browser's ethereum wallet to sign
+and in the second step, the same nuxt endpoint reopens the envelope to pick up where it left off
+here, expiration is Limit.expirationUser 20 minutes, allowing the user to walk away and return between manual steps
+front end Vue components get response.envelope, and return it in the next fetch request
+
+(3) totp (envelope sealed by nuxt worker, held by page, kept in cookie, opened by worker)
+similar flow in totp, with same 20 minute user task expiration
+here, the front end Vue component also keeps the envelope in a temporary_envelope_totp same site cookie, as the user or device might refresh the page while dealing with their authenticator app
+
+(4) oauth (first envelope nuxt worker to sveltekit worker; second envelope sveltekit back to nuxt)
+the nuxt site must take the user to the sveltekit site, which does the oauth dance, and then must get results back to nuxt
+
+1 (nuxt) ./components/OauthDemo.vue
+2 (nuxt) ./server/api/oauth.js
+3 (sveltekit) ./src/routes/continue/[provider]/+page.server.js
+4 (sveltekit) ./src/auth.js
+5 (nuxt) ./server/routes/oauth-done.get.js
+
+- page component 1 posts to nuxt endpoint 2, requesting an envelope to begin the flow as browserHash
+- endpoint 2 seals the envelope "OauthContinue." with a shorter 2 second expiration, as this is worker to worker (no user interaction or cold-starting lambdas involved)
+- back in 1, the page redirects the browser to 3, including the envelope in the query string
+3 calls openEnvelope directly (no door system for sveltekit), checking the action and expiration
+...the oauth dance happens...
+- in 5, signIn() seals the user's oauth {account, profile, user} in a second envelope "OauthDone." with the same 2 second Limit.handoffWorker, and with redirect() the browser, given that envelope, gives it to 6, navigating there
+- back in nuxt, 6 gets passed the decrypted letter from the door system, and checks the action and expiration
+
+demo code will get replaced with final code, and filenames will change
+in summary, make sure you're always setting and checking letter.action and letter.expiration
+and don't worry about authenticity or secrecy, but do think about implications of quick replay scenarios
+like the same envelope, again, or a an unrelated envelope when you're expecting one with the appropriate action
 
                    _   _
   ___   __ _ _   _| |_| |__

@@ -15,10 +15,10 @@ export async function load(event) {
 		let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 		if (defined(typeof process) && process.env) {
 			sources.push({note: 'a10', environment: process.env})
-		}//seeing a10 cloud only (you expect, have not observed, ttd november)
+		}
 		if (event?.platform?.env) {
 			sources.push({note: 'a20', environment: event?.platform?.env})
-		}//seeing a20 both local and cloud (you expect, have not observed, ttd november)
+		}
 		await decryptKeys('svelte', sources)
 
 		let letter = await openEnvelope(event.url.searchParams.get('envelope'))

@@ -1,7 +1,7 @@
 //./server/routes/oauth-done.get.js
 
 import {
-encryptSymmetric, isExpired,
+isExpired,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
