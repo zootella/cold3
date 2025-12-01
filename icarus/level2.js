@@ -494,6 +494,63 @@ test(() => {
 
 
 
+//                      _
+//   ___ _ ____   _____| | ___  _ __   ___
+//  / _ \ '_ \ \ / / _ \ |/ _ \| '_ \ / _ \
+// |  __/ | | \ V /  __/ | (_) | |_) |  __/
+//  \___|_| |_|\_/ \___|_|\___/| .__/ \___|
+//                             |_|
+
+//servers (nuxt, sveltekit workers, lambdas) send envelopes to each other 💌
+//or have pages hold them to keep context between neighboring requests statelessly
+//symmetric encryption means envelopes are authentic with secret contents that prevent tampering
+//just watch out for a replayed envelope, or getting a valid envelope for one think and playing it right away someplace else
+
+export async function sealEnvelope(action, duration, letter) {
+	checkText(action)//action we'll add to letter and seal into envelope
+	checkInt(duration)//duration of milliseconds, we'll set expiration to the date this much time later than now
+
+	letter.action = action
+	letter.expiration = Now() + duration
+
+	let symmetric = encryptSymmetric(Key('envelope, secret'))
+	let envelope = await symmetric.encryptObject(letter)
+	return envelope
+}
+export async function openEnvelope(action, envelope, options) {
+	checkText(action)//required matching action; watch out for an attacker submitting a recently created envelope for another purpose!
+
+	let symmetric = encryptSymmetric(Key('envelope, secret'))
+	let letter = await symmetric.decryptObject(envelope)
+
+	checkTextSame(action, letter.action)
+	if (isExpired(letter.expired)) {
+		if (options?.returnFalseIfExpired) {
+			return false//user can opt-in to soft check on expiration; let the user try again rather than blowing up the page
+		} else {
+			toss('expired', {action, envelope, options})//default for most situations where an expired envelope indicates tampering
+		}
+	}
+	return letter
+}
+
+
+
+//standardize server to server encrypted envelope, same worker and lambda, get and post
+export async function openEnvelope_old(envelope) {
+	if (!envelope) toss('missing envelope', {envelope})//throws on no envelope,
+	let symmetric = encryptSymmetric(Key('envelope, secret'))
+	let letter = await symmetric.decryptObject(envelope)
+	checkInt(letter.expiration, 1)//and no expiration, but YOU have to call isExpired(letter.expiration) to check the expiration date yourself!
+	return letter
+}
+
+
+
+
+
+
+
 
 
 
@@ -875,7 +932,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	door.method = method//save the method
 	if (method == 'GET') {
 		door.query = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
-		if (door?.query?.envelope) door.letter = await openEnvelope(door?.query?.envelope)
+		if (door?.query?.envelope) door.letter = await openEnvelope_old(door?.query?.envelope)
 
 		//authenticate worker get request: (1) https; (2) origin omitted
 		checkForwardedSecure(workerEvent.req.headers)
@@ -883,7 +940,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
-		if (door?.body?.envelope) door.letter = await openEnvelope(door?.body?.envelope)
+		if (door?.body?.envelope) door.letter = await openEnvelope_old(door?.body?.envelope)
 
 		//authenticate worker post request: (1) https; (2) origin omitted or valid
 		checkForwardedSecure(workerEvent.req.headers)
@@ -910,7 +967,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	door.method = method
 	if (method == 'GET') {
 		door.query = lambdaEvent.queryStringParameters
-		if (door?.query?.envelope) door.letter = await openEnvelope(door?.query?.envelope)
+		if (door?.query?.envelope) door.letter = await openEnvelope_old(door?.query?.envelope)
 
 		//authenticate lambda get request: (0) block entirely!
 		toss('lambda get not in use', {door})//when you do uploads, you'll probably need to add requests for signed URLs to upload to S3 here, ttd november
@@ -918,7 +975,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = makeObject(door.bodyText)
-		if (door?.body?.envelope) door.letter = await openEnvelope(door?.body?.envelope)//required; will throw if missing in check below
+		if (door?.body?.envelope) door.letter = await openEnvelope_old(door?.body?.envelope)//required; will throw if missing in check below
 
 		//authenticate lambda post request: (1) https; (2) origin *omitted*; (3) access code valid
 		checkForwardedSecure(lambdaEvent.headers)
@@ -1216,14 +1273,6 @@ noop(() => {//first, a demonstration of a promise race
 
 
 
-//standardize server to server encrypted envelope, same worker and lambda, get and post
-export async function openEnvelope(envelope) {
-	if (!envelope) toss('missing envelope', {envelope})//throws on no envelope,
-	let symmetric = encryptSymmetric(Key('envelope, secret'))
-	let letter = await symmetric.decryptObject(envelope)
-	checkInt(letter.expiration, 1)//and no expiration, but YOU have to call isExpired(letter.expiration) to check the expiration date yourself!
-	return letter
-}
 
 
 

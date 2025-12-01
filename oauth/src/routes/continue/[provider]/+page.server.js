@@ -4,7 +4,7 @@ import {
 Now, Limit,
 defined, toss, checkInt,
 Key, decryptKeys,
-openEnvelope, isExpired,
+openEnvelope_old, isExpired,
 originApex,
 } from 'icarus'
 import {redirect} from '@sveltejs/kit'
@@ -21,7 +21,7 @@ export async function load(event) {
 		}
 		await decryptKeys('svelte', sources)
 
-		let letter = await openEnvelope(event.url.searchParams.get('envelope'))
+		let letter = await openEnvelope_old(event.url.searchParams.get('envelope'))
 		if (letter.action != 'OauthContinue.') toss('envelope has wrong action')
 		if (isExpired(letter.expiration)) toss('expired')//oauth envelope start: expiration check [2]
 
