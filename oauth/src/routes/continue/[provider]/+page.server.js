@@ -21,7 +21,7 @@ export async function load(event) {
 		}
 		await decryptKeys('svelte', sources)
 
-		let letter = await openEnvelope('OauthContinue.', event.url.searchParams.get('envelope'))//oauth envelope start: expiration check [2]
+		let letter = await openEnvelope('OauthContinue.', event.url.searchParams.get('envelope'))//oauth envelope [2] open continue
 
 		return {}//GET looks good to start the oauth flow; in sveltekit return nothing or an empty object to deliver the page
 

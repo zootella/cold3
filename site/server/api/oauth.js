@@ -13,7 +13,7 @@ async function doorHandleBelow({door, browserHash, body, action, letter}) {
 
 		return {
 			outcome: 'OauthContinue.',//the page probably won't read this
-			envelope: await sealEnvelope('OauthContinue.', Limit.handoffWorker, {}),//oauth envelope start: expiration set [1]
+			envelope: await sealEnvelope('OauthContinue.', Limit.handoffWorker, {}),//oauth envelope [1] seal continue
 		}
 
 	} else if (action == 'OauthDone.') {//page calls back with signature of the nonce we gave it

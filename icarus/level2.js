@@ -992,7 +992,7 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 async function doorLambdaCheck({door, actions}) {
 
 	//workers posting a request to Network 23 must include an encrypted envelope as proof of their identity
-	door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, action wrong, or expired
+	door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, wrong action, or expired
 
 	//check the worker's requested action
 	checkActions({action: door.body?.action, actions})
@@ -1003,7 +1003,7 @@ async function doorLambdaCheck({door, actions}) {
 			door.body.ACCESS_NETWORK_23_SECRET,
 			(await getAccess()).get('ACCESS_NETWORK_23_SECRET')
 		)) toss('bad access code', {door})
-	}//going to replace ACCESS_NETWORK_23_SECRET with body.envelope which doorLambdaOpen decrypts and checks .sealed is within Limit.handoffLambda, ttd november p
+	}//going to replace ACCESS_NETWORK_23_SECRET with body.envelope which doorLambdaOpen decrypts and checks .sealed is within Limit.handoffLambda, ttd november
 }
 
 async function doorWorkerShut(door, response, error) {

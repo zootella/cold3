@@ -9,7 +9,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, browserHash, query}) {
 
-	let letter = await openEnvelope('OauthDone.', query.envelope)//oauth envelope done: expiration check [4]
+	let letter = await openEnvelope('OauthDone.', query.envelope)//oauth envelope [4] open done
 	log('letter arrived in worker 📩', look(letter))
 	//now we'll save the proven credential in the database
 	//and below, choose what route to send the user to, ttd november
