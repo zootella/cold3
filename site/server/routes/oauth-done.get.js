@@ -7,7 +7,7 @@ isExpired,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('GET', {workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, browserHash, query}) {
+async function doorHandleBelow({door, query, browserHash}) {
 
 	let letter = await openEnvelope('OauthDone.', query.envelope)//oauth envelope [4] open done
 	log('letter arrived in worker 📩', look(letter))

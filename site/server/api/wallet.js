@@ -8,7 +8,7 @@ import {verifyMessage} from 'viem'
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Prove1.', 'Prove2.'], workerEvent, doorHandleBelow})//wallet addresses are so long we don't need turnstile
 })
-async function doorHandleBelow({door, browserHash, body, action}) {
+async function doorHandleBelow({door, body, action, browserHash}) {
 	if (action == 'Prove1.') {//page requests nonce to prove it controlls address
 
 		let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum

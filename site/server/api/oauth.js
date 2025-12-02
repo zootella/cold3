@@ -8,7 +8,7 @@ import {verifyMessage} from 'viem'
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['OauthStart.', 'OauthDone.'], workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, browserHash, body, action, letter}) {
+async function doorHandleBelow({door, body, action, browserHash}) {
 	if (action == 'OauthStart.') {
 
 		return {

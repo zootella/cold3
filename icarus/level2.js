@@ -536,29 +536,6 @@ export async function openEnvelope(action, envelope, options) {
 	return letter
 }
 
-//standardize server to server encrypted envelope, same worker and lambda, get and post
-export async function openEnvelope_old(envelope) {
-	if (!envelope) toss('missing envelope', {envelope})//throws on no envelope,
-	let symmetric = encryptSymmetric(Key('envelope, secret'))
-	let letter = await symmetric.decryptObject(envelope)
-	checkInt(letter.expiration, 1)//and no expiration, but YOU have to call isExpired(letter.expiration) to check the expiration date yourself!
-	return letter
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //  _            _    
 // | |_ __ _ ___| | __
 // | __/ _` / __| |/ /

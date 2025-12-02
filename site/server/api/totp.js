@@ -10,7 +10,7 @@ credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Status.', 'Enroll1.', 'Enroll2.', 'Validate.', 'Remove.'], workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, browserHash, body, action}) {
+async function doorHandleBelow({door, body, action, browserHash}) {
 
 	//collect information from the database
 	let user, userTag, secret
@@ -61,7 +61,6 @@ async function doorHandleBelow({door, browserHash, body, action}) {
 		checkTotpSecret(secret)
 
 		//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
-		//ttd november, going to changen to Limit.expirationUser which is the same 20min, but with more of a unified and user focus
 		if (isExpired(letter.expiration)) return {outcome: 'BadSecret.'}//user walked away
 		if (!hasTextSame(
 			letter.message,
