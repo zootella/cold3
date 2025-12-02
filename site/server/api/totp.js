@@ -2,7 +2,7 @@
 import {
 browserToUser,
 trailRecent, trailCount, trailGet, trailAdd,
-checkNumerals, Data, encryptSymmetric, isExpired, hasTextSame,
+checkNumerals, Data, sealEnvelope, openEnvelope, isExpired, hasTextSame,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 } from 'icarus'
@@ -10,7 +10,7 @@ credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Status.', 'Enroll1.', 'Enroll2.', 'Validate.', 'Remove.'], workerEvent, doorHandleBelow})
 })
-async function doorHandleBelow({door, browserHash, body, action, letter}) {
+async function doorHandleBelow({door, browserHash, body, action}) {
 
 	//collect information from the database
 	let user, userTag, secret
@@ -25,9 +25,6 @@ async function doorHandleBelow({door, browserHash, body, action, letter}) {
 		if (secret) return {outcome: 'StatusEnrolled.'}
 		return {outcome: 'StatusNotEnrolled.'}
 	}
-
-	//get the key we the server use to protect provisional totp secrets while, during enrollment, the page has them in temporary cookies
-	const symmetric = encryptSymmetric(Key('envelope, secret'))
 
 	//make sure there's a user signed in (first factor) to the browser that posted at us
 	if (user.level < 2) return {outcome: 'BadUser.'}
@@ -47,8 +44,7 @@ async function doorHandleBelow({door, browserHash, body, action, letter}) {
 			issuer: Key('domain, public'),
 			addIdentifier: true,
 		})
-		enrollment.envelope = await symmetric.encryptObject({
-			expiration: Now() + Limit.expirationUser,
+		enrollment.envelope = await sealEnvelope('EnrollTotp.', Limit.expirationUser, {
 			secret: enrollment.secret,
 			message:
 			safefill`TOTP enrollment: browser ${browserHash}, user ${userTag}, secret ${enrollment.secret}`,
@@ -58,6 +54,7 @@ async function doorHandleBelow({door, browserHash, body, action, letter}) {
 	//second step of enrollment flow; the user has scanned the qr code and knows the current code
 	//we make sure the code is correct, and create their enrollment
 	} else if (action == 'Enroll2.') {
+		let letter = await openEnvelope('EnrollTotp.', body.envelope, {skipExpirationCheck: true})
 
 		//decrypt the secret from the page, possibly via a cookie through a refresh
 		let secret = letter.secret

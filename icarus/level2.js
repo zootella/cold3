@@ -5,7 +5,7 @@ wrapper,
 import {//from level0
 Time, Now, sayDate, sayTick, isExpired,
 log, logTo, say, look, defined, noop, test, ok, toss,
-checkInt, hasText, checkText, newline,
+checkInt, hasText, checkText, checkTextSame, newline,
 Tag, checkTag,
 Data, encryptSymmetric, encryptData, decryptData, hashText, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
@@ -519,22 +519,22 @@ export async function sealEnvelope(action, duration, letter) {
 }
 export async function openEnvelope(action, envelope, options) {
 	checkText(action)//required matching action; watch out for an attacker submitting a recently created envelope for another purpose!
+	if (!envelope) toss('missing envelope', {action, envelope, options})
 
 	let symmetric = encryptSymmetric(Key('envelope, secret'))
 	let letter = await symmetric.decryptObject(envelope)
 
 	checkTextSame(action, letter.action)
-	if (isExpired(letter.expired)) {
-		if (options?.returnFalseIfExpired) {
-			return false//user can opt-in to soft check on expiration; let the user try again rather than blowing up the page
-		} else {
-			toss('expired', {action, envelope, options})//default for most situations where an expired envelope indicates tampering
+	checkInt(letter.expiration, 1)
+	if (options?.skipExpirationCheck) {
+		//caller has requested we skip the expiration check; if expiration means the user walked away for more than 20 minutes, we want to instruct them to try again, not blow up the page
+	} else {
+		if (isExpired(letter.expiration)) {//default for most situations where an expired envelope indicates tampering
+			toss('expired', {action, envelope, options})
 		}
 	}
 	return letter
 }
-
-
 
 //standardize server to server encrypted envelope, same worker and lambda, get and post
 export async function openEnvelope_old(envelope) {
@@ -544,7 +544,6 @@ export async function openEnvelope_old(envelope) {
 	checkInt(letter.expiration, 1)//and no expiration, but YOU have to call isExpired(letter.expiration) to check the expiration date yourself!
 	return letter
 }
-
 
 
 
@@ -692,15 +691,14 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	if (!options.body) options.body = {}
 	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
 
-	let symmetric = encryptSymmetric(Key('envelope, secret'))
 	options.body = makePlain(options.body)
 
 	options.body.warm = true
-	options.body.envelope = await symmetric.encryptObject({action: 'Network23.', expiration: Now() + Limit.handoffLambda})
+	options.body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})//no additional letter contents
 	await $fetch(origin23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
 
 	options.body.warm = false
-	options.body.envelope = await symmetric.encryptObject({action: 'Network23.', expiration: Now() + Limit.handoffLambda})
+	options.body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})
 	return await $fetch(origin23()+url, options)
 }
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
@@ -847,7 +845,6 @@ export async function doorWorker(method, {
 				query: door.query,//query string from a GET request
 				body: door.body,//content body from a POST
 				action: door.body?.action,
-				letter: door.letter,
 				headers: door.workerEvent.req.headers,
 				browserHash: await hashText(checkTag(door.workerEvent.context.browserTag)),//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
 			})
@@ -878,7 +875,6 @@ export async function doorLambda(method, {
 				query: door.query,//lambda GET not in use, but here for the future, ttd november
 				body: door.body,
 				action: door.body?.action,
-				letter: door.letter,
 			})
 
 		} catch (e) { error = e }
@@ -932,7 +928,6 @@ async function doorWorkerOpen({method, workerEvent}) {
 	door.method = method//save the method
 	if (method == 'GET') {
 		door.query = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
-		if (door?.query?.envelope) door.letter = await openEnvelope_old(door?.query?.envelope)
 
 		//authenticate worker get request: (1) https; (2) origin omitted
 		checkForwardedSecure(workerEvent.req.headers)
@@ -940,7 +935,6 @@ async function doorWorkerOpen({method, workerEvent}) {
 
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
-		if (door?.body?.envelope) door.letter = await openEnvelope_old(door?.body?.envelope)
 
 		//authenticate worker post request: (1) https; (2) origin omitted or valid
 		checkForwardedSecure(workerEvent.req.headers)
@@ -967,7 +961,6 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	door.method = method
 	if (method == 'GET') {
 		door.query = lambdaEvent.queryStringParameters
-		if (door?.query?.envelope) door.letter = await openEnvelope_old(door?.query?.envelope)
 
 		//authenticate lambda get request: (0) block entirely!
 		toss('lambda get not in use', {door})//when you do uploads, you'll probably need to add requests for signed URLs to upload to S3 here, ttd november
@@ -975,7 +968,6 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = makeObject(door.bodyText)
-		if (door?.body?.envelope) door.letter = await openEnvelope_old(door?.body?.envelope)//required; will throw if missing in check below
 
 		//authenticate lambda post request: (1) https; (2) origin *omitted*; (3) access code valid
 		checkForwardedSecure(lambdaEvent.headers)
@@ -999,10 +991,8 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 }
 async function doorLambdaCheck({door, actions}) {
 
-	//workers must include an encrypted envelope as proof of their identity,
-	if (!door.letter)                       toss('envelope missing',      {door})
-	if (door.letter.action != 'Network23.') toss('envelope action wrong', {door})//and it must be the right kind,
-	if (isExpired(door.letter.expiration))  toss('envelope expired',      {door})//and recent
+	//workers posting a request to Network 23 must include an encrypted envelope as proof of their identity
+	door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, action wrong, or expired
 
 	//check the worker's requested action
 	checkActions({action: door.body?.action, actions})
@@ -1013,7 +1003,7 @@ async function doorLambdaCheck({door, actions}) {
 			door.body.ACCESS_NETWORK_23_SECRET,
 			(await getAccess()).get('ACCESS_NETWORK_23_SECRET')
 		)) toss('bad access code', {door})
-	}//going to replace ACCESS_NETWORK_23_SECRET with body.envelope which doorLambdaOpen decrypts and checks .sealed is within Limit.handoffLambda, ttd november 
+	}//going to replace ACCESS_NETWORK_23_SECRET with body.envelope which doorLambdaOpen decrypts and checks .sealed is within Limit.handoffLambda, ttd november p
 }
 
 async function doorWorkerShut(door, response, error) {

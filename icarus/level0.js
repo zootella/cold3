@@ -377,7 +377,7 @@ test(() => {
 	ok(textToInt('1') == 1)
 })
 
-export function checkTextSame(s1, s2) { if (!hasTextSame(s)) toss('same', {s1, s2}) }
+export function checkTextSame(s1, s2) { if (!hasTextSame(s1, s2)) toss('same', {s1, s2}) }
 export function hasTextSame(s1, s2) { return hasText(s1) && hasText(s2) && secureSameText(s1, s2) }
 //^both must be strings with text and the same, and includes time-safe comparison to protect from server timing attack
 

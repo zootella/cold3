@@ -4,7 +4,7 @@ import {
 Now, Limit,
 defined, toss, checkInt,
 Key, decryptKeys,
-openEnvelope_old, isExpired,
+openEnvelope, isExpired,
 originApex,
 } from 'icarus'
 import {redirect} from '@sveltejs/kit'
@@ -21,9 +21,7 @@ export async function load(event) {
 		}
 		await decryptKeys('svelte', sources)
 
-		let letter = await openEnvelope_old(event.url.searchParams.get('envelope'))
-		if (letter.action != 'OauthContinue.') toss('envelope has wrong action')
-		if (isExpired(letter.expiration)) toss('expired')//oauth envelope start: expiration check [2]
+		let letter = await openEnvelope('OauthContinue.', event.url.searchParams.get('envelope'))//oauth envelope start: expiration check [2]
 
 		return {}//GET looks good to start the oauth flow; in sveltekit return nothing or an empty object to deliver the page
 

@@ -3,7 +3,7 @@
 import {
 defined, toss, log, look, Now,
 isCloud, Key, decryptKeys,
-encryptSymmetric, originApex,
+sealEnvelope, originApex,
 } from 'icarus'
 
 import {SvelteKitAuth} from '@auth/sveltekit'
@@ -37,12 +37,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
 
 				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
-				let symmetric = encryptSymmetric(Key('envelope, secret'))
-				let envelope = await symmetric.encryptObject({
-					action: 'OauthDone.',
-					expiration: Now() + Limit.handoffWorker,//oauth envelope done: expiration set [3]
-					account, profile, user,
-				})
+				let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {account, profile, user})
 
 				let url = `${originApex()}/oauth-done?envelope=${envelope}`
 				log('Auth.js signIn() handler', look({account, profile, user, url}), `url length ${url.length}`)//claude thinks no provider will give us objects that get close to cloudflare's url length limit of 16,000 characters, which is great; see how big google and others are, ttd november
