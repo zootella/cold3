@@ -1,3 +1,3 @@
-//./src/hooks.server.js
+//./src/hooks.server.js ~ list of server middleware
 
-export {handle} from './auth'
+export {handle} from './auth'//register Auth.js's handle-compatible middleware function, which will run and review every request

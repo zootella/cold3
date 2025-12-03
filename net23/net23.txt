@@ -1427,23 +1427,19 @@ here's a summary of results from 2025nov with serverless framework 4, nuxt 3, an
 
 observed running...                 local    cloud    notes
 --------------------------------    -----    -----    -----
-sveltekit on cloudflare workers
-a10 process.env                     (haven't observed yet, but expect the same as b, ttd november)
-a20 event.platform.env
-
 auth.js handlers in sveltekit on cloudflare workers
 b10 process.env                     -        cloud     
 b20 event.platform.env              local    cloud     
 
 nuxt on cloudflare workers
-c10 process.env                     local    cloud     local makes sense; not sure if cloud comes from server bundle or dashboard
-c20 event.context.cloudflare.env    local    ?????     usually, cloud c20 is absent, but shows up sometimes; super weird
-c30 event.context.env               -        -         never seen
-c40 event.platform.env              -        -         never seen
-c50 useRuntimeConfig(event)         -        -         never seen, ironic as this is the correct Nuxt way to do secrets!
+c10 process.env                     local    cloud    local makes sense; not sure if cloud comes from server bundle or dashboard
+c20 event.context.cloudflare.env    local    ?????    usually, cloud c20 is absent, but shows up sometimes; super weird
+c30 event.context.env               -        -        never seen
+c40 event.platform.env              -        -        never seen
+c50 useRuntimeConfig(event)         -        -        never seen, ironic as this is the correct Nuxt way to do secrets!
 
 serverless framework on aws lambda
-d10 process.env                     local    cloud     always, wouldn't work otherwise, unusual place where amazon is simpler
+d10 process.env                     local    cloud    always, wouldn't work otherwise, unusual place where amazon is simpler
 
 additional secret stores not in use yet are SvelteKit's $env/static/private and $env/dynamic/private
 and AWS Secrets Manager, which would incur more code, cost, and delay, and less reliability

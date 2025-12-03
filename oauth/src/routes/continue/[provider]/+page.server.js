@@ -9,17 +9,8 @@ originApex,
 } from 'icarus'
 import {redirect} from '@sveltejs/kit'
 
-export async function load(event) {
+export async function load(event) {//note that at this point, the code in auth.js has already called decryptKeys
 	try {
-
-		let sources = []//collect possible sources of environment variables; there are a lot of them 😓
-		if (defined(typeof process) && process.env) {
-			sources.push({note: 'a10', environment: process.env})
-		}
-		if (event?.platform?.env) {
-			sources.push({note: 'a20', environment: event?.platform?.env})
-		}
-		await decryptKeys('svelte', sources)
 
 		let letter = await openEnvelope('OauthContinue.', event.url.searchParams.get('envelope'))//oauth envelope [2] open continue
 
