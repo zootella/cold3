@@ -39,6 +39,12 @@ function composeCookie(tag) {
 		name = cookieSecurePrefix + name
 		options.secure = true
 		options.domain = 'cold3.cc'//apex domain and subdomains allowed; ttd april2025 get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
+		/*
+		ttd november, ok, two options here, well three really
+		1 keep this the same
+		2 import icarus and then replace with Key('domain, public') except in earlier testing you were having trouble importing anything here
+		3 delete options.domain, actually, even more secure, and your ownly subdomain is oauth.cold3.cc, which you could change to use the cookie, but already completes a secure flow designed assuming you couldn't get it there!
+		*/
 	}
 	let o = {name, options}
 	if (hasTag(tag)) {

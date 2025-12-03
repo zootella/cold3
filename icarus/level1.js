@@ -176,12 +176,15 @@ export const Limit = Object.freeze({
 
 	//html form field limits
 	input: 512,//higher ceiling for single line form fields
-	area: 10000,//and for text areas, from twitter DMs and reddit posts
+	area: 10_000,//and for text areas, from twitter DMs and reddit posts
 
-	//times and timeouts related to server communication and the user experience
+	//times and timeouts related to the user experience
 	expirationUser: 20*Time.minute,//for interactions that involve manual steps, allow the user to walk away and come back
-	handoffWorker: 2*Time.second,//for worker to worker server requests and redirects, a tight window
-	handoffLambda: 8*Time.second,//wider for worker to lambda, where there's a different clock and a several-second cold start
+
+	//and server communication
+	handoffWorker: 2*Time.second,//for worker to worker server requests and redirects, a tight window because cloudflare is fast
+	handoffLambda: 14*Time.second,//compared the the cold starts that lambda must do
+	//^from checkly, average and p95 millisecond response times are 387/745 for sveltekit worker; 5850/7380 for lambda, so setting the timeouts at twice the p95s
 })
 export function cropToLimit(s, customLimit, defaultLimit) {
 	let limit = customLimit || defaultLimit//use the default limit if the caller above specified no custom limit

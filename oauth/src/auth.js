@@ -1,7 +1,7 @@
 //./src/auth.js ~ on the oauth trail, Auth.js configuration and handlers
 
 import {
-defined, toss, log, look, Now,
+defined, toss, log, look, Now, Limit,
 isCloud, Key, decryptKeys,
 sealEnvelope, originApex,
 } from 'icarus'
@@ -38,6 +38,19 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
 				let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {account, profile, user})//oauth envelope [3] seal done
+
+
+				/*
+				ok, so the blather problem
+				with urls, you could go huge
+				but with cookies, there's actually a hard limit of 4kib, sounds like?
+				ok so first seal an envelope with everything, and measure it's size
+				and if it's near 4kib, then cherry pick the most important parts, and go by that
+				*/
+
+				/*
+				ok claude, here is where i think we will set the oauth done envelope cookie
+				*/
 
 				let url = `${originApex()}/oauth-done?envelope=${envelope}`
 				log('Auth.js signIn() handler', look({account, profile, user, url}), `url length ${url.length}`)//claude thinks no provider will give us objects that get close to cloudflare's url length limit of 16,000 characters, which is great; see how big google and others are, ttd november

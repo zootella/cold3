@@ -1,7 +1,7 @@
 //./server/routes/oauth-done.get.js
 
 import {
-isExpired,
+openEnvelope,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -13,6 +13,11 @@ async function doorHandleBelow({door, query, browserHash}) {
 	log('letter arrived in worker 📩', look(letter))
 	//now we'll save the proven credential in the database
 	//and below, choose what route to send the user to, ttd november
+
+	/*
+	hi claude, ok, so with the new flow, this nuxt GET endpoint goes away completely
+	and we go back to before, when nuxt has only POST endpoints, which is great
+	*/
 
 	return sendRedirect(door.workerEvent, '/', 302)
 }

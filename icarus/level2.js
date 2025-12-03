@@ -308,13 +308,13 @@ export async function decryptKeys(sender, sources) {
 	const prefix = 14
 
 	if (true) {//switch on to see where we're finding the key across local|cloud × lambda|nuxt|sveltekit
-		let s = `Key found by ${isLocal() ? 'local' : 'cloud'} ${sender} @`
+		let s = `Key found by ${isLocal() ? 'local' : 'cloud'} ${sender} 🔑`
 		let places = []
 		for (let source of sources) {
 			let v = source.environment?.[name]
 			if (hasText(v)) s += ' ' + source.note
 		}
-		await awaitDog(s)
+		log(s)//you'll have to hunt for this in individual cloudflare and amazon dashboards, because datadog needs keys to work
 	}
 
 	let key

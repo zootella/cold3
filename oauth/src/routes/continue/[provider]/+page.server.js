@@ -1,7 +1,7 @@
 //./src/routes/continue/[provider]/+page.server.js ~ on the oauth trail, sveltekit server render
 
 import {
-Now, Limit,
+Now, Limit, log, look,
 defined, toss, checkInt,
 Key, decryptKeys,
 openEnvelope, isExpired,
@@ -26,6 +26,6 @@ export async function load(event) {
 		return {}//GET looks good to start the oauth flow; in sveltekit return nothing or an empty object to deliver the page
 
 	} catch (e) {
-		throw redirect(303, `${originApex()}/error`)//ttd november, this is unusual in that you are navigating to the nuxt error page, rather than having the component that it corresponds to take over the nuxt spa, but this should be ok (claude, let's confirm)
+		throw redirect(303, `${originApex()}`)//ttd november, this is unusual in that you are navigating to the nuxt error page, rather than having the component that it corresponds to take over the nuxt spa, but this should be ok (claude, let's confirm)
 	}
 }
