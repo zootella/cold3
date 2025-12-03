@@ -24,30 +24,11 @@ mitigated by:
 	(4b) because our tag cookie is first‑party, strictly‑necessary for core functionality, marked HttpOnly, Secure, and SameSite=Lax, compliance requires documenting its use in a privacy policy, and does not require explicit user consent
 */
 
-function compose(tag) {
-	let o = {}
-	o.name = composeCookieName()
-	o.options = {//these base options work for local development...
-		path: '/',//send for all routes
-		httpOnly: true,//page script can't see or change; more secure than local storage! 
-		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
-		maxAge: 395*24*60*60,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
-	}
-	if (isCloud()) {//...strengthen them for cloud deployment
-		o.options.secure = true
-		o.options.domain = Key('domain, public')//scope access to include subdomains; oauth.cold3.cc needs to see the browser tag
-	}
-	if (hasTag(tag)) {
-		o.value = composeCookieValue(tag)//assemble a value for a cookie we'll tell it to set with our eventual response
-	}
-	return o
-}
-
 export default defineEventHandler((workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
 
 	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
 	let value, valueTag, browserTag
-	value = getCookie(workerEvent, compose().name)//get the cookie where we may have previously tagged this browser
+	value = getCookie(workerEvent, composeCookieName())//get the cookie where we may have previously tagged this browser
 	valueTag = parseCookie(value)
 
 	if (hasTag(valueTag)) {//if the above steps got a valid tag
@@ -59,6 +40,16 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 	}
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
-	let c = compose(browserTag)
-	setCookie(workerEvent, c.name, c.value, c.options)//set response headers for when we send the response, telling the browser to save this tag for next time
+
+	let options = {//these base options work for local development...
+		path: '/',//send for all routes
+		httpOnly: true,//page script can't see or change; more secure than local storage! 
+		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
+		maxAge: 395*24*60*60,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
+	}
+	if (isCloud()) {//...strengthen them for cloud deployment
+		options.secure = true
+		options.domain = Key('domain, public')//scope access to include subdomains; oauth.cold3.cc needs to see the browser tag
+	}
+	setCookie(workerEvent, composeCookieName(), composeCookieValue(browserTag), options)//set response headers for when we send the response, telling the browser to save this tag for next time
 })
