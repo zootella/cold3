@@ -906,9 +906,8 @@ async function doorWorkerOpen({method, workerEvent}) {
 	if (method == 'GET') {
 		door.query = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
 
-		//authenticate worker get request: (1) https; (2) origin omitted
-		checkForwardedSecure(workerEvent.req.headers)
-		checkOriginOmitted(workerEvent.req.headers)//browser navigation GETs do not send origin header
+		//authenticate worker get request: (0) block entirely!
+		toss('worker get not in use', {door})
 
 	} else if (method == 'POST') {
 		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
@@ -1037,7 +1036,7 @@ POST |  1 https                         1 https
 Notes: (i) The Network 23 Application Programming Interface is exclusively for server to server communication; no pages allowed
 (ii) the worker and lambda have shared a secret securely stored in both server environments
 (iii) valid only would allow page access, but we must also allow omitted for SSR to work
-(iv) all site APIs are POST; we block GET entirely (except for getting the envelope back from the oauth site, ttd november update this guide)
+(iv) all site APIs are POST; we block GET entirely
 (v) similarly, there are no GET lambdas; note that this whole grid is for api.net23.cc; vhs.net23.cc is the cloudfront function which does its own checks of the method and origin and referer headers
 */
 function checkForwardedSecure(headers) { if (isLocal()) return//skip these checks during local development

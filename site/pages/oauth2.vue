@@ -13,6 +13,8 @@ checkText(envelope)
 //tell the oauth endpoint that we've got this message about the user returning with proof
 let response = await fetchWorker('/api/oauth', {method: 'POST', body: {action: 'OauthDone.', envelope}})
 
+log('hi from oauth2.vue after posting the envelope', look({response}))
+
 //staying within the nuxt spa, click over to the route that's correct, like maybe home, or dashboard, or welcome new user
 await navigateTo(response.route, {replace: true})//keep this url out of browser history, so back goes to before it, not here
 
