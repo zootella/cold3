@@ -1,7 +1,7 @@
 //./src/auth.js ~ on the oauth trail, Auth.js configuration and handlers
 
 import {
-defined, toss, log, look, Now, Limit,
+defined, toss, log, look, Time, Now, Limit,
 isCloud, Key, decryptKeys,
 sealEnvelope, originApex,
 } from 'icarus'
@@ -39,6 +39,21 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
 				let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {account, profile, user})//oauth envelope [3] seal done
 
+				/*
+				the oauth flow works as a whole; now we'll investigate an alternative method which puts the envelope in a cookie for the nuxt post endpoint to notice, rather than passing it in a url query string parameter
+
+				but before we start to switch to this, we want to be certain that local and deployed, we can set a cookie in here that the nuxt endpoint will receive!
+
+				so, this just makes a dummy cookie that doesn't do anything, other than get noticed manually by us as we're coding this
+				*/
+				event.cookies.set((isCloud() ? '__Secure-' : '') + 'oauth_done', envelope, {
+					domain: isCloud() ? 'cold3.cc' : undefined,
+					path: '/',
+					httpOnly: true,//js running in the browser, which is commonly compromised, won't be able to see the envelope
+					secure: isCloud(),
+					sameSite: 'lax',//should it be "lax" or "Lax"?
+					maxAge: 30,//seconds, cookies are configured in seconds not milliseconds
+				})
 
 				/*
 				ok, so the blather problem
