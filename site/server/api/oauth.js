@@ -23,8 +23,9 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		let letter = await openEnvelope('OauthDone.', body.envelope)//oauth envelope [4] open done
 		log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
-		//now we'll save the proven credential in the database
-		//and below, choose what route to send the user to, ttd november
+		//now, we'll make sure the browserHash sveltekit computed from the browserTag matches
+		//save the proven credentials in the database
+		//and chose what route to send the user, ttd november
 
 		return {
 			outcome: 'OauthProven.',
