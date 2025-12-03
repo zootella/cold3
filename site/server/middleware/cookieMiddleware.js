@@ -1,11 +1,11 @@
 //./server/middleware/cookieMiddleware.js
 
-//  _                                       _              
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| |
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |
-//                                                   |___/ 
+//  _                                       _                                _    _      
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _    ___ ___   ___ | | _(_) ___ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |  / __/ _ \ / _ \| |/ / |/ _ \
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| | | (_| (_) | (_) |   <| |  __/
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |  \___\___/ \___/|_|\_\_|\___|
+//                                                   |___/                               
 
 /*
 a tag identifies a browser, through multiple different signed-in users, and even before someone has signed up
@@ -24,54 +24,31 @@ mitigated by:
 	(4b) because our tag cookie is first‑party, strictly‑necessary for core functionality, marked HttpOnly, Secure, and SameSite=Lax, compliance requires documenting its use in a privacy policy, and does not require explicit user consent
 */
 
-const cookieSecurePrefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
-const cookieNameWarning  = 'current_session_password'
-const cookieValueWarning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
-function composeCookie(tag) {
-	let name = cookieNameWarning
-	let options = {//these base options work for local development...
+function compose(tag) {
+	let o = {}
+	o.name = composeCookieName()
+	o.options = {//these base options work for local development...
 		path: '/',//send for all routes
 		httpOnly: true,//page script can't see or change; more secure than local storage! 
 		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
 		maxAge: 395*24*60*60,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
 	}
 	if (isCloud()) {//...strengthen them for cloud deployment
-		name = cookieSecurePrefix + name
-		options.secure = true
-		options.domain = 'cold3.cc'//apex domain and subdomains allowed; ttd april2025 get in access or wrapper, not hardcoded! you can also omit, but then the cookie is locked to the domain without subdomains
-		/*
-		ttd november, ok, two options here, well three really
-		1 keep this the same
-		2 import icarus and then replace with Key('domain, public') except in earlier testing you were having trouble importing anything here
-		3 delete options.domain, actually, even more secure, and your ownly subdomain is oauth.cold3.cc, which you could change to use the cookie, but already completes a secure flow designed assuming you couldn't get it there!
-		*/
+		o.options.secure = true
+		o.options.domain = Key('domain, public')//scope access to include subdomains; oauth.cold3.cc needs to see the browser tag
 	}
-	let o = {name, options}
 	if (hasTag(tag)) {
-		o.value = `${cookieValueWarning}${tag}`//assemble a value for a cookie we'll tell it to set with our eventual response
-		o.cookieHeaderValue = `${name}=${cookieValueWarning}${tag}`//cookie header value with name and value together
+		o.value = composeCookieValue(tag)//assemble a value for a cookie we'll tell it to set with our eventual response
 	}
 	return o
-}
-function cookieValueToTag(value) {
-	if (
-		hasText(value) &&//got something,
-		value.length == cookieValueWarning.length+Limit.tag &&//length looks correct,
-		value.startsWith(cookieValueWarning)) {//and prefix is intact,
-		let tag = value.slice(-Limit.tag)//slice out the tag at the end of the cookie value
-		if (hasTag(tag)) {//and check it before we return it
-			return tag
-		}
-	}
-	return false//if any of that didn't work, don't throw, just return false
 }
 
 export default defineEventHandler((workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
 
 	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
 	let value, valueTag, browserTag
-	value = getCookie(workerEvent, composeCookie().name)//get the cookie where we may have previously tagged this browser
-	valueTag = cookieValueToTag(value)
+	value = getCookie(workerEvent, compose().name)//get the cookie where we may have previously tagged this browser
+	valueTag = parseCookie(value)
 
 	if (hasTag(valueTag)) {//if the above steps got a valid tag
 		browserTag = valueTag//use the existing browser tag
@@ -82,6 +59,6 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 	}
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
-	let cookie = composeCookie(browserTag)
-	setCookie(workerEvent, cookie.name, cookie.value, cookie.options)//set response headers for when we send the response, telling the browser to save this tag for next time
+	let c = compose(browserTag)
+	setCookie(workerEvent, c.name, c.value, c.options)//set response headers for when we send the response, telling the browser to save this tag for next time
 })

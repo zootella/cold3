@@ -1,8 +1,5 @@
 //./server/api/oauth.js ~ on the oauth trail, nuxt endpoint
 
-import {
-sealEnvelope, openEnvelope,
-} from 'icarus'
 import {verifyMessage} from 'viem'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -23,7 +20,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		let letter = await openEnvelope('OauthDone.', body.envelope)//oauth envelope [4] open done
 		log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
-		//now, we'll make sure the browserHash sveltekit computed from the browserTag matches
+		//now, we'll make sure the browserHash sveltekit computed from the browserTag matches (do this part next!!)
 		//save the proven credentials in the database
 		//and chose what route to send the user, ttd november
 

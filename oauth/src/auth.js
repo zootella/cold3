@@ -3,7 +3,9 @@
 import {
 defined, toss, log, look, Time, Now, Limit,
 isCloud, Key, decryptKeys,
-sealEnvelope, originApex,
+sealEnvelope, openEnvelope,
+composeCookieName, composeCookieValue, parseCookie,
+originApex,
 } from 'icarus'
 
 import {SvelteKitAuth} from '@auth/sveltekit'
@@ -36,7 +38,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
 
-				//ttd, need to read trusted browserTag here, hash it to browserHash, and include that in the envelope
+				//ttd, need to read trusted browserTag here, hash it to browserHash, and include that in the envelope (do this part next!!)
 
 				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
 				let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {account, profile, user})//oauth envelope [3] seal done

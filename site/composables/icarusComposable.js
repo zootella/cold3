@@ -32,5 +32,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 Key, accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
+sealEnvelope, openEnvelope,
+composeCookieName, composeCookieValue, parseCookie,
 
 } from 'icarus'

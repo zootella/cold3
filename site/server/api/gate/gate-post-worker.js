@@ -1,6 +1,6 @@
 
 import {
-sealEnvelope, origin23,
+origin23,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

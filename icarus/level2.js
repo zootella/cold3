@@ -492,7 +492,31 @@ test(() => {
 
 
 
+//  _                                       _                                _    _      
+// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _    ___ ___   ___ | | _(_) ___ 
+// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |  / __/ _ \ / _ \| |/ / |/ _ \
+// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| | | (_| (_) | (_) |   <| |  __/
+// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |  \___\___/ \___/|_|\_\_|\___|
+//                                                   |___/                               
 
+const cookie_secure_prefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
+const cookie_name_warning  = 'current_session_password'
+const cookie_value_warning = 'account_access_code_DO_NOT_SHARE_'//wording these two to discourage coached tampering
+
+export function composeCookieName() { return (isCloud() ? cookie_secure_prefix : '') + cookie_name_warning }
+export function composeCookieValue(tag) { return `${cookie_value_warning}${tag}` }
+export function parseCookie(value) {
+	if (
+		hasText(value) &&//got something,
+		value.length == cookie_value_warning.length+Limit.tag &&//length looks correct,
+		value.startsWith(cookie_value_warning)) {//and prefix is intact,
+		let tag = value.slice(-Limit.tag)//slice out the tag at the end of the cookie value
+		if (hasTag(tag)) {//and check it before we return it
+			return tag
+		}
+	}
+	return false//if any of that didn't work, don't throw, just return false
+}
 
 //                      _
 //   ___ _ ____   _____| | ___  _ __   ___
@@ -641,10 +665,6 @@ Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the bro
 other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 */
 
-const cookieSecurePrefix = '__Secure-'//duplicated from cookieMiddleware.js, ttd june2025
-const cookieNameWarning  = 'current_session_password'
-const cookieValueWarning = 'account_access_code_DO_NOT_SHARE_'
-
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
 	if (!options) options = {}//totally fine to call fetchWorker('/hello') with no options; we'll prepare an empty request body
@@ -655,7 +675,7 @@ export async function fetchWorker(url, options) {//from a Pinia store, Vue compo
 	if (process.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag
 	if (browserTag) {
 		if (!options.headers) options.headers = {}
-		options.headers.cookie = `${isCloud() ? cookieSecurePrefix : ''}${cookieNameWarning}=${cookieValueWarning}${browserTag}`
+		options.headers.cookie = `${composeCookieName()}=${composeCookieValue(browserTag)}`
 	}
 
 	options.body = makePlain(options.body)//$fetch automatically stringifies, but would throw on a method or circular reference
