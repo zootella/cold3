@@ -1,7 +1,7 @@
 //./server/api/oauth.js ~ on the oauth trail, nuxt endpoint
 
 import {
-sealEnvelope, Limit,
+sealEnvelope,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 
