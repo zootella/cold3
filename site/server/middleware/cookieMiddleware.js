@@ -29,7 +29,7 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
 	let value, valueTag, browserTag
 	value = getCookie(workerEvent, composeCookieName())//get the cookie where we may have previously tagged this browser
-	valueTag = parseCookie(value)
+	valueTag = parseCookieValue(value)
 
 	if (hasTag(valueTag)) {//if the above steps got a valid tag
 		browserTag = valueTag//use the existing browser tag

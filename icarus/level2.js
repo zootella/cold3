@@ -6,7 +6,7 @@ import {//from level0
 Time, Now, sayDate, sayTick, isExpired,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, checkTextSame, newline,
-Tag, checkTag,
+Tag, checkTag, hasTag,
 Data, encryptSymmetric, encryptData, decryptData, hashText, secureSameText, hmacSign,
 makePlain, makeObject, makeText,
 replaceAll, replaceOne, toTextOrBlank,
@@ -505,7 +505,7 @@ const cookie_value_warning = 'account_access_code_DO_NOT_SHARE_'//wording these 
 
 export function composeCookieName() { return (isCloud() ? cookie_secure_prefix : '') + cookie_name_warning }
 export function composeCookieValue(tag) { return `${cookie_value_warning}${tag}` }
-export function parseCookie(value) {
+export function parseCookieValue(value) {
 	if (
 		hasText(value) &&//got something,
 		value.length == cookie_value_warning.length+Limit.tag &&//length looks correct,

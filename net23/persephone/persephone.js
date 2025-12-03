@@ -25,7 +25,7 @@ Key, accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookie,
+composeCookieName, composeCookieValue, parseCookieValue,
 
 //and also import these references
 Data,

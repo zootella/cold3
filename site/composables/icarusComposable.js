@@ -33,6 +33,6 @@ Key, accessKey, canGetAccess, getAccess,
 doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookie,
+composeCookieName, composeCookieValue, parseCookieValue,
 
 } from 'icarus'

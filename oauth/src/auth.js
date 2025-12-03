@@ -1,10 +1,10 @@
 //./src/auth.js ~ on the oauth trail, Auth.js configuration and handlers
 
 import {
-defined, toss, log, look, Time, Now, Limit,
+defined, toss, log, look, Time, Now, Limit, hasTag,
 isCloud, Key, decryptKeys,
-sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookie,
+sealEnvelope, openEnvelope, hashText,
+composeCookieName, composeCookieValue, parseCookieValue,
 originApex,
 } from 'icarus'
 
@@ -38,10 +38,13 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
 
-				//ttd, need to read trusted browserTag here, hash it to browserHash, and include that in the envelope (do this part next!!)
+				//get the browser tag from the cookie the main site gave the browser; envelope proves this browser got the oauth information
+				let browserTag = parseCookieValue(event.cookies.get(composeCookieName()))//we can see the cookie here on a subdomain
+				if (!hasTag(browserTag)) return false//Auth.js treats false as deny sign-in
+				let browserHash = await hashText(browserTag)//browser tag is sensitive; hash it immediately
 
 				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
-				let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {account, profile, user})//oauth envelope [3] seal done
+				let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {account, profile, user, browserHash})//oauth envelope [3] seal done
 
 				let url = `${originApex()}/oauth2?envelope=${envelope}`
 				log('Auth.js signIn() handler', look({account, profile, user, url}), `url length ${url.length}`)//claude thinks no provider will give us objects that get close to cloudflare's url length limit of 16,000 characters, which is great; see how big google and others are, ttd november

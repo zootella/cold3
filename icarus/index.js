@@ -164,7 +164,7 @@ sayFloppyDisk, runTestsSticker,
 Task, fetchWorker, fetchLambda, fetchProvider,
 origin23, originOauth, originApex,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookie,
+composeCookieName, composeCookieValue, parseCookieValue,
 
 /* level 2 query */
 
