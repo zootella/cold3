@@ -1,7 +1,7 @@
 //./server/api/oauth.js ~ on the oauth trail, nuxt endpoint
 
 import {
-sealEnvelope,
+sealEnvelope, openEnvelope,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 
@@ -14,14 +14,22 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	} else if (action == 'OauthStart.') {
 
-		let r = {
-			outcome: 'OauthContinue.',//the page probably won't read this
+		return {
+			outcome: 'OauthContinue.',
 			envelope: await sealEnvelope('OauthContinue.', Limit.handoffWorker, {}),//oauth envelope [1] seal continue
 		}
-		return r
 
 	} else if (action == 'OauthDone.') {
 
+		let letter = await openEnvelope('OauthDone.', body.envelope)//oauth envelope [4] open done
+		log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
+		//now we'll save the proven credential in the database
+		//and below, choose what route to send the user to, ttd november
+
+		return {
+			outcome: 'OauthProven.',
+			route: '/',//ttd november, will change to welcome, home, or dashboard depending on the user's aim proving oauth
+		}
 	}
 	/*
 	ttd november, when you've got the smoke test, clean up the names around
