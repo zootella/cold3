@@ -21,7 +21,7 @@ import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
 /*
 	a summary of how this script encrypts secrets and generates the shrinkwrap seal wrapper
 
-	./.env.local          add and edit application defined secrets the one place
+	./.env.keys           add and edit application defined public keys and sensitive server secrets in one place
 
 	./.env                store secret symmetric encryption key here for node
 	./.dev.vars           and also here for cloudflare wrangler to make available to nitro in nuxt
@@ -32,8 +32,8 @@ import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
 	./seal.js             $ npm run seal to generate the next two files:
 	./wrapper.txt         first, a file manifest
 	./icarus/wrapper.js   from that, hash and date of the manifest, versioning the code
-												and including the contents of .env.local encrypted with the secret symmetric key
-	./icarus/library2.js  library2.js imports wrapper.js, adding environment detection, a tick and tag
+												and including the contents of .env.keys with secrets encrypted with the server symmetric key
+	./icarus/level0.js    level0.js imports wrapper.js, adding environment detection, a tick and tag
 */
 const pathWrapperTxt = 'wrapper.txt'
 const pathWrapperJs  = 'icarus/wrapper.js'
@@ -103,8 +103,7 @@ async function writeWrapper(o) {
 	await fs.writeFile(pathWrapperJs, s)
 }
 
-const envSecretFileName = '.env.local'//our file of secrets to encrypt
-const envKeysFileName = '.env.keys'//ttd september2025, upcoming format with public and secret keys defined together and separated
+const envKeysFileName = '.env.keys'
 async function affixSeal(properties, manifest) {
 
 	//total up the files, counting those that are something we wrote or created, versus everything

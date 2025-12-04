@@ -28,9 +28,9 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 
 	let authOptions = {
 		providers: [
-			googleProvider({clientId:  Key('oauth, google,  id'), clientSecret: Key('oauth, google,  secret')}),
+			googleProvider({clientId:  Key('oauth, google, id'),  clientSecret: Key('oauth, google, secret')}),
 			twitterProvider({clientId: Key('oauth, twitter, id'), clientSecret: Key('oauth, twitter, secret')}),
-			githubProvider({clientId:  Key('oauth, github,  id'), clientSecret: Key('oauth, github,  secret')}),
+			githubProvider({clientId:  Key('oauth, github, id'),  clientSecret: Key('oauth, github, secret')}),
 			discordProvider({clientId: Key('oauth, discord, id'), clientSecret: Key('oauth, discord, secret')}),
 		],
 		trustHost: true,//trust the incoming request's Host and X-Forwarded-Host headers to work with Cloudflare's reverse proxy
@@ -58,7 +58,7 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 			maxAge: 60,//seconds; intending us to identify our user with this cookie, Auth's default is 30 days
 			updateAge: 0,//tell Auth.js to never refresh this cookie; it will expire naturally shortly
 		},
-		secret: Key('oauth, auth, secret'),//Auth.js needs a random secret we define to sign things; we don't have to rotate it; generate with $ openssl rand -hex 32
+		secret: Key('auth.js, secret'),//Auth.js needs a random secret we define to sign things; we don't have to rotate it; generate with $ openssl rand -hex 32
 	}
 	return authOptions
 })
