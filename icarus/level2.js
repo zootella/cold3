@@ -330,9 +330,12 @@ export async function decryptKeys(sender, sources) {
 	_redactions = [key, ...listAllKeyValues(list)]//treat all decrypted values as sensitive to redact them from logs
 }
 
-function redactBeforeLogging(s) {
+function redactBeforeLogging(s) {//replace any decrypted values in s with black magic marker like "X#X#X#X#X#X#"
 	for (let v of _redactions) s = replaceAll(s, v, 'X#'.repeat(v.length).slice(0, v.length))
 	return s
+}
+function decryptedServerSecrets() {//true if we decrypted secrets, so we're running on a server that can use api keys, not a page
+	return _alreadyDecrypted
 }
 
 
@@ -1372,17 +1375,17 @@ export function logAlert(headline, watch) { keepPromise(awaitLogAlert(headline, 
 export async function awaitDog(...a) {//await async forms
 	let {s, l} = await prepareLog('debug', 'type:debug', 'DEBUG', '↓', a)
 	console.log(isCloud() ? s : l)//always also log to standard out
-	if (canGetAccess()) await sendLog(s)//page code can't log to datadog because we don't have secrets
+	if (decryptedServerSecrets()) await sendLog(s)//page code can't log to datadog because we don't have secrets
 }
 export async function awaitLogAudit(headline, watch) {
 	let {s, l} = await prepareLog('info', 'type:audit', 'AUDIT', headline, watch)
 	console.log(isCloud() ? s : l)
-	if (canGetAccess()) await sendLog(s)//keep an audit trail of every use of third party apis, running both cloud *and* local
+	if (decryptedServerSecrets()) await sendLog(s)//keep an audit trail of every use of third party apis, running both cloud *and* local
 }
 export async function awaitLogAlert(headline, watch) {
 	let {s, l} = await prepareLog('error', 'type:alert', 'ALERT', headline, watch)
 	console.error(isCloud() ? s : l)
-	if (canGetAccess() && isCloud()) await sendLog(s)//only log to datadog if from deployed code
+	if (decryptedServerSecrets() && isCloud()) await sendLog(s)//only log to datadog if from deployed code
 }
 async function prepareLog(status, type, label, headline, watch) {
 	let sticker = stickerParts()//find out what, where, and when we're running, also makes a tag for this sticker check right now
