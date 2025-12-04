@@ -686,8 +686,6 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	if (!options) options = {}
 	options.method = 'POST'//force post
 	if (!options.body) options.body = {}
-	options.body.ACCESS_NETWORK_23_SECRET = (await getAccess()).get('ACCESS_NETWORK_23_SECRET')//don't forget your keycard
-
 	options.body = makePlain(options.body)
 
 	options.body.warm = true
@@ -992,14 +990,6 @@ async function doorLambdaCheck({door, actions}) {
 
 	//check the worker's requested action
 	checkActions({action: door.body?.action, actions})
-
-	//check that the worker sent the lambda the valid Network 23 access key
-	if (door.method == 'POST') {
-		if (!secureSameText(
-			door.body.ACCESS_NETWORK_23_SECRET,
-			(await getAccess()).get('ACCESS_NETWORK_23_SECRET')
-		)) toss('bad access code', {door})
-	}//going to replace ACCESS_NETWORK_23_SECRET with body.envelope which doorLambdaOpen decrypts and checks .sealed is within Limit.handoffLambda, ttd november
 }
 
 async function doorWorkerShut(door, response, error) {

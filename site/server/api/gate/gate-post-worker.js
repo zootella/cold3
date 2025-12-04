@@ -14,7 +14,6 @@ async function doorHandleBelow({door}) {
 			method: 'POST',
 			body: {
 				name: 'GatePostWorker.',
-				ACCESS_NETWORK_23_SECRET: (await getAccess()).get('ACCESS_NETWORK_23_SECRET'),//ttd november, will replace ACCESS_NETWORK_23_SECRET secret here with "Network23." envelope below:
 				envelope: await sealEnvelope('Network23.', Limit.handoffLambda, {}),
 			}
 		}

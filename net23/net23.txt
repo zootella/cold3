@@ -3664,7 +3664,7 @@ places to see (and check) envelope in action:
 (1) lambda (envelope sealed by nuxt worker, opened by lambda)
 in level2, doorWorkerOpen and doorLambdaOpen call openEnvelope if the body or query string has one
 doorLambdaCheck requires a letter in the body with action "Network23."
-calling net23, the worker sets an expiration Limit.handoffLambda 8 seconds later, allowing for the cold start
+calling net23, the worker sets an expiration Limit.handoffLambda 14 seconds later, allowing for the cold start
 
 (2) wallet (envelope sealed by nuxt worker, held by page, opened by worker)
 wallet.js seals an envelope with the nonce for the user's browser's ethereum wallet to sign
