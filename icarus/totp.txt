@@ -165,7 +165,7 @@ test(async () => {//bookmark, ttd november
 
 
 	/*
-	ok, so your totp can encrypt the access.get('ACCESS_TOTP_SECRET') which is base62
+	ok, so your totp can encrypt the example test totp secret which is base62
 	and return that to the page
 	it can keep it in a 20min cookie
 	and is not as sensitive as the actual secret
@@ -247,41 +247,3 @@ you're worried you're going ot make a mistake with trailAdd where you are hashin
 so, test this out, if you had it a Data, for instance
 one way to allow template literals but still detect this is to throw if you get [Object object] or whatever they come up as
 or Promise, like have some not allowed terms
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

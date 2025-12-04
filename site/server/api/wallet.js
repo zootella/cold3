@@ -46,7 +46,6 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		log(`🖌 server has proof that browser ${browserHash} controls wallet ${address}`)//and we'll save that in the database to sign this user up or in, essentially, ttd november
 
-
 		//ttd november, sanity checking that sensitive stuff from Key gets redacted in datadog logs
 		let d = {
 			a: 'apple',
@@ -55,9 +54,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		}
 		logAudit('hello from wallet.js ', {d})
 
-
 		//more to do here about that after we smoke test and security audit this above...
-
 
 		return {outcome: 'Proven.'}//tell the page they succeeded
 	}

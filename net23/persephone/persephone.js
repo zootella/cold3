@@ -78,8 +78,8 @@ export async function sendMessage({provider, service, address, subjectText, mess
 	let task = Task({name: 'message', provider, service, parameters: {address, subjectText, messageText, messageHtml}})
 	try {
 		if (service == 'Email.') {
-			task.parameters.fromName = access.get('ACCESS_MESSAGE_BRAND')
-			task.parameters.fromEmail = access.get('ACCESS_MESSAGE_EMAIL')
+			task.parameters.fromName = Key('message brand')
+			task.parameters.fromEmail = Key('message email')
 			task.parameters.toEmail = checkEmail(address).f1//form 1 is the correct form to send to APIs
 			if      (provider == 'Amazon.') await sendMessageAmazonEmail(access, task)
 			else if (provider == 'Twilio.') await sendMessageTwilioEmail(access, task)
@@ -121,7 +121,7 @@ async function sendMessageTwilioEmail(access, task) {
 		]
 	}
 	const sendgrid = await loadTwilioEmail()
-	sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
+	sendgrid.setApiKey(Key('sendgrid key, secret'))
 	task.response = await sendgrid.send(task.request)
 	if (
 		task.response.length &&
@@ -140,12 +140,12 @@ async function sendMessageAmazonPhone(access, task) {
 }
 async function sendMessageTwilioPhone(access, task) {
 	task.request = {
-		from: access.get('ACCESS_TWILIO_PHONE'),
+		from: Key('twilio phone'),
 		to: task.parameters.toPhone,
 		body: task.parameters.messageText
 	}
 	const twilio = await loadTwilioPhone()
-	let client = twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
+	let client = twilio(Key('twilio sid, secret'), Key('twilio auth, secret'))
 	task.response = await client.messages.create(task.request)
 	if (hasText(task.response.sid)) task.success = true
 }
@@ -199,13 +199,13 @@ test(async () => {//test twilio modules load and appear ready
 
 	//twilio
 	const twilio = await loadTwilioPhone()
-	let twilioClient = twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
-	let accountContext = await twilioClient.api.accounts(access.get('ACCESS_TWILIO_SID'))
+	let twilioClient = twilio(Key('twilio sid, secret'), Key('twilio auth, secret'))
+	let accountContext = await twilioClient.api.accounts(Key('twilio sid, secret'))
 	ok(accountContext._version._domain.baseUrl.startsWith('https://'))
 
 	//sendgrid
 	const sendgrid = await loadTwilioEmail()
-	sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
+	sendgrid.setApiKey(Key('sendgrid key, secret'))
 	ok(sendgrid.client.defaultRequest.baseUrl.startsWith('https://'))
 })
 test(async () => {//test that we can use sharp, which relies on native libraries
@@ -250,9 +250,9 @@ export async function snippet2() {
 		const _sendgrid = await loadTwilioEmail()
 		o.twilioRequired = look(_twilio).slice(0, limit)
 		o.sendgridRequired = look(_sendgrid).slice(0, limit)
-		let twilioClient = _twilio(access.get('ACCESS_TWILIO_SID'), access.get('ACCESS_TWILIO_AUTH_SECRET'))
+		let twilioClient = _twilio(Key('twilio sid, secret'), Key('twilio auth, secret'))
 		o.twilioClient = look(twilioClient).slice(0, limit)
-		_sendgrid.setApiKey(access.get('ACCESS_SENDGRID_KEY_SECRET'))
+		_sendgrid.setApiKey(Key('sendgrid key, secret'))
 
 		//sharp
 		const _sharp = await loadSharp()

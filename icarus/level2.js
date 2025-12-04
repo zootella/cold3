@@ -1441,7 +1441,7 @@ async function sendLog(s) {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'DD-API-KEY': access.get('ACCESS_DATADOG_API_KEY_SECRET')
+				'DD-API-KEY': Key('datadog api key, secret')
 			},
 			body: s,//$fetch/ofetch see this JSON string and won't double stringify it
 		})
@@ -1501,7 +1501,7 @@ export async function checkTurnstileToken(token, ip) {
 	try {
 
 		let body = new FormData()
-		body.append('secret',   access.get('ACCESS_TURNSTILE_SECRET'))
+		body.append('secret',   Key('turnstile, secret'))
 		body.append('response', token)
 		body.append('remoteip', ip)
 

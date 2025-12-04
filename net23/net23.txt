@@ -3838,8 +3838,8 @@ widget mode: invisible
 pre-clearance: no
 
 and then get the site key and secret key, which in our code will be:
-ACCESS_TURNSTILE_SITE_KEY_PUBLIC, available to untrusted front-end code, revealed to users
-ACCESS_TURNSTILE_SECRET, securely and secretly stored in the cloudflare worker
+"turnstile site key, public", available to untrusted front-end code, revealed to users
+"turnstile, secret", securely and secretly stored in the cloudflare worker
 
 app.vue loads Turnstile site-wide as soon as the user navigates to any route
 if later the user navigates to a turnstile-protected form, turnstile already has signals that indicate human behavior

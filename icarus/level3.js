@@ -602,7 +602,7 @@ async function codeCompose({length, sticker}) {
 	c.code = randomCode(length)
 	c.hash = await hashText(c.codeTag+c.code)
 
-	c.subjectText = `Code ${c.letter} ${c.code} for ${(await getAccess()).get('ACCESS_MESSAGE_BRAND')}`
+	c.subjectText = `Code ${c.letter} ${c.code} for ${Key('message brand')}`
 	const warning = ` - Don't tell anyone, they could steal your whole account!`
 	sticker = sticker ? 'STICKER' : ''//gets replaced by the sticker on the lambda
 
@@ -610,6 +610,7 @@ async function codeCompose({length, sticker}) {
 	c.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${c.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
 	return c
 }
+//ttd november, here's an example of a function that doesn't need to be async anymore now that we're using key
 
 //what it looks like to use these functions to send a code
 async function codeSent({browserHash, provider, type, v, permit, code}) {
