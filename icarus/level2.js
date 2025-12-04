@@ -292,7 +292,7 @@ export function Key(search) {
 	if (!hasText(value)) toss('key not found')//every key lookup must succeed
 	return value
 }
-let _keys = [], _alreadyLoaded, _alreadyDecrypted//only decrypt once, on door open; only load public once, on first search with Key()
+let _keys = [], _redactions = [], _alreadyLoaded, _alreadyDecrypted//only decrypt once, on door open; only load public once, on first search with Key()
 
 function loadKeys() {
 	if (_alreadyLoaded) return; _alreadyLoaded = true
@@ -325,8 +325,21 @@ export async function decryptKeys(sender, sources) {
 	if (!hasText(key)) toss(`key not found by ${sender} in ${sources.length} sources`)
 
 	let block = (await decryptData(Data({base62: key.slice(prefix)}), Data({base62: wrapper.secretKeys}))).text()
-	_keys.push(...parseKeyBlock(block))
+	let list = parseKeyBlock(block)
+	_keys.push(...list)
+	_redactions = [key, ...listAllKeyValues(list)]//treat all decrypted values as sensitive to redact them from logs
 }
+
+function redactBeforeLogging(s) {
+	for (let v of _redactions) s = replaceAll(s, v, 'X#'.repeat(v.length).slice(0, v.length))
+	return s
+}
+
+
+
+
+
+
 
 //                              
 //   __ _  ___ ___ ___  ___ ___ 
@@ -1412,6 +1425,7 @@ async function prepareLog(status, type, label, headline, watch) {
 	b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
 	s = makeText(b)//prepare the body, stringified, s; deal with error objects, circular references, and methods
 	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
+	s = redactBeforeLogging(s)//ttd november, new one for Key instead of getAccess
 	size = s.length//byte size of body, this is how datadog bills us
 	s = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
 	m = replaceOne(d.message, '‹SIZE›', `‹${size}›`)
