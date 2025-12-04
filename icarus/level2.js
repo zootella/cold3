@@ -1084,7 +1084,7 @@ function checkOriginValid(headers, access) { if (isLocal()) return//skip these c
 	let n = headerCount(headers, 'Origin')
 	if (n != 1) toss('origin header missing or multiple', {n, headers})
 	let v = headerGet(headers, 'Origin')
-	let allowed = access.get('ACCESS_ORIGIN_URL')
+	let allowed = 'https://'+Key('domain, public')
 	if (v != allowed) toss('origin not allowed', {n, v, allowed, headers})
 }
 
@@ -1437,7 +1437,7 @@ async function sendLog(s) {
 	let task = Task({name: 'fetch datadog'})
 	try {
 
-		task.response = await fetchProvider(access.get('ACCESS_DATADOG_ENDPOINT'), {
+		task.response = await fetchProvider(Key('datadog endpoint, public'), {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -1505,7 +1505,7 @@ export async function checkTurnstileToken(token, ip) {
 		body.append('response', token)
 		body.append('remoteip', ip)
 
-		task.response = await fetchProvider(access.get('ACCESS_TURNSTILE_URL'), {method: 'POST', body})
+		task.response = await fetchProvider(Key('turnstile url, public'), {method: 'POST', body})
 		if (task.response.success && hasText(task.response.hostname)) task.success = true//make sure the API response looks good
 
 	} catch (e) { task.error = e }

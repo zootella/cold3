@@ -5,7 +5,6 @@ sequentialSeparate,
 } from 'icarus'
 const pageStore = usePageStore()
 
-const ACCESS_TURNSTILE_SITE_KEY_PUBLIC = '0x4AAAAAAA0P1yzAbb7POlXe'//from the cloudflare dashboard; intentionally public
 const fresh = 4*Time.minute//cloudflare says a token expires 5 minutes; we don't submit one older than 4
 
 //we begin the process of load+render+execute to get a first token right when the user navigates to the form
@@ -72,7 +71,7 @@ function step3Render() {
 	window.turnstile.render(//this call returns synchronously, and when it does, turnstile is ready to execute
 		refTurnstile.value,//this DOM element is where turnstile could show the user as a spinner or checkbox during token generation
 		{
-			sitekey: ACCESS_TURNSTILE_SITE_KEY_PUBLIC,
+			sitekey: Key('turnstile site key, public'),
 			callback: turnstileCallback,//after we call execute(), turnstile will give this callback the token
 			'error-callback': turnstileErrorCallback,
 			size: 'normal',//ttd january2025, you'll change this to invisible along with changing a setting in the dashboard

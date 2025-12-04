@@ -106,7 +106,7 @@ async function sendMessageAmazonEmail(access, task) {
 		}
 	}
 	const {SESClient, SendEmailCommand} = await loadAmazonEmail()
-	let client = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
+	let client = new SESClient({region: Key('amazon region, public')})
 	task.response = await client.send(new SendEmailCommand(task.request))
 	if (hasText(task.response.MessageId)) task.success = true
 }
@@ -134,7 +134,7 @@ async function sendMessageAmazonPhone(access, task) {
 		Message: task.parameters.messageText,
 	}
 	const {SNSClient, PublishCommand} = await loadAmazonPhone()
-	let client = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
+	let client = new SNSClient({region: Key('amazon region, public')})
 	task.response = await client.send(new PublishCommand(task.request))
 	if (hasText(task.response.MessageId)) task.success = true
 }
@@ -184,13 +184,13 @@ test(async () => {//test amazon modules load and appear ready
 
 	//check amazon email loads and looks ready
 	const {SESClient, GetSendQuotaCommand} = await loadAmazonEmail()
-	const mailClient = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
+	const mailClient = new SESClient({region: Key('amazon region, public')})
 	let quota = await mailClient.send(new GetSendQuotaCommand({}))
 	ok(quota.Max24HourSend >= 50000)//approved out of the sandbox, amazon limits to 50 thousand emails a day
 
 	//and amazon text messaging
 	const {SNSClient, GetSMSAttributesCommand} = await loadAmazonPhone()
-	const textClient = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
+	const textClient = new SNSClient({region: Key('amazon region, public')})
 	let smsAttributes = await textClient.send(new GetSMSAttributesCommand({}))
 	ok(smsAttributes.attributes.MonthlySpendLimit.length)//MonthlySpendLimit is a string like "50" dollars
 })
@@ -233,7 +233,7 @@ export async function snippet2() {
 
 		//amazon
 		const {SESClient, GetSendQuotaCommand} = await loadAmazonEmail()
-		const mailClient = new SESClient({region: access.get('ACCESS_AMAZON_REGION')})
+		const mailClient = new SESClient({region: Key('amazon region, public')})
 		o.amazonMail = look(mailClient.config).slice(0, limit)
 		try {
 			let quota = await mailClient.send(new GetSendQuotaCommand({}))
@@ -242,7 +242,7 @@ export async function snippet2() {
 			o.amazonMailQuotaError = e2.stack
 		}
 		const {SNSClient} = await loadAmazonPhone()
-		const textClient = new SNSClient({region: access.get('ACCESS_AMAZON_REGION')})
+		const textClient = new SNSClient({region: Key('amazon region, public')})
 		o.amazonText = look(textClient.config).slice(0, limit)
 
 		//twilio
