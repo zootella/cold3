@@ -46,7 +46,7 @@ watch([refBox1], () => {//which is also independently editable
 
 <p>And from that, here's what your name will be in links. You can edit this box directly, too.</p>
 <p><input :maxlength="Limit.name" v-model="refBox1" placeholder="name for links" class="w-96" /></p>
-<p>Your profile will be at <code>https://cold3.cc/{{refName1}}</code></p>
+<p>Your profile will be at <code>https://{{Key('domain, public')}}/{{refName1}}</code></p>
 <p>We'll reserve <code>{{refName0}}</code> for you, also.</p>
 
 </div>

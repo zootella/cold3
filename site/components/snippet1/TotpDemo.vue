@@ -19,7 +19,7 @@ const refCookie = useCookie('temporary_envelope_totp', {
 onMounted(async () => {
 
 	if (hasText(refCookie.value)) {
-		log('component loaded with stored cookie! 🍪🔔🔔🔔', refCookie.value)
+		log('component loaded with stored cookie! 🔔🍪🔔', refCookie.value)
 		//in this case, we need to move right to step 2, ttd november
 	}
 

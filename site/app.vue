@@ -5,7 +5,7 @@ addTurnstileHeadScript,
 } from 'icarus'
 
 let head = {
-	title: 'cold3.cc',
+	title: Key('domain, public'),
 	link: [
 		{
 			rel: 'icon',

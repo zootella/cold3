@@ -45,7 +45,7 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 		path: '/',//send for all routes
 		httpOnly: true,//page script can't see or change; more secure than local storage! 
 		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
-		maxAge: 395*24*60*60,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
+		maxAge: 395*Time.daysInSeconds,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
 	}
 	if (isCloud()) {//...strengthen them for cloud deployment
 		options.secure = true

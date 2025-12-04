@@ -1,5 +1,9 @@
 //./nuxt.config.js
 
+//local Node runs this file on $ nuxt dev, build, generate; importing what we need from icarus manually rather than trying to get automatic imports working here
+import {
+Time, Key, log, look,
+} from 'icarus'//
 import {vite as vidstack} from 'vidstack/plugins'
 
 /*
@@ -72,12 +76,12 @@ configuration.modules.push('@pinia/nuxt')
 //for nuxt-og-image
 configuration.modules.push('nuxt-og-image')
 configuration.site = {
-	name: 'cold3.cc',
-	url: 'https://cold3.cc',//needs site's deployed domain to link the cards in the page meta tags with absolute URLs
+	name: Key('domain, public'),
+	url: 'https://'+Key('domain, public'),//needs site's deployed domain to link the cards in the page meta tags with absolute URLs
 }
 configuration.ogImage = {
 	defaults: {
-		cacheMaxAgeSeconds: 20*60,//20 minutes in seconds; default if omitted is 3 days
+		cacheMaxAgeSeconds: 20*Time.minutesInSeconds//default if omitted is 3 days
 	},
 	runtimeCacheStorage: {
 		driver: 'cloudflare-kv-binding',

@@ -7,7 +7,7 @@ browserIsBesideAppStore,
 } from 'icarus'
 
 const refLabel = ref('user.name@example.com')
-const refIssuer = ref('cold3.cc')
+const refIssuer = ref(Key('domain, public'))
 const refUri = ref('')
 
 let enrollment

@@ -375,6 +375,10 @@ our primitives are standard, current, and secure
 we trust the http only cookie, and assume the posted body is compromised
 defense in depth can confuse defense
 
+summary of pillars here
+1 secure: no vulnerabilities; as secure as is possible, expected, required, for the modern consumer web, completely
+2 hardened: for large cohorts of users who are lightly compromised, hardened against attacks possible, as much as possible 
+3 simple: no security theater, simplicity is the best security, limited defense in depth
 
 
 
