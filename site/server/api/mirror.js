@@ -9,7 +9,7 @@ async function doorHandleBelow({door, body}) {
 	r.message = 'hello from cold3 api mirror, version 2024oct8b'
 	r.serverTick = Now()
 	r.headers = door.workerEvent.req.headers
-	r.accessLength = access.get('ACCESS_PASSWORD_SECRET').length
+	r.accessLength = Key('message email').length
 	r.tag = Tag()
 	r.sayEnvironment = Sticker()
 

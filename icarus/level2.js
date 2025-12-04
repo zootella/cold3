@@ -403,13 +403,6 @@ function redact_perform(s, redactions) {
 	redactions.forEach(replacement => s = replaceAll(s, replacement.p, replacement.r))//find secret part p and replace with redacted form r
 	return s
 }
-export async function redact_snippet() {//run as snippet, as $ node test will be able to decrypt secrets
-	let access = await getAccess()
-	log(`node accessed ${access.length()} variables`)
-	let s = `A ${access.get('ACCESS_SUPABASE_URL')} B ${access.get('ACCESS_SUPABASE_KEY_SECRET')} C ${access.get('ACCESS_PASSWORD_SECRET')} D`
-	let r = access.redact(s)
-	log(s, r)
-}
 
 //               _            _   
 //  _ __ ___  __| | __ _  ___| |_ 
@@ -1587,14 +1580,14 @@ let _real1, _test1
 async function getDatabase() {
 	if (!_real1) {
 		let access = await getAccess()
-		_real1 = createClient(access.get('ACCESS_SUPABASE_REAL1_URL'), access.get('ACCESS_SUPABASE_REAL1_KEY_SECRET'))
+		_real1 = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
 	}
 	return _real1
 }
 async function getTestDatabase() {
 	if (!_test1) {
 		let access = await getAccess()
-		_test1 = createClient(access.get('ACCESS_SUPABASE_TEST1_URL'), access.get('ACCESS_SUPABASE_TEST1_KEY_SECRET'))
+		_test1 = createClient(Key('supabase test1, url'), Key('supabase test1, secret'))
 	}
 	return _test1
 }

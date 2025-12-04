@@ -85,7 +85,7 @@ note the uri encoding that turns / into %2F and = into %3D; path and hash can ha
 */
 export async function vhsSign(path, expiration) {
 	let access = await getAccess()//this uses access, the current time, and a new random tag, so it's difficult to test
-	return await _vhsSign(Data({base16: access.get('ACCESS_VHS_SECRET')}), path, Now(), expiration, Tag())
+	return await _vhsSign(Data({base16: Key('vhs, secret')}), path, Now(), expiration, Tag())
 }
 async function _vhsSign(secret, path, now, expiration, seed) {//so we've factored out this core for testing, below
 	let message = `path=${encodeURIComponent(path)}&tick=${now+expiration}&seed=${seed}`
