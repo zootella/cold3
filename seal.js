@@ -126,14 +126,7 @@ async function affixSeal(properties, manifest) {
 	//compute the shrinkwrap hash of this version snapshot right now, which is the hash of wrapper.txt
 	let hash = Data({array: crypto.createHash('sha256').update(manifest).digest()})
 
-	//encrypt the secrets in .env.local
-	let legacy_plain = await fs.readFile(envSecretFileName, 'utf8')//specify utf8 to get a string
-	let legacy_cipher = await encryptData(
-		Data({base62: process.env.ACCESS_KEY_SECRET}),
-		Data({text: legacy_plain})
-	)
-
-	//ttd november, new system for page keys like alchemy, not yet running any actual secrets through here
+	//encrypt the secrets in .env.keys
 	const prefix = 14
 	let envKeysContents = await fs.readFile(envKeysFileName, 'utf8')
 	let blocks = parseKeyFile(envKeysContents)
@@ -153,7 +146,6 @@ async function affixSeal(properties, manifest) {
 	o.codeSize = codeSize
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
-	o.secrets = legacy_cipher.base62()//current system for server secrets
 	o.secretKeys = cipherData.base62()//put new system in place, haven't moved any actual secrets over yet
 	o.publicKeys = publicData.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
 

@@ -3329,37 +3329,6 @@ let contents = `
 
 
 
-//ttd september2025, from much earlier, didn't even have a heading
-//ttd november, likely you can get rid of this when you do getAccess -> Key
-export function parseEnvStyleFileContents(s) {
-	let lines = s.split(/\r?\n/)
-	let o = {}
-	lines.forEach(line => {
-		line = line.trimStart()
-		if (line.length && !line.startsWith('#')) {//skip blank and comment lines
-			let e = line.indexOf('=')//e is index of first equals sign
-			if (e != -1) {//only do lines that have key=value
-				let k = line.slice(0, e).trim()//key is trimmed text before equals
-				let v = line.slice(e+1)//value is everything on the line after the first equals
-				if (k.length) {//key name must exist
-					o[k] = v
-				}
-			}
-		}
-	})
-	return o
-}
-test(() => {
-let s = `
-key1=value1
-
-#blank line above, commented line here, and below is equals in a value
-TRUE_MATH=2+2=4
-`
-let o = parseEnvStyleFileContents(s)
-ok(o.key1 == 'value1')
-ok(o['TRUE_MATH'] == '2+2=4')
-})
 
 
 

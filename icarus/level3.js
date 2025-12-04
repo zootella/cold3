@@ -9,7 +9,6 @@ textToInt, hasText, checkText, checkTextOrBlank, newline,
 Tag, checkTagOrBlank, checkTag,
 Data, decryptData, secureSameText,
 replaceAll, replaceOne,
-parseEnvStyleFileContents,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
 randomCode, hashToLetter,
@@ -21,7 +20,7 @@ Limit, checkName, validateName,
 bundleValid,
 } from './level1.js'
 import {//from level2
-getAccess, Sticker, stickerParts, isLocal, isCloud,
+Sticker, stickerParts, isLocal, isCloud,
 Task, fetchWorker, fetchLambda, fetchProvider,
 
 /* level 2 query */
@@ -609,7 +608,6 @@ async function codeCompose({length, sticker}) {
 	c.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${c.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
 	return c
 }
-//ttd november, here's an example of a function that doesn't need to be async anymore now that we're using key
 
 //what it looks like to use these functions to send a code
 async function codeSent({browserHash, provider, type, v, permit, code}) {

@@ -152,7 +152,7 @@ functions that use parts of the larger application and environment
 export {
 
 Sticker, stickerParts, isLocal, isCloud,
-Key, decryptKeys, accessKey, canGetAccess, getAccess,
+Key, decryptKeys,
 doorWorker, doorLambda,
 headerGetOne,
 keepPromise, awaitDoorPromises,
@@ -280,7 +280,6 @@ say, look,
 makePlain, makeObject, makeText,
 
 parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
-parseEnvStyleFileContents,
 sequentialShared, sequentialSeparate,
 
 sameIgnoringCase, sameIgnoringTrailingSlash,
