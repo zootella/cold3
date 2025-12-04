@@ -898,7 +898,6 @@ but should still be findable in the amazon or cloudflare dashboard
 */
 
 async function doorWorkerOpen({method, workerEvent}) {
-	let access = await getAccess()
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
 		sources.push({note: 'c10', environment: process.env})
@@ -938,13 +937,12 @@ async function doorWorkerOpen({method, workerEvent}) {
 
 		//authenticate worker post request: (1) https; (2) origin omitted or valid
 		checkForwardedSecure(workerEvent.req.headers)
-		checkOriginOmittedOrValid(workerEvent.req.headers, access)
+		checkOriginOmittedOrValid(workerEvent.req.headers)
 
 	} else { toss('method not supported', {door}) }
 	return door
 }
 async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
-	let access = await getAccess()
 	let sources = []//unlike the cloudflare code above, the lambda event and context objects do not contain environment variables
 	if (defined(typeof process) && process.env) {
 		sources.push({note: 'd10', environment: process.env})
@@ -1064,16 +1062,16 @@ function checkForwardedSecure(headers) { if (isLocal()) return//skip these check
 		if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
 	} else { toss('multiple x forwarded proto headers', {n, headers}) }
 }
-function checkOriginOmittedOrValid(headers, access) {
+function checkOriginOmittedOrValid(headers) {
 	let n = headerCount(headers, 'Origin')
 	if (n == 0) {}//omitted is fine
-	else if (n == 1) { checkOriginValid(headers, access) }//if exactly one origin header is present, then make sure it's valid
+	else if (n == 1) { checkOriginValid(headers) }//if exactly one origin header is present, then make sure it's valid
 	else { toss('headers malformed with multiple origin', {headers}) }//headers malformed this way would be very unusual
 }
 function checkOriginOmitted(headers) {
 	if (headerCount(headers, 'Origin')) toss('origin must not be present', {headers})
 }
-function checkOriginValid(headers, access) { if (isLocal()) return//skip these checks during local development
+function checkOriginValid(headers) { if (isLocal()) return//skip these checks during local development
 	let n = headerCount(headers, 'Origin')
 	if (n != 1) toss('origin header missing or multiple', {n, headers})
 	let v = headerGet(headers, 'Origin')
@@ -1388,7 +1386,6 @@ export async function awaitLogAlert(headline, watch) {
 }
 async function prepareLog(status, type, label, headline, watch) {
 	let sticker = stickerParts()//find out what, where, and when we're running, also makes a tag for this sticker check right now
-	let access = await getAccess()//access secrets to be able to redact them
 	let d = {//this is the object we'll log to datadog
 
 		//datadog required
@@ -1417,8 +1414,7 @@ async function prepareLog(status, type, label, headline, watch) {
 	let b, s, size, m, l
 	b = [d]//prepare the body b, our fetch will send one log to datadog; we could send two at once like [d1, d2]
 	s = makeText(b)//prepare the body, stringified, s; deal with error objects, circular references, and methods
-	s = access.redact(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
-	s = redactBeforeLogging(s)//ttd november, new one for Key instead of getAccess
+	s = redactBeforeLogging(s)//mark out secrets; won't change the length, won't mess up the stringified format for datadog's parse
 	size = s.length//byte size of body, this is how datadog bills us
 	s = replaceOne(s,         '‹SIZE›', `‹${size}›`)//insert the length in the first line of the message
 	m = replaceOne(d.message, '‹SIZE›', `‹${size}›`)
@@ -1426,7 +1422,6 @@ async function prepareLog(status, type, label, headline, watch) {
 	return {s, l}//return stringified s, and readable for local development l, forms
 }
 async function sendLog(s) {
-	const access = await getAccess()
 	let task = Task({name: 'fetch datadog'})
 	try {
 
@@ -1485,7 +1480,6 @@ export function addTurnstileHeadScript(head) {
 export async function checkTurnstileToken(token, ip) {
 	if (!useTurnstileHere()) return
 	checkText(token); checkText(ip)
-	const access = await getAccess()
 
 	//turn this true and deploy to demonstrate turnstile protection
 	if (false) token = 'Extra'+token//add some extra stuff at the start of the token to mess it up
@@ -1577,16 +1571,14 @@ the design is simple:
 
 //create the supabase client to talk to the cloud database
 let _real1, _test1
-async function getDatabase() {
+async function getDatabase() {//ttd november, no longer needs to be async
 	if (!_real1) {
-		let access = await getAccess()
 		_real1 = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
 	}
 	return _real1
 }
 async function getTestDatabase() {
 	if (!_test1) {
-		let access = await getAccess()
 		_test1 = createClient(Key('supabase test1, url'), Key('supabase test1, secret'))
 	}
 	return _test1

@@ -84,7 +84,6 @@ Gb%2BabT%2FX%2FOx0Edh3ifBJ7g%3D
 note the uri encoding that turns / into %2F and = into %3D; path and hash can have characters that need to be encoded
 */
 export async function vhsSign(path, expiration) {
-	let access = await getAccess()//this uses access, the current time, and a new random tag, so it's difficult to test
 	return await _vhsSign(Data({base16: Key('vhs, secret')}), path, Now(), expiration, Tag())
 }
 async function _vhsSign(secret, path, now, expiration, seed) {//so we've factored out this core for testing, below

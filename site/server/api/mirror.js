@@ -3,7 +3,6 @@ export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body}) {
-	let access = await getAccess()
 	let r = {}
 
 	r.message = 'hello from cold3 api mirror, version 2024oct8b'

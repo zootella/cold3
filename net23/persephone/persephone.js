@@ -71,7 +71,6 @@ export async function warm({provider, service}) {
 //                                                                   
 
 export async function sendMessage({provider, service, address, subjectText, messageText, messageHtml}) {
-	let access = await getAccess()
 	let sticker = ` ${Sticker()}.${provider}${service}`
 	messageText = replaceOne(messageText, 'STICKER', sticker)
 	messageHtml = replaceOne(messageHtml, 'STICKER', sticker)
@@ -81,19 +80,19 @@ export async function sendMessage({provider, service, address, subjectText, mess
 			task.parameters.fromName = Key('message brand')
 			task.parameters.fromEmail = Key('message email')
 			task.parameters.toEmail = checkEmail(address).f1//form 1 is the correct form to send to APIs
-			if      (provider == 'Amazon.') await sendMessageAmazonEmail(access, task)
-			else if (provider == 'Twilio.') await sendMessageTwilioEmail(access, task)
+			if      (provider == 'Amazon.') await sendMessageAmazonEmail(task)
+			else if (provider == 'Twilio.') await sendMessageTwilioEmail(task)
 		} else if (service == 'Phone.') {
 			task.parameters.toPhone = checkPhone(address).f1
-			if      (provider == 'Amazon.') await sendMessageAmazonPhone(access, task)
-			else if (provider == 'Twilio.') await sendMessageTwilioPhone(access, task)
+			if      (provider == 'Amazon.') await sendMessageAmazonPhone(task)
+			else if (provider == 'Twilio.') await sendMessageTwilioPhone(task)
 		}
 	} catch (e) { task.error = e }
 	task.finish()
 	logAudit('message', {task})
 	return task
 }
-async function sendMessageAmazonEmail(access, task) {
+async function sendMessageAmazonEmail(task) {
 	task.request = {
 		Source: `"${task.parameters.fromName}" <${task.parameters.fromEmail}>`,//must be verified email or domain
 		Destination: {ToAddresses: [task.parameters.toEmail]},
@@ -110,7 +109,7 @@ async function sendMessageAmazonEmail(access, task) {
 	task.response = await client.send(new SendEmailCommand(task.request))
 	if (hasText(task.response.MessageId)) task.success = true
 }
-async function sendMessageTwilioEmail(access, task) {
+async function sendMessageTwilioEmail(task) {
 	task.request = {
 		from: {name: task.parameters.fromName, email: task.parameters.fromEmail},
 		personalizations: [{to: [{email: task.parameters.toEmail}]}],
@@ -128,7 +127,7 @@ async function sendMessageTwilioEmail(access, task) {
 		task.response[0].statusCode == 202 &&
 		hasText(headerGetOne(task.response[0].headers, 'x-message-id'))) task.success = true
 }
-async function sendMessageAmazonPhone(access, task) {
+async function sendMessageAmazonPhone(task) {
 	task.request = {
 		PhoneNumber: task.parameters.toPhone,
 		Message: task.parameters.messageText,
@@ -138,7 +137,7 @@ async function sendMessageAmazonPhone(access, task) {
 	task.response = await client.send(new PublishCommand(task.request))
 	if (hasText(task.response.MessageId)) task.success = true
 }
-async function sendMessageTwilioPhone(access, task) {
+async function sendMessageTwilioPhone(task) {
 	task.request = {
 		from: Key('twilio phone'),
 		to: task.parameters.toPhone,
@@ -179,7 +178,6 @@ test(() => {//deployed, make sure we're running in Node 20 on Amazon Linux on th
 	if (isCloud()) ok(process.version.startsWith('v22.') && process.platform == 'linux' && process.arch == 'arm64')
 })
 test(async () => {//test amazon modules load and appear ready
-	let access = await getAccess()
 
 	//check amazon email loads and looks ready
 	const {SESClient, GetSendQuotaCommand} = await loadAmazonEmail()
@@ -194,7 +192,6 @@ test(async () => {//test amazon modules load and appear ready
 	ok(smsAttributes.attributes.MonthlySpendLimit.length)//MonthlySpendLimit is a string like "50" dollars
 })
 test(async () => {//test twilio modules load and appear ready
-	let access = await getAccess()
 
 	//twilio
 	const twilio = await loadTwilioPhone()
@@ -228,7 +225,6 @@ export async function snippet2() {
 	let o = {}
 	try {
 		o.intro = "hi from snippet2 in persephone; tests cover all of this now, so you should soon delete it"
-		let access = await getAccess()
 
 		//amazon
 		const {SESClient, GetSendQuotaCommand} = await loadAmazonEmail()
