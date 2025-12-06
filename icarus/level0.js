@@ -525,6 +525,14 @@ test(() => {
 
 	c = cut2(s, '<a>', '<a>'); ok(c.found && c.before == 'red' && c.tag1 == '<a>' && c.middle == 'green' && c.tag2 == '<a>' && c.after == 'blue')
 })
+export function afterLast(s, tag) {
+	let c = cutLast(s, tag)
+	if (!c.found) toss('form', {s, tag})//make sure s is what we expect
+	return c.after
+}
+test(() => {
+	ok(afterLast('Some_Prefix_ValueValue', '_') == 'ValueValue')
+})
 
 export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2
 	checkText(tag1); checkText(tag2)
@@ -547,6 +555,7 @@ test(() => {
 		'first ‹SIZE› and second ‹SIZE› later', '‹SIZE›', `‹${size}›`) ==
 		'first ‹6789› and second ‹SIZE› later')
 })
+
 
 
 
