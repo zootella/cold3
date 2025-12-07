@@ -525,13 +525,13 @@ test(() => {
 
 	c = cut2(s, '<a>', '<a>'); ok(c.found && c.before == 'red' && c.tag1 == '<a>' && c.middle == 'green' && c.tag2 == '<a>' && c.after == 'blue')
 })
-export function afterLast(s, tag) {
+export function cutAfterLast(s, tag) {
 	let c = cutLast(s, tag)
 	if (!c.found) toss('form', {s, tag})//make sure s is what we expect
 	return c.after
 }
 test(() => {
-	ok(afterLast('Some_Prefix_ValueValue', '_') == 'ValueValue')
+	ok(cutAfterLast('Some_Prefix_ValueValue', '_') == 'ValueValue')
 })
 
 export function replaceAll(s, tag1, tag2) {//in s, find all instances of tag1, and replace them with tag2

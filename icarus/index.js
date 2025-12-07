@@ -251,7 +251,7 @@ intToText, textToInt,
 checkTextSame, hasTextSame, checkTextOrBlank, hasTextOrBlank,
 checkNumerals, isNumerals, takeNumerals,
 newline,
-cut, cutLast, afterLast,
+cut, cutLast, cutAfterLast,
 replaceAll, replaceOne,
 safefill, deindent,
 

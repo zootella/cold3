@@ -2,7 +2,7 @@
 import {
 wrapper, sayFloppyDisk, runTests, Time,
 log, look, newline, Data, Now, Tag,
-parseKeyFile, randomBetween, encryptData,
+parseKeyFile, randomBetween, encryptData, cutAfterLast,
 } from 'icarus'
 
 import {promises as fs} from 'fs'
@@ -126,11 +126,10 @@ async function affixSeal(properties, manifest) {
 	let hash = Data({array: crypto.createHash('sha256').update(manifest).digest()})
 
 	//encrypt the secrets in .env.keys
-	const prefix = 14
 	let envKeysContents = await fs.readFile(envKeysFileName, 'utf8')
 	let blocks = parseKeyFile(envKeysContents)
 	let cipherData = await encryptData(
-		Data({base62: process.env.SECRET_KEY_U1.slice(prefix)}),//key data is beyond tracer prefix
+		Data({base62: cutAfterLast(process.env.ACCESS_K10_SECRET, '_')}),//key data is beyond tracer prefix
 		Data({text: blocks.secretBlock})
 	)//encrypt the secret keys; server code will be able to decryypt them
 	let publicData = Data({text: blocks.publicBlock})//encode the public keys; client and server code will use them

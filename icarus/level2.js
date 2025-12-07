@@ -14,7 +14,7 @@ parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
 sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 runTests,
-safefill, deindent,
+safefill, deindent, cutAfterLast,
 } from './level0.js'
 import {//from level1
 Limit, checkActions,
@@ -303,14 +303,11 @@ function loadKeys() {
 export async function decryptKeys(sender, sources) {
 	if (_alreadyDecrypted) return; _alreadyDecrypted = true
 
-	const name = 'SECRET_KEY_U1'
-	const prefix = 14
-
 	if (false) {//switch on to see where we're finding the key across local|cloud × lambda|nuxt|sveltekit
 		let s = `Key found by ${isLocal() ? 'local' : 'cloud'} ${sender} 🔑`
 		let places = []
 		for (let source of sources) {
-			let v = source.environment?.[name]
+			let v = source.environment?.ACCESS_K10_SECRET
 			if (hasText(v)) s += ' ' + source.note
 		}
 		log(s)//using log because dog needs a key to work; you'll have to hunt in the individual cloudflare and amazon dashboards
@@ -318,12 +315,12 @@ export async function decryptKeys(sender, sources) {
 
 	let key
 	for (let source of sources) {
-		let v = source.environment?.[name]
+		let v = source.environment?.ACCESS_K10_SECRET
 		if (hasText(v)) key = v//save a good value as the found key; it's fine that multiple hits overwrite
 	}
 	if (!hasText(key)) toss(`key not found by ${sender} in ${sources.length} sources`)
 
-	let block = (await decryptData(Data({base62: key.slice(prefix)}), Data({base62: wrapper.secretKeys}))).text()
+	let block = (await decryptData(Data({base62: cutAfterLast(key, '_')}), Data({base62: wrapper.secretKeys}))).text()
 	let list = parseKeyBlock(block)
 	_keys.push(...list)
 	_redactions = [key, ...listAllKeyValues(list)]//treat all decrypted values as sensitive to redact them from logs

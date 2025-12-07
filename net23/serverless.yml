@@ -14,8 +14,7 @@ provider:
   architecture: arm64 #choose Amazon's custom Graviton2 chip for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to default x86_64
   stage: prod #set production by default, as this script includes resources like buckets
   environment: #build these secret values from the local .env file into the server bundle
-    ACCESS_KEY_SECRET:         ${env:ACCESS_KEY_SECRET}
-    SECRET_KEY_U1:             ${env:SECRET_KEY_U1}
+    ACCESS_K10_SECRET:         ${env:ACCESS_K10_SECRET}
     ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE} #promises not to change through automatic renewals; not sensitive or a secret but looks like one
   iam: #grant the identity role that runs the lambda functions additional permissions
     role:
