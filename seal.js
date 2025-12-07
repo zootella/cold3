@@ -144,8 +144,8 @@ async function affixSeal(properties, manifest) {
 	o.codeSize = codeSize
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
-	o.secretKeys = cipherData.base62()//put new system in place, haven't moved any actual secrets over yet
-	o.publicKeys = publicData.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
+	o.secretKeys = 'FujiTracer'+'S10_'+cipherData.base62()//put new system in place, haven't moved any actual secrets over yet
+	o.publicKeys = 'FujiTracer'+'P10_'+publicData.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)

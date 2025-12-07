@@ -295,7 +295,7 @@ let _keys = [], _redactions = [], _alreadyLoaded, _alreadyDecrypted//only decryp
 function loadKeys() {
 	if (_alreadyLoaded) return; _alreadyLoaded = true
 
-	let block = Data({base62: wrapper.publicKeys}).text()
+	let block = Data({base62: cutAfterLast(wrapper.publicKeys, '_')}).text()
 	_keys.push(...parseKeyBlock(block))
 }
 
@@ -319,7 +319,10 @@ export async function decryptKeys(sender, sources) {
 	}
 	if (!hasText(key)) toss(`key not found by ${sender} in ${sources.length} sources`)
 
-	let block = (await decryptData(Data({base62: cutAfterLast(key, '_')}), Data({base62: wrapper.secretKeys}))).text()
+	let block = (await decryptData(
+		Data({base62: cutAfterLast(key,                '_')}),
+		Data({base62: cutAfterLast(wrapper.secretKeys, '_')})
+	)).text()
 	let list = parseKeyBlock(block)
 	_keys.push(...list)
 	_redactions = [key, ...listAllKeyValues(list)]//treat all decrypted values as sensitive to redact them from logs
@@ -378,7 +381,7 @@ export async function sealEnvelope(action, duration, letter) {
 	letter.action = action
 	letter.expiration = Now() + duration
 
-	let symmetric = encryptSymmetric(Key('envelope, secret'))
+	let symmetric = encryptSymmetric(cutAfterLast(Key('envelope, secret'), '_'))
 	let envelope = await symmetric.encryptObject(letter)
 	return envelope
 }
@@ -386,7 +389,7 @@ export async function openEnvelope(action, envelope, options) {
 	checkText(action)//required matching action; watch out for an attacker submitting a recently created envelope for another purpose!
 	if (!envelope) toss('missing envelope', {action, envelope, options})
 
-	let symmetric = encryptSymmetric(Key('envelope, secret'))
+	let symmetric = encryptSymmetric(cutAfterLast(Key('envelope, secret'), '_'))
 	let letter = await symmetric.decryptObject(envelope)
 
 	checkTextSame(action, letter.action)
