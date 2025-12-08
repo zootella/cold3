@@ -4,7 +4,7 @@ import {
 sayTick, hashText,
 } from 'icarus'
 
-const refMessage = ref('yo')
+const refMessage = ref('hi')
 const refHash = ref('')
 const refDuration = ref(0)
 const refResults = ref('')
@@ -34,7 +34,7 @@ async function clicked(action) {
 	[]set both buttons gray when there's no text in the box
 	*/
 
-	refHash.value = await hashText(refMessage.value)//api doesn't return hash anymore so we duplicate computing the hash here on the page
+	refHash.value = r.hash
 	let s = ''
 	if (action == 'Get.') {
 		s = `${r.count} records in the last 30 seconds`
@@ -48,7 +48,7 @@ async function clicked(action) {
 </script>
 <template>
 <div class="border border-gray-300 p-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TrailDemo3</i></p>
+<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TrailDemo</i></p>
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="message to hash" class="w-96" />{{' '}}
