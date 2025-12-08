@@ -752,7 +752,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	if (typeof useRuntimeConfig == 'function') {
 		let c = useRuntimeConfig(workerEvent)
 		if (c) sources.push({note: 'c50', environment: c})//seeing flow reach here local and cloud
-	}//seeing c50 never, which is ironic as this is the correct Nuxt way to do things!
+	}//seeing c50 never, which is ironic as this is the correct Nuxt way to do things! ttd december probably because you aren't setting nuxt.config.js configuration.runtimeConfig.name1 = process.env.name1 so you could do that
 	await decryptKeys('worker', sources)
 
 	let door = {}//make door object to bundle everything together about this request we're doing

@@ -28,6 +28,12 @@ async function onEnter() {
 
 	//as a possible alternative beyond that, trying out detecting how many cycles we should require
 	let targetCycles = await hashPasswordMeasureSpeed(saltData, passwordText, minimumCycles, targetDuration)
+	/*
+	when you get back in here soon, do change it around a little
+	do 3x 100k cycles in a row with a random hash value, and then pick the fastest of those three
+	and then for choosing and recording the number, have it in units of 100k cycles
+	OWASP recommends 100-500 cycles, so allow a minimum of 100 (recorded as 1) and then on a fast computer there will be a million (recorded as 10)
+	*/
 
 	refOutput.value = `${h.base32()} hashed from ${commas(minimumCycles)} cycles in ${duration}ms on ${sayTick(t)}. To spend ${targetDuration}ms, target ${commas(targetCycles)} cycles.`
 	//ttd november, on a really cheap 5yo android tablet, works, but hits the minimum; testing good to use this as the method!

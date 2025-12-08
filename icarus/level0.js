@@ -3337,6 +3337,7 @@ let contents = `
 	ok(!lookupKey(list, 'tag3'))
 	ok(!lookupKey(list, 'tag5'))//not in use at all
 })
+//ttd december, you could make this simpler to not split up tags, block double spaces, and only sort public names that end ", public"; you don't need to have tags where you can reverse order, you do want seal to block setting a duplicate
 
 
 
