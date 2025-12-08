@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-hashText, hashPassword, hashPasswordMeasureSpeed, Data, sayTick,
+hashText, hashPassword, hashPasswordMeasureSpeed1, Data, sayTick,
 } from 'icarus'
 
 const saltData = Data({base62: Key('password, salt, public')})
@@ -20,7 +20,7 @@ async function onEnter() {
 	let passwordText = refPasswordBox.value
 	//here is where the button should go orange, and keep orange right through turnstile and actual fetch
 
-	let cycles = await hashPasswordMeasureSpeed(saltData, passwordText, minimumCycles, targetDuration)
+	let cycles = await hashPasswordMeasureSpeed1(saltData, passwordText, minimumCycles, targetDuration)
 	let hash = await hashPassword(cycles, saltData, passwordText)
 
 	let response = await fetchWorker('/api/password', {body: {action: 'Set.', hash: hash.base32(), cycles}})

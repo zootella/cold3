@@ -3,8 +3,8 @@
 </script>
 <template>
 
-<TrailDemo />
 <PasswordDemo />
+<PasswordDemo1 />
 <PasswordChange />
 <PasswordChallenge />
 

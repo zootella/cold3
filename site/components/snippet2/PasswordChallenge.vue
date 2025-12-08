@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-hashText, hashPassword, hashPasswordMeasureSpeed, Data, sayTick,
+hashText, hashPassword, Data, sayTick,
 } from 'icarus'
 
 const saltData = Data({base62: Key('password, salt, public')})
