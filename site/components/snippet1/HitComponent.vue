@@ -16,12 +16,12 @@ also isn't this what useState() is about?
 current behavior here is good, except if you click into a route that has the hit component, the POST interrupts the navigation, which is bad
 */
 
-const refState = ref('green')
+const refState = ref('ready')
 
 async function clickedHit() {
-	refState.value = 'orange'
+	refState.value = 'doing'
 	await flexStore.incrementHits()
-	refState.value = 'green'
+	refState.value = 'ready'
 }
 
 </script>

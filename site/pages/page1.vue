@@ -3,9 +3,15 @@
 </script>
 <template>
 
-<AuthenticateDemo />
+
+<PasswordDemo />
 <PasswordChange />
 <PasswordChallenge />
-<TotpDemo />
+<TrailDemo1 />
+<TrailDemo2 />
+<TrailDemo3 />
+
+
+
 
 </template>

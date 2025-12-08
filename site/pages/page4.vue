@@ -3,7 +3,8 @@
 </script>
 <template>
 
-<PasswordDemo />
+<AuthenticateDemo />
+<TotpDemo />
 <HitComponent />
 <NameComponent />
 <ValidateNameComponent />

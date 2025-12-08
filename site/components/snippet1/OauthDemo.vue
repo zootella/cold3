@@ -8,18 +8,18 @@ const origin = originOauth()//will be "https://oauth.cold3.cc" cloud, or "http:/
 
 async function clicked(provider) {
 
-	if      (provider == 'google')  { refGoogle.value = 'orange'; refTwitter.value = 'gray';   refDiscord.value = 'gray' }
-	else if (provider == 'twitter') { refGoogle.value = 'gray';   refTwitter.value = 'orange'; refDiscord.value = 'gray' }
-	else if (provider == 'discord') { refGoogle.value = 'gray';   refTwitter.value = 'gray';   refDiscord.value = 'orange' }
+	if      (provider == 'google')  { refGoogle.value = 'doing'; refTwitter.value = 'ghost'; refDiscord.value = 'ghost' }
+	else if (provider == 'twitter') { refGoogle.value = 'ghost'; refTwitter.value = 'doing'; refDiscord.value = 'ghost' }
+	else if (provider == 'discord') { refGoogle.value = 'ghost'; refTwitter.value = 'ghost'; refDiscord.value = 'doing' }
 	//ttd november, ok so that's awful, but leaving alone for now because this test is about the oauth flow, not component factoring in forms
 
 	let response = await fetchWorker('/api/oauth', {method: 'POST', body: {action: 'OauthStart.'}})
 	window.location.href = `${originOauth()}/continue/${provider}?envelope=${response.envelope}`//encoding? base62 don't need no stinkin' encoding 👒
 }
 
-const refGoogle  = ref('green')
-const refTwitter = ref('green')
-const refDiscord = ref('green')
+const refGoogle  = ref('ready')
+const refTwitter = ref('ready')
+const refDiscord = ref('ready')
 
 </script>
 <template>

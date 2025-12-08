@@ -1,63 +1,7 @@
 <script setup>//./components/TriButton.vue
 
-/*
-simple button component with which you can:
-- use easily in place of the built in <Button> (easily upgrade a component that has some <Button>s to <TriButton>s)
-- set to gray or orange to indicate if it's clickable or working (set this state from above)
-- hookup your function to run when the user clicks it, just as easily as with Button
-
-and TriButton has these features which it will take care of itself here internally and automatically:
-- is disabled when not green (easily preventing double clicks, and making logic in your parent component above simpler!)
-- when green and the pointer is floating, shows light green (encouraging the user to click it)
-
-super small and simple, intentionally
-and factored to do just one thing well
-the real test of usefullness will be, can it exist in a larger, more complex system
-working well in a variety of situations and use cases
-and making things easier, not harder, where it is used
-(ttd november, after PostButton, which is huge and then over-opinionated (you can't turn it orange outside, for instance) does this size and scope of factoring work well??)
-
-
-ok, results from TrailDemo3 and then also HitComponent
-yes, this is a workable drop-in replacement
-
-you might actually want to use numbers rather than names
-0 - ghosted, the gray state
-1 - clickable, the green state
-2 - actively in progress, the orange state
-on a page, words are frequent and numbers are rare, so if (refState.value == 1) means something
-
-you're imagining there's going to be a pattern like
-
-
-async function doSomething() {
-	refState.value = orange
-
-	//fetch, process, hash, wait for metamask, all that good stuff
-
-	refState.value = green//here
-}
-
-but really this should be
-
-async function doSomething() {
-	refState.value = 2
-	try {
-
-	} finally { refState.value = 1 }
-}
-
-because then an exception still throws upwards, but the state doesn't stay orange
-also, what if in //here above, the state shouldn't be green, it should be gray, for whatever reason
-then you need to switch to two things, and have refDoingSomething in doSomething, and have a watch on that which controls refState
-but you suspect that there won't be a one size fits all thing here; so you need to keep things simple and composable
-a la UNIX's golden "do one thing well"
-
-ttd november, all this
-*/
-
 const props = defineProps({
-	state: {type: String, default: 'green'}
+	state: {type: String, default: 'ready'}
 })
 
 const emit = defineEmits(['click'])
@@ -66,7 +10,7 @@ const emit = defineEmits(['click'])
 <template>
 
 <button
-	:disabled="props.state != 'green'"
+	:disabled="props.state != 'ready'"
 	:class="props.state"
 	@click="$emit('click', $event)"
 >
@@ -86,9 +30,9 @@ button:disabled {
 	@apply cursor-default;
 }
 
-button.gray        { @apply bg-gray-400; }
-button.green       { @apply bg-green-600; }
-button.green:hover { @apply bg-green-400; }
-button.orange      { @apply bg-orange-500; }
+button.ghost       { @apply bg-gray-400;   }
+button.ready       { @apply bg-green-600;  }
+button.ready:hover { @apply bg-green-400;  }
+button.doing       { @apply bg-orange-500; }
 
 </style>

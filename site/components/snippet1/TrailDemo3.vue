@@ -12,16 +12,15 @@ const refCount = ref(0)
 const refRecent = ref(0)
 const refNow = ref('')
 
-const refState = ref('green')
+const refState = ref('ready')
 
 watch([refMessage, refState], () => {
-	if      (refState.value == 'gray'  && hasText(refMessage.value))  { refState.value = 'green' }
-	else if (refState.value == 'green' && !hasText(refMessage.value)) { refState.value = 'gray'  }
+	if      (refState.value == 'ghost' && hasText(refMessage.value))  { refState.value = 'ready' }
+	else if (refState.value == 'ready' && !hasText(refMessage.value)) { refState.value = 'ghost' }
 })//either button could return from flight, and the user could be clearing or typing in the box, so from all that chaos, looking for th eright simple water-tight way to keep the button green only when there's message text in the box and no fetch in flight, essentially
 
 async function clicked(action) {
-	refState.value = 'orange'
-
+	refState.value = 'doing'
 
 	let t = Now()
 	let r = await fetchWorker('/api/trail', {method: 'POST', body: {action, message: refMessage.value}})
@@ -35,8 +34,6 @@ async function clicked(action) {
 	[]set both buttons gray when there's no text in the box
 	*/
 
-
-
 	refHash.value = await hashText(refMessage.value)//api doesn't return hash anymore so we duplicate computing the hash here on the page
 	let s = ''
 	if (action == 'Get.') {
@@ -45,7 +42,7 @@ async function clicked(action) {
 	}
 	refResults.value = s
 
-	refState.value = hasText(refMessage.value) ? 'green' : 'gray'
+	refState.value = hasText(refMessage.value) ? 'ready' : 'ghost'
 }
 
 </script>

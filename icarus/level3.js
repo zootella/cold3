@@ -1207,13 +1207,10 @@ export async function settingWrite(name, value) {
 //  \__|_|  \__,_|_|_|  \__\__,_|_.__/|_|\___|
 //                                            
 
-export async function trailRecent(message)         { trailLook('trailRecent', message); return await trail_recent({hash: await hashText(message),                       }) }
-export async function trailCount(message, horizon) { trailLook('trailCount',  message); return await trail_count({ hash: await hashText(message), since: Now() - horizon}) }
-export async function trailGet(message, horizon)   { trailLook('trailGet',    message); return await trail_get({   hash: await hashText(message), since: Now() - horizon}) }
-export async function trailAdd(message)            { trailLook('trailAdd',    message);        await trail_add({   hash: await hashText(message), now:   Now()          }) }
-async function trailLook(title, message) {
-	log(`${title} 🏕️ hash ${await hashText(message)} of message:`, `"${message}"`)//ttd november, see them going in to sanity check
-}
+export async function trailRecent(message)         { return await trail_recent({hash: await hashText(message),                       }) }
+export async function trailCount(message, horizon) { return await trail_count({ hash: await hashText(message), since: Now() - horizon}) }
+export async function trailGet(message, horizon)   { return await trail_get({   hash: await hashText(message), since: Now() - horizon}) }
+export async function trailAdd(message)            {        await trail_add({   hash: await hashText(message), now:   Now()          }) }
 
 SQL(`
 -- a thing that may be happening recently, is it too late? too soon? too frequent?
