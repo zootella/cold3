@@ -17,7 +17,7 @@ fraction, exponent, int, big, newline,
 hashText, given,
 makePlain, makeObject, makeText,
 totpGenerate,
-safefill, deindent,
+safefill, deindent, commas,
 } from './level0.js'
 
 //from npm
@@ -80,26 +80,6 @@ test(() => {
 	ok(sayPlural(0) == 's')//like "0 carrots"
 	ok(sayPlural(1) == '') //like "1 carrot"
 	ok(sayPlural(2) == 's')//like "2 carrots"
-})
-
-export function commas(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
-	s += ''//turn numbers into strings
-	if (!thousandsSeparator) thousandsSeparator = ','
-	let minus = ''
-	if (s.startsWith('-')) { minus = '-'; s = s.slice(1) }//deal with negative numbers
-	if (s.length > 4) {//let a group of four through
-		s = s.split('').reverse().join('')//reversed
-		s = s.match(/.{1,3}/g).join(thousandsSeparator)//grouped reverse
-		s = s.split('').reverse().join('')//forward again
-	}
-	return minus+s
-}
-test(() => {
-	ok(commas('') == '')
-	ok(commas('1234') == '1234')
-	ok(commas('12345') == '12,345')
-	ok(commas('-50') == '-50')
-	ok(commas('-70800') == '-70,800')
 })
 
 //say a huge integer like "802 billion"

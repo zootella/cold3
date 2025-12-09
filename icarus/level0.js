@@ -1335,11 +1335,13 @@ export async function passwordCycles() {//suggest a number of 100k iterations fo
 export async function passwordHash({passwordText, cycles, saltData}) {
 	checkText(passwordText); checkInt(cycles, 1)
 	if (saltData.size() != password_salt_size) toss('data')
-
-	let d1 = Data({text: passwordText})//first (1) Data uses normalization Form C, canonical composition so if a returning user enters the same characters with a different composition, the bytes in passwordData will still match
-	let d2 = await d1.hash()//from that, (2) SHA256 the cleartext password bytes once to begin so the message data we give to PBKDF2 is always the same length; both good form and necessary for the speed measurements from earlier to apply here
-	let d3 = await _pbkdf2({iterations: cycles * password_iterations_per_cycle, saltData, messageData: d2})//and then (3) run that through all the PBKDF2 iterations
-	return d3.base32()//base32 is our encoding form of choice for hash values; hash value size is 32 bytes just like SHA256
+	//(1) Data uses normalization Form C, canonical composition so if a returning user enters the same characters with a different composition, the bytes in passwordData will still match
+	//(2) SHA256 the cleartext password bytes once so the message data we give to PBKDF2 is always the same length; both good form and necessary for the speed measurements from passwordCycles() to apply here
+	//(3) and then, run d2 through all the PBKDF2 iterations
+	let d1 = Data({text: passwordText})
+	let d2 = await d1.hash()
+	let d3 = await _pbkdf2({iterations: cycles*password_iterations_per_cycle, saltData, messageData: d2})
+	return d3.base32()
 }
 async function _pbkdf2({iterations, saltData, messageData}) {//helper function which does PBKDF2
 
@@ -1361,29 +1363,42 @@ async function _pbkdf2({iterations, saltData, messageData}) {//helper function w
 
 	return Data({array: new Uint8Array(await crypto.subtle.exportKey('raw', derived))})//export the derived key as raw bytes
 }
-
-
-
-
-
-
-
-//(write tests for the new stuff, though...)
-test(async () => {//this is twice as slow as all your other tests, combined!
-
+noop(async () => {//intentionally slow so not a part of always on unit tests
 	let howToMakeASalt = Data({random: 16}).base32()//here's how you make a salt
 
-	//test PBKDF2 directly in not exported _pbkdf2
-	const saltData = Data({base32: '774GOUNJC2OSI3X76LCZLPTPZQ'})//and the one we'll use below
-	const iterations = 2000//100+ for production, this is for a quick test
-	let passwordText = '12345'//this is not a great password
-	let h = await _pbkdf2({iterations, saltData, messageData: Data({text: passwordText})})
+	let h = await _pbkdf2({//test PBKDF2 directly in not exported _pbkdf2()
+		iterations: 2_000,
+		saltData: Data({base32: '774GOUNJC2OSI3X76LCZLPTPZQ'}),
+		messageData: Data({text: '12345'})})//this is not a great password
 	ok(h.base32() == 'J7SRY4JEKVNQF3DSFFDP2J6ECKJBOFEIBIMCZ7RVQNIJL5THSATA')
 
-	//and above that, hashPassword which does SHA256 first so cycle number indicates device speed, but not password length
-	h = await hashPassword(iterations, saltData, passwordText)
-	ok(h.base32() == 'JYZRLFJITM3H42TKI2CQER2G6CSO3BURQPOLDZEAN5TSUU7PPCXQ')//coincidence both start J here; they are not the same!
+	let cycles = await passwordCycles()
+	log(`passwordCycles() reccommends ${cycles} cycles, which is ${commas(cycles*password_iterations_per_cycle)} iterations`)
+
+	const saltData = Data({base62: 'LjTQvbuRfidxXbw7mE0bjj'})
+	async function f(expected, cycles, passwordText) {
+		let t = Now()
+		ok(expected == await passwordHash({passwordText, cycles, saltData}))
+		log(`password hashing ${cycles} cycles took ${Now() - t}ms`)//we target 500, but it's faster, ~400 in node, ~333 in chrome
+	}
+	await f('EXTNMFVLHQJCEFFJHVKDXPUGBSOO4HDQXUHHKMHSB6WKX2PR2CIQ', 39, 'hi')
+	await f('ALEXKRISVXSK5LCNJFA6PWE3JHDNDZGFC6X557ZJEV6WS7TY2M3Q', 40, 'hi')
+	await f('GIFGRZYZW4PUMPQUH2REIARET34PDCUTGFLIAFKQ7BG3ZJW4OFFQ', 41, 'hi')
+	await f('XRTVTGXEBX5TRTPQVCCUJE6SM7WOQ2XH3A5X72TJHKOR5GOVTZQA', 42, 'hi')//seemingly, easter eggs abound 🥚
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //(legacy, soon to remove...)
 export async function hashPassword(iterations, saltData, passwordText) {
@@ -3589,6 +3604,26 @@ test(() => {
 
 
 
+
+export function commas(s, thousandsSeparator) {//pass comma, period, or leave out to get international ready thin space
+	s += ''//turn numbers into strings
+	if (!thousandsSeparator) thousandsSeparator = ','
+	let minus = ''
+	if (s.startsWith('-')) { minus = '-'; s = s.slice(1) }//deal with negative numbers
+	if (s.length > 4) {//let a group of four through
+		s = s.split('').reverse().join('')//reversed
+		s = s.match(/.{1,3}/g).join(thousandsSeparator)//grouped reverse
+		s = s.split('').reverse().join('')//forward again
+	}
+	return minus+s
+}
+test(() => {
+	ok(commas('') == '')
+	ok(commas('1234') == '1234')
+	ok(commas('12345') == '12,345')
+	ok(commas('-50') == '-50')
+	ok(commas('-70800') == '-70,800')
+})
 
 
 

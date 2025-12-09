@@ -200,7 +200,7 @@ functions that use module imports
 */
 export {
 
-sayPlural, commas, sayHugeInteger, saySize4, sayNumber4,
+sayPlural, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
 Limit, cropToLimit,
 trimLines, trimLine,
@@ -286,6 +286,7 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 roundDown,
 sample1,
 isExpired,
+commas,
 
 liveBox,//move to whichever level you need it!
 

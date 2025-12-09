@@ -1,39 +1,31 @@
 <script setup>
 
 import {
-hashText, hashPassword, passwordCycles, Data, sayTick,
+hashText, Data, sayTick,
+hashPassword, hashPasswordMeasureSpeed,//ttd december, legacy
+passwordStrength, passwordCycles, passwordHash,
 } from 'icarus'
-
-const saltData = Data({base62: Key('password, salt, public')})
-const minimumCycles = textToInt(Key('password, iterations, public'))
-const targetDuration = textToInt(Key('password, duration, public'))
 
 const refInput = ref('')
 const refOutput = ref('')
 
 function onInput() {
-	refOutput.value = `${refInput.value.length} charcters`
+	refOutput.value = passwordStrength(refInput.value)
 }
 
 async function onEnter() {
 	if (!hasText(refInput.value)) refInput.value = 'hello'
 	let passwordText = refInput.value
 
+	//as a possible alternative beyond that, trying out detecting how many cycles we should require
+	let cycles = await passwordCycles()
+
 	//basic first method with a uniform number of cycles
 	let t = Now()
-	let h = await hashPassword(minimumCycles, saltData, passwordText)
+	let b32 = await passwordHash({passwordText, cycles, saltData: Data({base62: Key('password, salt, public')})})
 	let duration = Now() - t
 
-	//as a possible alternative beyond that, trying out detecting how many cycles we should require
-	let targetCycles = await passwordCycles(targetDuration)
-	/*
-	when you get back in here soon, do change it around a little
-	do 3x 100k cycles in a row with a random hash value, and then pick the fastest of those three
-	and then for choosing and recording the number, have it in units of 100k cycles
-	OWASP recommends 100-500 cycles, so allow a minimum of 100 (recorded as 1) and then on a fast computer there will be a million (recorded as 10)
-	*/
-
-	refOutput.value = `${h.base32()} hashed from ${commas(minimumCycles)} cycles in ${duration}ms on ${sayTick(t)}. Recommended cycles here ${commas(targetCycles)}.`
+	refOutput.value = `${b32} hashed from ${commas(cycles * 100_000)} cycles in ${duration}ms on ${sayTick(t)}.`
 }
 
 </script>
