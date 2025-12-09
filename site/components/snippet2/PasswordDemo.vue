@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-hashText, hashPassword, passwordSpeedRun, Data, sayTick,
+hashText, hashPassword, passwordCycles, Data, sayTick,
 } from 'icarus'
 
 const saltData = Data({base62: Key('password, salt, public')})
@@ -25,7 +25,7 @@ async function onEnter() {
 	let duration = Now() - t
 
 	//as a possible alternative beyond that, trying out detecting how many cycles we should require
-	let targetCycles = await passwordSpeedRun(targetDuration)
+	let targetCycles = await passwordCycles(targetDuration)
 	/*
 	when you get back in here soon, do change it around a little
 	do 3x 100k cycles in a row with a random hash value, and then pick the fastest of those three

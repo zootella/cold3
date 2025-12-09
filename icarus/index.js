@@ -220,7 +220,6 @@ checkWallet, validateWallet,
 
 browserIsBesideAppStore, getBrowserGraphics,
 
-measurePasswordStrength,
 generatePosts, postDatabase,
 
 indexRecords, addRecords, mergeRecords,
@@ -262,7 +261,8 @@ Tag, checkTagOrBlank, checkTag, hasTag,
 randomBetweenLight, randomBetween, randomCode, hashToLetter,
 secureSameText, secureSameData,
 checkHash, hashData, hashText,
-hashPassword, passwordSpeedRun, hashPasswordMeasureSpeed1,
+hashPassword, hashPasswordMeasureSpeed,//ttd december, legacy
+passwordStrength, passwordCycles, passwordHash,
 encryptData, decryptData, encryptSymmetric,
 hmacSign,
 rsaEncrypt, rsaDecrypt,

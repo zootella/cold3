@@ -1289,12 +1289,59 @@ test(async () => {
 // | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_|
 // |_|                                          
 
-export async function hashPassword(iterations, saltData, passwordText) {
-	let passwordData = Data({text: passwordText})//Data uses normalization Form C, canonical composition so if the user comes back and enters the same characters but somehow with a different composition, there won't be a mismatch
-	let passwordHash = await passwordData.hash()//short passwords might hash faster; to not indicate a shorter password with a bigger cycle number, do a regular sha256 sum, making long and short passwords all the exact same hash value length
-	return await hashPassword2(iterations, saltData, passwordHash)
+export function passwordStrength(s) {//simple password strength meter
+	let pool = (
+		(/[a-z]/.test(s) ? 26 : 0) +
+		(/[A-Z]/.test(s) ? 26 : 0) +
+		(/[0-9]/.test(s) ? 10 : 0) +
+		(/[^a-zA-Z0-9]/.test(s) ? 12 : 0))//we assume a dozen different likely "special characters" like ~!@#$...
+	let entropy = s.length * Math.log2(pool || 1)//each character could be any in the pool; total possibilities is pool^length; log2 of that gives bits
+	if (entropy < 50) return 'Weak'
+	if (entropy < 65) return 'Fair'
+	if (entropy < 80) return 'Strong'
+	return 'Very Strong'//note we correctly rate a long simple password like https://www.eff.org/dice unlike everyone else
 }
-async function hashPassword2(iterations, saltData, messageData) {//helper function which does PBKDF2
+export function liveBox(s) {//move to another level by moving this, as well as the export in index.js
+	return passwordStrength(s)
+}
+
+const password_salt_size = 16//PBKDF2 uses 16 bytes of salt
+const password_hash_size = 32//and produces hash values 16 bytes in size, just like SHA256
+const password_laps = 3//run three laps of the speed test to discount a slow warmup
+const password_duration_target = 500//take half a second on the user's computer to secure their password
+const password_iterations_per_cycle = 100_000//for convenience, we'll count interations in units of 100k each
+
+export async function passwordCycles() {//suggest a number of 100k iterations for PBKDF2 on this processor, 1-500
+	let splits = []
+	for (let i = 0; i < password_laps; i++) splits.push(await lap())
+	let best = Math.min(...splits)
+	if (best < 1) best = 1//even in a future with a computer this fast, never divide by zero 🕳️
+
+	let cycles = Math.ceil(password_duration_target / best)
+	if (cycles == 0) cycles = 1//minimum one cycle, but wow that's a really slow computer
+	return cycles//our computed reccomended cycle count, 1-500 bounds, like hash 44 cycles (*100k= 6 million iterations) to work for 500ms on a reasonable 2025 computer; we with Moore's Law! 🏎️🖥️
+
+	async function lap() {
+		let saltData = Data({random: password_salt_size})//random salt for this speed test
+		let password = Tag()//random example password cleartext
+		let messageData = await Data({text: password}).hash()
+
+		let t = performance.now()
+		await _pbkdf2({iterations: password_iterations_per_cycle, saltData, messageData})
+		let duration = performance.now() - t
+		return duration
+	}
+}
+export async function passwordHash({passwordText, cycles, saltData}) {
+	checkText(passwordText); checkInt(cycles, 1)
+	if (saltData.size() != password_salt_size) toss('data')
+
+	let d1 = Data({text: passwordText})//first (1) Data uses normalization Form C, canonical composition so if a returning user enters the same characters with a different composition, the bytes in passwordData will still match
+	let d2 = await d1.hash()//from that, (2) SHA256 the cleartext password bytes once to begin so the message data we give to PBKDF2 is always the same length; both good form and necessary for the speed measurements from earlier to apply here
+	let d3 = await _pbkdf2({iterations: cycles * password_iterations_per_cycle, saltData, messageData: d2})//and then (3) run that through all the PBKDF2 iterations
+	return d3.base32()//base32 is our encoding form of choice for hash values; hash value size is 32 bytes just like SHA256
+}
+async function _pbkdf2({iterations, saltData, messageData}) {//helper function which does PBKDF2
 
 	//first, format the password text as key material for PBKDF2
 	let materia = await crypto.subtle.importKey(
@@ -1314,15 +1361,23 @@ async function hashPassword2(iterations, saltData, messageData) {//helper functi
 
 	return Data({array: new Uint8Array(await crypto.subtle.exportKey('raw', derived))})//export the derived key as raw bytes
 }
+
+
+
+
+
+
+
+//(write tests for the new stuff, though...)
 test(async () => {//this is twice as slow as all your other tests, combined!
 
 	let howToMakeASalt = Data({random: 16}).base32()//here's how you make a salt
 
-	//test PBKDF2 directly in not exported hashPassword2
+	//test PBKDF2 directly in not exported _pbkdf2
 	const saltData = Data({base32: '774GOUNJC2OSI3X76LCZLPTPZQ'})//and the one we'll use below
 	const iterations = 2000//100+ for production, this is for a quick test
 	let passwordText = '12345'//this is not a great password
-	let h = await hashPassword2(iterations, saltData, Data({text: passwordText}))
+	let h = await _pbkdf2({iterations, saltData, messageData: Data({text: passwordText})})
 	ok(h.base32() == 'J7SRY4JEKVNQF3DSFFDP2J6ECKJBOFEIBIMCZ7RVQNIJL5THSATA')
 
 	//and above that, hashPassword which does SHA256 first so cycle number indicates device speed, but not password length
@@ -1330,9 +1385,15 @@ test(async () => {//this is twice as slow as all your other tests, combined!
 	ok(h.base32() == 'JYZRLFJITM3H42TKI2CQER2G6CSO3BURQPOLDZEAN5TSUU7PPCXQ')//coincidence both start J here; they are not the same!
 })
 
+//(legacy, soon to remove...)
+export async function hashPassword(iterations, saltData, passwordText) {
+	let passwordData = Data({text: passwordText})//Data uses normalization Form C, canonical composition so if the user comes back and enters the same characters but somehow with a different composition, there won't be a mismatch
+	let passwordHash = await passwordData.hash()//short passwords might hash faster; to not indicate a shorter password with a bigger cycle number, do a regular sha256 sum, making long and short passwords all the exact same hash value length
+	return await _pbkdf2({iterations, saltData, messageData: passwordHash})
+}
 //measure how fast the processor here (in use, the user's device with a browser running the page) can do PBKDF2
 //provide any salt and password to calculate how many cycles you must require to take up the target duration milliseconds
-export async function hashPasswordMeasureSpeed1(saltData, passwordText, minimumCycles, targetDuration) {
+export async function hashPasswordMeasureSpeed(saltData, passwordText, minimumCycles, targetDuration) {
 
 	//warm up PBKDF2 so a cold start doesn't affect our speed test, next
 	await hashPassword(minimumCycles, saltData, passwordText)//use given minimum cycles as a single small bundle size, here for warmup...
@@ -1349,95 +1410,12 @@ export async function hashPasswordMeasureSpeed1(saltData, passwordText, minimumC
 	return cycles//around 5 million on a reasonable computer in 2025, but the point of this is we scale with Moore's Law! 🏎️🖥️
 }
 
-//^legacy, new version to change freely below:
-
-/*
-no, above takes nothing, randomizes salt data and password text, and returns ms/100k cycles, as per owasp guidelines
-ok but for the threefer thing, split into two outer and inner functions
-*/
-
-
-/*
-ok, now ill describe what we're going to build on top of this
-
-when setting a new password, the page will do the following for the user
-first, it will measure the processor speed, finding how quickly it can hash a password the 310k minimum owasp reccomended number of cycles
-based on that, it'll choose a number of 
-
-*/
-
-
-
-const hash_password_salt_size = 16//PBKDF2 uses 16 bytes of salt
-const hash_password_laps = 3//run three laps of the speed test to discount a slow warmup lap
-const hash_password_duration_target = 500//half a second
-const hash_password_iterations_per_cycle = 100_000//for convenience, we'll measure in units of 100k iterations each
-
-export async function passwordSpeedRun() {//suggest a number of 100k iterations for PBKDF2 on this processor, 1-500
-	let splits = []
-	for (let i = 0; i < hash_password_laps; i++) splits.push(await lap())
-	log('splits', look(splits))
-	let best = Math.min(...splits)
-	if (best < 1) best = 1//even in a future with a computer this fast, never divide by zero 🕳️
-
-	let cycles = Math.ceil(hash_password_duration_target / best)
-	if (cycles == 0) cycles = 1//minimum one cycle, but wow that's a really slow computer
-	return cycles//our computed reccomended cycle count, like hash 62 cycles (each 100k iterations) to work for 500ms; possible range this function can return is 1-500 cycles
-
-	async function lap() {
-		let saltData = Data({random: hash_password_salt_size})//random salt for this speed test
-		let password = Tag()//random example password cleartext
-		let messageData = await Data({text: password}).hash()
-
-		let t = performance.now()
-		await _pbkdf2(hash_password_iterations_per_cycle, saltData, messageData)
-		let duration = performance.now() - t
-		return duration
-	}
-}
-export async function passwordHash({passwordText, cycles, saltData}) {
-	checkText(passwordText); checkInt(cycles, 1)
-	if (saltData.size() != hash_password_salt_size) toss('data')
-
-	let d1 = Data({text: passwordText})//Data uses normalization Form C, canonical composition so if a returning user enters the same characters with a different composition, the bytes in passwordData will still match
-	let d2 = await d1.hash()//SHA256 the cleartext password bytes once to begin so the message data we give to PBKDF2 is always the same length; both good form and necessary for the speed measurements from earlier to apply here
-	let d3 = await _pbkdf2(cycles * hash_password_iterations_per_cycle, saltData, d2)//having done that, run through all the PBKDF2 iterations
-	return d3.base32()//base32 is our encoding form of choice for hash values
-}
-async function _pbkdf2(iterations, saltData, messageData) {//helper function which does PBKDF2
-
-	//first, format the password text as key material for PBKDF2
-	let materia = await crypto.subtle.importKey(
-		'raw',
-		messageData.array(),
-		{name: 'PBKDF2'},//the Password Based Key Derivation Function 2, from the fine folks at RSA Laboratories
-		false,//not extractable
-		['deriveBits', 'deriveKey'])
-
-	//second, derive the key using PBKDF2 with the given salt and number of iterations
-	let derived = await crypto.subtle.deriveKey(
-		{name: 'PBKDF2', salt: saltData.array(), iterations, hash: 'SHA-256'},
-		materia,
-		{name: 'AES-GCM', length: 256},//256 bit derived key length
-		true,//extractable
-		['encrypt', 'decrypt'])//we use the key to securely store the password, but it also works for encryption and decryption!
-
-	return Data({array: new Uint8Array(await crypto.subtle.exportKey('raw', derived))})//export the derived key as raw bytes
-}
 
 
 
 
 
-
-
-
-
-
-
-
-
-
+//bookmark
 
 
 
@@ -3613,9 +3591,6 @@ test(() => {
 
 
 
-export function liveBox(s) {//move to another level by moving this, as well as the export in index.js
-	//return s.length
-}
 
 
 

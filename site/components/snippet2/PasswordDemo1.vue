@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-hashText, hashPassword, hashPasswordMeasureSpeed1, Data, sayTick,
+hashText, hashPassword, hashPasswordMeasureSpeed, Data, sayTick,
 } from 'icarus'
 
 const saltData = Data({base62: Key('password, salt, public')})
@@ -20,7 +20,7 @@ async function onEnter() {
 	let t = Now()
 	let h = await hashPassword(minimumCycles, saltData, passwordText)
 	let duration = Now() - t
-	let targetCycles = await hashPasswordMeasureSpeed1(saltData, passwordText, minimumCycles, targetDuration)
+	let targetCycles = await hashPasswordMeasureSpeed(saltData, passwordText, minimumCycles, targetDuration)
 	refOutput.value = `${h.base32()} hashed from ${commas(minimumCycles)} cycles in ${duration}ms on ${sayTick(t)}. To spend ${targetDuration}ms, target ${commas(targetCycles)} cycles.`
 }
 
