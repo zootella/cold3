@@ -17,7 +17,7 @@ const refState = ref('ready')
 watch([refMessage, refState], () => {
 	if      (refState.value == 'ghost' && hasText(refMessage.value))  { refState.value = 'ready' }
 	else if (refState.value == 'ready' && !hasText(refMessage.value)) { refState.value = 'ghost' }
-})//either button could return from flight, and the user could be clearing or typing in the box, so from all that chaos, looking for th eright simple water-tight way to keep the button green only when there's message text in the box and no fetch in flight, essentially
+})//either button could return from doing, and the user could be clearing or typing in the box, so from all that chaos, looking for th eright simple water-tight way to keep the button green only when there's message text in the box and no fetch in flight, essentially
 
 async function clicked(action) {
 	refState.value = 'doing'

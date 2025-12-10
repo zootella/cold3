@@ -13,7 +13,7 @@ async function onBasicButton(email) {
 
 const refCustomButton = ref(null)
 const refCustomButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
-const refCustomButtonInFlight = ref(false)//the button below sets to true while it's working, we can watch
+const refCustomButtonIsDoing = ref(false)//the button below sets to true while it's working, we can watch
 
 watch([refName], () => {//example where the form is watching the user type a name
 	let v = validateName(refName.value, Limit.name)
@@ -34,7 +34,7 @@ async function onCustomButton() {
 
 	ref="refCustomButton"
 	:canSubmit="refCustomButtonCanSubmit"
-	v-model:inFlight="refCustomButtonInFlight"
+	v-model:isDoing="refCustomButtonInFlight"
 	:onClick="onCustomButton"
 >Submit</PostButton>
 
@@ -75,7 +75,7 @@ const props = defineProps({
 })
 
 //emits
-const emit = defineEmits(['update:inFlight'])//parents can optionally watch our in-flight status with v-model:inFlight
+const emit = defineEmits(['update:isDoing'])//parents can optionally watch our in-flight status with v-model:isDoing
 
 //refs
 const refState = ref('ghost')
@@ -101,7 +101,7 @@ watch([() => props.canSubmit, refDoing], () => {
 defineExpose({post: async (path, body) => {
 	let task = Task({name: 'post button', path, body})
 	refDoing.value = true
-	emit('update:inFlight', true)//if our parent needs to follow our doing condition, they can watch for this event
+	emit('update:isDoing', true)//if our parent needs to follow our doing condition, they can watch for this event
 	if (props.useTurnstile && useTurnstileHere()) {
 		body.turnstileToken = await pageStore.getTurnstileToken()//this can take a few seconds
 		task.tick2 = Now()//related, note that task.duration will be how long the button was doing; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
@@ -109,8 +109,8 @@ defineExpose({post: async (path, body) => {
 	task.response = await fetchWorker(path, {body})//throws on non-2XX; button remains doing but whole page enters error state
 	task.finish({success: true})
 	refDoing.value = false
-	emit('update:inFlight', false)
-	return task//ttd november, different than PostButton which returns task.response, throwing away task, but TrailDemo2 does want to say how long the task took! and will be simpler if that can be a feature here! also returning the task sets up .response as the name, rather than letting the caller alternate between response and result. it's the response body, so deliver it named that way
+	emit('update:isDoing', false)
+	return task
 }})
 
 //ttd march2025, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something

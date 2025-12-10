@@ -113,7 +113,7 @@ async function onDisconnect() {
 async function onProve() {
 	let {nonce, message, envelope} = (await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})).response//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
 
-	//ttd november, so another example of parent needs to start button into orange in flight state, or in this instance keep it that way while execution is awaiting signMessage, which would prevent two simultaneous taps
+	//ttd november, so another example of parent needs to start button into orange doing state, or in this instance keep it that way while execution is awaiting signMessage, which would prevent two simultaneous taps
 
 	let signature
 	try {
