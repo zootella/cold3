@@ -261,7 +261,6 @@ Tag, checkTagOrBlank, checkTag, hasTag,
 randomBetweenLight, randomBetween, randomCode, hashToLetter,
 secureSameText, secureSameData,
 checkHash, hashData, hashText,
-hashPassword, hashPasswordMeasureSpeed,//ttd december, legacy
 passwordStrength, passwordCycles, passwordHash,
 encryptData, decryptData, encryptSymmetric,
 hmacSign,

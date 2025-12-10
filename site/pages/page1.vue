@@ -4,7 +4,6 @@
 <template>
 
 <PasswordDemo />
-<PasswordDemo1 />
 <PasswordChange />
 <PasswordChallenge />
 

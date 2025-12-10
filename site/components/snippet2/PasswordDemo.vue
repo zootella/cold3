@@ -2,7 +2,6 @@
 
 import {
 hashText, Data, sayTick,
-hashPassword, hashPasswordMeasureSpeed,//ttd december, legacy
 passwordStrength, passwordCycles, passwordHash,
 } from 'icarus'
 
