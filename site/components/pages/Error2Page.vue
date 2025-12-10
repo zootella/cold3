@@ -40,14 +40,13 @@ and there, only the user's manual click moves things forward
 <div class="flex flex-col items-center space-y-2">
 <p>
 	<PostButton
-		label="Report Error"
-		labelFlying="Reporting..."
+		labeling="Reporting..."
 		:useTurnstile="true"
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
 		:onClick="onClick"
-	/>
+	>Report Error</PostButton>
 </p>
 <p><Button @click="hardReplace">Reload Site</Button></p>
 </div>

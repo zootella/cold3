@@ -100,9 +100,9 @@ async function onValidate() {
 
 <div>
 	<PostButton
-		label="Enroll" labelFlying="Requesting new enrollment..."
+		labeling="Requesting new enrollment..."
 		ref="refEnrollButton" :canSubmit="refEnrollEnabled" :onClick="onEnroll"
-	/>
+	>Enroll</PostButton>
 </div>
 
 <div v-if="refUri" class="space-y-2">
@@ -126,9 +126,9 @@ async function onValidate() {
 			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
 		/>
 		<PostButton
-			label="Validate Code" labelFlying="Validating..."
+			labeling="Validating..."
 			ref="refValidateButton" :canSubmit="refValidateEnabled" :onClick="onValidate"
-		/>
+		>Validate Code</PostButton>
 	</div>
 
 

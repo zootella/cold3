@@ -44,14 +44,13 @@ async function onClick() {
 	/>
 	{{' '}}
 	<PostButton
-		label="Check"
-		labelFlying="Checking..."
+		labeling="Checking..."
 		:useTurnstile="true"
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
 		:onClick="onClick"
-	/>
+	>Check</PostButton>
 </div>
 <p>{{refMessage}}</p>
 

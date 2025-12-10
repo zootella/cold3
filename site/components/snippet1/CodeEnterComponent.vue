@@ -66,13 +66,12 @@ function clickedCantFind() {
 		class="w-32"
 	/>{{' '}}
 	<PostButton
-		label="Enter"
-		labelFlying="Verifying..."
+		labeling="Verifying..."
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
 		:onClick="onClick"
-	/>
+	>Enter</PostButton>
 </p>
 <p><Button link @click="clickedCantFind">I can't find it</Button></p>
 

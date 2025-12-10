@@ -7,7 +7,7 @@ async function onBasicButton(email) {
 	let task = await refBasicButton.value.post('/api/endpoint', {action: 'SetEmail.', email})
 	//response body is task.response
 }
-<PostButton ref="refBasicButton" label="Submit" :onClick="() => onBasicButton('alice@example.com')" />
+<PostButton ref="refBasicButton" :onClick="() => onBasicButton('alice@example.com')">Submit</PostButton>
 
 (2) customized use with all features:
 
@@ -29,15 +29,14 @@ async function onCustomButton() {
 }
 
 <PostButton
-	label="Submit"
-	labelFlying="Submitting..."
+	labeling="Submitting..."
 	:useTurnstile="true"
 
 	ref="refCustomButton"
 	:canSubmit="refCustomButtonCanSubmit"
 	v-model:inFlight="refCustomButtonInFlight"
 	:onClick="onCustomButton"
-/>
+>Submit</PostButton>
 
 looks like a button; runs a function
 use when this is the last step in a form, and it's time to actually POST to an api endpoint
@@ -67,13 +66,12 @@ const pageStore = usePageStore()
 
 //props
 const props = defineProps({
-	label:        {type: String,   required: true},
-	labelFlying:  {type: String,   default: ''},//optional, if you want to change from label "Submit" to "Submitting..." while doing
-	useTurnstile: {type: Boolean,  default: false},
+	labeling: {type: String, default: ''},//optional, if you want to change from "Submit" to "Submitting..." while doing
+	useTurnstile: {type: Boolean, default: false},
 
 	/*ref="refButton"*///is here when you're setting attributes, but is not a property, of course
-	canSubmit:    {type: Boolean,  default: true},//can i remove type boolean just on this one, so that code that uses my post button can set a validation result that is simply truthy or falsey, in place of a true boolean?
-	onClick:      {type: Function, required: true},
+	canSubmit: {type: Boolean, default: true},//can i remove type boolean just on this one, so that code that uses my post button can set a validation result that is simply truthy or falsey, in place of a true boolean?
+	onClick: {type: Function, required: true},
 })
 
 //emits
@@ -81,19 +79,16 @@ const emit = defineEmits(['update:inFlight'])//parents can optionally watch our 
 
 //refs
 const refState = ref('ghost')
-const refLabel = ref(props.label)
-const refInFlight = ref(false)
+const refDoing = ref(false)
 
 onMounted(() => {
 	if (props.useTurnstile && useTurnstileHere()) pageStore.renderTurnstileWidget = true//causes BottomBar to render TurnstileComponent
 })
 
-watch([() => props.canSubmit, refInFlight], () => {
-	if (refInFlight.value) {
+watch([() => props.canSubmit, refDoing], () => {
+	if (refDoing.value) {
 		refState.value = 'doing'
-		if (hasText(props.labelFlying)) refLabel.value = props.labelFlying
 	} else {
-		refLabel.value = props.label
 		if (props.canSubmit) {
 			refState.value = 'ready'
 		} else {
@@ -105,7 +100,7 @@ watch([() => props.canSubmit, refInFlight], () => {
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
 	let task = Task({name: 'post button', path, body})
-	refInFlight.value = true
+	refDoing.value = true
 	emit('update:inFlight', true)//if our parent needs to follow our doing condition, they can watch for this event
 	if (props.useTurnstile && useTurnstileHere()) {
 		body.turnstileToken = await pageStore.getTurnstileToken()//this can take a few seconds
@@ -113,7 +108,7 @@ defineExpose({post: async (path, body) => {
 	}
 	task.response = await fetchWorker(path, {body})//throws on non-2XX; button remains doing but whole page enters error state
 	task.finish({success: true})
-	refInFlight.value = false
+	refDoing.value = false
 	emit('update:inFlight', false)
 	return task//ttd november, different than PostButton which returns task.response, throwing away task, but TrailDemo2 does want to say how long the task took! and will be simpler if that can be a feature here! also returning the task sets up .response as the name, rather than letting the caller alternate between response and result. it's the response body, so deliver it named that way
 }})
@@ -126,7 +121,10 @@ defineExpose({post: async (path, body) => {
 	:disabled="refState != 'ready'"
 	:class="refState"
 	@click="props.onClick($event)"
->{{refLabel}}</button>
+>
+	<template v-if="refDoing && hasText(props.labeling)">{{props.labeling}}</template><!-- custom like "Submitting..." -->
+	<slot v-else /><!-- default button label like "Submit" -->
+</button>
 
 </template>
 <style scoped>

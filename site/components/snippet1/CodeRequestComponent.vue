@@ -48,14 +48,13 @@ async function onClick() {
 	<input :maxlength="Limit.input" type="text" v-model="refAddress" placeholder="email or phone" class="w-64" />{{' '}}
 	<input :maxlength="Limit.input" type="text" v-model="refProvider" placeholder="provider" class="w-12" />{{' '}}
 	<PostButton
-		label="Send Code"
-		labelFlying="Sending..."
+		labeling="Sending..."
 		:useTurnstile="true"
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
 		:onClick="onClick"
-	/>
+	>Send Code</PostButton>
 </p>
 
 </div>

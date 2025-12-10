@@ -152,9 +152,9 @@ let useSoon = Key('walletconnect project id, public')
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
 	<Button @click="onDisconnect">Disconnect Wallet</Button>
 	<PostButton
-		label="Prove Ownership" labelFlying="Proving..."
+		labeling="Proving..."
 		ref="refProveButton" :canSubmit="refProveEnabled" :onClick="onProve"
-	/>
+	>Prove Ownership</PostButton>
 	<!-- here, PostButton->Button because it should be doing the whole flow, including the user interaction with the metamask popup, not just the post to the worker -->
 </div>
 <p>{{refInstructionalMessage}}</p>
