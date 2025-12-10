@@ -152,7 +152,7 @@ let useSoon = Key('walletconnect project id, public')
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
 	<Button @click="onDisconnect">Disconnect Wallet</Button>
-	<ImprovedPostButton
+	<PostButton
 		label="Prove Ownership" labelFlying="Proving..." :useTurnstile="false"
 		ref="refProveButton" :canSubmit="refProveEnabled" v-model:inFlight="refProveInFlight" :onClick="onProve"
 	/>

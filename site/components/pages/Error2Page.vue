@@ -40,7 +40,7 @@ and there, only the user's manual click moves things forward
 
 <div class="flex flex-col items-center space-y-2">
 <p>
-	<ImprovedPostButton
+	<PostButton
 		label="Report Error"
 		labelFlying="Reporting..."
 		:useTurnstile="true"

@@ -66,7 +66,7 @@ function clickedCantFind() {
 		v-model="refCodeCandidate"
 		class="w-32"
 	/>{{' '}}
-	<ImprovedPostButton
+	<PostButton
 		label="Enter"
 		labelFlying="Verifying..."
 		:useTurnstile="false"

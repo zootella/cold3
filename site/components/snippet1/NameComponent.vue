@@ -44,7 +44,7 @@ async function onClick() {
 		class="w-72"
 	/>
 	{{' '}}
-	<ImprovedPostButton
+	<PostButton
 		label="Check"
 		labelFlying="Checking..."
 		:useTurnstile="true"

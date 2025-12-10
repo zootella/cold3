@@ -1,18 +1,27 @@
 <script setup>//./components/PostButton.vue
 /*
-use like:
+(1) basic use leaning on defaults:
 
-const refButton = ref(null)
-const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
-const refButtonInFlight = ref(false)//the button below sets to true while it's working, we can watch
+const refBasicButton = ref(null)
+async function onBasicButton(email) {
+	let task = await refBasicButton.value.post('/api/endpoint', {action: 'SetEmail.', email})
+	//response body is task.response
+}
+<PostButton ref="refBasicButton" label="Submit" :onClick="() => onBasicButton('alice@example.com')" />
+
+(2) customized use with all features:
+
+const refCustomButton = ref(null)
+const refCustomButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
+const refCustomButtonInFlight = ref(false)//the button below sets to true while it's working, we can watch
 
 watch([refName], () => {//example where the form is watching the user type a name
 	let v = validateName(refName.value, Limit.name)
-	refButtonCanSubmit.value = toBoolean(v.ok)//avoid vue's type warning
+	refCustomButtonCanSubmit.value = toBoolean(v.ok)//avoid vue's type warning
 })
 
-async function onClick() {
-	let result = await refButton.value.post('/api/name', {
+async function onCustomButton() {
+	let task = await refCustomButton.value.post('/api/name', {
 		action: 'SomeAction.',
 		name: refName.value,
 		email: refEmail.value,
@@ -20,19 +29,35 @@ async function onClick() {
 }
 
 <PostButton
-	labelIdle="Submit"
+	label="Submit"
 	labelFlying="Submitting..."
-	:useTurnstile="false"
+	:useTurnstile="true"
 
-	ref="refButton"
-	:canSubmit="refButtonCanSubmit"
-	v-model:inFlight="refButtonInFlight"
-	:onClick="onClick"
+	ref="refCustomButton"
+	:canSubmit="refCustomButtonCanSubmit"
+	v-model:inFlight="refCustomButtonInFlight"
+	:onClick="onCustomButton"
 />
 
 looks like a button; runs a function
 use when this is the last step in a form, and it's time to actually POST to an api endpoint
 and additionally, if necessary, protect the endpoint with cloudflare turnstile on the page and server
+*/
+
+/*
+ttd november
+ok, in an evening with claude, you improved PostButton, which should be easy to use in both simple applications and those which require lots of features
+
+right now there are three types of buttons in the front end:
+1. <button> regular HTML with onClick and fetchWorker (example, TrailDemo1)
+2. <OriginalPostButton />, which you started using, but is quite complex (example, TrailDemo2)
+3. <PostButton />, here, which should be an easier migration path from button, and also a drop in replacement for PostButton
+
+ok, so this code was written and checked by ai, but has not actually run yet, even in a smoke test
+so go carefully, switching button and PostButton to PostButton one component at a time, testing everything
+[]but then the goal is to have eliminated button and PostButton, because everywhere it's PostButton
+[]and then get rid of PostButton and TrailDemo1
+[]and then rename PostButton -> PostButton
 */
 
 import {
@@ -42,37 +67,37 @@ const pageStore = usePageStore()
 
 //props
 const props = defineProps({
-	labelIdle:    {type: String,   required: true},
-	labelFlying:  {type: String,   required: true},
-	useTurnstile: {type: Boolean,  required: true},
+	label:        {type: String,   required: true},
+	labelFlying:  {type: String,   default: ''},//optional, if you want to change from label "Submit" to orange "Submitting..."
+	useTurnstile: {type: Boolean,  default: false},
 
 	/*ref="refButton"*///is here when you're setting attributes, but is not a property, of course
-	canSubmit:    {type: Boolean,  required: true},//can i remove type boolean just on this one, so that code that uses my post button can set a validation result that is simply truthy or falsey, in place of a true boolean?
-	inFlight:     {type: Boolean,  required: true},
+	canSubmit:    {type: Boolean,  default: true},//can i remove type boolean just on this one, so that code that uses my post button can set a validation result that is simply truthy or falsey, in place of a true boolean?
 	onClick:      {type: Function, required: true},
 })
 
 //emits
-const emit = defineEmits(['update:inFlight'])
+const emit = defineEmits(['update:inFlight'])//parents can optionally watch our in-flight status with v-model:inFlight
 
 //refs
-const refButtonState = ref('gray')
-const refButtonLabel = ref(props.labelIdle)
+const refState = ref('gray')
+const refLabel = ref(props.label)
+const refInFlight = ref(false)
 
-onMounted(async () => {//ttd april2025, does this need to be async?
+onMounted(() => {
 	if (props.useTurnstile && useTurnstileHere()) pageStore.renderTurnstileWidget = true//causes BottomBar to render TurnstileComponent
 })
 
-watch([() => props.canSubmit, () => props.inFlight], () => {
-	if (props.inFlight) {
-		refButtonState.value = 'orange'
-		refButtonLabel.value = props.labelFlying
+watch([() => props.canSubmit, refInFlight], () => {
+	if (refInFlight.value) {
+		refState.value = 'orange'
+		if (hasText(props.labelFlying)) refLabel.value = props.labelFlying
 	} else {
-		refButtonLabel.value = props.labelIdle
+		refLabel.value = props.label
 		if (props.canSubmit) {
-			refButtonState.value = 'green'
+			refState.value = 'green'
 		} else {
-			refButtonState.value = 'gray'
+			refState.value = 'gray'
 		}
 	}
 }, {immediate: true})//run this right away at the start to set things up, before running it again on the first change
@@ -80,15 +105,17 @@ watch([() => props.canSubmit, () => props.inFlight], () => {
 // the method that performs the post operation; this is exposed to the parent
 defineExpose({post: async (path, body) => {
 	let task = Task({name: 'post button', path, body})
-	emit('update:inFlight', true)//this lets our parent follow our orange condition
+	refInFlight.value = true
+	emit('update:inFlight', true)//if our parent needs to follow our orange condition, they can watch for this event
 	if (props.useTurnstile && useTurnstileHere()) {
 		body.turnstileToken = await pageStore.getTurnstileToken()//this can take a few seconds
 		task.tick2 = Now()//related, note that task.duration will be how long the button was orange; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
 	}
 	task.response = await fetchWorker(path, {body})//throws on non-2XX; button remains orange but whole page enters error state
 	task.finish({success: true})
+	refInFlight.value = false
 	emit('update:inFlight', false)
-	return task.response//return the response, discarding the task, so things don't keep getting deeper
+	return task//ttd november, different than PostButton which returns task.response, throwing away task, but TrailDemo2 does want to say how long the task took! and will be simpler if that can be a feature here! also returning the task sets up .response as the name, rather than letting the caller alternate between response and result. it's the response body, so deliver it named that way
 }})
 
 //ttd march2025, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something
@@ -96,10 +123,10 @@ defineExpose({post: async (path, body) => {
 <template>
 
 <button
-	:disabled="refButtonState != 'green'"
-	:class="refButtonState"
+	:disabled="refState != 'green'"
+	:class="refState"
 	@click="props.onClick($event)"
->{{refButtonLabel}}</button>
+>{{refLabel}}</button>
 
 </template>
 <style scoped>

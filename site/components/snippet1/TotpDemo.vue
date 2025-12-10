@@ -99,7 +99,7 @@ async function onValidate() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TotpDemo</i></p>
 
 <div>
-	<ImprovedPostButton
+	<PostButton
 		label="Enroll" labelFlying="Requesting new enrollment..." :useTurnstile="false"
 		ref="refEnrollButton" :canSubmit="refEnrollEnabled" v-model:inFlight="refEnrollInFlight" :onClick="onEnroll"
 	/>
@@ -125,7 +125,7 @@ async function onValidate() {
 			placeholder="000000"
 			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
 		/>
-		<ImprovedPostButton
+		<PostButton
 			label="Validate Code" labelFlying="Validating..." :useTurnstile="false"
 			ref="refValidateButton" :canSubmit="refValidateEnabled" v-model:inFlight="refValidateInFlight" :onClick="onValidate"
 		/>
