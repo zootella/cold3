@@ -68,7 +68,7 @@ const pageStore = usePageStore()
 //props
 const props = defineProps({
 	label:        {type: String,   required: true},
-	labelFlying:  {type: String,   default: ''},//optional, if you want to change from label "Submit" to orange "Submitting..."
+	labelFlying:  {type: String,   default: ''},//optional, if you want to change from label "Submit" to "Submitting..." while doing
 	useTurnstile: {type: Boolean,  default: false},
 
 	/*ref="refButton"*///is here when you're setting attributes, but is not a property, of course
@@ -80,7 +80,7 @@ const props = defineProps({
 const emit = defineEmits(['update:inFlight'])//parents can optionally watch our in-flight status with v-model:inFlight
 
 //refs
-const refState = ref('gray')
+const refState = ref('ghost')
 const refLabel = ref(props.label)
 const refInFlight = ref(false)
 
@@ -90,14 +90,14 @@ onMounted(() => {
 
 watch([() => props.canSubmit, refInFlight], () => {
 	if (refInFlight.value) {
-		refState.value = 'orange'
+		refState.value = 'doing'
 		if (hasText(props.labelFlying)) refLabel.value = props.labelFlying
 	} else {
 		refLabel.value = props.label
 		if (props.canSubmit) {
-			refState.value = 'green'
+			refState.value = 'ready'
 		} else {
-			refState.value = 'gray'
+			refState.value = 'ghost'
 		}
 	}
 }, {immediate: true})//run this right away at the start to set things up, before running it again on the first change
@@ -106,12 +106,12 @@ watch([() => props.canSubmit, refInFlight], () => {
 defineExpose({post: async (path, body) => {
 	let task = Task({name: 'post button', path, body})
 	refInFlight.value = true
-	emit('update:inFlight', true)//if our parent needs to follow our orange condition, they can watch for this event
+	emit('update:inFlight', true)//if our parent needs to follow our doing condition, they can watch for this event
 	if (props.useTurnstile && useTurnstileHere()) {
 		body.turnstileToken = await pageStore.getTurnstileToken()//this can take a few seconds
-		task.tick2 = Now()//related, note that task.duration will be how long the button was orange; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
+		task.tick2 = Now()//related, note that task.duration will be how long the button was doing; how long we made the user wait. it's not how long turnstile took on the page, as we get turnstile started as soon as the button renders!
 	}
-	task.response = await fetchWorker(path, {body})//throws on non-2XX; button remains orange but whole page enters error state
+	task.response = await fetchWorker(path, {body})//throws on non-2XX; button remains doing but whole page enters error state
 	task.finish({success: true})
 	refInFlight.value = false
 	emit('update:inFlight', false)
@@ -123,7 +123,7 @@ defineExpose({post: async (path, body) => {
 <template>
 
 <button
-	:disabled="refState != 'green'"
+	:disabled="refState != 'ready'"
 	:class="refState"
 	@click="props.onClick($event)"
 >{{refLabel}}</button>
@@ -140,9 +140,9 @@ button:focus-visible {
 button:disabled {
 	@apply cursor-default;
 }
-button.gray        { @apply bg-gray-400; }
-button.green       { @apply bg-green-600; }
-button.green:hover { @apply bg-green-400; }
-button.orange      { @apply bg-orange-500; }
+button.ghost       { @apply bg-gray-400; }
+button.ready       { @apply bg-green-600; }
+button.ready:hover { @apply bg-green-400; }
+button.doing       { @apply bg-orange-500; }
 
 </style>
