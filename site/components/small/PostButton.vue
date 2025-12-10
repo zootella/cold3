@@ -119,7 +119,7 @@ defineExpose({post: async (path, body) => {
 
 <button
 	:disabled="refState != 'ready'"
-	:class="refState"
+	:class="['my-button', refState]"
 	@click="props.onClick($event)"
 >
 	<template v-if="refDoing && hasText(props.labeling)">{{props.labeling}}</template><!-- custom like "Submitting..." -->
@@ -127,20 +127,3 @@ defineExpose({post: async (path, body) => {
 </button>
 
 </template>
-<style scoped>
-
-button {
-	@apply inline-flex items-center text-white px-2 py-1 rounded cursor-pointer;
-}
-button:focus-visible {
-	@apply outline-none ring-2 ring-blue-500 ring-offset-2;
-}
-button:disabled {
-	@apply cursor-default;
-}
-button.ghost       { @apply bg-gray-400; }
-button.ready       { @apply bg-green-600; }
-button.ready:hover { @apply bg-green-400; }
-button.doing       { @apply bg-orange-500; }
-
-</style>

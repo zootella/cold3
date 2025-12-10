@@ -15,20 +15,6 @@ const props = defineProps({
 </script>
 <template>
 
-<NuxtLink :to="to"><slot /></NuxtLink>
+<NuxtLink :to="to" class="my-button ready"><slot /></NuxtLink>
 
 </template>
-<style scoped>
-
-a {
-	@apply inline-flex items-center text-white px-2 py-1 rounded cursor-pointer;
-	@apply bg-green-600;
-}
-a:hover {
-	@apply bg-green-400;
-}
-a:focus-visible {
-	@apply outline-none ring-2 ring-blue-500 ring-offset-2;
-}
-
-</style>

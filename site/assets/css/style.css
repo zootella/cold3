@@ -45,8 +45,25 @@
 	}
 }
 
-/* Components layer: define reusable classes for buttons, etc. */
+/*
+Components layer: shared visual classes for elements that should look identical to users, regardless of what they are under the hood, like a <button>, an <a>, or a complex component tree. This returns to the original idea of CSS: styles that cascade over the whole site, defined once, applied everywhere. A designer can restyle every button-like thing on the site from one place, and they stay in sync automatically!
+*/
 @layer components {
 
-	/* nothing here because individual components' style scoped blocks is a better place for this */
+	/* states of availability and activity for buttons and links */
+	.ghost       { @apply bg-gray-400;   }
+	.ready       { @apply bg-green-600;  }
+	.ready:hover { @apply bg-green-400;  }
+	.doing       { @apply bg-orange-500; }
+
+	/* the page frequently needs a button that looks like a link, or a link that looks like a button. these styles define what it means to look like a button or a link, and get used on html tags like button and link as well as higher level vue components */
+	.my-button { @apply inline-flex items-center text-white px-2 py-1 rounded cursor-pointer no-underline; }
+	.my-button:focus-visible { @apply outline-none ring-2 ring-blue-500 ring-offset-2; }
+	a.my-button:visited { @apply text-white; }
+
+	.my-link             { @apply bg-transparent p-0 underline cursor-pointer; }
+	.my-link.ghost       { @apply bg-transparent text-gray-400;   }
+	.my-link.ready       { @apply bg-transparent text-blue-600;   }
+	.my-link.ready:hover { @apply bg-transparent text-blue-400;   }
+	.my-link.doing       { @apply bg-transparent text-orange-500; }
 }
