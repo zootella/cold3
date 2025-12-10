@@ -76,7 +76,7 @@ function clickedCantFind() {
 		:onClick="onClick"
 	/>
 </p>
-<p><LinkButton @click="clickedCantFind">I can't find it</LinkButton></p>
+<p><Button link @click="clickedCantFind">I can't find it</Button></p>
 
 </div>
 </template>

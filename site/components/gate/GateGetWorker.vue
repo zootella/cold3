@@ -23,7 +23,7 @@ const {data, refresh} = useFetch(
 
 <div>
 GET worker, block
-<LinkButton @click="refresh">Refresh</LinkButton><pre>{{look(data)}}</pre>
+<Button link @click="refresh">Refresh</Button><pre>{{look(data)}}</pre>
 </div>
 
 </template>

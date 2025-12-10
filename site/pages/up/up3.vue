@@ -32,6 +32,6 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 <p><code>t{{duration1}} {{summary1}}</code></p>
 <p><code>t{{bundle.duration2}} {{bundle.summary2}}</code></p>
 <p><code>t{{bundle.duration3}} {{bundle.summary3}}</code></p>
-<p><code>t{{bundle.duration4}} {{bundle.summary4}}</code> <LinkButton @click="hardReload">Reload</LinkButton></p>
+<p><code>t{{bundle.duration4}} {{bundle.summary4}}</code> <Button link @click="hardReload">Reload</Button></p>
 
 </template>

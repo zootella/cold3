@@ -7,7 +7,7 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 
 <p>
 	A component-free page to render other routes client, not server
-	<LinkButton @click="hardReload">Reload</LinkButton>
+	<Button link @click="hardReload">Reload</Button>
 </p>
 
 </template>
