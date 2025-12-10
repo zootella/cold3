@@ -1,7 +1,8 @@
 <script setup>//./components/TriButton.vue
 
 const props = defineProps({
-	state: {type: String, default: 'ready'}
+	state: {type: String, default: 'ready'},
+	type:  {type: String, default: 'button'},
 })
 
 const emit = defineEmits(['click'])
@@ -10,7 +11,9 @@ const emit = defineEmits(['click'])
 <template>
 
 <button
+	:type="type"
 	:disabled="props.state != 'ready'"
+	:data-state="props.state"
 	:class="props.state"
 	@click="$emit('click', $event)"
 >
