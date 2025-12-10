@@ -15,7 +15,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	//collect information from the database
 	let user, userTag, secret
 	user = await browserToUser({browserHash})//what user is signed in at the browser talking to us
-	if (user) { userTag = user.userTag; checkTag(userTag) }
+	if (user && user.userTag) { userTag = user.userTag; checkTag(userTag) }
 	if (userTag) secret = await credentialTotpGet({userTag})//and does that user have totp
 	if (secret) checkTotpSecret(secret)
 
