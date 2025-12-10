@@ -36,7 +36,7 @@ button:disabled {
 
 /* default push-button appearance */
 button:not(.link) {
-  @apply text-white px-2 py-1 rounded;
+	@apply text-white px-2 py-1 rounded;
 }
 button:not(.link).ghost       { @apply bg-gray-400; }
 button:not(.link).ready       { @apply bg-green-600; }
@@ -45,7 +45,7 @@ button:not(.link).doing       { @apply bg-orange-500; }
 
 /* alternative hyperlink appearance (make a link that runs a function, rather than causing a navigation) */
 button.link {
-  @apply bg-transparent p-0 underline;
+	@apply bg-transparent p-0 underline;
 }
 button.link.ghost       { @apply text-gray-400; }
 button.link.ready       { @apply text-blue-600; }

@@ -81,7 +81,7 @@ async function clickedSignOut() {
 
 <!-- state 2: clicked into "Sign Up" view -->
 <div v-show="refState == 2">
-	<p><button @click="refState = 1" class="linky">{{'<'}} Back</button></p>
+	<p><Button link @click="refState = 1">← Back</Button></p>
 	<p>Hello new person! To sign up, choose a new user name for yourself:</p>
 	<p>
 		<input type="text" v-model="refDesiredUserNameBox" placeholder="desired user name" />{{' '}}
@@ -91,7 +91,7 @@ async function clickedSignOut() {
 
 <!-- state 3: clicked into "Sign In" view -->
 <div v-show="refState == 3">
-	<p><button @click="refState = 1" class="linky">{{'<'}} Back</button></p>
+	<p><Button link @click="refState = 1">← Back</Button></p>
 	<p>Welcome back! Sign in with your existing user name:</p>
 	<p>
 		<input type="text" v-model="refReturningUserNameBox" placeholder="returning user name" />{{' '}}
@@ -111,5 +111,3 @@ async function clickedSignOut() {
 
 </div>
 </template>
-<style scoped>
-</style>
