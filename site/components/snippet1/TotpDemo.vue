@@ -58,7 +58,8 @@ const refEnrollButton   = ref(null); const refEnrollEnabled   = ref(true); const
 const refValidateButton = ref(null); const refValidateEnabled = ref(true); const refValidateInFlight = ref(false)
 
 async function onEnroll() {
-	let response = await refEnrollButton.value.post('/api/totp', {action: 'Enroll1.'})
+	let task = await refEnrollButton.value.post('/api/totp', {action: 'Enroll1.'})
+	let response = task.response
 	log('response from enroll 1', look(response))
 	if (response.outcome == 'Candidate.') {
 
@@ -76,11 +77,12 @@ async function onEnroll() {
 }
 
 async function onValidate() {
-	let response = await refValidateButton.value.post('/api/totp', {
+	let task = await refValidateButton.value.post('/api/totp', {
 		action: 'Enroll2.',
 		envelope: refCookie.value,
 		code: refCode.value
 	})
+	let response = task.response
 	log('response from enroll 2', look(response))
 	if (response.outcome == 'Enrolled.') {
 		refCookie.value = null//clear the cookie
@@ -97,8 +99,8 @@ async function onValidate() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TotpDemo</i></p>
 
 <div>
-	<PostButton
-		labelIdle="Enroll" labelFlying="Requesting new enrollment..." :useTurnstile="false"
+	<ImprovedPostButton
+		label="Enroll" labelFlying="Requesting new enrollment..." :useTurnstile="false"
 		ref="refEnrollButton" :canSubmit="refEnrollEnabled" v-model:inFlight="refEnrollInFlight" :onClick="onEnroll"
 	/>
 </div>
@@ -123,8 +125,8 @@ async function onValidate() {
 			placeholder="000000"
 			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
 		/>
-		<PostButton
-			labelIdle="Validate Code" labelFlying="Validating..." :useTurnstile="false"
+		<ImprovedPostButton
+			label="Validate Code" labelFlying="Validating..." :useTurnstile="false"
 			ref="refValidateButton" :canSubmit="refValidateEnabled" v-model:inFlight="refValidateInFlight" :onClick="onValidate"
 		/>
 	</div>

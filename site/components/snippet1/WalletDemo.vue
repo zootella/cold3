@@ -124,7 +124,8 @@ async function onProve() {
 	if (signature) {
 
 		//and send the signature to trusted code on the server
-		let response2 = await refProveButton.value.post('/api/wallet', {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature, envelope})
+		let task2 = await refProveButton.value.post('/api/wallet', {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature, envelope})
+		let response2 = task2.response
 		log('Prove2 response:', look(response2))
 
 	} else {
@@ -151,8 +152,8 @@ let useSoon = Key('walletconnect project id, public')
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
 	<Button @click="onDisconnect">Disconnect Wallet</Button>
-	<PostButton
-		labelIdle="Prove Ownership" labelFlying="Proving..." :useTurnstile="false"
+	<ImprovedPostButton
+		label="Prove Ownership" labelFlying="Proving..." :useTurnstile="false"
 		ref="refProveButton" :canSubmit="refProveEnabled" v-model:inFlight="refProveInFlight" :onClick="onProve"
 	/>
 	<!-- here, PostButton->Button because it should be doing the whole flow, including the user interaction with the metamask popup, not just the post to the worker -->

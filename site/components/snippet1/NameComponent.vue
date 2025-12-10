@@ -18,10 +18,11 @@ watch([refName], () => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/api/name', {
+	let task = await refButton.value.post('/api/name', {
 		action: 'Check.',
 		name: refName.value,
 	})
+	let response = task.response
 	log('name post response', look(response))
 	refMessage.value = ((response.available.isAvailable) ?
 		`✅ Yes, "${response.available.v.f2}" is available for you to take!` :
@@ -43,8 +44,8 @@ async function onClick() {
 		class="w-72"
 	/>
 	{{' '}}
-	<PostButton
-		labelIdle="Check"
+	<ImprovedPostButton
+		label="Check"
 		labelFlying="Checking..."
 		:useTurnstile="true"
 

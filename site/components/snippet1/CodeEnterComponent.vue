@@ -28,10 +28,11 @@ watch([refCodeCandidate], () => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/api/code/enter', {
+	let task = await refButton.value.post('/api/code/enter', {
 		codeTag: props.code.tag,//hidden from the user but kept with the form
 		codeCandidate: takeNumerals(refCodeCandidate.value),
 	})
+	let response = task.response
 	log('code enter post response', look(response))
 	if (response.success) {
 		//automatically, this box will disappear on setCodes below
@@ -65,8 +66,8 @@ function clickedCantFind() {
 		v-model="refCodeCandidate"
 		class="w-32"
 	/>{{' '}}
-	<PostButton
-		labelIdle="Enter"
+	<ImprovedPostButton
+		label="Enter"
 		labelFlying="Verifying..."
 		:useTurnstile="false"
 

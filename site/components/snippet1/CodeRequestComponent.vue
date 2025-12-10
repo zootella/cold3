@@ -19,10 +19,11 @@ watch([refAddress, refProvider], () => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/api/code/send', {
+	let task = await refButton.value.post('/api/code/send', {
 		address: refAddress.value,
 		provider: refProvider.value,
 	})
+	let response = task.response
 	log('code send post response', look(response))
 	if (response.success) {
 		//automatically, an enter box will appear
@@ -47,8 +48,8 @@ async function onClick() {
 <p>
 	<input :maxlength="Limit.input" type="text" v-model="refAddress" placeholder="email or phone" class="w-64" />{{' '}}
 	<input :maxlength="Limit.input" type="text" v-model="refProvider" placeholder="provider" class="w-12" />{{' '}}
-	<PostButton
-		labelIdle="Send Code"
+	<ImprovedPostButton
+		label="Send Code"
 		labelFlying="Sending..."
 		:useTurnstile="true"
 
