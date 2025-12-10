@@ -1,17 +1,41 @@
-<script setup>//components/Button.vue
-/*
-use like:
-<Button @click="myFunction">Submit</Button>
+<script setup>//./components/Button.vue
 
-looks like a button; runs a function
-use when this isn't the last step in a form, but we want to make the user feel like they're submitting something
-*/
+const props = defineProps({
+	state: {type: String, default: 'ready'},
+	type:  {type: String, default: 'button'},
+})
 
 const emit = defineEmits(['click'])
 
 </script>
 <template>
 
-<button class="pushy" @click="$emit('click')"><slot /></button>
+<button
+	:type="type"
+	:disabled="props.state != 'ready'"
+	:data-state="props.state"
+	:class="props.state"
+	@click="$emit('click', $event)"
+>
+	<slot />
+</button>
 
 </template>
+<style scoped>
+
+button {
+	@apply inline-flex items-center text-white px-2 py-1 rounded cursor-pointer;
+}
+button:focus-visible {
+	@apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+button:disabled {
+	@apply cursor-default;
+}
+
+button.ghost       { @apply bg-gray-400;   }
+button.ready       { @apply bg-green-600;  }
+button.ready:hover { @apply bg-green-400;  }
+button.doing       { @apply bg-orange-500; }
+
+</style>

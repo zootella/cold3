@@ -143,14 +143,14 @@ let useSoon = Key('walletconnect project id, public')
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>WalletDemo</i></p>
 
 <p>Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code>. There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.</p>
-<Button @click="onQuotes" :disabled="!refWagmiLoaded">Check again</Button>
+<OldButton @click="onQuotes" :disabled="!refWagmiLoaded">Check again</OldButton>
 
 <div v-if="!refIsConnected">
-	<Button @click="onConnect" :disabled="!refWagmiLoaded">Connect Wallet</Button>
+	<OldButton @click="onConnect" :disabled="!refWagmiLoaded">Connect Wallet</OldButton>
 </div>
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
-	<Button @click="onDisconnect">Disconnect Wallet</Button>
+	<OldButton @click="onDisconnect">Disconnect Wallet</OldButton>
 	<PostButton
 		labelIdle="Prove Ownership" labelFlying="Proving..." :useTurnstile="false"
 		ref="refProveButton" :canSubmit="refProveEnabled" v-model:inFlight="refProveInFlight" :onClick="onProve"

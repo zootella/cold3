@@ -55,7 +55,7 @@ and that I can read the current terms, policies, and notices at any time at http
 			:disabled="!refAccepted"
 			@click="refAccepted = false"
 			class="mt-3 px-8 py-2 bg-[#f0f] text-white rounded-lg font-medium disabled:bg-gray-300"
-		>Next ➜</button><!-- ttd july2025, change this to the pushy Button.vue component, or something else, after you choose a component library -->
+		>Next ➜</button><!-- ttd july2025, change this to the pushy OldButton.vue component, or something else, after you choose a component library -->
 	</div>
 
 </div>

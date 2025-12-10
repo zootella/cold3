@@ -30,7 +30,7 @@ async function onEnter() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordDemo1 (legacy)</i></p>
 
 <input type="text" v-model="refInput" @input="onTyping" placeholder="Type something..." @keyup.enter="onEnter" />{{' '}}
-<Button @click="onEnter">Submit</Button>
+<OldButton @click="onEnter">Submit</OldButton>
 <p>{{refOutput}}</p>
 
 </div>

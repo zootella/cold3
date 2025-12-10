@@ -26,9 +26,9 @@ const refDiscord = ref('ready')
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>OauthDemo</i></p>
 
-<div><TriButton :state="refGoogle"  @click="clicked('google')">Continue with Google</TriButton></div>
-<div><TriButton :state="refTwitter" @click="clicked('twitter')">Continue with 𝕏</TriButton></div>
-<div><TriButton :state="refDiscord" @click="clicked('discord')">Continue with Discord</TriButton> test flow here</div>
+<div><Button :state="refGoogle"  @click="clicked('google')">Continue with Google</Button></div>
+<div><Button :state="refTwitter" @click="clicked('twitter')">Continue with 𝕏</Button></div>
+<div><Button :state="refDiscord" @click="clicked('discord')">Continue with Discord</Button> test flow here</div>
 
 </div>
 </template>

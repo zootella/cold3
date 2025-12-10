@@ -34,7 +34,7 @@ async function onEnter() {
 
 <p><input type="password" v-model="refPasswordBox" class="w-64" /></p>
 <p><input type="password" v-model="refRepeatBox"   class="w-64" /></p>
-<p><Button @click="onEnter">Change Password</Button></p>
+<p><OldButton @click="onEnter">Change Password</OldButton></p>
 <p>{{refStatus}}</p>
 
 </div>

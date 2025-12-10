@@ -1,4 +1,4 @@
-<script setup>//TrailDemo3.vue - alternative with TriButton
+<script setup>//TrailDemo3.vue - alternative with Button
 
 import {
 sayTick, hashText,
@@ -52,8 +52,8 @@ async function clicked(action) {
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="message to hash" class="w-96" />{{' '}}
-	<TriButton :state="refState" @click="clicked('Get.')">Search</TriButton>{{' '}}
-	<TriButton :state="refState" @click="clicked('Set.')">Record</TriButton>
+	<Button :state="refState" @click="clicked('Get.')">Search</Button>{{' '}}
+	<Button :state="refState" @click="clicked('Set.')">Record</Button>
 </p>
 <p>fetch at {{refNow}} took {{refDuration}}ms</p>
 <p>hashed to <code>{{refHash}}</code></p>

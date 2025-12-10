@@ -46,7 +46,7 @@ async function onEnter() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordChallenge</i></p>
 
 <input type="password" v-model="refPasswordBox" @keyup.enter="onEnter" class="w-64" />{{' '}}
-<Button @click="onEnter">Sign In</Button>
+<OldButton @click="onEnter">Sign In</OldButton>
 <p>{{refStatus}}</p>
 
 </div>
