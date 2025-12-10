@@ -33,7 +33,7 @@ async function onEnter() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordDemo</i></p>
 
 <input type="text" v-model="refInput" @input="onInput" placeholder="Type something..." @keyup.enter="onEnter" />{{' '}}
-<OldButton @click="onEnter">Submit</OldButton><!-- change this to Button obviously, and show orange doing while the page is hashing -->
+<Button @click="onEnter">Submit</Button>
 <p>{{refOutput}}</p>
 
 </div>

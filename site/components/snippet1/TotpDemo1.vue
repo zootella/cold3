@@ -47,7 +47,7 @@ const refCodeTime = ref('')
 	<div></div><p>Generate a new RFC6238 TOTP enrollment</p>
 	<p class="text-right m-0">User:</p><input v-model="refLabel" class="px-2 py-2 border border-gray-300 rounded" />
 	<p class="text-right m-0">Issuer:</p><input v-model="refIssuer" class="px-2 py-2 border border-gray-300 rounded" />
-	<div></div><OldButton @click="generate" class="justify-self-start">Generate</OldButton>
+	<div></div><Button @click="generate" class="justify-self-start">Generate</Button>
 </div>
 
 <p>
@@ -58,7 +58,7 @@ const refCodeTime = ref('')
 <div v-if="refUri" class="space-y-2">
 	<p>Generated enrollment information:</p>
   <pre class="whitespace-pre-wrap break-words">{{enrollment}}</pre>
-  <p>On mobile, we'll automatically: <OldButton @click="redirect">Redirect to the default authenticator app</OldButton></p>
+  <p>On mobile, we'll automatically: <Button @click="redirect">Redirect to the default authenticator app</Button></p>
   <p>On desktop, we'll show a QR code:</p>
   
   <div class="flex justify-center py-2">

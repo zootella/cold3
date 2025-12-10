@@ -75,8 +75,8 @@ async function clickedSignOut() {
 
 <!-- state 1: confirmed no user is signed in -->
 <div v-show="refState == 1">
-	<button @click="refState = 2" class="pushy">Sign Up</button>{{' '}}
-	<button @click="refState = 3" class="pushy">Sign In</button>
+	<Button @click="refState = 2">Sign Up</Button>{{' '}}
+	<Button @click="refState = 3">Sign In</Button>
 </div>
 
 <!-- state 2: clicked into "Sign Up" view -->
@@ -85,7 +85,7 @@ async function clickedSignOut() {
 	<p>Hello new person! To sign up, choose a new user name for yourself:</p>
 	<p>
 		<input type="text" v-model="refDesiredUserNameBox" placeholder="desired user name" />{{' '}}
-		<button @click="clickedSignUp()" class="pushy">Sign Up</button>
+		<Button @click="clickedSignUp()">Sign Up</Button>
 	</p>
 </div>
 
@@ -95,14 +95,14 @@ async function clickedSignOut() {
 	<p>Welcome back! Sign in with your existing user name:</p>
 	<p>
 		<input type="text" v-model="refReturningUserNameBox" placeholder="returning user name" />{{' '}}
-		<button @click="clickedSignIn()" class="pushy">Sign In</button>
+		<Button @click="clickedSignIn()">Sign In</Button>
 	</p>
 </div>
 
 <!-- state 4: user is signed in -->
 <div v-show="refState == 4">
 	<p><code>{{ refUserTag }}</code> user tag of <code>{{ refUserName }}</code> signed in</p>
-	<p><button @click="clickedSignOut()" class="pushy">Sign Out</button></p>
+	<p><Button @click="clickedSignOut()">Sign Out</Button></p>
 </div>
 
 <div>

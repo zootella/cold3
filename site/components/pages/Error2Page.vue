@@ -51,7 +51,7 @@ and there, only the user's manual click moves things forward
 		:onClick="onClick"
 	/>
 </p>
-<p><OldButton @click="hardReplace">Reload Site</OldButton></p>
+<p><Button @click="hardReplace">Reload Site</Button></p>
 </div>
 
 </div>

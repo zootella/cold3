@@ -1,8 +1,9 @@
 <script setup>//./components/Button.vue
 
 const props = defineProps({
-	state: {type: String, default: 'ready'},
-	type:  {type: String, default: 'button'},
+	state: {type: String,  default: 'ready'},
+	type:  {type: String,  default: 'button'},
+	link:  {type: Boolean, default: false},
 })
 
 const emit = defineEmits(['click'])

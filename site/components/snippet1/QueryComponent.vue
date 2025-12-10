@@ -17,10 +17,10 @@ async function clicked(action) {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>QueryComponent</i></p>
 
 <div>
-	<button class="pushy" @click="clicked('Clear.')">Clear</button>{{' '}}
-	<button class="pushy" @click="clicked('Populate.')">Populate</button>{{' '}}
-	<button class="pushy" @click="clicked('Query2.')">Query 2</button>{{' '}}
-	<button class="pushy" @click="clicked('Query3.')">Query 3</button>
+	<Button @click="clicked('Clear.')">Clear</Button>{{' '}}
+	<Button @click="clicked('Populate.')">Populate</Button>{{' '}}
+	<Button @click="clicked('Query2.')">Query 2</Button>{{' '}}
+	<Button @click="clicked('Query3.')">Query 3</Button>
 </div>
 
 <pre>{{refOutput}}</pre>

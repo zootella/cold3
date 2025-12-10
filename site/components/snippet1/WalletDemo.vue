@@ -143,18 +143,19 @@ let useSoon = Key('walletconnect project id, public')
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>WalletDemo</i></p>
 
 <p>Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code>. There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.</p>
-<OldButton @click="onQuotes" :disabled="!refWagmiLoaded">Check again</OldButton>
+<Button @click="onQuotes">Check again</Button>
 
 <div v-if="!refIsConnected">
-	<OldButton @click="onConnect" :disabled="!refWagmiLoaded">Connect Wallet</OldButton>
+	<Button @click="onConnect">Connect Wallet</Button>
 </div>
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
-	<OldButton @click="onDisconnect">Disconnect Wallet</OldButton>
+	<Button @click="onDisconnect">Disconnect Wallet</Button>
 	<PostButton
 		labelIdle="Prove Ownership" labelFlying="Proving..." :useTurnstile="false"
 		ref="refProveButton" :canSubmit="refProveEnabled" v-model:inFlight="refProveInFlight" :onClick="onProve"
 	/>
+	<!-- here, PostButton->Button because it should be doing the whole flow, including the user interaction with the metamask popup, not just the post to the worker -->
 </div>
 <p>{{refInstructionalMessage}}</p>
 

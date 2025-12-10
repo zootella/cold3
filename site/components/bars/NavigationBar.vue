@@ -23,8 +23,6 @@ const sticker = stickerParts()
 <NuxtLink to="/feed2">feed2</NuxtLink>{{' '}}
 <NuxtLink to="/post/Fouv7hYGoytFMpU8JF0Fp">post</NuxtLink>{{' '}}
 <NuxtLink to="/post/NR0vIdQZAwnEjhCZWe1ca">first</NuxtLink>{{' - '}}
-<NuxtLink to="/query">query</NuxtLink>{{' '}}
-<NuxtLink to="/authenticate">authenticate</NuxtLink>{{' '}}
 <NuxtLink to="/me">me</NuxtLink>{{' '}}
 <NuxtLink to="/error2">error2</NuxtLink>{{' '}}
 <i>{{note}}, {{sticker.sealedText}}.{{sticker.hashText}}</i>
