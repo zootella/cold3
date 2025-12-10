@@ -15,7 +15,6 @@ const refCodeCandidate = ref('')
 
 const refButton = ref(null)
 const refButtonCanSubmit = ref(false)
-const refButtonInFlight = ref(false)
 
 let method
 if      (props.code.addressType == 'Email.') method = 'email'
@@ -69,11 +68,9 @@ function clickedCantFind() {
 	<PostButton
 		label="Enter"
 		labelFlying="Verifying..."
-		:useTurnstile="false"
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
-		v-model:inFlight="refButtonInFlight"
 		:onClick="onClick"
 	/>
 </p>

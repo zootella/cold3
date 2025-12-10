@@ -27,7 +27,6 @@ const refInstructionalMessage = ref('')
 
 const refProveButton = ref(null)
 const refProveEnabled = ref(true)
-const refProveInFlight = ref(false)//standard trio to use our PostButton
 
 let _wagmiConfig//from wagmi's create configuration; let's wagmi keep some state here
 let _wagmiWatch//from wagmi's watch account; something we need to call on unmounted if we have it
@@ -112,7 +111,7 @@ async function onDisconnect() {
 }
 
 async function onProve() {
-	let {nonce, message, envelope} = await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
+	let {nonce, message, envelope} = (await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})).response//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
 
 	//ttd november, so another example of parent needs to start button into orange in flight state, or in this instance keep it that way while execution is awaiting signMessage, which would prevent two simultaneous taps
 
@@ -153,8 +152,8 @@ let useSoon = Key('walletconnect project id, public')
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
 	<Button @click="onDisconnect">Disconnect Wallet</Button>
 	<PostButton
-		label="Prove Ownership" labelFlying="Proving..." :useTurnstile="false"
-		ref="refProveButton" :canSubmit="refProveEnabled" v-model:inFlight="refProveInFlight" :onClick="onProve"
+		label="Prove Ownership" labelFlying="Proving..."
+		ref="refProveButton" :canSubmit="refProveEnabled" :onClick="onProve"
 	/>
 	<!-- here, PostButton->Button because it should be doing the whole flow, including the user interaction with the metamask popup, not just the post to the worker -->
 </div>

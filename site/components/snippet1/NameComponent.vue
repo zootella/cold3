@@ -8,7 +8,6 @@ const refName = ref('')
 
 const refButton = ref(null)
 const refButtonCanSubmit = ref(false)
-const refButtonInFlight = ref(false)
 
 const refMessage = ref('')
 
@@ -51,7 +50,6 @@ async function onClick() {
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
-		v-model:inFlight="refButtonInFlight"
 		:onClick="onClick"
 	/>
 </div>

@@ -54,8 +54,8 @@ onMounted(async () => {
 
 const refUri = ref('')
 const refCode = ref('')
-const refEnrollButton   = ref(null); const refEnrollEnabled   = ref(true); const refEnrollInFlight   = ref(false)
-const refValidateButton = ref(null); const refValidateEnabled = ref(true); const refValidateInFlight = ref(false)
+const refEnrollButton   = ref(null); const refEnrollEnabled   = ref(true)
+const refValidateButton = ref(null); const refValidateEnabled = ref(true)
 
 async function onEnroll() {
 	let task = await refEnrollButton.value.post('/api/totp', {action: 'Enroll1.'})
@@ -100,8 +100,8 @@ async function onValidate() {
 
 <div>
 	<PostButton
-		label="Enroll" labelFlying="Requesting new enrollment..." :useTurnstile="false"
-		ref="refEnrollButton" :canSubmit="refEnrollEnabled" v-model:inFlight="refEnrollInFlight" :onClick="onEnroll"
+		label="Enroll" labelFlying="Requesting new enrollment..."
+		ref="refEnrollButton" :canSubmit="refEnrollEnabled" :onClick="onEnroll"
 	/>
 </div>
 
@@ -126,8 +126,8 @@ async function onValidate() {
 			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
 		/>
 		<PostButton
-			label="Validate Code" labelFlying="Validating..." :useTurnstile="false"
-			ref="refValidateButton" :canSubmit="refValidateEnabled" v-model:inFlight="refValidateInFlight" :onClick="onValidate"
+			label="Validate Code" labelFlying="Validating..."
+			ref="refValidateButton" :canSubmit="refValidateEnabled" :onClick="onValidate"
 		/>
 	</div>
 

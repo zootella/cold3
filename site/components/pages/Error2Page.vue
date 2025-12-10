@@ -7,7 +7,6 @@ const pageStore = usePageStore()
 
 const refButton = ref(null)
 const refButtonCanSubmit = ref(toBoolean(pageStore.errorDetails))
-const refButtonInFlight = ref(false)
 //ttd april2025, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
 
 async function onClick() {
@@ -47,7 +46,6 @@ and there, only the user's manual click moves things forward
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
-		v-model:inFlight="refButtonInFlight"
 		:onClick="onClick"
 	/>
 </p>

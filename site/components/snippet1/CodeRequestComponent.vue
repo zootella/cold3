@@ -8,7 +8,6 @@ const pageStore = usePageStore()
 
 const refButton = ref(null)
 const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
-const refButtonInFlight = ref(false)//the button below sets to true while it's working, we can watch
 
 const refAddress = ref('')
 const refProvider = ref('')
@@ -55,7 +54,6 @@ async function onClick() {
 
 		ref="refButton"
 		:canSubmit="refButtonCanSubmit"
-		v-model:inFlight="refButtonInFlight"
 		:onClick="onClick"
 	/>
 </p>
