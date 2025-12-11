@@ -2,7 +2,7 @@
 import {
 browserToUser,
 trailRecent, trailCount, trailGet, trailAdd,
-checkNumerals, Data, isExpired, hasTextSame,
+checkNumerals, Data, isExpired,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
 credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
 } from 'icarus'

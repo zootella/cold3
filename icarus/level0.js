@@ -380,10 +380,6 @@ test(() => {
 	ok(textToInt('1') == 1)
 })
 
-export function checkTextSame(s1, s2) { if (!hasTextSame(s1, s2)) toss('same', {s1, s2}) }
-export function hasTextSame(s1, s2) { return hasText(s1) && hasText(s2) && secureSameText(s1, s2) }
-//^both must be strings with text and the same, and includes time-safe comparison to protect from server timing attack
-
 export function checkTextOrBlank(s) { if (!hasTextOrBlank(s)) toss('type', {s}) }
 export function hasTextOrBlank(s) { return typeof s == 'string' }
 test(() => {
@@ -399,11 +395,6 @@ test(() => {
 	ok(hasTextOrBlank(''))//hasTextOrBlank requires a string, but blank is ok
 	ok(hasTextOrBlank(' '))
 	ok(hasTextOrBlank('a'))
-
-	//use hasTextSame for validating api keys--both need to be no whitespace string charcters, and the same
-	ok(!hasTextSame('', ''))
-	ok(hasTextSame('a', 'a'))
-	ok(!hasTextSame('a', 'b'))
 })
 
 export function checkNumerals(s, length) {//s must be one or many numerals, optional required length
@@ -1194,53 +1185,42 @@ test(async () => {
 	ok(await hashToLetter('6MIg9Bwj1ZC8wx6BLSgML', 'ABCD') == 'B')
 })
 
-//                         _ 
-//   ___  __ _ _   _  __ _| |
-//  / _ \/ _` | | | |/ _` | |
-// |  __/ (_| | |_| | (_| | |
-//  \___|\__, |\__,_|\__,_|_|
-//          |_|              
+//  _   _                        _   _             _    
+// | |_(_)_ __ ___   ___    __ _| |_| |_ __ _  ___| | __
+// | __| | '_ ` _ \ / _ \  / _` | __| __/ _` |/ __| |/ /
+// | |_| | | | | | |  __/ | (_| | |_| || (_| | (__|   < 
+//  \__|_|_| |_| |_|\___|  \__,_|\__|\__\__,_|\___|_|\_\
+//                                                      
 
-export function secureSameText(s1, s2) {//compare two strings without leaking timing clues about where they differ
-	return secureSameData(Data({text: 'Pad:'+s1}), Data({text: 'Pad:'+s2}))//normalizes to NFC, must pad because Data can't take blank
-}
-export function secureSameData(d1, d2) {
-	let s1 = d1.base16()//express the given bytes in base 16
-	let s2 = d2.base16()
-	s1 = s1.length + ':' + s1//prefix the strings with their lengths
-	s2 = s2.length + ':' + s2
+export function checkTextSame(s1, s2) { if (!hasTextSame(s1, s2)) toss('same', {s1, s2}) }
+export function hasTextSame(s1, s2) {
+	checkText(s1)
+	checkText(s2)//return false on different, but *throw* if given any blanks!
 
-	let length = Math.max(s1.length, s2.length)//find the longest length
-	length += Math.floor(Math.random() * (length + 256))//add a random length beyond that
-	s1 = s1.padEnd(length, ' ')//put spaces at the end to make both strings the same longer length
-	s2 = s2.padEnd(length, ' ')
+	let d1 = Data({text: s1})
+	let d2 = Data({text: s2})//normalize canonical in case the user entered the same characters with different encoding
 
-	let differences = 0//do constant-time comparison with ^ XOR and |= bitwise OR
-	for (let i = 0; i < length; i++) differences |= s1.charCodeAt(i) ^ s2.charCodeAt(i)
-	return differences == 0//true if there were no differences
+	let b1 = `${d1.size()}:${d1.base16()}`
+	let b2 = `${d2.size()}:${d2.base16()}`//express bytes in base16 after a length prefix
+
+	let longest = Math.max(b1.length, b2.length)
+	let stretch = longest + randomBetween(1, longest)//choose a random length longer than both
+
+	let c1 = `${b1}${' '.repeat(stretch - b1.length)}`
+	let c2 = `${b2}${' '.repeat(stretch - b2.length)}`//pad both to the same random longer length
+
+	let a1 = Data({text: c1}).array()
+	let a2 = Data({text: c2}).array()//convert each string like "2:4849  " (from "HI") to a Unit8Array
+
+	let differences = 0//run a constant-time comparison down the two arrays
+	for (let i = 0; i < a1.length; i++) differences |= a1[i] ^ a2[i]//bitwise XOR and OR avoid branching
+	return differences == 0//report true if we found zero differences
 }
 test(() => {
-	ok(secureSameText('', ''))
-	ok(secureSameText('a', 'a'))
-	ok(!secureSameText('a', ''))
-	ok(secureSameText('password12345',  'password12345'))
-	ok(!secureSameText('password12345', 'password12345x'))//extra letter
-	ok(!secureSameText('password12345', 'Password12345'))//case difference
-
-	function b16(s) {//base16 without any normalization; Data normalizes to NFC now
-		let a = (new TextEncoder()).encode(s)
-		return (Array.from(a, b => b.toString(16).padStart(2, '0'))).join('')
-	}
-	let e = 'é'//demonstration of accented unicode characters and different normalized forms in javascript
-	let e1 = e.normalize('NFC')//the javascript string literal é is already in C form
-	let e2 = e.normalize('NFD')//convert it into D form
-	let e3 = e2.normalize('NFC')//round trip back to C form
-	ok(e.length == 1 && e1.length == 1 && e2.length == 2 && e3.length == 1)
-	ok(b16(e)  == 'c3a9')
-	ok(b16(e1) == 'c3a9')
-	ok(b16(e2) == '65cc81')//form D is different
-	ok(b16(e3) == 'c3a9')
-	ok(secureSameText(e1, e2))//our function deals with that
+	ok(hasTextSame('password12345', 'password12345'))
+	ok(!hasTextSame('password12345', 'Password12345'))//case difference
+	ok(!hasTextSame('password12345', 'password12345x'))//extra letter
+	ok(!hasTextSame('password12345', 'password12345 '))//trailing space; this is why we length prefix
 })
 
 //  _               _     
@@ -1302,7 +1282,7 @@ export function passwordStrength(s) {//simple password strength meter
 	return 'Very Strong'//note we correctly rate a long simple password like https://www.eff.org/dice unlike everyone else
 }
 export function liveBox(s) {//move to another level by moving this, as well as the export in index.js
-	return passwordStrength(s)
+	//return passwordStrength(s)
 }
 
 const password_salt_size = 16//PBKDF2 uses 16 bytes of salt
@@ -1385,6 +1365,21 @@ noop(async () => {//intentionally slow so not a part of always on unit tests
 	await f('ALEXKRISVXSK5LCNJFA6PWE3JHDNDZGFC6X557ZJEV6WS7TY2M3Q', 40, 'hi')
 	await f('GIFGRZYZW4PUMPQUH2REIARET34PDCUTGFLIAFKQ7BG3ZJW4OFFQ', 41, 'hi')
 	await f('XRTVTGXEBX5TRTPQVCCUJE6SM7WOQ2XH3A5X72TJHKOR5GOVTZQA', 42, 'hi')//seemingly, easter eggs abound 🥚
+})
+test(() => {//canonical normalization is important when passwords might be 🇫🇷
+	function b16(s) {//base16 without any normalization; Data normalizes to NFC
+		let a = (new TextEncoder()).encode(s)
+		return (Array.from(a, b => b.toString(16).padStart(2, '0'))).join('')
+	}
+	let e = 'é'//demonstration of accented unicode characters and different normalized forms in javascript
+	let e1 = e.normalize('NFC')//the javascript string literal é is already in C form
+	let e2 = e.normalize('NFD')//convert it into D form
+	let e3 = e2.normalize('NFC')//round trip back to C form
+	ok(e.length == 1 && e1.length == 1 && e2.length == 2 && e3.length == 1)
+	ok(b16(e)  == 'c3a9')
+	ok(b16(e1) == 'c3a9')
+	ok(b16(e2) == '65cc81')//form D is different
+	ok(b16(e3) == 'c3a9')
 })
 
 //                                     _        _      

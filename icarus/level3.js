@@ -7,7 +7,7 @@ Time, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank, newline,
 Tag, checkTagOrBlank, checkTag,
-Data, decryptData, secureSameText,
+Data, decryptData, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
@@ -665,7 +665,7 @@ export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 		return {success: false, reason: 'Expired.', lives: 0}
 	}
 
-	if (secureSameText(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
+	if (hasTextSame(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
 		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
 		await browserValidatedAddress({
 			browserHash,

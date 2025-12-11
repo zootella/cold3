@@ -1,7 +1,7 @@
 //./server/api/wallet.js
 import {
 checkWallet, validateWallet,
-isExpired, hasTextSame,
+isExpired,
 } from 'icarus'
 import {verifyMessage} from 'viem'
 

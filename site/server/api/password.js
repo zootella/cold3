@@ -1,6 +1,6 @@
 //./server/api/totp.js
 import {
-browserToUser, secureSameText,
+browserToUser,
 trailRecent, trailCount, trailGet, trailAdd,
 credentialPasswordGet, credentialPasswordCreate, credentialPasswordRemove,
 } from 'icarus'
@@ -31,7 +31,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	} else if (action == 'Validate.') {
 		if (!password) toss('state')
 
-		let valid = secureSameText(password.hash, body.hash)
+		let valid = hasTextSame(password.hash, body.hash)
 		if (valid) {
 
 			await trailAdd(//maybe use later to detect a stale password, ttd november
