@@ -122,7 +122,7 @@ defineExpose({post: async (path, body) => {
 	:class="['my-button', refState]"
 	@click="props.onClick($event)"
 >
-	<template v-if="refDoing && hasText(props.labeling)">{{props.labeling}}</template><!-- custom like "Submitting..." -->
+	<template v-if="labeling && refDoing">{{props.labeling}}</template><!-- custom like "Submitting..." -->
 	<slot v-else /><!-- default button label like "Submit" -->
 </button>
 
