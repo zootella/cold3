@@ -1512,7 +1512,9 @@ keeps the index of hash values smaller than the piece size for files under 500 G
 so hard drive reads can be as fast as possible 💽
 */
 
-export async function hashFile({file, size, protocolTips}) {//works in local node testing and browser page with uppy, but not in lambda node!
+//given a standard JavaScript File object (extends Blob) and size, quickly compute just the tip hash
+//works in local Node testing and a browser page with Uppy, but not in Lambda Node! (where we can only get a stream)
+export async function hashFile({file, size, protocolTips}) {
 	if(!(file && size > 0 && file.size == size)) toss('bounds', {file, size})//file is a JavaScript File object, which extends Blob
 
 	//based on the file size, pick stripes at the start, middle, and end for us to hash quickly
@@ -1542,7 +1544,9 @@ export async function hashFile({file, size, protocolTips}) {//works in local nod
 	return status
 }
 
-export async function hashStream({stream, size, protocolPieces, protocolTips, onProgress, signal}) {//works everywhere, local and lambda node, and uppy page
+//given a ReadableStream (Web Streams API), compute both the tip hash and the piece hash
+//works everywhere: local and Lambda Node, and Uppy on a page
+export async function hashStream({stream, size, protocolPieces, protocolTips, onProgress, signal}) {
 	signal?.throwIfAborted()
 	if (!(stream && size > 0)) toss('bounds', {stream, size})
 
