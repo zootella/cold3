@@ -32,9 +32,13 @@ async function onEnter() {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordDemo</i></p>
 
+<p>first, here's the demo using a html input text field</p>
 <input type="text" v-model="refInput" @input="onInput" placeholder="Type something..." @keyup.enter="onEnter" />{{' '}}
 <Button @click="onEnter">Submit</Button>
 <p>{{refOutput}}</p>
+
+<p>second, here's our custom component we're growing designed to hold passwords</p>
+<PasswordBox />
 
 </div>
 </template>
