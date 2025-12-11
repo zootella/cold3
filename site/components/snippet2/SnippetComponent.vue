@@ -19,5 +19,3 @@ defineProps([
 <p v-else>else because no regular property</p>
 
 </template>
-<style scoped>
-</style>

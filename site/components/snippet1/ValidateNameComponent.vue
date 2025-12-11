@@ -51,11 +51,3 @@ watch([refBox1], () => {//which is also independently editable
 
 </div>
 </template>
-<style scoped>
-
-button.gray        { background-color: gray;       }
-button.green       { background-color: green;      }
-button.green:hover { background-color: lightgreen; }
-button.orange      { background-color: orange;     }
-
-</style>
