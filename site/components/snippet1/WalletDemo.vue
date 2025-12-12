@@ -5,6 +5,21 @@ sayTick,
 originApex,
 } from 'icarus'
 
+/*
+for coding and smoke testing right now, all this state is in a component
+in a moment, we'll refactor much of this from here into a pinia store
+that way, wagmi will be loaded once the first time a navigated tab needs it
+and stay around as the user clicks away from, and back to, components that use it
+ok but some things to think about in preparation for that refactor:
+(1) some stuff, like wagmi configured and loaded modules, go in the store
+(2) other stuff, like uri, like anything related to a previously completed or half completed and abandoned connection or proof flow, should *not* go in the store--here, we want the user's navigation away to cancel and reset the abandoned operation
+(3) right now we are calling _wagmiUnwatch onUnmounted; in a store that won't happen we'll just keep it going until the whole tab is torn down
+(4) we've got some pinia stores intended to begin with the server render as part of universal rendering; other stores are intended and coded so that they don't do anything on a server render portion, and work entirely on the client. for this web3 wallet stuff, we want that--client only
+(5) should the store be wallet specific, or should there be a wallet (and on client only) portion of a more unified credential store? if it's a wallet store, then the credential store may need to call into it, or a component which wants all the user's credentials may need to use both. (downside) but a standalone wallet store can be client only. if instead it's part of a larger unified user credential store, then there will be non-wallet stuff there that starts in the server render, and we'll have to keep the wallet stuff isolated so it's client only (im thinking that's the right way to do this between these two choices) to see current example stores coded in both styles, check out stores/main.js (always server render first, then client) compared to page.js (client only) and compared to flex.js (which can start out on the server render if a new tab's first GET is to a route with a component that needs it) ok so looking at that now, it seems like the pattern you established is to sort things not by type (wallets, credentials, etc) but rather by how and when it's loaded, actually. so not sure if we should use that pattern, or build a new alternative candidate pattern alongside it
+*/
+
+/* [1][may move to store!] first, these references will probably move to a pinia store */
+
 let viem, viem_chains, wagmi_core, wagmi_connectors
 async function dynamicImport() {
 	if (import.meta.client) {//tree shake viem and wagmi out of the server build entirely
@@ -17,73 +32,75 @@ async function dynamicImport() {
 	}
 }
 
+const refConnectedAddress = ref(null)//wallet address the user connected,
+const refIsConnected = ref(false)//true if a wallet address is connected
+
+let _wagmiConfig//from wagmi's create configuration; let's wagmi keep some state here
+
 const refBlockNumber = ref('Loading...')//current Ethereum block number,
 const refEtherPrice = ref('')//$ETH price,
 const refTimePulled = ref('')//and the time when we pulled those quotes
 
-const refWagmiLoaded = ref(false)
-const refConnectedAddress = ref(null)//wallet address the user connected,
-const refIsConnected = ref(false)//true if a wallet address is connected
-const refInstructionalMessage = ref('')
+/* [2][may stay in components!] while these references will probably stay in a component */
 
 const refProveButton = ref(null)
 const refProveEnabled = ref(true)
 
-const refWalletConnectUri = ref('')//wc: URI to show as QR code for WalletConnect flow
-let _walletConnectConnector//hold reference to reuse
+const refInstructionalMessage = ref('')//message to user if there was a problem in the connect and prove flow
 
-let _wagmiConfig//from wagmi's create configuration; let's wagmi keep some state here
-let _wagmiWatch//from wagmi's watch account; something we need to call on unmounted if we have it
+const refUri = ref('')//walletconnect uri we show as a qr code
+
+/* [3][may go away entirely] when we refactor to components above a web3 store, these we'll delete entirely */
+
+let _wagmiUnwatch//from wagmi's watch account; something we need to call on unmounted if we have it
 
 onMounted(async () => {
-
-	//load wagmi
 	await dynamicImport()//dynamic import wallet modules here on the page to work with the user's wallet
-
-	//create WalletConnect connector for mobile wallet connections
-	_walletConnectConnector = wagmi_connectors.walletConnect({
-		projectId: Key('walletconnect project id, public'),
-		showQrModal: false,//we'll show our own QR code
-		metadata: {
-			name: 'Cold3',
-			description: 'Cold3',
-			url: originApex(),//https://cold3.cc in production, http://localhost:3000 locally
+	_wagmiConfig = wagmi_core.createConfig({//configure wagmi to use a wallet injected into the page and also WalletConnect
+		chains: [
+			viem_chains.mainnet,//choose Ethereum network with real $ETH, rather than a testnet or L2
+		],
+		transports: {
+			[viem_chains.mainnet.id]: viem.http(Key('alchemy url, public')),//we use Alchemy to reach the blockchain; web3 keys like this are necessarily client side; configured origin protection on the dashboard
 		},
-		onDisplayUri: (uri) => {
-			refWalletConnectUri.value = uri//show QR code when WalletConnect generates the URI
-		}
+		connectors: [
+			wagmi_connectors.injected(),//use (1) browser wallet like MetaMask that injected window.ethereum
+			wagmi_connectors.walletConnect({//and (2) WalletConnect with the relay server, QR code, and user's mobile app
+				projectId: Key('walletconnect project id, public'),//got this from the reown dashboard
+				showQrModal: false,//false to prevent wagmi from showing its own modal ui; we'll render the QR code
+				metadata: {
+					name: Key('domain, public'),
+					description: Key('domain, public'),//text that shows up in the user's mobile wallet app
+					url: originApex(),
+				},
+				onDisplayUri: (uri) => {
+					refUri.value = uri//show QR code when WalletConnect generates the URI
+					//ttd december, when wagmi state is in a store, this uri and the context of a walletconnect flow should still be in the upper component--if the user clicks away to a different route in the spa, wagmi's load and configuration should persist, but a previous or half-completed connection flow should not! you'll have to get this right when you move wagmi into the credential pinia store soon
+				},
+			}),
+		],
 	})
-
-	//configure wagmi with both connectors registered upfront
-	_wagmiConfig = wagmi_core.createConfig({
-		chains: [viem_chains.mainnet],
-		connectors: [wagmi_connectors.injected(), _walletConnectConnector],//register connectors at config creation
-		transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy url, public'))}
-	})//configure wagmi to use Alchemy to reach Ethereum; web3 keys are necessarily client side; origin protection configured on the dashboard
-	refWagmiLoaded.value = true
-	_wagmiWatch = wagmi_core.watchAccount(_wagmiConfig, {
+	_wagmiUnwatch = wagmi_core.watchAccount(_wagmiConfig, {
 		onChange(account) {//bring in account after watch account on change
 			refConnectedAddress.value = account.address
 			refIsConnected.value = account.isConnected
-			if (account.isConnected) refWalletConnectUri.value = ''//hide QR code on successful connection
+			if (account.isConnected) refUri.value = ''//hide QR code on successful connection
 		}
 	})
 
-	//get current eth price and block number; uses alchemy but the user doesn't have to have a wallet
-	await onQuotes()
+	await onQuotes()//get current eth price and block number; uses alchemy but the user doesn't have to have a wallet
 
-	try {
-
-		//have wagmi restore a wallet the user connected here before route change or tab refresh
-		await wagmi_core.reconnect(_wagmiConfig)//wagmi keeps notes about this in localStorage @wagmi/core.store
-		let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after reconnect
-		refConnectedAddress.value = account.address
-		refIsConnected.value = account.isConnected
-
+	try {//ttd december, you're going to move this out of a try block as an exception from this code *is* exceptional and should crash the page
+	//have wagmi restore a wallet the user connected here before route change or tab refresh
+	await wagmi_core.reconnect(_wagmiConfig)//wagmi keeps notes about this in localStorage @wagmi/core.store
+	let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after reconnect
+	refConnectedAddress.value = account.address
+	refIsConnected.value = account.isConnected
 	} catch (e) { log('⛔ on mounted caught:', look(e)); throw e }//should not happen, crash the page during testing
 })
 onUnmounted(() => {
-	if (_wagmiWatch) _wagmiWatch()
+	if (_wagmiUnwatch) _wagmiUnwatch()
+	//ttd december, ok when you've moved wagmi into the pinia store, you won't need to unwatch anything
 })
 
 async function onQuotes() {
@@ -105,7 +122,7 @@ async function onQuotes() {
 	} catch (e) { log('⛔ on quotes caught:', look(e)); throw e }//should not happen, crash the page during testing
 }
 
-async function onConnect() {
+async function onInjectedConnect() {
 	try {
 
 		let result = await wagmi_core.connect(_wagmiConfig, {connector: wagmi_connectors.injected()})
@@ -123,19 +140,7 @@ async function onConnect() {
 		} else { log('⛔ on connect caught:', look(e)); throw e }
 	}
 }
-
-async function onDisconnect() {
-	try {
-
-		await wagmi_core.disconnect(_wagmiConfig)
-		let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after disconnect
-		refConnectedAddress.value = account.address
-		refIsConnected.value = account.isConnected
-
-	} catch (e) { log('⛔ on disconnect caught:', look(e)) }
-}
-
-async function onConnectWalletConnect() {
+async function onWalletConnect() {
 	try {
 
 		//get the instantiated walletConnect connector from wagmi's config
@@ -147,7 +152,7 @@ async function onConnectWalletConnect() {
 
 		//subscribe to display_uri; relay will generate a session topic and encryption key, and emit them here as a wc: URI
 		provider.on('display_uri', (uri) => {
-			refWalletConnectUri.value = uri//show QR code containing wc: URI with topic and symKey
+			refUri.value = uri//show QR code containing wc: URI with topic and symKey
 		})
 
 		//initiate the connection; this sends a session proposal to the relay and waits for a wallet to respond
@@ -156,25 +161,32 @@ async function onConnectWalletConnect() {
 		let account = wagmi_core.getAccount(_wagmiConfig)
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
-		refWalletConnectUri.value = ''//hide QR code on success
+		refUri.value = ''//hide QR code on success
 
 	} catch (e) {
 		if (e.name == 'UserRejectedRequestError') {
 			refInstructionalMessage.value = 'Connection rejected; try again'
-			refWalletConnectUri.value = ''//hide QR code
+			refUri.value = ''//hide QR code
 
 		} else { log('⛔ on connect walletconnect caught:', look(e)); throw e }
 	}
 }
+async function onDisconnect() {
+	try {
 
-function onOpenInWallet() {
-	window.location.href = refWalletConnectUri.value//deep-link to wallet app on mobile
+		await wagmi_core.disconnect(_wagmiConfig)
+		let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after disconnect
+		refConnectedAddress.value = account.address
+		refIsConnected.value = account.isConnected
+
+	} catch (e) { log('⛔ on disconnect caught:', look(e)) }
 }
 
 async function onProve() {
 	let {nonce, message, envelope} = (await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})).response//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
 
 	//ttd november, so another example of parent needs to start button into orange doing state, or in this instance keep it that way while execution is awaiting signMessage, which would prevent two simultaneous taps
+	//ok yeah, work on orange buttons next with claude code
 
 	let signature
 	try {
@@ -196,6 +208,10 @@ async function onProve() {
 	}
 }
 
+function redirect() {
+	window.location.href = refUri.value//deep-link to wallet app on mobile
+}
+
 </script>
 <template>
 <div class="border border-gray-300 p-2 space-y-2">
@@ -206,14 +222,13 @@ async function onProve() {
 
 <div v-if="!refIsConnected">
 	<div class="flex gap-2">
-		<Button @click="onConnect">Connect Browser Wallet</Button>
-		<Button @click="onConnectWalletConnect">Connect WalletConnect</Button>
+		<Button @click="onInjectedConnect">Browser Wallet</Button>
+		<Button @click="onWalletConnect">WalletConnect</Button>
 	</div>
-	<div v-if="refWalletConnectUri" class="mt-4 space-y-2">
-		<p class="text-sm">Scan with your mobile wallet:</p>
-		<QrCode :address="refWalletConnectUri" />
-		<p class="text-sm">Or open in wallet app:</p>
-		<Button @click="onOpenInWallet">Open in Wallet</Button>
+	<div v-if="refUri" class="mt-4 space-y-2">
+		<QrCode :address="refUri" />
+		<p>Scan the code above with your wallet app, or switch to it on this device with the button below.</p>
+		<Button @click="redirect">Open in Wallet App</Button>
 	</div>
 </div>
 <div v-else>
@@ -223,7 +238,7 @@ async function onProve() {
 		labeling="Proving..."
 		ref="refProveButton" :canSubmit="refProveEnabled" :onClick="onProve"
 	>Prove Ownership</PostButton>
-	<!-- here, PostButton->Button because it should be doing the whole flow, including the user interaction with the metamask popup, not just the post to the worker -->
+	<!-- here, change PostButton to Button because it should be doing the whole flow, including the user interaction with the metamask popup, not just the post to the worker -->
 </div>
 <p>{{refInstructionalMessage}}</p>
 
