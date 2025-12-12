@@ -43,9 +43,6 @@ const refTimePulled = ref('')//and the time when we pulled those quotes
 
 /* [2][may stay in components!] while these references will probably stay in a component */
 
-const refProveButton = ref(null)
-const refProveEnabled = ref(true)
-
 const refInstructionalMessage = ref('')//message to user if there was a problem in the connect and prove flow
 
 const refUri = ref('')//walletconnect uri we show as a qr code
@@ -104,6 +101,7 @@ onUnmounted(() => {
 })
 
 async function onQuotes() {
+	refQuotesState.value = 'doing'
 	try {
 
 		//get the current ethereum block number
@@ -120,9 +118,12 @@ async function onQuotes() {
 		refEtherPrice.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
 
 	} catch (e) { log('⛔ on quotes caught:', look(e)); throw e }//should not happen, crash the page during testing
+	refQuotesState.value = 'ready'
 }
 
 async function onInjectedConnect() {
+	refInjectedConnectState.value = 'doing'
+	refWalletConnectState.value = 'ghost'//disable the other connect button while this flow is in progress
 	try {
 
 		let result = await wagmi_core.connect(_wagmiConfig, {connector: wagmi_connectors.injected()})
@@ -139,8 +140,12 @@ async function onInjectedConnect() {
 
 		} else { log('⛔ on connect caught:', look(e)); throw e }
 	}
+	refInjectedConnectState.value = 'ready'
+	refWalletConnectState.value = 'ready'
 }
 async function onWalletConnect() {
+	refWalletConnectState.value = 'doing'
+	refInjectedConnectState.value = 'ghost'//disable the other connect button while this flow is in progress
 	try {
 
 		//get the instantiated walletConnect connector from wagmi's config
@@ -170,8 +175,12 @@ async function onWalletConnect() {
 
 		} else { log('⛔ on connect walletconnect caught:', look(e)); throw e }
 	}
+	refWalletConnectState.value = 'ready'
+	refInjectedConnectState.value = 'ready'
 }
 async function onDisconnect() {
+	refDisconnectState.value = 'doing'
+	refProveState.value = 'ghost'//disable prove button while disconnecting
 	try {
 
 		await wagmi_core.disconnect(_wagmiConfig)
@@ -180,37 +189,51 @@ async function onDisconnect() {
 		refIsConnected.value = account.isConnected
 
 	} catch (e) { log('⛔ on disconnect caught:', look(e)) }
+	refDisconnectState.value = 'ready'
+	refProveState.value = 'ready'
+	refInstructionalMessage.value = 'Disconnected wallet.'
 }
 
 async function onProve() {
-	let {nonce, message, envelope} = (await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})).response//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
+	refProveState.value = 'doing'
+	refDisconnectState.value = 'ghost'//disable disconnect button while proving
 
-	//ttd november, so another example of parent needs to start button into orange doing state, or in this instance keep it that way while execution is awaiting signMessage, which would prevent two simultaneous taps
-	//ok yeah, work on orange buttons next with claude code
+	//step 1: get nonce and message from server
+	let response1 = await fetchWorker('/api/wallet', {body: {action: 'Prove1.', address: refConnectedAddress.value}})
+	log('Prove1 response:', look(response1))
+	let {nonce, message, envelope} = response1
 
+	//step 2: request signature from connected wallet
 	let signature
 	try {
-		//request signature from connected wallet; if WalletConnect, this sends personal_sign through relay to phone wallet
-		//user sees message on their device and approves or rejects; promise resolves with signature or rejects
-		signature = await wagmi_core.signMessage(_wagmiConfig, {message})
+		signature = await wagmi_core.signMessage(_wagmiConfig, {message})//contacts local injected wallet or, if WalletConnect, sends the signature request to the phone app as both the page and that app have web sockets to the reown relay server. user sees signature request either place and approves or rejects
 	} catch (e) { log('⛔ wagmi sign message threw; expected when user declines signature request', look(e)) }
-	if (signature) {
 
-		//and send the signature to trusted code on the server
-		let task2 = await refProveButton.value.post('/api/wallet', {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature, envelope})
-		let response2 = task2.response
+	if (signature) {
+		//step 3: send signature to server for verification
+		let response2 = await fetchWorker('/api/wallet', {body: {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature, envelope}})
 		log('Prove2 response:', look(response2))
+		if (response2.outcome == 'Proven.') {
+			refInstructionalMessage.value = 'Server confirms proof you control this address. 🖌'
+		} else {
+		}
 
 	} else {
-		//user declied signature, not happy path but not rare either
-
-
+		//user declined signature, not happy path but not rare either
+		refInstructionalMessage.value = 'Signature request declined. Please try again.'
 	}
+
+	refProveState.value = 'ready'
+	refDisconnectState.value = 'ready'
 }
 
-function redirect() {
-	window.location.href = refUri.value//deep-link to wallet app on mobile
-}
+const refQuotesState = ref('ready')
+const refInjectedConnectState = ref('ready')
+const refWalletConnectState = ref('ready')
+const refDisconnectState = ref('ready')
+const refProveState = ref('ready')
+
+function redirect() { window.location.href = refUri.value }//deep-link to wallet app on mobile
 
 </script>
 <template>
@@ -218,12 +241,12 @@ function redirect() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>WalletDemo</i></p>
 
 <p>Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code>. There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.</p>
-<Button @click="onQuotes">Check again</Button>
+<Button :state="refQuotesState" @click="onQuotes">Check again</Button>
 
 <div v-if="!refIsConnected">
 	<div class="flex gap-2">
-		<Button @click="onInjectedConnect">Browser Wallet</Button>
-		<Button @click="onWalletConnect">WalletConnect</Button>
+		<Button :state="refInjectedConnectState" @click="onInjectedConnect">Browser Wallet</Button>
+		<Button :state="refWalletConnectState" @click="onWalletConnect">WalletConnect</Button>
 	</div>
 	<div v-if="refUri" class="mt-4 space-y-2">
 		<QrCode :address="refUri" />
@@ -233,12 +256,8 @@ function redirect() {
 </div>
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
-	<Button @click="onDisconnect">Disconnect Wallet</Button>
-	<PostButton
-		labeling="Proving..."
-		ref="refProveButton" :canSubmit="refProveEnabled" :onClick="onProve"
-	>Prove Ownership</PostButton>
-	<!-- here, change PostButton to Button because it should be doing the whole flow, including the user interaction with the metamask popup, not just the post to the worker -->
+	<Button :state="refDisconnectState" @click="onDisconnect">Disconnect Wallet</Button>
+	<Button :state="refProveState" labeling="Requesting Signature..." @click="onProve">Prove Ownership</Button>
 </div>
 <p>{{refInstructionalMessage}}</p>
 
