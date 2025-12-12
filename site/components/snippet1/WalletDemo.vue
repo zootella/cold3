@@ -3,6 +3,7 @@
 import {
 sayTick,
 originApex,
+anyIncludeAny,
 } from 'icarus'
 
 /*
@@ -148,30 +149,30 @@ async function onWalletConnect() {
 	refInjectedConnectState.value = 'ghost'//disable the other connect button while this flow is in progress
 	try {
 
-		//get the instantiated walletConnect connector from wagmi's config
-		let connectors = wagmi_core.getConnectors(_wagmiConfig)
-		let wcConnector = connectors.find(c => c.id === 'walletConnect')
+		let connectors = wagmi_core.getConnectors(_wagmiConfig)//in wagmi's configuration,
+		let connector = connectors.find(c => c.id == 'walletConnect')//find the instantiated WalletConnect connector,
+		let provider = await connector.getProvider()//and get its provider; opens a websocket to relay.walletconnect.org
 
-		//get the WalletConnect provider; this opens a WebSocket to relay.walletconnect.org
-		let provider = await wcConnector.getProvider()
-
-		//subscribe to display_uri; relay will generate a session topic and encryption key, and emit them here as a wc: URI
+		//subscribe to display_uri; relay will generate a session topic and encryption key, and give them to us in a uri
 		provider.on('display_uri', (uri) => {
 			refUri.value = uri//show QR code containing wc: URI with topic and symKey
 		})
 
 		//initiate the connection; this sends a session proposal to the relay and waits for a wallet to respond
 		//promise stays pending while QR code is displayed; resolves when phone wallet scans, connects to same relay topic, and user approves
-		let result = await wagmi_core.connect(_wagmiConfig, { connector: wcConnector })
+		let result = await wagmi_core.connect(_wagmiConfig, {connector: connector})
 		let account = wagmi_core.getAccount(_wagmiConfig)
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 		refUri.value = ''//hide QR code on success
 
 	} catch (e) {
+		refUri.value = ''//hide QR code on any error
 		if (e.name == 'UserRejectedRequestError') {
-			refInstructionalMessage.value = 'Connection rejected; try again'
-			refUri.value = ''//hide QR code
+			refInstructionalMessage.value = 'Connection rejected. Please try again.'
+
+		} else if (anyIncludeAny([e.message, e.name], ['expired', 'timeout'])) {
+			refInstructionalMessage.value = 'Connection timed out. Please try again.'//WalletConnect session proposal expires after 5 minutes
 
 		} else { log('⛔ on connect walletconnect caught:', look(e)); throw e }
 	}
@@ -204,10 +205,13 @@ async function onProve() {
 	let {nonce, message, envelope} = response1
 
 	//step 2: request signature from connected wallet
-	let signature
+	let signature, signError
 	try {
-		signature = await wagmi_core.signMessage(_wagmiConfig, {message})//contacts local injected wallet or, if WalletConnect, sends the signature request to the phone app as both the page and that app have web sockets to the reown relay server. user sees signature request either place and approves or rejects
-	} catch (e) { log('⛔ wagmi sign message threw; expected when user declines signature request', look(e)) }
+		signature = await wagmi_core.signMessage(_wagmiConfig, {message})//contacts local injected wallet or, if WalletConnect, sends the signature request to the phone app as both the page and that app have web sockets to the reown relay server. user sees signature request either place and approves or rejects; note there really isn't a way to cancel one of these in flight with walletconnect.org, which is why we don't have a cancel button
+	} catch (e) {
+		log('⛔ wagmi sign message threw; expected when user declines or times out signature request', look(e))
+		signError = e
+	}
 
 	if (signature) {
 		//step 3: send signature to server for verification
@@ -219,8 +223,12 @@ async function onProve() {
 		}
 
 	} else {
-		//user declined signature, not happy path but not rare either
-		refInstructionalMessage.value = 'Signature request declined. Please try again.'
+		//user declined or timed out signature request; not happy path but not rare either
+		if (anyIncludeAny([signError?.message, signError?.name], ['expired', 'timeout'])) {
+			refInstructionalMessage.value = 'Signature request timed out. Please try again.'
+		} else {
+			refInstructionalMessage.value = 'Signature request declined. Please try again.'
+		}
 	}
 
 	refProveState.value = 'ready'

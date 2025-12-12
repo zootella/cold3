@@ -3557,7 +3557,25 @@ test(() => {
 
 
 
+export function anyIncludeAny(strings, tags) {//true if any string contains any tag, matching case
+	for (let s of strings) {
+		if (!hasText(s)) continue//if an undefined makes it in here, it's just not a match
+		s = s.toLowerCase()
+		for (let t of tags) {
+			if (!hasText(t)) continue
+			if (s.includes(t.toLowerCase())) return true
+		}
+	}
+	return false
+}
+test(() => {
+	ok(anyIncludeAny(['red green blue'], ['green']))
+	ok(!anyIncludeAny(['red green blue'], ['purple']))
+	ok(anyIncludeAny(['red green blue'], ['orange', 'Red']))
 
+	ok(!anyIncludeAny(['a b', 'c d'], ['e']))
+	ok(anyIncludeAny(['a b', 'c d'], ['e', 'C']))
+})
 
 
 
