@@ -2,6 +2,7 @@
 
 import {
 sayTick,
+originApex,
 } from 'icarus'
 
 let viem, viem_chains, wagmi_core, wagmi_connectors
@@ -28,6 +29,9 @@ const refInstructionalMessage = ref('')
 const refProveButton = ref(null)
 const refProveEnabled = ref(true)
 
+const refWalletConnectUri = ref('')//wc: URI to show as QR code for WalletConnect flow
+let _walletConnectConnector//hold reference to reuse
+
 let _wagmiConfig//from wagmi's create configuration; let's wagmi keep some state here
 let _wagmiWatch//from wagmi's watch account; something we need to call on unmounted if we have it
 
@@ -35,12 +39,33 @@ onMounted(async () => {
 
 	//load wagmi
 	await dynamicImport()//dynamic import wallet modules here on the page to work with the user's wallet
-	_wagmiConfig = wagmi_core.createConfig({chains: [viem_chains.mainnet], transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy url, public'))}})//configure wagmi to use Alchemy to reach Ethereum; web3 keys are necessarily client side; origin protection configured on the dashboard
+
+	//create WalletConnect connector for mobile wallet connections
+	_walletConnectConnector = wagmi_connectors.walletConnect({
+		projectId: Key('walletconnect project id, public'),
+		showQrModal: false,//we'll show our own QR code
+		metadata: {
+			name: 'Cold3',
+			description: 'Cold3',
+			url: originApex(),//https://cold3.cc in production, http://localhost:3000 locally
+		},
+		onDisplayUri: (uri) => {
+			refWalletConnectUri.value = uri//show QR code when WalletConnect generates the URI
+		}
+	})
+
+	//configure wagmi with both connectors registered upfront
+	_wagmiConfig = wagmi_core.createConfig({
+		chains: [viem_chains.mainnet],
+		connectors: [wagmi_connectors.injected(), _walletConnectConnector],//register connectors at config creation
+		transports: {[viem_chains.mainnet.id]: viem.http(Key('alchemy url, public'))}
+	})//configure wagmi to use Alchemy to reach Ethereum; web3 keys are necessarily client side; origin protection configured on the dashboard
 	refWagmiLoaded.value = true
 	_wagmiWatch = wagmi_core.watchAccount(_wagmiConfig, {
 		onChange(account) {//bring in account after watch account on change
 			refConnectedAddress.value = account.address
 			refIsConnected.value = account.isConnected
+			if (account.isConnected) refWalletConnectUri.value = ''//hide QR code on successful connection
 		}
 	})
 
@@ -110,6 +135,42 @@ async function onDisconnect() {
 	} catch (e) { log('⛔ on disconnect caught:', look(e)) }
 }
 
+async function onConnectWalletConnect() {
+	try {
+
+		//get the instantiated walletConnect connector from wagmi's config
+		let connectors = wagmi_core.getConnectors(_wagmiConfig)
+		let wcConnector = connectors.find(c => c.id === 'walletConnect')
+
+		//get the WalletConnect provider; this opens a WebSocket to relay.walletconnect.org
+		let provider = await wcConnector.getProvider()
+
+		//subscribe to display_uri; relay will generate a session topic and encryption key, and emit them here as a wc: URI
+		provider.on('display_uri', (uri) => {
+			refWalletConnectUri.value = uri//show QR code containing wc: URI with topic and symKey
+		})
+
+		//initiate the connection; this sends a session proposal to the relay and waits for a wallet to respond
+		//promise stays pending while QR code is displayed; resolves when phone wallet scans, connects to same relay topic, and user approves
+		let result = await wagmi_core.connect(_wagmiConfig, { connector: wcConnector })
+		let account = wagmi_core.getAccount(_wagmiConfig)
+		refConnectedAddress.value = account.address
+		refIsConnected.value = account.isConnected
+		refWalletConnectUri.value = ''//hide QR code on success
+
+	} catch (e) {
+		if (e.name == 'UserRejectedRequestError') {
+			refInstructionalMessage.value = 'Connection rejected; try again'
+			refWalletConnectUri.value = ''//hide QR code
+
+		} else { log('⛔ on connect walletconnect caught:', look(e)); throw e }
+	}
+}
+
+function onOpenInWallet() {
+	window.location.href = refWalletConnectUri.value//deep-link to wallet app on mobile
+}
+
 async function onProve() {
 	let {nonce, message, envelope} = (await refProveButton.value.post('/api/wallet', {action: 'Prove1.', address: refConnectedAddress.value})).response//this is correctly and importantly *outside* the try block below (which protects us from alchemy and wagmi), as a 500 from our own server *should* crash the page! (and will here, getting thrown up from our code in the post method)
 
@@ -117,7 +178,8 @@ async function onProve() {
 
 	let signature
 	try {
-		//have metamask ask the user to sign the message
+		//request signature from connected wallet; if WalletConnect, this sends personal_sign through relay to phone wallet
+		//user sees message on their device and approves or rejects; promise resolves with signature or rejects
 		signature = await wagmi_core.signMessage(_wagmiConfig, {message})
 	} catch (e) { log('⛔ wagmi sign message threw; expected when user declines signature request', look(e)) }
 	if (signature) {
@@ -134,9 +196,6 @@ async function onProve() {
 	}
 }
 
-//ttd december, for walletconnect, from the reown dashboard
-let useSoon = Key('walletconnect project id, public')
-
 </script>
 <template>
 <div class="border border-gray-300 p-2 space-y-2">
@@ -146,7 +205,16 @@ let useSoon = Key('walletconnect project id, public')
 <Button @click="onQuotes">Check again</Button>
 
 <div v-if="!refIsConnected">
-	<Button @click="onConnect">Connect Wallet</Button>
+	<div class="flex gap-2">
+		<Button @click="onConnect">Connect Browser Wallet</Button>
+		<Button @click="onConnectWalletConnect">Connect WalletConnect</Button>
+	</div>
+	<div v-if="refWalletConnectUri" class="mt-4 space-y-2">
+		<p class="text-sm">Scan with your mobile wallet:</p>
+		<QrCode :address="refWalletConnectUri" />
+		<p class="text-sm">Or open in wallet app:</p>
+		<Button @click="onOpenInWallet">Open in Wallet</Button>
+	</div>
 </div>
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>

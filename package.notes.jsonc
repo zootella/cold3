@@ -131,7 +131,6 @@
 		"@wagmi/connectors": "^5.9.9",//adapters for metamask, walletconnect, and other wallets
 		"@wagmi/vue": "^0.2.5",//vue composables that wrap wagmi core to make wallet state reactive
 		"@tanstack/vue-query": "^5.87.1",//peer dependency of wagmi vue to do async state, caching, and avoid duplicating requests
-		//going to add @walletconnect/ethereum-provider
 
 		//4 framework
 		"@pinia/nuxt": "^0.11.1",
