@@ -508,6 +508,19 @@ Nuxt's useFetch and useAsyncData, which knows about universal rendering and retu
 Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the browser tag cookie manually
 other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 */
+/*
+notes coming back here months later, ttd december
+ok both fetchWorker and fetchLambda are convenience wrappers on top of $fetch, that's fine
+but in use, you want them to work differently, to be more convenient
+url should be route, it's not a complete url, right?
+POST should be required; if you're adding GET to workers, you'll have to go back in here and change things for that
+let task = await fetchWorker('/api/name', 'Status.', {count: 7})
+action should be explicit and required
+i think you don't need to expose options, just body
+should this return a task, and then you do task.response, even though if there's an exception it throws rather than pins, that would get you the duration time without you having to measure it yourself
+ok but looking at this now you also wrote it this way to align with fetchProvider, where you do need options, so you could do another layer on top of fetchWorker and fetchLambda like postWorker() and postLambda()
+yeah and if you do those, then that's where they fill in all the defaults, like empty body, net23 envelope, net23 warm first pass, that stuff
+*/
 
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
