@@ -41,6 +41,7 @@ let _wagmiConfig//from wagmi's create configuration; let's wagmi keep some state
 const refBlockNumber = ref('Loading...')//current Ethereum block number,
 const refEtherPrice = ref('')//$ETH price,
 const refTimePulled = ref('')//and the time when we pulled those quotes
+const refQuotesDuration = ref(-1)//how long it took for the page to get the quotes from alchemy
 
 /* [2][may stay in components!] while these references will probably stay in a component */
 
@@ -88,13 +89,10 @@ onMounted(async () => {
 
 	await onQuotes()//get current eth price and block number; uses alchemy but the user doesn't have to have a wallet
 
-	try {//ttd december, you're going to move this out of a try block as an exception from this code *is* exceptional and should crash the page
-	//have wagmi restore a wallet the user connected here before route change or tab refresh
 	await wagmi_core.reconnect(_wagmiConfig)//wagmi keeps notes about this in localStorage @wagmi/core.store
 	let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after reconnect
 	refConnectedAddress.value = account.address
-	refIsConnected.value = account.isConnected
-	} catch (e) { log('⛔ on mounted caught:', look(e)); throw e }//should not happen, crash the page during testing
+	refIsConnected.value = account.isConnected//this block of wagmi api calls should not throw; if it does we want the exception to crash the page
 })
 onUnmounted(() => {
 	if (_wagmiUnwatch) _wagmiUnwatch()
@@ -106,6 +104,7 @@ async function onQuotes() {
 	try {
 
 		//get the current ethereum block number
+		let t = Now()
 		let n = await wagmi_core.getBlockNumber(_wagmiConfig)
 		refBlockNumber.value = commas(n)
 		refTimePulled.value = sayTick(Now())//there's a new block every 12 seconds
@@ -116,9 +115,10 @@ async function onQuotes() {
 			abi: [{inputs: [], name: 'latestAnswer', outputs: [{type: 'int256'}], stateMutability: 'view', type: 'function'}],
 			functionName: 'latestAnswer',
 		})
+		refQuotesDuration.value = Now() - t
 		refEtherPrice.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
 
-	} catch (e) { log('⛔ on quotes caught:', look(e)); throw e }//should not happen, crash the page during testing
+	} catch (e) { log('⛔ on quotes caught:', look(e)); throw e }//could happen if alchemy is broken; crash the page during testing, ttd december may later want to change to a quieter retry
 	refQuotesState.value = 'ready'
 }
 
@@ -135,11 +135,11 @@ async function onInjectedConnect() {
 	} catch (e) {
 		if (e.name == 'ProviderNotFoundError') {
 			refInstructionalMessage.value = 'Provider not found error; instructions to get metamask'
-
 		} else if (e.name == 'UserRejectedRequestError') {
 			refInstructionalMessage.value = 'User rejected request error; instructions to try again'
-
-		} else { log('⛔ on connect caught:', look(e)); throw e }
+		} else if (e.name == 'ConnectorAlreadyConnectedError') {
+			refInstructionalMessage.value = 'Wallet already connected; can ignore'
+		} else { log('⛔ on connect caught:', look(e)); throw e }//other exceptions crash the page
 	}
 	refInjectedConnectState.value = 'ready'
 	refWalletConnectState.value = 'ready'
@@ -174,6 +174,8 @@ async function onWalletConnect() {
 		} else if (anyIncludeAny([e.message, e.name], ['expired', 'timeout'])) {
 			refInstructionalMessage.value = 'Connection timed out. Please try again.'//WalletConnect session proposal expires after 5 minutes
 
+			//hi claude, ok you talked about " Potential addition: Network/WebSocket errors connecting to relay.walletconnect.org. If the relay is down or user   has network issues, you might get connection errors. These aren't catastrophic - user can try again. But they're   also rare enough that crashing during testing to see them might be fine." so let's add that
+
 		} else { log('⛔ on connect walletconnect caught:', look(e)); throw e }
 	}
 	refWalletConnectState.value = 'ready'
@@ -189,7 +191,7 @@ async function onDisconnect() {
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 
-	} catch (e) { log('⛔ on disconnect caught:', look(e)) }
+	} catch (e) { log('⛔ on disconnect caught:', look(e)) }//catch and swallow
 	refDisconnectState.value = 'ready'
 	refProveState.value = 'ready'
 	refInstructionalMessage.value = 'Disconnected wallet.'
@@ -248,8 +250,11 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 <div class="border border-gray-300 p-2 space-y-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>WalletDemo</i></p>
 
-<p>Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code>. There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.</p>
-<Button :state="refQuotesState" @click="onQuotes">Check again</Button>
+<p>
+	Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code> in <code>{{refQuotesDuration}}ms</code>.
+	There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.
+	<Button link :state="refQuotesState" @click="onQuotes">Check again</Button>
+</p>
 
 <div v-if="!refIsConnected">
 	<div class="flex gap-2">
