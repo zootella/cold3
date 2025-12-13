@@ -118,7 +118,11 @@ async function onQuotes() {
 		refQuotesDuration.value = Now() - t
 		refEtherPrice.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
 
-	} catch (e) { log('⛔ on quotes caught:', look(e)); throw e }//could happen if alchemy is broken; crash the page during testing, ttd december may later want to change to a quieter retry
+	} catch (e) {
+		if (anyIncludeAny([e.message, e.name], ['fetch', 'timeout', 'network', '429', 'rate'])) {
+			log('detected network timeout or connection error to alchemy', look({e}))
+		} else { log('⛔ on quotes caught:', look(e)); throw e }
+	}
 	refQuotesState.value = 'ready'
 }
 
@@ -170,12 +174,12 @@ async function onWalletConnect() {
 		refUri.value = ''//hide QR code on any error
 		if (e.name == 'UserRejectedRequestError') {
 			refInstructionalMessage.value = 'Connection rejected. Please try again.'
-
+		} else if (e.name == 'ConnectorAlreadyConnectedError') {
+			refInstructionalMessage.value = 'Wallet already connected.'
 		} else if (anyIncludeAny([e.message, e.name], ['expired', 'timeout'])) {
-			refInstructionalMessage.value = 'Connection timed out. Please try again.'//WalletConnect session proposal expires after 5 minutes
-
-			//hi claude, ok you talked about " Potential addition: Network/WebSocket errors connecting to relay.walletconnect.org. If the relay is down or user   has network issues, you might get connection errors. These aren't catastrophic - user can try again. But they're   also rare enough that crashing during testing to see them might be fine." so let's add that
-
+			refInstructionalMessage.value = 'Connection timed out. Please try again.'//session proposal has 5min expiration
+		} else if (anyIncludeAny([e.message, e.name], ['socket', 'relay', 'websocket', 'connection', 'network', 'fetch'])) {
+			refInstructionalMessage.value = 'Connection error. Please check your network and try again.'
 		} else { log('⛔ on connect walletconnect caught:', look(e)); throw e }
 	}
 	refWalletConnectState.value = 'ready'
