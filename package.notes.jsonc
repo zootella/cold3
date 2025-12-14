@@ -121,7 +121,7 @@
 		"icarus": "*",
 
 		//2 utility
-		"nuxt-og-image": "5.1.12",//pinning to exactly this version after an upgrade wash change from 12 to 13 broke the build
+		"nuxt-og-image": "^5.1.6",//trying out letting this go higher than exactly 5.1.6 after seeing that a new scaffold did so
 		"@unhead/vue": "^2.0.5",
 		"unstorage": "^1.15.0",//nuxi module add og-image brings in these three, with no carrot on the module itself
 		"vidstack": "^1.12.13",//ttd july2025, did these come from og image or vidstack or elsewhere? new from the repot
@@ -134,7 +134,7 @@
 
 		//4 framework
 		"@pinia/nuxt": "^0.11.1",
-		"nuxt": "^3.17.5",
+		"nuxt": "3.20.0",//pinned nuxt to 3.20.0 on 2025dec14 as upgrade wash with ^3 erroneously brought in a nuxt devtools version that requires nuxt kit 4, while we're still on 3; ttd december, you may soon need to bite the bullet and migrate to Nuxt 4
 		"pinia": "^3.0.3",
 		"vue": "^3.5.16",
 		"vue-router": "^4.5.1",
