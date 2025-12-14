@@ -134,7 +134,7 @@
 
 		//4 framework
 		"@pinia/nuxt": "^0.11.1",
-		"nuxt": "3.20.0",//pinned nuxt to 3.20.0 on 2025dec14 as upgrade wash with ^3 erroneously brought in a nuxt devtools version that requires nuxt kit 4, while we're still on 3; ttd december, you may soon need to bite the bullet and migrate to Nuxt 4
+		"nuxt": "^3.17.5",
 		"pinia": "^3.0.3",
 		"vue": "^3.5.16",
 		"vue-router": "^4.5.1",

@@ -29,7 +29,7 @@
 		"@wagmi/core": "^2.20.3",
 		"@wagmi/vue": "^0.2.5",
 		"icarus": "*",
-		"nuxt": "3.20.0",
+		"nuxt": "^3.17.5",
 		"nuxt-og-image": "^5.1.6",
 		"pinia": "^3.0.3",
 		"qrcode": "^1.5.4",
