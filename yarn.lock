@@ -2922,12 +2922,20 @@
   resolved "https://registry.yarnpkg.com/@nuxt/devalue/-/devalue-2.0.2.tgz#5749f04df13bda4c863338d8dabaf370f45ef7c7"
   integrity sha512-GBzP8zOc7CGWyFQS6dv1lQz8VVpz5C2yRszbXufwG/9zhStTIH50EtD87NmWbTMwXDvZLNg8GIpb1UFdH93JCA==
 
-"@nuxt/devtools-kit@3.1.1", "@nuxt/devtools-kit@^3.1.1":
+"@nuxt/devtools-kit@3.1.1":
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/@nuxt/devtools-kit/-/devtools-kit-3.1.1.tgz#963ffdc64aff163506d17c68192fb2ec631d9289"
   integrity sha512-sjiKFeDCOy1SyqezSgyV4rYNfQewC64k/GhOsuJgRF+wR2qr6KTVhO6u2B+csKs74KrMrnJprQBgud7ejvOXAQ==
   dependencies:
     "@nuxt/kit" "^4.2.1"
+    execa "^8.0.1"
+
+"@nuxt/devtools-kit@^2.6.5":
+  version "2.7.0"
+  resolved "https://registry.yarnpkg.com/@nuxt/devtools-kit/-/devtools-kit-2.7.0.tgz#981dc6d27022dad38b9ec0644da4230b8556ff35"
+  integrity sha512-MIJdah6CF6YOW2GhfKnb8Sivu6HpcQheqdjOlZqShBr+1DyjtKQbAKSCAyKPaoIzZP4QOo2SmTFV6aN8jBeEIQ==
+  dependencies:
+    "@nuxt/kit" "^3.19.3"
     execa "^8.0.1"
 
 "@nuxt/devtools-wizard@3.1.1":
@@ -2982,7 +2990,7 @@
     which "^5.0.0"
     ws "^8.18.3"
 
-"@nuxt/kit@3.20.2", "@nuxt/kit@^3.15.4", "@nuxt/kit@^3.16.0":
+"@nuxt/kit@3.20.2", "@nuxt/kit@^3.15.4", "@nuxt/kit@^3.16.0", "@nuxt/kit@^3.19.3":
   version "3.20.2"
   resolved "https://registry.yarnpkg.com/@nuxt/kit/-/kit-3.20.2.tgz#6af1b227f15ee9518337b1306829872d17a6e341"
   integrity sha512-laqfmMcWWNV1FsVmm1+RQUoGY8NIJvCRl0z0K8ikqPukoEry0LXMqlQ+xaf8xJRvoH2/78OhZmsEEsUBTXipcw==
@@ -3009,7 +3017,7 @@
     unctx "^2.4.1"
     untyped "^2.0.0"
 
-"@nuxt/kit@^4.2.0", "@nuxt/kit@^4.2.1", "@nuxt/kit@^4.2.2":
+"@nuxt/kit@^4.1.3", "@nuxt/kit@^4.2.0", "@nuxt/kit@^4.2.1", "@nuxt/kit@^4.2.2":
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/@nuxt/kit/-/kit-4.2.2.tgz#f3f900a59e8c8f71313e31366c9319806ac9c9e7"
   integrity sha512-ZAgYBrPz/yhVgDznBNdQj2vhmOp31haJbO0I0iah/P9atw+OHH7NJLUZ3PK+LOz/0fblKTN1XJVSi8YQ1TQ0KA==
@@ -5042,7 +5050,7 @@
     hookable "^5.5.3"
     unhead "2.0.19"
 
-"@unocss/core@66.5.10", "@unocss/core@^66.5.10":
+"@unocss/core@66.5.10", "@unocss/core@^66.5.10", "@unocss/core@^66.5.3":
   version "66.5.10"
   resolved "https://registry.yarnpkg.com/@unocss/core/-/core-66.5.10.tgz#b4c9c73fec2f68044e00ba1b457b87d0538783b3"
   integrity sha512-SEmPE4pWNn9VcCvZqovPwFGuG/j69W3zh+x1Ky4z/I2pnyoB0Y0lBmq22KVu/dwExe+ZKKTQpxa0j5rbE27rDQ==
@@ -5063,7 +5071,7 @@
     "@unocss/extractor-arbitrary-variants" "66.5.10"
     "@unocss/rule-utils" "66.5.10"
 
-"@unocss/preset-wind3@^66.5.10":
+"@unocss/preset-wind3@^66.5.3":
   version "66.5.10"
   resolved "https://registry.yarnpkg.com/@unocss/preset-wind3/-/preset-wind3-66.5.10.tgz#bf40b86ca83c10d27fd373588cac81ffbff6224c"
   integrity sha512-N2Wgu+AnTSr4jIEAfajOfUtwESE/Zzr0GxwW88+MHIw6Tzj6tZeCEKNNKFzsgwfGkoNjvwIeIbkaIrIGJ7SveA==
@@ -6612,10 +6620,10 @@ css-declaration-sorter@^7.2.0:
   resolved "https://registry.yarnpkg.com/css-declaration-sorter/-/css-declaration-sorter-7.3.0.tgz#edc45c36bcdfea0788b1d4452829f142ef1c4a4a"
   integrity sha512-LQF6N/3vkAMYF4xoHLJfG718HRJh34Z8BnNhd6bosOMIVjMlhuZK5++oZa3uYAgrI5+7x2o27gUqTR2U/KjUOQ==
 
-css-gradient-parser@^0.0.17:
-  version "0.0.17"
-  resolved "https://registry.yarnpkg.com/css-gradient-parser/-/css-gradient-parser-0.0.17.tgz#9a523419f328ad2777ae790c296a6932d470aa9a"
-  integrity sha512-w2Xy9UMMwlKtou0vlRnXvWglPAceXCTtcmVSo8ZBUvqCV5aXEFP/PC6d+I464810I9FT++UACwTD5511bmGPUg==
+css-gradient-parser@^0.0.16:
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/css-gradient-parser/-/css-gradient-parser-0.0.16.tgz#5735da0822aef39da9b1960b314792ab542d9bb5"
+  integrity sha512-3O5QdqgFRUbXvK1x5INf1YkBz1UKSWqrd63vWsum8MNHDBYD5urm3QtxZbKU259OrEXNM26lP/MPY3d1IGkBgA==
 
 css-select@^5.1.0:
   version "5.2.2"
@@ -7416,7 +7424,7 @@ execa@^8.0.1:
     signal-exit "^4.1.0"
     strip-final-newline "^3.0.0"
 
-execa@^9.6.1:
+execa@^9.6.0:
   version "9.6.1"
   resolved "https://registry.yarnpkg.com/execa/-/execa-9.6.1.tgz#5b90acedc6bdc0fa9b9a6ddf8f9cbb0c75a7c471"
   integrity sha512-9Be3ZoN4LmYR90tUoVu2te2BsbzHfhJyfEiAVfz7N5/zv+jduIfLrV2xdQXOHbaD6KgpGdO9PRPM1Y4Q9QkPkA==
@@ -7895,9 +7903,9 @@ hex-rgb@^4.1.0:
   integrity sha512-Ox1pJVrDCyGHMG9CFg1tmrRUMRPRsAWYc/PinY0XzJU4K7y7vjNoLKIQ7BR5UJMCxNN8EM1MNDmHWA/B3aZUuw==
 
 hono@^4.9.6:
-  version "4.11.0"
-  resolved "https://registry.yarnpkg.com/hono/-/hono-4.11.0.tgz#02407c682775695eb051a6fda86059a5a0deea4a"
-  integrity sha512-Jg8uZzN2ul8/qlyid5FO8O624F3AK0wKtkgoeEON1qBum1rM1itYBxoMKu/1SPJC7F1+xlIZsJMmc4HHhJ1AWg==
+  version "4.11.1"
+  resolved "https://registry.yarnpkg.com/hono/-/hono-4.11.1.tgz#cb1b0c045fc74a96c693927234c95a45fb46ab0b"
+  integrity sha512-KsFcH0xxHes0J4zaQgWbYwmz3UPOOskdqZmItstUG93+Wk1ePBLkLGwbP9zlmh1BFUiL8Qp+Xfu9P7feJWpGNg==
 
 hookable@^5.5.3:
   version "5.5.3"
@@ -9274,40 +9282,40 @@ nuxi@^3.25.1:
   resolved "https://registry.yarnpkg.com/nuxi/-/nuxi-3.31.2.tgz#f7270da19304cf1be85bb14374edaef88e87406b"
   integrity sha512-sGH2bmLa5Qg4k5Ml/yiLADq/L/O34WmtRNXsl7q/xQdkw+GYq8KmhAt1+BWnW0wD5Q32A/cFgJeUl/Pc+6g37Q==
 
-nuxt-og-image@^5.1.6:
-  version "5.1.13"
-  resolved "https://registry.yarnpkg.com/nuxt-og-image/-/nuxt-og-image-5.1.13.tgz#b1123dc21bb94c2a1d274a9dde1ff713d65831ed"
-  integrity sha512-H9kqGlmcEb9agWURwT5iFQjbr7Ec7tcQHZZaYSpC/JXKq2/dFyRyAoo6oXTk6ob20dK9aNjkJDcX2XmgZy67+w==
+nuxt-og-image@5.1.12:
+  version "5.1.12"
+  resolved "https://registry.yarnpkg.com/nuxt-og-image/-/nuxt-og-image-5.1.12.tgz#f7bb996ca94be73bca88c1dfd145f39cb441fad8"
+  integrity sha512-BrQI7+g8Jqa7QtN+dDUPCs5WBCQM93YlnMJvyCtCOL0M5WKP7JMHyj51dvi9SxQklVvXpfc8FhUDm290K/OuYw==
   dependencies:
-    "@nuxt/devtools-kit" "^3.1.1"
-    "@nuxt/kit" "^4.2.2"
+    "@nuxt/devtools-kit" "^2.6.5"
+    "@nuxt/kit" "^4.1.3"
     "@resvg/resvg-js" "^2.6.2"
     "@resvg/resvg-wasm" "^2.6.2"
-    "@unocss/core" "^66.5.10"
-    "@unocss/preset-wind3" "^66.5.10"
+    "@unocss/core" "^66.5.3"
+    "@unocss/preset-wind3" "^66.5.3"
     chrome-launcher "^1.2.1"
     consola "^3.4.2"
     defu "^6.1.4"
-    execa "^9.6.1"
+    execa "^9.6.0"
     image-size "^2.0.2"
-    magic-string "^0.30.21"
+    magic-string "^0.30.19"
     mocked-exports "^0.1.1"
-    nuxt-site-config "^3.2.11"
+    nuxt-site-config "^3.2.9"
     nypm "^0.6.2"
-    ofetch "^1.5.1"
+    ofetch "^1.4.1"
     ohash "^2.0.11"
     pathe "^2.0.3"
     pkg-types "^2.3.0"
-    playwright-core "^1.57.0"
+    playwright-core "^1.56.0"
     radix3 "^1.1.2"
-    satori "^0.18.3"
+    satori "^0.15.2"
     satori-html "^0.3.2"
     sirv "^3.0.2"
     std-env "^3.10.0"
     strip-literal "^3.1.0"
     ufo "^1.6.1"
-    unplugin "^2.3.11"
-    unwasm "^0.5.2"
+    unplugin "^2.3.10"
+    unwasm "^0.3.11"
     yoga-wasm-web "^0.3.3"
 
 nuxt-site-config-kit@3.2.14:
@@ -9321,7 +9329,7 @@ nuxt-site-config-kit@3.2.14:
     std-env "^3.10.0"
     ufo "^1.6.1"
 
-nuxt-site-config@^3.2.11:
+nuxt-site-config@^3.2.9:
   version "3.2.14"
   resolved "https://registry.yarnpkg.com/nuxt-site-config/-/nuxt-site-config-3.2.14.tgz#1bf3058130dfb16e594db532d78e7738c59a5ec8"
   integrity sha512-/IzAkBFpe8kDJiSK7fw7G0EPnNImIh0x4jdwil8Mmaz03usTtkeWgnfZu9NJpMSI9eO5jJ+dxd/avjxssvdqwQ==
@@ -9955,7 +9963,7 @@ pkg-types@^2.1.0, pkg-types@^2.2.0, pkg-types@^2.3.0:
     exsolve "^1.0.7"
     pathe "^2.0.3"
 
-playwright-core@^1.57.0:
+playwright-core@^1.56.0:
   version "1.57.0"
   resolved "https://registry.yarnpkg.com/playwright-core/-/playwright-core-1.57.0.tgz#3dcc9a865af256fa9f0af0d67fc8dd54eecaebf5"
   integrity sha512-agTcKlMw/mjBWOnD6kFZttAAGHgi/Nw0CZ2o6JqWSbMlI219lAFLZZCyqByTsvVAJq5XA5H8cA6PrvBRpBWEuQ==
@@ -10691,22 +10699,22 @@ satori-html@^0.3.2:
   dependencies:
     ultrahtml "^1.2.0"
 
-satori@^0.18.3:
-  version "0.18.3"
-  resolved "https://registry.yarnpkg.com/satori/-/satori-0.18.3.tgz#5e8dbaed2e27cecc49d71b9f3c4e8671b1af8791"
-  integrity sha512-T3DzWNmnrfVmk2gCIlAxLRLbGkfp3K7TyRva+Byyojqu83BNvnMeqVeYRdmUw4TKCsyH4RiQ/KuF/I4yEzgR5A==
+satori@^0.15.2:
+  version "0.15.2"
+  resolved "https://registry.yarnpkg.com/satori/-/satori-0.15.2.tgz#99b497d35e7e3093645a5a08a1935573b7120420"
+  integrity sha512-vu/49vdc8MzV5jUchs3TIRDCOkOvMc1iJ11MrZvhg9tE4ziKIEIBjBZvies6a9sfM2vQ2gc3dXeu6rCK7AztHA==
   dependencies:
     "@shuding/opentype.js" "1.4.0-beta.0"
     css-background-parser "^0.1.0"
     css-box-shadow "1.0.0-3"
-    css-gradient-parser "^0.0.17"
+    css-gradient-parser "^0.0.16"
     css-to-react-native "^3.0.0"
     emoji-regex-xs "^2.0.1"
     escape-html "^1.0.3"
     linebreak "^1.1.0"
     parse-css-color "^0.2.1"
     postcss-value-parser "^4.2.0"
-    yoga-layout "^3.2.1"
+    yoga-wasm-web "^0.3.3"
 
 sax@>=0.6.0, sax@^1.4.1:
   version "1.4.3"
@@ -11802,7 +11810,7 @@ unplugin@^1.12.0:
     acorn "^8.14.0"
     webpack-virtual-modules "^0.6.2"
 
-unplugin@^2.0.0, unplugin@^2.1.0, unplugin@^2.3.11, unplugin@^2.3.2, unplugin@^2.3.6:
+unplugin@^2.0.0, unplugin@^2.1.0, unplugin@^2.3.10, unplugin@^2.3.11, unplugin@^2.3.2, unplugin@^2.3.6:
   version "2.3.11"
   resolved "https://registry.yarnpkg.com/unplugin/-/unplugin-2.3.11.tgz#411e020dd2ba90e2fbe1e7bd63a5a399e6ee3b54"
   integrity sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==
@@ -11857,18 +11865,6 @@ unwasm@^0.3.11:
     pathe "^2.0.3"
     pkg-types "^2.2.0"
     unplugin "^2.3.6"
-
-unwasm@^0.5.2:
-  version "0.5.2"
-  resolved "https://registry.yarnpkg.com/unwasm/-/unwasm-0.5.2.tgz#cd5a720c4614e57a6e3556f4ed2d0495d27bc947"
-  integrity sha512-uWhB7IXQjMC4530uVAeu0lzvYK6P3qHVnmmdQniBi48YybOLN/DqEzcP9BRGk1YTDG3rRWRD8me55nIYoTHyMg==
-  dependencies:
-    exsolve "^1.0.8"
-    knitwork "^1.3.0"
-    magic-string "^0.30.21"
-    mlly "^1.8.0"
-    pathe "^2.0.3"
-    pkg-types "^2.3.0"
 
 update-browserslist-db@^1.2.0:
   version "1.2.2"
@@ -12397,11 +12393,6 @@ yoctocolors@^2.1.1:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/yoctocolors/-/yoctocolors-2.1.2.tgz#d795f54d173494e7d8db93150cec0ed7f678c83a"
   integrity sha512-CzhO+pFNo8ajLM2d2IW/R93ipy99LWjtwblvC1RsoSUMZgyLbYFr221TnSNT7GjGdYui6P459mw9JH/g/zW2ug==
-
-yoga-layout@^3.2.1:
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/yoga-layout/-/yoga-layout-3.2.1.tgz#d2d1ba06f0e81c2eb650c3e5ad8b0b4adde1e843"
-  integrity sha512-0LPOt3AxKqMdFBZA3HBAt/t/8vIKq7VaQYbuA8WxCgung+p9TVyKRYdpvCb80HcdTN2NkbIKbhNwKUfm3tQywQ==
 
 yoga-wasm-web@^0.3.3:
   version "0.3.3"
