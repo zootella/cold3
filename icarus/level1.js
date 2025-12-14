@@ -20,33 +20,66 @@ totpGenerate,
 safefill, deindent, commas,
 } from './level0.js'
 
-//from npm
+//static imports
 import {z as zod} from 'zod'//use to validate email
 import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
 import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
 import {getAddress as viem_getAddress} from 'viem'
 
-//from node
-let module_node
-async function loadNode() {//for calls from lambda and local node testing; don't call from web worker or page, will throw
-	if (!module_node) {
-		module_node = {
+//dynamic imports
+
+/*
+ttd december, herd here
+- WalletDemo, viem and wagmi
+- QrCode, qrcode
+- UppyDemo, uppy (upcoming)
+
+const imported = await fsDynamicImport
+imported.fs
+
+const node_module = await nodeDynamicImport()
+//^call it thing_module both here for caching, and in the using component for using
+
+nodeDynamicImport
+fuzzDynamicImport
+walletDynamicImport
+qrDynamicImport
+uppyDynamicImport
+
+yeah, bundle them together by topic, not by module
+*/
+
+//node imports for running tests on the command line
+let _node
+async function nodeDynamicImport() {//for calls from lambda and local node testing; don't call from web worker or page, will throw
+	if (!_node) {
+		_node = {
 			fs:     await import('node:fs'),
 			stream: await import('node:stream'),
 			//note that crypto is not here because Node exposes it under crypto.subtle matching the browser API
 		}
 	}
-	return module_node
+	return _node
+}
+async function fuzzDynamicImport() {
+	//these modules are installed as development dependencies in the root package.json, and are not mentioned in any workspace's package.json; we want to keep bundlers from trying to package them into any client or server build
+	const {customAlphabet} = await import(/* @vite-ignore */ 'nanoid')
+	const {Secret, TOTP}   = await import(/* @vite-ignore */ 'otpauth')//magic comment to calm the aggressive preprocessor 🤯
+	return {customAlphabet, Secret, TOTP}
 }
 
 /*
 notes about imports:
+- the frameworks and bundlers have powerful tree shaking and code splitting capabilities and intelligence, and we're trying to not get in their way or mess that up
+- icarus being used in every build of every workspace has made all this, at times, quite challenging
 - modules promise isomorphic but then don't deliver: test in node, browser, and web worker SSR
 - some of these are still CommonJS, and then you have to look for .default
 - static imports above mean functions that use these don't have to be async, but the initial bundle size is larger
 - switching some to dynamic could save bundle size, but would spread async up the call tree
 - code for a dynamic import must name the module as a string literal argument, otherwise the bundler won't know to include it!
+- persephone.js as dynamic imports in addition to these. moving them here as amaonDynamicImport/twilioDynamicImport/sharpDynamicImport might work and be a consistancy flex, but we won't ever need them outside lambda, and here they could only confuse the SvelteKit and Nuxt bundlers
+- many users won't ever enter a phone number, or email, or use a wallet, upload a file, or see a qr code. Nuxt's client bundler does a good job of code splitting so pages load fast and bundled modules that won't get called are not delivered at all. but importing everything here in level1.js and then importing icarus everywhere messes that up. as a monolith, the client bundle is still small, but later we might want to go back and refactor to let code splitting work ⬛️🐵 ttd december
 */
 
 
@@ -1169,27 +1202,16 @@ test(() => {
 //                                         |_|                                     
 
 /*
-to run these fuzz comparisons:
-- run tests in Node with $ yarn test, the modules are installed as development dependencies in the project root
-- switch individual tests on with noop <--> test
-*/
-async function fuzzImports() {
-	const {customAlphabet} = await import(/* @vite-ignore */ 'nanoid')
-	const {Secret, TOTP}   = await import(/* @vite-ignore */ 'otpauth')//magic comment to calm the aggressive preprocessor 🤯
-	return {customAlphabet, Secret, TOTP}
-}
-
-/*
 Goo-idz!
 https://www.npmjs.com/package/nanoid
 https://github.com/ai/nanoid
 https://zelark.github.io/nano-id-cc/ collision calculator
 */
-noop(async () => { const fuzz = await fuzzImports()
+noop(async () => { const fuzz_module = await fuzzDynamicImport()
 	//here's what your Tag() function looked like before you extracted the implementation from nanoid to move it down to level0
 	function nanoidTag() {
 		const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-		return fuzz.customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
+		return fuzz_module.customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
 	}
 	for (let i = 0; i < 20; i++) log(`${nanoidTag()} from nanoid and ${Tag()} from Tag()`)//sanity check that they look the same
 })
@@ -1209,13 +1231,13 @@ base32 has (b) and (c) like base16 while being much shorter
 Data() has short zero dependency implementations of base16, 32, 62, and 64
 turn on this fuzz tester to use the base32 implementation that comes with otpauth to confirm our base32 implementation matches
 */
-async function cycle4648(size) { const fuzz = await fuzzImports()
+async function cycle4648(size) { const fuzz_module = await fuzzDynamicImport()
 	let d0 = Data({random: size})
 	let s1 = d0.base32()//we've written our own implementation of base32 encoding into Data
-	let s2 = fuzz.Secret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
+	let s2 = fuzz_module.Secret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
 	ok(s1 == s2)
 	let d1 = Data({base32: s1})
-	let d2 = Data({array: fuzz.Secret.fromBase32(s2).bytes})
+	let d2 = Data({array: fuzz_module.Secret.fromBase32(s2).bytes})
 	ok(d1.base16() == d2.base16())
 }
 noop(async () => {
@@ -1240,12 +1262,12 @@ async function testCycle(m, f) {
 /*
 RFC6238: time-based one-time password
 */
-async function cycle6238() { const fuzz = await fuzzImports()
+async function cycle6238() { const fuzz_module = await fuzzDynamicImport()
 	let d = Data({random: 20})//random shared secret for a totp enrollment
 	let t = randomBetween(0, 100*Time.year)//random timestamp between 1970 and 2070
 
 	let code1 = await totpGenerate(d, t)//our custom implementation in level0 which uses the js subtle api, which calls to native code
-	let code2 = (new fuzz.TOTP({secret: fuzz.Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})//same thing, using the npm otpauth module, 638k weekly downloads, but brings its own javascript implementation of crypto primitives, :(
+	let code2 = (new fuzz_module.TOTP({secret: fuzz_module.Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})//same thing, using the npm otpauth module, 638k weekly downloads, but brings its own javascript implementation of crypto primitives, :(
 	ok(code1 == code2)//make sure that our implementation matches what the popular module would compute!
 }
 noop(async () => {
@@ -1834,7 +1856,7 @@ ${hashedStream.pieceHash.base32()} piece hash from stream
 
 //turn on: try out on the command line with real files $ yarn test ~/Downloads/big.mov
 noop(async () => {
-	const node = await loadNode()
+	const node = await nodeDynamicImport()
 	let name = process.argv[2]
 	let size = node.fs.statSync(name).size
 	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//convert from Node-style stream to isomorphic WHATWG stream

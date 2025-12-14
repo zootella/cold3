@@ -7,6 +7,8 @@ anyIncludeAny,
 } from 'icarus'
 
 /*
+ttd december, notes before moving stuff here in WalletDemo to stores/page2.js
+
 for coding and smoke testing right now, all this state is in a component
 in a moment, we'll refactor much of this from here into a pinia store
 that way, wagmi will be loaded once the first time a navigated tab needs it
@@ -16,7 +18,32 @@ ok but some things to think about in preparation for that refactor:
 (2) other stuff, like uri, like anything related to a previously completed or half completed and abandoned connection or proof flow, should *not* go in the store--here, we want the user's navigation away to cancel and reset the abandoned operation
 (3) right now we are calling _wagmiUnwatch onUnmounted; in a store that won't happen we'll just keep it going until the whole tab is torn down
 (4) we've got some pinia stores intended to begin with the server render as part of universal rendering; other stores are intended and coded so that they don't do anything on a server render portion, and work entirely on the client. for this web3 wallet stuff, we want that--client only
-(5) should the store be wallet specific, or should there be a wallet (and on client only) portion of a more unified credential store? if it's a wallet store, then the credential store may need to call into it, or a component which wants all the user's credentials may need to use both. (downside) but a standalone wallet store can be client only. if instead it's part of a larger unified user credential store, then there will be non-wallet stuff there that starts in the server render, and we'll have to keep the wallet stuff isolated so it's client only (im thinking that's the right way to do this between these two choices) to see current example stores coded in both styles, check out stores/main.js (always server render first, then client) compared to page.js (client only) and compared to flex.js (which can start out on the server render if a new tab's first GET is to a route with a component that needs it) ok so looking at that now, it seems like the pattern you established is to sort things not by type (wallets, credentials, etc) but rather by how and when it's loaded, actually. so not sure if we should use that pattern, or build a new alternative candidate pattern alongside it
+
+wagmi's own architecture intends one single instance that lives with the tab
+and state related to an in-progress connect and prove flow is baked in
+so, we're not going to try to separate that. as claude explains:
+
+Wagmi's architecture:
+ - Single config, single set of connector instances, single WebSocket to relay
+ - In-flight operations (pending session proposals, pending signature requests) are bound to that config
+ - No clean "abort and reset" API - operations complete on their own (timeout, user action) or stay pending
+
+The simple path forward:
+ - Move everything wagmi-related into the store: imports, config, connection state, flow state, all of it
+ - Component becomes a pure view layer - reads store state, calls store methods, shows appropriate UI
+ - If user navigates away mid-QR-code and comes back, component re-mounts and displays the same QR code from store
+   state
+ - The pending WalletConnect session proposal is still alive, user can still scan it
+ - If they don't want to, they wait for timeout (5 min) or we could add a "Cancel" that calls disconnect
+
+What this means practically:
+ - refUri, refConnectedAddress, refIsConnected, refInstructionalMessage, all button states - all move to store
+ - onInjectedConnect, onWalletConnect, onDisconnect, onProve - all move to store
+ - _wagmiConfig, _wagmiUnwatch - move to store (and we stop unwatching on unmount since store persists)
+ - Component just does: const store = usePage2Store(); await store.load() then renders based on store state
+
+One nuance: The onDisplayUri callback in connector config can directly set store.uri since it's a closure over
+store state. No subscription pattern needed.
 */
 
 /* [1][may move to store!] first, these references will probably move to a pinia store */
