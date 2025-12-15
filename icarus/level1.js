@@ -28,30 +28,6 @@ import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next
 import {getAddress as viem_getAddress} from 'viem'
 
 //dynamic imports
-
-/*
-ttd december, herd here
-- WalletDemo, viem and wagmi
-- QrCode, qrcode
-- UppyDemo, uppy (upcoming)
-
-const imported = await fsDynamicImport
-imported.fs
-
-const node_module = await nodeDynamicImport()
-//^call it thing_module both here for caching, and in the using component for using
-
-nodeDynamicImport
-fuzzDynamicImport
-walletDynamicImport
-qrDynamicImport
-uppyDynamicImport
-
-yeah, bundle them together by topic, not by module
-
-this work done before adding uppy 🧐🎩
-*/
-
 let _qrcode
 export async function qrcodeDynamicImport() {
 	if (import.meta.client && !_qrcode) {
@@ -59,7 +35,21 @@ export async function qrcodeDynamicImport() {
 	}//our hope with if (import.meta.client) is nuxt will tree shake the whole module from the server bundle
 	return _qrcode
 }
-
+let _uppy
+export async function uppyDynamicImport() {//🧐🎩
+	if (import.meta.client && !_uppy) {//tree shake viem and wagmi out of the server build entirely
+		/* (example of what we'll  have in here)
+		let [m1, m2, m3, m4] = await Promise.all([
+			import('viem'),
+			import('viem/chains'),
+			import('@wagmi/core'),
+			import('@wagmi/connectors'),
+		])
+		_uppy = {viem: m1, viem_chains: m2, wagmi_core: m3, wagmi_connectors: m4}
+		*/
+	}
+	return _uppy
+}
 let _wevm
 export async function wevmDynamicImport() {//viem and wagmi are by the same team, https://wevm.dev/
 	if (import.meta.client && !_wevm) {//tree shake viem and wagmi out of the server build entirely
@@ -67,14 +57,14 @@ export async function wevmDynamicImport() {//viem and wagmi are by the same team
 			import('viem'),
 			import('viem/chains'),
 			import('@wagmi/core'),
-			import('@wagmi/connectors'),//these modules are huge, and static imports break the deploy to Cloudflare
+			import('@wagmi/connectors'),//these modules are big, and static imports break the deploy to Cloudflare
 		])
 		_wevm = {viem: m1, viem_chains: m2, wagmi_core: m3, wagmi_connectors: m4}
 	}
 	return _wevm
 }
 
-//node imports for running tests on the command line
+//dynamic imports that should not be bundled by anone; these are just for running manual tests on the command line
 let _node
 async function nodeDynamicImport() {//for calls from lambda and local node testing; don't call from web worker or page, will throw
 	if (!_node) {

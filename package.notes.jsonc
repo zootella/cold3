@@ -120,17 +120,27 @@
 		//1 icarus
 		"icarus": "*",
 
-		//2 utility
+		//2 utility, individual
+		"qrcode": "^1.5.4",//importable in node and browser but not web worker!
+		"vidstack": "^1.12.13",
+
+		//utility, nuxt-og-image, $ nuxi module add og-image brings in these three
 		"nuxt-og-image": "^5.1.6",//trying out letting this go higher than exactly 5.1.6 after seeing that a new scaffold did so
 		"@unhead/vue": "^2.0.5",
-		"unstorage": "^1.15.0",//nuxi module add og-image brings in these three, with no carrot on the module itself
-		"vidstack": "^1.12.13",//ttd july2025, did these come from og image or vidstack or elsewhere? new from the repot
-		"qrcode": "^1.5.4",//importable in node and browser but not web worker!
+		"unstorage": "^1.15.0",//universal key-value storage abstraction with multiple driver backends
+
+		//utility, viem and wagmi
 		"viem": "^2.37.3",//functions to read, write, encode for the ethereum blockchain
 		"@wagmi/core": "^2.20.3",//wallet connection state management
 		"@wagmi/connectors": "^5.9.9",//adapters for metamask, walletconnect, and other wallets
 		"@wagmi/vue": "^0.2.5",//vue composables that wrap wagmi core to make wallet state reactive
 		"@tanstack/vue-query": "^5.87.1",//peer dependency of wagmi vue to do async state, caching, and avoid duplicating requests
+
+		//utility, uppy
+		"@uppy/core": "^5.2.0",//file upload orchestrator: state, events, restrictions, plugin system
+		"@uppy/dashboard": "^5.1.0",//full-featured upload ui: drag-drop, progress, previews, file list
+		"@uppy/aws-s3": "^5.1.0",//upload destination plugin for s3 via presigned urls, includes multipart
+		"@uppy/vue": "^3.1.0",//vue 3 components and hooks wrapping uppy for reactive integration
 
 		//4 framework
 		"@pinia/nuxt": "^0.11.1",
