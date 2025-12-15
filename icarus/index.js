@@ -200,6 +200,8 @@ functions that use module imports
 */
 export {
 
+qrcodeDynamicImport, viemDynamicImport,
+
 sayPlural, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
 Limit, cropToLimit,

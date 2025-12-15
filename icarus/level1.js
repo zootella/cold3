@@ -50,6 +50,32 @@ uppyDynamicImport
 yeah, bundle them together by topic, not by module
 */
 
+let _qrcode
+export async function qrcodeDynamicImport() {
+	if (import.meta.client && !_qrcode) {
+		_qrcode = await import('qrcode')
+	}//our hope with if (import.meta.client) is nuxt will tree shake the whole module from the server bundle
+	return _qrcode
+}
+
+let _viem, _viem_chains, _wagmi_core, _wagmi_connectors
+export async function viemDynamicImport() {
+	if (import.meta.client && !_viem) {//tree shake viem and wagmi out of the server build entirely
+		[_viem, _viem_chains, _wagmi_core, _wagmi_connectors] = await Promise.all([
+			import('viem'),
+			import('viem/chains'),
+			import('@wagmi/core'),
+			import('@wagmi/connectors'),//these modules are huge, and static imports break the deploy to Cloudflare
+		])
+	}
+	return {
+		viem:             _viem,
+		viem_chains:      _viem_chains,
+		wagmi_core:       _wagmi_core,
+		wagmi_connectors: _wagmi_connectors,
+	}
+}
+
 //node imports for running tests on the command line
 let _node
 async function nodeDynamicImport() {//for calls from lambda and local node testing; don't call from web worker or page, will throw
