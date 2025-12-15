@@ -48,6 +48,8 @@ qrDynamicImport
 uppyDynamicImport
 
 yeah, bundle them together by topic, not by module
+
+this work done before adding uppy 🧐🎩
 */
 
 let _qrcode
