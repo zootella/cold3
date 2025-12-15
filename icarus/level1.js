@@ -58,22 +58,18 @@ export async function qrcodeDynamicImport() {
 	return _qrcode
 }
 
-let _viem, _viem_chains, _wagmi_core, _wagmi_connectors
-export async function viemDynamicImport() {
-	if (import.meta.client && !_viem) {//tree shake viem and wagmi out of the server build entirely
-		[_viem, _viem_chains, _wagmi_core, _wagmi_connectors] = await Promise.all([
+let _wevm
+export async function wevmDynamicImport() {//viem and wagmi are by the same team, https://wevm.dev/
+	if (import.meta.client && !_wevm) {//tree shake viem and wagmi out of the server build entirely
+		let [m1, m2, m3, m4] = await Promise.all([
 			import('viem'),
 			import('viem/chains'),
 			import('@wagmi/core'),
 			import('@wagmi/connectors'),//these modules are huge, and static imports break the deploy to Cloudflare
 		])
+		_wevm = {viem: m1, viem_chains: m2, wagmi_core: m3, wagmi_connectors: m4}
 	}
-	return {
-		viem:             _viem,
-		viem_chains:      _viem_chains,
-		wagmi_core:       _wagmi_core,
-		wagmi_connectors: _wagmi_connectors,
-	}
+	return _wevm
 }
 
 //node imports for running tests on the command line

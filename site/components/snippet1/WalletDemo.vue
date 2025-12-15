@@ -1,7 +1,7 @@
 <script setup>//./components/WalletDemo.vue
 
 import {
-viemDynamicImport,
+wevmDynamicImport,
 sayTick, originApex, anyIncludeAny,
 } from 'icarus'
 
@@ -47,8 +47,6 @@ store state. No subscription pattern needed.
 
 /* [1][may move to store!] first, these references will probably move to a pinia store */
 
-let viem, viem_chains, wagmi_core, wagmi_connectors
-
 const refConnectedAddress = ref(null)//wallet address the user connected,
 const refIsConnected = ref(false)//true if a wallet address is connected
 
@@ -69,9 +67,14 @@ const refUri = ref('')//walletconnect uri we show as a qr code
 
 let _wagmiUnwatch//from wagmi's watch account; something we need to call on unmounted if we have it
 
+let viem, viem_chains, wagmi_core, wagmi_connectors
 onMounted(async () => {
-	const m = await viemDynamicImport()//dynamic import wallet modules here on the page to work with the user's wallet
-	viem = m.viem; viem_chains = m.viem_chains; wagmi_core = m.wagmi_core; wagmi_connectors = m.wagmi_connectors
+	let wevm_module = await wevmDynamicImport()
+	viem             = wevm_module.viem
+	viem_chains      = wevm_module.viem_chains
+	wagmi_core       = wevm_module.wagmi_core
+	wagmi_connectors = wevm_module.wagmi_connectors
+
 	_wagmiConfig = wagmi_core.createConfig({//configure wagmi to use a wallet injected into the page and also WalletConnect
 		chains: [
 			viem_chains.mainnet,//choose Ethereum network with real $ETH, rather than a testnet or L2
