@@ -30,23 +30,21 @@ import {getAddress as viem_getAddress} from 'viem'
 //dynamic imports
 let _qrcode
 export async function qrcodeDynamicImport() {
-	if (import.meta.client && !_qrcode) {
+	if (import.meta.client && !_qrcode) {//use Nuxt's import meta to tree shake these modules out of the server build entirely
 		_qrcode = await import('qrcode')
 	}//our hope with if (import.meta.client) is nuxt will tree shake the whole module from the server bundle
 	return _qrcode
 }
 let _uppy
 export async function uppyDynamicImport() {//🧐🎩
-	if (import.meta.client && !_uppy) {//tree shake viem and wagmi out of the server build entirely
-		/* (example of what we'll  have in here)
+	if (import.meta.client && !_uppy) {
 		let [m1, m2, m3, m4] = await Promise.all([
-			import('viem'),
-			import('viem/chains'),
-			import('@wagmi/core'),
-			import('@wagmi/connectors'),
+			import('@uppy/core'),
+			import('@uppy/dashboard'),
+			import('@uppy/aws-s3'),
+			import('@uppy/vue'),
 		])
-		_uppy = {viem: m1, viem_chains: m2, wagmi_core: m3, wagmi_connectors: m4}
-		*/
+		_uppy = {uppy_core: m1, uppy_dashboard: m2, uppy_aws_s3: m3, uppy_vue: m4}
 	}
 	return _uppy
 }
