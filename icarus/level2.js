@@ -1408,7 +1408,7 @@ the design is simple:
 
 
 
-//note to look at how to make state including the database testable, ttd december
+//note to look at how to make state including the database able in scope of unit tests, ttd december
 
 
 
