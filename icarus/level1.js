@@ -38,13 +38,12 @@ export async function qrcodeDynamicImport() {
 let _uppy
 export async function uppyDynamicImport() {//🧐🎩
 	if (import.meta.client && !_uppy) {
-		let [m1, m2, m3, m4] = await Promise.all([
+		let [m1, m2, m3] = await Promise.all([
 			import('@uppy/core'),
 			import('@uppy/dashboard'),
 			import('@uppy/aws-s3'),
-			import('@uppy/vue'),
 		])
-		_uppy = {uppy_core: m1, uppy_dashboard: m2, uppy_aws_s3: m3, uppy_vue: m4}
+		_uppy = {uppy_core: m1, uppy_dashboard: m2, uppy_aws_s3: m3}
 	}
 	return _uppy
 }
