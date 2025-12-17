@@ -60,10 +60,6 @@ Here's a summary to paste next time:
 
 */
 
-/*
-uppyDynamicImport
-*/
-
 </script>
 <template>
 <div class="border border-gray-300 p-2">
