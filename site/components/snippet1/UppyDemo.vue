@@ -1,5 +1,15 @@
 <script setup>
 
+/*
+Uppy CSS: static imports for Dashboard styles. Unlike Vidstack (which has a Vite plugin
+that auto-extracts CSS from 'vidstack/bundle'), Uppy requires explicit CSS imports.
+Nuxt/Vite will extract these into a code-split CSS chunk loaded only when this component
+is used. CSS has no browser globals, so static imports work fine with SSR - only the JS
+needs dynamic importing via uppyDynamicImport() to avoid Cloudflare Workers issues.
+*/
+import '@uppy/core/css/style.min.css'
+import '@uppy/dashboard/css/style.min.css'
+
 import {
 uppyDynamicImport,
 } from 'icarus'
