@@ -14,60 +14,43 @@ import {
 uppyDynamicImport,
 } from 'icarus'
 
+let uppyInstance
+
 onMounted(async () => {
 	const uppy_modules = await uppyDynamicImport()
-	const uppy = new uppy_modules.uppy_core.default()
-	uppy.use(uppy_modules.uppy_dashboard.default, {
+	uppyInstance = new uppy_modules.uppy_core.default()
+	uppyInstance.use(uppy_modules.uppy_dashboard.default, {
 		inline: true,
 		target: '#uppy-dashboard',
 	})
 })
 
+onUnmounted(() => {
+	if (uppyInstance) {
+		uppyInstance.destroy()
+		uppyInstance = null
+	}
+})
+
 /*
-Here's a summary to paste next time:
+Why vanilla JS instead of @uppy/vue:
 
-  ---
-  Context: Adding Uppy to Nuxt 3 for Cloudflare Workers
+@uppy/vue provides thin Vue wrappers like <Dashboard :uppy="uppy" /> that handle mounting/unmounting
+for you. However, these components expect a pre-existing Uppy instance passed as a prop, which
+conflicts with our dynamic import pattern - we can't create the instance until after the async
+import resolves. We'd need something like:
 
-  Packages Added (site/package.json)
+  const uppy = shallowRef(null)
+  onMounted(async () => { uppy.value = new (await uppyDynamicImport()).uppy_core.default() })
+  <Dashboard v-if="uppy" :uppy="uppy" />
 
-  - @uppy/core@^5.2.0 - orchestrator: state management, events, file restrictions
-  - @uppy/dashboard@^5.1.0 - full UI: drag-drop, progress bars, previews, file list
-  - @uppy/aws-s3@^5.1.0 - upload destination: presigned URLs + multipart (merged from old @uppy/aws-s3-multipart)
-  - @uppy/vue@^3.1.0 - Vue 3 components: <Dashboard />, <DashboardModal />, hooks
+This adds complexity (shallowRef, v-if guard, prop drilling) for little benefit. The vanilla JS
+approach is simpler: mount to a DOM target in onMounted, destroy in onUnmounted. We handle the
+same lifecycle @uppy/vue would handle, but with full control and no extra abstraction layer.
 
-  Dynamic Import Pattern (icarus/level1.js)
-
-  let _uppy
-  export async function uppyDynamicImport() {
-    if (import.meta.client && !_uppy) {
-      // dynamic imports here - tree-shakes from server bundle
-    }
-    return _uppy
-  }
-  The import.meta.client guard prevents SSR execution on Cloudflare Workers.
-
-  Uppy AWS S3 Key Points
-
-  - shouldUseMultipart(file) - default threshold 100MB
-  - getUploadParameters(file) - returns presigned URL for single uploads
-  - signPart(file, partData) - presigns individual multipart chunks
-  - createMultipartUpload(), completeMultipartUpload(), abortMultipartUpload() - lifecycle
-  - S3 minimum chunk: 5MB, max 10,000 chunks per upload
-
-  SSR Considerations
-
-  - Uppy uses browser globals (window, AbortController)
-  - Must only import/instantiate client-side
-  - Options: import.meta.client guard, <ClientOnly>, .client.vue suffix, defineAsyncComponent
-
-  Sources
-
-  - https://uppy.io/docs/aws-s3/
-  - https://uppy.io/docs/vue/
-  - https://uppy.io/docs/uppy/
-  - https://github.com/transloadit/uppy
-
+Trade-off: @uppy/vue would give us reactive props (e.g., dynamically changing `plugins` or `theme`).
+We don't need that here - our config is static. If we later need reactive Uppy config, we could
+revisit, but for static Dashboard usage, vanilla JS is cleaner
 */
 
 </script>

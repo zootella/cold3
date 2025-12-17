@@ -140,7 +140,6 @@
 		"@uppy/core": "^5.2.0",//file upload orchestrator: state, events, restrictions, plugin system
 		"@uppy/dashboard": "^5.1.0",//full-featured upload ui: drag-drop, progress, previews, file list
 		"@uppy/aws-s3": "^5.1.0",//upload destination plugin for s3 via presigned urls, includes multipart
-		"@uppy/vue": "^3.1.0",//vue 3 components and hooks wrapping uppy for reactive integration
 
 		//4 framework
 		"@pinia/nuxt": "^0.11.1",

@@ -4936,16 +4936,6 @@
     namespace-emitter "^2.0.1"
     p-retry "^6.1.0"
 
-"@uppy/components@^1.0.3":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@uppy/components/-/components-1.1.0.tgz#aef0a45e1766ec588586657d608d3516ad4e4ae7"
-  integrity sha512-omiNBzJn49FQznkSwOIGn3TKz+3r4T+y8sxWIBDMO6De2genzywRk1drAWO9GbSAF3htlVuvamNojQ2pSLeh3w==
-  dependencies:
-    clsx "^2.1.1"
-    dequal "^2.0.3"
-    preact "^10.5.13"
-    pretty-bytes "^6.1.1"
-
 "@uppy/core@^5.2.0":
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/@uppy/core/-/core-5.2.0.tgz#baeb0f9f1ef5bec1882eac912f5a41094af69f84"
@@ -5007,15 +4997,6 @@
   dependencies:
     lodash "^4.17.21"
     preact "^10.5.13"
-
-"@uppy/vue@^3.1.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@uppy/vue/-/vue-3.1.0.tgz#0faf6315b8ff85860720ff5fed6b670d777b524a"
-  integrity sha512-V007Zg/GPS0OJ6F9PkhOhZAMVtSfsq6VO9cq3q1qMdfvknxgoxhcLbEz8I2zJNa2pvF7NeOn46gcGQMyrEvxTQ==
-  dependencies:
-    "@uppy/components" "^1.0.3"
-    preact "^10.5.13"
-    shallow-equal "^3.0.0"
 
 "@vercel/nft@^0.30.3":
   version "0.30.3"
@@ -6798,11 +6779,6 @@ depd@~1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/depd/-/depd-1.1.2.tgz#9bcd52e14c097763e749b274c4346ed2e560b5a9"
   integrity sha512-7emPTl6Dpo6JRXOXjLRxck+FlLRX5847cLKEn00PLAgc3g2hTZZgr+e4c2v6QpSmLeFP3n5yUo7ft6avBK/5jQ==
-
-dequal@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/dequal/-/dequal-2.0.3.tgz#2644214f1997d39ed0ee0ece72335490a7ac67be"
-  integrity sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==
 
 derive-valtio@0.1.0:
   version "0.1.0"
@@ -10224,11 +10200,6 @@ preact@^10.5.13:
   version "10.28.0"
   resolved "https://registry.yarnpkg.com/preact/-/preact-10.28.0.tgz#a851300df42842797046545e4172a4128d158755"
   integrity sha512-rytDAoiXr3+t6OIP3WGlDd0ouCUG1iCWzkcY3++Nreuoi17y6T5i/zRhe6uYfoVcxq6YU+sBtJouuRDsq8vvqA==
-
-pretty-bytes@^6.1.1:
-  version "6.1.1"
-  resolved "https://registry.yarnpkg.com/pretty-bytes/-/pretty-bytes-6.1.1.tgz#38cd6bb46f47afbf667c202cfc754bffd2016a3b"
-  integrity sha512-mQUvGU6aUFQ+rNvTIAcZuWGRT9a6f6Yrg9bHs4ImKF+HZCEK+plBvnAZYSIQztknZF2qnzNtr6F8s0+IuptdlQ==
 
 pretty-bytes@^7.1.0:
   version "7.1.0"
