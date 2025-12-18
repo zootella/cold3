@@ -78,6 +78,7 @@
 		//3 service
 		"@aws-sdk/client-ses": "^3.682.0",
 		"@aws-sdk/client-sns": "^3.682.0",//aws sdk v3 parts are already on lambda; these dev dependencies just for local development
+		"@vercel/nft": "^0.29.2",//vercel's node file trace to collect files for the diet coke vzip
 
 		//4 framework
 		"serverless": "^4.4.11",

@@ -55,6 +55,7 @@ async function listFiles() {
 			'**/.nuxt',
 			'**/.output',
 			'**/.serverless',
+			'**/vzip',
 			'**/.svelte-kit',
 			'**/.wrangler',
 			'**/*.log',

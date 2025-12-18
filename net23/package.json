@@ -18,6 +18,12 @@
 		"deploy": "yarn deploy-before && serverless deploy && yarn deploy-after",
 		"deploy-only": "serverless deploy --package .serverless",
 		"stowaway": "node stowaway.js",
+		"vzip-wash": "rimraf vzip",
+		"vzip-make": "node vzip-make.js",
+		"vzip-trace": "node vzip-trace.js",
+		"vzip-local": "cd vzip && serverless offline",
+		"vzip-deploy": "node vzip-deploy.js",
+		"vzip-size": "node -e \"let fs=require('fs'); let b=fs.statSync('vzip/.serverless/net23.zip').size; console.log('vzip serverless bundle net23.zip is '+b.toLocaleString()+' bytes')\"",
 		"www": "aws s3 sync ./www s3://www-net23-cc --delete"
 	},
 	"dependencies": {
@@ -30,6 +36,7 @@
 	"devDependencies": {
 		"@aws-sdk/client-ses": "^3.682.0",
 		"@aws-sdk/client-sns": "^3.682.0",
+		"@vercel/nft": "^0.29.2",
 		"fs-extra": "^11.2.0",
 		"serverless": "^4.4.11",
 		"serverless-domain-manager": "^8.0.0",
