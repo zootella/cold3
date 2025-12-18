@@ -11,19 +11,10 @@
 	},
 	"scripts": {
 		"local": "serverless offline --reloadHandler",
-		"build": "serverless package && yarn size",
-		"size": "node -e \"let fs=require('fs'); let b=fs.statSync('.serverless/net23.zip').size; console.log('serverless bundle net23.zip is '+b.toLocaleString()+' bytes')\"",
-		"deploy-before": "yarn stowaway && yarn --cwd ../ seal set-cloud",
-		"deploy-after": "yarn --cwd ../ seal set-local && yarn --cwd ../ test && yarn size",
-		"deploy": "yarn deploy-before && serverless deploy && yarn deploy-after",
-		"deploy-only": "serverless deploy --package .serverless",
-		"stowaway": "node stowaway.js",
-		"vzip-wash": "rimraf vzip",
-		"vzip-make": "node vzip-make.js",
-		"vzip-trace": "node vzip-trace.js",
-		"vzip-local": "cd vzip && serverless offline",
-		"vzip-deploy": "node vzip-deploy.js",
-		"vzip-size": "node -e \"let fs=require('fs'); let b=fs.statSync('vzip/.serverless/net23.zip').size; console.log('vzip serverless bundle net23.zip is '+b.toLocaleString()+' bytes')\"",
+		"build": "node vzip.js && cd vzip && serverless package && cd .. && yarn --cwd ../ test && yarn size",
+		"deploy-only": "cd vzip && serverless deploy && cd .. && yarn --cwd ../ test && yarn size",
+		"deploy": "node vzip.js && cd vzip && serverless package && serverless deploy && cd .. && yarn --cwd ../ test && yarn size",
+		"size": "node -e \"let fs=require('fs'); let b=fs.statSync('vzip/.serverless/net23.zip').size; console.log('net23.zip is '+b.toLocaleString()+' bytes')\"",
 		"www": "aws s3 sync ./www s3://www-net23-cc --delete"
 	},
 	"dependencies": {

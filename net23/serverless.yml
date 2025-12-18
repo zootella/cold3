@@ -73,45 +73,6 @@ functions:
           path: /up3
           method: post
 
-package:
-  patterns:
-    - '!**'             #exclude everything; following patterns include the folders and files we want in net23.zip
-    - 'src/**'          #lambda function handlers
-    - 'persephone/**'   #node code used by them
-    - 'node_modules/**' #node modules they import
-    - 'package.json'    #chat was sure that package.json should be excluded, but that breaks the deployment!
-    - 'serverless.yml'  #not necessary but we're throwing it in there
-
-    - '!node_modules/@img/**' #take just the sharp native binaries for amazon linux graviton arm64
-    - 'node_modules/@img/sharp-libvips-linux-arm64/**' #outside the docker container, remember to yarn stowaway so these are there!
-    - 'node_modules/@img/sharp-linux-arm64/**' #there is another pair with names like "linuxmusl" for Alpine Linux which you don't need
-    - 'node_modules/@img/colour/**' #regular javascript @img/colour module also in the folder
-
-    #even now on the current v4, serverless' package task is pretty broken
-    #without nohoist in the root package.json, net23.zip will be empty!
-    #you've seen devDependencies like aws-sdk, serverless itself, serverless plugins, and their dependencies included, but just sometimes
-    #icarus' devDependencies are reliably included, so below, we manually exclude the largest ones; many more small ones are along for the ride
-
-    - '!node_modules/@esbuild/**'
-    - '!node_modules/@babel/**'
-    - '!node_modules/@vue/**'
-    - '!node_modules/vue/**'
-    - '!node_modules/csstype/**'
-    - '!node_modules/@rollup/**'
-    - '!node_modules/rollup/**'
-    - '!node_modules/vite/**'
-    - '!node_modules/vue-router/**'
-
-    # with these exclusions, net23.zip is <20mb; these are the modules >1mb:
-    # @img
-    # twilio
-    # libphonenumber-js
-    # @types
-    # @supabase
-    # axios
-
-    # adding viem to icarus so level1 can validate Ethereum addresses caused the zip to grow 10mb; unzipped it's 16mb viem and 5mb ox; ttd september2025 leaving this as is even though lambda won't ever need to deal with blockchain
-
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization
     #before our first serverless deploy, staff performed manual steps to get the domain and ssl certificate, and put the ARN of the certificate in the .env file, referenced below
