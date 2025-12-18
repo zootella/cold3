@@ -84,7 +84,7 @@ async function main() {
 	await fs.rename(tracedDir, nodeModulesDir)
 
 	console.log('vzip-trace: swapped node_modules')
-	console.log('vzip-trace: done! test with: yarn vzip-local')
+	console.log('vzip-trace: done! next: yarn vzip-deploy')
 }
 
 main().catch(err => {

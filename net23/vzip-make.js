@@ -4,15 +4,15 @@ import fs from 'fs-extra'
 import path from 'path'
 
 /*
-vzip-make: clean room install
+vzip-make: clean room install for lambda deployment
 
 creates vzip/ folder with:
 - src/, persephone/, serverless.yml, .env from net23
 - merged dependencies from net23 + icarus (production only)
-- yarn install to get proper node_modules
+- npm install with linux arm64 flags for lambda
 - icarus .js files copied to node_modules/icarus/
 
-result: working serverless offline, ready to test locally
+result: ready for vzip-trace and vzip-deploy (not local testing)
 */
 
 const VZIP_DIR = 'vzip'
@@ -63,14 +63,14 @@ async function main() {
 	console.log('vzip-make: created package.json with merged dependencies')
 	console.log('vzip-make: dependencies:', Object.keys(mergedDeps).join(', '))
 
-	// run yarn install (--production to be explicit about no devDeps)
-	console.log('vzip-make: running yarn install --production...')
-	execSync('yarn install --production', {
+	// run npm install with linux arm64 flags (for lambda deployment)
+	console.log('vzip-make: running npm install for linux arm64...')
+	execSync('npm install --omit=dev --os=linux --cpu=arm64 --libc=glibc', {
 		cwd: VZIP_DIR,
 		stdio: 'inherit',
 	})
 
-	// copy icarus .js files AFTER yarn install (icarus is a workspace, not an npm package)
+	// copy icarus .js files AFTER npm install (icarus is a workspace, not an npm package)
 	const icarusDest = path.join(VZIP_DIR, 'node_modules/icarus')
 	await fs.ensureDir(icarusDest)
 	const icarusContents = await fs.readdir(icarusSrc)
@@ -81,7 +81,7 @@ async function main() {
 	}
 	console.log('vzip-make: copied icarus .js files to node_modules/icarus/')
 
-	console.log('vzip-make: done! test with: yarn vzip-local')
+	console.log('vzip-make: done! next: yarn vzip-trace')
 }
 
 main().catch(err => {
