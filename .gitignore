@@ -4,7 +4,6 @@ node_modules
 #serverless framework
 .serverless
 jspm_packages
-vzip
 
 #cloudflare
 .wrangler
