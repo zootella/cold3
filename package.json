@@ -15,10 +15,6 @@
 			"net23",
 			"oauth",
 			"site"
-		],
-		"nohoist": [
-			"net23/**",
-			"net23/**/**"
 		]
 	},
 	"scripts": {

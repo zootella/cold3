@@ -66,7 +66,6 @@
 		"sharp": "^0.34.4",//needs native modules that get into net23.zip with the stowaway.js script
 
 		//3 service
-		"@supabase/supabase-js": "^2.39.8",//only used by icarus; here so yarn nohoist lets serverless package it into the zip
 		"twilio": "^5.3.5",
 		"@sendgrid/mail": "^8.1.4",
 	},

@@ -19,7 +19,6 @@
 	},
 	"dependencies": {
 		"@sendgrid/mail": "^8.1.4",
-		"@supabase/supabase-js": "^2.39.8",
 		"icarus": "*",
 		"sharp": "^0.34.4",
 		"twilio": "^5.3.5"
