@@ -681,10 +681,9 @@ $ cd cold3
 $ yarn install
 $ yarn test
 
-copy in secrets and stowaway
+copy in secrets
 cold3/.env
-cold3/.env.local, place the two secrets files in the project root
-stowaway, and the stowaway folder beside the project root
+cold3/.env.keys, place the two secrets files in the project root
 
 $ yarn seal, which copies the secrets files you just placed
 $ cd site
