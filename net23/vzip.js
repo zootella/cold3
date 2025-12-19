@@ -1,135 +1,64 @@
 
-import {
-log,
-} from 'icarus'
-//hi claude code, ok, so i've imported log from icarus, and i think we can use it below. this script gets run by local node, which node 22 on my box, and some of the things in icarus we can use to make steps here easier
 import path from 'path'
 import {execSync} from 'child_process'
 import fs from 'fs-extra'
 import {nodeFileTrace} from '@vercel/nft'
+import {
+log, look,
+} from 'icarus'
 
-async function main() {
-	const start = Date.now()
+async function build() {//build the file net23/vzip/.serverless/net23.zip to deploy to AWS Lambda
 
-	// 1. wash - remove vzip folder
-	console.log('vzip: washing...')
+	log('Emptying...')//empty the vzip folder
 	await fs.remove('vzip')
 	await fs.ensureDir('vzip')
 
-	// 2. make - copy source files, npm install, copy icarus
-	console.log('vzip: making...')
-
-	// copy source files
-	await fs.copy('src', 'vzip/src')
-	await fs.copy('persephone', 'vzip/persephone')
+	log('Seeding...')//copy lambda source files, persephone library files, serverless.yml and .env
+	await fs.copy('.env',           'vzip/.env')
 	await fs.copy('serverless.yml', 'vzip/serverless.yml')
-	if (await fs.pathExists('.env')) {
-		await fs.copy('.env', 'vzip/.env')
-	}
+	await fs.copy('src',            'vzip/src')
+	await fs.copy('persephone',     'vzip/persephone')
 
-	// read dependencies from net23 and icarus (production deps only)
-	const icarusSrc = '../icarus'
-	const net23Pkg = JSON.parse(await fs.readFile('package.json', 'utf8'))
-	const icarusPkg = JSON.parse(await fs.readFile(path.join(icarusSrc, 'package.json'), 'utf8'))
+	//make a package.json for vzip based on net23's, with icarus's dependencies merged in
+	let p1 = JSON.parse(await fs.readFile('package.json'))
+	let p2 = JSON.parse(await fs.readFile('../icarus/package.json'))
+	p1.dependencies = {//the vzip/package.json dependencies: {} object
+		...p1.dependencies,//all the net23 dependencies
+		...p2.dependencies}//and additionally the icarus dependencies
+	delete p1.dependencies.icarus//remove the icarus workspace dependency "*"; we've brought in icarus' dependencies and will copy its code soon below
+	await fs.writeFile('vzip/package.json', JSON.stringify(p1, null, '\t'))
 
-	// merge dependencies (icarus is a workspace ref, skip it)
-	const mergedDeps = {}
-	for (const [name, version] of Object.entries(net23Pkg.dependencies || {})) {
-		if (name !== 'icarus') {
-			mergedDeps[name] = version
-		}
-	}
-	for (const [name, version] of Object.entries(icarusPkg.dependencies || {})) {
-		mergedDeps[name] = version
-	}
-
-	// create vzip package.json (no devDependencies)
-	const vzipPkg = {
-		name: 'vzip',
-		type: 'module',
-		private: true,
-		dependencies: mergedDeps,
-	}
-	await fs.writeFile('vzip/package.json', JSON.stringify(vzipPkg, null, '\t'))
-
-	// run npm install with linux arm64 flags (for lambda deployment)
-	execSync('npm install --omit=dev --os=linux --cpu=arm64 --libc=glibc', {
-		cwd: 'vzip',
-		stdio: 'inherit',
+	log('npm 📜 installing...')//have npm use vzip/package.json to build a new clean production only vzip/node_modules
+	execSync('npm install --omit=dev --os=linux --cpu=arm64 --libc=glibc', {//install for amazon linux on their graviton chip to get the right sharp native binaries
+		cwd: 'vzip',//run this command in the vzip subfolder
+		stdio: 'inherit',//show its command line output
 	})
 
-	// copy icarus .js files AFTER npm install (icarus is a workspace, not an npm package)
-	const icarusDest = 'vzip/node_modules/icarus'
-	await fs.ensureDir(icarusDest)
-	const icarusContents = await fs.readdir(icarusSrc)
-	for (const item of icarusContents) {
-		if (item.endsWith('.js') || item === 'package.json') {
-			await fs.copy(path.join(icarusSrc, item), path.join(icarusDest, item))
-		}
+	log('Placing icarus...')//now that we have node_modules populated, copy in the icarus .js files
+	await fs.ensureDir('vzip/node_modules/icarus')//as though there's a node module named "icarus"
+	let files = await fs.readdir('../icarus')
+	for (let file of files) {
+		if (file == 'package.json' || file.endsWith('.js')) await fs.copy('../icarus/'+file, 'vzip/node_modules/icarus/'+file)
 	}
 
-	// 3. trace - nft trace, prune node_modules
-	console.log('vzip: tracing...')
+	log("Running Vercel's 💫 Node File Trace...")
+	let entryPoints = (await fs.readdir('vzip/src')).filter(f => f.endsWith('.js')).map(f => 'vzip/src/' + f)
+	let {fileList} = await nodeFileTrace(entryPoints, {base: 'vzip'})//from vercel nft's results, pull out the list of necessary files
+	let necessary = [...fileList].filter(f => f.startsWith('node_modules/'))//lambda, persephone, icarus files above we've already got
 
-	// find entry points
-	const entryPoints = []
-	const srcFiles = await fs.readdir('vzip/src').catch(() => [])
-	for (const file of srcFiles) {
-		if (file.endsWith('.js')) {
-			entryPoints.push('vzip/src/' + file)
-		}
+	log(`...which identifies ${necessary.length} necessary files in node_modules. Taking...`)
+	await fs.rename('vzip/node_modules', 'vzip/node_modules_source')
+	for (let file of necessary) {
+		await fs.ensureDir(path.dirname('vzip/'+file))
+		await fs.copy('vzip/' + file.replace('node_modules', 'node_modules_source'), 'vzip/'+file)
 	}
-	const persephoneFiles = await fs.readdir('vzip/persephone').catch(() => [])
-	for (const file of persephoneFiles) {
-		if (file.endsWith('.js')) {
-			entryPoints.push('vzip/persephone/' + file)
-		}
-	}
+	await fs.remove('vzip/node_modules_source')
 
-	// run nft trace
-	const { fileList } = await nodeFileTrace(entryPoints, {
-		base: 'vzip',
-	})
-
-	// collect node_modules files to keep
-	const nodeModulesFiles = []
-	for (const file of fileList) {
-		if (file.startsWith('node_modules/')) {
-			nodeModulesFiles.push(file)
-		}
-	}
-	console.log(`vzip: traced ${nodeModulesFiles.length} files in node_modules`)
-
-	// copy traced files to node_modules_traced
-	await fs.ensureDir('vzip/node_modules_traced')
-	for (const file of nodeModulesFiles) {
-		const relativePath = file.slice(13)  // strip "node_modules/"
-		const dest = 'vzip/node_modules_traced/' + relativePath
-		await fs.ensureDir(path.dirname(dest))
-		await fs.copy('vzip/' + file, dest)
-	}
-
-	// swap folders
-	await fs.remove('vzip/node_modules')
-	await fs.rename('vzip/node_modules_traced', 'vzip/node_modules')
-
-	// 4. set cloud mode in wrapper.js
-	console.log('vzip: setting cloud mode...')
-	const wrapperPath = 'vzip/node_modules/icarus/wrapper.js'
-	if (await fs.pathExists(wrapperPath)) {
-		let content = await fs.readFile(wrapperPath, 'utf8')
-		content = content.replace(/"cloud":\s*(true|false)/, '"cloud": true')
-		await fs.writeFile(wrapperPath, content)
-	} else {
-		console.error('vzip: wrapper.js not found')
-		process.exit(1)
-	}
-
-	const elapsed = ((Date.now() - start) / 1000).toFixed(1)
-	console.log(`vzip: done in ${elapsed}s`)
+	log('Marking cloud ☁️ true in wrapper.js...')
+	let p = 'vzip/node_modules/icarus/wrapper.js'
+	let c = await fs.readFile(p, 'utf8')
+	c = c.replace('"cloud": false', '"cloud": true')
+	await fs.writeFile(p, c)
 }
 
-main().catch(err => {
-	console.error('vzip: fatal error:', err)
-	process.exit(1)
-})
+build().catch(e => { log('Error:', look(e)); process.exit(1) })
