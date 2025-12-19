@@ -7,7 +7,7 @@ import {
 log, look,
 } from 'icarus'
 
-async function build() {//build a lean net23/dist/.serverless/net23.zip with the right native binaries for Lambda
+async function main() {//build a lean net23/dist/.serverless/net23.zip with the right native binaries for Lambda
 
 	log('Emptying...')//empty the dist folder
 	await fs.remove('dist')
@@ -34,19 +34,19 @@ async function build() {//build a lean net23/dist/.serverless/net23.zip with the
 		stdio: 'inherit',//show its command line output
 	})
 
-	log('Placing icarus...')//now that we have node_modules populated, copy in the icarus .js files
+	log('Placing 🪽 icarus...')//now that we have node_modules populated, copy in the icarus .js files
 	await fs.ensureDir('dist/node_modules/icarus')//as though there's a node module named "icarus"
 	let files = await fs.readdir('../icarus')
 	for (let file of files) {
 		if (file == 'package.json' || file.endsWith('.js')) await fs.copy('../icarus/'+file, 'dist/node_modules/icarus/'+file)
 	}
 
-	log("Running Vercel's 💫 Node File Trace...")
+	log("Analyzing with Vercel's 💫 Node File Trace...")
 	let entryPoints = (await fs.readdir('dist/src')).filter(f => f.endsWith('.js')).map(f => 'dist/src/' + f)
 	let {fileList} = await nodeFileTrace(entryPoints, {base: 'dist'})//from vercel nft's results, pull out the list of necessary files
 	let necessary = [...fileList].filter(f => f.startsWith('node_modules/'))//lambda, persephone, icarus files above we've already got
 
-	log(`...which identifies ${necessary.length} necessary files in node_modules. Taking...`)
+	log(`...which identifies ${necessary.length} necessary files. Taking...`)
 	await fs.rename('dist/node_modules', 'dist/node_modules_source')
 	for (let file of necessary) {
 		await fs.ensureDir(path.dirname('dist/'+file))
@@ -54,11 +54,11 @@ async function build() {//build a lean net23/dist/.serverless/net23.zip with the
 	}
 	await fs.remove('dist/node_modules_source')
 
-	log('Marking cloud ☁️ true in wrapper.js...')
+	log('Marking wrapper.js cloud ☁️ true...')
 	let p = 'dist/node_modules/icarus/wrapper.js'
 	let c = await fs.readFile(p, 'utf8')
 	c = c.replace('"cloud": false', '"cloud": true')
 	await fs.writeFile(p, c)
 }
 
-build().catch(e => { log('Error:', look(e)); process.exit(1) })
+main().catch(e => { log('Error:', look(e)); process.exit(1) })

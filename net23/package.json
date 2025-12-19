@@ -11,9 +11,9 @@
 	},
 	"scripts": {
 		"local": "serverless offline --reloadHandler",
-		"build": "node dist.js && cd dist && serverless package && cd .. && yarn --cwd ../ test && yarn size",
+		"build": "node build.js && cd dist && serverless package && cd .. && yarn --cwd ../ test && yarn size",
 		"deploy-only": "cd dist && serverless deploy && cd .. && yarn --cwd ../ test && yarn size",
-		"deploy": "node dist.js && cd dist && serverless package && serverless deploy && cd .. && yarn --cwd ../ test && yarn size",
+		"deploy": "node build.js && cd dist && serverless package && serverless deploy && cd .. && yarn --cwd ../ test && yarn size",
 		"size": "node -e \"let fs=require('fs'); let b=fs.statSync('dist/.serverless/net23.zip').size; console.log('net23.zip is '+b.toLocaleString()+' bytes')\"",
 		"www": "aws s3 sync ./www s3://www-net23-cc --delete"
 	},
