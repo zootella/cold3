@@ -508,19 +508,6 @@ Nuxt's useFetch and useAsyncData, which knows about universal rendering and retu
 Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the browser tag cookie manually
 other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 */
-/*
-notes coming back here months later, ttd december
-ok both fetchWorker and fetchLambda are convenience wrappers on top of $fetch, that's fine
-but in use, you want them to work differently, to be more convenient
-url should be route, it's not a complete url, right?
-POST should be required; if you're adding GET to workers, you'll have to go back in here and change things for that
-let task = await fetchWorker('/api/name', 'Status.', {count: 7})
-action should be explicit and required
-i think you don't need to expose options, just body
-should this return a task, and then you do task.response, even though if there's an exception it throws rather than pins, that would get you the duration time without you having to measure it yourself
-ok but looking at this now you also wrote it this way to align with fetchProvider, where you do need options, so you could do another layer on top of fetchWorker and fetchLambda like postWorker() and postLambda()
-yeah and if you do those, then that's where they fill in all the defaults, like empty body, net23 envelope, net23 warm first pass, that stuff
-*/
 
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
@@ -603,7 +590,52 @@ export function originApex()  { return isCloud() ? `https://${Key('domain, publi
 
 
 
+/*
+notes coming back here months later, ttd december
+ok both fetchWorker and fetchLambda are convenience wrappers on top of $fetch, that's fine
+but in use, you want them to work differently, to be more convenient
+url should be route, it's not a complete url, right?
+POST should be required; if you're adding GET to workers, you'll have to go back in here and change things for that
+let task = await fetchWorker('/api/name', 'Status.', {count: 7})
+action should be explicit and required
+i think you don't need to expose options, just body
+should this return a task, and then you do task.response, even though if there's an exception it throws rather than pins, that would get you the duration time without you having to measure it yourself
+ok but looking at this now you also wrote it this way to align with fetchProvider, where you do need options, so you could do another layer on top of fetchWorker and fetchLambda like postWorker() and postLambda()
+yeah and if you do those, then that's where they fill in all the defaults, like empty body, net23 envelope, net23 warm first pass, that stuff
 
+ok, thsi is a complex refactor, lots of complex areas that could or dont or shouldn't interact
+one way to do this is, imagine the page doesn't care about how long turnstile or the worker call takes; you've observed it as always 3 seconds, faster on firefox, for months now, it's not interesting. also if something interesting did happen, well you can't know because the page doesn't have a trusted way to report back to hq. also also maybe you won't need turnstile nearly anywhere. or maybe you'll use 800ms of hashcash instead, or something
+so the play here is probably to leave Task and turnstile out of Post, and add turnstile (but not Task, not duration reporting) to Button
+
+ok to do this first you need to add actions to up, main, vhs demo, those
+before you reutrn here, do a separate refactor where you (1) add turnstile to Button and (2) migrate remaining parent users of PostButton to Button and (3) eliminate PostButton entirely; then return here
+and then you probably always want to keep fetchLambda and fetchWorker as their api aligns with fetchProvider
+except you don't use them anywhere, instead you always use Post and Lambda
+and ok also there's no Task or duration anywhere in this anymore, and you've figured out you do want (and it's working so that) any exception any depth in the stack automatically throws up through 500s and crashes the page without leaking information, that's great
+ok cool, you've got a pretty good plan forming here now
+*/
+export async function Post(route, action, body) {//draft convenience method for fetchWorker, ttd december
+	checkText(route); if (!route.startsWith('/api/')) toss('form', {route, action, body})
+	checkText(action)
+	if (!body) body = {}
+
+	let options = {}
+	options.method = 'POST'
+	options.body = body
+	options.body.action = action
+	return await fetchWorker(route, options)
+	//hi claude, ok, is this draft ready to simplify existing calls to fetchWorker?
+}
+export async function Lambda(route, action, body) {
+	checkText(route); if (!route.startsWith('/')) toss('form', {route, action, body})
+	checkText(action)
+	if (!body) body = {}
+
+	let options = {}
+	options.body = body
+	options.body.action = action
+	return await fetchLambda(route, options)
+}
 
 
 
