@@ -1325,7 +1325,7 @@ export function addTurnstileHeadScript(head) {
 		async: true,//tell the browser: you can download this script while you're parsing the HTML,
 		defer: true,//but don't run the script until you've finished fully paring the HTML
 	})
-}
+}//cloudflare's official documentation says to load turnstile in a script tag this way; there is no npm module, and cloudflare warns proxying or caching the script will break things. old fashioned, but intentional and correct as of 2025dec
 
 //used by trusted code in a worker for a nuxt api handler, to validate a turnstile token submitted with form data from an untrusted user
 export async function checkTurnstileToken(token, ip) {

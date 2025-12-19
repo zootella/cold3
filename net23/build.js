@@ -4,17 +4,22 @@ import {execSync} from 'child_process'
 import fs from 'fs-extra'
 import {nodeFileTrace} from '@vercel/nft'
 import {
-log, look,
+log, look, commas,
 } from 'icarus'
 
 async function main() {//build a lean net23/dist/.serverless/net23.zip with the right native binaries for Lambda
 
+	let z = 'dist/.serverless/net23.zip'
+	if (await fs.pathExists(z)) {
+		let size = (await fs.stat(z)).size
+		log(`💽 Deleting ${commas(size)} byte net23.zip from last time`)//size the previous one as a sanity check
+	}
 	await fs.remove('dist')
 	await fs.ensureDir('dist')//empty the dist folder
 	await fs.copy('.env',           'dist/.env')//copy lambda source files, persephone library files, serverless.yml and .env
 	await fs.copy('serverless.yml', 'dist/serverless.yml')
 	await fs.copy('src',            'dist/src')
-	await fs.copy('persephone',     'dist/persephone')
+	await fs.copy('persephone',     'dist/persephone')//other files in the net23 folder are left behind; note net23.zip will gain package-lock.json from npm install; it's not too big and having the exact dependency versions locked in the deployed artifact could be valuable for debugging
 
 	//make a package.json for dist based on net23's, with icarus's dependencies merged in
 	let p1 = JSON.parse(await fs.readFile('package.json'))
@@ -25,7 +30,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	delete p1.dependencies.icarus//but not the icarus workspace dependency "*"; we have icarus' dependencies and its code is coming
 	await fs.writeFile('dist/package.json', JSON.stringify(p1, null, '\t'))
 
-	log('build.js is npm 📜 installing...')//have npm use dist/package.json to build a new clean production only dist/node_modules
+	log('📜 npm install...')//have npm use dist/package.json to build a new clean production only dist/node_modules
 	execSync('npm install --omit=dev --os=linux --cpu=arm64 --libc=glibc', {//install for amazon linux on their graviton chip to get the right sharp native binaries
 		cwd: 'dist',//run this command in the dist subfolder
 		stdio: 'inherit',//show its command line output
@@ -38,12 +43,12 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 		if (file == 'package.json' || file.endsWith('.js')) await fs.copy('../icarus/'+file, 'dist/node_modules/icarus/'+file)
 	}
 
-	log("Analyzing with Vercel's 💫 Node File Trace...")
+	log("💫 Analyzing with Vercel's Node File Trace...")
 	let entryPoints = (await fs.readdir('dist/src')).filter(f => f.endsWith('.js')).map(f => 'dist/src/' + f)
 	let {fileList} = await nodeFileTrace(entryPoints, {base: 'dist'})//from vercel nft's results, pull out the list of necessary files
 	let necessary = [...fileList].filter(f => f.startsWith('node_modules/'))//lambda, persephone, icarus files above we've already got
 
-	log(`Taking necessary files...`)
+	log(`🗂️ Taking necessary files...`)
 	await fs.rename('dist/node_modules', 'dist/node_modules_source')
 	for (let file of necessary) {
 		await fs.ensureDir(path.dirname('dist/'+file))
@@ -57,4 +62,4 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	await fs.writeFile(p, c)
 }
 
-main().catch(e => { log('Error:', look(e)); process.exit(1) })
+main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })

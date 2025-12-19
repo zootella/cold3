@@ -1,9 +1,45 @@
 
-/*
+
 ttd, december, herded notes about the old pipeline here
 nearly all of this you don't need, but you'll go through it to pull out parts or details that are still applicable
 
-(1) from serverless.yml, you've removed the entire package toplevel property tree:
+
+
+
+
+
+net23.zip
+https://github.com/vercel/nft
+"Used to determine exactly which files (including node_modules) are necessary for the application runtime. This is similar to @vercel/ncc except there is no bundling performed and therefore no reliance on webpack. This achieves the same tree-shaking benefits without moving any assets or binaries."
+talking to Claude, @vercel/nft is their solution for their customers who are actually lambda
+and rollup has preserveModules
+alternatively, and Sandro found the clean room approach works well, but that would slow down the deploy
+ok so at 35,060,992 bytes you don't have to head back up the river that is the serverless build
+but if you did, vercel nft sounds like the thing to try
+
+
+
+
+
+
+
+  On esbuild limitations: Yes, esbuild can fail on certain patterns. It's designed for statically-analyzable imports. Things that break it:
+
+  - Dynamic require(variable) where the module name isn't a literal string
+  - eval() or new Function() that construct module references
+  - Conditional requires like if (platform === 'node') require('fs')
+  - Some older CJS patterns with circular dependencies
+  - Modules that do runtime filesystem probing to find their dependencies
+
+  Twilio and SendGrid are exactly the kind of "enterprise Node SDK" that tends to use these patterns internally. They weren't written with bundlers in mind.
+
+
+
+
+
+
+
+==== from serverless.yml, you've removed the entire package toplevel property tree:
 
 package:
   patterns:
@@ -44,7 +80,14 @@ package:
 
     # adding viem to icarus so level1 can validate Ethereum addresses caused the zip to grow 10mb; unzipped it's 16mb viem and 5mb ox; ttd september2025 leaving this as is even though lambda won't ever need to deal with blockchain
 
-(2) the stowaway script is no longer necessary as we install the whole thing for amazon linux; lots of good notes about sharp in here, though:
+
+
+
+
+
+
+
+==== the stowaway script is no longer necessary as we install the whole thing for amazon linux; lots of good notes about sharp in here, though:
      _
  ___| |__   __ _ _ __ _ __
 / __| '_ \ / _` | '__| '_ \
@@ -140,7 +183,19 @@ that alternative is cleaner but more cumbersome
 import fs from 'fs-extra'
 await fs.copy('../../stowaway/node_modules/@img', 'node_modules/@img', {overwrite: false})
 
-(3) and there's a lot of guide from net23.txt which you need to go through, and keep just parts of:
+
+
+
+
+
+
+
+
+
+
+
+
+==== and there's a lot of guide from net23.txt which you need to go through, and keep just parts of:
 
 2025oct, claude found a much easier way to get the right sharp binaries
 check out new instructions in net23/stowaway.js
@@ -371,11 +426,9 @@ https://www.npmjs.com/package/serverless-bundle
 https://esbuild.github.io/
 2020, extremely fast, should be able to handle the mixture
 
-(4) something else you'll put below here
 
 
 
 
 
 
-*/
