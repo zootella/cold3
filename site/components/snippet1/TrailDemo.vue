@@ -12,27 +12,20 @@ const refCount = ref(0)
 const refRecent = ref(0)
 const refNow = ref('')
 
-const refState = ref('ready')
+const refDoing = ref(false)
 
-watch([refMessage, refState], () => {
-	if      (refState.value == 'ghost' && hasText(refMessage.value))  { refState.value = 'ready' }
-	else if (refState.value == 'ready' && !hasText(refMessage.value)) { refState.value = 'ghost' }
-})//either button could return from doing, and the user could be clearing or typing in the box, so from all that chaos, looking for th eright simple water-tight way to keep the button green only when there's message text in the box and no fetch in flight, essentially
+const buttonState = computed(() => {
+	if (refDoing.value) return 'doing'
+	return hasText(refMessage.value) ? 'ready' : 'ghost'
+})
 
 async function clicked(action) {
-	refState.value = 'doing'
+	refDoing.value = true
 
 	let t = Now()
 	let r = await fetchWorker('/api/trail', {method: 'POST', body: {action, message: refMessage.value}})
 	refNow.value = sayTick(t)
 	refDuration.value = Now() - t
-	/*
-	ok, now we'd like to add a feature
-	while we're awaiting fetchWorker (in practice it takes ~300ms, but imagine it could be longer)
-
-	[]set both buttons orange while we're in this function
-	[]set both buttons gray when there's no text in the box
-	*/
 
 	refHash.value = r.hash
 	let s = ''
@@ -42,7 +35,7 @@ async function clicked(action) {
 	}
 	refResults.value = s
 
-	refState.value = hasText(refMessage.value) ? 'ready' : 'ghost'
+	refDoing.value = false
 }
 
 </script>
@@ -52,8 +45,8 @@ async function clicked(action) {
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="message to hash" class="w-96" />{{' '}}
-	<Button v-model="refState" @click="clicked('Get.')">Search</Button>{{' '}}
-	<Button v-model="refState" @click="clicked('Set.')">Record</Button>
+	<Button :model-value="buttonState" @click="clicked('Get.')">Search</Button>{{' '}}
+	<Button :model-value="buttonState" @click="clicked('Set.')">Record</Button>
 </p>
 <p>fetch at {{refNow}} took {{refDuration}}ms</p>
 <p>hashed to <code>{{refHash}}</code></p>
