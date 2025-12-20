@@ -52,8 +52,8 @@ async function clicked(action) {
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="message to hash" class="w-96" />{{' '}}
-	<Button :state="refState" @click="clicked('Get.')">Search</Button>{{' '}}
-	<Button :state="refState" @click="clicked('Set.')">Record</Button>
+	<Button v-model="refState" @click="clicked('Get.')">Search</Button>{{' '}}
+	<Button v-model="refState" @click="clicked('Set.')">Record</Button>
 </p>
 <p>fetch at {{refNow}} took {{refDuration}}ms</p>
 <p>hashed to <code>{{refHash}}</code></p>

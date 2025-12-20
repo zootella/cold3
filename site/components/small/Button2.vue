@@ -1,4 +1,4 @@
-<script setup>//./components/Button.vue
+<script setup>//./components/Button2.vue - sketchpad for possible changes to Button
 
 import {
 useTurnstileHere,
@@ -15,7 +15,7 @@ child changes state: emits 'update:modelValue'
 
 (1) minimal use:
 
-<Button @click="onClick">Submit</Button>
+<Button2 @click="onClick">Submit</Button2>
 
 (2) with state:
 
@@ -27,7 +27,7 @@ async function onClick() {
 	refState.value = 'ready'
 }
 
-<Button v-model="refState" labeling="Working..." @click="onClick">Submit</Button>
+<Button2 v-model="refState" labeling="Working..." @click="onClick">Submit</Button2>
 
 (3) with turnstile:
 
@@ -43,14 +43,14 @@ async function onClick() {
 	refState.value = 'ready'
 }
 
-<Button ref="refButton" v-model="refState" :useTurnstile="true" @click="onClick">Check</Button>
+<Button2 ref="refButton" v-model="refState" :useTurnstile="true" @click="onClick">Check</Button2>
 */
 
 const props = defineProps({
 	modelValue: {type: String, default: 'ready'},//v-model: "ready", "ghost", or "doing"
-	link: {type: Boolean, default: false},//default push-button appearance, or true to make a link that runs your function
-	labeling: {type: String, default: ''},//optional doing text like "Submitting..."
-	useTurnstile: {type: Boolean, default: false},//true to have Button orchestrate Cloudflare Turnstile at the bottom of the page if the api endpoint you need to post to requires a turnstile token
+	link: {type: Boolean, default: false},
+	labeling: {type: String, default: ''},
+	useTurnstile: {type: Boolean, default: false},
 })
 
 const emit = defineEmits(['update:modelValue', 'click'])

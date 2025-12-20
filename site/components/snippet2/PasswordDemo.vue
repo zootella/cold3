@@ -38,7 +38,7 @@ async function onEnter() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>PasswordDemo</i></p>
 
 <PasswordBox v-model="refInput" @input="onInput" @enter="onEnter" placeholder="Password..." class="w-72" />{{' '}}
-<Button labeling="Hashing..." @click="onEnter" :state="refDoing ? 'doing' : (refInput ? 'ready' : 'ghost')">Enter</Button>
+<Button labeling="Hashing..." @click="onEnter" :model-value="refDoing ? 'doing' : (refInput ? 'ready' : 'ghost')">Enter</Button>
 <p>{{refOutput}}</p>
 
 </div>
