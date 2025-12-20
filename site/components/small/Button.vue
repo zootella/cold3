@@ -6,18 +6,10 @@ useTurnstileHere,
 const pageStore = usePageStore()
 
 /*
-v-model pattern: parent and child both see and can change state
+Button component with three states: "ready" (green, clickable), "ghost" (gray, disabled), "doing" (orange, disabled).
+Parent controls state via v-model or :model-value. Button emits @click when clicked.
 
-parent sees state:  reads their ref bound to v-model
-parent changes state: sets their ref
-child sees state: reads modelValue prop
-child changes state: emits 'update:modelValue'
-
-(1) minimal use:
-
-<Button @click="onClick">Submit</Button>
-
-(2) with state:
+(1) Simple button, always ready (see HitComponent)
 
 const refState = ref('ready')
 
@@ -27,36 +19,60 @@ async function onClick() {
 	refState.value = 'ready'
 }
 
-<Button v-model="refState" labeling="Working..." @click="onClick">Submit</Button>
+<Button v-model="refState" @click="onClick">Hit</Button>
 
-(3) with turnstile:
+(2) Computed state with input validation (see TrailDemo, CodeEnterComponent)
 
-const refButton = ref(null)
-const refState = ref('ghost')
+Use refDoing + computed when button state depends on input validation.
+The computed ensures button stays 'doing' during requests regardless of input changes.
+
+const refDoing = ref(false)
+
+const buttonState = computed(() => {
+	if (refDoing.value) return 'doing'
+	return hasText(refInput.value) ? 'ready' : 'ghost'
+})
 
 async function onClick() {
-	refState.value = 'doing'
-	let body = {name: refName.value}
-	let token = await refButton.value.getTurnstileToken()
-	if (token) body.turnstileToken = token
-	body.action = 'Check.'
-	let response = await fetchWorker('/api/name', {body})
-	refState.value = 'ready'
+	refDoing.value = true
+	await doWork()
+	refDoing.value = false
 }
 
-<Button ref="refButton" v-model="refState" :useTurnstile="true" @click="onClick">Check</Button>
-*/
+<Button :model-value="buttonState" @click="onClick">Submit</Button>
 
-/*
-maybe ask claude later, ok, could we add a feature to button which doesn't change the api, and puts it into an automatic handle state mode
-for instance, let's say a parent just wants to get called when clicked
-and is going to post, and the button should be orange for the post
-so PostButton did all this automatically
-what if we had an alternative method like refButton.value.post()
-and it would call in here, and just send the same arguments to fetchWorker, same exact signature
-but also, it would take care of going doing beforehand, and back to ready after (ok but then what if according to the parent's rules, it should really go back to ghost after? how does that work??)
+(3) With Cloudflare Turnstile (see NameComponent, CodeRequestComponent, Error2Page)
 
-and if that works, it could also take care of turnstile, if turnstile is on for this use of the button
+Add :useTurnstile="true" and ref to get the token before posting.
+
+const refButton = ref(null)
+const refDoing = ref(false)
+
+const buttonState = computed(() => {
+	if (refDoing.value) return 'doing'
+	return isValid ? 'ready' : 'ghost'
+})
+
+async function onClick() {
+	refDoing.value = true
+	let body = {...}
+	let token = await refButton.value.getTurnstileToken()
+	if (token) body.turnstileToken = token
+	await fetchWorker('/api/endpoint', {body})
+	refDoing.value = false
+}
+
+<Button :model-value="buttonState" :useTurnstile="true" ref="refButton" @click="onClick">Submit</Button>
+
+(4) Link style (see WalletDemo)
+
+<Button link @click="onClick">Check again</Button>
+
+(5) Inline computed expression (see PasswordDemo)
+
+When state logic is simple, compute directly in template:
+
+<Button :model-value="refDoing ? 'doing' : (refInput ? 'ready' : 'ghost')" @click="onClick">Enter</Button>
 */
 
 const props = defineProps({

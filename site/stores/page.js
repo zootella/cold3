@@ -3,8 +3,8 @@
 export const usePageStore = defineStore('page', () => {
 
 //turnstile
-const renderTurnstileWidget = ref(false)//PostButton sets to true, causing BottomBar to render TurnstileComponent
-const getTurnstileToken = ref(null)//TurnstileComponent sets a reference to its getToken function, and PostButton calls it
+const renderTurnstileWidget = ref(false)//Button sets to true, causing BottomBar to render TurnstileComponent
+const getTurnstileToken = ref(null)//TurnstileComponent sets a reference to its getToken function for Button's parent from component to call
 
 //page reported error
 const errorDetails = ref(null)//hold error details from the error plugin, through error.vue, for error2 to report them
