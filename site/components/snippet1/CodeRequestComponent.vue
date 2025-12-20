@@ -7,22 +7,23 @@ const mainStore = useMainStore()
 const pageStore = usePageStore()
 
 const refButton = ref(null)
-const refButtonCanSubmit = ref(false)//set to true to let the button be clickable, the button below is watching
+const refDoing = ref(false)
 
 const refAddress = ref('')
 const refProvider = ref('')
 
-watch([refAddress, refProvider], () => {
+const buttonState = computed(() => {
+	if (refDoing.value) return 'doing'
 	let v = validateEmailOrPhone(refAddress.value)
-	refButtonCanSubmit.value = toBoolean(v.ok && hasText(refProvider.value))
+	return (v.ok && hasText(refProvider.value)) ? 'ready' : 'ghost'
 })
 
 async function onClick() {
-	let task = await refButton.value.post('/api/code/send', {
-		address: refAddress.value,
-		provider: refProvider.value,
-	})
-	let response = task.response
+	refDoing.value = true
+	let body = {address: refAddress.value, provider: refProvider.value}
+	let token = await refButton.value.getTurnstileToken()
+	if (token) body.turnstileToken = token
+	let response = await fetchWorker('/api/code/send', {body})
 	log('code send post response', look(response))
 	if (response.success) {
 		//automatically, an enter box will appear
@@ -37,6 +38,7 @@ async function onClick() {
 		pageStore.addNotification("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
 	}
 	mainStore.codes = response.codes
+	refDoing.value = false
 }
 
 </script>
@@ -47,14 +49,13 @@ async function onClick() {
 <p>
 	<input :maxlength="Limit.input" type="text" v-model="refAddress" placeholder="email or phone" class="w-64" />{{' '}}
 	<input :maxlength="Limit.input" type="text" v-model="refProvider" placeholder="provider" class="w-12" />{{' '}}
-	<PostButton
+	<Button
+		:model-value="buttonState"
 		labeling="Sending..."
 		:useTurnstile="true"
-
 		ref="refButton"
-		:canSubmit="refButtonCanSubmit"
-		:onClick="onClick"
-	>Send Code</PostButton>
+		@click="onClick"
+	>Send Code</Button>
 </p>
 
 </div>

@@ -54,12 +54,12 @@ onMounted(async () => {
 
 const refUri = ref('')
 const refCode = ref('')
-const refEnrollButton   = ref(null); const refEnrollEnabled   = ref(true)
-const refValidateButton = ref(null); const refValidateEnabled = ref(true)
+const refEnrollState = ref('ready')
+const refValidateState = ref('ready')
 
 async function onEnroll() {
-	let task = await refEnrollButton.value.post('/api/totp', {action: 'Enroll1.'})
-	let response = task.response
+	refEnrollState.value = 'doing'
+	let response = await fetchWorker('/api/totp', {body: {action: 'Enroll1.'}})
 	log('response from enroll 1', look(response))
 	if (response.outcome == 'Candidate.') {
 
@@ -74,15 +74,16 @@ async function onEnroll() {
 	} else {
 		//bad response that isn't a 500
 	}
+	refEnrollState.value = 'ready'
 }
 
 async function onValidate() {
-	let task = await refValidateButton.value.post('/api/totp', {
+	refValidateState.value = 'doing'
+	let response = await fetchWorker('/api/totp', {body: {
 		action: 'Enroll2.',
 		envelope: refCookie.value,
 		code: refCode.value
-	})
-	let response = task.response
+	}})
 	log('response from enroll 2', look(response))
 	if (response.outcome == 'Enrolled.') {
 		refCookie.value = null//clear the cookie
@@ -90,6 +91,7 @@ async function onValidate() {
 	} else {
 		//bad response that isn't a 500 (maybe make either success or 500 to not have to mess with stuff here!)
 	}
+	refValidateState.value = 'ready'
 }
 
 
@@ -99,10 +101,11 @@ async function onValidate() {
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>TotpDemo</i></p>
 
 <div>
-	<PostButton
+	<Button
+		v-model="refEnrollState"
 		labeling="Requesting new enrollment..."
-		ref="refEnrollButton" :canSubmit="refEnrollEnabled" :onClick="onEnroll"
-	>Enroll</PostButton>
+		@click="onEnroll"
+	>Enroll</Button>
 </div>
 
 <div v-if="refUri" class="space-y-2">
@@ -125,10 +128,11 @@ async function onValidate() {
 			placeholder="000000"
 			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
 		/>
-		<PostButton
+		<Button
+			v-model="refValidateState"
 			labeling="Validating..."
-			ref="refValidateButton" :canSubmit="refValidateEnabled" :onClick="onValidate"
-		>Validate Code</PostButton>
+			@click="onValidate"
+		>Validate Code</Button>
 	</div>
 
 

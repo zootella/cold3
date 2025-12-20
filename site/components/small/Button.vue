@@ -39,11 +39,24 @@ async function onClick() {
 	let body = {name: refName.value}
 	let token = await refButton.value.getTurnstileToken()
 	if (token) body.turnstileToken = token
-	let r = await Post('/api/name', 'Check.', body)
+	body.action = 'Check.'
+	let response = await fetchWorker('/api/name', {body})
 	refState.value = 'ready'
 }
 
 <Button ref="refButton" v-model="refState" :useTurnstile="true" @click="onClick">Check</Button>
+*/
+
+/*
+maybe ask claude later, ok, could we add a feature to button which doesn't change the api, and puts it into an automatic handle state mode
+for instance, let's say a parent just wants to get called when clicked
+and is going to post, and the button should be orange for the post
+so PostButton did all this automatically
+what if we had an alternative method like refButton.value.post()
+and it would call in here, and just send the same arguments to fetchWorker, same exact signature
+but also, it would take care of going doing beforehand, and back to ready after (ok but then what if according to the parent's rules, it should really go back to ghost after? how does that work??)
+
+and if that works, it could also take care of turnstile, if turnstile is on for this use of the button
 */
 
 const props = defineProps({

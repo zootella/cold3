@@ -12,9 +12,7 @@ const props = defineProps({
 
 const refInstruction = ref('')
 const refCodeCandidate = ref('')
-
-const refButton = ref(null)
-const refButtonCanSubmit = ref(false)
+const refDoing = ref(false)
 
 let method
 if      (props.code.addressType == 'Email.') method = 'email'
@@ -22,16 +20,17 @@ else if (props.code.addressType == 'Phone.') method = 'phone'
 else                                         method = 'messages'
 refInstruction.value = `Check your ${method} for the code we sent`
 
-watch([refCodeCandidate], () => {
-	refButtonCanSubmit.value = toBoolean(hasText(takeNumerals(refCodeCandidate.value)))//clickable after even the first number, intentionally
+const buttonState = computed(() => {
+	if (refDoing.value) return 'doing'
+	return hasText(takeNumerals(refCodeCandidate.value)) ? 'ready' : 'ghost'//clickable after even the first number, intentionally
 })
 
 async function onClick() {
-	let task = await refButton.value.post('/api/code/enter', {
+	refDoing.value = true
+	let response = await fetchWorker('/api/code/enter', {body: {
 		codeTag: props.code.tag,//hidden from the user but kept with the form
 		codeCandidate: takeNumerals(refCodeCandidate.value),
-	})
-	let response = task.response
+	}})
 	log('code enter post response', look(response))
 	if (response.success) {
 		//automatically, this box will disappear on setCodes below
@@ -47,6 +46,7 @@ async function onClick() {
 		pageStore.addNotification('code expired; request a new code to try again')
 	}
 	mainStore.codes = response.codes
+	refDoing.value = false
 }
 function clickedCantFind() {
 	log('clicked cant find')
@@ -65,13 +65,11 @@ function clickedCantFind() {
 		v-model="refCodeCandidate"
 		class="w-32"
 	/>{{' '}}
-	<PostButton
+	<Button
+		:model-value="buttonState"
 		labeling="Verifying..."
-
-		ref="refButton"
-		:canSubmit="refButtonCanSubmit"
-		:onClick="onClick"
-	>Enter</PostButton>
+		@click="onClick"
+	>Enter</Button>
 </p>
 <p><Button link @click="clickedCantFind">I can't find it</Button></p>
 

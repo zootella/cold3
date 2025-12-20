@@ -7,25 +7,27 @@ validateName,
 const refName = ref('')
 
 const refButton = ref(null)
-const refButtonCanSubmit = ref(false)
-
+const refDoing = ref(false)
 const refMessage = ref('')
 
-watch([refName], () => {
+const buttonState = computed(() => {
+	if (refDoing.value) return 'doing'
 	let v = validateName(refName.value, Limit.name)
-	refButtonCanSubmit.value = toBoolean(v.ok)
+	return v.ok ? 'ready' : 'ghost'
 })
 
 async function onClick() {
-	let task = await refButton.value.post('/api/name', {
-		action: 'Check.',
-		name: refName.value,
-	})
-	let response = task.response
+	refDoing.value = true
+	let body = {name: refName.value}
+	let token = await refButton.value.getTurnstileToken()
+	if (token) body.turnstileToken = token
+	body.action = 'Check.'
+	let response = await fetchWorker('/api/name', {body})
 	log('name post response', look(response))
 	refMessage.value = ((response.available.isAvailable) ?
 		`✅ Yes, "${response.available.v.f2}" is available for you to take!` :
 		`❌ Sorry, "${response.available.v.f2}" is already in use.`)
+	refDoing.value = false
 }
 
 </script>
@@ -43,14 +45,13 @@ async function onClick() {
 		class="w-72"
 	/>
 	{{' '}}
-	<PostButton
+	<Button
+		:model-value="buttonState"
 		labeling="Checking..."
 		:useTurnstile="true"
-
 		ref="refButton"
-		:canSubmit="refButtonCanSubmit"
-		:onClick="onClick"
-	>Check</PostButton>
+		@click="onClick"
+	>Check</Button>
 </div>
 <p>{{refMessage}}</p>
 
