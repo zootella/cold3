@@ -20,7 +20,7 @@ else if (props.code.addressType == 'Phone.') method = 'phone'
 else                                         method = 'messages'
 refInstruction.value = `Check your ${method} for the code we sent`
 
-const buttonState = computed(() => {
+const computedState = computed(() => {
 	return hasText(takeNumerals(refCodeCandidate.value)) ? 'ready' : 'ghost'//clickable after even the first number, intentionally
 })
 
@@ -64,10 +64,10 @@ function clickedCantFind() {
 		@keyup.enter="refButton.click()"
 	/>{{' '}}
 	<Button
-		:state="buttonState"
-		labeling="Verifying..."
-		:click="onClick"
 		ref="refButton"
+		:state="computedState"
+		:click="onClick"
+		labeling="Verifying..."
 	>Enter</Button>
 </p>
 <p><Button link :click="clickedCantFind">I can't find it</Button></p>

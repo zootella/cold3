@@ -8,7 +8,7 @@ const pageStore = usePageStore()
 const refButton = ref(null)
 //ttd april2025, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
 
-const buttonState = computed(() => {
+const computedState = computed(() => {
 	return pageStore.errorDetails ? 'ready' : 'ghost'
 })
 
@@ -43,11 +43,11 @@ and there, only the user's manual click moves things forward
 <div class="flex flex-col items-center space-y-2">
 <p>
 	<Button
-		:state="buttonState"
-		labeling="Reporting..."
-		:useTurnstile="true"
 		ref="refButton"
+		:state="computedState"
+		:useTurnstile="true"
 		:click="onClick"
+		labeling="Reporting..."
 	>Report Error</Button>
 </p>
 <p><Button :click="hardReplace">Reload Site</Button></p>

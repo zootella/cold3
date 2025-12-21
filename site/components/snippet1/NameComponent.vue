@@ -9,7 +9,7 @@ const refName = ref('')
 const refButton = ref(null)
 const refMessage = ref('')
 
-const buttonState = computed(() => {
+const computedState = computed(() => {
 	let v = validateName(refName.value, Limit.name)
 	return v.ok ? 'ready' : 'ghost'
 })
@@ -39,11 +39,11 @@ async function onClick() {
 	/>
 	{{' '}}
 	<Button
-		:state="buttonState"
-		labeling="Checking..."
-		:useTurnstile="true"
 		ref="refButton"
+		:state="computedState"
 		:click="onClick"
+		:useTurnstile="true"
+		labeling="Checking..."
 	>Check</Button>
 </div>
 <p>{{refMessage}}</p>

@@ -14,7 +14,7 @@ const refNow = ref('')
 
 const refDoing = ref(false)//true while either get or set are in flight
 
-const buttonState = computed(() => {
+const computedState = computed(() => {
 	if (refDoing.value) return 'ghost'//clicked button shows 'doing' via Button's internal state, other shows 'ghost'
 	return hasText(refMessage.value) ? 'ready' : 'ghost'
 })
@@ -43,8 +43,8 @@ async function clicked(action) {
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="message to hash" class="w-96" />{{' '}}
-	<Button :state="buttonState" :click="() => clicked('Get.')">Search</Button>{{' '}}
-	<Button :state="buttonState" :click="() => clicked('Set.')">Record</Button>
+	<Button :state="computedState" :click="() => clicked('Get.')">Search</Button>{{' '}}
+	<Button :state="computedState" :click="() => clicked('Set.')">Record</Button>
 </p>
 <p>fetch at {{refNow}} took {{refDuration}}ms</p>
 <p>hashed to <code>{{refHash}}</code></p>

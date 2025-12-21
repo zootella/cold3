@@ -8,7 +8,7 @@ const origin = originOauth()//will be "https://oauth.cold3.cc" cloud, or "http:/
 
 const refClickedProvider = ref(null)
 
-function buttonState(provider) {
+function functionState(provider) {
 	if (!refClickedProvider.value) return 'ready'
 	return refClickedProvider.value == provider ? 'doing' : 'ghost'
 }//interestingly, this works with this function in the template, rather than needing to use a computed property, ttd december
@@ -24,9 +24,9 @@ async function clicked(provider) {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>OauthDemo</i></p>
 
-<div><Button :state="buttonState('google')"  :click="() => clicked('google') ">Continue with Google</Button></div>
-<div><Button :state="buttonState('twitter')" :click="() => clicked('twitter')">Continue with 𝕏</Button></div>
-<div><Button :state="buttonState('discord')" :click="() => clicked('discord')">Continue with Discord</Button> test flow here</div>
+<div><Button :state="functionState('google')"  :click="() => clicked('google') ">Continue with Google</Button></div>
+<div><Button :state="functionState('twitter')" :click="() => clicked('twitter')">Continue with 𝕏</Button></div>
+<div><Button :state="functionState('discord')" :click="() => clicked('discord')">Continue with Discord</Button> test flow here</div>
 
 </div>
 </template>

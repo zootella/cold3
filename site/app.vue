@@ -55,6 +55,6 @@ this pattern avoids
 
 <TopBar /><!-- contains notifications for the user, like enter the code we just sent -->
 <NuxtLayout><NuxtPage /></NuxtLayout>
-<BottomBar /><!-- will contain the single global invisible turnstile widget after a button needs it -->
+<BottomBar /><!-- will contain the single global invisible turnstile widget after a Button needs it -->
 
 </template>

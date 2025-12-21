@@ -11,7 +11,7 @@ const refButton = ref(null)
 const refAddress = ref('')
 const refProvider = ref('')
 
-const buttonState = computed(() => {
+const computedState = computed(() => {
 	let v = validateEmailOrPhone(refAddress.value)
 	return (v.ok && hasText(refProvider.value)) ? 'ready' : 'ghost'
 })
@@ -43,11 +43,11 @@ async function onClick() {
 	<input :maxlength="Limit.input" type="text" v-model="refAddress" placeholder="email or phone" class="w-64" />{{' '}}
 	<input :maxlength="Limit.input" type="text" v-model="refProvider" placeholder="provider" class="w-12" @keyup.enter="refButton.click()" />{{' '}}
 	<Button
-		:state="buttonState"
-		labeling="Sending..."
-		:useTurnstile="true"
 		ref="refButton"
+		:state="computedState"
 		:click="onClick"
+		:useTurnstile="true"
+		labeling="Sending..."
 	>Send Code</Button>
 </p>
 
