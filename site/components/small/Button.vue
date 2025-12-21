@@ -6,95 +6,45 @@ useTurnstileHere,
 const pageStore = usePageStore()
 
 /*
-hi claude, the domentation below is great, but  now let's tighten it up. fewer, more abstract examples. i'd like these, please:
-- one that shows turning a plain vanilla  html button with a click handler function into Button instead
-- a fully featured one, using all the features, bu tnot turnstile (also leave out link here)
-- one focused just on how to use turnstile, no other advanced features
+Button component with three states: "ready" (clickable), "ghost" (disabled), "doing" (animate, disabled)
+Button awaits your async :click handler and manages the doing state automatically
 
+(1) Basic use: convert a plain HTML button. Button will show doing state, and guard against double-clicks
 
+<button @click="onClick">Submit</button>
+<Button :click="onClick">Submit</Button>
 
-
-Button component with three states: "ready" (green, clickable), "ghost" (gray, disabled), "doing" (orange, disabled).
-
-Use :click for async functions - Button awaits them and manages doing state automatically.
-Use :model-value when you need validation-based ghost state.
-Button's internal doing state takes precedence over modelValue.
-
-(1) Simple button (see HitComponent, up3)
-
-async function onClick() {
-	await doWork()
-}
-
-<Button :click="onClick">Hit</Button>
-
-(2) With input validation (see TrailDemo, CodeEnterComponent, PasswordDemo)
-
-const buttonState = computed(() => {
-	return hasText(refInput.value) ? 'ready' : 'ghost'
-})
-
-async function onClick() {
-	await doWork()
-}
-
-<Button :model-value="buttonState" :click="onClick">Submit</Button>
-
-(3) With Cloudflare Turnstile (see NameComponent, CodeRequestComponent, Error2Page)
+(2) Full featured example with validation, labeling, coordination, and programmatic click. While doing, the Button will show the labeling text. refButton.click() lets Enter in the input box act just like clicking the Button, protected by the same double-click guard. Parent can maintain its own refDoing and computedState to coordinate the button with external factors like a choice of buttons, async operations, or something else. Pass computedState one way down via :model-value
 
 const refButton = ref(null)
-
-const buttonState = computed(() => {
+const refDoing = ref(false)
+const computedState = computed(() => {
+	if (refDoing.value) return 'ghost'
 	return isValid ? 'ready' : 'ghost'
 })
-
 async function onClick() {
-	let body = {...}
-	await refButton.value.post('/api/endpoint', body)
-}
-
-<Button :model-value="buttonState" :useTurnstile="true" ref="refButton" :click="onClick">Submit</Button>
-
-(4) Link style (see WalletDemo, up3)
-
-<Button link :click="onClick">Check again</Button>
-
-(5) Cross-button coordination (see OauthDemo, WalletDemo)
-
-When clicking one button should ghost others, use a shared ref.
-Button's internal doing state makes the clicked button show 'doing'.
-
-const refConnecting = ref(false)
-
-const buttonState = computed(() => {
-	return refConnecting.value ? 'ghost' : 'ready'
-})
-
-async function onGoogle() {
-	refConnecting.value = true
+	refDoing.value = true
 	await doWork()
-	refConnecting.value = false
+	refDoing.value = false
 }
 
-<Button :model-value="buttonState" :click="onGoogle">Google</Button>
-<Button :model-value="buttonState" :click="onTwitter">Twitter</Button>
+<input @keyup.enter="refButton.click()" />
+<Button
+	ref="refButton"
+	:model-value="computedState"
+	:click="onClick"
+	labeling="Submitting..."
+>Submit</Button>
 
-(6) Programmatic click (see PasswordDemo)
-
-When an input's Enter key should trigger the button, use click() to go through Button's guards.
+(3) To use an api endpoint that requires turnstile, Button will orchestrate the widget and get and add the token for you
 
 const refButton = ref(null)
-
-const buttonState = computed(() => {
-	return hasText(refInput.value) ? 'ready' : 'ghost'
-})
-
 async function onClick() {
-	await doWork()
+	let body = {name: refName.value}
+	await refButton.value.post('/api/name', body)//use Button's .post() method instead of fetchWorker()
 }
 
-<PasswordBox @enter="refButton.click()" />
-<Button :model-value="buttonState" :click="onClick" ref="refButton">Submit</Button>
+<Button :useTurnstile="true" :click="onClick" ref="refButton">Submit</Button>
 */
 
 const props = defineProps({
@@ -104,10 +54,6 @@ const props = defineProps({
 	link: {type: Boolean, default: false},//instead of the default push-button appearance, make this look like a hyperlink
 	useTurnstile: {type: Boolean, default: false},//set true and use .post() to talk to an api endpoint that requires turnstile
 })
-
-const emit = defineEmits([
-	'update:modelValue',//enable two-way v-model binding so parents get notified of internal state changes
-])
 
 const refDoing = ref(false)//our internal doing state which we set true while the click handler is running
 const computedState = computed(() => {//merge internal + parent state; internal wins
