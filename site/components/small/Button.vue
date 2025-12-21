@@ -90,47 +90,56 @@ async function onClick() {
 */
 
 const props = defineProps({
-	modelValue: {type: String, default: 'ready'},//v-model: "ready", "ghost", or "doing"
+	modelValue: {type: String, default: 'ready'},//"ghost", "ready", or "doing"; named modelValue works with v-model
 	link: {type: Boolean, default: false},//default push-button appearance, or true to make a link that runs your function
-	labeling: {type: String, default: ''},//optional doing text like "Submitting..."
-	useTurnstile: {type: Boolean, default: false},//true to have Button orchestrate Cloudflare Turnstile at the bottom of the page if the api endpoint you need to post to requires a turnstile token
-	click: {type: Function, default: null},//async function Button awaits, managing doing state automatically
+	labeling: {type: String, default: ''},//optional text like "Submitting..." to accompany the doing visual style
+	useTurnstile: {type: Boolean, default: false},//true and use .post() and Button will do turnstile for you
+	click: {type: Function, default: null},//programatically click this button with refButton.value.click()
 })
 
-const emit = defineEmits(['update:modelValue', 'click'])
+const emit = defineEmits([
+	'update:modelValue',//unused; here for v-model compatibility if needed later
+	'click',//fallback for parents using @click instead of :click prop
+])
 
-const refInternalDoing = ref(false)
+const refDoing = ref(false)//our internal doing state; overrides parent's modelValue while async work runs
 
-const effectiveState = computed(() => {
-	if (refInternalDoing.value) return 'doing'
-	return props.modelValue
+const computedState = computed(() => {//merge internal + parent state; internal wins
+	if (refDoing.value) return 'doing'//our internal state indicates we're doing
+	return props.modelValue//otherwise, defer to our parent's validation logic
 })
 
-async function handleClick(event) {
-	if (props.click) {
-		if (effectiveState.value != 'ready') return//guard against double-clicks
-		refInternalDoing.value = true
+async function onClick(event) {
+	if (props.click) {//parent passed :click prop (preferred pattern)
+		if (computedState.value != 'ready') return//guard against double-clicks and clicks while ghost
+		refDoing.value = true
 		try {
 			await props.click(event)
 		} finally {
-			refInternalDoing.value = false
+			refDoing.value = false
 		}
-	} else {
+	} else {//parent using @click event (legacy pattern)
+		/*
+		hi claude, ok, i think we can remove this, requiring parents to use :click and not @click, is that ok? is this as simple as removing this if else? any changes outside that needed? just review the codebase and tell me your answer; ill make this edit after we chat abou tit
+		*/
 		emit('click', event)
 	}
 }
 
 onMounted(() => {
-	if (props.useTurnstile && useTurnstileHere()) pageStore.renderTurnstileWidget = true
+	if (
+		props.useTurnstile &&//parent set :useTurnstile="true"
+		useTurnstileHere()//true only in a page that came from the cloud, as turnstile won't work in local development or server render
+	) pageStore.renderTurnstileWidget = true//tells BottomBar to render the invisible turnstile widget now to get a token ready
 })
 
-defineExpose({
-	click: async () => {
-		await handleClick()//allows parent to click button programmatically, eg from enter key in input
+defineExpose({//exposes methods to parent via template ref; super useful and standard Vue 3 api even if the tutorial omits it
+	click: async () => {//lets @keyup.enter do the same thing as clicking the button
+		await onClick()
 	},
-	post: async (path, body) => {//convenience wrapper for fetchWorker that adds turnstile token automatically
+	post: async (path, body) => {//if you're using turnstile, call .post() instead of fetchWorker(); we add the token for you
 		if (props.useTurnstile && useTurnstileHere()) {
-			body.turnstileToken = await pageStore.getTurnstileToken()
+			body.turnstileToken = await pageStore.getTurnstileToken()//may take seconds; widget started on mount
 		}
 		return await fetchWorker(path, {body})
 	},
@@ -141,11 +150,11 @@ defineExpose({
 
 <button
 	type="button"
-	:disabled="effectiveState != 'ready'"
-	:class="[link ? 'my-link' : 'my-button', effectiveState]"
-	@click="handleClick"
+	:disabled="computedState != 'ready'"
+	:class="[link ? 'my-link' : 'my-button', computedState]"
+	@click="onClick"
 >
-	<template v-if="labeling && effectiveState == 'doing'">{{labeling}}</template>
+	<template v-if="labeling && computedState == 'doing'">{{labeling}}</template>
 	<slot v-else />
 </button>
 
