@@ -23,7 +23,7 @@ const {data, refresh} = useFetch(
 
 <div>
 GET lambda, block
-<Button link @click="refresh">Refresh</Button><pre>{{look(data)}}</pre>
+<Button link :click="refresh">Refresh</Button><pre>{{look(data)}}</pre>
 </div>
 
 </template>

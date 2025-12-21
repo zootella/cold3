@@ -18,7 +18,7 @@ function hardReplace() { window.location.replace('/') }//outside of Nuxt routing
 
 <p><NavigateButton to="/error2">Try to report the error...</NavigateButton></p>
 
-<p><Button @click="hardReplace">Reload Site</Button></p>
+<p><Button :click="hardReplace">Reload Site</Button></p>
 
 </div>
 </template>

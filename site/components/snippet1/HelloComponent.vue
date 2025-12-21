@@ -13,7 +13,7 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 	server render took {{mainStore.serverDuration}}ms ⏱️
 	<span v-if="mainStore.pageDuration != -1">
 		{{mainStore.pageDuration}}ms total navigation to mounted
-		{{' '}}<Button link @click="hardReload">Reload</Button>
+		{{' '}}<Button link :click="hardReload">Reload</Button>
 	</span>
 </p>
 <p>user:</p><pre>{{mainStore.user}}</pre>

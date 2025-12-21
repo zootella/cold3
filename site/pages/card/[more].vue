@@ -64,8 +64,8 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 <div>
 	<p>
 		meta og image delivered to page in {{refDelay}}ms;
-		<Button link @click="hardReload">Browser reload</Button>; or link to a
-		<Button link @click="randomPage">different random page</Button>
+		<Button link :click="hardReload">Browser reload</Button>; or link to a
+		<Button link :click="randomPage">different random page</Button>
 	</p>
 	<p><code>{{refFound}}</code></p>
 	<p><img :src="refSource" @load="onImageLoad" /></p>
