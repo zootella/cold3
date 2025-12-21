@@ -7,17 +7,14 @@ validateName,
 const refName = ref('')
 
 const refButton = ref(null)
-const refDoing = ref(false)
 const refMessage = ref('')
 
 const buttonState = computed(() => {
-	if (refDoing.value) return 'doing'
 	let v = validateName(refName.value, Limit.name)
 	return v.ok ? 'ready' : 'ghost'
 })
 
 async function onClick() {
-	refDoing.value = true
 	let body = {name: refName.value}
 	let token = await refButton.value.getTurnstileToken()
 	if (token) body.turnstileToken = token
@@ -27,7 +24,6 @@ async function onClick() {
 	refMessage.value = ((response.available.isAvailable) ?
 		`✅ Yes, "${response.available.v.f2}" is available for you to take!` :
 		`❌ Sorry, "${response.available.v.f2}" is already in use.`)
-	refDoing.value = false
 }
 
 </script>
@@ -50,7 +46,7 @@ async function onClick() {
 		labeling="Checking..."
 		:useTurnstile="true"
 		ref="refButton"
-		@click="onClick"
+		:handler="onClick"
 	>Check</Button>
 </div>
 <p>{{refMessage}}</p>

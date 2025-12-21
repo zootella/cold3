@@ -7,19 +7,16 @@ const mainStore = useMainStore()
 const pageStore = usePageStore()
 
 const refButton = ref(null)
-const refDoing = ref(false)
 
 const refAddress = ref('')
 const refProvider = ref('')
 
 const buttonState = computed(() => {
-	if (refDoing.value) return 'doing'
 	let v = validateEmailOrPhone(refAddress.value)
 	return (v.ok && hasText(refProvider.value)) ? 'ready' : 'ghost'
 })
 
 async function onClick() {
-	refDoing.value = true
 	let body = {address: refAddress.value, provider: refProvider.value}
 	let token = await refButton.value.getTurnstileToken()
 	if (token) body.turnstileToken = token
@@ -38,7 +35,6 @@ async function onClick() {
 		pageStore.addNotification("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
 	}
 	mainStore.codes = response.codes
-	refDoing.value = false
 }
 
 </script>
@@ -54,7 +50,7 @@ async function onClick() {
 		labeling="Sending..."
 		:useTurnstile="true"
 		ref="refButton"
-		@click="onClick"
+		:handler="onClick"
 	>Send Code</Button>
 </p>
 

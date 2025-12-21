@@ -120,7 +120,6 @@ onUnmounted(() => {
 })
 
 async function onQuotes() {
-	refQuotesState.value = 'doing'
 	try {
 
 		//get the current ethereum block number
@@ -143,12 +142,20 @@ async function onQuotes() {
 			log('detected network timeout or connection error to alchemy', look({e}))
 		} else { log('⛔ on quotes caught:', look(e)); throw e }
 	}
-	refQuotesState.value = 'ready'
 }
 
+const refConnecting = ref(false)//true while either connect flow is in progress, to ghost the other button
+const refWalletAction = ref(false)//true while disconnect or prove is in progress, to ghost the other button
+
+const connectButtonState = computed(() => {
+	return refConnecting.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state
+})
+const walletActionState = computed(() => {
+	return refWalletAction.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state
+})
+
 async function onInjectedConnect() {
-	refInjectedConnectState.value = 'doing'
-	refWalletConnectState.value = 'ghost'//disable the other connect button while this flow is in progress
+	refConnecting.value = true
 	try {
 
 		let result = await wagmi_core.connect(_wagmiConfig, {connector: wagmi_connectors.injected()})
@@ -165,12 +172,10 @@ async function onInjectedConnect() {
 			refInstructionalMessage.value = 'Wallet already connected; can ignore'
 		} else { log('⛔ on connect caught:', look(e)); throw e }//other exceptions crash the page
 	}
-	refInjectedConnectState.value = 'ready'
-	refWalletConnectState.value = 'ready'
+	refConnecting.value = false
 }
 async function onWalletConnect() {
-	refWalletConnectState.value = 'doing'
-	refInjectedConnectState.value = 'ghost'//disable the other connect button while this flow is in progress
+	refConnecting.value = true
 	try {
 
 		let connectors = wagmi_core.getConnectors(_wagmiConfig)//in wagmi's configuration,
@@ -202,12 +207,10 @@ async function onWalletConnect() {
 			refInstructionalMessage.value = 'Connection error. Please check your network and try again.'
 		} else { log('⛔ on connect walletconnect caught:', look(e)); throw e }
 	}
-	refWalletConnectState.value = 'ready'
-	refInjectedConnectState.value = 'ready'
+	refConnecting.value = false
 }
 async function onDisconnect() {
-	refDisconnectState.value = 'doing'
-	refProveState.value = 'ghost'//disable prove button while disconnecting
+	refWalletAction.value = true
 	try {
 
 		await wagmi_core.disconnect(_wagmiConfig)
@@ -216,14 +219,12 @@ async function onDisconnect() {
 		refIsConnected.value = account.isConnected
 
 	} catch (e) { log('⛔ on disconnect caught:', look(e)) }//catch and swallow
-	refDisconnectState.value = 'ready'
-	refProveState.value = 'ready'
+	refWalletAction.value = false
 	refInstructionalMessage.value = 'Disconnected wallet.'
 }
 
 async function onProve() {
-	refProveState.value = 'doing'
-	refDisconnectState.value = 'ghost'//disable disconnect button while proving
+	refWalletAction.value = true
 
 	//step 1: get nonce and message from server
 	let response1 = await fetchWorker('/api/wallet', {body: {action: 'Prove1.', address: refConnectedAddress.value}})
@@ -257,15 +258,8 @@ async function onProve() {
 		}
 	}
 
-	refProveState.value = 'ready'
-	refDisconnectState.value = 'ready'
+	refWalletAction.value = false
 }
-
-const refQuotesState = ref('ready')
-const refInjectedConnectState = ref('ready')
-const refWalletConnectState = ref('ready')
-const refDisconnectState = ref('ready')
-const refProveState = ref('ready')
 
 function redirect() { window.location.href = refUri.value }//deep-link to wallet app on mobile
 
@@ -277,24 +271,24 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 <p>
 	Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code> in <code>{{refQuotesDuration}}ms</code>.
 	There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.
-	<Button link v-model="refQuotesState" @click="onQuotes">Check again</Button>
+	<Button link :handler="onQuotes">Check again</Button>
 </p>
 
 <div v-if="!refIsConnected">
 	<div class="flex gap-2">
-		<Button v-model="refInjectedConnectState" @click="onInjectedConnect">Browser Wallet</Button>
-		<Button v-model="refWalletConnectState" @click="onWalletConnect">WalletConnect</Button>
+		<Button :model-value="connectButtonState" :handler="onInjectedConnect">Browser Wallet</Button>
+		<Button :model-value="connectButtonState" :handler="onWalletConnect">WalletConnect</Button>
 	</div>
 	<div v-if="refUri" class="mt-4 space-y-2">
 		<QrCode :address="refUri" />
 		<p>Scan the code above with your wallet app, or switch to it on this device with the button below.</p>
-		<Button @click="redirect">Open in Wallet App</Button>
+		<Button :handler="redirect">Open in Wallet App</Button>
 	</div>
 </div>
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
-	<Button v-model="refDisconnectState" @click="onDisconnect">Disconnect Wallet</Button>
-	<Button v-model="refProveState" labeling="Requesting Signature..." @click="onProve">Prove Ownership</Button>
+	<Button :model-value="walletActionState" :handler="onDisconnect">Disconnect Wallet</Button>
+	<Button :model-value="walletActionState" labeling="Requesting Signature..." :handler="onProve">Prove Ownership</Button>
 </div>
 <p>{{refInstructionalMessage}}</p>
 

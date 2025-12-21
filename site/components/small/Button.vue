@@ -7,72 +7,71 @@ const pageStore = usePageStore()
 
 /*
 Button component with three states: "ready" (green, clickable), "ghost" (gray, disabled), "doing" (orange, disabled).
-Parent controls state via v-model or :model-value. Button emits @click when clicked.
 
-(1) Simple button, always ready (see HitComponent)
+Use :handler for async functions - Button awaits them and manages doing state automatically.
+Use :model-value when you need validation-based ghost state.
+Button's internal doing state takes precedence over modelValue.
 
-const refState = ref('ready')
+(1) Simple button (see HitComponent, up3)
 
 async function onClick() {
-	refState.value = 'doing'
 	await doWork()
-	refState.value = 'ready'
 }
 
-<Button v-model="refState" @click="onClick">Hit</Button>
+<Button :handler="onClick">Hit</Button>
 
-(2) Computed state with input validation (see TrailDemo, CodeEnterComponent)
-
-Use refDoing + computed when button state depends on input validation.
-The computed ensures button stays 'doing' during requests regardless of input changes.
-
-const refDoing = ref(false)
+(2) With input validation (see TrailDemo, CodeEnterComponent, PasswordDemo)
 
 const buttonState = computed(() => {
-	if (refDoing.value) return 'doing'
 	return hasText(refInput.value) ? 'ready' : 'ghost'
 })
 
 async function onClick() {
-	refDoing.value = true
 	await doWork()
-	refDoing.value = false
 }
 
-<Button :model-value="buttonState" @click="onClick">Submit</Button>
+<Button :model-value="buttonState" :handler="onClick">Submit</Button>
 
 (3) With Cloudflare Turnstile (see NameComponent, CodeRequestComponent, Error2Page)
 
-Add :useTurnstile="true" and ref to get the token before posting.
-
 const refButton = ref(null)
-const refDoing = ref(false)
 
 const buttonState = computed(() => {
-	if (refDoing.value) return 'doing'
 	return isValid ? 'ready' : 'ghost'
 })
 
 async function onClick() {
-	refDoing.value = true
 	let body = {...}
 	let token = await refButton.value.getTurnstileToken()
 	if (token) body.turnstileToken = token
 	await fetchWorker('/api/endpoint', {body})
-	refDoing.value = false
 }
 
-<Button :model-value="buttonState" :useTurnstile="true" ref="refButton" @click="onClick">Submit</Button>
+<Button :model-value="buttonState" :useTurnstile="true" ref="refButton" :handler="onClick">Submit</Button>
 
-(4) Link style (see WalletDemo)
+(4) Link style (see WalletDemo, up3)
 
-<Button link @click="onClick">Check again</Button>
+<Button link :handler="onClick">Check again</Button>
 
-(5) Inline computed expression (see PasswordDemo)
+(5) Cross-button coordination (see OauthDemo, WalletDemo)
 
-When state logic is simple, compute directly in template:
+When clicking one button should ghost others, use a shared ref.
+Button's internal doing state makes the clicked button show 'doing'.
 
-<Button :model-value="refDoing ? 'doing' : (refInput ? 'ready' : 'ghost')" @click="onClick">Enter</Button>
+const refConnecting = ref(false)
+
+const buttonState = computed(() => {
+	return refConnecting.value ? 'ghost' : 'ready'
+})
+
+async function onGoogle() {
+	refConnecting.value = true
+	await doWork()
+	refConnecting.value = false
+}
+
+<Button :model-value="buttonState" :handler="onGoogle">Google</Button>
+<Button :model-value="buttonState" :handler="onTwitter">Twitter</Button>
 */
 
 const props = defineProps({
@@ -80,9 +79,31 @@ const props = defineProps({
 	link: {type: Boolean, default: false},//default push-button appearance, or true to make a link that runs your function
 	labeling: {type: String, default: ''},//optional doing text like "Submitting..."
 	useTurnstile: {type: Boolean, default: false},//true to have Button orchestrate Cloudflare Turnstile at the bottom of the page if the api endpoint you need to post to requires a turnstile token
+	handler: {type: Function, default: null},//async function Button awaits, managing doing state automatically
 })
 
 const emit = defineEmits(['update:modelValue', 'click'])
+
+const refInternalDoing = ref(false)
+
+const effectiveState = computed(() => {
+	if (refInternalDoing.value) return 'doing'
+	return props.modelValue
+})
+
+async function handleClick(event) {
+	if (props.handler) {
+		if (effectiveState.value != 'ready') return//guard against double-clicks
+		refInternalDoing.value = true
+		try {
+			await props.handler(event)
+		} finally {
+			refInternalDoing.value = false
+		}
+	} else {
+		emit('click', event)
+	}
+}
 
 onMounted(() => {
 	if (props.useTurnstile && useTurnstileHere()) pageStore.renderTurnstileWidget = true
@@ -102,11 +123,11 @@ defineExpose({
 
 <button
 	type="button"
-	:disabled="modelValue != 'ready'"
-	:class="[link ? 'my-link' : 'my-button', modelValue]"
-	@click="emit('click', $event)"
+	:disabled="effectiveState != 'ready'"
+	:class="[link ? 'my-link' : 'my-button', effectiveState]"
+	@click="handleClick"
 >
-	<template v-if="labeling && modelValue == 'doing'">{{labeling}}</template>
+	<template v-if="labeling && effectiveState == 'doing'">{{labeling}}</template>
 	<slot v-else />
 </button>
 

@@ -54,11 +54,8 @@ onMounted(async () => {
 
 const refUri = ref('')
 const refCode = ref('')
-const refEnrollState = ref('ready')
-const refValidateState = ref('ready')
 
 async function onEnroll() {
-	refEnrollState.value = 'doing'
 	let response = await fetchWorker('/api/totp', {body: {action: 'Enroll1.'}})
 	log('response from enroll 1', look(response))
 	if (response.outcome == 'Candidate.') {
@@ -74,11 +71,9 @@ async function onEnroll() {
 	} else {
 		//bad response that isn't a 500
 	}
-	refEnrollState.value = 'ready'
 }
 
 async function onValidate() {
-	refValidateState.value = 'doing'
 	let response = await fetchWorker('/api/totp', {body: {
 		action: 'Enroll2.',
 		envelope: refCookie.value,
@@ -91,7 +86,6 @@ async function onValidate() {
 	} else {
 		//bad response that isn't a 500 (maybe make either success or 500 to not have to mess with stuff here!)
 	}
-	refValidateState.value = 'ready'
 }
 
 
@@ -102,9 +96,8 @@ async function onValidate() {
 
 <div>
 	<Button
-		v-model="refEnrollState"
 		labeling="Requesting new enrollment..."
-		@click="onEnroll"
+		:handler="onEnroll"
 	>Enroll</Button>
 </div>
 
@@ -129,9 +122,8 @@ async function onValidate() {
 			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
 		/>
 		<Button
-			v-model="refValidateState"
 			labeling="Validating..."
-			@click="onValidate"
+			:handler="onValidate"
 		>Validate Code</Button>
 	</div>
 

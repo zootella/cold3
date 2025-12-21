@@ -12,7 +12,6 @@ const props = defineProps({
 
 const refInstruction = ref('')
 const refCodeCandidate = ref('')
-const refDoing = ref(false)
 
 let method
 if      (props.code.addressType == 'Email.') method = 'email'
@@ -21,12 +20,10 @@ else                                         method = 'messages'
 refInstruction.value = `Check your ${method} for the code we sent`
 
 const buttonState = computed(() => {
-	if (refDoing.value) return 'doing'
 	return hasText(takeNumerals(refCodeCandidate.value)) ? 'ready' : 'ghost'//clickable after even the first number, intentionally
 })
 
 async function onClick() {
-	refDoing.value = true
 	let response = await fetchWorker('/api/code/enter', {body: {
 		codeTag: props.code.tag,//hidden from the user but kept with the form
 		codeCandidate: takeNumerals(refCodeCandidate.value),
@@ -46,7 +43,6 @@ async function onClick() {
 		pageStore.addNotification('code expired; request a new code to try again')
 	}
 	mainStore.codes = response.codes
-	refDoing.value = false
 }
 function clickedCantFind() {
 	log('clicked cant find')
@@ -68,10 +64,10 @@ function clickedCantFind() {
 	<Button
 		:model-value="buttonState"
 		labeling="Verifying..."
-		@click="onClick"
+		:handler="onClick"
 	>Enter</Button>
 </p>
-<p><Button link @click="clickedCantFind">I can't find it</Button></p>
+<p><Button link :handler="clickedCantFind">I can't find it</Button></p>
 
 </div>
 </template>

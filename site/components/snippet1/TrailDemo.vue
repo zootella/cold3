@@ -12,16 +12,15 @@ const refCount = ref(0)
 const refRecent = ref(0)
 const refNow = ref('')
 
-const refDoing = ref(false)
+const refSearching = ref(false)
 
 const buttonState = computed(() => {
-	if (refDoing.value) return 'doing'
+	if (refSearching.value) return 'ghost'//clicked button shows 'doing' via Button's internal state, other shows 'ghost'
 	return hasText(refMessage.value) ? 'ready' : 'ghost'
 })
 
 async function clicked(action) {
-	refDoing.value = true
-
+	refSearching.value = true
 	let t = Now()
 	let r = await fetchWorker('/api/trail', {method: 'POST', body: {action, message: refMessage.value}})
 	refNow.value = sayTick(t)
@@ -34,8 +33,7 @@ async function clicked(action) {
 		if (r.count) s += `; most recent ${Now() - r.recent}ms ago`
 	}
 	refResults.value = s
-
-	refDoing.value = false
+	refSearching.value = false
 }
 
 </script>
@@ -45,8 +43,8 @@ async function clicked(action) {
 
 <p>
 	<input type="text" v-model="refMessage" placeholder="message to hash" class="w-96" />{{' '}}
-	<Button :model-value="buttonState" @click="clicked('Get.')">Search</Button>{{' '}}
-	<Button :model-value="buttonState" @click="clicked('Set.')">Record</Button>
+	<Button :model-value="buttonState" :handler="() => clicked('Get.')">Search</Button>{{' '}}
+	<Button :model-value="buttonState" :handler="() => clicked('Set.')">Record</Button>
 </p>
 <p>fetch at {{refNow}} took {{refDuration}}ms</p>
 <p>hashed to <code>{{refHash}}</code></p>

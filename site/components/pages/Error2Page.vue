@@ -6,16 +6,13 @@ getBrowserGraphics,
 const pageStore = usePageStore()
 
 const refButton = ref(null)
-const refDoing = ref(false)
 //ttd april2025, while error.vue can't report the error or automatically redirect here, you could make this page automatically report the error on load here. the user's click on error.vue would still interrupt an infinite loop
 
 const buttonState = computed(() => {
-	if (refDoing.value) return 'doing'
 	return pageStore.errorDetails ? 'ready' : 'ghost'
 })
 
 async function onClick() {
-	refDoing.value = true
 	let body = {
 		sticker: Sticker(),
 		graphics: getBrowserGraphics(),
@@ -26,7 +23,6 @@ async function onClick() {
 	body.action = 'PageErrorTurnstile.'
 	await fetchWorker('/api/report', {body})
 	pageStore.errorDetails = null
-	refDoing.value = false
 }
 
 function hardReplace() { window.location.replace('/') }//outside of Nuxt routing, same as the browser's Reload button, and to the domain root
@@ -54,10 +50,10 @@ and there, only the user's manual click moves things forward
 		labeling="Reporting..."
 		:useTurnstile="true"
 		ref="refButton"
-		@click="onClick"
+		:handler="onClick"
 	>Report Error</Button>
 </p>
-<p><Button @click="hardReplace">Reload Site</Button></p>
+<p><Button :handler="hardReplace">Reload Site</Button></p>
 </div>
 
 </div>
