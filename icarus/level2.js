@@ -1918,3 +1918,316 @@ test(() => {
 	//negative zero literal, -0, makes it through, but -0+'' is "0"
 	//and more importantly there is no negative 0 in PostgreSQL's BIGINT; one would get stored as regular zero
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+tiny tests with test() run everywhere, node, icarus, all over the serverless stack
+these unit tests with database tables will, to begin, run node only
+in the monorepo root
+$ yarn grid
+runs a function which creates the mock environment, which includes
+- importing and starting pglite
+- swapping out Now() and Tag() with simulated predictable options
+- runing all the SQL blocks above to create the schema tables in the ephemeral in memory postgresql database
+- making it so await database.from(table)... calls above go into our mock adapter to pglite rather than to the supabase api which always connects to the real supabase cloud
+and then runs all the grid(async () => {}) which are the database unit tests
+
+so, we don't have Ctrl+S icarus like hot module replacement dev loop feedback
+but that's ok, because now we can write application business logic level tests that include state in database tables
+and run them manually
+this is a lot better than manual testing with a real page on localhost and a real table in the supabase dashboard
+*/
+
+/*
+to begin, monorepo root
+$ yarn add @electric-sql/pglite
+and then make sure it doesn't get into any of the lambda, nuxt, sveltekit bundles!
+*/
+
+//the rest is all from Claude; thanks Claude! 😍 as a placeholder for the concept here, and our beginning coding it
+
+/*
+PGlite Test Adapter - Summary of Our Quest (December 2025)
+
+Goal: Write unit tests for middle-layer business logic that includes database state.
+We have great unit tests for pure functions (bottom of stack) and could use Playwright
+for UI (top of stack), but the middle layer - testing flows like "user signs up, changes
+password, deletes account" - had no good solution.
+
+Problem with our previous approach (test1 Supabase project):
+- Network latency (not the tens-of-ms we get with lambda/worker tests)
+- Shared state between test runs (manual cleanup in Supabase dashboard)
+- Can't run tests offline
+
+What we searched for:
+- Supabase's official answer: pgTAP for SQL-level tests, but we avoid stored procedures
+- PGlite: Real Postgres in WASM, memory:// mode, but raw SQL API only
+- pgmock: Postgres via x86 emulator, works with node-postgres, raw SQL
+- pg-mem: Pure JS Postgres reimplementation, fast, but limited features
+- MSW: Mock HTTP layer - but then we're testing mocks, not real queries
+- A Supabase client adapter backed by local Postgres: DOES NOT EXIST
+
+So we're building it. This adapter implements the subset of Supabase's chainable
+.from().select().eq().order() API that we actually use in level2.js, backed by PGlite.
+
+Requirements:
+- PGlite runs real Postgres in WASM, memory:// mode for ephemeral per-test databases
+- Schema SQL blocks become executable code (not just documentation)
+- Same chainable API as Supabase client so query functions work unchanged
+- Fresh database per test, no cleanup needed, instant isolation
+
+Usage: import { PGlite } from '@electric-sql/pglite' // add to imports at top
+Then see makeTestClock() below which replaces the old makeClock() for tests
+*/
+
+//query builder that collects chainable calls, then executes SQL against PGlite when awaited
+class TestQueryBuilder {
+	constructor(pglite, table) {
+		this.pglite = pglite
+		this.table = table
+		this.op = 'select'
+		this.cols = '*'
+		this.wheres = []
+		this.orderCol = null
+		this.orderAsc = true
+		this.limitN = null
+		this.countMode = null
+		this.headOnly = false
+		this.insertData = null
+		this.insertOpts = null
+		this.updateData = null
+	}
+
+	//chainable filter methods
+	select(cols, opts) {
+		this.cols = cols || '*'
+		if (opts?.count === 'exact') this.countMode = 'exact'
+		if (opts?.head) this.headOnly = true
+		return this
+	}
+	eq(col, val)  { this.wheres.push({col, op: '=',  val}); return this }
+	neq(col, val) { this.wheres.push({col, op: '!=', val}); return this }
+	gt(col, val)  { this.wheres.push({col, op: '>',  val}); return this }
+	gte(col, val) { this.wheres.push({col, op: '>=', val}); return this }
+	order(col, opts) { this.orderCol = col; this.orderAsc = opts?.ascending ?? true; return this }
+	limit(n) { this.limitN = n; return this }
+
+	//chainable mutation methods
+	insert(data, opts) { this.op = 'insert'; this.insertData = data; this.insertOpts = opts; return this }
+	update(data) { this.op = 'update'; this.updateData = data; return this }
+	delete() { this.op = 'delete'; return this }
+
+	//makes the chain thenable - this is called when you await the chain
+	then(resolve, reject) {
+		this._execute().then(resolve).catch(e => resolve({data: null, error: e}))
+	}
+
+	//build WHERE clause from collected filters
+	_where() {
+		if (!this.wheres.length) return {sql: '', params: []}
+		let parts = [], params = []
+		this.wheres.forEach((w, i) => {
+			if (w.val === null) {
+				parts.push(w.op === '=' ? `${w.col} IS NULL` : `${w.col} IS NOT NULL`)
+			} else {
+				parts.push(`${w.col} ${w.op} $${params.length + 1}`)
+				params.push(w.val)
+			}
+		})
+		return {sql: 'WHERE ' + parts.join(' AND '), params}
+	}
+
+	async _execute() {
+		if (this.op === 'select') return this._select()
+		if (this.op === 'insert') return this._insert()
+		if (this.op === 'update') return this._update()
+		if (this.op === 'delete') return this._delete()
+	}
+
+	async _select() {
+		let {sql: whereSQL, params} = this._where()
+		let sql = `SELECT ${this.cols || '*'} FROM ${this.table} ${whereSQL}`
+		if (this.orderCol) sql += ` ORDER BY ${this.orderCol} ${this.orderAsc ? 'ASC' : 'DESC'}`
+		if (this.limitN) sql += ` LIMIT ${this.limitN}`
+		let result = await this.pglite.query(sql, params)
+		if (this.countMode === 'exact') {
+			let countSQL = `SELECT COUNT(*) as count FROM ${this.table} ${whereSQL}`
+			let countResult = await this.pglite.query(countSQL, params)
+			return {data: result.rows, count: parseInt(countResult.rows[0].count), error: null}
+		}
+		return {data: result.rows, error: null}
+	}
+
+	async _insert() {
+		let rows = Array.isArray(this.insertData) ? this.insertData : [this.insertData]
+		for (let row of rows) {
+			let cols = Object.keys(row)
+			let vals = Object.values(row)
+			let placeholders = cols.map((_, i) => `$${i + 1}`)
+			let sql = `INSERT INTO ${this.table} (${cols.join(', ')}) VALUES (${placeholders.join(', ')})`
+			if (this.insertOpts?.onConflict) {
+				sql += ` ON CONFLICT (${this.insertOpts.onConflict}) DO NOTHING`
+			}
+			try {
+				await this.pglite.query(sql, vals)
+			} catch (e) {
+				if (e.message?.includes('duplicate') || e.message?.includes('23505')) {
+					//expected duplicate key, ignore if ignoreDuplicates
+					if (!this.insertOpts?.ignoreDuplicates) return {data: null, error: {code: '23505', message: e.message}}
+				} else {
+					return {data: null, error: e}
+				}
+			}
+		}
+		return {data: this.insertData, error: null}
+	}
+
+	async _update() {
+		let {sql: whereSQL, params: whereParams} = this._where()
+		let setCols = Object.keys(this.updateData)
+		let setVals = Object.values(this.updateData)
+		let setParts = setCols.map((col, i) => `${col} = $${i + 1}`)
+		let allParams = [...setVals, ...whereParams]
+		//adjust WHERE param indices
+		let adjustedWhere = whereSQL.replace(/\$(\d+)/g, (_, n) => `$${parseInt(n) + setCols.length}`)
+		let sql = `UPDATE ${this.table} SET ${setParts.join(', ')} ${adjustedWhere} RETURNING *`
+		let result = await this.pglite.query(sql, allParams)
+		return {data: result.rows, error: null}
+	}
+
+	async _delete() {
+		let {sql: whereSQL, params} = this._where()
+		let sql = `DELETE FROM ${this.table} ${whereSQL}`
+		await this.pglite.query(sql, params)
+		return {data: null, error: null}
+	}
+}
+
+//wrap PGlite to provide Supabase-like .from() entry point
+function makeTestDatabase(pglite) {
+	return { from(table) { return new TestQueryBuilder(pglite, table) } }
+}
+
+//schema for example_table - paste this into Supabase dashboard for production
+const SCHEMA_EXAMPLE_TABLE = `
+	CREATE TABLE IF NOT EXISTS example_table (
+		row_tag  TEXT PRIMARY KEY,
+		row_tick BIGINT NOT NULL,
+		hide     INTEGER DEFAULT 0,
+		name_text TEXT,
+		some_hash TEXT,
+		hits     INTEGER
+	);
+	CREATE INDEX IF NOT EXISTS example_table_row_tick ON example_table(row_tick);
+`
+
+//create a test clock with fresh in-memory PGlite database
+//usage: const clock = await makeTestClock()
+async function makeTestClock(schema) {
+	let {PGlite} = await import('@electric-sql/pglite')//dynamic import since we might not have it in production
+	let pglite = new PGlite('memory://')
+	await pglite.exec(schema || SCHEMA_EXAMPLE_TABLE)
+	let t = 1050000000000//test times start April 2003
+	let n = 0
+	return {
+		Now: () => { t += 1; return t },
+		forward: (d) => { checkInt(d, 1); t += d },
+		Tag: () => 'TestTag' + (++n + '').padStart(15, '0'),
+		database: makeTestDatabase(pglite),
+		context: 'Test.',
+		pglite,//expose for direct SQL if needed
+	}
+}
+
+//example test using the new adapter
+noop(async () => {
+	let clock = await makeTestClock()
+
+	//insert a row
+	await queryAddRow({
+		table: 'example_table',
+		row: {name_text: 'alice', some_hash: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRST', hits: 5},
+		clock
+	})
+
+	//query it back
+	let row = await queryTop({
+		table: 'example_table',
+		title: 'name_text',
+		cell: 'alice',
+		clock
+	})
+	ok(row.hits === 5)
+	ok(row.name_text === 'alice')
+
+	//test count
+	let count = await queryCountAllRows({table: 'example_table', clock})
+	ok(count === 1)
+
+	//test hide
+	await queryHideRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice', hideSet: 1, clock})
+	let hidden = await queryTop({table: 'example_table', title: 'name_text', cell: 'alice', clock})
+	ok(hidden === undefined)//hidden rows not returned by queryTop
+
+	log('test adapter: all tests passed')
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
