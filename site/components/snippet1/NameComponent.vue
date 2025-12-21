@@ -15,11 +15,7 @@ const buttonState = computed(() => {
 })
 
 async function onClick() {
-	let body = {name: refName.value}
-	let token = await refButton.value.getTurnstileToken()
-	if (token) body.turnstileToken = token
-	body.action = 'Check.'
-	let response = await fetchWorker('/api/name', {body})
+	let response = await refButton.value.post('/api/name', {action: 'Check.', name: refName.value})
 	log('name post response', look(response))
 	refMessage.value = ((response.available.isAvailable) ?
 		`✅ Yes, "${response.available.v.f2}" is available for you to take!` :

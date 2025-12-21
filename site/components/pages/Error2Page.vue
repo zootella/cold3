@@ -13,15 +13,12 @@ const buttonState = computed(() => {
 })
 
 async function onClick() {
-	let body = {
+	await refButton.value.post('/api/report', {
+		action: 'PageErrorTurnstile.',
 		sticker: Sticker(),
 		graphics: getBrowserGraphics(),
 		details: pageStore.errorDetails,
-	}
-	let token = await refButton.value.getTurnstileToken()
-	if (token) body.turnstileToken = token
-	body.action = 'PageErrorTurnstile.'
-	await fetchWorker('/api/report', {body})
+	})
 	pageStore.errorDetails = null
 }
 

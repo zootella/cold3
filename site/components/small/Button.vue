@@ -42,9 +42,7 @@ const buttonState = computed(() => {
 
 async function onClick() {
 	let body = {...}
-	let token = await refButton.value.getTurnstileToken()
-	if (token) body.turnstileToken = token
-	await fetchWorker('/api/endpoint', {body})
+	await refButton.value.post('/api/endpoint', body)
 }
 
 <Button :model-value="buttonState" :useTurnstile="true" ref="refButton" :click="onClick">Submit</Button>
@@ -127,15 +125,15 @@ onMounted(() => {
 })
 
 defineExpose({
-	getTurnstileToken: async () => {
-		if (props.useTurnstile && useTurnstileHere()) {
-			return await pageStore.getTurnstileToken()
-		}
-		return null
-	},
 	click: async () => {
 		await handleClick()//allows parent to click button programmatically, eg from enter key in input
-	}
+	},
+	post: async (path, body) => {//convenience wrapper for fetchWorker that adds turnstile token automatically
+		if (props.useTurnstile && useTurnstileHere()) {
+			body.turnstileToken = await pageStore.getTurnstileToken()
+		}
+		return await fetchWorker(path, {body})
+	},
 })
 
 </script>

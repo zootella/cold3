@@ -17,10 +17,7 @@ const buttonState = computed(() => {
 })
 
 async function onClick() {
-	let body = {address: refAddress.value, provider: refProvider.value}
-	let token = await refButton.value.getTurnstileToken()
-	if (token) body.turnstileToken = token
-	let response = await fetchWorker('/api/code/send', {body})
+	let response = await refButton.value.post('/api/code/send', {address: refAddress.value, provider: refProvider.value})
 	log('code send post response', look(response))
 	if (response.success) {
 		//automatically, an enter box will appear
