@@ -12,6 +12,7 @@ const props = defineProps({
 
 const refInstruction = ref('')
 const refCodeCandidate = ref('')
+const refButton = ref(null)
 
 let method
 if      (props.code.addressType == 'Email.') method = 'email'
@@ -60,11 +61,13 @@ function clickedCantFind() {
 		type="tel" inputmode="numeric" enterkeyhint="Enter"
 		v-model="refCodeCandidate"
 		class="w-32"
+		@keyup.enter="refButton.click()"
 	/>{{' '}}
 	<Button
 		:model-value="buttonState"
 		labeling="Verifying..."
 		:click="onClick"
+		ref="refButton"
 	>Enter</Button>
 </p>
 <p><Button link :click="clickedCantFind">I can't find it</Button></p>

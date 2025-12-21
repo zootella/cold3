@@ -54,6 +54,7 @@ onMounted(async () => {
 
 const refUri = ref('')
 const refCode = ref('')
+const refButton = ref(null)
 
 async function onEnroll() {
 	let response = await fetchWorker('/api/totp', {body: {action: 'Enroll1.'}})
@@ -113,15 +114,17 @@ async function onValidate() {
 
 	<div class="space-y-2">
 		<p class="text-sm">Enter the 6-digit code from your authenticator app:</p>
-		<input 
-			v-model="refCode" 
-			type="text" 
+		<input
+			v-model="refCode"
+			type="text"
 			inputmode="numeric"
 			maxlength="6"
 			placeholder="000000"
 			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
+			@keyup.enter="refButton.click()"
 		/>
 		<Button
+			ref="refButton"
 			labeling="Validating..."
 			:click="onValidate"
 		>Validate Code</Button>

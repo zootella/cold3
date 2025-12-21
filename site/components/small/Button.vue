@@ -72,6 +72,23 @@ async function onGoogle() {
 
 <Button :model-value="buttonState" :click="onGoogle">Google</Button>
 <Button :model-value="buttonState" :click="onTwitter">Twitter</Button>
+
+(6) Programmatic click (see PasswordDemo)
+
+When an input's Enter key should trigger the button, use click() to go through Button's guards.
+
+const refButton = ref(null)
+
+const buttonState = computed(() => {
+	return hasText(refInput.value) ? 'ready' : 'ghost'
+})
+
+async function onClick() {
+	await doWork()
+}
+
+<PasswordBox @enter="refButton.click()" />
+<Button :model-value="buttonState" :click="onClick" ref="refButton">Submit</Button>
 */
 
 const props = defineProps({
@@ -115,6 +132,9 @@ defineExpose({
 			return await pageStore.getTurnstileToken()
 		}
 		return null
+	},
+	click: async () => {
+		await handleClick()//allows parent to click button programmatically, eg from enter key in input
 	}
 })
 

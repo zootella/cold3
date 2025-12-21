@@ -39,6 +39,7 @@ async function onClick() {
 		v-model="refName"
 		placeholder="desired user name or route"
 		class="w-72"
+		@keyup.enter="refButton.click()"
 	/>
 	{{' '}}
 	<Button
