@@ -59,6 +59,7 @@ async function listFiles() {
 			'**/.wrangler',
 			'**/*.log',
 			'**/*.diff',
+			'**/*.zip',//net23/build may exist with net23.zip and net23previous.zip
 			'**/diff*.txt',
 			'**/dist',
 			'**/.vite-inspect',//git ignores site/size, but wrapper lists site/size/client.html and the other two in there
