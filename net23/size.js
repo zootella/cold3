@@ -8,23 +8,18 @@ const p1 = 'dist/.serverless/net23.zip'//serverless build and serverless deploy 
 const p2 = 'size/net23.zip'//this script copies it to here
 const p3 = 'size/net23previous.zip'//but only after moving the previous one here!
 
-async function main() {//copy the net23.zip serverless framework just built out, and show its size
+async function main() {//copy out the net23.zip file that serverless framework just built and show its size
 
-	await fs.ensureDir('size')
+	await fs.ensureDir('size')//note that git ignores "size", and seal doesn't include zips in wrapper
 	await fs.remove(p3)
 	if (await fs.pathExists(p2)) await fs.rename(p2, p3)
-	await fs.copy(p1, p2)
+	await fs.copy(p1, p2)//we've shifted the files p1 -> p2 -> p3
 
-	let size2 = (await fs.stat(p2)).size//the new build
-	let size3; if (await fs.pathExists(p3)) size3 = (await fs.stat(p3)).size//the previous build, if any
+	let size2 = (await fs.stat(p2)).size//the zip serverless just built
+	let size3 = 0; if (await fs.pathExists(p3)) size3 = (await fs.stat(p3)).size//the previous one, or zero
 
-	let s = `💽 net23.zip is ${commas(size2)} bytes`
-	if (size3) {
-		let gain = size2 - size3
-		let sign = gain >= 0 ? '+' : '-'
-		s += ` ${sign}${saySize4(Math.abs(gain))} previous`
-	}
-	log(s)
+	let gain = size2 - size3
+	log(`💽 net23.zip is ${commas(size2)} bytes ${gain >= 0 ? '+' : '-'}${saySize4(Math.abs(gain))} previous`)
 }
 
 main().catch(e => { console.error('🚧 Error:', e); process.exit(1) })
