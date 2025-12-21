@@ -38,7 +38,7 @@ async function onEnter() {
 <Button
 	labeling="Hashing..."
 	:click="onEnter"
-	:model-value="refInput ? 'ready' : 'ghost'" ref="refButton"
+	:state="refInput ? 'ready' : 'ghost'" ref="refButton"
 >Enter</Button>
 <p>{{refOutput}}</p>
 

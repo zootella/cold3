@@ -39,7 +39,7 @@ async function onClick() {
 	/>
 	{{' '}}
 	<Button
-		:model-value="buttonState"
+		:state="buttonState"
 		labeling="Checking..."
 		:useTurnstile="true"
 		ref="refButton"

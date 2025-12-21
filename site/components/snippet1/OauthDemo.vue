@@ -23,9 +23,9 @@ async function clicked(provider) {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>OauthDemo</i></p>
 
-<div><Button :model-value="buttonState" :click="() => clicked('google')">Continue with Google</Button></div>
-<div><Button :model-value="buttonState" :click="() => clicked('twitter')">Continue with 𝕏</Button></div>
-<div><Button :model-value="buttonState" :click="() => clicked('discord')">Continue with Discord</Button> test flow here</div>
+<div><Button :state="buttonState" :click="() => clicked('google')">Continue with Google</Button></div>
+<div><Button :state="buttonState" :click="() => clicked('twitter')">Continue with 𝕏</Button></div>
+<div><Button :state="buttonState" :click="() => clicked('discord')">Continue with Discord</Button> test flow here</div>
 
 </div>
 </template>

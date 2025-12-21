@@ -144,16 +144,6 @@ async function onQuotes() {
 	}
 }
 
-const refConnecting = ref(false)//true while either connect flow is in progress, to ghost the other button
-const refWalletAction = ref(false)//true while disconnect or prove is in progress, to ghost the other button
-
-const connectButtonState = computed(() => {
-	return refConnecting.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state
-})
-const walletActionState = computed(() => {
-	return refWalletAction.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state
-})
-
 async function onInjectedConnect() {
 	refConnecting.value = true
 	try {
@@ -210,7 +200,7 @@ async function onWalletConnect() {
 	refConnecting.value = false
 }
 async function onDisconnect() {
-	refWalletAction.value = true
+	refProving.value = true
 	try {
 
 		await wagmi_core.disconnect(_wagmiConfig)
@@ -219,12 +209,12 @@ async function onDisconnect() {
 		refIsConnected.value = account.isConnected
 
 	} catch (e) { log('⛔ on disconnect caught:', look(e)) }//catch and swallow
-	refWalletAction.value = false
+	refProving.value = false
 	refInstructionalMessage.value = 'Disconnected wallet.'
 }
 
 async function onProve() {
-	refWalletAction.value = true
+	refProving.value = true
 
 	//step 1: get nonce and message from server
 	let response1 = await fetchWorker('/api/wallet', {body: {action: 'Prove1.', address: refConnectedAddress.value}})
@@ -258,8 +248,17 @@ async function onProve() {
 		}
 	}
 
-	refWalletAction.value = false
+	refProving.value = false
 }
+
+const refConnecting = ref(false)//true while either connect flow is in progress, to ghost the other button
+const refProving = ref(false)//true while prove or disconnect is in progress, to ghost the other button
+const computedStateConnecting = computed(() => {
+	return refConnecting.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state
+})
+const computedStateProving = computed(() => {
+	return refProving.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state
+})
 
 function redirect() { window.location.href = refUri.value }//deep-link to wallet app on mobile
 
@@ -276,8 +275,8 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 
 <div v-if="!refIsConnected">
 	<div class="flex gap-2">
-		<Button :model-value="connectButtonState" :click="onInjectedConnect">Browser Wallet</Button>
-		<Button :model-value="connectButtonState" :click="onWalletConnect">WalletConnect</Button>
+		<Button :state="computedStateConnecting" :click="onInjectedConnect">Browser Wallet</Button>
+		<Button :state="computedStateConnecting" :click="onWalletConnect">WalletConnect</Button>
 	</div>
 	<div v-if="refUri" class="mt-4 space-y-2">
 		<QrCode :address="refUri" />
@@ -287,8 +286,8 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 </div>
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
-	<Button :model-value="walletActionState" :click="onDisconnect">Disconnect Wallet</Button>
-	<Button :model-value="walletActionState" labeling="Requesting Signature..." :click="onProve">Prove Ownership</Button>
+	<Button :state="computedStateProving" :click="onDisconnect">Disconnect Wallet</Button>
+	<Button :state="computedStateProving" :click="onProve" labeling="Requesting Signature...">Prove Ownership</Button>
 </div>
 <p>{{refInstructionalMessage}}</p>
 

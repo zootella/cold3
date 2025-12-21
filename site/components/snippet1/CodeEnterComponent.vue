@@ -64,7 +64,7 @@ function clickedCantFind() {
 		@keyup.enter="refButton.click()"
 	/>{{' '}}
 	<Button
-		:model-value="buttonState"
+		:state="buttonState"
 		labeling="Verifying..."
 		:click="onClick"
 		ref="refButton"
