@@ -25,7 +25,7 @@ async function clickedHit() {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>HitComponent</i></p>
 
-<Button :handler="clickedHit">Hit</Button>
+<Button :click="clickedHit">Hit</Button>
 {{flexStore.hits}} hits in {{flexStore.duration}}ms from {{flexStore.sticker}}
 
 </div>

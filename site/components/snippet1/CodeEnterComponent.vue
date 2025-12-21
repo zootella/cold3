@@ -64,10 +64,10 @@ function clickedCantFind() {
 	<Button
 		:model-value="buttonState"
 		labeling="Verifying..."
-		:handler="onClick"
+		:click="onClick"
 	>Enter</Button>
 </p>
-<p><Button link :handler="clickedCantFind">I can't find it</Button></p>
+<p><Button link :click="clickedCantFind">I can't find it</Button></p>
 
 </div>
 </template>

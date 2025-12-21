@@ -50,7 +50,7 @@ async function onClick() {
 		labeling="Sending..."
 		:useTurnstile="true"
 		ref="refButton"
-		:handler="onClick"
+		:click="onClick"
 	>Send Code</Button>
 </p>
 

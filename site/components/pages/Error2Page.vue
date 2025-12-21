@@ -50,10 +50,10 @@ and there, only the user's manual click moves things forward
 		labeling="Reporting..."
 		:useTurnstile="true"
 		ref="refButton"
-		:handler="onClick"
+		:click="onClick"
 	>Report Error</Button>
 </p>
-<p><Button :handler="hardReplace">Reload Site</Button></p>
+<p><Button :click="hardReplace">Reload Site</Button></p>
 </div>
 
 </div>

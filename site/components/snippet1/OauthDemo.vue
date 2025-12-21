@@ -6,14 +6,14 @@ originOauth,
 
 const origin = originOauth()//will be "https://oauth.cold3.cc" cloud, or "http://localhost:5173" local
 
-const refConnecting = ref(false)
+const refDoing = ref(false)
 
 const buttonState = computed(() => {
-	return refConnecting.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state, others show 'ghost'
+	return refDoing.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state, others show 'ghost'
 })
 
 async function clicked(provider) {
-	refConnecting.value = true
+	refDoing.value = true//note we don't need to set false because href= is going to tear down the whole Nuxt application
 	let response = await fetchWorker('/api/oauth', {method: 'POST', body: {action: 'OauthStart.'}})
 	window.location.href = `${originOauth()}/continue/${provider}?envelope=${response.envelope}`//encoding? base62 don't need no stinkin' encoding 👒
 }
@@ -23,9 +23,9 @@ async function clicked(provider) {
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>OauthDemo</i></p>
 
-<div><Button :model-value="buttonState" :handler="() => clicked('google')">Continue with Google</Button></div>
-<div><Button :model-value="buttonState" :handler="() => clicked('twitter')">Continue with 𝕏</Button></div>
-<div><Button :model-value="buttonState" :handler="() => clicked('discord')">Continue with Discord</Button> test flow here</div>
+<div><Button :model-value="buttonState" :click="() => clicked('google')">Continue with Google</Button></div>
+<div><Button :model-value="buttonState" :click="() => clicked('twitter')">Continue with 𝕏</Button></div>
+<div><Button :model-value="buttonState" :click="() => clicked('discord')">Continue with Discord</Button> test flow here</div>
 
 </div>
 </template>

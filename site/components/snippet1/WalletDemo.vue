@@ -271,24 +271,24 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 <p>
 	Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code> in <code>{{refQuotesDuration}}ms</code>.
 	There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.
-	<Button link :handler="onQuotes">Check again</Button>
+	<Button link :click="onQuotes">Check again</Button>
 </p>
 
 <div v-if="!refIsConnected">
 	<div class="flex gap-2">
-		<Button :model-value="connectButtonState" :handler="onInjectedConnect">Browser Wallet</Button>
-		<Button :model-value="connectButtonState" :handler="onWalletConnect">WalletConnect</Button>
+		<Button :model-value="connectButtonState" :click="onInjectedConnect">Browser Wallet</Button>
+		<Button :model-value="connectButtonState" :click="onWalletConnect">WalletConnect</Button>
 	</div>
 	<div v-if="refUri" class="mt-4 space-y-2">
 		<QrCode :address="refUri" />
 		<p>Scan the code above with your wallet app, or switch to it on this device with the button below.</p>
-		<Button :handler="redirect">Open in Wallet App</Button>
+		<Button :click="redirect">Open in Wallet App</Button>
 	</div>
 </div>
 <div v-else>
 	<p>Connected: <code>{{refConnectedAddress}}</code></p>
-	<Button :model-value="walletActionState" :handler="onDisconnect">Disconnect Wallet</Button>
-	<Button :model-value="walletActionState" labeling="Requesting Signature..." :handler="onProve">Prove Ownership</Button>
+	<Button :model-value="walletActionState" :click="onDisconnect">Disconnect Wallet</Button>
+	<Button :model-value="walletActionState" labeling="Requesting Signature..." :click="onProve">Prove Ownership</Button>
 </div>
 <p>{{refInstructionalMessage}}</p>
 

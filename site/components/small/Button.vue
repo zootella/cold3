@@ -8,7 +8,7 @@ const pageStore = usePageStore()
 /*
 Button component with three states: "ready" (green, clickable), "ghost" (gray, disabled), "doing" (orange, disabled).
 
-Use :handler for async functions - Button awaits them and manages doing state automatically.
+Use :click for async functions - Button awaits them and manages doing state automatically.
 Use :model-value when you need validation-based ghost state.
 Button's internal doing state takes precedence over modelValue.
 
@@ -18,7 +18,7 @@ async function onClick() {
 	await doWork()
 }
 
-<Button :handler="onClick">Hit</Button>
+<Button :click="onClick">Hit</Button>
 
 (2) With input validation (see TrailDemo, CodeEnterComponent, PasswordDemo)
 
@@ -30,7 +30,7 @@ async function onClick() {
 	await doWork()
 }
 
-<Button :model-value="buttonState" :handler="onClick">Submit</Button>
+<Button :model-value="buttonState" :click="onClick">Submit</Button>
 
 (3) With Cloudflare Turnstile (see NameComponent, CodeRequestComponent, Error2Page)
 
@@ -47,11 +47,11 @@ async function onClick() {
 	await fetchWorker('/api/endpoint', {body})
 }
 
-<Button :model-value="buttonState" :useTurnstile="true" ref="refButton" :handler="onClick">Submit</Button>
+<Button :model-value="buttonState" :useTurnstile="true" ref="refButton" :click="onClick">Submit</Button>
 
 (4) Link style (see WalletDemo, up3)
 
-<Button link :handler="onClick">Check again</Button>
+<Button link :click="onClick">Check again</Button>
 
 (5) Cross-button coordination (see OauthDemo, WalletDemo)
 
@@ -70,8 +70,8 @@ async function onGoogle() {
 	refConnecting.value = false
 }
 
-<Button :model-value="buttonState" :handler="onGoogle">Google</Button>
-<Button :model-value="buttonState" :handler="onTwitter">Twitter</Button>
+<Button :model-value="buttonState" :click="onGoogle">Google</Button>
+<Button :model-value="buttonState" :click="onTwitter">Twitter</Button>
 */
 
 const props = defineProps({
@@ -79,7 +79,7 @@ const props = defineProps({
 	link: {type: Boolean, default: false},//default push-button appearance, or true to make a link that runs your function
 	labeling: {type: String, default: ''},//optional doing text like "Submitting..."
 	useTurnstile: {type: Boolean, default: false},//true to have Button orchestrate Cloudflare Turnstile at the bottom of the page if the api endpoint you need to post to requires a turnstile token
-	handler: {type: Function, default: null},//async function Button awaits, managing doing state automatically
+	click: {type: Function, default: null},//async function Button awaits, managing doing state automatically
 })
 
 const emit = defineEmits(['update:modelValue', 'click'])
@@ -92,11 +92,11 @@ const effectiveState = computed(() => {
 })
 
 async function handleClick(event) {
-	if (props.handler) {
+	if (props.click) {
 		if (effectiveState.value != 'ready') return//guard against double-clicks
 		refInternalDoing.value = true
 		try {
-			await props.handler(event)
+			await props.click(event)
 		} finally {
 			refInternalDoing.value = false
 		}

@@ -46,7 +46,7 @@ async function onClick() {
 		labeling="Checking..."
 		:useTurnstile="true"
 		ref="refButton"
-		:handler="onClick"
+		:click="onClick"
 	>Check</Button>
 </div>
 <p>{{refMessage}}</p>

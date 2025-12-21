@@ -97,7 +97,7 @@ async function onValidate() {
 <div>
 	<Button
 		labeling="Requesting new enrollment..."
-		:handler="onEnroll"
+		:click="onEnroll"
 	>Enroll</Button>
 </div>
 
@@ -123,7 +123,7 @@ async function onValidate() {
 		/>
 		<Button
 			labeling="Validating..."
-			:handler="onValidate"
+			:click="onValidate"
 		>Validate Code</Button>
 	</div>
 
