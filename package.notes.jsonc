@@ -17,6 +17,7 @@
 	"devDependencies": {
 
 		//2 utility
+		"@electric-sql/pglite": "^0.3.14",//wasm PostgreSQL build for $ yarn grid tests for local development
 		"fast-glob": "^3.3.2",//yarn seal uses fast-glob; yarn wash uses rimraf, install that one globally
 		"nanoid": "^5.1.5",
 		"otpauth": "^9.4.1",//these two are for fuzz tests you can turn on in level1 and run with $ yarn test

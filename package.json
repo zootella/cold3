@@ -29,6 +29,7 @@
 	},
 	"packageManager": "yarn@1.22.22",
 	"devDependencies": {
+		"@electric-sql/pglite": "^0.3.14",
 		"fast-glob": "^3.3.2",
 		"nanoid": "^5.1.5",
 		"otpauth": "^9.4.1"

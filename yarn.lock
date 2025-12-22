@@ -1406,6 +1406,11 @@
   resolved "https://registry.yarnpkg.com/@ecies/ciphers/-/ciphers-0.2.4.tgz#20a4e51f61d521e5e311eb49385d93d91087de51"
   integrity sha512-t+iX+Wf5nRKyNzk8dviW3Ikb/280+aEJAnw9YXvCp2tYGPSkMki+NRY+8aNLmVFv3eNtMdvViPNOPxS8SZNP+w==
 
+"@electric-sql/pglite@^0.3.14":
+  version "0.3.14"
+  resolved "https://registry.yarnpkg.com/@electric-sql/pglite/-/pglite-0.3.14.tgz#ea464c0bc52435ceba710d3ebd33917e91d893cf"
+  integrity sha512-3DB258dhqdsArOI1fIt7cb9RpUOgcDg5hXWVgVHAeqVQ/qxtFy605QKs4gx6mFq3jWsSPqDN8TgSEsqC3OfV9Q==
+
 "@emnapi/core@^1.5.0":
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/@emnapi/core/-/core-1.6.0.tgz#517f65d1c8270d5d5aa1aad660d5acb897430dca"

@@ -1,6 +1,6 @@
 
 import {
-log, commas, saySize4,
+log, commas, sayPlural, saySize4,
 } from 'icarus'
 import fs from 'fs-extra'
 
@@ -19,7 +19,10 @@ async function main() {//copy out the net23.zip file that serverless framework j
 	let size3 = 0; if (await fs.pathExists(p3)) size3 = (await fs.stat(p3)).size//the previous one, or zero
 
 	let gain = size2 - size3
-	log(`💽 net23.zip is ${commas(size2)} bytes ${gain >= 0 ? '+' : '-'}${saySize4(Math.abs(gain))} previous`)
+	let absolute = Math.abs(gain)
+	let comparison = 'same as previous'
+	if (absolute) comparison = `${absolute == 1 ? '1 byte' : saySize4(absolute)} ${gain > 0 ? 'bigger' : 'smaller'} than previous`
+	log(`💽 net23.zip is ${commas(size2)} byte${sayPlural(size2)}; ${comparison}`)
 }
 
 main().catch(e => { console.error('🚧 Error:', e); process.exit(1) })
