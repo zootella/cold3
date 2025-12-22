@@ -2145,6 +2145,7 @@ const SCHEMA_EXAMPLE_TABLE = `
 //create a test clock with fresh in-memory PGlite database
 //usage: const clock = await makeTestClock()
 async function makeTestClock(schema) {
+	/*
 	let {PGlite} = await import('@electric-sql/pglite')//dynamic import since we might not have it in production
 	let pglite = new PGlite('memory://')
 	await pglite.exec(schema || SCHEMA_EXAMPLE_TABLE)
@@ -2158,6 +2159,7 @@ async function makeTestClock(schema) {
 		context: 'Test.',
 		pglite,//expose for direct SQL if needed
 	}
+	*/
 }
 
 //example test using the new adapter
