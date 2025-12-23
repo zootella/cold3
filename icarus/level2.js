@@ -1925,6 +1925,20 @@ test(() => {
 
 
 
+
+
+
+
+
+
+
+//      _       _        _                                  _ _     _            _       
+//   __| | __ _| |_ __ _| |__   __ _ ___  ___   _   _ _ __ (_) |_  | |_ ___  ___| |_ ___ 
+//  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \ | | | | '_ \| | __| | __/ _ \/ __| __/ __|
+// | (_| | (_| | || (_| | |_) | (_| \__ \  __/ | |_| | | | | | |_  | ||  __/\__ \ |_\__ \
+//  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|  \__,_|_| |_|_|\__|  \__\___||___/\__|___/
+//                                                                                       
+
 const _databaseTests = []
 export function grid(f) { _databaseTests.push(f) }
 export async function runDatabaseTests() { return await runTests(_databaseTests, '🪣') }
@@ -1940,6 +1954,17 @@ grid(async () => {
 	await db.close()
 	ok(true)
 })
+/*
+putting a pin in this for next time, claude code
+ok, this is great, i can write and run isomorphic tests with test() and database tests for local develpment with grid() and yarn grid in the monorepo root
+next things to do are:
+[]get rid of the dependency injection stuff that didn't work well with the database calls here, which will really clean things up; this will be a lot of code chrun that must not change any code action at all
+[]refactor the await import above into level1 alongside the others; the pattern here should be with @vite-ignore and _pglite, i think
+[]make the calls above to SQL() something that the first call to grid sets up, rather than just a noop for documentation--so while those will still be important documentation blocks to have devs manually paste into the supabase dashboard for the production database, they will also be real code that runs so if there's a syntax error or something we'll know in testing before we'd find out from the dashboard
+[]oh, that first call to grid will also setup the fake sequential Tag(), the starts in 1990 Now() and clockForward(Time.day), that stuff, but you can do this a little later
+and an early smoke test will be can we write a grid test that hits a database table that is a local simulation of a real table, like trail_table
+
+*/
 
 
 
