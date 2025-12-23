@@ -1925,18 +1925,22 @@ test(() => {
 
 
 
+const _databaseTests = []
+export function grid(f) { _databaseTests.push(f) }
+export async function runDatabaseTests() { return await runTests(_databaseTests, '🪣') }
 
 
 
+grid(async () => {
+	let {PGlite} = await import('@electric-sql/pglite')
+	let db = new PGlite()
+	let result = await db.query('SELECT 1 + 1 AS sum')
+	log('pglite result', result.rows)
+	ok(result.rows[0].sum == 2)
+	await db.close()
+	ok(true)
+})
 
-
-
-
-
-
-
-
-//ok, next you'll install pglite and confirm the builds are unaffected; this is before that
 
 
 
@@ -2194,42 +2198,3 @@ noop(async () => {
 
 	log('test adapter: all tests passed')
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
