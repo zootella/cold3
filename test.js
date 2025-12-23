@@ -14,7 +14,7 @@ async function main() {
 		addLogSink((s) => { fs.appendFile('test.log', s.trimEnd()+newline) })//have log() also write to a file
 
 		log(
-			sayFloppyDisk(wrapper).disk,
+			sayFloppyDisk(wrapper).disk,//show 💾 with the current percent filled and shrinkwrap seal hash
 			(await runTests()).message,//run tests and log out the results
 			''
 		)
