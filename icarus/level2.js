@@ -18,6 +18,7 @@ safefill, deindent, cutAfterLast,
 } from './level0.js'
 import {//from level1
 Limit, checkActions,
+gridDynamicImport,
 } from './level1.js'
 
 import {getQuery, readBody} from 'h3'
@@ -1946,8 +1947,8 @@ export async function runDatabaseTests() { return await runTests(_databaseTests,
 
 
 grid(async () => {
-	let {PGlite} = await import('@electric-sql/pglite')
-	let db = new PGlite()
+	let {pglite} = await gridDynamicImport()
+	let db = new pglite.PGlite()
 	let result = await db.query('SELECT 1 + 1 AS sum')
 	log('pglite result', result.rows)
 	ok(result.rows[0].sum == 2)

@@ -201,9 +201,8 @@ functions that use module imports
 */
 export {
 
-qrcodeDynamicImport,
-uppyDynamicImport,
-wevmDynamicImport,
+qrcodeDynamicImport, uppyDynamicImport, wevmDynamicImport,
+nodeDynamicImport, fuzzDynamicImport, gridDynamicImport,
 
 sayPlural, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,

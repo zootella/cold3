@@ -20,71 +20,78 @@ totpGenerate,
 safefill, deindent, commas,
 } from './level0.js'
 
-//static imports
+//(1) static imports
 import {z as zod} from 'zod'//use to validate email
 import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
 import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
 import {getAddress as viem_getAddress} from 'viem'
 
-//dynamic imports
-let _qrcode
+//(2) dynamic imports that use import meta client to stay out of server bundles
+let _qrcode, _uppy, _wevm
 export async function qrcodeDynamicImport() {
 	if (import.meta.client && !_qrcode) {//use Nuxt's import meta to tree shake these modules out of the server build entirely
-		_qrcode = await import('qrcode')
-	}//our hope with if (import.meta.client) is nuxt will tree shake the whole module from the server bundle
+		let [qrcode] = await Promise.all([
+			import ('qrcode')
+		])
+		_qrcode = {qrcode}
+	}
 	return _qrcode
 }
-let _uppy
 export async function uppyDynamicImport() {//🧐🎩
 	if (import.meta.client && !_uppy) {
-		let [m1, m2, m3] = await Promise.all([
+		let [uppy_core, uppy_dashboard, uppy_aws_s3] = await Promise.all([
 			import('@uppy/core'),
 			import('@uppy/dashboard'),
 			import('@uppy/aws-s3'),
 		])
-		_uppy = {uppy_core: m1, uppy_dashboard: m2, uppy_aws_s3: m3}
+		_uppy = {uppy_core, uppy_dashboard, uppy_aws_s3}
 	}
 	return _uppy
 }
-let _wevm
 export async function wevmDynamicImport() {//viem and wagmi are by the same team, https://wevm.dev/
 	if (import.meta.client && !_wevm) {//tree shake viem and wagmi out of the server build entirely
-		let [m1, m2, m3, m4] = await Promise.all([
+		let [viem, viem_chains, wagmi_core, wagmi_connectors] = await Promise.all([
 			import('viem'),
 			import('viem/chains'),
 			import('@wagmi/core'),
 			import('@wagmi/connectors'),//these modules are big, and static imports break the deploy to Cloudflare
 		])
-		_wevm = {viem: m1, viem_chains: m2, wagmi_core: m3, wagmi_connectors: m4}
+		_wevm = {viem, viem_chains, wagmi_core, wagmi_connectors}
 	}
 	return _wevm
 }
 
-//dynamic imports that should not be bundled by anone; these are just for running manual tests on the command line
-let _node
-async function nodeDynamicImport() {//for calls from lambda and local node testing; don't call from web worker or page, will throw
+//(3) dynamic imports that use vite ignore to stay out of all bundles
+let _node, _fuzz, _grid
+export async function nodeDynamicImport() {//modules for calls from lambda and local node testing; don't call from web worker or page!
 	if (!_node) {
-		_node = {
-			fs:     await import('node:fs'),
-			stream: await import('node:stream'),
-			//note that crypto is not here because Node exposes it under crypto.subtle matching the browser API
-		}
+		let [fs, stream] = await Promise.all([
+			import(/* @vite-ignore */ 'node:fs'),
+			import(/* @vite-ignore */ 'node:stream'),
+		])//note that crypto is not here because Node exposes it under crypto.subtle matching the browser API
+		_node = {fs, stream}
 	}
 	return _node
 }
-let _fuzz//hi claude, (1) please refactor fuzzDynamicImport below, keep comments, make it use _fuzz in line with how the other functions are structured, please
-async function fuzzDynamicImport() {
-	//these modules are installed as development dependencies in the root package.json, and are not mentioned in any workspace's package.json; we want to keep bundlers from trying to package them into any client or server build
-	const {customAlphabet} = await import(/* @vite-ignore */ 'nanoid')
-	const {Secret, TOTP}   = await import(/* @vite-ignore */ 'otpauth')//magic comment to calm the aggressive preprocessor 🤯
-	return {customAlphabet, Secret, TOTP}
+export async function fuzzDynamicImport() {//modules for fuzz testing to sanity check our implementations match what nanoid and otpauth do
+	if (!_fuzz) {
+		let [nanoid, otpauth] = await Promise.all([
+			import(/* @vite-ignore */ 'nanoid'),
+			import(/* @vite-ignore */ 'otpauth'),
+		])
+		_fuzz = {nanoid, otpauth}
+	}
+	return _fuzz
 }
-let _grid//and hi again claude, (2) please code below and we'll use it to do the dynamic import of pglite
-async function gridDynamicImport() {
-	//here's where we import pglite for the local node tested grid test cases that include our database tables, just like in production!
-	//but like the fuzz testing, we want to keep pglite out of all bundles, all combinations of local, cloud, icarus, client, server, amazon, cloudflare, nuxt, and sveltekit!
-
+export async function gridDynamicImport() {//modules for local unit tests that include database tables and queries with $ yarn grid
+	if (!_grid) {
+		let [pglite] = await Promise.all([
+			import(/* @vite-ignore */ '@electric-sql/pglite'),
+		])
+		_grid = {pglite}
+	}
+	return _grid
 }
 
 /*
@@ -1225,11 +1232,11 @@ https://www.npmjs.com/package/nanoid
 https://github.com/ai/nanoid
 https://zelark.github.io/nano-id-cc/ collision calculator
 */
-noop(async () => { const fuzz_module = await fuzzDynamicImport()
+noop(async () => { const {nanoid} = await fuzzDynamicImport()
 	//here's what your Tag() function looked like before you extracted the implementation from nanoid to move it down to level0
 	function nanoidTag() {
 		const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-		return fuzz_module.customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
+		return nanoid.customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
 	}
 	for (let i = 0; i < 20; i++) log(`${nanoidTag()} from nanoid and ${Tag()} from Tag()`)//sanity check that they look the same
 })
@@ -1249,13 +1256,13 @@ base32 has (b) and (c) like base16 while being much shorter
 Data() has short zero dependency implementations of base16, 32, 62, and 64
 turn on this fuzz tester to use the base32 implementation that comes with otpauth to confirm our base32 implementation matches
 */
-async function cycle4648(size) { const fuzz_module = await fuzzDynamicImport()
+async function cycle4648(size) { const {otpauth} = await fuzzDynamicImport()
 	let d0 = Data({random: size})
 	let s1 = d0.base32()//we've written our own implementation of base32 encoding into Data
-	let s2 = fuzz_module.Secret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
+	let s2 = otpauth.Secret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
 	ok(s1 == s2)
 	let d1 = Data({base32: s1})
-	let d2 = Data({array: fuzz_module.Secret.fromBase32(s2).bytes})
+	let d2 = Data({array: otpauth.Secret.fromBase32(s2).bytes})
 	ok(d1.base16() == d2.base16())
 }
 noop(async () => {
@@ -1280,12 +1287,12 @@ async function testCycle(m, f) {
 /*
 RFC6238: time-based one-time password
 */
-async function cycle6238() { const fuzz_module = await fuzzDynamicImport()
+async function cycle6238() { const {otpauth} = await fuzzDynamicImport()
 	let d = Data({random: 20})//random shared secret for a totp enrollment
 	let t = randomBetween(0, 100*Time.year)//random timestamp between 1970 and 2070
 
 	let code1 = await totpGenerate(d, t)//our custom implementation in level0 which uses the js subtle api, which calls to native code
-	let code2 = (new fuzz_module.TOTP({secret: fuzz_module.Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})//same thing, using the npm otpauth module, 638k weekly downloads, but brings its own javascript implementation of crypto primitives, :(
+	let code2 = (new otpauth.TOTP({secret: otpauth.Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})//same thing, using the npm otpauth module, 638k weekly downloads, but brings its own javascript implementation of crypto primitives, :(
 	ok(code1 == code2)//make sure that our implementation matches what the popular module would compute!
 }
 noop(async () => {

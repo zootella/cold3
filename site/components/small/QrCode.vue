@@ -33,8 +33,8 @@ async function qr(url) {//url to turn into a QR code, can be "ok" but should be 
 	if (hasText(url) && import.meta.client) {//only try this if we were given text and we're running in a browser
 		try {//most likely error is server render somehow gets in here, and import qrcode throws because web worker doesn't have canvas ☢️
 
-			const qrcode_module = await qrcodeDynamicImport()//dynamic import also keeps qrcode out of the initial bundle; most users won't use it ⚖️
-			svg = await qrcode_module.toString(url.trim(), {type: 'svg', width: 256, margin: 2})//width doesn't really matter for SVG; margin of 2 QR "module" lengths
+			const {qrcode} = await qrcodeDynamicImport()//dynamic import also keeps qrcode out of the initial bundle; most users won't use it ⚖️
+			svg = await qrcode.toString(url.trim(), {type: 'svg', width: 256, margin: 2})//width doesn't really matter for SVG; margin of 2 QR "module" lengths
 
 		} catch (e) {}//discarding these errors because we don't have a way to report client errors without erroring the whole tab
 	}
