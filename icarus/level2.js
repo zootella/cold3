@@ -1962,6 +1962,8 @@ next things to do are:
 []refactor the await import above into level1 alongside the others; the pattern here should be with @vite-ignore and _pglite, i think
 []make the calls above to SQL() something that the first call to grid sets up, rather than just a noop for documentation--so while those will still be important documentation blocks to have devs manually paste into the supabase dashboard for the production database, they will also be real code that runs so if there's a syntax error or something we'll know in testing before we'd find out from the dashboard
 []oh, that first call to grid will also setup the fake sequential Tag(), the starts in 1990 Now() and clockForward(Time.day), that stuff, but you can do this a little later
+[]get rid of example_table and the manual testing vue component above that, all that cruft also goes away now, which is great
+
 and an early smoke test will be can we write a grid test that hits a database table that is a local simulation of a real table, like trail_table
 
 */

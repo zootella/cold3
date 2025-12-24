@@ -21,7 +21,7 @@ async function main() {//copy out the net23.zip file that serverless framework j
 	let gain = size2 - size3
 	let absolute = Math.abs(gain)
 	let comparison = 'same as previous'
-	if (absolute) comparison = `${absolute == 1 ? '1 byte' : saySize4(absolute)} ${gain > 0 ? 'bigger' : 'smaller'} than previous`
+	if (absolute) comparison = `previous ${gain > 0 ? '+' : '-'}${absolute == 1 ? '1 byte' : saySize4(absolute)}`
 	log(`💽 net23.zip is ${saySize4(size2)}; ${comparison}`)
 }
 

@@ -91,7 +91,7 @@ export function ok(assertion) {
 }
 export async function runTests(tests, icon) {
 	if (!tests) tests = _tests//default isomorphic test cases if the caller didn't pass in their own
-	if (!icon) icon = '✅'
+	if (!icon) icon = '✅'//this is what success looks like
 
 	_passes = 0
 	let results = {}
