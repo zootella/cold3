@@ -107,8 +107,53 @@ notes about imports:
 - many users won't ever enter a phone number, or email, or use a wallet, upload a file, or see a qr code. Nuxt's client bundler does a good job of code splitting so pages load fast and bundled modules that won't get called are not delivered at all. but importing everything here in level1.js and then importing icarus everywhere messes that up. as a monolith, the client bundle is still small, but later we might want to go back and refactor to let code splitting work ⬛️🐵 ttd december
 */
 
+/*
+hi claude code! ok, check out
+1 first, the newer dynamic import pattern shown above
+2 second, the new dynamic import functions i wrote below
+3 third, the file persephone.js
+my questions are
+4 is all of this correct?
+5 are we using import.meta.client and vite ignore correctly?
+6 are we dereferencing .default exactly where we need to?
+7 what changes are needed to persephone.js to use these new helper functions instead of doing imports currently there?
+8 looking at how this monorepo works, with icarus as a shared isomorphic dependency to serverless framework, nuxt, and sveltekit, will everything be ok as far as bundles working and not containing extra code?
 
+and now these are just notes for me, please ignore
+[]remove the whole net23 warm thing, maybe; the warmup cost is the lambda itself, making the zip much smaller didn't help much
+*/
 
+//(3, addendum) new ones that follow the pattern of group 3 above
+let _amazon, _twilio, _sharp
+export async function amazonDynamicImport() {
+	if (!_amazon) {
+		let [ses, sns] = await Promise.all([
+			import(/* @vite-ignore */ '@aws-sdk/client-ses'),
+			import(/* @vite-ignore */ '@aws-sdk/client-sns'),
+		])
+		_amazon = {ses, sns}
+	}
+	return _amazon
+}
+export async function twilioDynamicImport() {
+	if (!_twilio) {
+		let [sendgrid, twilio] = await Promise.all([
+			import(/* @vite-ignore */ '@sendgrid/mail'),
+			import(/* @vite-ignore */ 'twilio'),
+		])
+		_twilio = {sendgrid: sendgrid.default, twilio: twilio.default}//these older enterprise modules were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
+	}
+	return _twilio
+}
+export async function sharpDynamicImport() {
+	if (!_sharp) {
+		let [sharp] = await Promise.all([
+			import(/* @vite-ignore */ 'sharp'),
+		])
+		_sharp = {sharp: sharp.default}
+	}
+	return _sharp
+}
 
 
 

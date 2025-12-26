@@ -203,6 +203,7 @@ export {
 
 qrcodeDynamicImport, uppyDynamicImport, wevmDynamicImport,
 nodeDynamicImport, fuzzDynamicImport, gridDynamicImport,
+amazonDynamicImport, twilioDynamicImport, sharpDynamicImport,
 
 sayPlural, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
