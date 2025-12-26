@@ -1942,18 +1942,75 @@ test(() => {
 
 const _databaseTests = []
 export function grid(f) { _databaseTests.push(f) }
-export async function runDatabaseTests() { return await runTests(_databaseTests, '🪣') }
+export async function runDatabaseTests() {
+	//hi claude, ok here is where we will call setup test grid database i think?
+	return await runTests(_databaseTests, '🪣')
+}
+
+let _schemaSQL = []
+let _testDatabase
+export function SQL(s) { _schemaSQL.push(s) }//SQL() collects schema for $ yarn grid tests; we keep schema alongside code; manually copypasta into the Supabase dashboard
+
+export async function getGridDatabase() {
+	if (!_testDatabase) {
+		let {pglite} = await gridDynamicImport()
+		_testDatabase = new pglite.PGlite()
+		for (let sql of _schemaSQL) {
+			await _testDatabase.exec(sql)
+		}
+	}
+	return _testDatabase
+}
 
 
 
 grid(async () => {
-	let {pglite} = await gridDynamicImport()
-	let db = new pglite.PGlite()
+	let db = await getGridDatabase()
 	let result = await db.query('SELECT 1 + 1 AS sum')
-	log('pglite result', result.rows)
+	log('pglite result', look(result.rows))
 	ok(result.rows[0].sum == 2)
-	await db.close()
-	ok(true)
+})
+grid(async () => {
+	let db = await getGridDatabase()
+	let result = await db.query('SELECT 2 + 2 AS sum')
+	ok(result.rows[0].sum == 4)
+})
+grid(async () => {
+	let db = await getGridDatabase()
+
+	let rowTag = Tag()
+	let rowTick = Now()
+	let nameText = 'hello from grid test'
+	let hits = 42
+	let someHash = await hashText('example data')
+
+	await db.query(
+		`INSERT INTO example_table (row_tag, row_tick, hide, name_text, hits, some_hash)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
+		[rowTag, rowTick, 0, nameText, hits, someHash]
+	)
+
+	let result = await db.query(
+		`SELECT * FROM example_table WHERE row_tag = $1`,
+		[rowTag]
+	)
+
+	ok(result.rows.length == 1)
+	ok(result.rows[0].row_tag == rowTag)
+	ok(result.rows[0].name_text == nameText)
+	ok(result.rows[0].hits == hits)
+	ok(result.rows[0].some_hash == someHash)
+})
+grid(async () => {
+	let db = await getGridDatabase()
+
+	let result = await db.query(
+		`SELECT * FROM example_table WHERE name_text = $1`,
+		['hello from grid test']
+	)
+
+	ok(result.rows.length == 1)
+	ok(result.rows[0].hits == 42)
 })
 /*
 putting a pin in this for next time, claude code

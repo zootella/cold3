@@ -24,6 +24,7 @@ Sticker, stickerParts, isLocal, isCloud,
 Task, fetchWorker, fetchLambda, fetchProvider,
 
 /* level 2 query */
+SQL,
 
 //query snippet
 snippetClear, snippetPopulate, snippetQuery2, snippet2,
@@ -156,8 +157,7 @@ export function validateMessageForm() {
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
 //                                            
 
-const SQL = noop//keeping the schema alongside the code; run by copypastaing on the supabase dashboard
-SQL(`
+/*
 -- list all the tables, and all the indices
 SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename ASC;
 SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' ORDER BY indexname ASC;
@@ -181,7 +181,7 @@ DROP INDEX IF EXISTS index1;
 ALTER TABLE example_table RENAME TO renamed_table;
 ALTER TABLE example_table RENAME COLUMN title1 TO title2;
 ALTER INDEX index1 RENAME TO index2;
-`)
+*/
 
 export async function snippetQuery3() {
 	let data, error
@@ -1270,12 +1270,12 @@ CREATE TABLE user_table (
 	stage         BIGINT    NOT NULL   -- 0 not used, 1 provisional, 2 normal, 
 );
 
-here is where you figure out, in this table? in the same column?
-provisional/normal
-creator/fan
-normal/staff/god
-visible/hidden by user; /hidden by staff; suspended, like not deleted, but user can't change; and unhidden
-closed by user/by staff; and unclosed?
+-- here is where you figure out, in this table? in the same column?
+-- provisional/normal
+-- creator/fan
+-- normal/staff/god
+-- visible/hidden by user; /hidden by staff; suspended, like not deleted, but user can't change; and unhidden
+-- closed by user/by staff; and unclosed?
 
 
 `)
