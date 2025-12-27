@@ -1455,34 +1455,6 @@ the design is simple:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 //      _       _        _                    
 //   __| | __ _| |_ __ _| |__   __ _ ___  ___ 
 //  / _` |/ _` | __/ _` | '_ \ / _` / __|/ _ \
@@ -1490,14 +1462,57 @@ the design is simple:
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
 //                                            
 
-//  _            _          _            _    
-// | |_ ___  ___| |_    ___| | ___   ___| | __
-// | __/ _ \/ __| __|  / __| |/ _ \ / __| |/ /
-// | ||  __/\__ \ |_  | (__| | (_) | (__|   < 
-//  \__\___||___/\__|  \___|_|\___/ \___|_|\_\
-//                                            
+//create the supabase client to talk to the cloud database
 
-noop(async () => { const clock = makeClock()//make a simulated clock for this test
+let _supabase
+let _pglite
+let _gridTests = []
+let _schema = []
+let _supafake
+let _gridTick = 1050000000000
+let _gridTagN = 0
+
+function getDatabase() {
+	if (!_supabase) _supabase = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
+	return _supabase
+}
+export function getGridDatabase() { return _pglite }
+
+export function grid(f) { _gridTests.push(f) }
+export async function runDatabaseTests() {
+
+	//switch to grid mode with simulated, local, and ephemeral database, ticks, and tags
+	let {pglite} = await pgliteDynamicImport()
+	_pglite = new pglite.PGlite()
+	for (let sql of _schema) {
+		await _pglite.exec(sql)
+	}
+	_supafake = fakeSupabase(_pglite)
+
+	return await runTests(_gridTests, '🪣')
+}
+
+export function SQL(s) { _schema.push(s) }//SQL() collects schema for $ yarn grid tests; we keep schema alongside code; manually copypasta into the Supabase dashboard
+
+function gridNow() { _gridTick += 1; return _gridTick }
+function gridForward(d) { checkInt(d, 1); _gridTick += d }
+function gridTag() { const prefix = 'TestTag'; return prefix + (((++_gridTagN)+'').padStart(Limit.tag - prefix.length, '0')) }
+
+async function getClock(clock) {
+	if (clock) return clock//simulated for testing
+	if (_supafake) return {Now: gridNow, forward: gridForward, Tag: gridTag, database: _supafake, pglite: _pglite, context: 'Test.'}
+	else return {Now, Tag, database: getDatabase(), context: 'Real.'}//real time, tags, and database
+}
+function makeClock() {//await
+	let t = 1050000000000//test clocks start in April, 2003
+	let n = 0//test tags are numbered 1, 2, 3 to be unique
+	function testNow() { t += 1; return t }//get the simulated tick count now, which will be 1 millisecond after the last time you asked
+	function forward(d) { checkInt(d, 1); t += d }//move the simulated time forward by d milliseconds, like 2*Time.hour or however long you want to sleep
+	function testTag() { const prefix = 'TestTag'; return prefix + (((++n)+'').padStart(Limit.tag - prefix.length, '0')) }//get a simulated globally unique tag, which will be like "TestTag00000000000001", then 2, 3, and so on
+	return {Now: testNow, forward, Tag: testTag, database: getTestDatabase(), context: 'Test.'}
+}
+
+grid(async () => { const clock = await getClock()//test the simulated clock
 
 	//times start 2003apr10 and are 1 millisecond later each time you call Now:
 	let april2003 = 1050000000000//lots of 0s to be recognizable as test data, but still the same number of digits as times now
@@ -1519,7 +1534,7 @@ noop(async () => { const clock = makeClock()//make a simulated clock for this te
 	ok(clock.context == 'Test.')
 })
 //example of a test for a query function below which uses the simulated clock; run these one at a time by changing test<->noop, and on $ yarn test; icarus won't work because the database connection needs server keys
-noop(async () => { const clock = makeClock()
+grid(async () => { const clock = await getClock()
 	await queryDeleteAllRows({table: 'example_table', clock})//test tags and ticks *can* collide, so remember to start with tables empty!
 	let row = {name_text: `My Name`, some_hash: Data({random: 32}).base32(), hits: 5}
 	await queryAddRow({table: 'example_table', row, clock})
@@ -1574,6 +1589,7 @@ export async function snippet2() {
 	})
 	log(look(r))
 }
+//^ttd february2025, these you can probably get rid of now that you have makeClock tests
 
 //count how many rows have cellFind under titleFind, including hidden
 export async function queryCountRows({table, titleFind, cellFind, clock}) { const {Now, Tag, database, context} = await getClock(clock)
@@ -1598,7 +1614,7 @@ export async function queryCountAllRows({table, clock}) { const {Now, Tag, datab
 }
 //delete all the rows from table, only works in the test context!
 export async function queryDeleteAllRows({table, clock}) { const {Now, Tag, database, context} = await getClock(clock)
-	if (context != 'Test.') toss('test', {table})//make sure this is the test database
+	if (context == 'Real.') toss('test', {table})//make sure this is not the real database
 	checkQueryTitle(table)
 	let {data, error} = (await database
 		.from(table)
@@ -1691,9 +1707,7 @@ export async function queryUpdateCells({table, titleFind, cellFind, titleSet, ce
 	if (error) toss('supabase', {error})
 	return data//data is the whole updated row, or undefined if no rows found to change
 }
-
-//ttd december, this will become a grid test
-noop(async () => { const clock = makeClock()
+grid(async () => { const clock = await getClock()
 	await queryDeleteAllRows({table: 'example_table', clock})//test tags and ticks *can* collide, so remember to start with tables empty!
 	let rows = [
 		{name_text: `name1`, some_hash: Data({random: 32}).base32(), hits: 10},
@@ -1942,57 +1956,6 @@ test(() => {
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|  \__,_|_| |_|_|\__|  \__\___||___/\__|___/
 //                                                                                       
 
-let _supabase
-let _pglite
-let _gridTests = []
-let _schema = []
-let _supafake
-let _gridTick = 1050000000000
-let _gridTagN = 0
-
-//create the supabase client to talk to the cloud database
-function getDatabase() {
-	if (!_supabase) _supabase = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
-	return _supabase
-}
-
-async function getClock(clock) {
-	if (clock) return clock//explicit clock for testing with time control
-	if (_supafake) return {Now: gridNow, forward: gridForward, Tag: gridTag, database: _supafake, pglite: _pglite, context: 'Grid.'}
-	return {Now, Tag, database: getDatabase(), context: 'Real.'}//real time, tags, and database
-}
-
-function makeClock() {//await
-	let t = 1050000000000//test clocks start in April, 2003
-	let n = 0//test tags are numbered 1, 2, 3 to be unique
-	function testNow() { t += 1; return t }//get the simulated tick count now, which will be 1 millisecond after the last time you asked
-	function forward(d) { checkInt(d, 1); t += d }//move the simulated time forward by d milliseconds, like 2*Time.hour or however long you want to sleep
-	function testTag() { const prefix = 'TestTag'; return prefix + (((++n)+'').padStart(Limit.tag - prefix.length, '0')) }//get a simulated globally unique tag, which will be like "TestTag00000000000001", then 2, 3, and so on
-	return {Now: testNow, forward, Tag: testTag, database: getTestDatabase(), context: 'Test.'}
-}
-
-export function grid(f) { _gridTests.push(f) }
-export async function runDatabaseTests() {
-
-	//switch to grid mode with simulated, local, and ephemeral database, ticks, and tags
-	let {pglite} = await pgliteDynamicImport()
-	_pglite = new pglite.PGlite()
-	for (let sql of _schema) {
-		await _pglite.exec(sql)
-	}
-	_supafake = makeGridAdapter(_pglite)
-
-	return await runTests(_gridTests, '🪣')
-}
-
-export function SQL(s) { _schema.push(s) }//SQL() collects schema for $ yarn grid tests; we keep schema alongside code; manually copypasta into the Supabase dashboard
-
-export function getGridDatabase() { return _pglite }//after switchToGridMode(), returns the PGlite instance for raw SQL
-
-function gridNow() { _gridTick += 1; return _gridTick }
-function gridForward(d) { checkInt(d, 1); _gridTick += d }
-function gridTag() { const prefix = 'GridTag'; return prefix + (((++_gridTagN)+'').padStart(Limit.tag - prefix.length, '0')) }
-
 //raw SQL smoke test using pglite directly
 grid(async () => {
 	let {pglite} = await getClock()
@@ -2087,11 +2050,16 @@ Supabase API methods we support:
 - .update(data) - update rows
 - .delete() - delete rows
 
-Usage: let database = makeGridAdapter(pglite)
+Usage: let database = fakeSupabase(pglite)
 Then: await database.from('table').select('*').eq('col', val)
 */
 
-class GridQueryBuilder {
+//wrap PGlite to provide Supabase-like .from() entry point
+function fakeSupabase(pglite) {
+	return { from(table) { return new FakeSupabaseQueryBuilder(pglite, table) } }
+}
+
+class FakeSupabaseQueryBuilder {
 	constructor(pglite, table) {
 		this.pglite = pglite
 		this.table = table
@@ -2208,9 +2176,4 @@ class GridQueryBuilder {
 		await this.pglite.query(sql, params)
 		return {data: null, error: null}
 	}
-}
-
-//wrap PGlite to provide Supabase-like .from() entry point
-function makeGridAdapter(pglite) {
-	return { from(table) { return new GridQueryBuilder(pglite, table) } }
 }
