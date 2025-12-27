@@ -202,7 +202,7 @@ functions that use module imports
 export {
 
 qrcodeDynamicImport, uppyDynamicImport, wevmDynamicImport,
-nodeDynamicImport, fuzzDynamicImport, gridDynamicImport,
+nodeDynamicImport, fuzzDynamicImport, pgliteDynamicImport,
 amazonDynamicImport, twilioDynamicImport, sharpDynamicImport,
 
 sayPlural, sayHugeInteger, saySize4, sayNumber4,

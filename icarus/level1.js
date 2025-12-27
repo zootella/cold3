@@ -84,7 +84,7 @@ export async function fuzzDynamicImport() {//modules for fuzz testing to sanity 
 	}
 	return _fuzz
 }
-export async function gridDynamicImport() {//modules for local unit tests that include database tables and queries with $ yarn grid
+export async function pgliteDynamicImport() {//modules for local unit tests that include database tables and queries with $ yarn grid
 	if (!_grid) {
 		let [pglite] = await Promise.all([
 			import(/* @vite-ignore */ '@electric-sql/pglite'),
