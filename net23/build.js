@@ -38,7 +38,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 		if (file == 'package.json' || file.endsWith('.js')) await fs.copy('../icarus/'+file, 'dist/node_modules/icarus/'+file)
 	}
 
-	log("💫 Analyzing with Vercel's Node File Trace...")
+	log("🌳 Analyzing with Vercel's Node File Trace...")
 	let entryPoints = (await fs.readdir('dist/src')).filter(f => f.endsWith('.js')).map(f => 'dist/src/' + f)
 	let {fileList} = await nodeFileTrace(entryPoints, {base: 'dist'})//from vercel nft's results, pull out the list of necessary files
 	let necessary = [...fileList].filter(f => f.startsWith('node_modules/'))//lambda, persephone, icarus files above we've already got

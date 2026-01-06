@@ -1472,14 +1472,7 @@ let _supafake
 let _gridTick = 1050000000000
 let _gridTagN = 0
 
-function getDatabase() {
-	if (!_supabase) _supabase = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
-	return _supabase
-}
-export function getGridDatabase() { return _pglite }
-
-export async function gridMode() {//in local node testing only, switch a single time to a simulated database, tags, and clock
-	await getGridDatabase()
+async function gridMode() {//in local node testing only, switch a single time to a simulated database, tags, and clock
 
 	//switch to grid mode with simulated, local, and ephemeral database, ticks, and tags
 	let {pglite} = await pgliteDynamicImport()
@@ -1503,7 +1496,7 @@ or maybe you get back an object with methods like
 export function grid(f) { _gridTests.push(f) }
 export async function runDatabaseTests() {
 	await gridMode()
-	return await runTests(_gridTests, '🪣')
+	return await runTests(_gridTests)
 }
 
 export function SQL(s) { _schema.push(s) }//SQL() collects schema for $ yarn grid tests; we keep schema alongside code; manually copypasta into the Supabase dashboard
@@ -1514,10 +1507,15 @@ function gridTag() { const prefix = 'TestTag'; return prefix + (((++_gridTagN)+'
 
 async function getClock(clock) {
 	if (clock) return clock//simulated for testing
-	if (_supafake) return {Now: gridNow, forward: gridForward, Tag: gridTag, database: _supafake, pglite: _pglite, context: 'Test.'}
-	else return {Now, Tag, database: getDatabase(), context: 'Real.'}//real time, tags, and database
+
+	if (_pglite) {
+		return {Now: gridNow, forward: gridForward, Tag: gridTag, database: _supafake, pglite: _pglite, context: 'Test.'}
+	} else {
+		if (!_supabase) _supabase = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
+		return {Now, Tag, database: _supabase, context: 'Real.'}//real time, tags, and database
+	}
 }
-function makeClock() {//await
+function makeClock_unused() {//ttd january, remove this soon when you've got this behavior elsewhere in the updated system
 	let t = 1050000000000//test clocks start in April, 2003
 	let n = 0//test tags are numbered 1, 2, 3 to be unique
 	function testNow() { t += 1; return t }//get the simulated tick count now, which will be 1 millisecond after the last time you asked
