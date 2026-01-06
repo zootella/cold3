@@ -35,12 +35,13 @@ checkEmail, checkPhone,
 } from 'icarus'
 
 //(4) same pattern as in 3; used only in net23 lambda [see also 1-3 in icarus/level1.js]
+/*
 let _amazon, _twilio, _sharp
 async function amazonDynamicImport() {
 	if (!_amazon) {
 		let [ses, sns] = await Promise.all([
-			import(/* @vite-ignore */ '@aws-sdk/client-ses'),
-			import(/* @vite-ignore */ '@aws-sdk/client-sns'),
+			import('@aws-sdk/client-ses'),
+			import('@aws-sdk/client-sns'),
 		])
 		_amazon = {ses, sns}
 	}
@@ -49,8 +50,8 @@ async function amazonDynamicImport() {
 async function twilioDynamicImport() {
 	if (!_twilio) {
 		let [sendgrid, twilio] = await Promise.all([
-			import(/* @vite-ignore */ '@sendgrid/mail'),
-			import(/* @vite-ignore */ 'twilio'),
+			import('@sendgrid/mail'),
+			import('twilio'),
 		])
 		_twilio = {sendgrid: sendgrid.default, twilio: twilio.default}//these older enterprise modules were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
 	}
@@ -59,12 +60,13 @@ async function twilioDynamicImport() {
 async function sharpDynamicImport() {
 	if (!_sharp) {
 		let [sharp] = await Promise.all([
-			import(/* @vite-ignore */ 'sharp'),
+			import('sharp'),
 		])
 		_sharp = {sharp: sharp.default}
 	}
 	return _sharp
 }
+*/
 
 /*
 "Icarus" is named for its light, universal nature, but this file is the opposite--
