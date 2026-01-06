@@ -34,8 +34,13 @@ checkEmail, checkPhone,
 
 } from 'icarus'
 
-//(4) same pattern as in 3; used only in net23 lambda [see also 1-3 in icarus/level1.js]
 /*
+"Icarus" is named for its light, universal nature, but this file is the opposite--
+deep in the stack, relying on heavy modules and tied to this layer alone.
+It's the underworld to Icarus's sky, so chat suggested "Persephone," queen of below...
+*/
+
+//(4) same pattern as in 3; used only in net23 lambda [see also 1-3 in icarus/level1.js]
 let _amazon, _twilio, _sharp
 async function amazonDynamicImport() {
 	if (!_amazon) {
@@ -66,31 +71,16 @@ async function sharpDynamicImport() {
 	}
 	return _sharp
 }
-*/
-
-/*
-"Icarus" is named for its light, universal nature, but this file is the opposite--
-deep in the stack, relying on heavy modules and tied to this layer alone.
-It's the underworld to Icarus's sky, so chat suggested "Persephone," queen of below...
-*/
-
-let _ses, _sns, _sendgrid, _twilio, _sharp//references to avoid double-loading that we do not use below!
-async function amazonEmailDynamicImport() { if (!_ses)      _ses      =  await import('@aws-sdk/client-ses');     return _ses      }
-async function amazonPhoneDynamicImport() { if (!_sns)      _sns      =  await import('@aws-sdk/client-sns');     return _sns      }
-async function twilioEmailDynamicImport() { if (!_sendgrid) _sendgrid = (await import('@sendgrid/mail')).default; return _sendgrid }
-async function twilioPhoneDynamicImport() { if (!_twilio)   _twilio   = (await import('twilio')).default;         return _twilio   }
-async function sharpDynamicImport()       { if (!_sharp)    _sharp    = (await import('sharp')).default;          return _sharp    }
-//^the last three were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
 
 //ttd april2025 replace this with a separate endpoint /warm which doesn't do anything, this will do the same thing, you believe, but ask chat
 export async function warm({provider, service}) {
 	let task = Task({name: 'warm'})
 	switch (provider+service) {
-		case 'Amazon.Email.': await amazonEmailDynamicImport(); break
-		case 'Amazon.Phone.': await amazonPhoneDynamicImport(); break
-		case 'Twilio.Email.': await twilioEmailDynamicImport(); break
-		case 'Twilio.Phone.': await twilioPhoneDynamicImport(); break
-		case 'Sharp.':        await sharpDynamicImport();       break
+		case 'Amazon.Email.': await amazonDynamicImport(); break
+		case 'Amazon.Phone.': await amazonDynamicImport(); break
+		case 'Twilio.Email.': await twilioDynamicImport(); break
+		case 'Twilio.Phone.': await twilioDynamicImport(); break//ttd january, note to streamline or remove the warm step, actually
+		case 'Sharp.':        await sharpDynamicImport();  break
 	}
 	task.finish({success: true})
 	return task
@@ -137,7 +127,8 @@ async function sendMessageAmazonEmail(task) {
 			}
 		}
 	}
-	const {SESClient, SendEmailCommand} = await amazonEmailDynamicImport()
+	const {ses} = await amazonDynamicImport()
+	const {SESClient, SendEmailCommand} = ses
 	let client = new SESClient({region: Key('amazon region, public')})
 	task.response = await client.send(new SendEmailCommand(task.request))
 	if (hasText(task.response.MessageId)) task.success = true
@@ -152,9 +143,9 @@ async function sendMessageTwilioEmail(task) {
 			{type: 'text/html',  value: task.parameters.messageHtml}
 		]
 	}
-	const sendgrid_module = await twilioEmailDynamicImport()
-	sendgrid_module.setApiKey(Key('sendgrid key, secret'))
-	task.response = await sendgrid_module.send(task.request)
+	const {sendgrid} = await twilioDynamicImport()
+	sendgrid.setApiKey(Key('sendgrid key, secret'))
+	task.response = await sendgrid.send(task.request)
 	if (
 		task.response.length &&
 		task.response[0].statusCode == 202 &&
@@ -165,7 +156,8 @@ async function sendMessageAmazonPhone(task) {
 		PhoneNumber: task.parameters.toPhone,
 		Message: task.parameters.messageText,
 	}
-	const {SNSClient, PublishCommand} = await amazonPhoneDynamicImport()
+	const {sns} = await amazonDynamicImport()
+	const {SNSClient, PublishCommand} = sns
 	let client = new SNSClient({region: Key('amazon region, public')})
 	task.response = await client.send(new PublishCommand(task.request))
 	if (hasText(task.response.MessageId)) task.success = true
@@ -176,8 +168,8 @@ async function sendMessageTwilioPhone(task) {
 		to: task.parameters.toPhone,
 		body: task.parameters.messageText
 	}
-	const twilio_module = await twilioPhoneDynamicImport()
-	let client = twilio_module(Key('twilio sid, secret'), Key('twilio auth, secret'))
+	const {twilio} = await twilioDynamicImport()
+	let client = twilio(Key('twilio sid, secret'), Key('twilio auth, secret'))
 	task.response = await client.messages.create(task.request)
 	if (hasText(task.response.sid)) task.success = true
 }
@@ -213,13 +205,14 @@ test(() => {//deployed, make sure we're running in Node 20 on Amazon Linux on th
 test(async () => {//test amazon modules load and appear ready
 
 	//check amazon email loads and looks ready
-	const {SESClient, GetSendQuotaCommand} = await amazonEmailDynamicImport()
+	const {ses, sns} = await amazonDynamicImport()
+	const {SESClient, GetSendQuotaCommand} = ses
 	const mailClient = new SESClient({region: Key('amazon region, public')})
 	let quota = await mailClient.send(new GetSendQuotaCommand({}))
 	ok(quota.Max24HourSend >= 50000)//approved out of the sandbox, amazon limits to 50 thousand emails a day
 
 	//and amazon text messaging
-	const {SNSClient, GetSMSAttributesCommand} = await amazonPhoneDynamicImport()
+	const {SNSClient, GetSMSAttributesCommand} = sns
 	const textClient = new SNSClient({region: Key('amazon region, public')})
 	let smsAttributes = await textClient.send(new GetSMSAttributesCommand({}))
 	ok(smsAttributes.attributes.MonthlySpendLimit.length)//MonthlySpendLimit is a string like "50" dollars
@@ -227,21 +220,20 @@ test(async () => {//test amazon modules load and appear ready
 test(async () => {//test twilio modules load and appear ready
 
 	//twilio
-	const twilio_module = await twilioPhoneDynamicImport()
-	let twilioClient = twilio_module(Key('twilio sid, secret'), Key('twilio auth, secret'))
+	const {twilio, sendgrid} = await twilioDynamicImport()
+	let twilioClient = twilio(Key('twilio sid, secret'), Key('twilio auth, secret'))
 	let accountContext = await twilioClient.api.accounts(Key('twilio sid, secret'))
 	ok(accountContext._version._domain.baseUrl.startsWith('https://'))
 
 	//sendgrid
-	const sendgrid_module = await twilioEmailDynamicImport()
-	sendgrid_module.setApiKey(Key('sendgrid key, secret'))
-	ok(sendgrid_module.client.defaultRequest.baseUrl.startsWith('https://'))
+	sendgrid.setApiKey(Key('sendgrid key, secret'))
+	ok(sendgrid.client.defaultRequest.baseUrl.startsWith('https://'))
 })
 test(async () => {//test that we can use sharp, which relies on native libraries
 
 	//sharp
-	const sharp_module = await sharpDynamicImport()
-	const b = await sharp_module({//make an image
+	const {sharp} = await sharpDynamicImport()
+	const b = await sharp({//make an image
 		create: {
 			width: 42, height: 42, channels: 4,//small square
 			background: '#ff00ff',//hot pink like it's 1988
@@ -260,7 +252,8 @@ export async function snippet2() {
 		o.intro = "hi from snippet2 in persephone; tests cover all of this now, so you should soon delete it"
 
 		//amazon
-		const {SESClient, GetSendQuotaCommand} = await amazonEmailDynamicImport()
+		const {ses, sns} = await amazonDynamicImport()
+		const {SESClient, GetSendQuotaCommand} = ses
 		const mailClient = new SESClient({region: Key('amazon region, public')})
 		o.amazonMail = look(mailClient.config).slice(0, limit)
 		try {
@@ -269,22 +262,21 @@ export async function snippet2() {
 		} catch (e2) {//permissions error deployed, but chat is explaining iam roles to define in serverless.yml
 			o.amazonMailQuotaError = e2.stack
 		}
-		const {SNSClient} = await amazonPhoneDynamicImport()
+		const {SNSClient} = sns
 		const textClient = new SNSClient({region: Key('amazon region, public')})
 		o.amazonText = look(textClient.config).slice(0, limit)
 
 		//twilio
-		const twilio_module = await twilioPhoneDynamicImport()
-		const sendgrid_module = await twilioEmailDynamicImport()
-		o.twilioRequired = look(twilio_module).slice(0, limit)
-		o.sendgridRequired = look(sendgrid_module).slice(0, limit)
-		let twilioClient = twilio_module(Key('twilio sid, secret'), Key('twilio auth, secret'))
+		const {twilio, sendgrid} = await twilioDynamicImport()
+		o.twilioRequired = look(twilio).slice(0, limit)
+		o.sendgridRequired = look(sendgrid).slice(0, limit)
+		let twilioClient = twilio(Key('twilio sid, secret'), Key('twilio auth, secret'))
 		o.twilioClient = look(twilioClient).slice(0, limit)
-		sendgrid_module.setApiKey(Key('sendgrid key, secret'))
+		sendgrid.setApiKey(Key('sendgrid key, secret'))
 
 		//sharp
-		const sharp_module = await sharpDynamicImport()
-		const b2 = await sharp_module({
+		const {sharp} = await sharpDynamicImport()
+		const b2 = await sharp({
 			create: {
 				width: 200, height: 120, channels: 4,
 				background: {r: 255, g: 0, b: 0, alpha: 1}
