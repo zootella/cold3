@@ -89,9 +89,8 @@ export function ok(assertion) {
 	if (assertion) _passes++//count another passed assertion
 	else throw new TestError()//the assertion is false! throw an exception to get the line number and stop the tests
 }
-export async function runTests(tests, icon) {
+export async function runTests(tests) {
 	if (!tests) tests = _tests//default isomorphic test cases if the caller didn't pass in their own
-	if (!icon) icon = '✅'//this is what success looks like
 
 	_passes = 0
 	let results = {}
@@ -118,7 +117,7 @@ export async function runTests(tests, icon) {
 		passes:   _passes,
 		tests:    tests.length,
 		duration: duration,
-		message:  `${icon} ${_passes} assertions in ${tests.length} tests all passed in ${duration}ms on ${sayTick(t)}`
+		message:  `✅ ${_passes} assertions in ${tests.length} tests all passed in ${duration}ms on ${sayTick(t)}`
 	}
 }
 

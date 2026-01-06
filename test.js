@@ -1,6 +1,6 @@
 
 import {
-wrapper, sayFloppyDisk, runTests,
+wrapper, sayFloppyDisk, runTests, runDatabaseTests,
 log, addLogSink, look, newline,
 awaitLogAlert,
 } from 'icarus'
@@ -16,6 +16,7 @@ async function main() {
 		log(
 			sayFloppyDisk(wrapper).disk,//show 💾 with the current percent filled and shrinkwrap seal hash
 			(await runTests()).message,//run tests and log out the results
+			(await runDatabaseTests()).message,//followed by database tests using pglite, which are slower; we run manually and locally
 			''
 		)
 

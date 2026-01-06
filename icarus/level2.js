@@ -1478,8 +1478,8 @@ function getDatabase() {
 }
 export function getGridDatabase() { return _pglite }
 
-export function grid(f) { _gridTests.push(f) }
-export async function runDatabaseTests() {
+export async function gridMode() {//in local node testing only, switch a single time to a simulated database, tags, and clock
+	await getGridDatabase()
 
 	//switch to grid mode with simulated, local, and ephemeral database, ticks, and tags
 	let {pglite} = await pgliteDynamicImport()
@@ -1489,6 +1489,20 @@ export async function runDatabaseTests() {
 	}
 	_supafake = fakeSupabase(_pglite)
 
+	//ttd january, tags
+	//ttd january, clock
+}
+/*
+or maybe you get back an object with methods like
+.clear()//removes all contents of all tables of the pglite database
+.set(t)//make Now() be the given t
+.forward(t)//move the clock forward the given duration
+.prefix(s)//start Tag() with the given prefix
+*/
+
+export function grid(f) { _gridTests.push(f) }
+export async function runDatabaseTests() {
+	await gridMode()
 	return await runTests(_gridTests, '🪣')
 }
 

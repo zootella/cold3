@@ -62,13 +62,15 @@ export async function wevmDynamicImport() {//viem and wagmi are by the same team
 	return _wevm
 }
 
-//(3) dynamic imports that use vite ignore to stay out of all bundles
-let _node, _fuzz, _grid
+//(3) dynamic imports for Node, local or lambda; we use a Function to hide from Vite and Rollup and keep these out of all bundles
+const hiddenImport = new Function('m', 'return import(m)')
+let _node, _fuzz, _grid//only used in local Node for manual testing
+let _amazon, _twilio, _sharp//only used in net23 AWS Lambda, which is also Node
 export async function nodeDynamicImport() {//modules for calls from lambda and local node testing; don't call from web worker or page!
 	if (!_node) {
 		let [fs, stream] = await Promise.all([
-			import(/* @vite-ignore */ 'node:fs'),
-			import(/* @vite-ignore */ 'node:stream'),
+			hiddenImport('node:fs'),
+			hiddenImport('node:stream'),
 		])//note that crypto is not here because Node exposes it under crypto.subtle matching the browser API
 		_node = {fs, stream}
 	}
@@ -77,8 +79,8 @@ export async function nodeDynamicImport() {//modules for calls from lambda and l
 export async function fuzzDynamicImport() {//modules for fuzz testing to sanity check our implementations match what nanoid and otpauth do
 	if (!_fuzz) {
 		let [nanoid, otpauth] = await Promise.all([
-			import(/* @vite-ignore */ 'nanoid'),
-			import(/* @vite-ignore */ 'otpauth'),
+			hiddenImport('nanoid'),
+			hiddenImport('otpauth'),
 		])
 		_fuzz = {nanoid, otpauth}
 	}
@@ -87,11 +89,40 @@ export async function fuzzDynamicImport() {//modules for fuzz testing to sanity 
 export async function pgliteDynamicImport() {//modules for local unit tests that include database tables and queries with $ yarn grid
 	if (!_grid) {
 		let [pglite] = await Promise.all([
-			import(/* @vite-ignore */ '@electric-sql/pglite'),
+			hiddenImport('@electric-sql/pglite'),
 		])
 		_grid = {pglite}
 	}
 	return _grid
+}
+export async function amazonDynamicImport() {
+	if (!_amazon) {
+		let [ses, sns] = await Promise.all([
+			hiddenImport('@aws-sdk/client-ses'),
+			hiddenImport('@aws-sdk/client-sns'),
+		])
+		_amazon = {ses, sns}
+	}
+	return _amazon
+}
+export async function twilioDynamicImport() {
+	if (!_twilio) {
+		let [sendgrid, twilio] = await Promise.all([
+			hiddenImport('@sendgrid/mail'),
+			hiddenImport('twilio'),
+		])
+		_twilio = {sendgrid: sendgrid.default, twilio: twilio.default}//these older enterprise modules were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
+	}
+	return _twilio
+}
+export async function sharpDynamicImport() {
+	if (!_sharp) {
+		let [sharp] = await Promise.all([
+			hiddenImport('sharp'),
+		])
+		_sharp = {sharp: sharp.default}
+	}
+	return _sharp
 }
 
 /*
@@ -106,54 +137,6 @@ notes about imports:
 - persephone.js as dynamic imports in addition to these. moving them here as amaonDynamicImport/twilioDynamicImport/sharpDynamicImport might work and be a consistancy flex, but we won't ever need them outside lambda, and here they could only confuse the SvelteKit and Nuxt bundlers
 - many users won't ever enter a phone number, or email, or use a wallet, upload a file, or see a qr code. Nuxt's client bundler does a good job of code splitting so pages load fast and bundled modules that won't get called are not delivered at all. but importing everything here in level1.js and then importing icarus everywhere messes that up. as a monolith, the client bundle is still small, but later we might want to go back and refactor to let code splitting work ⬛️🐵 ttd december
 */
-
-/*
-hi claude code! ok, check out
-1 first, the newer dynamic import pattern shown above
-2 second, the new dynamic import functions i wrote below
-3 third, the file persephone.js
-my questions are
-4 is all of this correct?
-5 are we using import.meta.client and vite ignore correctly?
-6 are we dereferencing .default exactly where we need to?
-7 what changes are needed to persephone.js to use these new helper functions instead of doing imports currently there?
-8 looking at how this monorepo works, with icarus as a shared isomorphic dependency to serverless framework, nuxt, and sveltekit, will everything be ok as far as bundles working and not containing extra code?
-
-and now these are just notes for me, please ignore
-[]remove the whole net23 warm thing, maybe; the warmup cost is the lambda itself, making the zip much smaller didn't help much
-*/
-
-//(3, addendum) new ones that follow the pattern of group 3 above
-let _amazon, _twilio, _sharp
-export async function amazonDynamicImport() {
-	if (!_amazon) {
-		let [ses, sns] = await Promise.all([
-			import(/* @vite-ignore */ '@aws-sdk/client-ses'),
-			import(/* @vite-ignore */ '@aws-sdk/client-sns'),
-		])
-		_amazon = {ses, sns}
-	}
-	return _amazon
-}
-export async function twilioDynamicImport() {
-	if (!_twilio) {
-		let [sendgrid, twilio] = await Promise.all([
-			import(/* @vite-ignore */ '@sendgrid/mail'),
-			import(/* @vite-ignore */ 'twilio'),
-		])
-		_twilio = {sendgrid: sendgrid.default, twilio: twilio.default}//these older enterprise modules were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
-	}
-	return _twilio
-}
-export async function sharpDynamicImport() {
-	if (!_sharp) {
-		let [sharp] = await Promise.all([
-			import(/* @vite-ignore */ 'sharp'),
-		])
-		_sharp = {sharp: sharp.default}
-	}
-	return _sharp
-}
 
 
 

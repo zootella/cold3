@@ -167,7 +167,7 @@ sealEnvelope, openEnvelope,
 composeCookieName, composeCookieValue, parseCookieValue,
 
 /* level 2 query */
-grid, runDatabaseTests, SQL, getGridDatabase,
+grid, runDatabaseTests, SQL, getGridDatabase,//new grid tests and simulated environment
 
 //query snippet
 snippetClear, snippetPopulate, snippetQuery2, snippet2,
