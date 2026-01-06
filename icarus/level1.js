@@ -62,15 +62,13 @@ export async function wevmDynamicImport() {//viem and wagmi are by the same team
 	return _wevm
 }
 
-//(3) dynamic imports for Node, local or lambda; we use a Function to hide from Vite and Rollup and keep these out of all bundles
-const hiddenImport = new Function('m', 'return import(m)')
-let _node, _fuzz, _grid//only used in local Node for manual testing
-let _amazon, _twilio, _sharp//only used in net23 AWS Lambda, which is also Node
+//(3) dynamic imports that use vite ignore to stay out of all bundles [see also (4) in net23/persephone.js]
+let _node, _fuzz, _grid
 export async function nodeDynamicImport() {//modules for calls from lambda and local node testing; don't call from web worker or page!
 	if (!_node) {
 		let [fs, stream] = await Promise.all([
-			hiddenImport('node:fs'),
-			hiddenImport('node:stream'),
+			import(/* @vite-ignore */ 'node:fs'),//tells Vite "don't resolve or bundle this; Node will resolve this module when it runs"
+			import(/* @vite-ignore */ 'node:stream'),
 		])//note that crypto is not here because Node exposes it under crypto.subtle matching the browser API
 		_node = {fs, stream}
 	}
@@ -79,8 +77,8 @@ export async function nodeDynamicImport() {//modules for calls from lambda and l
 export async function fuzzDynamicImport() {//modules for fuzz testing to sanity check our implementations match what nanoid and otpauth do
 	if (!_fuzz) {
 		let [nanoid, otpauth] = await Promise.all([
-			hiddenImport('nanoid'),
-			hiddenImport('otpauth'),
+			import(/* @vite-ignore */ 'nanoid'),
+			import(/* @vite-ignore */ 'otpauth'),
 		])
 		_fuzz = {nanoid, otpauth}
 	}
@@ -89,40 +87,11 @@ export async function fuzzDynamicImport() {//modules for fuzz testing to sanity 
 export async function pgliteDynamicImport() {//modules for local unit tests that include database tables and queries with $ yarn grid
 	if (!_grid) {
 		let [pglite] = await Promise.all([
-			hiddenImport('@electric-sql/pglite'),
+			import(/* @vite-ignore */ '@electric-sql/pglite'),
 		])
 		_grid = {pglite}
 	}
 	return _grid
-}
-export async function amazonDynamicImport() {
-	if (!_amazon) {
-		let [ses, sns] = await Promise.all([
-			hiddenImport('@aws-sdk/client-ses'),
-			hiddenImport('@aws-sdk/client-sns'),
-		])
-		_amazon = {ses, sns}
-	}
-	return _amazon
-}
-export async function twilioDynamicImport() {
-	if (!_twilio) {
-		let [sendgrid, twilio] = await Promise.all([
-			hiddenImport('@sendgrid/mail'),
-			hiddenImport('twilio'),
-		])
-		_twilio = {sendgrid: sendgrid.default, twilio: twilio.default}//these older enterprise modules were written for CommonJS and expect require(), but we can still bring them into this ESM project with a dynamic import and dereferencing .default
-	}
-	return _twilio
-}
-export async function sharpDynamicImport() {
-	if (!_sharp) {
-		let [sharp] = await Promise.all([
-			hiddenImport('sharp'),
-		])
-		_sharp = {sharp: sharp.default}
-	}
-	return _sharp
 }
 
 /*
