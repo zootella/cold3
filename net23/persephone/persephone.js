@@ -73,7 +73,7 @@ async function sharpDynamicImport() {
 }
 
 //ttd april2025 replace this with a separate endpoint /warm which doesn't do anything, this will do the same thing, you believe, but ask chat
-export async function warm({provider, service}) {
+export async function warm({provider, service}) {//ttd january, remove warm
 	let task = Task({name: 'warm'})
 	switch (provider+service) {
 		case 'Amazon.Email.': await amazonDynamicImport(); break

@@ -12,7 +12,7 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	return await doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
 async function doorHandleBelow({door, body}) {
-	await warm({})
+	await warm({})//ttd january, remove warm
 	return {
 		success: true,
 		note: `lambda says: ${Sticker()}, up2done`,

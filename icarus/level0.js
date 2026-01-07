@@ -42,7 +42,11 @@ Size.pb = 1024*Size.tb//pebibyte, really big
 Object.freeze(Size)
 
 export const noop = (() => {})//no operation, a function that does nothing
-export const Now = Date.now//just a shortcut
+
+let _simulationMode, _now//grid tests locally in Node use a simulated clock
+export function Now() { return _simulationMode ? _now : Date.now() }
+export function setNow(t) { _now = t }
+export function ageNow(t) { _now += t }
 
 //      _       _          __                  _         __  __ 
 //   __| | __ _| |_ ___   / _| ___  _ __   ___| |_ __ _ / _|/ _|
@@ -1060,8 +1064,18 @@ export function Tag() {//generate a new universally unique double-clickable tag 
 			'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
 			tagLength)
 	}
-	return _tagMaker()
+	let tag = _tagMaker()
+	if (_simulationMode) {
+		const minimumRandom = 6//when running grid tests, tags must still have at least 6 digits that are random
+		let prefix = `${_tagPrefix}${_tagNumber}n`
+		if (prefix.length + minimumRandom > tagLength) toss('data')
+		return prefix + tag.slice(prefix.length)//overlay the test prefix to make a tag like "Testing2nfiqJLsrLBaHU"
+	} else {
+		return tag
+	}
 }
+let _tagPrefix = 'TestTag', _tagNumber = 1
+export function setTagPrefix(s) { _tagPrefix = s; _tagNumber = 1 }
 
 //make sure a tag is exactly 21 letters and numbers, for the database
 export function checkTagOrBlank(s) { if (s === ''); else checkTag(s); return s }
