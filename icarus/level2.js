@@ -488,8 +488,7 @@ generally:
 - forward browser tag cookie so the server rendering from the very first GET works
 - make the body a POJO so stringification done later doesn't blow up
 fetchLambda:
-- include the Network 23 Secret Access Code
-- warm up the lambda before making the actual request
+- include the Network 23 sealed envelope
 fetchProvider:
 - pick which fetch function to call depending on what's available where we're running
 
@@ -533,13 +532,6 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	options.method = 'POST'//force post
 	if (!options.body) options.body = {}
 	options.body = makePlain(options.body)
-
-	options.body.warm = true
-	options.body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})//no additional letter contents
-	await $fetch(origin23()+url, options)//(Note 2) throws if lambda responds non-2XX; desired behavior
-	//ttd january, planning to soon remove the warm call entirely, actually, bookmark
-
-	options.body.warm = false
 	options.body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})
 	return await $fetch(origin23()+url, options)
 }
@@ -604,7 +596,7 @@ action should be explicit and required
 i think you don't need to expose options, just body
 should this return a task, and then you do task.response, even though if there's an exception it throws rather than pins, that would get you the duration time without you having to measure it yourself
 ok but looking at this now you also wrote it this way to align with fetchProvider, where you do need options, so you could do another layer on top of fetchWorker and fetchLambda like postWorker() and postLambda()
-yeah and if you do those, then that's where they fill in all the defaults, like empty body, net23 envelope, net23 warm first pass, that stuff
+yeah and if you do those, then that's where they fill in all the defaults, like empty body, net23 envelope, that stuff
 
 ok, thsi is a complex refactor, lots of complex areas that could or dont or shouldn't interact
 one way to do this is, imagine the page doesn't care about how long turnstile or the worker call takes; you've observed it as always 3 seconds, faster on firefox, for months now, it's not interesting. also if something interesting did happen, well you can't know because the page doesn't have a trusted way to report back to hq. also also maybe you won't need turnstile nearly anywhere. or maybe you'll use 800ms of hashcash instead, or something
