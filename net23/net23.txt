@@ -1210,6 +1210,19 @@ lambda serverless framework is local/deployed--run in those two environments
 
 
 
+and about the grid() tests that $ yarn test runs after entering simulation mode:
+
+1. yarn test → test.js runs runTests() (isomorphic, real Now/Tag)
+2. Then calls runDatabaseTests() which:
+  - Calls enterSimulationMode() — one-way door, no exit
+  - Runs runTests(_gridTests)
+3. In simulation mode:
+  - Now() becomes Date.now() + _simulationDelay (advanceable via ageNow())
+  - Tag() returns "Test1zz...", "Test2zz..." etc.
+  - getClock() returns PGlite-backed fake, not real Supabase
+4. Process is ephemeral — when yarn test ends, nothing persists
+
+Key safety: Simulation mode is only entered in local node testing. Once entered, production Supabase is unreachable. The flag is never exposed to deployed code paths.
 
 
 

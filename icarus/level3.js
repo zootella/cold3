@@ -14,7 +14,7 @@ checkHash, checkInt, roundDown, hashText, given,
 randomCode, hashToLetter,
 makePlain, makeObject, makeText,
 safefill, deindent,
-enterSimulationMode, isInSimulationMode, ageNow, setTagPrefix,
+isInSimulationMode, ageNow, prefixTags,
 } from './level0.js'
 import {//from level1
 Limit, checkName, validateName,

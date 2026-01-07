@@ -1080,7 +1080,7 @@ export function Tag() {//generate a new universally unique double-clickable tag 
 	}
 }
 let _tagPrefix = 'Test', _tagNumber = 1
-export function setTagPrefix(s) { _tagPrefix = s; _tagNumber = 1 }
+export function prefixTags(s) { _tagPrefix = s; _tagNumber = 1 }
 
 //make sure a tag is exactly 21 letters and numbers, for the database
 export function checkTagOrBlank(s) { if (s === ''); else checkTag(s); return s }

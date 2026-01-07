@@ -15,7 +15,7 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 runTests,
 safefill, deindent, cutAfterLast,
-enterSimulationMode, isInSimulationMode, ageNow, setTagPrefix,
+enterSimulationMode, isInSimulationMode, ageNow, prefixTags,
 } from './level0.js'
 import {//from level1
 Limit, checkActions,
@@ -1469,6 +1469,19 @@ export async function runDatabaseTests() {
 	enterSimulationMode()
 	return await runTests(_gridTests)
 }
+grid(() => {//now that we're in simulation mode, sanity check the mock Now() and Tag()
+	let t1 = Now()
+	ageNow(Time.minute)//in simulation mode for grid() tests, we can bump the clock forward
+	let t2 = Now()
+	ok(t2 - t1 >= Time.minute)
+
+	ok(Tag().startsWith('Test1'))//and tags start with a prefix and number, "Test" to begin by default
+	ok(Tag().startsWith('Test2'))
+	ok(Tag().startsWith('Test3'))
+	prefixTags('Note')//we can change it whenever
+	ok(Tag().startsWith('Note1'))//and with each change, the number resets
+	ok(Tag().startsWith('Note2'))
+})
 
 export function SQL(s) { _schema.push(s) }//SQL() collects schema for $ yarn grid tests; we keep schema alongside code; manually copypasta into the Supabase dashboard
 
@@ -1523,6 +1536,10 @@ grid(async () => { const clock = await getClock()//test the simulated clock
 	//make sure this isn't the real one before you do something destructive!
 	ok(!(clock.context == 'Real.'))
 	ok(clock.context == 'Test.')
+
+	/*
+	hi claude, ok, here's a grid test that uses .Now() and .Tag() as methods of clock. i want you to refactor this to instead use global Now() and Tag() as we are in simulation mode (which we always are in a grid test) i realize that the api is a little different, before and  here we have .forward and that will become ageNow(), and also the new system always uses real time and lets us zip forward, there isn't functionality to return to any specific past date, like april 2003. so, keep the thrust of this test while using the new system here. i think this refactor will change just this one test. when you're done, ill generate a diff and we'll review
+	*/
 })
 //example of a test for a query function below which uses the simulated clock; run these one at a time by changing test<->noop, and on $ yarn test; icarus won't work because the database connection needs server keys
 grid(async () => { const clock = await getClock()
