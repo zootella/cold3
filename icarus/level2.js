@@ -15,6 +15,7 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 runTests,
 safefill, deindent, cutAfterLast,
+enterSimulationMode, isInSimulationMode, ageNow, setTagPrefix,
 } from './level0.js'
 import {//from level1
 Limit, checkActions,
@@ -1470,62 +1471,47 @@ let _pglite
 let _gridTests = []
 let _schema = []
 let _supafake
-let _gridTick = 1050000000000
-let _gridTagN = 0
-
-async function gridMode() {//in local node testing only, switch a single time to a simulated database, tags, and clock
-
-	//switch to grid mode with simulated, local, and ephemeral database, ticks, and tags
-	let {pglite} = await pgliteDynamicImport()
-	_pglite = new pglite.PGlite()
-	for (let sql of _schema) {
-		await _pglite.exec(sql)
-	}
-	_supafake = fakeSupabase(_pglite)
-
-	//ttd january, tags
-	//ttd january, clock
-}
-/*
-or maybe you get back an object with methods like
-.clear()//removes all contents of all tables of the pglite database
-.set(t)//make Now() be the given t
-.forward(t)//move the clock forward the given duration
-.prefix(s)//start Tag() with the given prefix
-*/
 
 export function grid(f) { _gridTests.push(f) }
 export async function runDatabaseTests() {
-	await gridMode()
+	enterSimulationMode()
 	return await runTests(_gridTests)
 }
 
 export function SQL(s) { _schema.push(s) }//SQL() collects schema for $ yarn grid tests; we keep schema alongside code; manually copypasta into the Supabase dashboard
 
-function gridNow() { _gridTick += 1; return _gridTick }
-function gridForward(d) { checkInt(d, 1); _gridTick += d }
-function gridTag() { const prefix = 'TestTag'; return prefix + (((++_gridTagN)+'').padStart(Limit.tag - prefix.length, '0')) }
-
-function getClock(clock) {
+async function getClock(clock) {
 	if (clock) return clock//simulated for testing
-
-	if (_pglite) {
-		return {Now: gridNow, forward: gridForward, Tag: gridTag, database: _supafake, pglite: _pglite, context: 'Test.'}
+	if (isInSimulationMode()) {
+		if (!_pglite) {
+			let {pglite} = await pgliteDynamicImport()
+			_pglite = new pglite.PGlite()
+			_supafake = fakeSupabase(_pglite)
+			for (let sql of _schema) await _pglite.exec(sql)
+		}
+		return {
+			context: 'Test.',
+			database: _supafake, pglite: _pglite,
+			Now() { _gridTick += 1; return _gridTick },
+			forward(d) { checkInt(d, 1); _gridTick += d },
+			Tag() { const prefix = 'TestTag'; return prefix + (((++_gridTagN)+'').padStart(Limit.tag - prefix.length, '0')) },
+			//^ttd january, you'll soon replace clock.Now() and clock.Tag() with your simulated real Now() and Tag() so calls deeper down the stack play along, but this is here presently so you can refactor small steps between always working versions!
+		}
 	} else {
-		if (!_supabase) _supabase = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
-		return {Now, Tag, database: _supabase, context: 'Real.'}//real time, tags, and database
+		if (!_supabase) {
+			_supabase = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
+		}
+		return {
+			context: 'Real.',
+			database: _supabase,
+			Now, Tag,
+		}
 	}
 }
-function makeClock_unused() {//ttd january, remove this soon when you've got this behavior elsewhere in the updated system
-	let t = 1050000000000//test clocks start in April, 2003
-	let n = 0//test tags are numbered 1, 2, 3 to be unique
-	function testNow() { t += 1; return t }//get the simulated tick count now, which will be 1 millisecond after the last time you asked
-	function forward(d) { checkInt(d, 1); t += d }//move the simulated time forward by d milliseconds, like 2*Time.hour or however long you want to sleep
-	function testTag() { const prefix = 'TestTag'; return prefix + (((++n)+'').padStart(Limit.tag - prefix.length, '0')) }//get a simulated globally unique tag, which will be like "TestTag00000000000001", then 2, 3, and so on
-	return {Now: testNow, forward, Tag: testTag, database: getTestDatabase(), context: 'Test.'}
-}
+let _gridTick = 1050000000000
+let _gridTagN = 0
 
-grid(async () => { const clock = getClock()//test the simulated clock
+grid(async () => { const clock = await getClock()//test the simulated clock
 
 	//times start 2003apr10 and are 1 millisecond later each time you call Now:
 	let april2003 = 1050000000000//lots of 0s to be recognizable as test data, but still the same number of digits as times now
@@ -1547,7 +1533,7 @@ grid(async () => { const clock = getClock()//test the simulated clock
 	ok(clock.context == 'Test.')
 })
 //example of a test for a query function below which uses the simulated clock; run these one at a time by changing test<->noop, and on $ yarn test; icarus won't work because the database connection needs server keys
-grid(async () => { const clock = getClock()
+grid(async () => { const clock = await getClock()
 	await queryDeleteAllRows({table: 'example_table', clock})//test tags and ticks *can* collide, so remember to start with tables empty!
 	let row = {name_text: `My Name`, some_hash: Data({random: 32}).base32(), hits: 5}
 	await queryAddRow({table: 'example_table', row, clock})
@@ -1605,7 +1591,7 @@ export async function snippet2() {
 //^ttd february2025, these you can probably get rid of now that you have makeClock tests
 
 //count how many rows have cellFind under titleFind, including hidden
-export async function queryCountRows({table, titleFind, cellFind, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryCountRows({table, titleFind, cellFind, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(titleFind, cellFind)
 	let {data, count, error} = (await database
 		.from(table)
@@ -1616,7 +1602,7 @@ export async function queryCountRows({table, titleFind, cellFind, clock}) { cons
 	return count
 }
 //how many rows table has, including hidden
-export async function queryCountAllRows({table, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryCountAllRows({table, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table)
 	let {data, count, error} = (await database
 		.from(table)
@@ -1626,7 +1612,7 @@ export async function queryCountAllRows({table, clock}) { const {Now, Tag, datab
 	return count
 }
 //delete all the rows from table, only works in the test context!
-export async function queryDeleteAllRows({table, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryDeleteAllRows({table, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	if (context == 'Real.') toss('test', {table})//make sure this is not the real database
 	checkQueryTitle(table)
 	let {data, error} = (await database
@@ -1645,7 +1631,7 @@ export async function queryDeleteAllRows({table, clock}) { const {Now, Tag, data
 //     |_|                |___/                                             
 
 //get the most recent visible row with cell under title
-export async function queryTop({table, title, cell, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryTop({table, title, cell, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(title, cell)
 	let {data, error} = (await database
 		.from(table)
@@ -1660,7 +1646,7 @@ export async function queryTop({table, title, cell, clock}) { const {Now, Tag, d
 }
 
 //get all the visible rows with cell under title
-export async function queryGet({table, title, cell, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryGet({table, title, cell, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(title, cell)
 	let {data, error} = (await database
 		.from(table)
@@ -1673,7 +1659,7 @@ export async function queryGet({table, title, cell, clock}) { const {Now, Tag, d
 	return data
 }
 //get all the visible rows matching two cells
-export async function queryGet2({table, title1, cell1, title2, cell2, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryGet2({table, title1, cell1, title2, cell2, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2)
 	let {data, error} = (await database
 		.from(table)
@@ -1688,11 +1674,11 @@ export async function queryGet2({table, title1, cell1, title2, cell2, clock}) { 
 }
 
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
-export async function queryAddRow({table, row, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryAddRow({table, row, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	await queryAddRows({table, rows: [row], clock})
 }
 //add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
-export async function queryAddRows({table, rows, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryAddRows({table, rows, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table)
 	queryFillAndCheckRows(rows)
 	let {data, error} = (await database
@@ -1708,7 +1694,7 @@ export async function queryHideRows({table, titleFind, cellFind, hideSet, clock}
 	await queryUpdateCells({table, titleFind, cellFind, titleSet: 'hide', cellSet: hideSet, clock})
 }
 //change the vertical column of cells under titleSet to cellSet in all the rows that have cellFind under titleFind
-export async function queryUpdateCells({table, titleFind, cellFind, titleSet, cellSet, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryUpdateCells({table, titleFind, cellFind, titleSet, cellSet, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
 	let {data, error} = (await database
 		.from(table)
@@ -1720,7 +1706,7 @@ export async function queryUpdateCells({table, titleFind, cellFind, titleSet, ce
 	if (error) toss('supabase', {error})
 	return data//data is the whole updated row, or undefined if no rows found to change
 }
-grid(async () => { const clock = getClock()
+grid(async () => { const clock = await getClock()
 	await queryDeleteAllRows({table: 'example_table', clock})//test tags and ticks *can* collide, so remember to start with tables empty!
 	let rows = [
 		{name_text: `name1`, some_hash: Data({random: 32}).base32(), hits: 10},
@@ -1739,7 +1725,7 @@ grid(async () => { const clock = getClock()
 //     |_|                |___/      |_|                                        
 
 //count how many visible rows with cell under title were added since the given tick count
-export async function queryCountSince({table, title, cell, since, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryCountSince({table, title, cell, since, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(title, cell); checkInt(since)
 	let {data, count, error} = (await database
 		.from(table)
@@ -1753,7 +1739,7 @@ export async function queryCountSince({table, title, cell, since, clock}) { cons
 }
 
 //add row if table doesn't already have one with the same row.hash
-export async function queryAddRowIfHashUnique({table, row, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryAddRowIfHashUnique({table, row, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); queryFillAndCheckRows([row])
 	let {data, error} = (await database
 		.from(table)
@@ -1773,7 +1759,7 @@ export async function queryAddRowIfHashUnique({table, row, clock}) { const {Now,
 }
 
 //get the most recent visible row with title1: cell1 and title2: a number greater than cell2GreaterThan, like 1 or 2 fine if you pass in 0
-export async function queryTopEqualGreater({table, title1, cell1, title2, cell2GreaterThan, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryTopEqualGreater({table, title1, cell1, title2, cell2GreaterThan, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2GreaterThan)
 	let {data, error} = (await database
 		.from(table)
@@ -1789,7 +1775,7 @@ export async function queryTopEqualGreater({table, title1, cell1, title2, cell2G
 }
 
 //get recent rows since the given tick count where title1 == cell1 and title2's cell is greater than the given integer
-export async function queryTopSinceMatchGreater({table, since, title1, cell1, title2, cell2GreaterThan, clock}) { const {Now, Tag, database, context} = getClock(clock)
+export async function queryTopSinceMatchGreater({table, since, title1, cell1, title2, cell2GreaterThan, clock}) { const {Now, Tag, database, context} = await getClock(clock)
 	checkQueryTitle(table); checkInt(since); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2GreaterThan)
 	let {data, error} = (await database
 		.from(table)
@@ -1971,7 +1957,7 @@ test(() => {
 
 //raw SQL smoke test using pglite directly
 grid(async () => {
-	let {pglite} = getClock()
+	let {pglite} = await getClock()
 	let result = await pglite.query('SELECT 1 + 1 AS sum')
 	log('pglite result', look(result.rows))
 	ok(result.rows[0].sum == 2)
@@ -1979,14 +1965,14 @@ grid(async () => {
 
 //test the adapter with a simple select
 grid(async () => {
-	let {pglite} = getClock()
+	let {pglite} = await getClock()
 	let result = await pglite.query('SELECT 2 + 2 AS sum')
 	ok(result.rows[0].sum == 4)
 })
 
 //test insert and select via the adapter
 grid(async () => {
-	let {Now, Tag, database} = getClock()
+	let {Now, Tag, database} = await getClock()
 
 	let row = {
 		name_text: 'hello from grid test',

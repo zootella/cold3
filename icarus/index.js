@@ -247,6 +247,7 @@ test, ok, runTests,
 toss,
 log, addLogSink, logTo,
 sameObject, sameArray,
+enterSimulationMode, isInSimulationMode, ageNow, setTagPrefix,
 
 checkText, hasText, checkInt, minInt,
 toBoolean, toTextOrBlank,

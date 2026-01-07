@@ -5,12 +5,28 @@ wrapper,
 
 //level0 functions work anywhere javascript does (well, current browsers and node20+), and without any module imports!
 
-//              _ _       
-//  _   _ _ __ (_) |_ ___ 
-// | | | | '_ \| | __/ __|
-// | |_| | | | | | |_\__ \
-//  \__,_|_| |_|_|\__|___/
-//                        
+//      _         
+//  ___(_)_______ 
+// / __| |_  / _ \
+// \__ \ |/ /  __/
+// |___/_/___\___|
+//                
+
+export const Size = {}
+Size.b  = 1//one byte
+Size.kb = 1024*Size.b//number of bytes in a kibibyte, a kilobyte would be 1000 instead of 1024
+Size.mb = 1024*Size.kb//number of bytes in a mebibyte
+Size.gb = 1024*Size.mb//gibibyte
+Size.tb = 1024*Size.gb//tebibyte
+Size.pb = 1024*Size.tb//pebibyte, really big
+Object.freeze(Size)
+
+//  _   _                
+// | |_(_)_ __ ___   ___ 
+// | __| | '_ ` _ \ / _ \
+// | |_| | | | | | |  __/
+//  \__|_|_| |_| |_|\___|
+//                       
 
 export const Time = {}
 Time.millisecond = 1//just for documentation in code
@@ -32,30 +48,17 @@ Time.hoursInSeconds = Time.hour / Time.second
 Time.daysInSeconds = Time.day / Time.second//cookies and other configurations use units of seconds, not milliseconds
 Object.freeze(Time)//prevents changes and additions
 
-export const Size = {}
-Size.b  = 1//one byte
-Size.kb = 1024*Size.b//number of bytes in a kibibyte, a kilobyte would be 1000 instead of 1024
-Size.mb = 1024*Size.kb//number of bytes in a mebibyte
-Size.gb = 1024*Size.mb//gibibyte
-Size.tb = 1024*Size.gb//tebibyte
-Size.pb = 1024*Size.tb//pebibyte, really big
-Object.freeze(Size)
+let _simulationMode
+export function enterSimulationMode() { _simulationMode = true }
+export function isInSimulationMode() { return _simulationMode }
 
-export const noop = (() => {})//no operation, a function that does nothing
-
-let _simulationMode, _now//grid tests locally in Node use a simulated clock
-export function Now() { return _simulationMode ? _now : Date.now() }
-export function setNow(t) { _now = t }
-export function ageNow(t) { _now += t }
-
-//      _       _          __                  _         __  __ 
-//   __| | __ _| |_ ___   / _| ___  _ __   ___| |_ __ _ / _|/ _|
-//  / _` |/ _` | __/ _ \ | |_ / _ \| '__| / __| __/ _` | |_| |_ 
-// | (_| | (_| | ||  __/ |  _| (_) | |    \__ \ || (_| |  _|  _|
-//  \__,_|\__,_|\__\___| |_|  \___/|_|    |___/\__\__,_|_| |_|  
-//                                                              
-
-//date for staff: t -> "2024sep09" and "Fri04:09p39.470s" zone from wrapper
+let _simulationDelay = 0
+export function Now() { return Date.now() + _simulationDelay }
+export function ageNow(delay) {
+	if (!_simulationMode) toss('mode')
+	checkInt(delay)
+	_simulationDelay += delay//move the clock forward by delay milliseconds to test expiration
+}
 
 //say a tick count like "2024sep09" in UTC, for logs and staff
 export function sayDate(t) {
@@ -85,6 +88,8 @@ export function sayTick(t) {
 // | |_| | | | | |_| | | ||  __/\__ \ |_\__ \
 //  \__|_|_| |_|\__, |  \__\___||___/\__|___/
 //              |___/                        
+
+export const noop = (() => {})//no operation, a function that does nothing
 
 let _passes
 const _tests = []//presenting, tiny tests! all you need for blissful TDD, and in half a screenful of code
@@ -1067,14 +1072,14 @@ export function Tag() {//generate a new universally unique double-clickable tag 
 	let tag = _tagMaker()
 	if (_simulationMode) {
 		const minimumRandom = 6//when running grid tests, tags must still have at least 6 digits that are random
-		let prefix = `${_tagPrefix}${_tagNumber}n`
+		let prefix = `${_tagPrefix}${_tagNumber++}zz`
 		if (prefix.length + minimumRandom > tagLength) toss('data')
 		return prefix + tag.slice(prefix.length)//overlay the test prefix to make a tag like "Testing2nfiqJLsrLBaHU"
 	} else {
 		return tag
 	}
 }
-let _tagPrefix = 'TestTag', _tagNumber = 1
+let _tagPrefix = 'Test', _tagNumber = 1
 export function setTagPrefix(s) { _tagPrefix = s; _tagNumber = 1 }
 
 //make sure a tag is exactly 21 letters and numbers, for the database
