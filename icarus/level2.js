@@ -1456,48 +1456,36 @@ the design is simple:
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|
 //                                            
 
-//create the supabase client to talk to the cloud database
+let _supabase//Supabase client connected to real cloud database; used in all environments except grid tests
+let _pglite//PGlite instance providing in-memory PostgreSQL for grid tests; ephemeral, gone when local Node exits
+let _supafake//Supabase-compatible adapter wrapping PGlite; lets query functions work unchanged in grid tests
 
-let _supabase
-let _pglite
-let _gridTests = []
-let _schema = []
-let _supafake
+let _sql = []//SQL schema statements collected by SQL(); executed when we setup PGlite
+let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
+export function SQL(s) { _sql.push(s) }
+export function grid(f) { _grid.push(f) }
 
-export function grid(f) { _gridTests.push(f) }
 export async function runDatabaseTests() {
 	enterSimulationMode()
-	return await runTests(_gridTests)
+	return await runTests(_grid)
 }
-grid(() => {//now that we're in simulation mode, sanity check the mock Now() and Tag()
-	let t1 = Now()
-	ageNow(Time.minute)//in simulation mode for grid() tests, we can bump the clock forward
-	let t2 = Now()
-	ok(t2 - t1 >= Time.minute)
-
-	ok(Tag().startsWith('Test1'))//and tags start with a prefix and number, "Test" to begin by default
-	ok(Tag().startsWith('Test2'))
-	ok(Tag().startsWith('Test3'))
-	prefixTags('Note')//we can change it whenever
-	ok(Tag().startsWith('Note1'))//and with each change, the number resets
-	ok(Tag().startsWith('Note2'))
-})
-
-export function SQL(s) { _schema.push(s) }//SQL() collects schema for $ yarn grid tests; we keep schema alongside code; manually copypasta into the Supabase dashboard
 
 async function getDatabase() {
 	if (isInSimulationMode()) {//running in local Node, $ yarn test has entered simulation mode to run grid tests
 		if (!_pglite) {//first call in this mode, setup pglite
 			let {pglite} = await pgliteDynamicImport()
 			_pglite = new pglite.PGlite()
-			for (let sql of _schema) await _pglite.exec(sql)//make fake empty tables that match the real ones up in supabase
+			for (let sql of _sql) await _pglite.exec(sql)//make fake empty tables that match the real ones up in supabase
 			_supafake = {//create our adapter which matches the parts of the supabase api our code here uses
 				from(table) {
 					return new FakeSupabaseQueryBuilder(_pglite, table)
 				}
 			}
 		}
-		return {context: 'Test.', database: _supafake, pglite: _pglite}
+		return {
+			context: 'Test.', database: _supafake, pglite: _pglite,
+			clear: async (table) => await _pglite.exec(`DELETE FROM ${table}`),
+		}
 	} else {//every other environment and runtime, including local development and deployed production
 		if (!_supabase) {//first call in this mode, setup supabase
 			_supabase = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))
@@ -1506,30 +1494,49 @@ async function getDatabase() {
 	}
 }
 
-grid(() => {//test that simulation mode works with global Now() and Tag()
+grid(() => {
+	ok(isInSimulationMode())//grid tests run in simulation mode
 
-	//verify we're in simulation mode, not touching production
-	ok(isInSimulationMode())
-
-	//times are real but can be aged forward with ageNow()
 	let t1 = Now()
-	ageNow(8*Time.hour)//sleep for eight hours
+	ageNow(Time.minute)//we can bump the clock forward
 	let t2 = Now()
-	ok(t2 - t1 >= 8*Time.hour)
+	ok(t2 - t1 >= Time.minute)
 
-	//tags are prefixed and numbered in simulation mode
-	prefixTags('Clock')//start fresh for this test
-	ok(Tag().startsWith('Clock1'))
-	ok(Tag().startsWith('Clock2'))
-	ok(Tag().startsWith('Clock3'))
-	for (let i = 0; i < 500; i++) Tag()
-	ok(Tag().startsWith('Clock504'))
+	ok(Tag().startsWith('Test1'))//and tags start with a prefix and number, "Test" to begin by default
+	ok(Tag().startsWith('Test2'))
+	ok(Tag().startsWith('Test3'))
+	prefixTags('Note')//we can change it whenever
+	ok(Tag().startsWith('Note1'))//and with each change, the number resets
+	for (let i = 0; i < 50; i++) Tag()
+	ok(Tag().startsWith('Note52'))
 })
-//example of a test for a query function below
-grid(async () => {
-	await queryDeleteAllRows({table: 'example_table'})
-	let row = {name_text: `My Name`, some_hash: Data({random: 32}).base32(), hits: 5}
-	await queryAddRow({table: 'example_table', row})
+grid(async () => {//exercise query helper functions with example_table
+	let {clear} = await getDatabase()
+	await clear('example_table')
+	ok(await queryCountAllRows({table: 'example_table'}) == 0)//start empty
+
+	let hash1 = Data({random: 32}).base32()
+	await queryAddRow({table: 'example_table', row: {name_text: 'alice', hits: 10, some_hash: hash1}})
+	ok(await queryCountAllRows({table: 'example_table'}) == 1)//add one row
+	let hash2 = Data({random: 32}).base32()
+	await queryAddRows({table: 'example_table', rows: [//add two more
+		{name_text: 'alice', hits: 20, some_hash: hash2},
+		{name_text: 'bob', hits: 30, some_hash: hash2},
+	]})
+	ok(await queryCountAllRows({table: 'example_table'}) == 3)
+
+	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 2)
+	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'bob'}) == 1)
+
+	let top = await queryTop({table: 'example_table', title: 'name_text', cell: 'alice'})//queryTop gets most recent
+	ok(top.hits == 20)//second alice row was added more recently
+	let all = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})//queryGet returns all matches
+	ok(all.length == 2)
+
+	await queryHideRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice', hideSet: 1})//hide rows from visible queries
+	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 2)//still counted
+	let visible = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})
+	ok(visible.length == 0)//but not visible
 })
 
 //                                          _                  _   
@@ -1538,50 +1545,6 @@ grid(async () => {
 // | (_| | |_| |  __/ |  | |_| | \__ \ | | | | |_) | |_) |  __/ |_ 
 //  \__, |\__,_|\___|_|   \__, | |___/_| |_|_| .__/| .__/ \___|\__|
 //     |_|                |___/              |_|   |_|             
-
-function generateExampleRows(count, between, batch) {
-	checkInt(count, 1); checkInt(between, 1); checkText(batch)//make sure you're using properly during testing
-	let rows = []
-	let t = Now() - ((count + 1) * between)//start early enough in the past no rows will be in the future
-	let h = Data({random: 32}).base32()
-	for (let i = 0; i < count; i++) {
-		rows.push({
-			row_tag: Tag(),
-			row_tick: t,
-			hide: 0,
-			name_text: `${batch} ${i}`,
-			some_hash: h,
-			hits: 5,
-		})
-		t += randomBetween(1, between)//move forward in time a random amount
-	}
-	return rows
-}
-
-export async function snippetClear() {
-	await queryDeleteAllRows({table: 'example_table'})
-}
-export async function snippetPopulate() {
-	let rows = generateExampleRows(12, Time.hour, 'first')
-	await queryAddRows({table: 'example_table', rows})
-}
-export async function snippetQuery2() {
-	let data, error
-	try { data = await snippet2() } catch (e) { error = e }
-	if (error) return look(error)
-	else return data
-}
-export async function snippet2() {
-	log('hi from query snippet2')
-	let r = await queryHideRows({
-		table: 'example_table',
-		titleFind: 'some_hash',
-		cellFind: 'KJI3KGJVS25NNQU5PKVWBLOYD3Q7UF7QDUFSZXMI3NJV7MOZOJ3A',
-		hideSet: 1
-	})
-	log(look(r))
-}
-//^ttd february2025, these you can probably get rid of now that you have makeClock tests
 
 //count how many rows have cellFind under titleFind, including hidden
 export async function queryCountRows({table, titleFind, cellFind}) {
@@ -1605,18 +1568,6 @@ export async function queryCountAllRows({table}) {
 	)
 	if (error) toss('supabase', {error})
 	return count
-}
-//delete all the rows from table, only works in the test context!
-export async function queryDeleteAllRows({table}) {
-	checkQueryTitle(table)
-	const {database, context} = await getDatabase()
-	if (context == 'Real.') toss('test', {table})//make sure this is not the real database
-	let {data, error} = (await database
-		.from(table)
-		.delete()
-		.neq('row_tag', null)//supabase requires a condition; this one matches every row
-	)
-	if (error) toss('supabase', {error})
 }
 
 //                                                                          
@@ -1678,8 +1629,7 @@ export async function queryAddRow({table, row}) {
 }
 //add multiple rows at once like [{title1_text: "cell1", title2_text: "cell2", ...}, {...}, ...]
 export async function queryAddRows({table, rows}) {
-	checkQueryTitle(table)
-	queryFillAndCheckRows(rows)
+	checkQueryTitle(table); checkQueryFillRows(rows)
 	const {database} = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
@@ -1708,7 +1658,8 @@ export async function queryUpdateCells({table, titleFind, cellFind, titleSet, ce
 	return data//data is the whole updated row, or undefined if no rows found to change
 }
 grid(async () => {
-	await queryDeleteAllRows({table: 'example_table'})
+	let {clear} = await getDatabase()
+	await clear('example_table')
 	let rows = [
 		{name_text: `name1`, some_hash: Data({random: 32}).base32(), hits: 10},
 		{name_text: `name1`, some_hash: Data({random: 32}).base32(), hits: 20},
@@ -1742,7 +1693,7 @@ export async function queryCountSince({table, title, cell, since}) {
 
 //add row if table doesn't already have one with the same row.hash
 export async function queryAddRowIfHashUnique({table, row}) {
-	checkQueryTitle(table); queryFillAndCheckRows([row])
+	checkQueryTitle(table); checkQueryFillRows([row])
 	const {database} = await getDatabase()
 	let {data, error} = (await database
 		.from(table)
@@ -1802,7 +1753,7 @@ export async function queryTopSinceMatchGreater({table, since, title1, cell1, ti
 //  \__, |\__,_|\___|_|   \__, |  \___|_| |_|\___|\___|_|\_\
 //     |_|                |___/                             
 
-function queryFillAndCheckRows(rows) {
+function checkQueryFillRows(rows) {
 	let t = Now()//set a single timestamp for the group of rows we're adding
 	rows.forEach(row => {//fill in any missing defaults for the margin columns
 		if (!row.row_tag)  row.row_tag = Tag()

@@ -28,8 +28,7 @@ Task, fetchWorker, fetchLambda, fetchProvider,
 SQL,
 
 //query snippet
-snippetClear, snippetPopulate, snippetQuery2, snippet2,
-queryCountRows, queryCountAllRows, queryDeleteAllRows,
+queryCountRows, queryCountAllRows,
 
 //query common
 queryTop,
@@ -184,15 +183,6 @@ ALTER TABLE example_table RENAME COLUMN title1 TO title2;
 ALTER INDEX index1 RENAME TO index2;
 */
 
-export async function snippetQuery3() {
-	let data, error
-	try { data = await snippet3() } catch (e) { error = e }
-	if (error) return look(error)
-	else return data
-}
-export async function snippet3() {
-	log("hi from snippet 3")
-}
 
 
 

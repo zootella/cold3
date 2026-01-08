@@ -1074,7 +1074,7 @@ export function Tag() {//generate a new universally unique double-clickable tag 
 		const minimumRandom = 6//when running grid tests, tags must still have at least 6 digits that are random
 		let prefix = `${_tagPrefix}${_tagNumber++}zz`
 		if (prefix.length + minimumRandom > tagLength) toss('data')
-		return prefix + tag.slice(prefix.length)//overlay the test prefix to make a tag like "Testing2nfiqJLsrLBaHU"
+		return prefix + tag.slice(prefix.length)//overlay the test prefix to make a tag like "Testing2zziqJLsrLBaHU"
 	} else {
 		return tag
 	}

@@ -117,9 +117,6 @@ Code, codeSend, browserToCodes, codeEnter,
 
 /* level 3 query */
 
-snippetQuery3,
-snippet3,
-
 settingReadInt, settingRead, settingWrite,
 recordDelay, recordHit,
 
@@ -170,8 +167,7 @@ composeCookieName, composeCookieValue, parseCookieValue,
 grid, runDatabaseTests, SQL,//new grid tests and simulated environment
 
 //query snippet
-snippetClear, snippetPopulate, snippetQuery2, snippet2,
-queryCountRows, queryCountAllRows, queryDeleteAllRows,
+queryCountRows, queryCountAllRows,
 
 //query common
 queryTop,
