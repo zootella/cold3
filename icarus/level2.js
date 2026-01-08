@@ -1465,11 +1465,6 @@ let _grid = []//grid test functions collected by grid(); run by runDatabaseTests
 export function SQL(s) { _sql.push(s) }
 export function grid(f) { _grid.push(f) }
 
-export async function runDatabaseTests() {
-	enterSimulationMode()
-	return await runTests(_grid)
-}
-
 async function getDatabase() {
 	if (isInSimulationMode()) {//running in local Node, $ yarn test has entered simulation mode to run grid tests
 		if (!_pglite) {//first call in this mode, setup pglite
@@ -1494,57 +1489,12 @@ async function getDatabase() {
 	}
 }
 
-grid(() => {
-	ok(isInSimulationMode())//grid tests run in simulation mode
-
-	let t1 = Now()
-	ageNow(Time.minute)//we can bump the clock forward
-	let t2 = Now()
-	ok(t2 - t1 >= Time.minute)
-
-	ok(Tag().startsWith('Test1'))//and tags start with a prefix and number, "Test" to begin by default
-	ok(Tag().startsWith('Test2'))
-	ok(Tag().startsWith('Test3'))
-	prefixTags('Note')//we can change it whenever
-	ok(Tag().startsWith('Note1'))//and with each change, the number resets
-	for (let i = 0; i < 50; i++) Tag()
-	ok(Tag().startsWith('Note52'))
-})
-grid(async () => {//exercise query helper functions with example_table
-	let {clear} = await getDatabase()
-	await clear('example_table')
-	ok(await queryCountAllRows({table: 'example_table'}) == 0)//start empty
-
-	let hash1 = Data({random: 32}).base32()
-	await queryAddRow({table: 'example_table', row: {name_text: 'alice', hits: 10, some_hash: hash1}})
-	ok(await queryCountAllRows({table: 'example_table'}) == 1)//add one row
-	let hash2 = Data({random: 32}).base32()
-	await queryAddRows({table: 'example_table', rows: [//add two more
-		{name_text: 'alice', hits: 20, some_hash: hash2},
-		{name_text: 'bob', hits: 30, some_hash: hash2},
-	]})
-	ok(await queryCountAllRows({table: 'example_table'}) == 3)
-
-	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 2)
-	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'bob'}) == 1)
-
-	let top = await queryTop({table: 'example_table', title: 'name_text', cell: 'alice'})//queryTop gets most recent
-	ok(top.hits == 20)//second alice row was added more recently
-	let all = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})//queryGet returns all matches
-	ok(all.length == 2)
-
-	await queryHideRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice', hideSet: 1})//hide rows from visible queries
-	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 2)//still counted
-	let visible = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})
-	ok(visible.length == 0)//but not visible
-})
-
-//                                          _                  _   
-//   __ _ _   _  ___ _ __ _   _   ___ _ __ (_)_ __  _ __   ___| |_ 
-//  / _` | | | |/ _ \ '__| | | | / __| '_ \| | '_ \| '_ \ / _ \ __|
-// | (_| | |_| |  __/ |  | |_| | \__ \ | | | | |_) | |_) |  __/ |_ 
-//  \__, |\__,_|\___|_|   \__, | |___/_| |_|_| .__/| .__/ \___|\__|
-//     |_|                |___/              |_|   |_|             
+//                                                                          
+//   __ _ _   _  ___ _ __ _   _    ___ ___  _ __ ___  _ __ ___   ___  _ __  
+//  / _` | | | |/ _ \ '__| | | |  / __/ _ \| '_ ` _ \| '_ ` _ \ / _ \| '_ \ 
+// | (_| | |_| |  __/ |  | |_| | | (_| (_) | | | | | | | | | | | (_) | | | |
+//  \__, |\__,_|\___|_|   \__, |  \___\___/|_| |_| |_|_| |_| |_|\___/|_| |_|
+//     |_|                |___/                                             
 
 //count how many rows have cellFind under titleFind, including hidden
 export async function queryCountRows({table, titleFind, cellFind}) {
@@ -1569,13 +1519,6 @@ export async function queryCountAllRows({table}) {
 	if (error) toss('supabase', {error})
 	return count
 }
-
-//                                                                          
-//   __ _ _   _  ___ _ __ _   _    ___ ___  _ __ ___  _ __ ___   ___  _ __  
-//  / _` | | | |/ _ \ '__| | | |  / __/ _ \| '_ ` _ \| '_ ` _ \ / _ \| '_ \ 
-// | (_| | |_| |  __/ |  | |_| | | (_| (_) | | | | | | | | | | | (_) | | | |
-//  \__, |\__,_|\___|_|   \__, |  \___\___/|_| |_| |_|_| |_| |_|\___/|_| |_|
-//     |_|                |___/                                             
 
 //get the most recent visible row with cell under title
 export async function queryTop({table, title, cell}) {
@@ -1657,17 +1600,6 @@ export async function queryUpdateCells({table, titleFind, cellFind, titleSet, ce
 	if (error) toss('supabase', {error})
 	return data//data is the whole updated row, or undefined if no rows found to change
 }
-grid(async () => {
-	let {clear} = await getDatabase()
-	await clear('example_table')
-	let rows = [
-		{name_text: `name1`, some_hash: Data({random: 32}).base32(), hits: 10},
-		{name_text: `name1`, some_hash: Data({random: 32}).base32(), hits: 20},
-		{name_text: `name3`, some_hash: Data({random: 32}).base32(), hits: 30},
-	]
-	await queryAddRows({table: 'example_table', rows})
-	await queryHideRows({table: 'example_table', titleFind: 'name_text', cellFind: 'name1', hideSet: 3})
-})
 
 //                                                    _       _ _             _ 
 //   __ _ _   _  ___ _ __ _   _   ___ _ __   ___  ___(_) __ _| (_)_______  __| |
@@ -1911,14 +1843,36 @@ test(() => {
 //  \__,_|\__,_|\__\__,_|_.__/ \__,_|___/\___|  \__,_|_| |_|_|\__|  \__\___||___/\__|___/
 //                                                                                       
 
-//test the adapter with a simple select
+//after running all the isomorphic test() tests, $ yarn test calls here to run the grid() tests
+export async function runDatabaseTests() {
+	enterSimulationMode()
+	return await runTests(_grid)
+}
+
+//grid tests run in simulation mode, where Now() and Tag() act differently
+grid(() => {
+	ok(isInSimulationMode())//grid tests run in simulation mode
+
+	let t1 = Now()
+	ageNow(Time.minute)//we can bump the clock forward
+	let t2 = Now()
+	ok(t2 - t1 >= Time.minute)
+
+	ok(Tag().startsWith('Test1'))//and tags start with a prefix and number, "Test" to begin by default
+	ok(Tag().startsWith('Test2'))
+	ok(Tag().startsWith('Test3'))
+	prefixTags('Note')//we can change it whenever
+	ok(Tag().startsWith('Note1'))//and with each change, the number resets
+	for (let i = 0; i < 50; i++) Tag()
+	ok(Tag().startsWith('Note52'))
+})
+
+//grid tests use PGlite to create an empty and ephemeral version of the database tables
 grid(async () => {
-	let {pglite} = await getDatabase()
+	let {pglite} = await getDatabase()//sanity check PGlite with a table-free query
 	let result = await pglite.query('SELECT 2 + 2 AS sum')
 	ok(result.rows[0].sum == 4)
 })
-
-//test insert and select via the adapter
 grid(async () => {
 	let row = {
 		name_text: 'hello from grid test',
@@ -1930,11 +1884,39 @@ grid(async () => {
 	ok(result.name_text == 'hello from grid test')
 	ok(result.hits == 42)
 })
-
-//test that data persists across grid tests
-grid(async () => {
+grid(async () => {//table data persists across grid tests, but not between commands to run $ yarn test
 	let result = await queryTop({table: 'example_table', title: 'name_text', cell: 'hello from grid test'})
 	ok(result.hits == 42)
+})
+
+//now we can write unit tests for level2 database query functions, as well as higher!
+grid(async () => {//exercise query helper functions with example_table
+	let {clear} = await getDatabase()
+	await clear('example_table')
+	ok(await queryCountAllRows({table: 'example_table'}) == 0)//start empty
+
+	let hash1 = Data({random: 32}).base32()
+	await queryAddRow({table: 'example_table', row: {name_text: 'alice', hits: 10, some_hash: hash1}})
+	ok(await queryCountAllRows({table: 'example_table'}) == 1)//add one row
+	let hash2 = Data({random: 32}).base32()
+	await queryAddRows({table: 'example_table', rows: [//add two more
+		{name_text: 'alice', hits: 20, some_hash: hash2},
+		{name_text: 'bob', hits: 30, some_hash: hash2},
+	]})
+	ok(await queryCountAllRows({table: 'example_table'}) == 3)
+
+	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 2)
+	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'bob'}) == 1)
+
+	let top = await queryTop({table: 'example_table', title: 'name_text', cell: 'alice'})//queryTop gets most recent
+	ok(top.hits == 20)//second alice row was added more recently
+	let all = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})//queryGet returns all matches
+	ok(all.length == 2)
+
+	await queryHideRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice', hideSet: 1})//hide rows from visible queries
+	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 2)//still counted
+	let visible = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})
+	ok(visible.length == 0)//but not visible
 })
 
 //for ephemeral, local, Node grid tests, simulate Supabase's chainable select().eq().order() API backed by PGlite

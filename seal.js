@@ -150,13 +150,6 @@ async function affixSeal(properties, manifest) {
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)
-
-	//output a summary to the shrinkwrapper
-	log(
-		sayFloppyDisk(o).disk,
-		(await runTests()).message,//also run tests
-		''
-	)
 }
 
 //                       _    
