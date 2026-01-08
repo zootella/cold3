@@ -119,7 +119,7 @@ export async function runTests(tests) {
 			}
 		}
 	}
-	let duration = Now() - t
+	let duration = Date.now() - t//can't use Now() because grid tests simulated long sleeps 😴
 	return {
 		success:  true,
 		time:     t,
