@@ -14,8 +14,8 @@
 		"build": "vite build",
 		"preview": "yarn build && wrangler dev",
 		"prepare": "svelte-kit sync || echo ''",
-		"deploy-before": "yarn --cwd ../ seal set-cloud",
-		"deploy-after": "yarn --cwd ../ seal set-local && yarn --cwd ../ test",
+		"deploy-before": "node ../set-cloud.js",
+		"deploy-after": "node ../set-local.js && node ../test.js",
 		"deploy": "yarn deploy-before && yarn build && wrangler deploy && yarn deploy-after"
 	},
 	"dependencies": {

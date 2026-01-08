@@ -37,12 +37,13 @@ import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
 */
 const pathWrapperTxt = 'wrapper.txt'
 const pathWrapperJs  = 'icarus/wrapper.js'
-async function seal() {
+async function main() {
 	let list = await listFiles()
 	let properties = await hashFiles(list)
 	let manifest = await composeWrapper(properties)
 	await affixSeal(properties, manifest)
 }
+main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })
 
 async function listFiles() {
 
@@ -151,32 +152,3 @@ async function affixSeal(properties, manifest) {
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)
 }
-
-//                       _    
-//  _ __ ___   __ _ _ __| | __
-// | '_ ` _ \ / _` | '__| |/ /
-// | | | | | | (_| | |  |   < 
-// |_| |_| |_|\__,_|_|  |_|\_\
-//                            
-
-async function mark(setCloud) {
-	let o = {...wrapper}
-	o.cloud = setCloud
-	await writeWrapper(o)
-}
-
-//                  _       
-//  _ __ ___   __ _(_)_ __  
-// | '_ ` _ \ / _` | | '_ \ 
-// | | | | | | (_| | | | | |
-// |_| |_| |_|\__,_|_|_| |_|
-//                          
-
-async function main() {
-	let argument = process.argv.slice(2)[0]//argument two in, like $ yarn seal set-cloud
-
-	if      (argument == 'set-cloud') await mark(true)
-	else if (argument == 'set-local') await mark(false)
-	else                              await seal()
-}
-await main()
