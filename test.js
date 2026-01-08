@@ -3,7 +3,6 @@ import {
 wrapper, sayFloppyDisk, runTests, runDatabaseTests,
 log, addLogSink, look, newline,
 } from 'icarus'
-
 import {promises as fs} from 'fs'
 import dotenv from 'dotenv'
 
@@ -18,5 +17,4 @@ async function main() {
 		''
 	)
 }
-
 main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })

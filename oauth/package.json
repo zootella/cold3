@@ -12,9 +12,9 @@
 	"scripts": {
 		"local": "vite dev",
 		"build": "vite build",
-		"preview": "yarn build && wrangler dev",
+		"preview": "vite build && wrangler dev",
 		"prepare": "svelte-kit sync || echo ''",
-		"deploy": "node ../set-cloud.js && yarn build && wrangler deploy && node ../set-local.js && node ../test.js"
+		"deploy": "node ../set-cloud.js && vite build && wrangler deploy && node ../set-local.js && node ../test.js"
 	},
 	"dependencies": {
 		"@auth/sveltekit": "^1.9.2",

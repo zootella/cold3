@@ -4,7 +4,6 @@ wrapper, sayFloppyDisk, runTests, Time,
 log, look, newline, Data, Now, Tag,
 parseKeyFile, randomBetween, encryptData, cutAfterLast,
 } from 'icarus'
-
 import {promises as fs} from 'fs'
 import path from 'path'
 import crypto from 'crypto'

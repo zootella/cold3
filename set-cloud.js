@@ -1,5 +1,7 @@
 
-import {log, look} from 'icarus'
+import {
+log, look,
+} from 'icarus'
 import {promises as fs} from 'fs'
 
 async function main() {

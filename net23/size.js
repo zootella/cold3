@@ -1,6 +1,6 @@
 
 import {
-log, commas, saySize4,
+log, look, commas, saySize4,
 } from 'icarus'
 import fs from 'fs-extra'
 
@@ -25,4 +25,4 @@ async function main() {//copy out the net23.zip file that serverless framework j
 	log(`💽 net23.zip is ${saySize4(size2)}; ${comparison}`)
 }
 
-main().catch(e => { console.error('🚧 Error:', e); process.exit(1) })
+main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })

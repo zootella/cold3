@@ -13,7 +13,7 @@
 		"local": "nuxt dev",
 		"size": "nuxi analyze --no-serve && open ./size/client.html && open ./size/nitro.html",
 		"build": "nuxt build",
-		"deploy": "node ../set-cloud.js && yarn build && wrangler deploy && node ../set-local.js && node ../test.js",
+		"deploy": "node ../set-cloud.js && nuxt build && wrangler deploy && node ../set-local.js && node ../test.js",
 		"generate": "nuxt generate",
 		"preview": "nuxt build && wrangler dev",
 		"postinstall": "nuxt prepare",
