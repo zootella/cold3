@@ -1898,6 +1898,7 @@ grid(async () => {//exercise query helper functions with example_table
 	let hash1 = Data({random: 32}).base32()
 	await queryAddRow({table: 'example_table', row: {name_text: 'alice', hits: 10, some_hash: hash1}})
 	ok(await queryCountAllRows({table: 'example_table'}) == 1)//add one row
+	ageNow(Time.second)//ensure next rows have a later timestamp
 	let hash2 = Data({random: 32}).base32()
 	await queryAddRows({table: 'example_table', rows: [//add two more
 		{name_text: 'alice', hits: 20, some_hash: hash2},

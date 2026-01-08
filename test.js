@@ -7,7 +7,7 @@ import {promises as fs} from 'fs'
 import dotenv from 'dotenv'
 
 async function main() {
-	dotenv.config()//load .env to be able to access secrets
+	dotenv.config({quiet: true})//load .env to be able to access secrets
 	addLogSink((s) => { fs.appendFile('test.log', s.trimEnd()+newline) })//have log() also write to a file
 
 	log(

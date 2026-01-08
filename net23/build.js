@@ -53,7 +53,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 
 	let p = 'dist/node_modules/icarus/wrapper.js'
 	let c = await fs.readFile(p, 'utf8')
-	c = c.replace('"cloud": false', '"cloud": true')//in wrapper.js, set cloud to true
+	c = c.replace('"cloud": false', '"cloud": true')//in dist's icarus/wrapper.js, set cloud true
 	await fs.writeFile(p, c)
 }
 

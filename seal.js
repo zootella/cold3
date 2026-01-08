@@ -8,7 +8,7 @@ import {promises as fs} from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import glob from 'fast-glob'
-import dotenv from 'dotenv'; dotenv.config()//put .env properties on process.env
+import dotenv from 'dotenv'; dotenv.config({quiet: true})//put .env properties on process.env
 
 //      _          _       _                                               _ 
 //  ___| |__  _ __(_)_ __ | | ____      ___ __ __ _ _ __    ___  ___  __ _| |

@@ -7,7 +7,7 @@ import {promises as fs} from 'fs'
 async function main() {
 	let p = '../icarus/wrapper.js'
 	let c = await fs.readFile(p, 'utf8')
-	c = c.replace('"cloud": false', '"cloud": true')
+	c = c.replace('"cloud": false', '"cloud": true')//in icarus/wrapper.js, set cloud true
 	await fs.writeFile(p, c)
 }
 main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })
