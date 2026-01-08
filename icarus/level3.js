@@ -25,7 +25,7 @@ Sticker, stickerParts, isLocal, isCloud,
 Task, fetchWorker, fetchLambda, fetchProvider,
 
 /* level 2 query */
-SQL,
+SQL, grid,
 
 //query snippet
 queryCountRows, queryCountAllRows,
@@ -1242,6 +1242,33 @@ async function trail_add_many({now, hashes}) {//an array of several hashes, all 
 	hashes.forEach(hash => checkHash(hash))
 	await queryAddRows({table: 'trail_table', rows: hashes.map(hash => ({row_tick: now, hash: hash}))})
 }
+grid(async () => {
+	let message = 'Trail horizon test'
+	let horizon = 20*Time.second
+	ok((await trailCount(message, horizon)) == 0)//none yet
+	await trailAdd(message)
+	ok((await trailCount(message, horizon)) == 1)//find one
+	ageNow(10*Time.second)
+	await trailAdd(message)//5s later, add a second
+	ok((await trailCount(message, horizon)) == 2)//find both
+	ageNow(15*Time.second)//wait until first one falls over horizon
+	ok((await trailCount(message, horizon)) == 1)//only more recent remains
+	ageNow(10*Time.second)
+	ok((await trailCount(message, horizon)) == 0)//both over horizon
+
+	message = 'Trail recent test'
+	await trailAdd(message)
+	ageNow(12*Time.second)
+	let recent = await trailRecent(message)//returns tick when message was most recently added
+	ok(recent + (12*Time.second) <= Now())//confirm this is at least 12 simulated seconds ago
+	ok((await trailRecent('Not found')) == 0)//not found returns 0, not -1, as nobody added anything to the trail table on new years eve 1970
+
+	message = 'Trail get test'
+	await trailAdd(message); ageNow(Time.second)
+	await trailAdd(message); ageNow(Time.second)
+	let rows = await trailGet(message, Time.minute)
+	ok(rows.length == 2)
+})
 
 //                        _        _     _      
 //  _   _ ___  ___ _ __  | |_ __ _| |__ | | ___ 

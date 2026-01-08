@@ -1224,6 +1224,11 @@ and about the grid() tests that $ yarn test runs after entering simulation mode:
 
 Key safety: Simulation mode is only entered in local node testing. Once entered, production Supabase is unreachable. The flag is never exposed to deployed code paths.
 
+so, we don't have Ctrl+S icarus like hot module replacement dev loop feedback
+but that's ok, because now we can write application business logic level tests that include state in database tables
+and run them manually
+this is a lot better than manual testing with a real page on localhost and a real table in the supabase dashboard
+
 
 
 
