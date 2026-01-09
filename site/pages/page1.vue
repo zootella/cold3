@@ -3,8 +3,10 @@
 </script>
 <template>
 
+<CredentialCorner />
+<CredentialChallenge />
+<CredentialPanel />
+
 <PasswordDemo />
-<PasswordChange />
-<PasswordChallenge />
 
 </template>

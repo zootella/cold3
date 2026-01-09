@@ -3613,27 +3613,64 @@ test(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//ttd january, returned for a moment to the "reversible but readable UTC tick count" idea, and it's not too hard, and it's not too long
+function epochToText(t) {
+	checkInt(t)//makes sure t is a number that is a 0+ integer (claude, in this direction, input checking is easy! harder below!!)
+	let d = new Date(t)
+	let year = d.getUTCFullYear()
+	let month = Time.months.oneToJan[d.getUTCMonth() + 1].toLowerCase()
+	let day = String(d.getUTCDate()).padStart(2, '0')
+	let hour = String(d.getUTCHours()).padStart(2, '0')
+	let minute = String(d.getUTCMinutes()).padStart(2, '0')
+	let startOfMinute = Date.UTC(year, d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes())
+	let msIntoMinute = t - startOfMinute
+	return year + month + day + '.' + hour + minute + '.' + msIntoMinute
+}
+function textToEpoch(s) {
+	let [p1, p2, p3] = s.split('.')
+	checkText(p1); checkNumerals(p2, 4); checkNumerals(p3)
+	/*
+	hi claude, ok help me check the input carefully
+	from the checks above, if execution reaches here, we have these guarantees:
+	- all three parts exist
+	- p2 is exactly four numerals
+	- p3 is one or more numerals
+	but in the code below, as we split otu and process the individual fields, we need to additionally be really careful to notice bad input, and throw an exception if any part is in any way wrong, for instance, if:
+	the year (before the month) is not numerals
+	the year is <1970 or >9999 (we're not going to be year ten thousand compliant)
+	the month is not found in our array of valid month names "jan" through "dec"
+	the date (after the month) is not numerals
+	the hour is >23
+	the minute is >59
+	the millisecond is >59999
+	and any others you can think of along these lines that matter, claude!
+	ok so looking at the helper functions in this file which other format converters and encoders use to sanitize input tersely and safely, let's write this function so that nothing bad can get through
+	the right way to throw an Error if we do detect something not right is toss('data', {s})
+	*/
+	let year = Number(p1.slice(0, 4))
+	let month = Time.months.janToOne[p1.slice(4, 7)] - 1
+	let day = Number(p1.slice(7, 9))
+	let hour = Number(p2.slice(0, 2))
+	let minute = Number(p2.slice(2, 4))
+	let startOfMinute = Date.UTC(year, month, day, hour, minute)
+	return startOfMinute + Number(p3)
+}
+test(() => {
+	function f(t, s) {
+		ok(epochToText(t) == s)
+		ok(textToEpoch(s) == t)
+	}
+	f(1640995200000, '2022jan01.0000.0')
+	f(1645070756789, '2022feb17.0405.56789')//13 -> 20 characters, so same as a Tag, which is fine
+	f(1645101296789, '2022feb17.1234.56789')
+	f(1672531199999, '2022dec31.2359.59999')
+	f(1009843200000, '2002jan01.0000.0')
+	/*
+	ttd january, more to do here if you need this are
+	[]carefully check each part as you go text to number
+	[]write a little fuzz tester using random moments from 1970 onwards to confirm round trip reversability
+	*/
+})
 
 
 
