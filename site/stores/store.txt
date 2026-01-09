@@ -1,3 +1,4 @@
+notesfile
 
 /*
 mainStore 🍍 loads on server, updates on page as user clicks

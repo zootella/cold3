@@ -1,3 +1,5 @@
+notesfile
+
 ./src/auth.txt ~ on the oauth trail, design document and notes
 
 []store secrets more places, ttd november

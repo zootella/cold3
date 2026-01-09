@@ -1,3 +1,4 @@
+notesfile
 
 ttd november, go through these notes as soon as you've got totp as a user credential
 

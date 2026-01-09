@@ -1,4 +1,4 @@
-
+notesfile
 
 ttd, december, herded notes about the old pipeline here
 nearly all of this you don't need, but you'll go through it to pull out parts or details that are still applicable

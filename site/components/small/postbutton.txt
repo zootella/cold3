@@ -1,3 +1,5 @@
+notesfile
+
 <script setup>//./components/PostButton.vue
 /*
 (1) basic use leaning on defaults:

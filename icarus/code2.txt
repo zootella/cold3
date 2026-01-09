@@ -1,4 +1,4 @@
-
+notesfile
 
 essentially, right now, you are learning to distill objects on the server side to return tight meaningful summaries to teh apge
 previously, you were being exhaustive, because you wanted to not miss any detail
