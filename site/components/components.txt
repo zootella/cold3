@@ -6,6 +6,33 @@
 
 
 
+
+Design Intent Summary
+Core Philosophy:
+Build components that follow simple, recognizable patterns from Vue/Nuxt best practices—prioritizing function, idiomatic patterns, then clarity. Focus on craftsmanship and learning, not complexity or invention.
+Architectural Goals:
+
+Single responsibility: Each component does one thing well
+Proper encapsulation: Clear boundaries, minimal coupling
+Flexible for unknowns: Works for current demo needs and future use cases we can't predict yet
+State management: Pinia stores handle API calls to Nuxt endpoints, state persists as users navigate
+
+Styling Strategy:
+
+Semantic state over visual coupling: Components expose their state (unavailable, clickable, in-flight) via props and data-* attributes, not hardcoded styles
+Design-system ready: Using semantic HTML and state attributes means any future styling approach (CSS, Tailwind utilities, component libraries like Vuetify/PrimeVue/Nuxt UI) can hook in without rewriting component logic
+Current approach: Stub visual states with simple Tailwind classes for smoke testing, but keep styling separate from logic so designers can replace it later without touching component structure
+
+Right Now:
+Focus purely on component tree design, responsibility boundaries, and data flow patterns. Get the factoring right. Styling is temporary scaffolding.
+
+
+
+
+
+
+
+
 took a day to play around with styling components in tailwind
 
 ## goals
