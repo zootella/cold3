@@ -261,8 +261,16 @@ CREATE TABLE credential_table (
 	k4_text    TEXT      NOT NULL
 );
 
-CREATE INDEX credential1 ON credential_table (hide, user_tag,           row_tick DESC);  -- filter by user
-CREATE INDEX credential2 ON credential_table (hide, type_text, f0_text, row_tick DESC);  -- or by address
+CREATE INDEX credential1 ON credential_table (hide, user_tag, row_tick DESC);  -- filter by user
+
+CREATE INDEX credential2 ON credential_table (hide, type_text, f0_text) WHERE f0_text != '';  -- look up non blank text by type
+CREATE INDEX credential3 ON credential_table (hide, type_text, f1_text) WHERE f1_text != '';
+CREATE INDEX credential4 ON credential_table (hide, type_text, f2_text) WHERE f2_text != '';
+
+CREATE INDEX credential5 ON credential_table (hide, type_text, k1_text) WHERE k1_text != '';
+CREATE INDEX credential6 ON credential_table (hide, type_text, k2_text) WHERE k2_text != '';
+CREATE INDEX credential7 ON credential_table (hide, type_text, k3_text) WHERE k3_text != '';
+CREATE INDEX credential8 ON credential_table (hide, type_text, k4_text) WHERE k4_text != '';
 `)
 //ttd november, should event be a tag instead of a number? it's a litle arcane
 
