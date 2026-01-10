@@ -1,11 +1,13 @@
 
 import {
-credentialBrowserGet,
-credentialBrowserRemove,
+Tag,
+credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
+credentialNameCheck, credentialNameSet,
+credentialPasswordSet,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckName.', 'SignUpAndSignIn.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let r = {}
@@ -21,6 +23,23 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			await credentialBrowserRemove({userTag: browser.userTag})
 			r.signedOut = true
 		}
+
+	} else if (action == 'CheckName.') {
+		let v = await credentialNameCheck({raw1: body.slug, raw2: body.display})
+		if (!v) { r.outcome = 'NameNotAvailable.'; return r }
+		r.outcome = 'NameAvailable.'
+		r.v = v
+
+	} else if (action == 'SignUpAndSignIn.') {
+		//create new user with three credentials
+		let userTag = Tag()
+		let v = await credentialNameSet({userTag, raw1: body.slug, raw2: body.display})
+		if (!v) { r.outcome = 'NameNotAvailable.'; return r }
+		await credentialPasswordSet({userTag, hash: body.hash, cycles: body.cycles})
+		await credentialBrowserSet({userTag, browserHash})
+
+		r.outcome = 'SignedUp.'
+		r.userTag = userTag
 	}
 
 	return r

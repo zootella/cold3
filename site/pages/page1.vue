@@ -7,6 +7,8 @@
 <CredentialChallenge />
 <CredentialPanel />
 
+<SignUpSignInDemo />
+
 <PasswordDemo />
 
 </template>

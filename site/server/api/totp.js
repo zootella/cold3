@@ -4,7 +4,7 @@ browserToUser,
 trailRecent, trailCount, trailGet, trailAdd,
 checkNumerals, Data, isExpired,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
-credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
+credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -73,7 +73,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (!valid) return {outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the page still has the secret at this point!
 
 		//save this new enrollment for this user
-		await credentialTotpCreate({userTag, secret})
+		await credentialTotpSet({userTag, secret})
 		return {outcome: 'Enrolled.'}
 
 	//having previously enrolled, the user is signing in with totp

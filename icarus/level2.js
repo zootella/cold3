@@ -1566,6 +1566,22 @@ export async function queryGet2({table, title1, cell1, title2, cell2}) {
 	if (error) toss('supabase', {error})
 	return data
 }
+//get all the visible rows matching three cells
+export async function queryGet3({table, title1, cell1, title2, cell2, title3, cell3}) {
+	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2); checkQueryCell(title3, cell3)
+	const {database} = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.select('*')
+		.eq('hide', 0)
+		.eq(title1, cell1)
+		.eq(title2, cell2)
+		.eq(title3, cell3)
+		.order('row_tick', {ascending: false})
+	)
+	if (error) toss('supabase', {error})
+	return data
+}
 
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
 export async function queryAddRow({table, row}) {

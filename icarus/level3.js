@@ -33,8 +33,7 @@ queryCountRows, queryCountAllRows,
 
 //query common
 queryTop,
-queryGet,
-queryGet2,
+queryGet, queryGet2, queryGet3,
 queryAddRow,
 queryAddRows,
 queryHideRows,
@@ -202,52 +201,89 @@ lots of things you can think of as credentials, and move and handle here, many e
 []user names, those are reserved on the site, and owned by a single user
 []oauth accounts
 []ethereum address
+and you now realize: []browsers a user is signed in to!
 */
 
 
+//                    _            _   _       _                                             _ 
+//   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| |  _ __   __ _ ___ _____      _____  _ __ __| |
+//  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | | '_ \ / _` / __/ __\ \ /\ / / _ \| '__/ _` |
+// | (__| | |  __/ (_| |  __/ | | | |_| | (_| | | | |_) | (_| \__ \__ \\ V  V / (_) | | | (_| |
+//  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_| | .__/ \__,_|___/___/ \_/\_/ \___/|_|  \__,_|
+//                                                |_|                                          
 
 export async function credentialPasswordGet({userTag}) {
-	let row = await queryTop({table: 'credential_table', title: 'type_text', cell: 'Password.'})
-	if (row && row.event == 4) return {hash: row.k1_text, cycles: textToInt(row.k2_text)}//yes, return their password hash in base32
+	checkTag(userTag)
+	let rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.', title3: 'event', cell3: 4})
+	let row = rows[0]
+	if (row) return {hash: row.k1_text, cycles: textToInt(row.k2_text)}
 	return false//no current password
 }
-export async function credentialPasswordCreate({userTag, hash, cycles}) {
+export async function credentialPasswordSet({userTag, hash, cycles}) {
+	checkTag(userTag)
+	let existing = await credentialPasswordGet({userTag})
+	if (existing) {
+		await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.'})
+		await credentialSet({userTag, type: 'Password.', event: 1, k1: existing.hash, k2: existing.cycles+''})
+	}
 	await credentialSet({userTag, type: 'Password.', event: 4, k1: hash, k2: cycles+''})
 }
 export async function credentialPasswordRemove({userTag}) {
-	await credentialSet({userTag, type: 'Password.', event: 1})
+	checkTag(userTag)
+	let existing = await credentialPasswordGet({userTag})
+	if (!existing) return
+	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.'})
+	await credentialSet({userTag, type: 'Password.', event: 1, k1: existing.hash, k2: existing.cycles+''})
 }
 
-
-
-//                    _            _   _       _   _        _     _      
-//   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| | | |_ __ _| |__ | | ___ 
-//  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | | __/ _` | '_ \| |/ _ \
-// | (__| | |  __/ (_| |  __/ | | | |_| | (_| | | | || (_| | |_) | |  __/
-//  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \__\__,_|_.__/|_|\___|
-//                                                                       
+//                    _            _   _       _   _        _         
+//   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| | | |_ ___ | |_ _ __  
+//  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | | __/ _ \| __| '_ \ 
+// | (__| | |  __/ (_| |  __/ | | | |_| | (_| | | | || (_) | |_| |_) |
+//  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \__\___/ \__| .__/ 
+//                                                             |_|    
 
 //totp: a user can have a single verified enrollment or nothing; k1 is the shared secret key which generates codes
-export async function credentialTotpGet({userTag}) {//is this user doing totp?
-	let row = await queryTop({table: 'credential_table', title: 'type_text', cell: 'Totp.'})
-	if (row && row.event == 4) return row.k1_text//yes, return their totp secret in base32
+export async function credentialTotpGet({userTag}) {
+	checkTag(userTag)
+	let rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.', title3: 'event', cell3: 4})
+	let row = rows[0]
+	if (row) return row.k1_text//return their totp secret in base32
 	return false//no current totp enrollment
 }
-export async function credentialTotpCreate({userTag, secret}) {//enroll the user in totp
+export async function credentialTotpSet({userTag, secret}) {
+	checkTag(userTag)
+	let existing = await credentialTotpGet({userTag})
+	if (existing) {
+		await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.'})
+		await credentialSet({userTag, type: 'Totp.', event: 1, k1: existing})
+	}
 	await credentialSet({userTag, type: 'Totp.', event: 4, k1: secret})
 }
-export async function credentialTotpRemove({userTag}) {//remove totp for this user
-	await credentialSet({userTag, type: 'Totp.', event: 1})
+export async function credentialTotpRemove({userTag}) {
+	checkTag(userTag)
+	let existing = await credentialTotpGet({userTag})
+	if (!existing) return
+	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.'})
+	await credentialSet({userTag, type: 'Totp.', event: 1, k1: existing})
 }
+
+//                    _            _   _       _   _                                     
+//   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| | | |__  _ __ _____      _____  ___ _ __ 
+//  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__|
+// | (__| | |  __/ (_| |  __/ | | | |_| | (_| | | | |_) | | | (_) \ V  V /\__ \  __/ |   
+//  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_| |_.__/|_|  \___/ \_/\_/ |___/\___|_|   
+//                                                                                       
 
 //browser: user is signed in at this browser; k1 is browserHash
 export async function credentialBrowserGet({browserHash}) {//find what user, if any, is signed in at the given browser
 	checkHash(browserHash)
-	let row = await queryTop({table: 'credential_table', title: 'k1_text', cell: browserHash})//query without the type "Browser."
-	if (row && row.type_text == 'Browser.' && row.event == 4) { return {userTag: row.user_tag} }//but make sure it's the result
+	let rows = await queryGet3({table: 'credential_table', title1: 'type_text', cell1: 'Browser.', title2: 'k1_text', cell2: browserHash, title3: 'event', cell3: 4})
+	let row = rows[0]
+	if (row) return {userTag: row.user_tag}
 	return false//no one signed in at this browser
 }
-export async function credentialBrowserCreate({userTag, browserHash}) {//sign this user in at this browser
+export async function credentialBrowserSet({userTag, browserHash}) {//sign this user in at this browser
 	checkTag(userTag); checkHash(browserHash)
 	await credentialSet({userTag, type: 'Browser.', event: 4, k1: browserHash})
 }
@@ -255,13 +291,150 @@ export async function credentialBrowserRemove({userTag}) {//sign this user out e
 	checkTag(userTag)
 	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Browser.'})
 }
+
+//                    _            _   _       _                              
+//   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| |  _ __   __ _ _ __ ___   ___ 
+//  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | | '_ \ / _` | '_ ` _ \ / _ \
+// | (__| | |  __/ (_| |  __/ | | | |_| | (_| | | | | | | (_| | | | | | |  __/
+//  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_| |_| |_|\__,_|_| |_| |_|\___|
+//                                                                            
+
+//lookup between user tags and names to render a profile page, let the user see their name, or choose or change it
+export async function credentialNameGet({//returns false not found, or {userTag, v} with all three valid name forms
+	//provide any one of these:
+	userTag,//get a user's name, all three forms, if the user exists and has a name; used to show the user their own name info
+	f0, f2,//make sure normalized and display names are available; these two are just helpers to credentialNameCheck below
+	raw1,//given a GETing slug like "Tokyo-girl", look up her userTag and return v.f1 "Tokyo-Girl" for history replace state
+}) {
+	let row, rows
+	if (given(userTag)) { checkTag(userTag)
+		rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.', title3: 'event', cell3: 4})
+	} else if (given(f0)) { checkText(f0)
+		rows = await queryGet3({table: 'credential_table', title1: 'type_text', cell1: 'Name.', title2: 'f0_text', cell2: f0, title3: 'event', cell3: 4})
+	} else if (given(f2)) { checkText(f2)
+		rows = await queryGet3({table: 'credential_table', title1: 'type_text', cell1: 'Name.', title2: 'f2_text', cell2: f2, title3: 'event', cell3: 4})
+	} else if (given(raw1)) {
+		let v = validateName(raw1); if (!v.ok) return false
+		rows = await queryGet3({table: 'credential_table', title1: 'type_text', cell1: 'Name.', title2: 'f0_text', cell2: v.f0, title3: 'event', cell3: 4})
+	} else { toss('use', {userTag, f0, f2, raw1}) }
+
+	row = rows[0]
+	if (row) return {userTag: row.user_tag, v: bundleValid({f0: row.f0_text, f1: row.f1_text, f2: row.f2_text})}
+	return false//not found
+}
+
+//set the given new name for a user, if valid and available, and free up an old name if they had one
+export async function credentialNameSet({userTag, raw1, raw2}) {
+	checkTag(userTag)
+	let v = await credentialNameCheck({raw1, raw2})
+	if (!v) return false
+
+	//if user already has a name, free it first
+	let existing = await credentialNameGet({userTag})
+	if (existing) {
+		//hide old event 4 row
+		await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.'})
+		//add event 1 row to document the old name was released
+		await credentialSet({userTag, type: 'Name.', event: 1, f0: existing.v.f0, f1: existing.v.f1, f2: existing.v.f2})
+	}
+
+	//add event 4 row with new name
+	await credentialSet({userTag, type: 'Name.', event: 4, f0: v.f0, f1: v.f1, f2: v.f2})
+	return v
+}
+
+//given desired route and display names, check that they're valid and available
+export async function credentialNameCheck({//returns false taken or not valid, or bundled v with all three name forms
+	//provide both of these:
+	raw1,//desired route text like "Tokyo-Girl"; we'll normalize that down to form 0 "tokyo-girl" for you
+	raw2,//desired visual version like "東京 Girl 🌸"; user may have chosen text that doesn't normalize to match raw1's f0 and f1
+}) {
+	let v1 = validateName(raw1)//validate route input, produces f0 and f1
+	let v2 = validateName(raw2)//separately validate display name, produces f2, only
+	if (!(v1.ok && v2.ok)) return false
+
+	if (await credentialNameGet({f0: v1.f0})) return false//make sure desired route, normalized, is not already taken
+	if (await credentialNameGet({f2: v2.f2})) return false//we also require display names to be unique
+	return bundleValid({f0: v1.f0, f1: v1.f1, f2: v2.f2})//note how we composite together both validated objects ✂️
+}
+
+//remove a user's name credential, freeing it for others
+export async function credentialNameRemove({userTag}) {
+	checkTag(userTag)
+	let existing = await credentialNameGet({userTag})
+	if (!existing) return//nothing to remove
+
+	//hide old event 4 row
+	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.'})
+	//add event 1 row to document the name was released
+	await credentialSet({userTag, type: 'Name.', event: 1, f0: existing.v.f0, f1: existing.v.f1, f2: existing.v.f2})
+}
+
+grid(async () => {//test password credential set/get/remove
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	ok((await credentialPasswordGet({userTag})) == false)//no password yet
+	await credentialPasswordSet({userTag, hash: 'hash1', cycles: 100})
+	let result = await credentialPasswordGet({userTag})
+	ok(result.hash == 'hash1')
+	ok(result.cycles == 100)
+	await credentialPasswordRemove({userTag})
+	ok((await credentialPasswordGet({userTag})) == false)//now gone
+})
+grid(async () => {//test password change creates audit trail
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+
+	//set initial password
+	await credentialPasswordSet({userTag, hash: 'hash1', cycles: 100})
+	ok((await credentialPasswordGet({userTag})).hash == 'hash1')
+
+	//change password - should hide old, add event 1, add new event 4
+	await credentialPasswordSet({userTag, hash: 'hash2', cycles: 200})
+	let result = await credentialPasswordGet({userTag})
+	ok(result.hash == 'hash2')
+	ok(result.cycles == 200)
+
+	//verify only one active password (event 4) exists
+	let rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.', title3: 'event', cell3: 4})
+	ok(rows.length == 1)
+})
+grid(async () => {//test totp credential set/get/remove
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	ok((await credentialTotpGet({userTag})) == false)//no totp yet
+	await credentialTotpSet({userTag, secret: 'JBSWY3DPEHPK3PXP'})
+	ok((await credentialTotpGet({userTag})) == 'JBSWY3DPEHPK3PXP')
+	await credentialTotpRemove({userTag})
+	ok((await credentialTotpGet({userTag})) == false)//now gone
+})
+grid(async () => {//test totp re-enrollment creates audit trail
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+
+	//set initial totp
+	await credentialTotpSet({userTag, secret: 'SECRET1AAAAAAAAA'})
+	ok((await credentialTotpGet({userTag})) == 'SECRET1AAAAAAAAA')
+
+	//re-enroll with new secret (e.g., new phone)
+	await credentialTotpSet({userTag, secret: 'SECRET2BBBBBBBB'})
+	ok((await credentialTotpGet({userTag})) == 'SECRET2BBBBBBBB')
+
+	//verify only one active totp (event 4) exists
+	let rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.', title3: 'event', cell3: 4})
+	ok(rows.length == 1)
+})
 grid(async () => {//test browser credential create/get/remove
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
 	let browserHash = random32()
 	ok((await credentialBrowserGet({browserHash})) == false)//nobody signed in
-	await credentialBrowserCreate({userTag, browserHash})
+	await credentialBrowserSet({userTag, browserHash})
 	let result = await credentialBrowserGet({browserHash})
 	ok(result.userTag == userTag)
 	await credentialBrowserRemove({userTag})//sign out everywhere
@@ -273,8 +446,8 @@ grid(async () => {//sign out everywhere hides all browsers for one user
 	let userTag = Tag()
 	let browserHash1 = random32()//it's fine to simulate a hash value with random bytes
 	let browserHash2 = random32()
-	await credentialBrowserCreate({userTag, browserHash: browserHash1})
-	await credentialBrowserCreate({userTag, browserHash: browserHash2})
+	await credentialBrowserSet({userTag, browserHash: browserHash1})
+	await credentialBrowserSet({userTag, browserHash: browserHash2})
 	ok((await credentialBrowserGet({browserHash: browserHash1})).userTag == userTag)
 	ok((await credentialBrowserGet({browserHash: browserHash2})).userTag == userTag)
 	await credentialBrowserRemove({userTag})//signs out of both
@@ -288,9 +461,9 @@ grid(async () => {//simulate multi-user session flow over time
 	let browserB = random32()
 	let browserC = random32()
 
-	await credentialBrowserCreate({userTag: user1, browserHash: browserA})//user1 signs in at browserA
-	await credentialBrowserCreate({userTag: user2, browserHash: browserB})//user2 signs in at browserB
-	await credentialBrowserCreate({userTag: user1, browserHash: browserC})//user1 also signs in at browserC, their second simultaneous session
+	await credentialBrowserSet({userTag: user1, browserHash: browserA})//user1 signs in at browserA
+	await credentialBrowserSet({userTag: user2, browserHash: browserB})//user2 signs in at browserB
+	await credentialBrowserSet({userTag: user1, browserHash: browserC})//user1 also signs in at browserC, their second simultaneous session
 
 	ageNow(Time.minute)//a minute later, refresh all three tabs; everyone still signed in
 	ok((await credentialBrowserGet({browserHash: browserA})).userTag == user1)
@@ -304,6 +477,122 @@ grid(async () => {//simulate multi-user session flow over time
 
 	await credentialBrowserRemove({userTag: user2})//user2 signs out
 	ok((await credentialBrowserGet({browserHash: browserB})) == false)
+})
+grid(async () => {//test credentialNameGet with {userTag}
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+
+	let user1 = Tag()
+
+	//user doesn't exist at all
+	ok((await credentialNameGet({userTag: user1})) == false)
+
+	//user exists (has browser credential) but doesn't have a name
+	await credentialBrowserSet({userTag: user1, browserHash: random32()})
+	ok((await credentialNameGet({userTag: user1})) == false)
+
+	//user exists and has a name - returns {userTag, v} with all three forms
+	await credentialNameSet({userTag: user1, raw1: 'Tokyo-Girl', raw2: 'Tokyo Girl'})
+	let result = await credentialNameGet({userTag: user1})
+	ok(result.userTag == user1)
+	ok(result.v.ok == true)
+	ok(result.v.f0 == 'tokyo-girl')
+	ok(result.v.f1 == 'Tokyo-Girl')
+	ok(result.v.f2 == 'Tokyo Girl')
+})
+grid(async () => {//test credentialNameGet with {raw1}
+	//relies on previous test's 'Tokyo Girl' name
+
+	//invalid route returns false
+	ok((await credentialNameGet({raw1: ''})) == false)
+
+	//valid route but no user at that route
+	ok((await credentialNameGet({raw1: 'nonexistent-user'})) == false)
+
+	//sloppy case 'Tokyo-girl' normalizes to 'tokyo-girl' and finds user
+	let result = await credentialNameGet({raw1: 'Tokyo-girl'})
+	ok(result.userTag)//found the user
+	ok(result.v.f1 == 'Tokyo-Girl')//canonical form for redirect
+})
+grid(async () => {//test credentialNameCheck fail scenarios
+	//relies on previous test's 'Tokyo Girl' name
+
+	//scenario 1: invalid display name (doesn't touch database)
+	ok((await credentialNameCheck({raw1: 'Valid-Route', raw2: ''})) == false)
+	//scenario 2: normalized form (f0) collides with existing 'tokyo-girl'
+	ok((await credentialNameCheck({raw1: 'TOKYO-GIRL', raw2: 'Different Display'})) == false)
+	//scenario 3: display form (f2) collides with existing 'Tokyo Girl'
+	ok((await credentialNameCheck({raw1: 'unique-route', raw2: 'Tokyo Girl'})) == false)
+	//scenario 4: success - returns v with ok:true and all three forms
+	let v = await credentialNameCheck({raw1: 'New-Route', raw2: 'New Display'})
+	ok(v.ok == true)
+	ok(v.f0 == 'new-route')
+	ok(v.f1 == 'New-Route')
+	ok(v.f2 == 'New Display')
+})
+grid(async () => {//test credentialNameSet and credentialNameRemove
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+
+	let userTag = Tag()
+
+	//set returns v on success
+	let v = await credentialNameSet({userTag, raw1: 'Fresh-Name', raw2: 'Fresh Name'})
+	ok(v.ok == true)
+	ok(v.f0 == 'fresh-name')
+	ok(v.f1 == 'Fresh-Name')
+	ok(v.f2 == 'Fresh Name')
+
+	//verify it's in the database
+	let fetched = await credentialNameGet({userTag})
+	ok(fetched.v.f2 == 'Fresh Name')
+
+	//set returns false if name is taken
+	let user2 = Tag()
+	ok((await credentialNameSet({userTag: user2, raw1: 'Fresh-Name', raw2: 'Different'})) == false)//f0 collision
+	ok((await credentialNameSet({userTag: user2, raw1: 'Different', raw2: 'Fresh Name'})) == false)//f2 collision
+
+	//remove frees the name
+	await credentialNameRemove({userTag})
+	ok((await credentialNameGet({userTag})) == false)
+
+	//now user2 can take it
+	let v2 = await credentialNameSet({userTag: user2, raw1: 'Fresh-Name', raw2: 'Fresh Name'})
+	ok(v2.ok == true)
+})
+grid(async () => {//test name change frees old name for others
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+
+	let user1 = Tag()
+	let user2 = Tag()
+
+	//user1 takes "bob"
+	let v1 = await credentialNameSet({userTag: user1, raw1: 'Bob', raw2: 'Bob'})
+	ok(v1.ok == true)
+	ok(v1.f0 == 'bob')
+
+	//user2 cannot take "bob" - it's taken
+	ok((await credentialNameSet({userTag: user2, raw1: 'Bob', raw2: 'Bob'})) == false)
+
+	//user1 changes to "super-bob"
+	let v2 = await credentialNameSet({userTag: user1, raw1: 'Super-Bob', raw2: 'Super Bob'})
+	ok(v2.ok == true)
+	ok(v2.f0 == 'super-bob')
+
+	//verify user1 now has super-bob, not bob
+	let user1Name = await credentialNameGet({userTag: user1})
+	ok(user1Name.v.f0 == 'super-bob')
+	ok(user1Name.v.f2 == 'Super Bob')
+
+	//now user2 can take "bob" - it was freed
+	let v3 = await credentialNameSet({userTag: user2, raw1: 'Bob', raw2: 'Bob'})
+	ok(v3.ok == true)
+	ok(v3.f0 == 'bob')
+
+	//both users have their correct names
+	ok((await credentialNameGet({userTag: user1})).v.f0 == 'super-bob')
+	ok((await credentialNameGet({userTag: user2})).v.f0 == 'bob')
 })
 
 SQL(`
@@ -1051,6 +1340,8 @@ export async function nameCheck({v}) {//ttd march2025, draft like from the check
 	return task
 }
 
+//ttd: name_table is deprecated, will be removed once credential_table name functions are complete
+//note: queryTop usage here assumes 0 or 1 rows per key, but doesn't guarantee correct row if multiple exist
 async function name_get({//look up user route and name information by calling with one of these:
 	userTag,//a user's tag, like we're showing information about that user, or
 	name0,//a normalized route, like we're filling a request to that route, or
@@ -1245,7 +1536,8 @@ export async function settingReadInt(name, defaultValue) {
 export async function settingRead(name, defaultValue) {
 	let defaultValueText = defaultValue+''
 	checkText(name); checkTextOrBlank(defaultValueText)
-	let row = await queryTop({table: 'settings_table', title: 'setting_name_text', cell: name})
+	let rows = await queryGet({table: 'settings_table', title: 'setting_name_text', cell: name})
+	let row = rows[0]//unique index guarantees 0 or 1 visible rows per setting name
 	if (!row) {
 		row = {setting_name_text: name, setting_value_text: defaultValueText}
 		await queryAddRow({table: 'settings_table', row})

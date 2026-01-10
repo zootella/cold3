@@ -2,7 +2,7 @@
 import {
 browserToUser,
 trailRecent, trailCount, trailGet, trailAdd,
-credentialPasswordGet, credentialPasswordCreate, credentialPasswordRemove,
+credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -25,7 +25,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	} else if (action == 'Set.') {
 
-		await credentialPasswordCreate({userTag: user.userTag, hash: body.hash, cycles: body.cycles})
+		await credentialPasswordSet({userTag: user.userTag, hash: body.hash, cycles: body.cycles})
 		return {outcome: 'PasswordSet.'}
 
 	} else if (action == 'Validate.') {

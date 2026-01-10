@@ -18,11 +18,25 @@ async function signOut() {
 	userTag.value = ''
 }
 
+async function checkName({slug, display}) {
+	return await fetchWorker('/api/credential', {body: {action: 'CheckName.', slug, display}})
+}
+
+async function signUpAndSignIn({slug, display, hash, cycles}) {
+	let r = await fetchWorker('/api/credential', {body: {action: 'SignUpAndSignIn.', slug, display, hash, cycles}})
+	if (r.outcome == 'SignedUp.') {
+		userTag.value = r.userTag
+	}
+	return r
+}
+
 return {
 	loaded, load,
 	browserHash,
 	userTag,
 	signOut,
+	checkName,
+	signUpAndSignIn,
 }
 
 })

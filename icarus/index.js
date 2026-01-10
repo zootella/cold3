@@ -131,9 +131,10 @@ demonstrationSignOut,
 
 trailRecent, trailCount, trailGet, trailAdd,
 
-credentialPasswordGet, credentialPasswordCreate, credentialPasswordRemove,
-credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
-credentialBrowserGet, credentialBrowserCreate, credentialBrowserRemove,
+credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
+credentialTotpGet, credentialTotpSet, credentialTotpRemove,
+credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
+credentialNameGet, credentialNameCheck, credentialNameSet, credentialNameRemove,
 credentialGet, credentialSet,
 
 } from './level3.js'
@@ -172,8 +173,7 @@ queryCountRows, queryCountAllRows,
 
 //query common
 queryTop,
-queryGet,
-queryGet2,
+queryGet, queryGet2, queryGet3,
 queryAddRow,
 queryAddRows,
 queryHideRows,
