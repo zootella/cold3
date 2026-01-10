@@ -221,19 +221,12 @@ export async function credentialPasswordGet({userTag}) {
 }
 export async function credentialPasswordSet({userTag, hash, cycles}) {
 	checkTag(userTag)
-	let existing = await credentialPasswordGet({userTag})
-	if (existing) {
-		await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.'})
-		await credentialSet({userTag, type: 'Password.', event: 1, k1: existing.hash, k2: existing.cycles+''})
-	}
+	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.'})
 	await credentialSet({userTag, type: 'Password.', event: 4, k1: hash, k2: cycles+''})
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
-	let existing = await credentialPasswordGet({userTag})
-	if (!existing) return
 	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.'})
-	await credentialSet({userTag, type: 'Password.', event: 1, k1: existing.hash, k2: existing.cycles+''})
 }
 
 //                    _            _   _       _   _        _         
@@ -253,19 +246,12 @@ export async function credentialTotpGet({userTag}) {
 }
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
-	let existing = await credentialTotpGet({userTag})
-	if (existing) {
-		await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.'})
-		await credentialSet({userTag, type: 'Totp.', event: 1, k1: existing})
-	}
+	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.'})
 	await credentialSet({userTag, type: 'Totp.', event: 4, k1: secret})
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
-	let existing = await credentialTotpGet({userTag})
-	if (!existing) return
 	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.'})
-	await credentialSet({userTag, type: 'Totp.', event: 1, k1: existing})
 }
 
 //                    _            _   _       _   _                                     
@@ -328,17 +314,7 @@ export async function credentialNameSet({userTag, raw1, raw2}) {
 	checkTag(userTag)
 	let v = await credentialNameCheck({raw1, raw2})
 	if (!v) return false
-
-	//if user already has a name, free it first
-	let existing = await credentialNameGet({userTag})
-	if (existing) {
-		//hide old event 4 row
-		await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.'})
-		//add event 1 row to document the old name was released
-		await credentialSet({userTag, type: 'Name.', event: 1, f0: existing.v.f0, f1: existing.v.f1, f2: existing.v.f2})
-	}
-
-	//add event 4 row with new name
+	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.'})
 	await credentialSet({userTag, type: 'Name.', event: 4, f0: v.f0, f1: v.f1, f2: v.f2})
 	return v
 }
@@ -361,13 +337,7 @@ export async function credentialNameCheck({//returns false taken or not valid, o
 //remove a user's name credential, freeing it for others
 export async function credentialNameRemove({userTag}) {
 	checkTag(userTag)
-	let existing = await credentialNameGet({userTag})
-	if (!existing) return//nothing to remove
-
-	//hide old event 4 row
 	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.'})
-	//add event 1 row to document the name was released
-	await credentialSet({userTag, type: 'Name.', event: 1, f0: existing.v.f0, f1: existing.v.f1, f2: existing.v.f2})
 }
 
 grid(async () => {//password: set, change, verify single active, remove
