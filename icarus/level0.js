@@ -1283,6 +1283,12 @@ test(async () => {
 	ok(d2.base32().length == hash_length)
 	ok((await Data({text: 'hello'}).hash()).base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//hash method with await is somewhat clumsy, ttd november
 })
+export function random32() {//return 32 random bytes in base32, quickly making a fake new hash value for testing
+	return Data({random: hash_size}).base32()
+}
+test(() => {
+	ok(random32().length == hash_length)
+})
 
 //                                            _ 
 //  _ __   __ _ ___ _____      _____  _ __ __| |

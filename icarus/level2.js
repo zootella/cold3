@@ -16,6 +16,7 @@ randomBetween,
 runTests,
 safefill, deindent, cutAfterLast,
 enterSimulationMode, isInSimulationMode, ageNow, prefixTags,
+random32,
 } from './level0.js'
 import {//from level1
 Limit, checkActions,
@@ -1465,7 +1466,7 @@ let _grid = []//grid test functions collected by grid(); run by runDatabaseTests
 export function SQL(s) { _sql.push(s) }
 export function grid(f) { _grid.push(f) }
 
-async function getDatabase() {
+export async function getDatabase() {
 	if (isInSimulationMode()) {//running in local Node, $ yarn test has entered simulation mode to run grid tests
 		if (!_pglite) {//first call in this mode, setup pglite
 			let {pglite} = await pgliteDynamicImport()
@@ -1586,6 +1587,43 @@ export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
 	if (!hideSet) hideSet = 1//make sure we never set hide to 0, and use the custom passed hideSet number code, or 1 the generic default
 	await queryUpdateCells({table, titleFind, cellFind, titleSet: 'hide', cellSet: hideSet})
 }
+//hide rows matching two cells
+export async function queryHideRows2({table, title1, cell1, title2, cell2, hideSet}) {
+	if (!hideSet) hideSet = 1
+	checkQueryCell(title1, cell1); checkQueryCell(title2, cell2)
+	const {database} = await getDatabase()
+	let {data, error} = (await database
+		.from(table)
+		.update({hide: hideSet})
+		.eq(title1, cell1)
+		.eq(title2, cell2)
+		.eq('hide', 0)
+		.select()
+	)
+	if (error) toss('supabase', {error})
+}
+grid(async () => {
+	let {clear} = await getDatabase()
+	await clear('example_table')
+
+	let hash1 = random32()//32 random bytes in base32, a fake hash value
+	let hash2 = random32()
+
+	await queryAddRows({table: 'example_table', rows: [
+		{name_text: 'alice', hits: 10, some_hash: hash1},//matches both conditions
+		{name_text: 'alice', hits: 20, some_hash: hash2},//matches only name
+		{name_text: 'bob', hits: 30, some_hash: hash1},//matches only hash
+	]})
+	await queryHideRows2({table: 'example_table', title1: 'name_text', cell1: 'alice', title2: 'some_hash', cell2: hash1})
+
+	let aliceRows = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})
+	ok(aliceRows.length == 1)//only alice+hash2 visible
+	ok(aliceRows[0].some_hash == hash2)
+
+	let bobRows = await queryGet({table: 'example_table', title: 'name_text', cell: 'bob'})
+	ok(bobRows.length == 1)//bob untouched
+})
+
 //change the vertical column of cells under titleSet to cellSet in all the rows that have cellFind under titleFind
 export async function queryUpdateCells({table, titleFind, cellFind, titleSet, cellSet}) {
 	checkQueryCell(titleFind, cellFind); checkQueryCell(titleSet, cellSet)
@@ -1858,6 +1896,7 @@ grid(() => {
 	let t2 = Now()
 	ok(t2 - t1 >= Time.minute)
 
+	prefixTags('Test')//this is the default staring prefix
 	ok(Tag().startsWith('Test1'))//and tags start with a prefix and number, "Test" to begin by default
 	ok(Tag().startsWith('Test2'))
 	ok(Tag().startsWith('Test3'))
@@ -1895,11 +1934,11 @@ grid(async () => {//exercise query helper functions with example_table
 	await clear('example_table')
 	ok(await queryCountAllRows({table: 'example_table'}) == 0)//start empty
 
-	let hash1 = Data({random: 32}).base32()
+	let hash1 = random32()
 	await queryAddRow({table: 'example_table', row: {name_text: 'alice', hits: 10, some_hash: hash1}})
 	ok(await queryCountAllRows({table: 'example_table'}) == 1)//add one row
 	ageNow(Time.second)//ensure next rows have a later timestamp
-	let hash2 = Data({random: 32}).base32()
+	let hash2 = random32()
 	await queryAddRows({table: 'example_table', rows: [//add two more
 		{name_text: 'alice', hits: 20, some_hash: hash2},
 		{name_text: 'bob', hits: 30, some_hash: hash2},

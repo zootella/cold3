@@ -1,35 +1,28 @@
 //./stores/credential.js - manages user credentials and browser sessions
-//follows flex.js pattern: can load on server or client, uses loaded ref to prevent re-fetch
-
-import {
-Task,
-fetchWorker,
-} from 'icarus'
+//follows main.js pattern: loads during server render, loaded ref prevents re-fetch on client
 
 export const useCredentialStore = defineStore('credential', () => {
 
 const loaded = ref(false)
 const browserHash = ref('')//the hashed browser identifier, always present after load
+const userTag = ref('')//the signed-in user, or empty if not signed in
 
 async function load() { if (loaded.value) return; loaded.value = true
-	await _fetch('Load.')
+	let r = await fetchWorker('/api/credential', {body: {action: 'Get.'}})
+	browserHash.value = r.browserHash
+	if (r.userTag) userTag.value = r.userTag
 }
 
-async function _fetch(action, body = {}) {
-	let task = Task({name: 'credential store fetch'})
-	try {
-		task.response = await fetchWorker('/api/credential', {body: {action, ...body}})
-	} catch (e) { task.error = e }
-	task.finish()
-	if (!task.success) throw task
-
-	if (task.response.browserHash) browserHash.value = task.response.browserHash
-	return task.response
+async function signOut() {
+	await fetchWorker('/api/credential', {body: {action: 'SignOut.'}})
+	userTag.value = ''
 }
 
 return {
 	loaded, load,
 	browserHash,
+	userTag,
+	signOut,
 }
 
 })

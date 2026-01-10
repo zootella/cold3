@@ -4,10 +4,7 @@ import {
 } from 'icarus'
 
 const credentialStore = useCredentialStore()
-
-onMounted(async () => {
-	await credentialStore.load()
-})
+await credentialStore.load()//runs on server render, then no-op on client due to loaded ref
 
 /*
 this is the "credential panel" component
@@ -40,7 +37,11 @@ and then once we've got that smoke tested and working as well as older stuff whi
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CredentialPanel</i></p>
 
-<p class="text-sm font-mono break-all">Browser: {{ credentialStore.browserHash }}</p>
+<p>browser hash <code class="break-all">{{credentialStore.browserHash }}</code></p>
+<p v-if="credentialStore.userTag">user tag <code>{{credentialStore.userTag}}</code></p>
+<p v-else>not signed in</p>
+
+<Button v-if="credentialStore.userTag" :click="credentialStore.signOut">Sign Out</Button>
 
 </div>
 </template>

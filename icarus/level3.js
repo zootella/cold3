@@ -15,6 +15,7 @@ randomCode, hashToLetter,
 makePlain, makeObject, makeText,
 safefill, deindent,
 isInSimulationMode, ageNow, prefixTags,
+random32,
 } from './level0.js'
 import {//from level1
 Limit, checkName, validateName,
@@ -25,7 +26,7 @@ Sticker, stickerParts, isLocal, isCloud,
 Task, fetchWorker, fetchLambda, fetchProvider,
 
 /* level 2 query */
-SQL, grid,
+SQL, grid, getDatabase,
 
 //query snippet
 queryCountRows, queryCountAllRows,
@@ -37,6 +38,7 @@ queryGet2,
 queryAddRow,
 queryAddRows,
 queryHideRows,
+queryHideRows2,
 queryUpdateCells,
 
 //query specialized
@@ -237,6 +239,72 @@ export async function credentialTotpCreate({userTag, secret}) {//enroll the user
 export async function credentialTotpRemove({userTag}) {//remove totp for this user
 	await credentialSet({userTag, type: 'Totp.', event: 1})
 }
+
+//browser: user is signed in at this browser; k1 is browserHash
+export async function credentialBrowserGet({browserHash}) {//find what user, if any, is signed in at the given browser
+	checkHash(browserHash)
+	let row = await queryTop({table: 'credential_table', title: 'k1_text', cell: browserHash})//query without the type "Browser."
+	if (row && row.type_text == 'Browser.' && row.event == 4) { return {userTag: row.user_tag} }//but make sure it's the result
+	return false//no one signed in at this browser
+}
+export async function credentialBrowserCreate({userTag, browserHash}) {//sign this user in at this browser
+	checkTag(userTag); checkHash(browserHash)
+	await credentialSet({userTag, type: 'Browser.', event: 4, k1: browserHash})
+}
+export async function credentialBrowserRemove({userTag}) {//sign this user out everywhere
+	checkTag(userTag)
+	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Browser.'})
+}
+grid(async () => {//test browser credential create/get/remove
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	let browserHash = random32()
+	ok((await credentialBrowserGet({browserHash})) == false)//nobody signed in
+	await credentialBrowserCreate({userTag, browserHash})
+	let result = await credentialBrowserGet({browserHash})
+	ok(result.userTag == userTag)
+	await credentialBrowserRemove({userTag})//sign out everywhere
+	ok((await credentialBrowserGet({browserHash})) == false)//now gone
+})
+grid(async () => {//sign out everywhere hides all browsers for one user
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	let browserHash1 = random32()//it's fine to simulate a hash value with random bytes
+	let browserHash2 = random32()
+	await credentialBrowserCreate({userTag, browserHash: browserHash1})
+	await credentialBrowserCreate({userTag, browserHash: browserHash2})
+	ok((await credentialBrowserGet({browserHash: browserHash1})).userTag == userTag)
+	ok((await credentialBrowserGet({browserHash: browserHash2})).userTag == userTag)
+	await credentialBrowserRemove({userTag})//signs out of both
+	ok((await credentialBrowserGet({browserHash: browserHash1})) == false)
+	ok((await credentialBrowserGet({browserHash: browserHash2})) == false)
+})
+grid(async () => {//simulate multi-user session flow over time
+	let user1 = Tag()//make two example users
+	let user2 = Tag()
+	let browserA = random32()//and three example browsers, simulating hash values with random data
+	let browserB = random32()
+	let browserC = random32()
+
+	await credentialBrowserCreate({userTag: user1, browserHash: browserA})//user1 signs in at browserA
+	await credentialBrowserCreate({userTag: user2, browserHash: browserB})//user2 signs in at browserB
+	await credentialBrowserCreate({userTag: user1, browserHash: browserC})//user1 also signs in at browserC, their second simultaneous session
+
+	ageNow(Time.minute)//a minute later, refresh all three tabs; everyone still signed in
+	ok((await credentialBrowserGet({browserHash: browserA})).userTag == user1)
+	ok((await credentialBrowserGet({browserHash: browserB})).userTag == user2)
+	ok((await credentialBrowserGet({browserHash: browserC})).userTag == user1)
+
+	await credentialBrowserRemove({userTag: user1})//user1 signs out
+	ok((await credentialBrowserGet({browserHash: browserA})) == false)//and is signed out everywhere
+	ok((await credentialBrowserGet({browserHash: browserC})) == false)
+	ok((await credentialBrowserGet({browserHash: browserB})).userTag == user2)//user2 is not affected; still signed in to browserB
+
+	await credentialBrowserRemove({userTag: user2})//user2 signs out
+	ok((await credentialBrowserGet({browserHash: browserB})) == false)
+})
 
 SQL(`
 -- how can a user sign in? is what they just said valid to sign them in?

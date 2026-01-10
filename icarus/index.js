@@ -133,6 +133,7 @@ trailRecent, trailCount, trailGet, trailAdd,
 
 credentialPasswordGet, credentialPasswordCreate, credentialPasswordRemove,
 credentialTotpGet, credentialTotpCreate, credentialTotpRemove,
+credentialBrowserGet, credentialBrowserCreate, credentialBrowserRemove,
 credentialGet, credentialSet,
 
 } from './level3.js'
@@ -164,7 +165,7 @@ sealEnvelope, openEnvelope,
 composeCookieName, composeCookieValue, parseCookieValue,
 
 /* level 2 query */
-grid, runDatabaseTests, SQL,//new grid tests and simulated environment
+SQL, grid, getDatabase, runDatabaseTests,
 
 //query snippet
 queryCountRows, queryCountAllRows,
@@ -176,6 +177,7 @@ queryGet2,
 queryAddRow,
 queryAddRows,
 queryHideRows,
+queryHideRows2,
 queryUpdateCells,
 
 //query specialized
@@ -260,7 +262,7 @@ base62ToInt, intToBase62,
 
 Tag, checkTagOrBlank, checkTag, hasTag,
 randomBetweenLight, randomBetween, randomCode, hashToLetter,
-checkHash, hashData, hashText,
+checkHash, hashData, hashText, random32,
 passwordStrength, passwordCycles, passwordHash,
 encryptData, decryptData, encryptSymmetric,
 hmacSign,
