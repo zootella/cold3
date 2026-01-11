@@ -11,6 +11,9 @@ const passwordCycles = ref(0)//the user's password hash cycles, or 0 if not sign
 
 async function load() { if (loaded.value) return; loaded.value = true
 	await refresh()
+	/*
+	note for later on refresh claude, this is not the right pattern, i think! letting one refresh in might be fine, but that road leads to chatter and churn and a database that's hammered and a page that blinks and vibrates into existance, unnecessarily!! ok so instead we should have all of these calls which mutate state return, along with what they're currently reporting, a current up to date copy of the same information that Get. retrieves! and then the same code here takes that fresh packet of Get.ed information and updates the refs here. so above the components that depend on this store update automatically. do you agree, first with this problem, and then with this proposed solution? ttd january
+	*/
 }
 
 async function refresh() {//fetch current credential snapshot from server, update all refs
@@ -27,7 +30,8 @@ async function signOut() {
 }
 
 async function checkName({raw1, raw2, turnstileToken}) {
-	return await fetchWorker('/api/credential', {body: {action: 'CheckNameTurnstile.', raw1, raw2, turnstileToken}})
+	let r = await fetchWorker('/api/credential', {body: {action: 'CheckNameTurnstile.', raw1, raw2, turnstileToken}})
+	return r.nameIsAvailable
 }
 
 async function signUpAndSignIn({raw1, raw2, hash, cycles, turnstileToken}) {

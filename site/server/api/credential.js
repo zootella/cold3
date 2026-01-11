@@ -33,9 +33,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	} else if (action == 'CheckNameTurnstile.') {
 		let v = await credentialNameCheck({raw1: body.raw1, raw2: body.raw2})
-		if (!v) { r.outcome = 'NameNotAvailable.'; return r }
-		r.outcome = 'NameAvailable.'
-		r.v = v
+		r.nameIsAvailable = !!v
 
 	} else if (action == 'SignUpAndSignInTurnstile.') {
 		//create new user with three credentials

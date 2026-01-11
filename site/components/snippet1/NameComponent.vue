@@ -1,4 +1,11 @@
 <script setup>//./components/NameComponent.vue
+/*
+hi claude, our current work involves this component: NameComponent
+it's proven and has been in production for several months
+it uses turnstile to prevent an attacker from scripting requests to scan out a user name list
+so for our purposes now, it's a demonstration of turnstile
+it doesn't deal with the three validation forms, to see that look at ValidateNameComponent
+*/
 
 import {
 validateName,

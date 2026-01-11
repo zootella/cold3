@@ -1,4 +1,10 @@
 <script setup>
+/*
+hi claude, our current work involves this component: ValidateNameComponent
+it's proven and has been in production for several months
+it deals with name validation and the three forms, with two boxes and feedback to let a user set emoji in a display name, for instance, while choosing the slug route they want, even if those are not the same
+it doesn't use turnstile, to see that, look at NameComponent
+*/
 
 import {
 validateName,
