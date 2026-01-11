@@ -173,11 +173,10 @@ queryCountRows, queryCountAllRows,
 
 //query common
 queryTop,
-queryGet, queryGet2, queryGet3,
+queryGet,
 queryAddRow,
 queryAddRows,
-queryHideRows,
-queryHideRows2,
+queryHide,
 queryUpdateCells,
 
 //query specialized

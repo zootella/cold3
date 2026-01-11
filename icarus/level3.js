@@ -33,11 +33,10 @@ queryCountRows, queryCountAllRows,
 
 //query common
 queryTop,
-queryGet, queryGet2, queryGet3,
+queryGet,
 queryAddRow,
 queryAddRows,
-queryHideRows,
-queryHideRows2,
+queryHide,
 queryUpdateCells,
 
 //query specialized
@@ -204,7 +203,6 @@ lots of things you can think of as credentials, and move and handle here, many e
 and you now realize: []browsers a user is signed in to!
 */
 
-
 //                    _            _   _       _                                             _ 
 //   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| |  _ __   __ _ ___ _____      _____  _ __ __| |
 //  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | | '_ \ / _` / __/ __\ \ /\ / / _ \| '__/ _` |
@@ -214,19 +212,19 @@ and you now realize: []browsers a user is signed in to!
 
 export async function credentialPasswordGet({userTag}) {
 	checkTag(userTag)
-	let rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.', title3: 'event', cell3: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
 	let row = rows[0]
 	if (row) return {hash: row.k1_text, cycles: textToInt(row.k2_text)}
 	return false//no current password
 }
 export async function credentialPasswordSet({userTag, hash, cycles}) {
 	checkTag(userTag)
-	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.'})
 	await credentialSet({userTag, type: 'Password.', event: 4, k1: hash, k2: cycles+''})
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
-	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.'})
 }
 
 //                    _            _   _       _   _        _         
@@ -239,19 +237,19 @@ export async function credentialPasswordRemove({userTag}) {
 //totp: a user can have a single verified enrollment or nothing; k1 is the shared secret key which generates codes
 export async function credentialTotpGet({userTag}) {
 	checkTag(userTag)
-	let rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.', title3: 'event', cell3: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
 	let row = rows[0]
 	if (row) return row.k1_text//return their totp secret in base32
 	return false//no current totp enrollment
 }
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
-	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.'})
 	await credentialSet({userTag, type: 'Totp.', event: 4, k1: secret})
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
-	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.'})
 }
 
 //                    _            _   _       _   _                                     
@@ -264,7 +262,7 @@ export async function credentialTotpRemove({userTag}) {
 //browser: user is signed in at this browser; k1 is browserHash
 export async function credentialBrowserGet({browserHash}) {//find what user, if any, is signed in at the given browser
 	checkHash(browserHash)
-	let rows = await queryGet3({table: 'credential_table', title1: 'type_text', cell1: 'Browser.', title2: 'k1_text', cell2: browserHash, title3: 'event', cell3: 4})
+	let rows = await queryGet('credential_table', {type_text: 'Browser.', k1_text: browserHash, event: 4})
 	let row = rows[0]
 	if (row) return {userTag: row.user_tag}
 	return false//no one signed in at this browser
@@ -275,7 +273,7 @@ export async function credentialBrowserSet({userTag, browserHash}) {//sign this 
 }
 export async function credentialBrowserRemove({userTag}) {//sign this user out everywhere
 	checkTag(userTag)
-	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Browser.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Browser.'})
 }
 
 //                    _            _   _       _                              
@@ -294,14 +292,14 @@ export async function credentialNameGet({//returns false not found, or {userTag,
 }) {
 	let row, rows
 	if (given(userTag)) { checkTag(userTag)
-		rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.', title3: 'event', cell3: 4})
+		rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Name.', event: 4})
 	} else if (given(f0)) { checkText(f0)
-		rows = await queryGet3({table: 'credential_table', title1: 'type_text', cell1: 'Name.', title2: 'f0_text', cell2: f0, title3: 'event', cell3: 4})
+		rows = await queryGet('credential_table', {type_text: 'Name.', f0_text: f0, event: 4})
 	} else if (given(f2)) { checkText(f2)
-		rows = await queryGet3({table: 'credential_table', title1: 'type_text', cell1: 'Name.', title2: 'f2_text', cell2: f2, title3: 'event', cell3: 4})
+		rows = await queryGet('credential_table', {type_text: 'Name.', f2_text: f2, event: 4})
 	} else if (given(raw1)) {
 		let v = validateName(raw1); if (!v.ok) return false
-		rows = await queryGet3({table: 'credential_table', title1: 'type_text', cell1: 'Name.', title2: 'f0_text', cell2: v.f0, title3: 'event', cell3: 4})
+		rows = await queryGet('credential_table', {type_text: 'Name.', f0_text: v.f0, event: 4})
 	} else { toss('use', {userTag, f0, f2, raw1}) }
 
 	row = rows[0]
@@ -314,7 +312,7 @@ export async function credentialNameSet({userTag, raw1, raw2}) {
 	checkTag(userTag)
 	let v = await credentialNameCheck({raw1, raw2})
 	if (!v) return false
-	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.'})
 	await credentialSet({userTag, type: 'Name.', event: 4, f0: v.f0, f1: v.f1, f2: v.f2})
 	return v
 }
@@ -337,7 +335,7 @@ export async function credentialNameCheck({//returns false taken or not valid, o
 //remove a user's name credential, freeing it for others
 export async function credentialNameRemove({userTag}) {
 	checkTag(userTag)
-	await queryHideRows2({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Name.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.'})
 }
 
 grid(async () => {//password: set, change, verify single active, remove
@@ -350,7 +348,7 @@ grid(async () => {//password: set, change, verify single active, remove
 	await credentialPasswordSet({userTag, hash: 'hash2', cycles: 200})//change password
 	let result = await credentialPasswordGet({userTag})
 	ok(result.hash == 'hash2' && result.cycles == 200)//verify changed
-	let rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Password.', title3: 'event', cell3: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
 	ok(rows.length == 1)//only one active password after change
 	await credentialPasswordRemove({userTag})
 	ok((await credentialPasswordGet({userTag})) == false)//now gone
@@ -364,7 +362,7 @@ grid(async () => {//totp: set, re-enroll, verify single active, remove
 	ok((await credentialTotpGet({userTag})) == 'SECRETAAAAAAAAA1')//verify enrolled
 	await credentialTotpSet({userTag, secret: 'SECRETBBBBBBBBB2'})//re-enroll (new phone)
 	ok((await credentialTotpGet({userTag})) == 'SECRETBBBBBBBBB2')//verify new secret
-	let rows = await queryGet3({table: 'credential_table', title1: 'user_tag', cell1: userTag, title2: 'type_text', cell2: 'Totp.', title3: 'event', cell3: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
 	ok(rows.length == 1)//only one active totp after re-enroll
 	await credentialTotpRemove({userTag})
 	ok((await credentialTotpGet({userTag})) == false)//now gone
@@ -698,7 +696,7 @@ async function browser_out({browserHash, userTag, hideSet, origin}) {//sign this
 			origin_text: origin,
 		}
 	})
-	await queryHideRows({table: 'browser_table', titleFind: 'user_tag', cellFind: userTag, hideSet})//hide all the rows about this user, including the one we just made, signing them out, everywhere
+	await queryHide('browser_table', {user_tag: userTag}, {hideSet})//hide all the rows about this user, including the one we just made, signing them out, everywhere
 }
 
 
@@ -976,14 +974,14 @@ CREATE INDEX code2 ON code_table (type_text, address0_text, row_tick DESC) WHERE
 `)
 
 async function code_get({codeTag}) {//get the row about a code
-	let rows = await queryGet({table: 'code_table', title: 'row_tag', cell: codeTag})
+	let rows = await queryGet('code_table', {row_tag: codeTag})
 	return rows.length ? rows[0] : false
 }
 async function code_get_browser({browserHash}) {//get all the rows about the given browser
-	return await queryGet({table: 'code_table', title: 'browser_hash', cell: browserHash})
+	return await queryGet('code_table', {browser_hash: browserHash})
 }
 async function code_get_address({address0}) {//get all the rows about the given address
-	return await queryGet({table: 'code_table', title: 'address0_text', cell: address0})
+	return await queryGet('code_table', {address0_text: address0})
 }
 
 async function code_set_lives({codeTag, lives}) {//set the number of lives, decrement on wrong guess or 0 to revoke
@@ -1224,7 +1222,7 @@ async function name_set({userTag, name0, name1, name2}) {
 //remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
 async function name_delete({userTag, hideSet}) {//hide reason code optional
 	checkTag(userTag);
-	await queryHideRows({table: 'name_table', titleFind: 'user_tag', cellFind: userTag, hideSet})
+	await queryHide('name_table', {user_tag: userTag}, {hideSet})
 }
 
 //                                        _   _        _     _      
@@ -1391,7 +1389,7 @@ export async function settingReadInt(name, defaultValue) {
 export async function settingRead(name, defaultValue) {
 	let defaultValueText = defaultValue+''
 	checkText(name); checkTextOrBlank(defaultValueText)
-	let rows = await queryGet({table: 'settings_table', title: 'setting_name_text', cell: name})
+	let rows = await queryGet('settings_table', {setting_name_text: name})
 	let row = rows[0]//unique index guarantees 0 or 1 visible rows per setting name
 	if (!row) {
 		row = {setting_name_text: name, setting_value_text: defaultValueText}
@@ -1454,7 +1452,7 @@ async function trail_count({hash, since}) {
 //get the rows for hash since the given tick time in the past
 async function trail_get({hash, since}) {
 	checkHash(hash); checkInt(since)
-	return await queryGet({table: 'trail_table', title: 'hash', cell: hash, since})
+	return await queryGet('trail_table', {hash})//ttd january: since is checked but not used
 }
 //make a new record of the given hash right now
 async function trail_add({now, hash}) {//optionally call Now() and pass it in, if you need it

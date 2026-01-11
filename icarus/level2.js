@@ -1537,48 +1537,13 @@ export async function queryTop({table, title, cell}) {
 	return data[0]//data is an array with one element, or empty if none found
 }
 
-//get all the visible rows with cell under title
-export async function queryGet({table, title, cell}) {
-	checkQueryTitle(table); checkQueryCell(title, cell)
+//get all the visible rows matching the given column values
+export async function queryGet(table, cells) {
+	checkQueryTitle(table); checkQueryRow(cells)
 	const {database} = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')
-		.eq('hide', 0)
-		.eq(title, cell)
-		.order('row_tick', {ascending: false})
-	)
-	if (error) toss('supabase', {error})
-	return data
-}
-//get all the visible rows matching two cells
-export async function queryGet2({table, title1, cell1, title2, cell2}) {
-	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2)
-	const {database} = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')
-		.eq('hide', 0)
-		.eq(title1, cell1)
-		.eq(title2, cell2)
-		.order('row_tick', {ascending: false})
-	)
-	if (error) toss('supabase', {error})
-	return data
-}
-//get all the visible rows matching three cells
-export async function queryGet3({table, title1, cell1, title2, cell2, title3, cell3}) {
-	checkQueryTitle(table); checkQueryCell(title1, cell1); checkQueryCell(title2, cell2); checkQueryCell(title3, cell3)
-	const {database} = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.select('*')
-		.eq('hide', 0)
-		.eq(title1, cell1)
-		.eq(title2, cell2)
-		.eq(title3, cell3)
-		.order('row_tick', {ascending: false})
-	)
+	let query = database.from(table).select('*').eq('hide', 0)//start our query
+	for (let [title, cell] of Object.entries(cells)) query = query.eq(title, cell)//build it up
+	let {data, error} = await query.order('row_tick', {ascending: false})//send it to supabase
 	if (error) toss('supabase', {error})
 	return data
 }
@@ -1598,24 +1563,14 @@ export async function queryAddRows({table, rows}) {
 	if (error) toss('supabase', {error})
 }
 
-//hide rows in table with cellFind under titleFind, changing hide from 0 to hideSet like 1
-export async function queryHideRows({table, titleFind, cellFind, hideSet}) {
-	if (!hideSet) hideSet = 1//make sure we never set hide to 0, and use the custom passed hideSet number code, or 1 the generic default
-	await queryUpdateCells({table, titleFind, cellFind, titleSet: 'hide', cellSet: hideSet})
-}
-//hide rows matching two cells
-export async function queryHideRows2({table, title1, cell1, title2, cell2, hideSet}) {
-	if (!hideSet) hideSet = 1
-	checkQueryCell(title1, cell1); checkQueryCell(title2, cell2)
+//hide visible rows matching the given column values, changing hide from 0 to hideSet (default 1)
+export async function queryHide(table, cells, options) {
+	let hideSet = options?.hideSet || 1
+	checkQueryTitle(table); checkQueryRow(cells)
 	const {database} = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.update({hide: hideSet})
-		.eq(title1, cell1)
-		.eq(title2, cell2)
-		.eq('hide', 0)
-		.select()
-	)
+	let query = database.from(table).update({hide: hideSet}).eq('hide', 0)
+	for (let [title, cell] of Object.entries(cells)) query = query.eq(title, cell)
+	let {data, error} = await query.select()
 	if (error) toss('supabase', {error})
 }
 grid(async () => {
@@ -1630,13 +1585,13 @@ grid(async () => {
 		{name_text: 'alice', hits: 20, some_hash: hash2},//matches only name
 		{name_text: 'bob', hits: 30, some_hash: hash1},//matches only hash
 	]})
-	await queryHideRows2({table: 'example_table', title1: 'name_text', cell1: 'alice', title2: 'some_hash', cell2: hash1})
+	await queryHide('example_table', {name_text: 'alice', some_hash: hash1})
 
-	let aliceRows = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})
+	let aliceRows = await queryGet('example_table', {name_text: 'alice'})
 	ok(aliceRows.length == 1)//only alice+hash2 visible
 	ok(aliceRows[0].some_hash == hash2)
 
-	let bobRows = await queryGet({table: 'example_table', title: 'name_text', cell: 'bob'})
+	let bobRows = await queryGet('example_table', {name_text: 'bob'})
 	ok(bobRows.length == 1)//bob untouched
 })
 
@@ -1966,12 +1921,12 @@ grid(async () => {//exercise query helper functions with example_table
 
 	let top = await queryTop({table: 'example_table', title: 'name_text', cell: 'alice'})//queryTop gets most recent
 	ok(top.hits == 20)//second alice row was added more recently
-	let all = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})//queryGet returns all matches
+	let all = await queryGet('example_table', {name_text: 'alice'})//queryGet returns all matches
 	ok(all.length == 2)
 
-	await queryHideRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice', hideSet: 1})//hide rows from visible queries
+	await queryHide('example_table', {name_text: 'alice'})//hide rows from visible queries
 	ok(await queryCountRows({table: 'example_table', titleFind: 'name_text', cellFind: 'alice'}) == 2)//still counted
-	let visible = await queryGet({table: 'example_table', title: 'name_text', cell: 'alice'})
+	let visible = await queryGet('example_table', {name_text: 'alice'})
 	ok(visible.length == 0)//but not visible
 })
 
