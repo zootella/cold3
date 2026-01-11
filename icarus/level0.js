@@ -37,13 +37,13 @@ Time.day = 24*Time.hour
 Time.week = 7*Time.day
 Time.year = Math.floor(365.25 * Time.day)
 Time.month = Math.floor((Time.year) / 12)
-Time.months = {
-	oneToJan: ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-	janToOne: {
-		'jan': 1, 'feb':  2, 'mar': 3, 'apr':  4, 'may':  5, 'jun':  6,
-		'jul': 7, 'aug':  8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12}
-}
-//ttd january, have zeroToJan and janToZero also, same case, assemble here programatically with .unshift('')
+Time.months = {janToZero: {}, janToOne: {}}
+Time.months.zeroToJan = 'Jan.Feb.Mar.Apr.May.Jun.Jul.Aug.Sep.Oct.Nov.Dec'.split('.')
+Time.months.oneToJan = ['', ...Time.months.zeroToJan]
+Time.months.zeroToJan.forEach((name, i) => {
+	Time.months.janToZero[name.toLowerCase()] = i
+	Time.months.janToOne[name.toLowerCase()] = i + 1
+})
 Time.minutesInSeconds = Time.minute / Time.second
 Time.hoursInSeconds = Time.hour / Time.second
 Time.daysInSeconds = Time.day / Time.second//cookies and other configurations use units of seconds, not milliseconds
@@ -3620,12 +3620,14 @@ test(() => {
 
 
 
-//ttd january, returned for a moment to the "reversible but readable UTC tick count" idea, and it's not too hard, and it's not too long
-function epochToText(t) {
-	checkInt(t)//makes sure t is a number that is a 0+ integer (claude, in this direction, input checking is easy! harder below!!)
+//reversible but readable UTC tick count, and it's only 20 characters, ttd january
+export function tickToText(t) { let s = _tickToText(t); let t2 = _textToTick(s); checkSame(t, t2); return s }
+export function textToTick(s) { let t = _textToTick(s); let s2 = _tickToText(t); checkSame(s, s2); return t }
+function _tickToText(t) {
+	checkInt(t)
 	let d = new Date(t)
 	let year = d.getUTCFullYear()
-	let month = Time.months.oneToJan[d.getUTCMonth() + 1].toLowerCase()
+	let month = Time.months.zeroToJan[d.getUTCMonth()].toLowerCase()
 	let day = String(d.getUTCDate()).padStart(2, '0')
 	let hour = String(d.getUTCHours()).padStart(2, '0')
 	let minute = String(d.getUTCMinutes()).padStart(2, '0')
@@ -3633,50 +3635,46 @@ function epochToText(t) {
 	let msIntoMinute = t - startOfMinute
 	return year + month + day + '.' + hour + minute + '.' + msIntoMinute
 }
-function textToEpoch(s) {
-	let [p1, p2, p3] = s.split('.')
-	checkText(p1); checkNumerals(p2, 4); checkNumerals(p3)
-	/*
-	hi claude, ok help me check the input carefully
-	from the checks above, if execution reaches here, we have these guarantees:
-	- all three parts exist
-	- p2 is exactly four numerals
-	- p3 is one or more numerals
-	but in the code below, as we split otu and process the individual fields, we need to additionally be really careful to notice bad input, and throw an exception if any part is in any way wrong, for instance, if:
-	the year (before the month) is not numerals
-	the year is <1970 or >9999 (we're not going to be year ten thousand compliant)
-	the month is not found in our array of valid month names "jan" through "dec"
-	the date (after the month) is not numerals
-	the hour is >23
-	the minute is >59
-	the millisecond is >59999
-	and any others you can think of along these lines that matter, claude!
-	ok so looking at the helper functions in this file which other format converters and encoders use to sanitize input tersely and safely, let's write this function so that nothing bad can get through
-	the right way to throw an Error if we do detect something not right is toss('data', {s})
-	*/
-	let year = Number(p1.slice(0, 4))
-	let month = Time.months.janToOne[p1.slice(4, 7)] - 1
-	let day = Number(p1.slice(7, 9))
-	let hour = Number(p2.slice(0, 2))
+function _textToTick(s) {
+	let [p1, p2, p3] = s.split('.')//split the three parts from s like "2022feb17.1234.56789"
+	if (!p1 || p1.length != 9 || !isNumerals(p2, 4)) toss('data', {s})
+	let y = textToInt(p1.slice(0, 4), 1970)//round-trip validates numerals; must be 1970+
+	let month = Time.months.janToZero[p1.slice(4, 7)]//lookup returns 0-11 or undefined if not "jan" through "dec"
+	let dayText = p1.slice(7, 9); if (!isNumerals(dayText, 2)) toss('data', {s})
+	let day = Number(dayText)//note that there can be leading zeroes
+	let hour = Number(p2.slice(0, 2))//p2 already validated as 4 numerals above
 	let minute = Number(p2.slice(2, 4))
-	let startOfMinute = Date.UTC(year, month, day, hour, minute)
-	return startOfMinute + Number(p3)
+	let millisecond = textToInt(p3)//round-trip validates numerals; this field has no leading zeros
+	if (month === undefined || day < 1 || day > 31 || hour > 23 || minute > 59 || millisecond > 59999) toss('data', {s})
+	return Date.UTC(y, month, day, hour, minute) + millisecond
 }
 test(() => {
 	function f(t, s) {
-		ok(epochToText(t) == s)
-		ok(textToEpoch(s) == t)
+		ok(_tickToText(t) == s)
+		ok(_textToTick(s) == t)
 	}
-	f(1640995200000, '2022jan01.0000.0')
-	f(1645070756789, '2022feb17.0405.56789')//13 -> 20 characters, so same as a Tag, which is fine
+	f(1645070756789, '2022feb17.0405.56789')//13 numerals that aren't readable, or 20 characters which are, length similar to Tag
 	f(1645101296789, '2022feb17.1234.56789')
 	f(1672531199999, '2022dec31.2359.59999')
-	f(1009843200000, '2002jan01.0000.0')
-	/*
-	ttd january, more to do here if you need this are
-	[]carefully check each part as you go text to number
-	[]write a little fuzz tester using random moments from 1970 onwards to confirm round trip reversability
-	*/
+
+	f(0,            '1970jan01.0000.0')
+	f(946684800000, '2000jan01.0000.0')
+
+	f(951836400000, '2000feb29.1500.0')//mid afternoon on leap day 2000
+	f(983458800000, '2001mar01.1500.0')//one year later, that's March 1st; worried about leap seconds? JavaScript Date ignores them (POSIX time), so no special handling needed
+})
+noop(() => {//fuzz test round trip with random moments from 1970 to 2100
+	const seconds = 4
+	let now = Now()
+	let cycles = 0
+	while (Now() < now + (seconds*Time.second)) {
+		let t = randomBetween(0, 100*Time.year)//a random moment in the 100 years starting 1970
+		let s = _tickToText(t)
+		let t2 = _textToTick(s)
+		ok(t == t2)
+		cycles++
+	}
+	log(`round trip fuzz tested ${commas(cycles)} cycles in ${seconds} seconds`)
 })
 
 

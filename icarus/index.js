@@ -239,7 +239,7 @@ helpful javascript functions with no module imports
 export {
 
 Time, Size, noop,
-Now, sayDate, sayTick,
+Now, sayDate, sayTick, tickToText, textToTick,
 test, ok, runTests,
 toss,
 log, addLogSink, logTo,
