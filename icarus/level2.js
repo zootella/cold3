@@ -1538,11 +1538,12 @@ export async function queryTop({table, title, cell}) {
 }
 
 //get all the visible rows matching the given column values
-export async function queryGet(table, cells) {
+export async function queryGet(table, cells, options) {
 	checkQueryTitle(table); checkQueryRow(cells)
 	const {database} = await getDatabase()
 	let query = database.from(table).select('*').eq('hide', 0)//start our query
 	for (let [title, cell] of Object.entries(cells)) query = query.eq(title, cell)//build it up
+	if (options?.since) { checkInt(options.since); query = query.gte('row_tick', options.since) }//optionally filter by time
 	let {data, error} = await query.order('row_tick', {ascending: false})//send it to supabase
 	if (error) toss('supabase', {error})
 	return data

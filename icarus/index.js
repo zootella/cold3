@@ -129,7 +129,7 @@ demonstrationSignUp,
 demonstrationSignIn,
 demonstrationSignOut,
 
-trailRecent, trailCount, trailGet, trailAdd,
+trailRecent, trailCount, trailGet, trailAdd, trailAddMany,
 
 credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,

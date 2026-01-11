@@ -1419,10 +1419,57 @@ export async function settingWrite(name, value) {
 //  \__|_|  \__,_|_|_|  \__\__,_|_.__/|_|\___|
 //                                            
 
-export async function trailRecent(message)         { return await trail_recent({hash: await hashText(message),                       }) }
-export async function trailCount(message, horizon) { return await trail_count({ hash: await hashText(message), since: Now() - horizon}) }
-export async function trailGet(message, horizon)   { return await trail_get({   hash: await hashText(message), since: Now() - horizon}) }
-export async function trailAdd(message)            {        await trail_add({   hash: await hashText(message), now:   Now()          }) }
+export async function trailRecent(message) {
+	checkText(message)
+	let hash = await hashText(message)
+	let row = await queryTop({table: 'trail_table', title: 'hash', cell: hash})
+	return row ? row.row_tick : 0
+}
+export async function trailCount(message, horizon) {
+	checkText(message); checkInt(horizon, 1)
+	let hash = await hashText(message)
+	return await queryCountSince({table: 'trail_table', title: 'hash', cell: hash, since: Now() - horizon})
+}
+export async function trailGet(message, horizon) {
+	checkText(message); checkInt(horizon, 1)
+	let hash = await hashText(message)
+	return await queryGet('trail_table', {hash}, {since: Now() - horizon})
+}
+export async function trailAdd(message) { return await trailAddMany([message]) }
+export async function trailAddMany(a) {//use like trailAddMany([message1, message2])
+	a.forEach(checkText)//call checkText on each message in a
+	let now = Now()
+	let rows = await Promise.all(a.map(async message => ({row_tick: now, hash: await hashText(message)})))
+	await queryAddRows({table: 'trail_table', rows})
+}
+grid(async () => {//trail: count, get, and recent all respect horizon
+	let message = 'Trail test', horizon = 20*Time.second
+	ok((await trailCount(message, horizon)) == 0)//none yet
+	ok((await trailGet(message, horizon)).length == 0)
+	ok((await trailRecent(message)) == 0)//not found returns 0
+
+	await trailAdd(message)
+	let first = await trailRecent(message)//tick of first add
+	ok((await trailCount(message, horizon)) == 1)//find one
+	ok((await trailGet(message, horizon)).length == 1)
+
+	ageNow(10*Time.second)
+	await trailAdd(message)//add a second, 10s after first
+	let second = await trailRecent(message)//tick of second add
+	ok(second > first)//second is more recent
+	ok((await trailCount(message, horizon)) == 2)//find both
+	ok((await trailGet(message, horizon)).length == 2)
+
+	ageNow(15*Time.second)//first one falls over horizon (now 25s old)
+	ok((await trailCount(message, horizon)) == 1)//only more recent remains
+	ok((await trailGet(message, horizon)).length == 1)
+	ok((await trailRecent(message)) == second)//recent still returns the second add
+})
+grid(async () => {
+	await trailAddMany(['1 of 2', '2 of 2'])//add two messages at once, they're hashed simultaenously and added in a single query
+	ok((await trailCount('1 of 2', Time.minute)) == 1)
+	ok((await trailCount('2 of 2', Time.minute)) == 1)
+})
 
 SQL(`
 -- a thing that may be happening recently, is it too late? too soon? too frequent?
@@ -1437,59 +1484,6 @@ CREATE TABLE trail_table (
 CREATE INDEX trail1 ON trail_table (hide,       row_tick DESC);  -- hide or delete old rows quickly
 CREATE INDEX trail2 ON trail_table (hide, hash, row_tick DESC);  -- get time sorted rows by hash
 `)
-
-//get the tick count of the most recent record about hash, 0 if none found
-async function trail_recent({hash}) {
-	checkHash(hash)
-	let row = await queryTop({table: 'trail_table', title: 'hash', cell: hash})
-	return row ? row.row_tick : 0
-}
-//count how many records we have for hash since the given tick time in the past
-async function trail_count({hash, since}) {
-	checkHash(hash); checkInt(since)
-	return await queryCountSince({table: 'trail_table', title: 'hash', cell: hash, since})
-}
-//get the rows for hash since the given tick time in the past
-async function trail_get({hash, since}) {
-	checkHash(hash); checkInt(since)
-	return await queryGet('trail_table', {hash})//ttd january: since is checked but not used
-}
-//make a new record of the given hash right now
-async function trail_add({now, hash}) {//optionally call Now() and pass it in, if you need it
-	await trail_add_many({now, hashes: [hash]})
-}
-async function trail_add_many({now, hashes}) {//an array of several hashes, all at the same time
-	if (!now) now = Now()
-	hashes.forEach(hash => checkHash(hash))
-	await queryAddRows({table: 'trail_table', rows: hashes.map(hash => ({row_tick: now, hash: hash}))})
-}
-grid(async () => {
-	let message = 'Trail horizon test'
-	let horizon = 20*Time.second
-	ok((await trailCount(message, horizon)) == 0)//none yet
-	await trailAdd(message)
-	ok((await trailCount(message, horizon)) == 1)//find one
-	ageNow(10*Time.second)
-	await trailAdd(message)//5s later, add a second
-	ok((await trailCount(message, horizon)) == 2)//find both
-	ageNow(15*Time.second)//wait until first one falls over horizon
-	ok((await trailCount(message, horizon)) == 1)//only more recent remains
-	ageNow(10*Time.second)
-	ok((await trailCount(message, horizon)) == 0)//both over horizon
-
-	message = 'Trail recent test'
-	await trailAdd(message)
-	ageNow(12*Time.second)
-	let recent = await trailRecent(message)//returns tick when message was most recently added
-	ok(recent + (12*Time.second) <= Now())//confirm this is at least 12 simulated seconds ago
-	ok((await trailRecent('Not found')) == 0)//not found returns 0, not -1, as nobody added anything to the trail table on new years eve 1970
-
-	message = 'Trail get test'
-	await trailAdd(message); ageNow(Time.second)
-	await trailAdd(message); ageNow(Time.second)
-	let rows = await trailGet(message, Time.minute)
-	ok(rows.length == 2)
-})
 
 //                        _        _     _      
 //  _   _ ___  ___ _ __  | |_ __ _| |__ | | ___ 
