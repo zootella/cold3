@@ -6,6 +6,10 @@ passwordStrength, passwordCycles, passwordHash,
 Data,
 } from 'icarus'
 
+/*
+hi claude, so now we'll leave this demo as-is, but looking at our plan, i think much of this functionality will get copied into the "sign up" flow within CredentialCorner, which is fine
+*/
+
 const credentialStore = useCredentialStore()
 
 //two name boxes: display (top) controls slug (below), but slug is independently editable

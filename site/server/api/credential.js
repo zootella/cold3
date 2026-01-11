@@ -2,8 +2,8 @@
 import {
 Tag,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
-credentialNameCheck, credentialNameSet,
-credentialPasswordSet,
+credentialNameCheck, credentialNameSet, credentialNameGet,
+credentialPasswordSet, credentialPasswordGet,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -15,7 +15,13 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	if (action == 'Get.') {
 		r.browserHash = browserHash
 		let browser = await credentialBrowserGet({browserHash})
-		if (browser) r.userTag = browser.userTag
+		if (browser) {
+			r.userTag = browser.userTag
+			let name = await credentialNameGet({userTag: browser.userTag})
+			if (name) r.name = name.v
+			let password = await credentialPasswordGet({userTag: browser.userTag})
+			if (password) r.passwordCycles = password.cycles
+		}
 
 	} else if (action == 'SignOut.') {
 		let browser = await credentialBrowserGet({browserHash})
