@@ -38,6 +38,21 @@ async function signUpAndSignIn({slug, display, hash, cycles}) {
 	return r
 }
 
+async function removeName() {
+	await fetchWorker('/api/credential', {body: {action: 'RemoveName.'}})
+	await refresh()
+}
+
+async function removePassword() {
+	await fetchWorker('/api/credential', {body: {action: 'RemovePassword.'}})
+	await refresh()
+}
+
+async function closeAccount() {
+	await fetchWorker('/api/credential', {body: {action: 'CloseAccount.'}})
+	await refresh()
+}
+
 return {
 	loaded, load,
 	browserHash,
@@ -47,6 +62,9 @@ return {
 	signOut,
 	checkName,
 	signUpAndSignIn,
+	removeName,
+	removePassword,
+	closeAccount,
 }
 
 })

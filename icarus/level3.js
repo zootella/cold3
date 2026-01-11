@@ -338,6 +338,19 @@ export async function credentialNameRemove({userTag}) {
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.'})
 }
 
+//                    _            _   _       _        _                                                   _
+//   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| |   ___| | ___  ___  ___    __ _  ___ ___ ___  _   _ _ __ | |_
+//  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | |  / __| |/ _ \/ __|/ _ \  / _` |/ __/ __/ _ \| | | | '_ \| __|
+// | (__| | |  __/ (_| |  __/ | | | |_| | (_| | | | (__| | (_) \__ \  __/ | (_| | (_| (_| (_) | |_| | | | | |_
+//  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \___|_|\___/|___/\___|  \__,_|\___\___\___/ \__,_|_| |_|\__|
+//
+
+//permanently close a user's account, hiding all their credentials
+export async function credentialCloseAccount({userTag}) {
+	checkTag(userTag)
+	await queryHide('credential_table', {user_tag: userTag})//hide all credential types at once
+}
+
 grid(async () => {//password: set, change, verify single active, remove
 	let {clear} = await getDatabase()
 	await clear('credential_table')
@@ -446,6 +459,63 @@ grid(async () => {//name: change frees old name for others (the Bob story)
 	ok(v3.ok && v3.f0 == 'bob')
 	ok((await credentialNameGet({userTag: user1})).v.f0 == 'super-bob')//both have correct names
 	ok((await credentialNameGet({userTag: user2})).v.f0 == 'bob')
+})
+grid(async () => {//sign-up creates three credentials, then user removes name and password
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+
+	//sign up: create user with name, password, and browser credentials
+	let userTag = Tag()
+	let browserHash = random32()
+	await credentialNameSet({userTag, raw1: 'New-User', raw2: 'New User'})
+	await credentialPasswordSet({userTag, hash: 'testhash', cycles: 42})
+	await credentialBrowserSet({userTag, browserHash})
+
+	//verify all three credentials exist
+	ok((await credentialNameGet({userTag})).v.f0 == 'new-user')
+	ok((await credentialPasswordGet({userTag})).cycles == 42)
+	ok((await credentialBrowserGet({browserHash})).userTag == userTag)
+
+	//user removes their name
+	await credentialNameRemove({userTag})
+	ok((await credentialNameGet({userTag})) == false)//name gone
+	ok((await credentialPasswordGet({userTag})).cycles == 42)//password still there
+	ok((await credentialBrowserGet({browserHash})).userTag == userTag)//still signed in
+
+	//user removes their password
+	await credentialPasswordRemove({userTag})
+	ok((await credentialNameGet({userTag})) == false)//name still gone
+	ok((await credentialPasswordGet({userTag})) == false)//password gone
+	ok((await credentialBrowserGet({browserHash})).userTag == userTag)//still signed in
+})
+grid(async () => {//close account: user signs up, closes account, can't sign back in
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+
+	//sign up: create user with name, password, and browser credentials
+	let userTag = Tag()
+	let browserHash = random32()
+	await credentialNameSet({userTag, raw1: 'Closing-User', raw2: 'Closing User'})
+	await credentialPasswordSet({userTag, hash: 'myhash', cycles: 50})
+	await credentialBrowserSet({userTag, browserHash})
+
+	//verify all three credentials exist
+	ok((await credentialNameGet({userTag})).v.f0 == 'closing-user')
+	ok((await credentialPasswordGet({userTag})).cycles == 50)
+	ok((await credentialBrowserGet({browserHash})).userTag == userTag)
+
+	//user closes their account
+	await credentialCloseAccount({userTag})
+
+	//all credentials gone
+	ok((await credentialNameGet({userTag})) == false)//name gone
+	ok((await credentialPasswordGet({userTag})) == false)//password gone
+	ok((await credentialBrowserGet({browserHash})) == false)//signed out
+
+	//name is now available for another user
+	let user2 = Tag()
+	let v = await credentialNameSet({userTag: user2, raw1: 'Closing-User', raw2: 'Closing User'})
+	ok(v.ok && v.f0 == 'closing-user')//user2 can take the freed name
 })
 
 SQL(`

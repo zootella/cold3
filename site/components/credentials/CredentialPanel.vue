@@ -62,7 +62,8 @@ ok so my question for you now Claude is what should we tackle first? what part o
 
 <p v-if="credentialStore.userTag">
 	user tag <code>{{credentialStore.userTag}}</code> signed in
-	<Button v-if="credentialStore.userTag" :click="credentialStore.signOut">Sign Out</Button>
+	<Button :click="credentialStore.signOut">Sign Out</Button>
+	<Button :click="credentialStore.closeAccount">Permanently Close Account</Button>
 </p>
 <p v-else>no user is signed in</p>
 
@@ -71,10 +72,12 @@ ok so my question for you now Claude is what should we tackle first? what part o
 	f0 <code>{{credentialStore.name.f0}}</code>,
 	f1 <code>{{credentialStore.name.f1}}</code>,
 	f2 <code>{{credentialStore.name.f2}}</code>
+	<Button :click="credentialStore.removeName">Remove Name</Button>
 </p>
 
 <p v-if="credentialStore.passwordCycles">
 	user has password protected by <code>{{credentialStore.passwordCycles}}</code> cycles
+	<Button :click="credentialStore.removePassword">Remove Password</Button>
 </p>
 
 </div>

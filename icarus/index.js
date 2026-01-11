@@ -135,6 +135,7 @@ credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameCheck, credentialNameSet, credentialNameRemove,
+credentialCloseAccount,
 credentialGet, credentialSet,
 
 } from './level3.js'

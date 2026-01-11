@@ -2,12 +2,13 @@
 import {
 Tag,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
-credentialNameCheck, credentialNameSet, credentialNameGet,
-credentialPasswordSet, credentialPasswordGet,
+credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
+credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
+credentialCloseAccount,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckName.', 'SignUpAndSignIn.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckName.', 'SignUpAndSignIn.', 'RemoveName.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let r = {}
@@ -46,6 +47,27 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		r.outcome = 'SignedUp.'
 		r.userTag = userTag
+
+	} else if (action == 'RemoveName.') {
+		let browser = await credentialBrowserGet({browserHash})
+		if (browser) {
+			await credentialNameRemove({userTag: browser.userTag})
+			r.removed = true
+		}
+
+	} else if (action == 'RemovePassword.') {
+		let browser = await credentialBrowserGet({browserHash})
+		if (browser) {
+			await credentialPasswordRemove({userTag: browser.userTag})
+			r.removed = true
+		}
+
+	} else if (action == 'CloseAccount.') {
+		let browser = await credentialBrowserGet({browserHash})
+		if (browser) {
+			await credentialCloseAccount({userTag: browser.userTag})
+			r.closed = true
+		}
 	}
 
 	return r
