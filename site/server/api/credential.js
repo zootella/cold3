@@ -8,7 +8,7 @@ credentialCloseAccount,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckName.', 'SignUpAndSignIn.', 'RemoveName.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'RemoveName.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let r = {}
@@ -31,16 +31,16 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			r.signedOut = true
 		}
 
-	} else if (action == 'CheckName.') {
-		let v = await credentialNameCheck({raw1: body.slug, raw2: body.display})
+	} else if (action == 'CheckNameTurnstile.') {
+		let v = await credentialNameCheck({raw1: body.raw1, raw2: body.raw2})
 		if (!v) { r.outcome = 'NameNotAvailable.'; return r }
 		r.outcome = 'NameAvailable.'
 		r.v = v
 
-	} else if (action == 'SignUpAndSignIn.') {
+	} else if (action == 'SignUpAndSignInTurnstile.') {
 		//create new user with three credentials
 		let userTag = Tag()
-		let v = await credentialNameSet({userTag, raw1: body.slug, raw2: body.display})
+		let v = await credentialNameSet({userTag, raw1: body.raw1, raw2: body.raw2})
 		if (!v) { r.outcome = 'NameNotAvailable.'; return r }
 		await credentialPasswordSet({userTag, hash: body.hash, cycles: body.cycles})
 		await credentialBrowserSet({userTag, browserHash})

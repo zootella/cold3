@@ -88,6 +88,11 @@ defineExpose({//exposes methods to parent via template ref; super useful and sta
 		}
 		return await fetchWorker(path, {body})
 	},
+	getTurnstileToken: async () => {//get turnstile token to pass to store methods that use fetchWorker directly
+		if (props.useTurnstile && useTurnstileHere()) {
+			return await pageStore.getTurnstileToken()
+		} else { return '' }
+	},
 })
 
 </script>

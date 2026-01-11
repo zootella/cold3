@@ -26,12 +26,12 @@ async function signOut() {
 	await refresh()
 }
 
-async function checkName({slug, display}) {
-	return await fetchWorker('/api/credential', {body: {action: 'CheckName.', slug, display}})
+async function checkName({raw1, raw2, turnstileToken}) {
+	return await fetchWorker('/api/credential', {body: {action: 'CheckNameTurnstile.', raw1, raw2, turnstileToken}})
 }
 
-async function signUpAndSignIn({slug, display, hash, cycles}) {
-	let r = await fetchWorker('/api/credential', {body: {action: 'SignUpAndSignIn.', slug, display, hash, cycles}})
+async function signUpAndSignIn({raw1, raw2, hash, cycles, turnstileToken}) {
+	let r = await fetchWorker('/api/credential', {body: {action: 'SignUpAndSignInTurnstile.', raw1, raw2, hash, cycles, turnstileToken}})
 	if (r.outcome == 'SignedUp.') {
 		await refresh()
 	}

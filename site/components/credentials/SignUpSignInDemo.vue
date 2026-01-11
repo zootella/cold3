@@ -12,34 +12,33 @@ hi claude, so now we'll leave this demo as-is, but looking at our plan, i think 
 
 const credentialStore = useCredentialStore()
 
-//two name boxes: display (top) controls slug (below), but slug is independently editable
-const refDisplayBox = ref('')
-const refSlugBox = ref('')
+//button refs for turnstile token access
+const refCheckButton = ref(null)
+const refSignUpButton = ref(null)
+
+//name validation refs following ValidateNameComponent pattern
+const refStatus = ref(false)//overall status
+const refName0 = ref('')//output for form 0, normalized to reserve
+const refName1 = ref(''); const refBox1 = ref('')//output text and input box for form 1, canonical for route
+const refName2 = ref(''); const refBox2 = ref('')//output text and input box for form 2, pretty for pages and cards
+
 const refPassword = ref('')
 const refOutput = ref('')
 
-//validated name forms for display
-const refStatus = ref(false)
-const refName0 = ref('')
-const refName1 = ref('')
-const refName2 = ref('')
-
-//display box on top controls slug box
-watch([refDisplayBox], () => {
-	let v = validateName(refDisplayBox.value, Limit.name)
+watch([refBox2], () => {//box 2 on top controls box 1
+	let v = validateName(refBox2.value, Limit.name)
 	refStatus.value = v.ok
 	if (v.f2ok) {
 		refName2.value = v.f2
-		refSlugBox.value = v.f1//auto-fill slug from display
+		refBox1.value = v.f1
 	} else {
 		refName0.value = ''
 		refName1.value = ''
 		refName2.value = ''
 	}
 })
-//slug box is also independently editable
-watch([refSlugBox], () => {
-	let v = validateName(refSlugBox.value, Limit.name)
+watch([refBox1], () => {//which is also independently editable
+	let v = validateName(refBox1.value, Limit.name)
 	refStatus.value = v.ok
 	if (v.ok) {
 		refName0.value = v.f0
@@ -52,9 +51,9 @@ watch([refSlugBox], () => {
 })
 
 const computedValid = computed(() => {
-	let vDisplay = validateName(refDisplayBox.value, Limit.name)
-	let vSlug = validateName(refSlugBox.value, Limit.name)
-	return vDisplay.ok && vSlug.ok
+	let v1 = validateName(refBox1.value, Limit.name)
+	let v2 = validateName(refBox2.value, Limit.name)
+	return v1.ok && v2.ok
 })
 
 const computedPasswordStrength = computed(() => {
@@ -67,7 +66,8 @@ const computedReady = computed(() => {
 })
 
 async function onCheckName() {
-	let r = await credentialStore.checkName({slug: refSlugBox.value, display: refDisplayBox.value})
+	let turnstileToken = await refCheckButton.value.getTurnstileToken()
+	let r = await credentialStore.checkName({raw1: refBox1.value, raw2: refBox2.value, turnstileToken})
 	if (r.outcome == 'NameAvailable.') {
 		refOutput.value = `"${r.v.f2}" is available! Your profile will be at /${r.v.f1}`
 	} else if (r.outcome == 'NameNotAvailable.') {
@@ -89,12 +89,13 @@ async function onSignUpAndSignIn() {
 	refOutput.value = 'Signing up...'
 
 	//call API to create user
-	let r = await credentialStore.signUpAndSignIn({slug: refSlugBox.value, display: refDisplayBox.value, hash, cycles})
+	let turnstileToken = await refSignUpButton.value.getTurnstileToken()
+	let r = await credentialStore.signUpAndSignIn({raw1: refBox1.value, raw2: refBox2.value, hash, cycles, turnstileToken})
 
 	if (r.outcome == 'SignedUp.') {
 		refOutput.value = `Signed up and signed in as ${r.userTag}`
-		refDisplayBox.value = ''
-		refSlugBox.value = ''
+		refBox1.value = ''
+		refBox2.value = ''
 		refPassword.value = ''
 		refName0.value = ''
 		refName1.value = ''
@@ -117,12 +118,14 @@ async function onSignUpAndSignIn() {
 <template v-else>
 
 <p>Choose your display name:</p>
-<input :maxlength="Limit.name" v-model="refDisplayBox" placeholder="Name for pages..." class="w-72" />
+<input :maxlength="Limit.name" v-model="refBox2" placeholder="Name for pages..." class="w-72" />
 <p v-if="refName2">On pages and cards you'll be <i>{{ refName2 }}</i></p>
 
 <p class="mt-2">Your profile link (you can edit this):</p>
-<input :maxlength="Limit.name" v-model="refSlugBox" placeholder="Name for links..." class="w-72" />{{' '}}
+<input :maxlength="Limit.name" v-model="refBox1" placeholder="Name for links..." class="w-72" />{{' '}}
 <Button
+	ref="refCheckButton"
+	:useTurnstile="true"
 	labeling="Checking..."
 	:click="onCheckName"
 	:state="computedValid ? 'ready' : 'ghost'"
@@ -136,6 +139,8 @@ async function onSignUpAndSignIn() {
 
 <p class="mt-2">
 <Button
+	ref="refSignUpButton"
+	:useTurnstile="true"
 	labeling="Signing up..."
 	:click="onSignUpAndSignIn"
 	:state="computedReady ? 'ready' : 'ghost'"
