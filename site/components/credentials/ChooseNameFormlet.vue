@@ -22,43 +22,33 @@ defineExpose({
 	valid: computedValid,
 })
 
-watch([refBox2], () => {//box 2 on top controls box 1...
-	refResponse.value = ''//if we previously checked a name was taken or available, clear that stale response
-
+watch([refBox2], () => { watch2() })//box 2 on top controls box 1
+watch([refBox1], () => { watch1() })//which is also independently editable
+function watch2() {
 	let v2 = validateName(refBox2.value, Limit.name)
-	if (v2.f2ok) {
-		refBox1.value = v2.f1
-		refName2.value = v2.f2
-	} else {
-		refBox1.value = ''
-		refName2.value = ''
-		refName1.value = ''
-	}
-})
-watch([refBox1], () => {//...which is also independently editable
-	refResponse.value = ''
 
-	let empty = refBox2.value == '' && refBox1.value == ''
+	if (v2.f2ok) { refBox1.value = v2.f1; refName2.value = v2.f2 }//valid, populate downstream
+	else { refBox1.value = ''; refName2.value = ''; refName1.value = '' }//invalid, blank downstream
+
+	watch1()//continue on below as though the context of the lower box also changed
+}
+function watch1() {
+	refResponse.value = ''//clear stale name is available or not response
+
+	let empty = refBox2.value == '' && refBox1.value == ''//true if both boxes are empty, not even a space
 	let v2 = validateName(refBox2.value, Limit.name)
 	let v1 = validateName(refBox1.value, Limit.name)
+	let a = [refBox2.value, refBox1.value, v2.f2, v2.f1, v1.f2, v1.f1]
+	let same = a.every(s => s == a[0])//true if validation didn't correct anything we should tell the user about
 
-	if (v1.ok) {
-		refName1.value = v1.f1
-	} else {
-		refName2.value = ''
-		refName1.value = ''
-	}
+	if (v1.ok) { refName1.value = v1.f1 }//valid, populate downstream
+	else { refName2.value = ''; refName1.value = '' }//invalid, blank downstream
 
-	if (empty) {//both boxes empty: no detail line
-		refLine.value = 0
-	} else if (!v2.ok || !v2.ok) {//not valid: message says so
-		refLine.value = 1
-	} else if (refBox2.value == refName2.value && refName2.value == refName1.value) {//all forms same: no detail line
-		refLine.value = 0
-	} else {//validation possible but with edits the user should know about: show detail line to tell them
-		refLine.value = 2
-	}
-})
+	if (empty) refLine.value = 0//both boxes empty: omit detail line
+	else if (!v2.ok || !v1.ok) refLine.value = 1//something not valid: say so
+	else if (same) refLine.value = 0//all forms same: omit detail line
+	else refLine.value = 2//validation possible but with edits the user should know about: show detail line to tell them
+}
 
 const refButton = ref(null)
 async function onButton() {
