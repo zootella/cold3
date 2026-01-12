@@ -4,6 +4,7 @@ import {
 validateName,
 } from 'icarus'
 const credentialStore = useCredentialStore()
+//ttd january, this formlet, designed to help a user choose a name at the start, has f2 display name drive f1 link name. as users commonly edit their display name to include current status information, you'll also want to make a much simpler editor field in credential panel that edits f2 without touching f1
 
 const refName2 = ref(''); const refBox2 = ref('')//output text and input box for form 2, pretty for pages and cards
 const refName1 = ref(''); const refBox1 = ref('')//output text and input box for form 1, canonical for route
