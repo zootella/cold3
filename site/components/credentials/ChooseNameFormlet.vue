@@ -24,10 +24,12 @@ const refName1 = ref(''); const refBox1 = ref('')//output text and input box for
 const refName2 = ref(''); const refBox2 = ref('')//output text and input box for form 2, pretty for pages and cards
 
 const refOutput = ref('')
+const refShowCustomize = ref(false)
 
 watch([refBox2], () => {//box 2 on top controls box 1
 	let v = validateName(refBox2.value, Limit.name)
 	refStatus.value = v.ok
+	refShowCustomize.value = false//collapse customize section when display name changes
 	if (v.f2ok) {
 		refName2.value = v.f2
 		refBox1.value = v.f1
@@ -69,6 +71,7 @@ function clear() {
 	refName1.value = ''
 	refName2.value = ''
 	refOutput.value = ''
+	refShowCustomize.value = false
 }
 
 defineExpose({
@@ -83,17 +86,22 @@ defineExpose({
 
 <!-- first part is about letting the user choose their name, and instant client-side validation -->
 
-<p>Choose your display name:</p>
+<p>Choose your user name:</p>
 <input :maxlength="Limit.name" v-model="refBox2" placeholder="Name for pages..." class="w-72" @keyup.enter="refCheckButton.click()" />
 
 <p v-if="refName2">On pages and cards you'll be <span class="bg-fuchsia-200 px-1">{{ refName2 }}</span></p>
-<p v-if="refName1">Your profile will be at <code>https://{{Key('domain, public')}}/{{ refName1 }}</code></p>
-<p v-if="refName0">We'll reserve <code>/{{ refName0 }}</code> for you, also.</p>
+<p v-if="refName1">Your profile will be at <code>https://{{Key('domain, public')}}/{{ refName1 }}</code>{{' '}}
+	<Button v-if="!refShowCustomize" :click="() => refShowCustomize = true" link>Customize Link</Button>
+</p>
 
-<p class="mt-2">Your profile link (you can edit this):</p>
-<input :maxlength="Limit.name" v-model="refBox1" placeholder="Name for links..." class="w-72" @keyup.enter="refCheckButton.click()" />
+<template v-if="refShowCustomize">
+	<p class="mt-2">Your profile link:</p>
+	<input :maxlength="Limit.name" v-model="refBox1" placeholder="Name for links..." class="w-72" @keyup.enter="refCheckButton.click()" />
+	<p v-if="refName0">We'll reserve <code>/{{ refName0 }}</code> for you, also.</p>
+</template>
 
-<p>{{refStatus ? '✅ Valid for a name' : '❌ Not valid for a name'}}</p>
+<p v-if="refStatus">✅ Valid for a name</p>
+<p v-else-if="refBox1 || refBox2">❌ Not valid for a name</p>
 
 <!-- second part is letting them check that name against the database, as valid doesn't mean available -->
 
