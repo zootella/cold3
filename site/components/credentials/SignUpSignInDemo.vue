@@ -50,7 +50,6 @@ async function onSignUpAndSignIn() {
 
 	if (r.outcome == 'SignedUp.') {
 		refOutput.value = `Signed up and signed in as ${r.userTag}`
-		refChooseName.value.clear()
 		refPassword.value = ''
 	} else if (r.outcome == 'NameNotAvailable.') {
 		refOutput.value = 'That name is not available, please choose another.'
