@@ -6,8 +6,6 @@
 <AuthenticateDemo />
 <TotpDemo />
 <HitComponent />
-<NameComponent />
-<ValidateNameComponent />
 <TotpDemo1 />
 <CodeRequestComponent />
 
