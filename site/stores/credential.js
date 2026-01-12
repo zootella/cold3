@@ -35,19 +35,19 @@ async function checkName({name1, name2, turnstileToken}) {
 }
 
 async function signUpAndSignIn({name1, name2, hash, cycles, turnstileToken}) {
-	let r = await fetchWorker('/api/credential', {body: {action: 'SignUpAndSignInTurnstile.', name1, name2, hash, cycles, turnstileToken}})
-	if (r.outcome == 'SignedUp.') {
+	let task = await fetchWorker('/api/credential', {body: {action: 'SignUpAndSignInTurnstile.', name1, name2, hash, cycles, turnstileToken}})
+	if (task.success) {
 		await refresh()
 	}
-	return r
+	return task
 }
 
 async function setName({name1, name2}) {
-	let r = await fetchWorker('/api/credential', {body: {action: 'SetName.', name1, name2}})
-	if (r.outcome == 'NameSet.') {
+	let task = await fetchWorker('/api/credential', {body: {action: 'SetName.', name1, name2}})
+	if (task.success) {
 		await refresh()
 	}
-	return r
+	return task
 }
 
 async function removeName() {

@@ -12,13 +12,13 @@ const refNameOutput = ref('')
 async function onSaveName() {
 	if (!refChooseName.value?.valid) return
 	refNameOutput.value = 'Saving...'
-	let r = await credentialStore.setName({name1: refChooseName.value.name1, name2: refChooseName.value.name2})
-	if (r.outcome == 'NameSet.') {
+	let task = await credentialStore.setName({name1: refChooseName.value.name1, name2: refChooseName.value.name2})
+	if (task.success) {
 		refNameOutput.value = 'Name updated!'
-	} else if (r.outcome == 'NameNotAvailable.') {
+	} else if (task.outcome == 'NameNotAvailable.') {
 		refNameOutput.value = 'That name is not available.'
 	} else {
-		refNameOutput.value = `Error: ${r.outcome}`
+		refNameOutput.value = `Error: ${task.outcome}`
 	}
 }
 

@@ -40,15 +40,15 @@ async function onSignUpAndSignIn() {
 
 	//call API to create user
 	let turnstileToken = await refSignUpButton.value.getTurnstileToken()
-	let r = await credentialStore.signUpAndSignIn({name1: refChooseName.value.name1, name2: refChooseName.value.name2, hash, cycles, turnstileToken})
+	let task = await credentialStore.signUpAndSignIn({name1: refChooseName.value.name1, name2: refChooseName.value.name2, hash, cycles, turnstileToken})
 
-	if (r.outcome == 'SignedUp.') {
-		refOutput.value = `Signed up and signed in as ${r.userTag}`
+	if (task.success) {
+		refOutput.value = `Signed up and signed in as ${task.userTag}`
 		refPassword.value = ''
-	} else if (r.outcome == 'NameNotAvailable.') {
+	} else if (task.outcome == 'NameNotAvailable.') {
 		refOutput.value = 'That name is not available, please choose another.'
 	} else {
-		refOutput.value = `Error: ${r.outcome}`
+		refOutput.value = `Error: ${task.outcome}`
 	}
 }
 
