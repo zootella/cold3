@@ -6,8 +6,20 @@ validateName,
 const credentialStore = useCredentialStore()
 //ttd january, this formlet, designed to help a user choose a name at the start, has f2 display name drive f1 link name. as users commonly edit their display name to include current status information, you'll also want to make a much simpler editor field in credential panel that edits f2 without touching f1; alternatively have a profile string which is status and name is always displayed name f2+status, to keep churn out of the credential table, actually. but match the expected UI exactly for users
 
-const refName2 = ref(''); const refBox2 = ref('')//output text and input box for form 2, pretty for pages and cards
-const refName1 = ref(''); const refBox1 = ref('')//output text and input box for form 1, canonical for route
+const props = defineProps({//let our parent start us out with current name information
+	name2: {type: String, default: ''},
+	name1: {type: String, default: ''},
+})
+const refBox2 = ref(props.name2)//boxes for the user to edit
+const refBox1 = ref(props.name1)
+const refName2 = ref('')//validated name forms
+const refName1 = ref('')
+onMounted(() => {//simulate user typing in box2, then box1, to validate given properties into name forms
+	watch2()//validates box2, sets refName2, overwrites box1 with derived, calls watch1
+	refBox1.value = props.name1//restore intended box1 value
+	watch1()//validates restored box1, sets refName1
+})
+
 const refResponse = ref('')//blank before checking, or a message about name available or taken
 const refExpanded = ref(false)//true once the user clicked to show both boxes
 const refLine = ref(0)//0 hide detail line; 1 say not valid; 2 show details about differing corrected forms
@@ -18,8 +30,8 @@ const computedValid = computed(() => {
 	return v2.ok && v1.ok
 })
 defineExpose({
-	raw2: computed(() => refBox2.value),
-	raw1: computed(() => refBox1.value),
+	name2: computed(() => refName2.value),
+	name1: computed(() => refName1.value),
 	valid: computedValid,
 })
 
@@ -54,7 +66,7 @@ function watch1() {
 const refButton = ref(null)
 async function onButton() {
 	let turnstileToken = await refButton.value.getTurnstileToken()
-	let available = await credentialStore.checkName({raw2: refBox2.value, raw1: refBox1.value, turnstileToken})
+	let available = await credentialStore.checkName({name2: refName2.value, name1: refName1.value, turnstileToken})
 	refResponse.value = available ? 'Yes, that name is available' : 'Sorry, that name is taken'
 }
 

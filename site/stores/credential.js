@@ -29,14 +29,22 @@ async function signOut() {
 	await refresh()
 }
 
-async function checkName({raw1, raw2, turnstileToken}) {
-	let r = await fetchWorker('/api/credential', {body: {action: 'CheckNameTurnstile.', raw1, raw2, turnstileToken}})
+async function checkName({name1, name2, turnstileToken}) {
+	let r = await fetchWorker('/api/credential', {body: {action: 'CheckNameTurnstile.', name1, name2, turnstileToken}})
 	return r.nameIsAvailable
 }
 
-async function signUpAndSignIn({raw1, raw2, hash, cycles, turnstileToken}) {
-	let r = await fetchWorker('/api/credential', {body: {action: 'SignUpAndSignInTurnstile.', raw1, raw2, hash, cycles, turnstileToken}})
+async function signUpAndSignIn({name1, name2, hash, cycles, turnstileToken}) {
+	let r = await fetchWorker('/api/credential', {body: {action: 'SignUpAndSignInTurnstile.', name1, name2, hash, cycles, turnstileToken}})
 	if (r.outcome == 'SignedUp.') {
+		await refresh()
+	}
+	return r
+}
+
+async function setName({name1, name2}) {
+	let r = await fetchWorker('/api/credential', {body: {action: 'SetName.', name1, name2}})
+	if (r.outcome == 'NameSet.') {
 		await refresh()
 	}
 	return r
@@ -66,6 +74,7 @@ return {
 	signOut,
 	checkName,
 	signUpAndSignIn,
+	setName,
 	removeName,
 	removePassword,
 	closeAccount,

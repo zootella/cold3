@@ -1,10 +1,4 @@
 <script setup>
-/*
-hi claude, our current work involves this component: SignUpSignInDemo
-it's recent and we worked on it together
-as we've gotten name choosing functionality and safety into ChooseNameFormlet, things here are shorter and simpler
-eventually, we'll deprecate and delete this component, but it was absolutely necessary to complete smoke tests that create a user with starting credentials, testing code flows full stack as we code this one small testable step at a time!
-*/
 
 import {
 passwordStrength, passwordCycles, passwordHash,
@@ -46,7 +40,7 @@ async function onSignUpAndSignIn() {
 
 	//call API to create user
 	let turnstileToken = await refSignUpButton.value.getTurnstileToken()
-	let r = await credentialStore.signUpAndSignIn({raw1: refChooseName.value.raw1, raw2: refChooseName.value.raw2, hash, cycles, turnstileToken})
+	let r = await credentialStore.signUpAndSignIn({name1: refChooseName.value.name1, name2: refChooseName.value.name2, hash, cycles, turnstileToken})
 
 	if (r.outcome == 'SignedUp.') {
 		refOutput.value = `Signed up and signed in as ${r.userTag}`

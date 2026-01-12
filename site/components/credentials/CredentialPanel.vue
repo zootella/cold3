@@ -6,6 +6,22 @@ import {
 const credentialStore = useCredentialStore()
 await credentialStore.load()//runs on server render, then no-op on client due to loaded ref
 
+const refChooseName = ref(null)
+const refNameOutput = ref('')
+
+async function onSaveName() {
+	if (!refChooseName.value?.valid) return
+	refNameOutput.value = 'Saving...'
+	let r = await credentialStore.setName({name1: refChooseName.value.name1, name2: refChooseName.value.name2})
+	if (r.outcome == 'NameSet.') {
+		refNameOutput.value = 'Name updated!'
+	} else if (r.outcome == 'NameNotAvailable.') {
+		refNameOutput.value = 'That name is not available.'
+	} else {
+		refNameOutput.value = `Error: ${r.outcome}`
+	}
+}
+
 /*
 this is the "credential panel" component
 a signed in user can navigate to their account dashboard to see and control information about their account
@@ -67,13 +83,20 @@ ok so my question for you now Claude is what should we tackle first? what part o
 </p>
 <p v-else>no user is signed in</p>
 
-<p v-if="credentialStore.name">
-	user has name
-	f0 <code>{{credentialStore.name.f0}}</code>,
-	f1 <code>{{credentialStore.name.f1}}</code>,
-	f2 <code>{{credentialStore.name.f2}}</code>
-	<Button :click="credentialStore.removeName">Remove Name</Button>
-</p>
+<div v-if="credentialStore.name">
+	<p>
+		user has name
+		f0 <code>{{credentialStore.name.f0}}</code>,
+		f1 <code>{{credentialStore.name.f1}}</code>,
+		f2 <code>{{credentialStore.name.f2}}</code>
+		<Button :click="credentialStore.removeName">Remove Name</Button>
+	</p>
+	<ChooseNameFormlet ref="refChooseName" :name2="credentialStore.name.f2" :name1="credentialStore.name.f1" />
+	<p>
+		<Button :click="onSaveName" :state="refChooseName?.valid ? 'ready' : 'ghost'">Save Name</Button>
+		{{ refNameOutput }}
+	</p>
+</div>
 
 <p v-if="credentialStore.passwordCycles">
 	user has password protected by <code>{{credentialStore.passwordCycles}}</code> cycles
