@@ -55,6 +55,14 @@ async function removeName() {
 	await refresh()
 }
 
+async function setPassword({currentHash, newHash, newCycles}) {
+	let task = await fetchWorker('/api/credential', {body: {action: 'SetPassword.', currentHash, newHash, newCycles}})
+	if (task.success) {
+		await refresh()
+	}
+	return task
+}
+
 async function removePassword() {
 	await fetchWorker('/api/credential', {body: {action: 'RemovePassword.'}})
 	await refresh()
@@ -76,6 +84,7 @@ return {
 	signUpAndSignIn,
 	setName,
 	removeName,
+	setPassword,
 	removePassword,
 	closeAccount,
 }

@@ -10,6 +10,7 @@ const refEditing = ref('')//'' | 'account' | 'name' | 'password'
 function onCancel() {
 	refEditing.value = ''
 	refNameOutput.value = ''
+	refPasswordOutput.value = ''
 }
 
 //account
@@ -49,10 +50,26 @@ async function onSaveName() {
 }
 
 //password
-function onEditPassword() { refEditing.value = 'password' }
+const refPasswordOutput = ref('')
+function onEditPassword() {
+	refEditing.value = 'password'
+	refPasswordOutput.value = ''
+}
 async function onRemovePassword() {
 	await credentialStore.removePassword()
 	refEditing.value = ''
+}
+async function onPasswordDone({currentHash, newHash, newCycles}) {
+	refPasswordOutput.value = 'Saving...'
+	let task = await credentialStore.setPassword({currentHash, newHash, newCycles})
+	if (task.success) {
+		refPasswordOutput.value = 'Password updated!'
+		refEditing.value = ''
+	} else if (task.outcome == 'WrongPassword.') {
+		refPasswordOutput.value = 'Current password is incorrect.'
+	} else {
+		refPasswordOutput.value = `Error: ${task.outcome}`
+	}
 }
 
 </script>
@@ -99,10 +116,29 @@ async function onRemovePassword() {
 		user has password protected by <code>{{credentialStore.passwordCycles}}</code> cycles
 		<Button v-show="refEditing !== 'password'" link :click="onEditPassword">Edit</Button>
 	</p>
-	<p v-if="refEditing === 'password'" class="my-space">
-		<Button :click="onRemovePassword">Remove Password</Button>
-		<Button :click="onCancel">Cancel</Button>
+	<template v-if="refEditing === 'password'">
+		<SetPasswordFormlet :cycles="credentialStore.passwordCycles" @done="onPasswordDone">
+			<template #actions>
+				<Button :click="onRemovePassword">Remove Password</Button>
+				<Button :click="onCancel">Cancel</Button>
+				{{ refPasswordOutput }}
+			</template>
+		</SetPasswordFormlet>
+	</template>
+</div>
+<div v-if="credentialStore.userTag && !credentialStore.passwordCycles">
+	<p class="my-space">
+		user has no password
+		<Button v-show="refEditing !== 'password'" link :click="onEditPassword">Add Password</Button>
 	</p>
+	<template v-if="refEditing === 'password'">
+		<SetPasswordFormlet :cycles="0" @done="onPasswordDone">
+			<template #actions>
+				<Button :click="onCancel">Cancel</Button>
+				{{ refPasswordOutput }}
+			</template>
+		</SetPasswordFormlet>
+	</template>
 </div>
 
 </div>

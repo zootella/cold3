@@ -1,5 +1,6 @@
 
 import {
+hasTextSame,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
@@ -7,7 +8,7 @@ credentialCloseAccount,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'SetName.', 'RemoveName.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let task = Task({name: 'credential api'})
@@ -46,6 +47,16 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		} else if (action == 'RemoveName.') {
 			await credentialNameRemove({userTag: user.userTag})
+
+		} else if (action == 'SetPassword.') {
+			//if user has a password, verify current password before allowing change
+			let existing = await credentialPasswordGet({userTag: user.userTag})
+			if (existing) {
+				if (!body.currentHash || !hasTextSame(body.currentHash, existing.hash)) {
+					task.finish({success: false, outcome: 'WrongPassword.'}); return task
+				}
+			}
+			await credentialPasswordSet({userTag: user.userTag, hash: body.newHash, cycles: body.newCycles})
 
 		} else if (action == 'RemovePassword.') {
 			await credentialPasswordRemove({userTag: user.userTag})
