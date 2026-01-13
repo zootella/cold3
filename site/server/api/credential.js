@@ -1,6 +1,7 @@
 
 import {
 hasTextSame,
+validateName,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
@@ -8,7 +9,7 @@ credentialCloseAccount,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let task = Task({name: 'credential api'})
@@ -36,6 +37,27 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		await credentialPasswordSet({userTag, hash: body.hash, cycles: body.cycles})
 		await credentialBrowserSet({userTag, browserHash})
 		task.userTag = userTag
+
+	} else if (action == 'GetCyclesTurnstile.') {
+		let v = validateName(body.userIdentifier, Limit.name)
+		if (!v.ok) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		let nameRecord = await credentialNameGet({f0: v.f0})
+		if (!nameRecord) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		let password = await credentialPasswordGet({userTag: nameRecord.userTag})
+		if (!password) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		task.cycles = password.cycles
+
+	} else if (action == 'SignIn.') {
+		let v = validateName(body.userIdentifier, Limit.name)
+		if (!v.ok) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		let nameRecord = await credentialNameGet({f0: v.f0})
+		if (!nameRecord) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		let password = await credentialPasswordGet({userTag: nameRecord.userTag})
+		if (!password || !hasTextSame(body.hash, password.hash)) {
+			task.finish({success: false, outcome: 'InvalidCredentials.'}); return task
+		}
+		await credentialBrowserSet({userTag: nameRecord.userTag, browserHash})
+		task.userTag = nameRecord.userTag
 
 	} else {//remaining actions all require that there's a user signed into the requesting browser
 		let user = await credentialBrowserGet({browserHash})

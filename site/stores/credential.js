@@ -9,6 +9,11 @@ const userTag = ref('')//the signed-in user, or empty if not signed in
 const name = ref(null)//the user's name {f0, f1, f2}, or null if not signed in or no name
 const passwordCycles = ref(0)//the user's password hash cycles, or 0 if not signed in or no password
 
+const userDisplayName = computed(() => {//best available display name for UI
+	if (name.value?.f2) return name.value.f2
+	return userTag.value//fallback to tag if no name set
+})
+
 async function load() { if (loaded.value) return; loaded.value = true
 	await refresh()
 	/*
@@ -36,6 +41,19 @@ async function checkName({name1, name2, turnstileToken}) {
 
 async function signUpAndSignIn({name1, name2, hash, cycles, turnstileToken}) {
 	let task = await fetchWorker('/api/credential', {body: {action: 'SignUpAndSignInTurnstile.', name1, name2, hash, cycles, turnstileToken}})
+	if (task.success) {
+		await refresh()
+	}
+	return task
+}
+
+async function getCycles({userIdentifier, turnstileToken}) {
+	let task = await fetchWorker('/api/credential', {body: {action: 'GetCyclesTurnstile.', userIdentifier, turnstileToken}})
+	return task
+}
+
+async function signIn({userIdentifier, hash}) {
+	let task = await fetchWorker('/api/credential', {body: {action: 'SignIn.', userIdentifier, hash}})
 	if (task.success) {
 		await refresh()
 	}
@@ -78,10 +96,13 @@ return {
 	browserHash,
 	userTag,
 	name,
+	userDisplayName,
 	passwordCycles,
 	signOut,
 	checkName,
 	signUpAndSignIn,
+	getCycles,
+	signIn,
 	setName,
 	removeName,
 	setPassword,

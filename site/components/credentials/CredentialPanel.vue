@@ -110,6 +110,20 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 		</p>
 	</template>
 </div>
+<div v-if="credentialStore.userTag && !credentialStore.name">
+	<p class="my-space">
+		user has no name
+		<Button v-show="refEditing !== 'name'" link :click="onEditName">Add Name</Button>
+	</p>
+	<template v-if="refEditing === 'name'">
+		<ChooseNameFormlet ref="refChooseName" />
+		<p class="my-space">
+			<Button :click="onSaveName" :state="refChooseName?.valid ? 'ready' : 'ghost'">Set Name</Button>
+			<Button :click="onCancel">Cancel</Button>
+			{{ refNameOutput }}
+		</p>
+	</template>
+</div>
 
 <div v-if="credentialStore.userTag && credentialStore.passwordCycles">
 	<p class="my-space">
