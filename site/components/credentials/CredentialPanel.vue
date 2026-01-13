@@ -1,4 +1,14 @@
 <script setup>
+/*
+CredentialPanel.vue - credential management for signed-in users
+
+Shows: account controls (sign out, close account), name editor, password editor
+Modes: refEditing enum ('' | 'account' | 'name' | 'password') for mutually exclusive editing
+       each section has Edit link that expands controls, Cancel collapses back
+Parent: just render <CredentialPanel />, no props needed; assumes user is signed in
+Server contact: loads credentialStore, calls store methods for sign out, name changes, password changes
+Nested: uses ChooseNameForm for name editing, SetPasswordForm for password editing
+*/
 
 import {
 } from 'icarus'
@@ -101,7 +111,7 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 		<Button v-show="refEditing !== 'name'" link :click="onEditName">Edit</Button>
 	</p>
 	<template v-if="refEditing === 'name'">
-		<ChooseNameFormlet ref="refChooseName" :name2="credentialStore.name.f2" :name1="credentialStore.name.f1" />
+		<ChooseNameForm ref="refChooseName" :name2="credentialStore.name.f2" :name1="credentialStore.name.f1" />
 		<p class="my-space">
 			<Button :click="onSaveName" :state="refChooseName?.valid ? 'ready' : 'ghost'">Change Name</Button>
 			<Button :click="onRemoveName">Remove Name</Button>
@@ -116,7 +126,7 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 		<Button v-show="refEditing !== 'name'" link :click="onEditName">Add Name</Button>
 	</p>
 	<template v-if="refEditing === 'name'">
-		<ChooseNameFormlet ref="refChooseName" />
+		<ChooseNameForm ref="refChooseName" />
 		<p class="my-space">
 			<Button :click="onSaveName" :state="refChooseName?.valid ? 'ready' : 'ghost'">Set Name</Button>
 			<Button :click="onCancel">Cancel</Button>
@@ -131,13 +141,13 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 		<Button v-show="refEditing !== 'password'" link :click="onEditPassword">Edit</Button>
 	</p>
 	<template v-if="refEditing === 'password'">
-		<SetPasswordFormlet :cycles="credentialStore.passwordCycles" @done="onPasswordDone">
+		<SetPasswordForm :cycles="credentialStore.passwordCycles" @done="onPasswordDone">
 			<template #actions>
 				<Button :click="onRemovePassword">Remove Password</Button>
 				<Button :click="onCancel">Cancel</Button>
 				{{ refPasswordOutput }}
 			</template>
-		</SetPasswordFormlet>
+		</SetPasswordForm>
 	</template>
 </div>
 <div v-if="credentialStore.userTag && !credentialStore.passwordCycles">
@@ -146,12 +156,12 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 		<Button v-show="refEditing !== 'password'" link :click="onEditPassword">Add Password</Button>
 	</p>
 	<template v-if="refEditing === 'password'">
-		<SetPasswordFormlet :cycles="0" @done="onPasswordDone">
+		<SetPasswordForm :cycles="0" @done="onPasswordDone">
 			<template #actions>
 				<Button :click="onCancel">Cancel</Button>
 				{{ refPasswordOutput }}
 			</template>
-		</SetPasswordFormlet>
+		</SetPasswordForm>
 	</template>
 </div>
 

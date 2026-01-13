@@ -1,19 +1,16 @@
 <script setup>
+/*
+CredentialChallenge.vue - full page sign-in gate (STUB - not yet implemented)
+
+Intended: full page overlay requiring user to sign up or sign in before proceeding
+Will show: SignUpOrSignInForm or similar flow, blocking access to protected content
+Parent: renders this when authentication is required; component disappears after successful sign in
+Server contact: will use credentialStore via nested formlets
+Status: stub only, pending implementation
+*/
 
 import {
 } from 'icarus'
-
-onMounted(async () => {
-})
-
-/*
-this is the "credential challenge" component
-the site will show it full page, requiring the user to sign in
-so for our start of user name and password, it'll have the flow that includes sign up or sign in
-sign up will involve choosing a name that's available
-and settign a password, entering it twice
-once the user has completed the challenge this component performs (by signing up or signing in) this component will go away
-*/
 
 </script>
 <template>

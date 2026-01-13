@@ -1,10 +1,21 @@
 <script setup>
+/*
+ChooseNameForm.vue - name selection with f1/f2 validation and availability check
+
+Shows: display name input (f2), optionally expandable link name input (f1), validation feedback, Check if Available button
+Modes: collapsed (f2 drives f1 automatically) or expanded (both editable independently)
+Props: name2, name1 (strings) - optional initial values for editing existing name
+Exposes: valid (computed), name1 (computed), name2 (computed) - parent reads these for submission
+Parent usage: <ChooseNameForm ref="ref" />, then check ref.valid and read ref.name1/name2
+Server contact: Check if Available button calls credentialStore.checkName (turnstile protected)
+Validation: uses validateName to normalize input; shows "not valid" or corrected forms as feedback
+*/
+//ttd january, this formlet, designed to help a user choose a name at the start, has f2 display name drive f1 link name. as users commonly edit their display name to include current status information, you'll also want to make a much simpler editor field in credential panel that edits f2 without touching f1; alternatively have a profile string which is status and name is always displayed name f2+status, to keep churn out of the credential table, actually. but match the expected UI exactly for users
 
 import {
 validateName,
 } from 'icarus'
 const credentialStore = useCredentialStore()
-//ttd january, this formlet, designed to help a user choose a name at the start, has f2 display name drive f1 link name. as users commonly edit their display name to include current status information, you'll also want to make a much simpler editor field in credential panel that edits f2 without touching f1; alternatively have a profile string which is status and name is always displayed name f2+status, to keep churn out of the credential table, actually. but match the expected UI exactly for users
 
 const props = defineProps({//let our parent start us out with current name information
 	name2: {type: String, default: ''},

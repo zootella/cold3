@@ -1,4 +1,12 @@
 <script setup>
+/*
+SignUpSignInDemo.vue - TEMPORARY demo component for smoke testing (TO BE DELETED)
+
+Shows: combined sign up form with name and single password field
+Purpose: proof of concept to test credential APIs before real components were built
+Status: deprecated; use SignUpForm and SignInForm instead
+Delete: once SignUpOrSignInForm flow is fully validated, this file can be removed
+*/
 
 import {
 passwordStrength, passwordCycles, passwordHash,
@@ -62,7 +70,7 @@ async function onSignUpAndSignIn() {
 </template>
 <template v-else>
 
-<ChooseNameFormlet ref="refChooseName" />
+<ChooseNameForm ref="refChooseName" />
 
 <p class="mt-2">Choose your password:</p>
 <PasswordBox v-model="refPassword" placeholder="Password..." class="w-72" />

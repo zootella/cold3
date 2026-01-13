@@ -1,16 +1,23 @@
 <script setup>
+/*
+CredentialCorner.vue - compact credential status for site header/corner
+
+Shows: user's display name when signed in, or SignUpOrSignInForm controls when not
+Modes: signed-in (display only) | signed-out (interactive)
+Parent: just render <CredentialCorner />, no props needed
+Server contact: loads credentialStore on mount, which fetches current session state
+End state: when user signs in/up via nested components, store updates and display changes reactively
+*/
 
 import {
 } from 'icarus'
-/*
-this is the "credential corner" component
-it will occupy a small spot in the top bar of the site, all the time, on the right
-it's where the user can see their name if signed in
-or an anonymous person can reach controls to sign in, or sign up
-*/
 
 const credentialStore = useCredentialStore()
 await credentialStore.load()
+
+async function onSignOut() {
+	await credentialStore.signOut()
+}
 
 </script>
 <template>
@@ -18,11 +25,18 @@ await credentialStore.load()
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>CredentialCorner</i></p>
 
 <template v-if="credentialStore.userTag">
-	<p>Signed in as <code>{{ credentialStore.userDisplayName }}</code></p>
+	<p class="my-space">Signed in as <code>{{ credentialStore.userDisplayName }}</code> <Button link :click="onSignOut">Sign Out</Button></p>
 </template>
 <template v-else>
-	<SignInFormlet />
+	<SignUpOrSignInForm />
 </template>
 
 </div>
 </template>
+<style scoped>
+
+.my-space {
+	@apply flex flex-wrap items-baseline gap-2;
+}
+
+</style>

@@ -1,4 +1,15 @@
 <script setup>
+/*
+SignInForm.vue - sign in form for returning users
+
+Shows: username input, password input (PasswordBox), Sign In button
+Modes: single mode; button is ghost until both fields valid, then ready
+Parent: just render <SignInForm />, no props needed
+Server contact: on submit, calls getCycles (turnstile protected) then signIn
+       two API calls hidden behind one button; user sees single "Signing in..." flow
+End state: on success, credentialStore refreshes and parent can react; shows error message on failure
+Validation: uses validateName to check userIdentifier resolves to valid f0
+*/
 
 import {
 validateName,
