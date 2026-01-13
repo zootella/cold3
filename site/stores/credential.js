@@ -20,7 +20,7 @@ async function refresh() {//fetch current credential snapshot from server, updat
 	let r = await fetchWorker('/api/credential', {body: {action: 'Get.'}})
 	browserHash.value = r.browserHash
 	userTag.value = r.userTag || ''
-	name.value = r.name || null
+	name.value = r.userName || null
 	passwordCycles.value = r.passwordCycles || 0
 }
 

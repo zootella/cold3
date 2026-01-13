@@ -18,7 +18,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (user) {
 			task.userTag = user.userTag
 			let name = await credentialNameGet({userTag: user.userTag})
-			if (name) task.name = name.v
+			if (name) task.userName = name.v
 			let password = await credentialPasswordGet({userTag: user.userTag})
 			if (password) task.passwordCycles = password.cycles
 		}
