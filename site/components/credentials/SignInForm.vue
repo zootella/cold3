@@ -5,7 +5,7 @@ SignInForm.vue - sign in form for returning users
 Shows: username input, password input (PasswordBox), Sign In button
 Modes: single mode; button is ghost until both fields valid, then ready
 Parent: just render <SignInForm />, no props needed
-Server contact: on submit, calls getCycles (turnstile protected) then signIn
+Server contact: on submit, calls getPasswordCycles (turnstile protected) then signIn
        two API calls hidden behind one button; user sees single "Signing in..." flow
 End state: on success, credentialStore refreshes and parent can react; shows error message on failure
 Validation: uses validateName to check userIdentifier resolves to valid f0
@@ -36,7 +36,7 @@ async function onSignIn() {
 	let turnstileToken = await refButton.value.getTurnstileToken()
 
 	//get cycles for this user's password
-	let cyclesTask = await credentialStore.getCycles({userIdentifier: refUserIdentifier.value, turnstileToken})
+	let cyclesTask = await credentialStore.getPasswordCycles({userIdentifier: refUserIdentifier.value, turnstileToken})
 	if (!cyclesTask.success) {
 		refOutput.value = 'Incorrect username or password'
 		return
