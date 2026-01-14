@@ -12,13 +12,12 @@ const pageDuration = ref(-1)//how long it took for the user from the click here 
 const serverDuration = ref(-1)//within that, how long the server took to get together starting data for the page
 
 //objects and arrays from the database
-const user = ref({})//information about the user, if any, signed into this browser
+//previously, const user = ref({})//information about the user, if any, signed into this browser; moved to credentialStore, ttd january
 const codes = ref([])//codes this browser could enter, empty array before check or if none
 
 const loaded = ref(false)//prevent unnecessary reload on client after rendered and bridged from server
 async function load() { if (loaded.value) return; loaded.value = true//runs on the server first, then a no-op on the client
 	let r = await fetchWorker('/api/load')
-	user.value = r.user
 	codes.value = r.codes
 	serverDuration.value = r.duration//save the duration measured by the server (well, in SSR this is the server, too, but still)
 }
@@ -44,7 +43,7 @@ return {
 	loaded, load, mounted,//return loaded: server call sets true, true value goes over Nuxt Bridge, client call to .load() is a no-op
 	serverDuration, pageDuration,
 
-	user, codes,
+	codes,
 }
 
 })

@@ -1,6 +1,6 @@
 //./server/api/totp.js
 import {
-browserToUser,
+credentialBrowserGet, credentialNameGet,
 trailRecent, trailCount, trailGet, trailAdd,
 checkNumerals, Data, isExpired,
 totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
@@ -13,21 +13,22 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door, body, action, browserHash}) {
 
 	//collect information from the database
-	let user, userTag, secret
-	user = await browserToUser({browserHash})//what user is signed in at the browser talking to us
-	if (user && user.userTag) { userTag = user.userTag; checkTag(userTag) }
+	let user, userTag, userName, secret
+	user = await credentialBrowserGet({browserHash})//what user is signed in at the browser talking to us
+	if (user) { userTag = user.userTag; checkTag(userTag) }
+	if (userTag) userName = await credentialNameGet({userTag})//get the user's name for TOTP label
 	if (userTag) secret = await credentialTotpGet({userTag})//and does that user have totp
 	if (secret) checkTotpSecret(secret)
 
 	//status check on component load
 	if (action == 'Status.') {
-		if (!user || user.level < 2) return {outcome: 'StatusNoUser.'}
+		if (!user) return {outcome: 'StatusNoUser.'}
 		if (secret) return {outcome: 'StatusEnrolled.'}
 		return {outcome: 'StatusNotEnrolled.'}
 	}
 
 	//make sure there's a user signed in (first factor) to the browser that posted at us
-	if (user.level < 2) return {outcome: 'BadUser.'}
+	if (!user) return {outcome: 'BadUser.'}
 	checkTag(userTag)
 
 	if (action == 'Enroll1.' || action == 'Enroll2.') { if (secret) return {outcome: 'BadAlreadyEnrolled.'} }
@@ -40,7 +41,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	if (action == 'Enroll1.') {
 
 		let enrollment = await totpEnroll({//make a new provisional enrollment; this generates enrollment.secret
-			label: '@'+user.name.f1,//ttd november, simplified for demo
+			label: '@'+(userName?.v?.f2 || userTag),//display name if available, fallback to userTag (matches credentialStore.userDisplayName)
 			issuer: Key('domain, public'),
 			addIdentifier: true,
 		})

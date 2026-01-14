@@ -1,7 +1,7 @@
 //./server/api/report.js
 
 import {
-headerGetOne, browserToUser, recordHit, recordDelay,
+headerGetOne, credentialBrowserGet, recordHit, recordDelay,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -17,7 +17,7 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 		browser: {//source (2) browser: information the browser is telling us; more trustworthy
 			agent: headerGetOne(headers, 'user-agent'),
 			browserHash,
-			user: await browserToUser({browserHash}),//look up what user is signed in to this browser
+			user: await credentialBrowserGet({browserHash}),//look up what user is signed in to this browser
 		},
 		worker: {//source (3) worker: information cloudflare is telling us; trustworthy
 			sticker: Sticker(),
@@ -41,7 +41,7 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 		await recordHit({
 			origin: door.origin,
 			browserHash,
-			userTag: toTextOrBlank(r.browser.user.userTag),
+			userTag: toTextOrBlank(r.browser.user?.userTag),
 			ipText: toTextOrBlank(r.worker.ip),
 			geographyText: makeText(r.worker.geography),
 			browserText: makeText({agent: r.browser.agent, ...r.page.graphics}),//agent is from the browser, graphics renderer and vendor is from the page
@@ -54,7 +54,7 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 			d3: -1, d4: -1, d5: -1,//the delay table has room to grow
 			origin: door.origin,
 			browserHash,
-			userTag: toTextOrBlank(r.browser.user.userTag),
+			userTag: toTextOrBlank(r.browser.user?.userTag),
 			ipText: toTextOrBlank(r.worker.ip),
 		})
 

@@ -4,22 +4,42 @@ This document outlines the removal of the old `name_table` and `browser_table` s
 
 ---
 
-## Safe to Delete (demo/unused)
+## Migration Complete
 
-### icarus/level3.js functions
+All refactoring is done. The old systems are now fully disconnected from active code.
 
-| Lines | Item | Notes |
-|-------|------|-------|
-| 716-734 | `browser_table` schema | |
-| 737-769 | `browser_get`, `browser_in`, `browser_out` | Internal functions |
-| 1224-1248 | `name_table` schema | |
-| 1250-1264 | `nameCheck()` | Exported |
-| 1268-1296 | `name_get`, `name_set`, `name_delete` | Internal functions |
-| 1610-1626 | `browserToUser()` | Exported, uses both old systems |
-| 1633-1675 | `demonstrationSign*` (4 functions) | Exported |
+### Migrations Completed
+- [x] `site/components/snippet1/HelloComponent.vue` - migrated from `mainStore.user` to `credentialStore`
+- [x] `site/server/api/load.js` - removed `browserToUser`, now only returns `codes`
+- [x] `site/server/api/report.js` - swapped `browserToUser` → `credentialBrowserGet`
+- [x] `site/server/api/totp.js` - swapped `browserToUser` → `credentialBrowserGet`, simplified level checks
+- [x] `site/stores/mainStore.js` - removed `user` ref (moved to credentialStore)
+- [x] `icarus/level3.js:codeSend` - swapped `demonstrationSignGet` → `credentialBrowserGet`
 
-### icarus/index.js exports to remove
+---
 
+## Ready for Mass Deletion
+
+### Files to DELETE entirely
+
+| File | Notes |
+|------|-------|
+| `site/server/api/authenticate.js` | Only used by AuthenticateDemo |
+| `site/server/api/name.js` | Old nameCheck pattern |
+| `site/server/api/password.js` | Dead code - nothing uses this |
+| `site/components/pages/AuthenticateDemo.vue` | Uses old /api/authenticate |
+| `site/components/credentials/SignUpSignInDemo.vue` | Header says "TO BE DELETED" |
+
+### Lines to REMOVE from page files
+
+| File | Change |
+|------|--------|
+| `site/pages/page1.vue` | Remove `<SignUpSignInDemo />` |
+| `site/pages/page4.vue` | Remove `<AuthenticateDemo />` |
+
+### icarus/index.js - exports to remove
+
+Remove these 6 exports:
 - `nameCheck`
 - `browserToUser`
 - `demonstrationSignGet`
@@ -27,86 +47,56 @@ This document outlines the removal of the old `name_table` and `browser_table` s
 - `demonstrationSignIn`
 - `demonstrationSignOut`
 
-### Front-end components
+### icarus/level3.js - functions and schemas to remove
 
-| File | Notes |
-|------|-------|
-| `site/components/credentials/SignUpSignInDemo.vue` | Header says "TO BE DELETED" |
-| `site/components/pages/AuthenticateDemo.vue` | Uses old /api/authenticate |
+**browser_table section (lines ~693-769):**
+- `browser_table` SQL schema block (including comment block above it)
+- `browser_get`
+- `browser_in`
+- `browser_out`
 
-### API endpoints
+**name_table section (lines ~1214-1296):**
+- `name_table` SQL schema block (including ttd comment above it)
+- `nameCheck`
+- `name_get`
+- `name_set`
+- `name_delete`
 
-| File | Notes |
-|------|-------|
-| `site/server/api/authenticate.js` | Only used by AuthenticateDemo |
-| `site/server/api/name.js` | Old nameCheck pattern |
-| `site/server/api/password.js` | Nothing uses this - dead code |
+**browserToUser and demonstration functions (lines ~1609-1675):**
+- `browserToUser`
+- `demonstrationSignGet`
+- `demonstrationSignUp`
+- `demonstrationSignIn`
+- `demonstrationSignOut`
 
-### Page edits
-
-| File | Change |
-|------|--------|
-| `site/pages/page1.vue` | Remove `<SignUpSignInDemo />` |
-| `site/pages/page4.vue` | Remove `<AuthenticateDemo />` |
-
-### Pinia stores
-
-None to delete - all stores use the new credential system.
+**Note:** These are in 3 separate sections of level3.js, not contiguous.
 
 ---
 
-## Needs Migration (actively used by core site)
+## Optional Cleanup (stale txt files)
 
-These use `browserToUser` but are NOT demos:
+These contain old notes/examples referencing deprecated code:
 
-| File | Used By | Action Needed |
-|------|---------|---------------|
-| `site/server/api/load.js` | `mainStore.js` on every page load | Replace `browserToUser` with `credentialBrowserGet` + `credentialNameGet` |
-| `site/server/api/report.js` | `mainStore.js` Hello, `Error2Page.vue` | Same migration |
-
----
-
-## Decision Needed (demo but self-contained)
-
-| File | Used By | Options |
-|------|---------|---------|
-| `site/server/api/totp.js` | `TotpDemo.vue` (page4 only) | Delete if not using TOTP; or migrate if you want TOTP |
-| `site/components/snippet1/TotpDemo.vue` | page4.vue | Delete with api/totp.js, or keep TotpDemo1.vue (client-only) |
+- `site/server/api/report.txt`
+- `site/components/small/postbutton.txt`
+- `icarus/user.txt` - design notes (key concepts preserved below)
+- `icarus/code.txt` - has one reference to browser_table
+- `icarus/tables2.txt` - has references to browserToUser and browser_table
 
 ---
 
-## Behavior Differences to Note
+## Design Notes Preserved
 
-### `level` field
-
-`browser_table` has a `level` field that `credential_table` Browser. type doesn't have.
-
-**Where it's used:** `/api/totp.js` checks `user.level >= 2`
-
-**What it means:**
-- 1 = provisional (started signup but not finished)
-- 2 = normal signed-in user
-- 3 = elevated permissions (sudo hour)
-
-**Options:**
-- Store level in `k2` field of Browser. credential
-- Simplify: signed in = level 2, no provisional users
-
-### `origin_text` field
-
-`browser_table` tracks which domain a session originated from. `credential_table` Browser. type doesn't have this. Could add to `k2` if needed.
-
----
-
-## Design Notes Worth Preserving
-
-From `icarus/user.txt` (will be deleted with old system):
+From `icarus/user.txt` (can be deleted after noting these):
 
 **Happy lazy path concept:**
 > Don't force new users to verify email immediately. User can start using site with just email, verification only required on second device. This avoids friction while still enabling account recovery.
 
 **Feature roadmap:**
 > Future: user status messages, user hiding/unhiding, account closing. These build on the name/credential foundation.
+
+**Behavior change - `level` field:**
+> `browser_table` had levels (1=provisional, 2=normal, 3=elevated). The credential system simplifies this: signed in or not. Elevated permissions (sudo hour) can be added later if needed.
 
 ---
 
@@ -119,16 +109,39 @@ From `icarus/user.txt` (will be deleted with old system):
 - [ ] `site/components/pages/AuthenticateDemo.vue`
 - [ ] `site/components/credentials/SignUpSignInDemo.vue`
 
-### Edit Files
+### Edit Page Files
 - [ ] `site/pages/page1.vue` - remove `<SignUpSignInDemo />`
 - [ ] `site/pages/page4.vue` - remove `<AuthenticateDemo />`
-- [ ] `icarus/index.js` - remove 6 exports
-- [ ] `icarus/level3.js` - remove ~150 lines of functions/schema
 
-### Migrate Before Deleting browserToUser
-- [ ] `site/server/api/load.js`
-- [ ] `site/server/api/report.js`
+### Edit icarus/index.js
+Remove these exports:
+- [ ] `nameCheck`
+- [ ] `browserToUser`
+- [ ] `demonstrationSignGet`
+- [ ] `demonstrationSignUp`
+- [ ] `demonstrationSignIn`
+- [ ] `demonstrationSignOut`
 
-### Decision Needed
-- [ ] `site/server/api/totp.js`
-- [ ] `site/components/snippet1/TotpDemo.vue`
+### Edit icarus/level3.js
+Remove these functions/schemas:
+- [ ] `browser_table` SQL schema
+- [ ] `browser_get`
+- [ ] `browser_in`
+- [ ] `browser_out`
+- [ ] `name_table` SQL schema
+- [ ] `nameCheck`
+- [ ] `name_get`
+- [ ] `name_set`
+- [ ] `name_delete`
+- [ ] `browserToUser`
+- [ ] `demonstrationSignGet`
+- [ ] `demonstrationSignUp`
+- [ ] `demonstrationSignIn`
+- [ ] `demonstrationSignOut`
+
+### Optional Cleanup
+- [ ] `site/server/api/report.txt`
+- [ ] `site/components/small/postbutton.txt`
+- [ ] `icarus/user.txt`
+- [ ] `icarus/code.txt` (or just remove browser_table reference)
+- [ ] `icarus/tables2.txt` (or just remove browserToUser/browser_table references)

@@ -825,7 +825,7 @@ export async function browserValidatedAddress({browserHash, provider, type, v}) 
 export async function codeSend({browserHash, provider, type, v}) {//v is the address, valid, containing the three forms
 
 	//look up the user tag, even though we're not using it with code yet
-	let userTag = (await demonstrationSignGet({browserHash}))?.userTag
+	let userTag = (await credentialBrowserGet({browserHash}))?.userTag
 
 	let permit = await codePermit(v.f0)
 	if (!permit.success) return permit//return the failed permit directly, bubbling up

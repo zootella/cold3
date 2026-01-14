@@ -1,6 +1,8 @@
 <script setup>
 
 const mainStore = useMainStore()
+const credentialStore = useCredentialStore()
+await credentialStore.load()
 
 function hardReload() { window.location.reload() }//same as user clicking the browser's Reload button
 
@@ -16,7 +18,15 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 		{{' '}}<Button link :click="hardReload">Reload</Button>
 	</span>
 </p>
-<p>user:</p><pre>{{mainStore.user}}</pre>
+
+<p>browserHash <code>{{credentialStore.browserHash}}</code></p>
+<template v-if="credentialStore.userTag">
+	<p>userTag <code>{{credentialStore.userTag}}</code> signed in</p>
+	<p v-if="credentialStore.userDisplayName">user display name <code>{{credentialStore.userDisplayName}}</code></p>
+</template>
+<template v-else>
+	<p>user: <i>not signed in</i></p>
+</template>
 
 </div>
 </template>
