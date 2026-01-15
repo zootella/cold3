@@ -1,3 +1,4 @@
+
 # Deprecation Plan: name_table and browser_table
 
 This document outlines the removal of the old `name_table` and `browser_table` systems, which have been replaced by `credential_table` with `Name.` and `Browser.` credential types.
