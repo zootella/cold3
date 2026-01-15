@@ -41,7 +41,7 @@ async function onClick() {
 const refButton = ref(null)
 async function onClick() {
 	let body = {name: refName.value}
-	await refButton.value.post('/api/name', body)//use Button's .post() method instead of fetchWorker()
+	await refButton.value.post('/api/endpoint', body)//use Button's .post() method instead of fetchWorker()
 }
 
 <Button :useTurnstile="true" :click="onClick" ref="refButton">Submit</Button>
@@ -84,15 +84,16 @@ defineExpose({//exposes methods to parent via template ref; super useful and sta
 	},
 	post: async (path, body) => {//if you're using turnstile, call .post() instead of fetchWorker(); we add the token for you
 		if (props.useTurnstile && useTurnstileHere()) {
-			body.turnstileToken = await pageStore.getTurnstileToken()//may take seconds; widget started on mount
+			body.turnstileToken = await pageStore.getTurnstileToken()//this can take a few seconds
 		}
-		return await fetchWorker(path, {body})
+		return await fetchWorker(path, {body})//throws on non-2XX; button remains doing but whole page enters error state
 	},
 	getTurnstileToken: async () => {//get turnstile token to pass to store methods that use fetchWorker directly
 		if (props.useTurnstile && useTurnstileHere()) {
-			return await pageStore.getTurnstileToken()
+			return await pageStore.getTurnstileToken()//this can take a few seconds
 		} else { return '' }
 	},
+	//ttd march2025, at some point you should actually hide the turnstile widget to make sure it doesn't actually still sometimes show up. you have notes for that, it's something like some settings in code, some in the dashboard, or something
 })
 
 </script>

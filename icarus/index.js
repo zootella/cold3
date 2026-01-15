@@ -120,15 +120,6 @@ Code, codeSend, browserToCodes, codeEnter,
 settingReadInt, settingRead, settingWrite,
 recordDelay, recordHit,
 
-browserToUser,
-
-nameCheck,
-
-demonstrationSignGet,
-demonstrationSignUp,
-demonstrationSignIn,
-demonstrationSignOut,
-
 trailRecent, trailCount, trailGet, trailAdd, trailAddMany,
 
 credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,

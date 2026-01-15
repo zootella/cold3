@@ -260,7 +260,7 @@ export async function credentialTotpRemove({userTag}) {
 //                                                                                       
 
 //browser: user is signed in at this browser; k1 is browserHash
-export async function credentialBrowserGet({browserHash}) {//find what user, if any, is signed in at the given browser
+export async function credentialBrowserGet({browserHash}) {//what user, if any, is signed in at this browser?
 	checkHash(browserHash)
 	let rows = await queryGet('credential_table', {type_text: 'Browser.', k1_text: browserHash, event: 4})
 	let row = rows[0]
@@ -701,93 +701,27 @@ and local storage is specific to the device, browser, chrome profile, and host n
 so already you have different local storage for localhost as opposed to cold3.cc
 and that's fine, and you do want browser_table to have a record of what host this browser tag cam from the local storage of
 
+ttd january, above note is about how, when you had browser_table, you included the domain text
+there was a neighboring idea about having one database behind the same code deployed to multiple domains allowing users to sign in to one, a different one, or multiple connected sites, and that's the idea here you don't want to lose, even while you got rid of browser table entirely
+you suspect, but need to confirm, that sign ins from multiple domains works without this, you just can't do a control panel for staff or the user that shows them where, like which browsers and which domains, they're signed into
 
+and this note seems to be from claude:
 Exactly! Local storage is scoped specifically to the protocol, port, subdomain, and domain.
 */
 
-
-//  _                                       _        _     _      
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _| |__ | | ___ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` | '_ \| |/ _ \
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | |_) | |  __/
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|_.__/|_|\___|
-//                                                                
-
-SQL(`
--- what user is signed into this browser? sign users in and out
-CREATE TABLE browser_table (
-	row_tag       CHAR(21)  NOT NULL PRIMARY KEY,  -- unique tag identifies each row
-	row_tick      BIGINT    NOT NULL,              -- tick when row was added
-	hide          BIGINT    NOT NULL,              -- 0 visible, nonzero ignore
-
-	browser_hash  CHAR(52)  NOT NULL,  -- the browser a request is from
-	user_tag      CHAR(21)  NOT NULL,  -- the user we've proven is using that browser
-	level         BIGINT    NOT NULL,  -- 0 signed out, 1 provisional, 2 normal, 3 super user hour
-
-	origin_text   TEXT      NOT NULL   -- the protocol, port, subdomain, and domain for the the local storage holding browser tag
-);
-
--- index to get visible rows about a browser, recent first, quickly
-CREATE INDEX browser1 ON browser_table (browser_hash, row_tick DESC) WHERE hide = 0;  -- filter by browser
-CREATE INDEX browser2 ON browser_table (user_tag,     row_tick DESC) WHERE hide = 0;  -- or by user
-CREATE INDEX browser3 ON browser_table (level,        row_tick DESC) WHERE hide = 0;  -- quickly find expired super user hours
-`)
-//ttd february2025, trying the pattern where the group of functions which exclusively touch the table are named example_someThing, as below. if it works well for browser and name tables, then look at expanding to everywhere
-
-async function browser_get({browserHash}) {//what user, if any, is signed in at this browser?
-	checkHash(browserHash)
-	let row = await queryTopEqualGreater({
-		table: 'browser_table',
-		title1: 'browser_hash', cell1: browserHash,
-		title2: 'level', cell2GreaterThan: 0,
-	})
-	return row ? {browserHash: row.browser_hash, userTag: row.user_tag, level: row.level, origin: row.origin_text} : false
-}
-async function browser_in({browserHash, userTag, level, origin}) {//this user has proven their identity, sign them in here
-	checkHash(browserHash); checkTag(userTag); checkInt(level, 1); checkText(origin)//make sure level is 1+
-	await queryAddRow({
-		table: 'browser_table',
-		row: {
-			browser_hash: browserHash,
-			user_tag: userTag,
+/*
+ttd january
+other scraps left from deleting the old browser table
+there was a level, with comments like
 			level,//sign in at level 1 provisional, 2 normal, or 3 start an hour of elevated permissions
-			origin_text: origin,
-		}
-	})
-}
-async function browser_out({browserHash, userTag, hideSet, origin}) {//sign this user out everywhere; browser tag included but doesn't matter; hide reason code is optional for a note different than default 1
-	checkHash(browserHash); checkTag(userTag); checkText(origin)
+
+also you were recording where the user signed out from
 	await queryAddRow({//record that this user's sign-out happened now, and from this browser
-		table: 'browser_table',
-		row: {
-			browser_hash: browserHash,
-			user_tag: userTag,
-			level: 0,//level 0 means this row is about the user signing out
-			origin_text: origin,
-		}
-	})
-	await queryHide('browser_table', {user_tag: userTag}, {hideSet})//hide all the rows about this user, including the one we just made, signing them out, everywhere
-}
+you can get that back with the new client_table and standard starting columns to keep hashes of clients that make and hide rows
+*/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//ttd february2025, trying the pattern where the group of functions which exclusively touch the table are named example_someThing, as below. if it works well for browser and name tables, then look at expanding to everywhere
+//ttd january, actually maybe don't do that, this note is to look at removing that pattern
 
 
 
@@ -1211,89 +1145,8 @@ export async function recordHit({origin, browserHash, userTag, ipText, geography
 	await queryAddRowIfHashUnique({table: 'hit_table', row})
 }
 
-//ttd november, you think that you can entirely move name_table -> credential_table
 
-//                               _        _     _      
-//  _ __   __ _ _ __ ___   ___  | |_ __ _| |__ | | ___ 
-// | '_ \ / _` | '_ ` _ \ / _ \ | __/ _` | '_ \| |/ _ \
-// | | | | (_| | | | | | |  __/ | || (_| | |_) | |  __/
-// |_| |_|\__,_|_| |_| |_|\___|  \__\__,_|_.__/|_|\___|
-//                                                     
 
-//bookmark
-SQL(`
--- go between a user's tag, route, and name as it appears on the page
-CREATE TABLE name_table (
-	row_tag     CHAR(21)  NOT NULL PRIMARY KEY,
-	row_tick    BIGINT    NOT NULL,
-	hide        BIGINT    NOT NULL,
-
-	user_tag    CHAR(21)  NOT NULL,
-
-	name0_text  TEXT      NOT NULL,  -- like "user-name", route lowercased to check unique
-	name1_text  TEXT      NOT NULL,  -- like "User-Name", route with case the user chose
-	name2_text  TEXT      NOT NULL   -- like "User Name", the user's name for pages and cards
-);
-
--- indices to ensure unique values in these columns among visible rows, for defense-in-depth, as setName() prevents duplicates first
-CREATE UNIQUE INDEX name1 ON name_table (user_tag)   WHERE hide = 0;
-CREATE UNIQUE INDEX name2 ON name_table (name0_text) WHERE hide = 0;
-CREATE UNIQUE INDEX name3 ON name_table (name1_text) WHERE hide = 0;
-CREATE UNIQUE INDEX name4 ON name_table (name2_text) WHERE hide = 0;
-
--- indices to make queries fast
-CREATE INDEX name5 ON name_table (hide, user_tag,   row_tick DESC);  -- look up a user's route and name by their tag
-CREATE INDEX name6 ON name_table (hide, name0_text, row_tick DESC);  -- what user is at this route? is it taken?
-CREATE INDEX name7 ON name_table (hide, name2_text, row_tick DESC);  -- is this page name taken?
-`)
-
-export async function nameCheck({v}) {//ttd march2025, draft like from the check if your desired name is available, to choose and change a name
-	if (!v.ok) toss('valid', {v})//you have already done this check, but here too to make sure
-
-	let task = Task({name: 'name check'})
-	let row0 = await name_get({name0: v.f0})
-	let row2 = await name_get({name2: v.f2})
-	task.available = {
-		isAvailable: (!row0) && (!row2),
-		isAvailable0: !row0,
-		isAvailable2: !row2,
-		v,
-	}
-	task.finish({success: true})
-	return task
-}
-
-//ttd: name_table is deprecated, will be removed once credential_table name functions are complete
-//note: queryTop usage here assumes 0 or 1 rows per key, but doesn't guarantee correct row if multiple exist
-async function name_get({//look up user route and name information by calling with one of these:
-	userTag,//a user's tag, like we're showing information about that user, or
-	name0,//a normalized route, like we're filling a request to that route, or
-	name2,//a user name, like we're seeing if it's available
-}) {
-	let row
-	if      (given(userTag)) { checkTag(userTag);      row = await queryTop({table: 'name_table', title: 'user_tag',   cell: userTag}) }
-	else if (given(name0))   { checkName({f0: name0}); row = await queryTop({table: 'name_table', title: 'name0_text', cell: name0})   }
-	else if (given(name2))   { checkName({f2: name2}); row = await queryTop({table: 'name_table', title: 'name2_text', cell: name2})   }
-	else { toss('use', {userTag, name0, name2}) }
-
-	if (!row) return false//the given user tag wasn't found, no user is at the given normalized route, or that name for the page is available
-	return {userTag: row.user_tag, name0: row.name0_text, name1: row.name1_text, name2: row.name2_text}
-}
-
-//set the given normal, formal, and page names for the given user
-//setName() does not make sure the names it sets are available--you've already done that before calling here!
-//there is also defense in depth below, as the table's unique indices will make trying to add a duplicate row throw an error
-async function name_set({userTag, name0, name1, name2}) {
-	checkTag(userTag); checkName({f0: name0, f1: name1, f2: name2})
-	await name_delete({userTag})//replace an existing row about this user with a new one:
-	await queryAddRow({table: 'name_table', row: {user_tag: userTag, name0_text: name0, name1_text: name1, name2_text: name2}})
-}
-
-//remove a user's route and name information, to hide or delete the user, freeing the user's route and page name for another person to take after this
-async function name_delete({userTag, hideSet}) {//hide reason code optional
-	checkTag(userTag);
-	await queryHide('name_table', {user_tag: userTag}, {hideSet})
-}
 
 //                                        _   _        _     _      
 //  _ __   ___ _ __ ___  ___  _ __   __ _| | | |_ __ _| |__ | | ___ 
@@ -1606,70 +1459,6 @@ CREATE TABLE user_table (
 
 
 
-//what user, if any, is at the given browser?
-export async function browserToUser({browserHash}) {
-	checkHash(browserHash)
-	let user = {browserHash}
-	let u = await browser_get({browserHash})//always does this one query to be fast
-	if (u) {
-		user.userTag = u.userTag
-		user.level = u.level
-
-		if (user.userTag) {//we found a user tag, let's look up its name and more information about it
-			let n = await name_get({userTag: user.userTag})
-			if (n) {
-				user.name = bundleValid({f0: n.name0, f1: n.name1, f2: n.name2})
-			}
-		}
-	}
-	return user
-}
 
 
 
-
-
-
-export async function demonstrationSignGet({browserHash}) {
-	checkHash(browserHash)
-
-	let b = await browser_get({browserHash})//look for a user at the given browser
-	if (b) {
-		let n = await name_get({userTag: b.userTag})//find that user's name, right now their normalized route identifies them
-		if (n) {
-			return {isFound: true, browserHash, userTag: b.userTag, name0: n.name0, name1: n.name1, name2: n.name2}
-		}
-	}
-	return {isFound: false, browserHash}
-}
-export async function demonstrationSignUp({browserHash, name0, origin}) {
-	checkHash(browserHash); checkName({f0: name0})
-
-	let n = await name_get({name0})//confirm route is available in database
-	if (n) return {isSignedUp: false, reason: 'NameTaken.', browserHash, name0}
-
-	let userTag = Tag()//create a new user, making the unique tag that will identify them
-	await name_set({userTag, name0, name1: name0, name2: name0})//ttd january2025, all the same for now
-	await browser_in({browserHash, userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
-	return {isSignedUp: true, browserHash, userTag, name: name0, name0}//just for testing; we won't send user tags to pages
-}
-export async function demonstrationSignIn({browserHash, name0, origin}) {
-	checkHash(browserHash); checkName({f0: name0})
-
-	let n = await name_get({name0})//in this early simplification before user_table, a user exists by their tag with a route
-	if (!n) return {isSignedIn: false, reason: 'NameUnknown.', browserHash, name0}
-
-	await browser_in({browserHash, userTag: n.userTag, level: 2, origin})//and sign the new user into the requesting browser, in our records
-	return {isSignedIn: true, browserHash, userTag: n.userTag, name: name0, name0}//just for testing; we won't send user tags to pages
-}
-export async function demonstrationSignOut({browserHash, origin}) {
-	checkHash(browserHash)
-
-	let u = await demonstrationSignGet({browserHash})
-	if (u.isFound) {
-		await browser_out({browserHash, userTag: u.userTag, hideSet: 2, origin})//hide set 2 meaning at user's click we did this
-		return {isSignedOut: true, browserHash, userTag: u.userTag}
-	} else {
-		return {isSignedOut: false, reason: 'NameNotFound.', browserHash}
-	}
-}

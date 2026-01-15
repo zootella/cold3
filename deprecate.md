@@ -5,6 +5,16 @@ This document outlines the removal of the old `name_table` and `browser_table` s
 
 ---
 
+## Current Status
+
+**🎉 DEPRECATION COMPLETE** — All `browser_table` and `name_table` code has been removed.
+
+The `credential_table` system with `Browser.` and `Name.` credential types is now the sole implementation.
+
+**Remaining:** Optional cleanup of stale txt files (see below).
+
+---
+
 ## Migration Complete
 
 All refactoring is done. The old systems are now fully disconnected from active code.
@@ -78,8 +88,6 @@ Remove these 6 exports:
 
 These contain old notes/examples referencing deprecated code:
 
-- `site/server/api/report.txt`
-- `site/components/small/postbutton.txt`
 - `icarus/user.txt` - design notes (key concepts preserved below)
 - `icarus/code.txt` - has one reference to browser_table
 - `icarus/tables2.txt` - has references to browserToUser and browser_table
@@ -99,50 +107,60 @@ From `icarus/user.txt` (can be deleted after noting these):
 **Behavior change - `level` field:**
 > `browser_table` had levels (1=provisional, 2=normal, 3=elevated). The credential system simplifies this: signed in or not. Elevated permissions (sudo hour) can be added later if needed.
 
+From `browser_table` deletion (now in level3.js comments):
+
+**Multi-domain sign-in architecture:**
+> browser_table included domain text. Idea: one database behind code deployed to multiple domains, allowing users to sign in to one or multiple connected sites. Sign-ins from multiple domains may work without this, but can't build a control panel showing which browsers/domains a user is signed into.
+
+**Sign-out tracking:**
+> browser_table recorded where sign-outs happened from. Can restore this capability using client_table with standard columns for client hashes.
+
+**Function naming pattern:**
+> Tried `example_someThing` pattern for functions that exclusively touch one table. Reconsidering whether to expand or remove this pattern.
+
 ---
 
 ## Summary Checklist
 
-### Delete Files
-- [ ] `site/server/api/authenticate.js`
-- [ ] `site/server/api/name.js`
-- [ ] `site/server/api/password.js`
-- [ ] `site/components/pages/AuthenticateDemo.vue`
-- [ ] `site/components/credentials/SignUpSignInDemo.vue`
+### Delete Files ✅ DONE
+- [x] `site/server/api/authenticate.js`
+- [x] `site/server/api/name.js`
+- [x] `site/server/api/password.js`
+- [x] `site/components/pages/AuthenticateDemo.vue`
+- [x] `site/components/credentials/SignUpSignInDemo.vue`
 
-### Edit Page Files
-- [ ] `site/pages/page1.vue` - remove `<SignUpSignInDemo />`
-- [ ] `site/pages/page4.vue` - remove `<AuthenticateDemo />`
+### Edit Page Files ✅ DONE
+- [x] `site/pages/page1.vue` - remove `<SignUpSignInDemo />`
+- [x] `site/pages/page4.vue` - remove `<AuthenticateDemo />`
 
-### Edit icarus/index.js
+### Edit icarus/index.js ✅ DONE
 Remove these exports:
-- [ ] `nameCheck`
-- [ ] `browserToUser`
-- [ ] `demonstrationSignGet`
-- [ ] `demonstrationSignUp`
-- [ ] `demonstrationSignIn`
-- [ ] `demonstrationSignOut`
+- [x] `nameCheck`
+- [x] `browserToUser`
+- [x] `demonstrationSignGet`
+- [x] `demonstrationSignUp`
+- [x] `demonstrationSignIn`
+- [x] `demonstrationSignOut`
 
-### Edit icarus/level3.js
+### Edit icarus/level3.js ✅ DONE
 Remove these functions/schemas:
-- [ ] `browser_table` SQL schema
-- [ ] `browser_get`
-- [ ] `browser_in`
-- [ ] `browser_out`
-- [ ] `name_table` SQL schema
-- [ ] `nameCheck`
-- [ ] `name_get`
-- [ ] `name_set`
-- [ ] `name_delete`
-- [ ] `browserToUser`
-- [ ] `demonstrationSignGet`
-- [ ] `demonstrationSignUp`
-- [ ] `demonstrationSignIn`
-- [ ] `demonstrationSignOut`
+- [x] `browser_table` SQL schema
+- [x] `browser_get`
+- [x] `browser_in`
+- [x] `browser_out`
+- [x] `name_table` SQL schema
+- [x] `nameCheck`
+- [x] `name_get`
+- [x] `name_set`
+- [x] `name_delete`
+- [x] `browserToUser`
+- [x] `demonstrationSignGet`
+- [x] `demonstrationSignUp`
+- [x] `demonstrationSignIn`
+- [x] `demonstrationSignOut`
 
 ### Optional Cleanup
-- [ ] `site/server/api/report.txt`
-- [ ] `site/components/small/postbutton.txt`
+- [x] `site/components/small/postbutton.txt` - deleted
 - [ ] `icarus/user.txt`
 - [ ] `icarus/code.txt` (or just remove browser_table reference)
 - [ ] `icarus/tables2.txt` (or just remove browserToUser/browser_table references)

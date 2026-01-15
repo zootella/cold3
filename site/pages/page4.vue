@@ -3,7 +3,6 @@
 </script>
 <template>
 
-<AuthenticateDemo />
 <TotpDemo />
 <HitComponent />
 <TotpDemo1 />
