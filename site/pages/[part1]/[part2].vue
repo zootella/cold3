@@ -1,18 +1,15 @@
 <script setup> definePageMeta({layout: 'column-layout', note: 'on pages'})
 
 const route = useRoute()
-const part1 = route.params.part1
+const {userTag, userName} = await useUserRoute(route.params.part1, route.fullPath)
 const part2 = route.params.part2
-
-//ttd february2025, nested dynamic segments for user and post pages
 
 </script>
 <template>
 <div>
 
-<h1>Nested Dynamic Page</h1>
-<p>Part 1: <strong>{{ part1 }}</strong></p>
-<p>Part 2: <strong>{{ part2 }}</strong></p>
+<h1>{{ userName }}</h1>
+<p>Post: <strong>{{ part2 }}</strong></p>
 
 </div>
 </template>
