@@ -1,7 +1,9 @@
 notesfile
 
-
-
+//////////////////////////////////////////////////////////////////////////
+// ✅ KEEP - Nuxt dynamic routes reference                              //
+// [more].vue vs [...more].vue behavior                                 //
+//////////////////////////////////////////////////////////////////////////
 
 notes about how nuxt does dynamic routes
 
@@ -17,6 +19,10 @@ when do these get called? let's right a simple correct guide here, showing how t
 
 
 
+
+//////////////////////////////////////////////////////////////////////////
+// ✅ KEEP - route params example, how [more].vue works                 //
+//////////////////////////////////////////////////////////////////////////
 
 //./pages/card/[more].vue
 let name1 = _route.params.more//from the route after "card"; property name is more because this file is named [more].vue
@@ -36,6 +42,12 @@ we also compose a neighboring name, name2, to link there, replacing any random n
 
 
 
+
+//////////////////////////////////////////////////////////////////////////
+// ✅ KEEP - KEY INSIGHT: use router.replace() not 3xx redirect         //
+// corrects f0 "tokyo-girl" to f1 "Tokyo-Girl" without breaking Back    //
+// low priority nice-to-have; links already work case-insensitively     //
+//////////////////////////////////////////////////////////////////////////
 
 notes about correcting the case in user routes
 
@@ -70,6 +82,11 @@ not that case is corrected when it's wrong, that's a really low priority nice to
 
 
 
+
+//////////////////////////////////////////////////////////////////////////
+// 🔴 DELETE - old exploration before router.replace() insight          //
+// middleware vs pages debate, formNormal/formFormal drafts             //
+//////////////////////////////////////////////////////////////////////////
 
 previous notes and thinking
 before you realized a real hard 3xx redirect wasn't necessary

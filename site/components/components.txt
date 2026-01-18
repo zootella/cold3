@@ -7,6 +7,7 @@ notesfile
 
 
 
+
 Design Intent Summary
 Core Philosophy:
 Build components that follow simple, recognizable patterns from Vue/Nuxt best practices—prioritizing function, idiomatic patterns, then clarity. Focus on craftsmanship and learning, not complexity or invention.
@@ -33,9 +34,79 @@ Focus purely on component tree design, responsibility boundaries, and data flow 
 
 
 
-took a day to play around with styling components in tailwind
+what are your small componenbts now that Button is working so well?
 
-## goals
+<a> used some places for whole tab navigation
+<Navigate> and <NavigateButton> which are just a light wrapper on NuxtLink, with states and styling
+<Button> which is both simple and powerful
+
+ok, stuff to check and do and clean up still with small components:
+
+look at and clean up Navigate and NavigateButton
+have one that you style with link or not, just like Button does
+reproduce that error where when you float over a navigate button, the text goes from white to light something, rather than the button getting lighter
+so maybe jsut call this Link
+
+and another thing you need to do in here while you're checking the appearance and states of links adn buttons is have the dangerous visual appearance, the red button for destructive actions
+
+
+
+
+
+
+make sure you type things to bring up the right mobile keyboard!
+you've been using number pad, but there's also email and url!
+
+<input type="tel" />    <!-- triggers number pad -->
+<input type="email" />  <!-- triggers email keyboard -->
+<input type="url" />    <!-- triggers URL keyboard with .com key -->
+
+
+
+
+
+forms
+things you'll figure out as you code longer and more complex forms
+how does a form work when there are multiple steps?
+does icarus have form-wide validation functions, like validateSomeForm(), which both the vue component and api handler can use?
+
+
+
+are you going to use <form @submit.prevent="">?
+no - don't use <form> element at all. traditional form behavior (even with prevent) means:
+- browser adds POST to history
+- "Confirm form resubmission?" dialog if user clicks back
+- browser "helps" with autocomplete in ways you don't want
+instead, the SPA pattern:
+- @keyup.enter="refButton.click()" on inputs
+- Button.vue handles state and calls fetchWorker
+- no browser form state = no resubmission dialog, clean history
+this is what Button.vue is designed for
+
+
+
+
+
+are you going to use <input enterkeyhint="">?
+yes - mobile UX enhancement, changes the label on keyboard's Enter key:
+<input enterkeyhint="search" />  <!-- key shows "Search" -->
+<input enterkeyhint="send" />    <!-- key shows "Send" -->
+<input enterkeyhint="next" />    <!-- key shows "Next" (multi-step form) -->
+<input enterkeyhint="done" />    <!-- key shows "Done" (final field) -->
+<input enterkeyhint="go" />      <!-- key shows "Go" -->
+doesn't change functionality, just the visual label. nice UX polish for mobile
+
+
+
+
+
+
+
+
+
+
+
+
 
 visually simple--like you drew it all with a thick crayon
 - flat--as opposed to shadows, bubbles, shine, any z dimensional cues, accomplish things without those!
@@ -45,7 +116,6 @@ visually simple--like you drew it all with a thick crayon
 
 oh wait--if you accomplish these goals with chat and tailwind, does that mean you don't use a prepackaged component library? or you do, but just to get the slider-style checkbox, or something? don't those comonent libraries already come with a password box? so maybe you shouldn't be doing this here yourself, at all!
 
-remember to really lead with the design here
 figure out how you want things to work, then from that make choices about tools and factoring
 imagine this step in a form is jsut a box wher the user types their email
 they mistakingly type "name.example.com", so, not valid
@@ -53,7 +123,11 @@ should the Next button not be clickable until they fix it?
 should there be text below that says "That's not a valid email address"?
 should that text appear while they're typing? after they blur the box? after they hit submit?
 how does that work when you can place the Submit button on the phone keyboard, so they don't have to return focus to the page at all?
-if you wire it up so the submit button isn't even clickable until the form contains valid looking information, does that interrupt the user's flow? (the 1998 way, before client-side validation, is they press submit, and then get errors they have to scroll up to fix, which as an extreme, is also bad. but also also bad is the most modern way, where the user is pecking a nonworking submit button because they haven't correctly typed their email in a box above they're no longer looking at)
+
+if you wire it up so the submit button isn't even clickable until the form contains valid looking information, does that interrupt the user's flow?
+(the 1998 way, before client-side validation, is they press submit, and then get errors they have to scroll up to fix, which as an extreme, is also bad
+but also also bad is the most modern way, where the user is pecking a nonworking submit button because they haven't correctly typed their email in a box above they're no longer looking at)
+
 should the boxes animate "No" left and right like they do on macOS? is this clever or annoying?
 should this be like typeform, a whole bunch of different steps, or like the early web, a long form you spend time getting right before submitting?
 
@@ -69,90 +143,31 @@ until at last the button is also solid
 ok so then how do you show where the focus is?
 maybe with the accent color
 
-## button
+the dashed border looks weird and bad in firefox, maybe try a dotted border?
+remember to deploy to see what this looks like on mobile, both ios and android!
 
 another thing to do here now is style a button alongside these boxes
 and work on the button's animated state, which probably has an ellipsis that blinks ., .., ...
 and maybe also a gently swimming wallpaper background--you like this because it's calm, immediate, unique, and does not revert (like progress that shrinks) nor appear possibly endless (like all the spinners)
-
-
-
-
-do these:
-<InputBox /> single line
-<ParagraphBox /> multiple lines
-<NumberBox /> puts up mobile phone keypad
-and not phonebox, emailbox, namebox, any of those
-
-some of these styles, like mt-4 and max-w-xs are really about layout, and should go to divs higher in the tree
-
-the dashed border looks weird and bad in firefox, maybe try a dotted border?
-remember to deploy to see what this looks like on mobile, both ios and android!
 
 all the text the user types should be monospace, like Noto Sans Mono
 when they write a post, even, it's mono
 when it's rendered on the page it's in the brand font
 hook that up for these controls
 
-
-
-
-
-
-
-
-big questions about granular components
-- are they really going to make things better? maybe a longer form code even with some repitition is simpler with less communication, state machines, events flying around. you're more directly in control
-- does using props for configuration and emits for notifications mean you can't get the clarity of await any longer?
-- if you make your own granular components with tailwind here, and then soon want to get a vue tailwind component library into the stack to benefit from their professional and consistant look, are those two things not going to mix well together? maybe you should do as little as you can on this trail until you've investigated component libraries off the shelf
-
-
-
-
-
-
-paper sketch of granular components
-
-for each of these, figure out what
-1 you initialize them with; this information shouldn't change
-2 you call down to command them with after that fact, and
-3 they communicate up to you, telling you that something has happened, returning information, or asking for information
-
 do these hold a line of status or help or error text beneath them
 like "Got that as US +1 987 555 124" for phone number
 or "Prosessing for 5 seconds..." on a slow POST
 
-
-
-
-
-
-
-
-stop working on password because it won't even be in 1.0
-the identity trail is
-- magic link
-- two factor app
-- social login
-and then you're at a very solid workable set, and can grow from there with
-- wallet
-and you still haven't done password yet
-
-
-
-
 simple idea for the crayon design
 as a visual communication of brand, though, this may be too distinctive
 highly usable, but look underdeveloped, retro, rudimentary, less than current or professional
-ok with that caveat, here it is anyway
 
 inputs and buttons look a lot alike, buttons have text in them, buttons are solid
 dashed always means not valid, solid always means valid
 dashed box means blank or that's not an email address
 dashed button means you haven't gotten this form submittable yet
 the accent color (pink, not gray) means that thing has the focus
-
-ok, so what's a solid background dashed button look like? does that look bad? weird? all 1997-style? is that a good thing?
 
 and then all you have to figure out is what the Submitting... animation is for buttons
 ideas include
@@ -176,23 +191,11 @@ and this is all the animatino you need as you're building this thing so there's 
 ok, yeah, this meets your crayon requirement
 is really simple, both visually, and to code
 
-
-
-
-
-
-
 maybe you can code your own inputs and buttons easily
 but they look too kindergarten, too Yoshi's Wolly World
 and for that reason you bring in a look from a vue tailwind component library
 
 or maybe you just bring in the library to get the mobile-style checkbox ((x) ) that thing
-
-
-
-
-
-
 
 oh, can you set the placeholder text in one font and color (diatype, gray)
 and the text the user types in another (noto sans mono, black)
