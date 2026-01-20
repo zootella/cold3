@@ -18,7 +18,7 @@ async function attachState(task, browserHash) {//attach current credential state
 	if (user) {
 		task.userTag = user.userTag
 		let name = await credentialNameGet({userTag: user.userTag})
-		if (name) task.userName = name.v
+		if (name) task.userName = name.name
 		let password = await credentialPasswordGet({userTag: user.userTag})
 		if (password) task.passwordCycles = password.cycles
 	}

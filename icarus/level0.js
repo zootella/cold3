@@ -3676,6 +3676,7 @@ noop(() => {//fuzz test round trip with random moments from 1970 to 2100
 	}
 	log(`round trip fuzz tested ${commas(cycles)} cycles in ${seconds} seconds`)
 })
+//ttd january, since length as a whole is not constant, you probably want to make the first nine days just "feb7" rather than "feb07" actually; make this change if you use this form
 
 
 
