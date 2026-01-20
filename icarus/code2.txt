@@ -1,5 +1,7 @@
 notesfile
 
+(this notes document is part of a set; find them all by searching "otp notes")
+
 essentially, right now, you are learning to distill objects on the server side to return tight meaningful summaries to teh apge
 previously, you were being exhaustive, because you wanted to not miss any detail
 now, it's time to make things easier for yourself

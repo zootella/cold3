@@ -1,5 +1,8 @@
 notesfile
 
+(this notes document is part of a set; find them all by searching "otp notes")
+
+
 
 in scope now:
 [x]send code
