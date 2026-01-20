@@ -46,7 +46,7 @@ vue component pages to occupy the routes for user profiles and posts
 new vue components which are the main content of a user's public profile page, and a post they authored
 
 - `site/stores/renderStore.js` - Pinia store with cache and promise deduplication
-- `site/server/api/render.js` - API endpoint for LookupName action
+- `site/server/api/render.js` - API endpoint for Get. action
 pinia store and server api to get information about users and posts to render public profile and post components
 
 - `site/composables/useRouteCorrection.js` - client-side URL case correction
@@ -117,7 +117,7 @@ NAVIGATION SCENARIOS:
 USAGE:
 Pages call this after getting user data:
 
-    const user = await renderStore.getUser(route.params.part1)
+    const user = await renderStore.getUser({part1: route.params.part1})
     if (import.meta.client) useRouteCorrection({user})
 
 The composable calls useRoute() and useRouter() internally, then uses router.resolve() to
