@@ -1,0 +1,166 @@
+notesfile
+
+/*
+notes in render.txt about:
+pages/[part1]/index.vue    ->  ProfilePage.vue
+pages/[part1]/[part2].vue  ->  PostPage.vue
+
+and how those four use:
+stores/renderStore.js
+server/api/render.js
+composables/useRouteCorrection.js
+
+find these files together by searching "render stack"
+*/
+
+
+
+
+
+
+
+User Profile and Post Rendering
+
+## Overview
+
+User profile pages at `/First-Last` and post pages at `/First-Last/some-post` use:
+- **renderStore** (Pinia) - caches user data, handles SSR→hydration bridge
+- **render.js API** - looks up users by route segment
+- **useRouteCorrection** - corrects URL case client-side without HTTP redirect
+
+## The Three Name Forms
+
+From `validateName` in `icarus/level1.js`:
+- **f0**: `"tokyo-girl"` - normalized, lowercase, for database lookup
+- **f1**: `"Tokyo-Girl"` - canonical route, what URLs should display
+- **f2**: `"東京ガール"` - display name, can include emoji
+
+## Files in the stack, top to bottom, grouped by type
+
+- `site/pages/[part1]/index.vue` - profile page
+- `site/pages/[part1]/[part2].vue` - post page
+vue component pages to occupy the routes for user profiles and posts
+
+- `site/components/pages/ProfilePage.vue` - profile display component
+- `site/components/pages/PostPage.vue` - post display component
+new vue components which are the main content of a user's public profile page, and a post they authored
+
+- `site/stores/renderStore.js` - Pinia store with cache and promise deduplication
+- `site/server/api/render.js` - API endpoint for LookupName action
+pinia store and server api to get information about users and posts to render public profile and post components
+
+- `site/composables/useRouteCorrection.js` - client-side URL case correction
+a new composable which on the client adjusts the text in the location bar in case the user bookmarks or copies it away
+
+## URL Case Correction
+
+Uses `router.replace()` (wraps `history.replaceState`) on client only:
+- No HTTP redirect - page content correct from first GET
+- Back button works - replaceState doesn't add history entry
+- Case-insensitive links always work - lookup is by f0, correction to f1 is cosmetic
+
+
+
+
+
+useRouteCorrection: correct URL case without HTTP redirect
+
+WHAT THIS DOES:
+- after fetching user data, corrects URL case client-side if needed
+- e.g., /first-LAST becomes /First-Last in the location bar
+- uses router.replace() which calls history.replaceState under the hood
+
+THE THREE NAME FORMS (from validateName in icarus/level1.js):
+- f0: "tokyo-girl"    normalized, lowercase, for database uniqueness and case-insensitive lookup
+- f1: "Tokyo-Girl"    canonical route, case-preserved, what URLs should display
+- f2: "東京ガール"     display name, can include emoji, shown on page
+
+ALTERNATIVE SOLUTIONS (and why we don't use them):
+
+❌ HTTP 302 redirect from server
+   Server detects wrong case, returns 302 Found redirect to canonical URL.
+   Problems: Adds full HTTP round trip (request → 302 → second request → response).
+   User sees delay. SSR benefits lost on the redirect.
+
+❌ Nuxt middleware with server-side navigateTo()
+   Global middleware checks every route, redirects on server if case wrong.
+   This just does a 302 under the hood - same round trip problem as above.
+   Also adds user lookup latency to every route, even /about, /login, etc.
+
+❌ Nuxt middleware with client-side navigateTo()
+   Global middleware runs on client, calls navigateTo() which uses router.replace().
+   No round trip, but still adds user lookup logic to every route navigation.
+   Middleware runs before page component, so you'd duplicate the getUser() call.
+
+✅ Client-side correction in page files (what we do)
+   Page already calls getUser() for rendering. After that, useRouteCorrection()
+   calls router.replace() if needed. No extra lookup, no middleware overhead,
+   only runs on user routes, SSR works perfectly on first request.
+
+NAVIGATION SCENARIOS:
+
+1. Direct navigation (new tab, refresh, typed URL, link from Reddit):
+   - Server SSR: getUser() fetches user data, caches in store
+   - HTML sent to browser with Pinia state serialized
+   - Client hydration: getUser() returns cached data
+   - useRouteCorrection() runs: sees mismatch, calls router.replace()
+   - URL bar updates without page reload or history entry
+
+2. SPA navigation (click NuxtLink):
+   - Client-side navigation, getUser() fetches from API (or cache)
+   - useRouteCorrection() runs: corrects URL if needed
+
+3. Back/forward navigation:
+   - getUser() returns cached data
+   - useRouteCorrection() runs: URL already correct, no action needed
+
+USAGE:
+Pages call this after getting user data:
+
+    const user = await renderStore.getUser(route.params.part1)
+    if (import.meta.client) useRouteCorrection({user})
+
+The composable calls useRoute() and useRouter() internally, then uses router.resolve() to
+reconstruct the path with the corrected part1 param (this properly handles query strings,
+hash fragments, and avoids incorrectly replacing some other instance of the name if it
+appears elsewhere in the route, like in a post title).
+
+
+
+
+
+
+
+
+
+
+notes about how nuxt does dynamic routes
+
+./pages/static1/index.vue
+./pages/static1/[more].vue
+
+./pages/static2/index.vue
+./pages/static2/[...more].vue
+
+right now we're using [part1]/[part2].vue, two separate parts, rather than [...more]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

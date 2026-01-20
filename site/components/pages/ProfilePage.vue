@@ -1,28 +1,36 @@
-<script setup>
-/*
-ProfilePage.vue - displays user profile information
+<script setup>//profile component of a user that is probably not the same as the one signed in!
 
-Shows: user tag, three name forms (f0, f1, f2)
-Parent: render <ProfilePage />, no props needed; uses renderStore.current for data
-Server contact: assumes renderStore.load() was already called by the page
+/*
+notes in render.txt about:
+pages/[part1]/index.vue    ->  ProfilePage.vue
+pages/[part1]/[part2].vue  ->  PostPage.vue
+
+and how those four use:
+stores/renderStore.js
+server/api/render.js
+composables/useRouteCorrection.js
+
+find these files together by searching "render stack"
 */
 
-const renderStore = useRenderStore()
+const props = defineProps({
+	user: {type: Object, default: null},
+})
 
 </script>
 <template>
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>ProfilePage</i></p>
 
-<template v-if="renderStore.current">
+<template v-if="user">
 	<p class="my-space">
-		user tag <code>{{ renderStore.current.userTag }}</code>
+		user tag <code>{{ user.userTag }}</code>
 	</p>
 	<p class="my-space">
 		name
-		f0 <code>{{ renderStore.current.f0 }}</code>,
-		f1 <code>{{ renderStore.current.f1 }}</code>,
-		f2 <code>{{ renderStore.current.f2 }}</code>
+		f0 <code>{{ user.name.f0 }}</code>,
+		f1 <code>{{ user.name.f1 }}</code>,
+		f2 <code>{{ user.name.f2 }}</code>
 	</p>
 </template>
 <template v-else>

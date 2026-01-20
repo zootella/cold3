@@ -1,6 +1,21 @@
-//./stores/renderStore.js - data about the user whose profile/post page is being rendered
-//separate from credentialStore which is about the viewer (who's browsing)
-//follows the same pattern: loads during server render, lookup table prevents re-fetch for same user
+
+
+/*
+notes in render.txt about:
+pages/[part1]/index.vue    ->  ProfilePage.vue
+pages/[part1]/[part2].vue  ->  PostPage.vue
+
+and how those four use:
+stores/renderStore.js
+server/api/render.js
+composables/useRouteCorrection.js
+
+find these files together by searching "render stack"
+*/
+
+import {
+validateName,
+} from 'icarus'
 
 export const useRenderStore = defineStore('renderStore', () => {
 
@@ -11,44 +26,58 @@ const users = ref({})
 //index: f0 → userTag for fast lookup from normalized route segment
 const f0ToUserTag = ref({})
 
-//currently rendered user (set by load, used by pages)
-const current = ref(null)
+//in-flight promises for request deduplication (not reactive, not serialized across bridge)
+const pending = {}
 
-async function load(raw1) {
-	//normalize to f0 for cache lookup
-	//note: this is a simplified normalization; the real f0 comes from the API
-	const f0Guess = raw1.toLowerCase()
+//get user by raw route param - validates, checks cache, fetches if needed
+//three states: cached (return immediately), in-flight (return existing promise), or fetch (start new request)
+async function getUser(raw1) {
+	const v = validateName(raw1)
+	if (!v.ok) return null
 
-	//check cache: do we already have data for this user?
-	const cachedUserTag = f0ToUserTag.value[f0Guess]
+	const f0 = v.f0
+
+	//cached result - return immediately
+	const cachedUserTag = f0ToUserTag.value[f0]
 	if (cachedUserTag && users.value[cachedUserTag]) {
-		current.value = users.value[cachedUserTag]
-		return current.value
+		return users.value[cachedUserTag]
 	}
 
-	//fetch from API
-	let task = await fetchWorker('/api/render', {body: {action: 'LookupName.', raw1}})
-
-	//handle not found
-	if (!task.success || !task.lookup) {
-		current.value = null
-		return null
+	//in-flight promise - return same promise (both callers await same result)
+	if (pending[f0]) {
+		return pending[f0]
 	}
 
-	//cache the result
-	const lookup = task.lookup
-	f0ToUserTag.value[lookup.f0] = lookup.userTag
-	users.value[lookup.userTag] = lookup
+	//start fetch, cache promise for deduplication
+	const promise = (async () => {
+		const task = await fetchWorker('/api/render', {body: {action: 'LookupName.', raw1: f0}})
+		if (!task.success || !task.lookup) return null
 
-	//set as current
-	current.value = lookup
-	return lookup
+		const lookup = task.lookup
+		f0ToUserTag.value[lookup.name.f0] = lookup.userTag
+		users.value[lookup.userTag] = lookup
+		return lookup
+	})()
+
+	pending[f0] = promise
+
+	try {
+		return await promise
+	} finally {
+		delete pending[f0]
+	}
+}
+
+//stub for future: get post by identifier
+async function getPost(userTag, postId) {
+	//TODO: implement post fetching
+	return null
 }
 
 return {
 	users,
-	current,
-	load,
+	getUser,
+	getPost,
 }
 
 })
