@@ -3,255 +3,117 @@
 
 # Wallet Authentication System
 
-Proof of Ethereum wallet ownership via cryptographic signature.
-
-## Overview
-
-User connects their wallet (MetaMask, WalletConnect). Server generates a challenge message with a random nonce. User signs the message with their private key. Server verifies the signature proves ownership of the address.
-
-**Key design:** No database table for challenge state. The server seals an encrypted envelope containing the challenge parameters; the page holds it and resubmits with the signature.
+Proves user controls an Ethereum wallet by signing a challenge message with their private key.
 
 ---
 
-## Architecture
+## How It Works
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Browser                                                        │
-│  ├─ WalletDemo.vue  →  POST /api/wallet                         │
-│  ├─ wagmi: injected() for MetaMask                              │
-│  └─ wagmi: walletConnect() with QR code                         │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│  Nuxt Server                                                    │
-│  └─ api/wallet.js: Prove1 (challenge), Prove2 (verify)          │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│  icarus/                                                        │
-│  ├─ level0.js: Tag() for nonce generation                       │
-│  ├─ level1.js: checkWallet, validateWallet (EIP-55)             │
-│  └─ level2.js: sealEnvelope, openEnvelope                       │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│  viem                                                           │
-│  └─ verifyMessage(): recovers signer address from signature     │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. User connects wallet (MetaMask popup or WalletConnect QR scan)
+2. Page sends wallet address to server (Prove1)
+3. Server generates random nonce, builds challenge message, seals envelope
+4. Page asks wallet to sign the message (user clicks "Sign" in wallet)
+5. Page resubmits envelope + signature (Prove2)
+6. Server opens envelope, verifies signature proves address ownership
+
+No database table needed—the envelope holds all challenge state. This is the cleanest of the three systems: no codes to send, no secrets to store, just a cryptographic proof.
 
 ---
 
-## Sealed Envelope Pattern
+## The Envelope Pattern
 
-The challenge nonce and message are sealed in an envelope that the page holds between Prove1 and Prove2. No database write needed.
+Same principle as TOTP, but simpler because the flow is synchronous.
 
-### Prove1: Generate Challenge
+**Prove1:** Server generates a nonce (random 21-char tag), builds a human-readable challenge message containing the nonce, seals an envelope containing: browserHash, wallet address, nonce, and the message. Returns envelope + message to page.
 
-```javascript
-// site/server/api/wallet.js:12-21
-let address = checkWallet(body.address).f0
-let nonce = Tag()  // random 21-char string
-let message = safefill`Add your wallet with an instant, zero-gas signature of code ${nonce}`
+**Signing:** Page asks the wallet to sign the message. User sees the message in their wallet UI—it's readable, they know what they're approving. Wallet returns the signature.
 
-let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {
-  message: safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`,
-})
-return {message, nonce, envelope}
-```
+**Prove2:** Page sends envelope + signature + address + nonce + message back. Server opens envelope, verifies nothing was tampered with (the envelope's contents must match what the page claims), verifies the signature using viem's `verifyMessage()`. If the recovered signer matches the claimed address, ownership is proven.
 
-### Prove2: Verify Signature
-
-```javascript
-// site/server/api/wallet.js:23-51
-let letter = await openEnvelope('ProveWallet.', body.envelope, {skipExpirationCheck: true})
-if (isExpired(letter.expiration)) return {outcome: 'BadMessage.'}
-
-// Verify envelope contents match submitted values
-if (!hasTextSame(letter.message, safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`))
-  return {outcome: 'BadMessage.'}
-
-// Verify nonce is in message (prevents message substitution)
-if (!message.includes(nonce)) return {outcome: 'BadMessage.'}
-
-// Verify signature with viem
-let valid = await verifyMessage({address, message, signature})
-if (!valid) return {outcome: 'BadSignature.'}
-
-return {outcome: 'Proven.'}
-```
-
----
-
-## Why No Cookie?
-
-Unlike TOTP, wallet signing doesn't involve page refreshes:
-
-1. User clicks "Connect Wallet"
-2. Wallet popup appears (same browser context)
-3. User approves connection
-4. Page requests signature
-5. Wallet popup appears again
-6. User signs
-7. Page submits signature
-
-The page holds the envelope in memory (a `ref`) for the few seconds between Prove1 and Prove2.
+**Why memory, not cookie?** Wallet signing doesn't leave the page. User clicks a button, wallet popup appears, user approves, popup closes, page submits. Takes seconds, no refresh. The envelope lives in a Vue `ref` during this brief window.
 
 ---
 
 ## Wallet Connection
 
-**Location:** `site/components/snippet1/WalletDemo.vue:78-101`
+Two connection methods, both via wagmi:
 
-Uses wagmi with two connectors:
+**Injected (MetaMask, etc.):** Browser extension wallets inject `window.ethereum`. Click connect, popup appears, user approves, page gets address. Fast, no QR code.
 
-```javascript
-wagmi_core.createConfig({
-  chains: [viem_chains.mainnet],
-  transports: {
-    [viem_chains.mainnet.id]: viem.http(Key('alchemy url, public'))
-  },
-  connectors: [
-    wagmi_connectors.injected(),  // MetaMask, Coinbase Wallet, etc.
-    wagmi_connectors.walletConnect({
-      projectId: Key('walletconnect project id, public'),
-      showQrModal: false,
-      onDisplayUri: (uri) => { refUri.value = uri }  // show our own QR
-    }),
-  ],
-})
-```
+**WalletConnect:** For mobile wallets. Server generates a session URI, page displays it as QR code, user scans with phone wallet, approves on phone. Connection happens over a relay—the page and phone wallet don't talk directly.
 
-### MetaMask Flow
-
-```javascript
-// site/components/snippet1/WalletDemo.vue:147-166
-let result = await wagmi_core.connect(_wagmiConfig, {
-  connector: wagmi_connectors.injected()
-})
-refConnectedAddress.value = result.accounts[0]
-```
-
-### WalletConnect Flow
-
-```javascript
-// site/components/snippet1/WalletDemo.vue:167-201
-await wagmi_core.connect(_wagmiConfig, {
-  connector: wagmi_connectors.walletConnect({...})
-})
-// onDisplayUri callback shows QR code
-// User scans with mobile wallet
-// Connection resolves when approved
-```
+`WalletDemo.vue` handles both flows, showing the QR only when WalletConnect is chosen.
 
 ---
 
-## Signing Flow
+## Signature Verification
 
-**Location:** `site/components/snippet1/WalletDemo.vue:216-252`
+Ethereum signatures are powerful: you can recover the signer's address from any signature. This makes verification straightforward.
 
-```javascript
-// Step 1: Get challenge from server
-let response1 = await fetchWorker('/api/wallet', {
-  body: {action: 'Prove1.', address}
-})
-let {nonce, message, envelope} = response1
+1. User signs our challenge message (containing a nonce)
+2. Server calls viem's `verifyMessage({address, message, signature})`
+3. viem recovers the signer address from the signature
+4. If recovered address matches claimed address, ownership is proven
 
-// Step 2: Request signature from wallet
-let signature = await wagmi_core.signMessage(_wagmiConfig, {message})
+No shared secret needed. The user's private key never leaves their wallet—they just prove they have it by signing something unique.
 
-// Step 3: Submit signature for verification
-let response2 = await fetchWorker('/api/wallet', {
-  body: {action: 'Prove2.', address, nonce, message, signature, envelope}
-})
-// response2.outcome === 'Proven.'
-```
+**Why is the message human-readable?** Users see what they're signing in their wallet UI. A clear message like "Add your wallet with an instant, zero-gas signature of code ABC123..." builds trust. They know they're not signing a transaction that could drain their funds.
+
+**Why embed the nonce?** Prevents replay attacks. Even if someone captures a signature, they can't reuse it—the server will generate a different nonce next time.
 
 ---
 
-## Address Validation
+## Key Functions
 
-**Location:** `icarus/level1.js:1052-1103`
-
-```javascript
-export function validateWallet(raw) {
-  let t = raw.trim()
-
-  // Extract 40 hex characters (with or without 0x prefix)
-  let r40
-  if (t.length == 42 && t.slice(0, 2).toLowerCase() == '0x') r40 = t.slice(2)
-  else if (t.length == 40) r40 = t
-  else return {ok: false, raw}
-
-  // Validate hex characters
-  if (!/^[0-9a-fA-F]+$/.test(r40)) return {ok: false, raw}
-
-  // Apply EIP-55 checksum
-  let c = viem_getAddress(('0x'+r40).toLowerCase())
-
-  return {ok: true, f0: c, f1: c, f2: c, raw}
-}
-```
-
-Returns three address forms (all the same for wallets):
-- `f0`: checksummed (canonical)
-- `f1`: for API use
-- `f2`: for display
-
----
-
-## Nonce Generation
-
-**Location:** `icarus/level0.js:1046-1095`
-
-```javascript
-export function Tag() {
-  // 21 base62 characters
-  // ~107 billion years to collision
-  // crypto.getRandomValues() for security
-  return _tagMaker()
-}
-```
-
-The nonce is embedded in both:
-1. The human-readable message the user signs
-2. The sealed envelope for server verification
+| Function | Location | Purpose |
+|----------|----------|---------|
+| `Tag()` | level0.js | Generate cryptographic nonce (21 base62 chars) |
+| `validateWallet()` | level1.js | Parse address, apply EIP-55 checksum |
+| `sealEnvelope()` | level2.js | Encrypt challenge for page to hold |
+| `openEnvelope()` | level2.js | Decrypt and verify on resubmission |
+| `verifyMessage()` | viem | Recover signer from signature, compare to address |
 
 ---
 
 ## Security Properties
 
-| Property | How |
-|----------|-----|
-| Replay prevention | Nonce is random, envelope expires in 20 minutes |
-| Cross-browser prevention | browserHash embedded in envelope message |
-| Address binding | address embedded in envelope message |
-| Signature validity | viem.verifyMessage recovers signer, compares to claimed address |
-| Envelope tampering | Symmetric encryption with server-only key |
+| Property | Mechanism |
+|----------|-----------|
+| Replay prevention | Random nonce, 20-minute envelope expiration |
+| Cross-browser prevention | browserHash embedded in envelope |
+| Address binding | Address embedded in envelope, verified against signature |
+| Tamper prevention | Envelope encrypted with server-only key |
 
 ---
 
-## File Index
+## Frontend
 
-| Component | File | Lines |
-|-----------|------|-------|
-| API endpoint | `site/server/api/wallet.js` | 1-53 |
-| Envelope seal/open | `icarus/level2.js` | 380-408 |
-| Address validation | `icarus/level1.js` | 1052-1103 |
-| Nonce generation | `icarus/level0.js` | 1046-1095 |
-| Vue component | `site/components/snippet1/WalletDemo.vue` | 1-296 |
+| Component | Purpose |
+|-----------|---------|
+| `WalletDemo.vue` | Wallet connection, QR display, signing flow |
 
 ---
 
-## Comparison to OTP and TOTP
+## Compared to OTP and TOTP
 
-| Aspect | OTP (code_table) | TOTP | Wallet |
-|--------|------------------|------|--------|
-| Proves | Control of email/phone | Possession of device | Control of private key |
-| Secret | Server generates code | Shared secret in app | User's private key |
-| Provisional state | Database row | Cookie with envelope | Memory with envelope |
-| Verification | Hash comparison | HMAC-SHA1 | ECDSA signature recovery |
-| User action | Type 4-6 digits | Type 6 digits | Click "Sign" in wallet |
-| Rate limiting | Per-address | Per-secret | None (envelope expires) |
-| Database table | code_table | credential_table | None |
+Wallet is the simplest of the three systems:
+
+| | OTP | TOTP | Wallet |
+|-|-----|------|--------|
+| **What user proves** | Controls email/phone | Has authenticator device | Controls private key |
+| **Shared secret** | Code sent to user | Secret scanned into app | None (asymmetric) |
+| **Provisional state** | Database row | Cookie with envelope | Memory with envelope |
+| **Database table** | code_table | credential_table | None |
+| **User action** | Type 4-6 digits | Type 6 digits | Click "Sign" |
+
+Wallet requires no shared secret and no persistent storage for the challenge—just a brief envelope in memory. The cryptographic proof is self-contained in the signature.
+
+---
+
+## Files
+
+- `site/server/api/wallet.js` — endpoint (Prove1, Prove2)
+- `icarus/level0.js` — nonce generation
+- `icarus/level1.js` — address validation
+- `icarus/level2.js` — envelope seal/open
+- `site/components/snippet1/WalletDemo.vue` — frontend

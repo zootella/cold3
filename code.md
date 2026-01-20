@@ -1,588 +1,209 @@
 
 (this notes document is part of a set; find them all by searching "otp notes")
 
-# Verification Code System
+# Verification Code System (OTP)
 
-This document describes the verification code flow used for proving user ownership of an email address or phone number.
-
-## Overview
-
-The user types an address they control (email or phone). The system sends a short code. When the user enters the code correctly, the server has proof that the user at the browser controls that address.
+Proves user controls an email address or phone number by sending a short code they must enter.
 
 ---
 
-## Architecture Layers
+## How It Works
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Browser                                                        │
-│  ├─ Cookie: browserTag (http-only, 395 days)                    │
-│  ├─ CodeRequestComponent.vue  →  POST /api/code/send            │
-│  └─ CodeEnterComponent.vue    →  POST /api/code/enter           │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│  Nuxt Server (site/server/)                                     │
-│  ├─ cookieMiddleware.js: extracts browserTag from cookie        │
-│  ├─ api/code/send.js: validates input, calls codeSend()         │
-│  └─ api/code/enter.js: validates input, calls codeEnter()       │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│  icarus/level2.js & level3.js (core logic)                      │
-│  ├─ browserTag → browserHash (SHA-256)                          │
-│  ├─ codeSend(): permit check, compose code, call lambda, record │
-│  ├─ codeEnter(): validate, check expiration, verify hash        │
-│  └─ browserToCodes(): retrieve live codes for browser           │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│  Lambda: net23/src/message.js                                   │
-│  └─ persephone.js: sends via Amazon SES/SNS or Twilio           │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────────┐
-│  Database: code_table                                           │
-│  └─ Stores: browserHash, address, hash(codeTag+code), lives     │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. User enters their email or phone
+2. Server checks rate limits, generates a code, sends it via lambda
+3. Server stores hash(codeTag + code) in `code_table`, bound to this browser
+4. User receives email/SMS, types the code
+5. Server verifies hash matches, marks address as validated
+
+The code itself is never stored—only its hash. The user proves knowledge of the code; the server proves it generated that code for this browser.
 
 ---
 
-## Database Schema
+## Browser Identity
 
-### code_table
+Every browser gets a `browserTag` in an http-only cookie (395 days). The server hashes this to `browserHash` before use. The tag never reaches client JavaScript; the hash never leaves the server. This binds codes to the browser that requested them.
 
-**Location:** `icarus/level3.js:955-978`
-
-```sql
-CREATE TABLE code_table (
-  row_tag        CHAR(21)  NOT NULL PRIMARY KEY,  -- uniquely identifies the row, also the code tag
-  row_tick       BIGINT    NOT NULL,              -- timestamp when code was sent
-  hide           BIGINT    NOT NULL,              -- not used; set lives to 0 instead to revoke
-
-  browser_hash   CHAR(52)  NOT NULL,  -- hashed browser identifier
-
-  provider_text  TEXT      NOT NULL,  -- "Amazon." or "Twilio."
-  type_text      TEXT      NOT NULL,  -- "Email." or "Phone."
-  address0_text  TEXT      NOT NULL,  -- normalized address
-  address1_text  TEXT      NOT NULL,  -- API/formal address
-  address2_text  TEXT      NOT NULL,  -- display address
-
-  hash           CHAR(52)  NOT NULL,  -- hash(codeTag + codeCandidate)
-  lives          BIGINT    NOT NULL   -- guesses remaining (starts at 4)
-);
-
-CREATE INDEX code1 ON code_table (browser_hash, row_tick DESC) WHERE hide = 0;
-CREATE INDEX code2 ON code_table (type_text, address0_text, row_tick DESC) WHERE hide = 0;
-```
+**Functions:** `cookieMiddleware.js` manages the cookie; `hashText()` in level2.js creates the hash.
 
 ---
 
-## browserTag and browserHash
+## Sending a Code
 
-### Cookie (Client-Side)
+When the user requests a code, the server:
 
-**Location:** `site/server/middleware/cookieMiddleware.js`
+1. **Permits** — `codePermit()` checks rate limits against `code_table` history for this address
+2. **Composes** — `codeCompose()` generates a random code, its hash, and a visual letter (A-Z)
+3. **Sends** — Lambda (`net23/message.js` → `persephone.js`) delivers via Amazon SES/SNS or Twilio
+4. **Records** — `code_add()` inserts a row with browserHash, address, hash, and lives=4
 
-- **Name:** `__Secure-current_session_password` (cloud) or `current_session_password` (local)
-- **Value:** `account_access_code_DO_NOT_SHARE_` + tag
-- **Lifespan:** 395 days (under Chrome's 400-day cap), refreshed on every visit
-- **Flags:** HttpOnly, Secure, SameSite=Lax
-
-### Hash (Server-Side)
-
-**Location:** `icarus/level2.js:729`
-
-```javascript
-let browserHash = await hashText(checkTag(door.workerEvent.context.browserTag))
-```
-
-The browserTag is never sent to client code; only the hash is used internally. This prevents untrusted page JavaScript from learning the browser's identity.
+The code travels to the user; only its hash reaches the database.
 
 ---
 
-## Constraints: User Stories and Enforcement
+## Entering a Code
 
-Each constraint exists to handle a specific user scenario. This section details each boundary, the user story it addresses, and exactly where in the source code it is created and enforced.
+When the user submits their guess:
 
-### Constants Reference
-
-**Location:** `icarus/level3.js:915-953`
-
-```javascript
-export const Code = {
-  expiration: 20*Time.minute,  guesses: 4,
-  limitHard: 24,  day: Time.day,
-  limitSoft: 2,  week: 5*Time.day,  minutes: 1*Time.minute,
-  limitStong: 1,  short: 4,  standard: 6,
-  alphabet: 'ABCDEFHJKMNPQRTUVWXYZ',
-}
-```
+1. **Lookup** — `codeEnter()` finds the row by codeTag
+2. **Validate browser** — Reject if browserHash doesn't match (attacker intercepted code)
+3. **Check expiration** — Reject if 20 minutes have passed
+4. **Verify hash** — Compare hash(codeTag + guess) against stored hash
+5. **Update lives** — Correct: set lives=0, record validation. Wrong: decrement lives.
 
 ---
 
-### 1. Time Expiration (20 minutes)
+## Constraints
 
-**User Story:** User requests a verification code, gets sidetracked by a phone call, returns to the page 30 minutes later, and types in the code from their email. The system rejects it because the window has closed.
+Each constraint handles a real user scenario. Understanding how they're enforced—where in the code, what schema fields—clarifies how the system holds together.
 
-**Why it exists:** Limits the attack window. A code intercepted by an attacker is only useful for 20 minutes.
+### 20-Minute Expiration
 
-**Constant:**
-```javascript
-expiration: 20*Time.minute  // icarus/level3.js:917
-```
+**Story:** User requests a code, gets sidetracked, returns 30 minutes later. Code rejected.
 
-**Created:** When the code is sent, `row_tick` is set to current timestamp.
-```javascript
-// icarus/level3.js:997-1006
-async function code_add({codeTag, browserHash, provider, type, v, hash, lives}) {
-  await queryAddRow({table: 'code_table', row: {
-    row_tag: codeTag,
-    // row_tick is automatically set to Now() by queryAddRow
-    ...
-  }})
-}
-```
+**Schema:** `row_tick` stores when the code was sent. No separate expiration field—it's computed from `row_tick + Code.expiration`.
 
-**Enforced at entry:** When user submits a code, check if it's expired.
-```javascript
-// icarus/level3.js:877-878
-if (row.row_tick + Code.expiration < now) {
-  return {success: false, reason: 'Expired.', lives: 0}
-}
-```
+**Enforcement:** `codeEnter()` compares `row_tick + Code.expiration` against current time. Also, `browserToCodes()` only queries rows where `row_tick >= now - Code.expiration`, so expired codes don't even appear in the UI.
 
-**Enforced at retrieval:** When fetching active codes to display to user, exclude expired ones.
-```javascript
-// icarus/level3.js:841-842
-let rows = await queryTopSinceMatchGreater({table: 'code_table',
-  since: Now() - Code.expiration,  // only codes from past 20 minutes
-  ...
-})
-```
+**To test:** Send a code, wait (or mock time forward), attempt entry. Expect `{success: false, reason: 'Expired.'}`. Also verify `browserToCodes()` returns empty after expiration.
 
 ---
 
-### 2. Wrong Guess Limit (4 guesses)
+### 4 Wrong Guesses
 
-**User Story:** User misreads the code in their email (maybe "8" looked like "6"), types it wrong, tries again, makes another typo, and after 4 failed attempts the code is dead and they must request a new one.
+**Story:** User fat-fingers the code repeatedly. After 4 wrong attempts, code dies.
 
-**Why it exists:** Prevents brute-force guessing. With 4 guesses on a 4-digit code, an attacker has a 4/10000 = 0.04% chance per code.
+**Schema:** `lives` field starts at 4. Decremented on each wrong guess. At 0, the code is dead.
 
-**Constant:**
-```javascript
-guesses: 4  // icarus/level3.js:918
-```
+**Enforcement:** `codeEnter()` decrements `lives` on wrong guess via `code_set_lives()`. Entry is rejected if `!row.lives` (already dead). `browserToCodes()` filters `lives > 0`, hiding dead codes from UI.
 
-**Created:** When code is recorded, lives is initialized to 4.
-```javascript
-// icarus/level3.js:836
-await code_add({..., lives: Code.guesses})
-```
-
-**Enforced on wrong guess:** Decrement lives; user can try again if lives > 0.
-```javascript
-// icarus/level3.js:891-895
-} else {  // wrong guess
-  let lives = row.lives - 1
-  await code_set_lives({codeTag, lives})
-  return {success: false, reason: 'Wrong.', lives}
-}
-```
-
-**Enforced on entry attempt:** Reject if code has no lives remaining.
-```javascript
-// icarus/level3.js:873-874
-if (!row || row.browser_hash != browserHash || !row.lives) {
-  toss('page', {...})  // no lives = code is dead
-}
-```
-
-**Enforced at retrieval:** Don't show dead codes to user.
-```javascript
-// icarus/level3.js:844
-title2: 'lives', cell2GreaterThan: 0,  // only codes with lives remaining
-```
+**To test:** Send a code, enter wrong guess 4 times. First 3 return `{success: false, reason: 'Wrong.', lives: 3/2/1}`. Fourth returns `lives: 0`. Fifth attempt throws (code is dead). Verify code no longer appears in `browserToCodes()`.
 
 ---
 
-### 3. Correct Guess Consumes Code
+### Correct Guess Kills Code
 
-**User Story:** User correctly enters their code. The code is immediately invalidated so it cannot be reused, and the address is marked as validated.
+**Story:** User enters correct code. It's consumed immediately—can't be reused.
 
-**Why it exists:** One-time use. Prevents replay attacks if someone later obtains the code.
+**Schema:** Same `lives` field. Correct guess sets `lives = 0`.
 
-**Enforced:**
-```javascript
-// icarus/level3.js:881-889
-if (hasTextSame(row.hash, await hashText(codeTag+codeCandidate))) {  // correct
-  await code_set_lives({codeTag, lives: 0})  // kill the code
-  await browserValidatedAddress({...})        // record the validation
-  return {success: true, lives: 0}
-}
-```
+**Enforcement:** `codeEnter()` calls `code_set_lives({codeTag, lives: 0})` on correct guess, then `browserValidatedAddress()` to record the outcome.
+
+**To test:** Send a code, enter correctly. Returns `{success: true}`. Attempt same code again—throws (dead code). Verify address validation was recorded.
 
 ---
 
-### 4. Replacement Invalidation
+### Replacement Kills Old Code
 
-**User Story:** User requests a code, email is slow to arrive, user gets impatient and requests another code. The first code is invalidated when the second is sent, so the user doesn't accidentally verify with the old one.
+**Story:** User requests a code, doesn't receive it, requests another. First code dies when second is sent.
 
-**Why it exists:** Ensures only the most recent code is valid. Prevents confusion and limits attack surface.
+**Schema:** No explicit "replaced" field. The old code's `lives` is set to 0.
 
-**Detected at permit:** Check for active code to the same address.
-```javascript
-// icarus/level3.js:789,803
-let rowsLive = rowsDay.filter(row => row.row_tick >= now - Code.expiration)
-...
-wouldReplace: (rowsLive.length && rowsLive[0].lives) ? rowsLive[0].row_tag : false
-```
+**Enforcement:** `codePermit()` checks for live codes to this address in the past 20 minutes (`rowsLive`). Returns `wouldReplace: codeTag` if found. `codeSent()` calls `code_set_lives({codeTag: permit.wouldReplace, lives: 0})` before recording the new code.
 
-**Enforced at send:** Kill the old code before recording the new one.
-```javascript
-// icarus/level3.js:828-830
-if (permit.wouldReplace) {
-  await code_set_lives({codeTag: permit.wouldReplace, lives: 0})
-}
-```
+**To test:** Send code A to an address. Send code B to the same address within 20 minutes. Verify code A now has `lives = 0` and doesn't appear in `browserToCodes()`. Code B works normally.
 
 ---
 
-### 5. Browser Binding
+### Browser Binding
 
-**User Story:** Attacker intercepts a code sent to victim's email (e.g., via shoulder-surfing or email compromise). Attacker tries to enter the code from their own computer. The system rejects it because the code is bound to the victim's browser.
+**Story:** Attacker sees code over victim's shoulder, tries to use it from their own browser. Rejected.
 
-**Why it exists:** The code proves control of both the address AND continuity of the browser session.
+**Schema:** `browser_hash` field stores the SHA-256 hash of the requesting browser's tag.
 
-**Created:** Code is stored with the requesting browser's hash.
-```javascript
-// icarus/level3.js:1000
-browser_hash: browserHash,
-```
+**Enforcement:** `codeEnter()` compares `row.browser_hash` against the entering browser's hash. Mismatch throws immediately—doesn't even return a nice error, because this indicates tampering.
 
-**Enforced:**
-```javascript
-// icarus/level3.js:873
-if (!row || row.browser_hash != browserHash || !row.lives) {
-  toss('page', {...})  // wrong browser = reject
-}
-```
+**To test:** Send a code with browserHash A. Attempt entry with browserHash B. Expect throw/rejection. Same code with browserHash A succeeds.
 
 ---
 
-### 6. Hard Rate Limit (24 codes per address per day)
+### 24 Codes/Day Hard Limit
 
-**User Story:** An attacker or confused user hammers the same email address all day, requesting code after code. After 24 codes in 24 hours, the system blocks further requests to protect the address owner from spam and the system from abuse.
+**Story:** Attacker (or confused user) hammers an address with code requests all day. After 24, blocked for remainder of 24-hour window.
 
-**Why it exists:** Prevents email/SMS bombing an address. Hard stop regardless of timing.
+**Schema:** No counter field. Computed by querying `code_table` for rows matching this address with `row_tick >= now - Code.day`.
 
-**Constants:**
-```javascript
-limitHard: 24,       // icarus/level3.js:920
-day:       Time.day, // icarus/level3.js:921
-```
+**Enforcement:** `codePermit()` queries `code_get_address()`, filters to `rowsDay`, checks `rowsDay.length >= Code.limitHard`. Returns `{success: false, reason: 'CoolHard.'}`.
 
-**Enforced:**
-```javascript
-// icarus/level3.js:786-792
-let rows = await code_get_address({address0})
-let rowsWeek = rows.filter(row => row.row_tick >= now - Code.week)
-let rowsDay = rowsWeek.filter(row => row.row_tick >= now - Code.day)
-
-if (rowsDay.length >= Code.limitHard) {
-  return {success: false, reason: 'CoolHard.'}
-}
-```
+**To test:** Send 24 codes to one address (may need to mock or bypass soft limit). 25th request returns `CoolHard.`. Wait 24 hours (or mock time), request succeeds again.
 
 ---
 
-### 7. Soft Rate Limit (1 minute cooldown after 2 codes)
+### 1-Minute Soft Limit
 
-**User Story:** User is impatient. They request a code, don't see it immediately, click "send code" again. After the second code in a 5-day window, the system requires a 1-minute pause between subsequent requests.
+**Story:** User is impatient, clicks "send code" repeatedly. After 2 codes in a 5-day window, must wait 1 minute between subsequent requests.
 
-**Why it exists:** Slows down rapid-fire requests without completely blocking legitimate users who need a few retries.
+**Schema:** No counter field. Computed from `code_table` rows with `row_tick >= now - Code.week`.
 
-**Constants:**
-```javascript
-limitSoft: 2,             // icarus/level3.js:923
-week:      5*Time.day,    // icarus/level3.js:924
-minutes:   1*Time.minute, // icarus/level3.js:925
-```
+**Enforcement:** `codePermit()` checks `rowsWeek.length >= Code.limitSoft`. If so, computes `cool = rowsWeek[0].row_tick + Code.minutes`. If `now < cool`, returns `{success: false, reason: 'CoolSoft.'}`.
 
-**Enforced:**
-```javascript
-// icarus/level3.js:795-798
-if (rowsWeek.length >= Code.limitSoft) {
-  let cool = rowsWeek[0].row_tick + Code.minutes  // when cooldown ends
-  if (now < cool) return {success: false, reason: 'CoolSoft.'}
-}
-```
+**To test:** Send 2 codes to an address. Immediately request a third—returns `CoolSoft.`. Wait 1 minute, request succeeds. Note: first 2 codes have no delay between them.
 
 ---
 
-### 8. Code Length Escalation (4 digits → 6 digits)
+### 4→6 Digit Escalation
 
-**User Story:** New user signs up, enters their email. First code is a friendly 4-digit "1234" that's easy to type. If they request another code within 5 days (maybe they're testing, or setting up a second device), subsequent codes are 6 digits for increased security.
+**Story:** First-time user gets a friendly 4-digit code. Returning user (within 5 days) gets stronger 6-digit codes.
 
-**Why it exists:** Balance UX vs security. First-time users get convenience; repeated requests get stronger codes to defeat statistical attacks.
+**Schema:** No field. Code length is decided at send time and affects only what's generated and hashed.
 
-**Constants:**
-```javascript
-limitStong: 1,   // icarus/level3.js:927 (note: typo "Stong" in source)
-short:      4,   // icarus/level3.js:928
-standard:   6,   // icarus/level3.js:929
-```
+**Enforcement:** `codePermit()` returns `useLength: rowsWeek.length < Code.limitStrong ? Code.short : Code.standard`. `codeCompose()` receives this length, generates code of that size.
 
-**Decided at permit:**
-```javascript
-// icarus/level3.js:802
-useLength: rowsWeek.length < Code.limitStong ? Code.short : Code.standard,
-```
-
-**Applied at composition:**
-```javascript
-// icarus/level3.js:813
-c.code = randomCode(length)  // length is 4 or 6 based on permit decision
-```
-
-**Security analysis (from source comments):**
-```
-4-digit code with 4 guesses every 5 days:
-  50% chance after ~6930 guesses = ~23.7 years
-
-6-digit code with 4 guesses every hour:
-  50% chance after ~693000 guesses = ~19.8 years
-```
+**To test:** Fresh address receives 4-digit code. Second code to same address (within 5 days) is 6 digits. After 5 days without codes, next code is 4 digits again.
 
 ---
 
-## Code Lifecycle
+### Summary
 
-### 1. Permit Check
-
-**Location:** `icarus/level3.js:782-805`
-
-Before sending, check if the address is rate-limited:
-
-```javascript
-async function codePermit(address0) {
-  let rows = await code_get_address({address0})
-  let rowsWeek = rows.filter(row >= now - Code.week)      // Past 5 days
-  let rowsDay = rowsWeek.filter(row >= now - Code.day)    // Past 24 hours
-
-  // Hard limit: 24 in 24 hours → CoolHard.
-  if (rowsDay.length >= Code.limitHard)
-    return {success: false, reason: 'CoolHard.'}
-
-  // Soft limit: 2 in 5 days → require 1 minute gap
-  if (rowsWeek.length >= Code.limitSoft) {
-    let cool = rowsWeek[0].row_tick + Code.minutes
-    if (now < cool)
-      return {success: false, reason: 'CoolSoft.'}
-  }
-
-  return {
-    success: true,
-    useLength: rowsWeek.length < Code.limitStrong ? Code.short : Code.standard,
-    wouldReplace: // tag of code that will be invalidated if one exists
-  }
-}
-```
-
-### 2. Code Composition
-
-**Location:** `icarus/level3.js:808-823`
-
-```javascript
-async function codeCompose({length, sticker}) {
-  let c = {}
-  c.codeTag = Tag()                              // Unique 21-char identifier
-  c.letter = await hashToLetter(c.codeTag, Code.alphabet)  // Visual letter A-Z
-  c.code = randomCode(length)                    // 4 or 6 digit numeric code
-  c.hash = await hashText(c.codeTag + c.code)   // Hash for verification
-  c.subjectText = `Code ${c.letter} ${c.code} for ${Key('message brand')}`
-  // messageText and messageHtml built with warning text
-  return c
-}
-```
-
-### 3. Send Message
-
-**Location:** `net23/src/message.js` → `persephone/persephone.js:88-167`
-
-The lambda supports 4 provider/service combinations:
-- Amazon SES (email)
-- Amazon SNS (SMS)
-- Twilio SendGrid (email)
-- Twilio SMS
-
-### 4. Record Code
-
-**Location:** `icarus/level3.js:825-837`
-
-Insert row into code_table with:
-- browserHash
-- provider, type, address (3 forms)
-- hash(codeTag + code)
-- lives = 4
-
-### 5. Code Entry & Verification
-
-**Location:** `icarus/level3.js:867-897`
-
-```javascript
-export async function codeEnter({browserHash, codeTag, codeCandidate}) {
-  let row = await code_get({codeTag})
-
-  // Reject if: no row, wrong browser, no lives remaining
-  if (!row || row.browser_hash != browserHash || !row.lives)
-    toss('page')
-
-  // Check expiration
-  if (row.row_tick + Code.expiration < now)
-    return {success: false, reason: 'Expired.', lives: 0}
-
-  // Verify guess
-  if (hasTextSame(row.hash, await hashText(codeTag + codeCandidate))) {
-    // CORRECT
-    await code_set_lives({codeTag, lives: 0})  // Consume code
-    await browserValidatedAddress({...})        // Record validation
-    return {success: true, lives: 0}
-  } else {
-    // WRONG
-    let lives = row.lives - 1
-    await code_set_lives({codeTag, lives})
-    return {success: false, reason: 'Wrong.', lives}
-  }
-}
-```
+| Constraint | Schema Field | Checked In | Outcome |
+|------------|--------------|------------|---------|
+| Expiration | `row_tick` | `codeEnter()`, `browserToCodes()` | Expired. |
+| Wrong guesses | `lives` | `codeEnter()` | Wrong., then dead |
+| Correct guess | `lives` | `codeEnter()` | lives→0, validated |
+| Replacement | `lives` (of old) | `codeSent()` | old lives→0 |
+| Browser binding | `browser_hash` | `codeEnter()` | throw |
+| Hard limit | (computed) | `codePermit()` | CoolHard. |
+| Soft limit | (computed) | `codePermit()` | CoolSoft. |
+| Code length | (computed) | `codePermit()` | 4 or 6 digits |
 
 ---
 
-## Invalidation Rules
+## Key Functions
 
-Codes are invalidated by setting `lives = 0`:
-
-| Trigger | When |
-|---------|------|
-| Correct guess | User enters correct code |
-| Wrong guesses exhausted | 4 wrong attempts |
-| Replacement | New code sent for same address while this one is live |
-| Expiration | 20 minutes elapsed (checked on entry, row not deleted) |
-
----
-
-## Retrieval for Browser
-
-**Location:** `icarus/level3.js:840-864`
-
-`browserToCodes({browserHash})` returns active codes for display:
-
-```javascript
-// Only returns codes where:
-// - row_tick >= now - 20 minutes (not expired)
-// - browser_hash matches
-// - lives > 0 (not consumed)
-
-// Each code includes:
-{
-  tag,         // code identifier
-  tick,        // send timestamp
-  lives,       // guesses remaining
-  letter,      // visual A-Z letter
-  addressType, // "Email." or "Phone."
-  address0,    // normalized
-  address1,    // API form
-  address2,    // display form
-}
-// NOTE: hash is NOT sent (server secret)
-```
+| Function | Location | Purpose |
+|----------|----------|---------|
+| `codePermit()` | level3.js | Rate limit check, decides code length |
+| `codeCompose()` | level3.js | Generate code, hash, visual letter |
+| `codeSent()` | level3.js | Record to database, kill replaced code |
+| `codeEnter()` | level3.js | Verify guess, update lives |
+| `browserToCodes()` | level3.js | Get active codes for display |
+| `code_table` schema | level3.js | browserHash, address, hash, lives |
 
 ---
 
-## Frontend Components
+## Frontend
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| CodeRequestComponent.vue | `site/components/snippet1/` | Email/phone input, provider selector, POST to /api/code/send |
-| CodeEnterComponent.vue | `site/components/snippet1/` | Code input with letter display, lives remaining |
-| CodeEnterList.vue | `site/components/snippet1/` | Lists all active codes for current browser |
-
----
-
-## API Endpoints
-
-### POST /api/code/send
-
-**Location:** `site/server/api/code/send.js`
-
-**Protected by:** Cloudflare Turnstile
-
-**Input:**
-```json
-{
-  "address": "user@example.com",
-  "provider": "Amazon"
-}
-```
-
-**Responses:**
-- Success: returns updated codes list
-- `CoolSoft.`: must wait 1 minute
-- `CoolHard.`: blocked for 24 hours
-
-### POST /api/code/enter
-
-**Location:** `site/server/api/code/enter.js`
-
-**Input:**
-```json
-{
-  "codeTag": "...",
-  "codeCandidate": "123456"
-}
-```
-
-**Responses:**
-- `{success: true}`: address validated
-- `{success: false, reason: 'Wrong.', lives: N}`: wrong guess
-- `{success: false, reason: 'Expired.'}`: code expired
+| Component | Purpose |
+|-----------|---------|
+| `CodeRequestComponent.vue` | Address input, provider selector, calls /api/code/send |
+| `CodeEnterComponent.vue` | Code input, shows letter and lives remaining |
+| `CodeEnterList.vue` | Lists all active codes for this browser |
 
 ---
 
-## Security Design
+## Security Summary
 
-| Feature | Purpose |
-|---------|---------|
-| browserHash hashing | Browser tag never sent to client; only hash used server-side |
-| Code hash verification | hash(codeTag + code) kept server-side; code itself never stored |
-| HTTP-only cookie | Prevents JavaScript from reading browserTag |
-| Rate limiting | Hard (24/day) and soft (1 min after 2/5days) limits |
-| 4 guesses | Cryptographically analyzed: 19.8 years brute force on 4-digit code |
-| 20-minute expiration | Short window minimizes exposure |
-| Turnstile | Bot protection on code send endpoint |
-| Per-browser binding | All codes linked to specific browserHash |
+- **Code never stored** — only hash(codeTag + code)
+- **browserTag in http-only cookie** — JavaScript can't read it
+- **browserHash never sent to client** — stays server-side
+- **Turnstile on send endpoint** — bot protection
+- **Analyzed rate limits** — 23.7 years to 50% brute-force success
 
 ---
 
-## File Index
+## Files
 
-| Component | File | Lines |
-|-----------|------|-------|
-| Database schema | `icarus/level3.js` | 955-978 |
-| Code constants | `icarus/level3.js` | 915-953 |
-| Code permit | `icarus/level3.js` | 782-805 |
-| Code compose | `icarus/level3.js` | 808-823 |
-| Code send logic | `icarus/level3.js` | 825-837 |
-| Code enter logic | `icarus/level3.js` | 867-897 |
-| Browser to codes | `icarus/level3.js` | 840-864 |
-| Browser hash creation | `icarus/level2.js` | 729 |
-| Cookie middleware | `site/server/middleware/cookieMiddleware.js` | 1-56 |
-| API: send | `site/server/api/code/send.js` | 1-32 |
-| API: enter | `site/server/api/code/enter.js` | 1-23 |
-| Lambda handler | `net23/src/message.js` | 1-23 |
-| Message sending | `net23/persephone/persephone.js` | 88-167 |
-| Frontend: request | `site/components/snippet1/CodeRequestComponent.vue` | - |
-| Frontend: enter | `site/components/snippet1/CodeEnterComponent.vue` | - |
-| Frontend: list | `site/components/snippet1/CodeEnterList.vue` | - |
+- `site/server/api/code/send.js`, `enter.js` — endpoints
+- `icarus/level3.js` — core logic and code_table schema
+- `icarus/level2.js` — browserHash creation
+- `net23/src/message.js`, `persephone/persephone.js` — lambda messaging
+- `site/components/snippet1/Code*.vue` — frontend
