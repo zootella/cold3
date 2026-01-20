@@ -284,11 +284,11 @@ export async function credentialBrowserRemove({userTag}) {//sign this user out e
 //                                                                            
 
 //lookup between user tags and names to render a profile page, let the user see their name, or choose or change it
-export async function credentialNameGet({//returns false not found, or {userTag, v} with all three valid name forms
+export async function credentialNameGet({//returns false not found, or {userTag, name} with all three valid name forms
 	//provide any one of these:
 	userTag,//get a user's name, all three forms, if the user exists and has a name; used to show the user their own name info
 	f0, f2,//make sure normalized and display names are available; these two are just helpers to credentialNameCheck below
-	raw1,//given a GETing slug like "Tokyo-girl", look up her userTag and return v.f1 "Tokyo-Girl" for history replace state
+	part1,//given the first route part like "Tokyo-girl", look up her userTag and return name.f1 "Tokyo-Girl" for history replace state
 }) {
 	let row, rows
 	if (given(userTag)) { checkTag(userTag)
@@ -297,18 +297,13 @@ export async function credentialNameGet({//returns false not found, or {userTag,
 		rows = await queryGet('credential_table', {type_text: 'Name.', f0_text: f0, event: 4})
 	} else if (given(f2)) { checkText(f2)
 		rows = await queryGet('credential_table', {type_text: 'Name.', f2_text: f2, event: 4})
-	} else if (given(raw1)) {
-		let v = validateName(raw1); if (!v.ok) return false
+	} else if (given(part1)) {
+		let v = validateName(part1); if (!v.ok) return false
 		rows = await queryGet('credential_table', {type_text: 'Name.', f0_text: v.f0, event: 4})
-	} else { toss('use', {userTag, f0, f2, raw1}) }
+	} else { toss('use', {userTag, f0, f2, part1}) }
 
 	row = rows[0]
-	if (row) return {userTag: row.user_tag, v: bundleValid({f0: row.f0_text, f1: row.f1_text, f2: row.f2_text})}
-	/*
-	hi claude, how big a change would it be to make two renames of parameters into and out of this function
-	ok so as an input, instead of raw1, calling that part1
-	and as an output, instead of v alongside userTag, calling that name
-	*/
+	if (row) return {userTag: row.user_tag, name: bundleValid({f0: row.f0_text, f1: row.f1_text, f2: row.f2_text})}
 	return false//not found
 }
 
@@ -425,12 +420,12 @@ grid(async () => {//name: get by userTag, get by raw1, check collisions
 	ok((await credentialNameGet({userTag})) == false)//no name yet
 	await credentialNameSet({userTag, raw1: 'Tokyo-Girl', raw2: 'Tokyo Girl'})//set name
 	let result = await credentialNameGet({userTag})//get by userTag
-	ok(result.userTag == userTag && result.v.f0 == 'tokyo-girl')
-	ok(result.v.f1 == 'Tokyo-Girl' && result.v.f2 == 'Tokyo Girl')
-	ok((await credentialNameGet({raw1: ''})) == false)//invalid raw1 returns false
-	ok((await credentialNameGet({raw1: 'nonexistent'})) == false)//valid but not found
-	let lookup = await credentialNameGet({raw1: 'tokyo-GIRL'})//sloppy case normalizes and finds
-	ok(lookup.userTag == userTag && lookup.v.f1 == 'Tokyo-Girl')//returns canonical f1
+	ok(result.userTag == userTag && result.name.f0 == 'tokyo-girl')
+	ok(result.name.f1 == 'Tokyo-Girl' && result.name.f2 == 'Tokyo Girl')
+	ok((await credentialNameGet({part1: ''})) == false)//invalid part1 returns false
+	ok((await credentialNameGet({part1: 'nonexistent'})) == false)//valid but not found
+	let lookup = await credentialNameGet({part1: 'tokyo-GIRL'})//sloppy case normalizes and finds
+	ok(lookup.userTag == userTag && lookup.name.f1 == 'Tokyo-Girl')//returns canonical f1
 	ok((await credentialNameCheck({raw1: 'Valid', raw2: ''})) == false)//check: invalid raw2
 	ok((await credentialNameCheck({raw1: 'TOKYO-GIRL', raw2: 'Other'})) == false)//check: f0 collision
 	ok((await credentialNameCheck({raw1: 'other', raw2: 'Tokyo Girl'})) == false)//check: f2 collision
@@ -459,11 +454,11 @@ grid(async () => {//name: change frees old name for others (the Bob story)
 	ok((await credentialNameSet({userTag: user2, raw1: 'Bob', raw2: 'Bob'})) == false)//user2 can't take "bob"
 	let v2 = await credentialNameSet({userTag: user1, raw1: 'Super-Bob', raw2: 'Super Bob'})//user1 changes to "super-bob"
 	ok(v2.ok && v2.f0 == 'super-bob')
-	ok((await credentialNameGet({userTag: user1})).v.f0 == 'super-bob')//user1 now has super-bob
+	ok((await credentialNameGet({userTag: user1})).name.f0 == 'super-bob')//user1 now has super-bob
 	let v3 = await credentialNameSet({userTag: user2, raw1: 'Bob', raw2: 'Bob'})//user2 can now take "bob"
 	ok(v3.ok && v3.f0 == 'bob')
-	ok((await credentialNameGet({userTag: user1})).v.f0 == 'super-bob')//both have correct names
-	ok((await credentialNameGet({userTag: user2})).v.f0 == 'bob')
+	ok((await credentialNameGet({userTag: user1})).name.f0 == 'super-bob')//both have correct names
+	ok((await credentialNameGet({userTag: user2})).name.f0 == 'bob')
 })
 grid(async () => {//sign-up creates three credentials, then user removes name and password
 	let {clear} = await getDatabase()
@@ -477,7 +472,7 @@ grid(async () => {//sign-up creates three credentials, then user removes name an
 	await credentialBrowserSet({userTag, browserHash})
 
 	//verify all three credentials exist
-	ok((await credentialNameGet({userTag})).v.f0 == 'new-user')
+	ok((await credentialNameGet({userTag})).name.f0 == 'new-user')
 	ok((await credentialPasswordGet({userTag})).cycles == 42)
 	ok((await credentialBrowserGet({browserHash})).userTag == userTag)
 
@@ -505,7 +500,7 @@ grid(async () => {//close account: user signs up, closes account, can't sign bac
 	await credentialBrowserSet({userTag, browserHash})
 
 	//verify all three credentials exist
-	ok((await credentialNameGet({userTag})).v.f0 == 'closing-user')
+	ok((await credentialNameGet({userTag})).name.f0 == 'closing-user')
 	ok((await credentialPasswordGet({userTag})).cycles == 50)
 	ok((await credentialBrowserGet({browserHash})).userTag == userTag)
 

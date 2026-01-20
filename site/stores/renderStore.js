@@ -19,63 +19,55 @@ validateName,
 
 export const useRenderStore = defineStore('renderStore', () => {
 
-//lookup table: userTag → user data
-//keyed by userTag so data persists even if user changes their name
-const users = ref({})
-
-//index: f0 → userTag for fast lookup from normalized route segment
-const f0ToUserTag = ref({})
-
-//in-flight promises for request deduplication (not reactive, not serialized across bridge)
-const pending = {}
+//three lookup tables work together as a caching system:
+const mapNormalizedToTag = ref({})//validated normalized (form 0) route part1 → userTag
+const mapNormalizedToPromise = {}//same thing → promise; in-flight requests for deduplication; importantly not reactive or serialized!
+const mapTagToUser = ref({})//userTag → user object with that tag and validated name forms
 
 //get user by raw route param - validates, checks cache, fetches if needed
 //three states: cached (return immediately), in-flight (return existing promise), or fetch (start new request)
-async function getUser(raw1) {
-	const v = validateName(raw1)
-	if (!v.ok) return null
+async function getUser({part1}) {//given route part1, get user information to render a profile page
 
-	const f0 = v.f0
+	let v = validateName(part1)
+	if (!v.ok) return null//not found because we can't even normalize part1 from the route to a user name!
+	let n = v.f0//n is the validated, normalized form 0 of the name from part1 of the route
 
-	//cached result - return immediately
-	const cachedUserTag = f0ToUserTag.value[f0]
-	if (cachedUserTag && users.value[cachedUserTag]) {
-		return users.value[cachedUserTag]
+	let t = mapNormalizedToTag.value[n]//see if we already have profile information about the requested user name
+	if (t) {
+		let u = mapTagToUser.value[t]
+		if (u) {
+			return u
+		}
 	}
 
-	//in-flight promise - return same promise (both callers await same result)
-	if (pending[f0]) {
-		return pending[f0]
-	}
+	if (mapNormalizedToPromise[n]) {//we're already getting information about this user profile
+		return mapNormalizedToPromise[n]//return the promise that's working on it
+	}//both this caller and the earlier one will await the same result, which is the behavior we want!
 
-	//start fetch, cache promise for deduplication
-	const promise = (async () => {
-		const task = await fetchWorker('/api/render', {body: {action: 'LookupName.', raw1: f0}})
-		if (!task.success || !task.lookup) return null
-
-		const lookup = task.lookup
-		f0ToUserTag.value[lookup.name.f0] = lookup.userTag
-		users.value[lookup.userTag] = lookup
-		return lookup
-	})()
-
-	pending[f0] = promise
-
+	let p = f(n)//otherwise we should ask the server about this user. start a new fetch,
+	mapNormalizedToPromise[n] = p//cache the promise to not ask the same question twice,
 	try {
-		return await promise
+		return await p//here, wait for the fetch to complete,
 	} finally {
-		delete pending[f0]
+		delete mapNormalizedToPromise[n]//then clean up the promise
 	}
 }
+async function f(n) {//naming this function f for the promise flow it's a part of
+	let task = await fetchWorker('/api/render', {body: {action: 'Get.', part1: n}})
+	if (!task.success || !task.user) return null//not found because we don't have a record of this user in the database
+	let user = task.user
 
-//stub for future: get post by identifier
-async function getPost(userTag, postId) {
-	//TODO: implement post fetching
+	mapNormalizedToTag.value[user.name.f0] = user.userTag
+	mapTagToUser.value[user.userTag] = user
+	return user
+}
+
+async function getPost(userTag, postId) {//ttd january, here's where render store will help getting information to render posts
 	return null
 }
 
 return {
-	users,
+	mapTagToUser,
 	getUser,
 	getPost,
 }

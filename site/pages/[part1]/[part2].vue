@@ -16,7 +16,7 @@ find these files together by searching "render stack"
 const route = useRoute()
 
 const renderStore = useRenderStore()
-const user = await renderStore.getUser(route.params.part1)
+const user = await renderStore.getUser({part1: route.params.part1})
 if (!user && import.meta.server) setResponseStatus(useRequestEvent(), 404)
 
 if (import.meta.client) useRouteCorrection({user})

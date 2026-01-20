@@ -16,7 +16,7 @@ find these files together by searching "render stack"
 const route = useRoute()
 
 const renderStore = useRenderStore()
-const user = await renderStore.getUser(route.params.part1)//get information about user1 for route here like https://site.com/user1
+const user = await renderStore.getUser({part1: route.params.part1})//get information about user1 for route here like https://site.com/user1
 if (!user && import.meta.server) setResponseStatus(useRequestEvent(), 404)//if we're rendering this on the server, return the page as we render it, but with the 404 response code in the HTTP headers as a clue to the browser and spiders that this page is not found; this isn't the same thing as when we blow up the page with an error
 
 if (import.meta.client) useRouteCorrection({user})//when the browser runs this on the client, adjust the location bar from a working name to the canonical one, so if the user bookmarks or copies it the link is as correct as possible
