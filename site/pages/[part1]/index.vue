@@ -1,14 +1,13 @@
-<script setup>
+<script setup> definePageMeta({layout: 'column-layout', note: 'on profile'})
 
 const route = useRoute()
-const {userTag, userName} = await useUserRoute(route.params.part1, route.fullPath)
+const renderStore = useRenderStore()
+await renderStore.load(route.params.part1)
+useRouteCorrection(route.params.part1, route.fullPath)
 
 </script>
 <template>
-<div>
 
-<h1>{{ userName }}</h1>
-<p>user profile page for {{ userTag }}</p>
+<ProfilePage />
 
-</div>
 </template>

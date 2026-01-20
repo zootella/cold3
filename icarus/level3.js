@@ -303,7 +303,7 @@ export async function credentialNameGet({//returns false not found, or {userTag,
 	} else { toss('use', {userTag, f0, f2, raw1}) }
 
 	row = rows[0]
-	if (row) return {userTag: row.user_tag, v: bundleValid({f0: row.f0_text, f1: row.f1_text, f2: row.f2_text})}
+	if (row) return {userTag: row.user_tag, v: bundleValid({f0: row.f0_text, f1: row.f1_text, f2: row.f2_text}), rowTick: row.row_tick}
 	return false//not found
 }
 

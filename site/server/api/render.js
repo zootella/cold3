@@ -34,6 +34,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			f0: nameRecord.v.f0,//normalized: "tokyo-girl"
 			f1: nameRecord.v.f1,//canonical route: "Tokyo-Girl"
 			f2: nameRecord.v.f2,//display name: "東京ガール"
+			rowTick: nameRecord.rowTick,//when user set this name (sign-up time)
 		}
 		//check if requesting browser is signed in as this user (for personalized profile rendering)
 		let viewer = await credentialBrowserGet({browserHash})
