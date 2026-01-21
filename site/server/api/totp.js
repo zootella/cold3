@@ -1,9 +1,9 @@
 //./server/api/totp.js
 import {
 credentialBrowserGet, credentialNameGet,
-trailRecent, trailCount, trailGet, trailAdd,
+trailRecent, trailCount, trailAdd,
 checkNumerals, Data, isExpired,
-totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
+totpEnroll, totpValidate, totpConstants, checkTotpSecret, checkTotpCode,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 } from 'icarus'
 

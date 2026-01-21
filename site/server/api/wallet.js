@@ -1,6 +1,6 @@
 //./server/api/wallet.js
 import {
-checkWallet, validateWallet,
+checkWallet,
 isExpired,
 } from 'icarus'
 import {verifyMessage} from 'viem'

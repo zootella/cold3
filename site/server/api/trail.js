@@ -1,6 +1,6 @@
 
 import {
-trailRecent, trailCount, trailGet, trailAdd,
+trailRecent, trailCount, trailAdd,
 hashText,
 } from 'icarus'
 
