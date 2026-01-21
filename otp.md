@@ -92,9 +92,9 @@ This is the schema and helpers the code system uses. Our new otp system won't to
 trailRecent
 trailCount
 trailGet
+trailGetAny  ← new helper for otp
 trailAdd
 trailAddMany
-trailGetMulti  ← new helper for otp
 ```
 
 Trail table is a generalized tool that records proof of an event (any event we can describe in a message string) at a point in time.
@@ -108,7 +108,7 @@ Then later, `trailGet` that same message to know if the nonce is fresh or alread
 
 The code system doesn't use trail_table (it uses code_table instead). But trail_table can be very useful for otp—especially for rate limiting queries like "how many codes have we sent to this address recently?"
 
-**New helper needed:** `trailGetMulti(messages, horizon)` — queries multiple message hashes in one round trip using SQL `IN` clause. Returns all matching rows; caller filters by hash in application code. This turns 3 queries into 1 for `otpEnter`.
+`trailGetAny(messages, horizon)` queries multiple message hashes in one round trip using SQL `IN` clause. Returns all matching rows; caller filters by hash in application code. This turns 3 queries into 1 for `otpEnter`.
 
 ---
 
@@ -250,12 +250,12 @@ Each is hashed and recorded with a timestamp. We query these to enforce constrai
 - Find challenge by tag
 - If browserHash mismatch or challenge not found: reject
 
-**Validity checks (1 query with `trailGetMulti`):**
+**Validity checks (1 query with `trailGetAny`):**
 
-Instead of 3 separate queries, use a new helper that queries multiple message hashes in one round trip:
+Instead of 3 separate queries, use a helper that queries multiple message hashes in one round trip:
 
 ```javascript
-let rows = await trailGetMulti([
+let rows = await trailGetAny([
   `opened challenge ${tag}`,
   `closed challenge ${tag}`,
   `wrong guess on challenge ${tag}`
@@ -306,7 +306,7 @@ This could be a helper function for symmetry (`browserToOtp`), or just inline lo
 | Constraint | How enforced |
 |------------|--------------|
 | 20-minute expiration | `start` in envelope, checked against current time |
-| 4 wrong guesses | `trailGetMulti` result, count rows with wrong guess hash |
+| 4 wrong guesses | `trailGetAny` result, count rows with wrong guess hash |
 | Correct guess kills code | `trailAdd(`closed challenge ${tag}`)` |
 | Replacement kills old | Find in envelope by address, `trailAdd(`closed challenge ${oldTag}`)` |
 | Browser binding | browserHash in envelope, verified against submitting browser on resubmit |
@@ -332,7 +332,7 @@ This could be a helper function for symmetry (`browserToOtp`), or just inline lo
   - `closed challenge ${oldTag}` (only if replacing)
 
 **Enter code:**
-- `trailGetMulti` (1 round trip) — checks opened/closed/wrong in one query
+- `trailGetAny` (1 round trip) — checks opened/closed/wrong in one query
 - `trailAdd` (1 round trip) — adds 1 row:
   - Correct: `closed challenge ${tag}` (+ credential_table write)
   - Wrong: `wrong guess on challenge ${tag}`
@@ -347,16 +347,9 @@ This could be a helper function for symmetry (`browserToOtp`), or just inline lo
 
 A few things to resolve or be aware of:
 
-### trailGetMulti doesn't exist yet
+### ~~trailGetMulti doesn't exist yet~~ ✓ Done
 
-We designed it but haven't written it. Needs to be added to level3.js:
-
-```javascript
-trailGetMulti(messages, horizon)
-// Query multiple message hashes in one round trip
-// SQL: WHERE hash IN ($1, $2, $3) AND row_tick > $horizon
-// Returns all matching rows; caller filters by hash in application code
-```
+Implemented as `trailGetAny(messages, horizon)` in level3.js. Uses `queryGetAny` in level2.js which supports SQL `IN` clause. Returns all matching rows; caller filters by hash in application code.
 
 ### credential_table assumes a userTag
 

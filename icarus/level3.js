@@ -44,6 +44,7 @@ queryCountSince,
 queryAddRowIfHashUnique,
 queryTopEqualGreater,
 queryTopSinceMatchGreater,
+queryGetAny,
 
 } from './level2.js'
 
@@ -1358,6 +1359,11 @@ export async function trailGet(message, horizon) {
 	let hash = await hashText(message)
 	return await queryGet('trail_table', {hash}, {since: Now() - horizon})
 }
+export async function trailGetAny(messages, horizon) {//messages like [message1, message2, ...]
+	messages.forEach(checkText); checkInt(horizon, 1)
+	let hashes = await Promise.all(messages.map(hashText))
+	return await queryGetAny({table: 'trail_table', title: 'hash', cells: hashes, since: Now() - horizon})
+}
 export async function trailAdd(message) { return await trailAddMany([message]) }
 export async function trailAddMany(a) {//use like trailAddMany([message1, message2])
 	a.forEach(checkText)//call checkText on each message in a
@@ -1392,6 +1398,20 @@ grid(async () => {
 	await trailAddMany(['1 of 2', '2 of 2'])//add two messages at once, they're hashed simultaenously and added in a single query
 	ok((await trailCount('1 of 2', Time.minute)) == 1)
 	ok((await trailCount('2 of 2', Time.minute)) == 1)
+})
+grid(async () => {
+	let horizon = Time.minute
+	let [m1, m2, m3, m4] = ['message 1', 'message 2', 'message 3', 'message 4']
+
+	ok((await trailGetAny([m1, m2, m3], horizon)).length == 0)//none yet
+	ageNow(Time.second); await trailAdd(m1)
+	ok((await trailGetAny([m1, m2, m3], horizon)).length == 1)//only m1 found
+	ageNow(Time.second); await trailAddMany([m2, m3])
+	ageNow(Time.second); await trailAdd(m3)
+	ok((await trailGetAny([m1, m2, m3], horizon)).length == 4)//all three found, including 2x m3
+	ok((await trailGetAny([m1, m2], horizon)).length == 2)//two different messages
+	ok((await trailGetAny([m3], horizon)).length == 2)//two instances of the same message
+	ok((await trailGetAny([m4], horizon)).length == 0)//never added
 })
 
 SQL(`
@@ -1435,30 +1455,3 @@ CREATE TABLE user_table (
 
 
 `)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

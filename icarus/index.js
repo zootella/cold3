@@ -120,7 +120,7 @@ Code, codeSend, browserToCodes, codeEnter,
 settingReadInt, settingRead, settingWrite,
 recordDelay, recordHit,
 
-trailRecent, trailCount, trailGet, trailAdd, trailAddMany,
+trailRecent, trailCount, trailGet, trailGetAny, trailAdd, trailAddMany,
 
 credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
@@ -166,6 +166,7 @@ queryCountRows, queryCountAllRows,
 //query common
 queryTop,
 queryGet,
+queryGetAny,
 queryAddRow,
 queryAddRows,
 queryHide,

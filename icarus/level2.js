@@ -1538,7 +1538,7 @@ export async function queryTop({table, title, cell}) {
 }
 
 //get all the visible rows matching the given column values
-export async function queryGet(table, cells, options) {
+export async function queryGet(table, cells, options) {//cells is like {title1: 'cell1', title2: 'cell2', ...}
 	checkQueryTitle(table); checkQueryRow(cells)
 	const {database} = await getDatabase()
 	let query = database.from(table).select('*').eq('hide', 0)//start our query
@@ -1548,6 +1548,32 @@ export async function queryGet(table, cells, options) {
 	if (error) toss('supabase', {error})
 	return data
 }
+//get visible rows where below title the cell matches any of an array of search values
+export async function queryGetAny({table, title, cells, since}) {//cells is like [cell1, cell2, ...]
+	checkQueryTitle(table); checkQueryTitle(title); if (!cells.length) toss('query', {table, title})
+	cells.forEach(cell => checkQueryCell(title, cell))
+	const {database} = await getDatabase()
+	let query = database.from(table).select('*').eq('hide', 0).in(title, cells)
+	if (since) { checkInt(since); query = query.gte('row_tick', since) }
+	let {data, error} = await query.order('row_tick', {ascending: false})
+	if (error) toss('supabase', {error})
+	return data
+}
+grid(async () => {
+	let {clear} = await getDatabase()
+	await clear('example_table')
+	let hash = random32()
+	await queryAddRows({table: 'example_table', rows: [
+		{name_text: 'alice', hits: 1, some_hash: hash},
+		{name_text: 'bob',   hits: 2, some_hash: hash},
+		{name_text: 'carol', hits: 2, some_hash: hash},
+	]})
+
+	let q0 = await queryGetAny({table: 'example_table', title: 'hits', cells: [3]}); ok(q0.length == 0)//correctly nothing found
+	let q1 = await queryGetAny({table: 'example_table', title: 'hits', cells: [1]}); ok(q1.length == 1); ok(q1[0].name_text == 'alice')
+	let q2 = await queryGetAny({table: 'example_table', title: 'hits', cells: [2]}); ok(q2.length == 2)
+	let q3 = await queryGetAny({table: 'example_table', title: 'hits', cells: [1, 2, 3]}); ok(q3.length == 3)//finds 1 and both 2s, ignores missing 3
+})
 
 //add the given cells to a new row in table, this adds row_tag, row_tick, and hide for you
 export async function queryAddRow({table, row}) {
@@ -1961,6 +1987,7 @@ class FakeSupabaseQueryBuilder {
 	neq(col, val) { this.wheres.push({col, op: '!=', val}); return this }
 	gt(col, val)  { this.wheres.push({col, op: '>',  val}); return this }
 	gte(col, val) { this.wheres.push({col, op: '>=', val}); return this }
+	in(col, vals) { this.wheres.push({col, op: 'IN', val: vals}); return this }
 	order(col, opts) { this.orderCol = col; this.orderAsc = opts?.ascending ?? true; return this }
 	limit(n) { this.limitN = n; return this }
 
@@ -1977,6 +2004,10 @@ class FakeSupabaseQueryBuilder {
 		for (let w of this.wheres) {
 			if (w.val === null) {
 				parts.push(w.op === '=' ? `${w.col} IS NULL` : `${w.col} IS NOT NULL`)
+			} else if (w.op === 'IN') {
+				let placeholders = w.val.map((_, i) => `$${params.length + i + 1}`)
+				parts.push(`${w.col} IN (${placeholders.join(', ')})`)
+				params.push(...w.val)
 			} else {
 				parts.push(`${w.col} ${w.op} $${params.length + 1}`)
 				params.push(w.val)
