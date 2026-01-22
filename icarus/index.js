@@ -113,7 +113,7 @@ wrapper
 export {
 
 vhsSign,
-Code, codeSend, browserToCodes, codeEnter,
+Code, codeSend, browserToCodes, codeEnter, otpSend, otpEnter,
 
 /* level 3 query */
 
@@ -155,7 +155,7 @@ sayFloppyDisk, runTestsSticker,
 Task, fetchWorker, fetchLambda, fetchProvider,
 origin23, originOauth, originApex,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookieValue,
+composeCookieName, composeCookieValue, parseCookieValue, Cookie,
 
 /* level 2 query */
 SQL, grid, getDatabase, runDatabaseTests,

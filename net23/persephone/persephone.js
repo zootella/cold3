@@ -24,7 +24,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 Key, doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookieValue,
+composeCookieName, composeCookieValue, parseCookieValue, Cookie,
 
 //and also import these references
 Data,

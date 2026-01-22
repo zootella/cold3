@@ -339,12 +339,12 @@ function decryptedServerSecrets() {//true if we decrypted secrets, so we're runn
 	return _alreadyDecrypted
 }
 
-//  _                                       _                                _    _      
-// | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _    ___ ___   ___ | | _(_) ___ 
-// | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__| | __/ _` |/ _` |  / __/ _ \ / _ \| |/ / |/ _ \
-// | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| | | (_| (_) | (_) |   <| |  __/
-// |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |  \___\___/ \___/|_|\_\_|\___|
-//                                                   |___/                               
+//                  _    _           
+//   ___ ___   ___ | | _(_) ___  ___ 
+//  / __/ _ \ / _ \| |/ / |/ _ \/ __|
+// | (_| (_) | (_) |   <| |  __/\__ \
+//  \___\___/ \___/|_|\_\_|\___||___/
+//                                   
 
 const cookie_secure_prefix = '__Secure-'//causes browser to reject the cookie unless we set Secure and connection is HTTPS
 const cookie_name_warning  = 'current_session_password'
@@ -363,6 +363,31 @@ export function parseCookieValue(value) {
 		}
 	}
 	return false//if any of that didn't work, don't throw, just return false
+}
+
+export const Cookie = {
+	optionsForBrowser: Object.freeze({
+		path: '/',//send for all routes
+		httpOnly: true,//page script can't see or change; more secure than local storage!
+		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
+		maxAge: 395*Time.daysInSeconds,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
+		secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
+		...(isCloud() && {//running deployed,
+			domain: Key('domain, public')//include domain option with value like 'example.com', no protocol or slash; this scopes access to include subdomains, because oauth.cold3.cc needs to see the browser tag
+		}),//running locally, don't include domain property at all, clever use of the spread operator to accomplish this in a literal
+	}),
+	/*
+	the 3 constants, 3 functions, and optionsForBrowser above are all for cookieMiddleware/browserTag/browserHash on the server side.
+	🍪 Additionally, Vue components for OTP and TOTP keep encrypted envelopes in temporary cookies to keep a note from the server between enrollment steps that survives browser reload, using these very different cookie settings:
+	*/
+	optionsForEnvelope: Object.freeze({
+		path: '/',//we could restrict to certain routes, but this is simpler
+		httpOnly: false,//true would mean page script couldn't read it
+		sameSite: 'Strict',//browser will include cookie in requests to our server only, which doesn't read it, this is the most restrictive setting, there isn't one for "don't send it at all"
+		maxAge: Limit.expirationUser/Time.second,//the browser will delete this cookie 20 minutes after we last set .value; cookies are timed in seconds not milliseconds
+		secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
+		//leaving out domain, so cookie will only be readable at the same domain it's set, localhost or cold3.cc, no subdomains
+	}),
 }
 
 //                      _

@@ -6,6 +6,7 @@
 <TotpDemo />
 <HitComponent />
 <TotpDemo1 />
+<OtpRequestComponent />
 <CodeRequestComponent />
 
 </template>

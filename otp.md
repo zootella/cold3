@@ -59,7 +59,7 @@ otpSend
 otpPermit
 otpCompose
 otpSent
-browserToOtp
+browserToOtp -- actually not sure on this one, as the envelope will be the source of otp codes!
 otpEnter
 ```
 

@@ -16,6 +16,7 @@ makePlain, makeObject, makeText,
 safefill, deindent,
 isInSimulationMode, ageNow, prefixTags,
 random32,
+isExpired,
 } from './level0.js'
 import {//from level1
 Limit, checkName, validateName,
@@ -24,6 +25,7 @@ bundleValid,
 import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
 Task, fetchWorker, fetchLambda, fetchProvider,
+sealEnvelope, openEnvelope,
 
 /* level 2 query */
 SQL, grid, getDatabase,
@@ -757,6 +759,77 @@ export async function browserValidatedAddress({browserHash, provider, type, v}) 
 
 //~~~~ send all the codes!
 
+export async function otpSend({browserHash, provider, type, v, envelope}) {
+
+	let permit = await otpPermit(v.f0)
+	if (!permit.success) return permit//return the failed permit directly, bubbling up
+
+	//open existing envelope if provided, to preserve other challenges
+	let challenges = []
+	let oldTag = null
+	if (hasText(envelope)) {
+		try {
+			let letter = await openEnvelope('Otp.', envelope, {skipExpirationCheck: true})
+			if (!isExpired(letter.expiration) && letter.browserHash === browserHash) {
+				challenges = letter.challenges || []
+				//check for existing challenge to same address (replacement)
+				let existing = challenges.find(c => c.address === v.f0)
+				if (existing) {
+					oldTag = existing.tag
+					challenges = challenges.filter(c => c.address !== v.f0)
+				}
+			}
+		} catch (e) {
+			//envelope invalid or expired, start fresh
+		}
+	}
+
+	//generate new challenge using existing codeCompose for code and message text
+	let c = await codeCompose({length: permit.useLength, sticker: true})
+	let challenge = {
+		tag: c.codeTag,
+		code: c.code,//stored in envelope, not database
+		letter: c.letter,
+		lives: Code.guesses,
+		start: Now(),
+		address: v.f0,
+		addressDisplay: v.f1,
+		addressType: type,
+	}
+	challenges.push(challenge)
+
+	//send email/SMS
+	await fetchLambda('/message', {body: {
+		provider: provider,
+		service: type,
+		address: v.f1,
+		subjectText: c.subjectText,
+		messageText: c.messageText,
+		messageHtml: c.messageHtml,
+	}})
+
+	//record to trail
+	let trailMessages = [
+		safefill`opened challenge ${c.codeTag}`,
+		safefill`sent code to ${v.f0}`,
+	]
+	if (oldTag) trailMessages.push(safefill`closed challenge ${oldTag}`)
+	await trailAddMany(trailMessages)
+
+	//seal envelope with updated challenges
+	let newEnvelope = await sealEnvelope('Otp.', Limit.expirationUser, {browserHash, challenges})
+
+	//return challenges without codes for display
+	let otps = challenges.map(ch => ({
+		tag: ch.tag,
+		letter: ch.letter,
+		lives: ch.lives,
+		start: ch.start,
+		address: ch.address,
+		addressType: ch.addressType,
+	}))
+	return {success: true, envelope: newEnvelope, otps}
+}
 export async function codeSend({browserHash, provider, type, v}) {//v is the address, valid, containing the three forms
 
 	//look up the user tag, even though we're not using it with code yet
@@ -780,6 +853,25 @@ export async function codeSend({browserHash, provider, type, v}) {//v is the add
 }
 
 //can we send another code to this address now?
+async function otpPermit(address0) {
+	//use trail to find out how many codes we've sent to this address
+	let rows = await trailGet(safefill`sent code to ${address0}`, Code.week)
+	let rowsDay = rows.filter(row => row.row_tick >= Now() - Code.day)
+
+	if (rowsDay.length >= Code.limitHard) {
+		return {success: false, reason: 'CoolHard.'}
+	}
+
+	if (rows.length >= Code.limitSoft) {
+		let mostRecent = rows[0].row_tick//rows ordered by time desc
+		if (Now() < mostRecent + Code.minutes) return {success: false, reason: 'CoolSoft.'}
+	}
+
+	return {
+		success: true,
+		useLength: rows.length < Code.limitStong ? Code.short : Code.standard,
+	}
+}
 async function codePermit(address0) {
 	const now = Now()
 
@@ -805,7 +897,7 @@ async function codePermit(address0) {
 	}
 }
 
-//make a new random code and compose message text about it
+//make a new random code and compose message text about it (otpSend reuses this)
 async function codeCompose({length, sticker}) {
 	let c = {}
 
@@ -865,6 +957,72 @@ export async function browserToCodes({browserHash}) {
 }
 
 //the person at browserHash used the box on the page to enter a code, which could be right or wrong
+export async function otpEnter({browserHash, envelope, otpTag, otpCandidate}) {
+
+	let letter = await openEnvelope('Otp.', envelope, {skipExpirationCheck: true})
+
+	//check expiration
+	if (isExpired(letter.expiration)) return {success: false, reason: 'Expired.'}
+
+	//defensive checks that toss like Code does for !row || wrong browser || !lives
+	if (letter.browserHash !== browserHash) toss('wrong browser')
+
+	//find challenge by tag
+	let challenges = letter.challenges || []
+	let challenge = challenges.find(c => c.tag === otpTag)
+	if (!challenge) toss('challenge not found')
+
+	//check challenge hasn't expired (20 min from start)
+	if (Now() > challenge.start + Code.expiration) {
+		challenges = challenges.filter(c => c.tag !== otpTag)
+		let newEnvelope = challenges.length ? await sealEnvelope('Otp.', Limit.expirationUser, {browserHash, challenges}) : null
+		let otps = challenges.map(c => ({tag: c.tag, letter: c.letter, lives: c.lives, start: c.start, address: c.address, addressType: c.addressType}))
+		return {success: false, reason: 'Expired.', envelope: newEnvelope, otps}
+	}
+
+	//check trail: opened, not closed, wrong guess count
+	let trailRows = await trailGetAny([
+		safefill`opened challenge ${otpTag}`,
+		safefill`closed challenge ${otpTag}`,
+		safefill`wrong guess on challenge ${otpTag}`,
+	], Code.expiration)
+
+	let openedHash = await hashText(safefill`opened challenge ${otpTag}`)
+	let closedHash = await hashText(safefill`closed challenge ${otpTag}`)
+	let wrongHash = await hashText(safefill`wrong guess on challenge ${otpTag}`)
+
+	let opened = trailRows.find(r => r.message_hash === openedHash)
+	let closed = trailRows.find(r => r.message_hash === closedHash)
+	let wrongCount = trailRows.filter(r => r.message_hash === wrongHash).length
+
+	//challenge must be opened and not already closed; defensive check like Code's toss for !row.lives
+	if (!opened || closed || wrongCount >= Code.guesses) toss('challenge unavailable')
+
+	//compare guess to code
+	if (otpCandidate === challenge.code) {
+		//correct!
+		await trailAdd(safefill`closed challenge ${otpTag}`)
+		challenges = challenges.filter(c => c.tag !== otpTag)
+		let newEnvelope = challenges.length ? await sealEnvelope('Otp.', Limit.expirationUser, {browserHash, challenges}) : null
+		let otps = challenges.map(c => ({tag: c.tag, letter: c.letter, lives: c.lives, start: c.start, address: c.address, addressType: c.addressType}))
+		return {success: true, envelope: newEnvelope, otps, address: challenge.address, addressType: challenge.addressType}
+
+	} else {
+		//wrong guess
+		await trailAdd(safefill`wrong guess on challenge ${otpTag}`)
+		let lives = Code.guesses - wrongCount - 1
+		if (lives <= 0) {
+			//no more guesses, close the challenge so component disappears (like Code does)
+			await trailAdd(safefill`closed challenge ${otpTag}`)
+			challenges = challenges.filter(c => c.tag !== otpTag)
+		} else {
+			challenge.lives = lives
+		}
+		let newEnvelope = challenges.length ? await sealEnvelope('Otp.', Limit.expirationUser, {browserHash, challenges}) : null
+		let otps = challenges.map(c => ({tag: c.tag, letter: c.letter, lives: c.lives, start: c.start, address: c.address, addressType: c.addressType}))
+		return {success: false, reason: 'Wrong.', envelope: newEnvelope, otps, lives}
+	}
+}
 export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 	let now = Now()
 	let r

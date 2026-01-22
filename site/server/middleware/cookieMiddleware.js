@@ -1,4 +1,3 @@
-//./server/middleware/cookieMiddleware.js
 
 //  _                                       _                                _    _      
 // | |__  _ __ _____      _____  ___ _ __  | |_ __ _  __ _    ___ ___   ___ | | _(_) ___ 
@@ -6,6 +5,8 @@
 // | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| | | (_| (_) | (_) |   <| |  __/
 // |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |  \___\___/ \___/|_|\_\_|\___|
 //                                                   |___/                               
+
+//importing functions from icarus here may have made the cookie unreliable; but using automatic icarus imports from the server plugin seems to work ok 🤔 ttd january
 
 /*
 a tag identifies a browser, through multiple different signed-in users, and even before someone has signed up
@@ -41,15 +42,5 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
 
-	let options = {//these base options work for local development...
-		path: '/',//send for all routes
-		httpOnly: true,//page script can't see or change; more secure than local storage! 
-		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
-		maxAge: 395*Time.daysInSeconds,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
-	}
-	if (isCloud()) {//...strengthen them for cloud deployment
-		options.secure = true
-		options.domain = Key('domain, public')//scope access to include subdomains; oauth.cold3.cc needs to see the browser tag
-	}
-	setCookie(workerEvent, composeCookieName(), composeCookieValue(browserTag), options)//set response headers for when we send the response, telling the browser to save this tag for next time
+	setCookie(workerEvent, composeCookieName(), composeCookieValue(browserTag), Cookie.optionsForBrowser)//set response headers for when we send the response, telling the browser to save this tag for next time
 })

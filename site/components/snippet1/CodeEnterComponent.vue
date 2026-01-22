@@ -28,6 +28,7 @@ async function onClick() {
 	let response = await fetchWorker('/api/code/enter', {body: {
 		codeTag: props.code.tag,//hidden from the user but kept with the form
 		codeCandidate: takeNumerals(refCodeCandidate.value),
+
 	}})
 	log('code enter post response', look(response))
 	if (response.success) {

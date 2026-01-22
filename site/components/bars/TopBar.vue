@@ -8,7 +8,8 @@ const pageStore = usePageStore()
 </script>
 <template>
 
-<NotificationList v-show="pageStore.notifications.length" />
-<CodeEnterList    v-show="mainStore.codes.length"         />
+<NotificationList />
+<OtpEnterList />
+<CodeEnterList v-show="mainStore.codes.length" />
 
 </template>

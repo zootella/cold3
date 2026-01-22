@@ -15,10 +15,14 @@ const addNotification = (message) => { notifications.value.unshift({tag: Tag(), 
 const removeNotification = (tag) => { notifications.value = notifications.value.filter(item => item.tag != tag) }
 //ttd december, okay, but couldn't there be a notification we know about during the server render, so it arrives with the page? maybe organizing stores around the universal render isn't the right pattern. also, maybe there should be a guard against running page-only code in the store itself, rather than just being careful where you call its methods in components
 
+//otp code challenges the user could complete to prove to the server they control an email or sms address
+const otps = ref([])
+
 return {
 	renderTurnstileWidget, getTurnstileToken,
 	errorDetails,
 	notifications, addNotification, removeNotification,
+	otps,
 }
 
 })
