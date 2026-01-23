@@ -757,31 +757,28 @@ export async function browserValidatedAddress({browserHash, provider, type, v}) 
 
 //~~~~ send all the codes!
 
-export async function otpSend({browserHash, provider, v, letter}) {
+export async function otpSend({letter, v, provider, browserHash}) {
 
 	//look up the user tag, even though we're not using it with otp yet
 	let userTag = (await credentialBrowserGet({browserHash}))?.userTag
 
-	let permit = await otpPermit({address0: v.f0, letter})
+	let permit = await otpPermit({letter, v})
 	if (!permit.success) return permit
 
-	let task = Task({name: 'otp send'})
-
-	let otp = await otpCompose({length: permit.useLength, provider, v, sticker: true})
-
+	let o = await otpCompose({useLength: permit.useLength, provider, v, sticker: true})
 	await fetchLambda('/message', {body: {
-		provider: otp.provider,
-		service: otp.address.type,
-		address: otp.address.f1,
-		subjectText: otp.subjectText,
-		messageText: otp.messageText,
-		messageHtml: otp.messageHtml,
+		provider: o.provider,
+		service: o.address.type,//"Email." or "Phone." from verifyEmailOrPhone
+		address: o.address.f1,//form 1, canonical, for use with APIs
+		subjectText: o.subjectText,
+		messageText: o.messageText,
+		messageHtml: o.messageHtml,
 	}})
+	await otpSent({letter, o, browserHash})
 
-	await otpSent({browserHash, provider, v, otp, letter, wouldReplace: permit.wouldReplace})
-
+	let task = Task({name: 'otp send'})
 	task.success = true
-	return task
+	return task//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
 export async function codeSend({browserHash, provider, type, v}) {//v is the address, valid, containing the three forms
 
@@ -806,35 +803,33 @@ export async function codeSend({browserHash, provider, type, v}) {//v is the add
 }
 
 //can we send another code to this address now?
-async function otpPermit({address0, letter}) {
+async function otpPermit({letter, v}) {
 	let task = Task({name: 'otp permit'})
 	const now = Now()
 
 	//use trail to find out how many codes we've sent to this address
-	let rowsWeek = await trailGet(safefill`sent code to ${address0}`, Code.week)//those over the past 5 days
-	let rowsDay = rowsWeek.filter(row => row.row_tick >= now - Code.day)//those in just the last 24 hours
+	let rows5 = await trailGet(
+		safefill`OTP opened challenge: address ${v.f0}`,
+		Code.week)//those over the past 5 days
+	let rows1 = rows5.filter(row => row.row_tick >= now - Code.day)//those in just the last 24 hours
 
-	if (rowsDay.length >= Code.limitHard) {//we've already sent 24 codes to this address in the last 24 hours!
+	if (rows1.length >= Code.limitHard) {//we've already sent 24 codes to this address in the last 24 hours!
 		task.success = false
 		task.reason = 'CoolHard.'
-		return task
+		return task//the hard limit is important to prevent an attacker from spamming their friend with useless unwanted codes
 	}
 
-	if (rowsWeek.length >= Code.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
-		let cool = rowsWeek[0].row_tick + Code.minutes//tick when this address cools down
+	if (rows5.length >= Code.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
+		let cool = rows5[0].row_tick + Code.minutes//tick when this address cools down; first row in array will be most recently added
 		if (now < cool) {
 			task.success = false
 			task.reason = 'CoolSoft.'
-			return task
+			return task//the soft limit is important for usability within security; we slow the user down, encourage them to actually check their spam folder rather than spamming themselves another replacement code!
 		}
 	}
 
-	//check for existing otp to same address (replacement)
-	let existing = letter.otps.find(o => o.address == address0)
-	task.wouldReplace = existing ? existing.tag : false
-
 	task.success = true
-	task.useLength = rowsWeek.length < Code.limitStrong ? Code.short : Code.standard
+	task.useLength = rows5.length < Code.limitStrong ? Code.short : Code.standard
 	return task
 }
 async function codePermit(address0) {
@@ -863,10 +858,10 @@ async function codePermit(address0) {
 }
 
 //make a new random code and compose message text about it
-async function otpCompose({length, provider, v, sticker}) {
+async function otpCompose({useLength, provider, v, sticker}) {
 	let o = {
 		tag: Tag(),//identifier of this challenge, from which we can derive the prefix letter like Code Q 1234
-		answer: randomCode(length),//the correct answer, which we'll send to address and encrypt in envelope
+		answer: randomCode(useLength),//the correct answer, which we'll send to address and encrypt in envelope
 		start: Now(),//challenge creation time; user has 20 minutes from now to enter correct answer
 		provider: provider,
 		address: v,//validated address with three forms as well as .type like "Email." or "Phone."
@@ -898,25 +893,21 @@ async function codeCompose({length, sticker}) {
 }
 
 //what it looks like to use these functions to send a code
-async function otpSent({browserHash, provider, v, otp, letter, wouldReplace}) {
+async function otpSent({letter, o, browserHash}) {
 
-	if (wouldReplace) {
-		letter.otps = letter.otps.filter(o => o.tag != wouldReplace)//remove the otp this new one will replace
+	//take care of address_table and maybe also service_table, ttd january
+	await browserChallengedAddress({browserHash, provider: o.provider, type: o.address.type, v: o.address})
+
+	let messages = []
+	let x = letter.otps.find(f => f.address.f0 == o.address.f0)//look for a preexisting challenge x to this same address
+	if (x) {//if we found one, the new one o must replace it
+		messages.push(safefill`OTP closed challenge: tag ${x.tag}`)//close x on the trail
+		letter.otps = letter.otps.filter(f => f.tag != x.tag)//remove x from the letter
 	}
-
-	//take care of address_table and maybe also service_table
-	await browserChallengedAddress({browserHash, provider, type: v.type, v})
-
-	//add the new otp to the letter
-	letter.otps.push(otp)
-
-	//record to trail (equivalent to code_add and code_set_lives)
-	let trailMessages = [
-		safefill`opened challenge ${otp.tag}`,
-		safefill`sent code to ${v.f0}`,
-	]
-	if (wouldReplace) trailMessages.push(safefill`closed challenge ${wouldReplace}`)
-	await trailAddMany(trailMessages)
+	letter.otps.push(o)//store complete information about the just sent challenge in the letter
+	messages.push(safefill`OTP opened challenge: address ${o.address.f0}`)//record we bothered this address
+	messages.push(safefill`OTP opened challenge: tag ${o.tag}`)//record we created this challenge
+	await trailAddMany(messages)
 }
 async function codeSent({browserHash, provider, type, v, permit, code}) {
 
@@ -959,64 +950,59 @@ export async function browserToCodes({browserHash}) {
 }
 
 //the person at browserHash used the box on the page to enter a code, which could be right or wrong
-export async function otpEnter({browserHash, letter, otpTag, otpCandidate}) {
+export async function otpEnter({letter, tag, guess, browserHash}) {
 	let task = Task({name: 'otp enter'})
 
 	//find otp by tag (otp.js filters expired otps before calling us, so if we find it, it's valid)
-	let otp = letter.otps.find(o => o.tag == otpTag)
-	if (!otp) {
-		task.success = false
-		task.reason = 'Expired.'//filtered out (expired) or never existed
-		return task
-	}
+	let o = letter.otps.find(o => o.tag == tag)
+	if (!o) { task.success = false; task.reason = 'Expired.'; return task }//probably expired, maybe never existed, either way lead the user to try again with a new challenge
 
-	//check trail: opened, not closed, wrong guess count
-	let trailRows = await trailGetAny([
-		safefill`opened challenge ${otpTag}`,
-		safefill`closed challenge ${otpTag}`,
-		safefill`wrong guess on challenge ${otpTag}`,
-	], Code.expiration)
+	let rows = await trailGetAny([
+		safefill`OTP opened challenge: tag ${tag}`,
+		safefill`OTP closed challenge: tag ${tag}`,
+		safefill`OTP guessed wrong: tag ${tag}`,
+	], Code.expiration)//we need to find three different messages in the trail table, but it only takes one call out to supabase
 
-	let openedHash = await hashText(safefill`opened challenge ${otpTag}`)
-	let closedHash = await hashText(safefill`closed challenge ${otpTag}`)
-	let wrongHash = await hashText(safefill`wrong guess on challenge ${otpTag}`)
+	const openedHash = await hashText(safefill`OTP opened challenge: tag ${tag}`)
+	const closedHash = await hashText(safefill`OTP closed challenge: tag ${tag}`)
+	const missedHash = await hashText(safefill`OTP guessed wrong: tag ${tag}`)//compute same message hashes here to find and filter next
 
-	let opened = trailRows.find(r => r.hash === openedHash)
-	let closed = trailRows.find(r => r.hash === closedHash)
-	let wrongCount = trailRows.filter(r => r.hash === wrongHash).length
+	let opened = rows.find(r => r.hash == openedHash)//true if we have proof we opened a challenge with this tag in the last 20min
+	let closed = rows.find(r => r.hash == closedHash)//true if we found proof we closed this challenge in the same time horizon
+	let missed = rows.filter(r => r.hash == missedHash).length//number of wrong guesses we recorded on this challenge
 
-	//otp must be opened and not already closed; defensive check like Code's toss for !row.lives
-	if (!opened || closed || wrongCount >= Code.guesses) toss('otp unavailable')
+	if (!(opened && !closed && missed < Code.guesses)) { task.success = false; task.reason = 'Expired.'; return task }//make sure trail agrees that this is a challenge we opened, didn't close, and still has guesses; very unlikely, possible with race condition, or tampering; ok to treat like "Expired, please request a new code" rather than blowing up the page
 
-	//compare guess to code
-	if (otpCandidate === otp.answer) {
-		//correct!
-		await trailAdd(safefill`closed challenge ${otpTag}`)
-		await browserValidatedAddress({
-			browserHash,
-			provider: otp.provider,
-			type: otp.address.type,
-			v: otp.address,
-		})
-		letter.otps = letter.otps.filter(o => o.tag != otpTag)
+	if (hasTextSame(guess, o.answer)) {//correct guess
+
+		await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//kill the satisified challenge in the trail
+		letter.otps = letter.otps.filter(o => o.tag != tag)//kill the satisified challenge in the letter
+		await browserValidatedAddress({browserHash, provider: o.provider, type: o.address.type, v: o.address})//ttd january, this is where we'll add note of the demonstrated proof to credential_table, soon, but not now
+
 		task.success = true
-		task.address = otp.address.f0
-		task.addressType = otp.address.type
 		return task
 
-	} else {
-		//wrong guess
-		await trailAdd(safefill`wrong guess on challenge ${otpTag}`)
-		let lives = Code.guesses - wrongCount - 1
-		if (lives <= 0) {
-			//no more guesses, close the otp so component disappears (like Code does)
-			await trailAdd(safefill`closed challenge ${otpTag}`)
-			letter.otps = letter.otps.filter(o => o.tag != otpTag)
+	} else {//wrong guess
+
+		await trailAdd(safefill`OTP guessed wrong: tag ${tag}`)//count this incorrect guess in the trail
+		let lives = Code.guesses - missed - 1//calculate remaining guesses this challenge can safely accept
+
+		if (lives <= 0) {//expired by too many wrong guesses
+
+			await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//mark it as such
+			letter.otps = letter.otps.filter(o => o.tag != tag)//letter is a convenience; trail is a necessity here--otherwise an attacker could just replay the same valid envelope, guessing sequentially until they hit the correct answer!
+
+			task.success = false
+			task.reason = 'Expired.'//treat exhausted guesses like expired; user remedy is the same: request a new code
+			return task
+
+		} else {//person can guess again
+
+			task.success = false
+			task.reason = 'Wrong.'
+			task.lives = lives//tell the person how many guesses they have left; may encourage them to type more carefully
+			return task
 		}
-		task.success = false
-		task.reason = 'Wrong.'
-		task.lives = lives
-		return task
 	}
 }
 export async function codeEnter({browserHash, codeTag, codeCandidate}) {
@@ -1609,30 +1595,3 @@ CREATE TABLE user_table (
 
 
 `)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
