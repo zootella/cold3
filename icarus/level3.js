@@ -898,13 +898,26 @@ async function otpSent({letter, o, browserHash}) {
 	//take care of address_table and maybe also service_table, ttd january
 	await browserChallengedAddress({browserHash, provider: o.provider, type: o.address.type, v: o.address})
 
+	let s = {//o is big, with text and HTML message text; pick just what otpEnter needs to keep the envelope cookie small
+		tag: o.tag,
+		answer: o.answer,
+		start: o.start,
+		address: {
+			ok: o.address.ok,
+			f0: o.address.f0,
+			f1: o.address.f1,
+			f2: o.address.f2,
+			type: o.address.type,
+		},
+	}//3 of these smaller objects encrypt and encode to around a quarter of the browser enforced 4kib cookie size limit
+
 	let messages = []
 	let x = letter.otps.find(f => f.address.f0 == o.address.f0)//look for a preexisting challenge x to this same address
 	if (x) {//if we found one, the new one o must replace it
 		messages.push(safefill`OTP closed challenge: tag ${x.tag}`)//close x on the trail
 		letter.otps = letter.otps.filter(f => f.tag != x.tag)//remove x from the letter
 	}
-	letter.otps.push(o)//store complete information about the just sent challenge in the letter
+	letter.otps.push(s)//smaller version of o, cherry picked above 🍒
 	messages.push(safefill`OTP opened challenge: address ${o.address.f0}`)//record we bothered this address
 	messages.push(safefill`OTP opened challenge: tag ${o.tag}`)//record we created this challenge
 	await trailAddMany(messages)

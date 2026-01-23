@@ -96,7 +96,7 @@ as we work forward, here are the larger steps we'll tackle, one after the other:
 we'll code the new otp system, following the existing code system as a guide, full stack
 this is complete, and produced the otp components, endpoints, and helper functions, listed above
 
-## 2[]code review
+## 2[x]code review
 
 taking components new and old as pairs, side by side
 and moving from top to bottom
@@ -104,6 +104,12 @@ we'll do a through code review, refactoring as we go, with these goals in mind
 - parity: the otp system should look and act like the code system, rather than being different or (at this stage) better
 - correctness: the otp system must be complete and correct; a smoke test right now must work
 - security: the otp system must be secure, as we believe the code system is. if we in this review discover a flaw in either system, we must flag and correct it, immediately. otherwise we'll update and edit and refactor the otp system, but leave the code system as is
+
+## 2a[] first test
+
+write a single grid test, seeing how you can encapsulate the whole flow
+check out how large the objects are in the cookie; is this a problem for the 4kib size limit?
+localStorage has no such limit, but also no automatic expiration
 
 ## 3[]smoke test
 

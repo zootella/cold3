@@ -1913,7 +1913,14 @@ test(() => {
 
 //after running all the isomorphic test() tests, $ yarn test calls here to run the grid() tests
 export async function runDatabaseTests() {
-	enterSimulationMode()
+	enterSimulationMode()//replace Now() and Tag() with simulated versions for local Node tests
+
+	let sources = []
+	if (defined(typeof process) && process.env) {//Node can access the local .env file, and from that, decrypt wrapper's secret keys 🔑
+		sources.push({note: 'g10', environment: process.env})
+	}
+	await decryptKeys('grid', sources)//grid() tests can use public and secret keys with Key()
+
 	return await runTests(_grid)
 }
 
