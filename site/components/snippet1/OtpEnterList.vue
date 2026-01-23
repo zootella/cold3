@@ -15,7 +15,7 @@ onMounted(async () => {//this component is on TopBar, so we mount once and alway
 		//post the envelope to the server to tell us what it can about the open challenges
 		let response = await fetchWorker('/api/otp', {body: {action: 'FoundEnvelope.', envelope: refCookie.value}})
 		pageStore.otps = response.otps
-		refCookie.value = response.envelope//save response parts in the store and cookie
+		refCookie.value = hasText(response.envelope) ? response.envelope : null//update or clear the temporary envelope cookie
 
 		log('otp found envelope response', look(response))//ttd january
 	}

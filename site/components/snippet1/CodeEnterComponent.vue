@@ -45,6 +45,7 @@ async function onClick() {
 		pageStore.addNotification('code expired; request a new code to try again')
 	}
 	mainStore.codes = response.codes
+
 }
 function clickedCantFind() {
 	log('clicked cant find')

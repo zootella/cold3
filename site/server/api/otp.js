@@ -1,7 +1,6 @@
 //./server/api/otp.js
 import {
 validateEmailOrPhone,
-isExpired,
 Code,
 otpSend, otpEnter,
 } from 'icarus'
@@ -11,64 +10,49 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 
-	//send a verification code to an email or phone
+	let letter//letter contains this browser's active code challenges, and gets passed cookie <--> page <--> server, down the stack
+	if (hasText(body.envelope)) {
+		letter = await openEnvelope('Otp.', body.envelope, {browserHash, skipExpirationCheck: true})//envelope must be authentic and browser hash must match; we skip the envelope expiration check because an old envelope can't contain young codes, and we filter old codes out next
+	} else {
+		letter = {otps: []}//letter with empty array for code below and deeper to look for existing challenges and add a new one
+	}
+	letter.otps = letter.otps.filter(o => Now() <= o.start + Code.expiration)//filter out expired challenges
+
+	let task//each action below sets this task, which we return as the response body
 	if (action == 'SendTurnstile.') {
 
-		//first, validate what the untrusted client told us
 		checkText(body.address)
 		checkText(body.provider)
-
 		let v = validateEmailOrPhone(body.address)
-		if (!v.ok) return {success: false, reason: 'BadAddress.'}
-
+		if (!v.ok) toss('bad address', {body, v})
 		let provider = body.provider.trim().toUpperCase().slice(0, 1)
 		if      (provider == 'A') provider = 'Amazon.'
 		else if (provider == 'T') provider = 'Twilio.'
-		else return {success: false, reason: 'BadProvider.'}
+		else toss('bad provider', {body, provider})
+		task = await otpSend({browserHash, provider, v, letter})
 
-		return await otpSend({browserHash, provider, type: v.type, v, envelope: body.envelope})
-
-	//page found an envelope cookie and wants to know what challenges exist
 	} else if (action == 'FoundEnvelope.') {
 
-		//no envelope, return empty
-		if (!hasText(body.envelope)) return {envelope: null, otps: []}
+		task = Task({name: 'otp found envelope'})
+		task.success = true
 
-		//open envelope (bad envelope throws, becomes 500)
-		let letter = await openEnvelope('Otp.', body.envelope, {skipExpirationCheck: true})
-
-		//wrong browser is suspicious, toss
-		if (letter.browserHash !== browserHash) toss('wrong browser')
-
-		//expired envelope, return empty
-		if (isExpired(letter.expiration)) return {envelope: null, otps: []}
-
-		//filter out expired challenges
-		let challenges = (letter.challenges || []).filter(c => Now() <= c.start + Code.expiration)
-
-		//re-seal with only valid challenges (or null if none remain)
-		let envelope = challenges.length ? await sealEnvelope('Otp.', Limit.expirationUser, {browserHash, challenges}) : null
-
-		//return challenges without codes for display
-		let otps = challenges.map(c => ({
-			tag: c.tag,
-			letter: c.letter,
-			lives: c.lives,
-			start: c.start,
-			address: c.address,
-			addressType: c.addressType,
-		}))
-
-		return {envelope, otps}
-
-	//user is entering a code guess
 	} else if (action == 'Enter.') {
 
-		//first, validate what the untrusted client told us
-		checkText(body.envelope)
 		checkTag(body.otpTag)
-		checkText(body.otpCandidate)
-
-		return await otpEnter({browserHash, envelope: body.envelope, otpTag: body.otpTag, otpCandidate: body.otpCandidate})
+		checkNumerals(body.otpCandidate)
+		task = await otpEnter({browserHash, letter, otpTag: body.otpTag, otpCandidate: body.otpCandidate})
 	}
+
+	if (letter.otps.length > 0) {//we have active challenges for this browser
+		letter.browserHash = browserHash//prevent the letter we give it from being used elsewhere
+		task.envelope = await sealEnvelope('Otp.', Limit.expirationUser, letter)//encrypt it for the browser to keep for up to 20 minutes in a cookie
+	}
+	task.otps = letter.otps.map(o => ({//prepare otps, the array of information about active challenges for the page to know and show
+		tag: o.tag,
+		start: o.start,
+		f2: o.address.f2,//visual form for display on the page; vue derives letter from tag via hashToLetter, and type from f2 via validateEmailOrPhone
+		//the letter, encrypted into the envelope, also includes o.answer, the correct answer; obviously we don't leak that to the page!
+	}))
+	task.finish()
+	return task
 }

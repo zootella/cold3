@@ -17,8 +17,14 @@ const computedState = computed(() => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/api/code/send', {address: refAddress.value, provider: refProvider.value})
+	let response = await refButton.value.post('/api/code/send', {
+
+		address: refAddress.value,
+		provider: refProvider.value,
+
+	})
 	log('code send post response', look(response))
+
 	if (response.success) {
 		//automatically, an enter box will appear
 		//- collapse the controls in this box, as the user doesn't need to use them again
@@ -31,6 +37,7 @@ async function onClick() {
 		//- collapse the controls in this box, as the user can't use them for another minute
 		pageStore.addNotification("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
 	}
+
 	mainStore.codes = response.codes
 }
 

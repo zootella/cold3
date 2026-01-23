@@ -418,16 +418,23 @@ export async function openEnvelope(action, envelope, options) {
 	if (!envelope) toss('missing envelope', {action, envelope, options})
 
 	let symmetric = encryptSymmetric(cutAfterLast(Key('envelope, secret'), '_'))
-	let letter = await symmetric.decryptObject(envelope)
+	let letter = await symmetric.decryptObject(envelope)//security check 0: letter was sealed by us earlier, was secret from holders, and could not have been tampered with (but remember, it could be moved, or replayed!)
 
+	//security check 1: letters must have actions, and the action we found in the letter must match what we were given as expected
 	checkTextSame(action, letter.action)
+	//security check 2: letters must have expiration ticks written in them
 	checkInt(letter.expiration, 1)
+	//security check 3: unless instructed to skip, toss if the letter has expired
 	if (options?.skipExpirationCheck) {
 		//caller has requested we skip the expiration check; if expiration means the user walked away for more than 20 minutes, we want to instruct them to try again, not blow up the page
 	} else {
 		if (isExpired(letter.expiration)) {//default for most situations where an expired envelope indicates tampering
 			toss('expired', {action, envelope, options})
 		}
+	}
+	//security check 4: if caller, trusted server code, provided the trusted browserHash in options, require letter's to match
+	if (options?.browserHash) {
+		if (!hasTextSame(options.browserHash, letter.browserHash)) toss('transplanted', {action, envelope, options})
 	}
 	return letter
 }

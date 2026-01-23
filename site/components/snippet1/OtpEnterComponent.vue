@@ -2,6 +2,7 @@
 
 import {
 takeNumerals,
+hashToLetter, validateEmailOrPhone, Code,
 } from 'icarus'
 const refCookie = useOtpCookie()
 const pageStore = usePageStore()
@@ -14,10 +15,13 @@ const refInstruction = ref('')
 const refOtpCandidate = ref('')
 const refButton = ref(null)
 
+const prefix = await hashToLetter(props.otp.tag, Code.alphabet)
+const addressType = validateEmailOrPhone(props.otp.f2).type
+
 let method
-if      (props.otp.addressType == 'Email.') method = 'email'
-else if (props.otp.addressType == 'Phone.') method = 'phone'
-else                                        method = 'messages'
+if      (addressType == 'Email.') method = 'email'
+else if (addressType == 'Phone.') method = 'phone'
+else                              method = 'messages'
 refInstruction.value = `Check your ${method} for the code we sent`
 
 const computedState = computed(() => {
@@ -32,21 +36,20 @@ async function onClick() {
 	}})
 	log('otp enter post response', look(response))
 	if (response.success) {
-		//automatically, this box will disappear when we set pageStore.otps below
-		pageStore.addNotification("✔️ address verified with new OTP system")
+		//automatically, this box will disappear when we set pageStore.otps below, ttd january
+		pageStore.addNotification("✔️ address verified (new otp system)")
 	} else if (response.reason == 'Wrong.' && response.lives) {
 		//automatically, nothing changes
-		//-[]box should indicate incorrect guess, clear the field, tell the user to try again, ttd january
+		//-[]box should indicate incorrect guess, clear the field, tell the user to try again
 	} else if (response.reason == 'Wrong.' && response.lives == 0) {
 		//automatically, this box will disappear when we set pageStore.otps below
-		refOtpCandidate.value = ''
-		pageStore.addNotification('Code incorrect; request a new code to try again')
+		pageStore.addNotification('code incorrect; request a new code to try again')
 	} else if (response.reason == 'Expired.') {
 		//automatically, this box will disappear when we set pageStore.otps below
-		pageStore.addNotification('Code expired; request a new code to try again')
+		pageStore.addNotification('code expired; request a new code to try again')
 	}
-	if (response.envelope !== undefined) refCookie.value = response.envelope
-	if (response.otps) pageStore.otps = response.otps
+	refCookie.value = hasText(response.envelope) ? response.envelope : null//update or clear the temporary envelope cookie
+	pageStore.otps = response.otps
 }
 function clickedCantFind() {
 	log('clicked cant find')
@@ -59,7 +62,7 @@ function clickedCantFind() {
 
 <p>{{refInstruction}}</p>
 <p>
-	Code {{otp.letter}}
+	Code {{prefix}}
 	<input :maxlength="Limit.input"
 		type="tel" inputmode="numeric" enterkeyhint="Enter"
 		v-model="refOtpCandidate"
