@@ -1069,12 +1069,65 @@ export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 
 
 
+
+
+
+
+
+
+
+//                _        _        _     _      
+//   ___ ___   __| | ___  | |_ __ _| |__ | | ___ 
+//  / __/ _ \ / _` |/ _ \ | __/ _` | '_ \| |/ _ \
+// | (_| (_) | (_| |  __/ | || (_| | |_) | |  __/
+//  \___\___/ \__,_|\___|  \__\__,_|_.__/|_|\___|
+//                                               
+
+export const Code = {//factory settings for address verification codes
+
+	expiration: 20*Time.minute,//For each code: dead in 20 minutes,
+	guesses:    4,             //and dead after 4 wrong guesses. Also, dead after issued replacement
+
+	limitHard: 24,      //For each address: limit 24 codes,
+	day:       Time.day,//in 24 hours.
+
+	limitSoft: 2,            //Also, first 2 codes in,
+	week:      5*Time.day,   //5 days we can issue back to back, then,
+	minutes:   1*Time.minute,//1 minute delay between sending codes to an address.
+
+	limitStrong: 1,//First 1 code in 5 days to an address,
+	short:       4,//can be short like "1234".
+	standard:    6,//after that, longer like "123456"
+
+	alphabet: 'ABCDEFHJKMNPQRTUVWXYZ',//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
+	/*
+	For a 50% chance to guess correctly we need N guesses such that:
+		(1 - p)^N = 0.5   where p = 1/(total possible codes)
+	Using the small-p approximation: ln(1-p) ≈ -p, we get:
+		N ≈ ln(0.5)/(-p) ≈ 0.693 / p
+
+	For 4-digit codes: 
+		p = 1/10000 = 0.0001
+		N ≈ 0.693 / 0.0001 ≈ 6930 guesses
+		With 4 guesses every 5 days:
+			Periods = 6930 / 4 ≈ 1732.5
+			Total time ≈ 1732.5 * 5 days = 8662.5 days ≈ 23.7 years
+
+	For 6-digit codes:
+		p = 1/1000000 = 0.000001
+		N ≈ 0.693 / 0.000001 ≈ 693000 guesses
+		With 4 guesses every hour:
+			Periods = 693000 / 4 ≈ 173250
+			Total time ≈ 173250 hours ≈ 173250/8760 ≈ 19.8 years
+	*/
+}
+Object.freeze(Code)
+
 grid(async () => {//otp: sanity check
 	let browserHash = random32()
 	let letter = {otps: []}
-	let v = validateEmailOrPhone('test@example.com')
 
-	let sendResult = await otpSend({letter, v, provider: 'A', browserHash})
+	let sendResult = await otpSend({letter, v: validateEmailOrPhone('test@example.com'), provider: 'A', browserHash})
 	ok(sendResult.success)
 	ok(letter.otps.length == 1)//challenge information is in the letter for the envelope and cookie
 	let o = letter.otps[0]
@@ -1102,10 +1155,8 @@ grid(async () => {//otp: multiple addresses in one letter - alice's email and ph
 grid(async () => {//otp: code expires after 20 minutes
 	let browserHash = random32()
 	let letter = {otps: []}
-	let v = validateEmailOrPhone('expire@example.com')
 
-	let sendResult = await otpSend({letter, v, provider: 'A', browserHash})
-	ok(sendResult.success)
+	ok((await otpSend({letter, v: validateEmailOrPhone('expire@example.com'), provider: 'A', browserHash})).success)
 	let o = letter.otps[0]
 
 	ageNow(30*Time.minute)//wait past the 20 minute expiration
@@ -1116,11 +1167,9 @@ grid(async () => {//otp: code expires after 20 minutes
 grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts code
 	let browserHash = random32()
 	let letter = {otps: []}
-	let v3 = validateEmailOrPhone('wrong3@example.com')
-	let v4 = validateEmailOrPhone('wrong4@example.com')
 
-	await otpSend({letter, v: v3, provider: 'A', browserHash}); ageNow(Time.minute)
-	await otpSend({letter, v: v4, provider: 'A', browserHash}); ok(letter.otps.length == 2)
+	await otpSend({letter, v: validateEmailOrPhone('wrong3@example.com'), provider: 'A', browserHash}); ageNow(Time.minute)
+	await otpSend({letter, v: validateEmailOrPhone('wrong4@example.com'), provider: 'A', browserHash}); ok(letter.otps.length == 2)
 
 	let o3 = letter.otps.find(o => o.address.f0 == 'wrong3@example.com')
 	let o4 = letter.otps.find(o => o.address.f0 == 'wrong4@example.com')
@@ -1158,9 +1207,8 @@ grid(async () => {//otp: replacement code kills previous code to same address
 grid(async () => {//otp: attacker replaying envelope still can't get more guesses
 	let browserHash = random32()
 	let letter = {otps: []}
-	let v = validateEmailOrPhone('replay@example.com')
 
-	await otpSend({letter, v, provider: 'A', browserHash})
+	await otpSend({letter, v: validateEmailOrPhone('replay@example.com'), provider: 'A', browserHash})
 	let o = letter.otps[0]
 	const replay = () => ({otps: [{...o}]})
 
@@ -1220,70 +1268,16 @@ grid(async () => {//otp: first code to an address in 5d window is short (4 digit
 	ok(letter.otps[0].answer.length == 4)//third one back to being short again
 })
 grid(async () => {//otp: getting a challenge correct closes it on the trail
-	let v = validateEmailOrPhone('reenter@example.com')
 	let browserHash = random32()
 	let letter = {otps: []}
 
-	await otpSend({letter, v, provider: 'A', browserHash})
+	await otpSend({letter, v: validateEmailOrPhone('reenter@example.com'), provider: 'A', browserHash})
 	let o = letter.otps[0]
 
 	const replay = () => ({otps: [{...o}]})
 	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).success)//correct
 	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).reason == 'Expired.')//replay envelope to try to get that same right answer on that same challenge correcct again; trail knows it's closed
 })
-
-
-
-
-
-
-
-//                _        _        _     _      
-//   ___ ___   __| | ___  | |_ __ _| |__ | | ___ 
-//  / __/ _ \ / _` |/ _ \ | __/ _` | '_ \| |/ _ \
-// | (_| (_) | (_| |  __/ | || (_| | |_) | |  __/
-//  \___\___/ \__,_|\___|  \__\__,_|_.__/|_|\___|
-//                                               
-
-export const Code = {//factory settings for address verification codes
-
-	expiration: 20*Time.minute,//For each code: dead in 20 minutes,
-	guesses:    4,             //and dead after 4 wrong guesses. Also, dead after issued replacement
-
-	limitHard: 24,      //For each address: limit 24 codes,
-	day:       Time.day,//in 24 hours.
-
-	limitSoft: 2,            //Also, first 2 codes in,
-	week:      5*Time.day,   //5 days we can issue back to back, then,
-	minutes:   1*Time.minute,//1 minute delay between sending codes to an address.
-
-	limitStrong: 1,//First 1 code in 5 days to an address,
-	short:       4,//can be short like "1234".
-	standard:    6,//after that, longer like "123456"
-
-	alphabet: 'ABCDEFHJKMNPQRTUVWXYZ',//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
-	/*
-	For a 50% chance to guess correctly we need N guesses such that:
-		(1 - p)^N = 0.5   where p = 1/(total possible codes)
-	Using the small-p approximation: ln(1-p) ≈ -p, we get:
-		N ≈ ln(0.5)/(-p) ≈ 0.693 / p
-
-	For 4-digit codes: 
-		p = 1/10000 = 0.0001
-		N ≈ 0.693 / 0.0001 ≈ 6930 guesses
-		With 4 guesses every 5 days:
-			Periods = 6930 / 4 ≈ 1732.5
-			Total time ≈ 1732.5 * 5 days = 8662.5 days ≈ 23.7 years
-
-	For 6-digit codes:
-		p = 1/1000000 = 0.000001
-		N ≈ 0.693 / 0.000001 ≈ 693000 guesses
-		With 4 guesses every hour:
-			Periods = 693000 / 4 ≈ 173250
-			Total time ≈ 173250 hours ≈ 173250/8760 ≈ 19.8 years
-	*/
-}
-Object.freeze(Code)
 
 SQL(`
 -- what code like 1234 have we sent to the person at a browser to prove they control that address?
