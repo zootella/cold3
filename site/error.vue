@@ -1,4 +1,4 @@
-<script setup>//./error.vue
+<script setup>
 
 /*
 error.vue is Nuxt's default error page

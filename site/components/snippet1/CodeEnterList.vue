@@ -1,4 +1,4 @@
-<script setup>//./components/CodeEnterList.vue
+<script setup>
 
 import {
 sayPlural,

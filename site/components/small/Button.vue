@@ -1,4 +1,4 @@
-<script setup>//./components/Button.vue
+<script setup>
 
 import {
 useTurnstileHere,

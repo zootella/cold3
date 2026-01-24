@@ -1,4 +1,3 @@
-//./server/api/hit.js
 
 import {
 settingReadInt, settingWrite,

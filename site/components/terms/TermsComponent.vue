@@ -1,4 +1,4 @@
-<script setup>//./components/TermsComponent2.vue - component designed to let the user side scroll through terms
+<script setup>//component designed to let the user side scroll through terms
 
 const refAccepted = ref(false)
 

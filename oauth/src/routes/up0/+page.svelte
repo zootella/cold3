@@ -1,4 +1,4 @@
-<script>//./src/routes/up0/+page.svelte ~ simple static page for checkly at https://oauth.cold3.cc/up0
+<script>//simple static page for checkly at https://oauth.cold3.cc/up0
 
 import {
 Sticker,

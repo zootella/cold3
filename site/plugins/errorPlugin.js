@@ -1,4 +1,3 @@
-//./plugins/errorPlugin.js
 
 export default defineNuxtPlugin((nuxtApp) => {
 

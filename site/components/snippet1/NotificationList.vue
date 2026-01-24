@@ -1,4 +1,4 @@
-<script setup>//./components/NotificationList.vue
+<script setup>
 
 import {
 sayPlural,

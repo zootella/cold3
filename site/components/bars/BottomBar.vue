@@ -1,4 +1,4 @@
-<script setup>//./components/BottomBar.vue
+<script setup>
 
 const pageStore = usePageStore()
 

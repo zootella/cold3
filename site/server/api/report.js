@@ -1,4 +1,3 @@
-//./server/api/report.js
 
 import {
 headerGetOne, credentialBrowserGet, recordHit, recordDelay,

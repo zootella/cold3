@@ -1,4 +1,4 @@
-//./server/api/oauth.js ~ on the oauth trail, nuxt endpoint
+//on the oauth trail, nuxt endpoint
 
 import {verifyMessage} from 'viem'
 

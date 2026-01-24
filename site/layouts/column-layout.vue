@@ -1,4 +1,4 @@
-<script setup>//./layouts/column-layout.vue - layout that wraps into centered column and starts with navigation links
+<script setup>//layout that wraps into centered column and starts with navigation links
 
 const route = useRoute()//get the note from definePageMeta
 

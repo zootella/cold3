@@ -1,4 +1,4 @@
-//./server/api/otp.js
+
 import {
 validateEmailOrPhone,
 Code,

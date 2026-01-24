@@ -1,4 +1,4 @@
-//./src/routes/continue/[provider]/+page.server.js ~ on the oauth trail, sveltekit server render
+//on the oauth trail, sveltekit server render
 
 import {
 Now, Limit, log, look,

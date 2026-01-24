@@ -1,4 +1,3 @@
-//./nuxt.config.js
 
 //local Node runs this file on $ nuxt dev, build, generate; importing what we need from icarus manually rather than trying to get automatic imports working here
 import {

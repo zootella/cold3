@@ -1,4 +1,4 @@
-<script setup>//./components/WalletDemo.vue
+<script setup>
 
 import {
 wevmDynamicImport,

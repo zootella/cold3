@@ -1,4 +1,4 @@
-<script setup>//./components/CodeEnterComponent.vue
+<script setup>
 
 import {
 takeNumerals, Code, sayTimePage,

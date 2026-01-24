@@ -1,4 +1,4 @@
-<script setup>//./components/PasswordBox.vue
+<script setup>
 
 const props = defineProps({
 	modelValue: String,

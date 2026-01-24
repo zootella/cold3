@@ -1,4 +1,4 @@
-<script setup>//./components/OtpEnterComponent.vue
+<script setup>
 
 import {
 takeNumerals,

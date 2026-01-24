@@ -1,4 +1,4 @@
-<script setup>//./components/NotificationComponent.vue
+<script setup>
 
 import {
 } from 'icarus'

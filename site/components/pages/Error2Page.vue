@@ -1,4 +1,4 @@
-<script setup>//./components/Error2Page.vue
+<script setup>
 
 import {
 getBrowserGraphics,

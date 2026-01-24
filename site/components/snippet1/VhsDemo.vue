@@ -1,4 +1,4 @@
-<script setup>//./components/VhsDemo.vue
+<script setup>
 
 const refSource = ref(null)
 const refNote = ref('Requesting signed URL...')

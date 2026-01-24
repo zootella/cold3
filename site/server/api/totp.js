@@ -1,4 +1,4 @@
-//./server/api/totp.js
+
 import {
 credentialBrowserGet, credentialNameGet,
 trailRecent, trailCount, trailAdd,

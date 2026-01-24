@@ -1,4 +1,4 @@
-//./src/routes/+page.server.js ~ server side redirect away from the root of the oauth subdomain
+//server side redirect away from the root of the oauth subdomain
 
 import {
 originApex,

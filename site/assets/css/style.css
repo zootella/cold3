@@ -1,4 +1,4 @@
-/* ./assets/css/style.css, made to get styles to actually cascade, like a whole sheet of them ;) */
+/* made to get styles to actually cascade, like a whole sheet of them ;) */
 
 @font-face { /*yes, it's correct for font-face to go at the top, above the tailwind directives section below*/
 	font-family: 'Diatype Rounded';

@@ -1,4 +1,4 @@
-<script setup>//components/NavigateButton.vue
+<script setup>
 /*
 use like:
 <NavigateButton to="/about">About Page</NavigateButton>

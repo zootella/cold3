@@ -1,4 +1,4 @@
-<script setup>//./components/OauthDemo.vue ~ on the oauth trail, nuxt component
+<script setup>//on the oauth trail, nuxt component
 
 import {
 originOauth,

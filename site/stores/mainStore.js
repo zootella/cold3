@@ -1,4 +1,4 @@
-//./stores/main.js - always renders once and first on the server in universal rendering
+//always renders once and first on the server in universal rendering
 
 import {
 getBrowserGraphics,

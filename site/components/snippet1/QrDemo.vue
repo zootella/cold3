@@ -1,4 +1,4 @@
-<script setup>//./components/QrDemo.vue
+<script setup>
 
 import {
 browserIsBesideAppStore,

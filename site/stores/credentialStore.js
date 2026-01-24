@@ -1,4 +1,4 @@
-//./stores/credentialStore.js - manages user credentials and browser sessions
+//manages user credentials and browser sessions
 //follows mainStore pattern: loads during server render, loaded ref prevents re-fetch on client
 
 export const useCredentialStore = defineStore('credentialStore', () => {

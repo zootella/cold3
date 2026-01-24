@@ -1,4 +1,4 @@
-<script setup>//./components/OtpRequestComponent.vue
+<script setup>
 
 import {
 validateEmailOrPhone,

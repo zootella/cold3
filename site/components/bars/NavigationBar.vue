@@ -1,4 +1,4 @@
-<script setup>//./components/NavigationBar.vue
+<script setup>
 
 defineProps({note: String})
 

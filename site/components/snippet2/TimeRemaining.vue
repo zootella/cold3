@@ -1,4 +1,4 @@
-<script setup>//./components/TimeRemaining.vue
+<script setup>
 
 import {
 sayPlural,

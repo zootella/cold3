@@ -1,4 +1,4 @@
-<script>//./src/routes/continue/[provider]/+page.svelte ~ on the oauth trail, sveltekit client page
+<script>//on the oauth trail, sveltekit client page
 
 import {onMount} from 'svelte'
 import {page} from '$app/stores'//get svelte's page store, which holds the url and parameters

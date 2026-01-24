@@ -1,4 +1,3 @@
-//./wrangler.jsonc
 {
 	//name this deployed application in the Cloudflare dashboard for Workers & Pages
 	"name": "site4",

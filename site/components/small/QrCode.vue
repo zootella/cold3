@@ -1,4 +1,4 @@
-<script setup>//./components/QrCode.vue
+<script setup>
 
 import {
 qrcodeDynamicImport,

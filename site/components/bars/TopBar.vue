@@ -1,4 +1,4 @@
-<script setup>//./components/TopBar.vue
+<script setup>
 
 const mainStore = useMainStore()
 const pageStore = usePageStore()

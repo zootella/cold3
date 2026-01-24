@@ -1,4 +1,4 @@
-<script setup>//./components/TotpDemo.vue
+<script setup>
 
 import {
 sayTick, Data,

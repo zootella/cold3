@@ -1,4 +1,4 @@
-<script setup>//./app.vue
+<script setup>
 
 import {
 addTurnstileHeadScript,

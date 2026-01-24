@@ -1,4 +1,4 @@
-<script setup>//TrailDemo3.vue - alternative with Button
+<script setup>//alternative with Button
 
 import {
 sayTick, hashText,

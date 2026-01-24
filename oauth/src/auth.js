@@ -1,4 +1,4 @@
-//./src/auth.js ~ on the oauth trail, Auth.js configuration and handlers
+//on the oauth trail, Auth.js configuration and handlers
 
 import {
 defined, toss, log, look, Time, Now, Limit, hasTag,
