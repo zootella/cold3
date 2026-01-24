@@ -11,7 +11,7 @@ Data, decryptData, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
-randomCode, hashToLetter,
+randomCode, hashPrefix,
 makePlain, makeObject, makeText,
 safefill, deindent,
 isInSimulationMode, ageNow, prefixTags,
@@ -868,7 +868,7 @@ async function otpCompose({useLength, provider, v, sticker}) {
 		provider: provider,
 		address: v,//validated address with three forms as well as .type like "Email." or "Phone."
 	}
-	let prefix = await hashToLetter(o.tag, Code.alphabet)
+	let prefix = await hashPrefix(o.tag, Code.alphabet)
 	o.subjectText = `Code ${prefix} ${o.answer} for ${Key('message brand')}`
 	const warning = ` - Don't tell anyone, they could steal your whole account!`
 	sticker = sticker ? 'STICKER' : ''//gets replaced by the sticker on the lambda
@@ -881,7 +881,7 @@ async function codeCompose({length, sticker}) {
 	let c = {}
 
 	c.codeTag = Tag()
-	c.letter = await hashToLetter(c.codeTag, Code.alphabet)
+	c.letter = await hashPrefix(c.codeTag, Code.alphabet)
 	c.code = randomCode(length)
 	c.hash = await hashText(c.codeTag+c.code)
 
@@ -952,7 +952,7 @@ export async function browserToCodes({browserHash}) {
 				tick: row.row_tick,//when we sent the code
 				lives: row.lives,//how many guesses remain on this code
 
-				letter: await hashToLetter(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
+				letter: await hashPrefix(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
 				addressType: row.type_text,//the type of address, like "Email."
 				address0: row.address0_text,
 				address1: row.address1_text,//the address we used with the api

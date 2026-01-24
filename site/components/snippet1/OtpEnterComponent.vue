@@ -2,7 +2,7 @@
 
 import {
 takeNumerals,
-hashToLetter, validateEmailOrPhone, Code,
+hashPrefix, Code,
 } from 'icarus'
 const refCookie = useOtpCookie()
 const pageStore = usePageStore()
@@ -15,13 +15,12 @@ const refInstruction = ref('')
 const refGuess = ref('')
 const refButton = ref(null)
 
-const prefix = await hashToLetter(props.otp.tag, Code.alphabet)
-const addressType = validateEmailOrPhone(props.otp.f2).type
+const prefix = await hashPrefix(props.otp.tag, Code.alphabet)
 
 let method
-if      (addressType == 'Email.') method = 'email'
-else if (addressType == 'Phone.') method = 'phone'
-else                              method = 'messages'
+if      (props.otp.address.type == 'Email.') method = 'email'
+else if (props.otp.address.type == 'Phone.') method = 'phone'
+else                                         method = 'messages'
 refInstruction.value = `Check your ${method} for the code we sent`
 
 const computedState = computed(() => {

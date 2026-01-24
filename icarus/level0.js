@@ -1192,7 +1192,7 @@ noop(() => {//this might be slow, actually, but should be ok for individual one 
 })
 
 //choose a letter from the given alphabet that is a result of the hash of s
-export async function hashToLetter(s, alphabet) {
+export async function hashPrefix(s, alphabet) {
 	checkText(s); checkText(alphabet)
 
 	let d = await Data({text: s}).hash()
@@ -1202,9 +1202,9 @@ export async function hashToLetter(s, alphabet) {
 	return alphabet[i]//return alphabet letter at that index, will be even across alphabet
 }
 test(async () => {
-	ok(await hashToLetter('3IXdnF46zWIYmRb9TYFuw', 'ABCD') == 'A')
-	ok(await hashToLetter('4195KLh3ApK74M5gFHnbJ', 'ABCD') == 'D')
-	ok(await hashToLetter('6MIg9Bwj1ZC8wx6BLSgML', 'ABCD') == 'B')
+	ok(await hashPrefix('3IXdnF46zWIYmRb9TYFuw', 'ABCD') == 'A')
+	ok(await hashPrefix('4195KLh3ApK74M5gFHnbJ', 'ABCD') == 'D')
+	ok(await hashPrefix('6MIg9Bwj1ZC8wx6BLSgML', 'ABCD') == 'B')
 })
 
 //  _   _                        _   _             _    

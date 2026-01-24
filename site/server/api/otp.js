@@ -51,7 +51,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	task.otps = letter.otps.map(o => ({//we always return an array of non-secret information about currently active challenges
 		tag: o.tag,//a tag identifies each challenge; the page will tell us which one it's guessing at
 		start: o.start,//the birthdate of this challenge, which lives for 20 minutes
-		f2: o.address.f2,//email address or phone number, form 2 visual for page display
+		address: o.address,//the full address object with ok, f0, f1, f2, and type
 		//the secret code we sent, like "123456" is o.answer; it's encrypted into envelope, and critically not leaked here to the page!
 	}))
 	task.finish()
