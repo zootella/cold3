@@ -1,12 +1,14 @@
 notesfile
 
 
+================================================================================
+🔴 IMPLEMENTED — Early Task() prototype
 
-
-
-
-
-
+Stream-of-consciousness notes with an early Task() code snippet. The implemented
+version in level2.js:450-493 matches this design: tag, tick, sticker, finish()
+method with automatic success bubbling. The note "try Task without Tape" reflects
+what was ultimately built—Task survived, Tape was abandoned.
+================================================================================
 
 /*
 export function Task(task) {
@@ -31,24 +33,15 @@ ok you're going to try Task without Tape
 they're designed to be light and throwaway
 
 
+================================================================================
+🔴 IMPLEMENTED — High-level stack goals and architecture overview
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Design goals document outlining the three-tier stack: [i] page, [ii] worker,
+[iii] lambda. Goals included standardizing result/response/records, exception
+handling at every level, and keeping Amazon details out of page responses.
+All implemented: doorWorker/doorLambda handle errors uniformly, logAlert()
+captures details server-side, and 500 responses return null to clients.
+================================================================================
 
 omg the stack is as tall as one of those three bread sandwiches
 
@@ -93,21 +86,21 @@ worker success, worker failure, worker exception
 lambda success, lambda failure, lambda exception
 
 
+================================================================================
+🔴 IMPLEMENTED — Getting things running / Spelunk button notes
 
-
-
+Short implementation notes about getting the stack working and testing with a
+debug button. This was working-phase scaffolding, now superseded by the working
+implementation and proper test coverage.
+================================================================================
 
 first just get it working again
 
 
 
 
-
-
 get things running again
 make a [Spelunk] button that reaches down to lambda
-
-
 
 
 
@@ -120,6 +113,15 @@ make a [Spelunk] button that reaches down to lambda
 	*/
 
 
+================================================================================
+🔴 IMPLEMENTED — Door symmetry and logging location thoughts
+
+Brainstorming about where to log errors (worker vs lambda) and whether door
+should be symmetric. Concluded that exceptions should bubble up, workers log
+via logAlert(), and lambdas return full details since callers are validated.
+This is exactly how doorWorker/doorLambda work now—doorWorkerShut catches
+errors and logs them, returning null to clients.
+================================================================================
 
 you built symmetry into door, but realize that thta design may not be optimal
 for instance, it's important if the worker door handle below throws, that we datadog that, and not tell the page all the details
@@ -128,6 +130,15 @@ and the net23 does the job of logging things, including failures persephone expe
 or, this is crazy, it's easiest to handle things right wehre they happen, and you've gotten datadog reliable from lambda no problem
 and also, you haven't used supabase from lambda yet, so that's already all on in the worker
 
+
+================================================================================
+🔴 ABANDONED — Ledger/reports array idea
+
+Brainstorming about passing an array through handlers where each operation adds
+a "report" (turnstile check, amazon call, etc). This would flatten the nested
+response structure. Noted "don't do that now, if ever!" and indeed it was never
+implemented. The simpler Task pattern with success bubbling was sufficient.
+================================================================================
 
 you find yourself cooking up this idea where passed through the whole handler is an array where operations add reports, like turnstile is a report, a call to amazon is a report
 which means that you don't have this deeply nested thing with sometimes multiple hardcoded responses inside
@@ -153,10 +164,13 @@ and log to datadog only from the worker, also
 not response, but receipt
 
 
+================================================================================
+🔴 IMPLEMENTED — Charting course / exception testing checklist
 
-
-
-
+Implementation checklist for testing exceptions and success states through the
+stack. These were verification steps during development, now complete and
+validated by the working system.
+================================================================================
 
 right now all you're trying to do is
 []chart the existing course
@@ -166,6 +180,15 @@ right now all you're trying to do is
 []keep times in there in a standard way even if you don't use them
 
 
+================================================================================
+🔴 IMPLEMENTED — Full stack code trace (code send flow)
+
+Reference trace through the entire stack for sending a verification code:
+CodeRequestComponent → PostButton → send.js → codeSend() → fetch23() →
+message.js → persephone.js. Function names evolved (fetch23 → fetchLambda,
+codeSend → otpSend) but the architecture matches exactly. This was working
+documentation during implementation.
+================================================================================
 
 ~~~~ CodeRequestComponent.vue:
 
@@ -197,7 +220,7 @@ async function doorHandleBelow({door, body, action}) {
 
 export async function codeSend({browserTag, provider, type, v}) {
 ...
-	let result23 = await fetch23({$fetch, path: '/message', body})//ttd march2025, other notes about getting the nuxt 
+	let result23 = await fetch23({$fetch, path: '/message', body})//ttd march2025, other notes about getting the nuxt
 ...
 	return {success: true, result23}
 }
@@ -244,26 +267,15 @@ export async function sendMessage({provider, service, address, subjectText, mess
 }
 
 
+================================================================================
+🔴 ABANDONED — Tape object design exploration
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Extended brainstorming about a "Tape" object to hold a list of Task/Call objects.
+The idea was to pass tape through handlers, with tape.add() collecting reports
+and tape.ok() checking if all succeeded. Notes even explored auto-catching
+exceptions. Ultimately abandoned—the simpler Task-only approach with success
+bubbling was sufficient without the extra abstraction layer.
+================================================================================
 
 what would it look like to pass around a really simple receipt
 
@@ -299,7 +311,6 @@ Tape holds a list of
 Call objects
 
 let call = Call()//sets t1
-
 
 
 
@@ -350,11 +361,14 @@ you can use Task both places
 but probably only use Tape on the server
 
 
+================================================================================
+🔴 IMPLEMENTED — Task design summary
 
-
-
-
-
+Concise Task requirements list. All implemented in level2.js:450-493:
+tick/done/duration for timing, success detection, error capture. The current
+Task() includes tag, sticker, and automatic success bubbling from nested
+response/result objects.
+================================================================================
 
 Task
 when did it start?
@@ -364,20 +378,14 @@ did it succeed?
 did it throw?
 
 
+================================================================================
+🔴 ABANDONED — Detailed Task/Call field specifications
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+Specification for Task fields (provider, service, requestBody, sticker, etc.)
+and how to use with Tape. This level of structure wasn't needed—the implemented
+Task is lighter, with just name, tag, tick, sticker, and finish(). Success
+bubbling handles the rest without mandatory field lists.
+================================================================================
 
 /*
 	mandatory to begin
@@ -408,16 +416,12 @@ duration
 */
 
 
+================================================================================
+🔴 IMPLEMENTED — Stack file listing
 
-
-
-
-
-
-
-
-
-
+Quick reference of files in the stack flow. Still accurate for the architecture,
+though some names changed (fetch23 → fetchLambda, Task/Tape in level2 not level1).
+================================================================================
 
 CodeRequestComponent
 PostButton
@@ -427,9 +431,13 @@ level2.js:fetch23
 level1.js:Task and Tape
 
 
+================================================================================
+🔴 IMPLEMENTED — Light bracket idea (became Task)
 
-
-
+Note about a minimal timing/success wrapper. This is exactly what Task() became:
+title (name), sticker, tick, done, duration, success, error. The "light bracket"
+intuition was correct.
+================================================================================
 
 waht if it's a really light bracket that just does
 
@@ -448,8 +456,15 @@ and then try out putting that around lots of things in the stack
 []get Task to not include .error at all unless there is an error!
 
 
+================================================================================
+🔴 IMPLEMENTED — Monday afternoon issues (secrets + exceptions)
 
-
+Two key insights: (1) net23 must not leak secrets even though only workers call
+it—implemented via envelope authentication and null error responses. (2) The
+realization that checking if(task.success) feels wrong when exceptions would be
+cleaner—this led to the current philosophy where exceptions bubble up for code
+errors while success/failure objects handle user-facing paths.
+================================================================================
 
 issues monday afternoon:
 
@@ -473,14 +488,18 @@ it means it's staff's fault, either an error in configuration, or usage
 you do want to get that into datadog, but right now it's not going there
 
 
+================================================================================
+🔴 IMPLEMENTED — Exception bubbling realization
 
-
-
+Key architectural insight: instead of Task and Tape complexity, just let
+exceptions bubble up from persephone through lambda through worker. This is
+exactly how the system works now—doorWorker/doorLambda catch exceptions at
+the boundary, log them, and return appropriate responses. The "aha moment"
+that simplified the design.
+================================================================================
 
 const tape = Tape()
 if (tape.ok())
-
-
 
 
 
@@ -498,26 +517,21 @@ if (tape.ok())
 	*/
 	//does this throw if it's not successful? does it return a note in the return object?
 
-	
+
 
 	//ttd april2025, be able to tell if we think the code send worked ok or not
 
 
+================================================================================
+🔴 IMPLEMENTED — $fetch reference problem
 
-
-
-
-
-
-
-
-
-
-
+Notes about Nuxt's $fetch being auto-imported in components/endpoints but hard
+to reach from library files. The setFetch/getFetch pattern shown here was one
+approach. Solved differently in the final implementation—fetchWorker/fetchLambda
+use $fetch directly (available in server context) or fall back to ofetch.
+================================================================================
 
 //ttd march2025, other notes about getting the nuxt environment reference $fetch
-
-
 
 
 
@@ -532,8 +546,15 @@ export function getFetch() {
 }
 
 
+================================================================================
+🔴 IMPLEMENTED/SIMPLIFIED — fetchNetwork23 with warmup logic
 
-
+Old implementation of bridge to Network 23 with warmup calls, forceCloudLambda
+flag, and Duration helper. The warmup pattern was abandoned—reliability issues
+were only on GET (now all POST), and the envelope-based authentication replaced
+ACCESS_NETWORK_23_SECRET. Current fetchLambda() is much simpler: single POST
+with sealed envelope. origin23() handles local vs cloud routing.
+================================================================================
 
 /*
 ttd december2024, figure out how bridge works now that you've got cors done
@@ -550,12 +571,12 @@ use {} for named arguments, of course
 yeah do the warmup
 */
 
-//  _          _     _              _                     _   ____  _____ 
-// | |__  _ __(_) __| | __ _  ___  | |_ ___    _ __   ___| |_|___ \|___ / 
-// | '_ \| '__| |/ _` |/ _` |/ _ \ | __/ _ \  | '_ \ / _ \ __| __) | |_ \ 
+//  _          _     _              _                     _   ____  _____
+// | |__  _ __(_) __| | __ _  ___  | |_ ___    _ __   ___| |_|___ \|___ /
+// | '_ \| '__| |/ _` |/ _` |/ _ \ | __/ _ \  | '_ \ / _ \ __| __) | |_ \
 // | |_) | |  | | (_| | (_| |  __/ | || (_) | | | | |  __/ |_ / __/ ___) |
-// |_.__/|_|  |_|\__,_|\__, |\___|  \__\___/  |_| |_|\___|\__|_____|____/ 
-//                     |___/                                              
+// |_.__/|_|  |_|\__,_|\__, |\___|  \__\___/  |_| |_|\___|\__|_____|____/
+//                     |___/
 
 /*
 forceCloudLambda false means local worker -> local lambda; cloud worker -> cloud lambda
@@ -617,7 +638,6 @@ you still like calling into a warm lambda, and the code isn't too hard, though
 
 //move to level0
 function Duration(givenOpenTick) {//a small object to keep tick counts together for durations
-
 	let _openTick, _shutTick, _duration
 	function openTick() { return _openTick }//accessors
 	function shutTick() { return _shutTick }
@@ -634,28 +654,22 @@ function Duration(givenOpenTick) {//a small object to keep tick counts together 
 //if you do this, have it keep an array with any number of durations, and then a .text() which summarizes gaps on one line
 
 
+================================================================================
+🔴 ABANDONED — Final Tape design with Task integration
 
+Final attempt at Tape design showing how Task and Tape would work together.
+The tape.finish(task, more) pattern with success bubbling. This was the cleanest
+Tape design but still abandoned—Task alone with success bubbling was sufficient.
+The note "try to keep it like that" and "don't do the design where you take a
+function and call it" shows the wisdom to avoid over-engineering.
+================================================================================
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//  _            _                      _   _                   
-// | |_ __ _ ___| | __   __ _ _ __   __| | | |_ __ _ _ __   ___ 
+//  _            _                      _   _
+// | |_ __ _ ___| | __   __ _ _ __   __| | | |_ __ _ _ __   ___
 // | __/ _` / __| |/ /  / _` | '_ \ / _` | | __/ _` | '_ \ / _ \
 // | || (_| \__ \   <  | (_| | | | | (_| | | || (_| | |_) |  __/
 //  \__\__,_|___/_|\_\  \__,_|_| |_|\__,_|  \__\__,_| .__/ \___|
-//                                                  |_|         
+//                                                  |_|
 
 /*
 let task = Task({
@@ -695,7 +709,14 @@ export function Tape() {
 //for instance, don't do the design where you take a function and call it and catch an exception automatically
 
 
+================================================================================
+🔴 IMPLEMENTED — Pattern observations and implementation checklist
 
+Notes about emerging patterns: exceptions in lambda can be rethrown in worker,
+endpoints return function results directly, functions return tasks. All true
+of the current implementation. The checklist at the bottom has most items
+checked—the unchecked CodeEnterComponent item should be verified.
+================================================================================
 
 ==== comments, bottom to top...
 
@@ -737,7 +758,13 @@ note that if there was no keycard, door would have already thrown a detail-free 
 
 
 
+================================================================================
+🟡 REVIEW — Final implementation checklist
 
+Checklist with completion status. Most items checked [x], but one remains
+unchecked: "CodeEnterComponent also works through the store to keep things
+in sync". Need to verify if this was implemented or is still pending.
+================================================================================
 
 observe these three:
 [x]happy path
