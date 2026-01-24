@@ -1,4 +1,4 @@
-//on the oauth trail, nuxt endpoint
+//on the oauth trail: Nuxt endpoint
 
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['OauthStatus.', 'OauthStart.', 'OauthDone.'], workerEvent, doorHandleBelow})

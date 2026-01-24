@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'blank-layout'}) //./pages/oauth2.vue ~ on the oauth trail, nuxt page to get envelope from sveltekit
+<script setup> definePageMeta({layout: 'blank-layout'})//on the oauth trail: Nuxt page to receive envelope
 
 /*
 the user has finished the oauth dance on the sveltekit site, and now it's redirected the browser here to deliver the results

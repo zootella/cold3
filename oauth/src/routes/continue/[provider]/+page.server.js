@@ -1,4 +1,4 @@
-//on the oauth trail, sveltekit server render
+//on the oauth trail: SvelteKit server render
 
 import {
 Now, Limit, log, look,

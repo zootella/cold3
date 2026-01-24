@@ -1,4 +1,4 @@
-<script setup>//on the oauth trail, nuxt component
+<script setup>//on the oauth trail: Nuxt component
 
 import {
 originOauth,

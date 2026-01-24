@@ -1,4 +1,4 @@
-//on the oauth trail, Auth.js configuration and handlers
+//on the oauth trail: Auth.js configuration and handlers
 
 import {
 defined, toss, log, look, Time, Now, Limit, hasTag,
@@ -85,14 +85,13 @@ what module should we use for oauth?
 we want one high level enough that it has pluggable submodules specific to popular providers
 and will iron out all the wrinkles between Twitter and Discord,
 whether they use oauth v1 or 2, and PKCS, and so on
-
- _   _            _             _ _   _
-| |_| |__   ___  | |_ _ __ __ _(_) | | |__   ___ _ __ ___
-| __| '_ \ / _ \ | __| '__/ _` | | | | '_ \ / _ \ '__/ _ \
-| |_| | | |  __/ | |_| | | (_| | | | | | | |  __/ | |  __/
- \__|_| |_|\___|  \__|_|  \__,_|_|_| |_| |_|\___|_|  \___|
-
-a long trail led to @auth/core...
+ _   _            _             _ _   _                         
+| |_| |__   ___  | |_ _ __ __ _(_) | | |__   ___ _ __ ___       
+| __| '_ \ / _ \ | __| '__/ _` | | | | '_ \ / _ \ '__/ _ \      
+| |_| | | |  __/ | |_| | | (_| | | | | | | |  __/ | |  __/_ _ _ 
+ \__|_| |_|\___|  \__|_|  \__,_|_|_| |_| |_|\___|_|  \___(_|_|_)
+                                                                
+a long trail led to @auth/sveltekit...
 (1) there are turnkey identity providers like auth0.com
 but a service provider can become slow, unreliable, expensive,
 or require immediate developer attention to stay aligned with an update,
@@ -115,11 +114,21 @@ https://authjs.dev/getting-started/integrations
 linking to a github thread with lots of waiting and disappointment:
 https://github.com/nextauthjs/next-auth/pull/10684
 
-(5) so our strategy is to use @auth/core, the core of Auth.js
+(5) so we tried to use @auth/core directly
 which is lower level than being React or Next or Nuxt-specific
 but still at a level where we get modules that know about specific providers
+but couldn't get it working in Nuxt
 
-(ttd june2025, and then that didn't work, so we got NextAuth working in Next.js, and then Auth.js for SvelteKit working, and have made a completely separate website with sveltekit at a subdomain and are working on the links there and back)
+(6) so we arrived at Auth.js on SvelteKit
+choosing SvelteKit instead of Next.js, because React is awful
+as Auth.js has currently mainted modules for those two frameworks (but not Nuxt)
+we had to create a third serverless workspace, oauth, alongside Nuxt and Lambda
+it's SvelteKit, cloudflare workers, oauth.cold3.cc subdomain
+
+getting the SvelteKit through an OAuth flow wasn't too hard
+but then everything about secrets
+and encrypted envelopes and redirects between Nuxt and SvelteKit was significant
+as well as the additional third project, scaffold, framework, workspace, deploy, and website
 
 another thing that made the search difficult is most of these solutions
 want to be your whole user identity and user management system
@@ -130,9 +139,6 @@ and through all that they, not us, own all the users. great for them and bad for
 we're looking for a way a person at a browser can prove to our server, just once, right now
 that they control a third party social media account
 and get some information about their identity there, like their id, name, and email
-
-also, none of this search was about web3 or crypto wallets!
-that's a whole second world of solutions of all these types that's still on the backlog
 
 in researching this now, also found this similar rant:
 https://www.better-auth.com/docs/comparison
