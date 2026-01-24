@@ -8,20 +8,7 @@ nearly all of this you don't need, but you'll go through it to pull out parts or
 
 
 
-net23.zip
-https://github.com/vercel/nft
-"Used to determine exactly which files (including node_modules) are necessary for the application runtime. This is similar to @vercel/ncc except there is no bundling performed and therefore no reliance on webpack. This achieves the same tree-shaking benefits without moving any assets or binaries."
-talking to Claude, @vercel/nft is their solution for their customers who are actually lambda
-and rollup has preserveModules
-alternatively, and Sandro found the clean room approach works well, but that would slow down the deploy
-ok so at 35,060,992 bytes you don't have to head back up the river that is the serverless build
-but if you did, vercel nft sounds like the thing to try
-
-
-
-
-
-
+================================================================================
 
   On esbuild limitations: Yes, esbuild can fail on certain patterns. It's designed for statically-analyzable imports. Things that break it:
 
@@ -37,63 +24,7 @@ but if you did, vercel nft sounds like the thing to try
 
 
 
-
-
-==== from serverless.yml, you've removed the entire package toplevel property tree:
-
-package:
-  patterns:
-    - '!**'             #exclude everything; following patterns include the folders and files we want in net23.zip
-    - 'src/**'          #lambda function handlers
-    - 'persephone/**'   #node code used by them
-    - 'node_modules/**' #node modules they import
-    - 'package.json'    #chat was sure that package.json should be excluded, but that breaks the deployment!
-    - 'serverless.yml'  #not necessary but we're throwing it in there
-
-    - '!node_modules/@img/**' #take just the sharp native binaries for amazon linux graviton arm64
-    - 'node_modules/@img/sharp-libvips-linux-arm64/**' #outside the docker container, remember to yarn stowaway so these are there!
-    - 'node_modules/@img/sharp-linux-arm64/**' #there is another pair with names like "linuxmusl" for Alpine Linux which you don't need
-    - 'node_modules/@img/colour/**' #regular javascript @img/colour module also in the folder
-
-    #even now on the current v4, serverless' package task is pretty broken
-    #without nohoist in the root package.json, net23.zip will be empty!
-    #you've seen devDependencies like aws-sdk, serverless itself, serverless plugins, and their dependencies included, but just sometimes
-    #icarus' devDependencies are reliably included, so below, we manually exclude the largest ones; many more small ones are along for the ride
-
-    - '!node_modules/@esbuild/**'
-    - '!node_modules/@babel/**'
-    - '!node_modules/@vue/**'
-    - '!node_modules/vue/**'
-    - '!node_modules/csstype/**'
-    - '!node_modules/@rollup/**'
-    - '!node_modules/rollup/**'
-    - '!node_modules/vite/**'
-    - '!node_modules/vue-router/**'
-
-    # with these exclusions, net23.zip is <20mb; these are the modules >1mb:
-    # @img
-    # twilio
-    # libphonenumber-js
-    # @types
-    # @supabase
-    # axios
-
-    # adding viem to icarus so level1 can validate Ethereum addresses caused the zip to grow 10mb; unzipped it's 16mb viem and 5mb ox; ttd september2025 leaving this as is even though lambda won't ever need to deal with blockchain
-
-
-
-
-
-
-
-
-==== the stowaway script is no longer necessary as we install the whole thing for amazon linux; lots of good notes about sharp in here, though:
-     _
- ___| |__   __ _ _ __ _ __
-/ __| '_ \ / _` | '__| '_ \
-\__ \ | | | (_| | |  | |_) |
-|___/_| |_|\__,_|_|  | .__/
-                     |_|
+================================================================================
 
 https://www.npmjs.com/package/sharp
 https://github.com/lovell/sharp
@@ -107,286 +38,18 @@ it works windows/mac/linux but the native binaries are platform-specific
 here are easy manual steps to get the binaries for lambda
 this is node 22, amazon linux 2023, and amazon's graviton chip
 
-~/Documents/code/cold3/net23
-~/Documents/code/stowaway
-
-		make a new empty stowaway folder alongside the cold3 monorepo folder
-
-$ mkdir stowaway
-$ cd stowaway
 $ npm install --os=linux --cpu=arm64 --libc=glibc sharp@0.34.4
 
-		install sharp for amazon linux into the empty folder
 
-$ cat package.json
-$ ls -la node_modules/@img
-$ find node_modules/@img -ls
-$ sha256sum <path>
 
-		check the version you got in package.json
-		find the ~16mb libvips binary, and hash it
 
-$ cd ../cold3
-$ yarn wash
-$ yarn install
 
-		the stowaway script won't overwrite, so wash node modules empty to let it copy in a new version
 
-$ cd net23
-$ ls -la node_modules/@img
-drwxr-xr-x@ colour
-drwxr-xr-x@ sharp-darwin-arm64
-drwxr-xr-x@ sharp-libvips-darwin-arm64
 
-		before stowaway, you've got colour and the darwin editions, because we did this on a mac
 
-$ yarn stowaway
-$ ls -la node_modules/@img
-total 0
-drwxr-xr-x@ colour
-drwxr-xr-x@ sharp-darwin-arm64
-drwxr-xr-x@ sharp-libvips-darwin-arm64
-drwxr-xr-x@ sharp-libvips-linux-arm64
-drwxr-xr-x@ sharp-linux-arm64
+================================================================================
 
-		stowaway copied in the linux versions
-		local development works with different platform versions side-by-side
-
-things to note:
-- the stowaway script doesn't overwrite, so yarn wash to get actually new versions in
-- yarn add anywhere will find and remove the additional modules, so stowaway runs for every deploy
-- serverless.yml builds net23.zip picking colour and the two linux folders by name, and excluding everything else
-     _                                         
- ___| |_ _____      ____ ___      ____ _ _   _ 
-/ __| __/ _ \ \ /\ / / _` \ \ /\ / / _` | | | |
-\__ \ || (_) \ V  V / (_| |\ V  V / (_| | |_| |
-|___/\__\___/ \_/\_/ \__,_| \_/\_/ \__,_|\__, |
-                                         |___/ 
-
-use this script to copy sharp native libraries for linux alongside the windows or mac ones in @img
-this sneaks them into the serverless package zip
-yarn will find them and throw them back overboard, so manually run $ yarn stowaway after add or install!
-
-$ yarn install   ~ corrects modules for the computer we're coding on
-$ yarn stowaway  ~ adds linux sharp binaries alongside ones yarn put there for local development
-$ yarn build     ~ serverless package makes net23.zip, taking the ones for linux by name
-$ yarn deploy    ~ serverless deploy (importantly skipping package first)
-
-"scripts": {
-	"build": "serverless package",                                   ~ make the zip
-	"deploy": "serverless deploy --force",                           ~ make the zip and upload it
-	"justdeploy": "serverless deploy --force --package .serverless", ~ upload without making first
-},
-justdeploy is for when you've made the zip in the docker container, copied it out, and deploy that
-that alternative is cleaner but more cumbersome
-
-import fs from 'fs-extra'
-await fs.copy('../../stowaway/node_modules/@img', 'node_modules/@img', {overwrite: false})
-
-
-
-
-
-
-
-
-
-
-
-
-
-==== and there's a lot of guide from net23.txt which you need to go through, and keep just parts of:
-
-2025oct, claude found a much easier way to get the right sharp binaries
-check out new instructions in net23/stowaway.js
-
-
-   ____  _                    __              _ _                  
-  / __ \(_)_ __ ___   __ _   / _| ___  _ __  | (_)_ __  _   ___  __
- / / _` | | '_ ` _ \ / _` | | |_ / _ \| '__| | | | '_ \| | | \ \/ /
-| | (_| | | | | | | | (_| | |  _| (_) | |    | | | | | | |_| |>  < 
- \ \__,_|_|_| |_| |_|\__, | |_|  \___/|_|    |_|_|_| |_|\__,_/_/\_\
-  \____/             |___/                                         
-
-
-network 23 needs to do some image manipulation tasks, like:
--convert an open graph protocol card from svg generated by nuxt to png so whatsapp can display it
--resize and image and add watermark text
-we've found the node module sharp to do this
-while sharp is a node module, it's fast because native libraries do the image processing
-
-getting yarn to install the right libraries for amazon linux was challenging
-after long journeys on many dead-end trails sherpa'd by chatgpt, we found two working solutions:
-(1) a "stowaway" method, detailed below
-(2) a clean build in Docker, detailed in the next section
-
-the stowaway method:
-
-manually chuck the linux binaries into net23's node modules @img folder
-yarn add, remove, install will find them and chuck them overboard,
-so after running yarn, so you have to stow them away again
-serverless.yml's exclude keeps the mac or windows binaries out of the zip,
-but lets the stowaways through
-
-more info and example commands in net23/stowaway.mjs
-
-
-     _            _             
-  __| | ___   ___| | _____ _ __ 
- / _` |/ _ \ / __| |/ / _ \ '__|
-| (_| | (_) | (__|   <  __/ |   
- \__,_|\___/ \___|_|\_\___|_|   
-                                
-to be able to get the files to stow away, you learned docker
-and, docker will always be the most correct, clean, and secure way to build and deploy
-perhaps the stowaway method will break,
-or some new node module will need to actually compile binaries for amazon linux
-if so, you've got docker ready to (again) save the day
-
-here are the commands you learned to use docker generally,
-and build in amazon linux to make a serverless package with a sharp that works on lambda
-dollar sign on the left is your host computer; hashtag indented are commands inside the container
-
-==== docker setup
-
-$ brew update
-$ brew install --cask docker
-
-on mac, run Docker.app to start Docker Desktop for the command line docker to work
-
-$ docker --version
-$ docker-compose --version
-$ docker run hello-world
-
-==== docker cleanup
-
-$ docker images
-$ docker rmi image9
-$ docker ps -a
-$ docker rm container9
-
-==== docker setup
-
-use the platform attribute to specify what processor architecture we want
-switching from default amd64 x86 to faster better cheaper amazon graviton arm64
-notice the subtle aMD versus aRM below!
-
-$ docker run -it --platform linux/amd64 --name container23    amazonlinux:2023 /bin/bash
-$ docker run -it --platform linux/arm64 --name container23arm amazonlinux:2023 /bin/bash
-$ exit
-$ docker start -ai container23arm
-
-$ uname -m
-arm64  ~host apple silicon mac mini
-x86_64  ~container made with platform linux/amd64 to match amazon lambda default
-aarch64  ~container made with platform linux/arm64 to match amazon graviton
-
-		# yum update -y
-		# yum install -y which git tar zip
-		# curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-		# source ~/.nvm/nvm.sh
-		# nvm install 20
-		# npm install -g yarn@1
-		# node --version
-		# yarn --version
-
-		# mkdir code
-		# cd code
-		# git clone https://github.com/zootella/cold3
-		# cd cold3
-		# git checkout graviton1  ~branch name if you're working on a branch right now
-		# rm yarn.lock
-		# yarn install
-
-$ docker cp ../.env       container23arm:/code/cold3/.env
-$ docker cp ../.env.local container23arm:/code/cold3/.env.local
-
-		# git pull
-		# yarn install
-		# yarn seal
-		# yarn test
-		# cd net23
-		# yarn build
-
-$ rm -rf .serverless
-$ docker cp container23arm:/code/cold3/net23/.serverless .serverless
-$ docker cp container23arm:/code/cold3/wrapper.txt       ../wrapper.txt
-$ docker cp container23arm:/code/cold3/icarus/wrapper.js ../icarus/wrapper.js
-
-$ yarn justdeploy (have serverless deploy the .serverless folder without building it first)
-$ cd ../site (then also deploy the nuxt site to cloudflare)
-$ yarn deploy
-$ cd ..
-$ git status (and commit and push to github the sealed version you deployed)
-
-==== docker loop
-
-$ docker start -ai container23arm
-
-		# source ~/.nvm/nvm.sh
-		# nvm install 20
-		^when you go back in, you have to repeat just these two; afterwards yarn is there
-
-		# cd /code/cold3
-		# git stash
-		# git stash clear
-		# git pull
-
-		# yarn install
-		# yarn seal
-		# yarn test
-		# cd net23
-		# yarn build
-
-$ rm -rf .serverless
-$ docker cp container23arm:/code/cold3/net23/.serverless .serverless
-$ docker cp container23arm:/code/cold3/wrapper.txt ../wrapper.txt
-$ docker cp container23arm:/code/cold3/icarus/wrapper.js ../icarus/wrapper.js
-
-$ yarn justdeploy
-$ cd ../site
-$ yarn deploy
-$ cd ..
-$ git status (and so on to commit and push)
-
-==== docker end
-
-from this experimentation and use, here's what you've got on your mac:
-
-% docker images
-REPOSITORY    TAG       IMAGE ID       CREATED       SIZE
-amazonlinux   2023      6c2c3bb2ce48   6 days ago    248MB
-<none>        <none>    5bf4cf420ef7   4 weeks ago   214MB  ~you're seeing this remnant from amazonlinux a month ago but leaving it alone
-
-% docker ps -a
-CONTAINER ID   IMAGE              COMMAND       CREATED             STATUS                   PORTS     NAMES
-270df468a535   amazonlinux:2023   "/bin/bash"   About an hour ago   Up About an hour                   container23arm
-c65859f86d9a   5bf4cf420ef7       "/bin/bash"   2 weeks ago         Exited (0) 2 weeks ago             container23
-0c25625e7aaf   5bf4cf420ef7       "/bin/bash"   2 weeks ago         Exited (0) 2 weeks ago             layer1
-
-enter container23arm to do the loop tasks above
-the other container, layer1, is where you made lambda layers for sharp and twilio that you could not get working
-
-using these notes, you were building the zip inside docker,
-then copying it back out, and deploying it from the host computer
-this is because you didn't authenticate the container to be able to deploy directly
-but if you return to docker later to do clean secure deployments, you should
-and it shouldn't be hard to get github, cloudflare, and amazon authenticated
-so then you'd seal and deploy and commit all from inside the container
-
-chat kept on encouraging you to make a Dockerfile,
-but you just used it manually like a virtual computer
-you also worked on scripting the loop tasks, using a bash .sh script
-the hard part there was being able to tell on the outside when the build on the inside finished
-you planned a little done.txt file inside that outside would watch
-you never ran the script draft now that stowaway is the fast way, and all inside docker is the good way
-
-                  _    
- _ __   __ _  ___| | __
-| '_ \ / _` |/ __| |/ /
-| |_) | (_| | (__|   < 
-| .__/ \__,_|\___|_|\_\
-|_|                    
+pack
 
 you had configured a custom rollup bundle step for the lambda functions,
 but just removed it
@@ -425,6 +88,11 @@ https://www.npmjs.com/package/serverless-bundle
 
 https://esbuild.github.io/
 2020, extremely fast, should be able to handle the mixture
+
+
+
+
+
 
 
 
