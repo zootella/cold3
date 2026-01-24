@@ -1,47 +1,5 @@
 notesfile
 
-(this notes document is part of a set; find them all by searching "otp notes")
-
-
-
-in scope now:
-[x]send code
-[]validate code
-[]assign user tag on submit
-[]notice a live code after refresh and put up box to get it
-[x]limit with trail_table
-[x]necessary limitations
-[x]additional limitations
-
-in scope soon:
-[x]button component
-[x]turnstile
-[]email or sms
-[]see how :class and class together work
-[]get enterkeyhint working and decide about it
-
-
-
-
-
-
-actually maybe it's
-"Code B 1234 for brand - Don't tell anyone..." no hyphen, yes, seeing iphone then offer to copy the code and take just the 1234 part
-and then the box is
-Code B [    ] [Enter] clearly not something you need to type
-because (Code B) is (1234) rather than (Code) is (B 1234)
-
-
-a code challenge proves a link between
-	address == browser tag
-to then sign in a user, which is a link between
-             browser tag == user tag
-think about these relationships, fundamentally, when designing today
-
-
-so there's a complete flow coming together here
-and it's all based on browser tag
-but that's enough to run it!
 
 
 
@@ -49,8 +7,14 @@ but that's enough to run it!
 
 
 
-"Code J-7148 from brand. Don't tell anyone, they could steal your whole account!"
-Code [J-    ] [Enter] _I can't find it_
+
+
+
+
+================================================================================
+
+"Code J 7148 from brand. Don't tell anyone, they could steal your whole account!"
+Code J [    ] [Enter] _I can't find it_
 
 We emailed Code J to you at name@example.com 25sec ago from our email noreply@example.com.
 Check your spam or promotions folders
@@ -65,6 +29,7 @@ or actually just say the time it was sent, because that will match the email tim
 and you don't have to refresh the duration that counts forward
 
 
+================================================================================
 
 more text you could add later to the code email:
 Codes last 20 minutes.
@@ -92,42 +57,7 @@ yeah, you could make this complicated
 
 
 
-
-also realized when a code expires, the box should disappear on the page!
-the page will have its own timer for this
-and should probably disappear a minute early, too! (or say 20 minutes but actually it's 25, actually, the grace period)
-
-
-
-
-
-
-
-thinking having stepped away
-you're not just validating the address, you're also checking the person at the device, so for security, you should make it so the catch box only appears on the same browser where the person entered the address to challenge
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+================================================================================
 
 trailtable lets you hash a message that says anything
 and see how many times it's been recorded
@@ -162,16 +92,7 @@ server signs user into browser
 
 
 
-
-there's going to be another component that receives the code
-when does it show up?
-when this browsertag has a live code
-see if you can do this without involving the user tag
-
-
-
-
-
+================================================================================
 
 standard user signed into this browser, address controlled:
 	a signed in standard user typed another user's address--send no code!
@@ -189,28 +110,7 @@ tell me about this address, is it controlled by a user or not (next, make tables
 
 
 
-simplest happy path
-new person navigates browser, gets browser tag
-enters new address, presses submit
-endpoint has browser tag, no user tag, brand new address
-server makes random code, sends it to address
-site knows code for this browser is live, puts up catch box
-person types code into catch box
-server sees that code is valid, does three things
-- makes standard user tag
-- signs user into browser
-- identifies address as controlled by user
-
-
-
-
-
-
-
-
-
-
-
+================================================================================
 
 soon, to make sure you've got the provisional user tag right
 users will type in dob first
@@ -229,26 +129,7 @@ you need to solve this without:
 
 
 
-1[x] send a sms
-2[x] put in limits
-3[] record in address_table (user enters address, which is Challenged. Proven. Removed.)
-4[] generate or tie to user tag, user tag is generated on first address submission so you always have browser tag and user tag
-
-
-
-
-
-how does enterkeyhint work now that you have PostButton, and the form is above?
-or, this really doesn't matter because you want to avoid it, to direct the user's attention back to the page, which is where the next question, or the thing the need to fix, will be
-
-<!-- ttd february2025, enterkeyhint showing up on iphone keyboard, maybe because you're using and changing :disabled. so you could try to fix that, mostly out of curiosity, or not use it at all, to direct the user's attention back to the page, which is probably what you want to do for usability and consistancy. no, it's because you haven't done the enclosing form with submit prevent yet -->
-
-
-
-
-
-
-
+================================================================================
 
 quick thinking about the actual flow
 common lazy happy path
@@ -279,22 +160,7 @@ and also repeat the code (maybe they'll enter it now)
 hmmm... still thinking and gaming out you need to do here
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+================================================================================
 
 a user might request a code to their address once to sign up
 and again, the next day, to sign in a second device
@@ -315,9 +181,7 @@ user1 *still* controls address1!
 so make sure your rules allow for that
 
 
-
-
-
+================================================================================
 
 later, be able to add
 "Is +1 789 555 1234 still your number? [Yes] [No]"
@@ -330,60 +194,12 @@ also, if they say no, but that's the only way you have to identify them, what do
 
 
 
-a nice thing about address_table is, unlike browser_table, it doesn't have to be super fast
-a returning user can navigate to the site, be signed in, get their feed, all without touching address_table
-if things like adding, validating, removing an address take half-seconds of database round trips, that's fine
 
-so, you can do more processing in the worker after getting more rows
-and you don't need to hide rows to make queries easy
+
+================================================================================
 
 
 
-
-wait, validated should be verified
-
-
-
-
-simple happy path you're coding
-user signs up on browser1, validating his email
-user signs in on browser2, validating that same email
-and at that point, you need to code
-cold3.cc/settings
-and on it, there will be a list of addresses, both challenged and validated
-and links like _Verify_ and _Remove_
-all of this needs to be on your plate right now
-
-
-
-
-
-
-
-
-
-
-
-
-
-there is a function
-
-
-
-function 
-
-
-
-
-
-
-
-
-
-
-
-
-	/*
 	can't find it
 	- just sent it, so wait
 	- sent a minute ago, so actually check
@@ -398,41 +214,7 @@ function
 
 
 
-	*/
-
-	/*
-	if the code the user has been working on expired or was guessed to death, you'll get no code records at all, merge in []
-	and success false, guessAgain false
-
-	what really does CodeEnterComponent do?
-	it's there because the page knows this browser has a code the user could find and enter
-	it's tied to a specific code challenge, it has the code tag and prefix letter
 
 	what's the minimal ui copy here?
-
 	Check your email|texts for the code we sent
-	*/
 
-
-	/*
-	response will be correct: true, false
-	and lives: 0, 1+
-	you can also tell if they guessed this code already, with lives < Code.guesses or whatever
-
-	on correct, just say thanks, and disappear in a few seconds or a click
-	on wrong, still lives, say wrong, let them try again
-
-	on wrong, no more lives, say wrong, tell them to request a new code
-
-	and update the pinia store accordingly, removing dead codes from the array? no, setting lives and correct, and then letting this render appropriately!
-	*/
-
-
-
-
-/*
-<p>
-	we sent the code at {{sayTimePage(code.tick)}} and it'll last for {{Code.lifespan20/Time.minute}} minutes from then,
-	until {{sayTimePage(code.tick + (20*Time.minute))}}. After that, you'll have to request a new one.
-</p>
-*/

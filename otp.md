@@ -1,384 +1,147 @@
 
-(this notes document is part of a set; find them all by searching "otp notes")
+# OTP Summary
 
-# OTP: Envelope-Based Address Verification
+hi claude--we're partway through coding a new system called "otp"
+the goal is to replicate the same functionality beside an existing system called "code"
+here are critical parts of both systems; looking at the code full stack of each is a great way to get up to speed on this
+the code system is considered stable; team wrote it carefully, it's been through extensive QA, and has been in production for almost a year
+the otp system is in development, and is experimental. we're creating it alongside code to answer this question: if instead of having a dedicated database table for otp code challenges, could we implement this feature using trail_table messages and the encrypted envelope cookie?
+team coded totp using this pattern after code, and totp requires no table
 
-## Start Here
+## (1) helper functions
 
-This document describes a refactoring goal: rebuild the email/SMS verification code system without a dedicated database table.
+in icarus/level3.js, check out these functions and parts:
 
-**Before reading this, read these three documents:**
+otpSend, compare to codeSend
+otpPermit, compare to codePermit
+codeCompose, used by both systems
+codeSent, not sure how otp does the work here
+browserToCodes, otp's envelope does this
+otpEnter, compare to codeEnter
+Code.expiration and other constants, used by both
+SQL(`CREATE TABLE code_table..., database stat for the code system; otp has no table
 
-1. **code.md** — The existing `code_table` system. Understand how it works, especially the constraints (expiration, guesses, rate limits, browser binding). This is what we're replacing.
+## (2) api endpoints
 
-2. **totp.md** — The TOTP system. Shows the envelope pattern: server seals state, page holds it in a cookie, page resubmits with user input.
+look at these site workspace nuxt api endpoints:
 
-3. **wallet.md** — The wallet system. Another envelope example, plus trail_table for rate limiting.
+./site/server/api/otp.js - new endpoint for otp system, with actions to send, enter, or open a found cookie envelope
+./site/server/api/code/send.js - compare to these two endpoints for the code system
+./site/server/api/code/enter.js
 
-**The goal:** Build a new "otp" system matching the functionality in code.md. Same user interface, same security restrictions, same helper functions where sensible—but no `code_table`.
+## (3) vue components
 
----
+and here are the front end components:
 
-## Function Groups in level3.js
+TopBar, which renders:
+<NotificationList /> used by both the otp and code systems
+<OtpEnterList /> new, for the otp system, compare to
+<CodeEnterList v-show="mainStore.codes.length" /> this part of the older code system
 
-Scanning down level3.js, here are groups of functions and how they'll be involved:
+we've coded more otp components to match existing code components as follows, so you can take a look at them as pairs:
 
-### Ignore for now
+OtpEnterList, compare to CodeEnterList
+OtpEnterComponent, compare to CodeEnterComponent
+OtpRequestComponent, compare to CodeRequestComponent
 
-```
-addressRemoved
-addressMentioned
-addressChallenged
-addressValidated
-address_add
-addressToUser
-userToAddress
-browserChallengedAddress
-browserValidatedAddress
-```
+## (4) useful systems
 
-These are stub functions for an address table which we'll ignore for now.
+the code system relies entirely on the code_table in supabase
+the newer otp system instead uses two other systems, which you should familiarize yourself
+both are written generally, and are in use for parts of this application beyond otp
+these systems are stable, tested, and in production
+they're also pretty simple--they make straightforward guarantees
 
-### The existing code system (will remain, for reference)
+the first is trail_table, and functions above like trailRecent through trailAddMany
+you can see grid() tests below the exported functions as a demosntration of capability
 
-```
-codeSend
-codePermit
-codeCompose
-codeSent
-browserToCodes
-codeEnter
-```
+the second used system is envelope, with functions like
+for a demonstration of production system using envelope correctly, check out totp in these files on either side of the api boundary:
+TotpDemo.vue, which keeps the encrypted envelope from the server in a cookie before returning it, keeping state between enrollment steps
+totp.js, the api endpoint
+envelope helper functions are sealEnvelope, openEnvelope, and isExpired
 
-This group is the core of the current working code system.
+## (5) diff.diff
 
-### New otp functions to write alongside
+to check out recent work, i've generated diff.diff
+im doing this from a git commit hash from yesterday, like this:
 
-```
-otpSend
-otpPermit
-otpCompose
-otpSent
-browserToOtp -- actually not sure on this one, as the envelope will be the source of otp codes!
-otpEnter
-```
+git diff 843eccd . > diff.diff
 
-These are the new ones for the otp system. Same parameters, same activity, same return shapes. The difference is *how* they take care of business inside.
+here are recent commits with dates, messages, and hashes:
 
-### Shared: Code constants
+b5d3942 Jan22Thu DSX notes for today
+bb5ce79 Jan22Thu 2V2 coding tableless otp
+4c5a222 Jan21Wed FEC added trail get any in preparation for envelope based otp
+eaa2b1c Jan21Wed 7DE removed unused imports to quiet site local warning
+843eccd Jan20Tue L2D otp notes ready for morning
+9aaa2bc Jan20Tue 3B7 better notes documents about codes
+e81aee2 Jan20Tue WMV otp notes expansive first drafts
+571cc6e Jan20Tue V4G bug fix and cleanup
 
-```
-export const Code = {...}
-```
+## (6) lots of planning documentation
 
-This object defines the restrictions (time, guesses, rate limits) that keep the code system secure. Our otp system should use this same exact object, not duplicate it.
+the best way to get up to speed may be to look at all this existing code, and its comments
+additionally, though, the repository contains a lot of planning documentation and notes
+to find all those txt and md files, you can search for "otp notes"
 
-### Will NOT use: code_table and helpers
+# Agenda
 
-```
-SQL(`CREATE TABLE code_table ...`)
-code_get
-code_get_browser
-code_get_address
-code_set_lives
-code_add
-```
+as we work forward, here are the larger steps we'll tackle, one after the other:
 
-This is the schema and helpers the code system uses. Our new otp system won't touch this table at all—this is the key implementation difference. We're going to get the same system working without a dedicated database table.
+## 1[x]implementation
 
-### Will use: trail_table
+we'll code the new otp system, following the existing code system as a guide, full stack
+this is complete, and produced the otp components, endpoints, and helper functions, listed above
 
-```
-trailRecent
-trailCount
-trailGet
-trailGetAny  ← new helper for otp
-trailAdd
-trailAddMany
-```
+## 2[x]code review
 
-Trail table is a generalized tool that records proof of an event (any event we can describe in a message string) at a point in time.
+taking components new and old as pairs, side by side
+and moving from top to bottom
+we'll do a through code review, refactoring as we go, with these goals in mind
+- parity: the otp system should look and act like the code system, rather than being different or (at this stage) better
+- correctness: the otp system must be complete and correct; a smoke test right now must work
+- security: the otp system must be secure, as we believe the code system is. if we in this review discover a flaw in either system, we must flag and correct it, immediately. otherwise we'll update and edit and refactor the otp system, but leave the code system as is
 
-For example, to invalidate a nonce:
-```
-trailAdd(`invalidate nonce ${nonce}`)
-```
+## 2a[x] first test
 
-Then later, `trailGet` that same message to know if the nonce is fresh or already used.
+write a single grid test, seeing how you can encapsulate the whole flow
+check out how large the objects are in the cookie; is this a problem for the 4kib size limit?
+localStorage has no such limit, but also no automatic expiration
 
-The code system doesn't use trail_table (it uses code_table instead). But trail_table can be very useful for otp—especially for rate limiting queries like "how many codes have we sent to this address recently?"
+## 3[]smoke test
 
-`trailGetAny(messages, horizon)` queries multiple message hashes in one round trip using SQL `IN` clause. Returns all matching rows; caller filters by hash in application code. This turns 3 queries into 1 for `otpEnter`.
+ill do a smoke test running locally, comparing different happy path and chaos user paths through the code and otp systems
+the expectation here is that they perform identially as far as the user can tell
 
----
+## 4[x]test coverage
 
-## Four Resources for Implementation
+the code system doesn't have good test coverage, as the team wrote it before we had pglite and grid() tests
+now that we have those systems in place, we will write grid tests that cover user intractions of the otp system, simulating full stack interactions
+for instance, the handful of restrictions defined by Code.expiration and other properties, like first address in 5 days gets a 4 digit code, and so on
+each and all of those should be performed by a grid test
 
-At a high level, we can use these resources to make otp functionally equivalent to code without a dedicated database table:
+## 5[]evaluation
 
-### [A] Envelope
+ok, at this point along our trail, we will have written a functionaily equivalent otp system alongside code
+and both work independently, side by side
+now we come to the evaluation stage, is otp better and easier for developers to maintain, to reason about?
+is this potential refactor worth it? sure, we can use envelope and trail to code otp without a dedicated table
+but if the code is much more complex, and that complexity could hide a security flaw, it may be a better idea to stick with the existing table-backed system
+ok so our goal with simplicity and clarity coding otp leading up to this point is to make this as competitive a fight as possible, of course
+we've coded otp to be as simple and secure as possible so it is likely that at this later stage, a fair evaluation selects it
 
-The sealed secret envelope system that totp uses. Server seals an object, page stores it in a cookie (survives refresh), page resubmits it with each action.
+## 6[]replacement
 
-For instance: server puts the complete code in the envelope. Page keeps it in a cookie, cannot read it to cheat at guessing. Page submits guess + envelope. Server opens envelope, compares guess with the right answer—sealed, authentic, secret, in the envelope they were holding.
+if we make it this far, we have two equivalently simple, completely secure systems for one time password challenges and codes
+ill carefully remove the code system, leaving only the otp system in place
+we may also rename some elements of properties and parameters at this point, favoring simpler words like "code" over the harder to type "otp"--right now we're carefully keeping otp system things called otp, to be distinct from code system things called code
 
-The envelope can hold multiple pending codes as an array, updated each round trip.
+## 7[]integration
 
-### [B] Credential Table
+credential_table holds user identity credentials, like currently signed in browsers, registered user names, and standard passwords
+we wrote code before credential table, with just todos about integrating them
+at this step on our trail, with otp finished and selected (potentially) we'll integrate otp into credential table
+this will let a user who signes up by proving they control an email address sign into another device by again proving they can type a code sent to that address, for instance
 
-Rows in `credential_table` with numbered events to record the big picture outcomes:
-```
-event BIGINT NOT NULL  -- 2 mentioned, 3 challenged, 4 validated, 1 removed
-```
-
-If we send a code to alice@example.com, we can make a row with event=3 (challenged). If alice enters correctly, add a row with event=4 (validated).
-
-The meaningful large-scale outcomes that the code system keeps in code_table, we can keep in credential_table instead.
-
-**Note:** credential_table assumes a userTag exists. OTP will be used when a new person is signing up, so we need to think about how to use it before a browser has validated an address.
-
-### [C] Trail Table
-
-Discussed above. A generalized way to mark that an event happened. We can use it to see how many times recently we've bothered an address. We can't easily use it to look up what a correct code is for a browserHash—that's what the envelope is for.
-
-It may be mathematically possible to do lookups by recording many different messages, but our aim is to make otp *shorter* (in code, in schema), equivalently secure, and simpler to reason about.
-
-### [D] Simpler Rules (only if necessary)
-
-It's possible that as we design otp, we'll find that some restriction is hard to enforce without a dedicated database table. If so, two options:
-
-1. Make things complicated to offer exact equivalent protection, or
-2. Discard or simplify that rule
-
-We can talk about simplifying if the system as a whole remains secure. Some of the finer-grained rules (4→6 digit escalation, soft vs hard rate limits) may contribute greatly to complexity but not meaningfully to user experience or security.
-
----
-
-## Proposed Design: Envelope + Trail Table
-
-### The Envelope
-
-Held by the page in a cookie. The envelope system handles sealing, expiration, and tamper detection automatically. Inside:
-
-```json
-{
-  "browserHash": "a1b2c3d4e5f6...",
-  "challenges": [
-    {
-      "tag": "Xk9mPq2RfJ4nBvC8sL1w",
-      "code": "847291",
-      "letter": "K",
-      "lives": 4,
-      "start": 1705678900000,
-      "address": "alice@example.com",
-      "type": "Email."
-    },
-    {
-      "tag": "Yp3nWs8TgH6mDxE2qR9v",
-      "code": "5932",
-      "letter": "M",
-      "lives": 3,
-      "start": 1705679100000,
-      "address": "+15551234567",
-      "type": "Phone."
-    }
-  ]
-}
-```
-
-- `browserHash` — verified against submitting browser on resubmit
-- `tag` — unique identifier for this challenge
-- `code` — the actual code (envelope is sealed, so plaintext is fine)
-- `letter` — visual letter A-Z (stored, not computed)
-- `lives` — remaining guesses (decremented in envelope on wrong guess)
-- `start` — when created, trusted server clock (for 20-minute expiration check)
-- `address` — email/phone (for display and finding replacements)
-- `type` — "Email." or "Phone."
-
-Most users will have 0-1 challenges. A security-conscious user might have 2 (email + phone). The example shows 2 to illustrate the structure.
-
-**Why store the actual code?** Unlike code_table (which stores a hash because the database is readable), the envelope is sealed with a server-only key. The page holds it but can't read or tamper with it. Storing the plaintext code is simpler—no hashing on verify, just string comparison.
-
-### Four Trail Messages
-
-```
-sent code to ${address}
-opened challenge ${tag}
-closed challenge ${tag}
-wrong guess on challenge ${tag}
-```
-
-Each is hashed and recorded with a timestamp. We query these to enforce constraints.
-
----
-
-### Flow: Send Code (`otpSend`)
-
-**Inputs:** address, provider, existing envelope (if any)
-
-**Rate limit check (1 query):**
-- `trailGet(`sent code to ${address}`, 5 days)` — returns all rows for this message in past 5 days
-- Application code filters to check:
-  - Count in last 24h < 24 (hard limit)
-  - If count in 5 days >= 2, most recent must be > 1 minute ago (soft limit)
-  - Count in 5 days determines code length (4 vs 6 digits)
-
-**Replacement (envelope only, no query):**
-- Open envelope, find any existing challenge to this address
-- If found: `trailAdd(`closed challenge ${oldTag}`)` — invalidate it
-
-**Create challenge (add):**
-- Generate tag, code, hash, letter
-- `trailAdd(`opened challenge ${tag}`)`
-- `trailAdd(`sent code to ${address}`)`
-
-**Update envelope:**
-- Remove old challenge to this address (if any)
-- Add new challenge to array
-- Seal and return
-
-**Totals: 1 read, 2-3 writes**
-
----
-
-### Flow: Enter Code (`otpEnter`)
-
-**Inputs:** tag, guess, envelope
-
-**Find challenge:**
-- Open envelope, verify browserHash matches submitting browser
-- Find challenge by tag
-- If browserHash mismatch or challenge not found: reject
-
-**Validity checks (1 query with `trailGetAny`):**
-
-Instead of 3 separate queries, use a helper that queries multiple message hashes in one round trip:
-
-```javascript
-let rows = await trailGetAny([
-  `opened challenge ${tag}`,
-  `closed challenge ${tag}`,
-  `wrong guess on challenge ${tag}`
-], 20 * Time.minute)
-```
-
-Then in application code, separate the results:
-- `opened` — must exist, must be < 20 min old
-- `closed` — must NOT exist
-- `wrongCount` — must be < 4
-
-This uses SQL `IN` clause: `WHERE hash IN ($1, $2, $3) AND row_tick > $4`. Postgres handles this efficiently with the existing `trail2` index.
-
-**Verify guess:**
-- Compare hash(tag + guess) against challenge.hash
-
-**If correct (add):**
-- `trailAdd(`closed challenge ${tag}`)`
-- Record validation (credential_table)
-- Remove challenge from envelope array
-- Seal and return success
-
-**If wrong (add):**
-- `trailAdd(`wrong guess on challenge ${tag}`)`
-- Decrement `lives` in envelope (for UI on next request)
-- Seal and return failure with remaining guesses
-
-**Totals: 1 read, 1-2 writes**
-
----
-
-### Flow: Get Active Challenges
-
-With code_table, `browserToCodes(browserHash)` queries the database to find active codes—the database is the source of truth.
-
-With otp, the envelope *is* the source of truth. It arrives with the request as a cookie. Any endpoint can open it and see pending challenges. There's no lookup to perform.
-
-This could be a helper function for symmetry (`browserToOtp`), or just inline logic wherever needed. Either way: open envelope, return challenges array, done.
-
-**Should we validate on display?** We could query trail_table to check each challenge is still valid (not closed, not expired, not out of guesses). But simpler: just return them, let `otpEnter` reject stale ones. The UI might show a challenge that's secretly dead, but the user finds out immediately when they try to enter.
-
-**This is a major advantage over code_table.** Currently, every new tab queries `browserToCodes()` to check for active codes. With otp, if the envelope is empty (the common case—most users have no pending codes), there's no database query at all. The server just opens the envelope, sees it's empty, done.
-
----
-
-### Constraint Enforcement Summary
-
-| Constraint | How enforced |
-|------------|--------------|
-| 20-minute expiration | `start` in envelope, checked against current time |
-| 4 wrong guesses | `trailGetAny` result, count rows with wrong guess hash |
-| Correct guess kills code | `trailAdd(`closed challenge ${tag}`)` |
-| Replacement kills old | Find in envelope by address, `trailAdd(`closed challenge ${oldTag}`)` |
-| Browser binding | browserHash in envelope, verified against submitting browser on resubmit |
-| 24 codes/day hard limit | 1 query: `trailGet(`sent code to ${address}`, 5 days)`, filter in app |
-| 1-minute soft limit | Same query, check most recent timestamp in app |
-| 4→6 digit escalation | Same query, count rows in app |
-
----
-
-### Database Operation Summary
-
-| Flow | DB Round Trips | Trail Rows Added |
-|------|----------------|------------------|
-| Send code | 2 | 2-3 |
-| Enter code | 2 | 1 |
-| Get active challenges | 0 | 0 | (envelope only) |
-
-**Send code:**
-- `trailGet` (1 round trip) — rate limit check
-- `trailAddMany` (1 round trip) — adds 2-3 rows:
-  - `opened challenge ${tag}`
-  - `sent code to ${address}`
-  - `closed challenge ${oldTag}` (only if replacing)
-
-**Enter code:**
-- `trailGetAny` (1 round trip) — checks opened/closed/wrong in one query
-- `trailAdd` (1 round trip) — adds 1 row:
-  - Correct: `closed challenge ${tag}` (+ credential_table write)
-  - Wrong: `wrong guess on challenge ${tag}`
-
-**Get active challenges:** Just opens the envelope. No database at all when empty (the common case).
-
----
-
----
-
-## Before Implementation
-
-A few things to resolve or be aware of:
-
-### ~~trailGetMulti doesn't exist yet~~ ✓ Done
-
-Implemented as `trailGetAny(messages, horizon)` in level3.js. Uses `queryGetAny` in level2.js which supports SQL `IN` clause. Returns all matching rows; caller filters by hash in application code.
-
-### credential_table assumes a userTag
-
-The document mentions recording validation in credential_table, but credential_table assumes a userTag exists. OTP is often used during signup, before a user exists. Options:
-
-1. Don't record to credential_table until user is created, then backfill
-2. Create a provisional userTag at code-send time
-3. Use a different mechanism for pre-signup validation tracking
-
-This needs a decision.
-
-### Envelope expiration vs challenge expiration
-
-Both use 20 minutes, but measured differently:
-
-- **Envelope:** 20 minutes from last seal (resets on every interaction)
-- **Challenge:** 20 minutes from `start` (never resets)
-
-The envelope can outlive challenges inside it (if re-sealed on wrong guesses), but that's fine—challenge expiration is enforced by checking `start`, not by the envelope disappearing. A dead envelope can't contain live challenges, but a live envelope can contain dead challenges that get rejected on entry.
-
-### Code constants
-
-The shared `Code` object in level3.js defines all the timing and limit constants. Read it before implementing—otp should use these same values, not duplicate them.
-
----
-
-## What Success Looks Like
-
-- `code_table` can be dropped from the schema
-- All eight constraints from code.md still enforced (or consciously simplified)
-- Code is shorter and easier to reason about
-- User experience identical
+note: credential_table assumes a userTag exists, but otp is often used during signup before a user exists. the stub functions browserChallengedAddress and browserValidatedAddress need to handle pre-signup validation.
