@@ -3500,15 +3500,14 @@ like the same envelope, again, or a an unrelated envelope when you're expecting 
  \___/ \__,_|\__,_|\__|_| |_|
 
 
+to see the oauth flow across code files, search the breadcrumb "on the oauth trail"
+
 2025jun12
 steps to get oauth.cold3.cc
 up on cloudflare
 and as a new workspace in this monorepo that imports icarus
 
 https://developers.cloudflare.com/pages/get-started/c3/
-"We recommend using Cloudflare Workers for new projects. For existing Pages projects, see our migration guide and compatibility matrix."
-https://developers.cloudflare.com/workers/static-assets/migration-guides/migrate-from-pages/
-sure, starting this without the platform pages flag
 https://developers.cloudflare.com/pages/framework-guides/deploy-a-svelte-kit-site/
 https://developers.cloudflare.com/workers/framework-guides/web-apps/svelte/
 
@@ -3543,15 +3542,6 @@ https://oauth.cold3.cc/
 also confirmed that http -> https in chrome and firefox
 
 from there it's all in the code files checked into github, you think
-
-
-
-
-ttd november, going to move oauth notes here now that you've got the flow working with sveltekit and discord
-bookmark
-
-
-
 
 
 

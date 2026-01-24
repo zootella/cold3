@@ -1,7 +1,5 @@
 //on the oauth trail, nuxt endpoint
 
-import {verifyMessage} from 'viem'
-
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['OauthStatus.', 'OauthStart.', 'OauthDone.'], workerEvent, doorHandleBelow})
 })

@@ -1,3 +1,4 @@
+
 # Notes Document Review Process
 
 We're going through older planning and brainstorming documents, adding section headers to categorize content, and deciding what to keep versus delete.
@@ -34,15 +35,6 @@ original notes content here...
 5. For 🔴 sections: verify the implementation truly captures the intent before deleting
 6. For 🟢 sections: these survive as valuable reference material
 7. For 🟡 sections: flag for human review
-
-## Documents Reviewed
-
-- **totp.md, wallet.md** — Deleted (envelope pattern now understood from code)
-- **otp.md** — Deleted (moved credential_table note to today.md step 7)
-- **plan.md** — Deleted (implementation complete, questions answered)
-- **code.md** — Deleted (constraint stories covered by tests)
-- **code.txt, code2.txt** — Headers added, awaiting cleanup
-- **build.txt** — Headers added, mostly obsolete (old build systems replaced by build.js)
 
 ## Key Principle
 

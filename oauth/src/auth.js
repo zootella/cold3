@@ -25,6 +25,23 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 		sources.push({note: 'b20', environment: event?.platform?.env})
 	}//seeing b20 both local and cloud
 	await decryptKeys('auth', sources)
+	/*
+	note that SvelteKit's pattern for handling secrets is like:
+import {SECRET_KEY_S1} from '$env/static/private'  //read static value built into server bundle when we deployed to cloudflare
+import {env}           from '$env/dynamic/private' //read dynamic value from .env when running locally
+	if (hasText(SECRET_KEY_S1)) {
+		sources.push({note: 'b30', environment: {SECRET_KEY_S1}}) //wrap it back into an object to match what decryptKeys expects
+	if (env) {
+		sources.push({note: 'b40', environment: env})
+
+	About b20: Cloudflare injects secrets from the dashboard (or wrangler.toml) into the request event at runtime, per-request. Not bundled — provided by the platform.
+
+	About b10: The .env file in ./oauth/ gets bundled into the server bundle at build time. We see b10 in cloud only, meaning the build inlines these values into the deployed Worker code. Is this safe? Yes, because SvelteKit builds separate server and client bundles, and auth.js is only imported by hooks.server.js — a server-only entry point. The bundler has no import path to pull this code into the client bundle. But we're relying on import graph analysis, not enforcement.
+
+	To switch to SvelteKit's intended pattern: use $env/static/private (build-time) or $env/dynamic/private (runtime) as shown above, adding sources b30/b40. The additional protection: if anyone accidentally imported auth.js from a .svelte component, SvelteKit would error at build time rather than silently bundling secrets into client code. icarus decryptKeys() works with plain objects, so either approach is compatible — the $env pattern just adds a build-time guardrail we currently get architecturally.
+
+	ttd january, not going to mess with this now, but maybe should later, along with using xray.js to confirm the tracer locations
+	*/
 
 	let authOptions = {
 		providers: [
@@ -62,3 +79,61 @@ export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 	}
 	return authOptions
 })
+
+/*
+what module should we use for oauth?
+we want one high level enough that it has pluggable submodules specific to popular providers
+and will iron out all the wrinkles between Twitter and Discord,
+whether they use oauth v1 or 2, and PKCS, and so on
+
+ _   _            _             _ _   _
+| |_| |__   ___  | |_ _ __ __ _(_) | | |__   ___ _ __ ___
+| __| '_ \ / _ \ | __| '__/ _` | | | | '_ \ / _ \ '__/ _ \
+| |_| | | |  __/ | |_| | | (_| | | | | | | |  __/ | |  __/
+ \__|_| |_|\___|  \__|_|  \__,_|_|_| |_| |_|\___|_|  \___|
+
+a long trail led to @auth/core...
+(1) there are turnkey identity providers like auth0.com
+but a service provider can become slow, unreliable, expensive,
+or require immediate developer attention to stay aligned with an update,
+or they can go out of business,
+or just deplatform you, without warning, cause, reinstatement, or recourse
+
+ok, so how about npm modules
+(2) Passport.js is the leader, with 3.5 million weekly downloads,
+and with over 500 provider-specific strategies
+but, it's Express middleware, intended for a regular server and Node
+and we don't have Express, Node, or even a server!
+
+(3) Auth.js, formerly NextAuth, has 1.4 million weekly downloads
+https://www.npmjs.com/package/next-auth
+but is specific to Next.js, which is React; we are Nuxt and Vue
+
+but Auth's rebrand is about branching out to support all popular frameworks:
+https://authjs.dev/getting-started/integrations
+(4) and there's one for Nuxt, but it's status is "Open PR",
+linking to a github thread with lots of waiting and disappointment:
+https://github.com/nextauthjs/next-auth/pull/10684
+
+(5) so our strategy is to use @auth/core, the core of Auth.js
+which is lower level than being React or Next or Nuxt-specific
+but still at a level where we get modules that know about specific providers
+
+(ttd june2025, and then that didn't work, so we got NextAuth working in Next.js, and then Auth.js for SvelteKit working, and have made a completely separate website with sveltekit at a subdomain and are working on the links there and back)
+
+another thing that made the search difficult is most of these solutions
+want to be your whole user identity and user management system
+but then they'd make a bunch of cookies that require a warning, or expire users after 30 days
+and come in with their own logic and practices for how a user changes how they sign in
+and through all that they, not us, own all the users. great for them and bad for us!
+
+we're looking for a way a person at a browser can prove to our server, just once, right now
+that they control a third party social media account
+and get some information about their identity there, like their id, name, and email
+
+also, none of this search was about web3 or crypto wallets!
+that's a whole second world of solutions of all these types that's still on the backlog
+
+in researching this now, also found this similar rant:
+https://www.better-auth.com/docs/comparison
+*/
