@@ -5,6 +5,54 @@ wrapper,
 
 //level0 functions work anywhere javascript does (well, current browsers and node20+), and without any module imports!
 
+//  _   _               _            _       
+// | |_(_)_ __  _   _  | |_ ___  ___| |_ ___ 
+// | __| | '_ \| | | | | __/ _ \/ __| __/ __|
+// | |_| | | | | |_| | | ||  __/\__ \ |_\__ \
+//  \__|_|_| |_|\__, |  \__\___||___/\__|___/
+//              |___/                        
+
+export const noop = (() => {})//no operation, a function that does nothing
+
+let _passes
+const _tests = []//presenting, tiny tests! all you need for blissful TDD, and in half a screenful of code
+export function test(f) { _tests.push(f) }
+export function ok(assertion) {
+	if (assertion) _passes++//count another passed assertion
+	else throw new TestError()//the assertion is false! throw an exception to get the line number and stop the tests
+}
+export async function runTests(tests) {
+	if (!tests) tests = _tests//default isomorphic test cases if the caller didn't pass in their own
+
+	_passes = 0
+	let results = {}
+	let t = Now()
+
+	let failure
+	for (let i = 0; i < tests.length; i++) {
+		try {
+			await tests[i]()//run this test to see if it throws, or any call to ok got false
+		} catch (e) {
+			console.error(e)//also send a red message to the browser inspector
+			return {
+				success: false,
+				time:    t,
+				error:   e,
+				message: `${look(e)}${newline}on ${sayTick(t)}` 
+			}
+		}
+	}
+	let duration = Date.now() - t//can't use Now() because grid tests simulated long sleeps 😴
+	return {
+		success:  true,
+		time:     t,
+		passes:   _passes,
+		tests:    tests.length,
+		duration: duration,
+		message:  `✅ ${_passes} assertions in ${tests.length} tests all passed in ${duration}ms on ${sayTick(t)}`
+	}
+}
+
 //      _         
 //  ___(_)_______ 
 // / __| |_  / _ \
@@ -83,53 +131,62 @@ export function sayTick(t) {
 	return `${weekday}${hours}:${minutes}${meridiem}${seconds}.${milliseconds}s`
 }
 
-//  _   _               _            _       
-// | |_(_)_ __  _   _  | |_ ___  ___| |_ ___ 
-// | __| | '_ \| | | | | __/ _ \/ __| __/ __|
-// | |_| | | | | |_| | | ||  __/\__ \ |_\__ \
-//  \__|_|_| |_|\__, |  \__\___||___/\__|___/
-//              |___/                        
-
-export const noop = (() => {})//no operation, a function that does nothing
-
-let _passes
-const _tests = []//presenting, tiny tests! all you need for blissful TDD, and in half a screenful of code
-export function test(f) { _tests.push(f) }
-export function ok(assertion) {
-	if (assertion) _passes++//count another passed assertion
-	else throw new TestError()//the assertion is false! throw an exception to get the line number and stop the tests
+//reversible but readable UTC tick count, and it's max 20 characters
+export function tickToText(t) { let s = _tickToText(t); let t2 = _textToTick(s); checkSame(t, t2); return s }
+export function textToTick(s) { let t = _textToTick(s); let s2 = _tickToText(t); checkSame(s, s2); return t }
+function _tickToText(t) {
+	checkInt(t)
+	let d = new Date(t)
+	let year = d.getUTCFullYear()
+	let month = Time.months.zeroToJan[d.getUTCMonth()].toLowerCase()
+	let day = String(d.getUTCDate())
+	let hour = String(d.getUTCHours()).padStart(2, '0')
+	let minute = String(d.getUTCMinutes()).padStart(2, '0')
+	let startOfMinute = Date.UTC(year, d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes())
+	let msIntoMinute = t - startOfMinute
+	return year + month + day + '.' + hour + minute + '.' + msIntoMinute
 }
-export async function runTests(tests) {
-	if (!tests) tests = _tests//default isomorphic test cases if the caller didn't pass in their own
-
-	_passes = 0
-	let results = {}
-	let t = Now()
-
-	let failure
-	for (let i = 0; i < tests.length; i++) {
-		try {
-			await tests[i]()//run this test to see if it throws, or any call to ok got false
-		} catch (e) {
-			console.error(e)//also send a red message to the browser inspector
-			return {
-				success: false,
-				time:    t,
-				error:   e,
-				message: `${look(e)}${newline}on ${sayTick(t)}` 
-			}
-		}
-	}
-	let duration = Date.now() - t//can't use Now() because grid tests simulated long sleeps 😴
-	return {
-		success:  true,
-		time:     t,
-		passes:   _passes,
-		tests:    tests.length,
-		duration: duration,
-		message:  `✅ ${_passes} assertions in ${tests.length} tests all passed in ${duration}ms on ${sayTick(t)}`
-	}
+function _textToTick(s) {
+	let [p1, p2, p3] = s.split('.')//split the three parts from s like "2022feb17.1234.56789"
+	if (!p1 || p1.length < 8 || p1.length > 9 || !isNumerals(p2, 4)) toss('data', {s})
+	let y = textToInt(p1.slice(0, 4), 1970)//round-trip validates numerals; must be 1970+
+	let month = Time.months.janToZero[p1.slice(4, 7)]//lookup returns 0-11 or undefined if not "jan" through "dec"
+	let dayText = p1.slice(7); if (!isNumerals(dayText)) toss('data', {s})//1 or 2 digit day
+	let day = Number(dayText)//note that there can be leading zeroes
+	let hour = Number(p2.slice(0, 2))//p2 already validated as 4 numerals above
+	let minute = Number(p2.slice(2, 4))
+	let millisecond = textToInt(p3)//round-trip validates numerals; this field has no leading zeros
+	if (month === undefined || day < 1 || day > 31 || hour > 23 || minute > 59 || millisecond > 59999) toss('data', {s})
+	return Date.UTC(y, month, day, hour, minute) + millisecond
 }
+test(() => {
+	function f(t, s) {
+		ok(_tickToText(t) == s)
+		ok(_textToTick(s) == t)
+	}
+	f(1645070756789, '2022feb17.0405.56789')//compare 13 numerals that aren't human-understandable to 20 characters which are
+	f(1645101296789, '2022feb17.1234.56789')
+	f(1672531199999, '2022dec31.2359.59999')
+
+	f(0,            '1970jan1.0000.0')
+	f(946684800000, '2000jan1.0000.0')
+
+	f(951836400000, '2000feb29.1500.0')//mid afternoon on leap day 2000
+	f(983458800000, '2001mar1.1500.0')//one year later, that's March 1st; worried about leap seconds? JavaScript Date ignores them (POSIX time), so no special handling needed
+})
+noop(() => {//fuzz test round trip with random moments from 1970 to 2100
+	const seconds = 4
+	let now = Now()
+	let cycles = 0
+	while (Now() < now + (seconds*Time.second)) {
+		let t = randomBetween(0, 100*Time.year)//a random moment in the 100 years starting 1970
+		let s = _tickToText(t)
+		let t2 = _textToTick(s)
+		ok(t == t2)
+		cycles++
+	}
+	log(`round trip fuzz tested ${commas(cycles)} cycles in ${seconds} seconds`)
+})
 
 //  _                
 // | |_ ___  ___ ___ 
@@ -3655,63 +3712,6 @@ test(() => {
 
 
 
-//reversible but readable UTC tick count, and it's only 20 characters, ttd january
-export function tickToText(t) { let s = _tickToText(t); let t2 = _textToTick(s); checkSame(t, t2); return s }
-export function textToTick(s) { let t = _textToTick(s); let s2 = _tickToText(t); checkSame(s, s2); return t }
-function _tickToText(t) {
-	checkInt(t)
-	let d = new Date(t)
-	let year = d.getUTCFullYear()
-	let month = Time.months.zeroToJan[d.getUTCMonth()].toLowerCase()
-	let day = String(d.getUTCDate()).padStart(2, '0')
-	let hour = String(d.getUTCHours()).padStart(2, '0')
-	let minute = String(d.getUTCMinutes()).padStart(2, '0')
-	let startOfMinute = Date.UTC(year, d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes())
-	let msIntoMinute = t - startOfMinute
-	return year + month + day + '.' + hour + minute + '.' + msIntoMinute
-}
-function _textToTick(s) {
-	let [p1, p2, p3] = s.split('.')//split the three parts from s like "2022feb17.1234.56789"
-	if (!p1 || p1.length != 9 || !isNumerals(p2, 4)) toss('data', {s})
-	let y = textToInt(p1.slice(0, 4), 1970)//round-trip validates numerals; must be 1970+
-	let month = Time.months.janToZero[p1.slice(4, 7)]//lookup returns 0-11 or undefined if not "jan" through "dec"
-	let dayText = p1.slice(7, 9); if (!isNumerals(dayText, 2)) toss('data', {s})
-	let day = Number(dayText)//note that there can be leading zeroes
-	let hour = Number(p2.slice(0, 2))//p2 already validated as 4 numerals above
-	let minute = Number(p2.slice(2, 4))
-	let millisecond = textToInt(p3)//round-trip validates numerals; this field has no leading zeros
-	if (month === undefined || day < 1 || day > 31 || hour > 23 || minute > 59 || millisecond > 59999) toss('data', {s})
-	return Date.UTC(y, month, day, hour, minute) + millisecond
-}
-test(() => {
-	function f(t, s) {
-		ok(_tickToText(t) == s)
-		ok(_textToTick(s) == t)
-	}
-	f(1645070756789, '2022feb17.0405.56789')//13 numerals that aren't readable, or 20 characters which are, length similar to Tag
-	f(1645101296789, '2022feb17.1234.56789')
-	f(1672531199999, '2022dec31.2359.59999')
-
-	f(0,            '1970jan01.0000.0')
-	f(946684800000, '2000jan01.0000.0')
-
-	f(951836400000, '2000feb29.1500.0')//mid afternoon on leap day 2000
-	f(983458800000, '2001mar01.1500.0')//one year later, that's March 1st; worried about leap seconds? JavaScript Date ignores them (POSIX time), so no special handling needed
-})
-noop(() => {//fuzz test round trip with random moments from 1970 to 2100
-	const seconds = 4
-	let now = Now()
-	let cycles = 0
-	while (Now() < now + (seconds*Time.second)) {
-		let t = randomBetween(0, 100*Time.year)//a random moment in the 100 years starting 1970
-		let s = _tickToText(t)
-		let t2 = _textToTick(s)
-		ok(t == t2)
-		cycles++
-	}
-	log(`round trip fuzz tested ${commas(cycles)} cycles in ${seconds} seconds`)
-})
-//ttd january, since length as a whole is not constant, you probably want to make the first nine days just "feb7" rather than "feb07" actually; make this change if you use this form
 
 
 
