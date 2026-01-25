@@ -782,28 +782,6 @@ export async function otpSend({letter, v, provider, browserHash}) {
 	task.success = true
 	return task//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
-export async function codeSend({browserHash, provider, type, v}) {//v is the address, valid, containing the three forms
-
-	//look up the user tag, even though we're not using it with code yet
-	let userTag = (await credentialBrowserGet({browserHash}))?.userTag
-
-	let permit = await codePermit(v.f0)
-	if (!permit.success) return permit//return the failed permit directly, bubbling up
-
-	let code = await codeCompose({length: permit.useLength, sticker: true})
-	await fetchLambda('/message', {body: {
-		provider: provider,
-		service: type,
-		address: v.f1,
-		subjectText: code.subjectText,//email subject
-		messageText: code.messageText,//email body as text, or complete SMS message
-		messageHtml: code.messageHtml,//email body as HTML
-	}})
-	await codeSent({browserHash, provider, type, v, permit, code})
-
-	return {success: true}
-}
-
 //can we send another code to this address now?
 async function otpPermit({letter, v}) {
 	let task = Task({name: 'otp permit'})
@@ -834,30 +812,6 @@ async function otpPermit({letter, v}) {
 	task.useLength = rows5.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard
 	return task
 }
-async function codePermit(address0) {
-	const now = Now()
-
-	//use the code table to find out how many codes we've sent address
-	let rows = await code_get_address({address0})//get all the rows about the given address
-	let rowsWeek = rows.filter(row => row.row_tick >= now - otpConstants.week)//those over the past 5 days
-	let rowsDay = rowsWeek.filter(row => row.row_tick >= now - otpConstants.day)//those in just the last 24 hours
-	let rowsLive = rowsDay.filter(row => row.row_tick >= now - otpConstants.expiration)//past 20 minutes, so could be active still
-
-	if (rowsDay.length >= otpConstants.limitHard) {//we've already sent 10 codes to this address in the last 24 hours!
-		return {success: false, reason: 'CoolHard.'}
-	}
-
-	if (rowsWeek.length >= otpConstants.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
-		let cool = rowsWeek[0].row_tick + otpConstants.minutes//tick when this address cooled down
-		if (now < cool) return {success: false, reason: 'CoolSoft.'}//hasn't happened yet
-	}
-
-	return {
-		success: true,
-		useLength: rowsWeek.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard,
-		wouldReplace: (rowsLive.length && rowsLive[0].lives) ? rowsLive[0].row_tag : false,//include the code tag of a code that we sent to this address less than 20 minutes ago, and could still be verified. if you send a replacement code, you have to kill this one
-	}
-}
 
 //make a new random code and compose message text about it
 async function otpCompose({useLength, provider, v, sticker}) {
@@ -876,22 +830,6 @@ async function otpCompose({useLength, provider, v, sticker}) {
 	o.messageText = `${o.subjectText}${warning}${sticker}`
 	o.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${o.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
 	return o
-}
-async function codeCompose({length, sticker}) {
-	let c = {}
-
-	c.codeTag = Tag()
-	c.letter = await otpPrefix(c.codeTag, otpConstants.alphabet)
-	c.code = otpGenerate(length)
-	c.hash = await hashText(c.codeTag+c.code)
-
-	c.subjectText = `Code ${c.letter} ${c.code} for ${Key('message brand')}`
-	const warning = ` - Don't tell anyone, they could steal your whole account!`
-	sticker = sticker ? 'STICKER' : ''//gets replaced by the sticker on the lambda
-
-	c.messageText = `${c.subjectText}${warning}${sticker}`
-	c.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${c.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
-	return c
 }
 
 //what it looks like to use these functions to send a code
@@ -923,45 +861,6 @@ async function otpSent({letter, o, browserHash}) {
 	messages.push(safefill`OTP opened challenge: address ${o.address.f0}`)//record we bothered this address
 	messages.push(safefill`OTP opened challenge: tag ${o.tag}`)//record we created this challenge
 	await trailAddMany(messages)
-}
-async function codeSent({browserHash, provider, type, v, permit, code}) {
-
-	if (permit.wouldReplace) {
-		await code_set_lives({codeTag: permit.wouldReplace, lives: 0})//invalidate the code this new one will replace
-	}
-
-	//take care of address_table and maybe also service_table
-	await browserChallengedAddress({browserHash, provider, type, v})
-
-	//record that we sent the new code
-	await code_add({codeTag: code.codeTag, browserHash, provider, type, v, hash: code.hash, lives: otpConstants.guesses})
-}
-
-//is this browser expecting any codes? needs to run fast!
-export async function browserToCodes({browserHash}) {
-	let rows = await queryTopSinceMatchGreater({table: 'code_table',
-		since: Now() - otpConstants.expiration,//get not yet expired codes
-		title1: 'browser_hash', cell1: browserHash,//for this browser
-		title2: 'lives', cell2GreaterThan: 0,//that haven't been guessed to death or otherwise revoked
-	})
-	let codes = []//from the database rows, prepare records that the page will keep in a list
-	if (rows) {
-		for (let row of rows) {
-			codes.push({
-				tag: row.row_tag,//the code's tag, also the row tag, letting the page identify the challenge
-				tick: row.row_tick,//when we sent the code
-				lives: row.lives,//how many guesses remain on this code
-
-				letter: await otpPrefix(row.row_tag, otpConstants.alphabet),//the page could derive this but we'll do it
-				addressType: row.type_text,//the type of address, like "Email."
-				address0: row.address0_text,
-				address1: row.address1_text,//the address we used with the api
-				address2: row.address2_text,
-				//note we importantly do not send hash to the page, that's the secret part!
-			})
-		}
-	}
-	return codes//return empty if no codes for this browser right now
 }
 
 //the person at browserHash used the box on the page to enter a code, which could be right or wrong
@@ -1018,37 +917,6 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 			task.lives = lives//tell the person how many guesses they have left; may encourage them to type more carefully
 			return task
 		}
-	}
-}
-export async function codeEnter({browserHash, codeTag, codeCandidate}) {
-	let now = Now()
-	let r
-
-	let row = await code_get({codeTag})//find the row about it
-	log('hi in code enter', look({browserHash, codeTag, codeCandidate, row}))
-	if (!row || row.browser_hash != browserHash || !row.lives) {
-		toss('page', {browserHash, codeTag, codeCandidate, row})//very unusual, like from a tampered-with page
-	}
-
-	if (row.row_tick + otpConstants.expiration < now) {//too late, respond with lives 0 to tell the page the user needs to request a new code
-		return {success: false, reason: 'Expired.', lives: 0}
-	}
-
-	if (hasTextSame(row.hash, await hashText(codeTag+codeCandidate))) {//correct guess
-		await code_set_lives({codeTag, lives: 0})//a correct guess also kills the code
-		await browserValidatedAddress({
-			browserHash,
-			provider: row.provider_text,
-			type: row.type_text,
-			v: bundleValid({f0: row.address0_text, f1: row.address1_text, f2: row.address2_text}),
-		})
-		return {success: true, lives: 0}
-
-	} else {//wrong guess
-
-		let lives = row.lives - 1
-		await code_set_lives({codeTag, lives})
-		return {success: false, reason: 'Wrong.', lives}//user may be able to guess again on this code
 	}
 }
 
@@ -1280,60 +1148,6 @@ grid(async () => {//otp: getting a challenge correct closes it on the trail
 	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).success)//correct
 	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).reason == 'Expired.')//replay envelope to try to get that same right answer on that same challenge correcct again; trail knows it's closed
 })
-
-SQL(`
--- what code like 1234 have we sent to the person at a browser to prove they control that address?
-CREATE TABLE code_table (
-	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,  -- uniquely identifies the row, and also used as the code tag
-	row_tick       BIGINT    NOT NULL,              -- when we sent the code, the start of the code's 20 minute lifetime
-	hide           BIGINT    NOT NULL,              -- not used, instead set lives to 0 below to revoke the code
-
-	browser_hash   CHAR(52)  NOT NULL,  -- the browser that entered, and must verify, the address
-
-	provider_text  TEXT      NOT NULL,  -- note we sent the code using "Amazon." or "Twilio."
-	type_text      TEXT      NOT NULL,  -- address type like "Email." or "Phone."
-	address0_text  TEXT      NOT NULL,  -- address in the three forms, we'll use normal to find and page to show
-	address1_text  TEXT      NOT NULL,
-	address2_text  TEXT      NOT NULL,
-
-	hash           CHAR(52)  NOT NULL,  -- the hash of the code tag followed by the 4 or 6 numeral code
-
-	lives          BIGINT    NOT NULL   -- starts 4 guesses, decrement, or set directly to 0 to invalidate
-);
-
-CREATE INDEX code1 ON code_table (browser_hash,             row_tick DESC) WHERE hide = 0;  -- filter by browser
-CREATE INDEX code2 ON code_table (type_text, address0_text, row_tick DESC) WHERE hide = 0;  -- or by address
--- ^ttd march2025, maybe, change all indices to partial with where hide zero like above
-`)
-
-async function code_get({codeTag}) {//get the row about a code
-	let rows = await queryGet('code_table', {row_tag: codeTag})
-	return rows.length ? rows[0] : false
-}
-async function code_get_browser({browserHash}) {//get all the rows about the given browser
-	return await queryGet('code_table', {browser_hash: browserHash})
-}
-async function code_get_address({address0}) {//get all the rows about the given address
-	return await queryGet('code_table', {address0_text: address0})
-}
-
-async function code_set_lives({codeTag, lives}) {//set the number of lives, decrement on wrong guess or 0 to revoke
-	await queryUpdateCells({table: 'code_table',
-		titleFind: 'row_tag', cellFind: codeTag,
-		titleSet:  'lives',   cellSet: lives,
-	})
-}
-async function code_add({codeTag, browserHash, provider, type, v, hash, lives}) {//make a record to send a new code
-	await queryAddRow({table: 'code_table', row: {
-		row_tag: codeTag,//unique, identifies row and code, so chosen earlier to save a copy
-		browser_hash: browserHash,
-		provider_text: provider,
-		type_text: type,
-		address0_text: v.f0, address1_text: v.f1, address2_text: v.f2,
-		hash,
-		lives,
-	}})
-}
 
 
 

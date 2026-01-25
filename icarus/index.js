@@ -113,7 +113,7 @@ wrapper
 export {
 
 vhsSign,
-otpConstants, codeSend, browserToCodes, codeEnter, otpSend, otpEnter,
+otpConstants, otpSend, otpEnter,
 
 /* level 3 query */
 

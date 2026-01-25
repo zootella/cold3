@@ -1,6 +1,5 @@
 <script setup>
 
-const mainStore = useMainStore()
 const pageStore = usePageStore()
 
 //top bar, always there, holds stuff that might appear
@@ -10,6 +9,5 @@ const pageStore = usePageStore()
 
 <NotificationList />
 <OtpEnterList />
-<CodeEnterList v-show="mainStore.codes.length" />
 
 </template>

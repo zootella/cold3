@@ -121,7 +121,7 @@ now that we have those systems in place, we will write grid tests that cover use
 for instance, the handful of restrictions defined by Code.expiration and other properties, like first address in 5 days gets a 4 digit code, and so on
 each and all of those should be performed by a grid test
 
-## 5[]evaluation
+## 5[x]evaluation
 
 ok, at this point along our trail, we will have written a functionaily equivalent otp system alongside code
 and both work independently, side by side
@@ -131,13 +131,23 @@ but if the code is much more complex, and that complexity could hide a security 
 ok so our goal with simplicity and clarity coding otp leading up to this point is to make this as competitive a fight as possible, of course
 we've coded otp to be as simple and secure as possible so it is likely that at this later stage, a fair evaluation selects it
 
-## 6[]replacement
+## 6[x]replacement
 
 if we make it this far, we have two equivalently simple, completely secure systems for one time password challenges and codes
 ill carefully remove the code system, leaving only the otp system in place
 we may also rename some elements of properties and parameters at this point, favoring simpler words like "code" over the harder to type "otp"--right now we're carefully keeping otp system things called otp, to be distinct from code system things called code
 
-## 7[]integration
+(remaining tasks don't need to be done sequentially)
+
+## 7[]better ui
+
+we have working front end components that take a smoke test through the happy path
+but need to do more on the near-happy path, such as
+- the user guesses wrong, moving them to their last guess, or now they have to send another code, that splayed part of the flowchart
+- the user experiences the soft or hard time limit, telling them to look for another minute, or come back tomorrow
+- the user clicks can't find code, we give them more details, or just a nudge to really look in that spam folder. we could have gmail specific instructions, even, as we know if we sent the email to Gmail
+
+## 8[]integration
 
 credential_table holds user identity credentials, like currently signed in browsers, registered user names, and standard passwords
 we wrote code before credential table, with just todos about integrating them
@@ -145,6 +155,16 @@ at this step on our trail, with otp finished and selected (potentially) we'll in
 this will let a user who signes up by proving they control an email address sign into another device by again proving they can type a code sent to that address, for instance
 
 note: credential_table assumes a userTag exists, but otp is often used during signup before a user exists. the stub functions browserChallengedAddress and browserValidatedAddress need to handle pre-signup validation.
+
+additionally, otp will let us evaluate and monitor the performance of third party cloud service providers
+for instance, let's say that Twilio stops working, but Amazon is still going strong
+or, more insidious, Amazon says it's working, but we (need to be able to) notice that users who we send codes through one provider take far longer to complete the flow compared to another provider
+
+so now that we've replace code_table with our new otp system, we need to look at
+credential_table
+address_table
+service_table
+many of which are just stubs and notes--those tables can go away, but our user stories about them remain to be completed!
 
 # Evaluation Results
 

@@ -13,12 +13,10 @@ const serverDuration = ref(-1)//within that, how long the server took to get tog
 
 //objects and arrays from the database
 //previously, const user = ref({})//information about the user, if any, signed into this browser; moved to credentialStore, ttd january
-const codes = ref([])//codes this browser could enter, empty array before check or if none
 
 const loaded = ref(false)//prevent unnecessary reload on client after rendered and bridged from server
 async function load() { if (loaded.value) return; loaded.value = true//runs on the server first, then a no-op on the client
 	let r = await fetchWorker('/api/load')
-	codes.value = r.codes
 	serverDuration.value = r.duration//save the duration measured by the server (well, in SSR this is the server, too, but still)
 }
 async function mounted() {//runs on the client, only, when app.vue is mounted
@@ -42,8 +40,6 @@ async function mounted() {//runs on the client, only, when app.vue is mounted
 return {
 	loaded, load, mounted,//return loaded: server call sets true, true value goes over Nuxt Bridge, client call to .load() is a no-op
 	serverDuration, pageDuration,
-
-	codes,
 }
 
 })
