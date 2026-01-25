@@ -1244,26 +1244,26 @@ test(async () => {
 	ok(await otpPrefix('6MIg9Bwj1ZC8wx6BLSgML', 'ABCD') == 'B')
 })
 
-export function otpGenerate(length) {//generate a random numeric code avoiding starting 0 and any three in a row
-	checkInt(length, 1)
+export function otpGenerate(strength) {//generate a random numeric code avoiding starting 0 and any three in a row
+	checkInt(strength, 1)//provide strength as the desired length, like 4 "1234" or 6 "123456"
 	const ten = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-	let random = crypto.getRandomValues(new Uint32Array(length))//we'll modulo each random 32bit/4byte/0-4.2million value unsigned integer into a single digit 0-9
+	let random = crypto.getRandomValues(new Uint32Array(strength))//we'll modulo each random 32bit/4byte/0-4.2million value unsigned integer into a single digit 0-9
 	let i = 0
 	function pick(avoid) {//pick a random number 0-9, avoiding what's given, or null to play the whole table
 		let digits = avoid === null ? ten : ten.filter(d => d != avoid)//triple equals because we're using null or a number
 		return digits[random[i++] % digits.length]
 	}
 	let code = ''+pick(0)//for the first digit, we exclude 0; pick will use random's first uint32 to choose random 1-9
-	for (let n = 1; n < length; n++) {//loop adding remaining digits
+	for (let n = 1; n < strength; n++) {//loop adding remaining digits
 		let avoid = (n >= 2 && code[n-1] == code[n-2]) ? Number(code[n-1]) : null//if code ends double, avoid that digit
 		code += pick(avoid)
 	}
 	return code
 }
 test(() => {//sanity check
-	for (let length of [4, 6, 8, 12]) {
-		let code = otpGenerate(length)
-		ok(code.length == length)//correct length
+	for (let strength of [4, 6, 8, 12]) {
+		let code = otpGenerate(strength)
+		ok(code.length == strength)//correct length
 		ok(/^\d+$/.test(code))//only digits 0-9
 		ok(code[0] != '0')//no leading zero
 		ok(!/(\d)\1\1/.test(code))//no triple digits (e.g. "111")
