@@ -109,7 +109,7 @@ write a single grid test, seeing how you can encapsulate the whole flow
 check out how large the objects are in the cookie; is this a problem for the 4kib size limit?
 localStorage has no such limit, but also no automatic expiration
 
-## 3[]smoke test
+## 3[x]smoke test
 
 ill do a smoke test running locally, comparing different happy path and chaos user paths through the code and otp systems
 the expectation here is that they perform identially as far as the user can tell
@@ -145,3 +145,100 @@ at this step on our trail, with otp finished and selected (potentially) we'll in
 this will let a user who signes up by proving they control an email address sign into another device by again proving they can type a code sent to that address, for instance
 
 note: credential_table assumes a userTag exists, but otp is often used during signup before a user exists. the stub functions browserChallengedAddress and browserValidatedAddress need to handle pre-signup validation.
+
+# Evaluation Results
+
+completed january 2025
+
+## code length comparison
+
+### api endpoints
+
+| system | files | lines |
+|--------|-------|-------|
+| otp | 1 file (otp.js) | 60 |
+| code | 2 files (send.js + enter.js) | 53 |
+
+otp is slightly longer (+7 lines) but consolidated into one file with action dispatch.
+
+### helper functions (level3.js)
+
+| function | otp | code |
+|----------|-----|------|
+| send | 26 | 24 |
+| permit | 30 | 27 |
+| compose | 18 | 19 |
+| sent | 30 | 15 |
+| enter | 56 | 40 |
+| **subtotal** | **160** | **125** |
+
+otp helper functions are +35 lines longer.
+
+### code-only infrastructure (otp doesn't need)
+
+| code system only | lines |
+|-----------------|-------|
+| browserToCodes() | 28 |
+| code_get, code_get_browser, code_get_address | 14 |
+| code_set_lives, code_add | 27 |
+| code_table schema | 16 |
+| **subtotal** | **85** |
+
+### vue components
+
+| component | otp | code |
+|-----------|-----|------|
+| EnterList | 35 | 19 |
+| EnterComponent | 77 | 78 |
+| RequestComponent | 62 | 62 |
+| **subtotal** | **174** | **159** |
+
+otp components are +15 lines longer (mostly the onMounted envelope check in EnterList).
+
+## summary totals
+
+| layer | otp | code | difference |
+|-------|-----|------|------------|
+| api endpoints | 60 | 53 | +7 |
+| helper functions | 160 | 125 | +35 |
+| db infrastructure | 0 | 85 | -85 |
+| vue components | 174 | 159 | +15 |
+| **total** | **394** | **422** | **-28** |
+
+otp is 28 lines shorter overall, despite having longer helper functions.
+
+## complexity analysis
+
+### otp advantages
+
+1. no dedicated table - eliminates schema, migrations, 5 db helper functions
+2. single endpoint - one file to understand vs two
+3. self-contained state - the envelope cookie carries everything needed
+4. simpler enter logic - no db row lookup, just open envelope and check trail
+
+### otp disadvantages
+
+1. otpEnter is more complex (56 vs 40 lines) - must query trail for opened/closed/missed messages and compute hashes to verify
+2. otpSent is longer (30 vs 15 lines) - manages letter array + trail messages vs single db insert
+3. cookie management - client must pass envelope back on every request
+4. EnterList needs onMounted - must ask server about existing envelope on page load
+
+### maintenance considerations
+
+code system: to understand the flow, you trace through 2 endpoints, the code_table schema, and 5 db helper functions. state lives in the database.
+
+otp system: to understand the flow, you trace through 1 endpoint and the envelope/trail patterns. state lives in the encrypted cookie + trail messages.
+
+the otp system has fewer moving parts (no table, no db helpers) but the parts it does have are individually more complex (otpEnter's triple-trail-query pattern).
+
+## verdict
+
+the systems are close in total code size. otp wins by 28 lines, but that masks a tradeoff:
+
+- otp removes 85 lines of db infrastructure
+- otp adds 57 lines of envelope/trail logic
+
+for maintainability, roughly even. the question is which pattern is easier to reason about:
+
+- code: familiar crud pattern, state in database rows
+- otp: stateless server pattern, state in encrypted cookie + audit trail
