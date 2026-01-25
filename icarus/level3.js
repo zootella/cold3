@@ -187,6 +187,21 @@ export const otpConstants = {//factory settings for OTP codes to prove email and
 }
 Object.freeze(otpConstants)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export async function otpSend({letter, v, provider, browserHash}) {
 
 	//look up the user tag, even though we're not using it with otp yet
@@ -292,6 +307,27 @@ async function otpSent({letter, o, browserHash}) {
 	messages.push(safefill`OTP opened challenge: tag ${o.tag}`)//record we created this challenge
 	await trailAddMany(messages)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //the person at browserHash used the box on the page to enter a code, which could be right or wrong
 export async function otpEnter({letter, tag, guess, browserHash}) {
