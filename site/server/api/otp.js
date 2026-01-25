@@ -1,8 +1,9 @@
 
 import {
 validateEmailOrPhone,
-Code,
+otpConstants,
 otpSend, otpEnter,
+checkNumerals,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -16,7 +17,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	} else {
 		letter = {otps: []}//no challenges from earlier, but make an empty array in case we add one
 	}
-	letter.otps = letter.otps.filter(o => Now() <= o.start + Code.expiration)//filter to only keep not yet expired challenges
+	letter.otps = letter.otps.filter(o => Now() <= o.start + otpConstants.expiration)//filter to only keep not yet expired challenges
 
 	let task//each action below sets this task reference, which we return as the response body
 	if (action == 'SendTurnstile.') {//the person at the page has entered their email or phone to get a code there; this action needs turnstile protection to prevent a script kiddie from hitting here to spam strangers or run up our amazon or twilio bill 💩💸
@@ -46,7 +47,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	if (letter.otps.length > 0) {//we have active challenges for this browser
 		letter.browserHash = browserHash//lock this letter to the connected browser
-		task.envelope = await sealEnvelope('Otp.', Code.expiration, letter)//encrypt it for the browser to keep for up to 20 minutes in a cookie
+		task.envelope = await sealEnvelope('Otp.', otpConstants.expiration, letter)//encrypt it for the browser to keep for up to 20 minutes in a cookie
 	}
 	task.otps = letter.otps.map(o => ({//we always return an array of non-secret information about currently active challenges
 		tag: o.tag,//a tag identifies each challenge; the page will tell us which one it's guessing at

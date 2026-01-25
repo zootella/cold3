@@ -1,7 +1,7 @@
 <script setup> definePageMeta({layout: 'column-layout', note: 'on card'})//./pages/card/[more].vue
 
 import {
-randomCode,
+otpGenerate,
 } from 'icarus'
 const _route = useRoute()
 const _site = useSiteConfig()
@@ -48,7 +48,7 @@ function onImageLoad() {
 }
 
 function randomPage() {
-	let name2 = name1.replace(/\d+$/, '') + randomCode(4)//compose an alternate random name to link to
+	let name2 = name1.replace(/\d+$/, '') + otpGenerate(4)//compose an alternate random name to link to
 	navigateTo({name: _route.name, params: {more: name2}})//using navigateTo because what it does is the same as NuxtLink, chat tells me
 }
 

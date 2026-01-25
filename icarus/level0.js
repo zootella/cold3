@@ -1171,28 +1171,8 @@ test(() => {
 //  \___\___/ \__,_|\___|
 //                       
 
-export function randomCode(length) {//generate a random numeric code avoiding starting 0 and any three in a row
-	let s = ''+_randomDigitExcept(0)
-	while (s.length < length) s += _randomDigitExcept(_duplicateEndDigit(s))
-	return s
-}
-function _randomDigitExcept(avoid) {
-	let a = []//alphabet of digits we'll randomly select one from
-	for (let i = 0; i < 10; i++) { if (avoid == -1 || avoid != i) a.push(i) }
-	return a[((crypto.getRandomValues(new Uint32Array(1)))[0]) % a.length]
-}
-function _duplicateEndDigit(s) {
-	if (s.length < 2) return -1//too short to have a duplicate
-	if (s[s.length-2] == s[s.length-1]) { return Number(s[s.length-1]) } else { return -1 }
-}
-noop(() => {//this might be slow, actually, but should be ok for individual one time codes
-	let s = newline
-	for (let i = 0; i < 250; i++) s += randomCode(6) + ', '//try it out with 4, 6, and 10
-	log(s)
-})
-
 //choose a letter from the given alphabet that is a result of the hash of s
-export async function hashPrefix(s, alphabet) {
+export async function otpPrefix(s, alphabet) {
 	checkText(s); checkText(alphabet)
 
 	let d = await Data({text: s}).hash()
@@ -1202,9 +1182,62 @@ export async function hashPrefix(s, alphabet) {
 	return alphabet[i]//return alphabet letter at that index, will be even across alphabet
 }
 test(async () => {
-	ok(await hashPrefix('3IXdnF46zWIYmRb9TYFuw', 'ABCD') == 'A')
-	ok(await hashPrefix('4195KLh3ApK74M5gFHnbJ', 'ABCD') == 'D')
-	ok(await hashPrefix('6MIg9Bwj1ZC8wx6BLSgML', 'ABCD') == 'B')
+	ok(await otpPrefix('3IXdnF46zWIYmRb9TYFuw', 'ABCD') == 'A')
+	ok(await otpPrefix('4195KLh3ApK74M5gFHnbJ', 'ABCD') == 'D')
+	ok(await otpPrefix('6MIg9Bwj1ZC8wx6BLSgML', 'ABCD') == 'B')
+})
+
+export function otpGenerate(length) {//generate a random numeric code avoiding starting 0 and any three in a row
+	checkInt(length, 1)
+	const ten = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+	let random = crypto.getRandomValues(new Uint32Array(length))//we'll modulo each random 32bit/4byte/0-4.2million value unsigned integer into a single digit 0-9
+	let i = 0
+	function pick(avoid) {//pick a random number 0-9, avoiding what's given, or null to play the whole table
+		let digits = avoid === null ? ten : ten.filter(d => d != avoid)//triple equals because we're using null or a number
+		return digits[random[i++] % digits.length]
+	}
+	let code = ''+pick(0)//for the first digit, we exclude 0; pick will use random's first uint32 to choose random 1-9
+	for (let n = 1; n < length; n++) {//loop adding remaining digits
+		let avoid = (n >= 2 && code[n-1] == code[n-2]) ? Number(code[n-1]) : null//if code ends double, avoid that digit
+		code += pick(avoid)
+	}
+	return code
+}
+test(() => {//sanity check
+	for (let length of [4, 6, 8, 12]) {
+		let code = otpGenerate(length)
+		ok(code.length == length)//correct length
+		ok(/^\d+$/.test(code))//only digits 0-9
+		ok(code[0] != '0')//no leading zero
+		ok(!/(\d)\1\1/.test(code))//no triple digits (e.g. "111")
+	}
+})
+noop(() => {//demonstration
+	const n = 100
+	log(deindent`
+		example short codes:
+		${Array.from({length: n}, () => otpGenerate(4)).join(', ')}
+
+		and some standard ones:
+		${Array.from({length: n}, () => otpGenerate(6)).join(', ')}
+	`)
+})
+noop(() => {//fuzz test
+	const seconds = 4
+	function f(code) {
+		ok(code[0] != '0')//can't start 0
+		ok(!/(\d)\1\1/.test(code))//cant have three of the same in a row anywhere
+		return code
+	}
+	let cycles = 0
+	let start = Now()
+	while (Now() < start + (seconds*Time.second)) {
+		f(otpGenerate(4))
+		f(otpGenerate(6))
+		f(otpGenerate(20))
+		cycles += 3//check codes of three different lengths in each cycle
+	}
+	log(`generated and checked ${commas(cycles)} OTP codes in ${seconds} seconds`)
 })
 
 //  _   _                        _   _             _    
@@ -1932,6 +1965,8 @@ to be able to go between N guesses allowed in P_days time period
 P_days = 36525 * ln(1 - (3 * N / 1000000)) / ln(0.5)
 N = (1000000 / 3) * (1 - e^(P_days * ln(0.5) / 36525))
 played around with those in wolfram alpha; more guesses fit in longer time periods
+
+both OTP and TOTP have strength calculations related to the geometric distribution or birthday problem 🧮
 */
 export const totp_guard_wrong_guesses = 6//only let a first factor authenticated user enter 6 wrong code guesses
 export const totp_guard_horizon = Time.day//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess

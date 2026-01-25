@@ -11,7 +11,7 @@ Data, decryptData, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
-randomCode, hashPrefix,
+otpGenerate, otpPrefix,
 makePlain, makeObject, makeText,
 safefill, deindent,
 isInSimulationMode, ageNow, prefixTags,
@@ -812,17 +812,17 @@ async function otpPermit({letter, v}) {
 	//use trail to find out how many codes we've sent to this address
 	let rows5 = await trailGet(
 		safefill`OTP opened challenge: address ${v.f0}`,
-		Code.week)//those over the past 5 days
-	let rows1 = rows5.filter(row => row.row_tick >= now - Code.day)//those in just the last 24 hours
+		otpConstants.week)//those over the past 5 days
+	let rows1 = rows5.filter(row => row.row_tick >= now - otpConstants.day)//those in just the last 24 hours
 
-	if (rows1.length >= Code.limitHard) {//we've already sent 24 codes to this address in the last 24 hours!
+	if (rows1.length >= otpConstants.limitHard) {//we've already sent 24 codes to this address in the last 24 hours!
 		task.success = false
 		task.reason = 'CoolHard.'
 		return task//the hard limit is important to prevent an attacker from spamming their friend with useless unwanted codes
 	}
 
-	if (rows5.length >= Code.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
-		let cool = rows5[0].row_tick + Code.minutes//tick when this address cools down; first row in array will be most recently added
+	if (rows5.length >= otpConstants.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
+		let cool = rows5[0].row_tick + otpConstants.minutes//tick when this address cools down; first row in array will be most recently added
 		if (now < cool) {
 			task.success = false
 			task.reason = 'CoolSoft.'
@@ -831,7 +831,7 @@ async function otpPermit({letter, v}) {
 	}
 
 	task.success = true
-	task.useLength = rows5.length < Code.limitStrong ? Code.short : Code.standard
+	task.useLength = rows5.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard
 	return task
 }
 async function codePermit(address0) {
@@ -839,22 +839,22 @@ async function codePermit(address0) {
 
 	//use the code table to find out how many codes we've sent address
 	let rows = await code_get_address({address0})//get all the rows about the given address
-	let rowsWeek = rows.filter(row => row.row_tick >= now - Code.week)//those over the past 5 days
-	let rowsDay = rowsWeek.filter(row => row.row_tick >= now - Code.day)//those in just the last 24 hours
-	let rowsLive = rowsDay.filter(row => row.row_tick >= now - Code.expiration)//past 20 minutes, so could be active still
+	let rowsWeek = rows.filter(row => row.row_tick >= now - otpConstants.week)//those over the past 5 days
+	let rowsDay = rowsWeek.filter(row => row.row_tick >= now - otpConstants.day)//those in just the last 24 hours
+	let rowsLive = rowsDay.filter(row => row.row_tick >= now - otpConstants.expiration)//past 20 minutes, so could be active still
 
-	if (rowsDay.length >= Code.limitHard) {//we've already sent 10 codes to this address in the last 24 hours!
+	if (rowsDay.length >= otpConstants.limitHard) {//we've already sent 10 codes to this address in the last 24 hours!
 		return {success: false, reason: 'CoolHard.'}
 	}
 
-	if (rowsWeek.length >= Code.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
-		let cool = rowsWeek[0].row_tick + Code.minutes//tick when this address cooled down
+	if (rowsWeek.length >= otpConstants.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
+		let cool = rowsWeek[0].row_tick + otpConstants.minutes//tick when this address cooled down
 		if (now < cool) return {success: false, reason: 'CoolSoft.'}//hasn't happened yet
 	}
 
 	return {
 		success: true,
-		useLength: rowsWeek.length < Code.limitStrong ? Code.short : Code.standard,
+		useLength: rowsWeek.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard,
 		wouldReplace: (rowsLive.length && rowsLive[0].lives) ? rowsLive[0].row_tag : false,//include the code tag of a code that we sent to this address less than 20 minutes ago, and could still be verified. if you send a replacement code, you have to kill this one
 	}
 }
@@ -863,12 +863,12 @@ async function codePermit(address0) {
 async function otpCompose({useLength, provider, v, sticker}) {
 	let o = {
 		tag: Tag(),//identifier of this challenge, from which we can derive the prefix letter like Code Q 1234
-		answer: randomCode(useLength),//the correct answer, which we'll send to address and encrypt in envelope
+		answer: otpGenerate(useLength),//the correct answer, which we'll send to address and encrypt in envelope
 		start: Now(),//challenge creation time; user has 20 minutes from now to enter correct answer
 		provider: provider,
 		address: v,//validated address with three forms as well as .type like "Email." or "Phone."
 	}
-	let prefix = await hashPrefix(o.tag, Code.alphabet)
+	let prefix = await otpPrefix(o.tag, otpConstants.alphabet)
 	o.subjectText = `Code ${prefix} ${o.answer} for ${Key('message brand')}`
 	const warning = ` - Don't tell anyone, they could steal your whole account!`
 	sticker = sticker ? 'STICKER' : ''//gets replaced by the sticker on the lambda
@@ -881,8 +881,8 @@ async function codeCompose({length, sticker}) {
 	let c = {}
 
 	c.codeTag = Tag()
-	c.letter = await hashPrefix(c.codeTag, Code.alphabet)
-	c.code = randomCode(length)
+	c.letter = await otpPrefix(c.codeTag, otpConstants.alphabet)
+	c.code = otpGenerate(length)
 	c.hash = await hashText(c.codeTag+c.code)
 
 	c.subjectText = `Code ${c.letter} ${c.code} for ${Key('message brand')}`
@@ -934,13 +934,13 @@ async function codeSent({browserHash, provider, type, v, permit, code}) {
 	await browserChallengedAddress({browserHash, provider, type, v})
 
 	//record that we sent the new code
-	await code_add({codeTag: code.codeTag, browserHash, provider, type, v, hash: code.hash, lives: Code.guesses})
+	await code_add({codeTag: code.codeTag, browserHash, provider, type, v, hash: code.hash, lives: otpConstants.guesses})
 }
 
 //is this browser expecting any codes? needs to run fast!
 export async function browserToCodes({browserHash}) {
 	let rows = await queryTopSinceMatchGreater({table: 'code_table',
-		since: Now() - Code.expiration,//get not yet expired codes
+		since: Now() - otpConstants.expiration,//get not yet expired codes
 		title1: 'browser_hash', cell1: browserHash,//for this browser
 		title2: 'lives', cell2GreaterThan: 0,//that haven't been guessed to death or otherwise revoked
 	})
@@ -952,7 +952,7 @@ export async function browserToCodes({browserHash}) {
 				tick: row.row_tick,//when we sent the code
 				lives: row.lives,//how many guesses remain on this code
 
-				letter: await hashPrefix(row.row_tag, Code.alphabet),//the page could derive this but we'll do it
+				letter: await otpPrefix(row.row_tag, otpConstants.alphabet),//the page could derive this but we'll do it
 				addressType: row.type_text,//the type of address, like "Email."
 				address0: row.address0_text,
 				address1: row.address1_text,//the address we used with the api
@@ -976,7 +976,7 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 		safefill`OTP opened challenge: tag ${tag}`,
 		safefill`OTP closed challenge: tag ${tag}`,
 		safefill`OTP guessed wrong: tag ${tag}`,
-	], Code.expiration)//we need to find three different messages in the trail table, but it only takes one call out to supabase
+	], otpConstants.expiration)//we need to find three different messages in the trail table, but it only takes one call out to supabase
 
 	const openedHash = await hashText(safefill`OTP opened challenge: tag ${tag}`)
 	const closedHash = await hashText(safefill`OTP closed challenge: tag ${tag}`)
@@ -986,7 +986,7 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 	let closed = rows.find(r => r.hash == closedHash)//true if we found proof we closed this challenge in the same time horizon
 	let missed = rows.filter(r => r.hash == missedHash).length//number of wrong guesses we recorded on this challenge
 
-	if (!(opened && !closed && missed < Code.guesses)) { task.success = false; task.reason = 'Expired.'; return task }//make sure trail agrees that this is a challenge we opened, didn't close, and still has guesses; very unlikely, possible with race condition, or tampering; ok to treat like "Expired, please request a new code" rather than blowing up the page
+	if (!(opened && !closed && missed < otpConstants.guesses)) { task.success = false; task.reason = 'Expired.'; return task }//make sure trail agrees that this is a challenge we opened, didn't close, and still has guesses; very unlikely, possible with race condition, or tampering; ok to treat like "Expired, please request a new code" rather than blowing up the page
 
 	if (hasTextSame(guess, o.answer)) {//correct guess
 
@@ -1000,7 +1000,7 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 	} else {//wrong guess
 
 		await trailAdd(safefill`OTP guessed wrong: tag ${tag}`)//count this incorrect guess in the trail
-		let lives = Code.guesses - missed - 1//calculate remaining guesses this challenge can safely accept
+		let lives = otpConstants.guesses - missed - 1//calculate remaining guesses this challenge can safely accept
 
 		if (lives <= 0) {//expired by too many wrong guesses
 
@@ -1030,7 +1030,7 @@ export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 		toss('page', {browserHash, codeTag, codeCandidate, row})//very unusual, like from a tampered-with page
 	}
 
-	if (row.row_tick + Code.expiration < now) {//too late, respond with lives 0 to tell the page the user needs to request a new code
+	if (row.row_tick + otpConstants.expiration < now) {//too late, respond with lives 0 to tell the page the user needs to request a new code
 		return {success: false, reason: 'Expired.', lives: 0}
 	}
 
@@ -1083,7 +1083,7 @@ export async function codeEnter({browserHash, codeTag, codeCandidate}) {
 //  \___\___/ \__,_|\___|  \__\__,_|_.__/|_|\___|
 //                                               
 
-export const Code = {//factory settings for address verification codes
+export const otpConstants = {//factory settings for address verification codes 📟
 
 	expiration: 20*Time.minute,//For each code: dead in 20 minutes,
 	guesses:    4,             //and dead after 4 wrong guesses. Also, dead after issued replacement
@@ -1119,9 +1119,11 @@ export const Code = {//factory settings for address verification codes
 		With 4 guesses every hour:
 			Periods = 693000 / 4 ≈ 173250
 			Total time ≈ 173250 hours ≈ 173250/8760 ≈ 19.8 years
+
+	both OTP and TOTP have strength calculations related to the geometric distribution or birthday problem 🧮
 	*/
 }
-Object.freeze(Code)
+Object.freeze(otpConstants)
 
 grid(async () => {//otp: sanity check
 	let browserHash = random32()

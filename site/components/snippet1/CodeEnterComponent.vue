@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-takeNumerals, Code, sayTimePage,
+takeNumerals, sayTimePage,
 } from 'icarus'
 const mainStore = useMainStore()
 const pageStore = usePageStore()

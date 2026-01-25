@@ -2,7 +2,7 @@
 
 import {
 takeNumerals,
-hashPrefix, Code,
+otpPrefix, otpConstants,
 } from 'icarus'
 const refCookie = useOtpCookie()
 const pageStore = usePageStore()
@@ -15,7 +15,7 @@ const refInstruction = ref('')
 const refGuess = ref('')
 const refButton = ref(null)
 
-const prefix = await hashPrefix(props.otp.tag, Code.alphabet)
+const prefix = await otpPrefix(props.otp.tag, otpConstants.alphabet)
 
 let method
 if      (props.otp.address.type == 'Email.') method = 'email'
