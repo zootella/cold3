@@ -42,5 +42,5 @@ export default defineEventHandler((workerEvent) => {//nuxt runs middleware like 
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
 
-	setCookie(workerEvent, composeCookieName(), composeCookieValue(browserTag), Cookie.optionsForBrowser)//set response headers for when we send the response, telling the browser to save this tag for next time
+	setCookie(workerEvent, composeCookieName(), composeCookieValue(browserTag), cookieOptions.browser)//set response headers for when we send the response, telling the browser to save this tag for next time
 })

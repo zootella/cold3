@@ -23,7 +23,7 @@ We re-export plain helper functions from icarus here, and Nuxt's auto-import mak
 in Lambda files you still have to import these from Icarus manually, but that's fine because the Lambda side is small
 */
 import {
-Cookie,
+cookieOptions,
 } from 'icarus'//first, we have to import things from icarus that we're going to use in this file
 export {//exporting this full list of icarus functions and objects makes them available in all Vue components
 
@@ -50,7 +50,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 Key, doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookieValue, Cookie,
+composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
 
 } from 'icarus'
 
@@ -65,8 +65,8 @@ composeCookieName, composeCookieValue, parseCookieValue, Cookie,
 Beyond that, we define some functions here. Why are these here intead of in one of the lower levels of the Icarus library? Because they need to call other Nuxt composables, like useCookie. These are defined here, but won't work in Icarus, which is isomorphic and framework-agnostic. Cookie *options* can live in icarus (plain objects), but the useCookie() *call* must happen here.
 */
 
-export function useOtpCookie() { return useCookie('temporary_envelope_otp', {...Cookie.optionsForEnvelope}) }
-export function useTotpCookie() { return useCookie('temporary_envelope_totp', {...Cookie.optionsForEnvelope}) }//useCookie probably doesn't change or add to the options object we give it, but let's spread a fresh copy for each call, just in case
+export function useOtpCookie() { return useCookie('temporary_envelope_otp', {...cookieOptions.envelope}) }
+export function useTotpCookie() { return useCookie('temporary_envelope_totp', {...cookieOptions.envelope}) }//useCookie probably doesn't change or add to the options object we give it, but let's spread a fresh copy for each call, just in case
 
 //  _     _     _                                    _                      _        _       
 // | |__ (_)___| |_ ___  _ __ _   _   _ __ ___ _ __ | | __ _  ___ ___   ___| |_ __ _| |_ ___ 

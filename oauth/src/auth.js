@@ -4,7 +4,7 @@ import {
 defined, toss, log, look, Time, Now, Limit, hasTag,
 isCloud, Key, decryptKeys,
 sealEnvelope, openEnvelope, hashText,
-composeCookieName, composeCookieValue, parseCookieValue, Cookie,
+composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
 originApex,
 } from 'icarus'
 

@@ -32,7 +32,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 Key, doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookieValue, Cookie,
+composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
 
 } from 'icarus'
 const whatWeImported = {//we could import * to avoid duplicating the list, but that would make things harder on the tree shaker; ESM doesn't have a way to import a dynamic list (which makes sense) nor a way to get a list that was imported
@@ -60,7 +60,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 Key, doorWorker, doorLambda,
 Task, fetchWorker, fetchLambda, fetchProvider,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookieValue, Cookie,
+composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
 
 }
 export default defineNitroPlugin((nitroApp) => {

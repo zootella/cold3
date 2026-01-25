@@ -365,8 +365,8 @@ export function parseCookieValue(value) {
 	return false//if any of that didn't work, don't throw, just return false
 }
 
-export const Cookie = {
-	optionsForBrowser: Object.freeze({
+export const cookieOptions = {
+	browser: Object.freeze({
 		path: '/',//send for all routes
 		httpOnly: true,//page script can't see or change; more secure than local storage!
 		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
@@ -377,10 +377,10 @@ export const Cookie = {
 		}),//running locally, don't include domain property at all, clever use of the spread operator to accomplish this in a literal
 	}),
 	/*
-	the 3 constants, 3 functions, and optionsForBrowser above are all for cookieMiddleware/browserTag/browserHash on the server side.
+	the 3 constants, 3 functions, and browser above are all for cookieMiddleware/browserTag/browserHash on the server side.
 	🍪 Additionally, Vue components for OTP and TOTP keep encrypted envelopes in temporary cookies to keep a note from the server between enrollment steps that survives browser reload, using these very different cookie settings:
 	*/
-	optionsForEnvelope: Object.freeze({
+	envelope: Object.freeze({
 		path: '/',//we could restrict to certain routes, but this is simpler
 		httpOnly: false,//true would mean page script couldn't read it
 		sameSite: 'Strict',//browser will include cookie in requests to our server only, which doesn't read it, this is the most restrictive setting, there isn't one for "don't send it at all"
