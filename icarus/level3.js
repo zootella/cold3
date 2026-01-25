@@ -198,6 +198,7 @@ Object.freeze(otpConstants)
 
 
 
+//ok next let's try inlining the three send helpers
 
 
 
@@ -207,9 +208,57 @@ export async function otpSend({letter, v, provider, browserHash}) {
 	//look up the user tag, even though we're not using it with otp yet
 	let userTag = (await credentialBrowserGet({browserHash}))?.userTag
 
+	//Send Step 1: Permit - are we allowed to send another code to this address right now?
+	async function otpPermit({letter, v}) {
+		let task = Task({name: 'otp permit'})
+		const now = Now()
+
+		//use trail to find out how many codes we've sent to this address
+		let rows5 = await trailGet(
+			safefill`OTP opened challenge: address ${v.f0}`,
+			otpConstants.week)//those over the past 5 days
+		let rows1 = rows5.filter(row => row.row_tick >= now - otpConstants.day)//those in just the last 24 hours
+
+		if (rows1.length >= otpConstants.limitHard) {//we've already sent 24 codes to this address in the last 24 hours!
+			task.success = false
+			task.reason = 'CoolHard.'
+			return task//the hard limit is important to prevent an attacker from spamming their friend with useless unwanted codes
+		}
+
+		if (rows5.length >= otpConstants.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
+			let cool = rows5[0].row_tick + otpConstants.minutes//tick when this address cools down; first row in array will be most recently added
+			if (now < cool) {
+				task.success = false
+				task.reason = 'CoolSoft.'
+				return task//the soft limit is important for usability within security; we slow the user down, encourage them to actually check their spam folder rather than spamming themselves another replacement code!
+			}
+		}
+
+		task.success = true
+		task.useLength = rows5.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard
+		return task
+	}
 	let permit = await otpPermit({letter, v})
 	if (!permit.success) return permit
 
+	//make a new random code and compose message text about it
+	async function otpCompose({useLength, provider, v, sticker}) {
+		let o = {
+			tag: Tag(),//identifier of this challenge, from which we can derive the prefix letter like Code Q 1234
+			answer: otpGenerate(useLength),//the correct answer, which we'll send to address and encrypt in envelope
+			start: Now(),//challenge creation time; user has 20 minutes from now to enter correct answer
+			provider: provider,
+			address: v,//validated address with three forms as well as .type like "Email." or "Phone."
+		}
+		let prefix = await otpPrefix(o.tag, otpConstants.alphabet)
+		o.subjectText = `Code ${prefix} ${o.answer} for ${Key('message brand')}`
+		const warning = ` - Don't tell anyone, they could steal your whole account!`
+		sticker = sticker ? 'STICKER' : ''//gets replaced by the sticker on the lambda
+
+		o.messageText = `${o.subjectText}${warning}${sticker}`
+		o.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${o.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
+		return o
+	}
 	let o = await otpCompose({useLength: permit.useLength, provider, v, sticker: true})
 	if (!isInSimulationMode()) {//ttd january, have grid tests work but not actually send messages or need net23 local running
 		await fetchLambda('/message', {body: {
@@ -221,92 +270,45 @@ export async function otpSend({letter, v, provider, browserHash}) {
 			messageHtml: o.messageHtml,
 		}})
 	}
+	//what it looks like to use these functions to send a code
+	async function otpSent({letter, o, browserHash}) {
+
+		//take care of address_table and maybe also service_table, ttd january
+		await browserChallengedAddress({browserHash, provider: o.provider, type: o.address.type, v: o.address})
+
+		let s = {//o is big, with text and HTML message text; pick just what otpEnter needs to keep the envelope cookie small
+			tag: o.tag,
+			answer: o.answer,
+			start: o.start,
+			address: {
+				ok: o.address.ok,
+				f0: o.address.f0,
+				f1: o.address.f1,
+				f2: o.address.f2,
+				type: o.address.type,
+			},
+		}//3 of these smaller objects encrypt and encode to around a quarter of the browser enforced 4kib cookie size limit
+
+		let messages = []
+		let x = letter.otps.find(f => f.address.f0 == o.address.f0)//look for a preexisting challenge x to this same address
+		if (x) {//if we found one, the new one o must replace it
+			messages.push(safefill`OTP closed challenge: tag ${x.tag}`)//close x on the trail
+			letter.otps = letter.otps.filter(f => f.tag != x.tag)//remove x from the letter
+		}
+		letter.otps.push(s)//smaller version of o, cherry picked above 🍒
+		messages.push(safefill`OTP opened challenge: address ${o.address.f0}`)//record we bothered this address
+		messages.push(safefill`OTP opened challenge: tag ${o.tag}`)//record we created this challenge
+		await trailAddMany(messages)
+	}
 	await otpSent({letter, o, browserHash})
 
 	let task = Task({name: 'otp send'})
 	task.success = true
 	return task//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
-//can we send another code to this address now?
-async function otpPermit({letter, v}) {
-	let task = Task({name: 'otp permit'})
-	const now = Now()
 
-	//use trail to find out how many codes we've sent to this address
-	let rows5 = await trailGet(
-		safefill`OTP opened challenge: address ${v.f0}`,
-		otpConstants.week)//those over the past 5 days
-	let rows1 = rows5.filter(row => row.row_tick >= now - otpConstants.day)//those in just the last 24 hours
 
-	if (rows1.length >= otpConstants.limitHard) {//we've already sent 24 codes to this address in the last 24 hours!
-		task.success = false
-		task.reason = 'CoolHard.'
-		return task//the hard limit is important to prevent an attacker from spamming their friend with useless unwanted codes
-	}
 
-	if (rows5.length >= otpConstants.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
-		let cool = rows5[0].row_tick + otpConstants.minutes//tick when this address cools down; first row in array will be most recently added
-		if (now < cool) {
-			task.success = false
-			task.reason = 'CoolSoft.'
-			return task//the soft limit is important for usability within security; we slow the user down, encourage them to actually check their spam folder rather than spamming themselves another replacement code!
-		}
-	}
-
-	task.success = true
-	task.useLength = rows5.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard
-	return task
-}
-
-//make a new random code and compose message text about it
-async function otpCompose({useLength, provider, v, sticker}) {
-	let o = {
-		tag: Tag(),//identifier of this challenge, from which we can derive the prefix letter like Code Q 1234
-		answer: otpGenerate(useLength),//the correct answer, which we'll send to address and encrypt in envelope
-		start: Now(),//challenge creation time; user has 20 minutes from now to enter correct answer
-		provider: provider,
-		address: v,//validated address with three forms as well as .type like "Email." or "Phone."
-	}
-	let prefix = await otpPrefix(o.tag, otpConstants.alphabet)
-	o.subjectText = `Code ${prefix} ${o.answer} for ${Key('message brand')}`
-	const warning = ` - Don't tell anyone, they could steal your whole account!`
-	sticker = sticker ? 'STICKER' : ''//gets replaced by the sticker on the lambda
-
-	o.messageText = `${o.subjectText}${warning}${sticker}`
-	o.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${o.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
-	return o
-}
-
-//what it looks like to use these functions to send a code
-async function otpSent({letter, o, browserHash}) {
-
-	//take care of address_table and maybe also service_table, ttd january
-	await browserChallengedAddress({browserHash, provider: o.provider, type: o.address.type, v: o.address})
-
-	let s = {//o is big, with text and HTML message text; pick just what otpEnter needs to keep the envelope cookie small
-		tag: o.tag,
-		answer: o.answer,
-		start: o.start,
-		address: {
-			ok: o.address.ok,
-			f0: o.address.f0,
-			f1: o.address.f1,
-			f2: o.address.f2,
-			type: o.address.type,
-		},
-	}//3 of these smaller objects encrypt and encode to around a quarter of the browser enforced 4kib cookie size limit
-
-	let messages = []
-	let x = letter.otps.find(f => f.address.f0 == o.address.f0)//look for a preexisting challenge x to this same address
-	if (x) {//if we found one, the new one o must replace it
-		messages.push(safefill`OTP closed challenge: tag ${x.tag}`)//close x on the trail
-		letter.otps = letter.otps.filter(f => f.tag != x.tag)//remove x from the letter
-	}
-	letter.otps.push(s)//smaller version of o, cherry picked above 🍒
-	messages.push(safefill`OTP opened challenge: address ${o.address.f0}`)//record we bothered this address
-	messages.push(safefill`OTP opened challenge: tag ${o.tag}`)//record we created this challenge
-	await trailAddMany(messages)
-}
 
 
 
