@@ -41,7 +41,7 @@ It's the underworld to Icarus's sky, so chat suggested "Persephone," queen of be
 */
 
 //(4) same pattern as in 3; used only in net23 lambda [see also 1-3 in icarus/level1.js]
-let _amazon, _twilio, _sharp
+let _amazon, _twilio, _sharp, _bucket
 async function amazonDynamicImport() {
 	if (!_amazon) {
 		let [ses, sns] = await Promise.all([
@@ -70,6 +70,16 @@ async function sharpDynamicImport() {
 		_sharp = {sharp: sharp.default}
 	}
 	return _sharp
+}
+export async function bucketDynamicImport() {
+	if (!_bucket) {
+		let [clientS3, presigner] = await Promise.all([
+			import('@aws-sdk/client-s3'),
+			import('@aws-sdk/s3-request-presigner'),
+		])
+		_bucket = {clientS3, presigner}
+	}
+	return _bucket
 }
 
 export async function warm() {
@@ -233,6 +243,17 @@ test(async () => {//test that we can use sharp, which relies on native libraries
 	}).png().toBuffer()//render it as PNG; returns a Node Buffer, which is a subclass of Uint8Array
 	let d = Data({array: b})
 	ok(d.base64().startsWith('iVBORw0KGgo'))//headers at the start are the same for every image
+})
+test(async () => {//test s3 modules load and have expected exports
+	const {clientS3, presigner} = await bucketDynamicImport()
+	const {S3Client, CreateMultipartUploadCommand} = clientS3
+	const {getSignedUrl} = presigner
+	ok(typeof S3Client == 'function')
+	ok(typeof CreateMultipartUploadCommand == 'function')
+	ok(typeof getSignedUrl == 'function')
+
+	let client = new S3Client({region: Key('amazon region, public')})//verify we can instantiate an S3Client
+	ok(client.config)
 })
 
 //ttd november2024, before the automated tests above, here's the code that would throw and let you see the exception in a regular valid 200 OK from the lambda back to the worker's POST, which would return it back up to the page. keeping this around because this is the pattern to let you see what's going on in a presently/hopefully temporarily broken lambda

@@ -23,8 +23,10 @@
 		"twilio": "^5.3.5"
 	},
 	"devDependencies": {
+		"@aws-sdk/client-s3": "^3.975.0",
 		"@aws-sdk/client-ses": "^3.682.0",
 		"@aws-sdk/client-sns": "^3.682.0",
+		"@aws-sdk/s3-request-presigner": "^3.975.0",
 		"@vercel/nft": "^0.29.2",
 		"fs-extra": "^11.2.0",
 		"serverless": "^4.4.11",
