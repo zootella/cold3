@@ -596,3 +596,5 @@ yarn add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 ```
 
 **Done when:** `yarn build` succeeds in net23, and test output confirms S3 modules load.
+
+note to wash before yarn add, as always
