@@ -231,6 +231,7 @@ let stream = file.stream()
 |------|---------|
 | `net23/serverless.yml` | Infrastructure: S3 bucket, CloudFront, Lambda functions |
 | `net23/vhs.cjs` | CloudFront Function: Signature verification |
+| `net23/persephone/persephone.js` | `bucketDynamicImport()`: S3 SDK module loading |
 | `icarus/level3.js` | `vhsSign()`: Signature creation |
 | `icarus/level1.js` | `hashFile()`, `hashStream()`: File hashing |
 | `icarus/level1.js` | `uppyDynamicImport()`: Uppy module loading |
@@ -246,6 +247,7 @@ let stream = file.stream()
 - VhsDemo proof of concept displaying signed images
 - Uppy integrated and rendering in Cloudflare Workers environment
 - Hash functions tested across all target environments
+- S3 SDK modules loaded via `bucketDynamicImport()` in persephone.js (tested local and deployed)
 
 ## Implementation Plan
 
@@ -319,45 +321,6 @@ These choices fit our serverless stack (Cloudflare Worker + AWS Lambda + Browser
 **The result:** Browser ↔ Lambda (AWS operations) ↔ S3. Browser calls Lambda directly for upload orchestration, then uploads parts directly to S3 via presigned URLs. Worker is not in the upload path (auth token will be obtained from Worker separately, later). Small files work. Large files work. Resume works. One path.
 
 ---
-
-**What exists:**
-- `@uppy/aws-s3` package in `site/package.json`, loaded via `uppyDynamicImport()`
-- `vhs-net23-cc` S3 bucket defined in `net23/serverless.yml`
-- Lambda pattern established: `doorLambda` wrapper, async handler, body/door params
-- `up2.js` is a production Lambda (Uppy uses it to confirm server liveness) - leave it alone
-- New `/upload` Lambda will be created alongside existing ones, following same patterns, calling into `persephone.js` for AWS SDK modules
-
-**What we need to add:**
-
-1. **S3 CORS configuration** - Browser PUT requires CORS on the bucket:
-   - Configure in `serverless.yml` as `CorsConfiguration` on the VHSBucket resource
-   - AllowedOrigins from .env variables (not hardcoded): `${env:CORS_ORIGIN_APEX}`, `${env:CORS_ORIGIN_LOCAL}`
-   - Add to `net23/.env`: `CORS_ORIGIN_APEX=https://cold3.cc` and `CORS_ORIGIN_LOCAL=http://localhost:3000`
-   - Follows existing pattern with `ACCESS_AMAZON_CERTIFICATE`
-   - AllowedMethods: PUT (for part uploads)
-   - AllowedHeaders: content-type, etc.
-   - ExposeHeaders: ETag (needed for multipart - client must read ETag from each part response)
-
-2. **Lambda CORS configuration** - Browser calls Lambda directly, so API Gateway needs CORS:
-   - Enable CORS on the `/upload` endpoint in serverless.yml
-   - Same .env variables for AllowedOrigins: `${env:CORS_ORIGIN_APEX}`, `${env:CORS_ORIGIN_LOCAL}`
-   - In JS code (UppyDemo.vue), use `origin23()` for Lambda base URL - already handles cloud/local switching
-
-3. **IAM permissions for Lambda** - Currently only has ses/sns. Add:
-   - `s3:PutObject` on `arn:aws:s3:::vhs-net23-cc/*`
-   - `s3:CreateMultipartUpload`, `s3:UploadPart`, `s3:CompleteMultipartUpload`, `s3:AbortMultipartUpload`, `s3:ListParts`
-
-4. **AWS SDK packages** - Add to net23/package.json (yarn add when ready):
-   - `@aws-sdk/client-s3`
-   - `@aws-sdk/s3-request-presigner`
-   - Dynamic imports in `persephone.js` alongside existing `@aws-sdk/client-ses` and `@aws-sdk/client-sns` patterns
-
-5. **Upload Lambda** - Single endpoint with action parameter:
-   - Actions: `create`, `sign-part`, `complete`, `abort`, `list-parts`
-   - Uses AWS SDK v3 for S3 operations
-   - Keeps all AWS/S3 logic in Lambda-land, away from Nuxt/Cloudflare
-
-6. **Uppy plugin configuration** - In UppyDemo.vue, add aws-s3 plugin with multipart callbacks calling Lambda directly
 
 **Flow (multipart, browser → Lambda direct):**
 ```
@@ -560,41 +523,153 @@ Key details:
 - **Browser → Lambda direct** (not through Worker) - reduces round-trips, matches common patterns
 - **Single Lambda with action parameter** - one endpoint, less config churn
 - **Auth deferred** - smoke test runs open, then add envelope token soon after
-
-### Remaining questions:
-- S3 key format for now? Timestamp + filename? (Later: hash-based for content-addressable)
-- CORS origins: just cold3.cc, or also localhost:3000 for dev?
-
-**Smoke test goal:** Get a small file uploaded through the full multipart flow. Even though it's one part, it validates the entire pipeline: browser → Lambda (CORS) → S3 (presigned URL) → S3 (complete).
+- **S3 key format** - timestamp + filename for now (later: hash-based for content-addressable)
+- **CORS origins** - both cold3.cc and localhost:3000 for dev
 
 ---
 
 ## Next Steps
 
-### Step 1: Add AWS SDK S3 Modules
+### Step 1: Add AWS SDK S3 Modules ✓
 
-**In net23 workspace, add packages:**
-```bash
-cd net23
-yarn add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+**Completed.** Added S3 packages to net23 as devDependencies (same pattern as SES/SNS - AWS SDK v3 is pre-installed on Lambda, packages just needed for local development):
+
+```json
+"@aws-sdk/client-s3": "^3.975.0",
+"@aws-sdk/s3-request-presigner": "^3.975.0",
 ```
 
-**In persephone.js, add dynamic imports** alongside existing ses/sns pattern:
+Added `bucketDynamicImport()` in `persephone.js`:
+
 ```javascript
-// follow existing pattern for @aws-sdk/client-ses and @aws-sdk/client-sns
-// add similar dynamic imports for:
-// - S3Client, CreateMultipartUploadCommand, UploadPartCommand,
-//   CompleteMultipartUploadCommand, AbortMultipartUploadCommand, ListPartsCommand
-//   from "@aws-sdk/client-s3"
-// - getSignedUrl from "@aws-sdk/s3-request-presigner"
+export async function bucketDynamicImport() {
+	if (!_bucket) {
+		let [clientS3, presigner] = await Promise.all([
+			import('@aws-sdk/client-s3'),
+			import('@aws-sdk/s3-request-presigner'),
+		])
+		_bucket = {clientS3, presigner}
+	}
+	return _bucket
+}
 ```
 
-**Add test() to confirm modules load:**
-```javascript
-// in persephone.js test section, add sanity check that S3 modules import correctly
-// similar to existing tests for ses/sns
+Test verifies all multipart commands load: `S3Client`, `CreateMultipartUploadCommand`, `UploadPartCommand`, `CompleteMultipartUploadCommand`, `AbortMultipartUploadCommand`, `ListPartsCommand`, plus `getSignedUrl` from presigner. Tested local and deployed.
+
+### Step 2: Create Upload Lambda Endpoint
+
+Create the `/upload` Lambda that handles multipart S3 operations. Browser calls this directly (not through Worker; but soon, submitting a signed envelope of access permissions that it got in a previous call to Worker).
+
+**2a. Lambda handler code** - New file `net23/src/upload.js`:
+- Follow existing Lambda patterns (`doorLambda` wrapper, async handler)
+- Single endpoint with `action` parameter: `create`, `sign-part`, `complete`, `abort`, `list-parts`
+- Use `bucketDynamicImport()` from persephone.js to get S3 client and commands
+- Bucket name: `vhs-net23-cc`
+- S3 key format: `uploads/${timestamp}-${filename}`
+
+**2b. serverless.yml changes:**
+- Add function definition for upload-lambda
+- Add HTTP POST route `/upload`
+- Add IAM permissions for S3 multipart operations:
+  - `s3:PutObject`, `s3:GetObject` on `arn:aws:s3:::vhs-net23-cc/*`
+  - `s3:ListBucket` on `arn:aws:s3:::vhs-net23-cc` (needed for ListParts)
+- Add CORS on the endpoint (AllowedOrigins from .env variables)
+
+**2c. CORS environment variables** - Add to `net23/.env`:
+```
+ACCESS_ORIGIN_APEX_CLOUD=https://cold3.cc
+ACCESS_ORIGIN_APEX_LOCAL=http://localhost:3000
+# comment right in .env about how this mirrors isCloud() t/f for originApex()
+```
+These match `originApex()` values from icarus (cloud and local). Both allowed because:
+- Production: browser on cold3.cc calls Lambda deployed
+- Development: browser on localhost:3000 calls Lambda (local or deployed)
+
+**2d. S3 bucket CORS** - Add `CorsConfiguration` to VHSBucket resource:
+- AllowedOrigins: `${env:ACCESS_ORIGIN_APEX_CLOUD}`, `${env:ACCESS_ORIGIN_APEX_LOCAL}`
+- AllowedMethods: PUT
+- AllowedHeaders: content-type, etc.
+- ExposeHeaders: ETag (client must read this from part upload responses)
+
+**Security note:** CORS with localhost is safe because CORS isn't the security boundary—it only affects browser same-origin policy (attackers bypass it with curl). Real security comes from envelope authentication added later: Lambda will require a valid envelope (using `sealEnvelope`) that only code with `.env.keys` can create. Developers have keys locally; production Worker has keys and issues envelopes based on user permissions. An attacker with the open source code but without `.env.keys` cannot forge valid envelopes.
+
+**Done when:** Lambda deploys, and a manual curl/fetch test to the endpoint returns a response (even an error response confirms the Lambda is reachable and CORS is working).
+
+---
+
+### Step 2.5: Page-Direct Endpoint (Not Using Door)
+
+The door system (`doorLambda` in `icarus/level2.js`) is purpose-built for server-to-server communication: Worker → Lambda. It explicitly blocks page requests because the Network 23 API is "exclusively for server to server communication; no pages allowed."
+
+The `/upload` endpoint is different: pages call it directly. We must not use `doorLambda`, and instead handle things ourselves.
+
+#### What Door Provides (and what we need)
+
+**doorLambdaOpen (setup phase):**
+| Door does | Upload needs? | Notes |
+|-----------|---------------|-------|
+| `decryptKeys('lambda', sources)` | ✓ Yes | Need to call `Key()` for bucket name, region |
+| `door.task = Task({...})` | ✓ Yes | Logging, performance tracking |
+| Save `lambdaEvent`, `lambdaContext` | Maybe | Useful for debugging |
+| `checkForwardedSecure(headers)` | ✓ Yes | Pages should still use HTTPS |
+| `checkOriginOmitted(headers)` | ✗ No | **This blocks pages** - they always have Origin |
+| Parse body with `makeObject()` | ✓ Yes | Need to parse JSON body |
+
+**doorLambdaCheck (validation phase):**
+| Door does | Upload needs? | Notes |
+|-----------|---------------|-------|
+| `openEnvelope('Network23.', ...)` | Different | We'll use a different envelope type for page auth |
+| `checkActions({action, actions})` | ✓ Yes | Already works - validates action format and allowed list |
+
+**doorLambdaShut (cleanup phase):**
+| Door does | Upload needs? | Notes |
+|-----------|---------------|-------|
+| `door.task.finish()` | ✓ Yes | End timing |
+| `logAlert()` on error | ✓ Yes | Staff notification |
+| Format response for Lambda | ✓ Yes | `{statusCode, headers, body}` |
+| `awaitDoorPromises()` | ✓ Yes | Ensure logging completes before Lambda exits |
+| Return `null` on error | Different | See below |
+
+#### Error Response Strategy (Critical Difference)
+
+Door returns `null` on errors, which becomes a 500. The Worker catches this, logs it, returns 500 to the page, and the page's `fetchWorker` throws. Staff sees the error in Datadog; the page sees nothing sensitive.
+
+For page-direct calls, we must be careful what we return:
+- **On success:** Return the data (uploadId, key, url, etc.)
+- **On expected errors** (bad input, validation failure): Return `{error: 'brief message'}` with 400
+- **On unexpected errors** (S3 failure, code bug): Log to Datadog, return generic `{error: 'upload failed'}` with 500
+
+Never leak: stack traces, internal variable names, secret values, S3 error details that reveal bucket structure.
+
+#### What We'll Implement
+
+The upload Lambda will have its own lightweight door-like wrapper:
+
+```
+1. Setup (like doorLambdaOpen, minus origin check):
+   - decryptKeys()
+   - Task creation
+   - Body parsing
+   - checkForwardedSecure()
+
+2. Validation:
+   - checkActions() - already done in current code via doorLambda
+   - Envelope check (later, with page-appropriate envelope type)
+
+3. Handler:
+   - The S3 operations (already written)
+
+4. Cleanup (like doorLambdaShut, with page-safe errors):
+   - task.finish()
+   - On error: logAlert(), return sanitized error
+   - On success: return data
+   - awaitDoorPromises()
 ```
 
-**Done when:** `yarn build` succeeds in net23, and test output confirms S3 modules load.
+#### Why Not Modify Door?
 
-note to wash before yarn add, as always
+Door is correctly opinionated for its use case. Adding flags or modes would make it complex and error-prone. Better to have two clear patterns:
+- `doorLambda` for Worker → Lambda (authenticated, trusted, can speak freely)
+- A simpler pattern for Page → Lambda (untrusted, must sanitize everything)
+
+The upload Lambda is currently the only page-direct endpoint. If we add more, we could factor out a `doorLambdaPage` helper, but for now inline code is clearer.

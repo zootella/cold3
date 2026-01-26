@@ -187,6 +187,7 @@ noop(() => {//fuzz test round trip with random moments from 1970 to 2100
 	}
 	log(`round trip fuzz tested ${commas(cycles)} cycles in ${seconds} seconds`)
 })
+//ttd january, so what you could add to tickToText/textToTick next is it doesn't include the 0s at the end, as in, valid includes "1990" and "2003jun" and "2016mar15" and "1984dec25.13" so you can do just year, month, day, hour, if you do minute it has to be four digits at teh end, so that part can be omitted, or length 2, or length 4, and then seconds in milliseconds is the last part which is already variable length and can be present or absent. yeah, ifyou do this then this form is useful for routes, all of a sudden. and it's still reversible, some moments in time are just shorter, even if you use this to capture random moments in time. this is a cool idea. write a second smoke test which confirms round trip is correct even tight within a single jan1, within a single month, etc
 
 //  _                
 // | |_ ___  ___ ___ 

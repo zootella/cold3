@@ -24,6 +24,15 @@ provider:
           Action:
             - ses:* #give them full run of the messaging apis
             - sns:*
+        - Effect: Allow #settings to allow pages to upload files to the bucket
+          Resource: 'arn:aws:s3:::vhs-net23-cc'
+          Action:
+            - s3:ListBucket #needed for ListParts
+        - Effect: Allow
+          Resource: 'arn:aws:s3:::vhs-net23-cc/*'
+          Action:
+            - s3:PutObject
+            - s3:GetObject
 
 functions:
   gate-get-lambda:
@@ -72,6 +81,18 @@ functions:
       - http:
           path: /up3
           method: post
+  upload:
+    handler: src/upload.handler
+    timeout: 25
+    events:
+      - http:
+          path: /upload
+          method: post
+          cors: #the other lambdas can only be contacted by workers, which have no origin; but pages at the local and cloud domains must be able to contact /upload directly to be able to upload directly from page to bucket; envelope protects from misuse 
+            origin: '${env:ACCESS_ORIGIN_APEX_CLOUD},${env:ACCESS_ORIGIN_APEX_LOCAL}' #allow both local and cloud all the time
+            headers:
+              - Content-Type
+            allowCredentials: false #don't send cookies; our code will check body.envelope as authenticated permission
 
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization
@@ -86,7 +107,18 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: vhs-net23-cc
-        AccessControl: Private
+        AccessControl: Private #nobody can download from this bucket; media goes out through the cloudfront distribution
+        CorsConfiguration: #but pages at the cloud and local domains for the Nuxt site can PUT into the bucket
+          CorsRules:
+            - AllowedOrigins:
+                - ${env:ACCESS_ORIGIN_APEX_CLOUD}
+                - ${env:ACCESS_ORIGIN_APEX_LOCAL}
+              AllowedMethods:
+                - PUT
+              AllowedHeaders:
+                - Content-Type
+              ExposeHeaders:
+                - ETag
     #ttd may2025, move the buckets from serverless.yml (configuration-as-code) to net23.txt (manual configuration) to keep their contents safe from the automatic teardown; your hopefull expectation is that since they have universally unique names, it'll be easy for the distributions, and perhaps even the access identities and bucket policies, to still reside here
 
     WWWBucketPolicy: #define a policy for a bucket to allow cloudfront access
