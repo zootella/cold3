@@ -374,7 +374,7 @@ uppy.use(AwsS3, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'create',
+        action: 'Create.',
         filename: file.name,
         contentType: file.type
       })
@@ -387,7 +387,7 @@ uppy.use(AwsS3, {
     const res = await fetch(`${origin23()}/upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sign-part', uploadId, key, partNumber })
+      body: JSON.stringify({ action: 'SignPart.', uploadId, key, partNumber })
     })
     const { url } = await res.json()
     return { url }
@@ -397,7 +397,7 @@ uppy.use(AwsS3, {
     const res = await fetch(`${origin23()}/upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'complete', uploadId, key, parts })
+      body: JSON.stringify({ action: 'Complete.', uploadId, key, parts })
     })
     return await res.json()
   },
@@ -406,7 +406,7 @@ uppy.use(AwsS3, {
     await fetch(`${origin23()}/upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'abort', uploadId, key })
+      body: JSON.stringify({ action: 'Abort.', uploadId, key })
     })
   },
 
@@ -414,7 +414,7 @@ uppy.use(AwsS3, {
     const res = await fetch(`${origin23()}/upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'list-parts', uploadId, key })
+      body: JSON.stringify({ action: 'ListParts.', uploadId, key })
     })
     return await res.json()  // array of { PartNumber, Size, ETag }
   }

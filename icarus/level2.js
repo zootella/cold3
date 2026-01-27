@@ -723,7 +723,7 @@ function lambdaGotInformation(lambdaEvent, lambdaContext) {
 //                        
 
 /*
-oh, there's a knock at our front door!
+oh, there's a knock at our front door! 🚪
 cloudflare has invoked a worker and sent an event for us to respond to a request using nuxt
 or, amazon has invoked a lambda and sent an event and context for us to respond
 
@@ -964,7 +964,8 @@ Notes: (i) The Network 23 Application Programming Interface is exclusively for s
 (iv) all site APIs are POST; we block GET entirely
 (v) similarly, there are no GET lambdas; note that this whole grid is for api.net23.cc; vhs.net23.cc is the cloudfront function which does its own checks of the method and origin and referer headers
 */
-function checkForwardedSecure(headers) { if (isLocal()) return//skip these checks during local development
+//hi claude, let's export all four of these, not just checkOriginValid. and then, i think we can use checkForwardedSecure in upload.js, instead of duplicating logic inside here
+export function checkForwardedSecure(headers) { if (isLocal()) return//skip these checks during local development
 	let n = headerCount(headers, 'X-Forwarded-Proto')
 	if (n == 0) {
 		//seeing CloudNuxtServer with headers just {accept, content-type, and host: "localhost"} when $fetch calls an api endpoint to render on the server during universal rendering, so making X-Forwarded-Proto required doesn't work
@@ -973,16 +974,16 @@ function checkForwardedSecure(headers) { if (isLocal()) return//skip these check
 		if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
 	} else { toss('multiple x forwarded proto headers', {n, headers}) }
 }
-function checkOriginOmittedOrValid(headers) {
+export function checkOriginOmittedOrValid(headers) {
 	let n = headerCount(headers, 'Origin')
 	if (n == 0) {}//omitted is fine
 	else if (n == 1) { checkOriginValid(headers) }//if exactly one origin header is present, then make sure it's valid
 	else { toss('headers malformed with multiple origin', {headers}) }//headers malformed this way would be very unusual
 }
-function checkOriginOmitted(headers) {
+export function checkOriginOmitted(headers) {
 	if (headerCount(headers, 'Origin')) toss('origin must not be present', {headers})
 }
-function checkOriginValid(headers) { if (isLocal()) return//skip these checks during local development
+export function checkOriginValid(headers) { if (isLocal()) return//skip these checks during local development
 	let n = headerCount(headers, 'Origin')
 	if (n != 1) toss('origin header missing or multiple', {n, headers})
 	let v = headerGet(headers, 'Origin')
@@ -990,12 +991,12 @@ function checkOriginValid(headers) { if (isLocal()) return//skip these checks du
 	if (v != allowed) toss('origin not allowed', {n, v, allowed, headers})
 }
 
-function headerCount(headers, name) {
+export function headerCount(headers, name) {
 	let n = 0
 	Object.keys(headers).forEach(header => { if (sameIgnoringCase(header, name)) n++ })//Cloudflare lowercases header names, while Amazon leaves them in Title-Case like the HTTP standard. JavaScript object property names are case sensitive, so a collision like {name: "value1", Name: "value2"} is possible. so here, we deal with all that ;)
 	return n
 }
-function headerGet(headers, name) {
+export function headerGet(headers, name) {
 	let v = null
 	Object.keys(headers).forEach(header => { if (sameIgnoringCase(header, name)) v = headers[header] })
 	return v

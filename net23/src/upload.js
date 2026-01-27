@@ -1,6 +1,35 @@
 
 import {
-Sticker, doorLambda, toss, log, look, defined, Task, Key, Now, tickToText,
+
+//manual icarus import block for upload lambda
+wrapper, Sticker, stickerParts, isLocal, isCloud,
+Now, Time, Size, Limit, newline,
+defined, toss, log, look,
+noop, test, ok,
+
+toBoolean, toTextOrBlank,
+checkInt, minInt,
+intToText, textToInt, commas,
+checkText, hasText, checkTextSame, hasTextSame,
+hasTextOrBlank, checkTextOrBlank,
+makePlain, makeObject, makeText,
+safefill, deindent,
+
+Tag, hasTag, checkTag, checkTagOrBlank,
+checkHash,
+
+dog, logAudit, logAlert,
+awaitDog, awaitLogAudit, awaitLogAlert,
+
+Key, doorWorker, doorLambda,
+Task, fetchWorker, fetchLambda, fetchProvider,
+sealEnvelope, openEnvelope,
+composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
+
+//and also import these references
+decryptKeys, checkActions, awaitDoorPromises, checkForwardedSecure, checkOriginValid,
+tickToText,
+
 } from 'icarus'
 
 import {
@@ -8,9 +37,66 @@ bucketDynamicImport,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return await doorLambda('POST', {actions: ['Create.', 'SignPart.', 'Complete.', 'Abort.', 'ListParts.'], lambdaEvent, lambdaContext, doorHandleBelow})
-	//(2) hi claude, ok so thanks for following the door pattern of our other endpoints, but please take a minute or two to review where this call goes, and everything the door system provides, and how all that works. so i think here we can' tuse door in the standard way, as this lambda is called by pages directly? the door system is just for standard endpoints which are protected and can only be called by authenticated workers. so here, i think we're going to have to look at what door does, lots of stuff, exception handling and routing, an dthen factor out of there the things the parts of that we need to do here. alternatively, we could alter door to be more permissive for this endpoint, but i think this isn't the rigth design choice.
+	return await uploadLambda('POST', {actions: ['Create.', 'SignPart.', 'Complete.', 'Abort.', 'ListParts.'], lambdaEvent, lambdaContext})//the other lambda handlers use doorLambda, but they're all for authenticated worker<->lambda communication. Here, pages need to upload to Amazon directly, so we can't use doorLambda. Instead, we copy over the patterns and protections from icarus to this one endpoint. 💦 Not very DRY, and if we ever have a second page<->lambda endpoint we may reconsider, ttd january
 }
+async function uploadLambda(method, {actions, lambdaEvent, lambdaContext}) {
+	try {
+		let door = {}, response, error
+		try {
+
+			await uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, door})
+			response = await uploadHandleBelow({
+				door,
+				body: door.body,
+				action: door.body?.action,
+			})
+
+		} catch (e) { error = e }
+		try {
+
+			let r = await uploadLambdaShut(door, response, error)
+			if (response && !error) return r
+
+		} catch (e2) { await logAlert('upload shut', {e2, door, response, error}) }
+	} catch (e3) { console.error('[OUTER]', e3) }
+	return {statusCode: 500, headers: {'Content-Type': 'application/json'}, body: null}
+}
+async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, door}) {
+	let sources = []
+	if (defined(typeof process) && process.env) {
+		sources.push({note: 'u10', environment: process.env})
+	}
+	await decryptKeys('lambda', sources)
+
+	door.task = Task({name: 'upload lambda'})//make a door object like icarus does for worker<>lambda calls
+	door.lambdaEvent = lambdaEvent
+	door.lambdaContext = lambdaContext
+
+	checkForwardedSecure(lambdaEvent.headers)//deployed, protocol must be https
+	if (method != lambdaEvent.httpMethod) toss('method mismatch', {method, door})//Uppy will PUT to S3, but the page must POST here
+	door.method = method
+	checkOriginValid(lambdaEvent.headers)//doorLambda checks Origin; here, pages call directly so we check origin is the Nuxt site
+
+	door.body = makeObject(lambdaEvent.body)//parse body
+	checkActions({action: door.body?.action, actions})//check action
+	door.letter = await openEnvelope('Net23Upload.', door.body.envelope)//open envelope; page previously got from worker
+}
+async function uploadLambdaShut(door, response, error) {
+	door.response = response
+	door.error = error
+	door.task?.finish()
+
+	let r
+	if (error) {
+		logAlert('upload error', {body: door.body, response, error})
+		r = null
+	} else {
+		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: makeText(response)}
+	}
+	await awaitDoorPromises()
+	return r
+}
+
 /*
 S3 multipart upload: browser uploads files in chunks directly to S3, but needs Lambda to orchestrate.
 Why? Browser can't have AWS credentials, so Lambda creates presigned URLs that grant temporary permission.
@@ -23,7 +109,7 @@ Flow for a file upload:
 The browser never sends file bytes through Lambda - that would be slow and expensive.
 Instead, Lambda just does the coordination, and browser talks directly to S3 for the actual data.
 */
-async function doorHandleBelow({door, body, action}) {
+async function uploadHandleBelow({door, body, action}) {
 	const Bucket = Key('vhs bucket, public')
 	const {clientS3, presigner} = await bucketDynamicImport()
 	const {
@@ -50,8 +136,7 @@ async function doorHandleBelow({door, body, action}) {
 			UploadId: body.uploadId,
 			PartNumber: body.partNumber,//S3 requires sequential part numbers starting at 1
 		})
-		let url = await getSignedUrl(client, command, {expiresIn: 3600})//URL valid for 1 hour
-		//^hi claude, is this in seconds or milliseconds? we should use Time. please see how other parts of the codebase use this from  icarus
+		let url = await getSignedUrl(client, command, {expiresIn: Time.hoursInSeconds})//1 hour; AWS expects seconds
 		return {url}//page will PUT bytes to this URL; S3 responds with ETag (hash of that part)
 
 	} else if (action == 'Complete.') {//page has uploaded all parts and collected their ETags; now we tell S3 to assemble them; S3 verifies all parts are present and combines them into the final object
