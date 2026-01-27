@@ -138,25 +138,75 @@ function _tickToText(t) {
 	checkInt(t)
 	let d = new Date(t)
 	let year = d.getUTCFullYear()
-	let month = Time.months.zeroToJan[d.getUTCMonth()].toLowerCase()
-	let day = String(d.getUTCDate())
-	let hour = String(d.getUTCHours()).padStart(2, '0')
-	let minute = String(d.getUTCMinutes()).padStart(2, '0')
-	let startOfMinute = Date.UTC(year, d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes())
+	let monthIndex = d.getUTCMonth()
+	let month = Time.months.zeroToJan[monthIndex].toLowerCase()
+	let day = d.getUTCDate()
+	let hour = d.getUTCHours()
+	let minute = d.getUTCMinutes()
+	let startOfMinute = Date.UTC(year, monthIndex, day, hour, minute)
 	let msIntoMinute = t - startOfMinute
-	return year + month + day + '.' + hour + minute + '.' + msIntoMinute
+
+	// Determine what we need to show: include unit if non-zero OR if any later unit is non-zero (bridging)
+	let needMs = msIntoMinute > 0
+	let needMinute = minute > 0 || needMs
+	let needHour = hour > 0 || needMinute
+	let needDay = day > 1 || needHour
+	let needMonth = monthIndex > 0 || needDay
+
+	let result = String(year)
+	if (needMonth) {
+		result += month
+		if (needDay) {
+			result += String(day)
+			if (needHour) {
+				result += '.' + String(hour).padStart(2, '0')
+				if (needMinute) {
+					result += String(minute).padStart(2, '0')
+					if (needMs) {
+						result += '.' + msIntoMinute
+					}
+				}
+			}
+		}
+	}
+	return result
 }
 function _textToTick(s) {
-	let [p1, p2, p3] = s.split('.')//split the three parts from s like "2022feb17.1234.56789"
-	if (!p1 || p1.length < 8 || p1.length > 9 || !isNumerals(p2, 4)) toss('data', {s})
+	let [p1, p2, p3] = s.split('.')//split parts from s like "2022feb17.1234.56789" or short forms like "2022" or "2022feb"
+	if (!p1 || p1.length < 4 || p1.length > 9) toss('data', {s})
+
+	// Parse year (always first 4 characters)
 	let y = textToInt(p1.slice(0, 4), 1970)//round-trip validates numerals; must be 1970+
-	let month = Time.months.janToZero[p1.slice(4, 7)]//lookup returns 0-11 or undefined if not "jan" through "dec"
-	let dayText = p1.slice(7); if (!isNumerals(dayText)) toss('data', {s})//1 or 2 digit day
-	let day = Number(dayText)//note that there can be leading zeroes
-	let hour = Number(p2.slice(0, 2))//p2 already validated as 4 numerals above
-	let minute = Number(p2.slice(2, 4))
-	let millisecond = textToInt(p3)//round-trip validates numerals; this field has no leading zeros
-	if (month === undefined || day < 1 || day > 31 || hour > 23 || minute > 59 || millisecond > 59999) toss('data', {s})
+
+	// Defaults for omitted "zero" values
+	let month = 0, day = 1, hour = 0, minute = 0, millisecond = 0
+
+	// Parse month if present (characters 4-7)
+	if (p1.length >= 7) {
+		let monthLookup = Time.months.janToZero[p1.slice(4, 7)]
+		if (monthLookup === undefined) toss('data', {s})
+		month = monthLookup
+		// Parse day if present (characters 7+)
+		if (p1.length > 7) {
+			let dayText = p1.slice(7)
+			if (!isNumerals(dayText)) toss('data', {s})
+			day = Number(dayText)
+		}
+	} else if (p1.length > 4) {
+		toss('data', {s})//length 5-6 is invalid (partial month)
+	}
+
+	// Parse time part if present (2 digits = hour only, 4 digits = hour+minute)
+	if (p2 !== undefined) {
+		if (!isNumerals(p2) || (p2.length !== 2 && p2.length !== 4)) toss('data', {s})
+		hour = Number(p2.slice(0, 2))
+		if (p2.length === 4) minute = Number(p2.slice(2, 4))
+	}
+
+	// Parse milliseconds if present
+	if (p3 !== undefined) millisecond = textToInt(p3)
+
+	if (day < 1 || day > 31 || hour > 23 || minute > 59 || millisecond > 59999) toss('data', {s})
 	return Date.UTC(y, month, day, hour, minute) + millisecond
 }
 test(() => {
@@ -168,56 +218,68 @@ test(() => {
 	f(1645101296789, '2022feb17.1234.56789')
 	f(1672531199999, '2022dec31.2359.59999')
 
-	f(0,            '1970jan1.0000.0')
-	f(946684800000, '2000jan1.0000.0')
+	f(0,            '1970')//short form: start of year omits month, day, time
+	f(946684800000, '2000')//start of year 2000
 
-	f(951836400000, '2000feb29.1500.0')//mid afternoon on leap day 2000
-	f(983458800000, '2001mar1.1500.0')//one year later, that's March 1st; worried about leap seconds? JavaScript Date ignores them (POSIX time), so no special handling needed
+	f(951836400000, '2000feb29.15')//mid afternoon on leap day 2000; hour only, no minute
+	f(983458800000, '2001mar1.15')//one year later, that's March 1st; worried about leap seconds? JavaScript Date ignores them (POSIX time), so no special handling needed
+
+	//additional tests for short forms
+	f(631152000000, '1990')//start of year
+	f(633830400000, '1990feb')//start of month (not jan, so we show month but omit day 1)
+	f(633916800000, '1990feb2')//start of day
+	f(633949200000, '1990feb2.09')//start of hour (2 digit time)
+	f(633949500000, '1990feb2.0905')//start of minute (4 digit time)
+	f(633949500001, '1990feb2.0905.1')//one ms into minute
+	f(633949512345, '1990feb2.0905.12345')//full form
+
+	//bridging tests: show each boundary, then one ms past each to demonstrate bridging
+	f(946684800000, '2000')//year boundary
+	f(946684800001, '2000jan1.0000.1')//1ms past year: bridges month, day, hour, minute
+
+	f(949363200000, '2000feb')//month boundary
+	f(949363200001, '2000feb1.0000.1')//1ms past month: bridges day, hour, minute
+
+	f(949449600000, '2000feb2')//day boundary
+	f(949449600001, '2000feb2.0000.1')//1ms past day: bridges hour, minute
+
+	f(949453200000, '2000feb2.01')//hour boundary
+	f(949453200001, '2000feb2.0100.1')//1ms past hour: bridges minute
+	f(949453260000, '2000feb2.0101')//hour and minute both nonzero
 })
-noop(() => {//fuzz test round trip with random moments from 1970 to 2100
-	const seconds = 4
-	let now = Now()
-	let cycles = 0
-	while (Now() < now + (seconds*Time.second)) {
-		let t = randomBetween(0, 100*Time.year)//a random moment in the 100 years starting 1970
-		let s = _tickToText(t)
-		let t2 = _textToTick(s)
-		ok(t == t2)
-		cycles++
+test(() => {//fuzz test round trip
+	let cycles = 0, seconds = 0
+	function f(center, radius) {//center date and radius duration; loops to test randomly as rapidly as possible for 1 second
+		let c = _textToTick(center)
+		let start = Now()//when we started on this center
+		while (Now() < start + Time.second) {//true until we've been centered here for more than a second
+			let t = c + randomBetween(-radius, radius)
+			let s = _tickToText(t)
+			let t2 = _textToTick(s)
+			ok(t == t2)
+			cycles++
+		}
+		seconds++
 	}
-	//ttd january, ok so in addition to doing 4 seconds of 1970+100years, change that to do 2 seconds each of different time periods, to get tighter around the starts of months, days, hours, minutes, and around leap day and so on, especially now that we have the short summary valid forms like "1996" and "1996aug12"
+
+	f('2005', 30*Time.year)//broad sweep 1975-2035
+	f('2000feb29', 3*Time.day)//around leap day 2000
+
+	//narrow aperture: dense coverage around specific boundary types
+	f('2000', Time.hour)//year boundary
+	f('2000mar', Time.hour)//month boundary
+	f('2000jan1.12', 6*Time.hour)//hour boundaries
+	f('2000jan1.1230', 30*Time.minute)//minute boundaries
+	f('2000jan1.1230.30000', 30*Time.second)//second boundaries
+
+	//wide aperture: same centers but crossing multiple boundary levels
+	f('2000', 15*Time.day)//year boundary + days around it
+	f('2000mar', 15*Time.day)//month boundary + days around it
+	f('2000jan1.12', 15*Time.day)//hour + day + week boundaries
+	f('2000jan1.1230', 12*Time.hour)//minute + hour boundaries
+	f('2000jan1.1230.30000', 30*Time.minute)//second + minute boundaries
+
 	log(`round trip fuzz tested ${commas(cycles)} cycles in ${seconds} seconds`)
-})
-noop(() => {//ttd january, change to have new summary forms without trailing "zeroes"
-	function f(t, s) {
-		log(_textToTick(s))
-		/*
-		hi claude, ok, so above you can see code and tests for our method of, in a precise and always reversible way, expressing any Date.now() epoch tick count in a format that both human and machine can read
-		importantly, every single integer number of milliseconds since the start of UNIX time in 1970 can be expressed as text,
-		and reversed back to integer
-		and there is a one to one relationship between the two, as designed, adn checked with the round trip checks in the implementations above
-
-		ok so now i want to change how we do this, to allow for shorter valid text expressions
-		essentially, where there are "zeroes" at the end, we'll omit them rather than expressing them (as the current implementation does)
-		but, with careful rules, and still parsing carefully
-		i've added some test cases below here in a start of what will become a finished test for our new implementation
-		showing the parts that can be shortened or omitted
-
-		ok so what if a middle part is "zero" (like january, or the first day of any month, or the first minute of a day) but a later part is nonzero
-		in that case, we do express the bridging zero quantity
-		so one could argue that "1990.59999" could mean 59999 milliseconds into the start of 1990, but we're intentionally not going to do that
-
-		ok so i wrote this test so you can see with $ yarn test the output
-		but when we've updated the implementation and tests, these can become additional test cases that include valid integers as the first parameter (420 is a placeholder) and have assertions in both directions
-		*/
-	}
-	f(420, '1990')//zero milliseconds into a new year
-	f(420, '1990feb')//we never say mon1 now as it's the same as the start of a month
-	f(420, '1990feb2')//start of a day, no leading zero for day numbers
-	f(420, '1990feb2.09')//start of an hour, the hours+minutes section if present must be 2 or 4 numerals, always
-	f(420, '1990feb2.0905')//start of a minute, this is 9:05 AM
-	f(420, '1990feb2.0905.1')//one millisecond later, note that previous line doesn't end ".0" anymore
-	f(420, '1990feb2.0905.12345')//most moments will look the same even after this change
 })
 
 //  _                
