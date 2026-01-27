@@ -185,9 +185,40 @@ noop(() => {//fuzz test round trip with random moments from 1970 to 2100
 		ok(t == t2)
 		cycles++
 	}
+	//ttd january, ok so in addition to doing 4 seconds of 1970+100years, change that to do 2 seconds each of different time periods, to get tighter around the starts of months, days, hours, minutes, and around leap day and so on, especially now that we have the short summary valid forms like "1996" and "1996aug12"
 	log(`round trip fuzz tested ${commas(cycles)} cycles in ${seconds} seconds`)
 })
-//ttd january, so what you could add to tickToText/textToTick next is it doesn't include the 0s at the end, as in, valid includes "1990" and "2003jun" and "2016mar15" and "1984dec25.13" so you can do just year, month, day, hour, if you do minute it has to be four digits at teh end, so that part can be omitted, or length 2, or length 4, and then seconds in milliseconds is the last part which is already variable length and can be present or absent. yeah, ifyou do this then this form is useful for routes, all of a sudden. and it's still reversible, some moments in time are just shorter, even if you use this to capture random moments in time. this is a cool idea. write a second smoke test which confirms round trip is correct even tight within a single jan1, within a single month, etc
+noop(() => {//ttd january, change to have new summary forms without trailing "zeroes"
+	function f(t, s) {
+		log(_textToTick(s))
+		/*
+		hi claude, ok, so above you can see code and tests for our method of, in a precise and always reversible way, expressing any Date.now() epoch tick count in a format that both human and machine can read
+		importantly, every single integer number of milliseconds since the start of UNIX time in 1970 can be expressed as text,
+		and reversed back to integer
+		and there is a one to one relationship between the two, as designed, adn checked with the round trip checks in the implementations above
+
+		ok so now i want to change how we do this, to allow for shorter valid text expressions
+		essentially, where there are "zeroes" at the end, we'll omit them rather than expressing them (as the current implementation does)
+		but, with careful rules, and still parsing carefully
+		i've added some test cases below here in a start of what will become a finished test for our new implementation
+		showing the parts that can be shortened or omitted
+
+		ok so what if a middle part is "zero" (like january, or the first day of any month, or the first minute of a day) but a later part is nonzero
+		in that case, we do express the bridging zero quantity
+		so one could argue that "1990.59999" could mean 59999 milliseconds into the start of 1990, but we're intentionally not going to do that
+
+		ok so i wrote this test so you can see with $ yarn test the output
+		but when we've updated the implementation and tests, these can become additional test cases that include valid integers as the first parameter (420 is a placeholder) and have assertions in both directions
+		*/
+	}
+	f(420, '1990')//zero milliseconds into a new year
+	f(420, '1990feb')//we never say mon1 now as it's the same as the start of a month
+	f(420, '1990feb2')//start of a day, no leading zero for day numbers
+	f(420, '1990feb2.09')//start of an hour, the hours+minutes section if present must be 2 or 4 numerals, always
+	f(420, '1990feb2.0905')//start of a minute, this is 9:05 AM
+	f(420, '1990feb2.0905.1')//one millisecond later, note that previous line doesn't end ".0" anymore
+	f(420, '1990feb2.0905.12345')//most moments will look the same even after this change
+})
 
 //  _                
 // | |_ ___  ___ ___ 
