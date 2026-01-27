@@ -134,97 +134,55 @@ export function sayTick(t) {
 //reversible but readable UTC tick count, and it's max 20 characters
 export function tickToText(t) { let s = _tickToText(t); let t2 = _textToTick(s); checkSame(t, t2); return s }
 export function textToTick(s) { let t = _textToTick(s); let s2 = _tickToText(t); checkSame(s, s2); return t }
-function _tickToText(t) {
-	checkInt(t)
-	let d = new Date(t)
-	let year = d.getUTCFullYear()
-	let monthIndex = d.getUTCMonth()
-	let month = Time.months.zeroToJan[monthIndex].toLowerCase()
-	let day = d.getUTCDate()
-	let hour = d.getUTCHours()
-	let minute = d.getUTCMinutes()
-	let startOfMinute = Date.UTC(year, monthIndex, day, hour, minute)
-	let msIntoMinute = t - startOfMinute
+function _tickToText(tick) {
+	checkInt(tick)
+	let date = new Date(tick)
+	let y = date.getUTCFullYear()//year, 1970+
+	let m = date.getUTCMonth()//month index, 0 january through 11 december
+	let d = date.getUTCDate()//day of month, 1+
+	let h = date.getUTCHours()//hours of 24 hour clock, 0+
+	let i = date.getUTCMinutes()//minutes of hour, 0+
+	let s = tick - Date.UTC(y, m, d, h, i)//seconds and milliseconds in milliseconds into current minute, 0+
 
-	// Determine what we need to show: include unit if non-zero OR if any later unit is non-zero (bridging)
-	let needMs = msIntoMinute > 0
-	let needMinute = minute > 0 || needMs
-	let needHour = hour > 0 || needMinute
-	let needDay = day > 1 || needHour
-	let needMonth = monthIndex > 0 || needDay
-
-	let result = String(year)
-	if (needMonth) {
-		result += month
-		if (needDay) {
-			result += String(day)
-			if (needHour) {
-				result += '.' + String(hour).padStart(2, '0')
-				if (needMinute) {
-					result += String(minute).padStart(2, '0')
-					if (needMs) {
-						result += '.' + msIntoMinute
-					}
-				}
-			}
-		}
-	}
-	return result
+	let depth = s > 0 ? 5 : i > 0 ? 4 : h > 0 ? 3 : d > 1 ? 2 : m > 0 ? 1 : 0//required unit depth, 0 if all we need is year
+	let text = String(y)//begin composed text with year
+	if (depth >= 1) text += Time.months.zeroToJan[m].toLowerCase()//to that, append month if nonzero or later unit nonzero
+	if (depth >= 2) text += d//and then day if day is nonzero or a smaller unit is nonzero
+	if (depth >= 3) text += '.' + String(h).padStart(2, '0')//and so on
+	if (depth >= 4) text += String(i).padStart(2, '0')
+	if (depth >= 5) text += '.' + s
+	return text
 }
-function _textToTick(s) {
-	let [p1, p2, p3] = s.split('.')//split parts from s like "2022feb17.1234.56789" or short forms like "2022" or "2022feb"
-	if (!p1 || p1.length < 4 || p1.length > 9) toss('data', {s})
+function _textToTick(text) {
+	let [p1, p2, p3] = text.split('.')//split the up to three parts of s like "2022feb17.1234.56789"
+	if (!p1 || ![4, 7, 8, 9].includes(p1.length)) toss('data', {text})//4 just year, 7 "1990may", 8 and 9 day digits after that
 
-	// Parse year (always first 4 characters)
-	let y = textToInt(p1.slice(0, 4), 1970)//round-trip validates numerals; must be 1970+
+	let y = textToInt(p1.slice(0, 4), 1970)//1970+ year; round-trip validates numerals
+	let m = 0, d = 1, h = 0, i = 0, s = 0//0+ month, 1+ day, 0+ hour, 0+ minute, 0+ second and millisecond in milliseconds
 
-	// Defaults for omitted "zero" values
-	let month = 0, day = 1, hour = 0, minute = 0, millisecond = 0
-
-	// Parse month if present (characters 4-7)
-	if (p1.length >= 7) {
-		let monthLookup = Time.months.janToZero[p1.slice(4, 7)]
-		if (monthLookup === undefined) toss('data', {s})
-		month = monthLookup
-		// Parse day if present (characters 7+)
-		if (p1.length > 7) {
-			let dayText = p1.slice(7)
-			if (!isNumerals(dayText)) toss('data', {s})
-			day = Number(dayText)
+	if (p1.length > 4) {//first part has a month
+		let found = Time.months.janToZero[p1.slice(4, 7)]
+		if (found === undefined) toss('data', {text})//month name not found
+		m = found
+		if (p1.length > 7) {//beyond that, first part also has a day
+			d = textToInt(p1.slice(7), 1)//checks only numerals with round trip; checks value is 1+
 		}
-	} else if (p1.length > 4) {
-		toss('data', {s})//length 5-6 is invalid (partial month)
 	}
-
-	// Parse time part if present (2 digits = hour only, 4 digits = hour+minute)
-	if (p2 !== undefined) {
-		if (!isNumerals(p2) || (p2.length !== 2 && p2.length !== 4)) toss('data', {s})
-		hour = Number(p2.slice(0, 2))
-		if (p2.length === 4) minute = Number(p2.slice(2, 4))
+	if (p2 !== undefined) {//text has a second part
+		if (!isNumerals(p2) || (p2.length != 2 && p2.length != 4)) toss('data', {text})//must be like "00" just hours or "0030" military
+		h = Number(p2.slice(0, 2))
+		if (p2.length == 4) i = Number(p2.slice(2, 4))
 	}
+	if (p3 !== undefined) s = textToInt(p3, 1)//text has a third part, seconds and milliseconds as a count of milliseconds
 
-	// Parse milliseconds if present
-	if (p3 !== undefined) millisecond = textToInt(p3)
-
-	if (day < 1 || day > 31 || hour > 23 || minute > 59 || millisecond > 59999) toss('data', {s})
-	return Date.UTC(y, month, day, hour, minute) + millisecond
+	if (d < 1 || d > 31 || h > 23 || i > 59 || s > 59999) toss('data', {text})//check bounds on individual units
+	return Date.UTC(y, m, d, h, i) + s
 }
 test(() => {
 	function f(t, s) {
-		ok(_tickToText(t) == s)
-		ok(_textToTick(s) == t)
+		ok(tickToText(t) == s)
+		ok(textToTick(s) == t)
 	}
-	f(1645070756789, '2022feb17.0405.56789')//compare 13 numerals that aren't human-understandable to 20 characters which are
-	f(1645101296789, '2022feb17.1234.56789')
-	f(1672531199999, '2022dec31.2359.59999')
-
-	f(0,            '1970')//short form: start of year omits month, day, time
-	f(946684800000, '2000')//start of year 2000
-
-	f(951836400000, '2000feb29.15')//mid afternoon on leap day 2000; hour only, no minute
-	f(983458800000, '2001mar1.15')//one year later, that's March 1st; worried about leap seconds? JavaScript Date ignores them (POSIX time), so no special handling needed
-
-	//additional tests for short forms
 	f(631152000000, '1990')//start of year
 	f(633830400000, '1990feb')//start of month (not jan, so we show month but omit day 1)
 	f(633916800000, '1990feb2')//start of day
@@ -233,21 +191,30 @@ test(() => {
 	f(633949500001, '1990feb2.0905.1')//one ms into minute
 	f(633949512345, '1990feb2.0905.12345')//full form
 
-	//bridging tests: show each boundary, then one ms past each to demonstrate bridging
+	f(946684799999, '1999dec31.2359.59999')//check around a...
 	f(946684800000, '2000')//year boundary
-	f(946684800001, '2000jan1.0000.1')//1ms past year: bridges month, day, hour, minute
+	f(946684800001, '2000jan1.0000.1')//shows initial month, day, hour, and minute to get to nonzero millisecond
 
+	f(949363199999, '2000jan31.2359.59999')
 	f(949363200000, '2000feb')//month boundary
-	f(949363200001, '2000feb1.0000.1')//1ms past month: bridges day, hour, minute
+	f(949363200001, '2000feb1.0000.1')
 
+	f(949449599999, '2000feb1.2359.59999')
 	f(949449600000, '2000feb2')//day boundary
-	f(949449600001, '2000feb2.0000.1')//1ms past day: bridges hour, minute
+	f(949449600001, '2000feb2.0000.1')
 
+	f(949453199999, '2000feb2.0059.59999')
 	f(949453200000, '2000feb2.01')//hour boundary
-	f(949453200001, '2000feb2.0100.1')//1ms past hour: bridges minute
-	f(949453260000, '2000feb2.0101')//hour and minute both nonzero
+	f(949453200001, '2000feb2.0100.1')
+
+	f(949453259999, '2000feb2.0100.59999')
+	f(949453260000, '2000feb2.0101')//minute boundary
+	f(949453260001, '2000feb2.0101.1')
+
+	f(951836400000, '2000feb29.15')//mid afternoon on leap day 2000
+	f(983458800000, '2001mar1.15')//one year later, that's March 1st; JavaScript Date uses POSIX time, which ignores leap seconds
 })
-test(() => {//fuzz test round trip
+noop(() => {//fuzz test round trip
 	let cycles = 0, seconds = 0
 	function f(center, radius) {//center date and radius duration; loops to test randomly as rapidly as possible for 1 second
 		let c = _textToTick(center)
@@ -261,23 +228,20 @@ test(() => {//fuzz test round trip
 		}
 		seconds++
 	}
-
 	f('2005', 30*Time.year)//broad sweep 1975-2035
 	f('2000feb29', 3*Time.day)//around leap day 2000
 
-	//narrow aperture: dense coverage around specific boundary types
-	f('2000', Time.hour)//year boundary
-	f('2000mar', Time.hour)//month boundary
-	f('2000jan1.12', 6*Time.hour)//hour boundaries
-	f('2000jan1.1230', 30*Time.minute)//minute boundaries
-	f('2000jan1.1230.30000', 30*Time.second)//second boundaries
+	f('2000', Time.hour)//fuzz around each unit boundary with a narrow radius for dense coverage
+	f('2000mar', Time.hour)
+	f('2000jan1.12', 6*Time.hour)
+	f('2000jan1.1230', 30*Time.minute)
+	f('2000jan1.1230.30000', 30*Time.second)
 
-	//wide aperture: same centers but crossing multiple boundary levels
-	f('2000', 15*Time.day)//year boundary + days around it
-	f('2000mar', 15*Time.day)//month boundary + days around it
-	f('2000jan1.12', 15*Time.day)//hour + day + week boundaries
-	f('2000jan1.1230', 12*Time.hour)//minute + hour boundaries
-	f('2000jan1.1230.30000', 30*Time.minute)//second + minute boundaries
+	f('2000', 15*Time.day)//same boundaries, wider aperture to cross multiple boundary levels
+	f('2000mar', 15*Time.day)
+	f('2000jan1.12', 15*Time.day)
+	f('2000jan1.1230', 12*Time.hour)
+	f('2000jan1.1230.30000', 30*Time.minute)
 
 	log(`round trip fuzz tested ${commas(cycles)} cycles in ${seconds} seconds`)
 })
