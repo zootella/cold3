@@ -12,7 +12,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		return {
 			success: true,
-			source: 'https://vhs.net23.cc/banner.png?'+(await vhsSign('/', 2*Time.hour)),
+			source: 'https://vhs.net23.cc/banner.png?'+(await vhsSign('/', Limit.mediaDownload)),
 			sticker: Sticker(),
 		}
 	}
@@ -21,7 +21,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		return {
 			success: true,
-			envelope: await sealEnvelope('Net23Upload.', Time.minute, {}),
+			envelope: await sealEnvelope('Net23Upload.', Limit.mediaUpload, {}),
 		}
 	}
 }

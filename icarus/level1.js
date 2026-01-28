@@ -220,6 +220,10 @@ export const Limit = Object.freeze({
 	handoffWorker: 2*Time.second,//for worker to worker server requests and redirects, a tight window because cloudflare is fast
 	handoffLambda: 14*Time.second,//compared the the cold starts that lambda must do
 	//^from checkly, average and p95 millisecond response times are 387/745 for sveltekit worker; 5850/7380 for lambda, so setting the timeouts at twice the p95s
+
+	//and media transfer
+	mediaDownload: 2*Time.hour,//a page that gets signatures for cloudfront gets them with this expiration in the future
+	mediaUpload: 6*Time.hour,//when uploading, our envelope from the worker, and the S3 signed URLs last this long
 })
 export function cropToLimit(s, customLimit, defaultLimit) {
 	let limit = customLimit || defaultLimit//use the default limit if the caller above specified no custom limit

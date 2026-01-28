@@ -141,8 +141,8 @@ async function uploadHandleBelow({door, body, action}) {
 				UploadId: body.uploadId,
 				PartNumber: body.partNumber,//S3 requires sequential part numbers starting at 1
 			}),
-			{
-				expiresIn: Time.hoursInSeconds//options object as third parameter, we choose this expiration, currently 1 hour, typically 15-60min; AWS expects count of seconds
+			{//options object as third parameter
+				expiresIn: Limit.mediaUpload/Time.second//generate signed URLs that expire in this number of seconds
 			},
 		)
 		return {url}//page will PUT bytes to this URL; S3 responds with ETag (hash of that part)

@@ -14,17 +14,20 @@
 
 ## Next Step: Wire UppyDemo.vue to Lambda
 
-Add `@uppy/aws-s3` plugin to `site/components/snippet1/UppyDemo.vue` with multipart callbacks that POST to `/upload` Lambda.
+Add `@uppy/aws-s3` plugin to `site/components/snippet1/UppyDemo.vue` so dragging a file into Uppy uploads it to S3 via the Lambda.
 
-**To implement, read:**
-- `UppyDemo.vue` - current component state, how Uppy is initialized
-- `upload.js` - Lambda expects `{action, envelope, ...params}`, see `uploadHandleBelow()` for each action's parameters
-- `origin23()` from icarus - handles cloud/local URL switching
+**Read these files first:**
+- `site/components/snippet1/UppyDemo.vue` — the file you'll edit. Currently initializes Uppy with Dashboard only. `uppyDynamicImport()` already loads `@uppy/aws-s3` but the component doesn't use it yet.
+- `smoke-upload.js` (project root) — **working reference implementation.** This Node script does the exact upload flow you need to replicate in the browser: gets an envelope from the Worker, then calls the Lambda with `Create.`, `SignPart.`, PUTs bytes to S3, and calls `Complete.`. Translate this sequence into Uppy's `@uppy/aws-s3` multipart callbacks.
+- `net23/src/upload.js` — the Lambda endpoint. See `uploadHandleBelow()` for what each action expects and returns. Every request must include `envelope` and `action`.
+- `site/server/api/media.js` — the Worker endpoint. Action `MediaDemonstrationUpload.` returns `{success: true, envelope}`. The component should call this via `fetchWorker('/api/media', {body: {action: 'MediaDemonstrationUpload.'}})` before starting the upload.
+- `origin23()` from `icarus/level2.js` — returns the Lambda base URL (localhost:4000/prod locally, api.net23.cc in cloud). Each callback POSTs to `${origin23()}/upload`.
 
 **Key points:**
-- Use `shouldUseMultipart: () => true` - one code path for all file sizes
+- Use `shouldUseMultipart: () => true` — one code path for all file sizes
 - Each callback POSTs to `${origin23()}/upload` with action: `Create.`, `SignPart.`, `Complete.`, `Abort.`, or `ListParts.`
-- Must include `envelope` in every request (get from Worker via `sealEnvelope('Net23Upload.', ...)`)
+- Must include `envelope` in every request (get from Worker before upload starts)
+- Envelope and S3 signed URLs both expire after `Limit.mediaUpload` (6 hours)
 
 **Then smoke test:** select file → Create. → SignPart. → PUT to S3 → Complete. → file appears in bucket.
 
@@ -32,10 +35,11 @@ Add `@uppy/aws-s3` plugin to `site/components/snippet1/UppyDemo.vue` with multip
 
 ## Key Files
 
-- **Three files called `upload.js`** — each plays a different role in the upload pipeline:
+- **Upload pipeline**
   - `net23/src/upload.js` — Upload Lambda: `uploadLambda`, `uploadLambdaOpen`, `uploadLambdaShut`, `uploadHandleBelow`
-  - `site/server/api/upload.js` — Nuxt Worker endpoint: seals the envelope the page needs before talking to the Lambda
-  - `upload.js` (project root) — Node smoke test script: proves the full upload pipeline end to end from the command line
+  - `smoke-upload.js` (project root) — Node smoke test script: proves the full upload pipeline end to end from the command line
+- **Nuxt Worker endpoints**
+  - `site/server/api/media.js` — combined media endpoint with actions: `MediaDemonstrationSign.` (generates signed delivery URL via `vhsSign`) and `MediaDemonstrationUpload.` (seals envelope for upload smoke test)
 - **Infrastructure**
   - `net23/serverless.yml` — S3, CloudFront, Lambda, IAM, CORS
   - `net23/persephone/persephone.js` — `bucketDynamicImport()`: S3 SDK loading
