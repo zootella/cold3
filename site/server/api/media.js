@@ -4,11 +4,11 @@ vhsSign,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Sign.', 'SmokeTestEnvelope.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['MediaDemonstrationSign.', 'MediaDemonstrationUpload.'], workerEvent, doorHandleBelow})
 })
 async function doorHandleBelow({door, body, action, browserHash}) {
 
-	if (action == 'Sign.') {
+	if (action == 'MediaDemonstrationSign.') {
 
 		return {
 			success: true,
@@ -17,7 +17,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		}
 	}
 
-	if (action == 'SmokeTestEnvelope.') {
+	if (action == 'MediaDemonstrationUpload.') {
 
 		return {
 			success: true,

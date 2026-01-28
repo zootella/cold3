@@ -3,7 +3,7 @@
 const refSource = ref(null)
 const refNote = ref('Requesting signed URL...')
 
-let response = await fetchWorker('/api/media', {body: {action: 'Sign.'}})
+let response = await fetchWorker('/api/media', {body: {action: 'MediaDemonstrationSign.'}})
 refSource.value = response.source
 refNote.value = `Received image source URL "${response.source}" signed by ${response.sticker}`
 //runs right here on the margin to do this in SSR

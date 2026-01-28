@@ -16,7 +16,7 @@ async function main() {
 	let envelopeResponse = await fetch(`${worker}/api/media`, {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json'},
-		body: JSON.stringify({action: 'SmokeTestEnvelope.'}),
+		body: JSON.stringify({action: 'MediaDemonstrationUpload.'}),
 	})
 	let envelopeData = await envelopeResponse.json()
 	log('envelope response:', look(envelopeData))
