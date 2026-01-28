@@ -197,6 +197,129 @@ Browser → POST /upload (UploadComplete.) → Lambda → S3 CompleteMultipartUp
 
 ---
 
+## End-to-End Hashing: Goals
+
+We have two hash functions (`hashFile` for quick tip-only, `hashStream` for full integrity) and two places to run them: in the browser before/during upload, and in the bucket after upload completes. Hashing at both ends enables verification that the bytes the browser sent are identical to the bytes that landed in S3.
+
+### What This Enables
+
+**Corruption detection.** If something goes wrong during upload—Uppy bug, network corruption, S3 multipart assembly error—we can detect it. The browser knows what hash it sent; the server can verify what hash it received. Mismatch means something broke. We can log the error, notify the user, or discard the corrupted file rather than silently storing garbage.
+
+**Deduplication.** If the same file is uploaded twice, we don't need two copies in the bucket. Content-addressable storage (where the S3 key is derived from the hash) handles this naturally—uploading the same bytes targets the same location. S3 just overwrites with identical content.
+
+**Upload short-circuit.** Better than deduplication: if we check whether a hash already exists *before* uploading, we can skip the upload entirely. User drags in a 2 GB video they uploaded last month? "Already got that one"—instant success, zero bytes transferred. This works whether it's the same user re-uploading or a different user uploading identical content.
+
+### The Two Hashing Locations
+
+**Browser-side (before/during upload):**
+- Has direct access to the File object
+- Can use `hashFile()` for quick tipHash via random access slicing
+- Can use `hashStream()` with `file.stream()` for full pieceHash
+- Hashing happens before or concurrent with upload
+- Result: browser knows what it's sending
+
+**Server-side (after upload lands in bucket):**
+- Lambda reads the completed object from S3 as a stream
+- Must use `hashStream()` (no random access to S3 objects)
+- Computes pieceHash and tipHash from the stored bytes
+- Result: server knows what it received
+
+**Verification = comparing these two results.**
+
+### Onramp: Browser-Side Hashing Before/During Upload
+
+The browser has the file bytes directly via the File object. It can read them two ways: random-access slicing (`file.slice().arrayBuffer()`) for `hashFile()`, or streaming (`file.stream()`) for `hashStream()`. Both are available.
+
+**Approach: Tip hash first, then piece hash concurrent with upload.**
+
+```
+User drags file into Uppy:
+│
+├── 1. Compute tipHash (fast, random access)
+│      └── hashFile({file, size, protocolTips})
+│      └── ~10ms for any file size (reads only start/middle/end stripes)
+│
+├── 2. Check: does this tipHash already exist?
+│      └── If yes: short-circuit, "Already uploaded ✓", done
+│      └── If no: continue to upload
+│
+└── 3. In parallel (desktop only):
+       ├── hashStream() for full pieceHash ──► runs concurrently
+       └── Uppy begins multipart upload ────► runs concurrently
+```
+
+**Why concurrent hashing and upload is safe:**
+
+- Uppy uses `Blob.slice()` to read chunks for multipart upload
+- `hashStream()` uses `file.stream()` which creates an independent ReadableStream
+- Browser File/Blob APIs have no locking mechanism—multiple concurrent reads are safe by spec
+- Blobs are immutable; concurrent readers can't interfere with each other
+
+This was verified by examining Uppy's source (`@uppy/aws-s3` MultipartUploader uses `this.#data.slice(i, end)`) and the Web Streams / File API specs. Concurrent reads may cause minor I/O contention but won't cause errors or data corruption.
+
+**Mobile vs Desktop:**
+
+Use `browserIsBesideAppStore()` from icarus/level1.js (wraps the `is-mobile` npm package) to detect mobile devices.
+
+- **Desktop:** Run piece hash concurrently with upload. Desktop CPUs handle it easily.
+- **Mobile:** Skip piece hash, rely on tip hash only. Mobile devices have less processing power and battery concerns. The tip hash still catches most duplicates and provides reasonable integrity confidence.
+
+```js
+if (browserIsBesideAppStore()) {
+  // Mobile: tip hash only, then upload
+} else {
+  // Desktop: tip hash, then piece hash + upload in parallel
+}
+```
+
+**Why tip hash first (blocking) before upload starts:**
+
+The tip hash is fast (~10ms regardless of file size) and enables the short-circuit optimization. If the file already exists, we skip the entire upload. Worth the tiny delay to potentially save gigabytes of transfer.
+
+### Offramp: Server-Side Verification After Upload
+
+After bytes flow through Uppy, the browser, the internet, and land in S3, they re-enter our control. The Lambda doesn't see bytes during upload—it only orchestrates (presigned URLs, multipart commands). So server-side hashing must happen *after* the file is fully assembled in the bucket.
+
+**Approach: Explicit verification call after Uppy completes.**
+
+The browser calls a new `UploadVerify.` action after Uppy's `upload-success` event. The Lambda reads the completed object from S3, runs `hashStream()`, compares against the expected hash, and returns verified/failed. This happens entirely outside Uppy's flow.
+
+```
+Uppy flow (unchanged):
+├── createMultipartUpload ──► UploadCreate. ──► S3 CreateMultipartUpload
+├── signPart (×N) ──────────► UploadSign. ────► presigned URLs
+├── PUT bytes (×N) ─────────────────────────────────────────────► S3
+├── completeMultipartUpload ► UploadComplete. ► S3 CompleteMultipartUpload
+└── Uppy fires 'upload-success', file is done from Uppy's perspective
+
+Our verification (new, after Uppy):
+├── Browser shows "Verifying..."
+├── fetchUpload({action: 'UploadVerify.', key, expectedHash})
+├── Lambda: GetObject stream ──► hashStream() ──► compare hashes
+└── Browser shows result: "Verified ✓" or handles mismatch
+```
+
+**Why this works well:**
+
+- **Uppy stays clean.** Completion returns promptly, Uppy moves to the next file in a batch immediately. Our verification is invisible to Uppy.
+- **Progress is visible.** Browser controls the verification call, so it can show "Verifying..." UI right away. No mysterious stalls.
+- **Parallelism.** Verifications can run alongside ongoing uploads without blocking Uppy's queue.
+
+**Why not inline verification (hashing inside UploadComplete before returning)?** This would block Uppy's upload queue—a file stays "in progress" until `completeMultipartUpload` resolves, so batch uploads would bottleneck waiting for large files to hash. Also, HTTP request/response can't stream progress, so the user would see the progress bar fill and then... nothing, while hashing happens silently.
+
+**Edge cases to consider later (focus on happy path first):**
+- *Page disappears mid-upload.* Wifi drops, user closes laptop. Uploaded parts remain in S3 as orphaned fragments (existing concern, not new). S3 lifecycle rules can auto-expire incomplete multipart uploads.
+- *Page disappears after upload completes but before verification.* File exists in bucket, but we never confirmed its integrity. Unverified files could accumulate. May need a sweep/audit process, or a way to mark files as verified (metadata? separate prefix?).
+
+### Open Questions (not implementation details yet)
+
+- What's the source of truth for the expected hash? The S3 key itself (if content-addressable)? Object metadata? A separate catalog?
+- What happens on mismatch? Delete? Quarantine to a different prefix? Alert? Retry?
+- For short-circuit dedup: how do we check existence quickly? HeadObject on the expected key? A hash index/catalog?
+- How does tipHash (quick but partial) vs pieceHash (complete but slower) factor in? Use tipHash for fast dedup checks, pieceHash for full verification?
+
+---
+
 ## Next Steps
 
 - **Filename sanitization.** The Lambda rejects filenames with spaces (and other non-alphanumeric characters). Either sanitize client-side in `createMultipartUpload` (e.g. replace spaces with hyphens) or loosen the regex carefully. macOS screenshots triggered this in production.
