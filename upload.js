@@ -13,7 +13,7 @@ async function main() {
 
 	//step 1: get an envelope from the nuxt worker, acting as the page would
 	log('step 1: getting envelope from worker at', worker)
-	let envelopeResponse = await fetch(`${worker}/api/upload`, {
+	let envelopeResponse = await fetch(`${worker}/api/media`, {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json'},
 		body: JSON.stringify({action: 'SmokeTestEnvelope.'}),

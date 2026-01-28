@@ -32,17 +32,21 @@ Add `@uppy/aws-s3` plugin to `site/components/snippet1/UppyDemo.vue` with multip
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `net23/src/upload.js` | Upload Lambda: `uploadLambda`, `uploadLambdaOpen`, `uploadLambdaShut`, `uploadHandleBelow` |
-| `net23/serverless.yml` | Infrastructure: S3, CloudFront, Lambda, IAM, CORS |
-| `net23/persephone/persephone.js` | `bucketDynamicImport()`: S3 SDK loading |
-| `net23/vhs.cjs` | CloudFront Function: delivery signature verification |
-| `icarus/level2.js` | `checkForwardedSecure()`, `checkOriginValid()`, `openEnvelope()` |
-| `icarus/level3.js` | `vhsSign()`: delivery signature creation |
-| `icarus/level1.js` | `hashFile()`, `hashStream()`, `uppyDynamicImport()` |
-| `site/components/snippet1/UppyDemo.vue` | Upload UI (wire to Lambda next) |
-| `site/components/snippet1/VhsDemo.vue` | Delivery demo |
+- **Three files called `upload.js`** — each plays a different role in the upload pipeline:
+  - `net23/src/upload.js` — Upload Lambda: `uploadLambda`, `uploadLambdaOpen`, `uploadLambdaShut`, `uploadHandleBelow`
+  - `site/server/api/upload.js` — Nuxt Worker endpoint: seals the envelope the page needs before talking to the Lambda
+  - `upload.js` (project root) — Node smoke test script: proves the full upload pipeline end to end from the command line
+- **Infrastructure**
+  - `net23/serverless.yml` — S3, CloudFront, Lambda, IAM, CORS
+  - `net23/persephone/persephone.js` — `bucketDynamicImport()`: S3 SDK loading
+  - `net23/vhs.cjs` — CloudFront Function: delivery signature verification
+- **Shared libraries (icarus)**
+  - `icarus/level2.js` — `checkForwardedSecure()`, `checkOriginValid()`, `openEnvelope()`
+  - `icarus/level3.js` — `vhsSign()`: delivery signature creation
+  - `icarus/level1.js` — `hashFile()`, `hashStream()`, `uppyDynamicImport()`
+- **Frontend**
+  - `site/components/snippet1/UppyDemo.vue` — Upload UI (wire to Lambda next)
+  - `site/components/snippet1/VhsDemo.vue` — Delivery demo
 
 ---
 
