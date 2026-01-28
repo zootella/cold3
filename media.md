@@ -54,6 +54,144 @@ Add `@uppy/aws-s3` plugin to `site/components/snippet1/UppyDemo.vue` with multip
 
 **Step 2.5: Page-Direct Pattern ✓** — Can't use `doorLambda` (blocks pages). Created `uploadLambda`/`uploadLambdaOpen`/`uploadLambdaShut` with `checkOriginValid` (opposite of door's `checkOriginOmitted`). Envelope type: `'Net23Upload.'`.
 
+**Step 3: Smoke Test ✓** — Created `upload.js` at project root and `site/server/api/upload.js` Worker endpoint. Proved the full upload pipeline works end to end with `node upload`. Added filename validation in Lambda (alphanumeric, dots, hyphens only).
+
+---
+
+## How an Upload Works
+
+This section describes how a page upload works end to end. The example is a 250 MB video file that Uppy splits into 50 parts. We proved this flow with our smoke test script (`upload.js` at project root), which plays the role of the page.
+
+**Step 1: Get permission from our Worker.**
+The page POSTs to the Nuxt Worker at `/api/upload` to request an upload envelope. This is entirely within our application — no Amazon involved. The Worker calls `sealEnvelope('Net23Upload.', ...)` to create an encrypted, signed envelope with an expiration. The page receives `{success: true, envelope: "..."}`. This envelope is proof that our Worker authorized this upload session. The page will include it in every subsequent call to the Lambda.
+
+**Step 2: Tell Amazon to expect a file.**
+The page POSTs `{action: 'Create.', envelope, filename, contentType}` to our Lambda. The Lambda first runs security checks: verifies HTTPS, validates Origin, and decrypts the envelope (confirming it was sealed by us, hasn't expired, and is the right type). It then validates the filename against our alphanumeric regex (`/^[0-9A-Za-z][0-9A-Za-z.\-]*$/`), which only allows letters, numbers, dots, and hyphens — this is a security boundary, because without it a malicious filename like `../../other-folder/evil.txt` could use path traversal to write outside the `uploads/` prefix to an arbitrary location in the bucket.
+
+The Lambda chooses a path in the bucket — `uploads/{timestamp}.{random tag}.{filename}` — and calls the **S3 CreateMultipartUpload API**:
+
+```
+→ CreateMultipartUploadCommand {
+    Bucket: "vhs-net23-cc",
+    Key: "uploads/2026jan27.2257.46437.AbCdEfGhIjKlMnOpQrStU.vacation.mp4",
+    ContentType: "video/mp4"
+  }
+
+← {
+    UploadId: "9r..g773B.u8dF6.rnXltt1WeI9N5_VWMRFnfecAFJECl3vumJcF2i0lR6WqOJkBJSm
+               oZpYG84cyspLFLr6HkBnwMt0utDMZYwntWTV7JTSYshTviMpdHx_ghxUTMBXB"
+  }
+```
+
+We give Amazon our bucket name, the target path we chose, and the content type. Amazon allocates a multipart upload session and returns an `UploadId` — 128 characters, Amazon's internal identifier for this upload session. We don't interpret it; we just pass it back in subsequent calls.
+
+Our Lambda returns `{uploadId, path}` to the page. No file bytes have moved yet. Amazon is just reserving a session.
+
+**Steps 3 and 4: Sign and upload each part.**
+Uppy splits the 250 MB file into parts (Uppy chooses the part size; S3 requires at least 5 MB per part except the last). For each part, two things happen:
+
+First, the page asks our Lambda for a presigned URL. The page POSTs `{action: 'SignPart.', envelope, uploadId, path, partNumber: N}` to the Lambda. The Lambda calls the **S3 UploadPart API via getSignedUrl** — this doesn't actually upload anything, it creates a presigned URL:
+
+```
+→ UploadPartCommand {
+    Bucket: "vhs-net23-cc",
+    Key: "uploads/2026jan27.2257.46437.AbCdEfGhIjKlMnOpQrStU.vacation.mp4",
+    UploadId: "9r..g773B...ghxUTMBXB",
+    PartNumber: 1
+  }
+  getSignedUrl(client, command, { expiresIn: 3600 })
+
+← "https://vhs-net23-cc.s3.us-east-1.amazonaws.com
+    /uploads/2026jan27.2257.46437.AbCdEfGhIjKlMnOpQrStU.vacation.mp4
+    ?X-Amz-Algorithm=AWS4-HMAC-SHA256
+    &X-Amz-Credential=AKIA3MHJKIKR...
+    &X-Amz-Date=20260127T225746Z
+    &X-Amz-Expires=3600
+    &X-Amz-Signature=48f214cc1340...
+    &partNumber=1
+    &uploadId=9r..g773B...ghxUTMBXB"
+```
+
+The presigned URL is a temporary, self-contained permission slip. It embeds our AWS credentials, an expiration (3600 seconds = 1 hour, chosen by us in `getSignedUrl`), the target path, the upload session ID, and the part number. Anyone with this URL can PUT bytes to that exact location in S3, without having AWS credentials themselves.
+
+Second, the page PUTs the part's bytes directly to that presigned URL. This is the only step where actual file data moves, and it goes straight from the page to Amazon, bypassing our Lambda entirely:
+
+```
+→ PUT https://vhs-net23-cc.s3.us-east-1.amazonaws.com/uploads/...?X-Amz-...
+  Content-Type: video/mp4
+  Body: [5 MB of file bytes for part 1]
+
+← HTTP 200
+  ETag: "a3c2b1d4e5f6a7b8c9d0e1f2a3b4c5d6"
+```
+
+S3 responds with an `ETag` — for our bucket (no server-side encryption), this is the MD5 hash of that part's bytes. Identical bytes always produce the same ETag. The page saves this ETag.
+
+This sign-then-upload cycle repeats for all 50 parts. As each part completes, Uppy accumulates the ETags in memory:
+
+```
+After part  1: [{ PartNumber: 1,  ETag: "a3c2b1d4..." }]
+After part  2: [{ PartNumber: 1,  ETag: "a3c2b1d4..." }, { PartNumber: 2,  ETag: "f7e8d9c0..." }]
+...
+After part 50: [{ PartNumber: 1,  ETag: "a3c2b1d4..." }, ..., { PartNumber: 50, ETag: "b2a1c3d4..." }]
+```
+
+The traffic pattern: our Worker is contacted once (step 1, for the envelope). Our Lambda is contacted once per part for signing — 50 small JSON round-trips — but never touches file bytes. All 250 MB of data flows directly from the page to S3.
+
+**Step 5: Tell Amazon to assemble the file.**
+All 50 parts are uploaded. The page now sends the full array of ETags it accumulated to our Lambda, POSTing `{action: 'Complete.', envelope, uploadId, path, parts: [...]}`. The Lambda calls the **S3 CompleteMultipartUpload API**:
+
+```
+→ CompleteMultipartUploadCommand {
+    Bucket: "vhs-net23-cc",
+    Key: "uploads/2026jan27.2257.46437.AbCdEfGhIjKlMnOpQrStU.vacation.mp4",
+    UploadId: "9r..g773B...ghxUTMBXB",
+    MultipartUpload: {
+      Parts: [
+        { PartNumber: 1,  ETag: "a3c2b1d4e5f6a7b8c9d0e1f2a3b4c5d6" },
+        { PartNumber: 2,  ETag: "f7e8d9c0b1a2d3e4f5a6b7c8d9e0f1a2" },
+        ...
+        { PartNumber: 50, ETag: "b2a1c3d4e5f6a7b8c9d0e1f2a3b4c5d6" }
+      ]
+    }
+  }
+
+← { }  // success; the object now exists at the Key path in the bucket
+```
+
+Amazon verifies that all 50 parts are present and that the ETags match what it received during the uploads, then assembles the parts into the final 250 MB object at the path we chose in step 2. The file is now in the bucket. Our Lambda returns `{success: true, path}`.
+
+The parts array is small even for large files. Each entry is about 60 bytes of JSON. Our 50-part example is around 3 KB. Even a 50 GB file at 10,000 parts (the S3 maximum) would be about 600 KB — easily held in page memory. Uppy accumulates this array as it goes; no need to persist to a database.
+
+If the page dies mid-upload (browser crash, tab closed, network loss), the uploaded parts remain in S3 under that uploadId. They don't disappear — they sit as orphaned fragments, costing storage. That's what `ListParts.` is for: if the page can recover the uploadId (from localStorage or the Worker), it calls ListParts to ask S3 which parts were already received, and resumes from where it left off. If nobody ever completes or aborts the upload, S3 has a lifecycle rule option to auto-expire incomplete multipart uploads after a number of days, which we may want to configure.
+
+```txt
+hi claude, ok, interesting. so we need to save an array of all the etags, to be able to send back this complete list? for a really big file, like a hour of 4k video, how big is this? and we'll need to figure out where we keep this as we're going along, probably just in the memory of the page? or do we need ot persist this to supabase through the worker or something, i wonder
+
+ok and let's say the page dies between steps 4 and 5. does the file disappear? is some fragment left?
+```
+
+**The Amazon APIs called, in order:**
+1. `CreateMultipartUpload` — "I'm going to upload a file here, give me a session ID" (once)
+2. `getSignedUrl(UploadPartCommand)` — "Give me a presigned URL so the page can PUT part N directly" (once per part, 50 times)
+3. S3 PUT (by the page, not our Lambda) — actual bytes flow page → S3 (once per part, 50 times)
+4. `CompleteMultipartUpload` — "All parts are uploaded, here are the 50 ETags, assemble the file" (once)
+
+**Not called in the happy path but available:**
+- `AbortMultipartUpload` — "Something went wrong, discard all uploaded parts." Important because incomplete multipart uploads cost storage until aborted.
+- `ListParts` — "Which parts have been uploaded so far?" Enables resume after a page crash or network interruption.
+
+---
+
+## Future: Resume After Page Refresh
+
+Not implemented yet. The infrastructure is in place — our Lambda already has `ListParts.` and Uppy's `@uppy/aws-s3` plugin has a built-in `listParts` callback for exactly this. S3 keeps uploaded parts under the uploadId even after the page dies, and S3 is the source of truth for ETags, so we don't need to persist those. We'd just save `{uploadId, path}` to localStorage so the page can reconnect to the in-progress session after a refresh.
+
+**Concerns:**
+- **Duplicate tabs.** If the user duplicates the tab mid-upload, both tabs would read the same `{uploadId, path}` from localStorage and both might try to continue the upload. Need to coordinate — perhaps a lock via `BroadcastChannel` or `navigator.locks`, or by clearing localStorage when an upload starts so only the original tab owns it.
+- **Orphaned parts.** If the user never returns, incomplete multipart uploads cost storage indefinitely. S3 lifecycle rules can auto-expire these after a configurable number of days — a bucket-level setting in serverless.yml.
+- **Stale sessions.** The envelope expires, so a resumed upload would need a fresh envelope from the Worker. The uploadId itself doesn't expire (unless we add a lifecycle rule), but our Lambda checks the envelope on every call.
+
 ---
 
 ## Architecture Decisions
@@ -64,11 +202,11 @@ These are settled. Don't re-litigate.
 - **Single Lambda with action parameter** — one endpoint, less config
 - **Multipart always** (`shouldUseMultipart: () => true`) — one code path for all file sizes
 - **Envelope auth from start** — page gets envelope from Worker, includes in Lambda requests
-- **S3 key format** — `uploads/${timestamp}-${filename}` for now (later: hash-based)
+- **S3 path format** — `uploads/${timestamp}.${tag}.${filename}` for now (later: hash-based)
 
 **Flow:**
 ```
-Browser → POST /upload (Create.) → Lambda → S3 CreateMultipartUpload → { uploadId, key }
+Browser → POST /upload (Create.) → Lambda → S3 CreateMultipartUpload → { uploadId, path }
 Browser → POST /upload (SignPart.) → Lambda → presigned URL
 Browser → PUT to presigned URL → S3 → ETag
 ...repeat for each part...

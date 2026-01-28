@@ -120,29 +120,37 @@ async function uploadHandleBelow({door, body, action}) {
 	const client = new S3Client({region: Key('amazon region, public')})
 
 	if (action == 'Create.') {//page wants to upload a file; we tell S3 to expect it and get back an uploadId to track this session
-		let path = `uploads/${tickToText(Now())}-${body.filename}`
-		let command = new CreateMultipartUploadCommand({
+		let filename = checkText(body.filename)
+		if (!/^[0-9A-Za-z][0-9A-Za-z.\-]*$/.test(filename)) toss('filename', {filename})//letters, numbers, dots, hyphens only; no slashes, spaces, or other characters that could manipulate the S3 key path
+
+		let path = `uploads/${tickToText(Now())}.${Tag()}.${filename}`//choose a new unique path in the bucket for this upload
+		let command = new CreateMultipartUploadCommand({//we give S3 our bucket name, the target path we chose, and content type; S3 allocates a multipart upload session and returns an UploadId we'll use for all subsequent parts
 			Bucket,
 			Key: path,//Key property is the path in the bucket; timestamp prefix keeps uploads organized and avoids collisions
 			ContentType: body.contentType,
 		})
 		let response = await client.send(command)
-		return {uploadId: response.UploadId, key: path}//page needs both to continue: uploadId for S3's tracking, key for the file path
+		return {uploadId: response.UploadId, path}//page needs both to continue: uploadId for S3's tracking, path for the file location in the bucket
 
 	} else if (action == 'SignPart.') {//page is ready to upload chunk N; we create a presigned URL that lets the browser PUT directly to S3; presigned URL embeds our credentials + expiration, so browser can write without having AWS keys
-		let command = new UploadPartCommand({
-			Bucket,
-			Key: body.key,
-			UploadId: body.uploadId,
-			PartNumber: body.partNumber,//S3 requires sequential part numbers starting at 1
-		})
-		let url = await getSignedUrl(client, command, {expiresIn: Time.hoursInSeconds})//1 hour; AWS expects seconds
+		let url = await getSignedUrl(
+			client,
+			new UploadPartCommand({
+				Bucket,
+				Key: body.path,
+				UploadId: body.uploadId,
+				PartNumber: body.partNumber,//S3 requires sequential part numbers starting at 1
+			}),
+			{
+				expiresIn: Time.hoursInSeconds//options object as third parameter, we choose this expiration, currently 1 hour, typically 15-60min; AWS expects count of seconds
+			},
+		)
 		return {url}//page will PUT bytes to this URL; S3 responds with ETag (hash of that part)
 
 	} else if (action == 'Complete.') {//page has uploaded all parts and collected their ETags; now we tell S3 to assemble them; S3 verifies all parts are present and combines them into the final object
 		let command = new CompleteMultipartUploadCommand({
 			Bucket,
-			Key: body.key,
+			Key: body.path,
 			UploadId: body.uploadId,
 			MultipartUpload: {
 				Parts: body.parts.map(p => ({
@@ -152,12 +160,12 @@ async function uploadHandleBelow({door, body, action}) {
 			},
 		})
 		await client.send(command)
-		return {success: true, key: body.key}//upload done! key is the path where file now lives
+		return {success: true, path: body.path}//upload done! path is where the file now lives in the bucket
 
 	} else if (action == 'Abort.') {//user cancelled or something went wrong; tell S3 to discard all uploaded parts; important: incomplete multipart uploads cost storage until aborted
 		let command = new AbortMultipartUploadCommand({
 			Bucket,
-			Key: body.key,
+			Key: body.path,
 			UploadId: body.uploadId,
 		})
 		await client.send(command)
@@ -166,7 +174,7 @@ async function uploadHandleBelow({door, body, action}) {
 	} else if (action == 'ListParts.') {//for resume: page asks "which parts already uploaded?" after browser refresh or reconnect; S3 returns array of {PartNumber, ETag, Size} for parts already received; page can skip re-uploading those and continue from where it left off
 		let command = new ListPartsCommand({
 			Bucket,
-			Key: body.key,
+			Key: body.path,
 			UploadId: body.uploadId,
 		})
 		let response = await client.send(command)

@@ -154,7 +154,7 @@ function _tickToText(tick) {
 	return text
 }
 function _textToTick(text) {
-	let [p1, p2, p3] = text.split('.')//split the up to three parts of s like "2022feb17.1234.56789"
+	let [p1, p2, p3] = text.split('.')//split the up to three parts of the given text like "2022feb17.1234.56789"
 	if (!p1 || ![4, 7, 8, 9].includes(p1.length)) toss('data', {text})//4 just year, 7 "1990may", 8 and 9 day digits after that
 
 	let y = textToInt(p1.slice(0, 4), 1970)//1970+ year; round-trip validates numerals
