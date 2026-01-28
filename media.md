@@ -4,32 +4,11 @@
 
 **Delivery pipeline:** Working. CloudFront + S3 with signature verification. See `vhs.cjs`, `vhsSign()`.
 
-**Upload pipeline:** Backend ready, needs frontend wiring.
-- Upload Lambda deployed at `/upload` with 5 actions: `UploadCreate.`, `UploadSign.`, `UploadComplete.`, `UploadAbort.`, `UploadList.`
-- Envelope auth enabled (`openEnvelope('Net23Upload.', ...)`)
-- Origin validation (`checkOriginValid()` - cold3.cc and localhost:3000)
-- S3 bucket CORS configured (PUT, exposes ETag)
-
----
-
-## Next Step: Wire UppyDemo.vue to Lambda
-
-Add `@uppy/aws-s3` plugin to `site/components/snippet1/UppyDemo.vue` so dragging a file into Uppy uploads it to S3 via the Lambda.
-
-**Read these files first:**
-- `site/components/snippet1/UppyDemo.vue` — the file you'll edit. Currently initializes Uppy with Dashboard only. `uppyDynamicImport()` already loads `@uppy/aws-s3` but the component doesn't use it yet.
-- `smoke-upload.js` (project root) — **working reference implementation.** This Node script does the exact upload flow you need to replicate in the browser: gets an envelope from the Worker, then calls the Lambda with `UploadCreate.`, `UploadSign.`, PUTs bytes to S3, and calls `UploadComplete.`. Translate this sequence into Uppy's `@uppy/aws-s3` multipart callbacks.
-- `net23/src/upload.js` — the Lambda endpoint. See `uploadHandleBelow()` for what each action expects and returns. Every request must include `envelope` and `action`.
-- `site/server/api/media.js` — the Worker endpoint. Action `MediaDemonstrationUpload.` returns `{success: true, envelope}`. The component should call this via `fetchWorker('/api/media', {body: {action: 'MediaDemonstrationUpload.'}})` before starting the upload.
-- `origin23()` from `icarus/level2.js` — returns the Lambda base URL (localhost:4000/prod locally, api.net23.cc in cloud). Each callback POSTs to `${origin23()}/upload`.
-
-**Key points:**
-- Use `shouldUseMultipart: () => true` — one code path for all file sizes
-- Each callback POSTs to `${origin23()}/upload` with action: `UploadCreate.`, `UploadSign.`, `UploadComplete.`, `UploadAbort.`, or `UploadList.`
-- Must include `envelope` in every request (get from Worker before upload starts)
-- Envelope and S3 signed URLs both expire after `Limit.mediaUpload` (6 hours)
-
-**Then smoke test:** select file → UploadCreate. → UploadSign. → PUT to S3 → UploadComplete. → file appears in bucket.
+**Upload pipeline:** Working. Smoke tested local and deployed (small, medium, and 3 GB files).
+- `UppyDemo.vue` wired to Lambda via `@uppy/aws-s3` multipart callbacks
+- Password-protected: user enters password, page hashes with PBKDF2, Worker validates before issuing envelope
+- Lambda CORS headers set via `originApex()` on both success and error responses
+- Filename validation: alphanumeric, dots, hyphens only (spaces rejected — sanitization not yet implemented)
 
 ---
 
@@ -37,9 +16,8 @@ Add `@uppy/aws-s3` plugin to `site/components/snippet1/UppyDemo.vue` so dragging
 
 - **Upload pipeline**
   - `net23/src/upload.js` — Upload Lambda: `uploadLambda`, `uploadLambdaOpen`, `uploadLambdaShut`, `uploadHandleBelow`
-  - `smoke-upload.js` (project root) — Node smoke test script: proves the full upload pipeline end to end from the command line
 - **Nuxt Worker endpoints**
-  - `site/server/api/media.js` — combined media endpoint with actions: `MediaDemonstrationSign.` (generates signed delivery URL via `vhsSign`) and `MediaDemonstrationUpload.` (seals envelope for upload smoke test)
+  - `site/server/api/media.js` — combined media endpoint with actions: `MediaDemonstrationSign.` (generates signed delivery URL via `vhsSign`) and `MediaDemonstrationUpload.` (validates password hash, seals upload envelope)
 - **Infrastructure**
   - `net23/serverless.yml` — S3, CloudFront, Lambda, IAM, CORS
   - `net23/persephone/persephone.js` — `bucketDynamicImport()`: S3 SDK loading
@@ -49,29 +27,31 @@ Add `@uppy/aws-s3` plugin to `site/components/snippet1/UppyDemo.vue` so dragging
   - `icarus/level3.js` — `vhsSign()`: delivery signature creation
   - `icarus/level1.js` — `hashFile()`, `hashStream()`, `uppyDynamicImport()`
 - **Frontend**
-  - `site/components/snippet1/UppyDemo.vue` — Upload UI (wire to Lambda next)
+  - `site/components/snippet1/UppyDemo.vue` — Upload UI with password gate, Uppy Dashboard, and `@uppy/aws-s3` multipart callbacks
   - `site/components/snippet1/VhsDemo.vue` — Delivery demo
 
 ---
 
 ## Completed Steps
 
-**Step 1: AWS SDK S3 Modules ✓** — Added packages to net23, created `bucketDynamicImport()` in persephone.js.
+**Step 1: AWS SDK S3 Modules ✓** — `bucketDynamicImport()` in persephone.js.
 
-**Step 2: Upload Lambda ✓** — Created `upload.js` with 5 actions. Added serverless.yml config (function, IAM, CORS). Deployed.
+**Step 2: Upload Lambda ✓** — `upload.js` with 5 actions (`UploadCreate.`, `UploadSign.`, `UploadComplete.`, `UploadAbort.`, `UploadList.`). Page-direct pattern with `checkOriginValid`, envelope type `'Net23Upload.'`, CORS via `originApex()`.
 
-**Step 2.5: Page-Direct Pattern ✓** — Can't use `doorLambda` (blocks pages). Created `uploadLambda`/`uploadLambdaOpen`/`uploadLambdaShut` with `checkOriginValid` (opposite of door's `checkOriginOmitted`). Envelope type: `'Net23Upload.'`.
+**Step 3: Smoke Test ✓** — Proved full flow from command line. Script deleted after production code (`UppyDemo.vue`) replicated all tested paths. Recoverable from git if needed.
 
-**Step 3: Smoke Test ✓** — Created `upload.js` at project root and `site/server/api/upload.js` Worker endpoint. Proved the full upload pipeline works end to end with `node upload`. Added filename validation in Lambda (alphanumeric, dots, hyphens only).
+**Step 4: UppyDemo Wiring ✓** — `@uppy/aws-s3` multipart callbacks in `UppyDemo.vue`. Uses `$fetch` to Lambda (not `fetchLambda`, which is worker-only). Envelope cached in reactive ref, fetched once from Worker via `fetchWorker`. Uppy mounts after password validation.
+
+**Step 5: Password Protection ✓** — `PasswordBox` in `UppyDemo.vue`, PBKDF2 hashing (52 cycles), `hasTextSame` comparison in `media.js`. Wrong password returns `{success: false, reason: 'BadPassword.'}` (not an exception).
 
 ---
 
 ## How an Upload Works
 
-This section describes how a page upload works end to end. The example is a 250 MB video file that Uppy splits into 50 parts. We proved this flow with our smoke test script (`upload.js` at project root), which plays the role of the page.
+This section describes how a page upload works end to end. The example is a 250 MB video file that Uppy splits into 50 parts.
 
 **Step 1: Get permission from our Worker.**
-The page POSTs to the Nuxt Worker at `/api/upload` to request an upload envelope. This is entirely within our application — no Amazon involved. The Worker calls `sealEnvelope('Net23Upload.', ...)` to create an encrypted, signed envelope with an expiration. The page receives `{success: true, envelope: "..."}`. This envelope is proof that our Worker authorized this upload session. The page will include it in every subsequent call to the Lambda.
+The page POSTs to the Nuxt Worker at `/api/media` to request an upload envelope. This is entirely within our application — no Amazon involved. The Worker calls `sealEnvelope('Net23Upload.', ...)` to create an encrypted, signed envelope with an expiration. The page receives `{success: true, envelope: "..."}`. This envelope is proof that our Worker authorized this upload session. The page will include it in every subsequent call to the Lambda.
 
 **Step 2: Tell Amazon to expect a file.**
 The page POSTs `{action: 'UploadCreate.', envelope, filename, contentType}` to our Lambda. The Lambda first runs security checks: verifies HTTPS, validates Origin, and decrypts the envelope (confirming it was sealed by us, hasn't expired, and is the right type). It then validates the filename against our alphanumeric regex (`/^[0-9A-Za-z][0-9A-Za-z.\-]*$/`), which only allows letters, numbers, dots, and hyphens — this is a security boundary, because without it a malicious filename like `../../other-folder/evil.txt` could use path traversal to write outside the `uploads/` prefix to an arbitrary location in the bucket.
@@ -173,12 +153,6 @@ The parts array is small even for large files. Each entry is about 60 bytes of J
 
 If the page dies mid-upload (browser crash, tab closed, network loss), the uploaded parts remain in S3 under that uploadId. They don't disappear — they sit as orphaned fragments, costing storage. That's what `UploadList.` is for: if the page can recover the uploadId (from localStorage or the Worker), it calls ListParts to ask S3 which parts were already received, and resumes from where it left off. If nobody ever completes or aborts the upload, S3 has a lifecycle rule option to auto-expire incomplete multipart uploads after a number of days, which we may want to configure.
 
-```txt
-hi claude, ok, interesting. so we need to save an array of all the etags, to be able to send back this complete list? for a really big file, like a hour of 4k video, how big is this? and we'll need to figure out where we keep this as we're going along, probably just in the memory of the page? or do we need ot persist this to supabase through the worker or something, i wonder
-
-ok and let's say the page dies between steps 4 and 5. does the file disappear? is some fragment left?
-```
-
 **The Amazon APIs called, in order:**
 1. `CreateMultipartUpload` — "I'm going to upload a file here, give me a session ID" (once)
 2. `getSignedUrl(UploadPartCommand)` — "Give me a presigned URL so the page can PUT part N directly" (once per part, 50 times)
@@ -223,15 +197,23 @@ Browser → POST /upload (UploadComplete.) → Lambda → S3 CompleteMultipartUp
 
 ---
 
+## Next Steps
+
+- **Filename sanitization.** The Lambda rejects filenames with spaces (and other non-alphanumeric characters). Either sanitize client-side in `createMultipartUpload` (e.g. replace spaces with hyphens) or loosen the regex carefully. macOS screenshots triggered this in production.
+- **Round Trip.** After upload completes, display the file via the delivery pipeline (`vhsSign`) to prove both pipelines work together.
+- **Hash Demo.** Compute `hashStream()` on files in the browser before upload, displaying progress and hashes. Foundation for content-addressable storage.
+
+---
+
 ## User Stories
 
 ### Hash Demo
 
 As a developer, I can drag a large file into UppyDemo and see the computed hashes displayed on the page. This validates that `hashStream()` from `icarus/level1.js` works in the browser with real files and shows progress during hashing. No backend needed. We'll use Uppy's `file-added` event to trigger hashing, calling `hashStream()` with `file.stream()` and the protocol constants (`hashProtocolPieces`, `hashProtocolTips`). The `onProgress` callback updates the UI as pieces complete. Need to figure out how to best display progress and final hashes (tipHash, pieceHash as base32) in the component.
 
-### Simple Upload (backend ready, needs frontend wiring)
+### Simple Upload ✓
 
-As a developer, I can drag a file into Uppy and have it land in the S3 bucket. **Backend complete:** Lambda deployed with all S3 operations, CORS configured, envelope auth enabled. **Next:** Wire UppyDemo.vue to call the Lambda using the Uppy configuration above.
+Working. Password-protected upload from UppyDemo through Lambda to S3. Tested local and deployed with files up to 3 GB.
 
 ### Round Trip
 
