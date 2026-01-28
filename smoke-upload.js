@@ -28,19 +28,19 @@ async function main() {
 	let createResponse = await fetch(`${lambda}/upload`, {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json', 'Origin': worker},
-		body: JSON.stringify({action: 'Create.', envelope, filename: 'smoke-test.txt', contentType: 'text/plain'}),
+		body: JSON.stringify({action: 'UploadCreate.', envelope, filename: 'smoke-test.txt', contentType: 'text/plain'}),
 	})
 	let createData = await createResponse.json()
 	log('create response:', look(createData))
 	if (!createData.uploadId) { log('create failed'); return }
-	let {uploadId, path} = createData
+	let {uploadId, key} = createData
 
 	//step 3: sign part 1
 	log('step 3: signing part 1')
 	let signResponse = await fetch(`${lambda}/upload`, {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json', 'Origin': worker},
-		body: JSON.stringify({action: 'SignPart.', envelope, uploadId, path, partNumber: 1}),
+		body: JSON.stringify({action: 'UploadSign.', envelope, uploadId, key, partNumber: 1}),
 	})
 	let signData = await signResponse.json()
 	log('sign response:', look(signData))
@@ -63,11 +63,11 @@ async function main() {
 	let completeResponse = await fetch(`${lambda}/upload`, {
 		method: 'POST',
 		headers: {'Content-Type': 'application/json', 'Origin': worker},
-		body: JSON.stringify({action: 'Complete.', envelope, uploadId, path, parts: [{PartNumber: 1, ETag: etag}]}),
+		body: JSON.stringify({action: 'UploadComplete.', envelope, uploadId, key, parts: [{PartNumber: 1, ETag: etag}]}),
 	})
 	let completeData = await completeResponse.json()
 	log('complete result:', look(completeData))
 
-	log('done! file should be in bucket at:', path)
+	log('done! file should be in bucket at:', key)
 }
 main().catch(e => { log('error:', look(e)); process.exit(1) })

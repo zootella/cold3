@@ -12,9 +12,26 @@ import '@uppy/dashboard/css/style.min.css'
 
 import {
 uppyDynamicImport,
+origin23,
 } from 'icarus'
 
 let uppyInstance
+
+let envelope//cached upload envelope from Worker, shared across all upload callbacks; ttd january later decide how we reuse and renew this envelope, right now it's good for 6 hours
+async function getEnvelope() {
+	if (!envelope) {
+		let response = await fetchWorker('/api/media', {body: {action: 'MediaDemonstrationUpload.'}})
+		envelope = response.envelope
+	}
+	return envelope
+}
+
+async function fetchUpload(body) {
+	return await $fetch(`${origin23()}/upload`, {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls, here, we the page are contacting the /upload lambda directly
+		method: 'POST',
+		body: {...body, envelope: await getEnvelope()},
+	})
+}
 
 onMounted(async () => {
 	const uppy_modules = await uppyDynamicImport()
@@ -22,6 +39,38 @@ onMounted(async () => {
 	uppyInstance.use(uppy_modules.uppy_dashboard.default, {
 		inline: true,
 		target: '#uppy-dashboard',
+	})
+	uppyInstance.use(uppy_modules.uppy_aws_s3.default, {
+		shouldUseMultipart: () => true,
+
+		async createMultipartUpload(file) {
+			let response = await fetchUpload({action: 'UploadCreate.', filename: file.name, contentType: file.type})
+			log('🎈 UploadCreate.', look({file}), look(response))
+			return {uploadId: response.uploadId, key: response.key}
+		},
+
+		async signPart(file, {uploadId, key, partNumber}) {
+			let response = await fetchUpload({action: 'UploadSign.', uploadId, key, partNumber})
+			log('🎈 UploadSign.', look({file, uploadId, key, partNumber}), look(response))
+			return {url: response.url}
+		},
+
+		async completeMultipartUpload(file, {uploadId, key, parts}) {
+			await fetchUpload({action: 'UploadComplete.', uploadId, key, parts})
+			log('🎈 UploadComplete.', look({file, uploadId, key, parts}))
+			return {}
+		},
+
+		async abortMultipartUpload(file, {uploadId, key}) {
+			await fetchUpload({action: 'UploadAbort.', uploadId, key})
+			log('🎈 UploadAbort.', look({file, uploadId, key}))
+		},
+
+		async listParts(file, {uploadId, key}) {
+			let response = await fetchUpload({action: 'UploadList.', uploadId, key})
+			log('🎈 UploadList.', look({file, uploadId, key}), look(response))
+			return response
+		},
 	})
 })
 
