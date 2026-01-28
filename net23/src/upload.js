@@ -59,7 +59,7 @@ async function uploadLambda(method, {actions, lambdaEvent, lambdaContext}) {
 
 		} catch (e2) { await logAlert('upload shut', {e2, door, response, error}) }
 	} catch (e3) { console.error('[OUTER]', e3) }
-	return {statusCode: 500, headers: {'Content-Type': 'application/json'}, body: null}
+	return {statusCode: 500, headers: uploadCorsHeaders(), body: null}
 }
 async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, door}) {
 	let sources = []
@@ -81,6 +81,12 @@ async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, do
 	checkActions({action: door.body?.action, actions})//check action
 	door.letter = await openEnvelope('Net23Upload.', door.body.envelope)//open envelope; page previously got from worker
 }
+function uploadCorsHeaders() {//page at cold3.cc calls Lambda at api.net23.cc; browser requires CORS headers on every response, not just the preflight OPTIONS (which API Gateway handles via serverless.yml)
+	return {
+		'Content-Type': 'application/json',
+		'Access-Control-Allow-Origin': isLocal() ? 'http://localhost:3000' : 'https://'+Key('domain, public'),
+	}
+}
 async function uploadLambdaShut(door, response, error) {
 	door.response = response
 	door.error = error
@@ -91,7 +97,7 @@ async function uploadLambdaShut(door, response, error) {
 		logAlert('upload error', {body: door.body, response, error})
 		r = null
 	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: makeText(response)}
+		r = {statusCode: 200, headers: uploadCorsHeaders(), body: makeText(response)}
 	}
 	await awaitDoorPromises()
 	return r
