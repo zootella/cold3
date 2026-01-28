@@ -18,6 +18,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	}
 
 	if (action == 'MediaDemonstrationUpload.') {
+		if (!hasTextSame(body.hash, Key('upload demonstration password hash, private'))) return {success: false, reason: 'BadPassword.'}
 
 		return {
 			success: true,

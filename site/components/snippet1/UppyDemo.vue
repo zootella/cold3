@@ -13,27 +13,40 @@ import '@uppy/dashboard/css/style.min.css'
 import {
 uppyDynamicImport,
 origin23,
+passwordHash, Data,
 } from 'icarus'
 
 let uppyInstance
 
-let envelope//cached upload envelope from Worker, shared across all upload callbacks; ttd january later decide how we reuse and renew this envelope, right now it's good for 6 hours
-async function getEnvelope() {
-	if (!envelope) {
-		let response = await fetchWorker('/api/media', {body: {action: 'MediaDemonstrationUpload.'}})
-		envelope = response.envelope
-	}
-	return envelope
+const refPassword = ref('')
+const refStatus = ref('')//status text shown below password box
+const refEnvelope = ref(null)//reactive so template can switch from password box to uppy dashboard
+
+async function onPasswordEnter() {
+	if (!refPassword.value) return
+	refStatus.value = 'Hashing...'
+	let hash = await passwordHash({
+		passwordText: refPassword.value,
+		cycles: Number(Key('upload demonstration password cycles, public')),
+		saltData: Data({base62: Key('password, salt, public')}),
+	})
+	refStatus.value = 'Checking...'
+	let response = await fetchWorker('/api/media', {body: {action: 'MediaDemonstrationUpload.', hash}})
+	if (response.reason == 'BadPassword.') { refStatus.value = 'Wrong password'; return }
+	refEnvelope.value = response.envelope
+	refStatus.value = 'Unlocked'
+	await nextTick()//wait for Vue to render #uppy-dashboard div before mounting Uppy into it
+	await mountUppy()
 }
 
 async function fetchUpload(body) {
 	return await $fetch(`${origin23()}/upload`, {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls, here, we the page are contacting the /upload lambda directly
 		method: 'POST',
-		body: {...body, envelope: await getEnvelope()},
+		body: {...body, envelope: refEnvelope.value},
 	})
 }
 
-onMounted(async () => {
+async function mountUppy() {
 	const uppy_modules = await uppyDynamicImport()
 	uppyInstance = new uppy_modules.uppy_core.default()
 	uppyInstance.use(uppy_modules.uppy_dashboard.default, {
@@ -72,7 +85,7 @@ onMounted(async () => {
 			return response
 		},
 	})
-})
+}
 
 onUnmounted(() => {
 	if (uppyInstance) {
@@ -106,6 +119,10 @@ revisit, but for static Dashboard usage, vanilla JS is cleaner
 <template>
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>UppyDemo</i></p>
-<div id="uppy-dashboard"></div>
+<div v-if="!refEnvelope" class="mb-2">
+	<PasswordBox v-model="refPassword" @enter="onPasswordEnter" placeholder="Upload password..." class="w-72" />
+	<span v-if="refStatus" class="ml-2">{{ refStatus }}</span>
+</div>
+<div v-if="refEnvelope" id="uppy-dashboard"></div>
 </div>
 </template>
