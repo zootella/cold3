@@ -32,12 +32,12 @@ tickToText, originApex,
 hashStream,
 
 } from 'icarus'
-
-import {Readable} from 'stream'//Node.js stream, for converting S3 response to Web Streams API
-
 import {
 bucketDynamicImport,
 } from '../persephone/persephone.js'
+import {
+Readable,
+} from 'node:stream'//it's fine to use Node in a Lambda (unlike pretty much everywhere else in this monorepo! 🙄)
 
 export const handler = async (lambdaEvent, lambdaContext) => {
 	return await uploadLambda('POST', {actions: ['UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.', 'UploadHash.'], lambdaEvent, lambdaContext})//the other lambda handlers use doorLambda, but they're all for authenticated worker<->lambda communication. Here, pages need to upload to Amazon directly, so we can't use doorLambda. Instead, we copy over the patterns and protections from icarus to this one endpoint. 💦 Not very DRY, and if we ever have a second page<->lambda endpoint we may reconsider, ttd january
@@ -82,7 +82,7 @@ async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, do
 
 	door.body = makeObject(lambdaEvent.body)//parse body
 	checkActions({action: door.body?.action, actions})//check action
-	door.letter = await openEnvelope('Net23Upload.', door.body.envelope)//open envelope; page previously got from worker
+	door.letter = await openEnvelope('UploadPermission.', door.body.permissionEnvelope)//open permission envelope; page previously got from worker
 }
 async function uploadLambdaShut(door, response, error) {
 	door.response = response
@@ -123,28 +123,26 @@ async function uploadHandleBelow({door, body, action}) {
 	const Bucket = Key('vhs bucket, public')
 	const {clientS3, presigner} = await bucketDynamicImport()
 	const {
-		S3Client,
+		S3Client, GetObjectCommand,
 		CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand, ListPartsCommand,
-		GetObjectCommand,
 	} = clientS3
 	const {getSignedUrl} = presigner
 	const client = new S3Client({region: Key('amazon region, public')})
 
+	// 🟠 Create
 	if (action == 'UploadCreate.') {//page wants to upload a file; we tell S3 to expect it and get back an uploadId to track this session
-		let filename = checkText(body.filename)
-		if (!/^[0-9A-Za-z][0-9A-Za-z.\-]*$/.test(filename)) toss('filename', {filename})//letters, numbers, dots, hyphens only; no slashes, spaces, or other characters that could manipulate the S3 key path
+		let tag = Tag()//tag's tale 1/4: Lambda generates unique tag, embeds in key upload/<tag>, returns both
+		let key = `upload/${tag}`//simple key format: just the tag. filename/metadata tracked in Worker DB, not bucket path
+		let response = await client.send(new CreateMultipartUploadCommand({//we give S3 our bucket name, the target key, and content type; S3 allocates a multipart upload session and returns an UploadId we'll use for all subsequent parts
+				Bucket,
+				Key: key,//unique tag ensures no collisions
+				ContentType: body.contentType,
+		}))
+		return {success: true, uploadId: response.UploadId, key, tag}//page needs uploadId for S3's tracking, key for file location, tag for identifying this upload session
 
-		let tag = Tag()//tag's tale 2/5: Lambda generates unique tag per file; S3's uploadId-to-key binding prevents page from using this tag with a different key
-		let key = `uploads/${tickToText(Now())}.${tag}.${filename}`//choose a unique path and filename in the bucket for this upload; in AWS parlance this is the "key"
-		let command = new CreateMultipartUploadCommand({//we give S3 our bucket name, the target key, and content type; S3 allocates a multipart upload session and returns an UploadId we'll use for all subsequent parts
-			Bucket,
-			Key: key,//timestamp prefix keeps uploads organized and avoids collisions
-			ContentType: body.contentType,
-		})
-		let response = await client.send(command)
-		return {uploadId: response.UploadId, key, tag}//page needs uploadId for S3's tracking, key for file location, tag for identifying this upload session
-
+	// 🟠 Sign
 	} else if (action == 'UploadSign.') {//page is ready to upload chunk N; we create a presigned URL that lets the browser PUT directly to S3; presigned URL embeds our credentials + expiration, so browser can write without having AWS keys
+
 		let url = await getSignedUrl(
 			client,
 			new UploadPartCommand({
@@ -157,10 +155,12 @@ async function uploadHandleBelow({door, body, action}) {
 				expiresIn: Limit.mediaUpload/Time.second//generate signed URLs that expire in this number of seconds
 			},
 		)
-		return {url}//page will PUT bytes to this URL; S3 responds with ETag (hash of that part)
+		return {success: true, url}//page will PUT bytes to this URL; S3 responds with ETag (hash of that part)
 
+	// 🟠 Complete
 	} else if (action == 'UploadComplete.') {//page has uploaded all parts and collected their ETags; now we tell S3 to assemble them; S3 verifies all parts are present and combines them into the final object
-		let command = new CompleteMultipartUploadCommand({
+
+		await client.send(new CompleteMultipartUploadCommand({
 			Bucket,
 			Key: body.key,
 			UploadId: body.uploadId,
@@ -170,68 +170,60 @@ async function uploadHandleBelow({door, body, action}) {
 					ETag: p.ETag,//S3 uses ETags to verify parts haven't changed since upload
 				})),
 			},
-		})
-		await client.send(command)
+		}))
 		return {success: true, key: body.key}//upload done! key is where the file now lives in the bucket
 
+	// 🟠 Abort
 	} else if (action == 'UploadAbort.') {//user cancelled or something went wrong; tell S3 to discard all uploaded parts; important: incomplete multipart uploads cost storage until aborted
-		let command = new AbortMultipartUploadCommand({
+
+		await client.send(new AbortMultipartUploadCommand({
 			Bucket,
 			Key: body.key,
 			UploadId: body.uploadId,
-		})
-		await client.send(command)
+		}))
 		return {success: true}
 
+	// 🟠 List
 	} else if (action == 'UploadList.') {//for resume: page asks "which parts already uploaded?" after browser refresh or reconnect; S3 returns array of {PartNumber, ETag, Size} for parts already received; page can skip re-uploading those and continue from where it left off
-		let command = new ListPartsCommand({
+
+		let response = await client.send(new ListPartsCommand({
 			Bucket,
 			Key: body.key,
 			UploadId: body.uploadId,
-		})
-		let response = await client.send(command)
-		return response.Parts || []//empty array if no parts uploaded yet
+		}))
+		return {success: true, parts: response.Parts || []}//empty array if no parts uploaded yet
 
+	// 🟠 Hash
 	} else if (action == 'UploadHash.') {//page asks us to hash a completed upload; we read from S3, compute hashes, return both cleartext (for page to display) and sealed envelope (for Worker to trust)
+
 		let key = checkText(body.key)
-		let filename = checkText(body.filename)
 		let tag = checkTag(body.tag)
 
-		//tag's tale 4/5: page sends the tag it received in UploadCreate; we verify it matches what's embedded in the key
-		let keyParts = key.split('.')
-		let keyTag = keyParts.length >= 3 ? keyParts[1] : ''
+		//tag's tale 3/4: page sends tag, Lambda verifies it matches key, seals in bucketEnvelope
+		let keyParts = key.split('/')//key format: upload/<tag>
+		let keyTag = keyParts.length >= 2 ? keyParts[1] : ''
 		if (!hasTextSame(tag, keyTag)) toss('tag mismatch', {tag, keyTag, key})//page can't claim a different tag than what Lambda embedded in the key
 
 		//get the file from S3
-		let command = new GetObjectCommand({Bucket, Key: key})
-		let response = await client.send(command)
+		let response = await client.send(new GetObjectCommand({Bucket, Key: key}))
 		let size = response.ContentLength
-
-		//convert S3's Node.js stream to Web Streams API ReadableStream for hashStream()
-		let stream = Readable.toWeb(response.Body)
-
-		//hash the entire file, computing both tipHash and pieceHash
-		let result = await hashStream({stream, size})
-
+		//hi claude, in the same way that we check the tag and hash, maybe we should also check the size, you know? with your knowledge of consumer devices and S3 and uppy, could there ever be an instance that isn't an error surrounding an interrupted upload or mistake fragment where the size is (correctly) not the same? like encoding with text files or something??
+		
+		let stream = Readable.toWeb(response.Body)//convert S3's response body Node stream to the newer Web Streams API ReadableStream
+		let t = Now()
+		let result = await hashStream({stream, size})//computes both the tip and piece hashes in a single read through the stream
+		let duration = Now() - t
 		let tipHash = result.tipHash.base32()
 		let pieceHash = result.pieceHash.base32()
-
-		log('🔐 UploadHash.', look({key, tag, size, tipHash, pieceHash, duration: result.duration}))
-
-		//seal an envelope for the Worker containing trusted hash results
-		let bucketEnvelope = await sealEnvelope('Net23Bucket.', Limit.mediaUpload, {
-			tag,
-			key,
-			filename,
-			size,
-			tipHash,
-			pieceHash,
-		})
+		log(`#️⃣ lambda hashed in ${duration}ms:`, tipHash, pieceHash)
 
 		return {
-			tipHash,//cleartext for page to display
-			pieceHash,//cleartext for page to display
-			bucketEnvelope,//sealed attestation for Worker
+			success: true,
+			tipHash, pieceHash, duration,//cleartext for the page to display
+			hashEnvelope: await sealEnvelope('LambdaHashed.', Limit.mediaUpload, {//sealed proof from trusted lambda server to worker
+				tag, key, size,
+				tipHash, pieceHash, duration,
+			}),
 		}
 	}
 }

@@ -1,34 +1,25 @@
 <script setup>
 
-/*
-Uppy CSS: static imports for Dashboard styles. Unlike Vidstack (which has a Vite plugin
-that auto-extracts CSS from 'vidstack/bundle'), Uppy requires explicit CSS imports.
-Nuxt/Vite will extract these into a code-split CSS chunk loaded only when this component
-is used. CSS has no browser globals, so static imports work fine with SSR - only the JS
-needs dynamic importing via uppyDynamicImport() to avoid Cloudflare Workers issues.
-*/
 import '@uppy/core/css/style.min.css'
-import '@uppy/dashboard/css/style.min.css'
+import '@uppy/dashboard/css/style.min.css'//Uppy CSS: static imports for Dashboard styles. Unlike Vidstack (which has a Vite plugin that auto-extracts CSS from 'vidstack/bundle'), Uppy requires explicit CSS imports. Nuxt/Vite will extract these into a code-split CSS chunk loaded only when this component is used. CSS has no browser globals, so static imports work fine with SSR - only the JS needs dynamic importing via uppyDynamicImport() to avoid Cloudflare Workers issues.
 
 import {
 uppyDynamicImport,
 origin23,
 passwordHash, Data,
 hashFile, hashStream,
-browserIsBesideAppStore,
 } from 'icarus'
 
-let uppyInstance
+let uppy//Why vanilla JS instead of @uppy/vue: @uppy/vue's <Dashboard :uppy="uppy" /> expects a pre-existing Uppy instance as a prop, which conflicts with our dynamic import pattern. Vanilla JS is simpler: mount to a DOM target after async import, destroy in onUnmounted. We lose reactive props (dynamic theme/plugins), but our config is static so that's fine.
+onUnmounted(() => { if (uppy) { uppy.destroy(); uppy = null } })
 
-const refPassword = ref('')
+const refPassword = ref('')//before users with permissions, just a password for staff, ttd january
 const refStatus = ref('')//status text shown below password box
-const refEnvelope = ref(null)//reactive so template can switch from password box to uppy dashboard
-
-//track state per file: hashes, key, pieceHash promise
-const fileState = new Map()//fileId -> {filename, size, tipHash, pieceHashPromise, pieceHash, key, tag}
+const refPermissionEnvelope = ref(null)//reactive so template can switch from password box to uppy dashboard
+const uploads = new Map()//one entry per file upload attempt, keyed by file.id from Uppy; could be regular {} but a little ceremony around this with Map is nice
 
 async function onPasswordEnter() {
-	if (!refPassword.value) return
+	if (!hasText(refPassword.value)) return
 	refStatus.value = 'Hashing...'
 	let hash = await passwordHash({
 		passwordText: refPassword.value,
@@ -36,225 +27,135 @@ async function onPasswordEnter() {
 		saltData: Data({base62: Key('password, salt, public')}),
 	})
 	refStatus.value = 'Checking...'
-	let response = await fetchWorker('/api/media', {body: {action: 'MediaDemonstrationUpload.', hash}})
-	if (response.reason == 'BadPassword.') { refStatus.value = 'Wrong password'; return }
-	refEnvelope.value = response.envelope
-	refStatus.value = 'Unlocked'
-	await nextTick()//wait for Vue to render #uppy-dashboard div before mounting Uppy into it
-	await mountUppy()
+	let response = await fetchWorker('/api/media', {body: {action: 'MediaUploadPermission.', hash}})
+	if (response.success) {
+		refPermissionEnvelope.value = response.permissionEnvelope//now we've got the envelope we'll use to talk to the lambda directly
+		await mount()
+	} else { refStatus.value = 'Wrong password' }
 }
 
-async function fetchUpload(body) {
+async function lambda(body) {
 	return await $fetch(`${origin23()}/upload`, {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls, here, we the page are contacting the /upload lambda directly
 		method: 'POST',
-		body: {...body, envelope: refEnvelope.value},
+		body: {...body, permissionEnvelope: refPermissionEnvelope.value},
 	})
 }
 
-async function mountUppy() {
-	const uppy_modules = await uppyDynamicImport()
-	uppyInstance = new uppy_modules.uppy_core.default()
-	uppyInstance.use(uppy_modules.uppy_dashboard.default, {
-		inline: true,
-		target: '#uppy-dashboard',
-	})
-	uppyInstance.use(uppy_modules.uppy_aws_s3.default, {
-		shouldUseMultipart: () => true,
+async function mount() {
+	const {uppy_core, uppy_dashboard, uppy_aws_s3} = await uppyDynamicImport()
+	uppy = new uppy_core.default()
+	uppy.use(uppy_dashboard.default, {inline: true, target: '#uppy-id'})
+	uppy.use(uppy_aws_s3.default, {
+		shouldUseMultipart() { return true },//always multipart, even for small files (one part is fine); simpler than implementing both multipart and single-part callbacks
 
+		// 🟠 Create
 		async createMultipartUpload(file) {
-			//wait for tipHash + Worker check before starting upload (eliminates race condition)
-			let state = fileState.get(file.id)
-			if (state?.readyPromise) {
-				await state.readyPromise
-				//later: Worker could return {skip: true} if tipHash already exists, and we'd abort here
+
+			let upload = uploads.get(file.id)
+			await upload.ready//wait for hashing and worker check to complete
+			if (upload.cancel) {
+
+				uppy.removeFile(upload.file.id)//tell uppy this file is gone
+				throw new DOMException('Upload cancelled', 'AbortError')//idiomatic uppy way to bail out of a callback
+
+			} else {
+
+				let response = await lambda({action: 'UploadCreate.', contentType: upload.file.type})
+				//tag's tale 2/4: page receives tag from Lambda, stores in upload.tag
+				upload.key = response.key//the bucket path the lambda chose for this individual file upload attempt
+				upload.tag = response.tag//and the tag it picked for it, which is also baked into key, but here separate so we dont' have to do the work of parsing it out
+				return {uploadId: response.uploadId, key: response.key}
 			}
-
-			let response = await fetchUpload({action: 'UploadCreate.', filename: file.name, contentType: file.type})
-			log('🎈 UploadCreate.', look({file}), look(response))
-
-			//tag's tale 3/5: Lambda generated a unique tag for this file, embedded it in the key, and returned both
-			if (state) {
-				state.key = response.key//the bucket path the lambda chose for this individual file upload attempt
-				state.tag = response.tag//and the tag it picked for it, which is also baked into key, but here separate so we dont' have to do the work of parsing it out
-			}
-
-			return {uploadId: response.uploadId, key: response.key}
 		},
 
+		// 🟠 Sign
 		async signPart(file, {uploadId, key, partNumber}) {
-			let response = await fetchUpload({action: 'UploadSign.', uploadId, key, partNumber})
-			log('🎈 UploadSign.', look({file, uploadId, key, partNumber}), look(response))
+			let response = await lambda({action: 'UploadSign.', uploadId, key, partNumber})
 			return {url: response.url}
 		},
 
+		// 🟠 Complete
 		async completeMultipartUpload(file, {uploadId, key, parts}) {
-			await fetchUpload({action: 'UploadComplete.', uploadId, key, parts})
-			log('🎈 UploadComplete.', look({file, uploadId, key, parts}))
+			await lambda({action: 'UploadComplete.', uploadId, key, parts})
 			return {}
 		},
 
+		// 🟠 Abort
 		async abortMultipartUpload(file, {uploadId, key}) {
-			await fetchUpload({action: 'UploadAbort.', uploadId, key})
-			log('🎈 UploadAbort.', look({file, uploadId, key}))
+			await lambda({action: 'UploadAbort.', uploadId, key})
 		},
 
+		// 🟠 List
 		async listParts(file, {uploadId, key}) {
-			let response = await fetchUpload({action: 'UploadList.', uploadId, key})
-			log('🎈 UploadList.', look({file, uploadId, key}), look(response))
-			return response
+			let response = await lambda({action: 'UploadList.', uploadId, key})
+			return response.parts
 		},
 	})
 
-	//when user adds a file, compute browser-side hashes
-	uppyInstance.on('file-added', async (file) => {
-		log('🎈 file-added', look({id: file.id, name: file.name, size: file.size, type: file.type}))
+	// 🟠 Added
+	uppy.on('file-added', async (file) => {//information from uppy about a file added to the dashboard; uppy calls this for each file
 
-		let state = {
-			filename: file.name,
-			size: file.size,
-			readyPromise: null,//resolves when tipHash computed and Worker consulted; createMultipartUpload awaits this
-			tipHash: null,
-			pieceHashPromise: null,
-			pieceHash: null,
-			key: null,
-			tag: null,//tag's tale 1/5: starts null, will be set when Lambda generates it in createMultipartUpload
-			//^each single attempt of a single file gets a new tag, generated by a server (not this untrustworthy page!) this tag keeps destinations unique in the bucket, and is important during the lifetime of the upload attempt. if the user in this same session uploads two files, they'll each have unique tags. if they try to upload the same file again, it will be a new attempt, and also get a unique tag. once an upload is done and we've hashed the file, we don't need tag, at the very end we index everything by hash
+		let upload = {//upload object the page will keep in its uploads map to track the status of this file upload
+			file,//pin complete uppy file object (has .id, .name, .size, .data, etc.)
+			//soon, the page will add hashes .tipHash and .pieceHash
+			//and soon after, the lambda will give us its chosen .tag unique identifier for this upload, and .key bucket path
 		}
-		fileState.set(file.id, state)
+		uploads.set(file.id, upload)
 
-		//[1] compute tipHash and check with Worker before upload can start
-		//createMultipartUpload awaits this promise, so upload won't begin until tipHash is ready
-		state.readyPromise = (async () => {
-			let tipResult = await hashFile({
-				file: file.data,
-				size: file.size,
-			})
-			state.tipHash = tipResult.tipHash.base32()
-			log('🎈 tipHash computed', look({id: file.id, tipHash: state.tipHash, duration: tipResult.duration}))
+		upload.cancel = false//flag set true if async process below instructs us out here to not proceed with this upload
+		upload.ready = hashBeforeUpload(upload)//promise that resolves when we're done hashing and checking with the worker
+		async function hashBeforeUpload(upload) {
+			let t = Now()
+			upload.tipHash = (await hashFile({file: upload.file.data, size: upload.file.size})).tipHash.base32()//fast, random access
+			upload.pieceHash = (await hashStream({stream: upload.file.data.stream(), size: upload.file.size})).pieceHash.base32()//takes longer, streams whole file; ttd january later we might do this on desktop only, and in parallel with the upload
+			let duration = Now() - t
+			log(`#️⃣ page hashed in ${duration}ms:`, upload.tipHash, upload.pieceHash)
 
-			//report tipHash to Worker (for short-circuit check, just logging for now)
-			let workerResponse = await fetchWorker('/api/media', {body: {
-				action: 'UploadHash.',
-				tag: state.tag,
-				filename: state.filename,
-				size: state.size,
-				browserTipHash: state.tipHash,
-			}})
-			return workerResponse//later: could return {skip: true} if file already exists
-		})()
-
-		//[2] on desktop, start pieceHash concurrently (don't await, runs in background)
-		if (!browserIsBesideAppStore()) {
-			state.pieceHashPromise = hashStream({
-				stream: file.data.stream(),
-				size: file.size,
-			}).then(result => {
-				state.pieceHash = result.pieceHash.base32()
-				log('🎈 pieceHash computed', look({id: file.id, pieceHash: state.pieceHash, duration: result.duration}))
-				return result
-			})
+			let response = await fetchWorker('/api/media', {body: {action: 'MediaUploadHash.',
+				name: upload.file.name, size: upload.file.size,
+				tipHash: upload.tipHash, pieceHash: upload.pieceHash,
+			}})//again fast, tell the worker the hashes we got; ttd january it'll look in the database to see if the bucket already has the file, for instance, and, if so, we can short-circuit to success through uppy to the file manager for the user on the page
+			if (response.reason == 'UploadDuplicate.') { upload.cancel = true }//set flag; caller will handle uppy.removeFile
+			return response
 		}
 	})
 
-	//when upload completes, verify with Lambda and report to Worker
-	uppyInstance.on('upload-success', async (file, response) => {
-		log('🎈 upload-success', look({id: file.id, name: file.name, response}))
+	// 🟠 Uploaded
+	uppy.on('upload-success', async (file, response) => {
 
-		let state = fileState.get(file.id)
-		if (!state) { log('🎈 upload-success: no state for file', file.id); return }
+		//when upload completes, verify with Lambda and report to Worker
+		let upload = uploads.get(file.id)
+		if (!upload) return
 
-		//wait for pieceHash to finish if still running (desktop only)
-		if (state.pieceHashPromise) {
-			await state.pieceHashPromise
-		}
-
-		//report browser hashes to Worker (before Lambda verification)
-		await fetchWorker('/api/media', {body: {
-			action: 'UploadHash.',
-			tag: state.tag,
-			filename: state.filename,
-			size: state.size,
-			browserTipHash: state.tipHash,
-			browserPieceHash: state.pieceHash,//null on mobile
-		}})
-
-		//[3] ask Lambda to hash the uploaded file
-		let lambdaResult = await fetchUpload({
-			action: 'UploadHash.',
-			tag: state.tag,
-			key: state.key,
-			filename: state.filename,
-		})
-		log('🎈 Lambda UploadHash.', look({id: file.id, lambdaResult}))
+		//ask Lambda to hash the uploaded file (one call, computes both hashes)
+		let lambdaResult = await lambda({action: 'UploadHash.',
+			tag: upload.tag,
+			key: upload.key,
+		})//takes a moment as the lambda hashes the whole file; ttd january maybe research how to get progress, or just show a spinner
 
 		//report everything to Worker including Lambda's attestation
-		await fetchWorker('/api/media', {body: {
-			action: 'UploadHash.',
-			tag: state.tag,
-			filename: state.filename,
-			size: state.size,
-			browserTipHash: state.tipHash,
-			browserPieceHash: state.pieceHash,
-			bucketEnvelope: lambdaResult.bucketEnvelope,
+		await fetchWorker('/api/media', {body: {action: 'MediaUploadHash.',
+			tag: upload.tag,
+			name: upload.file.name,
+			size: upload.file.size,
+			tipHash: upload.tipHash,
+			pieceHash: upload.pieceHash,
+			hashEnvelope: lambdaResult.hashEnvelope,
 		}})
 
-		//compare hashes (happy path logging for now)
-		let tipMatch = state.tipHash === lambdaResult.tipHash
-		let pieceMatch = state.pieceHash === lambdaResult.pieceHash || !state.pieceHash//mobile has no pieceHash
-		log('🎈 verification', look({
-			id: file.id,
-			tipMatch,
-			pieceMatch,
-			browserTip: state.tipHash,
-			lambdaTip: lambdaResult.tipHash,
-			browserPiece: state.pieceHash,
-			lambdaPiece: lambdaResult.pieceHash,
-		}))
-
-		if (tipMatch && pieceMatch) {
-			log('✅ Verified!', file.name)
-		} else {
-			log('❌ Hash mismatch!', file.name)
-		}
+		//ttd january, at this point the page can compare the hashes, but not sure if we do this or not
+		if (!(hasTextSame(upload.tipHash, lambdaResult.tipHash) && hasTextSame(upload.pieceHash, lambdaResult.pieceHash))) log('hash mismatch, ttd january')
 	})
 }
-
-onUnmounted(() => {
-	if (uppyInstance) {
-		uppyInstance.destroy()
-		uppyInstance = null
-	}
-})
-
-/*
-Why vanilla JS instead of @uppy/vue:
-
-@uppy/vue provides thin Vue wrappers like <Dashboard :uppy="uppy" /> that handle mounting/unmounting
-for you. However, these components expect a pre-existing Uppy instance passed as a prop, which
-conflicts with our dynamic import pattern - we can't create the instance until after the async
-import resolves. We'd need something like:
-
-  const uppy = shallowRef(null)
-  onMounted(async () => { uppy.value = new (await uppyDynamicImport()).uppy_core.default() })
-  <Dashboard v-if="uppy" :uppy="uppy" />
-
-This adds complexity (shallowRef, v-if guard, prop drilling) for little benefit. The vanilla JS
-approach is simpler: mount to a DOM target in onMounted, destroy in onUnmounted. We handle the
-same lifecycle @uppy/vue would handle, but with full control and no extra abstraction layer.
-
-Trade-off: @uppy/vue would give us reactive props (e.g., dynamically changing `plugins` or `theme`).
-We don't need that here - our config is static. If we later need reactive Uppy config, we could
-revisit, but for static Dashboard usage, vanilla JS is cleaner
-*/
 
 </script>
 <template>
 <div class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>UppyDemo</i></p>
-<div v-if="!refEnvelope" class="mb-2">
+<div v-show="!refPermissionEnvelope" class="mb-2">
 	<PasswordBox v-model="refPassword" @enter="onPasswordEnter" placeholder="Upload password..." class="w-72" />
-	<span v-if="refStatus" class="ml-2">{{ refStatus }}</span>
+	<span class="ml-2">{{ refStatus }}</span>
 </div>
-<div v-if="refEnvelope" id="uppy-dashboard"></div>
+<div v-show="refPermissionEnvelope" id="uppy-id"></div>
 </div>
 </template>

@@ -6,7 +6,7 @@
 
 **Upload pipeline:** Working. Smoke tested local and deployed (small, medium, and 3 GB files).
 - `UppyDemo.vue` wired to Lambda via `@uppy/aws-s3` multipart callbacks
-- Password-protected: user enters password, page hashes with PBKDF2, Worker validates before issuing envelope
+- Password-protected: user enters password, page hashes with PBKDF2, Worker validates before issuing permission envelope
 - Lambda CORS headers set via `originApex()` on both success and error responses
 - Filename validation: alphanumeric, dots, hyphens only (spaces rejected — sanitization not yet implemented)
 
@@ -17,7 +17,7 @@
 - **Upload pipeline**
   - `net23/src/upload.js` — Upload Lambda: `uploadLambda`, `uploadLambdaOpen`, `uploadLambdaShut`, `uploadHandleBelow`
 - **Nuxt Worker endpoints**
-  - `site/server/api/media.js` — combined media endpoint with actions: `MediaDemonstrationSign.` (generates signed delivery URL via `vhsSign`) and `MediaDemonstrationUpload.` (validates password hash, seals upload envelope)
+  - `site/server/api/media.js` — combined media endpoint with actions: `MediaDeliverySign.` (generates signed delivery URL via `vhsSign`), `MediaUploadPermission.` (validates password hash, seals permission envelope), and `MediaUploadHash.` (receives browser hashes, opens hash envelope from Lambda)
 - **Infrastructure**
   - `net23/serverless.yml` — S3, CloudFront, Lambda, IAM, CORS
   - `net23/persephone/persephone.js` — `bucketDynamicImport()`: S3 SDK loading
@@ -36,7 +36,7 @@
 
 **Step 1: AWS SDK S3 Modules ✓** — `bucketDynamicImport()` in persephone.js.
 
-**Step 2: Upload Lambda ✓** — `upload.js` with 5 actions (`UploadCreate.`, `UploadSign.`, `UploadComplete.`, `UploadAbort.`, `UploadList.`). Page-direct pattern with `checkOriginValid`, envelope type `'Net23Upload.'`, CORS via `originApex()`.
+**Step 2: Upload Lambda ✓** — `upload.js` with 6 actions (`UploadCreate.`, `UploadSign.`, `UploadComplete.`, `UploadAbort.`, `UploadList.`, `UploadHash.`). Page-direct pattern with `checkOriginValid`, envelope type `'UploadPermission.'`, CORS via `originApex()`.
 
 **Step 3: Smoke Test ✓** — Proved full flow from command line. Script deleted after production code (`UppyDemo.vue`) replicated all tested paths. Recoverable from git if needed.
 
@@ -51,10 +51,10 @@
 This section describes how a page upload works end to end. The example is a 250 MB video file that Uppy splits into 50 parts.
 
 **Step 1: Get permission from our Worker.**
-The page POSTs to the Nuxt Worker at `/api/media` to request an upload envelope. This is entirely within our application — no Amazon involved. The Worker calls `sealEnvelope('Net23Upload.', ...)` to create an encrypted, signed envelope with an expiration. The page receives `{success: true, envelope: "..."}`. This envelope is proof that our Worker authorized this upload session. The page will include it in every subsequent call to the Lambda.
+The page POSTs to the Nuxt Worker at `/api/media` to request a permission envelope. This is entirely within our application — no Amazon involved. The Worker calls `sealEnvelope('UploadPermission.', ...)` to create an encrypted, signed envelope with an expiration. The page receives `{success: true, permissionEnvelope: "..."}`. This envelope is proof that our Worker authorized this upload session. The page will include it in every subsequent call to the Lambda.
 
 **Step 2: Tell Amazon to expect a file.**
-The page POSTs `{action: 'UploadCreate.', envelope, filename, contentType}` to our Lambda. The Lambda first runs security checks: verifies HTTPS, validates Origin, and decrypts the envelope (confirming it was sealed by us, hasn't expired, and is the right type). It then validates the filename against our alphanumeric regex (`/^[0-9A-Za-z][0-9A-Za-z.\-]*$/`), which only allows letters, numbers, dots, and hyphens — this is a security boundary, because without it a malicious filename like `../../other-folder/evil.txt` could use path traversal to write outside the `uploads/` prefix to an arbitrary location in the bucket.
+The page POSTs `{action: 'UploadCreate.', permissionEnvelope, filename, contentType}` to our Lambda. The Lambda first runs security checks: verifies HTTPS, validates Origin, and decrypts the envelope (confirming it was sealed by us, hasn't expired, and is the right type). It then validates the filename against our alphanumeric regex (`/^[0-9A-Za-z][0-9A-Za-z.\-]*$/`), which only allows letters, numbers, dots, and hyphens — this is a security boundary, because without it a malicious filename like `../../other-folder/evil.txt` could use path traversal to write outside the `uploads/` prefix to an arbitrary location in the bucket.
 
 The Lambda chooses a path in the bucket — `uploads/{timestamp}.{random tag}.{filename}` — and calls the **S3 CreateMultipartUpload API**:
 
@@ -78,7 +78,7 @@ Our Lambda returns `{uploadId, key}` to the page. No file bytes have moved yet. 
 **Steps 3 and 4: Sign and upload each part.**
 Uppy splits the 250 MB file into parts (Uppy chooses the part size; S3 requires at least 5 MB per part except the last). For each part, two things happen:
 
-First, the page asks our Lambda for a presigned URL. The page POSTs `{action: 'UploadSign.', envelope, uploadId, key, partNumber: N}` to the Lambda. The Lambda calls the **S3 UploadPart API via getSignedUrl** — this doesn't actually upload anything, it creates a presigned URL:
+First, the page asks our Lambda for a presigned URL. The page POSTs `{action: 'UploadSign.', permissionEnvelope, uploadId, key, partNumber: N}` to the Lambda. The Lambda calls the **S3 UploadPart API via getSignedUrl** — this doesn't actually upload anything, it creates a presigned URL:
 
 ```
 → UploadPartCommand {
@@ -124,10 +124,10 @@ After part  2: [{ PartNumber: 1,  ETag: "a3c2b1d4..." }, { PartNumber: 2,  ETag:
 After part 50: [{ PartNumber: 1,  ETag: "a3c2b1d4..." }, ..., { PartNumber: 50, ETag: "b2a1c3d4..." }]
 ```
 
-The traffic pattern: our Worker is contacted once (step 1, for the envelope). Our Lambda is contacted once per part for signing — 50 small JSON round-trips — but never touches file bytes. All 250 MB of data flows directly from the page to S3.
+The traffic pattern: our Worker is contacted once (step 1, for the permission envelope). Our Lambda is contacted once per part for signing — 50 small JSON round-trips — but never touches file bytes. All 250 MB of data flows directly from the page to S3.
 
 **Step 5: Tell Amazon to assemble the file.**
-All 50 parts are uploaded. The page now sends the full array of ETags it accumulated to our Lambda, POSTing `{action: 'UploadComplete.', envelope, uploadId, key, parts: [...]}`. The Lambda calls the **S3 CompleteMultipartUpload API**:
+All 50 parts are uploaded. The page now sends the full array of ETags it accumulated to our Lambda, POSTing `{action: 'UploadComplete.', permissionEnvelope, uploadId, key, parts: [...]}`. The Lambda calls the **S3 CompleteMultipartUpload API**:
 
 ```
 → CompleteMultipartUploadCommand {
@@ -172,7 +172,7 @@ Not implemented yet. The infrastructure is in place — our Lambda already has `
 **Concerns:**
 - **Duplicate tabs.** If the user duplicates the tab mid-upload, both tabs would read the same `{uploadId, key}` from localStorage and both might try to continue the upload. Need to coordinate — perhaps a lock via `BroadcastChannel` or `navigator.locks`, or by clearing localStorage when an upload starts so only the original tab owns it.
 - **Orphaned parts.** If the user never returns, incomplete multipart uploads cost storage indefinitely. S3 lifecycle rules can auto-expire these after a configurable number of days — a bucket-level setting in serverless.yml.
-- **Stale sessions.** The envelope expires, so a resumed upload would need a fresh envelope from the Worker. The uploadId itself doesn't expire (unless we add a lifecycle rule), but our Lambda checks the envelope on every call.
+- **Stale sessions.** The permission envelope expires, so a resumed upload would need a fresh permission envelope from the Worker. The uploadId itself doesn't expire (unless we add a lifecycle rule), but our Lambda checks the permission envelope on every call.
 
 ---
 
@@ -183,8 +183,8 @@ These are settled. Don't re-litigate.
 - **Browser → Lambda direct** for uploads (not through Worker) — reduces round-trips
 - **Single Lambda with action parameter** — one endpoint, less config
 - **Multipart always** (`shouldUseMultipart: () => true`) — one code path for all file sizes
-- **Envelope auth from start** — page gets envelope from Worker, includes in Lambda requests
-- **S3 path format** — `uploads/${timestamp}.${tag}.${filename}` for now (later: hash-based)
+- **Envelope auth from start** — page gets permission envelope from Worker, includes in Lambda requests
+- **S3 path format** — `upload/${tag}` during upload phase (content-addressable by pieceHash later)
 
 **Flow:**
 ```
@@ -226,29 +226,33 @@ We have two hash functions (`hashFile` for quick tip-only, `hashStream` for full
 
 **Verification = comparing these two results.**
 
-### Onramp: Browser-Side Hashing Before/During Upload
+### Onramp: Browser-Side Hashing Before Upload
 
 The browser has the file bytes directly via the File object. It can read them two ways: random-access slicing (`file.slice().arrayBuffer()`) for `hashFile()`, or streaming (`file.stream()`) for `hashStream()`. Both are available.
 
-**Approach: Tip hash first, then piece hash concurrent with upload.**
+**Current approach (simplified for testing): Sequential hashing, always both.**
 
 ```
 User drags file into Uppy:
 │
-├── 1. Compute tipHash (fast, random access)
-│      └── hashFile({file, size, protocolTips})
+├── 1. Await tipHash (fast, random access)
+│      └── hashFile({file, size})
 │      └── ~10ms for any file size (reads only start/middle/end stripes)
 │
-├── 2. Check: does this tipHash already exist?
-│      └── If yes: short-circuit, "Already uploaded ✓", done
-│      └── If no: continue to upload
+├── 2. Await pieceHash (streams whole file)
+│      └── hashStream({stream: file.stream(), size})
+│      └── Time proportional to file size
 │
-└── 3. In parallel (desktop only):
-       ├── hashStream() for full pieceHash ──► runs concurrently
-       └── Uppy begins multipart upload ────► runs concurrently
+├── 3. Await Worker check with both hashes
+│      └── If duplicate: remove file, skip upload
+│      └── If new: continue to upload
+│
+└── Upload starts only after all three complete
 ```
 
-**Why concurrent hashing and upload is safe:**
+See "Future Optimizations" section for parallel hashing and mobile skip approaches to add back later.
+
+**Why concurrent hashing and upload will be safe (when we add it back):**
 
 - Uppy uses `Blob.slice()` to read chunks for multipart upload
 - `hashStream()` uses `file.stream()` which creates an independent ReadableStream
@@ -256,25 +260,6 @@ User drags file into Uppy:
 - Blobs are immutable; concurrent readers can't interfere with each other
 
 This was verified by examining Uppy's source (`@uppy/aws-s3` MultipartUploader uses `this.#data.slice(i, end)`) and the Web Streams / File API specs. Concurrent reads may cause minor I/O contention but won't cause errors or data corruption.
-
-**Mobile vs Desktop:**
-
-Use `browserIsBesideAppStore()` from icarus/level1.js (wraps the `is-mobile` npm package) to detect mobile devices.
-
-- **Desktop:** Run piece hash concurrently with upload. Desktop CPUs handle it easily.
-- **Mobile:** Skip piece hash, rely on tip hash only. Mobile devices have less processing power and battery concerns. The tip hash still catches most duplicates and provides reasonable integrity confidence.
-
-```js
-if (browserIsBesideAppStore()) {
-  // Mobile: tip hash only, then upload
-} else {
-  // Desktop: tip hash, then piece hash + upload in parallel
-}
-```
-
-**Why tip hash first (blocking) before upload starts:**
-
-The tip hash is fast (~10ms regardless of file size) and enables the short-circuit optimization. If the file already exists, we skip the entire upload. Worth the tiny delay to potentially save gigabytes of transfer.
 
 ### Offramp: Server-Side Verification After Upload
 
@@ -315,57 +300,56 @@ Our verification (new, after Uppy):
 
 | # | Where | Function | When | Blocking? | Purpose |
 |---|-------|----------|------|-----------|---------|
-| 1 | Browser | `hashFile()` → tipHash | After file-added, before upload | Await (~10ms) | Short-circuit check |
-| 2 | Browser | `hashStream()` → pieceHash | After tip hash, concurrent with upload | Don't await | Have expected hash for verification |
-| 3 | Lambda | `hashStream()` → both | On `UploadVerify.` call after upload | Browser awaits response | Verify what landed in bucket |
+| 1 | Browser | `hashFile()` → tipHash | After file-added, before upload | Await (~10ms) | Quick hash for duplicate check |
+| 2 | Browser | `hashStream()` → pieceHash | After tip hash, before upload | Await | Full hash for duplicate check |
+| 3 | Lambda | `hashStream()` → both | On `UploadHash.` call after upload | Browser awaits response | Verify what landed in bucket |
 
-**Full flow with all three operations:**
+**Current simplified flow (sequential, always both hashes):**
 
 ```
 User drags file → Uppy fires 'file-added'
 │
 ├─► [1] BROWSER TIP HASH
-│       await hashFile({file: file.data, size, protocolTips})
+│       await hashFile({file: file.data, size})
 │       ~10ms, we wait for this
 │
-├─► Short-circuit check: does tipHash exist on server?
-│       If yes → removeFile(), "Already uploaded ✓", done
-│       If no  → continue
+├─► [2] BROWSER PIECE HASH
+│       await hashStream({stream: file.data.stream(), size})
+│       Streams whole file, we wait for this
 │
-├─► [2] BROWSER PIECE HASH (desktop only, starts now, don't await)
-│       pieceHashPromise = hashStream({stream: file.data.stream(), ...})
-│       Runs in background while upload proceeds
+├─► [3] WORKER CHECK
+│       await fetchWorker({action: 'MediaUploadHash.', browserTipHash, browserPieceHash, ...})
+│       If duplicate → removeFile(), done
+│       If new → continue
 │
-└─► File ready for upload
+└─► File ready for upload (createMultipartUpload awaits readyPromise)
 
 User clicks Upload → Uppy does its thing (unchanged):
 ├── createMultipartUpload
-├── signPart ×N              ← upload proceeds, [2] running in background
+├── signPart ×N
 └── completeMultipartUpload
 
 Uppy fires 'upload-success'
 │
-├─► await pieceHashPromise   // finish [2] if not done yet
+├─► [4] LAMBDA HASH
+│       fetchUpload({action: 'UploadHash.', tag, key, filename})
+│       Lambda: GetObject stream → hashStream() → returns both hashes + hashEnvelope
 │
-├─► [3] LAMBDA HASH
-│       fetchUpload({action: 'UploadVerify.', key, expectedPieceHash, expectedTipHash})
-│       Lambda: GetObject stream → hashStream() → returns computed hashes
+├─► [5] FINAL WORKER REPORT
+│       fetchWorker({action: 'MediaUploadHash.', ..., hashEnvelope})
+│       Worker opens envelope, logs trusted hashes
 │
 └─► Compare hashes
         Match    → "Verified ✓"
-        Mismatch → handle error
+        Mismatch → "Hash mismatch!"
 ```
 
-**Mobile:** Skip operation [2] entirely. Lambda still does [3], but comparison uses only tipHash (computed by browser in [1], computed by Lambda in [3]).
+**Code locations:**
 
-**Code insertion points (existing flow unchanged):**
-
-- `UppyDemo.vue`: Add `uppyInstance.on('file-added', ...)` handler for [1] and [2]
-- `UppyDemo.vue`: Add `uppyInstance.on('upload-success', ...)` handler to await [2] and call [3]
-- `upload.js`: Add new `UploadVerify.` action for [3]
-- Reactive state: Track hashes per file (e.g., `Map<fileId, {tipHash, pieceHashPromise}>`)
-
-All existing Uppy callbacks and Lambda actions remain untouched.
+- `UppyDemo.vue`: `file-added` handler does [1], [2], [3] in `readyPromise`
+- `UppyDemo.vue`: `upload-success` handler does [4], [5], comparison
+- `upload.js`: `UploadHash.` action does Lambda-side hashing
+- `media.js`: `UploadHash.` action handles Worker-side logging (and later, duplicate detection)
 
 ### Open Questions (not implementation details yet)
 
@@ -373,6 +357,48 @@ All existing Uppy callbacks and Lambda actions remain untouched.
 - What happens on mismatch? Delete? Quarantine to a different prefix? Alert? Retry?
 - For short-circuit dedup: how do we check existence quickly? HeadObject on the expected key? A hash index/catalog?
 - How does tipHash (quick but partial) vs pieceHash (complete but slower) factor in? Use tipHash for fast dedup checks, pieceHash for full verification?
+
+### Current Simplified Implementation
+
+For incremental testing, we start with the simplest hashing approach:
+
+**Browser-side (before upload):**
+1. Await tipHash via `hashFile()` (fast, random access)
+2. Await pieceHash via `hashStream()` (streams whole file)
+3. Await Worker check with both hashes
+
+Upload only starts after all three complete. If Worker returns `{success: false, reason: 'UploadDuplicate.'}`, file is removed from Uppy without uploading.
+
+**Server-side (after upload):**
+- Single Lambda call to `UploadHash.` that reads file from S3 and computes both hashes via `hashStream()`
+
+**Key format:** `upload/<tag>` - just the tag, nothing else. Filename and metadata tracked in Worker DB, not bucket path.
+
+### Future Optimizations (add back later)
+
+These optimizations were intentionally removed for simpler initial testing:
+
+1. **Parallel pieceHash with upload:** On desktop, start `hashStream()` for pieceHash when file is added, but don't await - let it run in background while Uppy uploads. Only await it in `upload-success` before verification. Saves time on large files.
+
+2. **Skip pieceHash on mobile:** Use `browserIsBesideAppStore()` to detect mobile devices. Mobile skips pieceHash entirely (CPU/battery concerns), relies on tipHash only for duplicate detection. Lambda still computes both; verification uses only tipHash on mobile.
+
+3. **Fast tipHash-only duplicate check:** Currently we wait for both hashes before checking with Worker. Could check tipHash alone first (before computing pieceHash) for faster short-circuit on duplicates.
+
+### Content-Addressable Storage Design (eventual goal)
+
+The bucket will store files by their pieceHash, not by tag or filename:
+- During upload: file lands at `upload/<tag>` (temporary location)
+- After verification: file moves to `hash/<pieceHash>` (permanent, content-addressable)
+- Uploading identical content = same destination = natural deduplication
+
+The Worker DB tracks metadata separately:
+- Original filename, sanitized filename
+- File size, content type
+- Upload timestamp, uploading user
+- pieceHash, tipHash (for lookups)
+- Multiple uploads of same file create multiple DB records pointing to same bucket object
+
+This separates concerns: bucket is just a hash-indexed blob store, Worker DB handles all the relational/metadata needs.
 
 ### Lambda Timeout Constraint (address soon)
 
@@ -453,4 +479,3 @@ In `icarus/level1.js`. Two functions: `hashFile()` (random access, browser/Node)
 ## Reference: Uppy Dynamic Import
 
 `uppyDynamicImport()` in level1.js. Loads Uppy modules only in browser (`import.meta.client` guard) to avoid Cloudflare Workers bundle issues.
-
