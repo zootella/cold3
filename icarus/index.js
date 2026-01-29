@@ -215,6 +215,8 @@ checkWallet, validateWallet,
 
 browserIsBesideAppStore, getBrowserGraphics,
 
+hashFile, hashStream, hashProtocol,
+
 generatePosts, postDatabase,
 
 indexRecords, addRecords, mergeRecords,

@@ -311,12 +311,82 @@ Our verification (new, after Uppy):
 - *Page disappears mid-upload.* Wifi drops, user closes laptop. Uploaded parts remain in S3 as orphaned fragments (existing concern, not new). S3 lifecycle rules can auto-expire incomplete multipart uploads.
 - *Page disappears after upload completes but before verification.* File exists in bucket, but we never confirmed its integrity. Unverified files could accumulate. May need a sweep/audit process, or a way to mark files as verified (metadata? separate prefix?).
 
+### Implementation: Three Hashing Operations
+
+| # | Where | Function | When | Blocking? | Purpose |
+|---|-------|----------|------|-----------|---------|
+| 1 | Browser | `hashFile()` → tipHash | After file-added, before upload | Await (~10ms) | Short-circuit check |
+| 2 | Browser | `hashStream()` → pieceHash | After tip hash, concurrent with upload | Don't await | Have expected hash for verification |
+| 3 | Lambda | `hashStream()` → both | On `UploadVerify.` call after upload | Browser awaits response | Verify what landed in bucket |
+
+**Full flow with all three operations:**
+
+```
+User drags file → Uppy fires 'file-added'
+│
+├─► [1] BROWSER TIP HASH
+│       await hashFile({file: file.data, size, protocolTips})
+│       ~10ms, we wait for this
+│
+├─► Short-circuit check: does tipHash exist on server?
+│       If yes → removeFile(), "Already uploaded ✓", done
+│       If no  → continue
+│
+├─► [2] BROWSER PIECE HASH (desktop only, starts now, don't await)
+│       pieceHashPromise = hashStream({stream: file.data.stream(), ...})
+│       Runs in background while upload proceeds
+│
+└─► File ready for upload
+
+User clicks Upload → Uppy does its thing (unchanged):
+├── createMultipartUpload
+├── signPart ×N              ← upload proceeds, [2] running in background
+└── completeMultipartUpload
+
+Uppy fires 'upload-success'
+│
+├─► await pieceHashPromise   // finish [2] if not done yet
+│
+├─► [3] LAMBDA HASH
+│       fetchUpload({action: 'UploadVerify.', key, expectedPieceHash, expectedTipHash})
+│       Lambda: GetObject stream → hashStream() → returns computed hashes
+│
+└─► Compare hashes
+        Match    → "Verified ✓"
+        Mismatch → handle error
+```
+
+**Mobile:** Skip operation [2] entirely. Lambda still does [3], but comparison uses only tipHash (computed by browser in [1], computed by Lambda in [3]).
+
+**Code insertion points (existing flow unchanged):**
+
+- `UppyDemo.vue`: Add `uppyInstance.on('file-added', ...)` handler for [1] and [2]
+- `UppyDemo.vue`: Add `uppyInstance.on('upload-success', ...)` handler to await [2] and call [3]
+- `upload.js`: Add new `UploadVerify.` action for [3]
+- Reactive state: Track hashes per file (e.g., `Map<fileId, {tipHash, pieceHashPromise}>`)
+
+All existing Uppy callbacks and Lambda actions remain untouched.
+
 ### Open Questions (not implementation details yet)
 
 - What's the source of truth for the expected hash? The S3 key itself (if content-addressable)? Object metadata? A separate catalog?
 - What happens on mismatch? Delete? Quarantine to a different prefix? Alert? Retry?
 - For short-circuit dedup: how do we check existence quickly? HeadObject on the expected key? A hash index/catalog?
 - How does tipHash (quick but partial) vs pieceHash (complete but slower) factor in? Use tipHash for fast dedup checks, pieceHash for full verification?
+
+### Lambda Timeout Constraint (address soon)
+
+API Gateway has a hard 29-second timeout. Current Lambda timeout is 25 seconds. For the `UploadHash.` action where Lambda streams a file from S3 and hashes it, this limits us to files that can be hashed in ~25 seconds—roughly 5-10GB depending on S3 throughput and Lambda CPU.
+
+**For now:** Accept this limit. Larger files either skip server-side verification or get flagged as "unverified."
+
+**Questions to explore:**
+
+- Should all page↔Lambda communication bypass API Gateway and use Lambda Function URLs instead? Or just the hash verification step?
+- What benefit does API Gateway provide that we'd lose? (Request validation? Throttling? Logging? Custom domains?)
+- If we wanted moment-by-moment hashing progress from Lambda to page (probably not necessary, but imagine we did)—how would we solve that?
+- Would a WebSocket connection between page and Lambda help? For the entire upload session? Just during hashing?
+- Lambda Function URLs support response streaming—could we stream hash progress that way?
 
 ---
 

@@ -29,15 +29,18 @@ composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
 //and also import these references
 decryptKeys, checkActions, awaitDoorPromises, checkForwardedSecure, checkOriginValid,
 tickToText, originApex,
+hashStream,
 
 } from 'icarus'
+
+import {Readable} from 'stream'//Node.js stream, for converting S3 response to Web Streams API
 
 import {
 bucketDynamicImport,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return await uploadLambda('POST', {actions: ['UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.'], lambdaEvent, lambdaContext})//the other lambda handlers use doorLambda, but they're all for authenticated worker<->lambda communication. Here, pages need to upload to Amazon directly, so we can't use doorLambda. Instead, we copy over the patterns and protections from icarus to this one endpoint. 💦 Not very DRY, and if we ever have a second page<->lambda endpoint we may reconsider, ttd january
+	return await uploadLambda('POST', {actions: ['UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.', 'UploadHash.'], lambdaEvent, lambdaContext})//the other lambda handlers use doorLambda, but they're all for authenticated worker<->lambda communication. Here, pages need to upload to Amazon directly, so we can't use doorLambda. Instead, we copy over the patterns and protections from icarus to this one endpoint. 💦 Not very DRY, and if we ever have a second page<->lambda endpoint we may reconsider, ttd january
 }
 async function uploadLambda(method, {actions, lambdaEvent, lambdaContext}) {
 	try {
@@ -122,6 +125,7 @@ async function uploadHandleBelow({door, body, action}) {
 	const {
 		S3Client,
 		CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand, ListPartsCommand,
+		GetObjectCommand,
 	} = clientS3
 	const {getSignedUrl} = presigner
 	const client = new S3Client({region: Key('amazon region, public')})
@@ -130,14 +134,15 @@ async function uploadHandleBelow({door, body, action}) {
 		let filename = checkText(body.filename)
 		if (!/^[0-9A-Za-z][0-9A-Za-z.\-]*$/.test(filename)) toss('filename', {filename})//letters, numbers, dots, hyphens only; no slashes, spaces, or other characters that could manipulate the S3 key path
 
-		let key = `uploads/${tickToText(Now())}.${Tag()}.${filename}`//choose a unique path and filename in the bucket for this upload; in AWS parlance this is the "key"
+		let tag = Tag()//tag's tale 2/5: Lambda generates unique tag per file; S3's uploadId-to-key binding prevents page from using this tag with a different key
+		let key = `uploads/${tickToText(Now())}.${tag}.${filename}`//choose a unique path and filename in the bucket for this upload; in AWS parlance this is the "key"
 		let command = new CreateMultipartUploadCommand({//we give S3 our bucket name, the target key, and content type; S3 allocates a multipart upload session and returns an UploadId we'll use for all subsequent parts
 			Bucket,
 			Key: key,//timestamp prefix keeps uploads organized and avoids collisions
 			ContentType: body.contentType,
 		})
 		let response = await client.send(command)
-		return {uploadId: response.UploadId, key}//page needs both to continue: uploadId for S3's tracking, key for the file location in the bucket
+		return {uploadId: response.UploadId, key, tag}//page needs uploadId for S3's tracking, key for file location, tag for identifying this upload session
 
 	} else if (action == 'UploadSign.') {//page is ready to upload chunk N; we create a presigned URL that lets the browser PUT directly to S3; presigned URL embeds our credentials + expiration, so browser can write without having AWS keys
 		let url = await getSignedUrl(
@@ -186,5 +191,47 @@ async function uploadHandleBelow({door, body, action}) {
 		})
 		let response = await client.send(command)
 		return response.Parts || []//empty array if no parts uploaded yet
+
+	} else if (action == 'UploadHash.') {//page asks us to hash a completed upload; we read from S3, compute hashes, return both cleartext (for page to display) and sealed envelope (for Worker to trust)
+		let key = checkText(body.key)
+		let filename = checkText(body.filename)
+		let tag = checkTag(body.tag)
+
+		//tag's tale 4/5: page sends the tag it received in UploadCreate; we verify it matches what's embedded in the key
+		let keyParts = key.split('.')
+		let keyTag = keyParts.length >= 3 ? keyParts[1] : ''
+		if (!hasTextSame(tag, keyTag)) toss('tag mismatch', {tag, keyTag, key})//page can't claim a different tag than what Lambda embedded in the key
+
+		//get the file from S3
+		let command = new GetObjectCommand({Bucket, Key: key})
+		let response = await client.send(command)
+		let size = response.ContentLength
+
+		//convert S3's Node.js stream to Web Streams API ReadableStream for hashStream()
+		let stream = Readable.toWeb(response.Body)
+
+		//hash the entire file, computing both tipHash and pieceHash
+		let result = await hashStream({stream, size})
+
+		let tipHash = result.tipHash.base32()
+		let pieceHash = result.pieceHash.base32()
+
+		log('🔐 UploadHash.', look({key, tag, size, tipHash, pieceHash, duration: result.duration}))
+
+		//seal an envelope for the Worker containing trusted hash results
+		let bucketEnvelope = await sealEnvelope('Net23Bucket.', Limit.mediaUpload, {
+			tag,
+			key,
+			filename,
+			size,
+			tipHash,
+			pieceHash,
+		})
+
+		return {
+			tipHash,//cleartext for page to display
+			pieceHash,//cleartext for page to display
+			bucketEnvelope,//sealed attestation for Worker
+		}
 	}
 }
