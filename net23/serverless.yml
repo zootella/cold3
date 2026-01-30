@@ -35,7 +35,7 @@ provider:
             - s3:GetObject
 
 functions:
-  gate-get-lambda:
+  gate-get-lambda: #ttd january, maybe get rid of the "gate" system of cors testing, instead, test with curl with a section about how to in net23.txt; same time maybe also get rid of snippet2
     handler: src/gate-get-lambda.handler
     timeout: 25
     events:
@@ -65,7 +65,7 @@ functions:
     events:
       - http:
           path: /snippet2
-          method: get #ttd december2024 decide if you're keeping this GET function
+          method: get #ttd december2024 decide if you're keeping this GET function; ttd january look at this alongside "gate" soon maybe
           #omit cors to block requests from pages and allow direct navigation from tabs
   up2:
     handler: src/up2.handler
@@ -88,8 +88,10 @@ functions:
       - http:
           path: /upload
           method: post
-          cors: #the other lambdas can only be contacted by workers, which have no origin; but pages at the local and cloud domains must be able to contact /upload directly to be able to upload directly from page to bucket; envelope protects from misuse 
-            origin: '${env:ACCESS_ORIGIN_APEX_CLOUD},${env:ACCESS_ORIGIN_APEX_LOCAL}' #allow both local and cloud all the time
+          cors: #the other lambdas can only be contacted by workers, servers which have no origin; but pages contact the /upload lambda directly to get a signed URL for every ~5mb file piece uppy then PUTs directly to S3; this is too much chatter to route through the worker; envelope protects from misuse
+            origins: #allow both local and cloud all the time
+              - ${env:ACCESS_ORIGIN_APEX_CLOUD} #like https://cold3.cc origin of Nuxt site, not net23, which is where the upload page will need to call us from
+              - ${env:ACCESS_ORIGIN_APEX_LOCAL} #like http://localhost:3000 origin when $ yarn local is running the Nuxt site for local development; we're open source but envelope protects deployed endpoint from being contacted by unauthorized developers (who could spoof Origin header with curl anyways)
             headers:
               - Content-Type
             allowCredentials: false #don't send cookies; our code will check body.envelope as authenticated permission
