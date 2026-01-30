@@ -108,8 +108,8 @@ async function mount() {
 			let t1, t2, t3
 			t1 = Now()
 			upload.tipHash = (await hashFile({file: upload.file.data, size: upload.file.size})).tipHash.base32()//fast, random access
-			t2 = Now()
-			upload.pieceHash = (await hashStream({stream: upload.file.data.stream(), size: upload.file.size})).pieceHash.base32()//takes longer, streams whole file; ttd january later we might do this on desktop only, and in parallel with the upload
+			t2 = Now()//really, really fast, seeing 10ms!
+			upload.pieceHash = (await hashStream({stream: upload.file.data.stream(), size: upload.file.size})).pieceHash.base32()//takes longer, streams whole file; ttd january later we might do this on desktop only, and in parallel with the upload; still fast but would need to show progress; seeing 200k bytes/ms so 1gb file takes ~5s
 			t3 = Now()
 			log(`#️⃣ page hashed ${saySize4(upload.file.size)} in ${commas(t3 - t2)}ms (${commas(Math.round(upload.file.size / (t3 - t2)))} bytes/ms)`, `tip hashed in ${t2 - t1}ms`, `tip ${upload.tipHash} and ${upload.pieceHash} piece hashes`)
 
@@ -134,7 +134,7 @@ async function mount() {
 			tag: upload.tag,
 			key: upload.key,
 		})//takes a moment as the lambda hashes the whole file; ttd january maybe research how to get progress, or just show a spinner
-		log(`#️⃣ lambda hashed ${saySize4(upload.file.size)} in ${commas(result.duration)}ms (${commas(Math.round(upload.file.size / result.duration))} bytes/ms)`, `tip ${result.tipHash} and ${result.pieceHash} piece hashes`)
+		log(`#️⃣ lambda hashed ${saySize4(upload.file.size)} in ${commas(result.duration)}ms (${commas(Math.round(upload.file.size / result.duration))} bytes/ms)`, `tip ${result.tipHash} and ${result.pieceHash} piece hashes`)//page on mac can do 200k bytes/ms; lambda 50k bytes/ms so 1gb file takes 20s, near the 30s API Gateway ceiling
 
 		//report everything to Worker including Lambda's attestation
 		await fetchWorker('/api/media', {body: {action: 'MediaUploadHash.',
