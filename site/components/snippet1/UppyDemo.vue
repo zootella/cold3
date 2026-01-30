@@ -7,7 +7,7 @@ import {
 uppyDynamicImport,
 origin23,
 passwordHash, Data,
-hashFile, hashStream,
+hashFile, hashStream, saySize4,
 } from 'icarus'
 
 let uppy//Why vanilla JS instead of @uppy/vue: @uppy/vue's <Dashboard :uppy="uppy" /> expects a pre-existing Uppy instance as a prop, which conflicts with our dynamic import pattern. Vanilla JS is simpler: mount to a DOM target after async import, destroy in onUnmounted. We lose reactive props (dynamic theme/plugins), but our config is static so that's fine.
@@ -105,11 +105,13 @@ async function mount() {
 		upload.cancel = false//flag set true if async process below instructs us out here to not proceed with this upload
 		upload.ready = hashBeforeUpload(upload)//promise that resolves when we're done hashing and checking with the worker
 		async function hashBeforeUpload(upload) {
-			let t = Now()
+			let t1, t2, t3
+			t1 = Now()
 			upload.tipHash = (await hashFile({file: upload.file.data, size: upload.file.size})).tipHash.base32()//fast, random access
+			t2 = Now()
 			upload.pieceHash = (await hashStream({stream: upload.file.data.stream(), size: upload.file.size})).pieceHash.base32()//takes longer, streams whole file; ttd january later we might do this on desktop only, and in parallel with the upload
-			let duration = Now() - t
-			log(`#️⃣ page hashed in ${duration}ms:`, upload.tipHash, upload.pieceHash)
+			t3 = Now()
+			log(`#️⃣ page hashed ${saySize4(upload.file.size)} in ${commas(t3 - t2)}ms (${commas(Math.round(upload.file.size / (t3 - t2)))} bytes/ms)`, `tip hashed in ${t2 - t1}ms`, `tip ${upload.tipHash} and ${upload.pieceHash} piece hashes`)
 
 			let response = await fetchWorker('/api/media', {body: {action: 'MediaUploadHash.',
 				name: upload.file.name, size: upload.file.size,
@@ -128,10 +130,11 @@ async function mount() {
 		if (!upload) return
 
 		//ask Lambda to hash the uploaded file (one call, computes both hashes)
-		let lambdaResult = await lambda({action: 'UploadHash.',
+		let result = await lambda({action: 'UploadHash.',
 			tag: upload.tag,
 			key: upload.key,
 		})//takes a moment as the lambda hashes the whole file; ttd january maybe research how to get progress, or just show a spinner
+		log(`#️⃣ lambda hashed ${saySize4(upload.file.size)} in ${commas(result.duration)}ms (${commas(Math.round(upload.file.size / result.duration))} bytes/ms)`, `tip ${result.tipHash} and ${result.pieceHash} piece hashes`)
 
 		//report everything to Worker including Lambda's attestation
 		await fetchWorker('/api/media', {body: {action: 'MediaUploadHash.',
@@ -140,11 +143,11 @@ async function mount() {
 			size: upload.file.size,
 			tipHash: upload.tipHash,
 			pieceHash: upload.pieceHash,
-			hashEnvelope: lambdaResult.hashEnvelope,
+			hashEnvelope: result.hashEnvelope,
 		}})
 
 		//ttd january, at this point the page can compare the hashes, but not sure if we do this or not
-		if (!(hasTextSame(upload.tipHash, lambdaResult.tipHash) && hasTextSame(upload.pieceHash, lambdaResult.pieceHash))) log('hash mismatch, ttd january')
+		if (!(hasTextSame(upload.tipHash, result.tipHash) && hasTextSame(upload.pieceHash, result.pieceHash))) log('hash mismatch, ttd january')
 	})
 }
 
