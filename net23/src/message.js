@@ -8,15 +8,23 @@ sendMessage,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return await doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
+	return await doorLambda('POST', {actions: ['Gate.', 'Send.'], lambdaEvent, lambdaContext, doorHandleBelow})
 }
-async function doorHandleBelow({door, body}) {
-	return await sendMessage({
-		provider: body.provider,
-		service: body.service,
-		address: body.address,
-		subjectText: body.subjectText,
-		messageText: body.messageText,
-		messageHtml: body.messageHtml,
-	})
+async function doorHandleBelow({door, body, action}) {
+
+	if (action == 'Gate.') {
+
+		return {success: true, sticker: Sticker()}//just for manual curl testing of cors and origin header security concerns
+
+	} else if (action == 'Send.') {
+
+		return await sendMessage({
+			provider: body.provider,
+			service: body.service,
+			address: body.address,
+			subjectText: body.subjectText,
+			messageText: body.messageText,
+			messageHtml: body.messageHtml,
+		})
+	}
 }

@@ -227,7 +227,7 @@ export async function otpSend({letter, v, provider, browserHash}) {
 
 	// 📬 Step 3 Send: Have Network 23 actually send the email or SMS
 	if (!isInSimulationMode()) {//ttd january, have grid tests work but not actually send messages or need net23 local running
-		await fetchLambda('/message', {body: {
+		await fetchLambda('/message', {body: {action: 'Send.',
 			provider: o.provider,
 			service: o.address.type,//"Email." or "Phone." from verifyEmailOrPhone
 			address: o.address.f1,//form 1, canonical, for use with APIs

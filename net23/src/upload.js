@@ -40,7 +40,7 @@ Readable,
 } from 'node:stream'//it's fine to use Node in a Lambda (unlike pretty much everywhere else in this monorepo! 🙄)
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return await uploadLambda('POST', {actions: ['UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.', 'UploadHash.'], lambdaEvent, lambdaContext})//the other lambda handlers use doorLambda, but they're all for authenticated worker<->lambda communication. Here, pages need to upload to Amazon directly, so we can't use doorLambda. Instead, we copy over the patterns and protections from icarus to this one endpoint. 💦 Not very DRY, and if we ever have a second page<->lambda endpoint we may reconsider, ttd january
+	return await uploadLambda('POST', {actions: ['Gate.', 'UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.', 'UploadHash.'], lambdaEvent, lambdaContext})//the other lambda handlers use doorLambda, but they're all for authenticated worker<->lambda communication. Here, pages need to upload to Amazon directly, so we can't use doorLambda. Instead, we copy over the patterns and protections from icarus to this one endpoint. 💦 Not very DRY, and if we ever have a second page<->lambda endpoint we may reconsider, ttd january
 }
 async function uploadLambda(method, {actions, lambdaEvent, lambdaContext}) {
 	try {
@@ -82,7 +82,11 @@ async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, do
 
 	door.body = makeObject(lambdaEvent.body)//parse body
 	checkActions({action: door.body?.action, actions})//check action
-	door.letter = await openEnvelope('UploadPermission.', door.body.permissionEnvelope)//open permission envelope; page previously got from worker
+	if (door.body?.action == 'Gate.') {
+		//gate action doesn't require envelope so we can test with curl
+	} else {//all other uses do; pages contact the upload lambda directly, but only with recent permission to do so from a worker
+		door.letter = await openEnvelope('UploadPermission.', door.body.permissionEnvelope)//open permission envelope page got from worker
+	}
 }
 async function uploadLambdaShut(door, response, error) {
 	door.response = response
@@ -120,6 +124,12 @@ The browser never sends file bytes through Lambda - that would be slow and expen
 Instead, Lambda just does the coordination, and browser talks directly to S3 for the actual data.
 */
 async function uploadHandleBelow({door, body, action}) {
+
+	// 🟠 Gate
+	if (action == 'Gate.') {
+		return {success: true, sticker: Sticker()}//report reachability to a manual curl test; application code doesn't use this action
+	}
+
 	const Bucket = Key('vhs bucket, public')
 	const {clientS3, presigner} = await bucketDynamicImport()
 	const {
