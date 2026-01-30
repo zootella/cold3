@@ -900,11 +900,15 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 }
 async function doorLambdaCheck({door, actions}) {
 
-	//workers posting a request to Network 23 must include an encrypted envelope as proof of their identity
-	door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, wrong action, or expired
-
 	//check the worker's requested action
 	checkActions({action: door.body?.action, actions})
+
+	//workers posting a request to Network 23 must include an encrypted envelope as proof of their identity
+	if (door.body?.action == 'Gate.') {
+		//gate action doesn't require envelope to make manual testing with curl easier
+	} else {//every other action absolutely does
+		door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, wrong action, or expired
+	}
 }
 
 async function doorWorkerShut(door, response, error) {

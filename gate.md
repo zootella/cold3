@@ -89,7 +89,7 @@ higher:
 | Page at evil-site.com (text/plain) | skipped | **Yes** | No |
 | Server (no Origin) | N/A | **Yes** | N/A |
 
-**Application code required (belt):**
+**Application code required (icarus' level2 door system checks):**
 ```javascript
 function checkOriginWhitelisted(headers) {
   let origin = headerGet(headers, 'Origin')
@@ -103,7 +103,7 @@ function checkOriginWhitelisted(headers) {
 
 **Goal:** Accept requests only from servers (workers, curl). Block all page requests.
 
-**serverless.yml (suspenders):**
+**serverless.yml:**
 ```yaml
 lower:
   handler: src/lower.handler
@@ -121,7 +121,7 @@ lower:
 | Page (any domain, text/plain) | skipped | **Yes** |
 | Server (no Origin) | N/A | **Yes** |
 
-**Application code required (belt):**
+**Application code required (level2 door):**
 ```javascript
 function checkOriginOmitted(headers) {
   if (headerCount(headers, 'Origin') > 0) throw 'Origin header must not be present'
@@ -135,7 +135,7 @@ function checkOriginOmitted(headers) {
 | **serverless.yml CORS** (suspenders) | Controls browser enforcement via response headers; blocks complex cross-origin requests at preflight | Block simple requests; block/allow based on Origin presence |
 | **Application code** (belt) | Inspect Origin header; reject unauthorized requests | N/A - can do everything |
 
-**The belt is required. The suspenders provide defense-in-depth and better browser UX.**
+**The level2 door checks are required. The serverless configuration protections provide defense-in-depth and better browser UX.**
 
 ### Our Inline Lambda Authorizer
 
@@ -190,13 +190,13 @@ curl -s -i -X OPTIONS "https://api.net23.cc/upload" \
   | grep -i "access-control-allow-origin"
 # Expected: access-control-allow-origin: https://cold3.cc (doesn't match, browser blocks)
 
-# POST from server (no Origin) - reaches Lambda, belt rejects
+# POST from server (no Origin) - reaches Lambda, level2 door rejects
 curl -s -i -X POST "https://api.net23.cc/upload" \
   -H "Content-Type: application/json" \
   -d '{"action":"Gate."}'
 # Expected: HTTP/2 500 (checkOriginValid threw: origin header missing)
 
-# POST with whitelisted Origin - reaches Lambda, belt allows, Gate succeeds
+# POST with whitelisted Origin - reaches Lambda, level2 door allows, Gate succeeds
 curl -s -i -X POST "https://api.net23.cc/upload" \
   -H "Origin: https://cold3.cc" \
   -H "Content-Type: application/json" \
@@ -213,25 +213,25 @@ curl -s -i -X OPTIONS "https://api.net23.cc/message" \
   -H "Access-Control-Request-Method: POST"
 # Expected: HTTP/2 403 Missing Authentication Token (no OPTIONS handler configured)
 
-# POST from server (no Origin) - reaches Lambda, belt allows, Gate succeeds
+# POST from server (no Origin) - reaches Lambda, level2 door allows, Gate succeeds
 curl -s -i -X POST "https://api.net23.cc/message" \
   -H "Content-Type: application/json" \
   -d '{"action":"Gate."}'
 # Expected: HTTP/2 200 {"success":true,"sticker":"..."}
 
-# POST with Origin header (simulating page) - reaches Lambda, belt rejects
+# POST with Origin header (simulating page) - reaches Lambda, level2 door rejects
 curl -s -i -X POST "https://api.net23.cc/message" \
   -H "Origin: https://cold3.cc" \
   -H "Content-Type: application/json" \
   -d '{"action":"Gate."}'
 # Expected: HTTP/2 500 (checkOriginOmitted threw: "origin must not be present")
 
-# Simple request with Origin (text/plain skips preflight) - reaches Lambda, belt rejects
+# Simple request with Origin (text/plain skips preflight) - reaches Lambda, level2 door rejects
 curl -s -i -X POST "https://api.net23.cc/message" \
   -H "Origin: https://evil-site.com" \
   -H "Content-Type: text/plain" \
   -d '{"action":"Gate."}'
-# Expected: HTTP/2 500 (checkOriginOmitted threw - proves belt is required)
+# Expected: HTTP/2 500 (checkOriginOmitted threw - proves level2 door is required)
 ```
 
 ## Key Observations
@@ -239,4 +239,4 @@ curl -s -i -X POST "https://api.net23.cc/message" \
 1. **Preflight controls browser behavior** - API Gateway returns CORS headers; browsers enforce the match
 2. **Requests always reach Lambda** - Unless preflight fails for complex requests
 3. **Belt catches what suspenders miss** - Simple requests, server requests with/without Origin
-4. **200 vs 500 proves security** - Gate. succeeds only when both suspenders and belt allow the request
+4. **200 vs 500 proves security** - Gate. succeeds only when both serverless configuration (suspenders) and level2 door (belt) allow the request
