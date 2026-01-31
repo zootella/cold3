@@ -603,14 +603,14 @@ function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data',
 function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
 export function lambda23(route) {//get the url of a Network 23 lambda function route, like '/message' or '/upload', running cloud or local
 	if (isCloud()) {
-		let urls = {
-			'/up2':     Key('up2 lambda url'),
-			'/up3':     Key('up3 lambda url'),
-			'/message': Key('message lambda url'),//only workers may call these, so we even keep the lambda urls private
-			'/upload':  Key('upload lambda url, public'),//the upload page needs to work with the upload lambda directly
+		let keys = {
+			'/up2':     'up2 lambda url',
+			'/up3':     'up3 lambda url',
+			'/message': 'message lambda url',//only workers may call these, so we even keep the lambda urls private
+			'/upload':  'upload lambda url, public',//the upload page needs to work with the upload lambda directly
 		}
-		let url = urls[route]
-		if (!url) toss('unknown lambda route', {route, urls})
+		let url = Key(keys[route])
+		if (!url) toss('unknown lambda route', {route, keys})
 		return url
 	} else {
 		return 'http://localhost:4000/prod' + route//using Node to emulate Lambda and API Gateway (which we don't use in production at all anymore) serverless-offline runs lambdas here, with a great developer experience including hot module replacement 🥵
