@@ -272,11 +272,3 @@ resources:
 custom:
   serverless-offline:
     httpPort: 4000 #run locally on port 4000 instead of the default 3000 when we do $ npm run local, nuxt wants 3000
-  customDomain: #settings for serverless-domain-manager to get lambdas up at api.net23.cc
-    domainName: api.net23.cc
-    basePath: ''
-    stage: ${opt:stage, self:provider.stage}
-    createRoute53Record: true
-    endpointType: 'regional'
-    securityPolicy: 'tls_1_2'
-    certificateArn: ${env:ACCESS_AMAZON_CERTIFICATE}
