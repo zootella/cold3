@@ -54,10 +54,10 @@ function handleCorsPreflight(headers) {
 	return {
 		statusCode: 204,
 		headers: {
-			'Access-Control-Allow-Origin': originApex(),
+			'Access-Control-Allow-Origin': originApex(),//tell the browser (more trustworthy than the page) we only want POST from our own domain
 			'Access-Control-Allow-Methods': 'POST, OPTIONS',
 			'Access-Control-Allow-Headers': 'Content-Type',
-			'Access-Control-Max-Age': '86400',//cache preflight for 24 hours
+			'Access-Control-Max-Age': ''+(2*Time.hour/Time.second),//2 hours in seconds as a string; if we said longer, Chrome would cut to 2 hours, anyway; tell the browser that it can use this answer for the next 2 hours, rather than asking OPTIONS before every POST
 		},
 		body: '',
 	}

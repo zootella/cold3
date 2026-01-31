@@ -566,7 +566,19 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	if (!options.body) options.body = {}
 	options.body = makePlain(options.body)
 	options.body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})
-	return await $fetch(origin23()+url, options)
+	let endpoint
+	if (isCloud()) {//cloud: look up Function URL from secret keys
+		let lambdaUrls = {
+			'/message': Key('message lambda url, secret'),
+			'/up2': Key('up2 lambda url, secret'),
+			'/up3': Key('up3 lambda url, secret'),
+		}
+		endpoint = lambdaUrls[url]
+		if (!endpoint) toss('unknown lambda path', {url})
+	} else {//local: serverless-offline at localhost:4000
+		endpoint = origin23() + url
+	}
+	return await $fetch(endpoint, options)
 }
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)

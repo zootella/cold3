@@ -38,24 +38,30 @@ functions:
   message:
     handler: src/message.handler
     timeout: 25
-    events:
-      - http:
-          path: /message
-          method: post
+    url:
+      cors: false
+    events: #BuildRemove
+      - http: #BuildRemove
+          path: /message #BuildRemove
+          method: post #BuildRemove
   up2:
     handler: src/up2.handler
     timeout: 25
-    events:
-      - http:
-          path: /up2
-          method: post
+    url:
+      cors: false
+    events: #BuildRemove
+      - http: #BuildRemove
+          path: /up2 #BuildRemove
+          method: post #BuildRemove
   up3:
     handler: src/up3.handler
     timeout: 25
-    events:
-      - http:
-          path: /up3
-          method: post
+    url:
+      cors: false
+    events: #BuildRemove
+      - http: #BuildRemove
+          path: /up3 #BuildRemove
+          method: post #BuildRemove
   upload:
     handler: src/upload.handler
     timeout: 25
