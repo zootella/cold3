@@ -58,43 +58,96 @@ POST response   |   JSON, no CORS               JSON with Access-Control-Allow-O
 
 ## Implementation Steps
 
-### Step 1: Add `from` parameter to doorLambda signature
+### Phase 1: Enhance doorLambda to support Page mode
+
+Build out the `from` parameter in level2.js. After this phase, doorLambda can handle both Worker and Page modes, but upload.js still uses its own uploadLambda (nothing breaks).
+
+**1a. Add helper functions to level2.js**
+
+Add `getLambdaMethod` to DRY up httpMethod extraction:
+```javascript
+function getLambdaMethod(lambdaEvent) {
+    return isCloud()
+        ? lambdaEvent.requestContext?.http?.method
+        : lambdaEvent.httpMethod
+}
+```
+
+Add `isOriginValid` alongside `checkOriginValid` (avoids catching our own exception in handleCorsPreflight):
+```javascript
+export function isOriginValid(headers) {
+    if (isLocal()) return true
+    let n = headerCount(headers, 'Origin')
+    if (n != 1) return false
+    let v = headerGet(headers, 'Origin')
+    return v == originApex()
+}
+export function checkOriginValid(headers) {
+    if (!isOriginValid(headers)) toss('origin not valid', {headers})
+}
+```
+
+Add `handleCorsPreflight` (moved from upload.js):
+```javascript
+function handleCorsPreflight(headers) {
+    if (!isOriginValid(headers)) {
+        return {statusCode: 403, headers: {}, body: ''}
+    }
+    return {
+        statusCode: 204,
+        headers: {
+            'Access-Control-Allow-Origin': originApex(),
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': ''+(2*Time.hour/Time.second),
+        },
+        body: '',
+    }
+}
+```
+
+**1b. Add `from` parameter to doorLambda signature**
 ```javascript
 export async function doorLambda(method, {
-    from,  // NEW: 'Worker.' or 'Page.'
+    from,  // 'Worker.' or 'Page.'
     lambdaEvent, lambdaContext,
     doorHandleBelow,
     actions,
 }) {
 ```
 
-### Step 2: Handle OPTIONS in doorLambda (for Page only)
+**1c. Handle OPTIONS in doorLambda (for Page only)**
+
 At the top of doorLambda, before the try block:
 ```javascript
 if (from == 'Page.') {
-    let httpMethod = lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method
-    if (httpMethod == 'OPTIONS') return handleCorsPreflight(lambdaEvent.headers)
+    if (getLambdaMethod(lambdaEvent) == 'OPTIONS') return handleCorsPreflight(lambdaEvent.headers)
 }
 ```
 
-### Step 3: Modify doorLambdaOpen to branch on `from`
+**1d. Modify doorLambdaOpen to validate `from` and branch origin checks**
 ```javascript
 async function doorLambdaOpen({method, from, lambdaEvent, lambdaContext}) {
     // ... existing decryptKeys and setup ...
 
+    // validate from parameter
+    if (from != 'Worker.' && from != 'Page.') toss('from must be Worker. or Page.', {from})
+
+    // ... existing method check ...
+
+    // branch origin check based on from
     if (from == 'Worker.') {
         checkOriginOmitted(lambdaEvent.headers)  // existing behavior
     } else if (from == 'Page.') {
-        checkOriginValid(lambdaEvent.headers)    // new behavior
-    } else {
-        toss('from must be Worker. or Page.', {from})
+        checkOriginValid(lambdaEvent.headers)
     }
 
     // ... rest of function ...
 }
 ```
 
-### Step 4: Modify doorLambdaCheck to branch on `from`
+**1e. Modify doorLambdaCheck to branch envelope logic on `from`**
+
 All four cases explicit for clarity in security-critical code:
 ```javascript
 async function doorLambdaCheck({door, from, actions}) {
@@ -118,7 +171,7 @@ async function doorLambdaCheck({door, from, actions}) {
 }
 ```
 
-### Step 5: Modify doorLambdaShut to add CORS headers for Page
+**1f. Modify doorLambdaShut to add CORS headers for Page**
 ```javascript
 async function doorLambdaShut(door, from, response, error) {
     // ... existing setup ...
@@ -140,10 +193,6 @@ async function doorLambdaShut(door, from, response, error) {
 
 Also update the 500 fallback at the end of doorLambda itself:
 ```javascript
-// Current (no CORS):
-return {statusCode: 500, headers: {'Content-Type': 'application/json'}, body: ''}
-
-// Updated (CORS for Page):
 let headers = {'Content-Type': 'application/json'}
 if (from == 'Page.') {
     headers['Access-Control-Allow-Origin'] = originApex()
@@ -151,24 +200,62 @@ if (from == 'Page.') {
 return {statusCode: 500, headers, body: ''}
 ```
 
-### Step 6: Move handleCorsPreflight to level2.js
-Export it so upload.js can use it during transition, or keep it internal to doorLambda.
+**1g. Update up2.js and up3.js to specify actions** ✓ DONE
 
-### Step 7: Update all lambda handlers
-- message.js: add `from: 'Worker.'`
-- up2.js: add `from: 'Worker.'`
-- up3.js: add `from: 'Worker.'`
-- upload.js: switch from `uploadLambda` to `doorLambda` with `from: 'Page.'`
+Already added `actions: ['Up.']` to both handlers (they already have `from: 'Worker.'`).
 
-### Step 8: Simplify upload.js
-Remove duplicated door functions:
-- `uploadLambda` function (replaced by doorLambda)
-- `uploadLambdaOpen` function (replaced by doorLambdaOpen)
-- `uploadLambdaShut` function (replaced by doorLambdaShut)
-- `handleCorsPreflight` (moved to level2.js)
+**Phase 1 files:**
+- `icarus/level2.js` - doorLambda, doorLambdaOpen, doorLambdaCheck, doorLambdaShut, add helpers
+- `net23/src/up2.js` - ✓ already has `actions: ['Up.']`
+- `net23/src/up3.js` - ✓ already has `actions: ['Up.']`
 
-Keep in doorHandleBelow:
-- `openEnvelope('UploadPermission.', body.permissionEnvelope)` - this is handler-specific auth, not door-level
+---
+
+### Phase 2: Migrate upload.js to unified doorLambda
+
+Switch upload.js from its own uploadLambda to the enhanced doorLambda, then remove the duplicated code.
+
+**2a. Update upload.js handler to use doorLambda**
+```javascript
+export const handler = async (lambdaEvent, lambdaContext) => {
+    return await doorLambda('POST', {
+        from: 'Page.',
+        actions: ['Gate.', 'UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.', 'UploadHash.'],
+        lambdaEvent,
+        lambdaContext,
+        doorHandleBelow: uploadHandleBelow,
+    })
+}
+```
+
+**2b. Move permissionEnvelope check into uploadHandleBelow**
+
+The handler-specific auth stays in the handler (not at door level):
+```javascript
+async function uploadHandleBelow({door, body, action}) {
+    if (action == 'Gate.') {
+        return {success: true, sticker: Sticker()}
+    }
+
+    // handler-specific auth: page must have permission envelope from worker
+    door.letter = await openEnvelope('UploadPermission.', body.permissionEnvelope)
+
+    // ... rest of handler ...
+}
+```
+
+**2c. Remove duplicated functions from upload.js**
+- Delete `handleCorsPreflight` (now in level2.js)
+- Delete `uploadLambda` (replaced by doorLambda)
+- Delete `uploadLambdaOpen` (replaced by doorLambdaOpen)
+- Delete `uploadLambdaShut` (replaced by doorLambdaShut)
+
+**2d. Update imports in upload.js**
+
+Remove imports that are no longer needed, keep what's used by uploadHandleBelow.
+
+**Phase 2 files:**
+- `net23/src/upload.js` - switch to doorLambda, delete duplicated functions
 
 ## Safety Considerations
 
@@ -190,41 +277,12 @@ Keep in doorHandleBelow:
    - OPTIONS preflight works for Page lambdas
    - CORS headers present on all Page lambda responses
 
-## Additional Cleanup Notes
-
-### DRY up httpMethod extraction
-The pattern `lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method` appears in multiple places. Create a helper function near the other header utilities (checkOriginValid, etc.):
-```javascript
-function getLambdaMethod(lambdaEvent) {
-    return isCloud()
-        ? lambdaEvent.requestContext?.http?.method
-        : lambdaEvent.httpMethod
-}
-```
-
-### Add isOriginValid alongside checkOriginValid
-Currently upload.js lines 60-62 catch an exception we throw ourselves (messy). Follow the pattern of `checkText`/`hasText`:
-- `checkOriginValid(headers)` - throws if invalid (for use in door authentication)
-- `isOriginValid(headers)` - returns boolean (for use in handleCorsPreflight where we want to return 403, not throw)
-
-```javascript
-export function isOriginValid(headers) {
-    if (isLocal()) return true
-    let n = headerCount(headers, 'Origin')
-    if (n != 1) return false
-    let v = headerGet(headers, 'Origin')
-    let allowed = 'https://'+Key('domain, public')
-    return v == allowed
-}
-export function checkOriginValid(headers) {
-    if (!isOriginValid(headers)) toss('origin not valid', {headers})
-}
-```
-
 ## Files to Modify
 
+**Phase 1:**
 1. `icarus/level2.js` - doorLambda, doorLambdaOpen, doorLambdaCheck, doorLambdaShut, add handleCorsPreflight, add getLambdaMethod, add isOriginValid
-2. `net23/src/message.js` - add `from: 'Worker.'`
-3. `net23/src/up2.js` - add `from: 'Worker.'`
-4. `net23/src/up3.js` - add `from: 'Worker.'`
-5. `net23/src/upload.js` - switch to doorLambda, delete duplicated functions
+2. `net23/src/up2.js` - add `actions: ['Up.']`
+3. `net23/src/up3.js` - add `actions: ['Up.']`
+
+**Phase 2:**
+4. `net23/src/upload.js` - switch to doorLambda, delete duplicated functions

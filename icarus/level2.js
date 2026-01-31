@@ -751,10 +751,10 @@ then write your code in doorHandleBelow() beneath
 */
 
 export async function doorWorker(method, {
-	workerEvent,//cloudflare event objects
-	doorHandleBelow,//your function that runs code specific to the request
 	actions,//a list of acceptable body.action tags, like ['CheckName.', 'TakeName.'] or whatever, so your action if doesn't need an else
 	useTurnstile,//true to protect this api endpoint with cloudflare turnstile; the page must have given us body.turnstileToken
+	workerEvent,//cloudflare event object
+	doorHandleBelow,//your function that runs code specific to the request
 }) {
 	try {
 		let door = {}, response, error
@@ -774,7 +774,7 @@ export async function doorWorker(method, {
 		} catch (e1) { error = e1 }
 		try {
 
-			let r = await doorWorkerShut(door, response, error)
+			let r = await doorWorkerShut({door, response, error})
 			if (response && !error) return r
 
 		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }
@@ -782,15 +782,21 @@ export async function doorWorker(method, {
 	setResponseStatus(workerEvent, 500); return null
 }
 export async function doorLambda(method, {
+	from,//who is allowed to call us here? trusted server code must hard-code "Worker." or "Page." in the call here
+	actions,
 	lambdaEvent, lambdaContext,//amazon event objects
 	doorHandleBelow,
-	actions,
 }) {
 	try {
+		//trusted server code must configure each lambda handler as accessible explicitly and exclusively from worker or page
+		if (!(from == 'Worker.' || from == 'Page.')) toss('code', {from})
+		//if we've configured the lambda calling us to talk directly to a page, we need to do the cors OPTIONS preflight
+		if (from == 'Page.' && getLambdaMethod(lambdaEvent) == 'OPTIONS') return handleLambdaCorsPreflight(lambdaEvent.headers)
+
 		let door = {}, response, error
 		try {
 
-			door = await doorLambdaOpen({method, lambdaEvent, lambdaContext})
+			door = await doorLambdaOpen({from, method, lambdaEvent, lambdaContext})
 			await doorLambdaCheck({door, actions})
 			response = await doorHandleBelow({
 				door,
@@ -802,12 +808,14 @@ export async function doorLambda(method, {
 		} catch (e) { error = e }
 		try {
 
-			let r = await doorLambdaShut(door, response, error)
+			let r = await doorLambdaShut({door, response, error})
 			if (response && !error) return r
 
 		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }
 	} catch (e3) { console.error('[OUTER]', e3) }
-	return {statusCode: 500, headers: {'Content-Type': 'application/json'}, body: ''}//body must be string, not null, for lambda function urls
+	let headers = {'Content-Type': 'application/json'}
+	if (from == 'Page.') handleLambdaCorsResponse(headers)
+	return {statusCode: 500, headers, body: ''}//body must be string, not null, for lambda function urls
 }
 /*
 note on this design catching exceptions
@@ -845,7 +853,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	door.origin = headerOrigin({workerEvent})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
 	door.ip = headerGetOne(workerEvent.req.headers, 'cf-connecting-ip')
 
-	if (method != workerEvent.req.method) toss('method mismatch', {method, door})//check the method
+	if (method != getWorkerMethod(workerEvent)) toss('method mismatch', {method, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
 		door.query = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
@@ -863,7 +871,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	} else { toss('method not supported', {door}) }
 	return door
 }
-async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
+async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 	let sources = []//unlike the cloudflare code above, the lambda event and context objects do not contain environment variables
 	if (defined(typeof process) && process.env) {
 		sources.push({note: 'd10', environment: process.env})
@@ -872,13 +880,12 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 
 	let door = {}//our object that bundles together everything about this incoming request
 	door.task = Task({name: 'door lambda'})
+	door.from = from
 
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
 	door.lambdaContext = lambdaContext
 
-	let requestMethod = (//get the HTTP method from the incoming request, like POST
-		isCloud() ? lambdaEvent.requestContext?.http?.method//lambda function urls deployed, so deep here
-		: lambdaEvent.httpMethod)//for yarn local, serverless offline emulates api gateway, so shallower here
+	let requestMethod = getLambdaMethod(lambdaEvent)
 	if (method != requestMethod) toss('method mismatch', {method, requestMethod, door})//method is what code requires; enforce it
 	door.method = method
 	if (method == 'GET') {
@@ -891,9 +898,10 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it
 		door.body = makeObject(door.bodyText)
 
-		//authenticate lambda post request: (1) https; (2) origin *omitted*; (3) access code valid
+		//authenticate lambda post request: (1) https; (2) origin correct for worker or page
 		checkForwardedSecure(lambdaEvent.headers)
-		checkOriginOmitted(lambdaEvent.headers)
+		if (door.from == 'Worker.') { checkOriginOmitted(lambdaEvent.headers) }//worker to lambda: origin must be absent
+		else if (door.from == 'Page.') { checkOriginValid(lambdaEvent.headers) }//page to lambda: origin must be present and known
 
 	} else { toss('method not supported', {door}) }
 	return door
@@ -901,7 +909,7 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 
 async function doorWorkerCheck({door, actions, useTurnstile}) {
 
-	//make sure the action the page wants is in the api endpoint code's list of accpetable actions
+	//make sure the action the page wants is in the api endpoint code's hardcoded list of actions it expects
 	checkActions({action: door.body?.action, actions})
 
 	//if the api endpoint code requires cloudflare turnstile, make sure the page sent a valid token
@@ -913,18 +921,22 @@ async function doorWorkerCheck({door, actions, useTurnstile}) {
 }
 async function doorLambdaCheck({door, actions}) {
 
-	//check the worker's requested action
+	//make sure the action the page wants is in the api endpoint code's hardcoded list of actions it expects
 	checkActions({action: door.body?.action, actions})
 
-	//workers posting a request to Network 23 must include an encrypted envelope as proof of their identity
-	if (door.body?.action == 'Gate.') {
-		//gate action doesn't require envelope to make manual testing with curl easier
-	} else {//every other action absolutely does
-		door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, wrong action, or expired
+	//if this is a lambda for workers, make sure they include the standard envelope that proves they're our servers not attackers
+	if (door.from == 'Worker.') {//this lambda endpoint is configured to be called by trusted code in a worker
+		if (door.body?.action == 'Gate.') {//body indicates the special "Gate." action, used for manual curl testing
+			//don't require an envelope; this action does nothing and this allows easier curl testing
+		} else {
+			door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, wrong action, or expired
+		}
+	} else if (door.from == 'Page.') {//this lambda endpoint is configured to be called by potentially compromised javascript on a page
+		//no standard envelope; each endpoint fashions its own authentication
 	}
 }
 
-async function doorWorkerShut(door, response, error) {
+async function doorWorkerShut({door, response, error}) {
 	door.response = response
 	door.error = error
 	door.task.finish()
@@ -940,7 +952,7 @@ async function doorWorkerShut(door, response, error) {
 	await awaitDoorPromises()
 	return r
 }
-async function doorLambdaShut(door, response, error) {
+async function doorLambdaShut({door, response, error}) {
 	door.response = response
 	door.error = error
 	door.task.finish()
@@ -950,7 +962,9 @@ async function doorLambdaShut(door, response, error) {
 		logAlert('door lambda shut', {body: door.body, response, error})
 		r = null
 	} else {
-		r = {statusCode: 200, headers: {'Content-Type': 'application/json'}, body: makeText(response)}//by comparison, amazon wants it raw
+		let headers = {'Content-Type': 'application/json'}
+		if (door.from == 'Page.') handleLambdaCorsResponse(headers)//missing or mismatched access control allow origin will cause the (trustworthy) browser to swallow the response rather than giving it to the (suspect) script on the page
+		r = {statusCode: 200, headers, body: makeText(response)}//by comparison, amazon wants it raw
 	}
 	await awaitDoorPromises()
 	return r
@@ -981,7 +995,6 @@ Notes: (i) The Network 23 Application Programming Interface is exclusively for s
 (iv) all site APIs are POST; we block GET entirely
 (v) similarly, there are no GET lambdas; note that this whole grid is for api.net23.cc; vhs.net23.cc is the cloudfront function which does its own checks of the method and origin and referer headers
 */
-//hi claude, let's export all four of these, not just checkOriginValid. and then, i think we can use checkForwardedSecure in upload.js, instead of duplicating logic inside here
 export function checkForwardedSecure(headers) { if (isLocal()) return//skip these checks during local development
 	let n = headerCount(headers, 'X-Forwarded-Proto')
 	if (n == 0) {
@@ -990,6 +1003,13 @@ export function checkForwardedSecure(headers) { if (isLocal()) return//skip thes
 		let v = headerGet(headers, 'X-Forwarded-Proto')
 		if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
 	} else { toss('multiple x forwarded proto headers', {n, headers}) }
+}
+function getWorkerMethod(workerEvent) {
+	return workerEvent.req.method//this is where to find the http method like POST in the event object from cloudflare
+}
+function getLambdaMethod(lambdaEvent) {
+	return (isCloud() ? lambdaEvent.requestContext?.http?.method//deployed to cloud, lambda function urls use payload format version 2.0
+		: lambdaEvent.httpMethod)//running locally, object arrives in older api gateway format
 }
 export function checkOriginOmittedOrValid(headers) {
 	let n = headerCount(headers, 'Origin')
@@ -1000,12 +1020,14 @@ export function checkOriginOmittedOrValid(headers) {
 export function checkOriginOmitted(headers) {
 	if (headerCount(headers, 'Origin')) toss('origin must not be present', {headers})
 }
-export function checkOriginValid(headers) { if (isLocal()) return//skip these checks during local development
+export function checkOriginValid(headers) {
+	if (!isOriginValid(headers)) toss('origin not valid', {headers})
+}
+export function isOriginValid(headers) { if (isLocal()) return true//skip these checks during local development
 	let n = headerCount(headers, 'Origin')
-	if (n != 1) toss('origin header missing or multiple', {n, headers})
+	if (n != 1) return false
 	let v = headerGet(headers, 'Origin')
-	let allowed = 'https://'+Key('domain, public')
-	if (v != allowed) toss('origin not allowed', {n, v, allowed, headers})
+	return v == originApex()
 }
 
 export function headerCount(headers, name) {
@@ -1050,6 +1072,44 @@ function headerOrigin({workerEvent}) {
 	//from chat and observation, we assemble it from two headers
 	//workerEvent.req.url should be useful, but it's just the route, like "/api/something", which is the part we don't need!
 	//we don't need the origin on the lambda side, and it's likely harder to get, anyway
+}
+
+/*
+CORS
+
+our page at cold3.cc calls our lambdas at on.aws; not the same domain!
+browsers block scripts from reading cross-origin responses
+script still calls us, we still reply, but the (trustworthy) browser swallows the response
+rather than giving it to (potentially malicious) javascript on a page from some random domain
+
+two enforcers here:
+(1) we check incoming Origin header, returning 403 if unknown
+(2) browser checks our Access-Control-Allow-Origin response header,
+swallowing our response rather than giving it to script on a page from a domain that's not ours
+
+this protects a user with a trustworthy browser which has navigated onto a malicious site at an unknown domain
+the attacker themselves can spoof Origin with curl or their own modified browser
+but cannot prevent a target victim's trustworthy browser from setting Origin to us honestly,
+and correctly not delivering a response from us to script on a foreign domain
+*/
+function handleLambdaCorsPreflight(headers) {//browsers send OPTIONS before POST to ask if that's going to work; this is the CORS preflight
+	if (isOriginValid(headers)) {//the origin domain the browser wrote into the headers to us is ok
+		return {
+			statusCode: 204,//preflight success
+			headers: {
+				'Access-Control-Allow-Origin': originApex(),//we tell the browser we only talk to script at our domain
+				'Access-Control-Allow-Methods': 'POST, OPTIONS',//we accept POST (the real request) and OPTIONS (this preflight)
+				'Access-Control-Allow-Headers': 'Content-Type',//page is allowed to send Content-Type header
+				'Access-Control-Max-Age': ''+(2*Time.hour/Time.second),//2 hours in seconds as a string; if we said longer, Chrome would cut to 2 hours, anyway; tell the browser that it can use this answer for the next 2 hours, rather than asking OPTIONS before every POST
+			},
+			body: '',//no content; just the headers above matter
+		}
+	} else {
+		return {statusCode: 403, headers: {}, body: ''}//unknown origin; reject without revealing anything
+	}
+}
+function handleLambdaCorsResponse(headers) {
+	headers['Access-Control-Allow-Origin'] = originApex()//every response needs this header, not just the preflight
 }
 
 //      _                        _                 _   _                 
