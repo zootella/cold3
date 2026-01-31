@@ -59,17 +59,12 @@ functions:
   upload:
     handler: src/upload.handler
     timeout: 25
-    events:
-      - http:
-          path: /upload
-          method: post
-          cors: #the other lambdas can only be contacted by workers, servers which have no origin; but pages contact the /upload lambda directly to get a signed URL for every ~5mb file piece uppy then PUTs directly to S3; this is too much chatter to route through the worker; envelope protects from misuse
-            origins: #allow both local and cloud all the time
-              - ${env:ACCESS_ORIGIN_APEX_CLOUD} #like https://cold3.cc origin of Nuxt site, not net23, which is where the upload page will need to call us from
-              - ${env:ACCESS_ORIGIN_APEX_LOCAL} #like http://localhost:3000 origin when $ yarn local is running the Nuxt site for local development; we're open source but envelope protects deployed endpoint from being contacted by unauthorized developers (who could spoof Origin header with curl anyways)
-            headers:
-              - Content-Type
-            allowCredentials: false #don't send cookies; our code will check body.envelope as authenticated permission
+    url:
+      cors: false #our code in upload.js handles CORS; see handleCorsPreflight(); but ttd january, maybe later add this back as it may be faster and cheaper than having the lambda code do it
+    events: #BuildRemove: for local development with serverless-offline; build.js strips this for production deploy
+      - http: #BuildRemove
+          path: /upload #BuildRemove
+          method: post #BuildRemove, lines that include "BuildRemove" build.js will remove
 
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization

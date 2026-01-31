@@ -35,7 +35,8 @@ async function onPasswordEnter() {
 }
 
 async function lambda(body) {
-	return await $fetch(`${origin23()}/upload`, {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls, here, we the page are contacting the /upload lambda directly
+	let url = isCloud() ? Key('upload lambda url, public') : `${origin23()}/upload`//cloud: Lambda Function URL; local: serverless-offline at localhost:4000, ttd january refactor this to be better once you've standardized on lambda function urls
+	return await $fetch(url, {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls, here, we the page are contacting the /upload lambda directly
 		method: 'POST',
 		body: {...body, permissionEnvelope: refPermissionEnvelope.value},
 	})

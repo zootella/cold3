@@ -1,6 +1,6 @@
 
 import {
-log, look, commas,
+log, look, commas, newline,
 } from 'icarus'
 import path from 'path'
 import {execSync} from 'child_process'
@@ -13,6 +13,12 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	await fs.ensureDir('dist')//empty the dist folder
 	await fs.copy('.env',           'dist/.env')//copy lambda source files, persephone library files, serverless.yml and .env
 	await fs.copy('serverless.yml', 'dist/serverless.yml')
+	{//strip lines marked BuildRemove; they're for local dev with serverless-offline, but production uses only the Function URL
+		let p = 'dist/serverless.yml'
+		let c = await fs.readFile(p, 'utf8')
+		c = c.split(/\r?\n/).filter(line => !line.includes('BuildRemove')).join(newline)
+		await fs.writeFile(p, c)
+	}
 	await fs.copy('src',            'dist/src')
 	await fs.copy('persephone',     'dist/persephone')//other files in the net23 folder are left behind; note net23.zip will gain package-lock.json from npm install; it's not too big and having the exact dependency versions locked in the deployed artifact could be valuable for debugging
 
