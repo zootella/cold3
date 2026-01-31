@@ -9,6 +9,6 @@ export default defineEventHandler(async (workerEvent) => {
 async function doorHandleBelow({door, body}) {
 	return {
 		success: true,
-		note: (await fetchLambda('/up2')).note,
+		note: (await fetchLambda('/up2', {body: {action: 'Up.'}})).note,
 	}
 }
