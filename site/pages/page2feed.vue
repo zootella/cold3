@@ -1,17 +1,7 @@
 <script setup> definePageMeta({layout: 'column-layout', note: 'on page2feed'})
 
-let dynamicValue = ref('dynamic value') // This makes dynamicValue a reactive reference
-let staticValue = 'static value' // This remains a non-reactive constant
-//and the third one, below, is just regular html
-
 </script>
 <template>
-
-<SnippetComponent
-	:dynamicProperty="dynamicValue"
-	:staticProperty="staticValue"
-	regularProperty="regular value"
-/>
 
 <ul>
 <li>Item 1</li>
