@@ -12,15 +12,12 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	await fs.remove('dist')
 	await fs.ensureDir('dist')//empty the dist folder
 	await fs.copy('.env',           'dist/.env')//copy lambda source files, persephone library files, serverless.yml and .env
-	await fs.copy('serverless.yml', 'dist/serverless.yml')
-	{//strip lines marked BuildRemove; they're for local dev with serverless-offline, but production uses only the Function URL
-		let p = 'dist/serverless.yml'
-		let c = await fs.readFile(p, 'utf8')
-		c = c.split(/\r?\n/).filter(line => !line.includes('BuildRemove')).join(newline)
-		await fs.writeFile(p, c)
-	}//ttd january, now that the lambda function url refactor is working, note to come back here and clean this up maybe
 	await fs.copy('src',            'dist/src')
 	await fs.copy('persephone',     'dist/persephone')//other files in the net23 folder are left behind; note net23.zip will gain package-lock.json from npm install; it's not too big and having the exact dependency versions locked in the deployed artifact could be valuable for debugging
+
+	let c = await fs.readFile('serverless.yml', 'utf8')
+	c = c.split(/\r?\n/).filter(line => !line.includes('BuildRemove')).join(newline)//strip lines marked BuildRemove; they let serverless-offline emulate API Gateway-style; we deploy to Lambda Function URLs instead
+	await fs.writeFile('dist/serverless.yml', c)
 
 	//make a package.json for dist based on net23's, with icarus's dependencies merged in
 	let p1 = JSON.parse(await fs.readFile('package.json'))
@@ -58,7 +55,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	await fs.remove('dist/node_modules_source')
 
 	let p = 'dist/node_modules/icarus/wrapper.js'
-	let c = await fs.readFile(p, 'utf8')
+	c = await fs.readFile(p, 'utf8')
 	c = c.replace('"cloud": false', '"cloud": true')//in dist's icarus/wrapper.js, set cloud true
 	await fs.writeFile(p, c)
 }

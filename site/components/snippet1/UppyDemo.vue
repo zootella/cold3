@@ -5,7 +5,7 @@ import '@uppy/dashboard/css/style.min.css'//Uppy CSS: static imports for Dashboa
 
 import {
 uppyDynamicImport,
-origin23,
+lambda23,
 passwordHash, Data,
 hashFile, hashStream, saySize4,
 } from 'icarus'
@@ -35,8 +35,7 @@ async function onPasswordEnter() {
 }
 
 async function lambda(body) {
-	let url = isCloud() ? Key('upload lambda url, public') : `${origin23()}/upload`//cloud: Lambda Function URL; local: serverless-offline at localhost:4000, ttd january refactor this to be better once you've standardized on lambda function urls; another note here to get this flagged in the next diff, maybe have beside origin23() lambda23('/message') actually, just do it like that, and it uses isCloud and Key and all that good stuff
-	return await $fetch(url, {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls, here, we the page are contacting the /upload lambda directly
+	return await $fetch(lambda23('/upload'), {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls; here, the page needs to use the /upload lambda directly
 		method: 'POST',
 		body: {...body, permissionEnvelope: refPermissionEnvelope.value},
 	})

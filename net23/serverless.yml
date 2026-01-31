@@ -38,7 +38,7 @@ functions:
     handler: src/message.handler
     timeout: 90 #seconds
     url:
-      cors: false #ttd january, note we could just say url: true for these four, or we could add cors here above the cors implementation we're going to soon add to level2; another note along these lines: our code in upload.js handles CORS; see handleCorsPreflight(); but ttd january, maybe later add this back as it may be faster and cheaper than having the lambda code do it
+      cors: false #ttd january, note we could just say url: true for these four, or we could add cors here above the cors implementation we're going to soon add to level2; another note along these lines: our code in upload.js handles CORS; see handleCorsPreflight(); but ttd january, maybe later add this back as it may be faster and cheaper than having the lambda code do it, lambdarefactor
     events:               #BuildRemove - build.js copies this script to dist/serverless.yml, omitting these lines
       - http:             #BuildRemove   they're here so serverless-offline works for local development
           path: /message  #BuildRemove   deployed, they put lambdas behind api gateway

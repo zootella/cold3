@@ -566,20 +566,7 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	if (!options.body) options.body = {}
 	options.body = makePlain(options.body)
 	options.body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})
-	//return await $fetch(origin23()+url, options) previously; ttd january refactor more from below
-	let endpoint
-	if (isCloud()) {//cloud: look up Function URL from secret keys
-		let lambdaUrls = {
-			'/message': Key('message lambda url'),
-			'/up2': Key('up2 lambda url'),
-			'/up3': Key('up3 lambda url'),
-		}
-		endpoint = lambdaUrls[url]
-		if (!endpoint) toss('unknown lambda path', {url})
-	} else {//local: serverless-offline at localhost:4000
-		endpoint = origin23() + url
-	}
-	return await $fetch(endpoint, options)
+	return await $fetch(lambda23(url), options)
 }
 export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
 	checkAbsoluteUrl(url)
@@ -614,16 +601,26 @@ return task//(7)
 */
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
 function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
-export function origin23() {//where you can find Network 23; no trailing slash
-	return (isCloud() ?
-		'https://api.net23.cc' :    //our global connectivity via satellite,
-		'http://localhost:4000/prod'//or check your local Network 23 affliate
-	)
+export function lambda23(route) {//get the url of a Network 23 lambda function route, like '/message' or '/upload', running cloud or local
+	if (isCloud()) {
+		let urls = {
+			'/up2':     Key('up2 lambda url'),
+			'/up3':     Key('up3 lambda url'),
+			'/message': Key('message lambda url'),//only workers may call these, so we even keep the lambda urls private
+			'/upload':  Key('upload lambda url, public'),//the upload page needs to work with the upload lambda directly
+		}
+		let url = urls[route]
+		if (!url) toss('unknown lambda route', {route, urls})
+		return url
+	} else {
+		return 'http://localhost:4000/prod' + route//using Node to emulate Lambda and API Gateway (which we don't use in production at all anymore) serverless-offline runs lambdas here, with a great developer experience including hot module replacement 🥵
+	}
 }
 export function originOauth() { return isCloud() ? `https://oauth.${Key('domain, public')}` : `http://localhost:5173` }//vite port
 export function originApex()  { return isCloud() ? `https://${Key('domain, public')}`       : `http://localhost:3000` }//nitro port
 //similarly, the sveltekit site for oauth has these origins for cloud and local, and the main Nuxt site is at the apex domain
 //serverless framework's default port is 3000, but we customized to 4000; Nuxt has Nitro's default 3000; SvelteKit has Vite's default 5173, same as vite running icarus
+
 
 
 
