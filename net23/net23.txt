@@ -2364,7 +2364,7 @@ so intead running webpack manually beforehand works
 and npm run deploy does this in a single command that bundles two steps
 
 (3) run lambda functions locally
-serverless-offline emulates lambda locally
+serverless-offline can emulate api gateway and lambda locally
 except somehow it can't find the named handler in the output bundle
 so this hack uses a separate yml config that points at the source files
 and that way, runs them fine
@@ -2417,7 +2417,7 @@ rollup-plugin-node-polyfills     776k     5years ~ a little too old
 
 here's what we finished:
 [x]hello lambda
-[x]develop locally, using serverless framework's emulation of api gateway and lambda (lambdas deploy as function urls, but serverless offline emulates them with Node behind their fake little local version of API Gateway)
+[x]develop locally, using serverless framework's emulation of api gateway and lambda
 [x]do some math big int style
 [x]use a node module directly, nanoid probably
 [x]import library code

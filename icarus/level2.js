@@ -566,6 +566,7 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	if (!options.body) options.body = {}
 	options.body = makePlain(options.body)
 	options.body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})
+	//return await $fetch(origin23()+url, options) previously; ttd january refactor more from below
 	let endpoint
 	if (isCloud()) {//cloud: look up Function URL from secret keys
 		let lambdaUrls = {
@@ -809,7 +810,7 @@ export async function doorLambda(method, {
 
 		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }
 	} catch (e3) { console.error('[OUTER]', e3) }
-	return {statusCode: 500, headers: {'Content-Type': 'application/json'}, body: null}
+	return {statusCode: 500, headers: {'Content-Type': 'application/json'}, body: ''}//body must be string, not null, for lambda function urls
 }
 /*
 note on this design catching exceptions
@@ -878,8 +879,10 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
 	door.lambdaContext = lambdaContext
 
-	let m = lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method//ttd january, this is messy in the transition from api gateway rest api to lambda function urls; when we've switched completely we just need the second one
-	if (method != m) toss('method mismatch', {method, m, door})
+	let requestMethod = (//get the HTTP method from the incoming request, like POST
+		isCloud() ? lambdaEvent.requestContext?.http?.method//lambda function urls deployed, so deep here
+		: lambdaEvent.httpMethod)//for yarn local, serverless offline emulates api gateway, so shallower here
+	if (method != requestMethod) toss('method mismatch', {method, requestMethod, door})//method is what code requires; enforce it
 	door.method = method
 	if (method == 'GET') {
 		door.query = lambdaEvent.queryStringParameters

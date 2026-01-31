@@ -4,7 +4,7 @@ service: net23
 frameworkVersion: '4'
 useDotenv: true
 plugins:
-  - serverless-offline #emulates Lambda for local development
+  - serverless-offline #emulates Lambda and API Gateway for local development
 
 provider:
   name: aws
@@ -36,40 +36,40 @@ provider:
 functions:
   message:
     handler: src/message.handler
-    timeout: 25
+    timeout: 90 #seconds
     url:
-      cors: false
-    events: #BuildRemove
-      - http: #BuildRemove
-          path: /message #BuildRemove
-          method: post #BuildRemove
+      cors: false #ttd january, note we could just say url: true for these four, or we could add cors here above the cors implementation we're going to soon add to level2; another note along these lines: our code in upload.js handles CORS; see handleCorsPreflight(); but ttd january, maybe later add this back as it may be faster and cheaper than having the lambda code do it
+    events:               #BuildRemove - build.js copies this script to dist/serverless.yml, omitting these lines
+      - http:             #BuildRemove   they're here so serverless-offline works for local development
+          path: /message  #BuildRemove   deployed, they put lambdas behind api gateway
+          method: post    #BuildRemove   but now we're deploying using lambda function urls, which is newer, simpler, cheaper, and secure
   up2:
     handler: src/up2.handler
-    timeout: 25
+    timeout: 15
     url:
       cors: false
-    events: #BuildRemove
-      - http: #BuildRemove
-          path: /up2 #BuildRemove
-          method: post #BuildRemove
+    events:               #BuildRemove
+      - http:             #BuildRemove
+          path: /up2      #BuildRemove
+          method: post    #BuildRemove
   up3:
     handler: src/up3.handler
-    timeout: 25
+    timeout: 15
     url:
       cors: false
-    events: #BuildRemove
-      - http: #BuildRemove
-          path: /up3 #BuildRemove
-          method: post #BuildRemove
+    events:               #BuildRemove
+      - http:             #BuildRemove
+          path: /up3      #BuildRemove
+          method: post    #BuildRemove
   upload:
     handler: src/upload.handler
-    timeout: 25
+    timeout: 300 #5 minutes, enough time to hash a really big file; lambda function url limit is 15min, up from 30s behind api gateway
     url:
-      cors: false #our code in upload.js handles CORS; see handleCorsPreflight(); but ttd january, maybe later add this back as it may be faster and cheaper than having the lambda code do it
-    events: #BuildRemove: for local development with serverless-offline; build.js strips this for production deploy
-      - http: #BuildRemove
-          path: /upload #BuildRemove
-          method: post #BuildRemove, lines that include "BuildRemove" build.js will remove
+      cors: false
+    events:               #BuildRemove
+      - http:             #BuildRemove
+          path: /upload   #BuildRemove
+          method: post    #BuildRemove
 
 resources:
   Resources: #yes, it's correct to have resources twice and nested with different capitalization

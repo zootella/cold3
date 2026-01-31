@@ -18,7 +18,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 		let c = await fs.readFile(p, 'utf8')
 		c = c.split(/\r?\n/).filter(line => !line.includes('BuildRemove')).join(newline)
 		await fs.writeFile(p, c)
-	}
+	}//ttd january, now that the lambda function url refactor is working, note to come back here and clean this up maybe
 	await fs.copy('src',            'dist/src')
 	await fs.copy('persephone',     'dist/persephone')//other files in the net23 folder are left behind; note net23.zip will gain package-lock.json from npm install; it's not too big and having the exact dependency versions locked in the deployed artifact could be valuable for debugging
 

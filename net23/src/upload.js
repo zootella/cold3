@@ -82,7 +82,7 @@ async function uploadLambda(method, {actions, lambdaEvent, lambdaContext}) {
 
 		} catch (e2) { await logAlert('upload shut', {e2, door, response, error}) }
 	} catch (e3) { console.error('[OUTER]', e3) }
-	return {statusCode: 500, headers: {'Access-Control-Allow-Origin': originApex()}, body: ''}
+	return {statusCode: 500, headers: {'Access-Control-Allow-Origin': originApex()}, body: ''}//body must be string, not null, for lambda function urls
 }
 async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, door}) {
 	let sources = []
