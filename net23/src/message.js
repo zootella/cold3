@@ -8,7 +8,7 @@ sendMessage,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return await doorLambda('POST', {actions: ['Gate.', 'Send.'], lambdaEvent, lambdaContext, doorHandleBelow})
+	return await doorLambda('POST', {from: 'Worker.', actions: ['Gate.', 'Send.'], lambdaEvent, lambdaContext, doorHandleBelow})
 }
 async function doorHandleBelow({door, body, action}) {
 

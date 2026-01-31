@@ -9,7 +9,7 @@ warm,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return await doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
+	return await doorLambda('POST', {from: 'Worker.', lambdaEvent, lambdaContext, doorHandleBelow})
 }
 async function doorHandleBelow({door, body}) {
 	await warm()

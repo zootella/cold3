@@ -39,6 +39,17 @@ import {
 Readable,
 } from 'node:stream'//it's fine to use Node in a Lambda (unlike pretty much everywhere else in this monorepo! 🙄)
 
+/*
+imagine a refactor where we get the level2 door system ready to secure a lambda designed for direct page contact! then a lot of what's below would get incorporated into level2, and code here would be as simple as:
+
+export const handler = async (lambdaEvent, lambdaContext) => {
+	return await doorLambda('POST', {from: 'Page.', actions: ['Gate.', 'Send.'], lambdaEvent, lambdaContext, doorHandleBelow})
+}
+async function doorHandleBelow({door, body, action}) {...
+
+note from: 'Page.', we will make this limitation mandatory for parameters to doorLambda, and i've already set it in all four. the only possible accepted values are "Page." meaning this lambda can only be contacted by a page at a whitelisted domain, or "Worker." meaning this lambda can only be contacted by a worker for server to server communication
+*/
+
 export const handler = async (lambdaEvent, lambdaContext) => {
 	let httpMethod = lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method//API Gateway REST API uses httpMethod; Lambda Function URLs use requestContext.http.method
 	if (httpMethod == 'OPTIONS') return handleCorsPreflight(lambdaEvent.headers)
