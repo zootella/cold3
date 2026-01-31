@@ -1,36 +1,13 @@
 
 import {
-
-//manual icarus import block for upload lambda
-wrapper, Sticker, stickerParts, isLocal, isCloud,
-Now, Time, Size, Limit, newline,
-defined, toss, log, look,
-noop, test, ok,
-
-toBoolean, toTextOrBlank,
-checkInt, minInt,
-intToText, textToInt, commas,
-checkText, hasText, checkTextSame, hasTextSame,
-hasTextOrBlank, checkTextOrBlank,
-makePlain, makeObject, makeText,
-safefill, deindent,
-
-Tag, hasTag, checkTag, checkTagOrBlank,
-checkHash,
-
-dog, logAudit, logAlert,
-awaitDog, awaitLogAudit, awaitLogAlert,
-
-Key, doorWorker, doorLambda,
-Task, fetchWorker, fetchLambda, fetchProvider,
+Sticker,
+Now, Time, Limit,
+toss, log,
+checkText, hasTextSame,
+Tag, checkTag,
+Key, doorLambda,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
-
-//and also import these references
-decryptKeys, checkActions, awaitDoorPromises, checkForwardedSecure, checkOriginValid,
-tickToText, originApex,
 hashStream,
-
 } from 'icarus'
 import {
 bucketDynamicImport,
@@ -39,108 +16,14 @@ import {
 Readable,
 } from 'node:stream'//it's fine to use Node in a Lambda (unlike pretty much everywhere else in this monorepo! 🙄)
 
-/*
-imagine a refactor where we get the level2 door system ready to secure a lambda designed for direct page contact! then a lot of what's below would get incorporated into level2, and code here would be as simple as:
-
 export const handler = async (lambdaEvent, lambdaContext) => {
-	return await doorLambda('POST', {from: 'Page.', actions: ['Gate.', 'Send.'], lambdaEvent, lambdaContext, doorHandleBelow})
-}
-async function doorHandleBelow({door, body, action}) {...
-
-note from: 'Page.', we will make this limitation mandatory for parameters to doorLambda, and i've already set it in all four. the only possible accepted values are "Page." meaning this lambda can only be contacted by a page at a whitelisted domain, or "Worker." meaning this lambda can only be contacted by a worker for server to server communication
-*/
-
-export const handler = async (lambdaEvent, lambdaContext) => {
-	let httpMethod = lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method//API Gateway REST API uses httpMethod; Lambda Function URLs use requestContext.http.method
-	if (httpMethod == 'OPTIONS') return handleCorsPreflight(lambdaEvent.headers)
-
-	return await uploadLambda('POST', {actions: ['Gate.', 'UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.', 'UploadHash.'], lambdaEvent, lambdaContext})//the other lambda handlers use doorLambda, but they're all for authenticated worker<->lambda communication. Here, pages need to upload to Amazon directly, so we can't use doorLambda. Instead, we copy over the patterns and protections from icarus to this one endpoint. 💦 Not very DRY, and if we ever have a second page<->lambda endpoint we may reconsider, ttd january
-}
-function handleCorsPreflight(headers) {
-	try {
-		checkOriginValid(headers)//validates Origin header matches allowed domain; throws if not
-	} catch (e) {//ttd january, later on, maybe refactor to isOriginValid so you can call that here directly instead of catching your own exception
-		return {statusCode: 403, headers: {}, body: ''}//origin not allowed
-	}
-	return {
-		statusCode: 204,
-		headers: {
-			'Access-Control-Allow-Origin': originApex(),//tell the browser (more trustworthy than the page) we only want POST from our own domain
-			'Access-Control-Allow-Methods': 'POST, OPTIONS',
-			'Access-Control-Allow-Headers': 'Content-Type',
-			'Access-Control-Max-Age': ''+(2*Time.hour/Time.second),//2 hours in seconds as a string; if we said longer, Chrome would cut to 2 hours, anyway; tell the browser that it can use this answer for the next 2 hours, rather than asking OPTIONS before every POST
-		},
-		body: '',
-	}
-}
-async function uploadLambda(method, {actions, lambdaEvent, lambdaContext}) {
-	try {
-		let door = {}, response, error
-		try {
-
-			await uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, door})
-			response = await uploadHandleBelow({
-				door,
-				body: door.body,
-				action: door.body?.action,
-			})
-
-		} catch (e) { error = e }
-		try {
-
-			let r = await uploadLambdaShut(door, response, error)
-			if (response && !error) return r
-
-		} catch (e2) { await logAlert('upload shut', {e2, door, response, error}) }
-	} catch (e3) { console.error('[OUTER]', e3) }
-	return {statusCode: 500, headers: {'Access-Control-Allow-Origin': originApex()}, body: ''}//body must be string, not null, for lambda function urls
-}
-async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, door}) {
-	let sources = []
-	if (defined(typeof process) && process.env) {
-		sources.push({note: 'u10', environment: process.env})
-	}
-	await decryptKeys('lambda', sources)
-
-	door.task = Task({name: 'upload lambda'})//make a door object like icarus does for worker<>lambda calls
-	door.lambdaEvent = lambdaEvent
-	door.lambdaContext = lambdaContext
-
-	checkForwardedSecure(lambdaEvent.headers)//deployed, protocol must be https
-	let httpMethod = lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method
-	if (method != httpMethod) toss('method mismatch', {method, httpMethod, door})//Uppy will PUT to S3, but the page must POST here
-	door.method = method
-	checkOriginValid(lambdaEvent.headers)//doorLambda checks Origin; here, pages call directly so we check origin is the Nuxt site
-
-	door.body = makeObject(lambdaEvent.body)//parse body
-	checkActions({action: door.body?.action, actions})//check action
-	if (door.body?.action == 'Gate.') {
-		//gate action doesn't require envelope so we can test with curl
-	} else {//all other uses do; pages contact the upload lambda directly, but only with recent permission to do so from a worker
-		door.letter = await openEnvelope('UploadPermission.', door.body.permissionEnvelope)//open permission envelope page got from worker
-	}
-}
-async function uploadLambdaShut(door, response, error) {
-	door.response = response
-	door.error = error
-	door.task?.finish()
-
-	let r
-	if (error) {
-		logAlert('upload error', {body: door.body, response, error})
-		r = null
-	} else {
-		r = {
-			statusCode: 200,
-			headers: {
-				'Content-Type': 'application/json',
-				'Access-Control-Allow-Origin': originApex(),//page at cold3.cc calls Lambda at api.net23.cc; browser requires CORS headers on every response, not just the preflight OPTIONS (which API Gateway handles via serverless.yml)
-			},
-			body: makeText(response),
-		}
-	}
-	await awaitDoorPromises()
-	return r
+	return await doorLambda('POST', {
+		from: 'Page.',
+		actions: ['Gate.', 'UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.', 'UploadHash.'],
+		lambdaEvent,
+		lambdaContext,
+		doorHandleBelow: uploadHandleBelow,
+	})
 }
 
 /*
@@ -161,6 +44,9 @@ async function uploadHandleBelow({door, body, action}) {
 	if (action == 'Gate.') {
 		return {success: true, sticker: Sticker()}//report reachability to a manual curl test; application code doesn't use this action
 	}
+
+	//page must submit permission envelope from worker
+	door.letter = await openEnvelope('UploadPermission.', body.permissionEnvelope)
 
 	const Bucket = Key('vhs bucket, public')
 	const {clientS3, presigner} = await bucketDynamicImport()
