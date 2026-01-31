@@ -569,9 +569,9 @@ export async function fetchLambda(url, options) {//from a Nuxt api handler worke
 	let endpoint
 	if (isCloud()) {//cloud: look up Function URL from secret keys
 		let lambdaUrls = {
-			'/message': Key('message lambda url, secret'),
-			'/up2': Key('up2 lambda url, secret'),
-			'/up3': Key('up3 lambda url, secret'),
+			'/message': Key('message lambda url'),
+			'/up2': Key('up2 lambda url'),
+			'/up3': Key('up3 lambda url'),
 		}
 		endpoint = lambdaUrls[url]
 		if (!endpoint) toss('unknown lambda path', {url})

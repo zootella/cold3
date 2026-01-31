@@ -85,7 +85,6 @@
 		//4 framework
 		"serverless": "^4.4.11",
 		"serverless-offline": "^14.3.4",
-		"serverless-domain-manager": "^8.0.0",
 	}
 }
 

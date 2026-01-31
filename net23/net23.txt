@@ -1702,7 +1702,7 @@ goals and steps:
 [x]setup forwarding so support@cold3.cc forwards to another domain
 [x]configure noreply@cold3.cc to correctly bounce or kill email
 [x]configure DKIM and SPF for maximum security and correctness
-[]get a lambda at api.net23.cc to send email from noreply@cold3.cc on surface and deep in headers
+[x]get a lambda to send email from noreply@cold3.cc on surface and deep in headers
 
 cloudflare dashboard for previous example domain, where you setup pages and email forwarding
 websites, example.com
@@ -1763,7 +1763,7 @@ aws has never heard of it outside of the pinpoint verification you just complete
 you have working email forwarding like support@ef---.ll-
 the domain you've setup at aws, net23.cc, the user should never see, not even in headers
 and considering all this, your goal:
-"a lambda at api.net23.cc can send an email from noreply@ef---.ll-"
+"a lambda can send an email from noreply@ef---.ll-"
 should be possible
 
 											_ _     ____  
@@ -2189,7 +2189,6 @@ $ npm install -D webpack-cli                  6 million, 32 packages
 
 $ npm install -D serverless-webpack         235 thousand, 52 packages
 $ npm install -D serverless-offline         519 thousand, 85 packages
-$ npm install -D serverless-domain-manager  220 thousand, 62 packages
 $ npm install -D serverless-s3-sync          32 thousand,  9 packages
 
 as an aside, "$ serverless deploy" works, but doesn't notice changed files in www
@@ -2213,7 +2212,7 @@ use create and list invalidations to get the cloudfront distribution in front of
 (bookmark)
 next three scopes:
 1 hello world lambda, no custom domain, no webpack
-2 lambdas as api.net23.cc
+2 lambdas
 3 webpack and babel
 try running local and deployed
 can you see the bundle size before and after?
@@ -2244,7 +2243,7 @@ live updates don't seem to work, but maybe that's not an intended feature
 $ npm run deploy
 first time, right now with two lambdas that aren't using a custom domain
 
-# lambda step 2: manual steps to get custom domain
+# lambda step 2: manual steps to get custom domain (historical, api.net23.cc replaced with lambda function urls)
 
 serverless.yml should be able to create api.net23.cc, but you're getting this error:
 $ npm run deploy
@@ -2365,7 +2364,7 @@ so intead running webpack manually beforehand works
 and npm run deploy does this in a single command that bundles two steps
 
 (3) run lambda functions locally
-serverless-offline can emulate api gateway and lambda locally
+serverless-offline emulates lambda locally
 except somehow it can't find the named handler in the output bundle
 so this hack uses a separate yml config that points at the source files
 and that way, runs them fine
@@ -2387,8 +2386,8 @@ in code in ./dist/hello1.js:
 	"...e.d(o,{handler:()=>t});const t=async..."
 
 on the web:
-	http://localhost:3000/prod/hello1 ~ path to function emulated locally
-	https://api.net23.cc/hello1 ~ path to function deployed  
+	http://localhost:4000/hello1 ~ path to function emulated locally
+	https://(lambda function identifier).lambda-url.us-east-1.on.aws/ ~ path to function deployed  
 
 you've seen subfolders like src/handlers and dist/service appear, but for the moment at least, have managed to keep them away
 
@@ -2405,7 +2404,6 @@ here is net23's package.json with rollup, looking at popularity and recency:
 
 serverless                 1 million      1month
 serverless-offline           536k         2months
-serverless-domain-manager    198k         5months
 serverless-s3-sync           31k          6months ~ a little too rare
 
 rollup                        22 million  1month
@@ -2419,7 +2417,7 @@ rollup-plugin-node-polyfills     776k     5years ~ a little too old
 
 here's what we finished:
 [x]hello lambda
-[x]develop locally, using serverless framework's emulation of api gateway and lambda
+[x]develop locally, using serverless framework's emulation of api gateway and lambda (lambdas deploy as function urls, but serverless offline emulates them with Node behind their fake little local version of API Gateway)
 [x]do some math big int style
 [x]use a node module directly, nanoid probably
 [x]import library code
@@ -2479,7 +2477,7 @@ cold3.cc/ping/ping1                                            -a nuxt page with
 cold3.cc/ping/ping2                                            -a nuxt page with a trivial script tag
 cold3.cc/ping/ping3 > cold3.cc/api/ping3                       -a nuxt page that fetches to a trivial nuxt api
 cold3.cc/ping/ping4 > cold3.cc/api/ping4 > Supabase            -all that, but the server api code queries the global count from supabase
-cold3.cc/ping/ping5 > cold3.cc/api/ping5 > api.net23.cc/ping5  -instead of calling supabase, fetches to our own trivial lambda
+cold3.cc/ping/ping5 > cold3.cc/api/ping5 > (lambda url)/ping5  -instead of calling supabase, fetches to our own lambda
 
 example output, deployed to cloud, curl and browser:
 

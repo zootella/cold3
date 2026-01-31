@@ -30,7 +30,6 @@
 		"@vercel/nft": "^0.29.2",
 		"fs-extra": "^11.2.0",
 		"serverless": "^4.4.11",
-		"serverless-domain-manager": "^8.0.0",
 		"serverless-offline": "^14.3.4"
 	}
 }

@@ -4,8 +4,7 @@ service: net23
 frameworkVersion: '4'
 useDotenv: true
 plugins:
-  - serverless-offline #emulates Lambda and API Gateway for local development
-  - serverless-domain-manager #use our domain for API Gateway and Lambda
+  - serverless-offline #emulates Lambda for local development
 
 provider:
   name: aws
@@ -243,8 +242,6 @@ resources:
             AliasTarget:
               DNSName: !GetAtt VHSDistribution.DomainName
               HostedZoneId: Z2FDTNDATAQYW2
-
-          #you did manual dashboard steps to create the api.net23.cc record and connect it to "prod-net23", which this script created in API Gateway
 
   Outputs: #outputs, correctly here in the outer resources section, end up in the cloudformation template Outputs tab. things will probably work without creating any outputs here at all, but we're leaving it just in case we later find out it's helpful
 
