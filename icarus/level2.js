@@ -866,7 +866,8 @@ async function doorLambdaOpen({method, lambdaEvent, lambdaContext}) {
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
 	door.lambdaContext = lambdaContext
 
-	if (method != lambdaEvent.httpMethod) toss('method mismatch', {method, door})
+	let m = lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method//ttd january, this is messy in the transition from api gateway rest api to lambda function urls; when we've switched completely we just need the second one
+	if (method != m) toss('method mismatch', {method, m, door})
 	door.method = method
 	if (method == 'GET') {
 		door.query = lambdaEvent.queryStringParameters

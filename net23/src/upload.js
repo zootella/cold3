@@ -40,7 +40,27 @@ Readable,
 } from 'node:stream'//it's fine to use Node in a Lambda (unlike pretty much everywhere else in this monorepo! 🙄)
 
 export const handler = async (lambdaEvent, lambdaContext) => {
+	let httpMethod = lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method//API Gateway REST API uses httpMethod; Lambda Function URLs use requestContext.http.method
+	if (httpMethod == 'OPTIONS') return handleCorsPreflight(lambdaEvent.headers)
+
 	return await uploadLambda('POST', {actions: ['Gate.', 'UploadCreate.', 'UploadSign.', 'UploadComplete.', 'UploadAbort.', 'UploadList.', 'UploadHash.'], lambdaEvent, lambdaContext})//the other lambda handlers use doorLambda, but they're all for authenticated worker<->lambda communication. Here, pages need to upload to Amazon directly, so we can't use doorLambda. Instead, we copy over the patterns and protections from icarus to this one endpoint. 💦 Not very DRY, and if we ever have a second page<->lambda endpoint we may reconsider, ttd january
+}
+function handleCorsPreflight(headers) {
+	try {
+		checkOriginValid(headers)//validates Origin header matches allowed domain; throws if not
+	} catch (e) {//ttd january, later on, maybe refactor to isOriginValid so you can call that here directly instead of catching your own exception
+		return {statusCode: 403, headers: {}, body: ''}//origin not allowed
+	}
+	return {
+		statusCode: 204,
+		headers: {
+			'Access-Control-Allow-Origin': originApex(),
+			'Access-Control-Allow-Methods': 'POST, OPTIONS',
+			'Access-Control-Allow-Headers': 'Content-Type',
+			'Access-Control-Max-Age': '86400',//cache preflight for 24 hours
+		},
+		body: '',
+	}
 }
 async function uploadLambda(method, {actions, lambdaEvent, lambdaContext}) {
 	try {
@@ -62,7 +82,7 @@ async function uploadLambda(method, {actions, lambdaEvent, lambdaContext}) {
 
 		} catch (e2) { await logAlert('upload shut', {e2, door, response, error}) }
 	} catch (e3) { console.error('[OUTER]', e3) }
-	return {statusCode: 500, headers: {'Access-Control-Allow-Origin': originApex()}, body: null}
+	return {statusCode: 500, headers: {'Access-Control-Allow-Origin': originApex()}, body: ''}
 }
 async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, door}) {
 	let sources = []
@@ -76,7 +96,8 @@ async function uploadLambdaOpen({method, actions, lambdaEvent, lambdaContext, do
 	door.lambdaContext = lambdaContext
 
 	checkForwardedSecure(lambdaEvent.headers)//deployed, protocol must be https
-	if (method != lambdaEvent.httpMethod) toss('method mismatch', {method, door})//Uppy will PUT to S3, but the page must POST here
+	let httpMethod = lambdaEvent.httpMethod || lambdaEvent.requestContext?.http?.method
+	if (method != httpMethod) toss('method mismatch', {method, httpMethod, door})//Uppy will PUT to S3, but the page must POST here
 	door.method = method
 	checkOriginValid(lambdaEvent.headers)//doorLambda checks Origin; here, pages call directly so we check origin is the Nuxt site
 
