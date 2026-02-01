@@ -1,201 +1,262 @@
 
 import {
-log, look, defined,
+log, look, defined, makeText,
 Key, decryptKeys, headerGet,
 } from 'icarus'
 import dotenv from 'dotenv'
 
-/*
-CORS and Origin Security Tests for Lambda Function URLs
+const prepare = (uploadUrl, messageUrl, allowedOrigin) => [
+`
+These tests verify that our lambdas are secured properly, and include a discussion about web stack security and CORS. Ok, let's get started! To begin, the /upload endpoint is configured for browser-to-Lambda communication. Pages at our domain should be able to call it directly; servers should be blocked. In our application code, checkOriginValid in level2.js requires a valid Origin header from the whitelist. Tests 1-5 verify this works correctly.
 
-These tests verify that the doorLambda security layer correctly handles:
-- Page endpoints (/upload): require valid Origin from whitelist
-- Server endpoints (/message): require Origin to be absent
+Test 1 📋 Preflight from whitelisted origin
 
-Run with: yarn cors
+When JavaScript on a page makes a cross-origin request (different scheme, host, or port) that the browser considers "complex" (a POST with JSON, or custom headers, or methods like PUT/DELETE), the browser first sends an OPTIONS request called a "preflight" to ask the server if the desired request that will follow will be allowed. The browser does this automatically at the start of performing page script's fetch() or XMLHttpRequest call - the developer doesn't write this code. Simple requests (GET, or POST with text/plain) skip preflight entirely. Navigation (clicking links, typing URLs) doesn't trigger preflight because there the user is navigating the whole browser to a page (with its own origin in the location bar), not having script on a page at one origin make a request to another one.
 
-Based on the manual curl tests documented in gate.md, now automated.
-*/
+Our /upload endpoint is configured to accept requests from pages only. The doorLambda function in level2.js handles OPTIONS requests by checking if the Origin matches our whitelist. If so, it returns 204 with Access-Control-Allow-Origin matching the request. The browser sees the match and proceeds to send the actual POST.
+`,
+{
+	url: uploadUrl,
+	method: 'OPTIONS',
+	headers: {
+		'Origin': allowedOrigin,
+		'Access-Control-Request-Method': 'POST',
+		'Access-Control-Request-Headers': 'Content-Type',
+	},
+	expect: {
+		status: 204,
+		headers: {
+			'access-control-allow-origin': allowedOrigin,
+		},
+	},
+},
+`
+Test 2 📋 Preflight from non-whitelisted origin
+
+Now imagine malicious code at a script kiddie's website attempts the same request. The browser (unmodified - this is a script kiddie, not a fully grown hacker) sends the same OPTIONS preflight as in Test 1. The browser includes its actual origin in the Origin header (script cannot spoof this) and waits to see if the server's response grants permission.
+
+Our doorLambda checks the Origin against our whitelist and finds no match. It returns 403 with no CORS headers. The browser sees the rejection and refuses to send the actual POST. The request never reaches our business logic - the browser stopped it. This is CORS enforcement: the browser is the enforcer, not the server.
+`,
+{
+	url: uploadUrl,
+	method: 'OPTIONS',
+	headers: {
+		'Origin': 'https://unrecognized.ninja',
+		'Access-Control-Request-Method': 'POST',
+		'Access-Control-Request-Headers': 'Content-Type',
+	},
+	expect: {
+		status: 403,
+	},
+},
+`
+Test 3 📋 POST with no Origin (server-style request)
+
+When a server (or curl, or any non-browser client) makes a request, there's no Origin header - browsers add that automatically for cross-origin requests, but other clients don't. There's also no preflight, because preflight is a browser behavior. The request goes straight to the endpoint.
+
+Our Lambda receives this request and runs. Icarus' checkOriginValid function in level2.js checks for a valid Origin header. Finding none, it throws an error and the request fails with 500. This is our code doing its job. Without checkOriginValid, this request would have succeeded, allowing any server on the internet to call our upload endpoint.
+`,
+{
+	url: uploadUrl,
+	method: 'POST',
+	headers: {
+		'Content-Type': 'application/json',
+	},
+	body: makeText({
+		action: 'Gate.',
+	}),
+	expect: {
+		status: 500,
+	},
+},
+`
+Test 4 📋 POST with non-whitelisted Origin
+
+This test covers a scenario that browsers would normally prevent: sending a POST with an Origin header that didn't pass preflight. A real browser at unrecognized.ninja would be stopped at Test 2 (preflight mismatch). But a "simple request" with text/plain content-type skips preflight, and curl or modified browsers can skip it entirely. So we need to verify the Lambda rejects these too.
+
+Test 3 proved checkOriginValid requires an Origin header to be present. This test proves it also validates the value against the whitelist. The Origin header is present but not in our whitelist, so checkOriginValid throws and the request fails with 500. This confirms our application code provides real validation, not just a presence check.
+`,
+{
+	url: uploadUrl,
+	method: 'POST',
+	headers: {
+		'Origin': 'https://unrecognized.ninja',
+		'Content-Type': 'application/json',
+	},
+	body: makeText({
+		action: 'Gate.',
+	}),
+	expect: {
+		status: 500,
+	},
+},
+`
+Test 5 📋 POST with whitelisted Origin
+
+This test simulates what happens after a successful preflight: the browser sends the actual POST with its Origin header included. Here we use fetch with the allowed Origin to mimic that browser behavior. In a real scenario, a browser would only reach this point if it already passed preflight (Test 1), but this test lets us verify the Lambda directly.
+
+Our Lambda receives the request and checkOriginValid in level2.js examines the Origin header. It's present and matches our whitelist, so the check passes. The request proceeds to business logic - in this case the Gate. action, which simply returns success with a sticker. This is the only path that should succeed for /upload: a request with a valid, whitelisted Origin header.
+`,
+{
+	url: uploadUrl,
+	method: 'POST',
+	headers: {
+		'Origin': allowedOrigin,
+		'Content-Type': 'application/json',
+	},
+	body: makeText({
+		action: 'Gate.',
+	}),
+	expect: {
+		status: 200,
+		headers: {
+			'access-control-allow-origin': allowedOrigin,
+		},
+		bodyContains: '"success":true',
+	},
+},
+`
+Now we'll test a different lambda. The /message endpoint is the opposite: it's designed for worker-to-Lambda communication only. Our workers (running on Cloudflare) call this endpoint to send emails and SMS messages. Pages should never call it directly - that would bypass our rate limiting and abuse prevention. In our application code, checkOriginOmitted in level2.js requires that the Origin header is absent - any request with an Origin header (which browsers always add for cross-origin requests) gets rejected. Tests 6-9 verify this works correctly.
+
+Test 6 📋 Preflight to server-only endpoint
+
+When a browser wants to make a complex cross-origin request (like POST with JSON), it sends an OPTIONS preflight first - same as Tests 1 and 2. But unlike /upload, the /message endpoint is for servers only. The doorLambda function doesn't have a preflight handler for server endpoints - it only handles OPTIONS for page endpoints.
+
+When the OPTIONS request arrives, doorLambda processes it as a regular request, which fails because server endpoints expect no Origin header and require other authentication. The browser sees the failure and stops. The actual POST request is never sent - the browser blocked it at preflight.
+`,
+{
+	url: messageUrl,
+	method: 'OPTIONS',
+	headers: {
+		'Origin': allowedOrigin,
+		'Access-Control-Request-Method': 'POST',
+	},
+	expect: {
+		status: 500,
+	},
+},
+`
+Test 7 📋 POST with no Origin (server-to-server)
+
+When a server (like our Cloudflare worker, or curl) makes a request, it doesn't include an Origin header - that's a browser behavior for cross-origin requests. Servers just send the request directly. There's no preflight either, since preflight is also browser-only. This is exactly how we want legitimate worker-to-Lambda communication to work.
+
+Our Lambda receives the request and checkOriginOmitted in level2.js examines the headers. It confirms the Origin header is absent, which means this isn't coming from a browser page. The check passes, business logic runs, and we return success. This is the only path that should succeed for /message: a request with no Origin header, indicating server-to-server communication.
+`,
+{
+	url: messageUrl,
+	method: 'POST',
+	headers: {
+		'Content-Type': 'application/json',
+	},
+	body: makeText({
+		action: 'Gate.',
+	}),
+	expect: {
+		status: 200,
+		bodyContains: '"success":true',
+	},
+},
+`
+Test 8 📋 POST with Origin header (simulating page)
+
+In a real browser scenario, this request would never happen - Test 6 showed that preflight fails for /message, so the browser would stop there. But what if someone uses curl or a modified browser to skip preflight and send a POST directly with an Origin header? This test verifies our code catches that case. Note we're using our own domain as the Origin - even trusted origins are blocked from this endpoint.
+
+Our Lambda receives the request and checkOriginOmitted in level2.js sees an Origin header is present. Regardless of its value, the presence of any Origin header indicates this request came from (or is pretending to come from) a browser page. The check throws and the request fails with 500. This is our code protecting us - any Origin header means rejection.
+`,
+{
+	url: messageUrl,
+	method: 'POST',
+	headers: {
+		'Origin': allowedOrigin,
+		'Content-Type': 'application/json',
+	},
+	body: makeText({
+		action: 'Gate.',
+	}),
+	expect: {
+		status: 500,
+	},
+},
+`
+Test 9 📋 Simple request with text/plain and Origin
+
+This is the most important test for understanding why code-level checks are essential. A "simple request" - POST with text/plain content-type - skips preflight entirely. The browser sends it directly without asking permission first. This means Test 6's protection (preflight fails) doesn't help here. The request sails right past the preflight layer and reaches the Lambda. A malicious page could do exactly this.
+
+Our Lambda receives the request and checkOriginOmitted in level2.js sees the Origin header. The check throws and the request fails with 500. This test proves that preflight alone cannot fully protect a server-only endpoint - simple requests bypass preflight, so our code must be the final line of defense. Without checkOriginOmitted, this request would have succeeded, allowing any page on the internet to call our /message endpoint.
+`,
+{
+	url: messageUrl,
+	method: 'POST',
+	headers: {
+		'Origin': 'https://unrecognized.ninja',
+		'Content-Type': 'text/plain',
+	},
+	body: makeText({
+		action: 'Gate.',
+	}),
+	expect: {
+		status: 500,
+	},
+},
+]
 
 async function main() {
 	dotenv.config({quiet: true})
-
-	// Unlock secrets so Key() can get lambda URLs
 	let sources = []
 	if (defined(typeof process) && process.env) {
-		sources.push({note: 'cors', environment: process.env})
+		sources.push({note: 'n10', environment: process.env})
 	}
-	await decryptKeys('cors', sources)
+	await decryptKeys('node', sources)
 
 	// Get lambda URLs and expected origin from keys
 	let uploadUrl = Key('upload lambda url, public')
 	let messageUrl = Key('message lambda url')
 	let allowedOrigin = `https://${Key('domain, public')}`
 
-	log('')
-	log('╔════════════════════════════════════════════════════════════════════╗')
-	log('║           CORS and Origin Security Tests                           ║')
-	log('╚════════════════════════════════════════════════════════════════════╝')
-	log('')
-	log(`Upload Lambda:  ${uploadUrl}`)
-	log(`Message Lambda: ${messageUrl}`)
-	log(`Allowed Origin: ${allowedOrigin}`)
-	log('')
-
-	let allPassed = true
-
-	// /upload - Page endpoint (requires valid Origin from whitelist)
-	log('┌────────────────────────────────────────────────────────────────────┐')
-	log('│  /upload - Page Endpoint (requires valid Origin from whitelist)   │')
-	log('└────────────────────────────────────────────────────────────────────┘')
-
-	if (!await runTest({
-		name: 'Test 1: Preflight from whitelisted origin',
-		url: uploadUrl,
-		method: 'OPTIONS',
-		headers: {
-			'Origin': allowedOrigin,
-			'Access-Control-Request-Method': 'POST',
-			'Access-Control-Request-Headers': 'Content-Type',
-		},
-		expectStatus: 204,
-		expectHeaders: {'access-control-allow-origin': allowedOrigin},
-	})) allPassed = false
-
-	if (!await runTest({
-		name: 'Test 2: Preflight from non-whitelisted origin',
-		url: uploadUrl,
-		method: 'OPTIONS',
-		headers: {
-			'Origin': 'https://evil-site.com',
-			'Access-Control-Request-Method': 'POST',
-			'Access-Control-Request-Headers': 'Content-Type',
-		},
-		expectStatus: 403,
-	})) allPassed = false
-
-	if (!await runTest({
-		name: 'Test 3: POST with no Origin (server-style request)',
-		url: uploadUrl,
-		method: 'POST',
-		headers: {'Content-Type': 'application/json'},
-		body: JSON.stringify({action: 'Gate.'}),
-		expectStatus: 500,
-	})) allPassed = false
-
-	if (!await runTest({
-		name: 'Test 4: POST with non-whitelisted Origin',
-		url: uploadUrl,
-		method: 'POST',
-		headers: {
-			'Origin': 'https://evil-site.com',
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({action: 'Gate.'}),
-		expectStatus: 500,
-	})) allPassed = false
-
-	if (!await runTest({
-		name: 'Test 5: POST with whitelisted Origin',
-		url: uploadUrl,
-		method: 'POST',
-		headers: {
-			'Origin': allowedOrigin,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({action: 'Gate.'}),
-		expectStatus: 200,
-		expectHeaders: {'access-control-allow-origin': allowedOrigin},
-		expectBodyContains: '"success":true',
-	})) allPassed = false
-
-	// /message - Server endpoint (requires Origin to be absent)
-	log('┌────────────────────────────────────────────────────────────────────┐')
-	log('│  /message - Server Endpoint (requires Origin to be absent)        │')
-	log('└────────────────────────────────────────────────────────────────────┘')
-
-	if (!await runTest({
-		name: 'Test 6: Preflight to server-only endpoint',
-		url: messageUrl,
-		method: 'OPTIONS',
-		headers: {
-			'Origin': allowedOrigin,
-			'Access-Control-Request-Method': 'POST',
-		},
-		expectStatus: 500,
-	})) allPassed = false
-
-	if (!await runTest({
-		name: 'Test 7: POST with no Origin (server-to-server)',
-		url: messageUrl,
-		method: 'POST',
-		headers: {'Content-Type': 'application/json'},
-		body: JSON.stringify({action: 'Gate.'}),
-		expectStatus: 200,
-		expectBodyContains: '"success":true',
-	})) allPassed = false
-
-	if (!await runTest({
-		name: 'Test 8: POST with Origin header (simulating page)',
-		url: messageUrl,
-		method: 'POST',
-		headers: {
-			'Origin': allowedOrigin,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({action: 'Gate.'}),
-		expectStatus: 500,
-	})) allPassed = false
-
-	if (!await runTest({
-		name: 'Test 9: Simple request with text/plain and Origin',
-		url: messageUrl,
-		method: 'POST',
-		headers: {
-			'Origin': 'https://evil-site.com',
-			'Content-Type': 'text/plain',
-		},
-		body: JSON.stringify({action: 'Gate.'}),
-		expectStatus: 500,
-	})) allPassed = false
-
-	if (!allPassed) process.exit(1)
+	let t = prepare(uploadUrl, messageUrl, allowedOrigin)
+	let d = t.filter(x => typeof x !== 'string')
+	let single = parseInt(process.argv[2]) || null //yarn cors 2 runs just test 2
+	if (single) {
+		await runTest(d[single - 1])
+	} else {
+		for (let test of t) {
+			if (typeof test === 'string') log(test)
+			else await runTest(test)
+		}
+	}
 }
+main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })
 
-async function runTest({name, url, method, headers, body, expectStatus, expectHeaders, expectBodyContains}) {
+async function runTest({url, method, headers, body, expect}) {
 	let a = []
-	a.push(name)
-	a.push(`→ ${method} ${url}`)
+	a.push('', `${method} ${url}`)
 	a.push(look({headers, body}))
 
+	//For these tests, fetch and curl are functionally equivalent - both are non-browser clients that don't enforce CORS (that's browser-only), can send arbitrary headers (including Origin or not), and don't do automatic preflight (also browser-only). These tests check what the Lambda does with certain headers, not browser behavior. Either client works for that. The Lambda can't tell the difference between curl and Node fetch.
 	let response = await fetch(url, {method, headers, body})
 	let status = response.status
 	let responseHeaders = Object.fromEntries([...response.headers.entries()])
 	let responseBody = await response.text()
 
-	a.push(`← ${status}`)
-	a.push(look({responseHeaders, responseBody}))
+	let r = [`${status} ${response.statusText}`]
+	for (let [k, v] of Object.entries(responseHeaders)) r.push(`${k}: ${v}`)
+	r.push('', responseBody || '«empty body»')
+	a.push('', r.join('\n'))
 
-	let failures = []
-	if (status !== expectStatus) {
-		failures.push(`Expected status ${expectStatus}, got ${status}`)
+	let f = []//🐳
+	if (status != expect.status) {
+		f.push(`Expected status ${expect.status}, got ${status} ❌`)
 	}
-	if (expectHeaders) {
-		for (let [k, v] of Object.entries(expectHeaders)) {
+	if (expect.headers) {
+		for (let [k, v] of Object.entries(expect.headers)) {
 			let actual = headerGet(responseHeaders, k)
-			if (actual !== v) failures.push(`Expected header ${k}: ${v}, got: ${actual || '(missing)'}`)
+			if (actual !== v) f.push(`Expected header ${k}: ${v}, got: ${actual || '(missing)'} ❌`)
 		}
 	}
-	if (expectBodyContains && !responseBody.includes(expectBodyContains)) {
-		failures.push(`Expected body to contain "${expectBodyContains}"`)
+	if (expect.bodyContains && !responseBody.includes(expect.bodyContains)) {
+		f.push(`Expected body to contain "${expect.bodyContains}" ❌`)
 	}
 
-	let passed = failures.length === 0
-	a.push(passed ? `🟢 Success` : `🔴 Unexpected result!`)
-	if (!passed) a.push(look(failures))
-
+	f.length ? a.push('', '🔴 Unexpected result:', look(f)) : a.push('', '🟢 Success')
 	log(...a)
-	return passed
 }
-
-main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })
