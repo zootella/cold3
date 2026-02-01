@@ -228,3 +228,122 @@ The plan is this: Start by implementing CORS handling entirely in your handler c
 Then add the url.cors configuration in serverless.yml on top of the working code. This creates two layers of protection. AWS now intercepts OPTIONS preflights and responds from config—your preflight handling code becomes unreachable but remains as documentation of intent. For actual requests, your origin-checking code still runs, providing a secondary gate even though browsers already passed the config check. When you set response headers, AWS overwrites them with config values, which is fine since both layers express the same policy.
 
 The result is belt and suspenders. The YAML config is the enforced policy at the infrastructure level. The JavaScript code is a fallback that would catch anything if the config were ever misconfigured or removed. Both layers agreeing means no conflicts—just redundancy. The only cost is maintaining two expressions of the same policy, which is worth it for the confidence that your endpoints behave correctly regardless of which layer is doing the work.
+
+# [Section F] Code Review Notes (February 2025)
+
+Team decided to not configure CORS in serverless.yml. OPTIONS, preflight, everything happens in and relies upon the implementation in `icarus/level2.js` around `doorLambda`. Here are notes from a code review of that implementation.
+
+# Review Recommendations
+
+## Recommendation 1: Add `Vary: Origin`
+
+### What `Vary` Does
+
+The `Vary` HTTP header tells caches: "This response depends on certain request headers. Only serve this cached response if those headers match."
+
+```
+Vary: Origin
+```
+
+Means: "The response you're caching was generated based on the `Origin` request header. Don't serve this cached response to a request with a different `Origin`."
+
+### When It Matters
+
+Consider a caching layer (CDN, proxy, browser cache) between client and server:
+
+```
+Request 1: Origin: https://cold3.cc
+Response:  Access-Control-Allow-Origin: https://cold3.cc  <- cached
+
+Request 2: Origin: https://evil.com
+Response:  (served from cache) Access-Control-Allow-Origin: https://cold3.cc  <- WRONG!
+```
+
+The browser receiving response 2 sees the Origin doesn't match `Access-Control-Allow-Origin` and blocks the response. But this is still bad - the cache is serving incorrect responses.
+
+### Does It Actually Matter For Our Setup?
+
+Thinking about this more carefully:
+
+1. **We only have one allowed origin** - `originApex()` returns a single value. There's no scenario where different valid origins get different `Access-Control-Allow-Origin` values.
+
+2. **Lambda Function URLs don't cache by default** - There's no CloudFront distribution in front of these endpoints.
+
+3. **POST responses typically aren't cached** - Browsers and caches generally don't cache POST responses.
+
+4. **Invalid origins get rejected, not served differently** - A request from `evil.com` throws an error, it doesn't get a response with different CORS headers.
+
+### What Does MDN Say?
+
+From [MDN's CORS documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS/Errors/CORSMissingAllowOrigin):
+
+> "If `Access-Control-Allow-Origin` is set to `*` or **a static origin** for a particular resource, then configure the server to always send `Access-Control-Allow-Origin` in responses for the resource — for non-CORS requests as well as CORS requests — and **do not use `Vary`**."
+
+> "In other words, if the CORS response is always the same regardless of the `Origin` request header, `Vary: Origin` **should not be set**."
+
+`Vary: Origin` is for when you have **multiple allowed origins in an allowlist** and you echo back whichever one matched, so the response genuinely differs based on the Origin header.
+
+### Our Setup
+
+- We have ONE allowed origin (`originApex()`)
+- The `Access-Control-Allow-Origin` value is always the same static value
+- The response doesn't dynamically vary based on which origin from a list matched
+
+### Decision: Don't Add `Vary: Origin`
+
+MDN explicitly says not to use it when the CORS response is static. Our single-origin setup means the response is always the same. No change needed.
+
+---
+
+## Recommendation 2: Remove `OPTIONS` from `Access-Control-Allow-Methods`
+
+### What `Access-Control-Allow-Methods` Means
+
+From the Fetch specification:
+
+> `Access-Control-Allow-Methods` indicates which methods are supported by the response's URL for the purposes of the CORS protocol.
+
+The key phrase is "for the purposes of the CORS protocol" - meaning the **actual request** that follows the preflight, not the preflight itself.
+
+### The Preflight Flow
+
+```
+1. Browser wants to POST with Content-Type: application/json
+2. Browser sends OPTIONS preflight: "Can I POST with these headers?"
+3. Server responds: "Yes, POST is allowed, Content-Type header is allowed"
+4. Browser sends actual POST request
+```
+
+The `Access-Control-Allow-Methods` in step 3 tells the browser what methods are allowed for step 4. The browser already knows OPTIONS works - it just successfully sent an OPTIONS request!
+
+### Does Including OPTIONS Cause Problems?
+
+No. The browser simply ignores methods it doesn't care about. It's looking for `POST` in the list, sees it, and proceeds.
+
+### Why Remove It?
+
+1. **Accuracy** - It's technically incorrect per the spec's intent
+2. **Clarity** - Future developers might wonder "do we support OPTIONS as an actual API method?"
+3. **Cleanliness** - Minor, but why include unnecessary information?
+
+### What Do Trusted Sources Do?
+
+- **MDN** (Mozilla Developer Network) examples include OPTIONS: `Access-Control-Allow-Methods: POST, GET, OPTIONS`
+- **AWS API Gateway** documentation shows: `"Access-Control-Allow-Methods": "OPTIONS,POST,GET"`
+
+Both authoritative sources include OPTIONS in their examples.
+
+### Decision: Keep OPTIONS
+
+Since MDN and AWS - the two most relevant authorities (web standards and our infrastructure) - both include OPTIONS in their examples, we leave our code matching that pattern. No change needed.
+
+---
+
+## Summary
+
+| Recommendation | Decision |
+|----------------|----------|
+| Add `Vary: Origin` | **Don't add** - MDN says not to use for static single-origin setups |
+| Remove `OPTIONS` from methods | **Keep as-is** - matches MDN and AWS examples |
+
+Both initial recommendations were reconsidered after checking authoritative sources. The CORS implementation in `icarus/level2.js` is correct as-is. No changes needed.

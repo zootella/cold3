@@ -37,8 +37,7 @@ functions:
   message:
     handler: src/message.handler
     timeout: 90 #seconds
-    url:
-      cors: false #ttd january, note we could just say url: true for these four, or we could add cors here above the cors implementation we're going to soon add to level2; another note along these lines: our code in upload.js handles CORS; see handleCorsPreflight(); but ttd january, maybe later add this back as it may be faster and cheaper than having the lambda code do it, lambdarefactor
+    url: true
     events:               #BuildRemove - build.js copies this script to dist/serverless.yml, omitting these lines
       - http:             #BuildRemove   they're here so serverless-offline works for local development
           path: /message  #BuildRemove   deployed, they put lambdas behind api gateway
@@ -46,8 +45,7 @@ functions:
   up2:
     handler: src/up2.handler
     timeout: 15
-    url:
-      cors: false
+    url: true
     events:               #BuildRemove
       - http:             #BuildRemove
           path: /up2      #BuildRemove
@@ -55,8 +53,7 @@ functions:
   up3:
     handler: src/up3.handler
     timeout: 15
-    url:
-      cors: false
+    url: true
     events:               #BuildRemove
       - http:             #BuildRemove
           path: /up3      #BuildRemove
@@ -64,8 +61,7 @@ functions:
   upload:
     handler: src/upload.handler
     timeout: 300 #5 minutes, enough time to hash a really big file; lambda function url limit is 15min, up from 30s behind api gateway
-    url:
-      cors: false
+    url: true #ttd january, note that we could configure cors in these, and then amazon's lambda loader would respond to OPTIONS with the preflight before any of our code was even loaded. but since our code must block missing or wrong Origin anyway, we built out the complete CORS dance in doorLambda, and you can test it with $ yarn cors, so here we keep configuration simple and code complete
     events:               #BuildRemove
       - http:             #BuildRemove
           path: /upload   #BuildRemove

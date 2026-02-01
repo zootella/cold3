@@ -40,10 +40,8 @@ Instead, Lambda just does the coordination, and browser talks directly to S3 for
 */
 async function uploadHandleBelow({door, body, action}) {
 
-	// 🟠 Gate
-	if (action == 'Gate.') {
-		return {success: true, sticker: Sticker()}//report reachability to a manual curl test; application code doesn't use this action
-	}
+	//report reachability to our manual CORS tests; application code doesn't use this action
+	if (action == 'Gate.') return {success: true, sticker: Sticker()}
 
 	//page must submit permission envelope from worker
 	door.letter = await openEnvelope('UploadPermission.', body.permissionEnvelope)

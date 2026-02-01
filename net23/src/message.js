@@ -12,11 +12,10 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 }
 async function doorHandleBelow({door, body, action}) {
 
-	if (action == 'Gate.') {
+	//report reachability to our manual CORS tests; application code doesn't use this action
+	if (action == 'Gate.') return {success: true, sticker: Sticker()}
 
-		return {success: true, sticker: Sticker()}//just for manual curl testing of cors and origin header security concerns
-
-	} else if (action == 'Send.') {
+	if (action == 'Send.') {
 
 		return await sendMessage({
 			provider: body.provider,

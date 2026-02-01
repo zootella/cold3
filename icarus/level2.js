@@ -926,11 +926,8 @@ async function doorLambdaCheck({door, actions}) {
 
 	//if this is a lambda for workers, make sure they include the standard envelope that proves they're our servers not attackers
 	if (door.from == 'Worker.') {//this lambda endpoint is configured to be called by trusted code in a worker
-		if (door.body?.action == 'Gate.') {//body indicates the special "Gate." action, used for manual curl testing
-			//don't require an envelope; this action does nothing and this allows easier curl testing
-		} else {
-			door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, wrong action, or expired
-		}
+		//the worker must prove it's one of our servers, not some random outsider, by including a valid envelope, which can only be sealed with a server secret
+		door.letter = await openEnvelope('Network23.', door?.body?.envelope)//throws on missing, wrong action, or expired
 	} else if (door.from == 'Page.') {//this lambda endpoint is configured to be called by potentially compromised javascript on a page
 		//no standard envelope; each endpoint fashions its own authentication
 	}
