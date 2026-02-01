@@ -8,7 +8,9 @@ import dotenv from 'dotenv'
 
 async function main() {
 	dotenv.config({quiet: true})//load .env to be able to access secrets
-	addLogSink((s) => { fs.appendFile('test.log', s.trimEnd()+newline) })//have log() also write to a file
+	if (false) {//optionally have log() also write to a file
+		addLogSink((s) => { fs.appendFile('test.log', s.trimEnd()+newline) })
+	}
 
 	log(
 		sayFloppyDisk(wrapper).disk,//show 💾 with the current percent filled and shrinkwrap seal hash
