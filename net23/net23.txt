@@ -791,6 +791,60 @@ ripgrep 15.1.0
 
 
 
+2026feb installed pnpm to maybe switch to that from yarn classic
+
+```
+$ corepack enable
+$ corepack prepare pnpm@latest --activate
+Preparing pnpm@latest for immediate activation...
+$ pnpm --version
+10.28.2
+
+$ brew list pnpm
+Error: No such keg: /opt/homebrew/Cellar/pnpm
+$ npm list -g pnpm
+/Users/kevin/.nvm/versions/node/v22.21.0/lib
+└── (empty)
+
+$ which pnpm
+/Users/kevin/.nvm/versions/node/v22.21.0/bin/pnpm
+```
+
+Did these commands in ~/Documents/code, not any project folder.
+Install and use pnpm through corepack, not homebrew.
+Corepack comes with node and manages package managers like yarn and pnpm.
+It should already be on; enable turns it on and is safe to repeat.
+Prepare downloads and caches pnpm within corepack.
+Confirmed pnpm 10.28.2 is not installed through homebrew or npm globals.
+The which path shows pnpm lives inside the nvm-managed node directory, meaning it comes through corepack, same as yarn.
+Existing yarn classic projects are unaffected because corepack reads the packageManager field in each project's package.json to decide which package manager to use.
+
+then at the bottom of ~/.zshrc added:
+```
+alias gitlog='git log -n 24 --pretty=format:"%h %ad %s" --date=format:"%b%d%a"'
+zmodload zsh/datetime                            #get built-in zsh module for subsecond accuracy
+nn() {
+  local nnstart=$EPOCHREALTIME                   #start time now before pnpm runs
+  pnpm "$@"                                      #run pnpm with all arguments forwarded exactly
+  local nnret=$?                                 #capture pnpm's exit code before anything overwrites it
+  local nnelapsed=$(( EPOCHREALTIME - nnstart )) #calculate how long pnpm took
+  printf "⏱ Done in %.2fs.\n" "$nnelapsed" >&2   #print to stderr so it never pollutes piped output
+  return $nnret                                  #return pnpm's real exit code for && chains
+}
+cd ~/Documents/code
+```
+to only have to type nn, and not have to give up the awesome timer, like:
+$ nn --version
+10.28.2
+⏱ Done in 0.24s.
+
+
+
+
+
+
+
+
 
  _            _     __ _ _      
 | | ___   ___| | __/ _(_) | ___ 
