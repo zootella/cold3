@@ -59,5 +59,4 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	c = c.replace('"cloud": false', '"cloud": true')//in dist's icarus/wrapper.js, set cloud true
 	await fs.writeFile(p, c)
 }
-
 main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })

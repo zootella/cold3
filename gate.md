@@ -229,7 +229,7 @@ Then add the url.cors configuration in serverless.yml on top of the working code
 
 The result is belt and suspenders. The YAML config is the enforced policy at the infrastructure level. The JavaScript code is a fallback that would catch anything if the config were ever misconfigured or removed. Both layers agreeing means no conflicts—just redundancy. The only cost is maintaining two expressions of the same policy, which is worth it for the confidence that your endpoints behave correctly regardless of which layer is doing the work.
 
-# test
+# Tests
 
 Use these curl commands to verify CORS configuration is working correctly. Both `/upload` and `/message` support a `Gate.` action that returns `{success: true, sticker: ...}` without requiring envelopes, enabling clean curl testing of the CORS and Origin header security layers.
 

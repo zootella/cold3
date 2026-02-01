@@ -24,5 +24,4 @@ async function main() {//copy out the net23.zip file that serverless framework j
 	if (absolute) comparison = `previous ${gain > 0 ? '+' : '-'}${absolute == 1 ? '1 byte' : saySize4(absolute)}`
 	log(`💽 net23.zip is ${saySize4(size2)}; ${comparison}`)
 }
-
 main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })
