@@ -2,10 +2,11 @@
 import {
 log, look, defined, makeText,
 Key, decryptKeys, headerGet,
+sealEnvelope, Limit,
 } from 'icarus'
 import dotenv from 'dotenv'
 
-const prepare = (uploadUrl, messageUrl, allowedOrigin) => [
+const prepare = (cloudApex) => [
 `
 These tests verify that our lambdas are secured properly, and include a discussion about web stack security and CORS. Ok, let's get started! To begin, the /upload endpoint is configured for browser-to-Lambda communication. Pages at our domain should be able to call it directly; servers should be blocked. In our application code, checkOriginValid in level2.js requires a valid Origin header from the whitelist. Tests 1-5 verify this works correctly.
 
@@ -16,17 +17,17 @@ When JavaScript on a page makes a cross-origin request (different scheme, host, 
 Our /upload endpoint is configured to accept requests from pages only. The doorLambda function in level2.js handles OPTIONS requests by checking if the Origin matches our whitelist. If so, it returns 204 with Access-Control-Allow-Origin matching the request. The browser sees the match and proceeds to send the actual POST.
 `,
 {
-	url: uploadUrl,
+	route: '/upload',
 	method: 'OPTIONS',
 	headers: {
-		'Origin': allowedOrigin,
+		'Origin': cloudApex,
 		'Access-Control-Request-Method': 'POST',
 		'Access-Control-Request-Headers': 'Content-Type',
 	},
 	expect: {
 		status: 204,
 		headers: {
-			'access-control-allow-origin': allowedOrigin,
+			'access-control-allow-origin': cloudApex,
 		},
 	},
 },
@@ -38,7 +39,7 @@ Now imagine malicious code at a script kiddie's website attempts the same reques
 Our doorLambda checks the Origin against our whitelist and finds no match. It returns 403 with no CORS headers. The browser sees the rejection and refuses to send the actual POST. The request never reaches our business logic - the browser stopped it. This is CORS enforcement: the browser is the enforcer, not the server.
 `,
 {
-	url: uploadUrl,
+	route: '/upload',
 	method: 'OPTIONS',
 	headers: {
 		'Origin': 'https://unrecognized.ninja',
@@ -57,14 +58,14 @@ When a server (or curl, or any non-browser client) makes a request, there's no O
 Our Lambda receives this request and runs. Icarus' checkOriginValid function in level2.js checks for a valid Origin header. Finding none, it throws an error and the request fails with 500. This is our code doing its job. Without checkOriginValid, this request would have succeeded, allowing any server on the internet to call our upload endpoint.
 `,
 {
-	url: uploadUrl,
+	route: '/upload',
 	method: 'POST',
 	headers: {
 		'Content-Type': 'application/json',
 	},
-	body: makeText({
+	body: {
 		action: 'Gate.',
-	}),
+	},
 	expect: {
 		status: 500,
 	},
@@ -77,15 +78,15 @@ This test covers a scenario that browsers would normally prevent: sending a POST
 Test 3 proved checkOriginValid requires an Origin header to be present. This test proves it also validates the value against the whitelist. The Origin header is present but not in our whitelist, so checkOriginValid throws and the request fails with 500. This confirms our application code provides real validation, not just a presence check.
 `,
 {
-	url: uploadUrl,
+	route: '/upload',
 	method: 'POST',
 	headers: {
 		'Origin': 'https://unrecognized.ninja',
 		'Content-Type': 'application/json',
 	},
-	body: makeText({
+	body: {
 		action: 'Gate.',
-	}),
+	},
 	expect: {
 		status: 500,
 	},
@@ -98,19 +99,19 @@ This test simulates what happens after a successful preflight: the browser sends
 Our Lambda receives the request and checkOriginValid in level2.js examines the Origin header. It's present and matches our whitelist, so the check passes. The request proceeds to business logic - in this case the Gate. action, which simply returns success with a sticker. This is the only path that should succeed for /upload: a request with a valid, whitelisted Origin header.
 `,
 {
-	url: uploadUrl,
+	route: '/upload',
 	method: 'POST',
 	headers: {
-		'Origin': allowedOrigin,
+		'Origin': cloudApex,
 		'Content-Type': 'application/json',
 	},
-	body: makeText({
+	body: {
 		action: 'Gate.',
-	}),
+	},
 	expect: {
 		status: 200,
 		headers: {
-			'access-control-allow-origin': allowedOrigin,
+			'access-control-allow-origin': cloudApex,
 		},
 		bodyContains: '"success":true',
 	},
@@ -125,10 +126,10 @@ When a browser wants to make a complex cross-origin request (like POST with JSON
 When the OPTIONS request arrives, doorLambda processes it as a regular request, which fails because server endpoints expect no Origin header and require other authentication. The browser sees the failure and stops. The actual POST request is never sent - the browser blocked it at preflight.
 `,
 {
-	url: messageUrl,
+	route: '/message',
 	method: 'OPTIONS',
 	headers: {
-		'Origin': allowedOrigin,
+		'Origin': cloudApex,
 		'Access-Control-Request-Method': 'POST',
 	},
 	expect: {
@@ -143,14 +144,15 @@ When a server (like our Cloudflare worker, or curl) makes a request, it doesn't 
 Our Lambda receives the request and checkOriginOmitted in level2.js examines the headers. It confirms the Origin header is absent, which means this isn't coming from a browser page. The check passes, business logic runs, and we return success. This is the only path that should succeed for /message: a request with no Origin header, indicating server-to-server communication.
 `,
 {
-	url: messageUrl,
+	route: '/message',
 	method: 'POST',
 	headers: {
 		'Content-Type': 'application/json',
 	},
-	body: makeText({
+	body: {
 		action: 'Gate.',
-	}),
+		envelope: true,//with envelope true set here, our test runner below will mint a valid Network23. envelope, just like trusted code in the worker does on each call to fetchLambda
+	},
 	expect: {
 		status: 200,
 		bodyContains: '"success":true',
@@ -164,15 +166,16 @@ In a real browser scenario, this request would never happen - Test 6 showed that
 Our Lambda receives the request and checkOriginOmitted in level2.js sees an Origin header is present. Regardless of its value, the presence of any Origin header indicates this request came from (or is pretending to come from) a browser page. The check throws and the request fails with 500. This is our code protecting us - any Origin header means rejection.
 `,
 {
-	url: messageUrl,
+	route: '/message',
 	method: 'POST',
 	headers: {
-		'Origin': allowedOrigin,
+		'Origin': cloudApex,
 		'Content-Type': 'application/json',
 	},
-	body: makeText({
+	body: {
 		action: 'Gate.',
-	}),
+		envelope: true,
+	},
 	expect: {
 		status: 500,
 	},
@@ -185,15 +188,16 @@ This is the most important test for understanding why code-level checks are esse
 Our Lambda receives the request and checkOriginOmitted in level2.js sees the Origin header. The check throws and the request fails with 500. This test proves that preflight alone cannot fully protect a server-only endpoint - simple requests bypass preflight, so our code must be the final line of defense. Without checkOriginOmitted, this request would have succeeded, allowing any page on the internet to call our /message endpoint.
 `,
 {
-	url: messageUrl,
+	route: '/message',
 	method: 'POST',
 	headers: {
 		'Origin': 'https://unrecognized.ninja',
 		'Content-Type': 'text/plain',
 	},
-	body: makeText({
+	body: {
 		action: 'Gate.',
-	}),
+		envelope: true,
+	},
 	expect: {
 		status: 500,
 	},
@@ -208,32 +212,41 @@ async function main() {
 	}
 	await decryptKeys('node', sources)
 
-	// Get lambda URLs and expected origin from keys
-	let uploadUrl = Key('upload lambda url, public')
-	let messageUrl = Key('message lambda url')
-	let allowedOrigin = `https://${Key('domain, public')}`
-
-	let t = prepare(uploadUrl, messageUrl, allowedOrigin)
+	let cloudApex = `https://${Key('domain, public')}`
+	let t = prepare(cloudApex)
 	let d = t.filter(x => typeof x !== 'string')
 	let single = parseInt(process.argv[2]) || null //yarn cors 2 runs just test 2
+	let results = []//all test results
 	if (single) {
-		await runTest(d[single - 1])
+		results.push(await runTest(d[single - 1]))
 	} else {
 		for (let test of t) {
 			if (typeof test === 'string') log(test)
-			else await runTest(test)
+			else results.push(await runTest(test))
 		}
 	}
+	let passed = results.filter(r => !r.length)//successful test results, which will be empty arrays
+	let failed = results.filter(r => r.length)//unsuccessful test results, each would be an array of unsatisified expectations
+	log(failed.length ? `Some tests failed! ⚠️⚠️⚠️` : `All ${results.length} tests passed ✅`)
 }
 main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })
 
-async function runTest({url, method, headers, body, expect}) {
+async function runTest({route, method, headers, body, expect}) {
+	let url
+	if      (route == '/upload')  url = Key('upload lambda url, public')//our lambda function secured to work with pages, only
+	else if (route == '/message') url = Key('message lambda url')//our lambda function secured to work with servers, only
+	else toss('code')
+
+	if (body) {//prepare reqest body
+		if (body.envelope) body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})//fresh keycard just like fetchLambda mints
+		body = makeText(body)//stringify
+	}
+
 	let a = []
-	a.push('', `${method} ${url}`)
+	a.push('', `${method} ${route}`)
 	a.push(look({headers, body}))
 
-	//For these tests, fetch and curl are functionally equivalent - both are non-browser clients that don't enforce CORS (that's browser-only), can send arbitrary headers (including Origin or not), and don't do automatic preflight (also browser-only). These tests check what the Lambda does with certain headers, not browser behavior. Either client works for that. The Lambda can't tell the difference between curl and Node fetch.
-	let response = await fetch(url, {method, headers, body})
+	let response = await fetch(url, {method, headers, body})//using fetch here in Node, but just as good as bash $ curl; both are non-browser clients that don't enforce CORS, can send arbitrary headers, including Origin or not, and don't automatically do preflight (fetch does when script in a page calls it, but not here in local command line Node) these tests are about how our deployed lambdas act, not browser behavior, and the lambda can't tell what we're running on this end
 	let status = response.status
 	let responseHeaders = Object.fromEntries([...response.headers.entries()])
 	let responseBody = await response.text()
@@ -259,4 +272,5 @@ async function runTest({url, method, headers, body, expect}) {
 
 	f.length ? a.push('', '🔴 Unexpected result:', look(f)) : a.push('', '🟢 Success')
 	log(...a)
+	return f
 }
