@@ -21,9 +21,10 @@
 		"test": "node test.js",
 		"seal": "node seal.js && node test.js",
 		"cors": "node cors.js",
-		"upgrade-wash": "yarn wash && rimraf yarn.lock",
-		"wash": "rimraf .yarn package-lock.json node_modules icarus/node_modules net23/node_modules oauth/node_modules site/node_modules oauth/.wrangler site/.wrangler oauth/worker-configuration.d.ts site/worker-configuration.d.ts net23/.serverless net23/dist oauth/.svelte-kit site/.nuxt site/.output site/.wrangler site/dist",
-		"xray": "node xray.js"
+		"upgrade-wash": "yarn wash && rimraf package-lock.json yarn.lock pnpm-lock.yaml",
+		"wash": "rimraf .yarn node_modules icarus/node_modules net23/node_modules oauth/node_modules site/node_modules oauth/.wrangler site/.wrangler oauth/worker-configuration.d.ts site/worker-configuration.d.ts net23/.serverless net23/dist oauth/.svelte-kit site/.nuxt site/.output site/.wrangler site/dist",
+		"xray": "node xray.js",
+		"sem": "node sem.js"
 	},
 	"dependencies": {
 		"icarus": "*"
@@ -33,6 +34,8 @@
 		"@electric-sql/pglite": "^0.3.14",
 		"fast-glob": "^3.3.2",
 		"nanoid": "^5.1.5",
-		"otpauth": "^9.4.1"
+		"otpauth": "^9.4.1",
+		"semver": "^7.7.3",
+		"yaml": "^2.8.2"
 	}
 }

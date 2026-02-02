@@ -21,6 +21,8 @@
 		"fast-glob": "^3.3.2",//yarn seal uses fast-glob; yarn wash uses rimraf, install that one globally
 		"nanoid": "^5.1.5",
 		"otpauth": "^9.4.1",//these two are for fuzz tests you can turn on in level1 and run with $ yarn test
+		"semver": "^7.7.3",
+		"yaml": "^2.8.2",//these two are for sem.js to make sem.yaml
 	}
 }
 

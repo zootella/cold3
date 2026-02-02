@@ -44,6 +44,24 @@ async function main() {
 }
 main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })
 
+/*
+Several tiers of file exclusion in this project:
+
+(1) .gitignore - Keep out of repository and public GitHub
+like node_modules, build artifacts, secrets
+
+(2) listFiles() - Exclude files from wrapper.txt hash manifest
+wrapper.txt defines the deployed system's identity
+git ignored BUT in wrapper.txt: .env, .env.keys, .dev.vars (secrets are part of identity)
+committed to git BUT excluded from wrapper.txt: wrapper.txt, wrapper.js (can't hash themselves)
+
+(3) affixSeal() - Exclude files we don't expect a person to read or code
+everything in wrapper.txt, minus binary, generated or automated content
+lockfiles, images, and generated reports committed and hashed, but don't count towards metrics about this project's mental weight
+
+additionally, $ yarn wash and $ yarn upgrade-wash have lists of files they delete to start module dependencies afresh
+*/
+
 async function listFiles() {
 
 	//list all the files that are a part of this project in its current form; configuration, code, and notes
@@ -114,6 +132,7 @@ async function affixSeal(properties, manifest) {
 		if (
 			!f.path.endsWith('package-lock.json') &&//lockfiles
 			!f.path.endsWith('yarn.lock') &&
+			!f.path.endsWith('.yaml') &&//the lockfile pnpm-lock.yaml and our semantic version report sem.yaml
 			!f.path.endsWith('.gif') &&//images
 			!f.path.endsWith('.jpg') &&
 			!f.path.endsWith('.png') &&

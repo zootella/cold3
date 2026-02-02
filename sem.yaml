@@ -1,0 +1,1010 @@
+summary:
+  generated: Monday, February 2, 2026 at 2:42 PM
+  Installed version 1+ year old 🕰️:
+    - "@tailwindcss/forms"
+    - fast-glob
+    - is-mobile
+    - qrcode
+    - serverless-offline
+    - svelte
+  Current version 6+ months newer ⏰:
+    - "@tailwindcss/forms"
+    - svelte
+  Major new version available 🆕:
+    - "@sveltejs/adapter-auto"
+    - "@sveltejs/vite-plugin-svelte"
+    - "@vercel/nft"
+    - "@vitejs/plugin-vue"
+    - "@wagmi/connectors"
+    - "@wagmi/core"
+    - h3
+    - nuxt
+    - vite
+    - vue-router
+    - zod
+  downloads:
+    5 figure:
+      nitro-cloudflare-dev: 12,571
+      vidstack: 32,404
+      "@auth/sveltekit": 47,854
+      nuxt-og-image: 74,009
+      "@sveltejs/adapter-cloudflare": 76,147
+    6 figure:
+      nuxi: 201,717
+      "@uppy/aws-s3": 282,891
+      "@nuxtjs/tailwindcss": 300,835
+      "@tanstack/vue-query": 370,420
+      "@sveltejs/adapter-auto": 373,056
+      "@uppy/dashboard": 376,362
+      "@wagmi/core": 484,375
+      "@wagmi/connectors": 503,400
+      "@uppy/core": 530,356
+      serverless-offline: 548,853
+      "@pinia/nuxt": 581,823
+      "@sveltejs/kit": 873,427
+      otpauth: 926,443
+    7 figure:
+      serverless: 1,152,400
+      nuxt: 1,174,646
+      nitropack: 1,177,503
+      credit-card-type: 1,193,217
+      is-mobile: 1,215,370
+      "@sveltejs/vite-plugin-svelte": 1,244,477
+      "@unhead/vue": 1,499,909
+      "@aws-sdk/client-ses": 2,326,942
+      viem: 2,598,911
+      "@aws-sdk/client-sns": 2,601,639
+      svelte: 2,631,657
+      "@tailwindcss/forms": 2,638,655
+      twilio: 2,698,267
+      "@sendgrid/mail": 2,813,782
+      pinia: 2,815,194
+      wrangler: 3,298,361
+      unstorage: 3,622,773
+      ofetch: 3,787,407
+      h3: 4,161,939
+      "@vercel/nft": 4,537,485
+      "@electric-sql/pglite": 4,674,296
+      vue-router: 4,679,722
+      "@vitejs/plugin-vue": 4,797,318
+      qrcode: 6,231,119
+      "@aws-sdk/s3-request-presigner": 6,524,876
+      vue: 8,525,448
+      "@supabase/supabase-js": 8,926,632
+      pino-pretty: 8,964,534
+    8 figure:
+      libphonenumber-js: 12,064,205
+      "@aws-sdk/client-s3": 16,048,568
+      sharp: 31,009,810
+      vite: 53,689,019
+      zod: 84,021,090
+      fast-glob: 88,622,243
+      nanoid: 89,053,271
+    9 figure:
+      yaml: 100,201,216
+      fs-extra: 137,260,753
+      semver: 502,960,728
+modules:
+  "@auth/sveltekit":
+    homepage: https://sveltekit.authjs.dev
+    description: Authentication for SvelteKit.
+    from: oauth
+    versions:
+      declared: ^1.9.2
+      installed: 1.11.1
+      current: 1.11.1
+      latest: 1.11.1
+    published:
+      installed: 2025-10-26
+      current: 2025-10-26
+      latest: 2025-10-26
+    downloads:
+      weekly: 47,854
+      on: 2026-02-02
+  "@aws-sdk/client-s3":
+    homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-s3
+    description: AWS SDK for JavaScript S3 Client for Node.js, Browser and React Native
+    from: net23
+    versions:
+      declared: ^3.975.0
+      installed: 3.975.0
+      current: 3.981.0
+      latest: 3.981.0
+    published:
+      installed: 2026-01-23
+      current: 2026-02-02
+      latest: 2026-02-02
+    downloads:
+      weekly: 16,048,568
+      on: 2026-02-02
+  "@aws-sdk/client-ses":
+    homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-ses
+    description: AWS SDK for JavaScript Ses Client for Node.js, Browser and React Native
+    from: net23
+    versions:
+      declared: ^3.682.0
+      installed: 3.919.0
+      current: 3.981.0
+      latest: 3.981.0
+    published:
+      installed: 2025-10-28
+      current: 2026-02-02
+      latest: 2026-02-02
+    downloads:
+      weekly: 2,326,942
+      on: 2026-02-02
+  "@aws-sdk/client-sns":
+    homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-sns
+    description: AWS SDK for JavaScript Sns Client for Node.js, Browser and React Native
+    from: net23
+    versions:
+      declared: ^3.682.0
+      installed: 3.919.0
+      current: 3.981.0
+      latest: 3.981.0
+    published:
+      installed: 2025-10-28
+      current: 2026-02-02
+      latest: 2026-02-02
+    downloads:
+      weekly: 2,601,639
+      on: 2026-02-02
+  "@aws-sdk/s3-request-presigner":
+    homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/packages/s3-request-presigner
+    description: "[![NPM version](https://img.shields.io/npm/v/@aws-sdk/s3-request-presigner/latest.svg)](https://www.npmjs.com/package/@aws-sdk/s3-request-presigner) [![NPM downloads](https://img.shields.io/npm/dm/@aws-sdk/s3-request-presigner.svg)](https://www.npmjs.com/"
+    from: net23
+    versions:
+      declared: ^3.975.0
+      installed: 3.975.0
+      current: 3.981.0
+      latest: 3.981.0
+    published:
+      installed: 2026-01-23
+      current: 2026-02-02
+      latest: 2026-02-02
+    downloads:
+      weekly: 6,524,876
+      on: 2026-02-02
+  "@electric-sql/pglite":
+    homepage: https://pglite.dev
+    description: PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3.7mb gzipped.
+    from: root
+    versions:
+      declared: ^0.3.14
+      installed: 0.3.14
+      current: 0.3.15
+      latest: 0.3.15
+    published:
+      installed: 2025-11-06
+      current: 2026-01-15
+      latest: 2026-01-15
+    downloads:
+      weekly: 4,674,296
+      on: 2026-02-02
+  "@nuxtjs/tailwindcss":
+    homepage: https://github.com/nuxt-modules/tailwindcss#readme
+    description: Tailwind CSS module for Nuxt
+    from: site
+    versions:
+      declared: ^6.14.0
+      installed: 6.14.0
+      current: 6.14.0
+      latest: 6.14.0
+    published:
+      installed: 2025-04-27
+      current: 2025-04-27
+      latest: 2025-04-27
+    downloads:
+      weekly: 300,835
+      on: 2026-02-02
+  "@pinia/nuxt":
+    homepage: https://pinia.vuejs.org/ssr/nuxt.html
+    description: Nuxt Module for pinia
+    from: site
+    versions:
+      declared: ^0.11.1
+      installed: 0.11.2
+      current: 0.11.3
+      latest: 0.11.3
+    published:
+      installed: 2025-07-18
+      current: 2025-11-05
+      latest: 2025-11-05
+    downloads:
+      weekly: 581,823
+      on: 2026-02-02
+  "@sendgrid/mail":
+    homepage: https://sendgrid.com
+    description: Twilio SendGrid NodeJS mail service
+    from: net23
+    versions:
+      declared: ^8.1.4
+      installed: 8.1.6
+      current: 8.1.6
+      latest: 8.1.6
+    published:
+      installed: 2025-09-19
+      current: 2025-09-19
+      latest: 2025-09-19
+    downloads:
+      weekly: 2,813,782
+      on: 2026-02-02
+  "@supabase/supabase-js":
+    homepage: https://github.com/supabase/supabase-js/tree/master/packages/core/supabase-js
+    description: Isomorphic Javascript SDK for Supabase
+    from: icarus
+    versions:
+      declared: ^2.39.8
+      installed: 2.77.0
+      current: 2.93.3
+      latest: 2.93.3
+    published:
+      installed: 2025-10-29
+      current: 2026-01-29
+      latest: 2026-01-29
+    downloads:
+      weekly: 8,926,632
+      on: 2026-02-02
+  "@sveltejs/adapter-auto":
+    note: Major new version available 🆕
+    homepage: https://svelte.dev/docs/kit/adapter-auto
+    description: Automatically chooses the SvelteKit adapter for your current environment, if possible.
+    from: oauth
+    versions:
+      declared: ^6.0.0
+      installed: 6.1.1
+      current: 6.1.1
+      latest: 7.0.0
+    published:
+      installed: 2025-10-02
+      current: 2025-10-02
+      latest: 2025-10-16
+    downloads:
+      weekly: 373,056
+      on: 2026-02-02
+  "@sveltejs/adapter-cloudflare":
+    homepage: https://svelte.dev/docs/kit/adapter-cloudflare
+    description: Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages
+    from: oauth
+    versions:
+      declared: ^7.0.4
+      installed: 7.2.4
+      current: 7.2.6
+      latest: 7.2.6
+    published:
+      installed: 2025-10-02
+      current: 2026-01-23
+      latest: 2026-01-23
+    downloads:
+      weekly: 76,147
+      on: 2026-02-02
+  "@sveltejs/kit":
+    homepage: https://svelte.dev
+    description: SvelteKit is the fastest way to build Svelte apps
+    from: oauth
+    versions:
+      declared: ^2.16.0
+      installed: 2.48.3
+      current: 2.50.1
+      latest: 2.50.1
+    published:
+      installed: 2025-10-29
+      current: 2026-01-23
+      latest: 2026-01-23
+    downloads:
+      weekly: 873,427
+      on: 2026-02-02
+  "@sveltejs/vite-plugin-svelte":
+    note: Major new version available 🆕
+    homepage: https://github.com/sveltejs/vite-plugin-svelte#readme
+    description: The official [Svelte](https://svelte.dev) plugin for [Vite](https://vitejs.dev).
+    from: oauth
+    versions:
+      declared: ^5.0.0
+      installed: 5.1.1
+      current: 5.1.1
+      latest: 6.2.4
+    published:
+      installed: 2025-07-11
+      current: 2025-07-11
+      latest: 2026-01-09
+    downloads:
+      weekly: 1,244,477
+      on: 2026-02-02
+  "@tailwindcss/forms":
+    note: Installed version 1+ year old 🕰️; Current version 6+ months newer ⏰
+    homepage: https://github.com/tailwindlabs/tailwindcss-forms#readme
+    description: A plugin that provides a basic reset for form styles that makes form elements easy to override with utilities.
+    from: site
+    versions:
+      declared: ^0.5.10
+      installed: 0.5.10
+      current: 0.5.11
+      latest: 0.5.11
+    published:
+      installed: 2025-01-07
+      current: 2025-12-17
+      latest: 2025-12-17
+    downloads:
+      weekly: 2,638,655
+      on: 2026-02-02
+  "@tanstack/vue-query":
+    homepage: https://tanstack.com/query
+    description: Hooks for managing, caching and syncing asynchronous and remote data in Vue
+    from: site
+    versions:
+      declared: ^5.87.1
+      installed: 5.90.5
+      current: 5.92.9
+      latest: 5.92.9
+    published:
+      installed: 2025-10-16
+      current: 2026-01-23
+      latest: 2026-01-23
+    downloads:
+      weekly: 370,420
+      on: 2026-02-02
+  "@unhead/vue":
+    homepage: https://unhead.unjs.io
+    description: Full-stack <head> manager built for Vue.
+    from: site
+    versions:
+      declared: ^2.0.5
+      installed: 2.0.19
+      current: 2.1.2
+      latest: 2.1.2
+    published:
+      installed: 2025-10-08
+      current: 2026-01-11
+      latest: 2026-01-11
+    downloads:
+      weekly: 1,499,909
+      on: 2026-02-02
+  "@uppy/aws-s3":
+    homepage: https://uppy.io
+    description: Upload to Amazon S3 with Uppy
+    from: site
+    versions:
+      declared: ^5.1.0
+      installed: 5.1.0
+      current: 5.1.0
+      latest: 5.1.0
+    published:
+      installed: 2025-12-02
+      current: 2025-12-02
+      latest: 2025-12-02
+    downloads:
+      weekly: 282,891
+      on: 2026-02-02
+  "@uppy/core":
+    homepage: https://uppy.io
+    description: "Core module for the extensible JavaScript file upload widget with support for drag&drop, resumable uploads, previews, restrictions, file processing/encoding, remote providers like Instagram, Dropbox, Google Drive, S3 and more :dog:"
+    from: site
+    versions:
+      declared: ^5.2.0
+      installed: 5.2.0
+      current: 5.2.0
+      latest: 5.2.0
+    published:
+      installed: 2025-12-02
+      current: 2025-12-02
+      latest: 2025-12-02
+    downloads:
+      weekly: 530,356
+      on: 2026-02-02
+  "@uppy/dashboard":
+    homepage: https://uppy.io
+    description: Universal UI plugin for Uppy.
+    from: site
+    versions:
+      declared: ^5.1.0
+      installed: 5.1.0
+      current: 5.1.0
+      latest: 5.1.0
+    published:
+      installed: 2025-12-02
+      current: 2025-12-02
+      latest: 2025-12-02
+    downloads:
+      weekly: 376,362
+      on: 2026-02-02
+  "@vercel/nft":
+    note: Major new version available 🆕
+    homepage: https://github.com/vercel/nft#readme
+    description: "[![CI Status](https://github.com/vercel/nft/actions/workflows/ci.yml/badge.svg)](https://github.com/vercel/nft/actions/workflows/ci.yml)"
+    from: net23
+    versions:
+      declared: ^0.29.2
+      installed: 0.29.4
+      current: 0.29.4
+      latest: 1.3.0
+    published:
+      installed: 2025-05-30
+      current: 2025-05-30
+      latest: 2026-01-21
+    downloads:
+      weekly: 4,537,485
+      on: 2026-02-02
+  "@vitejs/plugin-vue":
+    note: Major new version available 🆕
+    homepage: https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue#readme
+    description: The official plugin for Vue SFC support in Vite.
+    from: icarus
+    versions:
+      declared: ^5.0.4
+      installed: 5.2.4
+      current: 5.2.4
+      latest: 6.0.4
+    published:
+      installed: 2025-05-09
+      current: 2025-05-09
+      latest: 2026-02-02
+    downloads:
+      weekly: 4,797,318
+      on: 2026-02-02
+  "@wagmi/connectors":
+    note: Major new version available 🆕
+    homepage: https://github.com/wevm/wagmi#readme
+    description: Collection of connectors for Wagmi
+    from: site
+    versions:
+      declared: ^5.9.9
+      installed: 5.11.2
+      current: 5.11.2
+      latest: 7.1.6
+    published:
+      installed: 2025-09-25
+      current: 2025-09-25
+      latest: 2026-02-01
+    downloads:
+      weekly: 503,400
+      on: 2026-02-02
+  "@wagmi/core":
+    note: Major new version available 🆕
+    homepage: https://github.com/wevm/wagmi#readme
+    description: VanillaJS library for Ethereum
+    from: site
+    versions:
+      declared: ^2.20.3
+      installed: 2.22.1
+      current: 2.22.1
+      latest: 3.3.2
+    published:
+      installed: 2025-10-14
+      current: 2025-10-14
+      latest: 2026-02-01
+    downloads:
+      weekly: 484,375
+      on: 2026-02-02
+  credit-card-type:
+    homepage: https://github.com/braintree/credit-card-type
+    description: A library for determining credit card type
+    from: icarus
+    versions:
+      declared: ^10.0.0
+      installed: 10.1.0
+      current: 10.1.2
+      latest: 10.1.2
+    published:
+      installed: 2025-08-04
+      current: 2026-01-28
+      latest: 2026-01-28
+    downloads:
+      weekly: 1,193,217
+      on: 2026-02-02
+  fast-glob:
+    note: Installed version 1+ year old 🕰️
+    homepage: https://github.com/mrmlnc/fast-glob#readme
+    description: It's a very fast and efficient glob library for Node.js
+    from: root
+    versions:
+      declared: ^3.3.2
+      installed: 3.3.3
+      current: 3.3.3
+      latest: 3.3.3
+    published:
+      installed: 2025-01-05
+      current: 2025-01-05
+      latest: 2025-01-05
+    downloads:
+      weekly: 88,622,243
+      on: 2026-02-02
+  fs-extra:
+    homepage: https://github.com/jprichardson/node-fs-extra
+    description: fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.
+    from: net23
+    versions:
+      declared: ^11.2.0
+      installed: 11.3.2
+      current: 11.3.3
+      latest: 11.3.3
+    published:
+      installed: 2025-09-15
+      current: 2025-12-18
+      latest: 2025-12-18
+    downloads:
+      weekly: 137,260,753
+      on: 2026-02-02
+  h3:
+    note: Major new version available 🆕
+    homepage: https://h3.dev
+    description: Minimal H(TTP) framework built for high performance and portability.
+    from: icarus
+    versions:
+      declared: ^1.13.0
+      installed: 1.15.4
+      current: 1.15.5
+      latest: 2.0.1-rc.11
+    published:
+      installed: 2025-07-30
+      current: 2026-01-15
+      latest: 2026-01-20
+    downloads:
+      weekly: 4,161,939
+      on: 2026-02-02
+  is-mobile:
+    note: Installed version 1+ year old 🕰️
+    homepage: https://github.com/juliangruber/is-mobile
+    description: Check if mobile browser.
+    from: icarus
+    versions:
+      declared: ^5.0.0
+      installed: 5.0.0
+      current: 5.0.0
+      latest: 5.0.0
+    published:
+      installed: 2024-10-16
+      current: 2024-10-16
+      latest: 2024-10-16
+    downloads:
+      weekly: 1,215,370
+      on: 2026-02-02
+  libphonenumber-js:
+    homepage: https://gitlab.com/catamphetamine/libphonenumber-js#readme
+    description: A simpler (and smaller) rewrite of Google Android's libphonenumber library in javascript
+    from: icarus
+    versions:
+      declared: ^1.11.3
+      installed: 1.12.25
+      current: 1.12.36
+      latest: 1.12.36
+    published:
+      installed: 2025-10-24
+      current: 2026-01-30
+      latest: 2026-01-30
+    downloads:
+      weekly: 12,064,205
+      on: 2026-02-02
+  nanoid:
+    homepage: https://github.com/ai/nanoid#readme
+    description: A tiny (118 bytes), secure URL-friendly unique string ID generator
+    from: root
+    versions:
+      declared: ^5.1.5
+      installed: 5.1.6
+      current: 5.1.6
+      latest: 5.1.6
+    published:
+      installed: 2025-09-22
+      current: 2025-09-22
+      latest: 2025-09-22
+    downloads:
+      weekly: 89,053,271
+      on: 2026-02-02
+  nitro-cloudflare-dev:
+    homepage: https://github.com/pi0/nitro-cloudflare-dev#readme
+    description: POC module to enable access to the Cloudflare runtime bindings in development server of Nitro and Nuxt
+    from: site
+    versions:
+      declared: ^0.2.2
+      installed: 0.2.2
+      current: 0.2.2
+      latest: 0.2.2
+    published:
+      installed: 2025-03-06
+      current: 2025-03-06
+      latest: 2025-03-06
+    downloads:
+      weekly: 12,571
+      on: 2026-02-02
+  nitropack:
+    homepage: https://github.com/nitrojs/nitro#readme
+    description: Build and Deploy Universal JavaScript Servers
+    from: site
+    versions:
+      declared: ^2.11.12
+      installed: 2.12.9
+      current: 2.13.1
+      latest: 2.13.1
+    published:
+      installed: 2025-10-28
+      current: 2026-01-15
+      latest: 2026-01-15
+    downloads:
+      weekly: 1,177,503
+      on: 2026-02-02
+  nuxi:
+    homepage: https://github.com/nuxt/cli#readme
+    description: Nuxt CLI
+    from: site
+    versions:
+      declared: ^3.25.1
+      installed: 3.29.3
+      current: 3.32.0
+      latest: 3.32.0
+    published:
+      installed: 2025-10-09
+      current: 2026-01-06
+      latest: 2026-01-06
+    downloads:
+      weekly: 201,717
+      on: 2026-02-02
+  nuxt:
+    note: Major new version available 🆕
+    homepage: https://nuxt.com
+    description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
+    from: site
+    versions:
+      declared: ^3.17.5
+      installed: 3.20.0
+      current: 3.21.0
+      latest: 4.3.0
+    published:
+      installed: 2025-10-28
+      current: 2026-01-22
+      latest: 2026-01-22
+    downloads:
+      weekly: 1,174,646
+      on: 2026-02-02
+  nuxt-og-image:
+    homepage: https://nuxtseo.com/og-image
+    description: Enlightened OG Image generation for Nuxt.
+    from: site
+    versions:
+      declared: ^5.1.6
+      installed: 5.1.12
+      current: 5.1.13
+      latest: 5.1.13
+    published:
+      installed: 2025-10-14
+      current: 2025-12-11
+      latest: 2025-12-11
+    downloads:
+      weekly: 74,009
+      on: 2026-02-02
+  ofetch:
+    homepage: https://github.com/unjs/ofetch#readme
+    description: A better fetch API. Works on node, browser and workers.
+    from: icarus
+    versions:
+      declared: ^1.4.1
+      installed: 1.5.0
+      current: 1.5.1
+      latest: 1.5.1
+    published:
+      installed: 2025-10-28
+      current: 2025-11-01
+      latest: 2025-11-01
+    downloads:
+      weekly: 3,787,407
+      on: 2026-02-02
+  otpauth:
+    homepage: https://github.com/hectorm/otpauth
+    description: One Time Password (HOTP/TOTP) library for Node.js, Deno, Bun and browsers
+    from: root
+    versions:
+      declared: ^9.4.1
+      installed: 9.4.1
+      current: 9.4.1
+      latest: 9.4.1
+    published:
+      installed: 2025-08-12
+      current: 2025-08-12
+      latest: 2025-08-12
+    downloads:
+      weekly: 926,443
+      on: 2026-02-02
+  pinia:
+    homepage: https://pinia.vuejs.org
+    description: Intuitive, type safe and flexible Store for Vue
+    from: site
+    versions:
+      declared: ^3.0.3
+      installed: 3.0.3
+      current: 3.0.4
+      latest: 3.0.4
+    published:
+      installed: 2025-06-04
+      current: 2025-11-05
+      latest: 2025-11-05
+    downloads:
+      weekly: 2,815,194
+      on: 2026-02-02
+  pino-pretty:
+    homepage: https://github.com/pinojs/pino-pretty#readme
+    description: Prettifier for Pino log lines
+    from: site
+    versions:
+      declared: ^13.1.1
+      installed: 13.1.2
+      current: 13.1.3
+      latest: 13.1.3
+    published:
+      installed: 2025-10-10
+      current: 2025-12-01
+      latest: 2025-12-01
+    downloads:
+      weekly: 8,964,534
+      on: 2026-02-02
+  qrcode:
+    note: Installed version 1+ year old 🕰️
+    homepage: http://github.com/soldair/node-qrcode
+    description: QRCode / 2d Barcode api with both server side and client side support using canvas
+    from: site
+    versions:
+      declared: ^1.5.4
+      installed: 1.5.4
+      current: 1.5.4
+      latest: 1.5.4
+    published:
+      installed: 2024-08-05
+      current: 2024-08-05
+      latest: 2024-08-05
+    downloads:
+      weekly: 6,231,119
+      on: 2026-02-02
+  semver:
+    homepage: https://github.com/npm/node-semver#readme
+    description: The semantic version parser used by npm.
+    from: root
+    versions:
+      declared: ^7.7.3
+      installed: 7.7.3
+      current: 7.7.3
+      latest: 7.7.3
+    published:
+      installed: 2025-10-07
+      current: 2025-10-07
+      latest: 2025-10-07
+    downloads:
+      weekly: 502,960,728
+      on: 2026-02-02
+  serverless:
+    homepage: https://github.com/serverless/serverless#readme
+    description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
+    from: net23
+    versions:
+      declared: ^4.4.11
+      installed: 4.22.0
+      current: 4.31.2
+      latest: 4.31.2
+    published:
+      installed: 2025-10-22
+      current: 2026-01-27
+      latest: 2026-01-27
+    downloads:
+      weekly: 1,152,400
+      on: 2026-02-02
+  serverless-offline:
+    note: Installed version 1+ year old 🕰️
+    homepage: https://github.com/dherault/serverless-offline
+    description: Emulate AWS λ and API Gateway locally when developing your Serverless project
+    from: net23
+    versions:
+      declared: ^14.3.4
+      installed: 14.4.0
+      current: 14.4.0
+      latest: 14.4.0
+    published:
+      installed: 2024-12-09
+      current: 2024-12-09
+      latest: 2024-12-09
+    downloads:
+      weekly: 548,853
+      on: 2026-02-02
+  sharp:
+    homepage: https://sharp.pixelplumbing.com
+    description: High performance Node.js image processing, the fastest module to resize JPEG, PNG, WebP, GIF, AVIF and TIFF images
+    from: net23
+    versions:
+      declared: ^0.34.4
+      installed: 0.34.4
+      current: 0.34.5
+      latest: 0.34.5
+    published:
+      installed: 2025-09-17
+      current: 2025-11-06
+      latest: 2025-11-06
+    downloads:
+      weekly: 31,009,810
+      on: 2026-02-02
+  svelte:
+    note: Installed version 1+ year old 🕰️; Current version 6+ months newer ⏰
+    homepage: https://svelte.dev
+    description: Cybernetically enhanced web apps
+    from: oauth
+    versions:
+      declared: ^5.0.0
+      installed: 5.1.1
+      current: 5.49.1
+      latest: 5.49.1
+    published:
+      installed: 2024-10-24
+      current: 2026-01-30
+      latest: 2026-01-30
+    downloads:
+      weekly: 2,631,657
+      on: 2026-02-02
+  twilio:
+    homepage: https://github.com/twilio/twilio-node#readme
+    description: A Twilio helper library
+    from: net23
+    versions:
+      declared: ^5.3.5
+      installed: 5.10.4
+      current: 5.12.0
+      latest: 5.12.0
+    published:
+      installed: 2025-10-28
+      current: 2026-01-22
+      latest: 2026-01-22
+    downloads:
+      weekly: 2,698,267
+      on: 2026-02-02
+  unstorage:
+    homepage: https://unstorage.unjs.io
+    description: Universal Storage Layer
+    from: site
+    versions:
+      declared: ^1.15.0
+      installed: 1.17.1
+      current: 1.17.4
+      latest: 1.17.4
+    published:
+      installed: 2025-09-04
+      current: 2026-01-15
+      latest: 2026-01-15
+    downloads:
+      weekly: 3,622,773
+      on: 2026-02-02
+  vidstack:
+    homepage: null
+    description: Build awesome media experiences on the web.
+    from: site
+    versions:
+      declared: ^1.12.13
+      installed: 1.12.13
+      current: 1.12.13
+      latest: 0.6.15
+    published:
+      installed: 2025-02-16
+      current: 2025-02-16
+      latest: 2024-04-19
+    downloads:
+      weekly: 32,404
+      on: 2026-02-02
+  viem:
+    homepage: https://viem.sh
+    description: TypeScript Interface for Ethereum
+    from:
+      - icarus
+      - site
+    versions:
+      declared: ^2.37.3
+      installed: 2.38.5
+      current: 2.45.1
+      latest: 2.45.1
+    published:
+      installed: 2025-10-28
+      current: 2026-01-29
+      latest: 2026-01-29
+    downloads:
+      weekly: 2,598,911
+      on: 2026-02-02
+  vite:
+    note: Major new version available 🆕
+    homepage: https://vite.dev
+    description: Native-ESM powered web dev build tool
+    from:
+      - icarus
+      - oauth
+    versions:
+      declared: ^6.2.6
+      installed: 6.4.1
+      current: 6.4.1
+      latest: 7.3.1
+    published:
+      installed: 2025-10-20
+      current: 2025-10-20
+      latest: 2026-01-07
+    downloads:
+      weekly: 53,689,019
+      on: 2026-02-02
+  vue:
+    homepage: https://github.com/vuejs/core/tree/main/packages/vue#readme
+    description: The progressive JavaScript framework for building modern web UI.
+    from:
+      - icarus
+      - site
+    versions:
+      declared: ^3.5.16
+      installed: 3.5.22
+      current: 3.5.27
+      latest: 3.5.27
+    published:
+      installed: 2025-09-25
+      current: 2026-01-19
+      latest: 2026-01-19
+    downloads:
+      weekly: 8,525,448
+      on: 2026-02-02
+  vue-router:
+    note: Major new version available 🆕
+    homepage: https://router.vuejs.org
+    description: "> - This is the repository for Vue Router 4 (for Vue 3) > - For Vue Router 3 (for Vue 2) see [vuejs/vue-router](https://github.com/vuejs/vue-router). >   To see what versions are currently supported, please refer to the [Security Policy](./packages/router"
+    from:
+      - icarus
+      - site
+    versions:
+      declared: ^4.5.1
+      installed: 4.6.3
+      current: 4.6.4
+      latest: 5.0.2
+    published:
+      installed: 2025-10-16
+      current: 2025-12-11
+      latest: 2026-02-02
+    downloads:
+      weekly: 4,679,722
+      on: 2026-02-02
+  wrangler:
+    homepage: https://github.com/cloudflare/workers-sdk#readme
+    description: Command-line interface for all things Cloudflare Workers
+    from:
+      - oauth
+      - site
+    versions:
+      declared: ^4.20.0
+      installed: 4.45.2
+      current: 4.61.1
+      latest: 4.61.1
+    published:
+      installed: 2025-10-29
+      current: 2026-01-29
+      latest: 2026-01-29
+    downloads:
+      weekly: 3,298,361
+      on: 2026-02-02
+  yaml:
+    homepage: https://eemeli.org/yaml/
+    description: JavaScript parser and stringifier for YAML
+    from: root
+    versions:
+      declared: ^2.8.2
+      installed: 2.8.2
+      current: 2.8.2
+      latest: 2.8.2
+    published:
+      installed: 2025-11-30
+      current: 2025-11-30
+      latest: 2025-11-30
+    downloads:
+      weekly: 100,201,216
+      on: 2026-02-02
+  zod:
+    note: Major new version available 🆕
+    homepage: https://zod.dev
+    description: TypeScript-first schema declaration and validation library with static type inference
+    from: icarus
+    versions:
+      declared: ^3.25.74
+      installed: 3.25.76
+      current: 3.25.76
+      latest: 4.3.6
+    published:
+      installed: 2025-07-08
+      current: 2025-07-08
+      latest: 2026-01-22
+    downloads:
+      weekly: 84,021,090
+      on: 2026-02-02
