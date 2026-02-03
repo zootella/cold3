@@ -916,7 +916,7 @@ and the task of updating them and confirming that the stack fits together and wo
 
 to keep the project current in today's reality of rapid code rot,
 without spending the time and effort of updating modules individually, testing everything, and then moving on to the next one
-the Network 23 Software Engineering Division instead employs a manœuvre we call "repot the plan"
+the Network 23 Software Engineering Division instead employs a manœuvre we call "repot the plant"
 
 here's how you do that
 (step 1)

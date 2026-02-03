@@ -67,22 +67,29 @@ async function listFiles() {
 	//list all the files that are a part of this project in its current form; configuration, code, and notes
 	let paths = await glob('**/*', {
 		dot: true,//include unix-style hidden files like .hidden
-		ignore: [//ignore these paths, notice we're intentionally including some things, like .env, that git ignores
-			'**/.DS_Store',//ignore this bothersome apple computer nonsense from the 1990s
+		ignore: [//exclude these folders and files from getting listed and hashed in wrapper.txt
+
 			'**/.git',
-			'**/.nuxt',
-			'**/.output',
-			'**/.serverless',
-			'**/.svelte-kit',
-			'**/.wrangler',
-			'**/*.log',
-			'**/*.diff',
-			'**/*.zip',//net23/build may exist with net23.zip and net23previous.zip
-			'**/diff*.txt',
-			'**/dist',
-			'**/.vite-inspect',//git ignores site/size, but wrapper lists site/size/client.html and the other two in there
 			'**/node_modules',
-			'**/worker-configuration.d.ts',
+			//note we include .env to be hashed in wrapper.txt, while .gitignore critically keeps secrets out of the repository
+
+			'**/*.d.ts',//typescript declaration files; type info for IDEs, no runtime effect; wrangler generates worker-configuration.d.ts
+			'**/.wrangler',//cloudflare tooling in oauth and site
+			'**/.serverless',//serverless framework deployment state; net23/.serverless
+			'**/.svelte-kit',//sveltekit build output; oauth/.svelte-kit
+			'**/.nuxt',//nuxt dev server cache; site/.nuxt
+			'**/.output',//nuxt production build; site/.output
+			'**/.vite-inspect',//vite inspector plugin output, site/size/.vite-inspect
+			'**/dist',//build output folders; net23/dist from serverless, site/.nuxt/dist (covered by .nuxt/**)
+			'net23/size/**',//net23 deployment zips from build.js
+			
+			'**/*.diff',//meant to be ephemeral, local, for development, and track changes rather than being part of changes
+			'**/diff*.txt',
+			'**/*.log',
+			'fresh*/**',//folders like fresh1, fresh2 at root; reference scaffolds for comparing dependency versions
+
+			'**/.DS_Store',//Mac Finder metadata files; they are everywhere
+			'**/.claude',//claude code settings; machine-specific tooling, not application
 
 			//also leave out the two that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
 			pathWrapperTxt,

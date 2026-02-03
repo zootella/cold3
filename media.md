@@ -161,3 +161,44 @@ Working. Browser requests signed URL from server (`vhsSign()`), fetches from `vh
 ## Reference: Hashing (Fuji Protocol)
 
 In `icarus/level1.js`. `hashFile()` for quick tipHash via random access slicing. `hashStream()` for full pieceHash via streaming. Works in browser and Lambda.
+
+# Essay (from early brainstorming and planning)
+
+In this scenario, we're computing the SHA-256 hash of a 4GB file at two distinct layers of the stack. On the backend, the file resides in an S3 bucket and is processed by a Node.js 22 Lambda function running on Graviton. This environment supports native streaming via node:crypto, allowing efficient, memory-safe hashing of large files directly from S3 using createReadStream and hash.update() workflows. The goal here is to verify file integrity server-side, either before storage, during migration, or as part of a deduplication or audit pipeline.
+
+On the frontend, the same file is handled in a Nuxt 3 Vue component using the Composition API, where the user has dragged and dropped it into the page via Uppy.
+
+We want to use SHA-256 to compute a hash ensuring the integrity of the file both places. This way, we can avoid a user performing a duplicate upload, and be sure that the file uploaded without corruption.
+
+Node can hash the file fine, but the browser lacks native streaming support in crypto.subtle. We could use a npm module like noble hashes, but it could be several times slower. We could choose a wasm module like hash-wasm, but it would be difficult to audit.
+
+So, we split the file into 1mb chunks, and compute the SHA-256 sum of each chunk. We keep an array of all the chunk hashes, and when all are in place, we hash the hashes. We're choosing to do this directly and simply ourselves, rather than bringing in libraries or following standards from IPFS, Git, or BitTorrent--those are overkill in this situation where our need is served by just a few functions of our own JavaScript.
+
+```js
+//usage in browser with uppy
+let stream = file.data.stream()
+let hash = await hashLargeFile(stream)
+
+//usage in node lambda with s3
+let {Readable} from 'node:stream'
+let nodeStream = response.Body
+let webStream = Readable.toWeb(nodeStream)
+let hash = await hashLargeFile(webStream)
+```
+
+The Lambda's role is to authorize the S3 multipart upload without ever touching the file bytes themselves. When a user starts uploading a file, the Lambda first calls S3 to create a multipart upload session, receiving back a single UploadId that identifies this entire file upload. This UploadId stays constant throughout the process - think of it like a session ID for the upload.
+
+As Uppy chunks the file and begins uploading pieces, the Lambda gets called repeatedly to sign individual parts. Each part has a sequential number (1, 2, 3... up to however many chunks exist), and for each one the Lambda generates a unique presigned URL. This URL contains the S3 bucket path, the part number, the UploadId tying it back to the upload session, and AWS signature parameters that cryptographically prove authorization. The signature includes details like which AWS credentials were used, a timestamp, an expiration time (typically 1 hour), and a HMAC-SHA256 hash that only someone with Network 23's AWS secret key could generate. Each part gets its own distinct signature even though they all share the same UploadId.
+
+The chunk size - whether 5MB or 20MB - is configured entirely on the client side in Uppy. The Lambda never needs to know this value. When generating presigned URLs, the Lambda simply authorizes "you can PUT something to S3 as part number N" without specifying or validating the size. S3 will accept whatever size chunk the browser sends (within S3's constraints of 5MB minimum per part except the last, and 5GB maximum). Uppy slices the file into uniform chunks of the configured size, with the final piece containing whatever bytes remain, and the browser sends each chunk in a separate HTTP PUT request with a Content-Length header declaring exactly how many bytes are coming. If the connection breaks mid-upload, that partial part is discarded and Uppy simply retries it. When all parts finish uploading, the Lambda makes a final call to S3 with the complete list of part numbers and their ETags, and S3 concatenates them in numerical order to create the final file in the bucket.
+
+
+
+
+
+
+
+
+
+
+

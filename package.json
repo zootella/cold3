@@ -22,7 +22,7 @@
 		"seal": "node seal.js && node test.js",
 		"cors": "node cors.js",
 		"upgrade-wash": "yarn wash && rimraf package-lock.json yarn.lock pnpm-lock.yaml",
-		"wash": "rimraf .yarn node_modules icarus/node_modules net23/node_modules oauth/node_modules site/node_modules oauth/.wrangler site/.wrangler oauth/worker-configuration.d.ts site/worker-configuration.d.ts net23/.serverless net23/dist oauth/.svelte-kit site/.nuxt site/.output site/.wrangler site/dist",
+		"wash": "rimraf .yarn node_modules icarus/node_modules net23/node_modules oauth/node_modules site/node_modules oauth/.wrangler oauth/worker-configuration.d.ts site/worker-configuration.d.ts net23/.serverless net23/dist oauth/.svelte-kit site/.nuxt site/.output site/.wrangler site/dist",
 		"xray": "node xray.js",
 		"sem": "node sem.js"
 	},

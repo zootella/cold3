@@ -1,3 +1,4 @@
+
 #node
 node_modules
 
@@ -40,10 +41,6 @@ vite.config.ts.timestamp-*
 env.js
 card.js
 
-#lock files; forgetting to delete one on a new os would really mess up the build
-.yarn
-package-lock.json
-
 #logs and diffs
 logs
 *.log
@@ -55,3 +52,4 @@ diff*.txt
 Thumbs.db
 .fleet
 .idea
+.claude
