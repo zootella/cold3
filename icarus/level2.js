@@ -298,7 +298,7 @@ let _keys = [], _redactions = [], _alreadyLoaded, _alreadyDecrypted//only decryp
 function loadKeys() {
 	if (_alreadyLoaded) return; _alreadyLoaded = true
 
-	let block = Data({base62: cutAfterLast(wrapper.publicKeys, '_')}).text()
+	let block = Data({base62: cutAfterLast(wrapper.publicKeys, '_').replaceAll(' ', '')}).text()
 	_keys.push(...parseKeyBlock(block))
 }
 
@@ -323,8 +323,8 @@ export async function decryptKeys(sender, sources) {
 	if (!hasText(key)) toss(`key not found by ${sender} in ${sources.length} sources`)
 
 	let block = (await decryptData(
-		Data({base62: cutAfterLast(key,                '_')}),
-		Data({base62: cutAfterLast(wrapper.secretKeys, '_')})
+		Data({base62: cutAfterLast(key,                '_').replaceAll(' ', '')}),
+		Data({base62: cutAfterLast(wrapper.secretKeys, '_').replaceAll(' ', '')})
 	)).text()
 	let list = parseKeyBlock(block)
 	_keys.push(...list)

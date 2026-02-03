@@ -2,7 +2,7 @@
 import {
 wrapper, sayFloppyDisk, runTests, Time,
 log, look, newline, Data, Now, Tag,
-parseKeyFile, randomBetween, encryptData, cutAfterLast,
+parseKeyFile, randomBetween, encryptData, cutAfterLast, cutRandomWords,
 } from 'icarus'
 import {promises as fs} from 'fs'
 import path from 'path'
@@ -164,8 +164,8 @@ async function affixSeal(properties, manifest) {
 	o.codeSize = codeSize
 	o.totalFiles = totalFiles
 	o.totalSize = totalSize
-	o.secretKeys = 'FujiTracer'+'S10_'+cipherData.base62()//put new system in place, haven't moved any actual secrets over yet
-	o.publicKeys = 'FujiTracer'+'P10_'+publicData.base62()//new system for intentionally, acceptably, and necessarily public factory presets and client side bundle keys
+	o.secretKeys = 'FujiTracer'+'S10_'+cutRandomWords(cipherData.base62(), 10, 20)//secrets available only to server bundles
+	o.publicKeys = 'FujiTracer'+'P10_'+cutRandomWords(publicData.base62(), 10, 20)//intentionally, acceptably, and necessarily public factory presets and client side bundle keys, still politely obscured
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)

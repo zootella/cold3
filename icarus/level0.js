@@ -1239,6 +1239,27 @@ export function mulberryData({seed, size}) {
 	return Data({array: a})
 }
 
+//split a long string of characters into words so it wraps nicely, none longer than max
+export function cutRandomWords(s, min, max) {
+	checkText(s); checkInt(min, 1); checkInt(max, min)
+	let words = [], i = 0
+	while (i < s.length) {
+		let remaining = s.length - i
+		if (remaining <= max) { words.push(s.slice(i)); break }//take the rest as final word
+		let l = randomBetween(min, max)
+		words.push(s.slice(i, i + l))
+		i += l
+	}
+	return words.join(' ')
+}
+noop(() => {
+	let l = randomBetween(10, Size.kb)
+	let s = Data({random: l}).base62()
+	let w = cutRandomWords(s, 10, 20)
+	log(w)
+	ok(w.replaceAll(' ', '') == s)//round trip, remove spaces and confirm we get the original back
+})
+
 
 
 //                      _                 

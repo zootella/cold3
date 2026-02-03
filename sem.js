@@ -6,6 +6,9 @@ import {
 log, look, commas, takeNumerals,
 } from 'icarus'
 
+//ttd january, you might be able to make this simpler by erroring out if  you find the same module with two different declared versions in different package.json files; already we're trying to not allow this, and it shouldn't be allowed
+//ttd january, note that when you switch from yarn to pnpm stuff in here will have to change; pnpm's lockfile is valid yaml, so some manual scraping of yarn.lock's yaml-like format will go away
+
 // Note constants
 const note_old_installed = 'Installed version 1+ year old 🕰️'
 const note_stale_current = 'Current version 6+ months newer ⏰'

@@ -252,7 +252,7 @@ cut, cutLast, cutAfterLast,
 replaceAll, replaceOne,
 safefill, deindent,
 
-Bin, Data, checkSizeStartEnd, mulberryData,
+Bin, Data, checkSizeStartEnd, mulberryData, cutRandomWords,
 base62ToInt, intToBase62,
 
 Tag, checkTagOrBlank, checkTag, hasTag,
