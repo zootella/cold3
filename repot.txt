@@ -1,0 +1,373 @@
+
+notesfile
+
+
+
+
+```
+  steps to quickly scaffold the cloudflare nuxt stack and modules, 2026feb3
+  these are designed to be easy to paste in one line at a time rather than typing or this being a script
+  start in ~/Documents/code/temp
+
+rm -rf fresh1
+pnpm create cloudflare@latest
+  type name fresh1, framework starter, nuxt, no official modules, no git, no deploy)
+cd fresh1
+git init
+git add . && git commit -m "1nuxt"
+
+pnpm dlx nuxi@latest module add pinia
+git diff > 2pinia.diff && git add . && git commit -m "2pinia"
+
+pnpm dlx nuxi@latest module add og-image
+git diff > 3ogimage.diff && git add . && git commit -m "3ogimage"
+
+pnpm dlx nuxi@latest module add tailwindcss
+pnpm why tailwindcss > 4tailwind.txt
+git diff > 4tailwind.diff && git add . && git commit -m "4tailwind"
+
+pnpm add vidstack@next
+git diff > 5vidstack.diff && git add . && git commit -m "5vidstack"
+
+rm -rf .git .nuxt .output .vscode .wrangler node_modules
+cd ../..
+rm -rf cold3/fresh1
+mv temp/fresh1 cold3/fresh1
+
+  fresh1 will be an inert folder in the monorepo, alongside named workspace folders
+  and you and claude can examine
+  you can also $ cp -r fresh1 fresh2 to boil down fresh2 as you update or decline granular differences
+```
+
+
+
+
+
+
+
+
+
+
+
+
+(these steps are about recreating the project, not the computer you're building the project on)
+
+code rot happens faster than ever
+six months later, several modules will be on new full number versions
+and the task of updating them and confirming that the stack fits together and works together as a whole is significant
+
+to keep the project current in today's reality of rapid code rot,
+without spending the time and effort of updating modules individually, testing everything, and then moving on to the next one
+the Network 23 Software Engineering Division instead employs a manœuvre we call "repot the plant"
+
+here's how you do that
+(step 1)
+after updating platform things like node, yarn, git, wrangler, modules outside any project
+(step 2)
+in a completely separate folder,
+following current getting started docs like
+https://developers.cloudflare.com/pages/get-started/c3/
+and
+https://nuxt.com/docs/getting-started/installation
+make a new 'Hello, World!' project from scratch, bringing in the same modules (but new versions)
+essentially, follow the path from the very start that you used the last time to create the project
+(step 3)
+confirm hello world in the new pot is working, local and deployed
+look at the configuration files you get, like wrangler.toml and nuxt.config.ts--the starting default contents will be different
+merge previous project configurations into the new configuration files, make sure this does not break hello world
+(step 4)
+move code files from the old project into the new one
+
+
+
+
+quick repot1
+
+$ npm create cloudflare@latest
+repot1
+website or web app
+nuxt
+yes git for version control
+yes deploy to cloudflare
+(quickly get the right chrome profile forward, and already signed in to cloudflare there!)
+yeah it's up at
+https://repot1.pages.dev/
+
+$ npx nuxi add mypage
+$ npx nuxi add mycomponent
+$ npx nuxi add myapi
+
+
+2025feb trying to find or make new repot steps
+https://developers.cloudflare.com/pages/get-started/c3/
+$ yarn create cloudflare
+
+ttd february2025
+
+get just enough to generate stats.html
+and to deploy to a pages.dev domain
+use this to find small modules for qr codes and totp codes that works in cloudflare
+and have good notes so you can return to it later, also
+
+
+
+notes repotting for nuxt based static site start, 2025mar
+https://developers.cloudflare.com/pages/get-started/c3/
+
+$ wrangler whoami (make sure you're signed into the cloudflare account you want to use)
+$ yarn create cloudflare (with yarn 1 installed globally)
+example-com, sets the local directory and pages project name in the dashboard; use hyphen, not space
+Framework Starter, category
+Nuxt, framework
+y, yes to install nuxi@3; didn't get asked the second time through these steps
+no, don't use git for version control; going to drag created files into this existing repository
+yes, deploy to cloudflare; add domain after that in the dashboard
+
+github website
+navigate to organization or user, repository list, New green button
+example.com, repository name, ok to use a period here
+wrote description
+Public
+no readme, gitignore, license, to start out with a completely empty repository
+Create repository
+
+$ git clone git@github.com:username/example-com.git
+warning: You appear to have cloned an empty repository.
+
+then, drag contents from example-com folder to example.com folder
+set README.md, LICENSE, and .gitignore
+in package.json, rename dev to local
+git add, commit, push
+yarn build, local, and deploy
+
+
+
+
+
+~~ notes from the 2025jul repot prompted by wrangler 3->4 and cloudflare pages->workers
+
+cloudflare create without pages flag, to use that the new way
+current version of nuxt, which is still 3
+add nuxi to use that in yarn, going to get 3
+current version of wrangler, which is now 4
+
+https://developers.cloudflare.com/pages/get-started/c3/
+https://developers.cloudflare.com/workers/static-assets/migration-guides/migrate-from-pages/
+https://developers.cloudflare.com/workers/static-assets/migration-guides/migrate-from-pages/#compatibility-matrix
+
+$ yarn create cloudflare (note no pages flag, choosing the workers option)
+repot4, name
+framework starter
+nuxt
+none, official modules
+no, git version control
+no, deploy application
+
+choosing to align the compatability dates
+
+local, build, deploy, all work
+in cloudflare dashboard, added the subdomain
+
+$ yarn add -D nuxi
+$ yarn nuxi --version, 3.25.1
+note how nuxi and wrangler are installed globally and in the project
+and all the versions are the same
+
+ok, next, let's add the modules and plugins, specifically
+- icarus
+- pinia
+- tailwind
+- vidstack
+- nuxt og image, which may include sharp? (it didn't)
+
+## pinia
+
+"nitro-cloudflare-dev", "@nuxtjs/tailwindcss", "@pinia/nuxt"
+ 	"dependencies": {
++		"@pinia/nuxt": "0.11.1",
++		"pinia": "^3.0.3",
+
+pinia went up a whole version number, so watch out for that
+
+## tailwind
+
+https://tailwindcss.nuxtjs.org/
+$ yarn nuxi module add tailwindcss
+
+ok so what that did, other than messin gup your indentation
+"@nuxtjs/tailwindcss"
+				modules: ["nitro-cloudflare-dev", "@nuxtjs/tailwindcss"],
+	"dependencies": {
+		"@nuxtjs/tailwindcss": "7.0.0-beta.0",
+so backed out of that and installed it manually to get the previous, not beta, version
+
+## vidstack
+
+$ yarn add vidstack@next
+otherwise you get a 0. version
+
+## nuxt og image
+
+$ yarn run nuxi module add og-image
+that and complete notes in the cards section below
+
+
+
+
+
+== nuxt scaffolding steps, 2025oct
+
+first, context as to why we're here:
+upgrade wash created an error which you can solve by taking node 20->22
+did this first with the nuxt project; serverless.yml is still on 20
+but these are general useful scaffolding steps you've needed before now
+
+lighter weight than a full repot, the goal here is to quickly scaffold the nuxt project
+imagining you were following getting started installation steps from current documentation today
+reasons you frequently want to do this:
+- confirm core flow works, like dev, build, deploy
+- see what versions of modules you get
+- look at project file structure
+- look at config files and default values
+
+modules that are a part of or tied to nuxt are here, like pinia, tailwind, og image, vidstack
+really anything where the getting started installation page has framework-specific steps
+other front end modules that can break in workers, like qrcode, viem, wagmi core, don't need to be here
+
+note that these steps use npm not yarn, because
+it's the default for getting started installation pages
+it's confusing to follow yarn steps when they might mean classic or berry
+you can delete node_modules and lockfiles and switch to yarn afterwards
+the scaffolded module versions and default settings files won't be different had you switched to yarn early
+
+(0) starting environment
+
+$ nvm current         "22", using 22 for this test today 2025oct28
+$ node --version      "22"
+$ npm --version       "10", intentionally didn't update
+$ yarn --version      "1.22.22", available globally from corepack
+$ wrangler --version  "4", installed globally with npm in the context of this node version in nvm
+
+(1) cloudflare workers with nuxt and vue
+https://developers.cloudflare.com/workers/framework-guides/web-apps/more-web-frameworks/nuxt/
+https://nuxt.com/docs/4.x/getting-started/installation
+
+$ npm create cloudflare@latest
+oct28a, name
+framework starter
+Nuxt
+no official modules (and none we need below are in their list!)
+no git
+no deploy (even in real scaffolding we'll do these two things afterwards)
+
+$ cd oct28a
+$ npm run build
+$ npm run dev
+
+	"dependencies": {
+		"nuxt": "^4.2.0",
+		"vue": "^3.5.22",
+		"vue-router": "^4.6.3"
+	},
+	"devDependencies": {
+		"nitro-cloudflare-dev": "^0.2.2",
+		"nitropack": "^2.12.9",
+		"wrangler": "^4.45.1"
+	}
+	^results from running through these steps 2025oct28; cold3 is current except nuxt has gone to 4!
+
+>>> 2025oct28
+
+(2) nuxi
+install nuxi locally so you can see its version number
+you still have to use npx to run it, but npx will use the local copy rather than global or temporary download
+
+$ npm install -D nuxi
+$ npx nuxi --version
+
+	"devDependencies": {
+		"nuxi": "^3.29.3",
+
+(3) pinia
+https://nuxt.com/modules/pinia
+https://pinia.vuejs.org/getting-started.html
+
+$ npm install pinia @pinia/nuxt
+
+	"dependencies": {
+		"pinia": "^3.0.3",
+		"@pinia/nuxt": "^0.11.2",
+
+(4) nuxt og image
+https://nuxt.com/modules/og-image
+
+$ npx nuxi module add og-image
+
+	"dependencies": {
+		"nuxt-og-image": "^5.1.12",
+		"@unhead/vue": "^2.0.19",
+		"unstorage": "^1.17.1",
+	^brings along two peer dependencies, but regular carrots on all three this time
+
+(5) tailwind
+https://nuxt.com/modules/tailwindcss
+
+$ npx nuxi module add tailwindcss
+$ npm list tailwindcss
+
+	"dependencies": {
+		"@nuxtjs/tailwindcss": "^6.14.0",
+	^but then $ npm list tailwindcss shows that the version of tailwind it brought is "tailwindcss@3.4.18"
+
+(6) vidstack
+https://vidstack.io/docs/player/getting-started/installation/vue/?bundler=nuxt&provider=video&styling=default-layout
+
+$ npm install vidstack@next
+
+	"dependencies": {
+		"vidstack": "^1.12.13",
+
+in summary, scaffolding 2025oct28, cold3 is up to date and behind as follows:
+
+on 2025oct28 start of day
+
+cold3   today   module
+----    ----    ----
+22      22      node
+1       1       yarn
+
+3  !=   4       nuxt
+3       3       nuxi
+3       3       vue
+4       4       vue-router
+
+0.2.2   0.2.2   nitro-cloudflare-dev
+2       2       nitropack
+4       4       wrangler
+
+3       3       pinia
+0.11.1  0.11.2  @pinia/nuxt, note version 0 so pinned to 0.11.x
+
+5       5       nuxt-og-image
+2       2       @unhead/vue
+1       1       unstorage
+
+6       6       @nuxtjs/tailwindcss
+3       3       actual tailwindcss
+
+1       1       vidstack
+
+ok, so everything is still current except for nuxt
+and you can wait ~6m to let the ecosystem catch up with nuxt 4 before you deal with it
+
+
+
+
+
+
+
+
+
+
+
+
