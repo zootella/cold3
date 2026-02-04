@@ -12,7 +12,7 @@
 	"scripts": {
 		"local": "serverless offline --reloadHandler",
 		"build": "node build.js && cd dist && serverless package && cd .. && node size.js && node ../test.js",
-		"ship": "node build.js && cd dist && serverless deploy && cd .. && node size.js && node ../test.js",
+		"cloud": "node build.js && cd dist && serverless deploy && cd .. && node size.js && node ../test.js",
 		"deploy-only": "cd dist && serverless deploy && cd .. && node ../test.js",
 		"www": "aws s3 sync ./www s3://www-net23-cc --delete"
 	},

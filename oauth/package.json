@@ -14,7 +14,7 @@
 		"build": "vite build",
 		"preview": "vite build && wrangler dev",
 		"prepare": "svelte-kit sync || echo ''",
-		"ship": "node ../set-cloud.js && vite build && wrangler deploy && node ../set-local.js && node ../test.js"
+		"cloud": "node ../set-cloud.js && vite build && wrangler deploy && node ../set-local.js && node ../test.js"
 	},
 	"dependencies": {
 		"@auth/sveltekit": "^1.9.2",

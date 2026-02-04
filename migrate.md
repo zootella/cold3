@@ -175,6 +175,8 @@ export default defineNuxtConfig({
 })
 ```
 
+**Decision:** We're adopting the new `app/` directory structure. This aligns with fresh scaffolds and Nuxt's forward direction. The codemod `nuxt/4/file-structure` can move files automatically, or we can do it manually.
+
 ### Data Fetching
 
 Nuxt 4 changes `useFetch` and `useAsyncData` to use shallow reactivity by default. Nested mutations like `data.value.user.profile.name = 'Bob'` won't trigger UI updates.
@@ -195,6 +197,116 @@ Nuxt 4 creates separate TS projects for app/server/shared contexts. Imports that
 - If using Nuxt layers, each layer may need its own `compatibilityVersion` setting
 - Cloudflare Workers deployment uses the same build output structure
 
+### Error Handling
+
+This codebase has a specific error handling philosophy that interacts with Nuxt's error system. Changes here could silently break error reporting or surface new failure modes.
+
+**Philosophy (from net23.txt):**
+
+The approach is "fail fast" — exceptions are exceptional, not control flow:
+
+1. **Two try/catch levels only:**
+   - **Tight**: Around third-party API calls (Twilio, MetaMask, Alchemy) — catch locally, work around or retry
+   - **Broad**: Global handlers at framework level — log to Datadog, show error.vue, interrupt user
+
+2. **Never catch in between.** If you're writing try/catch for control flow in your own code, you're doing it wrong. Toss exceptions immediately, let them bubble up to global handlers. This surfaces bugs quickly rather than masking them.
+
+3. **Cause/remedy thinking:**
+   - Staff fault → deploy fix (this is a bug)
+   - Critical provider fault (Cloudflare, Supabase) → they wake up on-call, fix it
+   - Redundant provider fault (Twilio, SES) → round-robin to backup automatically
+   - User fault → UX guidance, or block if attacking
+
+4. **Trust zones:** page script (least trusted, assume malicious extensions) → browser → worker (trusted)
+
+**Current Implementation:**
+
+`plugins/errorPlugin.js` hooks into Nuxt's error system:
+
+```js
+nuxtApp.hook('app:error', async (error) => { ... })  // SSR, plugin init, first hydration
+nuxtApp.hook('vue:error', async (error, instance, info) => { ... })  // render, lifecycle, setup
+```
+
+- Server-side: logs to Datadog via `awaitLogAlert()`, returns nothing (Nuxt renders error.vue)
+- Client-side: saves details to `pageStore.errorDetails`, calls `showError()` to trigger error.vue
+- `error.vue` is deliberately minimal — no error details exposed, just "Reload Site" and link to error2
+
+**Nuxt 4 Migration Concerns:**
+
+1. **`process.server`/`process.client`** — The plugin uses these; Nuxt 4 deprecates them for `import.meta.server`/`import.meta.client`. Already noted as a ttd in the code.
+
+2. **Hook signatures** — Verify `app:error` and `vue:error` hooks still exist with same signatures in Nuxt 4.
+
+3. **`showError`/`createError` APIs** — These are Nuxt utils. Check if signatures changed.
+
+4. **`error.vue` location** — With the `app/` directory structure, this may need to move to `app/error.vue`. The codemod should handle this, but verify.
+
+5. **Plugin execution order** — The error plugin accesses `usePageStore()`. If Nuxt 4 changes when plugins run relative to Pinia initialization, this could fail.
+
+**Testing approach:** After enabling compatibility mode, deliberately throw an exception in a component and verify: (a) it logs server-side, (b) client shows error.vue, (c) pageStore has the details.
+
+### Environment Detection (Sticker)
+
+The codebase includes a fuzzy environment detection system in `icarus/level2.js` that determines where code is running without being explicitly told. This is used throughout for conditional behavior.
+
+**How it works:**
+
+`senseEnvironment()` probes for globals and builds a tag list:
+
+```js
+if (type(typeof process)) {                  a.push('Proc')
+  if (text(process?.versions?.v8))           a.push('Eigh')  // V8 engine
+  if (text(process?.versions?.node))         a.push('Node')
+  if (text(process?.env?.AWS_EXECUTION_ENV)) a.push('Lamb')  // Lambda
+  if (process?.client)                       a.push('Clie')  // Nuxt client
+  if (process?.server)                       a.push('Serv')  // Nuxt server
+}
+if (type(typeof $fetch))                     a.push('Fetc')  // Nuxt's fetch
+// ... plus window, document, self, localStorage, navigator, location, etc.
+```
+
+Then matches against a pattern table to determine environment:
+
+```
+LocalVite, LocalNode, LocalLambda, CloudLambda
+LocalNuxtServer, CloudNuxtServer
+LocalPageServer, CloudPageServer
+LocalPageClient, CloudPageClient
+```
+
+**What depends on this:**
+
+`isLocal()` and `isCloud()` are used throughout for:
+
+| Usage | Location | Purpose |
+|-------|----------|---------|
+| Cookie secure flag | `level2.js:374` | `secure: isCloud()` |
+| Cookie name prefix | `level2.js:353` | `__Host-` prefix only in cloud |
+| Origin URLs | `level2.js:619-620` | localhost:3000 vs deployed domain |
+| Security checks | `level2.js:995,1023` | Skip HTTPS/origin checks locally |
+| Datadog logging | `level2.js:1371` | Only send to Datadog from cloud |
+| Turnstile verification | `level2.js:1450` | Skip locally (needs real IPs) |
+
+`Sticker()` generates debug strings like `"LocalVite.2025jun26.PKM3EYY.Fri10:21a..."` used in:
+- Error plugin logging
+- API response debugging
+- Test result summaries
+
+**Nuxt 4 Migration Concerns:**
+
+1. **`process.client`/`process.server` deprecated** — The detection uses these at lines 119-120. Nuxt 4 deprecates them for `import.meta.client`/`import.meta.server`, but `import.meta.*` can't be checked dynamically the same way (`typeof import.meta.client` won't work).
+
+2. **Fuzzy matching sensitivity** — If Nuxt 4 changes what globals are available (e.g., different polyfills, different bundler behavior), the pattern matching could misidentify the environment. The version number `_senseEnvironmentVersion = 3` exists for this reason.
+
+3. **Pattern table may need updates** — New rows may be needed if Nuxt 4 environments have different signatures. After migration, run `senseEnvironment()` in each context and compare the `found` tags against expected patterns.
+
+**Testing approach:** After enabling compatibility mode or upgrading:
+1. Log `senseEnvironment()` output in each context (local dev server, local page client, deployed server, deployed client)
+2. Verify `isLocal()`/`isCloud()` return expected values
+3. Check that cookies, origins, and security checks behave correctly
+4. If patterns drift, update the `_senseEnvironment` table and increment `_senseEnvironmentVersion`
+
 ## [5] Migration: Modules
 
 ### nitro-cloudflare-dev
@@ -212,6 +324,8 @@ Nitro 2.12+ has this built in natively. When you set the preset and have wrangle
 ```
 ℹ Using cloudflare-dev emulation in development mode.
 ```
+
+**Fresh1 status:** The `pnpm create cloudflare@latest` scaffold still includes `nitro-cloudflare-dev` in the generated config and package.json. This may be Cloudflare's CLI being conservative, or it may still be needed for certain features. Test removal after migration.
 
 **How to test removing it:**
 
@@ -370,6 +484,8 @@ However, setting `resvg: 'node'` won't work on Workers (no Node runtime). The WA
 
 **Migration approach:** The fresh scaffold pulls whatever version is current. If the scaffold's OG image generation works on Cloudflare, the version is proven. The current 5.1.12 vs 5.1.13 issue was Nuxt 3 specific—Nuxt 4's dependency tree may resolve differently.
 
+**Fresh1 status:** The scaffold pulled 5.1.13 (the version that broke on Nuxt 3). This needs testing—if OG image generation works on fresh1 deployed to Cloudflare, that version is proven for Nuxt 4.
+
 Sources: [Nuxt SEO docs](https://nuxtseo.com/docs/og-image/getting-started/installation), [Compatibility guide](https://nuxtseo.com/docs/og-image/guides/compatibility), [GitHub issues](https://github.com/nuxt-modules/og-image/issues)
 
 ### Tailwind
@@ -406,6 +522,54 @@ Vue component library for media playback. Installed as `vidstack@next`, not thro
 No Nuxt-specific integration means no Nuxt-specific migration concerns. It's a Vue 3 component; Nuxt 4 still uses Vue 3. The only Nuxt-relevant pattern is `<ClientOnly>` wrapping for SSR, which works identically in Nuxt 4.
 
 Sources: [Vidstack docs](https://www.vidstack.io/docs/player/getting-started/installation/vue)
+
+### h3
+
+Nuxt 4 upgrades from h3 v1 to h3 v2. This is a breaking change for code that imports h3 utilities directly.
+
+**This codebase uses h3 directly in two places:**
+
+1. `icarus/level2.js` imports `getQuery`, `readBody`:
+   ```js
+   import {getQuery, readBody} from 'h3'
+   // ...
+   door.query = getQuery(workerEvent)
+   door.body = await readBody(workerEvent)
+   ```
+
+2. `site/server/middleware/cookieMiddleware.js` uses `getCookie`, `setCookie`:
+   ```js
+   value = getCookie(workerEvent, composeCookieName())
+   setCookie(workerEvent, composeCookieName(), composeCookieValue(browserTag), cookieOptions.browser)
+   ```
+
+**h3 v2 changes that may affect this code:**
+
+- `readBody` now always returns the raw body. Use `readJSON` for parsed JSON, or `readValidatedBody` with a schema.
+- `getQuery` renamed to `getURLQuery`. The old name may still work but is deprecated.
+- Cookie functions may have signature changes.
+- Event object structure changed—`event.node.req`/`event.node.res` replaced with `event.request`/`event.response`.
+
+**Fresh1 status:** The scaffold explicitly adds `h3: "2.0.1-rc.11"` to devDependencies. This confirms Nuxt 4 uses h3 v2.
+
+**Migration approach:** After enabling compatibility mode or upgrading to Nuxt 4, test server routes that use these functions. If they fail, update imports and function calls per h3 v2 API.
+
+Sources: [h3 v2 migration](https://h3.unjs.io/guide/migration)
+
+### Other Dependencies
+
+The site workspace has dependencies that aren't part of the fresh scaffold (they're not installed by `nuxi module add`). These need testing after Nuxt 4 upgrade but are outside the scaffold comparison:
+
+| Package | Purpose | Migration concern |
+|---------|---------|-------------------|
+| `@wagmi/core`, `@wagmi/connectors`, `viem` | Web3 wallet connection | Vue 3 compatible, no Nuxt-specific integration |
+| `@tanstack/vue-query` | Async state management | Peer dep of wagmi, also used directly |
+| `@uppy/core`, `@uppy/dashboard`, `@uppy/aws-s3` | File uploads | Vue 3 compatible, client-only |
+| `qrcode` | QR code generation | Pure JS, no framework deps |
+| `@tailwindcss/forms` | Tailwind plugin | Works with any Tailwind version |
+| `icarus` | Workspace shared code | Internal, moves with us |
+
+These packages don't interact with Nuxt's internals—they're Vue components or pure utilities. Test after migration; no preemptive changes needed.
 
 
 ## [6] Migration: pnpm
@@ -551,4 +715,15 @@ reviewed the output yaml diff is reasonable and we're ready to use this tool now
 
 **[This is the section we maintain with exact steps to take next.]**
 
-(next, we should update sem.js to use sem.yaml with pnpm)
+**Nuxt 3 → Nuxt 4 migration (planning):**
+
+1. ☐ Test fresh1 deployment to Cloudflare — proves og-image 5.1.13 works on Nuxt 4
+2. ☐ Enable compatibility mode on site (`future: { compatibilityVersion: 4 }`) — surfaces code issues before package upgrade
+3. ☐ Test h3 v2 API changes — `getQuery`, `readBody`, `getCookie`, `setCookie` in icarus and middleware
+4. ☐ Test error handling — throw in component, verify Datadog logging and error.vue display
+5. ☐ Test environment detection — log `senseEnvironment()` in all contexts, verify `isLocal()`/`isCloud()` correct
+6. ☐ Update `process.server`/`process.client` → `import.meta.server`/`import.meta.client` (note: senseEnvironment needs different approach)
+7. ☐ Move to `app/` directory structure — either via codemod or manually
+8. ☐ Upgrade nuxt package to ^4.x
+9. ☐ Test nitro-cloudflare-dev removal — verify native Cloudflare emulation works
+10. ☐ Test extra deps (wagmi, uppy, qrcode) — should work but verify
