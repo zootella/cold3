@@ -1,12 +1,109 @@
 
-//you can't write comments in package.json, so here are some alongside
+# package.json notes
 
-//1 icarus
-//2 utility
-//3 service
-//4 framework
+you can't write comments in package.json, so here are some alongside
+also generate a fresh sem.yaml, of course; these are the manual notes
 
-//./package.json
+## scaffold fresh
+
+```
+  steps to quickly scaffold the cloudflare nuxt stack and modules, 2026feb3
+  these are designed to be easy to paste in one line at a time rather than typing or this being a script
+  start in ~/Documents/code/temp
+
+rm -rf fresh1
+pnpm create cloudflare@latest
+  type name fresh1, framework starter, nuxt, no official modules, no git, no deploy)
+cd fresh1
+git init
+git add . && git commit -m "1nuxt"
+
+pnpm dlx nuxi@latest module add pinia
+git diff > 2pinia.diff && git add . && git commit -m "2pinia"
+
+pnpm dlx nuxi@latest module add og-image
+git diff > 3ogimage.diff && git add . && git commit -m "3ogimage"
+
+pnpm dlx nuxi@latest module add tailwindcss
+pnpm why tailwindcss > 4tailwind.txt
+git diff > 4tailwind.diff && git add . && git commit -m "4tailwind"
+
+pnpm add vidstack@next
+git diff > 5vidstack.diff && git add . && git commit -m "5vidstack"
+
+rm -rf .git .nuxt .output .vscode .wrangler node_modules
+cd ../..
+rm -rf cold3/fresh1
+mv temp/fresh1 cold3/fresh1
+
+  fresh1 will be an inert folder in the monorepo, alongside named workspace folders
+  and you and claude can examine
+  you can also $ cp -r fresh1 fresh2 to boil down fresh2 as you update or decline granular differences
+```
+
+## nuxi effects
+
+scaffolded fresh 2026feb3, nuxi add brought in these peer dependencies:
+
+$ pnpm dlx nuxi@latest module add pinia
+```diff
+ 	"dependencies": {
++		"@pinia/nuxt": "0.11.3",
++		"pinia": "^3.0.4",
+ 		"vue": "^3.5.27",
+ 		"vue-router": "^4.6.4"
+ 	},
+```
+
+$ pnpm dlx nuxi@latest module add og-image
+```diff
+ 	"dependencies": {
+ 		"@pinia/nuxt": "0.11.3",
++		"nuxt-og-image": "5.1.13",
++		"@unhead/vue": "^2.1.2",
++		"unstorage": "^1.17.4",
+ 		"vue": "^3.5.27",
+ 		"vue-router": "^4.6.4"
+ 	},
+```
+
+$ pnpm dlx nuxi@latest module add tailwindcss
+$ pnpm add vidstack@next
+```diff
+ 	"dependencies": {
++		"@nuxtjs/tailwindcss": "6.14.0",
++		"vidstack": "^1.12.13",
+ 		"@pinia/nuxt": "0.11.3",
+ 		"@unhead/vue": "^2.1.2",
+ 		"nuxt": "^4.3.0",
+```
+
+$ pnpm why tailwindcss > 4tailwind.txt
+```
+Legend: production dependency, optional only, dev only
+
+fresh-today ~/Documents/code/temp/fresh-today (PRIVATE)
+
+dependencies:
+@nuxtjs/tailwindcss 6.14.0
+├─┬ tailwind-config-viewer 2.0.4
+│ └── tailwindcss 3.4.19 peer
+└── tailwindcss 3.4.19
+```
+
+So we get **tailwindcss 3.4.19** as a transitive dependency of `@nuxtjs/tailwindcss` (which appears in our package.json, and is at version 6). You don't declare `tailwindcss` directly in package.json — the Nuxt module brings it in. This means we're on Tailwind 3.x, not Tailwind 4.x. Tailwind 4 is a major rewrite with CSS-first configuration — a separate migration if we ever want it.
+
+## package.json notes
+
+**ttd february update for nuxt 4, all below is from nuxt 3! also, do we need this now that we have sem.yaml?**
+
+1 icarus
+2 utility
+3 service
+4 framework, these are the four categories we use below:
+
+./package.json (root)
+```json
 {
 	"name": "w5",
 	"dependencies": {
@@ -25,8 +122,10 @@
 		"yaml": "^2.8.2",//these two are for sem.js to make sem.yaml
 	}
 }
+```
 
-//./icarus/package.json
+./icarus/package.json
+```json
 {
 	"name": "icarus",
 	"dependencies": {
@@ -56,8 +155,10 @@
 		"vue-router": "^4.5.1",
 	}
 }
+```
 
-//./net23/package.json
+./net23/package.json
+```json
 {
 	"name": "net23",
 	"dependencies": {
@@ -89,8 +190,10 @@
 		"serverless-offline": "^14.3.4",
 	}
 }
+```
 
-//./oauth/package.json
+./oauth/package.json
+```json
 {
 	"name": "oauth",
 	"dependencies": {
@@ -115,8 +218,10 @@
 		"vite": "^6.2.6",
 	}
 }
+```
 
-//./site/package.json
+./site/package.json
+```json
 {
 	"name": "site4",
 	"dependencies": {
@@ -166,3 +271,4 @@
 		"nuxi": "^3.25.1",//added nuxt's framework cli to run some things directly sometimes
 	}
 }
+```

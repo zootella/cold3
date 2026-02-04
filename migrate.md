@@ -307,6 +307,32 @@ LocalPageClient, CloudPageClient
 3. Check that cookies, origins, and security checks behave correctly
 4. If patterns drift, update the `_senseEnvironment` table and increment `_senseEnvironmentVersion`
 
+### Configuration Files
+
+Two config files need updates: `nuxt.config.js` and `wrangler.jsonc`. Both have a compatibility date that should be bumped to match fresh1.
+
+**nuxt.config.js:**
+
+| Setting | site (current) | fresh1 (target) | Action |
+|---------|----------------|-----------------|--------|
+| `compatibilityDate` | `'2025-06-10'` | `'2025-07-15'` | Bump |
+
+Site's nuxt.config has additional settings not in fresh1 (build.analyze, esbuild BigInt fix, components.dirs, tailwindcss.cssPath, Google Fonts, ogImage KV cache, vidstack plugin). These are site-specific additions, not conflicts — keep them all.
+
+**wrangler.jsonc:**
+
+| Setting | site (current) | fresh1 (target) | Action |
+|---------|----------------|-----------------|--------|
+| `compatibility_date` | `"2025-06-10"` | `"2025-09-27"` | Bump |
+| `main`, `assets` | omitted | present | Keep omitting (Nitro overrides) |
+| `nodejs_compat` flag | present | absent | Keep for now, test removal later |
+| `placement: smart` | enabled | commented out | Keep enabled |
+| `kv_namespaces` | OG_IMAGE_CACHE | absent | Keep (site-specific) |
+
+**nodejs_compat question:** Site has both `"compatibility_flags": ["nodejs_compat"]` in wrangler.jsonc AND `nitro.cloudflare.nodeCompat: true` in nuxt.config. Fresh1 only has the latter. The nuxt.config setting is build-time polyfills; the wrangler setting is runtime. Probably keep both for safety, test removal in Phase 3.
+
+**main/assets question:** Fresh1's scaffold includes `"main": "./.output/server/index.mjs"` and `"assets": {...}`, but site omits them. Nitro overrides these at build time and warns if you set them manually. Site learned to omit them to avoid the warning. However, if Nuxt 4/Nitro's behavior changed, we might need to add them back. If deployment fails with "can't find entry point" or similar, check whether `main` needs to be explicitly set.
+
 ## [5] Migration: Modules
 
 ### nitro-cloudflare-dev
@@ -317,32 +343,47 @@ This module enables access to the Cloudflare runtime platform in the development
 
 It reads your `wrangler.jsonc`, spins up a local miniflare instance, and injects the emulated bindings into your request context so your server routes work locally the same way they do in production.
 
+**Three layers of Node compatibility:**
+
+| Layer | Where | What it does |
+|-------|-------|--------------|
+| Build-time polyfills | `nitro.cloudflare.nodeCompat: true` in nuxt.config | Bundles shims for Node APIs (fs, path, crypto) into the Worker at build time |
+| Runtime polyfills | `compatibility_flags: ["nodejs_compat"]` in wrangler.jsonc | Cloudflare's Workers runtime provides Node API compatibility as a platform feature |
+| Dev emulation | `nitro-cloudflare-dev` module | Spins up miniflare locally so KV/R2/D1 bindings work during `nuxt dev` |
+
+Site has all three. Fresh scaffold only has build-time polyfills (nodeCompat) and dev emulation (the module). We added the runtime flag ourselves — it might be redundant, or it might be a useful fallback. Keep for now.
+
 **Why it may not be needed anymore:**
 
-Nitro 2.12+ has this built in natively. When you set the preset and have wrangler installed, you should see:
+Nitro 2.12+ has dev emulation built in natively. When it's working, you should see:
 
 ```
 ℹ Using cloudflare-dev emulation in development mode.
 ```
 
-**Fresh1 status:** The `pnpm create cloudflare@latest` scaffold still includes `nitro-cloudflare-dev` in the generated config and package.json. This may be Cloudflare's CLI being conservative, or it may still be needed for certain features. Test removal after migration.
+**Fresh1 status:** The `pnpm create cloudflare@latest` scaffold still includes `nitro-cloudflare-dev` in the generated config and package.json. This may be Cloudflare's CLI being conservative, or it may still be needed for certain features.
 
-**How to test removing it:**
+**⚠️ TODO: Test removal in Phase 3**
 
-1. Check your Nitro version (Nuxt 3.12+ ships with Nitro 2.12+)
-2. Remove the module from your config:
+After migration is working, try removing this module:
+
+1. Comment out the module in nuxt.config:
    ```js
    // configuration.modules.push('nitro-cloudflare-dev')  // comment out
    ```
-3. Make sure wrangler is a dev dependency (you already have it)
-4. Run `nuxt dev`
-5. Look for the "Using cloudflare-dev emulation" message
-6. Test that your KV binding still works—specifically, that `nuxt-og-image` can still write to `OG_IMAGE_CACHE` during local dev
+2. Run `nuxt dev`
+3. Look for the "Using cloudflare-dev emulation" message in console
+4. Test that KV binding still works — hit `/__og-image__/image/og.png` locally, verify it generates
+5. If it works, uninstall the package:
+   ```bash
+   pnpm remove nitro-cloudflare-dev
+   ```
+6. If it doesn't work (no emulation message, KV errors), uncomment and keep the module
 
-If it works, uninstall the package. If not, check that your `compatibilityDate` is recent enough and that your preset is explicitly set. Your config already has both:
+Prerequisite: `compatibilityDate` must be recent and preset must be explicit. Site has both:
 
 ```js
-configuration.compatibilityDate = '2025-06-10'
+configuration.compatibilityDate = '2025-07-15'
 configuration.nitro = { preset: 'cloudflare_module', ... }
 ```
 
@@ -826,3 +867,176 @@ reviewed the output yaml diff is reasonable and we're ready to use this tool now
 9. ☐ Upgrade nuxt package to ^4.x
 10. ☐ Test nitro-cloudflare-dev removal — verify native Cloudflare emulation works
 11. ☐ Test extra deps (wagmi, uppy, qrcode) — should work but verify
+12. ☐ Test `nuxi analyze` — verify size reports still generate (client.html, nitro.html)
+
+---
+
+## Trail Notes
+
+**Starting point**
+
+Ran sem and seal, committed, deployed, full smoke test passed (unit tests all environments, og card, qr code, upload, manual and visual, local and cloud). On branch migrate1. Ready to begin Phase 2.
+
+a39ae52 Feb04Wed MEI working nuxt 3 starting point to return to
+
+**Surveying fresh2**
+
+Process: fresh1 stays untouched as permanent reference. fresh2 is working copy — delete files as we review them and confirm they're either not needed or already addressed in site. When fresh2 is empty, we've covered everything.
+
+- `worker-configuration.d.ts` — Generated by `wrangler types`, TypeScript declarations for Workers runtime. Site uses JS not TS, not needed. Deleted.
+- `env.d.ts` — TypeScript module augmentation for h3 event context with Cloudflare properties. JS not TS, not needed. Deleted.
+- `README.md` — Boilerplate Nuxt commands (install, dev, build, preview). Site already has these scripts. Deleted.
+- `tsconfig.json` — Nuxt 4 uses project references (app/server/shared/node) instead of single extends. Site's old one also referenced non-existent file. Overwrote site's copy with fresh1's. Deleted from fresh2.
+
+**Aligning package.json**
+
+Updated site/package.json to match fresh1's versions:
+
+- nuxt 3.20.0 → ^4.3.0
+- Bumped vue, vue-router, pinia, @pinia/nuxt, @unhead/vue, unstorage, nitropack, wrangler
+- nuxt-og-image 5.1.12 → 5.1.13
+- Added h3 2.0.1-rc.11 to devDeps (Nuxt 4 needs explicit h3 v2)
+- Moved @nuxtjs/tailwindcss from devDeps to deps, pinned to 6.14.0
+- Removed nuxi (nuxt brings it), pino-pretty (pnpm auto-installs peers)
+- Kept site's scripts, metadata, and extra deps (wagmi, uppy, qrcode, icarus)
+
+**package.json scripts**
+
+```
+		"build": "nuxt build", <fresh>
+		"build": "nuxt build", <site>
+ok, build is exactly the same. this means we never customized it, which is fine
+		"generate": "nuxt generate", <fresh>
+		"generate": "nuxt generate", <site>
+		"postinstall": "nuxt prepare", <fresh>
+		"postinstall": "nuxt prepare", <site>
+generate and postinstall exactly the same, also never use these and don't know what they are
+		"cf-typegen": "wrangler types", <fresh>
+		"retype": "wrangler types", <site>
+renamed and never used
+
+		"dev": "nuxt dev", <fresh>
+		"local": "nuxt dev", <site>
+ok here we just renamed dev to local, also fine
+
+		"preview": "pnpm run build && wrangler dev", <fresh>
+		"preview": "nuxt build && wrangler dev", <site>
+ok here scaffolding goes back outside to go back into the front door, where we just stay in the house. i think fine?
+
+		"deploy": "pnpm run build && wrangler deploy", <fresh>
+		"cloud": "node ../set-cloud.js && nuxt build && wrangler deploy && node ../set-local.js && node ../test.js", <site>
+this one is important, let's discuss
+
+		"size": "nuxi analyze --no-serve && open ./size/client.html && open ./size/nitro.html", <site>
+this one is new custom ours, so it makes sense that it's not in scaffolding
+```
+
+Conclusion: No script changes needed. The Nuxt CLI interface (`nuxt dev`, `nuxt build`, `nuxi analyze`, etc.) is unchanged between v3 and v4. Our build/deploy pipeline stays the same.
+
+**Configuration files**
+
+Bumped both compatibility dates to match fresh1 (scaffolded 2026feb3 ⌚):
+- nuxt.config.js `compatibilityDate`: `'2025-06-10'` → `'2025-07-15'` — Nuxt/Nitro framework behavior
+- wrangler.jsonc `compatibility_date`: `"2025-06-10"` → `"2025-09-27"` — Cloudflare Workers runtime behavior
+
+These are independent systems (framework vs platform), so the dates don't need to match each other. Comments added explaining what each date controls.
+
+**wrangler.jsonc review**
+
+Reviewed site/wrangler.jsonc against fresh2/wrangler.jsonc. Reorganized comments to integrate fresh scaffold documentation inline near each setting. Final state:
+
+| Setting | Status | Notes |
+|---------|--------|-------|
+| `$schema` | ✓ present | JSON Schema for editor tooling |
+| `name` | ✓ present | "site4" (site-specific) |
+| `compatibility_date` | ✓ bumped | "2025-09-27" with ⌚ marker |
+| `compatibility_flags` | ✓ kept | `["nodejs_compat"]` — runtime polyfills |
+| `observability` | ✓ present | `{enabled: true}` |
+| `placement` | ✓ present | `{mode: "smart"}` — fresh has this commented, we enable it |
+| `kv_namespaces` | ✓ present | OG_IMAGE_CACHE binding (site-specific) |
+| `main`, `assets` | ⚠️ commented | See trouble spot below |
+
+Scaffold boilerplate not copied (correctly): `vars` example, `services` example — these are placeholder code for unused features.
+
+**Potential trouble: `main` and `assets` commented out**
+
+Fresh scaffold includes:
+```jsonc
+"main": "./.output/server/index.mjs",
+"assets": {
+  "binding": "ASSETS",
+  "directory": "./.output/public/"
+}
+```
+
+Site omits them because Nitro overrides these at build time and warns:
+```
+WARN [cloudflare] Wrangler config main is overridden and will be ignored.
+```
+
+The concern: if Nuxt 4's Nitro changed how it handles this, deployment could fail with "can't find entry point." We learned to omit them on Nuxt 3; that might not be correct for Nuxt 4.
+
+**If deployment fails:** First thing to try is uncommenting `main` and `assets`. If Nitro still overrides them (causing the warning), fine. If Nitro stopped overriding them, they're now required.
+
+Deleted `wrangler.jsonc` from fresh2.
+
+**nuxt.config.js review**
+
+Compared site/nuxt.config.js (94 lines) against fresh1/nuxt.config.ts (21 lines).
+
+Fresh1 core (all present in site):
+- `compatibilityDate` — already bumped ✓
+- `devtools: { enabled: true }` ✓
+- `nitro.preset: 'cloudflare_module'` ✓
+- `nitro.cloudflare.deployConfig: true` ✓
+- `nitro.cloudflare.nodeCompat: true` ✓
+- `modules`: nitro-cloudflare-dev, pinia, og-image, tailwindcss ✓
+
+Site-specific additions (keep all):
+- `build.analyze` — size reports
+- `nitro.esbuild.options.target: 'esnext'` — BigInt fix
+- `components.dirs` with `pathPrefix: false` — subfolder organization
+- `tailwindcss.cssPath` — custom stylesheet
+- `app.head.link` — Google Fonts
+- `site` config — domain for og-image
+- `ogImage` config — KV cache, 20min TTL
+- `vue.compilerOptions.isCustomElement` — vidstack media-* tags
+- `vite.plugins` — vidstack
+
+No changes needed to nuxt.config.js at this stage. The Cloudflare/Nitro section (lines 36-44) was reviewed in detail — documented three layers of Node compatibility in section [5] nitro-cloudflare-dev, added TODO to test module removal in Phase 3.
+
+Deleted `nuxt.config.ts` from fresh2.
+
+**package.md review**
+
+Reviewed package.md "nuxi effects" section documenting what peer deps each `nuxi module add` brought in during scaffolding. Added explanation that tailwindcss 3.4.19 is a transitive dep of @nuxtjs/tailwindcss — we're on Tailwind 3.x, not 4.x.
+
+Deleted numbered diff files from fresh2 (2pinia.diff, 3ogimage.diff, 4tailwind.diff, 5vidstack.diff, 4tailwind.txt) — their info is now in package.md.
+
+**.gitignore comparison**
+
+Compared fresh2/.gitignore against cold3/.gitignore (root level). Scaffold's ignores are a subset of ours — we cover everything plus serverless, sveltekit, vite timestamps, and more.
+
+Scaffold has `!.env.example` and `!.dev.vars.example` exceptions (allowlist patterns to commit example env files). We deliberately don't use these — no exceptions for anything matching secret patterns, period.
+
+Deleted `.gitignore` from fresh2.
+
+Compared `public/favicon.ico` — identical (same hash). Site already has the Nuxt default favicon as fallback. Deleted from fresh2.
+
+Copied `public/robots.txt` to site — default "allow all" to avoid 404s on crawler requests. Deleted from fresh2.
+
+Deleted `pnpm-lock.yaml` from fresh2 — fresh1 keeps this as reference for known-good scaffold versions.
+
+**app.vue comparison**
+
+Scaffold's app.vue is hello world (NuxtWelcome). Site's is the real app with store init, head config, Turnstile, TopBar/BottomBar.
+
+Notable: scaffold includes `<NuxtRouteAnnouncer />` — accessibility component that announces route changes to screen readers. Site doesn't have this. Consider adding later for a11y.
+
+Directory location: scaffold has `app/app.vue`, site has `site/app.vue` (root level). The `app/` directory restructure is next.
+
+Deleted `app/` folder from fresh2. **fresh2 is now empty.**
+
+
+
+

@@ -20,32 +20,31 @@
 		"retype": "wrangler types"
 	},
 	"dependencies": {
-		"@pinia/nuxt": "^0.11.1",
+		"@nuxtjs/tailwindcss": "6.14.0",
+		"@pinia/nuxt": "0.11.3",
 		"@tanstack/vue-query": "^5.87.1",
-		"@unhead/vue": "^2.0.5",
+		"@unhead/vue": "^2.1.2",
 		"@uppy/aws-s3": "^5.1.0",
 		"@uppy/core": "^5.2.0",
 		"@uppy/dashboard": "^5.1.0",
 		"@wagmi/connectors": "^5.9.9",
 		"@wagmi/core": "^2.20.3",
 		"icarus": "workspace:*",
-		"nuxt": "3.20.0",
-		"nuxt-og-image": "5.1.12",
-		"pinia": "^3.0.3",
+		"nuxt": "^4.3.0",
+		"nuxt-og-image": "5.1.13",
+		"pinia": "^3.0.4",
 		"qrcode": "^1.5.4",
-		"unstorage": "^1.15.0",
+		"unstorage": "^1.17.4",
 		"vidstack": "^1.12.13",
 		"viem": "^2.37.3",
-		"vue": "^3.5.16",
-		"vue-router": "^4.5.1"
+		"vue": "^3.5.27",
+		"vue-router": "^4.6.4"
 	},
 	"devDependencies": {
-		"@nuxtjs/tailwindcss": "^6.14.0",
 		"@tailwindcss/forms": "^0.5.10",
+		"h3": "2.0.1-rc.11",
 		"nitro-cloudflare-dev": "^0.2.2",
-		"nitropack": "^2.11.12",
-		"nuxi": "^3.25.1",
-		"pino-pretty": "^13.1.1",
-		"wrangler": "^4.20.0"
+		"nitropack": "^2.13.1",
+		"wrangler": "^4.62.0"
 	}
 }
