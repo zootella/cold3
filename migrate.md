@@ -561,3 +561,5 @@ git add -A && git commit -m "pnpm migration"
 # if failure:
 rm pnpm-lock.yaml && git checkout .
 ```
+
+(change to get new hash after wash before getting started...)
