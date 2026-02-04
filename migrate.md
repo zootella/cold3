@@ -517,6 +517,25 @@ git branch -D migrate1
 
 (none yet)
 
+```bash
+yarn wash #cleared node modules insalled by yarn classic, does not delete yarn.lock
+git switch -c migrate1 #created and switched to a new branch named "migrate1"
+
+--- a/package.json
++++ b/package.json
+-	"packageManager": "yarn@1.22.22",
++	"packageManager": "pnpm@10.28.2",
+
+ja import
+WARN 21 deprecated subdependencies found: boom@0.3.8, boom@0.4.2, connect@2.8.8, cryptiles@0.1.3, cryptiles@0.2.2, express@3.3.8, formidable@1.0.14, fstream@0.1.31, hawk@0.10.2, hawk@1.0.0, hoek@0.7.6, hoek@0.9.1, mkdirp@0.3.5, natives@1.1.6, node-uuid@1.4.8, request@2.16.6, request@2.27.0, rimraf@2.2.8, sntp@0.1.4, sntp@0.2.4, tar@0.1.20
+Progress: resolved 126, reused 0, downloaded 0, added 0, done
+⏱ Done in 0.74s.
+
+
+
+
+```
+
 ### Next Steps
 
 **[This is the section we maintain with exact steps to take next.]**

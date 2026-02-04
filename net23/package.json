@@ -12,13 +12,13 @@
 	"scripts": {
 		"local": "serverless offline --reloadHandler",
 		"build": "node build.js && cd dist && serverless package && cd .. && node size.js && node ../test.js",
-		"deploy": "node build.js && cd dist && serverless deploy && cd .. && node size.js && node ../test.js",
+		"ship": "node build.js && cd dist && serverless deploy && cd .. && node size.js && node ../test.js",
 		"deploy-only": "cd dist && serverless deploy && cd .. && node ../test.js",
 		"www": "aws s3 sync ./www s3://www-net23-cc --delete"
 	},
 	"dependencies": {
 		"@sendgrid/mail": "^8.1.4",
-		"icarus": "*",
+		"icarus": "workspace:*",
 		"sharp": "^0.34.4",
 		"twilio": "^5.3.5"
 	},

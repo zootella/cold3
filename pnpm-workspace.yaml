@@ -1,0 +1,7 @@
+
+#workspaces for pnpm
+packages:
+  - icarus #shared isomorphic library imported by all client and server bundles below
+  - net23  #Lambda functions to use AWS and heavyweight Node modules, Serverless Framework
+  - oauth  #SvelteKit site to use Auth.js for oauth authentication, Cloudflare Workers and wrangler
+  - site   #Nuxt website with trusted server code, secrets, Supabase, and universal rendering, Cloudflare Workers and wrangler
