@@ -103,7 +103,7 @@ Run `node sem.js` to generate `sem.yaml` with complete version analysis across a
 - Download counts grouped by magnitude
 - Publication dates
 
-The script parses yarn.lock (will simplify after pnpm migration since pnpm-lock.yaml is valid YAML) and fetches live data from the npm registry.
+The script parses pnpm-lock.yaml (valid YAML, simpler than the old yarn.lock parsing) and fetches live data from the npm registry.
 
 ## [4] Migration: Nuxt 4
 
@@ -358,6 +358,8 @@ Stores are in `site/stores/`. If adopting Nuxt 4's `app/` directory structure, e
 pinia: { storesDirs: ['./stores/**'] }
 ```
 
+**Decision:** Move stores to `app/stores/` to keep all application code together. The codemod should handle this.
+
 **Current SSR Pattern:**
 
 The codebase uses a manual `loaded` flag to prevent double-fetching:
@@ -492,18 +494,29 @@ Sources: [Nuxt SEO docs](https://nuxtseo.com/docs/og-image/getting-started/insta
 
 `@nuxtjs/tailwindcss` supports both Nuxt 3 and Nuxt 4.
 
-**This codebase has no migration issue.** The `site/tailwind.config.js` uses relative paths:
+The `site/tailwind.config.js` uses relative paths, which avoids the `@` alias issue (Nuxt 4 changes `@` to mean `app/` instead of root).
+
+**However**, adopting the `app/` directory structure means content paths need updating:
 
 ```js
+// Current
 content: [
   './nuxt.config.{js,ts}',
   './app.vue',
   './components/**/*.{vue,js,ts}',
-  // ... all relative paths
+  // ...
+]
+
+// After app/ move
+content: [
+  './nuxt.config.{js,ts}',
+  './app/app.vue',
+  './app/components/**/*.{vue,js,ts}',
+  // ...
 ]
 ```
 
-If it used `@/components/**/*.vue`, that would break (Nuxt 4 changes `@` to mean `app/` instead of root). But it doesn't.
+This is a manual step after moving to the `app/` directory structure.
 
 **Tailwind CSS v4** (January 2025) is a major rewrite with CSS-first configuration. The Nuxt module supports it. Alternative: use the Vite plugin directly:
 
@@ -648,7 +661,92 @@ The lockfile currently pins 5.1.12. After `pnpm import`, verify the resolved ver
 | `unstorage` | Test removing | nitropack/nuxt/walletconnect bring it |
 | `@tanstack/vue-query` | Keep | peer dep of wagmi but also used directly in code |
 
-## [7] Actual, Manual, Incremental Steps
+## [7] Execution
+
+### Methodology: All At Once
+
+The "tear off the bandaid" approach. Rather than incremental testing with compatibility flags and one-change-at-a-time verification, make all changes first, then fix whatever breaks.
+
+**Why this might work better:**
+
+- Incremental approaches stretch over days/weeks, maintaining mental context is hard
+- Compatibility mode and codemods don't know about Cloudflare, may leave vestiges
+- We have fresh1 as a known-good reference — match it, don't invent our own path
+- A working starting point means we can always abandon and return to main
+- The codebase is small enough to hold in your head
+
+**Phase 1: Checkpoint**
+
+We're here. Code is tested, committed, working. Branch `migrate1` exists. We can always `git switch main` to return.
+
+**Phase 2: Changes Everywhere**
+
+Without running the code, apply all changes in sequence. Use fresh1 as the guide — match its versions, module roster, compatibility dates, config patterns. We're not deploying fresh1; we trust that Cloudflare's scaffold works and use it as the reference on the wall.
+
+Order: outwards to inwards. Dependencies first, then configuration, then code.
+
+| Order | Change | Guide |
+|-------|--------|-------|
+| 2a | Bump nuxt to ^4.x | fresh1/package.json |
+| 2a | Bump all module versions to fresh1's versions | fresh1/package.json |
+| 2a | Restore carets (except where fresh1 pins exactly) | fresh1/package.json |
+| 2b | Update nuxt.config.js patterns | fresh1/nuxt.config.ts |
+| 2b | Update compatibilityDate | fresh1/nuxt.config.ts |
+| 2b | Remove nitro-cloudflare-dev | test if native works |
+| 2c | Move to `app/` directory structure | fresh1 folder structure |
+| 2c | Update tailwind.config.js content paths | manual, for app/ structure |
+| 2d | Update `process.server`/`process.client` → `import.meta.*` | Nuxt 4 deprecation |
+| 2d | Update h3 v2 API usage | h3 migration guide |
+| 2d | Review senseEnvironment() for new patterns | manual testing later |
+
+Commits during Phase 2: decide as we go. Maybe a few large checkpoints, maybe all at once.
+
+At each step: review the diff, do a sanity check ("is this correct to run?"), but don't run yet. When phase 2 is complete:
+
+- package.json files have fresh1-aligned versions with carets
+- Directory structure matches Nuxt 4 convention
+- Config files updated
+- Deprecated modules removed
+- Code updated for known API changes
+
+**Phase 3: Fix-a-thon**
+
+Now try to run it. Expect errors.
+
+1. `pnpm install` — resolve any dependency conflicts
+2. `pnpm build` — fix build errors one by one
+3. `pnpm dev` — fix runtime errors
+4. Run automated tests — fix failures
+5. Manual smoke tests — check key flows (auth, OG images, Cloudflare bindings)
+6. Deploy to Cloudflare — verify production works
+
+Research and fix issues as they surface. This is where we discover what actually breaks vs. what we worried might break.
+
+**Rollback Philosophy**
+
+Fix forward only. Either we make it all the way to Nuxt 4 working, or we completely retreat to main (Nuxt 3) and try again in a few months. No partial rollbacks, no "keep this module on the old version." The hope is that og-image 5.1.13 broke on Nuxt 3 because they moved on to Nuxt 4 and stopped testing backwards — following fresh1's versions should put us in their tested path.
+
+Note: fresh1 pins og-image to exactly `5.1.13` (no caret). We follow that.
+
+**Phase 4: Cleanup**
+
+Once working:
+
+1. Verify all fresh1 guide points are reflected
+2. Run `node sem.js` — confirm versions are current, carets restored
+3. Remove yarn.lock and any yarn classic remnants
+4. Review for leftover TODOs, stale comments, dead code
+5. Final commit on migrate1
+6. `git switch main && git merge migrate1 && git branch -D migrate1`
+7. `git push`
+
+---
+
+### Methodology: Incremental (Alternative)
+
+The step-by-step approach with testing at each stage. Enable compatibility mode first, test, then upgrade packages, test, then move directories, test. Documented in "Next Steps" below for reference, but we may use the All At Once approach instead.
+
+---
 
 ### Undo Button
 
@@ -724,6 +822,7 @@ reviewed the output yaml diff is reasonable and we're ready to use this tool now
 5. ☐ Test environment detection — log `senseEnvironment()` in all contexts, verify `isLocal()`/`isCloud()` correct
 6. ☐ Update `process.server`/`process.client` → `import.meta.server`/`import.meta.client` (note: senseEnvironment needs different approach)
 7. ☐ Move to `app/` directory structure — either via codemod or manually
-8. ☐ Upgrade nuxt package to ^4.x
-9. ☐ Test nitro-cloudflare-dev removal — verify native Cloudflare emulation works
-10. ☐ Test extra deps (wagmi, uppy, qrcode) — should work but verify
+8. ☐ Update tailwind.config.js content paths for `app/` structure
+9. ☐ Upgrade nuxt package to ^4.x
+10. ☐ Test nitro-cloudflare-dev removal — verify native Cloudflare emulation works
+11. ☐ Test extra deps (wagmi, uppy, qrcode) — should work but verify

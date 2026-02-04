@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 4 12:46 PM
+  generated: 2026 Feb 4 1:06 PM
   🕰️ Installed version 1+ year old:
     - fast-glob
     - is-mobile
@@ -111,6 +111,8 @@ modules:
     versions:
       declared: ^3.975.0
       installed: 3.982.0 on 2026feb03 0m old
+      current: 3.983.0 on 2026feb04 0m old
+      latest: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -121,6 +123,8 @@ modules:
     versions:
       declared: ^3.682.0
       installed: 3.982.0 on 2026feb03 0m old
+      current: 3.983.0 on 2026feb04 0m old
+      latest: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -131,6 +135,8 @@ modules:
     versions:
       declared: ^3.682.0
       installed: 3.982.0 on 2026feb03 0m old
+      current: 3.983.0 on 2026feb04 0m old
+      latest: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -141,6 +147,8 @@ modules:
     versions:
       declared: ^3.975.0
       installed: 3.982.0 on 2026feb03 0m old
+      current: 3.983.0 on 2026feb04 0m old
+      latest: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
