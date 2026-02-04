@@ -1037,6 +1037,20 @@ Directory location: scaffold has `app/app.vue`, site has `site/app.vue` (root le
 
 Deleted `app/` folder from fresh2. **fresh2 is now empty.**
 
+**Outer shell changes summary**
+
+Reviewed diff of all site changes. Actual substantive changes are minimal:
+
+| File | Change |
+|------|--------|
+| nuxt.config.js | `compatibilityDate`: `'2025-06-10'` → `'2025-07-15'` |
+| wrangler.jsonc | `compatibility_date`: `"2025-06-10"` → `"2025-09-27"` |
+| tsconfig.json | Single `extends` → Nuxt 4 project references (app/server/shared/node) |
+| package.json | nuxt 3→4, version bumps, added h3, removed nuxi/pino-pretty |
+| public/robots.txt | Added (new file, default "allow all") |
+
+Ready to commit outer shell, then move inwards to `app/` directory structure.
+
 
 
 
