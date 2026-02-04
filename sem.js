@@ -3,18 +3,25 @@ import fs from 'fs'
 import yaml from 'yaml'
 import semver from 'semver'
 import {
-log, look, commas, takeNumerals, toss,
+log, look, commas, takeNumerals, toss, Now, sayWhenPage, sayDate, tickToText, textToTick, Time,
 } from 'icarus'
 
 // Note constants
-const note_old_installed = 'Installed version 1+ year old 🕰️'
-const note_stale_current = 'Current version 6+ months newer ⏰'
-const note_major_available = 'Major new version available 🆕'
+const note_old_installed = '🕰️ Installed version 1+ year old'
+const note_stale_current = '⏰ Current version 6+ months newer'
+const note_major_available = '🎁 Major new version available'
+const note_latest_behind = '🩸 Latest tag is behind installed'
+const note_version_zero = '🐣 Pre-1.0 version installed'
+const note_exact_pin = '📌 Exact version pinned'
+const note_deprecated = '🪦 Installed version marked deprecated on npm'
 
-// Helper to format date as YYYY-MM-DD
-function formatDate(isoString) {
-	if (!isoString) return null
-	return isoString.split('T')[0]
+// Helper to format version with publication date and age
+function formatVersion(version, isoString, now) {
+	if (!version) return 'not found'
+	if (!isoString) return version
+	let tick = new Date(isoString).getTime()
+	let ageMonths = Math.round((now - tick) / Time.month)
+	return `${version} on ${sayDate(tick)} ${ageMonths}m old`
 }
 
 // Helper to check if date2 is more than 6 months after date1
@@ -52,6 +59,7 @@ async function fetchNpmVersions(name) {
 		let data = await response.json()
 		return {
 			versions: Object.keys(data.versions),
+			versionsData: data.versions,
 			latest: data['dist-tags']?.latest,
 			time: data.time || {},
 			description: data.description || null,
@@ -160,29 +168,31 @@ async function main() {
 	}))
 
 	// Preserve existing download data (parse commas-formatted numbers back to int)
-	let today = new Date().toISOString().split('T')[0]
+	function parseOn(s) {
+		if (!s) return null
+		return textToTick(s)
+	}
+	let today = Now()
 	let downloadsData = new Map()
 	for (let m of modules.values()) {
 		let prev = previousData[m.name]?.downloads
 		if (prev?.weekly != null && prev?.on) {
 			let weekly = typeof prev.weekly === 'string' ? parseInt(takeNumerals(prev.weekly)) : prev.weekly
-			downloadsData.set(m.name, {weekly, on: prev.on})
+			downloadsData.set(m.name, {weekly, on: parseOn(prev.on)})
 		}
 	}
 
 	// Build list of modules needing fetch: missing first, then stale (>1 month old)
-	let oneMonthAgo = new Date()
-	oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
-	let oneMonthAgoStr = oneMonthAgo.toISOString().split('T')[0]
+	let oneMonthAgo = Now() - Time.month
 
 	let allNeedsFetch = [...modules.values()]
 		.map(m => ({name: m.name, on: downloadsData.get(m.name)?.on || null}))
-		.filter(m => !m.on || m.on < oneMonthAgoStr)
+		.filter(m => !m.on || m.on < oneMonthAgo)
 		.sort((a, b) => {
 			if (!a.on && b.on) return -1
 			if (a.on && !b.on) return 1
 			if (!a.on && !b.on) return 0
-			return a.on.localeCompare(b.on)
+			return a.on - b.on
 		})
 
 	let missing = allNeedsFetch.filter(m => !m.on).length
@@ -206,11 +216,15 @@ async function main() {
 		if (npm) {
 			m.latestInRange = semver.maxSatisfying(npm.versions, m.semver)
 			m.latest = npm.latest
-			m.installedDate = formatDate(npm.time[m.installed])
-			m.currentDate = formatDate(npm.time[m.latestInRange])
-			m.latestDate = formatDate(npm.time[m.latest])
+			m.installedTime = npm.time[m.installed]
+			m.currentTime = npm.time[m.latestInRange]
+			m.latestTime = npm.time[m.latest]
+			m.installedLine = formatVersion(m.installed, m.installedTime, today)
+			m.currentLine = formatVersion(m.latestInRange, m.currentTime, today)
+			m.latestLine = formatVersion(m.latest, m.latestTime, today)
 			m.description = npm.description
 			m.homepage = npm.homepage
+			m.deprecated = npm.versionsData[m.installed]?.deprecated || null
 		}
 		m.downloads = downloadsData.get(m.name) || null
 	}
@@ -224,40 +238,58 @@ async function main() {
 		[note_old_installed]: [],
 		[note_stale_current]: [],
 		[note_major_available]: [],
+		[note_latest_behind]: [],
+		[note_version_zero]: [],
+		[note_exact_pin]: [],
+		[note_deprecated]: [],
 	}
 
 	for (let m of sorted) {
-		let notes = []
-		if (isMoreThan1YearOld(m.installedDate)) {
-			notes.push(note_old_installed)
+		// Check if all versions are the same (before adding notes)
+		let allSame = m.installedLine === m.currentLine && m.currentLine === m.latestLine
+
+		// Build notes to append
+		let installedNote = ''
+		let currentNote = ''
+		let latestNote = ''
+
+		if (isMoreThan1YearOld(m.installedTime)) {
+			installedNote += ' ' + note_old_installed
 			summary[note_old_installed].push(m.name)
 		}
-		if (isMoreThan6MonthsNewer(m.installedDate, m.currentDate)) {
-			notes.push(note_stale_current)
+		if (m.installed && semver.major(m.installed) === 0) {
+			installedNote += ' ' + note_version_zero
+			summary[note_version_zero].push(m.name)
+		}
+		if (!m.semver.startsWith('^') && !m.semver.startsWith('~')) {
+			installedNote += ' ' + note_exact_pin
+			summary[note_exact_pin].push(m.name)
+		}
+		if (m.deprecated) {
+			installedNote += ' ' + note_deprecated
+			summary[note_deprecated].push(m.name)
+		}
+		if (isMoreThan6MonthsNewer(m.installedTime, m.currentTime)) {
+			currentNote = ' ' + note_stale_current
 			summary[note_stale_current].push(m.name)
 		}
 		if (isMajorVersionHigher(m.installed, m.latest)) {
-			notes.push(note_major_available)
+			latestNote += ' ' + note_major_available
 			summary[note_major_available].push(m.name)
+		}
+		if (m.installed && m.latest && semver.lt(m.latest, m.installed)) {
+			latestNote += ' ' + note_latest_behind
+			summary[note_latest_behind].push(m.name)
 		}
 
 		output[m.name] = {
-			...(notes.length > 0 && {note: notes.join('; ')}),
 			homepage: m.homepage || null,
 			description: m.description || null,
 			from: m.sources.length === 1 ? m.sources[0] : m.sources,
-			versions: {
-				declared: m.semver,
-				installed: m.installed || 'NOT FOUND',
-				current: m.latestInRange || 'NOT FOUND',
-				latest: m.latest || 'NOT FOUND',
-			},
-			published: {
-				installed: m.installedDate || null,
-				current: m.currentDate || null,
-				latest: m.latestDate || null,
-			},
-			downloads: m.downloads ? {weekly: commas(m.downloads.weekly), on: m.downloads.on} : {weekly: null, on: null},
+			versions: allSame
+			? { declared: m.semver, installed: m.installedLine + installedNote + currentNote + latestNote }
+			: { declared: m.semver, installed: m.installedLine + installedNote, current: m.currentLine + currentNote, latest: m.latestLine + latestNote },
+			downloads: m.downloads ? {weekly: commas(m.downloads.weekly), on: tickToText(m.downloads.on)} : {weekly: null, on: null},
 		}
 	}
 
@@ -281,7 +313,7 @@ async function main() {
 
 	let finalOutput = {
 		summary: {
-			generated: new Date().toLocaleString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit'}),
+			generated: sayWhenPage(Now()),
 			...filteredSummary,
 			downloads: downloadsByMagnitude,
 		},

@@ -532,17 +532,20 @@ git switch -c migrate1 #created and switched to a new branch named "migrate1"
 
 ja import
 ja install
-
-#then some fixes
-#added more imports to icarus even though they're dynamic in code
-#renamed deploy to ship so you can type ja ship rather than pnpm run deploy
-#pinned og-image to exact version so image will load in cloudflare deployed
-
-#3806a97 Feb04Wed GSH migration to pnpm working
-
-
-
 ```
+
+then some fixes:
+added more imports to icarus even though they're dynamic in code
+renamed deploy to ship so you can type ja ship rather than pnpm run deploy
+pinned og-image to exact version so image will load in cloudflare deployed
+
+3806a97 Feb04Wed GSH migration to pnpm working
+
+updated sem.js to work from pnpm lockfile
+fixed the script to error out if it runs into the same module with a different semver
+reviewed the output yaml diff is reasonable and we're ready to use this tool now in pnpm-land
+
+49e90b0 Feb04Wed EVJ updated sem.js to work with pnpm now
 
 ### Next Steps
 
