@@ -515,9 +515,13 @@ git branch -D migrate1
 
 ### Completed Steps
 
-(none yet)
-
 ```bash
+gitlog
+
+#017244c Feb03Tue XUV migration plan ready
+#d9943a3 Feb03Tue AYO before first migration steps
+#bb9dc01 Feb04Wed SGO yarn wash to prove you can get back here
+
 yarn wash #cleared node modules insalled by yarn classic, does not delete yarn.lock
 git switch -c migrate1 #created and switched to a new branch named "migrate1"
 
@@ -527,10 +531,14 @@ git switch -c migrate1 #created and switched to a new branch named "migrate1"
 +	"packageManager": "pnpm@10.28.2",
 
 ja import
-WARN 21 deprecated subdependencies found: boom@0.3.8, boom@0.4.2, connect@2.8.8, cryptiles@0.1.3, cryptiles@0.2.2, express@3.3.8, formidable@1.0.14, fstream@0.1.31, hawk@0.10.2, hawk@1.0.0, hoek@0.7.6, hoek@0.9.1, mkdirp@0.3.5, natives@1.1.6, node-uuid@1.4.8, request@2.16.6, request@2.27.0, rimraf@2.2.8, sntp@0.1.4, sntp@0.2.4, tar@0.1.20
-Progress: resolved 126, reused 0, downloaded 0, added 0, done
-⏱ Done in 0.74s.
+ja install
 
+#then some fixes
+#added more imports to icarus even though they're dynamic in code
+#renamed deploy to ship so you can type ja ship rather than pnpm run deploy
+#pinned og-image to exact version so image will load in cloudflare deployed
+
+#3806a97 Feb04Wed GSH migration to pnpm working
 
 
 
@@ -540,45 +548,4 @@ Progress: resolved 126, reused 0, downloaded 0, added 0, done
 
 **[This is the section we maintain with exact steps to take next.]**
 
-Start from a clean committed state. The only new file created is `pnpm-lock.yaml`; everything else is modifications git can restore.
-
-```bash
-# 1. Convert lockfile (works even with packageManager set to yarn)
-pnpm import
-```
-
-`pnpm import` only creates `pnpm-lock.yaml` — it reads yarn.lock, translates the resolved versions, and writes the new lockfile. It does not touch node_modules. This step works even while the `packageManager` field is still set to yarn.
-
-```bash
-# 2. Clean node_modules
-yarn wash
-```
-
-pnpm uses a different node_modules structure (content-addressable store with symlinks) than yarn classic's flat hoisted layout. pnpm can overwrite in place, but deleting first avoids stale files and potential confusion. `yarn wash` deletes node_modules across root and all workspaces.
-
-```bash
-# 3. Update root package.json
-#    "packageManager": "pnpm@10.28.2"
-
-# 4. Install (try defaults first, add .npmrc if peer conflicts block)
-pnpm install
-
-# 5. Test
-pnpm --filter icarus run build
-pnpm --filter site run build
-pnpm --filter site run local    # then hit /__og-image__/image/og.png
-pnpm --filter oauth run build
-pnpm --filter oauth run local
-```
-
-**Success criteria:** OG image generates at `/__og-image__/image/og.png`. That exercises the nuxt-og-image WASM chain (satori/yoga/resvg), which is the riskiest part.
-
-```bash
-# if success:
-git add -A && git commit -m "pnpm migration"
-
-# if failure:
-rm pnpm-lock.yaml && git checkout .
-```
-
-(change to get new hash after wash before getting started...)
+(next, we should update sem.js to use sem.yaml with pnpm)

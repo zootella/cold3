@@ -3,11 +3,8 @@ import fs from 'fs'
 import yaml from 'yaml'
 import semver from 'semver'
 import {
-log, look, commas, takeNumerals,
+log, look, commas, takeNumerals, toss,
 } from 'icarus'
-
-//ttd january, you might be able to make this simpler by erroring out if  you find the same module with two different declared versions in different package.json files; already we're trying to not allow this, and it shouldn't be allowed
-//ttd january, note that when you switch from yarn to pnpm stuff in here will have to change; pnpm's lockfile is valid yaml, so some manual scraping of yarn.lock's yaml-like format will go away
 
 // Note constants
 const note_old_installed = 'Installed version 1+ year old 🕰️'
@@ -102,9 +99,9 @@ async function main() {
 		}
 	}
 
-	// Read root package.json to get workspace list
-	let root = JSON.parse(fs.readFileSync('package.json', 'utf8'))
-	let workspaces = root.workspaces?.packages || root.workspaces || []
+	// Read workspace list from pnpm-workspace.yaml
+	let workspaceConfig = yaml.parse(fs.readFileSync('pnpm-workspace.yaml', 'utf8'))
+	let workspaces = workspaceConfig.packages || []
 
 	// Collect all package.json paths with their source names
 	let sources = [
@@ -112,42 +109,42 @@ async function main() {
 		...workspaces.map(w => ({path: `${w}/package.json`, name: w}))
 	]
 
-	// Map of "name:semver" -> {name, semver, sources[]} to deduplicate
+	// Map of "name" -> {semver, sources[]} to collect and detect conflicts
 	let modules = new Map()
 	for (let source of sources) {
 		let pkg = JSON.parse(fs.readFileSync(source.path, 'utf8'))
 		let deps = {...pkg.dependencies, ...pkg.devDependencies}
 		for (let [name, ver] of Object.entries(deps)) {
 			if (name === 'icarus') continue // skip workspace self-reference
-			let key = `${name}:${ver}`
-			if (modules.has(key)) {
-				modules.get(key).sources.push(source.name)
+			if (modules.has(name)) {
+				let existing = modules.get(name)
+				if (existing.semver !== ver) {
+					toss(`Different declared semver for "${name}": ${existing.sources.join(', ')} want ${existing.semver} but ${source.name} wants ${ver}`)
+				}
+				existing.sources.push(source.name)
 			} else {
-				modules.set(key, {name, semver: ver, sources: [source.name]})
+				modules.set(name, {name, semver: ver, sources: [source.name]})
 			}
 		}
 	}
 
-	// Parse yarn.lock to get installed versions
-	// NOTE: yarn.lock is NOT valid YAML (has things like multiple comma-separated keys per line)
-	// so we use string-based parsing here. After migrating to pnpm, pnpm-lock.yaml IS valid YAML
-	// and we could use the yaml module to parse it properly instead of this string matching.
-	let lockfile = fs.readFileSync('yarn.lock', 'utf8')
-	let lockLines = lockfile.split('\n')
-
-	function getInstalledVersion(name, semver) {
-		let pattern = `${name}@${semver}`
-		for (let i = 0; i < lockLines.length; i++) {
-			let line = lockLines[i]
-			if (line.includes(`"${pattern}"`) || line.includes(pattern)) {
-				if (line.endsWith(':')) {
-					let versionLine = lockLines[i + 1]
-					let match = versionLine?.match(/version "([^"]+)"/)
-					if (match) return match[1]
-				}
+	// Parse pnpm-lock.yaml to get installed versions
+	let lockfile = yaml.parse(fs.readFileSync('pnpm-lock.yaml', 'utf8'))
+	let versionMap = new Map()
+	for (let [, data] of Object.entries(lockfile.importers || {})) {
+		let allDeps = {...data.dependencies, ...data.devDependencies}
+		for (let [name, info] of Object.entries(allDeps)) {
+			if (info?.specifier && info?.version) {
+				let key = `${name}:${info.specifier}`
+				// Strip peer dep info: "1.2.3(peer@1.0.0)" → "1.2.3"
+				let version = info.version.split('(')[0]
+				versionMap.set(key, version)
 			}
 		}
-		return null
+	}
+
+	function getInstalledVersion(name, semver) {
+		return versionMap.get(`${name}:${semver}`) || null
 	}
 
 	for (let m of modules.values()) {
