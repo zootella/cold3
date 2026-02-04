@@ -1,5 +1,5 @@
 summary:
-  generated: Monday, February 2, 2026 at 2:42 PM
+  generated: Tuesday, February 3, 2026 at 6:31 PM
   Installed version 1+ year old 🕰️:
     - "@tailwindcss/forms"
     - fast-glob
@@ -108,12 +108,12 @@ modules:
     versions:
       declared: ^3.975.0
       installed: 3.975.0
-      current: 3.981.0
-      latest: 3.981.0
+      current: 3.982.0
+      latest: 3.982.0
     published:
       installed: 2026-01-23
-      current: 2026-02-02
-      latest: 2026-02-02
+      current: 2026-02-03
+      latest: 2026-02-03
     downloads:
       weekly: 16,048,568
       on: 2026-02-02
@@ -124,12 +124,12 @@ modules:
     versions:
       declared: ^3.682.0
       installed: 3.919.0
-      current: 3.981.0
-      latest: 3.981.0
+      current: 3.982.0
+      latest: 3.982.0
     published:
       installed: 2025-10-28
-      current: 2026-02-02
-      latest: 2026-02-02
+      current: 2026-02-03
+      latest: 2026-02-03
     downloads:
       weekly: 2,326,942
       on: 2026-02-02
@@ -140,12 +140,12 @@ modules:
     versions:
       declared: ^3.682.0
       installed: 3.919.0
-      current: 3.981.0
-      latest: 3.981.0
+      current: 3.982.0
+      latest: 3.982.0
     published:
       installed: 2025-10-28
-      current: 2026-02-02
-      latest: 2026-02-02
+      current: 2026-02-03
+      latest: 2026-02-03
     downloads:
       weekly: 2,601,639
       on: 2026-02-02
@@ -156,12 +156,12 @@ modules:
     versions:
       declared: ^3.975.0
       installed: 3.975.0
-      current: 3.981.0
-      latest: 3.981.0
+      current: 3.982.0
+      latest: 3.982.0
     published:
       installed: 2026-01-23
-      current: 2026-02-02
-      latest: 2026-02-02
+      current: 2026-02-03
+      latest: 2026-02-03
     downloads:
       weekly: 6,524,876
       on: 2026-02-02
@@ -236,12 +236,12 @@ modules:
     versions:
       declared: ^2.39.8
       installed: 2.77.0
-      current: 2.93.3
-      latest: 2.93.3
+      current: 2.94.0
+      latest: 2.94.0
     published:
       installed: 2025-10-29
-      current: 2026-01-29
-      latest: 2026-01-29
+      current: 2026-02-03
+      latest: 2026-02-03
     downloads:
       weekly: 8,926,632
       on: 2026-02-02
@@ -285,12 +285,12 @@ modules:
     versions:
       declared: ^2.16.0
       installed: 2.48.3
-      current: 2.50.1
-      latest: 2.50.1
+      current: 2.50.2
+      latest: 2.50.2
     published:
       installed: 2025-10-29
-      current: 2026-01-23
-      latest: 2026-01-23
+      current: 2026-02-02
+      latest: 2026-02-02
     downloads:
       weekly: 873,427
       on: 2026-02-02
@@ -399,12 +399,12 @@ modules:
     versions:
       declared: ^5.1.0
       installed: 5.1.0
-      current: 5.1.0
-      latest: 5.1.0
+      current: 5.1.1
+      latest: 5.1.1
     published:
       installed: 2025-12-02
-      current: 2025-12-02
-      latest: 2025-12-02
+      current: 2026-02-03
+      latest: 2026-02-03
     downloads:
       weekly: 376,362
       on: 2026-02-02
@@ -966,12 +966,12 @@ modules:
     versions:
       declared: ^4.20.0
       installed: 4.45.2
-      current: 4.61.1
-      latest: 4.61.1
+      current: 4.62.0
+      latest: 4.62.0
     published:
       installed: 2025-10-29
-      current: 2026-01-29
-      latest: 2026-01-29
+      current: 2026-02-03
+      latest: 2026-02-03
     downloads:
       weekly: 3,298,361
       on: 2026-02-02

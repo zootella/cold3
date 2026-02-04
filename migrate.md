@@ -484,21 +484,67 @@ The lockfile currently pins 5.1.12. After `pnpm import`, verify the resolved ver
 | `unstorage` | Test removing | nitropack/nuxt/walletconnect bring it |
 | `@tanstack/vue-query` | Keep | peer dep of wagmi but also used directly in code |
 
-### Migration Steps
+## [7] Actual, Manual, Incremental Steps
+
+### Undo Button
+
+```bash
+# Start an experiment (migrate1, migrate2, etc.) see what branch you're on with $ git branch
+git switch -c migrate1
+
+# Switch between branches (always commit first)
+git switch main                     # go to main
+git switch migrate1                 # go to experiment
+
+# Compare branches
+git diff main..migrate1             # file differences
+
+# If it works — merge into main, delete branch
+git switch main
+git merge migrate1
+git branch -D migrate1
+
+# If it doesn't work — abandon, delete branch
+git switch main
+git branch -D migrate1
+```
+
+**Note:** node_modules is not tracked by git. When switching branches, reinstall if dependencies differ (`yarn install` on main, `pnpm install` on experiment).
+
+**GitHub:** Keep experiment branches local. `git switch -c migrate1` doesn't touch GitHub. If experiment succeeds, merge to main and `git push` — commits reach GitHub, branch name never does. If experiment fails, delete locally, nothing to clean up remotely.
+
+### Completed Steps
+
+(none yet)
+
+### Next Steps
+
+**[This is the section we maintain with exact steps to take next.]**
 
 Start from a clean committed state. The only new file created is `pnpm-lock.yaml`; everything else is modifications git can restore.
 
 ```bash
 # 1. Convert lockfile (works even with packageManager set to yarn)
 pnpm import
+```
 
-# 2. Update root package.json
+`pnpm import` only creates `pnpm-lock.yaml` — it reads yarn.lock, translates the resolved versions, and writes the new lockfile. It does not touch node_modules. This step works even while the `packageManager` field is still set to yarn.
+
+```bash
+# 2. Clean node_modules
+yarn wash
+```
+
+pnpm uses a different node_modules structure (content-addressable store with symlinks) than yarn classic's flat hoisted layout. pnpm can overwrite in place, but deleting first avoids stale files and potential confusion. `yarn wash` deletes node_modules across root and all workspaces.
+
+```bash
+# 3. Update root package.json
 #    "packageManager": "pnpm@10.28.2"
 
-# 3. Install (try defaults first, add .npmrc if peer conflicts block)
+# 4. Install (try defaults first, add .npmrc if peer conflicts block)
 pnpm install
 
-# 4. Test
+# 5. Test
 pnpm --filter icarus run build
 pnpm --filter site run build
 pnpm --filter site run local    # then hit /__og-image__/image/og.png
