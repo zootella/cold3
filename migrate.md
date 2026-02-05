@@ -1339,6 +1339,29 @@ This worked on Nuxt 3. The og-image also works locally on Nuxt 4 (local dev does
 - v6 bundles Inter fonts by default (sidesteps the Google Fonts fetch problem), unbundles renderer deps (must install satori + resvg-wasm explicitly), and fixes WASM imports with `?module` suffixes for Workers.
 - Our og-image WAS working on Nuxt 3 + v5.1.12 + compatibility_date 2025-06-10. So something in the Nuxt 3→4 pipeline change (Nitro version, WASM bundling) or the compat date bump broke it.
 
-**Testing compatibility_date rollback** — reverted wrangler.jsonc from `2025-09-27` to `2025-06-10` to isolate.
+**Testing compatibility_date rollback** — reverted wrangler.jsonc from `2025-09-27` to `2025-06-10` to isolate. Deployed as commit `61a1fe5 BAB`. Result: **did not fix it.** OG image still 500s in production. This rules out compatibility_date as the cause — the problem is in how Nitro 2.13.1 bundles the WASM for cloudflare-module, not a Cloudflare runtime policy change.
+
+**Plan: upgrade nuxt-og-image to v6 beta**
+
+Our og-image usage is minimal — good news for a beta migration:
+
+- 2 pages use `defineOgImageComponent('NuxtSeo', {title, description, theme, colorMode})`
+  - `app/pages/index.vue` — static home card
+  - `app/pages/card/[more].vue` — dynamic card with name from route params
+- No custom OG image templates or components
+- No custom fonts (using defaults)
+- No images embedded in OG cards
+- Config: Cloudflare KV cache (`OG_IMAGE_CACHE` binding), 20-minute TTL
+
+Steps:
+
+1. Revert compatibility_date back to `2025-09-27` (rollback didn't help, keep the fresh scaffold date)
+2. Install v6: `pnpm add nuxt-og-image@next` in site workspace
+3. Install renderer deps: `pnpm add satori @resvg/resvg-wasm` in site workspace
+4. In both pages, rename `defineOgImageComponent('NuxtSeo', {...})` → `defineOgImage('NuxtSeo', {...})`
+5. Eject the NuxtSeo template: `npx nuxt-og-image eject NuxtSeo` (copies it into our project as a `.satori.vue` file)
+6. Check if `ogImage` config in nuxt.config.js needs changes (runtimeCacheStorage, defaults)
+7. Try the migration CLI first: `npx nuxt-og-image migrate v6 --dry-run` to see what it wants to change
+8. Build, test locally, deploy, test og-image on production
 
 
