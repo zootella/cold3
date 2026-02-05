@@ -62,11 +62,10 @@ configuration.vite.plugins.push(tailwindcss())
 configuration.app.head.link.push({
 	rel: 'stylesheet',
 	href: 'https://fonts.googleapis.com/css2?' + (
-					'family=Noto+Sans:ital,wght@0,400;1,400;0,700;1,700' +
-		'&family=Noto+Sans+Mono:ital,wght@0,400;1,400;0,700;1,700' +
-						'&family=Roboto:ital,wght@0,400;1,400;0,500;1,500' +//note 500, tailwind semibold
-		'&display=swap' +
-		'&subset=latin,latin-ext')//just basic latin characters
+					'family=Noto+Sans:ital,wght@0,400;0,700;1,400;1,700' +
+		'&family=Noto+Sans+Mono:ital,wght@0,400;0,700;1,400;1,700' +
+						'&family=Roboto:ital,wght@0,400;0,500;1,400;1,500' +//note 500, tailwind semibold
+		'&display=swap')//CSS2 API does unicode-range subsetting automatically
 })
 
 //for pinia

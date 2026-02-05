@@ -49,10 +49,10 @@ and we don't really need this at all because it's likely NuxtLink from some foot
 		text-gray-800       /* darker gray text to look good on the gray band */
 		decoration-gray-500 /* subdued underline color for links; must repeat below, see note */
 		text-sm             /* tailwind's standard small but still readable text size */
-		font-roboto         /* vibe the user's Android phone ten years ago */
 		leading-tight       /* no vertical space between lines in the same paragraph */
 		space-y-2           /* vertical space between headings and paragraphs in the text */
 	;
+	font-family: "Roboto", sans-serif; /* vibe the user's Android phone ten years ago */
 }
 .myTerms a {
 	@apply text-gray-800 decoration-gray-500; /* ttd july2025, if you stop styling a in style.css, you think you can remove this */

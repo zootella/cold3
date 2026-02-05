@@ -16,7 +16,7 @@ const refAccepted = ref(false)
 		<TermsDocument />
 
 		<!-- very hacky, but the only way I can find to get the edge of the second column to peak in on phones -->
-		<p class="text-gray-100 text-sm font-roboto py-10">
+		<p class="text-gray-100 text-sm py-10" style="font-family: 'Roboto', sans-serif;">
 			The numerals below are used only for spacing:
 			1234567890123456789012345678901234567890
 		</p>

@@ -600,3 +600,54 @@ How the fonts map to Tailwind theme configuration:
 - **System stacks** (built into browsers): tail of every font-family list
 
 For v4 correctness: the `@font-face` declarations sit above `@import "tailwindcss"`, which is correct -- they need to be defined before Tailwind's reset. The `@theme` block uses CSS custom properties (`--font-sans`, `--font-mono`, `--font-roboto`, etc.), which is the v4 pattern replacing the old JS `theme.extend.fontFamily` object. The Google Fonts link in nuxt.config.js is completely independent of Tailwind. Nothing about the font setup needed to change for v4 beyond moving the family definitions from JS to CSS, which we already did.
+
+## Custom font utilities in scoped styles
+
+Build failed with: `Cannot apply unknown utility class 'font-roboto'` in TermsDocument.vue.
+
+**The problem.** `@reference "tailwindcss"` gives scoped style blocks access to Tailwind's built-in utilities, but not to custom utilities defined in our `@theme` block. The built-in font utilities (`font-sans`, `font-mono`) work because those names exist in Tailwind's defaults -- our `@theme` overrides their values at runtime via CSS variables, but the compiler already knows the classes exist. Custom names we invented (`font-roboto`, `font-diatype`, `font-lemon`) don't exist in Tailwind's base, so the compiler rejects them. This is not about how the font arrives (Google CDN vs bundled woff2 vs system) -- it's about whether the utility name is built-in or custom.
+
+Currently only `font-roboto` is used in scoped `@apply` (TermsDocument and TermsComponent). But `font-diatype` and `font-lemon` would hit the same wall if anyone used them in a scoped style block.
+
+**Tailwind's documented preference hierarchy** (from their compatibility page):
+
+1. Best: don't use `@apply` in scoped styles at all -- put utility classes in templates. Tailwind's Vite plugin scans templates and generates the CSS. No scoped resolution needed.
+2. Good: use CSS variables directly -- `font-family: var(--font-roboto)` instead of `@apply font-roboto`. All `@theme` values are emitted as CSS custom properties on `:root`, available everywhere without `@reference`.
+3. Acceptable: use `@reference` pointing to your main CSS file instead of bare `"tailwindcss"`.
+
+**Option 1 -- Move the class to the template.** Put `font-roboto` in the `class=""` attribute on the HTML element instead of in `@apply`. This is the Tailwind team's ideal pattern. The tradeoff: TermsDocument currently groups text size, color, font, leading, and spacing together in `.myTerms` via `@apply`, which reads as a single design declaration. Moving just `font-roboto` out to the template splits that intent across two places.
+
+**Option 2 -- Use the CSS variable directly.** Replace `@apply font-roboto` with `font-family: var(--font-roboto)` in the scoped style. Plain CSS reading a variable, zero machinery, works everywhere. The tradeoff: mixing `@apply` shorthand with raw CSS in the same rule block. Slightly less uniform but totally functional.
+
+**Option 3 -- Switch `@reference` to point at our stylesheet.** Add a Node.js subpath import in package.json (`"#style.css": "./app/assets/css/style.css"`), then change all 9 components from `@reference "tailwindcss"` to `@reference "#style.css"`. This makes every custom utility available in every scoped style block. Vite aliases (`~/`, `@/`) do not work inside `@reference` -- the Tailwind plugin doesn't resolve them -- so a subpath import or relative path is required. The tradeoff: heavier compilation (Tailwind processes each component's style block against the full stylesheet) and a subpath import convention the team needs to know about. But it's the documented pattern for this exact situation.
+
+## Resolution: plain CSS for custom fonts, Tailwind for defaults
+
+Chose a simplified version of Option 2. The root insight: the custom named utilities (`--font-roboto`, `--font-diatype`, `--font-lemon`) in `@theme` were middlemen. They only existed to create Tailwind utility class names, and those names only worked in templates, not in scoped `@apply` (which is where `font-roboto` was actually used). Removing the middlemen and using plain CSS eliminates the problem entirely.
+
+Changes made:
+- Removed `--font-roboto`, `--font-diatype`, `--font-lemon` from `@theme` in style.css. Kept `--font-sans` and `--font-mono` (built-in names that Tailwind already knows).
+- TermsDocument.vue: replaced `font-roboto` in the `@apply` block with `font-family: "Roboto", sans-serif` as plain CSS on the next line.
+- TermsComponent.vue: replaced `font-roboto` in the template class attribute with `style="font-family: 'Roboto', sans-serif;"`.
+
+Build passes. `@reference "tailwindcss"` stays in all 9 components.
+
+**The rule going forward:** Tailwind's built-in font utilities (`font-sans`, `font-mono`) work everywhere -- in templates, in `@apply`, in scoped styles -- because Tailwind knows those names. Our `@theme` overrides change their values (Diatype Rounded for sans, Noto Sans Mono for mono) but the utility names are built-in. For one-off font choices (like setting the terms document in Roboto), use plain CSS: `font-family: "Roboto", sans-serif`. The browser knows the font because the Google Fonts `<link>` in nuxt.config.js loaded it. No Tailwind involvement needed.
+
+Example: to set a textarea in Noto Sans Mono, use `class="font-mono"` or `@apply font-mono` in a scoped style. This works because `font-mono` is built-in and `--font-mono` points at Noto Sans Mono via our `@theme` override.
+
+## Google Fonts URL fix (pre-existing bug)
+
+During visual testing, the terms document appeared in a denser, narrower font than expected -- the system sans-serif (Helvetica/SF Pro) instead of Roboto. This was not caused by the Tailwind migration.
+
+The Google Fonts CSS2 API was returning HTTP 400 for our font URL. The axis tuples must be sorted numerically, but our URL had them interleaved: `ital,wght@0,400;1,400;0,700;1,700` (ital 0, then ital 1, then back to ital 0). The API requires: `ital,wght@0,400;0,700;1,400;1,700` (all ital 0 values first, then all ital 1 values).
+
+This means all three linked fonts (Noto Sans, Noto Sans Mono, Roboto) were silently failing to load.
+
+Verified with Chrome DevTools (Elements > Computed > Rendered Fonts):
+- **Production** (cold3.cc/terms): rendering `.SF NS` (SF Pro, Apple's system font) from a local file. Roboto is not loading.
+- **Localhost**: rendering `Roboto-Regular` from a network resource (Google Fonts CDN). Roboto is loading correctly.
+
+Production was never showing Roboto -- it was showing SF Pro via the fallback stack. The visual difference between localhost and production was localhost being *correct*, not broken. We confirmed this by temporarily swapping in IBM Plex Sans (a visually distinctive font) to prove Google Fonts loading works, then switching back to Roboto.
+
+Fix: reordered all three font family axis tuples in nuxt.config.js to sorted order. Also removed the `&subset=latin,latin-ext` parameter, which is a CSS v1 API feature -- the CSS2 API handles subsetting automatically via `unicode-range` in the `@font-face` declarations it generates.
