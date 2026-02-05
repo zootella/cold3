@@ -471,6 +471,65 @@ This pattern works. There's no hydration plugin because state flows through Vue'
 
 Sources: [Pinia Nuxt docs](https://pinia.vuejs.org/ssr/nuxt.html)
 
+### Tailwind
+
+#### Researched upgrade
+
+This is actually a really interesting situation you've uncovered. Here's what's going on:
+
+**Cloudflare's `create` scaffolder gave you the legacy integration path.** `@nuxtjs/tailwindcss` v6.14 is a Tailwind v3 wrapper — it pins `tailwindcss 3.4.x` as its own dependency and manages Tailwind through PostCSS the v3 way (config file, content array, PostCSS plugin). It does not support Tailwind v4 at all. Issue #820 on that module's repo has been open since March 2024 asking for v4 support, with 45+ thumbs-up reactions, and it's still unresolved. The module appears to be effectively in maintenance mode for TW3.
+
+**Tailwind v4 on Nuxt is not bleeding edge — it's the officially recommended path.** Tailwind's own docs at tailwindcss.com/docs/guides/nuxtjs show *only* the v4 setup. It doesn't mention `@nuxtjs/tailwindcss` at all. The approach is:
+
+1. Install `tailwindcss` + `@tailwindcss/vite` directly
+2. Add the Vite plugin to `nuxt.config.ts`
+3. Create a CSS file with `@import "tailwindcss"`
+4. Register that CSS file in the Nuxt config
+
+That's it. No Nuxt module, no `tailwind.config.js`, no PostCSS config. The entire configuration model moves into CSS using `@theme {}` directives.
+
+This is also the path that Nuxt UI v3 took (which requires TW4 and explicitly conflicts with `@nuxtjs/tailwindcss`), and the path that nuxt-og-image v6 expects.
+
+**The migration itself is structurally simple but conceptually different.** Tailwind v4 is a CSS-first configuration model — your `tailwind.config.js` goes away and gets replaced by `@theme {}` blocks in your CSS. For a fresh project scaffolded two days ago, this is trivial since you probably have minimal custom theme configuration. The concrete steps would be:
+
+1. Remove `@nuxtjs/tailwindcss` from modules and dependencies
+2. `yarn add tailwindcss @tailwindcss/vite`
+3. Add the Vite plugin to nuxt.config.ts
+4. Create `app/assets/css/main.css` with `@import "tailwindcss"`
+5. Add that to `css: []` in nuxt.config
+6. Move any custom theme config from `tailwind.config.js` into `@theme {}` in your CSS
+7. Delete `tailwind.config.js`
+
+For a project that's two days old, this is a 15-minute change. The utility classes themselves are almost entirely backward compatible — you'll barely notice the difference in your templates. The big conceptual shift is that there's no more JS config file; everything lives in CSS.
+
+The community signal here is pretty clear: `@nuxtjs/tailwindcss` is the v3 legacy path, and the `@tailwindcss/vite` direct integration is where everyone on Nuxt 4 is landing. Cloudflare's scaffolder just hasn't caught up yet.
+
+#### Planning upgrade: Tailwind v4 + og-image v6
+
+The path is: Tailwind v4 first (unblocks og-image v6), then og-image v6 (fixes WASM on Workers).
+
+**Part 1: Tailwind v3 → v4**
+
+Remove `@nuxtjs/tailwindcss` entirely — it's the TW3 legacy wrapper and will never support v4. Replace with `tailwindcss` + `@tailwindcss/vite` as a Vite plugin registered in nuxt.config.js. This is the official Tailwind-recommended Nuxt integration and requires no Nuxt module.
+
+`tailwind.config.js` goes away. Its contents move into CSS: the forms plugin becomes `@plugin "@tailwindcss/forms"`, and the custom font families become `@theme {}` CSS variables. See Tailwind's v4 upgrade guide for the `@theme` syntax.
+
+`style.css` needs its directives updated: `@tailwind base/components/utilities` becomes `@import "tailwindcss"`. The `@font-face` blocks, `@layer` blocks, and `@apply` usages are TW4 compatible and stay as-is.
+
+The CSS file path moves from the `@nuxtjs/tailwindcss` module config into `configuration.css` in nuxt.config.js.
+
+Build and test locally — verify custom font utilities (`font-roboto`, `font-lemon`, etc.) still work.
+
+**Part 2: og-image v5 → v6**
+
+Install `nuxt-og-image@beta` plus its now-unbundled renderer deps (`satori`, `@resvg/resvg-wasm`).
+
+With TW4 installed directly as a project dependency, the `detectCssProvider` resolution bug (missing `{ try: true }` in `resolveModulePath`) should be moot — tailwindcss will be findable from the project root. If it still crashes, apply a pnpm patch to add `try: true`.
+
+The API rename: `defineOgImageComponent()` → `defineOgImage()` in both pages. Eject the NuxtSeo community template so it ships with our build. Check v6 migration guide for any config changes to `ogImage` in nuxt.config.js.
+
+Build, test locally, deploy, and test og-image rendering on production Cloudflare Workers — this is the real test since the WASM fix is the whole point of v6. (compatibility_date is already back to `2025-09-27`.)
+
 ### OG Image
 
 Dynamic OG image generation for social cards. This module has required the most maintenance due to version instability and heavy dependencies designed for both serverless and traditional Node environments.
@@ -1353,15 +1412,30 @@ Our og-image usage is minimal — good news for a beta migration:
 - No images embedded in OG cards
 - Config: Cloudflare KV cache (`OG_IMAGE_CACHE` binding), 20-minute TTL
 
-Steps:
+**Attempted v6 install — blocked by Tailwind v4 requirement**
 
-1. Revert compatibility_date back to `2025-09-27` (rollback didn't help, keep the fresh scaffold date)
-2. Install v6: `pnpm add nuxt-og-image@next` in site workspace
-3. Install renderer deps: `pnpm add satori @resvg/resvg-wasm` in site workspace
-4. In both pages, rename `defineOgImageComponent('NuxtSeo', {...})` → `defineOgImage('NuxtSeo', {...})`
-5. Eject the NuxtSeo template: `npx nuxt-og-image eject NuxtSeo` (copies it into our project as a `.satori.vue` file)
-6. Check if `ogImage` config in nuxt.config.js needs changes (runtimeCacheStorage, defaults)
-7. Try the migration CLI first: `npx nuxt-og-image migrate v6 --dry-run` to see what it wants to change
-8. Build, test locally, deploy, test og-image on production
+`pnpm add nuxt-og-image@beta` installed 6.0.0-beta.15 but `nuxt prepare` crashed immediately:
+
+```
+Cannot resolve module "tailwindcss" (from: site/)
+```
+
+v6's CSS provider detection requires `tailwindcss@^4.0.0`. We're on Tailwind v3 via `@nuxtjs/tailwindcss`. Reverted to v5.1.13.
+
+Tailwind v3 → v4 is a major migration of its own: config file replaced by CSS-based `@theme` directives, `@tailwind` directives replaced by `@import "tailwindcss"`, forms plugin migration, 49 `@apply` usages across 11 files to audit. Not something to bolt on today.
+
+**Where we stand — the strategic question**
+
+This is all on branch `migrate1`. Main branch has everything working on Nuxt 3. The question is: switch to Nuxt 4 now, or wait?
+
+Nuxt 4 itself works — tests, builds, deploys, local dev, production smoke tests all pass. The only failure is og-image on Cloudflare Workers, but it creates a dependency chain:
+
+- og-image v5 → WASM broken on Workers with Nitro 2.13.1 (no fix planned for v5)
+- og-image v6 beta → requires Tailwind v4
+- Tailwind v4 → config rewrite, CSS restructure, forms plugin migration
+
+"Switch to Nuxt 4 now" actually means "Nuxt 4 + Tailwind v4 + og-image v6 beta" — three major migrations stacked, with the last two being beta/new. Waiting 6 months would likely bring: og-image v6 stable, Tailwind v4 ecosystem mature, `@nuxtjs/tailwindcss` with v4 support, and possibly a relaxed Tailwind v4 requirement.
+
+One open question: does og-image v6 truly *require* Tailwind v4, or is it just a CSS provider detection that can be disabled? If the latter, v6 might work on TW v3 with config.
 
 
