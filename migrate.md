@@ -1135,6 +1135,57 @@ All code and configuration changes from Phase 2 table (lines 729-741) are done:
 
 Ready for Phase 3: fix-a-thon. `pnpm install`, build, dev, test, deploy.
 
+**Phase 2 review corrections**
+
+First smoke test (`pnpm run seal`) revealed h3 v2 still exports `getQuery` and `readBody` — names didn't change. Corrected the imports (I had wrong info about renames to `getURLQuery`/`readJSON`).
+
+Code review of doorWorkerOpen vs doorLambdaOpen revealed a pattern violation: `door.requestMethod` was pinned to door before validation. The pattern is:
+- Local variable `requestMethod` for validation check
+- Only `door.method` gets pinned after validation passes
+- Include `requestMethod` in toss object: `{method, requestMethod, door}`
+
+Fixed to match Lambda's structure. Both functions now have aligned a/b/c sections:
+- (a) Create door, pin task
+- (b) Pin event objects from provider/framework
+- (c) Method validation, then GET/POST handling with security checks
+
+ac58486 PUI code changes for nuxt 4 in icarus
+
+**Version management with sem.yaml**
+
+Three version states for every package:
+
+| State | What it is | Example |
+|-------|-----------|---------|
+| **declared** | Semver range in package.json | `^2.39.8` |
+| **installed** | What's in lockfile/node_modules | `2.94.0` |
+| **latest** | Newest on npm | `2.94.1` |
+
+Two wash commands control how `pnpm install` resolves:
+
+- `wash && install` — keeps lockfile, restores same installed versions
+- `upgrade-wash && install` — removes lockfile, resolves fresh within declared ranges
+
+Neither changes declared. To update declared, manually edit package.json.
+
+For Nuxt 4 migration, fresh1 scaffolding provided "known good" declared versions. We copied them exactly:
+
+- **Pinned** (no caret): `@nuxtjs/tailwindcss: 6.14.0`, `@pinia/nuxt: 0.11.3`, `h3: 2.0.1-rc.11`, `nuxt-og-image: 5.1.13`
+- **Caret with minimum**: `nuxt: ^4.3.0`, `vue: ^3.5.27`, etc.
+
+sem.yaml makes version gaps visible. Diffing sem.yaml before/after changes shows exactly what moved. Non-Nuxt packages (like `@supabase/supabase-js`) weren't part of fresh1 alignment — their declared versions are stale but still valid within semver.
+
+**Goal: return to an upgradeable stack**
+
+The goal isn't just "switch to Nuxt 4." It's to return to a modern, healthy stack where `upgrade-wash && install` works without breaking things. A stack that can ride semver ranges forward, rather than a stale brittle one where more and more must be pinned, and things only work by following arcane versions baked into an old lockfile.
+
+Before Phase 3 smoke test, run `upgrade-wash && install && sem && seal && diff`. This:
+- Resolves fresh within declared ranges (no package.json changes)
+- Gets us on the latest compatible versions
+- sem.yaml diff shows what moved
+- seal verifies tests still pass
+- If something breaks, we want it to break on fresh versions, not stale lockfile artifacts
+
 
 
 
