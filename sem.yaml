@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 5 12:30 PM
+  generated: 2026 Feb 5 2:39 PM
   🕰️ Installed version 1+ year old:
     - fast-glob
     - is-mobile
@@ -109,6 +109,8 @@ modules:
     versions:
       declared: ^3.975.0 on 2026jan23 0m old
       installed: 3.983.0 on 2026feb04 0m old
+      current: 3.984.0 on 2026feb05 0m old
+      latest: 3.984.0 on 2026feb05 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -119,6 +121,8 @@ modules:
     versions:
       declared: ^3.983.0
       installed: 3.983.0 on 2026feb04 0m old
+      current: 3.984.0 on 2026feb05 0m old
+      latest: 3.984.0 on 2026feb05 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -129,6 +133,8 @@ modules:
     versions:
       declared: ^3.983.0
       installed: 3.983.0 on 2026feb04 0m old
+      current: 3.984.0 on 2026feb05 0m old
+      latest: 3.984.0 on 2026feb05 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -139,6 +145,8 @@ modules:
     versions:
       declared: ^3.975.0 on 2026jan23 0m old
       installed: 3.983.0 on 2026feb04 0m old
+      current: 3.984.0 on 2026feb05 0m old
+      latest: 3.984.0 on 2026feb05 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -189,8 +197,8 @@ modules:
     versions:
       declared: ^2.94.1
       installed: 2.94.1 on 2026feb04 0m old
-      current: 2.95.1 on 2026feb05 0m old
-      latest: 2.95.1 on 2026feb05 0m old
+      current: 2.95.2 on 2026feb05 0m old
+      latest: 2.95.2 on 2026feb05 0m old
     downloads:
       weekly: 9,033,555
       on: 2026feb4.1821.46960
@@ -374,7 +382,7 @@ modules:
       declared: ^16.4.7 on 2024dec03 14m old
       installed: 16.6.1 on 2025jun27 7m old
       current: 16.6.1 on 2025jun27 7m old
-      latest: 17.2.3 on 2025sep29 4m old 🎁 Major new version available
+      latest: 17.2.4 on 2026feb05 0m old 🎁 Major new version available
     downloads:
       weekly: 89,667,593
       on: 2026feb4.1821.46960
