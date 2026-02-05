@@ -105,7 +105,46 @@ Run `node sem.js` to generate `sem.yaml` with complete version analysis across a
 
 The script parses pnpm-lock.yaml (valid YAML, simpler than the old yarn.lock parsing) and fetches live data from the npm registry.
 
-## [4] Migration: Nuxt 4
+## [4] The Declared Version Gap
+
+In a project that's a year or two old, the declared versions in package.json become archaeological artifacts — the version when each dependency was added, not anything meaningful to the current project. Example from sem.yaml:
+
+```yaml
+"@supabase/supabase-js":
+  versions:
+    declared: ^2.39.8
+    installed: 2.94.1 on 2026feb04
+```
+
+The declared `^2.39.8` is a fossil from 2024. The project runs 2.94.1. That old version will never appear in any working tree again. Why does package.json still say it?
+
+**How the ecosystem ended up this way:**
+
+1. **Lockfiles changed everything.** npm originally had no lockfile — declared versions were your only reproducibility. Semver ranges (`^`, `~`) made sense because `npm install` would get compatible updates. Then lockfiles arrived (package-lock.json, yarn.lock, pnpm-lock.yaml), and declared versions became vestigial.
+
+2. **Declared versions became constraints, not requests.** With a lockfile, declared versions just set the floor. `^2.39.8` means "at least 2.39.8" but the lockfile decides what you actually get. Nobody looks at package.json for what's installed anymore.
+
+3. **No built-in "sync declared to installed" command.** npm/pnpm/yarn have `update` (bump installed within declared range) and `outdated` (show gaps), but no native "update declared to match installed."
+
+4. **Fear and toil.** Bumping declared versions feels risky and tedious. The lockfile works, ship it.
+
+**The standard tool: npm-check-updates (ncu)**
+
+```bash
+npx npm-check-updates        # shows what could be bumped
+npx npm-check-updates -u     # updates package.json declared versions
+```
+
+This is the de facto answer, but it's third-party, not built into npm/pnpm/yarn. Most teams don't run it regularly. Some automate it with Dependabot or Renovate, which open PRs to bump versions.
+
+**The philosophical split:**
+
+- **Camp A:** Declared versions should be the minimum known-good. Let semver ranges do their job. The lockfile handles reproducibility.
+- **Camp B:** Declared versions should reflect reality. If you're running 2.94.1, say `^2.94.1`. Stale declared versions are tech debt.
+
+Camp B is healthier. sem.yaml makes the gap visible — a future enhancement could generate ncu-style updates to close it.
+
+## [5] Migration: Nuxt 4
 
 Nuxt's official upgrade path is incremental: enable compatibility mode, run codemods, then upgrade. This section documents those tools as reference — they may be useful, but they're not necessarily our plan.
 
@@ -333,7 +372,7 @@ Site's nuxt.config has additional settings not in fresh1 (build.analyze, esbuild
 
 **main/assets question:** Fresh1's scaffold includes `"main": "./.output/server/index.mjs"` and `"assets": {...}`, but site omits them. Nitro overrides these at build time and warns if you set them manually. Site learned to omit them to avoid the warning. However, if Nuxt 4/Nitro's behavior changed, we might need to add them back. If deployment fails with "can't find entry point" or similar, check whether `main` needs to be explicitly set.
 
-## [5] Migration: Modules
+## [6] Migration: Modules
 
 ### nitro-cloudflare-dev
 
@@ -626,7 +665,7 @@ The site workspace has dependencies that aren't part of the fresh scaffold (they
 These packages don't interact with Nuxt's internals—they're Vue components or pure utilities. Test after migration; no preemptive changes needed.
 
 
-## [6] Migration: pnpm
+## [7] Migration: pnpm
 
 Migrating from Yarn Classic (1.x) to pnpm. The fresh scaffolds already use pnpm, so this aligns the monorepo with the target state.
 
@@ -702,7 +741,7 @@ The lockfile currently pins 5.1.12. After `pnpm import`, verify the resolved ver
 | `unstorage` | Test removing | nitropack/nuxt/walletconnect bring it |
 | `@tanstack/vue-query` | Keep | peer dep of wagmi but also used directly in code |
 
-## [7] Execution
+## [8] Execution
 
 ### Methodology: All At Once
 

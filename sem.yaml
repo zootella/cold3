@@ -1,10 +1,23 @@
 summary:
-  generated: 2026 Feb 4 7:41 PM
+  generated: 2026 Feb 5 11:19 AM
   🕰️ Installed version 1+ year old:
     - fast-glob
     - is-mobile
     - qrcode
     - serverless-offline
+  🏺 Declared release 1+ year earlier than installed:
+    - "@aws-sdk/client-ses"
+    - "@aws-sdk/client-sns"
+    - "@supabase/supabase-js"
+    - "@sveltejs/kit"
+    - credit-card-type
+    - fast-glob
+    - fs-extra
+    - libphonenumber-js
+    - ofetch
+    - serverless
+    - svelte
+    - twilio
   🎁 Major new version available:
     - "@sveltejs/adapter-auto"
     - "@sveltejs/vite-plugin-svelte"
@@ -97,7 +110,7 @@ modules:
     description: Authentication for SvelteKit.
     from: oauth
     versions:
-      declared: ^1.9.2
+      declared: ^1.9.2 on 2025may10 9m old
       installed: 1.11.1 on 2025oct26 3m old
     downloads:
       weekly: 44,327
@@ -107,10 +120,8 @@ modules:
     description: AWS SDK for JavaScript S3 Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.975.0
-      installed: 3.982.0 on 2026feb03 0m old
-      current: 3.983.0 on 2026feb04 0m old
-      latest: 3.983.0 on 2026feb04 0m old
+      declared: ^3.975.0 on 2026jan23 0m old
+      installed: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -119,10 +130,8 @@ modules:
     description: AWS SDK for JavaScript Ses Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.682.0
-      installed: 3.982.0 on 2026feb03 0m old
-      current: 3.983.0 on 2026feb04 0m old
-      latest: 3.983.0 on 2026feb04 0m old
+      declared: ^3.682.0 on 2024oct29 15m old
+      installed: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -131,10 +140,8 @@ modules:
     description: AWS SDK for JavaScript Sns Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.682.0
-      installed: 3.982.0 on 2026feb03 0m old
-      current: 3.983.0 on 2026feb04 0m old
-      latest: 3.983.0 on 2026feb04 0m old
+      declared: ^3.682.0 on 2024oct29 15m old
+      installed: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -143,10 +150,8 @@ modules:
     description: "[![NPM version](https://img.shields.io/npm/v/@aws-sdk/s3-request-presigner/latest.svg)](https://www.npmjs.com/package/@aws-sdk/s3-request-presigner) [![NPM downloads](https://img.shields.io/npm/dm/@aws-sdk/s3-request-presigner.svg)](https://www.npmjs.com/"
     from: net23
     versions:
-      declared: ^3.975.0
-      installed: 3.982.0 on 2026feb03 0m old
-      current: 3.983.0 on 2026feb04 0m old
-      latest: 3.983.0 on 2026feb04 0m old
+      declared: ^3.975.0 on 2026jan23 0m old
+      installed: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -155,10 +160,8 @@ modules:
     description: PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3.7mb gzipped.
     from: root
     versions:
-      declared: ^0.3.14
-      installed: 0.3.14 on 2025nov06 3m old 🐣 Pre-1.0 version installed
-      current: 0.3.15 on 2026jan15 1m old
-      latest: 0.3.15 on 2026jan15 1m old
+      declared: ^0.3.14 on 2025nov06 3m old
+      installed: 0.3.15 on 2026jan15 1m old 🐣 Pre-1.0 version installed
     downloads:
       weekly: 4,678,176
       on: 2026feb4.1821.46960
@@ -187,7 +190,7 @@ modules:
     description: Twilio SendGrid NodeJS mail service
     from: net23
     versions:
-      declared: ^8.1.4
+      declared: ^8.1.4 on 2024oct17 16m old
       installed: 8.1.6 on 2025sep19 5m old
     downloads:
       weekly: 2,857,956
@@ -197,10 +200,10 @@ modules:
     description: Isomorphic Javascript SDK for Supabase
     from: icarus
     versions:
-      declared: ^2.39.8
-      installed: 2.94.0 on 2026feb03 0m old
-      current: 2.94.1 on 2026feb04 0m old
-      latest: 2.94.1 on 2026feb04 0m old
+      declared: ^2.39.8 on 2024mar12 23m old
+      installed: 2.94.1 on 2026feb04 0m old
+      current: 2.95.1 on 2026feb05 0m old
+      latest: 2.95.1 on 2026feb05 0m old
     downloads:
       weekly: 9,033,555
       on: 2026feb4.1821.46960
@@ -209,7 +212,7 @@ modules:
     description: Automatically chooses the SvelteKit adapter for your current environment, if possible.
     from: oauth
     versions:
-      declared: ^6.0.0
+      declared: ^6.0.0 on 2025apr02 10m old
       installed: 6.1.1 on 2025oct02 4m old
       current: 6.1.1 on 2025oct02 4m old
       latest: 7.0.0 on 2025oct16 4m old 🎁 Major new version available
@@ -221,7 +224,7 @@ modules:
     description: Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages
     from: oauth
     versions:
-      declared: ^7.0.4
+      declared: ^7.0.4 on 2025jun09 8m old
       installed: 7.2.6 on 2026jan23 0m old
     downloads:
       weekly: 82,257
@@ -231,7 +234,7 @@ modules:
     description: SvelteKit is the fastest way to build Svelte apps
     from: oauth
     versions:
-      declared: ^2.16.0
+      declared: ^2.16.0 on 2025jan17 13m old
       installed: 2.50.2 on 2026feb02 0m old
     downloads:
       weekly: 876,575
@@ -241,7 +244,7 @@ modules:
     description: The official [Svelte](https://svelte.dev) plugin for [Vite](https://vitejs.dev).
     from: oauth
     versions:
-      declared: ^5.0.0
+      declared: ^5.0.0 on 2024nov26 14m old
       installed: 5.1.1 on 2025jul11 7m old
       current: 5.1.1 on 2025jul11 7m old
       latest: 6.2.4 on 2026jan09 1m old 🎁 Major new version available
@@ -253,7 +256,7 @@ modules:
     description: A plugin that provides a basic reset for form styles that makes form elements easy to override with utilities.
     from: site
     versions:
-      declared: ^0.5.10
+      declared: ^0.5.10 on 2025jan07 13m old
       installed: 0.5.11 on 2025dec17 2m old 🐣 Pre-1.0 version installed
     downloads:
       weekly: 2,680,926
@@ -263,7 +266,7 @@ modules:
     description: Hooks for managing, caching and syncing asynchronous and remote data in Vue
     from: site
     versions:
-      declared: ^5.87.1
+      declared: ^5.87.1 on 2025sep05 5m old
       installed: 5.92.9 on 2026jan23 0m old
     downloads:
       weekly: 385,669
@@ -309,7 +312,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.1.0
+      declared: ^5.1.0 on 2025dec02 2m old
       installed: 5.1.1 on 2026feb03 0m old
     downloads:
       weekly: 381,907
@@ -319,7 +322,7 @@ modules:
     description: "[![CI Status](https://github.com/vercel/nft/actions/workflows/ci.yml/badge.svg)](https://github.com/vercel/nft/actions/workflows/ci.yml)"
     from: net23
     versions:
-      declared: ^0.29.2
+      declared: ^0.29.2 on 2025feb20 11m old
       installed: 0.29.4 on 2025may30 8m old 🐣 Pre-1.0 version installed
       current: 0.29.4 on 2025may30 8m old
       latest: 1.3.0 on 2026jan21 0m old 🎁 Major new version available
@@ -331,7 +334,7 @@ modules:
     description: The official plugin for Vue SFC support in Vite.
     from: icarus
     versions:
-      declared: ^5.0.4
+      declared: ^5.0.4 on 2024feb09 24m old
       installed: 5.2.4 on 2025may09 9m old
       current: 5.2.4 on 2025may09 9m old
       latest: 6.0.4 on 2026feb02 0m old 🎁 Major new version available
@@ -345,7 +348,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.9.9
+      declared: ^5.9.9 on 2025aug29 5m old
       installed: 5.11.2 on 2025sep25 4m old
       current: 5.11.2 on 2025sep25 4m old
       latest: 7.1.6 on 2026feb01 0m old 🎁 Major new version available
@@ -359,7 +362,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^2.20.3
+      declared: ^2.20.3 on 2025aug29 5m old
       installed: 2.22.1 on 2025oct14 4m old
       current: 2.22.1 on 2025oct14 4m old
       latest: 3.3.2 on 2026feb01 0m old 🎁 Major new version available
@@ -371,7 +374,7 @@ modules:
     description: A library for determining credit card type
     from: icarus
     versions:
-      declared: ^10.0.0
+      declared: ^10.0.0 on 2023nov07 27m old
       installed: 10.1.2 on 2026jan28 0m old
     downloads:
       weekly: 1,258,798
@@ -381,7 +384,7 @@ modules:
     description: Loads environment variables from .env file
     from: root
     versions:
-      declared: ^16.4.7
+      declared: ^16.4.7 on 2024dec03 14m old
       installed: 16.6.1 on 2025jun27 7m old
       current: 16.6.1 on 2025jun27 7m old
       latest: 17.2.3 on 2025sep29 4m old 🎁 Major new version available
@@ -393,7 +396,7 @@ modules:
     description: It's a very fast and efficient glob library for Node.js
     from: root
     versions:
-      declared: ^3.3.2
+      declared: ^3.3.2 on 2023nov06 27m old
       installed: 3.3.3 on 2025jan05 13m old 🕰️ Installed version 1+ year old
     downloads:
       weekly: 94,186,895
@@ -403,7 +406,7 @@ modules:
     description: fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.
     from: net23
     versions:
-      declared: ^11.2.0
+      declared: ^11.2.0 on 2023nov28 26m old
       installed: 11.3.3 on 2025dec18 2m old
     downloads:
       weekly: 140,054,511
@@ -417,6 +420,8 @@ modules:
     versions:
       declared: 2.0.1-rc.11
       installed: 2.0.1-rc.11 on 2026jan20 1m old 📌 Exact version pinned
+      current: 2.0.1-rc.11 on 2026jan20 1m old
+      latest: 2.0.1-rc.12 on 2026feb05 0m old
     downloads:
       weekly: 4,159,531
       on: 2026feb4.1821.46960
@@ -435,7 +440,7 @@ modules:
     description: A simpler (and smaller) rewrite of Google Android's libphonenumber library in javascript
     from: icarus
     versions:
-      declared: ^1.11.3
+      declared: ^1.11.3 on 2024jun05 20m old
       installed: 1.12.36 on 2026jan30 0m old
     downloads:
       weekly: 12,299,472
@@ -445,7 +450,7 @@ modules:
     description: A tiny (118 bytes), secure URL-friendly unique string ID generator
     from: root
     versions:
-      declared: ^5.1.5
+      declared: ^5.1.5 on 2025mar18 11m old
       installed: 5.1.6 on 2025sep22 4m old
     downloads:
       weekly: 94,895,352
@@ -495,7 +500,7 @@ modules:
     description: A better fetch API. Works on node, browser and workers.
     from: icarus
     versions:
-      declared: ^1.4.1
+      declared: ^1.4.1 on 2024oct08 16m old
       installed: 1.5.1 on 2025nov01 3m old
     downloads:
       weekly: 3,791,474
@@ -505,10 +510,8 @@ modules:
     description: One Time Password (HOTP/TOTP) library for Node.js, Deno, Bun and browsers
     from: root
     versions:
-      declared: ^9.4.1
-      installed: 9.4.1 on 2025aug12 6m old
-      current: 9.5.0 on 2026feb04 0m old
-      latest: 9.5.0 on 2026feb04 0m old
+      declared: ^9.4.1 on 2025aug12 6m old
+      installed: 9.5.0 on 2026feb04 0m old
     downloads:
       weekly: 906,306
       on: 2026feb4.1821.46960
@@ -541,6 +544,8 @@ modules:
     versions:
       declared: ^7.7.3
       installed: 7.7.3 on 2025oct07 4m old
+      current: 7.7.4 on 2026feb05 0m old
+      latest: 7.7.4 on 2026feb05 0m old
     downloads:
       weekly: 514,720,390
       on: 2026feb4.1821.46960
@@ -549,7 +554,7 @@ modules:
     description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
     from: net23
     versions:
-      declared: ^4.4.11
+      declared: ^4.4.11 on 2024nov19 15m old
       installed: 4.31.2 on 2026jan27 0m old
     downloads:
       weekly: 1,185,950
@@ -559,7 +564,7 @@ modules:
     description: Emulate AWS λ and API Gateway locally when developing your Serverless project
     from: net23
     versions:
-      declared: ^14.3.4
+      declared: ^14.3.4 on 2024nov06 15m old
       installed: 14.4.0 on 2024dec09 14m old 🕰️ Installed version 1+ year old
     downloads:
       weekly: 561,989
@@ -569,7 +574,7 @@ modules:
     description: High performance Node.js image processing, the fastest module to resize JPEG, PNG, WebP, GIF, AVIF and TIFF images
     from: net23
     versions:
-      declared: ^0.34.4
+      declared: ^0.34.4 on 2025sep17 5m old
       installed: 0.34.5 on 2025nov06 3m old 🐣 Pre-1.0 version installed
     downloads:
       weekly: 35,411,185
@@ -579,10 +584,8 @@ modules:
     description: Cybernetically enhanced web apps
     from: oauth
     versions:
-      declared: ^5.0.0
-      installed: 5.49.1 on 2026jan30 0m old
-      current: 5.49.2 on 2026feb04 0m old
-      latest: 5.49.2 on 2026feb04 0m old
+      declared: ^5.0.0 on 2024oct19 16m old
+      installed: 5.49.2 on 2026feb04 0m old
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
@@ -591,8 +594,10 @@ modules:
     description: A Twilio helper library
     from: net23
     versions:
-      declared: ^5.3.5
+      declared: ^5.3.5 on 2024oct24 15m old
       installed: 5.12.0 on 2026jan22 0m old
+      current: 5.12.1 on 2026feb05 0m old
+      latest: 5.12.1 on 2026feb05 0m old
     downloads:
       weekly: 2,767,196
       on: 2026feb4.1825.16236
@@ -625,7 +630,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^2.37.3
+      declared: ^2.37.3 on 2025sep04 5m old
       installed: 2.45.1 on 2026jan29 0m old
     downloads:
       weekly: 2,639,619
@@ -637,7 +642,7 @@ modules:
       - icarus
       - oauth
     versions:
-      declared: ^6.2.6
+      declared: ^6.2.6 on 2025apr10 10m old
       installed: 6.4.1 on 2025oct20 4m old
       current: 6.4.1 on 2025oct20 4m old
       latest: 7.3.1 on 2026jan07 1m old 🎁 Major new version available
@@ -679,6 +684,8 @@ modules:
     versions:
       declared: ^4.62.0
       installed: 4.62.0 on 2026feb03 0m old
+      current: 4.63.0 on 2026feb05 0m old
+      latest: 4.63.0 on 2026feb05 0m old
     downloads:
       weekly: 3,405,027
       on: 2026feb4.1829.44951
@@ -697,7 +704,7 @@ modules:
     description: TypeScript-first schema declaration and validation library with static type inference
     from: icarus
     versions:
-      declared: ^3.25.74
+      declared: ^3.25.74 on 2025jul04 7m old
       installed: 3.25.76 on 2025jul08 7m old
       current: 3.25.76 on 2025jul08 7m old
       latest: 4.3.6 on 2026jan22 0m old 🎁 Major new version available

@@ -6,8 +6,54 @@ import {
 log, look, commas, takeNumerals, toss, Now, sayWhenPage, sayDate, tickToText, textToTick, Time,
 } from 'icarus'
 
+/*
+sem.js — version analysis for all workspaces in the monorepo
+Reads every package.json and pnpm-lock.yaml, fetches live data from npm, writes sem.yaml.
+Each module gets flagged with notes. Here's what they mean and what to do:
+
+🕰️ Installed version 1+ year old
+   Two very different situations with the same signal. A stable utility like is-mobile
+   sitting at 5.0.0 for 16 months is probably done — fine. A dev tool like serverless-offline
+   at 14.4.0 for 14 months is probably expiring — they've moved on. Look and decide which.
+
+🏺 Declared release 1+ year earlier than installed
+   The version in package.json is an archaeological artifact. You declared ^2.39.8 but you're
+   running 2.94.1 — that old version will never appear again. Action: bump the declared version
+   forward in package.json. Mechanical, low risk, just closing the gap. (ncu does this.)
+
+⏰ Current version 6+ months newer
+   There's a newer version within your declared semver range that you're not running. Your
+   lockfile is holding you back. Action: upgrade-wash && install to resolve fresh.
+
+🎁 Major new version available
+   Breaking changes, intentional decision required. Some major bumps are trivial (dotenv 16→17),
+   others are real work (wagmi 2→3, zod 3→4). Action: evaluate the changelog, test, upgrade.
+
+🩸 Latest tag is behind installed
+   You're on a version newer than what npm calls "latest" — typically because you installed from
+   a @next or prerelease tag. They already made the version you're running; the question is
+   whether they'll promote it to stable, or you're riding a prerelease channel indefinitely.
+   Action: watch the project, decide if you're comfortable on that channel.
+
+🐣 Pre-1.0 version installed
+   No semver stability guarantee — minor versions can contain breaking changes. For some packages
+   this is genuinely early (pglite 0.3.x), for others it's just convention (sharp 0.34.x, 35M
+   weekly downloads, been pre-1.0 for a decade). Action: know that semver minor = breaking for
+   these packages.
+
+📌 Exact version pinned
+   No caret or tilde — you won't get patches automatically. Usually intentional: matching a
+   scaffold's known-good version, or avoiding a specific broken release. Action: check
+   periodically whether the pin is still needed, especially after scaffolding updates.
+
+🪦 Installed version marked deprecated on npm
+   The maintainer is telling you to stop using this version. Action: look for the recommended
+   replacement or upgrade path.
+*/
+
 // Note constants
 const note_old_installed = '🕰️ Installed version 1+ year old'
+const note_old_declared = '🏺 Declared release 1+ year earlier than installed'
 const note_stale_current = '⏰ Current version 6+ months newer'
 const note_major_available = '🎁 Major new version available'
 const note_latest_behind = '🩸 Latest tag is behind installed'
@@ -225,6 +271,20 @@ async function main() {
 			m.description = npm.description
 			m.homepage = npm.homepage
 			m.deprecated = npm.versionsData[m.installed]?.deprecated || null
+
+			// Get the base version from declared semver to show when it was released
+			let declaredBase = semver.minVersion(m.semver)
+			if (declaredBase) {
+				m.declaredTime = npm.time[declaredBase.version]
+				if (m.declaredTime) {
+					let tick = new Date(m.declaredTime).getTime()
+					let ageMonths = Math.round((today - tick) / Time.month)
+					m.declaredAge = `on ${sayDate(tick)} ${ageMonths}m old`
+				} else {
+					// Version specified in package.json doesn't exist on npm
+					m.declaredAge = `⚠️ ${declaredBase.version} not found on npm`
+				}
+			}
 		}
 		m.downloads = downloadsData.get(m.name) || null
 	}
@@ -236,6 +296,7 @@ async function main() {
 	let output = {}
 	let summary = {
 		[note_old_installed]: [],
+		[note_old_declared]: [],
 		[note_stale_current]: [],
 		[note_major_available]: [],
 		[note_latest_behind]: [],
@@ -256,6 +317,15 @@ async function main() {
 		if (isMoreThan1YearOld(m.installedTime)) {
 			installedNote += ' ' + note_old_installed
 			summary[note_old_installed].push(m.name)
+		}
+		if (m.declaredTime && m.installedTime && !isMajorVersionHigher(m.installed, m.latest)) {
+			// Check if declared is more than 1 year older than installed (and no major version jump)
+			let declaredDate = new Date(m.declaredTime)
+			let oneYearLater = new Date(declaredDate)
+			oneYearLater.setFullYear(oneYearLater.getFullYear() + 1)
+			if (new Date(m.installedTime) > oneYearLater) {
+				summary[note_old_declared].push(m.name)
+			}
 		}
 		if (m.installed && semver.major(m.installed) === 0) {
 			installedNote += ' ' + note_version_zero
@@ -282,13 +352,18 @@ async function main() {
 			summary[note_latest_behind].push(m.name)
 		}
 
+		// Format declared with date if available and different from installed
+		let declaredWithDate = m.declaredAge && m.installed !== semver.minVersion(m.semver)?.version
+			? `${m.semver} ${m.declaredAge}`
+			: m.semver
+
 		output[m.name] = {
 			homepage: m.homepage || null,
 			description: m.description || null,
 			from: m.sources.length === 1 ? m.sources[0] : m.sources,
 			versions: allSame
-			? { declared: m.semver, installed: m.installedLine + installedNote + currentNote + latestNote }
-			: { declared: m.semver, installed: m.installedLine + installedNote, current: m.currentLine + currentNote, latest: m.latestLine + latestNote },
+			? { declared: declaredWithDate, installed: m.installedLine + installedNote + currentNote + latestNote }
+			: { declared: declaredWithDate, installed: m.installedLine + installedNote, current: m.currentLine + currentNote, latest: m.latestLine + latestNote },
 			downloads: m.downloads ? {weekly: commas(m.downloads.weekly), on: tickToText(m.downloads.on)} : {weekly: null, on: null},
 		}
 	}

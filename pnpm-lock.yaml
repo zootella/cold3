@@ -14,7 +14,7 @@ importers:
     devDependencies:
       '@electric-sql/pglite':
         specifier: ^0.3.14
-        version: 0.3.14
+        version: 0.3.15
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
@@ -26,7 +26,7 @@ importers:
         version: 5.1.6
       otpauth:
         specifier: ^9.4.1
-        version: 9.4.1
+        version: 9.5.0
       semver:
         specifier: ^7.7.3
         version: 7.7.3
@@ -38,7 +38,7 @@ importers:
     dependencies:
       '@supabase/supabase-js':
         specifier: ^2.39.8
-        version: 2.94.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+        version: 2.94.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@uppy/aws-s3':
         specifier: ^5.1.0
         version: 5.1.0(@uppy/core@5.2.0)
@@ -50,7 +50,7 @@ importers:
         version: 5.1.1(@uppy/core@5.2.0)
       '@wagmi/connectors':
         specifier: ^5.9.9
-        version: 5.11.2(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)))(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
+        version: 5.11.2(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)))(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
       '@wagmi/core':
         specifier: ^2.20.3
         version: 2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76))
@@ -109,16 +109,16 @@ importers:
     devDependencies:
       '@aws-sdk/client-s3':
         specifier: ^3.975.0
-        version: 3.982.0
+        version: 3.983.0
       '@aws-sdk/client-ses':
         specifier: ^3.682.0
-        version: 3.982.0
+        version: 3.983.0
       '@aws-sdk/client-sns':
         specifier: ^3.682.0
-        version: 3.982.0
+        version: 3.983.0
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.975.0
-        version: 3.982.0
+        version: 3.983.0
       '@vercel/nft':
         specifier: ^0.29.2
         version: 0.29.4(rollup@4.57.1)
@@ -136,41 +136,41 @@ importers:
     dependencies:
       '@auth/sveltekit':
         specifier: ^1.9.2
-        version: 1.11.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)
+        version: 1.11.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)
       icarus:
         specifier: workspace:*
         version: link:../icarus
     devDependencies:
       '@sveltejs/adapter-auto':
         specifier: ^6.0.0
-        version: 6.1.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))
+        version: 6.1.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))
       '@sveltejs/adapter-cloudflare':
         specifier: ^7.0.4
-        version: 7.2.6(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(wrangler@4.62.0(@cloudflare/workers-types@4.20260203.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
+        version: 7.2.6(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(wrangler@4.62.0(@cloudflare/workers-types@4.20260205.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
       '@sveltejs/kit':
         specifier: ^2.16.0
-        version: 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@sveltejs/vite-plugin-svelte':
         specifier: ^5.0.0
-        version: 5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+        version: 5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       svelte:
         specifier: ^5.0.0
-        version: 5.49.1
+        version: 5.49.2
       vite:
         specifier: ^6.2.6
         version: 6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       wrangler:
         specifier: ^4.62.0
-        version: 4.62.0(@cloudflare/workers-types@4.20260203.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+        version: 4.62.0(@cloudflare/workers-types@4.20260205.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
 
   site:
     dependencies:
       '@nuxtjs/tailwindcss':
         specifier: 6.14.0
-        version: 6.14.0(magicast@0.5.1)(tsx@4.21.0)(yaml@2.8.2)
+        version: 6.14.0(magicast@0.5.2)(tsx@4.21.0)(yaml@2.8.2)
       '@pinia/nuxt':
         specifier: 0.11.3
-        version: 0.11.3(magicast@0.5.1)(pinia@3.0.4(vue@3.5.27))
+        version: 0.11.3(magicast@0.5.2)(pinia@3.0.4(vue@3.5.27))
       '@tanstack/vue-query':
         specifier: ^5.87.1
         version: 5.92.9(vue@3.5.27)
@@ -188,7 +188,7 @@ importers:
         version: 5.1.1(@uppy/core@5.2.0)
       '@wagmi/connectors':
         specifier: ^5.9.9
-        version: 5.11.2(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
+        version: 5.11.2(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)
       '@wagmi/core':
         specifier: ^2.20.3
         version: 2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
@@ -197,10 +197,10 @@ importers:
         version: link:../icarus
       nuxt:
         specifier: ^4.3.0
-        version: 4.3.0(@electric-sql/pglite@0.3.14)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2)
+        version: 4.3.0(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2)
       nuxt-og-image:
         specifier: 5.1.13
-        version: 5.1.13(@unhead/vue@2.1.2(vue@3.5.27))(magicast@0.5.1)(unstorage@1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2))(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
+        version: 5.1.13(@unhead/vue@2.1.2(vue@3.5.27))(magicast@0.5.2)(unstorage@1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2))(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
       pinia:
         specifier: ^3.0.4
         version: 3.0.4(vue@3.5.27)
@@ -209,7 +209,7 @@ importers:
         version: 1.5.4
       unstorage:
         specifier: ^1.17.4
-        version: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)
+        version: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)
       vidstack:
         specifier: ^1.12.13
         version: 1.12.13
@@ -234,10 +234,10 @@ importers:
         version: 0.2.2
       nitropack:
         specifier: ^2.13.1
-        version: 2.13.1(@electric-sql/pglite@0.3.14)(idb-keyval@6.2.2)(xml2js@0.6.2)
+        version: 2.13.1(@electric-sql/pglite@0.3.15)(idb-keyval@6.2.2)(xml2js@0.6.2)
       wrangler:
         specifier: ^4.62.0
-        version: 4.62.0(@cloudflare/workers-types@4.20260203.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+        version: 4.62.0(@cloudflare/workers-types@4.20260205.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
 
 packages:
 
@@ -301,20 +301,20 @@ packages:
   '@aws-crypto/util@5.2.0':
     resolution: {integrity: sha512-4RkU9EsI6ZpBve5fseQlGNUWKMa1RLPQ1dnjnQoe07ldfIzcsGb5hC5W0Dm7u423KWzawlrpbjXBrXCEv9zazQ==}
 
-  '@aws-sdk/client-lambda@3.982.0':
-    resolution: {integrity: sha512-Q45Y2Rztn7NUQzaLxJ4bER01tYIVueKjxn66m4g6xhdHSwHY/4G8XavIdwv2NUTkob/Ge8iUQY8waXXXd0t6AA==}
+  '@aws-sdk/client-lambda@3.983.0':
+    resolution: {integrity: sha512-wBXiBuenyPZvhtRCWAROw5aQ1K5VWMeUIqCvufa3COt6CdIkRG1exUCBbLgRr9yBfELxD2OOiYlFeH1lE5E5kg==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.982.0':
-    resolution: {integrity: sha512-k0ANYAtPiON9BwLXcDgJXkmmCAGEuSk2pZOvrMej2kNhs3xTXoPshIUR5UMCD9apYiWtXJJfXMZSgaME+iWNaQ==}
+  '@aws-sdk/client-s3@3.983.0':
+    resolution: {integrity: sha512-V40PT2irPh3lj+Z95tZI6batVrjaTrWEOXRNVBuoZSgpM3Ak1jiE9ZXwVLkMcbb9/GH4xVpB3EsGM7gbxmgFLQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-ses@3.982.0':
-    resolution: {integrity: sha512-FMfZsrdevWomqEwLWaW5Jfq+8jRbROQe8sbEANVTNPYBfXvnd8TxPs/09h7TgFjtSB7hsjUv8Ja6IjeMV5HHPA==}
+  '@aws-sdk/client-ses@3.983.0':
+    resolution: {integrity: sha512-tmB78hti/Ito855k49iU7hGk7rqYSu7m0k6roOQZIhkJy73omkNzDoHpxuIy5OeZn4ii4JuoLqnU+i5dCKvhZw==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-sns@3.982.0':
-    resolution: {integrity: sha512-Awuz9NPy/OlnQ1xKIuQBP5Anxkp0aIQT9oh30gDUl0YniYKamDi5zqjrHpZStYPWehETmPSuiCcC+oh+5MVVFw==}
+  '@aws-sdk/client-sns@3.983.0':
+    resolution: {integrity: sha512-OdqioLVhV8mav8nj6eSbTeAySIHCEMKdq4O844UUbbQaOpTonfc+TwR3wr2lsRel7rdSEk42CK/CZrH8vtUVmg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-sso@3.982.0':
@@ -409,12 +409,12 @@ packages:
     resolution: {integrity: sha512-v4J8qYAWfOMcZ4MJUyatntOicTzEMaU7j3OpkRCGGFSL2NgXQ5VbxauIyORA+pxdKZ0qQG2tCQjQjZDlXEC3Ow==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/s3-request-presigner@3.982.0':
-    resolution: {integrity: sha512-18mEy26sW0lf6Z3UpIPHFQ08+p+Kfn/A7EE7lrCAiQcq4b5ueSkR9B0uurIZHFtb9UMjOPXVdYaetWpl//Oidw==}
+  '@aws-sdk/s3-request-presigner@3.983.0':
+    resolution: {integrity: sha512-O/PMdYcCVuBnOyuYglNvaNbh8RWMSE0zBwA8H6m+2VZbtLdALvyXgW5m6Q7wbnKdj+a4bJXh3AStDq6a82TA6Q==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/signature-v4-multi-region@3.982.0':
-    resolution: {integrity: sha512-AWqjMAH848aNwnLCtIKM3WO00eHuUoYVfQMP4ccrUHhnEduGOusVgdHQ5mLNQZZNZzREuBwnPPhIP55cy0gFSg==}
+  '@aws-sdk/signature-v4-multi-region@3.983.0':
+    resolution: {integrity: sha512-11FCcxI/WKRufKDdPgKPXtrhjDArhkOPb4mf66rICZUnPHlD8Cb7cjZZS/eFC+iuwoHBosrxo0hYsvK3s7DxGw==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/token-providers@3.982.0':
@@ -431,6 +431,10 @@ packages:
 
   '@aws-sdk/util-endpoints@3.982.0':
     resolution: {integrity: sha512-M27u8FJP7O0Of9hMWX5dipp//8iglmV9jr7R8SR8RveU+Z50/8TqH68Tu6wUWBGMfXjzbVwn1INIAO5lZrlxXQ==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/util-endpoints@3.983.0':
+    resolution: {integrity: sha512-t/VbL2X3gvDEjC4gdySOeFFOZGQEBKwa23pRHeB7hBLBZ119BB/2OEFtTFWKyp3bnMQgxpeVeGS7/hxk6wpKJw==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/util-format-url@3.972.3':
@@ -473,8 +477,8 @@ packages:
     resolution: {integrity: sha512-CGOfOJqWjg2qW/Mb6zNsDm+u5vFQ8DxXfbM09z69p5Z6+mE1ikP2jUXw+j42Pf1XTYED2Rni5f95npYeuwMDQA==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/generator@7.29.0':
-    resolution: {integrity: sha512-vSH118/wwM/pLR38g/Sgk05sNtro6TlTJKuiMXDaZqPUfjTFcudpCOt00IhOfj+1BFAX+UFAlzCU+6WXr3GLFQ==}
+  '@babel/generator@7.29.1':
+    resolution: {integrity: sha512-qsaF+9Qcm2Qv8SRIMMscAvG4O3lJ0F1GuMo5HR/Bp02LopNgnZBC/EkbevHFeGs4ls/oPz9v+Bsmzbkbe+0dUw==}
     engines: {node: '>=6.9.0'}
 
   '@babel/helper-annotate-as-pure@7.27.3':
@@ -649,8 +653,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@4.20260203.0':
-    resolution: {integrity: sha512-XD2uglpGbVppjXXLuAdalKkcTi/i4TyQSx0w/ijJbvrR1Cfm7zNkxtvFBNy3tBNxZOiFIJtw5bszifQB1eow6A==}
+  '@cloudflare/workers-types@4.20260205.0':
+    resolution: {integrity: sha512-LTnpvcodmiuMwxmbrO2Fd0+Avbm2UVLLJxT8J2pRWPfoM44gmbIecXwOPZmDAMeadKWrBsQ+B0sloQAhUu5fpA==}
 
   '@coinbase/wallet-sdk@3.9.3':
     resolution: {integrity: sha512-N/A2DRIf0Y3PHc1XAMvbBUu4zisna6qAdqABMZwBMNEfWrXpAwx16pZGkYCLGE+Rvv1edbcB2LYDRnACNcmCiw==}
@@ -686,8 +690,8 @@ packages:
     peerDependencies:
       '@noble/ciphers': ^1.0.0
 
-  '@electric-sql/pglite@0.3.14':
-    resolution: {integrity: sha512-3DB258dhqdsArOI1fIt7cb9RpUOgcDg5hXWVgVHAeqVQ/qxtFy605QKs4gx6mFq3jWsSPqDN8TgSEsqC3OfV9Q==}
+  '@electric-sql/pglite@0.3.15':
+    resolution: {integrity: sha512-Cj++n1Mekf9ETfdc16TlDi+cDDQF0W7EcbyRHYOAeZdsAe8M/FJg18itDTSwyHfar2WIezawM9o0EKaRGVKygQ==}
 
   '@emnapi/core@1.8.1':
     resolution: {integrity: sha512-AvT9QFpxK0Zd8J0jopedNm+w/2fIzvtPKPjqyw9jwvBaReTTqPBk9Hixaz7KbjimP+QNz605/XnjFcDAL2pqBg==}
@@ -1645,6 +1649,10 @@ packages:
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
     engines: {node: ^14.21.3 || >=16}
 
+  '@noble/hashes@2.0.1':
+    resolution: {integrity: sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw==}
+    engines: {node: '>= 20.19.0'}
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -2343,6 +2351,9 @@ packages:
   '@rolldown/pluginutils@1.0.0-rc.2':
     resolution: {integrity: sha512-izyXV/v+cHiRfozX62W9htOAvwMo4/bXKDrQ+vom1L1qRuexPock/7VZDAhnpHCLNejd3NJ6hiab+tO0D44Rgw==}
 
+  '@rolldown/pluginutils@1.0.0-rc.3':
+    resolution: {integrity: sha512-eybk3TjzzzV97Dlj5c+XrBFW57eTNhzod66y9HrBlzJ6NsCrWCp/2kaPS3K9wJmurBC0Tdw4yPjXKZqlznim3Q==}
+
   '@rollup/plugin-alias@6.0.0':
     resolution: {integrity: sha512-tPCzJOtS7uuVZd+xPhoy5W4vThe6KWXNmsFCNktaAh5RTqcLiSfT4huPQIXkgJ6YCOjJHvecOAzQxLFhPxKr+g==}
     engines: {node: '>=20.19.0'}
@@ -2840,28 +2851,28 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@supabase/auth-js@2.94.0':
-    resolution: {integrity: sha512-FPFx8DzEreSoLo2HVfwNY0p/uNQ9rONQp3VKw68UP8wg1YwXK5g+TM4d4U7LTGW4HqwG0rjUdQ1it7QPw09r2w==}
+  '@supabase/auth-js@2.94.1':
+    resolution: {integrity: sha512-Wt/SdmAtNNiqrcBbPlzWojLcE1bQ9OYb8PTaYF6QccFX5JeXZI0sZ01MLNE+E83UK6cK0lw4YznX0D2g08UQng==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/functions-js@2.94.0':
-    resolution: {integrity: sha512-DAbIptT7e7hAvYHp4FhRH+LxxvKQ38QGxjaFHLoDoeQBqDaAbP/iu74dLOn6PIAnSRAqUkN2bKGs3awzNzBgKA==}
+  '@supabase/functions-js@2.94.1':
+    resolution: {integrity: sha512-A7Bx0gnclDNZ4m8+mnO2IEEzMxtUSg7cpPEBF6Ek1LpjIQkC7vvoidiV/RuntnKX43IiVcWV1f2FsAppMagEmQ==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/postgrest-js@2.94.0':
-    resolution: {integrity: sha512-3YKoDJu8VxvlJdCe2U2edzSQ9uArR0OLM3A4eAsS4QnIqzs+HuY5ZnubeoWnn/zRNeTENMLSXXZHAeMBPkyXew==}
+  '@supabase/postgrest-js@2.94.1':
+    resolution: {integrity: sha512-N6MTghjHnMZddT48rAj8dIFgedCU97cc1ahQM74Tc+DF4UH7y2+iEfdYV3unJsylpaiWlu92Fy8Lj14Jbrmxog==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/realtime-js@2.94.0':
-    resolution: {integrity: sha512-TTPVttf4yMZTd0Jo65rIn4eyTAlI7XlwgB6OVEnne4Sz4VOddXPavEw4xRISOKJZ1n8ULLRz03hilMtqnj9gNg==}
+  '@supabase/realtime-js@2.94.1':
+    resolution: {integrity: sha512-Wq8olpCAGmN4y2DH2kUdlcakdzNHRCde72BFS8zK5ub46bBeSUoE9DqrfeNFWKaF2gCE/cmK8aTUTorZD9jdtQ==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/storage-js@2.94.0':
-    resolution: {integrity: sha512-wLdfqKqSfdDgGbLqgsT8ssEELBaHJm1xwiymq3cvVgxcbjRR6ECtUGtA1kj0JvX/F9DiARbrk/zkIsQ+OaUVBg==}
+  '@supabase/storage-js@2.94.1':
+    resolution: {integrity: sha512-/Mi18LGyrugPwtfqETfAqEGcBQotY/7IMsTGYgEFdqr8cQq280BVQWjN2wI9KibWtshPp0Ryvil5Uzd5YfM7kA==}
     engines: {node: '>=20.0.0'}
 
-  '@supabase/supabase-js@2.94.0':
-    resolution: {integrity: sha512-KcqoA3ITW++CwoyCFxwV10npzR6wMfjKbMz87Q1PSuLw26SmHFQjjbBLvuZpzOrPoQ67on5W55irFsK8e0BhWg==}
+  '@supabase/supabase-js@2.94.1':
+    resolution: {integrity: sha512-87vOY8n3WHB3m+a/KeySj07djOQVuRA5qgX5E7db1eDkaZ1of5M+3t/tv6eYYy4BfqxuHMZuCe5uVrO/oyvoow==}
     engines: {node: '>=20.0.0'}
 
   '@sveltejs/acorn-typescript@1.0.8':
@@ -4227,8 +4238,8 @@ packages:
     resolution: {integrity: sha512-EFd6afGmXlCx8H8WTZHhAoDaWaGyuIBoZJ2mknrNxug+aZKjkp0a0dlars9Izl+jF+7Gu1/5f/2h68cQpe0IiA==}
     hasBin: true
 
-  fastq@1.19.1:
-    resolution: {integrity: sha512-GwLTyxkCXjXbxqIhTsMI2Nui8huMPtnxg7krajPJAjnEG/iiOS7i+zCtWGZR9G0NBKbXKh6X9m9UIsYX/N6vvQ==}
+  fastq@1.20.1:
+    resolution: {integrity: sha512-GGToxJ/w1x32s/D2EKND7kTil4n8OVk/9mycTc4VDza13lOvpUZTGX3mFSCtV9ksdGBVzvsyAVLM6mHFThxXxw==}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -4937,8 +4948,8 @@ packages:
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
-  magicast@0.5.1:
-    resolution: {integrity: sha512-xrHS24IxaLrvuo613F719wvOIv9xPHFWQHuvGUBmPnCA/3MQxKI3b+r7n1jAoDHmsbC5bRhTZYR77invLAxVnw==}
+  magicast@0.5.2:
+    resolution: {integrity: sha512-E3ZJh4J3S9KfwdjZhe2afj6R9lGIN5Pher1pF39UGrXRqq/VDaGVIGN13BjHd2u8B61hArAGOnso7nBOouW3TQ==}
 
   marky@1.3.0:
     resolution: {integrity: sha512-ocnPZQLNpvbedwTy9kNrQEsknEfgvcLMvOtz3sFeWApDq1MXH1TqkCIx58xlpESsfwQOnuBO9beyQuNGzVvuhQ==}
@@ -5278,8 +5289,8 @@ packages:
   openapi-typescript-helpers@0.0.15:
     resolution: {integrity: sha512-opyTPaunsklCBpTK8JGef6mfPhLSnyy5a0IN9vKtx3+4aExf+KxEqYwIy3hqkedXIB97u357uLMJsOnm3GVjsw==}
 
-  otpauth@9.4.1:
-    resolution: {integrity: sha512-+iVvys36CFsyXEqfNftQm1II7SW23W1wx9RwNk0Cd97lbvorqAhBDksb/0bYry087QMxjiuBS0wokdoZ0iUeAw==}
+  otpauth@9.5.0:
+    resolution: {integrity: sha512-Ldhc6UYl4baR5toGr8nfKC+L/b8/RgHKoIixAebgoNGzUUCET02g04rMEZ2ZsPfeVQhMHcuaOgb28nwMr81zCA==}
 
   ox@0.11.3:
     resolution: {integrity: sha512-1bWYGk/xZel3xro3l8WGg6eq4YEKlaqvyMtVhfMFpbJzK2F6rj4EDRtqDCWVEJMkzcmEi9uW2QxsqELokOlarw==}
@@ -6272,8 +6283,8 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
-  svelte@5.49.1:
-    resolution: {integrity: sha512-jj95WnbKbXsXXngYj28a4zx8jeZx50CN/J4r0CEeax2pbfdsETv/J1K8V9Hbu3DCXnpHz5qAikICuxEooi7eNQ==}
+  svelte@5.49.2:
+    resolution: {integrity: sha512-PYLwnngYzyhKzqDlGVlCH4z+NVI8mC0/bTv15vw25CcdOhxENsOHIbQ36oj5DIf3oBazM+STbCAvaskpxtBmWA==}
     engines: {node: '>=18'}
 
   svgo@4.0.0:
@@ -7106,12 +7117,12 @@ snapshots:
       preact: 10.24.3
       preact-render-to-string: 6.5.11(preact@10.24.3)
 
-  '@auth/sveltekit@1.11.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)':
+  '@auth/sveltekit@1.11.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)':
     dependencies:
       '@auth/core': 0.41.1
-      '@sveltejs/kit': 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@sveltejs/kit': 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       set-cookie-parser: 2.7.2
-      svelte: 5.49.1
+      svelte: 5.49.2
 
   '@aws-crypto/crc32@5.2.0':
     dependencies:
@@ -7160,7 +7171,7 @@ snapshots:
       '@smithy/util-utf8': 2.3.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-lambda@3.982.0':
+  '@aws-sdk/client-lambda@3.983.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -7172,7 +7183,7 @@ snapshots:
       '@aws-sdk/middleware-user-agent': 3.972.6
       '@aws-sdk/region-config-resolver': 3.972.3
       '@aws-sdk/types': 3.973.1
-      '@aws-sdk/util-endpoints': 3.982.0
+      '@aws-sdk/util-endpoints': 3.983.0
       '@aws-sdk/util-user-agent-browser': 3.972.3
       '@aws-sdk/util-user-agent-node': 3.972.4
       '@smithy/config-resolver': 4.4.6
@@ -7209,7 +7220,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-s3@3.982.0':
+  '@aws-sdk/client-s3@3.983.0':
     dependencies:
       '@aws-crypto/sha1-browser': 5.2.0
       '@aws-crypto/sha256-browser': 5.2.0
@@ -7227,9 +7238,9 @@ snapshots:
       '@aws-sdk/middleware-ssec': 3.972.3
       '@aws-sdk/middleware-user-agent': 3.972.6
       '@aws-sdk/region-config-resolver': 3.972.3
-      '@aws-sdk/signature-v4-multi-region': 3.982.0
+      '@aws-sdk/signature-v4-multi-region': 3.983.0
       '@aws-sdk/types': 3.973.1
-      '@aws-sdk/util-endpoints': 3.982.0
+      '@aws-sdk/util-endpoints': 3.983.0
       '@aws-sdk/util-user-agent-browser': 3.972.3
       '@aws-sdk/util-user-agent-node': 3.972.4
       '@smithy/config-resolver': 4.4.6
@@ -7269,7 +7280,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-ses@3.982.0':
+  '@aws-sdk/client-ses@3.983.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -7281,7 +7292,7 @@ snapshots:
       '@aws-sdk/middleware-user-agent': 3.972.6
       '@aws-sdk/region-config-resolver': 3.972.3
       '@aws-sdk/types': 3.973.1
-      '@aws-sdk/util-endpoints': 3.982.0
+      '@aws-sdk/util-endpoints': 3.983.0
       '@aws-sdk/util-user-agent-browser': 3.972.3
       '@aws-sdk/util-user-agent-node': 3.972.4
       '@smithy/config-resolver': 4.4.6
@@ -7314,7 +7325,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-sns@3.982.0':
+  '@aws-sdk/client-sns@3.983.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -7326,7 +7337,7 @@ snapshots:
       '@aws-sdk/middleware-user-agent': 3.972.6
       '@aws-sdk/region-config-resolver': 3.972.3
       '@aws-sdk/types': 3.973.1
-      '@aws-sdk/util-endpoints': 3.982.0
+      '@aws-sdk/util-endpoints': 3.983.0
       '@aws-sdk/util-user-agent-browser': 3.972.3
       '@aws-sdk/util-user-agent-node': 3.972.4
       '@smithy/config-resolver': 4.4.6
@@ -7671,9 +7682,9 @@ snapshots:
       '@smithy/types': 4.12.0
       tslib: 2.8.1
 
-  '@aws-sdk/s3-request-presigner@3.982.0':
+  '@aws-sdk/s3-request-presigner@3.983.0':
     dependencies:
-      '@aws-sdk/signature-v4-multi-region': 3.982.0
+      '@aws-sdk/signature-v4-multi-region': 3.983.0
       '@aws-sdk/types': 3.973.1
       '@aws-sdk/util-format-url': 3.972.3
       '@smithy/middleware-endpoint': 4.4.13
@@ -7682,7 +7693,7 @@ snapshots:
       '@smithy/types': 4.12.0
       tslib: 2.8.1
 
-  '@aws-sdk/signature-v4-multi-region@3.982.0':
+  '@aws-sdk/signature-v4-multi-region@3.983.0':
     dependencies:
       '@aws-sdk/middleware-sdk-s3': 3.972.6
       '@aws-sdk/types': 3.973.1
@@ -7713,6 +7724,14 @@ snapshots:
       tslib: 2.8.1
 
   '@aws-sdk/util-endpoints@3.982.0':
+    dependencies:
+      '@aws-sdk/types': 3.973.1
+      '@smithy/types': 4.12.0
+      '@smithy/url-parser': 4.2.8
+      '@smithy/util-endpoints': 3.2.8
+      tslib: 2.8.1
+
+  '@aws-sdk/util-endpoints@3.983.0':
     dependencies:
       '@aws-sdk/types': 3.973.1
       '@smithy/types': 4.12.0
@@ -7765,7 +7784,7 @@ snapshots:
   '@babel/core@7.29.0':
     dependencies:
       '@babel/code-frame': 7.29.0
-      '@babel/generator': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/helper-compilation-targets': 7.28.6
       '@babel/helper-module-transforms': 7.28.6(@babel/core@7.29.0)
       '@babel/helpers': 7.28.6
@@ -7782,7 +7801,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/generator@7.29.0':
+  '@babel/generator@7.29.1':
     dependencies:
       '@babel/parser': 7.29.0
       '@babel/types': 7.29.0
@@ -7909,7 +7928,7 @@ snapshots:
   '@babel/traverse@7.29.0':
     dependencies:
       '@babel/code-frame': 7.29.0
-      '@babel/generator': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/helper-globals': 7.28.0
       '@babel/parser': 7.29.0
       '@babel/template': 7.28.6
@@ -8002,7 +8021,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260131.0':
     optional: true
 
-  '@cloudflare/workers-types@4.20260203.0': {}
+  '@cloudflare/workers-types@4.20260205.0': {}
 
   '@coinbase/wallet-sdk@3.9.3':
     dependencies:
@@ -8070,10 +8089,10 @@ snapshots:
     dependencies:
       postcss-selector-parser: 7.1.1
 
-  '@dxup/nuxt@0.3.2(magicast@0.5.1)':
+  '@dxup/nuxt@0.3.2(magicast@0.5.2)':
     dependencies:
       '@dxup/unimport': 0.1.2
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       chokidar: 5.0.0
       pathe: 2.0.3
       tinyglobby: 0.2.15
@@ -8086,7 +8105,7 @@ snapshots:
     dependencies:
       '@noble/ciphers': 1.3.0
 
-  '@electric-sql/pglite@0.3.14': {}
+  '@electric-sql/pglite@0.3.15': {}
 
   '@emnapi/core@1.8.1':
     dependencies:
@@ -8910,7 +8929,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.12
-      debug: 4.4.3
+      debug: 4.3.4
       pony-cause: 2.1.11
       semver: 7.7.3
       uuid: 9.0.1
@@ -8924,7 +8943,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.12
-      debug: 4.4.3
+      debug: 4.3.4
       pony-cause: 2.1.11
       semver: 7.7.3
       uuid: 9.0.1
@@ -8970,6 +8989,8 @@ snapshots:
 
   '@noble/hashes@1.8.0': {}
 
+  '@noble/hashes@2.0.1': {}
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -8980,13 +9001,13 @@ snapshots:
   '@nodelib/fs.walk@1.2.8':
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
-      fastq: 1.19.1
+      fastq: 1.20.1
 
-  '@nuxt/cli@3.32.0(cac@6.7.14)(magicast@0.5.1)':
+  '@nuxt/cli@3.32.0(cac@6.7.14)(magicast@0.5.2)':
     dependencies:
       '@bomb.sh/tab': 0.0.11(cac@6.7.14)(citty@0.1.6)
       '@clack/prompts': 1.0.0-alpha.9
-      c12: 3.3.3(magicast@0.5.1)
+      c12: 3.3.3(magicast@0.5.2)
       citty: 0.1.6
       confbox: 0.2.2
       consola: 3.4.2
@@ -9019,9 +9040,9 @@ snapshots:
 
   '@nuxt/devalue@2.0.2': {}
 
-  '@nuxt/devtools-kit@3.1.1(magicast@0.5.1)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@nuxt/devtools-kit@3.1.1(magicast@0.5.2)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       execa: 8.0.1
       vite: 7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
     transitivePeerDependencies:
@@ -9032,7 +9053,7 @@ snapshots:
       consola: 3.4.2
       diff: 8.0.3
       execa: 8.0.1
-      magicast: 0.5.1
+      magicast: 0.5.2
       pathe: 2.0.3
       pkg-types: 2.3.0
       prompts: 2.4.2
@@ -9040,9 +9061,9 @@ snapshots:
 
   '@nuxt/devtools@3.1.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)':
     dependencies:
-      '@nuxt/devtools-kit': 3.1.1(magicast@0.5.1)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@nuxt/devtools-kit': 3.1.1(magicast@0.5.2)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@nuxt/devtools-wizard': 3.1.1
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       '@vue/devtools-core': 8.0.6(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
       '@vue/devtools-kit': 8.0.6
       birpc: 2.9.0
@@ -9057,7 +9078,7 @@ snapshots:
       is-installed-globally: 1.0.0
       launch-editor: 2.12.0
       local-pkg: 1.1.2
-      magicast: 0.5.1
+      magicast: 0.5.2
       nypm: 0.6.4
       ohash: 2.0.11
       pathe: 2.0.3
@@ -9069,7 +9090,7 @@ snapshots:
       structured-clone-es: 1.0.0
       tinyglobby: 0.2.15
       vite: 7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-      vite-plugin-inspect: 11.3.3(@nuxt/kit@4.3.0(magicast@0.5.1))(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      vite-plugin-inspect: 11.3.3(@nuxt/kit@4.3.0(magicast@0.5.2))(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       vite-plugin-vue-tracer: 1.2.0(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
       which: 5.0.0
       ws: 8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -9079,9 +9100,9 @@ snapshots:
       - utf-8-validate
       - vue
 
-  '@nuxt/kit@3.21.0(magicast@0.5.1)':
+  '@nuxt/kit@3.21.0(magicast@0.5.2)':
     dependencies:
-      c12: 3.3.3(magicast@0.5.1)
+      c12: 3.3.3(magicast@0.5.2)
       consola: 3.4.2
       defu: 6.1.4
       destr: 2.0.5
@@ -9105,9 +9126,9 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@nuxt/kit@4.3.0(magicast@0.5.1)':
+  '@nuxt/kit@4.3.0(magicast@0.5.2)':
     dependencies:
-      c12: 3.3.3(magicast@0.5.1)
+      c12: 3.3.3(magicast@0.5.2)
       consola: 3.4.2
       defu: 6.1.4
       destr: 2.0.5
@@ -9130,10 +9151,10 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@nuxt/nitro-server@4.3.0(@electric-sql/pglite@0.3.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(nuxt@4.3.0(@electric-sql/pglite@0.3.14)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2))(xml2js@0.6.2)':
+  '@nuxt/nitro-server@4.3.0(@electric-sql/pglite@0.3.15)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(nuxt@4.3.0(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2))(xml2js@0.6.2)':
     dependencies:
       '@nuxt/devalue': 2.0.2
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       '@unhead/vue': 2.1.2(vue@3.5.27)
       '@vue/shared': 3.5.27
       consola: 3.4.2
@@ -9147,8 +9168,8 @@ snapshots:
       impound: 1.0.0
       klona: 2.0.6
       mocked-exports: 0.1.1
-      nitropack: 2.13.1(@electric-sql/pglite@0.3.14)(idb-keyval@6.2.2)(xml2js@0.6.2)
-      nuxt: 4.3.0(@electric-sql/pglite@0.3.14)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2)
+      nitropack: 2.13.1(@electric-sql/pglite@0.3.15)(idb-keyval@6.2.2)(xml2js@0.6.2)
+      nuxt: 4.3.0(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2)
       ohash: 2.0.11
       pathe: 2.0.3
       pkg-types: 2.3.0
@@ -9156,7 +9177,7 @@ snapshots:
       std-env: 3.10.0
       ufo: 1.6.3
       unctx: 2.5.0
-      unstorage: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)
+      unstorage: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)
       vue: 3.5.27
       vue-bundle-renderer: 2.2.0
       vue-devtools-stub: 0.1.0
@@ -9203,9 +9224,9 @@ snapshots:
       pkg-types: 2.3.0
       std-env: 3.10.0
 
-  '@nuxt/telemetry@2.6.6(magicast@0.5.1)':
+  '@nuxt/telemetry@2.6.6(magicast@0.5.2)':
     dependencies:
-      '@nuxt/kit': 3.21.0(magicast@0.5.1)
+      '@nuxt/kit': 3.21.0(magicast@0.5.2)
       citty: 0.1.6
       consola: 3.4.2
       destr: 2.0.5
@@ -9220,9 +9241,9 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  '@nuxt/vite-builder@4.3.0(@types/node@25.2.0)(magicast@0.5.1)(nuxt@4.3.0(@electric-sql/pglite@0.3.14)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2))(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(vue@3.5.27)(yaml@2.8.2)':
+  '@nuxt/vite-builder@4.3.0(@types/node@25.2.0)(magicast@0.5.2)(nuxt@4.3.0(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2))(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(vue@3.5.27)(yaml@2.8.2)':
     dependencies:
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       '@rollup/plugin-replace': 6.0.3(rollup@4.57.1)
       '@vitejs/plugin-vue': 6.0.4(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
       '@vitejs/plugin-vue-jsx': 5.1.4(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
@@ -9239,7 +9260,7 @@ snapshots:
       magic-string: 0.30.21
       mlly: 1.8.0
       mocked-exports: 0.1.1
-      nuxt: 4.3.0(@electric-sql/pglite@0.3.14)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2)
+      nuxt: 4.3.0(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2)
       pathe: 2.0.3
       pkg-types: 2.3.0
       postcss: 8.5.6
@@ -9278,11 +9299,11 @@ snapshots:
       - vue-tsc
       - yaml
 
-  '@nuxtjs/tailwindcss@6.14.0(magicast@0.5.1)(tsx@4.21.0)(yaml@2.8.2)':
+  '@nuxtjs/tailwindcss@6.14.0(magicast@0.5.2)(tsx@4.21.0)(yaml@2.8.2)':
     dependencies:
-      '@nuxt/kit': 3.21.0(magicast@0.5.1)
+      '@nuxt/kit': 3.21.0(magicast@0.5.2)
       autoprefixer: 10.4.24(postcss@8.5.6)
-      c12: 3.3.3(magicast@0.5.1)
+      c12: 3.3.3(magicast@0.5.2)
       consola: 3.4.2
       defu: 6.1.4
       h3: 1.15.5
@@ -9559,9 +9580,9 @@ snapshots:
 
   '@paulmillr/qr@0.2.1': {}
 
-  '@pinia/nuxt@0.11.3(magicast@0.5.1)(pinia@3.0.4(vue@3.5.27))':
+  '@pinia/nuxt@0.11.3(magicast@0.5.2)(pinia@3.0.4(vue@3.5.27))':
     dependencies:
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       pinia: 3.0.4(vue@3.5.27)
     transitivePeerDependencies:
       - magicast
@@ -9616,11 +9637,11 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-controllers@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@reown/appkit-controllers@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       valtio: 1.13.2(react@18.3.1)
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
     transitivePeerDependencies:
@@ -9651,11 +9672,11 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-controllers@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@reown/appkit-controllers@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       valtio: 1.13.2(react@18.3.1)
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
     transitivePeerDependencies:
@@ -9686,12 +9707,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-pay@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@reown/appkit-pay@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)
       lit: 3.3.0
       valtio: 1.13.2(react@18.3.1)
     transitivePeerDependencies:
@@ -9722,12 +9743,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-pay@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@reown/appkit-pay@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)
       lit: 3.3.0
       valtio: 1.13.2(react@18.3.1)
     transitivePeerDependencies:
@@ -9762,12 +9783,12 @@ snapshots:
     dependencies:
       buffer: 6.0.3
 
-  '@reown/appkit-scaffold-ui@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)':
+  '@reown/appkit-scaffold-ui@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       lit: 3.3.0
     transitivePeerDependencies:
@@ -9799,12 +9820,12 @@ snapshots:
       - valtio
       - zod
 
-  '@reown/appkit-scaffold-ui@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)':
+  '@reown/appkit-scaffold-ui@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       lit: 3.3.0
     transitivePeerDependencies:
@@ -9836,10 +9857,10 @@ snapshots:
       - valtio
       - zod
 
-  '@reown/appkit-ui@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@reown/appkit-ui@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       lit: 3.3.0
       qrcode: 1.5.3
@@ -9871,10 +9892,10 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-ui@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@reown/appkit-ui@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       lit: 3.3.0
       qrcode: 1.5.3
@@ -9906,14 +9927,14 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-utils@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)':
+  '@reown/appkit-utils@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-polyfills': 1.7.8
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@walletconnect/logger': 2.1.2
-      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       valtio: 1.13.2(react@18.3.1)
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
     transitivePeerDependencies:
@@ -9944,14 +9965,14 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit-utils@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)':
+  '@reown/appkit-utils@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@reown/appkit-polyfills': 1.7.8
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@walletconnect/logger': 2.1.2
-      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       valtio: 1.13.2(react@18.3.1)
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
     transitivePeerDependencies:
@@ -9993,18 +10014,18 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@reown/appkit@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@reown/appkit@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-pay': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-pay': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@reown/appkit-polyfills': 1.7.8
-      '@reown/appkit-scaffold-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)
-      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)
+      '@reown/appkit-scaffold-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)
+      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@3.25.76)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       bs58: 6.0.0
       valtio: 1.13.2(react@18.3.1)
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -10036,18 +10057,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@reown/appkit@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@reown/appkit@1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@reown/appkit-common': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-pay': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-controllers': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-pay': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@reown/appkit-polyfills': 1.7.8
-      '@reown/appkit-scaffold-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)
-      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)
+      '@reown/appkit-scaffold-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)
+      '@reown/appkit-ui': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit-utils': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(valtio@1.13.2(react@18.3.1))(zod@4.3.6)
       '@reown/appkit-wallet': 1.7.8(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/universal-provider': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       bs58: 6.0.0
       valtio: 1.13.2(react@18.3.1)
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -10133,6 +10154,8 @@ snapshots:
   '@resvg/resvg-wasm@2.6.2': {}
 
   '@rolldown/pluginutils@1.0.0-rc.2': {}
+
+  '@rolldown/pluginutils@1.0.0-rc.3': {}
 
   '@rollup/plugin-alias@6.0.0(rollup@4.57.1)':
     optionalDependencies:
@@ -10724,19 +10747,19 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@supabase/auth-js@2.94.0':
+  '@supabase/auth-js@2.94.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/functions-js@2.94.0':
+  '@supabase/functions-js@2.94.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/postgrest-js@2.94.0':
+  '@supabase/postgrest-js@2.94.1':
     dependencies:
       tslib: 2.8.1
 
-  '@supabase/realtime-js@2.94.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)':
+  '@supabase/realtime-js@2.94.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)':
     dependencies:
       '@types/phoenix': 1.6.7
       '@types/ws': 8.18.1
@@ -10746,18 +10769,18 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@supabase/storage-js@2.94.0':
+  '@supabase/storage-js@2.94.1':
     dependencies:
       iceberg-js: 0.8.1
       tslib: 2.8.1
 
-  '@supabase/supabase-js@2.94.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)':
+  '@supabase/supabase-js@2.94.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)':
     dependencies:
-      '@supabase/auth-js': 2.94.0
-      '@supabase/functions-js': 2.94.0
-      '@supabase/postgrest-js': 2.94.0
-      '@supabase/realtime-js': 2.94.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@supabase/storage-js': 2.94.0
+      '@supabase/auth-js': 2.94.1
+      '@supabase/functions-js': 2.94.1
+      '@supabase/postgrest-js': 2.94.1
+      '@supabase/realtime-js': 2.94.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      '@supabase/storage-js': 2.94.1
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -10766,22 +10789,22 @@ snapshots:
     dependencies:
       acorn: 8.15.0
 
-  '@sveltejs/adapter-auto@6.1.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))':
+  '@sveltejs/adapter-auto@6.1.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))':
     dependencies:
-      '@sveltejs/kit': 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@sveltejs/kit': 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
 
-  '@sveltejs/adapter-cloudflare@7.2.6(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(wrangler@4.62.0(@cloudflare/workers-types@4.20260203.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10))':
+  '@sveltejs/adapter-cloudflare@7.2.6(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(wrangler@4.62.0(@cloudflare/workers-types@4.20260205.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10))':
     dependencies:
-      '@cloudflare/workers-types': 4.20260203.0
-      '@sveltejs/kit': 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@cloudflare/workers-types': 4.20260205.0
+      '@sveltejs/kit': 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       worktop: 0.8.0-next.18
-      wrangler: 4.62.0(@cloudflare/workers-types@4.20260203.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      wrangler: 4.62.0(@cloudflare/workers-types@4.20260205.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10)
 
-  '@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@sveltejs/acorn-typescript': 1.0.8(acorn@8.15.0)
-      '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       '@types/cookie': 0.6.0
       acorn: 8.15.0
       cookie: 0.6.0
@@ -10793,26 +10816,26 @@ snapshots:
       sade: 1.8.1
       set-cookie-parser: 3.0.1
       sirv: 3.0.2
-      svelte: 5.49.1
+      svelte: 5.49.2
       vite: 6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
 
-  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@sveltejs/vite-plugin-svelte': 5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       debug: 4.4.3
-      svelte: 5.49.1
+      svelte: 5.49.2
       vite: 6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
     transitivePeerDependencies:
       - supports-color
 
-  '@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
+  '@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte-inspector': 4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.1)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@sveltejs/vite-plugin-svelte-inspector': 4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.49.2)(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       debug: 4.4.3
       deepmerge: 4.3.1
       kleur: 4.1.5
       magic-string: 0.30.21
-      svelte: 5.49.1
+      svelte: 5.49.2
       vite: 6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       vitefu: 1.1.1(vite@6.4.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
     transitivePeerDependencies:
@@ -11008,7 +11031,7 @@ snapshots:
       '@babel/core': 7.29.0
       '@babel/plugin-syntax-typescript': 7.28.6(@babel/core@7.29.0)
       '@babel/plugin-transform-typescript': 7.28.6(@babel/core@7.29.0)
-      '@rolldown/pluginutils': 1.0.0-rc.2
+      '@rolldown/pluginutils': 1.0.0-rc.3
       '@vue/babel-plugin-jsx': 2.0.1(@babel/core@7.29.0)
       vite: 7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       vue: 3.5.27
@@ -11181,7 +11204,7 @@ snapshots:
 
   '@vue/shared@3.5.27': {}
 
-  '@wagmi/connectors@5.11.2(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)))(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)':
+  '@wagmi/connectors@5.11.2(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)))(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)':
     dependencies:
       '@base-org/account': 1.1.1(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
       '@coinbase/wallet-sdk': 4.3.6(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -11190,7 +11213,7 @@ snapshots:
       '@safe-global/safe-apps-provider': 0.18.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@safe-global/safe-apps-sdk': 9.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@wagmi/core': 2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76))
-      '@walletconnect/ethereum-provider': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/ethereum-provider': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
       cbw-sdk: '@coinbase/wallet-sdk@3.9.3'
       porto: 0.2.19(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76))
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -11226,7 +11249,7 @@ snapshots:
       - wagmi
       - zod
 
-  '@wagmi/connectors@5.11.2(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)':
+  '@wagmi/connectors@5.11.2(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(zod@4.3.6)':
     dependencies:
       '@base-org/account': 1.1.1(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)
       '@coinbase/wallet-sdk': 4.3.6(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -11235,7 +11258,7 @@ snapshots:
       '@safe-global/safe-apps-provider': 0.18.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@safe-global/safe-apps-sdk': 9.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@wagmi/core': 2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
-      '@walletconnect/ethereum-provider': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/ethereum-provider': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
       cbw-sdk: '@coinbase/wallet-sdk@3.9.3'
       porto: 0.2.19(@wagmi/core@2.22.1(@tanstack/query-core@5.90.20)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -11299,21 +11322,21 @@ snapshots:
       - react
       - use-sync-external-store
 
-  '@walletconnect/core@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/core@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/jsonrpc-ws-connection': 1.0.16(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
       '@walletconnect/relay-api': 1.0.11
       '@walletconnect/relay-auth': 1.1.0
       '@walletconnect/safe-json': 1.0.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/window-getters': 1.0.1
       es-toolkit: 1.33.0
       events: 3.3.0
@@ -11343,21 +11366,21 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/core@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/core@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/jsonrpc-ws-connection': 1.0.16(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
       '@walletconnect/relay-api': 1.0.11
       '@walletconnect/relay-auth': 1.1.0
       '@walletconnect/safe-json': 1.0.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@walletconnect/window-getters': 1.0.1
       es-toolkit: 1.33.0
       events: 3.3.0
@@ -11387,21 +11410,21 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/core@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/core@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/jsonrpc-ws-connection': 1.0.16(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
       '@walletconnect/relay-api': 1.0.11
       '@walletconnect/relay-auth': 1.1.0
       '@walletconnect/safe-json': 1.0.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/window-getters': 1.0.1
       es-toolkit: 1.33.0
       events: 3.3.0
@@ -11431,21 +11454,21 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/core@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/core@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/jsonrpc-ws-connection': 1.0.16(bufferutil@4.1.0)(utf-8-validate@5.0.10)
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
       '@walletconnect/relay-api': 1.0.11
       '@walletconnect/relay-auth': 1.1.0
       '@walletconnect/safe-json': 1.0.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@walletconnect/window-getters': 1.0.1
       es-toolkit: 1.33.0
       events: 3.3.0
@@ -11479,18 +11502,18 @@ snapshots:
     dependencies:
       tslib: 1.14.1
 
-  '@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@reown/appkit': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@reown/appkit': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/sign-client': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/universal-provider': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/sign-client': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/universal-provider': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       events: 3.3.0
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -11520,18 +11543,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
-      '@reown/appkit': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@reown/appkit': 1.7.8(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/sign-client': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/universal-provider': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/sign-client': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/universal-provider': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       events: 3.3.0
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -11608,11 +11631,11 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@walletconnect/keyvaluestorage@1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)':
+  '@walletconnect/keyvaluestorage@1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)':
     dependencies:
       '@walletconnect/safe-json': 1.0.2
       idb-keyval: 6.2.2
-      unstorage: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)
+      unstorage: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -11654,16 +11677,16 @@ snapshots:
     dependencies:
       tslib: 1.14.1
 
-  '@walletconnect/sign-client@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/sign-client@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@walletconnect/core': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/core': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/events': 1.0.1
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/logger': 2.1.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       events: 3.3.0
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -11690,16 +11713,16 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/sign-client@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/sign-client@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
-      '@walletconnect/core': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/core': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@walletconnect/events': 1.0.1
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/logger': 2.1.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       events: 3.3.0
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -11726,16 +11749,16 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/sign-client@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/sign-client@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
-      '@walletconnect/core': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/core': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       '@walletconnect/events': 1.0.1
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/logger': 2.1.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       events: 3.3.0
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -11762,16 +11785,16 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/sign-client@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/sign-client@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
-      '@walletconnect/core': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/core': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       '@walletconnect/events': 1.0.1
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/logger': 2.1.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       events: 3.3.0
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -11802,12 +11825,12 @@ snapshots:
     dependencies:
       tslib: 1.14.1
 
-  '@walletconnect/types@2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)':
+  '@walletconnect/types@2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)':
     dependencies:
       '@walletconnect/events': 1.0.1
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-types': 1.0.4
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
       events: 3.3.0
     transitivePeerDependencies:
@@ -11831,12 +11854,12 @@ snapshots:
       - ioredis
       - uploadthing
 
-  '@walletconnect/types@2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)':
+  '@walletconnect/types@2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)':
     dependencies:
       '@walletconnect/events': 1.0.1
       '@walletconnect/heartbeat': 1.2.2
       '@walletconnect/jsonrpc-types': 1.0.4
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
       events: 3.3.0
     transitivePeerDependencies:
@@ -11860,18 +11883,18 @@ snapshots:
       - ioredis
       - uploadthing
 
-  '@walletconnect/universal-provider@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/universal-provider@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@walletconnect/events': 1.0.1
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
-      '@walletconnect/sign-client': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/sign-client': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       es-toolkit: 1.33.0
       events: 3.3.0
     transitivePeerDependencies:
@@ -11900,18 +11923,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/universal-provider@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/universal-provider@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@walletconnect/events': 1.0.1
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
-      '@walletconnect/sign-client': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/sign-client': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       es-toolkit: 1.33.0
       events: 3.3.0
     transitivePeerDependencies:
@@ -11940,18 +11963,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/universal-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/universal-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@walletconnect/events': 1.0.1
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
-      '@walletconnect/sign-client': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/sign-client': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)
       es-toolkit: 1.33.0
       events: 3.3.0
     transitivePeerDependencies:
@@ -11980,18 +12003,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/universal-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/universal-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@walletconnect/events': 1.0.1
       '@walletconnect/jsonrpc-http-connection': 1.0.8
       '@walletconnect/jsonrpc-provider': 1.0.14
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/logger': 2.1.2
-      '@walletconnect/sign-client': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
-      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/sign-client': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
+      '@walletconnect/utils': 2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)
       es-toolkit: 1.33.0
       events: 3.3.0
     transitivePeerDependencies:
@@ -12020,18 +12043,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/utils@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/utils@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@noble/ciphers': 1.2.1
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/relay-api': 1.0.11
       '@walletconnect/relay-auth': 1.1.0
       '@walletconnect/safe-json': 1.0.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/window-getters': 1.0.1
       '@walletconnect/window-metadata': 1.0.1
       bs58: 6.0.0
@@ -12064,18 +12087,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/utils@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/utils@2.21.0(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@noble/ciphers': 1.2.1
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/relay-api': 1.0.11
       '@walletconnect/relay-auth': 1.1.0
       '@walletconnect/safe-json': 1.0.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/types': 2.21.0(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/window-getters': 1.0.1
       '@walletconnect/window-metadata': 1.0.1
       bs58: 6.0.0
@@ -12108,18 +12131,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/utils@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
+  '@walletconnect/utils@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@3.25.76)':
     dependencies:
       '@noble/ciphers': 1.2.1
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/relay-api': 1.0.11
       '@walletconnect/relay-auth': 1.1.0
       '@walletconnect/safe-json': 1.0.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/window-getters': 1.0.1
       '@walletconnect/window-metadata': 1.0.1
       bs58: 6.0.0
@@ -12152,18 +12175,18 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@walletconnect/utils@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
+  '@walletconnect/utils@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(utf-8-validate@5.0.10)(zod@4.3.6)':
     dependencies:
       '@noble/ciphers': 1.2.1
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
       '@walletconnect/jsonrpc-utils': 1.0.8
-      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/keyvaluestorage': 1.1.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/relay-api': 1.0.11
       '@walletconnect/relay-auth': 1.1.0
       '@walletconnect/safe-json': 1.0.2
       '@walletconnect/time': 1.0.2
-      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.14))(ioredis@5.9.2)
+      '@walletconnect/types': 2.21.1(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)
       '@walletconnect/window-getters': 1.0.1
       '@walletconnect/window-metadata': 1.0.1
       bs58: 6.0.0
@@ -12442,7 +12465,7 @@ snapshots:
     dependencies:
       run-applescript: 7.1.0
 
-  c12@3.3.3(magicast@0.5.1):
+  c12@3.3.3(magicast@0.5.2):
     dependencies:
       chokidar: 5.0.0
       confbox: 0.2.2
@@ -12457,7 +12480,7 @@ snapshots:
       pkg-types: 2.3.0
       rc9: 2.1.2
     optionalDependencies:
-      magicast: 0.5.1
+      magicast: 0.5.2
 
   cac@6.7.14: {}
 
@@ -12782,9 +12805,9 @@ snapshots:
 
   dayjs@1.11.19: {}
 
-  db0@0.3.4(@electric-sql/pglite@0.3.14):
+  db0@0.3.4(@electric-sql/pglite@0.3.15):
     optionalDependencies:
-      '@electric-sql/pglite': 0.3.14
+      '@electric-sql/pglite': 0.3.15
 
   debug@3.2.7:
     dependencies:
@@ -13166,7 +13189,7 @@ snapshots:
 
   extension-port-stream@3.0.0:
     dependencies:
-      readable-stream: 4.7.0
+      readable-stream: 3.6.2
       webextension-polyfill: 0.10.0
 
   fast-deep-equal@3.1.3: {}
@@ -13191,7 +13214,7 @@ snapshots:
     dependencies:
       strnum: 2.1.2
 
-  fastq@1.19.1:
+  fastq@1.20.1:
     dependencies:
       reusify: 1.1.0
 
@@ -13939,7 +13962,7 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  magicast@0.5.1:
+  magicast@0.5.2:
     dependencies:
       '@babel/parser': 7.29.0
       '@babel/types': 7.29.0
@@ -14073,7 +14096,7 @@ snapshots:
       mlly: 1.8.0
       pkg-types: 2.3.0
 
-  nitropack@2.13.1(@electric-sql/pglite@0.3.14)(idb-keyval@6.2.2)(xml2js@0.6.2):
+  nitropack@2.13.1(@electric-sql/pglite@0.3.15)(idb-keyval@6.2.2)(xml2js@0.6.2):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.2
       '@rollup/plugin-alias': 6.0.0(rollup@4.57.1)
@@ -14085,7 +14108,7 @@ snapshots:
       '@rollup/plugin-terser': 0.4.4(rollup@4.57.1)
       '@vercel/nft': 1.3.0(rollup@4.57.1)
       archiver: 7.0.1
-      c12: 3.3.3(magicast@0.5.1)
+      c12: 3.3.3(magicast@0.5.2)
       chokidar: 5.0.0
       citty: 0.1.6
       compatx: 0.2.0
@@ -14094,7 +14117,7 @@ snapshots:
       cookie-es: 2.0.0
       croner: 9.1.0
       crossws: 0.3.5
-      db0: 0.3.4(@electric-sql/pglite@0.3.14)
+      db0: 0.3.4(@electric-sql/pglite@0.3.15)
       defu: 6.1.4
       destr: 2.0.5
       dot-prop: 10.1.0
@@ -14113,7 +14136,7 @@ snapshots:
       knitwork: 1.3.0
       listhen: 1.9.0
       magic-string: 0.30.21
-      magicast: 0.5.1
+      magicast: 0.5.2
       mime: 4.1.0
       mlly: 1.8.0
       node-fetch-native: 1.6.7
@@ -14140,7 +14163,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       unimport: 5.6.0
       unplugin-utils: 0.3.1
-      unstorage: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)
+      unstorage: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)
       untyped: 2.0.0
       unwasm: 0.5.3
       youch: 4.1.0-beta.13
@@ -14236,10 +14259,10 @@ snapshots:
     dependencies:
       boolbase: 1.0.0
 
-  nuxt-og-image@5.1.13(@unhead/vue@2.1.2(vue@3.5.27))(magicast@0.5.1)(unstorage@1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2))(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27):
+  nuxt-og-image@5.1.13(@unhead/vue@2.1.2(vue@3.5.27))(magicast@0.5.2)(unstorage@1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2))(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27):
     dependencies:
-      '@nuxt/devtools-kit': 3.1.1(magicast@0.5.1)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/devtools-kit': 3.1.1(magicast@0.5.2)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       '@resvg/resvg-js': 2.6.2
       '@resvg/resvg-wasm': 2.6.2
       '@unhead/vue': 2.1.2(vue@3.5.27)
@@ -14252,7 +14275,7 @@ snapshots:
       image-size: 2.0.2
       magic-string: 0.30.21
       mocked-exports: 0.1.1
-      nuxt-site-config: 3.2.19(magicast@0.5.1)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
+      nuxt-site-config: 3.2.19(magicast@0.5.2)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
       nypm: 0.6.4
       ofetch: 1.5.1
       ohash: 2.0.11
@@ -14267,7 +14290,7 @@ snapshots:
       strip-literal: 3.1.0
       ufo: 1.6.3
       unplugin: 2.3.11
-      unstorage: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)
+      unstorage: 1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)
       unwasm: 0.5.3
       yoga-wasm-web: 0.3.3
     transitivePeerDependencies:
@@ -14276,9 +14299,9 @@ snapshots:
       - vite
       - vue
 
-  nuxt-site-config-kit@3.2.19(magicast@0.5.1)(vue@3.5.27):
+  nuxt-site-config-kit@3.2.19(magicast@0.5.2)(vue@3.5.27):
     dependencies:
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       pkg-types: 2.3.0
       site-config-stack: 3.2.19(vue@3.5.27)
       std-env: 3.10.0
@@ -14287,12 +14310,12 @@ snapshots:
       - magicast
       - vue
 
-  nuxt-site-config@3.2.19(magicast@0.5.1)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27):
+  nuxt-site-config@3.2.19(magicast@0.5.2)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27):
     dependencies:
-      '@nuxt/devtools-kit': 3.1.1(magicast@0.5.1)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/devtools-kit': 3.1.1(magicast@0.5.2)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
       h3: 1.15.5
-      nuxt-site-config-kit: 3.2.19(magicast@0.5.1)(vue@3.5.27)
+      nuxt-site-config-kit: 3.2.19(magicast@0.5.2)(vue@3.5.27)
       pathe: 2.0.3
       pkg-types: 2.3.0
       sirv: 3.0.2
@@ -14303,19 +14326,19 @@ snapshots:
       - vite
       - vue
 
-  nuxt@4.3.0(@electric-sql/pglite@0.3.14)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2):
+  nuxt@4.3.0(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2):
     dependencies:
-      '@dxup/nuxt': 0.3.2(magicast@0.5.1)
-      '@nuxt/cli': 3.32.0(cac@6.7.14)(magicast@0.5.1)
+      '@dxup/nuxt': 0.3.2(magicast@0.5.2)
+      '@nuxt/cli': 3.32.0(cac@6.7.14)(magicast@0.5.2)
       '@nuxt/devtools': 3.1.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.27)
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
-      '@nuxt/nitro-server': 4.3.0(@electric-sql/pglite@0.3.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(nuxt@4.3.0(@electric-sql/pglite@0.3.14)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2))(xml2js@0.6.2)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
+      '@nuxt/nitro-server': 4.3.0(@electric-sql/pglite@0.3.15)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(nuxt@4.3.0(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2))(xml2js@0.6.2)
       '@nuxt/schema': 4.3.0
-      '@nuxt/telemetry': 2.6.6(magicast@0.5.1)
-      '@nuxt/vite-builder': 4.3.0(@types/node@25.2.0)(magicast@0.5.1)(nuxt@4.3.0(@electric-sql/pglite@0.3.14)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.1)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2))(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(vue@3.5.27)(yaml@2.8.2)
+      '@nuxt/telemetry': 2.6.6(magicast@0.5.2)
+      '@nuxt/vite-builder': 4.3.0(@types/node@25.2.0)(magicast@0.5.2)(nuxt@4.3.0(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.2.0)(@vue/compiler-sfc@3.5.27)(bufferutil@4.1.0)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2)(magicast@0.5.2)(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(utf-8-validate@5.0.10)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(xml2js@0.6.2)(yaml@2.8.2))(rollup@4.57.1)(terser@5.46.0)(tsx@4.21.0)(vue@3.5.27)(yaml@2.8.2)
       '@unhead/vue': 2.1.2(vue@3.5.27)
       '@vue/shared': 3.5.27
-      c12: 3.3.3(magicast@0.5.1)
+      c12: 3.3.3(magicast@0.5.2)
       chokidar: 5.0.0
       compatx: 0.2.0
       consola: 3.4.2
@@ -14498,9 +14521,9 @@ snapshots:
 
   openapi-typescript-helpers@0.0.15: {}
 
-  otpauth@9.4.1:
+  otpauth@9.5.0:
     dependencies:
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': 2.0.1
 
   ox@0.11.3(zod@3.22.4):
     dependencies:
@@ -14545,7 +14568,7 @@ snapshots:
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
       '@noble/curves': 1.8.1
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': 1.7.1
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
       abitype: 1.0.8(zod@3.25.76)
@@ -14557,7 +14580,7 @@ snapshots:
     dependencies:
       '@adraffy/ens-normalize': 1.11.1
       '@noble/curves': 1.8.1
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': 1.7.1
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
       abitype: 1.0.8(zod@4.3.6)
@@ -15372,7 +15395,7 @@ snapshots:
 
   serverless-offline@14.4.0(bufferutil@4.1.0)(serverless@4.31.2)(utf-8-validate@5.0.10):
     dependencies:
-      '@aws-sdk/client-lambda': 3.982.0
+      '@aws-sdk/client-lambda': 3.983.0
       '@hapi/boom': 10.0.1
       '@hapi/h2o2': 10.0.4
       '@hapi/hapi': 21.4.4
@@ -15673,7 +15696,7 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svelte@5.49.1:
+  svelte@5.49.2:
     dependencies:
       '@jridgewell/remapping': 2.3.5
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -15938,7 +15961,7 @@ snapshots:
 
   unplugin-vue-router@0.19.2(@vue/compiler-sfc@3.5.27)(vue-router@4.6.4(vue@3.5.27))(vue@3.5.27):
     dependencies:
-      '@babel/generator': 7.29.0
+      '@babel/generator': 7.29.1
       '@vue-macros/common': 3.1.2(vue@3.5.27)
       '@vue/compiler-sfc': 3.5.27
       '@vue/language-core': 3.2.4
@@ -15973,7 +15996,7 @@ snapshots:
       picomatch: 4.0.3
       webpack-virtual-modules: 0.6.2
 
-  unstorage@1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.14))(idb-keyval@6.2.2)(ioredis@5.9.2):
+  unstorage@1.17.4(db0@0.3.4(@electric-sql/pglite@0.3.15))(idb-keyval@6.2.2)(ioredis@5.9.2):
     dependencies:
       anymatch: 3.1.3
       chokidar: 5.0.0
@@ -15984,7 +16007,7 @@ snapshots:
       ofetch: 1.5.1
       ufo: 1.6.3
     optionalDependencies:
-      db0: 0.3.4(@electric-sql/pglite@0.3.14)
+      db0: 0.3.4(@electric-sql/pglite@0.3.15)
       idb-keyval: 6.2.2
       ioredis: 5.9.2
 
@@ -16181,7 +16204,7 @@ snapshots:
       vite: 7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       vscode-uri: 3.1.0
 
-  vite-plugin-inspect@11.3.3(@nuxt/kit@4.3.0(magicast@0.5.1))(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)):
+  vite-plugin-inspect@11.3.3(@nuxt/kit@4.3.0(magicast@0.5.2))(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       ansis: 4.2.0
       debug: 4.4.3
@@ -16194,7 +16217,7 @@ snapshots:
       vite: 7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
       vite-dev-rpc: 1.1.0(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
     optionalDependencies:
-      '@nuxt/kit': 4.3.0(magicast@0.5.1)
+      '@nuxt/kit': 4.3.0(magicast@0.5.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -16321,7 +16344,7 @@ snapshots:
       mrmime: 2.0.1
       regexparam: 3.0.0
 
-  wrangler@4.62.0(@cloudflare/workers-types@4.20260203.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10):
+  wrangler@4.62.0(@cloudflare/workers-types@4.20260205.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.2
       '@cloudflare/unenv-preset': 2.12.0(unenv@2.0.0-rc.24)(workerd@1.20260131.0)
@@ -16332,7 +16355,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20260131.0
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20260203.0
+      '@cloudflare/workers-types': 4.20260205.0
       fsevents: 2.3.3
     transitivePeerDependencies:
       - bufferutil
