@@ -98,7 +98,7 @@ async function onValidate() {
 <div v-if="refUri" class="space-y-2">
 	<div class="flex justify-center py-2">
 		<div class="flex items-center gap-4">
-			<div class="flex-shrink-0">
+			<div class="shrink-0">
 				<QrCode :address="refUri" />
 			</div>
 		</div>
@@ -113,7 +113,7 @@ async function onValidate() {
 			inputmode="numeric"
 			maxlength="6"
 			placeholder="000000"
-			class="px-3 py-2 border border-gray-300 rounded w-full text-center text-lg tracking-widest font-mono"
+			class="px-3 py-2 border border-gray-300 rounded-sm w-full text-center text-lg tracking-widest font-mono"
 			@keyup.enter="refButton.click()"
 		/>
 		<Button

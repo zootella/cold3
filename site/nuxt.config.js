@@ -3,6 +3,7 @@ import {
 Time, Key, log, look,
 } from 'icarus'//local Node runs this file on $ nuxt dev, build, generate; we can use icarus helpers here
 import {vite as vidstack} from 'vidstack/plugins'
+import tailwindcss from '@tailwindcss/vite'
 
 /*
 $ cloudflare create
@@ -54,8 +55,8 @@ configuration.components = {
 }
 
 //for tailwind
-configuration.modules.push('@nuxtjs/tailwindcss')
-configuration.tailwindcss = {cssPath: '~/assets/css/style.css'}
+configuration.css = ['./app/assets/css/style.css']
+configuration.vite.plugins.push(tailwindcss())
 
 //for google fonts
 configuration.app.head.link.push({

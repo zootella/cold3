@@ -45,8 +45,8 @@ const refCodeTime = ref('')
 
 <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-2 items-center">
 	<div></div><p>Generate a new RFC6238 TOTP enrollment</p>
-	<p class="text-right m-0">User:</p><input v-model="refLabel" class="px-2 py-2 border border-gray-300 rounded" />
-	<p class="text-right m-0">Issuer:</p><input v-model="refIssuer" class="px-2 py-2 border border-gray-300 rounded" />
+	<p class="text-right m-0">User:</p><input v-model="refLabel" class="px-2 py-2 border border-gray-300 rounded-sm" />
+	<p class="text-right m-0">Issuer:</p><input v-model="refIssuer" class="px-2 py-2 border border-gray-300 rounded-sm" />
 	<div></div><Button :click="generate" class="justify-self-start">Generate</Button>
 </div>
 
@@ -63,7 +63,7 @@ const refCodeTime = ref('')
   
   <div class="flex justify-center py-2">
     <div class="flex items-center gap-4">
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <QrCode :address="refUri" />
       </div>
       

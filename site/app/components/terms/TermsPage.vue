@@ -21,6 +21,7 @@
 
 </template>
 <style scoped>
+@reference "tailwindcss";
 
 .myText {
 	@apply text-gray-700 decoration-gray-500;

@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 5 2:39 PM
+  generated: 2026 Feb 5 3:34 PM
   🕰️ Installed version 1+ year old:
     - fast-glob
     - is-mobile
@@ -27,7 +27,6 @@ summary:
     - nitro-cloudflare-dev
     - sharp
   📌 Exact version pinned:
-    - "@nuxtjs/tailwindcss"
     - "@pinia/nuxt"
     - nuxt-og-image
   downloads:
@@ -39,7 +38,6 @@ summary:
       "@sveltejs/adapter-cloudflare": 82,257
     6 figure:
       "@uppy/aws-s3": 292,709
-      "@nuxtjs/tailwindcss": 306,918
       "@sveltejs/adapter-auto": 372,936
       "@uppy/dashboard": 381,907
       "@tanstack/vue-query": 385,669
@@ -75,6 +73,7 @@ summary:
       "@vitejs/plugin-vue": 4,786,123
       "@vercel/nft": 5,524,454
       qrcode: 6,394,940
+      "@tailwindcss/vite": 6,607,358
       "@aws-sdk/s3-request-presigner": 6,635,744
       vue: 8,549,415
       "@supabase/supabase-js": 9,033,555
@@ -82,6 +81,7 @@ summary:
       libphonenumber-js: 12,299,472
       "@aws-sdk/client-s3": 16,370,151
       sharp: 35,411,185
+      tailwindcss: 47,765,674
       vite: 53,611,431
       zod: 87,621,926
       dotenv: 89,667,593
@@ -160,16 +160,6 @@ modules:
     downloads:
       weekly: 4,678,176
       on: 2026feb4.1821.46960
-  "@nuxtjs/tailwindcss":
-    homepage: https://github.com/nuxt-modules/tailwindcss#readme
-    description: Tailwind CSS module for Nuxt
-    from: site
-    versions:
-      declared: 6.14.0
-      installed: 6.14.0 on 2025apr27 9m old 📌 Exact version pinned
-    downloads:
-      weekly: 306,918
-      on: 2026feb4.1829.44951
   "@pinia/nuxt":
     homepage: https://pinia.vuejs.org/ssr/nuxt.html
     description: Nuxt Module for pinia
@@ -256,6 +246,16 @@ modules:
     downloads:
       weekly: 2,680,926
       on: 2026feb4.1829.44951
+  "@tailwindcss/vite":
+    homepage: https://tailwindcss.com
+    description: A utility-first CSS framework for rapidly building custom user interfaces.
+    from: site
+    versions:
+      declared: ^4.1.18
+      installed: 4.1.18 on 2025dec11 2m old
+    downloads:
+      weekly: 6,607,358
+      on: 2026feb5.2153.32117
   "@tanstack/vue-query":
     homepage: https://tanstack.com/query
     description: Hooks for managing, caching and syncing asynchronous and remote data in Vue
@@ -582,6 +582,16 @@ modules:
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
+  tailwindcss:
+    homepage: https://tailwindcss.com
+    description: A utility-first CSS framework for rapidly building custom user interfaces.
+    from: site
+    versions:
+      declared: ^4.1.18
+      installed: 4.1.18 on 2025dec11 2m old
+    downloads:
+      weekly: 47,765,674
+      on: 2026feb5.2153.32117
   twilio:
     homepage: https://github.com/twilio/twilio-node#readme
     description: A Twilio helper library

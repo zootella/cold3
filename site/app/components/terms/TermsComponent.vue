@@ -62,6 +62,7 @@ and that I can read the current terms, policies, and notices at any time at http
 
 </template>
 <style scoped>
+@reference "tailwindcss";
 
 .myText {
 	@apply text-gray-700 decoration-gray-500;

@@ -42,6 +42,7 @@ function onBack() {
 </div>
 </template>
 <style scoped>
+@reference "tailwindcss";
 
 .my-space {
 	@apply flex flex-wrap items-baseline gap-2;

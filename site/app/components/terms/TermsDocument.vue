@@ -42,6 +42,7 @@ and we don't really need this at all because it's likely NuxtLink from some foot
 
 </script>
 <style scoped>
+@reference "tailwindcss";
 
 .myTerms {
 	@apply

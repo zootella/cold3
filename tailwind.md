@@ -478,8 +478,125 @@ Tailwind v4 defines colors in OKLCH (wider P3 gamut) instead of sRGB hex. The co
 | @layer components behaves differently | Our classes are applied by name, never with variants like `hover:my-button` | Classes not applying, obvious |
 | Vidstack plugin conflict | Both are standard Vite plugins, no shared concerns | Build error, immediate |
 
+## Appendix: Verification workflow
 
+The monorepo has a pipeline for validating changes before running the site or committing. `ja` is a shell alias that wraps `pnpm` with a timer.
 
+1. **`ja wash`** -- deletes all `node_modules` and build artifacts (`.nuxt`, `.output`, `.wrangler`, `dist`, etc.) across every workspace. Keeps the lockfile.
+2. **`ja install`** -- reinstalls everything from `package.json` and `pnpm-lock.yaml`. Runs postinstall hooks (`nuxt prepare`, `svelte-kit sync`). If this fails, there's a real dependency or config problem.
+3. **`ja sem`** -- runs `sem.js`, which reads every workspace's `package.json` and the lockfile, fetches live data from the npm registry, and writes `sem.yaml`. The report shows declared vs installed vs current vs latest versions for every dependency, with flags for staleness, deprecation, major upgrades, etc. Diffing `sem.yaml` before and after a change shows exactly what moved in the dependency tree.
+4. **`ja seal`** -- runs `seal.js` then `test.js`. Seal hashes every file in the project into `wrapper.txt` (a manifest of SHA256 hashes and sizes), then generates `icarus/wrapper.js` with a frozen object containing the manifest hash, file counts, timestamps, and encrypted secrets. Tests run immediately after. If tests fail, the seal is invalid.
+5. **`git diff > diff.diff`** -- with all of the above passing, generate a diff of everything: code changes, lockfile changes, `sem.yaml` changes, `wrapper.txt` changes. This is the complete picture for code review before committing.
 
+The key insight is that `sem.yaml` and `wrapper.txt` are diffable artifacts. When you change a dependency, the sem diff shows what version moved and how, and the wrapper diff shows what files changed and by how much. This catches unintended side effects before they reach the dev server.
 
+# [4] Review Notes
 
+## Packages (sem.yaml, site/package.json)
+
+Reviewed and confirmed correct.
+
+The module `@nuxtjs/tailwindcss` (306K weekly downloads, pinned at exact version 6.14.0) is removed. It bundled Tailwind v3 as a hidden transitive dependency -- tailwindcss never appeared in any of our package.json files, making it invisible to version tracking.
+
+Replaced by two direct dependencies in site/package.json:
+- `tailwindcss: ^4.1.18` (47.8M weekly downloads) -- the framework itself, now visible and version-tracked
+- `@tailwindcss/vite: ^4.1.18` (6.6M weekly downloads) -- the Vite plugin that replaces the Nuxt module
+
+`@tailwindcss/forms: ^0.5.10` stays in devDependencies, unchanged.
+
+Both new packages use caret ranges, consistent with the majority of our deps. The pinned list in sem.yaml drops from 3 to 2 entries (only `@pinia/nuxt` and `nuxt-og-image` remain pinned). We moved from a 6-figure community module to the 8-figure core package -- much more mainstream, and one fewer exact pin to worry about.
+
+## @reference additions (9 Vue components)
+
+Reviewed and confirmed correct.
+
+In v3, the Nuxt module wired things up so `@apply` in `<style scoped>` could resolve Tailwind classes automatically. In v4, scoped CSS is processed in isolation -- it doesn't know what `flex` or `gap-2` means unless told where to look. `@reference "tailwindcss"` imports Tailwind's class definitions for resolution only, without emitting any CSS.
+
+Added to all 9 components that use `@apply` in scoped styles:
+- 5 with `.my-space`: CredentialCorner, CredentialPanel, SignUpOrSignInForm, PostPage, ProfilePage
+- 4 terms components: TermsPage, TermsComponent, TermsDocument, TermsAnchors
+
+Correctly skipped the 4 scoped style blocks that use only raw CSS (no `@apply`): PostComponent, MeasureComponent, feed.vue, QrCode.vue.
+
+## Template renames and utility audit
+
+Reviewed and confirmed correct.
+
+Tailwind v4 renamed a handful of utilities to resolve naming inconsistencies from v3. We searched the entire codebase for every known rename and found only 9 spot changes needed across 3 components:
+
+- **TotpDemo.vue**: `flex-shrink-0` -> `shrink-0`, `rounded` -> `rounded-sm`
+- **TotpDemo1.vue**: `rounded` -> `rounded-sm` (x2), `flex-shrink-0` -> `shrink-0`
+- **StyleComponent.vue**: `focus:outline-none` -> `focus:outline-hidden` (x2)
+
+The audit searched for every v4-renamed utility: bare `rounded` (now `rounded-sm`), `outline-none` (now `outline-hidden`), `shadow` / `shadow-sm`, `blur` / `blur-sm`, bare `ring`, `bg-opacity-*` / `text-opacity-*` / `border-opacity-*`, `flex-grow` (now `grow`), `flex-shrink` (now `shrink`), `overflow-ellipsis`, bare `border` without an explicit color, and `theme()` function calls. Most had zero hits. The only matches were the 9 instances above.
+
+No other components needed template changes. The ~60 remaining Vue files use utilities that are identical in v4: spacing (`p-`, `m-`, `gap-`), sizing (`w-`, `h-`, `max-w-`), flexbox (`flex`, `justify-`, `items-`, `shrink-0` already correct), grid, overflow, columns, typography (`text-`, `font-`, `leading-`, `tracking-`), and responsive/state variants.
+
+## Terms layout safety
+
+The terms pages (TermsPage, TermsComponent, TermsDocument, TermsAnchors) use a complex multi-column layout with side-scrolling, built over a month by a design intern. All of their Tailwind utilities are structurally identical between v3 and v4:
+
+- **Layout**: `flex`, `flex-col`, `gap-*`, `columns-*`, `break-inside-avoid` -- no renames, no behavioral changes
+- **Sizing**: `w-full`, `max-w-*`, `h-*`, `min-h-*` -- pixel-identical
+- **Overflow/scroll**: `overflow-x-auto`, `overflow-y-hidden`, `scroll-smooth` -- unchanged
+- **Typography**: `text-sm`, `text-lg`, `font-bold`, `leading-*`, `tracking-*` -- same output
+- **Spacing**: all `p-*`, `m-*`, `gap-*` values -- same output
+
+The only changes to these files were the `@reference` additions in their scoped style blocks, which affect resolution only and emit no CSS.
+
+## Visual testing after the migration
+
+The v4 upgrade is structurally a no-op for layout. Flexbox, grid, spacing, sizing, overflow, columns, and typography utilities produce identical CSS output. There is no need to fine-tooth-comb every page for layout regressions.
+
+What *is* subtly different in v4, and worth a visual scan:
+
+- **OKLCH colors**: v4 uses the OKLCH color space instead of sRGB hex. The utility names are the same (`bg-blue-500`, `text-gray-700`, etc.) but the rendered values shift slightly -- colors may appear marginally more vibrant or saturated. This is most noticeable in mid-range blues and purples. A quick visual pass through pages with prominent color use is worthwhile.
+- **Placeholder color**: v3 defaulted to `gray-400`; v4 defaults to the element's text color at 50% opacity. If any inputs have visible placeholder text, check that it still looks right.
+- **Button cursor**: v3 gave `<button>` elements `cursor: pointer` in its reset; v4 leaves the browser default (`cursor: default`). Our `.my-button` class already applies `cursor-pointer` explicitly, so this shouldn't matter for styled buttons, but check any unstyled `<button>` elements.
+- **Hover on touch**: v4 wraps hover styles in `@media (hover: hover)`, which suppresses them on touch-only devices. This is generally an improvement but worth testing on mobile if sticky hover states were relied on.
+
+Recommended testing approach: spin up the dev server, walk through the main flows (sign in, profile, posts, terms document), and glance at colors and interactive elements. The terms page deserves an extra look for scroll behavior on mobile. Any differences should be cosmetic color shifts, not layout breaks.
+
+## nuxt.config.js and the integration layer
+
+Reviewed and confirmed correct.
+
+The migration drops down a layer in how Tailwind reaches the project. `@tailwindcss/vite` is a Vite plugin, not Vue- or Nuxt-specific -- it works for any Vite project (React, Svelte, plain HTML, whatever). The chain changes from:
+
+- **Before**: Nuxt → `@nuxtjs/tailwindcss` module (community-maintained, Nuxt-specific) → Tailwind
+- **After**: Vite → `@tailwindcss/vite` plugin (maintained by the Tailwind team, framework-agnostic) → Tailwind
+
+Nuxt exposes its underlying Vite config, so `configuration.vite.plugins.push(tailwindcss())` registers the plugin right next to where vidstack is already registered the same way. The `//for tailwind` comment stays. The CSS file path moves from `configuration.tailwindcss = {cssPath: ...}` (a module-specific option) to `configuration.css = [...]` (standard Nuxt CSS entry point).
+
+Fewer middlemen, more mainstream. Instead of going through a Nuxt-specific wrapper that a community developer maintains, we're plugging directly into the build tool using the official plugin from the Tailwind team.
+
+## style.css and the deleted config file
+
+Reviewed and confirmed correct.
+
+Everything from `tailwind.config.js` is accounted for in style.css: the forms plugin becomes `@plugin "@tailwindcss/forms"`, and the font family definitions become CSS custom properties inside `@theme`. The old JS config used `...defaultTheme.fontFamily.sans` to spread Tailwind's default fallback list; in the CSS version the fallback stacks are spelled out explicitly. Those values are Tailwind's defaults -- just visible instead of imported programmatically.
+
+The three `@tailwind` directives (base, components, utilities) become `@import "tailwindcss"`. The three layers still exist internally -- they're just not something you spell out anymore. The `@layer base` and `@layer components` blocks lower in style.css still work exactly as before; what changed is how you tell Tailwind to show up in the first place. `@plugin` is the v4 way to register plugins in CSS rather than in a JS config file.
+
+The two utility renames in `.my-button` (`rounded` → `rounded-sm`, `outline-none` → `outline-hidden`) produce identical CSS output to what they replaced.
+
+## Fonts: full stack analysis
+
+There are three standard approaches to web fonts, and this repo uses all three:
+
+**Approach 1 -- System fallbacks (name them).** Every font-family list in `@theme` ends with a stack of well-known system fonts: `ui-sans-serif, system-ui, sans-serif` for text, `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas` for code. These give the browser good built-in options if nothing custom loads. The emoji fallbacks (`Apple Color Emoji`, `Segoe UI Emoji`, etc.) are also in this category.
+
+**Approach 2 -- Google Fonts (link them).** `nuxt.config.js` injects a `<link>` tag into `<head>` that loads three font families from Google's CDN: Noto Sans (regular, italic, bold, bold italic), Noto Sans Mono (same weights), and Roboto (regular, italic, 500/semibold). This is independent of Tailwind -- it's just an HTML link tag, unchanged by the migration.
+
+**Approach 3 -- Bundled woff2 (bring them).** Two woff2 files live in `site/public/fonts/`: ABCDiatypeRounded-Regular-Trial.woff2 and Lemon-Wide.woff2. The `@font-face` declarations at the top of style.css register these with `font-display: swap`. Because they're in `public/`, Nuxt serves them as static assets and they deploy to Cloudflare Workers alongside the site.
+
+How the fonts map to Tailwind theme configuration:
+
+- **Diatype Rounded** (bundled woff2): first in `--font-sans` (site-wide default for body text), also available as `font-diatype` utility
+- **Noto Sans** (Google Fonts): second in `--font-sans` fallback chain
+- **Noto Sans Mono** (Google Fonts): first in `--font-mono` (site-wide default for code)
+- **Roboto** (Google Fonts): `font-roboto` utility
+- **Lemon Wide** (bundled woff2): `font-lemon` utility
+- **System stacks** (built into browsers): tail of every font-family list
+
+For v4 correctness: the `@font-face` declarations sit above `@import "tailwindcss"`, which is correct -- they need to be defined before Tailwind's reset. The `@theme` block uses CSS custom properties (`--font-sans`, `--font-mono`, `--font-roboto`, etc.), which is the v4 pattern replacing the old JS `theme.extend.fontFamily` object. The Google Fonts link in nuxt.config.js is completely independent of Tailwind. Nothing about the font setup needed to change for v4 beyond moving the family definitions from JS to CSS, which we already did.

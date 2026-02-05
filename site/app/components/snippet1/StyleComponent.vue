@@ -54,7 +54,7 @@ function validatePassword(e) {
 		@focus="isFocused = true"
 		@blur="isFocused = false"
 		:class="[
-			'block w-full px-4 py-2 border-4 rounded-lg focus:outline-none',
+			'block w-full px-4 py-2 border-4 rounded-lg focus:outline-hidden',
 			borderClass,
 			isFocused ? 'border-dashed' : 'border-solid'
 		]"
@@ -109,7 +109,7 @@ function validatePassword(e) {
 		@focus="passwordIsFocused = true"
 		@blur="passwordIsFocused = false"
 		:class="[
-			'block w-full px-4 py-2 border-4 rounded-lg focus:outline-none',
+			'block w-full px-4 py-2 border-4 rounded-lg focus:outline-hidden',
 			passwordBorderClass,
 			passwordIsFocused ? 'border-dashed' : 'border-solid'
 		]"
