@@ -1,3 +1,26 @@
+# Tailwind CSS: Migration and Reference
+
+This document chronicles the migration from Tailwind v3 to v4, completed on the `migrate1` branch in February 2026.
+
+## How styling works now
+
+- **Tailwind v4** via `@tailwindcss/vite` — a Vite plugin, not a Nuxt module. Registered in `nuxt.config.js` alongside vidstack.
+- **Global stylesheet** at `site/app/assets/css/style.css` — contains `@import "tailwindcss"`, `@plugin "@tailwindcss/forms"`, `@theme` (font overrides for sans and mono), `@layer base` (resets, link colors), and `@layer components` (shared classes like `.my-button`, `.my-link`, state classes).
+- **No `tailwind.config.js`** — all configuration lives in CSS via `@theme` and `@plugin`.
+- **Scoped styles** use `@reference "tailwindcss"` to resolve `@apply` with built-in Tailwind utilities. Custom font choices (like Roboto for the terms document) use plain `font-family` CSS instead of Tailwind utilities.
+- **Fonts** arrive three ways: bundled woff2 files in `site/public/fonts/` (Diatype Rounded, Lemon Wide), Google Fonts CDN link in `nuxt.config.js` (Noto Sans, Noto Sans Mono, Roboto), and system fallback stacks at the tail of every font-family list.
+
+## What changed from v3
+
+- Replaced `@nuxtjs/tailwindcss` module (community, 306K downloads) with `tailwindcss` + `@tailwindcss/vite` (official, 47.8M + 6.6M downloads)
+- `@tailwind base/components/utilities` directives became `@import "tailwindcss"`
+- JS config file deleted; plugin and theme moved to CSS directives
+- 9 utility renames across 4 files: `rounded` → `rounded-sm`, `outline-none` → `outline-hidden`, `flex-shrink-0` → `shrink-0`
+- Added `@reference "tailwindcss"` to 9 Vue components with scoped `@apply`
+- Removed custom named font utilities (`--font-roboto`, `--font-diatype`, `--font-lemon`) from `@theme`; one-off font choices use plain CSS
+- Fixed pre-existing Google Fonts bug: CSS2 API URL had unsorted axis tuples returning HTTP 400; all three linked fonts were silently failing to load on production
+
+---
 
 # [1] Mainstream Use of Tailwind in new Nuxt Projects (Best Practices)
 
