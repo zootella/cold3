@@ -1225,7 +1225,18 @@ Before Phase 3 smoke test, run `upgrade-wash && install && sem && seal && diff`.
 - seal verifies tests still pass
 - If something breaks, we want it to break on fresh versions, not stale lockfile artifacts
 
+**Declared version bump**
 
+Added block comment to sem.js documenting what each flag means and what action to take. Then bumped 12 packages flagged 🏺 (declared release 1+ year earlier than installed) to `^<installed>`:
+
+- root: fast-glob
+- icarus: supabase-js, credit-card-type, libphonenumber-js, ofetch
+- net23: client-ses, client-sns, twilio, fs-extra, serverless
+- oauth: sveltejs/kit, svelte
+
+This is mechanical — just closing the gap between what package.json says and what the lockfile actually installs. No behavior change, no new versions pulled. After wash + install + test + sem + seal: all tests pass, 🏺 summary section cleared from sem.yaml, lockfile specifiers updated to match. One transitive change: debug 4.3.4 → 4.4.3 (walletconnect chain).
+
+h3 stays pinned to exactly `2.0.1-rc.11` (no caret) — intentional, matching fresh1 scaffold. rc versions can break between releases; unpin when h3 v2 goes stable.
 
 
 

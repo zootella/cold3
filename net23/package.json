@@ -20,16 +20,16 @@
 		"@sendgrid/mail": "^8.1.4",
 		"icarus": "workspace:*",
 		"sharp": "^0.34.4",
-		"twilio": "^5.3.5"
+		"twilio": "^5.12.0"
 	},
 	"devDependencies": {
 		"@aws-sdk/client-s3": "^3.975.0",
-		"@aws-sdk/client-ses": "^3.682.0",
-		"@aws-sdk/client-sns": "^3.682.0",
+		"@aws-sdk/client-ses": "^3.983.0",
+		"@aws-sdk/client-sns": "^3.983.0",
 		"@aws-sdk/s3-request-presigner": "^3.975.0",
 		"@vercel/nft": "^0.29.2",
-		"fs-extra": "^11.2.0",
-		"serverless": "^4.4.11",
+		"fs-extra": "^11.3.3",
+		"serverless": "^4.31.2",
 		"serverless-offline": "^14.3.4"
 	}
 }

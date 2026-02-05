@@ -1,23 +1,10 @@
 summary:
-  generated: 2026 Feb 5 11:19 AM
+  generated: 2026 Feb 5 11:34 AM
   🕰️ Installed version 1+ year old:
     - fast-glob
     - is-mobile
     - qrcode
     - serverless-offline
-  🏺 Declared release 1+ year earlier than installed:
-    - "@aws-sdk/client-ses"
-    - "@aws-sdk/client-sns"
-    - "@supabase/supabase-js"
-    - "@sveltejs/kit"
-    - credit-card-type
-    - fast-glob
-    - fs-extra
-    - libphonenumber-js
-    - ofetch
-    - serverless
-    - svelte
-    - twilio
   🎁 Major new version available:
     - "@sveltejs/adapter-auto"
     - "@sveltejs/vite-plugin-svelte"
@@ -130,7 +117,7 @@ modules:
     description: AWS SDK for JavaScript Ses Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.682.0 on 2024oct29 15m old
+      declared: ^3.983.0
       installed: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 2,333,005
@@ -140,7 +127,7 @@ modules:
     description: AWS SDK for JavaScript Sns Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.682.0 on 2024oct29 15m old
+      declared: ^3.983.0
       installed: 3.983.0 on 2026feb04 0m old
     downloads:
       weekly: 2,695,891
@@ -200,7 +187,7 @@ modules:
     description: Isomorphic Javascript SDK for Supabase
     from: icarus
     versions:
-      declared: ^2.39.8 on 2024mar12 23m old
+      declared: ^2.94.1
       installed: 2.94.1 on 2026feb04 0m old
       current: 2.95.1 on 2026feb05 0m old
       latest: 2.95.1 on 2026feb05 0m old
@@ -234,7 +221,7 @@ modules:
     description: SvelteKit is the fastest way to build Svelte apps
     from: oauth
     versions:
-      declared: ^2.16.0 on 2025jan17 13m old
+      declared: ^2.50.2
       installed: 2.50.2 on 2026feb02 0m old
     downloads:
       weekly: 876,575
@@ -374,7 +361,7 @@ modules:
     description: A library for determining credit card type
     from: icarus
     versions:
-      declared: ^10.0.0 on 2023nov07 27m old
+      declared: ^10.1.2
       installed: 10.1.2 on 2026jan28 0m old
     downloads:
       weekly: 1,258,798
@@ -396,7 +383,7 @@ modules:
     description: It's a very fast and efficient glob library for Node.js
     from: root
     versions:
-      declared: ^3.3.2 on 2023nov06 27m old
+      declared: ^3.3.3
       installed: 3.3.3 on 2025jan05 13m old 🕰️ Installed version 1+ year old
     downloads:
       weekly: 94,186,895
@@ -406,7 +393,7 @@ modules:
     description: fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.
     from: net23
     versions:
-      declared: ^11.2.0 on 2023nov28 26m old
+      declared: ^11.3.3
       installed: 11.3.3 on 2025dec18 2m old
     downloads:
       weekly: 140,054,511
@@ -421,7 +408,7 @@ modules:
       declared: 2.0.1-rc.11
       installed: 2.0.1-rc.11 on 2026jan20 1m old 📌 Exact version pinned
       current: 2.0.1-rc.11 on 2026jan20 1m old
-      latest: 2.0.1-rc.12 on 2026feb05 0m old
+      latest: 2.0.1-rc.13 on 2026feb05 0m old
     downloads:
       weekly: 4,159,531
       on: 2026feb4.1821.46960
@@ -440,7 +427,7 @@ modules:
     description: A simpler (and smaller) rewrite of Google Android's libphonenumber library in javascript
     from: icarus
     versions:
-      declared: ^1.11.3 on 2024jun05 20m old
+      declared: ^1.12.36
       installed: 1.12.36 on 2026jan30 0m old
     downloads:
       weekly: 12,299,472
@@ -500,7 +487,7 @@ modules:
     description: A better fetch API. Works on node, browser and workers.
     from: icarus
     versions:
-      declared: ^1.4.1 on 2024oct08 16m old
+      declared: ^1.5.1
       installed: 1.5.1 on 2025nov01 3m old
     downloads:
       weekly: 3,791,474
@@ -554,7 +541,7 @@ modules:
     description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
     from: net23
     versions:
-      declared: ^4.4.11 on 2024nov19 15m old
+      declared: ^4.31.2
       installed: 4.31.2 on 2026jan27 0m old
     downloads:
       weekly: 1,185,950
@@ -584,7 +571,7 @@ modules:
     description: Cybernetically enhanced web apps
     from: oauth
     versions:
-      declared: ^5.0.0 on 2024oct19 16m old
+      declared: ^5.49.2
       installed: 5.49.2 on 2026feb04 0m old
     downloads:
       weekly: 2,657,105
@@ -594,7 +581,7 @@ modules:
     description: A Twilio helper library
     from: net23
     versions:
-      declared: ^5.3.5 on 2024oct24 15m old
+      declared: ^5.12.0
       installed: 5.12.0 on 2026jan22 0m old
       current: 5.12.1 on 2026feb05 0m old
       latest: 5.12.1 on 2026feb05 0m old

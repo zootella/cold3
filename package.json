@@ -25,7 +25,7 @@
 	"devDependencies": {
 		"@electric-sql/pglite": "^0.3.14",
 		"dotenv": "^16.4.7",
-		"fast-glob": "^3.3.2",
+		"fast-glob": "^3.3.3",
 		"nanoid": "^5.1.5",
 		"otpauth": "^9.4.1",
 		"semver": "^7.7.3",
