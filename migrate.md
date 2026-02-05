@@ -1051,6 +1051,91 @@ Reviewed diff of all site changes. Actual substantive changes are minimal:
 
 Ready to commit outer shell, then move inwards to `app/` directory structure.
 
+**Directory restructure for Nuxt 4**
+
+Created `site/app/` and moved application code into it:
+
+Files: `app.vue`, `error.vue`
+
+Folders: `assets`, `components`, `composables`, `layouts`, `pages`, `plugins`, `stores`
+
+Stays at site root: `server`, `public`, `nuxt.config.js`, `tailwind.config.js`, `tsconfig.json`, `wrangler.jsonc`, `package.json`
+
+**tailwind.config.js**
+
+Removed manual `content` array entirely. The `@nuxtjs/tailwindcss` module auto-discovers paths based on Nuxt's directory structure — it will find `app/` automatically.
+
+**h3 v1 → v2 migration**
+
+Nuxt 4's Nitro pins to h3 `2.0.1-rc.11` (prerelease). The h3 event object structure changed between v1 and v2 — you can't read a v2 event with v1 functions.
+
+icarus/package.json: `"h3": "^1.13.0"` → `"h3": "2.0.1-rc.11"`
+
+API changes in icarus/level2.js:
+- `getQuery` and `readBody` — names unchanged, still work
+- `workerEvent.req.headers` → `getRequestHeaders(workerEvent)` (no more direct property access)
+- `workerEvent.req.method` → `getMethod(workerEvent)` (no more direct property access)
+
+Minimized h3 surface area: extract from h3 ONCE in `doorWorkerOpen`, then pass plain objects (`door.headers`) everywhere else. This gives us:
+- 4 h3 calls in doorWorkerOpen
+- 1 wrapper function (getWorkerMethod, parallel to getLambdaMethod)
+- 1 import statement with aliased names (h3v2_* prefix for clarity)
+
+Lambda code path unchanged — it reads directly from AWS event structure, not h3.
+
+Rollback to v1 (if needed) — 6 lines in 2 files:
+
+```diff
+# icarus/package.json
+- "h3": "2.0.1-rc.11",
++ "h3": "^1.13.0",
+
+# icarus/level2.js — import
+- import {
+- getQuery          as h3v2_getQuery,
+- readBody          as h3v2_readBody,
+- getRequestHeaders as h3v2_getRequestHeaders,
+- getMethod         as h3v2_getMethod,
+- } from 'h3'
++ import {getQuery, readBody} from 'h3'
+
+# icarus/level2.js — doorWorkerOpen extraction
+- door.headers = h3v2_getRequestHeaders(workerEvent)
++ door.headers = workerEvent.req.headers
+- door.query = h3v2_getQuery(workerEvent)
++ door.query = getQuery(workerEvent)
+- door.body = await h3v2_readBody(workerEvent)
++ door.body = await readBody(workerEvent)
+
+# icarus/level2.js — getWorkerMethod
+- return h3v2_getMethod(workerEvent)
++ return workerEvent.req.method
+```
+
+Everything downstream (headerOrigin, checkForwardedSecure, report call, etc.) uses `door.headers` — a plain object either way, unchanged.
+
+**process.client/server → import.meta.client/server**
+
+Nuxt 4 deprecates `process.client`/`process.server` in favor of `import.meta.client`/`import.meta.server`. The difference: `process.*` is runtime, `import.meta.*` is compile-time (Vite replaces with `true`/`false` at build).
+
+Most usage was already `import.meta.*` — only `senseEnvironment()` in icarus/level2.js used `process?.client`/`process?.server` for runtime environment detection.
+
+Changed senseEnvironment() to use `import.meta.*` and moved the checks outside the `if (type(typeof process))` block. In non-Vite environments (Lambda, plain Node), `import.meta.client` is `undefined` (falsy), so behavior is identical. Future-proofs against Nuxt eventually removing `process.client`/`process.server`.
+
+---
+
+**Phase 2 Complete**
+
+All code and configuration changes from Phase 2 table (lines 729-741) are done:
+
+- 2a: package.json versions aligned with fresh1, carets restored
+- 2b: nuxt.config.js patterns, compatibilityDate, nitro-cloudflare-dev removed
+- 2c: app/ directory structure, tailwind.config.js content array removed
+- 2d: h3 v2 migration, process.client/server → import.meta.*, senseEnvironment updated
+
+Ready for Phase 3: fix-a-thon. `pnpm install`, build, dev, test, deploy.
+
+
 
 
 

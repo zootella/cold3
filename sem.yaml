@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 4 1:06 PM
+  generated: 2026 Feb 4 7:31 PM
   🕰️ Installed version 1+ year old:
     - fast-glob
     - is-mobile
@@ -13,8 +13,6 @@ summary:
     - "@wagmi/connectors"
     - "@wagmi/core"
     - dotenv
-    - h3
-    - nuxt
     - vite
     - vue-router
     - zod
@@ -28,7 +26,9 @@ summary:
     - nitro-cloudflare-dev
     - sharp
   📌 Exact version pinned:
-    - nuxt
+    - "@nuxtjs/tailwindcss"
+    - "@pinia/nuxt"
+    - h3
     - nuxt-og-image
   downloads:
     5 figure:
@@ -38,7 +38,6 @@ summary:
       nuxt-og-image: 74,014
       "@sveltejs/adapter-cloudflare": 82,257
     6 figure:
-      nuxi: 201,171
       "@uppy/aws-s3": 292,709
       "@nuxtjs/tailwindcss": 306,918
       "@sveltejs/adapter-auto": 372,936
@@ -79,7 +78,6 @@ summary:
       "@aws-sdk/s3-request-presigner": 6,635,744
       vue: 8,549,415
       "@supabase/supabase-js": 9,033,555
-      pino-pretty: 9,221,395
     8 figure:
       libphonenumber-js: 12,299,472
       "@aws-sdk/client-s3": 16,370,151
@@ -169,8 +167,8 @@ modules:
     description: Tailwind CSS module for Nuxt
     from: site
     versions:
-      declared: ^6.14.0
-      installed: 6.14.0 on 2025apr27 9m old
+      declared: 6.14.0
+      installed: 6.14.0 on 2025apr27 9m old 📌 Exact version pinned
     downloads:
       weekly: 306,918
       on: 2026feb4.1829.44951
@@ -179,8 +177,8 @@ modules:
     description: Nuxt Module for pinia
     from: site
     versions:
-      declared: ^0.11.1
-      installed: 0.11.3 on 2025nov05 3m old 🐣 Pre-1.0 version installed
+      declared: 0.11.3
+      installed: 0.11.3 on 2025nov05 3m old 🐣 Pre-1.0 version installed 📌 Exact version pinned
     downloads:
       weekly: 574,156
       on: 2026feb4.1829.44951
@@ -275,7 +273,7 @@ modules:
     description: Full-stack <head> manager built for Vue.
     from: site
     versions:
-      declared: ^2.0.5
+      declared: ^2.1.2
       installed: 2.1.2 on 2026jan11 1m old
     downloads:
       weekly: 1,494,102
@@ -413,12 +411,12 @@ modules:
   h3:
     homepage: https://h3.dev
     description: Minimal H(TTP) framework built for high performance and portability.
-    from: icarus
+    from:
+      - icarus
+      - site
     versions:
-      declared: ^1.13.0
-      installed: 1.15.5 on 2026jan15 1m old
-      current: 1.15.5 on 2026jan15 1m old
-      latest: 2.0.1-rc.11 on 2026jan20 1m old 🎁 Major new version available
+      declared: 2.0.1-rc.11
+      installed: 2.0.1-rc.11 on 2026jan20 1m old 📌 Exact version pinned
     downloads:
       weekly: 4,159,531
       on: 2026feb4.1821.46960
@@ -467,30 +465,18 @@ modules:
     description: Build and Deploy Universal JavaScript Servers
     from: site
     versions:
-      declared: ^2.11.12
+      declared: ^2.13.1
       installed: 2.13.1 on 2026jan15 1m old
     downloads:
       weekly: 1,164,344
-      on: 2026feb4.1829.44951
-  nuxi:
-    homepage: https://github.com/nuxt/cli#readme
-    description: Nuxt CLI
-    from: site
-    versions:
-      declared: ^3.25.1
-      installed: 3.32.0 on 2026jan06 1m old
-    downloads:
-      weekly: 201,171
       on: 2026feb4.1829.44951
   nuxt:
     homepage: https://nuxt.com
     description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
     from: site
     versions:
-      declared: 3.20.0
-      installed: 3.20.0 on 2025oct28 3m old 📌 Exact version pinned
-      current: 3.20.0 on 2025oct28 3m old
-      latest: 4.3.0 on 2026jan22 0m old 🎁 Major new version available
+      declared: ^4.3.0
+      installed: 4.3.0 on 2026jan22 0m old
     downloads:
       weekly: 1,163,970
       on: 2026feb4.1829.44951
@@ -499,10 +485,8 @@ modules:
     description: Enlightened OG Image generation for Nuxt.
     from: site
     versions:
-      declared: 5.1.12
-      installed: 5.1.12 on 2025oct14 4m old 📌 Exact version pinned
-      current: 5.1.12 on 2025oct14 4m old
-      latest: 5.1.13 on 2025dec11 2m old
+      declared: 5.1.13
+      installed: 5.1.13 on 2025dec11 2m old 📌 Exact version pinned
     downloads:
       weekly: 74,014
       on: 2026feb4.1829.44951
@@ -533,20 +517,10 @@ modules:
     description: Intuitive, type safe and flexible Store for Vue
     from: site
     versions:
-      declared: ^3.0.3
+      declared: ^3.0.4
       installed: 3.0.4 on 2025nov05 3m old
     downloads:
       weekly: 2,840,519
-      on: 2026feb4.1829.44951
-  pino-pretty:
-    homepage: https://github.com/pinojs/pino-pretty#readme
-    description: Prettifier for Pino log lines
-    from: site
-    versions:
-      declared: ^13.1.1
-      installed: 13.1.3 on 2025dec01 2m old
-    downloads:
-      weekly: 9,221,395
       on: 2026feb4.1829.44951
   qrcode:
     homepage: http://github.com/soldair/node-qrcode
@@ -627,7 +601,7 @@ modules:
     description: Universal Storage Layer
     from: site
     versions:
-      declared: ^1.15.0
+      declared: ^1.17.4
       installed: 1.17.4 on 2026jan15 1m old
     downloads:
       weekly: 3,638,203
@@ -677,7 +651,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^3.5.16
+      declared: ^3.5.27
       installed: 3.5.27 on 2026jan19 1m old
     downloads:
       weekly: 8,549,415
@@ -689,7 +663,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^4.5.1
+      declared: ^4.6.4
       installed: 4.6.4 on 2025dec11 2m old
       current: 4.6.4 on 2025dec11 2m old
       latest: 5.0.2 on 2026feb02 0m old 🎁 Major new version available
@@ -703,7 +677,7 @@ modules:
       - oauth
       - site
     versions:
-      declared: ^4.20.0
+      declared: ^4.62.0
       installed: 4.62.0 on 2026feb03 0m old
     downloads:
       weekly: 3,405,027

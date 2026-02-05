@@ -23,7 +23,12 @@ Limit, checkActions,
 pgliteDynamicImport,
 } from './level1.js'
 
-import {getQuery, readBody} from 'h3'
+import {
+getQuery          as h3v2_getQuery,//parse query string from URL like /api/search?name=bob&count=5 → {name: 'bob', count: '5'}
+readBody          as h3v2_readBody,//parse POST body as JSON; awaitable
+getRequestHeaders as h3v2_getRequestHeaders,//extract headers like {name: 'value'} plain object
+getMethod         as h3v2_getMethod,//get HTTP method like 'GET' or 'POST'
+} from 'h3'//h3 from the unjs.io team is a js HTTP server, used by Nitro; our 2026feb Nuxt 4 scaffold showed Nitro is pinned to release candidate 2.0.1-rc.11 and so must we be if we want to look in the right places for headers and method in the event object
 import {ofetch} from 'ofetch'//Nuxt's $fetch calls ofetch; imported here so a lambda can call it
 import {createClient} from '@supabase/supabase-js'
 
@@ -91,7 +96,7 @@ export function stickerParts() {
 }
 
 //deep in a library function, where are we running? use fuzzy logic chaos theory and other 90s buzzwords to figure it out
-const _senseEnvironmentVersion = 3//if you change how this works at all, increment!
+const _senseEnvironmentVersion = 4//if you change how this works at all, increment!
 const _senseEnvironment = `
 Aclo Clie Docu Doma Loca Eigh Fetc Glob Lamb Node Proc Regi Requ Scri Self Serv Stor Wind Zulu >Determining
                          Eigh      Glob      Node Proc                                         >LocalNode
@@ -116,9 +121,9 @@ function senseEnvironment() {
 		if (text(process?.versions?.node))         a.push('Node')//node version
 		if (text(process?.env?.AWS_EXECUTION_ENV)) a.push('Lamb')//amazon
 		if (text(process?.env?.AWS_REGION))        a.push('Regi')
-		if (process?.client)                       a.push('Clie')//nuxt client
-		if (process?.server)                       a.push('Serv')//nuxt server
 	}
+	if (import.meta.client) a.push('Clie')//nuxt client
+	if (import.meta.server) a.push('Serv')//nuxt server
 	if (type(typeof navigator) && text(navigator?.userAgent)) {//start tags from the user agent with A
 		if (navigator.userAgent.includes('Android'))    a.push('Aand')
 		if (navigator.userAgent.includes('iOS'))        a.push('Aios')
@@ -550,7 +555,7 @@ export async function fetchWorker(url, options) {//from a Pinia store, Vue compo
 	if (!options.body) options.body = {}
 
 	let browserTag//with universal rendering, we may already be on the server! if so, we must forward the browser tag cookie
-	if (process.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag
+	if (import.meta.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag
 	if (browserTag) {
 		if (!options.headers) options.headers = {}
 		options.headers.cookie = `${composeCookieName()}=${composeCookieValue(browserTag)}`
@@ -684,46 +689,6 @@ export async function Lambda(route, action, body) {
 
 
 
-/*
-ttd april2025, clean this up, you're getting most of this now, you may find:
-
-function workerGotInformation(workerEvent) {
-
-	//confirmed by cloudflare
-	let tlsVersion = workerEvent.req.cf?.tlsVersion//like "TLSv1.3" or undefined if http rather than https
-	let clientIp = workerEvent.req.headers['cf-connecting-ip']//like "192.168.1.1" or "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-	//^ this information comes from cloudflare, so the client cannot fake it
-
-	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
-	let origin = workerEvent.req.headers['origin']//nuxt makes this lowercase
-	let referer = workerEvent.req.headers['referer']//and web standards can't correct this spelling!
-	//^ these come from the client browser, so script alone cannot fake it, but curl or postman can
-
-	//and now the rest are set by the client, and can be changed by script or browser extensions
-	let userAgent = workerEvent.req.headers['user-agent']//like "Mozilla/5.0 (iPhone; CPU iPhone OS..."
-	let method = getMethod(workerEvent)//like "GET" or "POST"
-	let url = workerEvent.req.url//like "route/subroute?key=value"
-}
-
-function lambdaGotInformation(lambdaEvent, lambdaContext) {
-
-	//confirmed by amazon
-	let isHttps = lambdaEvent.headers['x-forwarded-proto'] == 'https'//set by api gateway
-	let clientIp = lambdaEvent.requestContext?.identity?.sourceIp
-
-	//can't be spoofed by script or extension, but can be set by a sophisticated attacker
-	let origin = lambdaEvent.headers['origin']
-	let referer = lambdaEvent.headers['referer']
-
-	//script and extensions can spoof these, or they are simply set by the user and his script or extensions
-	let method = lambdaEvent.httpMethod
-	let urlPath = lambdaEvent.path
-	let urlQueryStringParameters = lambdaEvent.queryStringParameters
-	let userAgent = lambdaEvent.headers['User-Agent']
-
-	lambdaContext.awsRequestId//A unique identifier for the request (useful for tracing and debugging).
-}
-*/
 
 //      _                  
 //   __| | ___   ___  _ __ 
@@ -767,7 +732,7 @@ export async function doorWorker(method, {
 				query: door.query,//query string from a GET request
 				body: door.body,//content body from a POST
 				action: door.body?.action,
-				headers: door.workerEvent.req.headers,
+				headers: door.headers,
 				browserHash: await hashText(checkTag(door.workerEvent.context.browserTag)),//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
 			})
 
@@ -850,23 +815,25 @@ async function doorWorkerOpen({method, workerEvent}) {
 	door.task = Task({name: 'door worker'})
 
 	door.workerEvent = workerEvent//save everything they gave us about the request
-	door.origin = headerOrigin({workerEvent})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
-	door.ip = headerGetOne(workerEvent.req.headers, 'cf-connecting-ip')
+	door.headers = h3v2_getRequestHeaders(workerEvent)
+	door.origin = headerOrigin({headers: door.headers})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
+	door.ip = headerGetOne(door.headers, 'cf-connecting-ip')
 
-	if (method != getWorkerMethod(workerEvent)) toss('method mismatch', {method, door})//check the method
+	let requestMethod = getWorkerMethod(workerEvent)
+	if (method != requestMethod) toss('method mismatch', {method, requestMethod, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
-		door.query = getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
+		door.query = h3v2_getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
 
 		//authenticate worker get request: (0) block entirely!
 		toss('worker get not in use', {door})
 
 	} else if (method == 'POST') {
-		door.body = await readBody(workerEvent)//safely decode the body of the http request using unjs/destr; await because it may still be arriving!
+		door.body = await h3v2_readBody(workerEvent)//safely decode the body of the http request; await because it may still be arriving!
 
 		//authenticate worker post request: (1) https; (2) origin omitted or valid
-		checkForwardedSecure(workerEvent.req.headers)
-		checkOriginOmittedOrValid(workerEvent.req.headers)
+		checkForwardedSecure(door.headers)
+		checkOriginOmittedOrValid(door.headers)
 
 	} else { toss('method not supported', {door}) }
 	return door
@@ -1002,7 +969,7 @@ export function checkForwardedSecure(headers) { if (isLocal()) return//skip thes
 	} else { toss('multiple x forwarded proto headers', {n, headers}) }
 }
 function getWorkerMethod(workerEvent) {
-	return workerEvent.req.method//this is where to find the http method like POST in the event object from cloudflare
+	return h3v2_getMethod(workerEvent)//using h3 v2, same as Nitro
 }
 function getLambdaMethod(lambdaEvent) {
 	return (isCloud() ? lambdaEvent.requestContext?.http?.method//deployed to cloud, lambda function urls use payload format version 2.0
@@ -1059,11 +1026,11 @@ export function headerGetOne(headers, name) {
 	else             toss('overlapping headers', {headers, name})
 }
 
-function headerOrigin({workerEvent}) {
+function headerOrigin({headers}) {
 	return (
-		toTextOrBlank(headerGetOne(workerEvent.req.headers, 'x-forwarded-proto'))
+		toTextOrBlank(headerGetOne(headers, 'x-forwarded-proto'))
 		+ '://' +
-		toTextOrBlank(headerGetOne(workerEvent.req.headers, 'host'))
+		toTextOrBlank(headerGetOne(headers, 'host'))
 	)
 	//just in cloudflare, we need the origin like "http://localhost:3000" or "https://cold3.cc"
 	//from chat and observation, we assemble it from two headers
