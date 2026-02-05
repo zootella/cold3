@@ -23,7 +23,7 @@
 		"@wagmi/connectors": "^5.9.9",
 		"@wagmi/core": "^2.20.3",
 		"credit-card-type": "^10.1.2",
-		"h3": "2.0.1-rc.11",
+		"h3": "^1.15.5",
 		"is-mobile": "^5.0.0",
 		"libphonenumber-js": "^1.12.36",
 		"ofetch": "^1.5.1",

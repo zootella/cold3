@@ -1238,5 +1238,37 @@ This is mechanical — just closing the gap between what package.json says and w
 
 h3 stays pinned to exactly `2.0.1-rc.11` (no caret) — intentional, matching fresh1 scaffold. rc versions can break between releases; unpin when h3 v2 goes stable.
 
+**Phase 2 complete — Phase 3 begins**
+
+Audited all Phase 2 items against the table (lines 768-780). Everything done except nitro-cloudflare-dev removal, which was intentionally deferred to Phase 3 testing. Cookie middleware uses h3 auto-imports (getCookie, setCookie, defineEventHandler) — no code changes needed, just runtime verification.
+
+Phase 3 order: unit tests first (`ja test`), then builds (`ja build` in each workspace), then local dev (`ja local`). Fix what breaks at each stage before moving to the next.
+
+**Phase 3: first build attempt**
+
+Unit tests pass. oauth and net23 build normally (10s, 68s). Site build fails at 21s:
+
+```
+"sendError" is not exported by h3@2.0.1-rc.11
+```
+
+nuxt-og-image 5.1.13's satori renderer imports `sendError` from h3. h3 v2 removed `sendError` (replaced with `throw createError()`). Build dies during Nitro's server-side rollup.
+
+**Root cause: our foundational assumption was wrong.** We assumed Nuxt 4 = h3 v2. It doesn't. `pnpm why h3 -r` reveals:
+
+- `h3 2.0.1-rc.11` — our explicit pin in site and icarus package.json
+- `h3 1.15.5` — what Nitro 2.13.1 actually depends on, and what every transitive dep uses
+
+Nuxt 4.3.0 / Nitro 2.13.1 still runs on h3 v1. The fresh1 scaffold included `h3: "2.0.1-rc.11"` in devDependencies, but that scaffold doesn't have nuxt-og-image — so the conflict never surfaced there. We copied it, and it became the top-level resolution, shadowing Nitro's 1.15.5. When og-image tried to import `sendError`, pnpm handed it our v2 instead of Nitro's v1.
+
+The h3 v2 migration in icarus/level2.js (aliased imports, getRequestHeaders, getMethod) was premature — the runtime h3 is v1. Those v1 APIs (`workerEvent.req.headers`, `workerEvent.req.method`) are what Nitro actually provides.
+
+**Fix:** Reverse the h3 v2 changes:
+
+1. icarus/package.json: `"h3": "2.0.1-rc.11"` → `"h3": "^1.13.0"` (original v1 range)
+2. site/package.json: remove `"h3": "2.0.1-rc.11"` entirely (Nitro provides h3)
+3. icarus/level2.js: revert the 6 lines per the rollback documented at lines 1126-1152
+
+After this, the whole monorepo resolves to h3 1.15.5 via Nitro. nuxt-og-image finds `sendError`. Our code uses v1 APIs that Nitro provides. h3 v2 migration can happen later when Nitro actually upgrades.
 
 

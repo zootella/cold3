@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 5 11:34 AM
+  generated: 2026 Feb 5 12:30 PM
   🕰️ Installed version 1+ year old:
     - fast-glob
     - is-mobile
@@ -13,6 +13,7 @@ summary:
     - "@wagmi/connectors"
     - "@wagmi/core"
     - dotenv
+    - h3
     - vite
     - vue-router
     - zod
@@ -28,7 +29,6 @@ summary:
   📌 Exact version pinned:
     - "@nuxtjs/tailwindcss"
     - "@pinia/nuxt"
-    - h3
     - nuxt-og-image
   downloads:
     5 figure:
@@ -401,14 +401,12 @@ modules:
   h3:
     homepage: https://h3.dev
     description: Minimal H(TTP) framework built for high performance and portability.
-    from:
-      - icarus
-      - site
+    from: icarus
     versions:
-      declared: 2.0.1-rc.11
-      installed: 2.0.1-rc.11 on 2026jan20 1m old 📌 Exact version pinned
-      current: 2.0.1-rc.11 on 2026jan20 1m old
-      latest: 2.0.1-rc.13 on 2026feb05 0m old
+      declared: ^1.15.5
+      installed: 1.15.5 on 2026jan15 1m old
+      current: 1.15.5 on 2026jan15 1m old
+      latest: 2.0.1-rc.13 on 2026feb05 0m old 🎁 Major new version available
     downloads:
       weekly: 4,159,531
       on: 2026feb4.1821.46960

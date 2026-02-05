@@ -24,11 +24,9 @@ pgliteDynamicImport,
 } from './level1.js'
 
 import {
-getQuery          as h3v2_getQuery,//parse query string from URL like /api/search?name=bob&count=5 → {name: 'bob', count: '5'}
-readBody          as h3v2_readBody,//parse POST body as JSON; awaitable
-getRequestHeaders as h3v2_getRequestHeaders,//extract headers like {name: 'value'} plain object
-getMethod         as h3v2_getMethod,//get HTTP method like 'GET' or 'POST'
-} from 'h3'//h3 from the unjs.io team is a js HTTP server, used by Nitro; our 2026feb Nuxt 4 scaffold showed Nitro is pinned to release candidate 2.0.1-rc.11 and so must we be if we want to look in the right places for headers and method in the event object
+getQuery as h3v1_getQuery,//parse query string from URL like /api/search?name=bob&count=5 → {name: 'bob', count: '5'}
+readBody as h3v1_readBody,//parse POST body as JSON
+} from 'h3'//h3 is a javascript HTTP server from the unjs.io team which Nitro uses; in a year or so we may need to update to v2
 import {ofetch} from 'ofetch'//Nuxt's $fetch calls ofetch; imported here so a lambda can call it
 import {createClient} from '@supabase/supabase-js'
 
@@ -815,7 +813,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	door.task = Task({name: 'door worker'})
 
 	door.workerEvent = workerEvent//save everything they gave us about the request
-	door.headers = h3v2_getRequestHeaders(workerEvent)
+	door.headers = getWorkerHeaders(workerEvent)
 	door.origin = headerOrigin({headers: door.headers})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
 	door.ip = headerGetOne(door.headers, 'cf-connecting-ip')
 
@@ -823,13 +821,13 @@ async function doorWorkerOpen({method, workerEvent}) {
 	if (method != requestMethod) toss('method mismatch', {method, requestMethod, door})//check the method
 	door.method = method//save the method
 	if (method == 'GET') {
-		door.query = h3v2_getQuery(workerEvent)//parse the params object from the request url using unjs/ufo
+		door.query = getWorkerQuery(workerEvent)//parse the params object from the request url using unjs/ufo
 
 		//authenticate worker get request: (0) block entirely!
 		toss('worker get not in use', {door})
 
 	} else if (method == 'POST') {
-		door.body = await h3v2_readBody(workerEvent)//safely decode the body of the http request; await because it may still be arriving!
+		door.body = await getWorkerBody(workerEvent)//safely decode the body of the http request; await because it may still be arriving!
 
 		//authenticate worker post request: (1) https; (2) origin omitted or valid
 		checkForwardedSecure(door.headers)
@@ -968,13 +966,14 @@ export function checkForwardedSecure(headers) { if (isLocal()) return//skip thes
 		if (v != 'https') toss('x forwarded proto header not https', {n, v, headers})
 	} else { toss('multiple x forwarded proto headers', {n, headers}) }
 }
-function getWorkerMethod(workerEvent) {
-	return h3v2_getMethod(workerEvent)//using h3 v2, same as Nitro
-}
+function getWorkerQuery(workerEvent) { return h3v1_getQuery(workerEvent) }//for h3 v1 this is a method,
+function getWorkerHeaders(workerEvent) { return workerEvent.req.headers }//but this is just a property dereference
+function getWorkerMethod(workerEvent) { return workerEvent.req.method }//abstracted these to refactor here when nitro migrates to h3 v2
 function getLambdaMethod(lambdaEvent) {
 	return (isCloud() ? lambdaEvent.requestContext?.http?.method//deployed to cloud, lambda function urls use payload format version 2.0
 		: lambdaEvent.httpMethod)//running locally, object arrives in older api gateway format
 }
+async function getWorkerBody(workerEvent) { return await h3v1_readBody(workerEvent) }
 export function checkOriginOmittedOrValid(headers) {
 	let n = headerCount(headers, 'Origin')
 	if (n == 0) {}//omitted is fine
