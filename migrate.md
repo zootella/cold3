@@ -1271,4 +1271,74 @@ The h3 v2 migration in icarus/level2.js (aliased imports, getRequestHeaders, get
 
 After this, the whole monorepo resolves to h3 1.15.5 via Nitro. nuxt-og-image finds `sendError`. Our code uses v1 APIs that Nitro provides. h3 v2 migration can happen later when Nitro actually upgrades.
 
+**h3 v2 → v1 revert complete**
+
+Reversed all h3 v2 changes:
+
+1. icarus/package.json: `"h3": "2.0.1-rc.11"` → `"^1.15.5"` (caret range, resolved to 1.15.5 via Nitro)
+2. site/package.json: removed `"h3": "2.0.1-rc.11"` entirely (Nitro provides h3)
+3. icarus/level2.js: reverted import from 4 aliased `h3v2_*` functions to 2 `h3v1_*` functions (`getQuery`, `readBody`). Headers and method now come from `workerEvent.req.headers` and `workerEvent.req.method` directly (h3 v1 style).
+4. Abstracted all h3 access behind four `getWorker*` one-liners (`getWorkerQuery`, `getWorkerHeaders`, `getWorkerMethod`, `getWorkerBody`) so that a future h3 v2 migration only requires changing those four functions.
+
+wash + install + test + sem + seal all clean. sem.yaml confirms: h3 moved from `📌 Exact version pinned` to `🎁 Major new version available` (installed 1.15.5, latest 2.0.1-rc.13). h3@2.0.1-rc.11 is fully gone from pnpm-lock.yaml.
+
+Ready to retry Phase 3: `ja test`, then `ja build` in each workspace.
+
+**Phase 3 retry: all three builds pass**
+
+Unit tests pass. All three workspaces build successfully:
+
+- **oauth** (10s) — clean. `ox` `/*#__PURE__*/` annotation warnings and pglite node:fs externalization are pre-existing wagmi/viem noise.
+- **net23** (68s) — clean. `npm warn deprecated` messages are all transitive WalletConnect churn (sign-client, universal-provider, ethereum-provider). Tests pass (912 + 178 assertions).
+- **site** (22s) — builds on Nuxt 4.3.0 / Nitro 2.13.1 / Vite 6.4.1 / Vue 3.5.27. No h3/sendError error — nuxt-og-image renderer builds fine now that h3 resolves to v1. Pre-existing warnings remain: Rollup circular chunk warnings from barrel file re-exports (originOauth, originApex, lambda23, runTestsSticker through icarus/index.js), vidstack sourcemap warning, chunk size warning from crypto/wallet/pglite bundles. Nitro preset cloudflare-module, compatibility date 2025-07-07.
+
+No new warnings from the migration. Next: `ja local` to test the dev server.
+
+**Phase 3: local dev servers and smoke tests pass**
+
+Ran `ja local` on all three workspaces (oauth, net23, site) and went through manual smoke test steps. All passed. The Nuxt 3 → 4 migration is functionally complete — tests, builds, and local dev all working.
+
+**Phase 3: all three workspaces deployed to production**
+
+`ja cloud` succeeded for oauth, net23, and site. Terminal output clean. Running manual smoke tests on the production domain now.
+
+**Phase 3: production smoke tests — og-image 500**
+
+All production smoke tests pass except nuxt-og-image. The `__og-image__` endpoint returns a 500. `wrangler tail` captured the error:
+
+```
+failed to asynchronously prepare wasm: CompileError: WebAssembly.instantiate(): Wasm code generation disallowed by embedder
+Aborted(CompileError: WebAssembly.instantiate(): Wasm code generation disallowed by embedder)
+```
+
+nuxt-og-image's satori renderer uses `yoga-wasm-web` for CSS layout. Cloudflare Workers requires WASM to be pre-compiled and imported as module bindings — runtime `WebAssembly.instantiate()` with raw bytes is blocked.
+
+This worked on Nuxt 3. The og-image also works locally on Nuxt 4 (local dev doesn't have Workers WASM restrictions). The regression is production-only.
+
+**Three possible causes:**
+
+1. **compatibility_date** `2025-06-10` → `2025-09-27` — the fresh scaffold bumped this. Cloudflare may have tightened WASM runtime restrictions between those dates.
+2. **Nitro version** — older Nitro (Nuxt 3) may have bundled/imported WASM differently for `cloudflare-module`.
+3. **nuxt-og-image** `5.1.12` → `5.1.13` — minor bump but could have changed how yoga-wasm is loaded.
+
+**Investigated nuxt-og-image v6 beta** (6.0.0-beta.15) as a possible fix. Findings:
+
+- v6 beta.8 (2026-01-27) specifically fixed Cloudflare Workers WASM: switched satori from node/asm.js binding (runtime `WebAssembly.instantiate()`) to ESM WASM binding with `?module` suffixes that Cloudflare can bundle as module imports. This directly targets our error.
+- However, GitHub issue #434 (same error) remains open — fix may not cover all scenarios.
+- 15 betas in 13 days, still making breaking changes (renderer rename in beta.14, component resolution rework in beta.10). No RC yet. Early-to-mid beta quality.
+- API changes required: `defineOgImageComponent()` → `defineOgImage()`, must eject NuxtSeo template, add satori + resvg-wasm as explicit deps, template suffix `.satori.vue`, URL path changes (`/__og-image__/image/` → `/_og/d/`).
+- Migration tool exists: `npx nuxt-og-image migrate v6`.
+
+**Assessment:** v6 is the right long-term fix but pinning to a fast-moving beta risks chasing breaking changes. Simplest first step: roll compatibility_date back to `2025-06-10` — one-line change, zero code risk, isolates whether the date or the bundler is the cause.
+
+**Broader community research** (see og.md for full report):
+
+- Nuxt 4 = h3 v1 / Nitro v2 is confirmed by Daniel Roe's roadmap. h3 v2 / Nitro v3 is scoped to Nuxt 5. GitHub issue nuxt/nuxt#34109 shows others hit the same h3 v2 leaking problem we did.
+- nuxt-og-image v5 on Cloudflare Workers is documented as having known unresolved issues (WASM loading, cross-request I/O isolation for fonts/images, script size limits). No fix planned for v5 — fixes are v6 only.
+- Community uses three paths: (A) prerender OG images at build time (avoids runtime WASM, but only works for static routes — our card pages are dynamic), (B) upgrade to v6 beta (where the WASM fixes live), (C) bypass nuxt-og-image entirely with `@cf-wasm/og`.
+- v6 bundles Inter fonts by default (sidesteps the Google Fonts fetch problem), unbundles renderer deps (must install satori + resvg-wasm explicitly), and fixes WASM imports with `?module` suffixes for Workers.
+- Our og-image WAS working on Nuxt 3 + v5.1.12 + compatibility_date 2025-06-10. So something in the Nuxt 3→4 pipeline change (Nitro version, WASM bundling) or the compat date bump broke it.
+
+**Testing compatibility_date rollback** — reverted wrangler.jsonc from `2025-09-27` to `2025-06-10` to isolate.
+
 
