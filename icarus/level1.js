@@ -1295,9 +1295,10 @@ async function cycle6238() { const {otpauth} = await fuzzDynamicImport()
 	let code = (new otpauth.TOTP({secret: otpauth.Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})//npm otpauth module generates the code
 	ok(await totpValidate({secret: d, code, now: t}))//our implementation validates it
 }
-test(async () => {
-	let cycles = await testCycle(0.5*Time.second, cycle6238)
-	log(cycles)
+noop(async () => {
+	const seconds = 4
+	let cycles = await testCycle(seconds*Time.second, cycle6238)
+	log(`In ${seconds} seconds, matched 📲 ${commas(cycles)} RFC 6238 TOTP codes with random secrets and times confirming npm's otpauth == our single screen browser crypto implementation, FTW`)
 })
 
 

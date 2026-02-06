@@ -1921,20 +1921,68 @@ noop(async () => {//see what these objects look like before we stringify and bas
 //                                                     |_|    
 
 /*
-RFC 6238 defines TOTP for short-lived one-time passwords using synchronized device clocks, enabling two-factor authentication using authenticator apps that operate offline, aren't tied to a provider or centralized account system, and offer secure, portable verification
+RFC 6238 defines TOTP for short-lived one-time passwords using synchronized device clocks, enabling two-factor authentication using authenticator apps that operate offline, aren't tied to a provider or centralized account system, and offer secure, portable verification. It's fantastic in that it is not tied to an Internet connection, a service provider, or even a software vendor
+it's strong yet usable security provided by pure cryptography, at its best
 
-npm otpauth is popular and works in a web worker, but brings its own javascript implementation of cryptographic primitives, so instead Claude and me coded the specification on top of the native subtle library in less than a screenful of code, below
+There's an app for that: npm otpauth is popular and works in a web worker, but brings its own javascript implementation of cryptographic primitives, so instead Claude and me coded the specification on top of the native subtle library in less than a screenful of code, below. In level1, you can switch on cycle6238 to fuzz test our code here matches that npm module
+
+Also, about backup codes: Many TOTP implementations at the user level include setting backup codes, but they're not part of the standard, and we're going to use other credentials as multiple factors for account recovery instead
 */
+export const totpConstants = Object.freeze({
 
-const totp_size = 20//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
-const totp_algorithm = 'SHA1'//SHA1-HMAC is what authenticator apps expect
-const totp_code_length = 6//6 digit codes, what users are used to
-const totp_period_seconds = 30//30 second refresh, also what users are used to
-const totp_window = 1//permit codes from the previous and next 1 time periods to work with clock synchronization and user delay
+	//about the totp standard and our typical use of it
+	secretSize: 20,//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
+	algorithm: 'SHA1',//SHA1-HMAC is what authenticator apps expect
+	codeLength: 6,//6 digit codes, what users are used to
+	period: 30,//30 second refresh, also what users are used to
+	window: 1,//permit codes from the previous and next 1 time periods to work with clock synchronization and user delay
+
+	/*
+	code entry must be supplemented by a rate limiting method,
+	as an attacker who gets to the code guess box could quickly try all million possibilities
+	consider a simple guard that only allows N guesses in a time period P--how do we choose N and P?
+	lower N is more secure, but a sloppy user is inconvenienced by locking their own account
+	longer P is more secure, but makes an attack to send intentional wrong guesses to lock the user's account more impactful
+
+	so what's the equation?
+	S = B/P = ln(0.5) / ln(1 - (3 * N/1000000))
+	- 0.5 is 50% chance of guessing correctly
+	- 1000000 is total possible 6 digit codes
+	- 3 is number of targets a guess can match for previous, current, next time windows
+	the attacker is limited to N guesses every P period time, creating a guard that breaks in B lifetime
+	guard strength is S = B/P, the system breaks after this many time period durations
+	let's plug in some N guesses to calculate the resulting S strength multiplier
+	N  4 guesses: S 57761 (/365.25 for a P of 24 hours = 158 years to break)
+	N  6 guesses: S 38507 (105 years) 📌 we're going to pick this one
+	N 12 guesses: S 19253 (52 years, allowing more guesses means a shorter lifetime to break)
+
+	also solved the same equation holding break time constant at 100 years which is 36525 days
+	to be able to go between N guesses allowed in P_days time period
+	P_days = 36525 * ln(1 - (3 * N / 1000000)) / ln(0.5)
+	N = (1000000 / 3) * (1 - e^(P_days * ln(0.5) / 36525))
+	played around with those in wolfram alpha; more guesses fit in longer time periods
+
+	both OTP and TOTP have strength calculations related to the geometric distribution or birthday problem 🧮
+	*/
+	guardWrongGuesses: 6,//only let a first factor authenticated user enter 6 wrong code guesses
+	guardHorizon: Time.day,//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess
+})
+
+//make sure codes and secret from the page are present and look ok with these helper functions
+export function checkTotpSecret(secret) {//a totp secret is 20 bytes encoded in base 32 like "X7C25WC6CUCF77BO7BOCVUHAZ553UKYA"
+	if (Data({base32: secret}).size() != totpConstants.secretSize) toss('check', {secret})//data performs round trip check
+}
+export function checkTotpCode(code) {//code is a string of 6 numerals that can start 0 like "012345"
+	checkNumerals(code, totpConstants.codeLength)
+}
+test(() => {
+	checkTotpSecret('X7C25WC6CUCF77BO7BOCVUHAZ553UKYA')
+	checkTotpCode('012345')//sanity check that these don't throw
+})
 
 //make the qr code for the user to scan to set up their authenticator app
 export async function totpEnroll({label, issuer, addIdentifier, secret}) {//only pass in secret for testing
-	if (!secret) secret = Data({random: totp_size})//generate a new random secret for this enrollment
+	if (!secret) secret = Data({random: totpConstants.secretSize})//generate a new random secret for this enrollment
 
 	//make the otpauth://totp/... URI for the redirect or QR code
 	checkText(label); checkText(issuer)
@@ -1947,9 +1995,9 @@ export async function totpEnroll({label, issuer, addIdentifier, secret}) {//only
 
 	let params = new URLSearchParams({
 		secret: secret.base32(),
-		algorithm: totp_algorithm,
-		digits: totp_code_length.toString(),
-		period: totp_period_seconds.toString(),
+		algorithm: totpConstants.algorithm,
+		digits: totpConstants.codeLength.toString(),
+		period: totpConstants.period.toString(),
 		issuer: issuer,
 	})
 	let uri = `otpauth://totp/${encodeURIComponent(`${issuer}:${label}`)}?${params}`
@@ -1962,8 +2010,8 @@ export async function totpIdentifier({secret}) { return (await hashText(secret.b
 export async function totpValidate({secret, code, now}) {//only pass in tick count now for testing
 	if (!now) now = Now()//validate based on the time right now, trusted server clock
 
-	for (let i = -totp_window; i <= totp_window; i++) {//our window is 1, so we'll loop 3 times
-		let t = now + (i * totp_period_seconds * Time.second)
+	for (let i = -totpConstants.window; i <= totpConstants.window; i++) {//our window is 1, so we'll loop 3 times
+		let t = now + (i * totpConstants.period * Time.second)
 		let correct = await totpGenerate({secret, now: t})
 		if (code == correct) return true
 	}
@@ -1973,7 +2021,7 @@ export async function totpValidate({secret, code, now}) {//only pass in tick cou
 export async function totpGenerate({secret, now}) {//exported for demonstration components only, ttd february
 
 	//counter: given a number of milliseconds since the start of 1970, generate the 8 bytes to hash
-	let period = Math.floor(now / (totp_period_seconds * Time.second))
+	let period = Math.floor(now / (totpConstants.period * Time.second))
 	let counterArray = new Uint8Array(8)
 	let view = new DataView(counterArray.buffer)
 	view.setUint32(4, period, false)//store in last 4 bytes, big-endian
@@ -1987,11 +2035,11 @@ export async function totpGenerate({secret, now}) {//exported for demonstration 
 		((array[offset + 1] & 0xff) << 16) |//keep all bits, shift 16
 		((array[offset + 2] & 0xff) << 8) |//keep all bits, shift 8
 		(array[offset + 3] & 0xff)//keep all bits, no shift
-	) % Math.pow(10, totp_code_length)//modulo by 10^codeLength to get final code
-	return code.toString().padStart(totp_code_length, '0')//convert to string with leading zeros
+	) % Math.pow(10, totpConstants.codeLength)//modulo by 10^codeLength to get final code
+	return code.toString().padStart(totpConstants.codeLength, '0')//convert to string with leading zeros
 }
-
 test(async () => {
+
 	//enroll: URI formatting, identifier, all fields
 	let enrollment = await totpEnroll({
 		secret: Data({base32: 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR'}),
@@ -2011,6 +2059,7 @@ test(async () => {
 	ok(uri.endsWith('&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com'))
 })
 test(async () => {
+
 	//RFC 6238 Appendix B test vectors for generate
 	let rfc = Data({text: '12345678901234567890'})
 	ok(await totpGenerate({secret: rfc, now: 59000})         == '287082')
@@ -2032,67 +2081,6 @@ test(async () => {
 	ok((await totpValidate({secret, code, now: t})))
 	ok((await totpValidate({secret, code, now: t + (30*Time.second)})))
 	ok(!(await totpValidate({secret, code, now: t + (60*Time.second)})))
-})
-
-/*
-RFC6238 TOTP is fantastic in that it is not tied to an Internet connection, a service provider, or even a software vendor
-it's strong yet usable security provided by pure cryptography, at its best
-
-code entry must be supplemented by a rate limiting method,
-as an attacker who gets to the code guess box could quickly try all million possibilities
-consider a simple guard that only allows N guesses in a time period P--how do we choose N and P?
-lower N is more secure, but a sloppy user is inconvenienced by locking their own account
-longer P is more secure, but makes an attack to send intentional wrong guesses to lock the user's account more impactful
-
-so what's the equation?
-S = B/P = ln(0.5) / ln(1 - (3 * N/1000000))
-- 0.5 is 50% chance of guessing correctly
-- 1000000 is total possible 6 digit codes
-- 3 is number of targets a guess can match for previous, current, next time windows
-the attacker is limited to N guesses every P period time, creating a guard that breaks in B lifetime
-guard strength is S = B/P, the system breaks after this many time period durations
-let's plug in some N guesses to calculate the resulting S strength multiplier
-N  4 guesses: S 57761 (/365.25 for a P of 24 hours = 158 years to break)
-N  6 guesses: S 38507 (105 years) 📌 we're going to pick this one
-N 12 guesses: S 19253 (52 years, allowing more guesses means a shorter lifetime to break)
-
-also solved the same equation holding break time constant at 100 years which is 36525 days
-to be able to go between N guesses allowed in P_days time period
-P_days = 36525 * ln(1 - (3 * N / 1000000)) / ln(0.5)
-N = (1000000 / 3) * (1 - e^(P_days * ln(0.5) / 36525))
-played around with those in wolfram alpha; more guesses fit in longer time periods
-
-both OTP and TOTP have strength calculations related to the geometric distribution or birthday problem 🧮
-*/
-export const totp_guard_wrong_guesses = 6//only let a first factor authenticated user enter 6 wrong code guesses
-export const totp_guard_horizon = Time.day//every 24 hours, to make an attacker spend 105 years to reach 50% chance of correct guess
-//ttd august2025, also, not doing backup codes in this scope; they're commonly implemented by products using rfc6238 but not part of that standard
-
-export const totpConstants = {
-
-	//about the totp standard and our typical use of it
-	secretSize: totp_size,//20 bytes; secrets are strings in base 32
-	algorithm: totp_algorithm,
-	codeLength: totp_code_length,//6 numerals, codes are strings
-	period: totp_period_seconds,
-	window: totp_window,
-
-	//presets we chose for rate limiting protection
-	guardWrongGuesses: totp_guard_wrong_guesses,//block guessing on a secret after 6 wrong guesses
-	guardHorizon: totp_guard_horizon,//in the past 24 hours, in milliseconds
-}
-Object.freeze(totpConstants)
-
-//make sure codes and secret from the page are present and look ok with these helper functions
-export function checkTotpSecret(secret) {//a totp secret is 20 bytes encoded in base 32 like "X7C25WC6CUCF77BO7BOCVUHAZ553UKYA"
-	if (Data({base32: secret}).size() != totpConstants.secretSize) toss('check', {secret})//data performs round trip check
-}
-export function checkTotpCode(code) {//code is a string of 6 numerals that can start 0 like "012345"
-	checkNumerals(code, totpConstants.codeLength)
-}
-test(() => {
-	checkTotpSecret('X7C25WC6CUCF77BO7BOCVUHAZ553UKYA')
-	checkTotpCode('012345')//sanity check that these don't throw
 })
 
 //  _               _                   _     
