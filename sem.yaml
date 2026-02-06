@@ -1,6 +1,7 @@
 summary:
-  generated: 2026 Feb 5 4:38 PM
+  generated: 2026 Feb 5 6:41 PM
   🕰️ Installed version 1+ year old:
+    - "@resvg/resvg-wasm"
     - fast-glob
     - is-mobile
     - qrcode
@@ -18,6 +19,7 @@ summary:
     - vue-router
     - zod
   🩸 Latest tag is behind installed:
+    - nuxt-og-image
     - vidstack
   🐣 Pre-1.0 version installed:
     - "@electric-sql/pglite"
@@ -25,10 +27,12 @@ summary:
     - "@tailwindcss/forms"
     - "@vercel/nft"
     - nitro-cloudflare-dev
+    - satori
     - sharp
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
+    - satori
   downloads:
     5 figure:
       nitro-cloudflare-dev: 12,417
@@ -39,6 +43,7 @@ summary:
     6 figure:
       "@uppy/aws-s3": 292,709
       "@sveltejs/adapter-auto": 372,936
+      "@resvg/resvg-wasm": 381,134
       "@uppy/dashboard": 381,907
       "@tanstack/vue-query": 385,669
       "@wagmi/core": 485,845
@@ -46,6 +51,7 @@ summary:
       "@uppy/core": 543,303
       serverless-offline: 561,989
       "@pinia/nuxt": 574,156
+      satori: 650,032
       "@sveltejs/kit": 876,575
       otpauth: 906,306
     7 figure:
@@ -170,6 +176,16 @@ modules:
     downloads:
       weekly: 574,156
       on: 2026feb4.1829.44951
+  "@resvg/resvg-wasm":
+    homepage: https://github.com/yisibl/resvg-js#readme
+    description: A high-performance SVG renderer and toolkit, powered by Rust based resvg and napi-rs
+    from: site
+    versions:
+      declared: ^2.6.2
+      installed: 2.6.2 on 2024mar26 22m old 🕰️ Installed version 1+ year old
+    downloads:
+      weekly: 381,134
+      on: 2026feb6.0027.3002
   "@sendgrid/mail":
     homepage: https://sendgrid.com
     description: Twilio SendGrid NodeJS mail service
@@ -320,7 +336,7 @@ modules:
       declared: ^0.29.2 on 2025feb20 12m old
       installed: 0.29.4 on 2025may30 8m old 🐣 Pre-1.0 version installed
       current: 0.29.4 on 2025may30 8m old
-      latest: 1.3.0 on 2026jan21 0m old 🎁 Major new version available
+      latest: 1.3.0 on 2026jan21 1m old 🎁 Major new version available
     downloads:
       weekly: 5,524,454
       on: 2026feb4.1825.16236
@@ -483,8 +499,10 @@ modules:
     description: Enlightened OG Image generation for Nuxt.
     from: site
     versions:
-      declared: 5.1.13
-      installed: 5.1.13 on 2025dec11 2m old 📌 Exact version pinned
+      declared: 6.0.0-beta.15
+      installed: 6.0.0-beta.15 on 2026feb05 0m old 📌 Exact version pinned
+      current: 6.0.0-beta.15 on 2026feb05 0m old
+      latest: 5.1.13 on 2025dec11 2m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 74,014
       on: 2026feb4.1829.44951
@@ -530,6 +548,18 @@ modules:
     downloads:
       weekly: 6,394,940
       on: 2026feb4.1821.46960
+  satori:
+    homepage: https://github.com/vercel/satori#readme
+    description: Enlightened library to convert HTML and CSS to SVG.
+    from: site
+    versions:
+      declared: 0.15.2
+      installed: 0.15.2 on 2025jun09 8m old 🐣 Pre-1.0 version installed 📌 Exact version pinned
+      current: 0.15.2 on 2025jun09 8m old
+      latest: 0.19.1 on 2026jan16 1m old
+    downloads:
+      weekly: 650,032
+      on: 2026feb6.0027.3002
   semver:
     homepage: https://github.com/npm/node-semver#readme
     description: The semantic version parser used by npm.

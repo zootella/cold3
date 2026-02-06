@@ -11,11 +11,9 @@ let name1 = _route.params.more//from the route after "card"; property name is mo
 let sticker = stickerParts()
 let stickerText = [sticker.where, sticker.sealedText, sticker.hashText].join('.')
 
-defineOgImageComponent('NuxtSeo', {
-	title: `💦 dynamic card for ${name1}`,
-	description: stickerText,
-	theme: '#ff00ff',
-	colorMode: 'light'
+defineOgImage('ProfileCard', {
+	title: `🧔🏻 ${name1}`,
+	sticker: stickerText,
 })
 
 const refSource = ref('')
