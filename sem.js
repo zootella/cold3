@@ -29,7 +29,7 @@ Each module gets flagged with notes. Here's what they mean and what to do:
    Breaking changes, intentional decision required. Some major bumps are trivial (dotenv 16→17),
    others are real work (wagmi 2→3, zod 3→4). Action: evaluate the changelog, test, upgrade.
 
-🩸 Latest tag is behind installed
+🩸 Installed tag beyond latest
    You're on a version newer than what npm calls "latest" — typically because you installed from
    a @next or prerelease tag. They already made the version you're running; the question is
    whether they'll promote it to stable, or you're riding a prerelease channel indefinitely.
@@ -56,7 +56,7 @@ const note_old_installed = '🕰️ Installed version 1+ year old'
 const note_old_declared = '🏺 Declared release 1+ year earlier than installed'
 const note_stale_current = '⏰ Current version 6+ months newer'
 const note_major_available = '🎁 Major new version available'
-const note_latest_behind = '🩸 Latest tag is behind installed'
+const note_latest_behind = '🩸 Installed tag beyond latest'
 const note_version_zero = '🐣 Pre-1.0 version installed'
 const note_exact_pin = '📌 Exact version pinned'
 const note_deprecated = '🪦 Installed version marked deprecated on npm'

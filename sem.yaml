@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 1:26 PM
+  generated: 2026 Feb 6 1:31 PM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-wasm"
     - fast-glob
@@ -114,9 +114,7 @@ modules:
     from: net23
     versions:
       declared: ^3.975.0 on 2026jan23 0m old
-      installed: 3.983.0 on 2026feb04 0m old
-      current: 3.985.0 on 2026feb06 0m old
-      latest: 3.985.0 on 2026feb06 0m old
+      installed: 3.985.0 on 2026feb06 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -125,10 +123,8 @@ modules:
     description: AWS SDK for JavaScript Ses Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.983.0
-      installed: 3.983.0 on 2026feb04 0m old
-      current: 3.985.0 on 2026feb06 0m old
-      latest: 3.985.0 on 2026feb06 0m old
+      declared: ^3.983.0 on 2026feb04 0m old
+      installed: 3.985.0 on 2026feb06 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -137,10 +133,8 @@ modules:
     description: AWS SDK for JavaScript Sns Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.983.0
-      installed: 3.983.0 on 2026feb04 0m old
-      current: 3.985.0 on 2026feb06 0m old
-      latest: 3.985.0 on 2026feb06 0m old
+      declared: ^3.983.0 on 2026feb04 0m old
+      installed: 3.985.0 on 2026feb06 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -150,9 +144,7 @@ modules:
     from: net23
     versions:
       declared: ^3.975.0 on 2026jan23 0m old
-      installed: 3.983.0 on 2026feb04 0m old
-      current: 3.985.0 on 2026feb06 0m old
-      latest: 3.985.0 on 2026feb06 0m old
+      installed: 3.985.0 on 2026feb06 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -201,10 +193,8 @@ modules:
     description: Isomorphic Javascript SDK for Supabase
     from: icarus
     versions:
-      declared: ^2.94.1
-      installed: 2.94.1 on 2026feb04 0m old
-      current: 2.95.3 on 2026feb06 0m old
-      latest: 2.95.3 on 2026feb06 0m old
+      declared: ^2.94.1 on 2026feb04 0m old
+      installed: 2.95.3 on 2026feb06 0m old
     downloads:
       weekly: 9,033,555
       on: 2026feb4.1821.46960
@@ -287,10 +277,8 @@ modules:
     description: Full-stack <head> manager built for Vue.
     from: site
     versions:
-      declared: ^2.1.2
-      installed: 2.1.2 on 2026jan11 1m old
-      current: 2.1.3 on 2026feb06 0m old
-      latest: 2.1.3 on 2026feb06 0m old
+      declared: ^2.1.2 on 2026jan11 1m old
+      installed: 2.1.3 on 2026feb06 0m old
     downloads:
       weekly: 1,494,102
       on: 2026feb4.1829.44951
@@ -567,10 +555,8 @@ modules:
     description: The semantic version parser used by npm.
     from: root
     versions:
-      declared: ^7.7.3
-      installed: 7.7.3 on 2025oct07 4m old
-      current: 7.7.4 on 2026feb05 0m old
-      latest: 7.7.4 on 2026feb05 0m old
+      declared: ^7.7.3 on 2025oct07 4m old
+      installed: 7.7.4 on 2026feb05 0m old
     downloads:
       weekly: 514,720,390
       on: 2026feb4.1821.46960
@@ -609,10 +595,8 @@ modules:
     description: Cybernetically enhanced web apps
     from: oauth
     versions:
-      declared: ^5.49.2
-      installed: 5.49.2 on 2026feb04 0m old
-      current: 5.50.0 on 2026feb06 0m old
-      latest: 5.50.0 on 2026feb06 0m old
+      declared: ^5.49.2 on 2026feb04 0m old
+      installed: 5.50.0 on 2026feb06 0m old
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
@@ -631,10 +615,8 @@ modules:
     description: A Twilio helper library
     from: net23
     versions:
-      declared: ^5.12.0
-      installed: 5.12.0 on 2026jan22 1m old
-      current: 5.12.1 on 2026feb05 0m old
-      latest: 5.12.1 on 2026feb05 0m old
+      declared: ^5.12.0 on 2026jan22 1m old
+      installed: 5.12.1 on 2026feb05 0m old
     downloads:
       weekly: 2,767,196
       on: 2026feb4.1825.16236
@@ -719,10 +701,8 @@ modules:
       - oauth
       - site
     versions:
-      declared: ^4.62.0
-      installed: 4.62.0 on 2026feb03 0m old
-      current: 4.63.0 on 2026feb05 0m old
-      latest: 4.63.0 on 2026feb05 0m old
+      declared: ^4.62.0 on 2026feb03 0m old
+      installed: 4.63.0 on 2026feb05 0m old
     downloads:
       weekly: 3,405,027
       on: 2026feb4.1829.44951

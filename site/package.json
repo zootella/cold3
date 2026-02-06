@@ -21,6 +21,7 @@
 	},
 	"dependencies": {
 		"@pinia/nuxt": "0.11.3",
+		"@resvg/resvg-js": "^2.6.2",
 		"@resvg/resvg-wasm": "^2.6.2",
 		"@tailwindcss/vite": "^4.1.18",
 		"@tanstack/vue-query": "^5.87.1",
