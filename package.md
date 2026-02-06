@@ -60,6 +60,17 @@ mv temp/fresh1 cold3/fresh1
   you can also $ cp -r fresh1 fresh2 to boil down fresh2 as you update or decline granular differences
 ```
 
+
+ttd february, condense and update below
+- nuxi effects section is from recent scaffolding
+- why tailwind doesn't matter now that we're on tailwind 4 and it's listd in package.json directly
+- package.json notes after that are all from the old days on yarn classic with nuxt 3
+
+
+
+
+
+
 ## nuxi effects
 
 scaffolded fresh 2026feb3, nuxi add brought in these peer dependencies:
