@@ -1,5 +1,237 @@
 
-# Migration Strategy and Notes
+# Summary, 2026feb
+
+Annual stack upgrade, completed February 2026. Moved major versions of the package manager, framework, CSS framework, and OG image module forward simultaneously, then fixed everything until unit tests and smoke tests passed in both dev and production.
+
+**Package manager:** Yarn Classic → pnpm 10. Updated sem.js to read pnpm lockfile. Removed `pino-pretty` (a yarn workaround for unresolved peer deps that pnpm handles natively).
+
+**Framework:** Nuxt 3 → Nuxt 4.3.0 (Nitro 2.13.1, Vite 6). Restructured into `site/app/` directory. Replaced `process.client`/`process.server` with compile-time `import.meta.client`/`import.meta.server`. Abstracted h3 access behind four `getWorker*` functions in icarus/level2.js for the eventual h3 v2 migration (which is Nuxt 5, not 4 — a lesson learned the hard way when the scaffold's h3 v2 devDep broke og-image).
+
+**CSS:** `@nuxtjs/tailwindcss` (Nuxt module wrapping Tailwind 3) → `@tailwindcss/vite` (Tailwind 4 as a direct Vite plugin). Eliminated `tailwind.config.js` — all config now lives in CSS via `@import`, `@theme`, `@plugin`. Fixed a silent Google Fonts CSS2 bug (unsorted axis tuples → HTTP 400, all three linked fonts were failing on production).
+
+**OG image:** nuxt-og-image 5 → 6.0.0-beta.15. Forced by a WASM bundling break on Cloudflare Workers with Nitro 2.13.1 (v5 has no fix, v6 only). v6 in turn required Tailwind 4 — so "upgrade Nuxt" cascaded into three stacked migrations.
+
+**Version cleanup:** Bumped 12 stale packages to `^<installed>` so the stack rides semver ranges forward instead of depending on an old lockfile.
+
+# Remaining Action Items
+
+Extracted from migrate.md, tailwind.md, og.md. One entry per item, do it here, check it off here.
+
+## [] Test error handling
+
+Throw an exception in a component deliberately. Verify the full path: server-side logs to Datadog, client shows error.vue, pageStore has the error details. Test both SSR (fresh page load in new tab) and client-side (SPA navigation via NuxtLink) error paths.
+
+Relevant code: `app/plugins/errorPlugin.js`, `app/error.vue`. errorPlugin uses `app:error` hook, `vue:error` hook, `showError()`, `createError()`, and accesses `usePageStore()` — any of these could have shifted in Nuxt 4.
+
+☐ SSR error path works
+☐ Client-side SPA error path works
+
+## [] Test environment detection
+
+Log `senseEnvironment()` output in all four contexts: local dev server, local page client, deployed server, deployed client. Compare the `found` tags against the pattern table in `_senseEnvironment`. Also verify `isLocal()` and `isCloud()` return correct values in each context — these read `wrapper.cloud` (build-time text replace by set-cloud.js), separate from senseEnvironment, but worth confirming after the `import.meta.client`/`import.meta.server` change from Chapter 2.
+
+If patterns drift, update `_senseEnvironment` and increment `_senseEnvironmentVersion`.
+
+☐ All four contexts produce correct Sticker strings
+☐ `isLocal()`/`isCloud()` correct in each context
+
+## [] Investigate removing nitro-cloudflare-dev
+
+The module is officially deprecated. Nitro >=2.12 has native dev emulation and we're on 2.13.1. Currently this module (miniflare) is the only thing providing KV bindings in local dev — the og-image cache uses `cloudflare-kv-binding` pointing at `OG_IMAGE_CACHE`. If native emulation doesn't provide that binding, og-image won't error — it'll silently skip caching and regenerate every request. Production is unaffected (Workers provides bindings directly).
+
+Steps:
+
+1. Comment out `configuration.modules.push('nitro-cloudflare-dev')` in nuxt.config.js
+2. Run `nuxt dev` — look for `"Using cloudflare-dev emulation in development mode."` in console
+3. Test that og-image generates locally (hit the `/_og/d/` endpoint) — this exercises the KV binding
+4. If it works: `pnpm remove nitro-cloudflare-dev`
+5. If not: uncomment and keep
+
+☐ Native emulation works, module removed
+
+## [] Test Pinia hydration in universal rendering
+
+Three stores (mainStore, credentialStore, flexStore) use a `loaded` ref guard to prevent double-fetching. `app.vue` calls `await mainStore.load()` during server render, sets `loaded = true`, client receives hydrated state, and `load()` becomes a no-op. pageStore is client-only with no guard.
+
+Test: open a route in a new tab (SSR path — `<script setup>` runs on server, renders HTML, hydrates client). Then from an already-loaded page, navigate via NuxtLink to the same component (SPA path — `<script setup>` runs on client). Confirm both paths work and Pinia state bridges correctly.
+
+☐ SSR first-paint path works
+☐ SPA navigation path works
+
+## [] Investigate removing @tanstack/vue-query
+
+Not from scaffold — ours. Original note said "peer dependency of wagmi vue" but we use `@wagmi/core` and `@wagmi/connectors` directly, not a wagmi Vue wrapper. `pnpm why` shows zero transitive dependents. Not imported anywhere in site/app or icarus. Likely dead weight.
+
+`pnpm remove @tanstack/vue-query`, build, test.
+
+☐ Removed, builds clean, nothing breaks
+
+## Investigate @tailwindcss/forms on v4
+
+Old note says "works with any Tailwind version." We migrated to Tailwind v4 where it loads via `@plugin "@tailwindcss/forms"` in style.css. Verify the plugin is actually working — check that form elements (inputs, selects) get the normalization styles.
+
+☐ Forms plugin confirmed working on v4
+
+## Verify og-image KV cache
+
+After deployment, confirm the caching layer is actually working on Cloudflare:
+
+1. Check `OG_IMAGE_CACHE` KV namespace in Cloudflare dashboard — are cached images appearing?
+2. Check that cached images expire after 20 minutes (not lingering indefinitely)
+3. Second request for the same image should serve from KV cache, not regenerate (check response time or `wrangler tail`)
+
+☐ KV cache receiving images
+☐ TTL expiry working
+☐ Cache hits confirmed
+
+## Test nuxi analyze
+
+Verify the bundle analysis reports still generate after migration.
+
+`npx nuxi analyze`
+
+☐ client.html and nitro.html size reports generate
+
+# Tailwind CSS
+
+## How It Works
+
+**Tailwind v4** via `@tailwindcss/vite` — a Vite plugin, not a Nuxt module. Registered in `nuxt.config.js` alongside vidstack. No `tailwind.config.js` — all configuration lives in CSS.
+
+**Global stylesheet** at `site/app/assets/css/style.css`:
+1. `@font-face` declarations for two bundled woff2 fonts (Diatype Rounded, Lemon Wide)
+2. `@import "tailwindcss"` — single import replaces the old three `@tailwind` directives
+3. `@plugin "@tailwindcss/forms"` — normalizes form controls
+4. `@theme` — overrides `--font-sans` (Diatype Rounded → Noto Sans → system) and `--font-mono` (Noto Sans Mono → system)
+5. `@layer base` — body defaults, link colors, code styling
+6. `@layer components` — `.my-button`, `.my-link`, and state classes (`.ghost`, `.ready`, `.doing`)
+
+### Packages
+
+| Package | Version | Role |
+|---|---|---|
+| tailwindcss | ^4.1.18 | The framework |
+| @tailwindcss/vite | ^4.1.18 | Vite plugin (replaces the old `@nuxtjs/tailwindcss` Nuxt module) |
+| @tailwindcss/forms | ^0.5.10 | Form control normalization plugin |
+
+### Fonts
+
+Three delivery methods, all independent of Tailwind:
+
+| Font | Source | Used as |
+|---|---|---|
+| Diatype Rounded | Bundled woff2 in `public/fonts/` | Default body font (`--font-sans`) |
+| Lemon Wide | Bundled woff2 in `public/fonts/` | Decorative (via plain CSS) |
+| Noto Sans, Noto Sans Mono, Roboto | Google Fonts CDN link in nuxt.config.js | Sans fallback, code font (`--font-mono`), terms document |
+
+System fallback stacks at the tail of every font-family list.
+
+### Component Styling Patterns
+
+Out of ~70 Vue files, three patterns:
+
+1. **Utility classes in templates** (~57 files, dominant). Classes directly on elements, no `<style>` block. Preferred default.
+2. **Scoped `@apply`** (9 files). Named class wrapping Tailwind utilities. Requires `@reference "tailwindcss"` at top of the `<style scoped>` block.
+3. **Raw scoped CSS** (4 files). Fixed positioning, pixel values, `!important` overrides — things Tailwind can't express.
+
+## Things That Bite
+
+### @reference is required for scoped @apply
+
+In v4, `@apply` in `<style scoped>` can't resolve Tailwind classes without `@reference "tailwindcss"` at the top. Anyone adding a new component with scoped `@apply` must include this line or the build fails with "Cannot apply unknown utility class."
+
+9 components currently have it: CredentialCorner, CredentialPanel, SignUpOrSignInForm, PostPage, ProfilePage, TermsPage, TermsComponent, TermsDocument, TermsAnchors.
+
+### Custom font utilities don't work in scoped @apply
+
+`@reference "tailwindcss"` gives access to Tailwind's built-in utilities, but not to custom names defined in our `@theme`. The built-in `font-sans` and `font-mono` work because Tailwind knows those names — our `@theme` just overrides their values. But if we defined `--font-roboto` in `@theme`, `@apply font-roboto` would fail in any scoped style block.
+
+**The rule:** For one-off font choices, use plain CSS (`font-family: "Roboto", sans-serif`) instead of a Tailwind utility. The browser knows the font because the Google Fonts `<link>` loaded it. No Tailwind involvement needed. This is what TermsDocument.vue and TermsComponent.vue do for Roboto.
+
+Pointing `@reference` at our stylesheet instead of `"tailwindcss"` would fix this, but requires a subpath import (Vite aliases don't work inside `@reference`) and heavier compilation. Not worth it for two font references.
+
+### Google Fonts CSS2 API requires sorted axis tuples
+
+Found and fixed during migration: the Google Fonts URL had unsorted axis tuples (`ital,wght@0,400;1,400;0,700;1,700`), which the CSS2 API silently rejects with HTTP 400. All three linked fonts were failing to load on production — pages rendered in system fonts instead. The fix: sort numerically (`ital,wght@0,400;0,700;1,400;1,700`). Also removed the `&subset=latin,latin-ext` parameter (CSS v1 API feature; CSS2 handles subsetting automatically via `unicode-range`).
+
+# OG Image
+
+## How It Works
+
+OG image generation works locally and on Cloudflare Workers in production. Pages call `defineOgImage()` with a template name and props. nuxt-og-image handles meta tag injection, KV caching, and orchestrates rendering:
+
+```
+HTML/CSS → [satori] → SVG → [resvg] → PNG
+              ↑
+           [yoga]
+         (CSS layout)
+```
+
+**Templates:** Two custom `.satori.vue` components in `app/components/OgImage/` — HomeCard (index page) and ProfileCard (card pages). Simple flex layouts, Inter font, white background with gray border. These must be local files, not community templates, because Workers I/O isolation blocks runtime fetching.
+
+**Pages:** `index.vue` calls `defineOgImage('HomeCard', {sticker})`. `card/[more].vue` calls `defineOgImage('ProfileCard', {title, sticker})`.
+
+**Config** in `nuxt.config.js`: module registered, `site` block for absolute URLs, `ogImage` block with 20-minute cache TTL and `cloudflare-kv-binding` driver pointing to `OG_IMAGE_CACHE` KV namespace.
+
+### Packages
+
+Three top-level in `site/package.json`:
+
+| Package | Version | Does | Pin reason |
+|---------|---------|------|------------|
+| nuxt-og-image | 6.0.0-beta.15 | Nuxt integration, composable API, KV cache | Exact — carets don't float on prereleases |
+| satori | 0.15.2 | HTML/CSS → SVG (Vercel) | Exact — 0.16+ breaks Cloudflare Workers |
+| @resvg/resvg-wasm | ^2.6.2 | SVG → PNG via Rust/WASM | Caret — stable |
+
+Two transitive (pulled in by satori):
+
+| Package | Version | Does |
+|---------|---------|------|
+| yoga-wasm-web | 0.3.3 | CSS flexbox layout (Facebook, C++/WASM) |
+| @shuding/opentype.js | 1.4.0-beta.0 | Font parsing for satori |
+
+The largest artifact is resvg's 2.48 MB WASM binary.
+
+To update nuxt-og-image to a newer beta: `pnpm add nuxt-og-image@beta`. Once v6 goes stable: switch to `"nuxt-og-image": "^6.0.0"` and semver floats normally.
+
+### Fonts
+
+Inter bundled in two weights (400 normal, 700 bold), Latin only. Emoji works out of the box (converted to inline SVGs). CJK/non-Latin would need fonts added via `@nuxt/fonts`. The Google Fonts in our nuxt.config head links (Noto Sans, Roboto) are for page rendering, not available to satori.
+
+### Cache
+
+Config sets 20-minute TTL via `cacheMaxAgeSeconds` with `cloudflare-kv-binding` driver pointing to `OG_IMAGE_CACHE` KV namespace. To purge a cached image, append `?purge` to its og:image URL from the page's meta tags.
+
+**☐ Verify after migration:**
+1. KV store is receiving cached images (check OG_IMAGE_CACHE in Cloudflare dashboard)
+2. Cached images expire after 20 minutes (not lingering indefinitely)
+3. Second request for the same image serves from KV cache, not a fresh regeneration (check response time or `wrangler tail`)
+
+### Known Issues
+
+- Bare `/_og/d/` requests without a `c_` component parameter 500 (falls back to unejected NuxtSeoSatori community template). Doesn't affect real pages — their og:image meta tags include `c_HomeCard` or `c_ProfileCard` automatically.
+
+## The Satori Ceiling
+
+Satori is Vercel's tool, maintained for `@vercel/og` on their edge runtime. Satori 0.16+ switched to runtime `WebAssembly.instantiate()` — works on Vercel Edge Functions, blocked on Cloudflare Workers ([vercel/satori#693](https://github.com/vercel/satori/issues/693), no fix planned).
+
+nuxt-og-image v6 bridges this by hardcoding `cloudflare-module` to the `"0-15-wasm"` satori binding with `esmImport: true` (PR #437). This is a deliberate ceiling — satori improvements after 0.15 don't reach Cloudflare users.
+
+Every path on Cloudflare Workers ends at this wall. Whether through nuxt-og-image, `@cf-wasm/og`, or a hand-rolled server route, you're running satori 0.15.2. Stable for now — our cards are simple, we don't need cutting-edge CSS layout.
+
+### Worries
+
+- **Satori is Vercel's.** No incentive to accommodate a competitor's platform.
+- **Pinned to exact versions.** Frozen until we manually update.
+- **nuxt-og-image is beta, single maintainer** (Harlan Wilton). Active but fragile bus factor.
+
+### Hopes
+
+- **Build-time WASM transform.** As Nitro and nuxt-og-image mature, a transform that rewrites `WebAssembly.instantiate()` to pre-compiled imports could unlock newer satori on Workers. We'd just update deps.
+- **Cloudflare relaxes WASM restrictions.** Possible as WASM grows, but it's a core security boundary.
+- **v6 goes stable.** Semver floats normally, less manual pinning.
+
+# Miscellaneous
 
 ## [5] Migration: Nuxt 4
 

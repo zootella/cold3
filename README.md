@@ -25,6 +25,8 @@ $ npm run icarus
 $ node test
 ```
 
+ttd february, here's where now you talk about pnpm wash, install, test, build, sem, seal, then diff, only at the end local
+
 ## Make a new site on Cloudflare
 
 ```
