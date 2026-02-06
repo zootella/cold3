@@ -48,6 +48,7 @@ function onImageLoad() {
 function randomPage() {
 	let name2 = name1.replace(/\d+$/, '') + otpGenerate(4)//compose an alternate random name to link to
 	navigateTo({name: _route.name, params: {more: name2}})//using navigateTo because what it does is the same as NuxtLink, chat tells me
+	//ttd february, yeah, but now on nuxt4 thsi seems to reload the spa while it didn't before
 }
 
 function hardReload() { window.location.reload() }//same as user clicking the browser's Reload button
@@ -65,7 +66,7 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 		<Button link :click="hardReload">Browser reload</Button>; or link to a
 		<Button link :click="randomPage">different random page</Button>
 	</p>
-	<p><code>{{refFound}}</code></p>
+	<p><pre class="whitespace-pre-wrap break-words">{{refFound}}</pre></p>
 	<p><img :src="refSource" @load="onImageLoad" /></p>
 </div>
 
