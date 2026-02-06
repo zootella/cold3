@@ -16,24 +16,24 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@supabase/supabase-js": "^2.94.1",
+		"@supabase/supabase-js": "^2.95.3",
 		"@uppy/aws-s3": "^5.1.0",
 		"@uppy/core": "^5.2.0",
-		"@uppy/dashboard": "^5.1.0",
-		"@wagmi/connectors": "^5.9.9",
-		"@wagmi/core": "^2.20.3",
+		"@uppy/dashboard": "^5.1.1",
+		"@wagmi/connectors": "^5.11.2",
+		"@wagmi/core": "^2.22.1",
 		"credit-card-type": "^10.1.2",
 		"h3": "^1.15.5",
 		"is-mobile": "^5.0.0",
 		"libphonenumber-js": "^1.12.36",
 		"ofetch": "^1.5.1",
 		"qrcode": "^1.5.4",
-		"viem": "^2.37.3",
-		"zod": "^3.25.74"
+		"viem": "^2.45.1",
+		"zod": "^3.25.76"
 	},
 	"devDependencies": {
-		"@vitejs/plugin-vue": "^5.0.4",
-		"vite": "^6.2.6",
+		"@vitejs/plugin-vue": "^5.2.4",
+		"vite": "^6.4.1",
 		"vue": "^3.5.27",
 		"vue-router": "^4.6.4"
 	}

@@ -23,12 +23,12 @@
 	},
 	"packageManager": "pnpm@10.28.2",
 	"devDependencies": {
-		"@electric-sql/pglite": "^0.3.14",
-		"dotenv": "^16.4.7",
+		"@electric-sql/pglite": "^0.3.15",
+		"dotenv": "^16.6.1",
 		"fast-glob": "^3.3.3",
-		"nanoid": "^5.1.5",
-		"otpauth": "^9.4.1",
-		"semver": "^7.7.3",
+		"nanoid": "^5.1.6",
+		"otpauth": "^9.5.0",
+		"semver": "^7.7.4",
 		"yaml": "^2.8.2"
 	}
 }
