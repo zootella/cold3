@@ -1,10 +1,29 @@
 
-# package.json notes
+# package.json Notes
 
-you can't write comments in package.json, so here are some alongside
-also generate a fresh sem.yaml, of course; these are the manual notes
+## Update Once a Year 🌅
 
-## scaffold fresh
+Every framework version has a lifecycle, and there's a sweet spot in the middle of it. Move too early and you pay the pioneer tax — modules have bugs, edge cases are uncharted, you're debugging the platform instead of building product, and the problems you solve will solve themselves in a few months anyway. Move too late and you pay the stagnation tax — dependencies start requiring the new major, security patches slow down, you can't update within your declared semver ranges, and what would have been a two-day migration in January becomes a two-week one in June.
+
+Nuxt ships a new major roughly every summer. The sweet spot is midwinter — about six months after release. Major bugs are fixed, module authors have updated, the ecosystem has settled. You still have a full runway before the next cycle starts. The discipline is to treat migration as a scheduled event, not something you do reactively when forced or rush into the moment a new version drops. Once a year, in the middle of the cycle, when the version is proven and the runway is long.
+
+## Update Everything at Once 🩹
+
+We took the "tear off the bandaid" approach: make all changes without running the code, then fix whatever breaks. This worked, and it worked because of the fresh scaffold. We scaffolded a fresh Nuxt 4 project on Cloudflare Workers, then systematically matched our site to it — versions, directory structure, config patterns — outwards to inwards, dependencies first, then configuration, then code.
+
+The alternative — incremental migration with compatibility flags, codemods, and one-change-at-a-time testing — would have been worse. Not just slower (two days of work stretched to two weeks of context-switching), but genuinely riskier. Incremental migration can lead you into impossible intermediate states: a half-upgraded dependency tree where nothing works forward or backward. Nuxt's `future: { compatibilityVersion: 4 }` compatibility mode doesn't know about Cloudflare Workers. Codemods don't know about our h3 abstraction layer or og-image's WASM constraints. Each cautious intermediate test would have been testing a combination that nobody upstream ever tested.
+
+The all-at-once approach avoided this by targeting a known-good end state (the scaffold) rather than navigating through unknown intermediate states. The safety net wasn't incremental testing — it was git. `git switch main` returns to working Nuxt 3 at any time. Fix forward or retreat completely — no partial rollbacks, no "keep this module on the old version while upgrading the rest."
+
+This approach does require fixing forward through surprises. We hit h3 v2 shadowing, WASM breakage on Workers, and a three-migration dependency chain. But each surprise was encountered with the full picture visible — all the changes on the table, all the versions aligned to the target — not buried under layers of incremental half-changes where any one of a dozen intermediate steps could be the culprit.
+
+## Scaffold Fresh 🍓
+
+Modern full-stack JavaScript has several top-level dependencies the team is responsible for: cloud provider, package manager, web framework, their associated tooling, and framework modules. These compete for authority — Nuxt, Cloudflare's CLI, and pnpm each assume they're the starting point and everything else will follow their conventions. Each releases major versions on its own schedule, and their ecosystems of modules follow. When Nuxt 4 ships, Pinia updates, Tailwind updates, Wrangler updates its integration — and each brings its own dependency tree and peer dependency requirements.
+
+This creates a difficult reality. There is no single source of truth for "what versions work together." Nuxt's migration guide doesn't know about Cloudflare. Cloudflare's scaffold doesn't know about og-image. og-image's docs don't know about your WASM constraints on Workers. Upgrading in place means changing one thing, watching peer dependencies conflict, chasing errors through transitive dependency mazes, and never being sure if the problem is your code, your config, or dependency hell.
+
+Scaffolding fresh cuts through this. Run `pnpm create cloudflare@latest`, pick Nuxt, add your modules with `nuxi module add` — and you have a working project that represents the current blessed combination of versions and configs as the CLI tools understand it today. Not what the docs say should work, not what worked six months ago, but what actually resolves and builds right now. This is your reference point. Compare it against your current setup, and you know exactly what needs to change. The scaffold is disposable — an inert folder you examine and discard. Your real project keeps its git history, deployment pipeline, and wrangler bindings. The scaffold just tells you where to aim.
 
 ```
   steps to quickly scaffold the cloudflare nuxt stack and modules, 2026feb3

@@ -1,260 +1,76 @@
-# Nuxt OG Image on Cloudflare Workers: Research & Findings
+# OG Image
 
-**Date:** February 5, 2026  
-**Stack:** Nuxt 4, nuxt-og-image 5.1.13, Cloudflare Workers  
-**Status:** Works locally, broken in production on Workers
+## How It Works
 
----
-
-## 1. The Nuxt 4 / h3 / Nitro Version Landscape
-
-### Current Release Boundaries
-
-Nuxt 4 (stable July 15, 2025, currently at ~4.3) ships with **Nitro v2 and h3 v1**. The h3 v2 / Nitro v3 migration is explicitly scoped to **Nuxt 5**, which has no release date yet.
-
-Daniel Roe's roadmap post is clear: Nuxt 4 and Nitro v3 were intentionally decoupled so the ecosystem could migrate in stages:
-
-- **v3 → v4**: App-layer changes (directory structure, data fetching, Unhead v2)
-- **v4 → v5**: Server-layer changes (h3 v2, Nitro v3, Vite Environment API)
-
-### h3 v2 Leaking Into v4 Builds
-
-There is a filed issue ([nuxt/nuxt#34109](https://github.com/nuxt/nuxt/issues/34109), ~3 weeks old) where h3 v2.0.1-rc.8 was resolved into a Nuxt 4.2.2 build via transitive dependencies, breaking the build because h3 v2 removed exports like `send` that Nuxt 4's error handler still imports from h3 v1.
-
-**Mitigation:** Pin h3 to v1.x in package.json resolutions to prevent transitive hoisting:
-
-```json
-"resolutions": {
-  "h3": "^1.13.0"
-}
-```
-
-### Forward-Compatibility Shims in Nuxt 4.3
-
-Nuxt 4.3 (latest minor, released as v3.21 backport) has begun adding forward-compatibility for h3 v2. For example, `createError()` now accepts both old and new property names:
-
-```js
-// Old (h3 v1, still works)
-throw createError({ statusCode: 404, statusMessage: 'Not Found' })
-
-// New (h3 v2 style, now also works in Nuxt 4.3+)
-throw createError({ status: 404, statusText: 'Not Found' })
-```
-
-These are soft deprecations, not a full h3 v2 adoption.
-
----
-
-## 2. nuxt-og-image Version Tracks
-
-There are three relevant version tracks:
-
-| Version | Status | Notes |
-|---------|--------|-------|
-| **v5.1.x** | Stable, current | Requires Nuxt ≥3.16. Works with Nuxt 4. Documented on nuxtseo.com. |
-| **v6.0.0-beta.15** | Beta (released Feb 5, 2026) | Major rewrite with significant breaking changes. Active WASM/Workers fixes. |
-| **v4.x** | Legacy | Removed deprecations, added Nuxt SEO v2 support. Do not use. |
-
-For Nuxt 4 + Cloudflare Workers today, **v5.1.x is the "right" stable version**, but it has known, unresolved issues on Workers (see below).
-
----
-
-## 3. Cloudflare Workers: The Known-Broken Target
-
-### Official Compatibility Matrix (v5)
-
-The nuxt-og-image compatibility docs list these constraints for **Cloudflare Workers**:
-
-| Dependency | Supported | Notes |
-|-----------|-----------|-------|
-| **satori** | ✅ via WASM | Default renderer, works on all environments |
-| **resvg** | ✅ via WASM | SVG → PNG conversion |
-| **chromium** | ❌ | No WASM binary support |
-| **sharp** | ❌ | No WASM support |
-| **css-inline** | ❌ | No WASM support on Workers |
-
-The docs also note: *"There is an open issue for custom fonts and images being broken in Cloudflare Workers. Please reply to the issue if you need this fixed."*
-
-### The Core Problem: Workers I/O Isolation
-
-The root cause of "works locally, breaks in production" is Workers' **cross-request I/O isolation**. When nuxt-og-image's Satori renderer tries to fetch fonts from Google Fonts or load images from your own origin during OG image rendering, Workers throws:
-
-> "Cannot perform I/O on behalf of a different request. I/O objects (such as streams, request/response bodies, and others) created in the context of one request handler cannot be accessed from a different request's handler."
-
-This is a fundamental Workers constraint that Node.js doesn't have. The Satori renderer needs to fetch fonts and potentially images as part of SVG rendering, and these fetches fail under Workers' isolation model.
-
-### Known Issues (GitHub)
-
-- **[#63](https://github.com/nuxt-modules/og-image/issues/63)** (July 2023, still open): Custom fonts and images broken on Cloudflare Workers. The I/O isolation error manifests when fetching Google Fonts.
-- **[#263](https://github.com/nuxt-modules/og-image/issues/263)** (Sept 2024): `.wasm` file loader errors on Cloudflare Pages — `No loader is configured for ".wasm" files`.
-- **[#193](https://github.com/nuxt-modules/og-image/issues/193)** (April 2024): `script_too_large` error on Cloudflare Pages free tier — the compiled WASM file is 2.4MB, exceeding the 1MB worker limit.
-- **Unsupported image type: unknown** (May 2025, AnswerOverflow): Images from `public/` fail on Workers because Workers doesn't serve static assets with correct Content-Type headers the way Pages does.
-- **OOM during prerender** (Oct 2025, Cloudflare Community): `@resvg/resvg-wasm` causes JavaScript heap memory exhaustion during Nuxt build with `cloudflare-module` preset.
-
----
-
-## 4. Why v6 Beta Exists (and Why It Matters for Workers)
-
-The v6 beta releases contain **specifically targeted fixes** for the Workers WASM story. Key changes:
-
-### PR #437: "Satori wasm binding, process proxy patch, and wasm `?module` imports"
-
-This is the Cloudflare-specific fix. It addresses:
-
-1. **Proper `?module` WASM imports** — Workers requires WASM to be imported as ES modules (`import wasm from './foo.wasm?module'`), and v5 didn't handle this correctly
-2. **Process proxy patch** — Workers doesn't have `process`, and v5's Satori integration had edge cases where `process.env` checks leaked through
-3. **Satori WASM binding** — Correct initialization path for Satori's WASM backend in edge runtimes
-
-### v6 Breaking Changes Relevant to Workers Migration
-
-**Renderer dependencies are unbundled.** You must install explicitly based on runtime:
-
-```bash
-# For Cloudflare Workers (edge runtime)
-npm i satori @resvg/resvg-wasm
-
-# For Node.js
-npm i satori @resvg/resvg-js
-```
-
-**Component files require a renderer suffix:**
+OG image generation works locally and on Cloudflare Workers in production. Pages call `defineOgImage()` with a template name and props. nuxt-og-image handles meta tag injection, KV caching, and orchestrates rendering:
 
 ```
-# Before (v5)
-components/OgImage/MyTemplate.vue
-
-# After (v6)
-components/OgImage/MyTemplate.satori.vue
+HTML/CSS → [satori] → SVG → [resvg] → PNG
+              ↑
+           [yoga]
+         (CSS layout)
 ```
 
-**Community templates must be ejected for production:**
+**Templates:** Two custom `.satori.vue` components in `app/components/OgImage/` — HomeCard (index page) and ProfileCard (card pages). Simple flex layouts, Inter font, white background with gray border. These must be local files, not community templates, because Workers I/O isolation blocks runtime fetching.
 
-```bash
-npx nuxt-og-image eject NuxtSeo
-```
+**Pages:** `index.vue` calls `defineOgImage('HomeCard', {sticker})`. `card/[more].vue` calls `defineOgImage('ProfileCard', {title, sticker})`.
 
-**`defineOgImageComponent()` deprecated** in favor of `defineOgImage()`:
+**Config** in `nuxt.config.js`: module registered, `site` block for absolute URLs, `ogImage` block with 20-minute cache TTL and `cloudflare-kv-binding` driver pointing to `OG_IMAGE_CACHE` KV namespace.
 
-```js
-// Before (v5)
-defineOgImageComponent('NuxtSeo', { title: 'Hello' })
+### Packages
 
-// After (v6)
-defineOgImage('NuxtSeo', { title: 'Hello' })
-```
+Three top-level in `site/package.json`:
 
-**Inter fonts bundled by default** — sidesteps the Google Fonts fetch-during-render problem for the default case.
+| Package | Version | Does | Pin reason |
+|---------|---------|------|------------|
+| nuxt-og-image | 6.0.0-beta.15 | Nuxt integration, composable API, KV cache | Exact — carets don't float on prereleases |
+| satori | 0.15.2 | HTML/CSS → SVG (Vercel) | Exact — 0.16+ breaks Cloudflare Workers |
+| @resvg/resvg-wasm | ^2.6.2 | SVG → PNG via Rust/WASM | Caret — stable |
 
-**UnoCSS runtime removed** — replaced with native Tailwind v4 build-time processing.
+Two transitive (pulled in by satori):
 
-**Font config changed** — `ogImage.fonts` config removed. Custom fonts require `@nuxt/fonts` module.
+| Package | Version | Does |
+|---------|---------|------|
+| yoga-wasm-web | 0.3.3 | CSS flexbox layout (Facebook, C++/WASM) |
+| @shuding/opentype.js | 1.4.0-beta.0 | Font parsing for satori |
 
-**URL paths shortened:**
+The largest artifact is resvg's 2.48 MB WASM binary.
 
-| v5 | v6 |
-|----|-----|
-| `/__og-image__/image/` | `/_og/d/` |
-| `/__og-image__/static/` | `/_og/s/` |
-| `/__og-image__/font/` | `/_og/f/` |
+To update nuxt-og-image to a newer beta: `pnpm add nuxt-og-image@beta`. Once v6 goes stable: switch to `"nuxt-og-image": "^6.0.0"` and semver floats normally.
 
-**Migration CLI available:**
+### Fonts
 
-```bash
-npx nuxt-og-image migrate v6 --dry-run  # preview changes
-npx nuxt-og-image migrate v6            # apply changes
-```
+Inter bundled in two weights (400 normal, 700 bold), Latin only. Emoji works out of the box (converted to inline SVGs). CJK/non-Latin would need fonts added via `@nuxt/fonts`. The Google Fonts in our nuxt.config head links (Noto Sans, Roboto) are for page rendering, not available to satori.
 
----
+### Cache
 
-## 5. What the Community Does (Three Paths)
+Config sets 20-minute TTL via `cacheMaxAgeSeconds` with `cloudflare-kv-binding` driver pointing to `OG_IMAGE_CACHE` KV namespace. To purge a cached image, append `?purge` to its og:image URL from the page's meta tags.
 
-### Path A: Prerender OG Images at Build Time (v5 safe path)
+**☐ Verify after migration:**
+1. KV store is receiving cached images (check OG_IMAGE_CACHE in Cloudflare dashboard)
+2. Cached images expire after 20 minutes (not lingering indefinitely)
+3. Second request for the same image serves from KV cache, not a fresh regeneration (check response time or `wrangler tail`)
 
-Avoid runtime generation entirely. Use `nuxi generate` or configure route rules to prerender OG image routes. Images are generated during build (where Node.js is available) and deployed as static assets.
+### Known Issues
 
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  routeRules: {
-    '/__og-image__/**': { prerender: true }
-  }
-})
-```
+- Bare `/_og/d/` requests without a `c_` component parameter 500 (falls back to unejected NuxtSeoSatori community template). Doesn't affect real pages — their og:image meta tags include `c_HomeCard` or `c_ProfileCard` automatically.
 
-### Path B: Upgrade to v6 Beta (where the fix lives)
+## The Satori Ceiling
 
-The actual Workers WASM fixes are in v6. Migration steps:
+Satori is Vercel's tool, maintained for `@vercel/og` on their edge runtime. Satori 0.16+ switched to runtime `WebAssembly.instantiate()` — works on Vercel Edge Functions, blocked on Cloudflare Workers ([vercel/satori#693](https://github.com/vercel/satori/issues/693), no fix planned).
 
-1. Install v6: `npm i nuxt-og-image@next`
-2. Install renderer deps: `npm i satori @resvg/resvg-wasm`
-3. Run migration CLI: `npx nuxt-og-image migrate v6`
-4. Eject community templates: `npx nuxt-og-image eject NuxtSeo`
-5. Verify `.satori.vue` suffixes on OG components
+nuxt-og-image v6 bridges this by hardcoding `cloudflare-module` to the `"0-15-wasm"` satori binding with `esmImport: true` (PR #437). This is a deliberate ceiling — satori improvements after 0.15 don't reach Cloudflare users.
 
-### Path C: Bypass nuxt-og-image, Use `@cf-wasm/og` Directly
+Every path on Cloudflare Workers ends at this wall. Whether through nuxt-og-image, `@cf-wasm/og`, or a hand-rolled server route, you're running satori 0.15.2. Stable for now — our cards are simple, we don't need cutting-edge CSS layout.
 
-Use Cloudflare's own WASM-compatible OG image library in a Nitro server route, bypassing nuxt-og-image entirely. Documented in a [DEV Community article](https://dev.to/jdgamble555/using-og-image-outside-of-node-22f) (Nov 2025):
+### Worries
 
-```ts
-// nuxt.config.ts
-import additionalModules from "@cf-wasm/plugins/nitro-additional-modules"
+- **Satori is Vercel's.** No incentive to accommodate a competitor's platform.
+- **Pinned to exact versions.** Frozen until we manually update.
+- **nuxt-og-image is beta, single maintainer** (Harlan Wilton). Active but fragile bus factor.
 
-export default defineNuxtConfig({
-  nitro: {
-    preset: 'cloudflare-module',
-    modules: [additionalModules({ target: "edge-light" })],
-  }
-})
-```
+### Hopes
 
----
-
-## 6. Recommended Configuration (v5, if staying stable)
-
-### nuxt.config.ts
-
-```ts
-export default defineNuxtConfig({
-  ogImage: {
-    compatibility: {
-      runtime: {
-        chromium: false,
-        sharp: false,
-        // css-inline: false,  // if getting WASM errors
-      }
-    }
-  }
-})
-```
-
-### Cloudflare Workers Setup
-
-- Use the `cloudflare-module` preset (not `cloudflare-pages`)
-- Ensure `nodejs_compat` is in `compatibility_flags` in `wrangler.toml`
-- For images in OG templates: avoid self-fetching from your own origin (`/images/foo.png`). Use absolute external URLs or base64-encoded images as a workaround for the Content-Type header issue.
-
-### wrangler.toml
-
-```toml
-compatibility_date = "2025-07-15"
-compatibility_flags = ["nodejs_compat"]
-main = "./.output/server/index.mjs"
-
-[assets]
-binding = "ASSETS"
-directory = "./.output/public/"
-```
-
----
-
-## 7. Summary & Recommendation
-
-| Approach | Stability | Workers Support | Effort |
-|----------|-----------|----------------|--------|
-| v5.1.x + prerender | Stable | ✅ (build-time only) | Low |
-| v6 beta | Beta | ✅ (runtime, active fixes) | Medium |
-| `@cf-wasm/og` direct | Stable (different lib) | ✅ | High (rewrite) |
-
-**For the cold3 project:** The v6 beta path is the most pragmatic. The v5 Workers story is documented as broken with no fix planned for v5 — the fixes are going into v6 exclusively. v6.0.0-beta.15 dropped today (Feb 5, 2026) with continued WASM fixes. The migration CLI automates most of the breaking changes.
-
-If beta risk is unacceptable, prerendering OG images at build time is the reliable v5 fallback — Satori runs in Node during build, and Workers just serves the resulting static PNGs.
+- **Build-time WASM transform.** As Nitro and nuxt-og-image mature, a transform that rewrites `WebAssembly.instantiate()` to pre-compiled imports could unlock newer satori on Workers. We'd just update deps.
+- **Cloudflare relaxes WASM restrictions.** Possible as WASM grows, but it's a core security boundary.
+- **v6 goes stable.** Semver floats normally, less manual pinning.
