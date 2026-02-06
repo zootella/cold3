@@ -16,7 +16,7 @@ cut,
 fraction, exponent, int, big, newline,
 hashText, given,
 makePlain, makeObject, makeText,
-totpGenerate,
+totpValidate,
 safefill, deindent, commas,
 } from './level0.js'
 
@@ -1292,12 +1292,11 @@ async function cycle6238() { const {otpauth} = await fuzzDynamicImport()
 	let d = Data({random: 20})//random shared secret for a totp enrollment
 	let t = randomBetween(0, 100*Time.year)//random timestamp between 1970 and 2070
 
-	let code1 = await totpGenerate(d, t)//our custom implementation in level0 which uses the js subtle api, which calls to native code
-	let code2 = (new otpauth.TOTP({secret: otpauth.Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})//same thing, using the npm otpauth module, 638k weekly downloads, but brings its own javascript implementation of crypto primitives, :(
-	ok(code1 == code2)//make sure that our implementation matches what the popular module would compute!
+	let code = (new otpauth.TOTP({secret: otpauth.Secret.fromBase32(d.base32()), algorithm: 'SHA1', digits: 6, period: 30})).generate({timestamp: t})//npm otpauth module generates the code
+	ok(await totpValidate({secret: d, code, now: t}))//our implementation validates it
 }
-noop(async () => {
-	let cycles = await testCycle(4*Time.second, cycle6238)
+test(async () => {
+	let cycles = await testCycle(0.5*Time.second, cycle6238)
 	log(cycles)
 })
 

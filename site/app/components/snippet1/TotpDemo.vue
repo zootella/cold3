@@ -2,7 +2,7 @@
 
 import {
 sayTick, Data,
-totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants,
+totpEnroll, totpIdentifier, totpValidate, totpGenerate, totpConstants,
 browserIsBesideAppStore,
 } from 'icarus'
 

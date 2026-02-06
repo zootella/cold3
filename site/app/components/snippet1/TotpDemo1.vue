@@ -2,7 +2,7 @@
 
 import {
 sayTick, Data,
-totpEnroll, totpSecretIdentifier, totpValidate, totpGenerate, totpConstants,
+totpEnroll, totpIdentifier, totpValidate, totpGenerate, totpConstants,
 browserIsBesideAppStore,
 } from 'icarus'
 
@@ -27,9 +27,9 @@ async function repeater() { if (!enrollment) return
 	let secret = Data({base32: enrollment.secret})
 
 	let t = Now()
-	refCodePrev.value = await totpGenerate(secret, t - (30*Time.second))
-	refCodeHere.value = await totpGenerate(secret, t)
-	refCodeNext.value = await totpGenerate(secret, t + (30*Time.second))
+	refCodePrev.value = await totpGenerate({secret, now: t - (30*Time.second)})
+	refCodeHere.value = await totpGenerate({secret, now: t})
+	refCodeNext.value = await totpGenerate({secret, now: t + (30*Time.second)})
 	refCodeTime.value = sayTick(t)
 }
 

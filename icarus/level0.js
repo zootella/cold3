@@ -1920,8 +1920,11 @@ noop(async () => {//see what these objects look like before we stringify and bas
 // |_|  |_|  \___|\___/_____|____/ \___/   \__\___/ \__| .__/ 
 //                                                     |_|    
 
-//RFC 6238 defines TOTP for short-lived one-time passwords using synchronized device clocks, enabling two-factor authentication using authenticator apps that operate offline, aren't tied to a provider or centralized account system, and offer secure, portable verification
-//npm otpauth is popular and works in a web worker, but brings its own javascript implementation of cryptographic primitives, so instead Claude and me coded the specification on top of the native subtle library in a single screenful of code, below
+/*
+RFC 6238 defines TOTP for short-lived one-time passwords using synchronized device clocks, enabling two-factor authentication using authenticator apps that operate offline, aren't tied to a provider or centralized account system, and offer secure, portable verification
+
+npm otpauth is popular and works in a web worker, but brings its own javascript implementation of cryptographic primitives, so instead Claude and me coded the specification on top of the native subtle library in less than a screenful of code, below
+*/
 
 const totp_size = 20//20 bytes = 160 bits is standard and secure; longer would make the QR code denser
 const totp_algorithm = 'SHA1'//SHA1-HMAC is what authenticator apps expect
@@ -1929,116 +1932,16 @@ const totp_code_length = 6//6 digit codes, what users are used to
 const totp_period_seconds = 30//30 second refresh, also what users are used to
 const totp_window = 1//permit codes from the previous and next 1 time periods to work with clock synchronization and user delay
 
-/*
-Enroll                🟢 make the qr code for the user to scan to set up their authenticator app
-> Secret              make the shared secret for totp
-> EnrollGivenSecret   factored for testing, do the work of the enrollment given the random secret
-- > SecretIdentifier  🟢 show the user text like "[X2B]" hashed from the secret
-Validate              🟢 determine if a code is valid for a secret right now
-> ValidateGivenTime   factored for testing, determine if a code is valid for the given secret and time
-- > Generate          ☢️ exported only for demonstration and testing! generate the same code the authenticator app does
-- - > Counter         following rfc6238, turn a time into bytes to hash
-- - > Truncate        following rfc6238, turn a hash into the short code of numerals
-*/
+//make the qr code for the user to scan to set up their authenticator app
+export async function totpEnroll({label, issuer, addIdentifier, secret}) {//only pass in secret for testing
+	if (!secret) secret = Data({random: totp_size})//generate a new random secret for this enrollment
 
-export async function totpEnroll({label, issuer, addIdentifier}) {
-	let secret = totpSecret()
-	let enrollment = await totpEnrollGivenSecret({secret, label, issuer, addIdentifier})
-	return enrollment
-}
-function totpSecret() { return Data({random: totp_size}) }
-
-export async function totpValidate(secret, code) { return await totpValidateGivenTime(secret, code, Now()) }
-async function totpValidateGivenTime(secret, code, now) {
-	for (let i = -totp_window; i <= totp_window; i++) {//our window is 1, so we'll loop 3 times
-		let t = now + (i * totp_period_seconds * Time.second)
-		let correct = await totpGenerate(secret, t)
-		if (code == correct) return true
-	}
-	return false//no match found
-}
-test(async () => {
-	let secret = Data({base32: '77ODUCNGUB3JHWN2MTPBSC5ZFD6YJHQW'})
-	let t = 1756599008818
-	let code = '844422'//starting with a matching secret, time, and resulting code
-
-	ok(code == await totpGenerate(secret, t))//confirm that's what we generate
-
-	ok(!(await totpValidateGivenTime(secret, code, t - (60*Time.second))))//60 seconds early or late, no longer valid
-	ok((await totpValidateGivenTime(secret, code, t - (30*Time.second))))//30 seconds early or late, still valid
-	ok((await totpValidateGivenTime(secret, code, t)))//perfect clock synchronization
-	ok((await totpValidateGivenTime(secret, code, t + (30*Time.second))))
-	ok(!(await totpValidateGivenTime(secret, code, t + (60*Time.second))))
-})
-
-export async function totpGenerate(secret, t) {//exported to demonstrate a complete flow; in actual use the site never calls this
-	let counterData = totpCounter(t)
-	let signatureData = await hmacSign('SHA-1', secret, counterData)
-	return totpTruncate(signatureData, totp_code_length)
-}
-test(async () => {
-	let secret = Data({text: '12345678901234567890'})
-	ok(await totpGenerate(secret, 59000)         == '287082')
-	ok(await totpGenerate(secret, 1234567890000) == '005924')//test vectors from the RFC are 8 digits; looking at just the first 6 is fine
-
-	let d = Data({base32: 'AKXFF73AHHKW2WREOTTXIGCFAXFQV4QP'})
-	let t = 1756593477167
-	ok((await totpGenerate(d, t))                    == '585017')
-	ok((await totpGenerate(d, t + ( 1*Time.second))) == '585017')//one second later is still in the same time period
-	ok((await totpGenerate(d, t + (30*Time.second))) == '691316')//while 30 seconds later must be in the next period
-	ok((await totpGenerate(d, t + (60*Time.second))) == '546345')
-	ok((await totpGenerate(d, t + (90*Time.second))) == '857364')
-})
-
-function totpCounter(t) {//given a number of milliseconds since the start of 1970, generate the 8 bytes to hash
-	let period = Math.floor(t / (totp_period_seconds * Time.second))
-	let array = new Uint8Array(8)
-	let view = new DataView(array.buffer)
-	view.setUint32(4, period, false)//store in last 4 bytes, big-endian
-	return Data({array})
-}
-test(() => {
-	function f(t, b16) { ok(totpCounter(t).base16() == b16) }
-	f(1756586162508,  '00000000037d7228')//from now
-	f(59000,          '0000000000000001')//from RFC 6238 Appendix B
-	f(1111111109000,  '00000000023523ec')  
-	f(1111111111000,  '00000000023523ed')
-	f(1234567890000,  '000000000273ef07')
-	f(2000000000000,  '0000000003f940aa')
-	f(20000000000000, '0000000027bc86aa')
-})
-
-function totpTruncate(signatureData, codeLength) {//hmac signature data, takes code length 8 to test against vectors from the RFC
-	let array = signatureData.array()
-	let offset = array[array.length - 1] & 0x0f//use last byte's bottom 4 bits as offset
-	let code = (
-		((array[offset] & 0x7f) << 24) |//clear top bit of first byte, shift 24
-		((array[offset + 1] & 0xff) << 16) |//keep all bits, shift 16
-		((array[offset + 2] & 0xff) << 8) |//keep all bits, shift 8
-		(array[offset + 3] & 0xff)//keep all bits, no shift
-	) % Math.pow(10, codeLength)//modulo by 10^codeLength to get final code
-	return code.toString().padStart(codeLength, '0')//convert to string with leading zeros
-}
-test(async () => {
-	async function f(secret, counter, expected) {
-		let signatureData = await hmacSign('SHA-1', secret, Data({base16: counter}))
-		ok(totpTruncate(signatureData, 8) == expected)
-	}
-	let secret = Data({text: '12345678901234567890'})//also from the appendix
-	await f(secret, '0000000000000001', '94287082')
-	await f(secret, '00000000023523ec', '07081804')
-	await f(secret, '00000000023523ed', '14050471')
-	await f(secret, '000000000273ef07', '89005924')
-	await f(secret, '0000000003f940aa', '69279037')
-	await f(secret, '0000000027bc86aa', '65353130')
-})
-
-async function totpEnrollGivenSecret({secret, label, issuer, addIdentifier}) {//make the otpauth://totp/... URI for the redirect or QR code
+	//make the otpauth://totp/... URI for the redirect or QR code
 	checkText(label); checkText(issuer)
 	if (label.includes(':') || issuer.includes(':')) toss('colon reserved', {label, issuer})
 
 	//extra stuff beyond standard and common implementation to help the user find the right listing
-	let identifier = await totpSecretIdentifier(secret)
+	let identifier = await totpIdentifier({secret})
 	if (addIdentifier) label += ` [${identifier}]`//the page could tell the user to look for the listing marked "...[ABC]"
 	let title = `${issuer}: ${label}`//or the title of the listing in Google Authenticator; others are similar
 
@@ -2052,26 +1955,83 @@ async function totpEnrollGivenSecret({secret, label, issuer, addIdentifier}) {//
 	let uri = `otpauth://totp/${encodeURIComponent(`${issuer}:${label}`)}?${params}`
 	return {secret: secret.base32(), identifier, title, uri}
 }
-export async function totpSecretIdentifier(secret) { return (await hashText(secret.base32())).slice(0, 3) }
-test(async () => {
-	let secret = Data({base16: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'})
-	ok((await totpEnrollGivenSecret({secret, label: 'alice@example.com', issuer: 'TestCorp'})).uri == 'otpauth://totp/TestCorp%3Aalice%40example.com?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=TestCorp')
-	ok((await totpEnrollGivenSecret({secret, label: '@_Alice-Jones_ [HI] <tag>', issuer: 'examplesite.com'})).uri == 'otpauth://totp/examplesite.com%3A%40_Alice-Jones_%20%5BHI%5D%20%3Ctag%3E?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com')
+//show the user text like "[X2B]" hashed from the secret
+export async function totpIdentifier({secret}) { return (await hashText(secret.base32())).slice(0, 3) }
 
+//determine if a code is valid for a secret now, pass in a time for testing
+export async function totpValidate({secret, code, now}) {//only pass in tick count now for testing
+	if (!now) now = Now()//validate based on the time right now, trusted server clock
+
+	for (let i = -totp_window; i <= totp_window; i++) {//our window is 1, so we'll loop 3 times
+		let t = now + (i * totp_period_seconds * Time.second)
+		let correct = await totpGenerate({secret, now: t})
+		if (code == correct) return true
+	}
+	return false//no match found
+}
+//generate the same code the authenticator app does
+export async function totpGenerate({secret, now}) {//exported for demonstration components only, ttd february
+
+	//counter: given a number of milliseconds since the start of 1970, generate the 8 bytes to hash
+	let period = Math.floor(now / (totp_period_seconds * Time.second))
+	let counterArray = new Uint8Array(8)
+	let view = new DataView(counterArray.buffer)
+	view.setUint32(4, period, false)//store in last 4 bytes, big-endian
+	let signatureData = await hmacSign('SHA-1', secret, Data({array: counterArray}))
+
+	//truncate: turn the hmac signature into the short code of numerals
+	let array = signatureData.array()
+	let offset = array[array.length - 1] & 0x0f//use last byte's bottom 4 bits as offset
+	let code = (
+		((array[offset] & 0x7f) << 24) |//clear top bit of first byte, shift 24
+		((array[offset + 1] & 0xff) << 16) |//keep all bits, shift 16
+		((array[offset + 2] & 0xff) << 8) |//keep all bits, shift 8
+		(array[offset + 3] & 0xff)//keep all bits, no shift
+	) % Math.pow(10, totp_code_length)//modulo by 10^codeLength to get final code
+	return code.toString().padStart(totp_code_length, '0')//convert to string with leading zeros
+}
+
+test(async () => {
+	//enroll: URI formatting, identifier, all fields
+	let enrollment = await totpEnroll({
+		secret: Data({base32: 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR'}),
+		label: 'Alice', issuer: 'ExampleSite', addIdentifier: true,
+	})
+	ok(enrollment.secret == 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR')
+	ok(enrollment.identifier == '25I')
+	ok(enrollment.title == 'ExampleSite: Alice [25I]')
+	ok(enrollment.uri == 'otpauth://totp/ExampleSite%3AAlice%20%5B25I%5D?secret=SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR&algorithm=SHA1&digits=6&period=30&issuer=ExampleSite')
+
+	//enroll: special characters in label
+	ok((await totpEnroll({secret: Data({base16: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'}), label: '@_Alice-Jones_ [HI] <tag>', issuer: 'examplesite.com'})).uri == 'otpauth://totp/examplesite.com%3A%40_Alice-Jones_%20%5BHI%5D%20%3Ctag%3E?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com')
+
+	//enroll: random secret path produces well-shaped URI
 	let uri = (await totpEnroll({label: '@alice.jones', issuer: 'examplesite.com'})).uri
 	ok(uri.startsWith('otpauth://totp/examplesite.com%3A%40alice.jones?secret='))
 	ok(uri.endsWith('&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com'))
+})
+test(async () => {
+	//RFC 6238 Appendix B test vectors for generate
+	let rfc = Data({text: '12345678901234567890'})
+	ok(await totpGenerate({secret: rfc, now: 59000})         == '287082')
+	ok(await totpGenerate({secret: rfc, now: 1234567890000}) == '005924')
 
-	let enrollment = await totpEnrollGivenSecret({
-		secret: Data({base32: 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR'}),//server generates and shares with user at enrollment
-		label: 'Alice',//server composes from user name, route, or email
-		issuer: 'ExampleSite',
-		addIdentifier: true,//for this example, we're doing the [ABC] thing
-	})
-	ok(enrollment.secret == 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR')//stays in the database to validate future codes
-	ok(enrollment.title == 'ExampleSite: Alice [25I]')//these we could send to the page safely later on
-	ok(enrollment.identifier == '25I')
-	ok(enrollment.uri == 'otpauth://totp/ExampleSite%3AAlice%20%5B25I%5D?secret=SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR&algorithm=SHA1&digits=6&period=30&issuer=ExampleSite')//shown to the user once to set things up; contains the shared secret (this is how we share it)!
+	//generate: same code within a period, different code across period boundaries
+	let secret = Data({base32: 'AKXFF73AHHKW2WREOTTXIGCFAXFQV4QP'})
+	let t = 1756593477167
+	ok(await totpGenerate({secret, now: t})                    == '585017')
+	ok(await totpGenerate({secret, now: t + ( 1*Time.second)}) == '585017')
+	ok(await totpGenerate({secret, now: t + (30*Time.second)}) == '691316')
+	ok(await totpGenerate({secret, now: t + (60*Time.second)}) == '546345')
+	ok(await totpGenerate({secret, now: t + (90*Time.second)}) == '857364')
+
+	//validate: window accepts ±1 period, rejects ±2
+	let code = '585017'
+	ok(!(await totpValidate({secret, code, now: t - (60*Time.second)})))
+	ok((await totpValidate({secret, code, now: t - (30*Time.second)})))
+	ok((await totpValidate({secret, code, now: t})))
+	ok((await totpValidate({secret, code, now: t + (30*Time.second)})))
+	ok(!(await totpValidate({secret, code, now: t + (60*Time.second)})))
 })
 
 /*

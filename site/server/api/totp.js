@@ -70,7 +70,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		}//➡️ passing this check is proof it's the real secret from step 1!
 
 		//make sure the user can generate a valid code
-		let valid = await totpValidate(Data({base32: secret}), body.code)
+		let valid = await totpValidate({secret: Data({base32: secret}), code: body.code})
 		if (!valid) return {outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the page still has the secret at this point!
 
 		//save this new enrollment for this user
@@ -89,7 +89,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (n >= totpConstants.guardWrongGuesses) return {outcome: 'Later.'}
 
 		//validate the page's guess
-		let valid = await totpValidate(secret, body.code)
+		let valid = await totpValidate({secret, code: body.code})
 		if (valid) {//guess at code from page is correct
 
 			log(`ttd november 🎃 user ${userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
