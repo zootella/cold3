@@ -47,7 +47,7 @@ importers:
         version: 5.1.1(@uppy/core@5.2.0)
       '@wagmi/connectors':
         specifier: ^7.1.6
-        version: 7.1.6(@coinbase/wallet-sdk@4.3.6(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6))(@metamask/sdk@0.33.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@wagmi/core@3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
+        version: 7.1.6(@coinbase/wallet-sdk@4.3.6(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6))(@metamask/sdk@0.33.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@wagmi/core@3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
       '@wagmi/core':
         specifier: ^3.3.2
         version: 3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
@@ -138,9 +138,6 @@ importers:
         specifier: workspace:*
         version: link:../icarus
     devDependencies:
-      '@sveltejs/adapter-auto':
-        specifier: ^6.1.1
-        version: 6.1.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))
       '@sveltejs/adapter-cloudflare':
         specifier: ^7.2.6
         version: 7.2.6(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(wrangler@4.63.0(@cloudflare/workers-types@4.20260206.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10))
@@ -191,7 +188,7 @@ importers:
         version: 5.1.1(@uppy/core@5.2.0)
       '@wagmi/connectors':
         specifier: ^7.1.6
-        version: 7.1.6(@coinbase/wallet-sdk@4.3.6(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6))(@metamask/sdk@0.33.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@wagmi/core@3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
+        version: 7.1.6(@coinbase/wallet-sdk@4.3.6(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6))(@metamask/sdk@0.33.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@wagmi/core@3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
       '@wagmi/core':
         specifier: ^3.3.2
         version: 3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
@@ -235,9 +232,6 @@ importers:
       '@tailwindcss/forms':
         specifier: ^0.5.11
         version: 0.5.11(tailwindcss@4.1.18)
-      nitro-cloudflare-dev:
-        specifier: ^0.2.2
-        version: 0.2.2
       nitropack:
         specifier: ^2.13.1
         version: 2.13.1(@electric-sql/pglite@0.3.15)(idb-keyval@6.2.2)(xml2js@0.6.2)
@@ -2827,11 +2821,6 @@ packages:
     peerDependencies:
       acorn: ^8.9.0
 
-  '@sveltejs/adapter-auto@6.1.1':
-    resolution: {integrity: sha512-cBNt4jgH4KuaNO5gRSB2CZKkGtz+OCZ8lPjRQGjhvVUD4akotnj2weUia6imLl2v07K3IgsQRyM36909miSwoQ==}
-    peerDependencies:
-      '@sveltejs/kit': ^2.0.0
-
   '@sveltejs/adapter-cloudflare@7.2.6':
     resolution: {integrity: sha512-PmaWW6EdMue8s24bUwa9EMsnjMaCS1HroM8HwlvwSxO8Cq5LldAxnnaUS5cnJ3RdVRorJZtL71eMTs+wbuXHgw==}
     peerDependencies:
@@ -5053,9 +5042,6 @@ packages:
 
   nanotar@0.2.0:
     resolution: {integrity: sha512-9ca1h0Xjvo9bEkE4UOxgAzLV0jHKe6LMaxo37ND2DAhhAtd0j8pR1Wxz+/goMrZO8AEZTWCmyaOsFI/W5AdpCQ==}
-
-  nitro-cloudflare-dev@0.2.2:
-    resolution: {integrity: sha512-aZfNTVdgXPQeAmXW0Tw8hm3usAHr4qVG4Bg3WhHBGeZYuXr9OyT04Ztb+STkMzhyaXvfMHViAaPUPg06iAYqag==}
 
   nitropack@2.13.1:
     resolution: {integrity: sha512-2dDj89C4wC2uzG7guF3CnyG+zwkZosPEp7FFBGHB3AJo11AywOolWhyQJFHDzve8COvGxJaqscye9wW2IrUsNw==}
@@ -10137,10 +10123,6 @@ snapshots:
     dependencies:
       acorn: 8.15.0
 
-  '@sveltejs/adapter-auto@6.1.1(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))':
-    dependencies:
-      '@sveltejs/kit': 2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
-
   '@sveltejs/adapter-cloudflare@7.2.6(@sveltejs/kit@2.50.2(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(svelte@5.50.0)(vite@6.4.1(@types/node@25.2.1)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)))(wrangler@4.63.0(@cloudflare/workers-types@4.20260206.0)(bufferutil@4.1.0)(utf-8-validate@5.0.10))':
     dependencies:
       '@cloudflare/workers-types': 4.20260206.0
@@ -10578,7 +10560,7 @@ snapshots:
 
   '@vue/shared@3.5.27': {}
 
-  '@wagmi/connectors@7.1.6(@coinbase/wallet-sdk@4.3.6(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6))(@metamask/sdk@0.33.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@wagmi/core@3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(db0@0.3.4(@electric-sql/pglite@0.3.15))(ioredis@5.9.2)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))':
+  '@wagmi/connectors@7.1.6(@coinbase/wallet-sdk@4.3.6(bufferutil@4.1.0)(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(utf-8-validate@5.0.10)(zod@4.3.6))(@metamask/sdk@0.33.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(@safe-global/safe-apps-provider@0.18.6(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@safe-global/safe-apps-sdk@9.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))(@wagmi/core@3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)))(@walletconnect/ethereum-provider@2.21.1(bufferutil@4.1.0)(react@18.3.1)(utf-8-validate@5.0.10)(zod@4.3.6))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))':
     dependencies:
       '@wagmi/core': 3.3.2(@tanstack/query-core@5.90.20)(ox@0.11.3(zod@4.3.6))(react@18.3.1)(use-sync-external-store@1.2.0(react@18.3.1))(viem@2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6))
       viem: 2.45.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -12890,12 +12872,6 @@ snapshots:
   nanoid@5.1.6: {}
 
   nanotar@0.2.0: {}
-
-  nitro-cloudflare-dev@0.2.2:
-    dependencies:
-      consola: 3.4.2
-      mlly: 1.8.0
-      pkg-types: 2.3.0
 
   nitropack@2.13.1(@electric-sql/pglite@0.3.15)(idb-keyval@6.2.2)(xml2js@0.6.2):
     dependencies:

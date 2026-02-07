@@ -35,7 +35,7 @@ configuration.build = {
 configuration.analyzeDir = 'size'//put the report files in a folder named "size" rather than .nuxt/analyze
 
 //for Cloudflare Workers
-configuration.modules.push('nitro-cloudflare-dev')//run locally with a Miniflare Wrangler development proxy; ttd january this may not be necessary in Nuxt 4; you could try removing this, but scaffolding for nuxt 4 freshly made 2026feb4 still included it
+//Cloudflare Workers bindings (KV, R2, D1) don't exist in plain Node; Nitro >=2.12 emulates them natively during nuxt dev
 configuration.nitro = {
 	preset: 'cloudflare_module',//tell Nitro to build for Cloudflare Workers
 	cloudflare: {

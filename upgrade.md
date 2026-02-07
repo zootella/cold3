@@ -142,29 +142,3 @@ The oauth workspace is a minimal SvelteKit app (2 pages, ~180 lines of logic) th
 **Remove, don't upgrade.** `svelte.config.js` imports `@sveltejs/adapter-cloudflare` directly — adapter-auto is listed in `oauth/package.json` devDependencies but never imported anywhere. Dead weight, same situation as @tanstack/vue-query in site. The major cadence is even faster than vite-plugin-svelte (v5 to v6 was 13 days), each bump just tracking whichever underlying adapter crossed a major. Moot anyway since it should be removed.
 
 When we do this, also remove `nitro-cloudflare-dev` from `site/package.json` at the same time. Same pattern — a deprecated Cloudflare dev shim that Nitro 2.12+ replaced with native emulation. That one's still wired into `site/nuxt.config.js` line 38 so it needs a test (steps already in package2.md), but both are vestigial Cloudflare convenience packages worth cleaning out together.
-
-## Independent
-
-These modules don't have strong coupling to each other or to the groups above. Each can be evaluated and upgraded on its own timeline.
-
-### zod (upgrade)
-
-```yaml
-zod:
-  homepage: https://zod.dev
-  description: TypeScript-first schema declaration and validation library with static type inference
-  from: icarus
-  versions:
-    declared: ^3.25.76
-    installed: 3.25.76 on 2025jul08 7m old
-    current: 3.25.76 on 2025jul08 7m old
-    latest: 4.3.6 on 2026jan22 0m old 🎁 Major new version available
-  downloads:
-    weekly: 87,621,926
-```
-
-**Do it — zero code changes required.** Our entire zod usage is a single schema in `icarus/level1.js`: `zod.string().email()` cached as a lazy singleton, called via `.safeParse()` three times in `validateEmail()` to check adjusted, presented, and normalized email forms. No other schemas, no `z.infer<>`, no complex compositions anywhere in the monorepo. In v4, `z.string().email()` is deprecated but still functional — the idiomatic replacement is `z.email()`, but there's no rush. The upgrade is literally changing `^3.25.76` to `^4.0.0` in `icarus/package.json`.
-
-The v4 rewrite is real — sweeping API changes for heavy users (`.record()` requires two args, `.default()` behavior changed, error customization overhauled, TypeScript generics simplified) — but none of it touches our one-method usage. Zero runtime dependencies in both versions. Bundle drops from ~12.5 KB to ~5.4 KB gzipped, string parsing 14x faster. v4 also declares `"sideEffects": false` (v3 didn't), so Rollup/Vite can tree-shake aggressively. v3 ran for 4 years (2021–2025), v4 has been stable for 7 months with no v5 signals, and zod's subpath versioning guarantees `zod/v3` will exist forever if we ever needed to fall back. Easiest upgrade on the list.
-
-Since zod lands in the default client bundle, also worth considering Zod Mini (`zod/mini`) — 1.88 KB gzipped vs 5.4 KB for full v4. Same schemas, same `.safeParse()`, but stripped-down error reporting (plain strings instead of structured `ZodError` objects). Our usage is binary — `validateEmail()` checks `.success` and returns the result object upstream on failure. If nothing downstream ever inspects zod's structured error messages (issue codes, paths, formatted output), Mini works and saves another 3x. Check whether callers of `validateEmail()`/`checkEmail()` look inside the `j1`/`j2`/`j3` error objects beyond the boolean.

@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 8:17 PM
+  generated: 2026 Feb 6 9:12 PM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -8,7 +8,6 @@ summary:
     - qrcode
     - serverless-offline
   🎁 Major new version available:
-    - "@sveltejs/adapter-auto"
     - "@sveltejs/vite-plugin-svelte"
     - "@vitejs/plugin-vue"
     - h3
@@ -21,7 +20,6 @@ summary:
     - "@electric-sql/pglite"
     - "@pinia/nuxt"
     - "@tailwindcss/forms"
-    - nitro-cloudflare-dev
     - satori
     - sharp
   📌 Exact version pinned:
@@ -30,14 +28,12 @@ summary:
     - satori
   downloads:
     5 figure:
-      nitro-cloudflare-dev: 12,417
       vidstack: 32,747
       "@auth/sveltekit": 44,327
       nuxt-og-image: 74,014
       "@sveltejs/adapter-cloudflare": 82,257
     6 figure:
       "@uppy/aws-s3": 292,709
-      "@sveltejs/adapter-auto": 372,936
       "@resvg/resvg-wasm": 381,134
       "@uppy/dashboard": 381,907
       "@tanstack/vue-query": 385,669
@@ -203,18 +199,6 @@ modules:
     downloads:
       weekly: 9,033,555
       on: 2026feb4.1821.46960
-  "@sveltejs/adapter-auto":
-    homepage: https://svelte.dev/docs/kit/adapter-auto
-    description: Automatically chooses the SvelteKit adapter for your current environment, if possible.
-    from: oauth
-    versions:
-      declared: ^6.1.1
-      installed: 6.1.1 on 2025oct02 4m old
-      current: 6.1.1 on 2025oct02 4m old
-      latest: 7.0.0 on 2025oct16 4m old 🎁 Major new version available
-    downloads:
-      weekly: 372,936
-      on: 2026feb4.1825.16236
   "@sveltejs/adapter-cloudflare":
     homepage: https://svelte.dev/docs/kit/adapter-cloudflare
     description: Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages
@@ -441,16 +425,6 @@ modules:
     downloads:
       weekly: 94,895,352
       on: 2026feb4.1821.46960
-  nitro-cloudflare-dev:
-    homepage: https://github.com/pi0/nitro-cloudflare-dev#readme
-    description: POC module to enable access to the Cloudflare runtime bindings in development server of Nitro and Nuxt
-    from: site
-    versions:
-      declared: ^0.2.2
-      installed: 0.2.2 on 2025mar06 11m old 🐣 Pre-1.0 version installed
-    downloads:
-      weekly: 12,417
-      on: 2026feb4.1829.44951
   nitropack:
     homepage: https://github.com/nitrojs/nitro#readme
     description: Build and Deploy Universal JavaScript Servers
