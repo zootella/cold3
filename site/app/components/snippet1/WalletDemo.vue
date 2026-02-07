@@ -99,7 +99,7 @@ onMounted(async () => {
 			}),
 		],
 	})
-	_wagmiUnwatch = wagmi_core.watchAccount(_wagmiConfig, {
+	_wagmiUnwatch = wagmi_core.watchConnection(_wagmiConfig, {
 		onChange(account) {//bring in account after watch account on change
 			refConnectedAddress.value = account.address
 			refIsConnected.value = account.isConnected
@@ -110,7 +110,7 @@ onMounted(async () => {
 	await onQuotes()//get current eth price and block number; uses alchemy but the user doesn't have to have a wallet
 
 	await wagmi_core.reconnect(_wagmiConfig)//wagmi keeps notes about this in localStorage @wagmi/core.store
-	let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after reconnect
+	let account = wagmi_core.getConnection(_wagmiConfig)//bring in account after reconnect
 	refConnectedAddress.value = account.address
 	refIsConnected.value = account.isConnected//this block of wagmi api calls should not throw; if it does we want the exception to crash the page
 })
@@ -149,7 +149,7 @@ async function onInjectedConnect() {
 	try {
 
 		let result = await wagmi_core.connect(_wagmiConfig, {connector: wagmi_connectors.injected()})
-		let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after connect
+		let account = wagmi_core.getConnection(_wagmiConfig)//bring in account after connect
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 
@@ -180,7 +180,7 @@ async function onWalletConnect() {
 		//initiate the connection; this sends a session proposal to the relay and waits for a wallet to respond
 		//promise stays pending while QR code is displayed; resolves when phone wallet scans, connects to same relay topic, and user approves
 		let result = await wagmi_core.connect(_wagmiConfig, {connector: connector})
-		let account = wagmi_core.getAccount(_wagmiConfig)
+		let account = wagmi_core.getConnection(_wagmiConfig)
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 		refUri.value = ''//hide QR code on success
@@ -204,7 +204,7 @@ async function onDisconnect() {
 	try {
 
 		await wagmi_core.disconnect(_wagmiConfig)
-		let account = wagmi_core.getAccount(_wagmiConfig)//bring in account after disconnect
+		let account = wagmi_core.getConnection(_wagmiConfig)//bring in account after disconnect
 		refConnectedAddress.value = account.address
 		refIsConnected.value = account.isConnected
 

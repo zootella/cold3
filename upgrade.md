@@ -217,37 +217,6 @@ The v4 rewrite is real — sweeping API changes for heavy users (`.record()` req
 
 Since zod lands in the default client bundle, also worth considering Zod Mini (`zod/mini`) — 1.88 KB gzipped vs 5.4 KB for full v4. Same schemas, same `.safeParse()`, but stripped-down error reporting (plain strings instead of structured `ZodError` objects). Our usage is binary — `validateEmail()` checks `.success` and returns the result object upstream on failure. If nothing downstream ever inspects zod's structured error messages (issue codes, paths, formatted output), Mini works and saves another 3x. Check whether callers of `validateEmail()`/`checkEmail()` look inside the `j1`/`j2`/`j3` error objects beyond the boolean.
 
-### dotenv (remove)
-
-```yaml
-dotenv:
-  homepage: https://github.com/motdotla/dotenv#readme
-  description: Loads environment variables from .env file
-  from: root
-  versions:
-    declared: ^16.6.1
-    installed: 16.6.1 on 2025jun27 7m old
-    current: 16.6.1 on 2025jun27 7m old
-    latest: 17.2.4 on 2026feb05 0m old 🎁 Major new version available
-  downloads:
-    weekly: 89,667,593
-```
-
-**Don't upgrade — the "breaking change" is ads.** The sole difference between v16 and v17 is that the `quiet` option default flipped from `true` to `false`. In v16.6.0 the maintainer added a runtime log message to stdout that includes rotating promotional tips for dotenvx, his commercial product: `[dotenv@17.2.1] injecting env (0) from .env -- tip: encrypt with dotenvx: https://dotenvx.com`. v17 made this on by default. No API changes, no parsing changes, no security fixes. The community backlash was intense — the stdout spam broke Playwright XML reports, corrupted JSON-RPC streams in Claude Desktop/MCP servers, and polluted piped commands. The maintainer closed and locked multiple GitHub issues (#904, #909) from people objecting. A package with 89M weekly downloads being used as an advertising vehicle.
-
-Our usage is three local dev scripts (`seal.js`, `test.js`, `cors.js`) that load `.env` into `process.env` — none of this ends up in bundled code. All three already pass `{quiet: true}`, so even if we did upgrade to v17 we'd see no ads. But there's no reason to: `^16.6.1` won't auto-upgrade to 17.x, there are no security vulnerabilities in v16, and the core functionality is unchanged.
-
-Better path: drop dotenv entirely and use Node's built-in `process.loadEnvFile()` (experimental in Node 22, stable in 24 — we're on 22 and only moving forward). Three files to change (`seal.js`, `test.js`, `cors.js`), same pattern in each — remove the import and replace the config call:
-
-```js
-// remove: import dotenv from 'dotenv'
-// remove: dotenv.config({quiet: true})
-// add:
-process.loadEnvFile()
-```
-
-Then `pnpm remove dotenv` from root package.json. One caveat: `process.loadEnvFile()` throws if `.env` doesn't exist (dotenv silently ignores), but these are local dev scripts where `.env` should always be present.
-
 ### @vercel/nft (upgrade)
 
 ```yaml

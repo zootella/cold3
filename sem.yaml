@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 6:23 PM
+  generated: 2026 Feb 6 6:42 PM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -12,8 +12,6 @@ summary:
     - "@sveltejs/vite-plugin-svelte"
     - "@vercel/nft"
     - "@vitejs/plugin-vue"
-    - "@wagmi/connectors"
-    - "@wagmi/core"
     - h3
     - vite
     - vue-router
@@ -359,10 +357,8 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.11.2
-      installed: 5.11.2 on 2025sep25 4m old
-      current: 5.11.2 on 2025sep25 4m old
-      latest: 7.1.6 on 2026feb01 0m old 🎁 Major new version available
+      declared: ^7.1.6
+      installed: 7.1.6 on 2026feb01 0m old
     downloads:
       weekly: 508,960
       on: 2026feb4.1821.46960
@@ -373,10 +369,8 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^2.22.1
-      installed: 2.22.1 on 2025oct14 4m old
-      current: 2.22.1 on 2025oct14 4m old
-      latest: 3.3.2 on 2026feb01 0m old 🎁 Major new version available
+      declared: ^3.3.2
+      installed: 3.3.2 on 2026feb01 0m old
     downloads:
       weekly: 485,845
       on: 2026feb4.1821.46960
