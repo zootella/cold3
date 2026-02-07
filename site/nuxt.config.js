@@ -94,17 +94,14 @@ configuration.vite.plugins.push(vidstack())
 /*
 pglite asset exclusion 🛢 2026feb7
 
-pglite (@electric-sql/pglite) is an in-memory PostgreSQL used only for local unit testing via pgliteDynamicImport() in icarus/level1.js. it ships a pglite.wasm (8.8MB) and pglite.data (4.9MB) that are referenced inside its source with the pattern:
-  new URL("./pglite.wasm", import.meta.url)
+pglite (@electric-sql/pglite) is an in-memory PostgreSQL used only for local unit testing via pgliteDynamicImport() in icarus/level1.js. It ships a pglite.wasm (8.8MB) and pglite.data (4.9MB) that are referenced inside its source with the pattern new URL("./pglite.wasm", import.meta.url)
 
-the dynamic import() in level1.js already has /* @vite-ignore *​/ which successfully prevents pglite's JS from being bundled into any client chunk. however, Vite has a separate asset pipeline that detects the new URL("...", import.meta.url) pattern in any module it scans, and copies those files to the client output as static assets — independent of whether the JS import was ignored. this was putting 14MB of pglite binaries into .output/public/_nuxt/ even though no browser or Worker ever loads them.
+The dynamic import() in level1.js already has @vite-ignore which successfully prevents pglite's JS from being bundled into any client chunk. However, Vite has a separate asset pipeline that detects the new URL("...", import.meta.url) pattern in any module it scans, and copies those files to the client output as static assets — independent of whether the JS import was ignored. This was putting 14MB of pglite binaries into .output/public/_nuxt/ even though no browser or Worker ever loads them.
 
-the fix: tell Rollup to externalize pglite entirely. this prevents Vite from scanning pglite's source files at all, so the new URL() asset references are never discovered.
+The fix is to tell Rollup to externalize pglite entirely. This prevents Vite from scanning pglite's source files at all, so the new URL() asset references are never discovered. We discovered this issue by running nuxi analyze and noticing pglite.wasm and pglite.data in the client build output. Total CDN output is 24MB with if false below, 8MB if true. Cloudflare Workers has a static asset size limit, so this matters.
 
-found by running nuxi analyze and noticing pglite.wasm and pglite.data in the client build output. total CDN output dropped from 24MB to 8MB after this fix. Cloudflare Workers has a static asset size limit, so this matters.
-
-to verify: rm -rf .output node_modules/.cache/nuxt && pnpm build, then check that .output/public/_nuxt/ has no pglite files. the Nuxt build cache at node_modules/.cache/nuxt persists assets across rebuilds, so you must clear it when testing changes to this setting.
+To verify, delete .output node_modules/.cache/nuxt && pnpm build, then check that .output/public/_nuxt/ has no pglite files. The Nuxt build cache at node_modules/.cache/nuxt persists assets across rebuilds, so you must clear it when testing changes to this setting. The root workspace pnpm wash script deletes node_modules entirely, so you can use that.
 */
-if (false) configuration.vite.build = {rollupOptions: {external: ['@electric-sql/pglite']}}//if true to make this easily switchable
+if (true) configuration.vite.build = {rollupOptions: {external: ['@electric-sql/pglite']}}//if true to make this easily switchable
 
 export default defineNuxtConfig(configuration)
