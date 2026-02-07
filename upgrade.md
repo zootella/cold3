@@ -1,3 +1,4 @@
+
 # Major Version Upgrade Evaluation
 
 ## Context
@@ -122,23 +123,3 @@ The oauth workspace is a minimal SvelteKit app (2 pages, ~180 lines of logic) th
 ```
 
 **Not now — majors too frequent to chase.** The major version cadence here is fast (v4 Oct 2024, v5 Nov 2024, v6 Jul 2025, v7-next already exists) — each just tracks a Vite major, averaging a new one every 4–5 months. Upgrading now would clear the flag for a few months before the next major lands. The oauth workspace is minimal (2 pages, ~180 lines of logic, just an Auth.js OAuth bridge), the v6 breaking changes don't touch our usage (no TS, no custom transforms, already ESM, Vite 6.4 satisfies the peer dep), and v5 works fine. Not worth the churn of perpetually chasing a fast-moving major version number that signals mechanical peer dep bumps, not meaningful architectural changes.
-
-### @sveltejs/adapter-auto (remove)
-
-```yaml
-"@sveltejs/adapter-auto":
-  homepage: https://svelte.dev/docs/kit/adapter-auto
-  description: Automatically chooses the SvelteKit adapter for your current environment, if possible.
-  from: oauth
-  versions:
-    declared: ^6.1.1
-    installed: 6.1.1 on 2025oct02 4m old
-    current: 6.1.1 on 2025oct02 4m old
-    latest: 7.0.0 on 2025oct16 4m old 🎁 Major new version available
-  downloads:
-    weekly: 372,936
-```
-
-**Remove, don't upgrade.** `svelte.config.js` imports `@sveltejs/adapter-cloudflare` directly — adapter-auto is listed in `oauth/package.json` devDependencies but never imported anywhere. Dead weight, same situation as @tanstack/vue-query in site. The major cadence is even faster than vite-plugin-svelte (v5 to v6 was 13 days), each bump just tracking whichever underlying adapter crossed a major. Moot anyway since it should be removed.
-
-When we do this, also remove `nitro-cloudflare-dev` from `site/package.json` at the same time. Same pattern — a deprecated Cloudflare dev shim that Nitro 2.12+ replaced with native emulation. That one's still wired into `site/nuxt.config.js` line 38 so it needs a test (steps already in package2.md), but both are vestigial Cloudflare convenience packages worth cleaning out together.

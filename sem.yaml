@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 9:12 PM
+  generated: 2026 Feb 6 10:16 PM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -36,7 +36,6 @@ summary:
       "@uppy/aws-s3": 292,709
       "@resvg/resvg-wasm": 381,134
       "@uppy/dashboard": 381,907
-      "@tanstack/vue-query": 385,669
       "@wagmi/core": 485,845
       "@resvg/resvg-js": 499,219
       "@wagmi/connectors": 508,960
@@ -251,16 +250,6 @@ modules:
     downloads:
       weekly: 6,607,358
       on: 2026feb5.2153.32117
-  "@tanstack/vue-query":
-    homepage: https://tanstack.com/query
-    description: Hooks for managing, caching and syncing asynchronous and remote data in Vue
-    from: site
-    versions:
-      declared: ^5.92.9
-      installed: 5.92.9 on 2026jan23 0m old
-    downloads:
-      weekly: 385,669
-      on: 2026feb4.1829.44951
   "@unhead/vue":
     homepage: https://unhead.unjs.io
     description: Full-stack <head> manager built for Vue.
@@ -441,7 +430,7 @@ modules:
     from: site
     versions:
       declared: ^4.3.0
-      installed: 4.3.0 on 2026jan22 0m old
+      installed: 4.3.0 on 2026jan22 1m old
     downloads:
       weekly: 1,163,970
       on: 2026feb4.1829.44951

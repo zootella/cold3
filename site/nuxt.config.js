@@ -35,7 +35,7 @@ configuration.build = {
 configuration.analyzeDir = 'size'//put the report files in a folder named "size" rather than .nuxt/analyze
 
 //for Cloudflare Workers
-//Cloudflare Workers bindings (KV, R2, D1) don't exist in plain Node; Nitro >=2.12 emulates them natively during nuxt dev
+//scaffolding may have come with configuration.modules.push('nitro-cloudflare-dev') but we removed it; Nitro >=2.12 runs a local miniflare instance to emulate Cloudflare bindings natively during dev
 configuration.nitro = {
 	preset: 'cloudflare_module',//tell Nitro to build for Cloudflare Workers
 	cloudflare: {
