@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 2:04 PM
+  generated: 2026 Feb 6 6:00 PM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -19,7 +19,7 @@ summary:
     - vite
     - vue-router
     - zod
-  🩸 Installed tag beyond latest:
+  🩸 Latest tag is behind installed:
     - nuxt-og-image
     - vidstack
   🐣 Pre-1.0 version installed:
@@ -504,7 +504,7 @@ modules:
       declared: 6.0.0-beta.15
       installed: 6.0.0-beta.15 on 2026feb05 0m old 📌 Exact version pinned
       current: 6.0.0-beta.15 on 2026feb05 0m old
-      latest: 5.1.13 on 2025dec11 2m old 🩸 Installed tag beyond latest
+      latest: 5.1.13 on 2025dec11 2m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 74,014
       on: 2026feb4.1829.44951
@@ -650,7 +650,7 @@ modules:
       declared: ^1.12.13
       installed: 1.12.13 on 2025feb16 12m old
       current: 1.12.13 on 2025feb16 12m old
-      latest: 0.6.15 on 2024apr19 22m old 🩸 Installed tag beyond latest
+      latest: 0.6.15 on 2024apr19 22m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 32,747
       on: 2026feb4.1829.44951
@@ -736,7 +736,7 @@ modules:
       declared: ^3.25.76
       installed: 3.25.76 on 2025jul08 7m old
       current: 3.25.76 on 2025jul08 7m old
-      latest: 4.3.6 on 2026jan22 0m old 🎁 Major new version available
+      latest: 4.3.6 on 2026jan22 1m old 🎁 Major new version available
     downloads:
       weekly: 87,621,926
       on: 2026feb4.1825.16236

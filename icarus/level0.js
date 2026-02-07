@@ -1924,7 +1924,7 @@ noop(async () => {//see what these objects look like before we stringify and bas
 RFC 6238 defines TOTP for short-lived one-time passwords using synchronized device clocks, enabling two-factor authentication using authenticator apps that operate offline, aren't tied to a provider or centralized account system, and offer secure, portable verification. It's fantastic in that it is not tied to an Internet connection, a service provider, or even a software vendor
 it's strong yet usable security provided by pure cryptography, at its best
 
-There's an app for that: npm otpauth is popular and works in a web worker, but brings its own javascript implementation of cryptographic primitives, so instead Claude and me coded the specification on top of the native subtle library in less than a screenful of code, below. In level1, you can switch on cycle6238 to fuzz test our code here matches that npm module
+But there's an app for that: npm otpauth is popular and works in a web worker, but brings its own javascript implementation of cryptographic primitives, so instead Claude and me coded the specification on top of the native subtle library in 57 lines of code, below 🍅 In level1, switch on cycle6238 to fuzz test the implementations operate identically
 
 Also, about backup codes: Many TOTP implementations at the user level include setting backup codes, but they're not part of the standard, and we're going to use other credentials as multiple factors for account recovery instead
 */
@@ -2022,13 +2022,11 @@ export async function totpGenerate({secret, now}) {//exported for demonstration 
 
 	//counter: given a number of milliseconds since the start of 1970, generate the 8 bytes to hash
 	let period = Math.floor(now / (totpConstants.period * Time.second))
-	let counterArray = new Uint8Array(8)
-	let view = new DataView(counterArray.buffer)
-	view.setUint32(4, period, false)//store in last 4 bytes, big-endian
-	let signatureData = await hmacSign('SHA-1', secret, Data({array: counterArray}))
+	let counter = new Uint8Array(8)
+	;(new DataView(counter.buffer)).setUint32(4, period, false)//store in last 4 bytes, big-endian
+	let array = (await hmacSign('SHA-1', secret, Data({array: counter}))).array()
 
 	//truncate: turn the hmac signature into the short code of numerals
-	let array = signatureData.array()
 	let offset = array[array.length - 1] & 0x0f//use last byte's bottom 4 bits as offset
 	let code = (
 		((array[offset] & 0x7f) << 24) |//clear top bit of first byte, shift 24
