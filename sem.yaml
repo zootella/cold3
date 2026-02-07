@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 6:00 PM
+  generated: 2026 Feb 6 6:23 PM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -14,7 +14,6 @@ summary:
     - "@vitejs/plugin-vue"
     - "@wagmi/connectors"
     - "@wagmi/core"
-    - dotenv
     - h3
     - vite
     - vue-router
@@ -92,7 +91,6 @@ summary:
       tailwindcss: 47,765,674
       vite: 53,611,431
       zod: 87,621,926
-      dotenv: 89,667,593
       fast-glob: 94,186,895
       nanoid: 94,895,352
     9 figure:
@@ -391,18 +389,6 @@ modules:
       installed: 10.1.2 on 2026jan28 0m old
     downloads:
       weekly: 1,258,798
-      on: 2026feb4.1821.46960
-  dotenv:
-    homepage: https://github.com/motdotla/dotenv#readme
-    description: Loads environment variables from .env file
-    from: root
-    versions:
-      declared: ^16.6.1
-      installed: 16.6.1 on 2025jun27 7m old
-      current: 16.6.1 on 2025jun27 7m old
-      latest: 17.2.4 on 2026feb05 0m old 🎁 Major new version available
-    downloads:
-      weekly: 89,667,593
       on: 2026feb4.1821.46960
   fast-glob:
     homepage: https://github.com/mrmlnc/fast-glob#readme

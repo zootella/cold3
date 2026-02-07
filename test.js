@@ -4,10 +4,8 @@ wrapper, sayFloppyDisk, runTests, runDatabaseTests,
 log, addLogSink, look, newline,
 } from 'icarus'
 import {promises as fs} from 'fs'
-import dotenv from 'dotenv'
-
 async function main() {
-	dotenv.config({quiet: true})//load .env to be able to access secrets
+	process.loadEnvFile()//load .env to be able to access secrets
 	if (false) {//optionally have log() also write to a file
 		addLogSink((s) => { fs.appendFile('test.log', s.trimEnd()+newline) })
 	}

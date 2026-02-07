@@ -4,7 +4,6 @@ log, look, defined, makeText,
 Key, decryptKeys, headerGet,
 sealEnvelope, Limit,
 } from 'icarus'
-import dotenv from 'dotenv'
 
 const prepare = (cloudApex) => [
 `
@@ -205,7 +204,7 @@ Our Lambda receives the request and checkOriginOmitted in level2.js sees the Ori
 ]
 
 async function main() {
-	dotenv.config({quiet: true})
+	process.loadEnvFile()
 	let sources = []
 	if (defined(typeof process) && process.env) {
 		sources.push({note: 'n10', environment: process.env})
