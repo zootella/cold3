@@ -143,54 +143,6 @@ The oauth workspace is a minimal SvelteKit app (2 pages, ~180 lines of logic) th
 
 When we do this, also remove `nitro-cloudflare-dev` from `site/package.json` at the same time. Same pattern — a deprecated Cloudflare dev shim that Nitro 2.12+ replaced with native emulation. That one's still wired into `site/nuxt.config.js` line 38 so it needs a test (steps already in package2.md), but both are vestigial Cloudflare convenience packages worth cleaning out together.
 
-## web3
-
-The wagmi packages (connectors and core) are from the same wevm project and ship as a coordinated set. Both are used in icarus and site. viem is their underlying transport layer and stays at ^2.x — no viem major bump is involved.
-
-### @wagmi/connectors (upgrade)
-
-```yaml
-"@wagmi/connectors":
-  homepage: https://github.com/wevm/wagmi#readme
-  description: Collection of connectors for Wagmi
-  from:
-    - icarus
-    - site
-  versions:
-    declared: ^5.11.2
-    installed: 5.11.2 on 2025sep25 4m old
-    current: 5.11.2 on 2025sep25 4m old
-    latest: 7.1.6 on 2026feb01 0m old 🎁 Major new version available
-  downloads:
-    weekly: 508,960
-```
-
-### @wagmi/core (upgrade)
-
-```yaml
-"@wagmi/core":
-  homepage: https://github.com/wevm/wagmi#readme
-  description: VanillaJS library for Ethereum
-  from:
-    - icarus
-    - site
-  versions:
-    declared: ^2.22.1
-    installed: 2.22.1 on 2025oct14 4m old
-    current: 2.22.1 on 2025oct14 4m old
-    latest: 3.3.2 on 2026feb01 0m old 🎁 Major new version available
-  downloads:
-    weekly: 485,845
-```
-
-The actual breaking changes are small. Connectors v5→v6 was a ghost bump (zero API changes, just a peer dep pin). v6→v7's single change is that connector SDK dependencies were unbundled from the package into optional peer deps — we'd need to explicitly install `@walletconnect/ethereum-provider` since we use `walletConnect()`. Core v2→v3 renames three functions: `getAccount`→`getConnection`, `watchAccount`→`watchConnection`, `switchAccount`→`switchConnection`, and adds `ox` as a peer dep (already satisfied transitively by viem 2.45.1). Everything else we use (`createConfig`, `reconnect`, `connect`, `disconnect`, `getBlockNumber`, `readContract`, `signMessage`, `getConnectors`) is unchanged. viem stays at ^2.x, no change needed.
-
-Our usage is contained in three files: `icarus/level1.js` (dynamic import function `wevmDynamicImport()`, address validation with `viem.getAddress()`, mnemonic generation), `site/app/components/snippet1/WalletDemo.vue` (the wallet UI — 2 connectors, 10 core functions, all loaded dynamically via `import.meta.client`), and `site/server/api/wallet.js` (server-side `verifyMessage()` for wallet proof). The code changes would be renaming `getAccount` to `getConnection` in ~5 places in WalletDemo.vue, renaming `watchAccount` to `watchConnection` in 1 place, and adding `@walletconnect/ethereum-provider` to both `icarus/package.json` and `site/package.json`.
-
-**Do it.** ~20 minutes of mechanical renames buys 12+ months of being current — core v2 ran for 26 months before v3, and v3 looks like it's settling into another long stable run with no v4 or connectors v8 on the horizon. Unlike vite-plugin-svelte's 4–5 month churn, this project holds majors for years. Being on v3/v7 now means when the web3 user stories come, we're already on current docs and examples and can focus on new functionality.
-
-When doing the upgrade, two things to watch for. First, `@walletconnect/ethereum-provider` becomes an explicit dependency we manage — it's already in our tree (buried inside connectors v5's bundled deps) but v7 unbundles it, so we'll need to declare it in `icarus/package.json` and `site/package.json`. Second, core v3 adds `ox` as a peer dep. viem 2.45.1 pulls in ox@0.11.3 transitively, which should satisfy it, but pnpm can be strict about peer deps not being hoisted — may need to add `ox` explicitly if `pnpm install` complains.
-
 ## Independent
 
 These modules don't have strong coupling to each other or to the groups above. Each can be evaluated and upgraded on its own timeline.

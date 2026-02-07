@@ -1,6 +1,6 @@
 
 import {
-log, look, commas, newline,
+log, look, commas, newline, deindent,
 } from 'icarus'
 import path from 'path'
 import {execSync} from 'child_process'
@@ -26,13 +26,32 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 		...p1.dependencies,//all the net23 dependencies
 		...p2.dependencies}//and additionally the icarus dependencies
 	delete p1.dependencies.icarus//but not the icarus workspace dependency "*"; we have icarus' dependencies and its code is coming
+	p1.pnpm = {//pnpm can't fake platform from the CLI; it reads supportedArchitectures from package.json
+		supportedArchitectures: {//install optional deps for Lambda's platform, not the build machine's
+			os: ['linux'],//Amazon Linux 2023
+			cpu: ['arm64'],//Graviton
+			libc: ['glibc'],//pnpm ignores this and installs musl too; we delete musl after install
+		},
+		onlyBuiltDependencies: ['sharp'],//pnpm 10 blocks postinstall scripts by default; sharp needs theirs to set up its native binaries
+	}
 	await fs.writeFile('dist/package.json', JSON.stringify(p1, null, '\t'))
 
-	log('📜 npm install...')//have npm use dist/package.json to build a new clean production only dist/node_modules
-	execSync('npm install --omit=dev --os=linux --cpu=arm64 --libc=glibc', {//install for amazon linux on their graviton chip to get the right sharp native binaries
-		cwd: 'dist',//run this command in the dist subfolder
-		stdio: 'inherit',//show its command line output
+	//also place npmrc and pnpm workspace files alongside package.json in dist
+	await fs.writeFile('dist/.npmrc', deindent`
+		node-linker=hoisted #flat layout so vercel nft doesn't trace into .pnpm symlink farm
+	`)
+	await fs.writeFile('dist/pnpm-workspace.yaml', deindent`
+		#we place a blank file here to stop pnpm from looking further upwards to the monorepo above
+	`)
+
+	//pnpm installs faster than npm
+	log('📜 pnpm install...')
+	execSync('pnpm install --prod', {
+		cwd: 'dist',
+		stdio: 'inherit',
 	})
+	await fs.remove('dist/node_modules/@img/sharp-linuxmusl-arm64')
+	await fs.remove('dist/node_modules/@img/sharp-libvips-linuxmusl-arm64')//sharp ships two sets of linux-arm64 native binaries: glibc (for Amazon Linux, Ubuntu, Debian) and musl (for Alpine). pnpm ignores the libc filter and installs both (~17 MB each), so as a workaround, we manually delete musl
 
 	//now that we have node_modules populated, copy in the icarus .js files
 	await fs.ensureDir('dist/node_modules/icarus')//as though there's a node module named "icarus"
