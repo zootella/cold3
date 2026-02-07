@@ -56,14 +56,6 @@ After deployment, confirm the caching layer is actually working on Cloudflare:
 ☐ TTL expiry working
 ☐ Cache hits confirmed
 
-## Test nuxi analyze
-
-Verify the bundle analysis reports still generate after migration.
-
-`npx nuxi analyze`
-
-☐ client.html and nitro.html size reports generate
-
 # Tailwind CSS
 
 ## How It Works
@@ -320,11 +312,10 @@ Migrated from Yarn Classic to pnpm (branch `migrate1`). Updated sem.js to read p
 
 ### Remaining Tests
 
-The original 12-step plan's first three items turned out to be wrong: fresh1 didn't prove og-image worked (it 500'd on Workers — Chapter 5), we skipped compatibility mode and went straight to Nuxt 4, and h3 v2 testing was premature (Nuxt 4 still uses h3 v1 — Chapter 4). Items 6–9 and 11 are done. Three remain:
+The original 12-step plan's first three items turned out to be wrong: fresh1 didn't prove og-image worked (it 500'd on Workers — Chapter 5), we skipped compatibility mode and went straight to Nuxt 4, and h3 v2 testing was premature (Nuxt 4 still uses h3 v1 — Chapter 4). Items 6–9 and 11 are done. Two remain:
 
 - ☐ Test error handling — throw in component, verify Datadog logging and error.vue display
 - ☐ Test environment detection — log `senseEnvironment()` in all contexts, verify `isLocal()`/`isCloud()` correct
-- ☐ Test `nuxi analyze` — verify size reports still generate (client.html, nitro.html)
 
 ---
 
