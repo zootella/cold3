@@ -91,4 +91,20 @@ configuration.ogImage = {
 configuration.vue.compilerOptions.isCustomElement = (tag) => tag.startsWith('media-')
 configuration.vite.plugins.push(vidstack())
 
+/*
+pglite asset exclusion 🛢 2026feb7
+
+pglite (@electric-sql/pglite) is an in-memory PostgreSQL used only for local unit testing via pgliteDynamicImport() in icarus/level1.js. it ships a pglite.wasm (8.8MB) and pglite.data (4.9MB) that are referenced inside its source with the pattern:
+  new URL("./pglite.wasm", import.meta.url)
+
+the dynamic import() in level1.js already has /* @vite-ignore *​/ which successfully prevents pglite's JS from being bundled into any client chunk. however, Vite has a separate asset pipeline that detects the new URL("...", import.meta.url) pattern in any module it scans, and copies those files to the client output as static assets — independent of whether the JS import was ignored. this was putting 14MB of pglite binaries into .output/public/_nuxt/ even though no browser or Worker ever loads them.
+
+the fix: tell Rollup to externalize pglite entirely. this prevents Vite from scanning pglite's source files at all, so the new URL() asset references are never discovered.
+
+found by running nuxi analyze and noticing pglite.wasm and pglite.data in the client build output. total CDN output dropped from 24MB to 8MB after this fix. Cloudflare Workers has a static asset size limit, so this matters.
+
+to verify: rm -rf .output node_modules/.cache/nuxt && pnpm build, then check that .output/public/_nuxt/ has no pglite files. the Nuxt build cache at node_modules/.cache/nuxt persists assets across rebuilds, so you must clear it when testing changes to this setting.
+*/
+if (false) configuration.vite.build = {rollupOptions: {external: ['@electric-sql/pglite']}}//if true to make this easily switchable
+
 export default defineNuxtConfig(configuration)

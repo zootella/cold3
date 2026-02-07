@@ -67,8 +67,22 @@ ttd february, condense and update below
 - package.json notes after that are all from the old days on yarn classic with nuxt 3
 
 
+## analysis, 2026feb7
 
+Post-migration review of sem.yaml. No dead weight found, no urgent upgrades.
 
+**@resvg/resvg-js and @resvg/resvg-wasm** — Both needed. nuxt-og-image selects between them based on the Nitro preset. resvg-wasm runs in production on Cloudflare Workers (WASM binary in V8 isolate). resvg-js runs during local dev (native N-API addon, faster, crash-isolated in a worker thread). Both at latest stable (2.6.2), only a 2.7.0-alpha.2 prerelease exists beyond that.
+
+**@pinia/nuxt exact pin (0.11.3)** — Harmless. 0.11.3 is the latest version, nothing newer exists. Since it's pre-1.0, `^0.11.3` would only float to `0.11.4+` anyway. The exact pin came from `nuxi module add`, not a deliberate decision. Same pattern visible with nuxt-og-image and @nuxtjs/tailwindcss in the nuxi effects section below.
+
+**Stale-flagged packages (installed 1+ year old)** — All six are already at latest stable within their major version. The flag reflects release age, not that we're behind. resvg-js (2.6.2), resvg-wasm (2.6.2), fast-glob (3.3.3, used directly in seal.js for wrapper manifest), is-mobile (5.0.0), qrcode (1.5.4), serverless-offline (14.4.0).
+
+**Major version bumps available (ecosystem-gated, not actionable now):**
+- h3 1→2 — scoped to Nuxt 5, not Nuxt 4. We abstracted h3 access behind four `getWorker*` functions in icarus/level2.js for this eventual migration.
+- vite 6→7 — Nuxt 4 uses vite 6 internally. icarus and oauth declare vite 6 directly and should stay aligned.
+- vue-router 4→5 — Nuxt manages this dependency.
+- @vitejs/plugin-vue 5→6 — in icarus, needs to match vite version.
+- @sveltejs/vite-plugin-svelte 5→6 — in oauth, svelte ecosystem change.
 
 
 ## nuxi effects

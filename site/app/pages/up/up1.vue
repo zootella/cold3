@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'column-layout', note: 'on up1'})
+<script setup> definePageMeta({layout: 'column-layout', note: 'on up1'})//upfile
 
 </script>
 <template>

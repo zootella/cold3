@@ -1,4 +1,4 @@
-
+//upfile
 import {
 Sticker, stickerParts, doorLambda, toss, log, look, defined, Task,
 runTests, runTestsSticker,

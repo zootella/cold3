@@ -35,20 +35,6 @@ If patterns drift, update `_senseEnvironment` and increment `_senseEnvironmentVe
 ☐ All four contexts produce correct Sticker strings
 ☐ `isLocal()`/`isCloud()` correct in each context
 
-## [] Investigate removing nitro-cloudflare-dev
-
-The module is officially deprecated. Nitro >=2.12 has native dev emulation and we're on 2.13.1. Currently this module (miniflare) is the only thing providing KV bindings in local dev — the og-image cache uses `cloudflare-kv-binding` pointing at `OG_IMAGE_CACHE`. If native emulation doesn't provide that binding, og-image won't error — it'll silently skip caching and regenerate every request. Production is unaffected (Workers provides bindings directly).
-
-Steps:
-
-1. Comment out `configuration.modules.push('nitro-cloudflare-dev')` in nuxt.config.js
-2. Run `nuxt dev` — look for `"Using cloudflare-dev emulation in development mode."` in console
-3. Test that og-image generates locally (hit the `/_og/d/` endpoint) — this exercises the KV binding
-4. If it works: `pnpm remove nitro-cloudflare-dev`
-5. If not: uncomment and keep
-
-☐ Native emulation works, module removed
-
 ## [] Test Pinia hydration in universal rendering
 
 Three stores (mainStore, credentialStore, flexStore) use a `loaded` ref guard to prevent double-fetching. `app.vue` calls `await mainStore.load()` during server render, sets `loaded = true`, client receives hydrated state, and `load()` becomes a no-op. pageStore is client-only with no guard.
@@ -58,27 +44,13 @@ Test: open a route in a new tab (SSR path — `<script setup>` runs on server, r
 ☐ SSR first-paint path works
 ☐ SPA navigation path works
 
-## [] Investigate removing @tanstack/vue-query
-
-Not from scaffold — ours. Original note said "peer dependency of wagmi vue" but we use `@wagmi/core` and `@wagmi/connectors` directly, not a wagmi Vue wrapper. `pnpm why` shows zero transitive dependents. Not imported anywhere in site/app or icarus. Likely dead weight.
-
-`pnpm remove @tanstack/vue-query`, build, test.
-
-☐ Removed, builds clean, nothing breaks
-
-## Investigate @tailwindcss/forms on v4
-
-Old note says "works with any Tailwind version." We migrated to Tailwind v4 where it loads via `@plugin "@tailwindcss/forms"` in style.css. Verify the plugin is actually working — check that form elements (inputs, selects) get the normalization styles.
-
-☐ Forms plugin confirmed working on v4
-
 ## Verify og-image KV cache
 
 After deployment, confirm the caching layer is actually working on Cloudflare:
 
-1. Check `OG_IMAGE_CACHE` KV namespace in Cloudflare dashboard — are cached images appearing?
-2. Check that cached images expire after 20 minutes (not lingering indefinitely)
-3. Second request for the same image should serve from KV cache, not regenerate (check response time or `wrangler tail`)
+- Check `OG_IMAGE_CACHE` KV namespace in Cloudflare dashboard — are cached images appearing?
+- Check that cached images expire after 20 minutes (not lingering indefinitely)
+- Second request for the same image should serve from KV cache, not regenerate (check response time or `wrangler tail`)
 
 ☐ KV cache receiving images
 ☐ TTL expiry working
@@ -99,12 +71,12 @@ Verify the bundle analysis reports still generate after migration.
 **Tailwind v4** via `@tailwindcss/vite` — a Vite plugin, not a Nuxt module. Registered in `nuxt.config.js` alongside vidstack. No `tailwind.config.js` — all configuration lives in CSS.
 
 **Global stylesheet** at `site/app/assets/css/style.css`:
-1. `@font-face` declarations for two bundled woff2 fonts (Diatype Rounded, Lemon Wide)
-2. `@import "tailwindcss"` — single import replaces the old three `@tailwind` directives
-3. `@plugin "@tailwindcss/forms"` — normalizes form controls
-4. `@theme` — overrides `--font-sans` (Diatype Rounded → Noto Sans → system) and `--font-mono` (Noto Sans Mono → system)
-5. `@layer base` — body defaults, link colors, code styling
-6. `@layer components` — `.my-button`, `.my-link`, and state classes (`.ghost`, `.ready`, `.doing`)
+- `@font-face` declarations for two bundled woff2 fonts (Diatype Rounded, Lemon Wide)
+- `@import "tailwindcss"` — single import replaces the old three `@tailwind` directives
+- `@plugin "@tailwindcss/forms"` — normalizes form controls
+- `@theme` — overrides `--font-sans` (Diatype Rounded → Noto Sans → system) and `--font-mono` (Noto Sans Mono → system)
+- `@layer base` — body defaults, link colors, code styling
+- `@layer components` — `.my-button`, `.my-link`, and state classes (`.ghost`, `.ready`, `.doing`)
 
 ### Packages
 
@@ -130,9 +102,9 @@ System fallback stacks at the tail of every font-family list.
 
 Out of ~70 Vue files, three patterns:
 
-1. **Utility classes in templates** (~57 files, dominant). Classes directly on elements, no `<style>` block. Preferred default.
-2. **Scoped `@apply`** (9 files). Named class wrapping Tailwind utilities. Requires `@reference "tailwindcss"` at top of the `<style scoped>` block.
-3. **Raw scoped CSS** (4 files). Fixed positioning, pixel values, `!important` overrides — things Tailwind can't express.
+- **Utility classes in templates** (~57 files, dominant). Classes directly on elements, no `<style>` block. Preferred default.
+- **Scoped `@apply`** (9 files). Named class wrapping Tailwind utilities. Requires `@reference "tailwindcss"` at top of the `<style scoped>` block.
+- **Raw scoped CSS** (4 files). Fixed positioning, pixel values, `!important` overrides — things Tailwind can't express.
 
 ## Things That Bite
 
@@ -203,9 +175,9 @@ Inter bundled in two weights (400 normal, 700 bold), Latin only. Emoji works out
 Config sets 20-minute TTL via `cacheMaxAgeSeconds` with `cloudflare-kv-binding` driver pointing to `OG_IMAGE_CACHE` KV namespace. To purge a cached image, append `?purge` to its og:image URL from the page's meta tags.
 
 **☐ Verify after migration:**
-1. KV store is receiving cached images (check OG_IMAGE_CACHE in Cloudflare dashboard)
-2. Cached images expire after 20 minutes (not lingering indefinitely)
-3. Second request for the same image serves from KV cache, not a fresh regeneration (check response time or `wrangler tail`)
+- KV store is receiving cached images (check OG_IMAGE_CACHE in Cloudflare dashboard)
+- Cached images expire after 20 minutes (not lingering indefinitely)
+- Second request for the same image serves from KV cache, not a fresh regeneration (check response time or `wrangler tail`)
 
 ### Known Issues
 
@@ -255,23 +227,6 @@ Error handling hooks into Nuxt's internals (`app:error`, `vue:error` hooks, `sho
 
 ## [6] Migration: Modules
 
-### nitro-cloudflare-dev
-
-**What it does:** When `nuxt dev` runs, Cloudflare bindings (KV, R2, D1) don't exist in Node. This module spins up a local miniflare instance and injects emulated bindings into the request context so server routes work locally like production.
-
-**Current state:** Module is in nuxt.config.js and package.json. Site also has two other Node compatibility layers: `nitro.cloudflare.nodeCompat: true` (build-time polyfills) and `compatibility_flags: ["nodejs_compat"]` in wrangler.jsonc (runtime polyfills).
-
-**The module is officially deprecated.** The [README](https://github.com/nitrojs/nitro-cloudflare-dev) says "no longer required for the latest versions of Nitro" and points to [Nitro's native dev emulation](https://nitro.build/deploy/providers/cloudflare). Nitro ≥2.12 has this built in — we're on 2.13.1. The fresh scaffold still includes it (Cloudflare's CLI being conservative).
-
-**Why this matters for og-image caching:** The og-image cache uses `cloudflare-kv-binding` as its storage driver, pointing at the `OG_IMAGE_CACHE` KV namespace from wrangler.jsonc. In production, the Workers runtime provides this binding directly — the module is not involved. In local dev, the KV namespace doesn't exist in Node, so something must emulate it. Currently that's this module (miniflare). If we remove it, Nitro's native emulation must provide the same binding, or og-image's storage driver has nothing to connect to — it may error or silently skip caching and regenerate every request. Production is unaffected either way.
-
-**☐ Test removal:**
-1. Comment out `configuration.modules.push('nitro-cloudflare-dev')` in nuxt.config.js
-2. Run `nuxt dev` — look for `"ℹ Using cloudflare-dev emulation in development mode."` in console
-3. Test that og-image generates locally (hit the `/_og/d/` endpoint) — this exercises the KV binding
-4. If it works: `pnpm remove nitro-cloudflare-dev`
-5. If not: uncomment and keep
-
 ### Pinia
 
 Stores moved to `app/stores/`. No hydration errors surfaced. The SSR pattern is intact:
@@ -291,14 +246,6 @@ Vue component library for media playback. Installed as `vidstack@next`, not thro
 No Nuxt-specific integration means no Nuxt-specific migration concerns. It's a Vue 3 component; Nuxt 4 still uses Vue 3. The only Nuxt-relevant pattern is `<ClientOnly>` wrapping for SSR, which works identically in Nuxt 4.
 
 Sources: [Vidstack docs](https://www.vidstack.io/docs/player/getting-started/installation/vue)
-
-### Other Dependencies
-
-The site workspace has dependencies that aren't part of the fresh scaffold (they're not installed by `nuxi module add`). These need testing after Nuxt 4 upgrade but are outside the scaffold comparison:
-
-**`@tanstack/vue-query`** — Async state management. Note says "peer dep of wagmi, also used directly" but both claims are unverified here — see Dependency Cleanup section for updated research.
-
-**`@tailwindcss/forms`** — Tailwind plugin for form normalization. Note says "works with any Tailwind version" but we migrated to Tailwind v4 where it loads via `@plugin "@tailwindcss/forms"` in style.css — investigate whether the claim still holds.
 
 ## [7] Migration: pnpm
 
@@ -333,15 +280,12 @@ Before removing a dependency, ask "why is it here?" not "can we delete it?" Chec
 
 **`unstorage`** — Probably keep. Origin: also injected by `nuxi module add og-image` (see package.md). Also in the fresh scaffold. Our og-image config uses unstorage's driver system (`cloudflare-kv-binding` for KV cache). WalletConnect also brings it transitively, but og-image's caching layer likely needs it resolvable at the site level.
 
-**`@tanstack/vue-query`** — ☐ Test removing. NOT from scaffold — ours. Original package.md note (Nuxt 3 era) said "peer dependency of wagmi vue." But we use `@wagmi/core` and `@wagmi/connectors` directly, not a wagmi Vue wrapper. `pnpm why` shows zero transitive dependents. Not imported anywhere in site/app or icarus. Likely added anticipating wagmi Vue query hooks we never used. Dead weight.
-
 ## [8] Execution
 
 ### Remaining from this plan
 
-1. ☐ Test nitro-cloudflare-dev removal — verify native Cloudflare emulation works (module still in nuxt.config.js)
-2. ☐ Review senseEnvironment() — verify `isLocal()`/`isCloud()` correct across all contexts after `import.meta.*` change
-3. ☐ Merge to main — `git switch main && git merge migrate1 && git branch -D migrate1 && git push`
+- ☐ Review senseEnvironment() — verify `isLocal()`/`isCloud()` correct across all contexts after `import.meta.*` change
+- ☐ Merge to main — `git switch main && git merge migrate1 && git branch -D migrate1 && git push`
 
 ### Undo Button
 
@@ -376,12 +320,11 @@ Migrated from Yarn Classic to pnpm (branch `migrate1`). Updated sem.js to read p
 
 ### Remaining Tests
 
-The original 12-step plan's first three items turned out to be wrong: fresh1 didn't prove og-image worked (it 500'd on Workers — Chapter 5), we skipped compatibility mode and went straight to Nuxt 4, and h3 v2 testing was premature (Nuxt 4 still uses h3 v1 — Chapter 4). Items 6–9 and 11 are done. Four remain:
+The original 12-step plan's first three items turned out to be wrong: fresh1 didn't prove og-image worked (it 500'd on Workers — Chapter 5), we skipped compatibility mode and went straight to Nuxt 4, and h3 v2 testing was premature (Nuxt 4 still uses h3 v1 — Chapter 4). Items 6–9 and 11 are done. Three remain:
 
-1. ☐ Test error handling — throw in component, verify Datadog logging and error.vue display
-2. ☐ Test environment detection — log `senseEnvironment()` in all contexts, verify `isLocal()`/`isCloud()` correct
-3. ☐ Test nitro-cloudflare-dev removal — verify native Cloudflare emulation works
-4. ☐ Test `nuxi analyze` — verify size reports still generate (client.html, nitro.html)
+- ☐ Test error handling — throw in component, verify Datadog logging and error.vue display
+- ☐ Test environment detection — log `senseEnvironment()` in all contexts, verify `isLocal()`/`isCloud()` correct
+- ☐ Test `nuxi analyze` — verify size reports still generate (client.html, nitro.html)
 
 ---
 
