@@ -168,23 +168,3 @@ zod:
 The v4 rewrite is real — sweeping API changes for heavy users (`.record()` requires two args, `.default()` behavior changed, error customization overhauled, TypeScript generics simplified) — but none of it touches our one-method usage. Zero runtime dependencies in both versions. Bundle drops from ~12.5 KB to ~5.4 KB gzipped, string parsing 14x faster. v4 also declares `"sideEffects": false` (v3 didn't), so Rollup/Vite can tree-shake aggressively. v3 ran for 4 years (2021–2025), v4 has been stable for 7 months with no v5 signals, and zod's subpath versioning guarantees `zod/v3` will exist forever if we ever needed to fall back. Easiest upgrade on the list.
 
 Since zod lands in the default client bundle, also worth considering Zod Mini (`zod/mini`) — 1.88 KB gzipped vs 5.4 KB for full v4. Same schemas, same `.safeParse()`, but stripped-down error reporting (plain strings instead of structured `ZodError` objects). Our usage is binary — `validateEmail()` checks `.success` and returns the result object upstream on failure. If nothing downstream ever inspects zod's structured error messages (issue codes, paths, formatted output), Mini works and saves another 3x. Check whether callers of `validateEmail()`/`checkEmail()` look inside the `j1`/`j2`/`j3` error objects beyond the boolean.
-
-### @vercel/nft (upgrade)
-
-```yaml
-"@vercel/nft":
-  homepage: https://github.com/vercel/nft#readme
-  description: Node File Trace - file dependency tracing for Node.js applications.
-  from: net23
-  versions:
-    declared: ^0.29.4
-    installed: 0.29.4 on 2025may30 8m old 🐣 Pre-1.0 version installed
-    current: 0.29.4 on 2025may30 8m old
-    latest: 1.3.0 on 2026jan21 1m old 🎁 Major new version available
-  downloads:
-    weekly: 5,524,454
-```
-
-**Do it, but verify the trace output.** The 1.0 wasn't a rewrite, it was a stability declaration — the sole breaking change is Node minimum raised from >=18 to >=20 (we're on 22). The `nodeFileTrace()` API is completely unchanged, and our call in `net23/build.js` line 46 works identically on both versions. The upgrade also clears the 🐣 pre-1.0 flag (real semver guarantees), drops ~20 transitive dependencies via glob v13, and aligns with Nitro v2 which already depends on `@vercel/nft ^1.2.0`.
-
-The risk isn't the API — it's the trace results. nft determines which files from `node_modules` go into the Lambda zip, and that zip working with sharp native binaries, Twilio, SendGrid, and the CJS/ESM mix in `build.js` has been hard-won (see `build.txt` for the history). The glob v13 change is internal, and 1.x adds `module-sync` export condition handling that could trace CJS/ESM boundaries differently. If nft includes fewer files or misses a transitive require, Lambda breaks in production. To verify: bump the version, run `build.js`, and diff the `fileList` output against a 0.29 run before deploying. If the file lists are equivalent, ship it. If they diverge, inspect what changed before proceeding.

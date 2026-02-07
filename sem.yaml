@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 7:48 PM
+  generated: 2026 Feb 6 8:03 PM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -10,7 +10,6 @@ summary:
   🎁 Major new version available:
     - "@sveltejs/adapter-auto"
     - "@sveltejs/vite-plugin-svelte"
-    - "@vercel/nft"
     - "@vitejs/plugin-vue"
     - h3
     - vite
@@ -23,7 +22,6 @@ summary:
     - "@electric-sql/pglite"
     - "@pinia/nuxt"
     - "@tailwindcss/forms"
-    - "@vercel/nft"
     - nitro-cloudflare-dev
     - satori
     - sharp
@@ -331,10 +329,8 @@ modules:
     description: "[![CI Status](https://github.com/vercel/nft/actions/workflows/ci.yml/badge.svg)](https://github.com/vercel/nft/actions/workflows/ci.yml)"
     from: net23
     versions:
-      declared: ^0.29.4
-      installed: 0.29.4 on 2025may30 8m old 🐣 Pre-1.0 version installed
-      current: 0.29.4 on 2025may30 8m old
-      latest: 1.3.0 on 2026jan21 1m old 🎁 Major new version available
+      declared: ^1.3.0
+      installed: 1.3.0 on 2026jan21 1m old
     downloads:
       weekly: 5,524,454
       on: 2026feb4.1825.16236

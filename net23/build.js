@@ -13,7 +13,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	await fs.ensureDir('dist')//empty the dist folder
 	await fs.copy('.env',           'dist/.env')//copy lambda source files, persephone library files, serverless.yml and .env
 	await fs.copy('src',            'dist/src')
-	await fs.copy('persephone',     'dist/persephone')//other files in the net23 folder are left behind; note net23.zip will gain package-lock.json from npm install; it's not too big and having the exact dependency versions locked in the deployed artifact could be valuable for debugging
+	await fs.copy('persephone',     'dist/persephone')//other files in the net23 folder are left behind; note net23.zip will gain pnpm-lock.yaml from pnpm install; it's not too big and having the exact dependency versions locked in the deployed artifact could be valuable for debugging
 
 	let c = await fs.readFile('serverless.yml', 'utf8')
 	c = c.split(/\r?\n/).filter(line => !line.includes('BuildRemove')).join(newline)//strip lines marked BuildRemove; they let serverless-offline emulate API Gateway-style; we deploy to Lambda Function URLs instead
