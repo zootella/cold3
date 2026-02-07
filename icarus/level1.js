@@ -21,7 +21,7 @@ safefill, deindent, commas,
 } from './level0.js'
 
 //(1) static imports
-import {z as zod} from 'zod'//use to validate email
+import {email as zodEmail} from 'zod/mini'//use to validate email; zod mini is 2kb gzipped https://zod.dev/packages/mini
 import creditCardType from 'credit-card-type'//use to validate card; from Braintree owned by PayPal
 import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate phone; from Google for Android
 import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
@@ -660,8 +660,8 @@ and return an object like {ok, f0, f1, f2, raw, otherPartsOrDetails, ...}
 //                                                                
 
 let _zodEmail//standard pattern to make once on first use for any number of uses; doesn't hold state
-function zodEmail() {
-	if (!_zodEmail) _zodEmail = zod.string().email()//make a zod schema to only accept strings that look like valid email addresses
+function zodEmailSchema() {
+	if (!_zodEmail) _zodEmail = zodEmail()//make a zod schema to only accept strings that look like valid email addresses
 	return _zodEmail
 }
 
@@ -675,7 +675,7 @@ export function validateEmail(raw, limit) {
 	don't touch space in the middle
 	*/
 	let f1 = cropped.trim()
-	let j1 = zodEmail().safeParse(f1)
+	let j1 = zodEmailSchema().safeParse(f1)
 	if (!j1.success) return {f1, raw, cropped, j1}//ok not true on these early returns
 
 	/* (2) presented step for email
@@ -685,7 +685,7 @@ export function validateEmail(raw, limit) {
 	*/
 	let p = cut(f1, "@")
 	let f2 = p.before + "@" + p.after.toLowerCase()
-	let j2 = zodEmail().safeParse(f2)
+	let j2 = zodEmailSchema().safeParse(f2)
 	if (!j2.success) return {f1, f2, raw, cropped, j2}
 
 	/* (3) normalized step for email
@@ -698,7 +698,7 @@ export function validateEmail(raw, limit) {
 	name = cut(name, '+').before//name+spam@example.com is really name@example.com
 	if (periodIgnorers.includes(domain)) name = name.replace(/\./g, '')//first.last@gmail.com is really firstlast@gmail.com
 	let f0 = name + "@" + domain
-	let j3 = zodEmail().safeParse(f0)
+	let j3 = zodEmailSchema().safeParse(f0)
 	if (!j3.success) return {f1, f2, f0, raw, cropped, j3}
 
 	return {ok: true, f0, f1, f2, raw, cropped}

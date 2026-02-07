@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 8:03 PM
+  generated: 2026 Feb 6 8:17 PM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -14,7 +14,6 @@ summary:
     - h3
     - vite
     - vue-router
-    - zod
   🩸 Latest tag is behind installed:
     - nuxt-og-image
     - vidstack
@@ -709,10 +708,8 @@ modules:
     description: TypeScript-first schema declaration and validation library with static type inference
     from: icarus
     versions:
-      declared: ^3.25.76
-      installed: 3.25.76 on 2025jul08 7m old
-      current: 3.25.76 on 2025jul08 7m old
-      latest: 4.3.6 on 2026jan22 1m old 🎁 Major new version available
+      declared: ^4.3.6
+      installed: 4.3.6 on 2026jan22 1m old
     downloads:
       weekly: 87,621,926
       on: 2026feb4.1825.16236
