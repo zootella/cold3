@@ -1,5 +1,5 @@
 summary:
-  generated: 2026 Feb 6 10:16 PM
+  generated: 2026 Feb 7 10:09 AM
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -204,7 +204,7 @@ modules:
     from: oauth
     versions:
       declared: ^7.2.6
-      installed: 7.2.6 on 2026jan23 0m old
+      installed: 7.2.6 on 2026jan23 1m old
     downloads:
       weekly: 82,257
       on: 2026feb4.1825.16236
@@ -429,8 +429,8 @@ modules:
     description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
     from: site
     versions:
-      declared: ^4.3.0
-      installed: 4.3.0 on 2026jan22 1m old
+      declared: ^4.3.0 on 2026jan22 1m old
+      installed: 4.3.1 on 2026feb07 0m old
     downloads:
       weekly: 1,163,970
       on: 2026feb4.1829.44951
