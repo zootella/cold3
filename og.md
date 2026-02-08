@@ -328,3 +328,56 @@ The CDN is working. `cf-cache-status: HIT` and `age: 17` confirm the response wa
 
 The system now matches the target architecture: first request renders and stores in the edge cache, every subsequent request at the same datacenter is served from cache with zero Worker execution. Cache entries expire automatically per the `s-maxage` TTL — no zombie problem, no unbounded storage growth.
 
+### 7. Service binding alternative (2026feb8, commit `4a00c5e`, sticker `JHQ4HZT`)
+
+Cloudflare Service Bindings let one Worker call another without going through the public CDN. A Worker can also bind to itself — `"services": [{"binding": "SELF", "service": "site4"}]` in wrangler.jsonc — and call `env.SELF.fetch(request)`. This invokes the Worker's own fetch handler on the same thread with zero network overhead, bypassing the CDN loop detection that caused the 522 in trail note 5.
+
+This fixes the original single-middleware design: replace `fetch(url, ...)` with `workerEvent.context.cloudflare.env.SELF.fetch(new Request(url, ...))`. The middleware handles both cache reads and writes in one file. No plugin needed, no dependency on `beforeResponse` hook behavior. The `x-og-render` bypass header works as originally intended — the service binding invocation re-enters the middleware, sees the header, passes through, and nuxt-og-image renders normally.
+
+Added a guard (`if (!self) return`) so the middleware falls through gracefully if the SELF binding isn't configured (e.g., local dev or misconfiguration).
+
+Deleted `ogCachePlugin.js` — no longer needed.
+
+Test route: `/card/test13728`. og:image URL:
+```
+/_og/d/c_ProfileCard,title_%F0%9F%A7%94%F0%9F%8F%BB+test13728,sticker_CloudPageServer.2026feb08.JHQ4HZT,q_e30,p_Ii9jYXJkL3Rlc3QxMzcyOCI.png?_v=bcff2977-bd5d-4236-8c24-74f6475e371f
+```
+
+**First fetch (1120ms — full satori render, cache miss):**
+```
+content-type: image/png
+content-length: 27459
+cache-control: public, s-maxage=1200, stale-while-revalidate
+etag: W/"pp-yH-_wgVISvl4U5agh3zi7arPKsIOOttSVj5_d7Zk"
+last-modified: Sun, 08 Feb 2026 23:38:15 GMT
+vary: accept-encoding, host
+set-cookie: (absent)
+cf-placement: local-DEN
+x-og-cache: MISS
+```
+
+**Second fetch (38ms — edge cache hit):**
+```
+content-type: image/png
+content-length: 27459
+cache-control: public, max-age=14400, s-maxage=1200, stale-while-revalidate
+etag: W/"pp-yH-_wgVISvl4U5agh3zi7arPKsIOOttSVj5_d7Zk"    ← same
+last-modified: Sun, 08 Feb 2026 23:38:15 GMT               ← same
+cf-cache-status: HIT                                        ← CDN is caching
+age: 8                                                      ← seconds in cache
+x-og-cache: HIT                                             ← our middleware served from cache
+set-cookie: (absent)
+cf-placement: local-DEN
+```
+
+**Analysis:**
+
+Same behavior as the middleware + plugin design (trail note 6). Both approaches produce identical caching results — the difference is architectural simplicity. The service binding approach keeps all cache logic in one middleware file and avoids the h3 `beforeResponse` hook entirely.
+
+Two working designs, both tested and committed:
+
+| | Commit | Approach | Files |
+|---|---|---|---|
+| Design A | `84f2132` (PBL) | middleware + Nitro plugin via `beforeResponse` hook | middleware10.js + ogCachePlugin.js |
+| Design B | `4a00c5e` (JHQ) | middleware + SELF service binding | middleware10.js + wrangler.jsonc binding |
+
