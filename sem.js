@@ -388,7 +388,7 @@ async function main() {
 
 	let finalOutput = {
 		summary: {
-			generated: sayWhenPage(Now()),
+			generated: tickToText(Now()),
 			...filteredSummary,
 			downloads: downloadsByMagnitude,
 		},

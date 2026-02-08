@@ -199,7 +199,6 @@ sayPlural, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
 Limit, cropToLimit,
 trimLines, trimLine,
-deaccent, slug,
 
 bundleValid,
 checkName,

@@ -164,7 +164,7 @@ The CDN remains the primary cache. The module still sets `Cache-Control: public,
 
 ## Plan
 
-1[]run tests and document results as a record of our starting point
+1[x]run tests and document results as a record of our starting point
 2[]make the cookie not break the cdn
 3[]repeat tests to confirm the cdn works
 4[]configure lru cache with capacity 1 in place of the kv store
@@ -173,16 +173,52 @@ The CDN remains the primary cache. The module still sets `Cache-Control: public,
 
 ## Trail Notes
 
-### did something
+### 1. Baseline tests (2026feb7, ~22:48 UTC)
 
-notes about what we did
-outcomes
-things that happened according to expectations, and things that hapepned outside of expectations
+Configuration: KV cache enabled (`OG_IMAGE_CACHE` binding), `cacheMaxAgeSeconds: 1200`, cookie middleware running on all routes. Deploy from commit `8b358a1` (clean working tree).
 
-### did the next thing
+Test route: `/card/test1584` (unique, no prior cache state). og:image URL:
+```
+/_og/d/c_ProfileCard,title_%F0%9F%A7%94%F0%9F%8F%BB+test1584,sticker_CloudPageServer.2026feb07.SCRPUA5,q_e30,p_Ii9jYXJkL3Rlc3QxNTg0Ig.png?_v=6bc16989-7e10-4dc3-8353-95b3cc6c9b7a
+```
 
-might be the planned step after
-or might be a section here saying we undid the previous thing
-or something else
+**First fetch (859ms — full satori render):**
+```
+content-type: image/png
+content-length: 27286
+cache-control: public, s-maxage=1200, stale-while-revalidate
+etag: W/"Axyov5M0U5BMNLny4LeHTrN_vc6ViQjgDh418ltDoO4"
+last-modified: Sat, 07 Feb 2026 22:48:28 GMT
+set-cookie: __Secure-current_session_password=...; Max-Age=34128000; Domain=cold3.cc; Path=/; HttpOnly; Secure; SameSite=Lax
+cf-placement: remote-EWR
+cf-cache-status: (absent)
+```
 
+**Second fetch (128ms — KV cache hit):**
+```
+content-type: image/png
+content-length: 27286
+cache-control: public, s-maxage=1200, stale-while-revalidate
+etag: W/"Axyov5M0U5BMNLny4LeHTrN_vc6ViQjgDh418ltDoO4"    ← same
+last-modified: Sat, 07 Feb 2026 22:48:28 GMT               ← same (not re-rendered)
+set-cookie: __Secure-current_session_password=...; Max-Age=34128000; Domain=cold3.cc; Path=/; HttpOnly; Secure; SameSite=Lax
+cf-placement: remote-EWR
+cf-cache-status: (absent)
+```
+
+**Analysis:**
+
+KV caching works — timing drops from 859ms to 128ms, etag and last-modified are identical (served from KV, not re-rendered). CDN is not caching — `cf-cache-status` is absent on both fetches. `Set-Cookie` is present on both responses (different cookie values — a new browser tag is minted per request). This is consistent with the theory: Cloudflare's CDN refuses to cache responses with `Set-Cookie`, so despite the correct `Cache-Control` header, the CDN never stores the response.
+
+Both requests were placed at `remote-EWR` (Newark). Curl ran from Denver — the CDN PoP routing and Worker placement are independent of where we're testing from.
+
+### 2. Cookie fix (2026feb7)
+
+Added an early return to `site/server/middleware/cookieMiddleware.js` — if the request path starts with `/_og/`, skip the entire middleware. No cookie is read, written, or set in the response. No `workerEvent.context.browserTag` is populated. This is safe because `/_og/` routes go straight to nuxt-og-image's route handler — no SSR, no `fetchWorker`, no `doorWorker`, nothing downstream needs the browserTag.
+
+Also made several housekeeping changes discovered during the review of the cookie/auth system:
+
+- Unexported `slug()` and `deaccent()` from `icarus/level1.js` and removed both from `icarus/index.js` re-exports. Both were only called internally by `validateName()` — the exports were dead.
+- Added `_og`, `_nuxt`, and `_payload` to `reservedRoutes` in `validateName`, preventing users from registering usernames that would collide with Nuxt's underscore-prefixed system routes.
+- Converted `reservedRoutes` from an array with `.includes()` to a Set with `.has()`, and switched to a template literal format for easier readability and maintenance of the list.
 

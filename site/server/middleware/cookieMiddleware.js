@@ -27,6 +27,8 @@ mitigated by:
 
 export default defineEventHandler((workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
 
+	if (workerEvent.req.url.startsWith('/_og/')) return//og:image routes are fetched by social crawlers and img tags, not user sessions; setting a cookie here would cause cloudflare's cdn to refuse to cache the response
+
 	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
 	let value, valueTag, browserTag
 	value = getCookie(workerEvent, composeCookieName())//get the cookie where we may have previously tagged this browser

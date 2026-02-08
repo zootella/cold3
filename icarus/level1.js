@@ -304,7 +304,7 @@ test(() => {
 //              |___/                                            
 
 //remove accents from vowels
-export function deaccent(s) {
+function deaccent(s) {
 	return (s
 		.normalize('NFD')//convert accented characters to their decomposed form
 		.replace(/[\u0300-\u036f]/g, '')//remove combining diacritic marks
@@ -319,7 +319,7 @@ test(() => {
 })
 
 //sanitize text from the user that might be fine on the page for use in the URL, like a user name or post title
-export function slug(s, limit) {//will return blank if s doesn't have any safe characters at all!
+function slug(s, limit) {//will return blank if s doesn't have any safe characters at all!
 	s = cropToLimit(s, limit, Limit.name)//crop at the start; mutations below all make s the same length or shorter
 
 	s = deaccent(s)//remove accents from vowels
@@ -507,13 +507,13 @@ test(() => {
 	ok(_checkName({f1: 'Name-1', f0: 'name-1'}) == 'Ok.')//...and together
 	ok(_checkName({f1: 'Name-1', f0: 'name-2'}) != 'Ok.')//...but not together!
 })
-const reservedRoutes = ['about', 'account', 'admin', 'administrator', 'app', 'ban', 'billing', 'blog', 'community', 'config', 'contact', 'creator', 'dashboard', 'developer', 'dm', 'e', 'f', 'fan', 'faq', 'feed', 'feedback', 'forum', 'help', 'home', 'i', 'legal', 'login', 'logout', 'manage', 'me', 'messages', 'moderator', 'my', 'notifications', 'official', 'privacy', 'profile', 'q', 'qr', 'register', 'report', 'root', 'search', 'settings', 'shop', 'signin', 'signout', 'signup', 'staff', 'status', 'store', 'subscribe', 'support', 'system', 'terms', 'unsubscribe', 'user', 'verify']//profile pages are on the root route; prevent a user from clashing with a utility or brochure page!
+const reservedRoutes = new Set(`_nuxt _og _payload about account admin administrator app ban billing blog community config contact creator dashboard developer dm e f fan faq feed feedback forum help home i legal login logout manage me messages moderator my notifications official privacy profile q qr register report root search settings shop signin signout signup staff status store subscribe support system terms unsubscribe user verify`.trim().split(/\s+/))//profile pages are on the root route; prevent a user from clashing with a utility or brochure page!
 export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let cropped = cropToLimit(raw, limit, Limit.name)
 	let f2 = trimLine(cropped)//"東京❤️女の子" valid for display on the page
 	let f1 = slug(cropped)//"Tokyo-Girl" working and correct route for links
 	let f0 = f1.toLowerCase()//"tokyo-girl" reserved to prevent duplicates, also a working route
-	let k = hasText(f2) && hasText(f1) && hasText(f0) && !reservedRoutes.includes(f0)
+	let k = hasText(f2) && hasText(f1) && hasText(f0) && !reservedRoutes.has(f0)
 	let f2ok = hasText(f2)
 	return {ok: k, f0, f1, f2, f2ok, raw, cropped}
 }
