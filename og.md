@@ -222,3 +222,42 @@ Also made several housekeeping changes discovered during the review of the cooki
 - Added `_og`, `_nuxt`, and `_payload` to `reservedRoutes` in `validateName`, preventing users from registering usernames that would collide with Nuxt's underscore-prefixed system routes.
 - Converted `reservedRoutes` from an array with `.includes()` to a Set with `.has()`, and switched to a template literal format for easier readability and maintenance of the list.
 
+### 3. Post-cookie-fix test (2026feb8, ~02:38 UTC)
+
+Configuration: KV cache still enabled (`OG_IMAGE_CACHE` binding), `cacheMaxAgeSeconds: 1200`, cookie middleware now skips `/_og/` routes. Deploy from commit `c007a5e`.
+
+Test route: `/card/test12448` (unique, no prior cache state). og:image URL:
+```
+/_og/d/c_ProfileCard,title_%F0%9F%A7%94%F0%9F%8F%BB+test12448,sticker_CloudPageServer.2026feb08.NPMW3X2,q_e30,p_Ii9jYXJkL3Rlc3QxMjQ0OCI.png?_v=2e7c90c5-8bf0-4cb5-9e44-ea518079d2e7
+```
+
+**First fetch (818ms — full satori render):**
+```
+content-type: image/png
+content-length: 28616
+cache-control: public, s-maxage=1200, stale-while-revalidate
+etag: W/"YDzNr-gy0H-ULhpHkoXIXXIi7xkNl_VHf4jCiOF0BT0"
+last-modified: Sun, 08 Feb 2026 02:38:29 GMT
+vary: accept-encoding, host
+set-cookie: (absent)
+cf-placement: remote-EWR
+cf-cache-status: (absent)
+```
+
+**Second fetch (100ms — KV cache hit):**
+```
+content-type: image/png
+content-length: 28616
+cache-control: public, s-maxage=1200, stale-while-revalidate
+etag: W/"YDzNr-gy0H-ULhpHkoXIXXIi7xkNl_VHf4jCiOF0BT0"    ← same
+last-modified: Sun, 08 Feb 2026 02:38:29 GMT               ← same
+vary: accept-encoding, host
+set-cookie: (absent)
+cf-placement: remote-EWR
+cf-cache-status: (absent)
+```
+
+**Analysis:**
+
+The cookie fix works — `Set-Cookie` is absent on both responses, confirming the middleware early-return is effective. However, the CDN is still not caching: `cf-cache-status` is absent on both fetches, and timing (818ms → 100ms) matches a KV cache hit, not a CDN edge hit (~10–30ms). The `Set-Cookie` theory was partially right — the cookie needed to go — but removing it was not sufficient to enable CDN caching. Something else is also preventing the CDN from caching Worker responses.
+
