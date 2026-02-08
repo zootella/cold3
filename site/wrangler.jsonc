@@ -27,6 +27,11 @@
 	"kv_namespaces": [
 		{"binding": "OG_IMAGE_CACHE", "id": "ee95a879988944c2a7eb9521e62eb102"}
 	],
+
+	//service binding to ourselves; lets middleware10 call back into our own fetch handler without going through the CDN (which would 522 on loop detection)
+	"services": [
+		{"binding": "SELF", "service": "site4"}
+	],
 	/*
 	» Bindings
 	» Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
@@ -38,7 +43,7 @@
 	» Service Bindings (communicate between multiple Workers)
 	» https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	» "services": [{"binding": "MY_SERVICE", "service": "my-service"}]
-	not using
+	SELF binding used by middleware10 to invoke our own fetch handler without going through the CDN
 	*/
 
 	//tells a fancy editor like Visual Studio Code what Wrangler's JSON schema is to power autocomplete and validation
