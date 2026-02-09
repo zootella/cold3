@@ -25,8 +25,7 @@ mitigated by:
 	(4b) because our tag cookie is first‑party, strictly‑necessary for core functionality, marked HttpOnly, Secure, and SameSite=Lax, compliance requires documenting its use in a privacy policy, and does not require explicit user consent
 */
 
-export default defineEventHandler((workerEvent) => {return;//turned into no-op for refactor, code still here for diff
-//nuxt runs middleware like this at the start of every GET and POST request
+export default defineEventHandler((workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
 
 	if (workerEvent.req.url.startsWith('/_og/')) return//og:image routes are fetched by social crawlers and img tags, not user sessions; setting a cookie here would cause cloudflare's cdn to refuse to cache the response
 
