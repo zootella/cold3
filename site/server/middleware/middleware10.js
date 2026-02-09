@@ -17,7 +17,7 @@ miss → invoke our own fetch handler via the SELF service binding (wrangler.jso
        that kills a plain fetch() self-request). The bypass header lets middleware10 pass through on
        the subrequest so nuxt-og-image renders the png, and we store it in the edge cache for next time.
 */
-export default defineEventHandler(async (workerEvent) => {
+export default defineEventHandler(async (workerEvent) => {return//turned into no-op for refactor; still here for diff
 
 	if (!workerEvent.path.startsWith('/_og/')) return//only og:image routes; everything else passes through untouched
 	if (getRequestHeader(workerEvent, 'x-og-render')) return//this is our own subrequest coming back for rendering; let it through to nuxt-og-image
