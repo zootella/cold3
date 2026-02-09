@@ -381,3 +381,57 @@ Two working designs, both tested and committed:
 | Design A | `84f2132` (PBL) | middleware + Nitro plugin via `beforeResponse` hook | middleware10.js + ogCachePlugin.js |
 | Design B | `4a00c5e` (JHQ) | middleware + SELF service binding | middleware10.js + wrangler.jsonc binding |
 
+### 8. Design decision: service binding (Design B)
+
+No measurable performance difference between the two designs. First-render times across all tests: 817ms (Design A), 1120ms/969ms/811ms/623ms (Design B). The variance is satori/WASM cold-start noise, not systematic overhead from the service binding. Cache hit times are equivalent (~38-44ms).
+
+**Design A — middleware + plugin** (`84f2132`)
+
+Pros: no wrangler.jsonc configuration needed; the render happens in the normal request flow without an intermediary.
+
+Cons: cache logic is split across two files (middleware10.js reads, ogCachePlugin.js writes). The plugin depends on Nitro's `beforeResponse` hook receiving `response.body` as the raw Buffer. This works because nuxt-og-image's handler `return`s the image buffer (eventHandlers.js line 96) rather than calling `send()`. If the module ever changed to use `send()` or `event.respondWith()`, the `beforeResponse` hook would fire with `body: undefined` (h3 v1 issue #596) and caching would silently stop working — no error, just every request falling through to a fresh render. This is a fragile coupling to an internal implementation detail of a beta module (`nuxt-og-image` 6.0.0-beta.15).
+
+**Design B — middleware + service binding** (`4a00c5e`) ← chosen
+
+Pros: all cache logic in one self-contained file. The service binding gives us a complete Response object we fully control — headers, body, status — regardless of how the downstream handler produces it internally. No dependency on h3 hook behavior or nuxt-og-image's implementation details. If the module changes how it sends responses, the service binding still gets the final HTTP response.
+
+Cons: requires the SELF binding in wrangler.jsonc (`"services": [{"binding": "SELF", "service": "site4"}]`). Self-binding is undocumented by Cloudflare (see trail note 10), but it works in production and is the community-recommended workaround for the 522 loop detection problem.
+
+**Decision:** Design B. The robustness argument is decisive — we're pinned to a beta module, and coupling our caching to its internal return-vs-send behavior is an unnecessary risk. The SELF binding is one line of configuration and eliminates that fragility entirely.
+
+### 9. Interleaved card test (2026feb8, sticker `JHQ4HZT`)
+
+Two unique cards (testAlpha20707, testBravo20707), three rounds of fetches interleaved to verify independent caching behavior.
+
+```
+A1  MISS  653ms  content-length: 31309
+B1  MISS  556ms  content-length: 30911
+     — 3 second pause —
+A2  HIT   50ms   cf-cache-status: HIT  age: 3
+B2  HIT   38ms   cf-cache-status: HIT  age: 3
+     — 3 second pause —
+A3  HIT   40ms   cf-cache-status: HIT  age: 6
+B3  HIT   42ms   cf-cache-status: HIT  age: 6
+```
+
+Both cards render independently (different content-length), cache independently (`x-og-cache: HIT` and `cf-cache-status: HIT` on all subsequent fetches), and `age` increments correctly across rounds. Cache hits are consistently 38–50ms. First renders cluster at 556–653ms with occasional outliers up to ~1100ms from WASM cold-start variance.
+
+### 10. Service binding research (2026feb9)
+
+Trail note 8 chose Design B (service binding) and noted that self-binding is "an unusual pattern." Research into the Cloudflare ecosystem reveals a more nuanced picture.
+
+**Official documentation does not mention self-binding.** The service bindings docs describe the feature exclusively as Worker A calling Worker B — two distinct Workers. All configuration examples show a caller binding to a different target. The GA blog post and the original "Introducing Services" blog post frame service bindings purely as inter-Worker communication for microservice architectures. There is no doc page for "self-binding," "recursive worker," or anything similar. The pattern is neither officially blessed nor officially discouraged.
+
+**Community evidence shows it works and is recommended as a workaround.** A Cloudflare Community thread titled "Can a Worker now call itself?" directly addresses the 522 problem we hit. The answer: use a service binding pointing to yourself. A separate thread, "Gain an Understanding of a Self Referencing Worker," discusses why it works without triggering error 1019. And a workers-sdk GitHub issue (#8246) is a bug report specifically about "self-referencing Service Bindings" — the Cloudflare tooling team treats it as a valid configuration that *should* work, even though they haven't documented it.
+
+**There is no official "call my own fetch handler" API.** The alternatives Cloudflare provides are: (a) `global_fetch_strictly_public` compatibility flag, which routes `fetch()` through the public CDN path but is still subject to loop detection; (b) Custom Domains instead of Routes, which can be self-fetched but still go through the network; (c) `env.ASSETS.fetch()` for static assets only; (d) refactoring the logic into a shared function — the most common community advice, but not viable when you need to invoke an entire framework pipeline (Nitro middleware → nuxt-og-image handler → satori render).
+
+**Limits that apply to our use:**
+
+- Each `self.fetch()` call counts toward the **32 Worker invocations per request** limit. We use exactly 1 per cache miss, so this is not a concern.
+- Each call counts toward the **subrequest limit** (1,000 on paid plans). Again, 1 per miss.
+- Service binding calls do **not** count toward the 6 simultaneous open connection limit — a minor positive.
+- `wrangler dev` has known bugs with self-binding when combined with Workers Assets + RPC entrypoints (workers-sdk #8246). Not our configuration, and we don't use `wrangler dev` for og-image testing anyway (the WASM pipeline and Cache API only work in production).
+
+**Assessment:** Self-binding is a pragmatic workaround that exploits the generality of the service binding mechanism. It's not a hack — Cloudflare's tooling acknowledges it — but it's not a documented best practice either. For our use case (one self-call per cache miss to invoke the full Nitro/nuxt-og-image pipeline), it's the only viable approach short of patching the module or running a second Worker.
+
