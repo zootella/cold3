@@ -31,7 +31,9 @@ export default defineEventHandler(async (workerEvent) => {//nuxt runs middleware
 	}
 	//if we make it down here, this request isn't about an open graph protocol image, or it is but we couldn't serve it from the CDN
 
-	return middlewareCookie(workerEvent)
+	if (!workerEvent.path.startsWith('/_og/')) {//og:image routes are fetched by social crawlers and img tags, not user sessions; setting a cookie here would cause cloudflare's cdn to refuse to cache the response
+		return middlewareCookie(workerEvent)
+	}
 }
 
 async function middlewareImage(workerEvent) {
@@ -102,8 +104,6 @@ mitigated by:
 */
 
 function middlewareCookie(workerEvent) {
-
-	if (workerEvent.req.url.startsWith('/_og/')) return//og:image routes are fetched by social crawlers and img tags, not user sessions; setting a cookie here would cause cloudflare's cdn to refuse to cache the response
 
 	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
 	let value, valueTag, browserTag
