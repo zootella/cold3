@@ -19,62 +19,60 @@ miss → invoke our own fetch handler via the SELF service binding (wrangler.jso
 */
 
 export default defineEventHandler(async (workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
-	let result
-	result = await f10(workerEvent)
-	if (result) return result
-	f20(workerEvent)
-})
+	if (
+		workerEvent.path.startsWith('/_og/') &&//only og:image routes; everything else passes through untouched
+		(!getRequestHeader(workerEvent, 'x-og-render')) && //this is our own subrequest coming back for rendering; let it through to nuxt-og-image
+		typeof caches != 'undefined' && caches.default &&//make sure the Cloudflare Cache API is here; won't be running local
+		workerEvent.context.cloudflare?.env?.SELF//self service binding from wrangler.json; absent only if we've misconfigured
+	) {
+		try {
+			return await middlewareImage(workerEvent)
+		} catch (e3) { console.error('[OUTER]', e3) }//fall through and let the request proceed to nuxt-og-image's normal handler
+	}
+	//if we make it down here, this request isn't about an open graph protocol image, or it is but we couldn't serve it from the CDN
 
-async function f10(workerEvent) {
+	return middlewareCookie(workerEvent)
+}
 
-	if (!workerEvent.path.startsWith('/_og/')) return//only og:image routes; everything else passes through untouched
-	if (getRequestHeader(workerEvent, 'x-og-render')) return//this is our own subrequest coming back for rendering; let it through to nuxt-og-image
-	if (!(typeof caches != 'undefined' && caches.default)) return//make sure the Cloudflare Cache API is here; won't be running local
+async function middlewareImage(workerEvent) {
 
-	try {
+	let url = getRequestURL(workerEvent).toString()
+	let cacheKey = new Request(url)
 
-		let url = getRequestURL(workerEvent).toString()
-		let cacheKey = new Request(url)
+	//check edge cache
+	let hit = await caches.default.match(cacheKey)
+	if (hit) {
+		for (let [k, v] of hit.headers) setHeader(workerEvent, k, v)
+		setHeader(workerEvent, 'x-og-cache', 'HIT')
+		return new Uint8Array(await hit.arrayBuffer())
+	}
 
-		//check edge cache
-		let hit = await caches.default.match(cacheKey)
-		if (hit) {
-			for (let [k, v] of hit.headers) setHeader(workerEvent, k, v)
-			setHeader(workerEvent, 'x-og-cache', 'HIT')
-			return new Uint8Array(await hit.arrayBuffer())
-		}
+	//miss — invoke our own fetch handler via the SELF service binding; this calls back into this worker on the same thread without going through the CDN, avoiding the 522 that a plain fetch() causes
+	const self = workerEvent.context.cloudflare.env.SELF
+	let response = await self.fetch(new Request(url, { headers: { 'x-og-render': '1' } }))
 
-		//miss — invoke our own fetch handler via the SELF service binding; this calls back into this worker on the same thread without going through the CDN, avoiding the 522 that a plain fetch() causes
-		let self = workerEvent.context.cloudflare?.env?.SELF
-		if (!self) return//SELF binding not configured; fall through to normal handler
+	if (!response.ok) {//render failed — pass through the error without caching
+		setResponseStatus(workerEvent, response.status)
+		setHeader(workerEvent, 'content-type', response.headers.get('content-type') || 'text/plain')
+		return response.body
+	}
 
-		let response = await self.fetch(new Request(url, { headers: { 'x-og-render': '1' } }))
+	let body = await response.arrayBuffer()
+	let headers = {}
+	for (let k of ['content-type', 'cache-control', 'etag', 'last-modified', 'vary']) {
+		let v = response.headers.get(k)
+		if (v) headers[k] = v
+	}
 
-		if (!response.ok) {//render failed — pass through the error without caching
-			setResponseStatus(workerEvent, response.status)
-			setHeader(workerEvent, 'content-type', response.headers.get('content-type') || 'text/plain')
-			return response.body
-		}
+	//store in edge cache; waitUntil lets this happen after we've already responded to the client
+	let context = workerEvent.context.cloudflare?.context
+	let store = caches.default.put(cacheKey, new Response(body.slice(0), { headers }))
+	context.waitUntil(store)//intentionally fire-and-forget; client gets the response now, cache write finishes in the background
 
-		let body = await response.arrayBuffer()
-		let headers = {}
-		for (let k of ['content-type', 'cache-control', 'etag', 'last-modified', 'vary']) {
-			let v = response.headers.get(k)
-			if (v) headers[k] = v
-		}
-
-		//store in edge cache; waitUntil lets this happen after we've already responded to the client
-		let context = workerEvent.context.cloudflare?.context
-		let store = caches.default.put(cacheKey, new Response(body.slice(0), { headers }))
-		if (context) context.waitUntil(store)
-		else await store
-
-		//return to client
-		for (let [k, v] of Object.entries(headers)) setHeader(workerEvent, k, v)
-		setHeader(workerEvent, 'x-og-cache', 'MISS')
-		return new Uint8Array(body)
-
-	} catch {}//cache api failed — fall through silently and let the request proceed to nuxt-og-image's normal handler
+	//return to client
+	for (let [k, v] of Object.entries(headers)) setHeader(workerEvent, k, v)
+	setHeader(workerEvent, 'x-og-cache', 'MISS')
+	return new Uint8Array(body)
 }
 
 //  _                                       _                                _    _      
@@ -103,7 +101,7 @@ mitigated by:
 	(4b) because our tag cookie is first‑party, strictly‑necessary for core functionality, marked HttpOnly, Secure, and SameSite=Lax, compliance requires documenting its use in a privacy policy, and does not require explicit user consent
 */
 
-function f20(workerEvent) {
+function middlewareCookie(workerEvent) {
 
 	if (workerEvent.req.url.startsWith('/_og/')) return//og:image routes are fetched by social crawlers and img tags, not user sessions; setting a cookie here would cause cloudflare's cdn to refuse to cache the response
 
