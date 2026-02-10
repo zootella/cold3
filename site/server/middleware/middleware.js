@@ -1,4 +1,6 @@
 
+//importing functions from icarus here may have made the cookie unreliable; but using automatic icarus imports from the server plugin seems to work ok 🤔 ttd january
+
 //                _                                             _
 //   ___   __ _  (_)_ __ ___   __ _  __ _  ___    ___ __ _  ___| |__   ___
 //  / _ \ / _` | | | '_ ` _ \ / _` |/ _` |/ _ \  / __/ _` |/ __| '_ \ / _ \
@@ -19,21 +21,26 @@ miss → invoke our own fetch handler via the SELF service binding (wrangler.jso
 */
 
 export default defineEventHandler(async (workerEvent) => {//nuxt runs middleware like this at the start of every GET and POST request
-	if (
-		workerEvent.path.startsWith('/_og/') &&//only og:image routes; everything else passes through untouched
-		(!getRequestHeader(workerEvent, 'x-og-render')) && //this is our own subrequest coming back for rendering; let it through to nuxt-og-image
-		typeof caches != 'undefined' && caches.default &&//make sure the Cloudflare Cache API is here; won't be running local
-		workerEvent.context.cloudflare?.env?.SELF//self service binding from wrangler.json; absent only if we've misconfigured
-	) {
-		try {
-			return await middlewareImage(workerEvent)
-		} catch (e3) { console.error('[OUTER]', e3) }//fall through and let the request proceed to nuxt-og-image's normal handler
-	}
-	//if we make it down here, this request isn't about an open graph protocol image, or it is but we couldn't serve it from the CDN
+	try {
+		if (workerEvent.path.startsWith('/_og/')) {//the request is for a card image, like this is WhatsApp or 𝕏 on the line ☎️ note that setting a cookie on a response would cause cloudflare's CDN to not cache it!
 
-	if (!workerEvent.path.startsWith('/_og/')) {//og:image routes are fetched by social crawlers and img tags, not user sessions; setting a cookie here would cause cloudflare's cdn to refuse to cache the response
-		return middlewareCookie(workerEvent)
-	}
+			if (
+				isCloud() &&//we're running deployed
+				!getRequestHeader(workerEvent, 'x-og-render') &&//our own header means, this is us calling to render an image, don't try to get it from the CDN, return undefined here to have Nitro call nuxt-og-image to render a fresh card and return it to self.fetch() in the outer worker
+				typeof caches != 'undefined' && caches.default &&//and two sanity checks of the cloudflare apis we'll use, we have the CDN,
+				workerEvent.context.cloudflare.env.SELF//and the service binding to ourselves we made in wrangler.jsonc
+			) {
+				return await middlewareImage(workerEvent)//return the bytes of a card, either from a fresh render or cached in the CDN; returning non-undefined tells Nitro we've handled this request, no additional handlers run
+			} else {
+				return undefined//return undefined to have Nitro continue on to run the right handler for the route, which will be nuxt-og-image
+			}
+
+		} else {//browser requesting from worker
+
+			middlewareCookie(workerEvent)//make sure the browser gets a renewed or filled-in browserTag to keep a user signed in
+			return undefined//continue on to the handler for the route, like a page or api endpoint
+		}
+	} catch (e) { console.error(e); return undefined }//log an error to the cloudflare dashboard, but don't blow up the page, keep going into the handler for this route
 })
 
 async function middlewareImage(workerEvent) {
@@ -83,8 +90,6 @@ async function middlewareImage(workerEvent) {
 // | |_) | | | (_) \ V  V /\__ \  __/ |    | || (_| | (_| | | (_| (_) | (_) |   <| |  __/
 // |_.__/|_|  \___/ \_/\_/ |___/\___|_|     \__\__,_|\__, |  \___\___/ \___/|_|\_\_|\___|
 //                                                   |___/                               
-
-//importing functions from icarus here may have made the cookie unreliable; but using automatic icarus imports from the server plugin seems to work ok 🤔 ttd january
 
 /*
 a tag identifies a browser, through multiple different signed-in users, and even before someone has signed up

@@ -27,24 +27,12 @@
 	"kv_namespaces": [
 		{"binding": "OG_IMAGE_CACHE", "id": "ee95a879988944c2a7eb9521e62eb102"}
 	],
+	//ttd january, will remove here and in dashboard when cards go straight from render to CDN, no additional KV in the middle
 
-	//service binding to ourselves; lets middleware10 call back into our own fetch handler without going through the CDN (which would 522 on loop detection)
+	//service bindings; https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	"services": [
-		{"binding": "SELF", "service": "site4"}
+		{"binding": "SELF", "service": "site4"}//convention to name binding to ourselves SELF, middleware uses to cache cards in the CDN
 	],
-	/*
-	» Bindings
-	» Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-	» databases, object storage, AI inference, real-time communication and more.
-	» https://developers.cloudflare.com/workers/runtime-apis/bindings/
-	we're only using a KV store for nuxt-og-image
-	https://developers.cloudflare.com/kv/
-
-	» Service Bindings (communicate between multiple Workers)
-	» https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-	» "services": [{"binding": "MY_SERVICE", "service": "my-service"}]
-	SELF binding used by middleware10 to invoke our own fetch handler without going through the CDN
-	*/
 
 	//tells a fancy editor like Visual Studio Code what Wrangler's JSON schema is to power autocomplete and validation
 	"$schema": "node_modules/wrangler/config-schema.json"
