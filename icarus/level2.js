@@ -373,7 +373,7 @@ export const cookieOptions = {
 		path: '/',//send for all routes
 		httpOnly: true,//page script can't see or change; more secure than local storage!
 		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
-		maxAge: 395*Time.daysInSeconds,//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
+		maxAge: inSeconds(395*Time.days),//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
 		secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
 		...(isCloud() && {//running deployed,
 			domain: Key('domain, public')//include domain option with value like 'example.com', no protocol or slash; this scopes access to include subdomains, because oauth.cold3.cc needs to see the browser tag

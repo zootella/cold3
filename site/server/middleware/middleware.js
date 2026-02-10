@@ -21,7 +21,7 @@ On a card request, this middleware checks the edge cache first. On hit, it retur
 🌀 Manual curl test: All this happens only in production; running locally every card request is a fresh render. To confirm production cards are working properly, use curl. Random each run to avoid any existing cache state.
 
 ```bash
-OG_URL=$(curl -s "https://cold3.cc/card/test$RANDOM" | grep -o 'content="https://cold3.cc/_og[^"]*' | sed 's/content="//')
+OG_URL=$(curl -s "https://cold3.cc/card/test$RANDOM" | grep -o 'og:image" content="[^"]*' | head -1 | sed 's/og:image" content="//')
 curl -s -D- -o /dev/null -w "\nTotal: %{time_total}s\n" "$OG_URL"
 sleep 3
 curl -s -D- -o /dev/null -w "\nTotal: %{time_total}s\n" "$OG_URL"
