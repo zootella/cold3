@@ -34,7 +34,7 @@ export default defineEventHandler(async (workerEvent) => {//nuxt runs middleware
 	if (!workerEvent.path.startsWith('/_og/')) {//og:image routes are fetched by social crawlers and img tags, not user sessions; setting a cookie here would cause cloudflare's cdn to refuse to cache the response
 		return middlewareCookie(workerEvent)
 	}
-}
+})
 
 async function middlewareImage(workerEvent) {
 
