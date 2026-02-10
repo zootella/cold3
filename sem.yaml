@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb8.2340.59102
+  generated: 2026feb10.1754.47710
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -94,7 +94,7 @@ modules:
     from: oauth
     versions:
       declared: ^1.11.1
-      installed: 1.11.1 on 2025oct26 3m old
+      installed: 1.11.1 on 2025oct26 4m old
     downloads:
       weekly: 44,327
       on: 2026feb4.1825.16236
@@ -105,6 +105,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
+      current: 3.986.0 on 2026feb09 0m old
+      latest: 3.986.0 on 2026feb09 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -115,6 +117,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
+      current: 3.986.0 on 2026feb09 0m old
+      latest: 3.986.0 on 2026feb09 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -125,6 +129,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
+      current: 3.986.0 on 2026feb09 0m old
+      latest: 3.986.0 on 2026feb09 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -135,6 +141,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
+      current: 3.986.0 on 2026feb09 0m old
+      latest: 3.986.0 on 2026feb09 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -164,7 +172,7 @@ modules:
     from: site
     versions:
       declared: ^2.6.2
-      installed: 2.6.2 on 2024mar26 22m old 🕰️ Installed version 1+ year old
+      installed: 2.6.2 on 2024mar26 23m old 🕰️ Installed version 1+ year old
     downloads:
       weekly: 499,219
       on: 2026feb6.2044.50125
@@ -174,7 +182,7 @@ modules:
     from: site
     versions:
       declared: ^2.6.2
-      installed: 2.6.2 on 2024mar26 22m old 🕰️ Installed version 1+ year old
+      installed: 2.6.2 on 2024mar26 23m old 🕰️ Installed version 1+ year old
     downloads:
       weekly: 381,134
       on: 2026feb6.0027.3002
@@ -498,7 +506,7 @@ modules:
       declared: 0.15.2
       installed: 0.15.2 on 2025jun09 8m old 🐣 Pre-1.0 version installed 📌 Exact version pinned
       current: 0.15.2 on 2025jun09 8m old
-      latest: 0.19.1 on 2026jan16 1m old
+      latest: 0.19.2 on 2026feb10 0m old
     downloads:
       weekly: 650,032
       on: 2026feb6.0027.3002
@@ -549,6 +557,8 @@ modules:
     versions:
       declared: ^5.50.0
       installed: 5.50.0 on 2026feb06 0m old
+      current: 5.50.1 on 2026feb10 0m old
+      latest: 5.50.1 on 2026feb10 0m old
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
@@ -603,6 +613,8 @@ modules:
     versions:
       declared: ^2.45.1
       installed: 2.45.1 on 2026jan29 0m old
+      current: 2.45.2 on 2026feb09 0m old
+      latest: 2.45.2 on 2026feb09 0m old
     downloads:
       weekly: 2,639,619
       on: 2026feb4.1821.46960
@@ -629,6 +641,8 @@ modules:
     versions:
       declared: ^3.5.27
       installed: 3.5.27 on 2026jan19 1m old
+      current: 3.5.28 on 2026feb09 0m old
+      latest: 3.5.28 on 2026feb09 0m old
     downloads:
       weekly: 8,549,415
       on: 2026feb4.1825.16236
@@ -655,6 +669,8 @@ modules:
     versions:
       declared: ^4.63.0
       installed: 4.63.0 on 2026feb05 0m old
+      current: 4.64.0 on 2026feb10 0m old
+      latest: 4.64.0 on 2026feb10 0m old
     downloads:
       weekly: 3,405,027
       on: 2026feb4.1829.44951
