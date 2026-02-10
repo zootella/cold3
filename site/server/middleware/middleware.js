@@ -16,7 +16,7 @@ To get CDN caching, the worker must explicitly use the Cloudflare Cache API (cac
 hit  → serve from edge cache (~1-5ms), nothing downstream runs
 miss → invoke our own fetch handler via the SELF service binding (wrangler.jsonc), which re-enters
        the worker on the same thread without going through the CDN (avoiding the 522 loop detection
-       that kills a plain fetch() self-request). The bypass header lets middleware10 pass through on
+       that kills a plain fetch() self-request). The bypass header lets flow pass through on
        the subrequest so nuxt-og-image renders the png, and we store it in the edge cache for next time.
 */
 
@@ -28,7 +28,8 @@ export default defineEventHandler(async (workerEvent) => {//nuxt runs middleware
 				isCloud() &&//we're running deployed
 				!getRequestHeader(workerEvent, 'x-og-render') &&//our own header means, this is us calling to render an image, don't try to get it from the CDN, return undefined here to have Nitro call nuxt-og-image to render a fresh card and return it to self.fetch() in the outer worker
 				typeof caches != 'undefined' && caches.default &&//and two sanity checks of the cloudflare apis we'll use, we have the CDN,
-				workerEvent.context.cloudflare.env.SELF//and the service binding to ourselves we made in wrangler.jsonc
+				workerEvent.context.cloudflare?.env?.SELF &&//the service binding to ourselves we made in wrangler.jsonc is here,
+				workerEvent.context.cloudflare?.context//and the worker's ctx parameter is defined, we'll call ctx.waitUntil()
 			) {
 				return await middlewareImage(workerEvent)//return the bytes of a card, either from a fresh render or cached in the CDN; returning non-undefined tells Nitro we've handled this request, no additional handlers run
 			} else {
@@ -74,9 +75,9 @@ async function middlewareImage(workerEvent) {
 	}
 
 	//store in edge cache; waitUntil lets this happen after we've already responded to the client
-	let context = workerEvent.context.cloudflare?.context
+	let executionContext = workerEvent.context.cloudflare.context
 	let store = caches.default.put(cacheKey, new Response(body.slice(0), { headers }))
-	context.waitUntil(store)//intentionally fire-and-forget; client gets the response now, cache write finishes in the background
+	executionContext.waitUntil(store)//intentionally fire-and-forget; client gets the response now, cache write finishes in the background
 
 	//return to client
 	for (let [k, v] of Object.entries(headers)) setHeader(workerEvent, k, v)
