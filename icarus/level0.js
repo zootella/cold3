@@ -92,10 +92,8 @@ Time.months.zeroToJan.forEach((name, i) => {
 	Time.months.janToZero[name.toLowerCase()] = i
 	Time.months.janToOne[name.toLowerCase()] = i + 1
 })
-Time.minutesInSeconds = Time.minute / Time.second
-Time.hoursInSeconds = Time.hour / Time.second
-Time.daysInSeconds = Time.day / Time.second//cookies and other configurations use units of seconds, not milliseconds
 Object.freeze(Time)//prevents changes and additions
+export function inSeconds(t) { return t / Time.second }//cookies and some other configurations use units of seconds, not milliseconds
 
 let _simulationMode
 export function enterSimulationMode() { _simulationMode = true }

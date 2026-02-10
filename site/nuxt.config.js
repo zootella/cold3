@@ -1,6 +1,6 @@
 
 import {
-Time, Key, log, look,
+Time, inSeconds, Key, log, look,
 } from 'icarus'//local Node runs this file on $ nuxt dev, build, generate; we can use icarus helpers here
 import {vite as vidstack} from 'vidstack/plugins'
 import tailwindcss from '@tailwindcss/vite'
@@ -78,12 +78,13 @@ configuration.site = {
 	url: 'https://'+Key('domain, public'),//needs site's deployed domain to link the cards in the page meta tags with absolute URLs
 }
 configuration.ogImage = {
+	//nuxt-og-image's docs recommend Cloudflare KV for caching rendered cards. That doesn't fit our needs 🍞 Our cards don't go stale; re-rendering one would produce identical pixels 🧟 There's no way to configure expiration, every KV entry stays forever! 🔥 Instead we wrote middleware.js to use Cloudflare's CDN: it serves hot cards from cache globally, evicts cold cards automatically via TTL, and costs nothing on our account 💸 The lru-cache driver keeps nuxt-og-image's internal cache effectively inert so the CDN is the only real caching layer
 	defaults: {
-		cacheMaxAgeSeconds: 20*Time.minutesInSeconds//default if omitted is 3 days
+		cacheMaxAgeSeconds: inSeconds(20*Time.minute)//a popular card will get rendered once per 20min per cloudflare CDN region. From nuxt-og-image's cache.js this setting fans out three places: (1) the `Cache-Control` header that enables the CDN, (2) the storage driver's expiresAt entry, (3) `maxAge` in h3's `handleCacheHeaders` for 304 conditional requests; Only (1) matters for us, but there's no way to set it independently
 	},
 	runtimeCacheStorage: {
-		driver: 'cloudflare-kv-binding',
-		binding: 'OG_IMAGE_CACHE',
+		driver: 'lru-cache',//unstorage's bounded cache driver, backed by lru-cache v11 (already in our tree as a transitive dep of unstorage). Without this, the default is a plain Map with no size limit, so memory would only grow in the isolate
+		max: 1,//only hold the single most recently rendered card; the CDN edge cache is our real cache layer; lru-cache doesn't allow 0 here
 	},
 }
 

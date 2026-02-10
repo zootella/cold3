@@ -1,7 +1,7 @@
 
 import {
 Sticker,
-Now, Time, Limit,
+Now, Time, inSeconds, Limit,
 toss, log,
 checkText, hasTextSame,
 Tag, checkTag,
@@ -78,7 +78,7 @@ async function uploadHandleBelow({door, body, action}) {
 				PartNumber: body.partNumber,//S3 requires sequential part numbers starting at 1
 			}),
 			{//options object as third parameter
-				expiresIn: Limit.mediaUpload/Time.second//generate signed URLs that expire in this number of seconds
+				expiresIn: inSeconds(Limit.mediaUpload)//generate signed URLs that expire in this number of seconds
 			},
 		)
 		return {success: true, url}//page will PUT bytes to this URL; S3 responds with ETag (hash of that part)

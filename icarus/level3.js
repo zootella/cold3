@@ -3,7 +3,7 @@ import {//from wrapper
 wrapper,
 } from './wrapper.js'
 import {//from level0
-Time, Now, sayDate, sayTick,
+Time, inSeconds, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank, newline,
 Tag, checkTagOrBlank, checkTag,

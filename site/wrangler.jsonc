@@ -23,12 +23,6 @@
 	» https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
 	*/
 
-	//followed nuxt-og-image instructions to make a cache for the card PNGs; to set this up, you made a new KV store in the Cloudflare dashboard, and pasted its id here
-	"kv_namespaces": [
-		{"binding": "OG_IMAGE_CACHE", "id": "ee95a879988944c2a7eb9521e62eb102"}
-	],
-	//ttd january, will remove here and in dashboard when cards go straight from render to CDN, no additional KV in the middle
-
 	//service bindings; https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	"services": [
 		{"binding": "SELF", "service": "site4"}//convention to name binding to ourselves SELF, middleware uses to cache cards in the CDN

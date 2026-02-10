@@ -3,7 +3,7 @@ import {
 
 //manual icarus import block for persephone
 wrapper, Sticker, stickerParts, isLocal, isCloud,
-Now, Time, Size, Limit, newline,
+Now, Time, inSeconds, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,
 
@@ -255,4 +255,3 @@ test(async () => {//test s3 modules load and have expected exports
 	let client = new S3Client({region: Key('amazon region, public')})//verify we can instantiate an S3Client
 	ok(client.config)
 })
-

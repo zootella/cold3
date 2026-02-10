@@ -3,7 +3,7 @@ import {//from wrapper
 wrapper,
 } from './wrapper.js'
 import {//from level0
-Time, Now, sayDate, sayTick, isExpired,
+Time, inSeconds, Now, sayDate, sayTick, isExpired,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, checkTextSame, newline,
 Tag, checkTag, hasTag,
@@ -387,7 +387,7 @@ export const cookieOptions = {
 		path: '/',//we could restrict to certain routes, but this is simpler
 		httpOnly: false,//true would mean page script couldn't read it
 		sameSite: 'Strict',//browser will include cookie in requests to our server only, which doesn't read it, this is the most restrictive setting, there isn't one for "don't send it at all"
-		maxAge: Limit.expirationUser/Time.second,//the browser will delete this cookie 20 minutes after we last set .value; cookies are timed in seconds not milliseconds
+		maxAge: inSeconds(Limit.expirationUser),//the browser will delete this cookie 20 minutes after we last set .value; cookies are timed in seconds not milliseconds
 		secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
 		//leaving out domain, so cookie will only be readable at the same domain it's set, localhost or cold3.cc, no subdomains
 	}),
@@ -1063,7 +1063,7 @@ function handleLambdaCorsPreflight(headers) {//browsers send OPTIONS before POST
 				'Access-Control-Allow-Origin': originApex(),//we tell the browser we only talk to script at our domain
 				'Access-Control-Allow-Methods': 'POST, OPTIONS',//we accept POST (the real request) and OPTIONS (this preflight)
 				'Access-Control-Allow-Headers': 'Content-Type',//page is allowed to send Content-Type header
-				'Access-Control-Max-Age': ''+(2*Time.hour/Time.second),//2 hours in seconds as a string; if we said longer, Chrome would cut to 2 hours, anyway; tell the browser that it can use this answer for the next 2 hours, rather than asking OPTIONS before every POST
+				'Access-Control-Max-Age': ''+inSeconds(2*Time.hour),//2 hours in seconds as a string; if we said longer, Chrome would cut to 2 hours, anyway; tell the browser that it can use this answer for the next 2 hours, rather than asking OPTIONS before every POST
 			},
 			body: '',//no content; just the headers above matter
 		}

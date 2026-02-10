@@ -218,7 +218,7 @@ unstorage ships an `lru-cache` driver (backed by `lru-cache` v11) as a bounded a
 ```js
 configuration.ogImage = {
   defaults: {
-    cacheMaxAgeSeconds: 2*Time.hoursInSeconds,
+    cacheMaxAgeSeconds: inSeconds(2*Time.hour),
   },
   runtimeCacheStorage: {
     driver: 'lru-cache',

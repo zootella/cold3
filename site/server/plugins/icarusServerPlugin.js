@@ -11,7 +11,7 @@ import {
 
 //manual icarus import block for nuxt server import
 wrapper, Sticker, stickerParts, isLocal, isCloud,
-Now, Time, Size, Limit, newline,
+Now, Time, inSeconds, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,
 
@@ -39,7 +39,7 @@ const whatWeImported = {//we could import * to avoid duplicating the list, but t
 
 //manual icarus import block for nuxt server globalize
 wrapper, Sticker, stickerParts, isLocal, isCloud,
-Now, Time, Size, Limit, newline,
+Now, Time, inSeconds, Size, Limit, newline,
 defined, toss, log, look,
 noop, test, ok,
 
