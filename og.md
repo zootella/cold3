@@ -85,6 +85,27 @@ Dependencies: `nuxt-og-image` 6.0.0-beta.15, `satori` 0.15.2, `@resvg/resvg-js` 
 
 Key module source files (in `node_modules/nuxt-og-image/dist/runtime/server/`): `util/eventHandlers.js` (route handler, orchestrates cache then render), `util/cache.js` (`useOgImageBufferCache()`, sets headers, writes to storage), `og-image/satori/renderer.js` (the satori+resvg pipeline), `og-image/satori/instances.js` (WASM singleton management).
 
+## URL Structure
+
+nuxt-og-image encodes all rendering parameters into the URL. The full URL is also the CDN cache key — each unique card gets its own cache entry automatically. Example:
+
+```
+https://cold3.cc/_og/d/c_ProfileCard,title_%F0%9F%A7%94%F0%9F%8F%BB+name8942,sticker_CloudPageServer.2026feb07.SCRPUA5,q_e30,p_Ii9jYXJkL25hbWU4OTQyIg.png?_v=6bc16989-7e10-4dc3-8353-95b3cc6c9b7a
+```
+
+Segments are comma-separated key-value pairs, split on the first `_`:
+
+- **`/_og/d/`** — nuxt-og-image's route prefix. `d` = dynamic (rendered on demand)
+- **`c_ProfileCard`** — which `.satori.vue` component to render (e.g. `HomeCard`, `ProfileCard`)
+- **`title_%F0%9F%A7%94%F0%9F%8F%BB+name8942`** — prop passed to the component. URL-encoded: 🧔🏻 name8942
+- **`sticker_CloudPageServer.2026feb07.SCRPUA5`** — prop. The Sticker string identifying the build
+- **`q_e30`** — query options. Base64 of `{}` (empty object)
+- **`p_Ii9jYXJkL25hbWU4OTQyIg`** — page path. Base64 of `"/card/name8942"`
+- **`.png`** — output format
+- **`?_v=6bc16989-...`** — Nuxt build ID. Cache-busts all cards on redeploy
+
+The URL is fully deterministic: same page + same props = same URL = same cache key. This is why `cacheKey = new Request(url)` in middleware.js works — Cloudflare's Cache API keys on the full URL.
+
 ## How to Test
 
 No local or staging environment — WASM rendering and the Cache API only exist in the production Worker. Every test targets production. The same test must be repeatable before and after each change, so that results are directly comparable.

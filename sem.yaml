@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb10.1754.47710
+  generated: 2026feb10.2341.52251
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -105,8 +105,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
-      current: 3.986.0 on 2026feb09 0m old
-      latest: 3.986.0 on 2026feb09 0m old
+      current: 3.987.0 on 2026feb10 0m old
+      latest: 3.987.0 on 2026feb10 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -117,8 +117,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
-      current: 3.986.0 on 2026feb09 0m old
-      latest: 3.986.0 on 2026feb09 0m old
+      current: 3.987.0 on 2026feb10 0m old
+      latest: 3.987.0 on 2026feb10 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -129,8 +129,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
-      current: 3.986.0 on 2026feb09 0m old
-      latest: 3.986.0 on 2026feb09 0m old
+      current: 3.987.0 on 2026feb10 0m old
+      latest: 3.987.0 on 2026feb10 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -141,8 +141,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
-      current: 3.986.0 on 2026feb09 0m old
-      latest: 3.986.0 on 2026feb09 0m old
+      current: 3.987.0 on 2026feb10 0m old
+      latest: 3.987.0 on 2026feb10 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -313,6 +313,8 @@ modules:
     versions:
       declared: ^1.3.0
       installed: 1.3.0 on 2026jan21 1m old
+      current: 1.3.1 on 2026feb10 0m old
+      latest: 1.3.1 on 2026feb10 0m old
     downloads:
       weekly: 5,524,454
       on: 2026feb4.1825.16236
@@ -337,6 +339,8 @@ modules:
     versions:
       declared: ^7.1.6
       installed: 7.1.6 on 2026feb01 0m old
+      current: 7.1.7 on 2026feb10 0m old
+      latest: 7.1.7 on 2026feb10 0m old
     downloads:
       weekly: 508,960
       on: 2026feb4.1821.46960
@@ -349,6 +353,8 @@ modules:
     versions:
       declared: ^3.3.2
       installed: 3.3.2 on 2026feb01 0m old
+      current: 3.3.3 on 2026feb10 0m old
+      latest: 3.3.3 on 2026feb10 0m old
     downloads:
       weekly: 485,845
       on: 2026feb4.1821.46960

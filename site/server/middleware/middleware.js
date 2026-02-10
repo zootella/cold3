@@ -58,7 +58,8 @@ export default defineEventHandler(async (workerEvent) => {//nuxt runs middleware
 			middlewareCookie(workerEvent)//make sure the browser gets a renewed or filled-in browserTag to keep a user signed in
 			return undefined//continue on to the handler for the route, like a page or api endpoint
 		}
-	} catch (e) { console.error(e); return undefined }//log an error to the cloudflare dashboard, but don't blow up the page, keep going into the handler for this route
+
+	} catch (e3) { console.error('[OUTER]', e3); return undefined }//log an error to the cloudflare dashboard, but don't blow up the page, keep going into the handler for this route
 })
 
 async function middlewareImage(workerEvent) {
