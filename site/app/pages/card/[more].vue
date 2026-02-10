@@ -66,7 +66,7 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 		<Button link :click="hardReload">Browser reload</Button>; or link to a
 		<Button link :click="randomPage">different random page</Button>
 	</p>
-	<p><pre class="whitespace-pre-wrap break-words">{{refFound}}</pre></p>
+	<div><pre class="whitespace-pre-wrap break-words">{{refFound}}</pre></div>
 	<p><img :src="refSource" @load="onImageLoad" /></p>
 </div>
 
