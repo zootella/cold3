@@ -81,7 +81,19 @@ configuration.ogImage = {
 ]
 ```
 
-Dependencies: `nuxt-og-image` 6.0.0-beta.15, `satori` 0.15.2, `@resvg/resvg-js` ^2.6.2, `@resvg/resvg-wasm` ^2.6.2.
+## Dependencies
+
+All toplevel in `site/package.json`. The render pipeline is: nuxt-og-image orchestrates → satori converts HTML/CSS to SVG → resvg rasterizes SVG to PNG.
+
+**`nuxt-og-image`** (6.0.0-beta.15, pinned) — The Nuxt module that orchestrates everything. Handles route registration (`/_og/`), URL encoding, cache headers, and wiring the render pipeline together.
+
+**`satori`** (0.15.2, pinned) — Vercel's library that converts HTML/CSS to SVG. Takes the `.satori.vue` component output and produces an SVG. Uses yoga-wasm internally for flexbox layout.
+
+**`@resvg/resvg-wasm`** (^2.6.2) — Rasterizes the SVG from satori into a PNG. WASM build of the Rust resvg library. This is what runs in the Cloudflare Worker — no native bindings needed.
+
+**`@resvg/resvg-js`** (^2.6.2) — Same rasterizer, native Node.js build via napi-rs. Used during local dev where WASM isn't needed and native is faster.
+
+**`@unhead/vue`** (^2.1.3) — Vue head manager. Injected by `nuxi module add og-image` — load-bearing for og-image's meta tag integration (it's how `defineOgImage()` gets the `og:image` meta tag onto the page).
 
 Key module source files (in `node_modules/nuxt-og-image/dist/runtime/server/`): `util/eventHandlers.js` (route handler, orchestrates cache then render), `util/cache.js` (`useOgImageBufferCache()`, sets headers, writes to storage), `og-image/satori/renderer.js` (the satori+resvg pipeline), `og-image/satori/instances.js` (WASM singleton management).
 
