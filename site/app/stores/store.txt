@@ -27,10 +27,3 @@ causing more data to fill into main store, or another store, and this process to
 and, the whole flow around a hybrid store may be academic, in that:
 (1) you've got mainStore working with universal rendering, it always starts out on the server, and
 (2) pageStore is fine in that it starts out empty on the server and page, and then calls from the page grow it, it just doesn't have a load method
-
-
-
-
-
-
-

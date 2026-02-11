@@ -218,3 +218,40 @@ also, if they say no, but that's the only way you have to identify them, what do
 	what's the minimal ui copy here?
 	Check your email|texts for the code we sent
 
+
+
+
+
+
+
+
+
+================================================================================
+
+
+We've seen this address at another browser: require verification; outcomes verified and signed in
+Address totally new: challenge address but let them in anyway; new user tag; signed into that browser
+
+Then move on to:
+User lifecycle: hide, suspend, delete
+User profile and page, name, status, route, permission to view, to edit
+User rank: fan, creator, staff, god
+User provisional, full
+
+And do more types for addresses:
+Oauth twitter, google,
+MetaMask, wallet connect, rainbow, wagmi, trust wallet, Coinbase wallet, Robinhood wallet
+Totp with qr and protocol, mobile detect
+
+
+
+
+
+================================================================================
+
+
+			reason: 'CoolHard.',
+			explanation: 'We can only send 10 codes in 24 hours.',
+
+				reason: 'CoolSoft.',
+				explanation: 'Must wait 5 minutes between codes.',
