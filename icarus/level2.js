@@ -607,8 +607,6 @@ function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's U
 export function lambda23(route) {//get the url of a Network 23 lambda function route, like '/message' or '/upload', running cloud or local
 	if (isCloud()) {
 		let keys = {
-			'/up2':     'up2 lambda url',
-			'/up3':     'up3 lambda url',
 			'/message': 'message lambda url',//only workers may call these, so we even keep the lambda urls private
 			'/upload':  'upload lambda url, public',//the upload page needs to work with the upload lambda directly
 		}

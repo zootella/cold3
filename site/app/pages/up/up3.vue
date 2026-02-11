@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'column-layout', note: 'on up3'})//upfile
+<script setup> definePageMeta({layout: 'column-layout', note: 'on up3'})
 
 import {
 runTestsSticker,
@@ -13,9 +13,9 @@ onServerPrefetch(async () => {//only runs on the server
 })
 
 const bundle = reactive({summary2: '', summary3: '', summary4: '', duration2: -1, duration3: -1, duration4: -1})
-async function run2(t) { bundle.summary2 = (await runTestsSticker()).summary;           bundle.duration2 = Now()-t }
-async function run3(t) { bundle.summary3 = (await fetchWorker('/api/up/up3w')).summary; bundle.duration3 = Now()-t }
-async function run4(t) { bundle.summary4 = (await fetchWorker('/api/up/up3l')).summary; bundle.duration4 = Now()-t }
+async function run2(t) { bundle.summary2 = (await runTestsSticker()).summary; bundle.duration2 = Now()-t }
+async function run3(t) { bundle.summary3 = (await fetchWorker('/api/up', {body: {action: 'Up3w.'}})).summary; bundle.duration3 = Now()-t }
+async function run4(t) { bundle.summary4 = (await fetchWorker('/api/up', {body: {action: 'Up3l.'}})).summary; bundle.duration4 = Now()-t }
 onMounted(async () => {//only runs on the client
 	let t = Now()//page clock, careful not to mix server and page clocks!
 	run2(t)

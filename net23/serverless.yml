@@ -42,22 +42,6 @@ functions:
       - http:             #BuildRemove   they're here so serverless-offline works for local development
           path: /message  #BuildRemove   deployed, they put lambdas behind api gateway
           method: post    #BuildRemove   but now we're deploying using lambda function urls, which is newer, simpler, cheaper, and secure
-  up2:
-    handler: src/up2.handler
-    timeout: 15
-    url: true
-    events:               #BuildRemove
-      - http:             #BuildRemove
-          path: /up2      #BuildRemove
-          method: post    #BuildRemove
-  up3:
-    handler: src/up3.handler
-    timeout: 15
-    url: true
-    events:               #BuildRemove
-      - http:             #BuildRemove
-          path: /up3      #BuildRemove
-          method: post    #BuildRemove
   upload:
     handler: src/upload.handler
     timeout: 300 #5 minutes, enough time to hash a really big file; lambda function url limit is 15min, up from 30s behind api gateway
