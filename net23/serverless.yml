@@ -34,7 +34,7 @@ provider:
             - s3:GetObject
 
 functions:
-  message:
+  message: #send email and SMS messages with AWS and Twilio/Sendgrid; secured to be used only by workers calling server-to-server
     handler: src/message.handler
     timeout: 90 #seconds
     url: true
@@ -42,7 +42,7 @@ functions:
       - http:             #BuildRemove   they're here so serverless-offline works for local development
           path: /message  #BuildRemove   deployed, they put lambdas behind api gateway
           method: post    #BuildRemove   but now we're deploying using lambda function urls, which is newer, simpler, cheaper, and secure
-  upload:
+  upload: #upload from a page with Uppy; secured to be used only by pages from expected domains calling client-to-server
     handler: src/upload.handler
     timeout: 300 #5 minutes, enough time to hash a really big file; lambda function url limit is 15min, up from 30s behind api gateway
     url: true #ttd january, note that we could configure cors in these, and then amazon's lambda loader would respond to OPTIONS with the preflight before any of our code was even loaded. but since our code must block missing or wrong Origin anyway, we built out the complete CORS dance in doorLambda, and you can test it with $ yarn cors, so here we keep configuration simple and code complete

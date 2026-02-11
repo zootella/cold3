@@ -1,4 +1,4 @@
-<script setup> definePageMeta({layout: 'column-layout', note: 'on card'})//./pages/card/[more].vue
+<script setup> definePageMeta({layout: 'column-layout', note: 'on card'})
 
 import {
 otpGenerate,
@@ -19,6 +19,11 @@ defineOgImage('ProfileCard', {
 const refSource = ref('')
 const refFound = ref('')
 const refDelay = ref(-1)//how many milliseconds it took to generate the new image, or deliver it from the cache
+const refFetchDelay = ref(-1)
+const refCardSource = ref('')
+const refCfCache = ref('')
+const refAge = ref('')
+const refHasCookie = ref(null)
 let whenMounted
 
 onMounted(async () => {//only runs in browser, because document doesn't exist on server render
@@ -41,8 +46,19 @@ onMounted(async () => {//only runs in browser, because document doesn't exist on
 	}
 })
 
-function onImageLoad() {
-	refDelay.value = Now() - whenMounted//end time of the page waiting for the image to arrive, seeing ~1500s for new cards
+async function onImageLoad() {
+	refDelay.value = Now() - whenMounted
+
+	let url = refSource.value
+	if (!url) return
+	let start = Now()
+	let response = await fetch(url, { cache: 'no-store' })
+	refFetchDelay.value = Now() - start
+
+	refCardSource.value = response.headers.get('x-card-source') || '(missing)'
+	refCfCache.value = response.headers.get('cf-cache-status') || '(missing)'
+	refAge.value = response.headers.get('age') || '(missing)'
+	refHasCookie.value = !!response.headers.get('set-cookie')
 }
 
 function randomPage() {
@@ -65,6 +81,13 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 		meta og image delivered to page in {{refDelay}}ms;
 		<Button link :click="hardReload">Browser reload</Button>; or link to a
 		<Button link :click="randomPage">different random page</Button>
+	</p>
+	<p v-if="refFetchDelay >= 0">
+		follow-up fetch {{refFetchDelay}}ms;
+		x-card-source: {{refCardSource}},
+		cf-cache-status: {{refCfCache}},
+		age: {{refAge}}s,
+		set-cookie: {{refHasCookie ? 'present 🔴' : 'absent'}}
 	</p>
 	<div><pre class="whitespace-pre-wrap break-words">{{refFound}}</pre></div>
 	<p><img :src="refSource" @load="onImageLoad" /></p>
