@@ -15,6 +15,7 @@ pageStore.errorDetails = null//and clear the store. This way, if the report atte
 const refButton = ref(null)//using Button to get turnstile for free, but display none hides it in the template
 
 onMounted(async () => {
+	await nextTick()//yield so TurnstileComponent in BottomBar (a later sibling in app.vue) mounts and registers its getToken function before we call post()
 	if (details) {
 		await refButton.value.post('/api/report', {//auto-trigger: Button handles turnstile, doing state, and shows "Reporting..."
 			action: 'PageErrorTurnstile.',
