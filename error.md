@@ -3,7 +3,7 @@
 
 search tag: errorfile
 
-## (a) Design Philosophy
+## Design Philosophy
 
 We divide situations off the happy path into three categories, and each one gets a different treatment.
 
@@ -13,15 +13,15 @@ We divide situations off the happy path into three categories, and each one gets
 
 **The user did something valid but off the happy path.** Typed something that isn't an email, clicked cancel, entered the wrong password, tried a name that's already taken. This is not exceptional -- it's normal behavior that just isn't the success case. We do not throw. We return the outcome as data and the UI reacts through reactive state. On the server, this means `task.finish({success: false, outcome: 'InvalidCredentials.'})` and `return task`. On the client, the store checks `if (!task.success) return` and the component stays rendered with its current state, or shows a message.
 
-## (b) Patterns in Use
+## Patterns in Use
 
 **toss() -- application-level throw.** Defined in `icarus/level0.js`. `toss(message, watch)` throws a `TossError` (a custom Error subclass) carrying context variables for logging. Used on both client and server whenever our own code detects something is wrong. On the server, a toss inside a handler makes doorWorker catch it, log to Datadog, and return a 500. On the client, a toss bubbles through Vue's component tree to the error plugin.
 
-**doorWorker -- server API envelope.** Every server API endpoint is wrapped in `doorWorker()` from `icarus/level2.js`. It has three nested try-catch layers. The inner layer catches any exception from the handler (including toss), saves it to an `error` variable, and passes it to `doorWorkerShut` for clean response building and Datadog logging. If shut itself fails, the middle layer logs that. The outermost layer catches anything else with `console.error('[OUTER]')`. This is the category (b) pattern applied to our own infrastructure -- the handler is treated like potentially-failing code that must not prevent the door from shutting cleanly.
+**doorWorker -- server API envelope.** Every server API endpoint is wrapped in `doorWorker()` from `icarus/level2.js`. It has three nested try-catch layers. The inner layer catches any exception from the handler (including toss), saves it to an `error` variable, and passes it to `doorWorkerShut` for clean response building and Datadog logging. If shut itself fails, the middle layer logs that. The outermost layer catches anything else with `console.error('[OUTER]')`. This is the third-party pattern applied to our own infrastructure -- the handler is treated like potentially-failing code that must not prevent the door from shutting cleanly.
 
 **toss on server becomes a thrown FetchError on client.** When a handler calls `toss()`, doorWorker catches it, logs it, and returns a 500 response. On the client, `fetchWorker` (which uses `$fetch` from ofetch) sees the 500 and throws a `FetchError`. That FetchError bubbles up through the component, hits the `vue:error` hook, the error plugin catches it, and the page blows up. So `toss()` anywhere in server handler code does blow up the page -- it just crosses the HTTP boundary along the way.
 
-**Task outcomes -- structured data, not exceptions.** Server handlers return a Task object with `{success, outcome, ...data}`. `outcome` is a typed string like `'NameNotAvailable.'` or `'WrongPassword.'`. The client checks `task.success` as a boolean -- if false, the UI reacts through refs and computed state (ghosting a button, showing a message). No exceptions involved. This is how category (c) situations flow.
+**Task outcomes -- structured data, not exceptions.** Server handlers return a Task object with `{success, outcome, ...data}`. `outcome` is a typed string like `'NameNotAvailable.'` or `'WrongPassword.'`. The client checks `task.success` as a boolean -- if false, the UI reacts through refs and computed state (ghosting a button, showing a message). No exceptions involved. This is how off-happy-path situations flow.
 
 **Catch-classify-rethrow -- third-party error triage.** Best seen in `WalletDemo.vue`. Every call to wagmi or WalletConnect is wrapped in try-catch. Inside the catch, known error names (`UserRejectedRequestError`, `ProviderNotFoundError`, `ConnectorAlreadyConnectedError`) and keyword patterns (`fetch`, `timeout`, `network`, `expired`) are handled inline with `refInstructionalMessage`. Anything unrecognized gets rethrown so it blows up the page. The `anyIncludeAny()` helper from icarus does fuzzy matching across `e.message` and `e.name`.
 
@@ -33,9 +33,9 @@ We divide situations off the happy path into three categories, and each one gets
 
 **Store load pattern -- silent on expected failure.** Stores like `credentialStore` follow: `if (!task.success) return`. The component stays rendered, and Vue reactivity updates it when store refs change. The store doesn't throw and doesn't show an error -- the task outcome simply doesn't update the refs.
 
-**404 without error.vue.** Profile pages (`[part1]/index.vue`, `[part1]/[part2].vue`) call `setResponseStatus(useRequestEvent(), 404)` when a user isn't found, while still rendering the page normally. The page shows "not found" through reactive state. This is category (c) -- navigating to a nonexistent profile is normal behavior, not an exception.
+**404 without error.vue.** Profile pages (`[part1]/index.vue`, `[part1]/[part2].vue`) call `setResponseStatus(useRequestEvent(), 404)` when a user isn't found, while still rendering the page normally. The page shows "not found" through reactive state. This is the off-happy-path pattern -- navigating to a nonexistent profile is normal behavior, not an exception.
 
-## (c) Nuxt APIs We Use
+## Nuxt APIs We Use
 
 **`app:error` hook.** Registered in `errorPlugin.js`. Fires during SSR failures, plugin initialization errors, and the first hydrate/mount on the client. On the server, the handler logs to Datadog then returns nothing -- Nuxt renders `error.vue`. On the client, it delegates to the same `handleError` function as `vue:error`.
 
@@ -43,29 +43,28 @@ We divide situations off the happy path into three categories, and each one gets
 
 **`showError()`** Triggers Nuxt's fatal error state on the client, causing the entire page to be replaced with `error.vue`. Called from `errorPlugin.js` with `{status: 400, statusText: 'Page error'}`. The guard `if (pageStore.errorDetails)` ensures it's called at most once per error -- subsequent errors while already in error state are logged but don't re-trigger.
 
-**`error.vue`** Nuxt's top-level error page. Renders when `showError()` is called (client) or when an unhandled error occurs during SSR (server). Kept deliberately minimal -- two buttons, no data fetching, no automatic redirects. The "Try to report the error" button navigates to `/error2`, which retrieves the saved details from `pageStore` and POSTs them to `/api/report` with Turnstile protection. The "Reload Site" button does `window.location.replace('/')` -- a hard reload outside Nuxt routing, breaking any potential infinite loop.
+**`error.vue`** Nuxt's top-level error page. Renders when `showError()` is called (client) or when an unhandled error occurs during SSR (server). Kept deliberately minimal -- no custom components, no data fetching, no automatic redirects. Uses only NuxtLink and plain HTML. "Report Error" is a NuxtLink to `/error2`. "Reload Site" is a plain `<a href="/">` -- a full page navigation outside Nuxt routing, equivalent to the browser's reload button.
 
 **`setResponseStatus()`** Sets the HTTP status code during SSR without triggering the error page. Used for 404 on profile pages where the page renders normally with "not found" content.
 
-## (d) Files
+## Files
 
 **Core files about errors:**
 
 ```
 error.md                                  - this document
 site/app/plugins/errorPlugin.js           - global error hooks (app:error, vue:error) and showError()
-site/app/error.vue                        - fatal error page (minimal, two buttons)
-site/app/pages/error2.vue                 - error reporting page wrapper
-site/app/components/pages/Error2Page.vue  - error reporting UI and POST to /api/report
+site/app/error.vue                        - fatal error page (minimal, no custom components)
+site/app/pages/error2.vue                 - error reporting page, auto-submits and reloads
 ```
 
 **Error infrastructure -- the plumbing:**
 
 `site/app/plugins/errorPlugin.js` -- Registers `app:error` and `vue:error` hooks. On the server, logs to Datadog. On the client, saves error details to pageStore and calls `showError()`. This is the single place where uncaught exceptions meet Nuxt's error system.
 
-`site/app/error.vue` -- Nuxt's fatal error page. Minimal by design: two buttons, no data fetching, no redirects. "Try to report the error" navigates to /error2. "Reload Site" does `window.location.replace('/')`.
+`site/app/error.vue` -- Nuxt's fatal error page. Minimal by design: no custom components, no data fetching, no redirects. Uses only NuxtLink and a plain `<a>` tag. "Report Error" navigates to /error2. "Reload Site" is a plain anchor to `/` -- a full page navigation that kills the SPA.
 
-`site/app/pages/error2.vue` and `site/app/components/pages/Error2Page.vue` -- The error reporting page. Reads `pageStore.errorDetails`, POSTs to `/api/report` with Turnstile protection, then offers a hard reload.
+`site/app/pages/error2.vue` -- The error reporting page. On mount, takes `pageStore.errorDetails` into a local variable, clears the store, auto-submits the report via a hidden Button (for Turnstile), then hard-replaces home. If there's nothing to report (user navigated here directly), bounces home immediately.
 
 `site/app/stores/pageStore.js` -- Pinia store that holds `errorDetails` ref. This is the bridge between the error plugin (which saves details) and the error2 page (which reads and reports them).
 
@@ -85,18 +84,20 @@ site/app/components/pages/Error2Page.vue  - error reporting UI and POST to /api/
 
 `site/app/components/small/Button.vue` -- Example of try/finally without catch. Ensures UI cleanup while letting exceptions propagate.
 
-## (e) The Error Flow
+## The Error Flow
 
 Something throws somewhere in the SPA -- a toss, a FetchError from a 500, a TypeError, anything. Nothing catches it. The exception bubbles up through the Vue component tree until it reaches the root.
 
 Nuxt's `vue:error` hook fires (or `app:error` if this happened during startup/SSR). Both are registered in `errorPlugin.js`. The plugin's `handleError` function runs. On the server, it logs to Datadog and returns nothing -- Nuxt renders error.vue in the HTTP response. On the client, it saves the full error details (the exception, component instance, info string) to `pageStore.errorDetails`, then calls `showError({status: 400, statusText: 'Page error'})`.
 
-`showError()` puts the entire SPA into Nuxt's error state. Whatever page was rendered is replaced with `error.vue`. The app is now broken -- some ref might be null, some store might be half-loaded, the component tree that threw is gone. That's fine, because error.vue doesn't try to use any of it. It's deliberately minimal: two buttons, no data fetching, no layout, no stores.
+`showError()` puts the entire SPA into Nuxt's error state. Whatever page was rendered is replaced with `error.vue`. The app is now broken -- some ref might be null, some store might be half-loaded, the component tree that threw is gone. That's fine, because error.vue doesn't try to use any of it. It uses no custom components -- only NuxtLink and a plain `<a>` tag. Anything custom could trip over the same broken state that got us here.
 
-The user has two choices. "Reload Site" calls `window.location.replace('/')` -- a browser-level reset that kills the SPA entirely and starts a fresh page load at the domain root. The error is gone, the broken state is gone, everything starts over.
+The user has two choices. "Reload Site" is a plain `<a href="/">` -- no JavaScript at all, just a full page navigation that kills the SPA entirely and starts a fresh page load at the domain root. The error is gone, the broken state is gone, everything starts over.
 
-Alternatively, the user can click "Try to report the error." This navigates to `/error2`, which is a regular page we made (not a Nuxt convention -- `error.vue` is the Nuxt convention, `error2` is ours). The SPA is still in a broken state, but we're attempting to use it anyway. Error2Page reads `pageStore.errorDetails`, renders a Turnstile-protected "Report Error" button, and POSTs the details to `/api/report`. If that works, the error gets logged for staff and `pageStore.errorDetails` is cleared. If it doesn't work -- if the broken state is so broken that Turnstile or the POST throws -- then the user ends up back at error.vue again (errorPlugin catches the new error).
+Alternatively, the user can click "Report Error." This NuxtLink navigates to `/error2`, which is a regular page we made (not a Nuxt convention -- `error.vue` is the Nuxt convention, `error2` is ours). The SPA is still in a broken state, but we're attempting to use it anyway. On mount, error2 takes `pageStore.errorDetails` into a local variable and immediately clears the store. This clearing is critical: if the report attempt itself throws, errorPlugin's guard (`if (pageStore.errorDetails)`) will see null, process the new error normally, and send the user back to error.vue. Without clearing first, the guard would block the second error.
 
-This is not an infinite loop because every step requires a manual click. The user's click on "Try to report" is the circuit breaker. If reporting keeps failing, the user can just click "Reload Site" (or the browser's own reload button) and start fresh. An automatic report-on-load would risk a tight loop if the reporting itself triggers an error.
+Error2 then auto-submits the report via a hidden Button component (rendered with `v-show="false"` for its Turnstile integration and `.post()` method). If the POST succeeds, the page hard-replaces home. If it throws, errorPlugin catches the new error and the user lands on error.vue again. If there's nothing to report (the user navigated to /error2 directly, or drag-refreshed), it bounces home immediately.
+
+This is not an infinite loop because the only way to reach error2 is by clicking "Report Error" on error.vue. That manual click is the circuit breaker. If reporting keeps failing, the user can click "Reload Site" (or the browser's own reload button) and start fresh.
 
 **Nuxt APIs we do not use, and why.** We do not use `createError()` -- our errors originate as `toss()` or natural exceptions and bubble up to the hooks. `createError` is for when you want Nuxt to control an error's fatality. We don't -- everything is fatal by design. We do not use `clearError()` -- we exit the error state with `window.location.replace('/')`, which is a browser-level reset equivalent to closing the tab and opening a new one. This has zero dependence on Nuxt cleaning up its internal state correctly. After an error that blew up the page, we don't want to gracefully recover within the same app instance -- we want to nuke it and start fresh. We do not use `<NuxtErrorBoundary>` -- we handle third-party errors with try-catch-classify-rethrow, which is more precise than a component boundary. We do not use `useError()` or `useFetch`/`useAsyncData` error refs -- our data fetching goes through `fetchWorker` and Pinia stores.

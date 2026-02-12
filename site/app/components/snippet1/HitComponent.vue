@@ -5,7 +5,7 @@ await flexStore.getHits()
 
 async function clickedHit() {
 	await flexStore.incrementHits()
-	notDefined
+	notDefined//errorfile
 }
 
 </script>
