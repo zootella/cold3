@@ -4,9 +4,9 @@ import {
 
 /*
 "flex" store: a store that may or may not be needed during the server render
+summary of patterns found, ttd february
 
-the problem:
-a component (HitComponent) needs data from the server. if the first GET is to a page containing it,
+[I] the problem: a component (HitComponent) needs data from the server. if the first GET is to a page containing it,
 the data should be in the server-rendered HTML (for crawlers, for the all-at-once first paint). if the
 user arrives on a different page and later navigates to it, the data should be fetched on the client
 without blocking the navigation — the page appears instantly with defaults and fills in when the fetch completes
@@ -28,7 +28,31 @@ what we landed on:
 
 this is hand-rolled. it's suspect that such a fundamental universal rendering pattern isn't prominently
 documented in Nuxt/Pinia guides. we may be missing an idiomatic solution. works mechanically; verifying
-with smoke testing. revisit if a cleaner community-endorsed pattern surfaces, ttd feburary
+with smoke testing. revisit if a cleaner community-endorsed pattern surfaces
+
+[II] toward topic stores: right now our stores are organized by lifecycle role (mainStore = always SSR,
+flexStore = maybe SSR, pageStore = client only). once the pattern is proven, stores should be organized by
+topic instead (posts, credentials, etc.). a single topic store can mix methods in three categories:
+
+1. flex-loaded: might be needed during SSR, might not. uses loaded flag + if (import.meta.server) await p.
+   the initial batch of posts, a user profile — in the HTML if the route calls for it, non-blocking if not
+2. client-only actions: plain await. load-more-on-scroll, form submission, user settings. only happen in
+   response to user interaction, never during SSR. no guards needed
+3. always-SSR: plain await, called from app.vue or a layout always in the render tree. loaded flag prevents
+   re-fetch on hydration. this is the mainStore pattern today
+
+the loaded flag and import.meta.server check can be per-method, not per-store. the store is organized around
+its topic, and each method declares its own relationship to the rendering lifecycle through which pattern it uses
+
+[III] deduplication — two patterns: the loaded flag (used here, mainStore, credentialStore) is coarse: second
+caller returns immediately with no data, no promise. works because Vue reactivity updates the component when the
+store refs change later. on the server this is fine because SSR renders components sequentially — by the time
+the second component renders, the first one's await has completed and the store has data
+
+promise caching (used in renderStore) is finer-grained: second caller awaits the same promise as the first.
+needed when callers want to await the actual result, or when fetches are per-key (different users, different
+posts). see renderStore's mapNormalizedToPromise for the implementation. for topic stores with per-item
+fetches like postStore.getPost(id), this is the pattern to use
 */
 
 export const useFlexStore = defineStore('flexStore', () => {

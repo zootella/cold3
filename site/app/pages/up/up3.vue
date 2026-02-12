@@ -33,5 +33,11 @@ function hardReload() { window.location.reload() }//same as user clicking the br
 <p><code>t{{bundle.duration2}} {{bundle.summary2}}</code></p>
 <p><code>t{{bundle.duration3}} {{bundle.summary3}}</code></p>
 <p><code>t{{bundle.duration4}} {{bundle.summary4}}</code> <Button link :click="hardReload">Reload</Button></p>
+<!--
+tests run everywhere, so they're built into every bundle, so what about the size cost? 🐷
+measured with cd site $ pnpm size 2026feb recently on nuxt 4,
+all of icarus (tests *and* code) is 31kb of the 167kb nuxt entry client bundle
+so, tests are a small part of a bundle that's already small enough
+-->
 
 </template>
