@@ -1,4 +1,6 @@
 
+//search tag: errorfile
+
 export default defineNuxtPlugin((nuxtApp) => {
 
 	//Gets failures during SSR, plugin initialization, and the very first hydrate/mount on the client
@@ -27,8 +29,8 @@ async function handleError(details) {
 			console.error('error plugin', details)//only the user can see this, but often the user is staff
 			pageStore.errorDetails = details//save the detains in the store for error2 to retrieve it
 			showError({//cause the fatal error state, stopping the whole page, and rendering the simple error.vue
-				statusCode: 400,//status code required, even though there's no HTTP; using 400 malformed request to mark an error entirely on the page
-				statusMessage: 'Page error',
+				status: 400,//status code required, even though there's no HTTP; using 400 malformed request to mark an error entirely on the page
+				statusText: 'Page error',
 			})
 		}
 		//on the client, also return nothing; we called show error to put the page into the error.vue fatal error state

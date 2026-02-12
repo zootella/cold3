@@ -1,4 +1,4 @@
-<script setup>
+<script setup>//search tag: errorfile
 
 /*
 error.vue is Nuxt's default error page

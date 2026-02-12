@@ -1,4 +1,5 @@
-<script setup> definePageMeta({layout: 'column-layout', note: 'on error2'})//./pages/error2.vue
+<script setup> definePageMeta({layout: 'column-layout', note: 'on error2'})//search tag: errorfile
+
 //ttd april2025, you probably won't use the regular layout for this error reporting page
 
 </script>

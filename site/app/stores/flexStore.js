@@ -71,16 +71,12 @@ async function incrementHits() {
 }
 
 async function _fetchHit(action) {
-	let task = Task({name: 'hit store fetch'})
-	try {
-		task.response = await fetchWorker('/api/hit', {body: {action}})
-	} catch (e) { task.error = e }
-	task.finish()
-	if (!task.success) throw task//following draft pattern from PostButton, but here, why not just not have the try catch?
+	let t = Now()
+	let response = await fetchWorker('/api/hit', {body: {action}})
 
-	hits.value = task.response.hits
-	duration.value = task.duration
-	sticker.value = task.sticker
+	hits.value = response.hits
+	duration.value = Now() - t
+	sticker.value = Sticker()//will say Local or CloudPageServer on server render, *PageClient after that
 }
 
 return {
