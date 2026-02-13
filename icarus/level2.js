@@ -501,51 +501,35 @@ test(() => {
 // |  _|  __/ || (__| | | |
 // |_|  \___|\__\___|_| |_|
 //                         
-//fetchpass, review
-	/*
-	[i] a summary of our fetch functions
+/*
+fetch ⚾ Three functions for three destinations. fetchWorker talks to our Cloudflare Workers — called from Vue components, Pinia stores, and Nuxt server handlers. fetchLambda talks to our AWS Lambdas — called from workers (with a sealed envelope proving server identity) or directly from pages (without one, since client JavaScript can't hold secrets). fetchProvider talks to third-party APIs — called from workers and lambdas, never from pages.
 
-	use fetchWorker in components and stores; works fine on both server and client in universal rendering
-	use fetchLambda in workers, only; only a worker can POST to the Application Programming Interfaces of Network 23
-	use fetchProvider in workers and lambdas; only trusted code can contact third party providers
+The trust boundary shapes everything. fetchWorker and fetchLambda call our own code, so exceptions throw upward — a 500 from our own endpoint is a bug, and bugs should blow up. fetchProvider calls foreign code. Your handler must wrap the call in try-catch, because a third-party API returning 500 is a Tuesday, not a bug.
 
-	fetchWorker and fetchLambda use Nuxt's $fetch
-	fetchProvider uses $fetch in a worker and ofetch in a lambda
+All three use $fetch or ofetch. $fetch is Nuxt's fetch wrapper around ofetch — same module, but $fetch knows about universal rendering (short-circuits to a function call during SSR instead of an HTTP request), adds the base URL for /api routes, and stringifies JSON. ofetch underneath throws on non-2XX, which is the behavior we want everywhere. fetchWorker and fetchLambda always have $fetch because they always run inside Nuxt. fetchProvider runs in workers (Nuxt, has $fetch) and lambdas (no Nuxt, so we added ofetch directly) — the `const f` ternary picks whichever is available.
 
-	[ii] how exceptions work with these
+fetchWorker forwards the browser tag cookie during SSR. On the first page load, the server renders the page — there's no browser yet, so there's no cookie header on internal fetches. But the worker needs the browser tag to identify the session. Nuxt's SSR context has it (doorWorker extracted it from the original request), so fetchWorker reconstructs the cookie and forwards it. On the client this is unnecessary — the browser sends cookies automatically.
 
-	all three throw exceptions upwards
-	- fetchWorker and fetchLambda call our own code, so we want an exception to continue up the stack
-	- your code using a third party API should try { fetchProvider } catch (e) { logAudit(...) }, catching an exception from an endpoint outsidd of our control
+fetchLambda seals an envelope when called from a worker — a time-limited cryptographic proof that the caller is one of our servers. Pages can't seal envelopes because they don't have the server key. Each page-to-lambda route handles its own authentication instead; the upload page, for instance, obtains a permissionEnvelope from the worker first and includes it in every lambda call.
 
-	[iii] behaviors and protections our fetch functions add
+fetchProvider is deliberately minimal — doesn't default a method, doesn't makePlain the body, doesn't add headers. Third-party APIs vary too much. The pattern for using it:
 
-	generally:
-	- default or mandatory POST method
-	- forward browser tag cookie so the server rendering from the very first GET works
-	- make the body a POJO so stringification done later doesn't blow up
-	fetchLambda:
-	- include the Network 23 sealed envelope
-	fetchProvider:
-	- pick which fetch function to call depending on what's available where we're running
+	let task = Task({name: 'example'})
+	try {
+		task.response = await fetchProvider({url, options: {
+			method: 'POST',
+			headers: {},
+			body: makePlain(body),
+		}})
+		if (task.response.success && hasText(task.response.id)) task.success = true
+	} catch (e) { task.error = e }
+	task.finish()
+	return task
 
-	[iv] below that, what calls what, adding which features
+Wrap in try-catch because foreign APIs fail. Call makePlain yourself because the body might be FormData or a string, not always JSON. Examine the response and set task.success on proof it worked. Return the task — matches the shape of your own endpoint responses.
 
-	$fetch, from Nuxt:
-	- knows about Nuxt's universal rendering, short circuiting to a function call when a component or store is SSR
-	- adds the base URL for API routes
-	and calls ofetch, formerly ohmyfetch, https://www.npmjs.com/package/ofetch 1.7 million weekly downloads, which:
-	- stringifies and parses the JSON body
-	- throws errors for non-2XX response codes
-	- has more features Nuxt might be using, like request and response interceptors, and retry and timeout features
-	which calls the browser's native fetch()
-
-	[v] nearby alternatives in JavaScriptland that we're *not* using
-
-	Nuxt's useFetch and useAsyncData, which knows about universal rendering and returns reactive data
-	Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the browser tag cookie manually
-	other multi million download npm libraries, like axios, node-fetch, ky, and superagent
-	*/
+We don't use Nuxt's useFetch or useAsyncData — those return reactive refs for data that renders into the page; our fetching goes through Pinia stores with their own loading state. We don't use useRequestFetch — fetchWorker forwards the browser tag cookie manually, which is the only header that matters. We don't use axios, node-fetch, ky, or superagent — ofetch is already in the tree via Nuxt, throws on non-2XX by default, and does everything we need.
+*/
 
 export async function fetchWorker(route, action, body = {}) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRoute(route); checkAction(action)
@@ -558,7 +542,7 @@ export async function fetchWorker(route, action, body = {}) {//from a Pinia stor
 	let headers = browserTag ? {cookie: `${composeCookieName()}=${composeCookieValue(browserTag)}`} : {}
 
 	const f = $fetch//used from Nuxt front end, so we always have Nuxt's $fetch
-	return await f(route, {method: 'POST', headers, body})//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
+	return await f(route, {method: 'POST', headers, body})//throws if worker responds non-2XX; worker is first-party so that's what we want
 }
 export async function fetchLambda({from, route, action, body = {}}) {//fetch to a Network 23 Lambda from a worker (with sealed envelope) or page (without)
 	checkActions({action: from, actions: ['Page.', 'Worker.']}); checkRoute(route); checkAction(action)
@@ -577,30 +561,6 @@ export async function fetchProvider({url, options}) {//from a worker or lambda, 
 	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
 }
 
-//fetchpass, review
-	/*
-	fetchWorker and fetchLambda talk to your own endpoints; fetchProvider is for third-party APIs, so the pattern is different:
-	(1) your own endpoints respond with a task as the body; here, make your own task at the top
-	(2) if your own endpoints respond 500, you *want* to keep throwing upwards; here instead, use a try{} block to protect yourself from third-party behavior outside your control
-	(3) fetchWorker and fetchLambda use POST by default; here, you must set the method explicitly
-	(4) you might need to include some headers
-	(5) fetchWorker and fetchLambda call makePlain(body) to avoid stringification exceptions, and can do this because with your own endpoints, the body is always JSON; here, body might be text or multipart form, so you have to call makePlain() if you need to
-	(6) examine the response from the third-party API, and set task.success upon proof it worked
-	(7) returning the wrapped task matches returning the response body task from one of your own endpoints
-
-	let task = Task({name: 'fetch example'})//(1)
-	try {//(2)
-		task.response = await fetchProvider({url, options: {
-			method: 'POST',//(3)
-			headers: {},//(4)
-			body: makePlain(body),//(5)
-		}})
-		if (task.response.success && hasText(task.response.otherDetail)) task.success = true//(6)
-	} catch (e) { task.error = e }
-	task.finish()
-	if (!task.success) toss('act apporpriately for a failed result')
-	return task//(7)
-	*/
 export function lambda23(route) {//get the url of a Network 23 lambda function route, like '/message' or '/upload', running cloud or local
 	if (isCloud()) {
 		let keys = {
