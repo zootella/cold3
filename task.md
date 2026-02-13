@@ -57,6 +57,55 @@ These need individual attention:
 
 **level2.js checkTurnstileToken** — On failure, audits and tosses with `{task}`. Change to pass relevant pieces directly.
 
+## Stage 3b: The OTP and messaging chain
+
+The remaining five `Task(` calls live in one connected chain: a user requests a code on the page, the worker validates and calls `otpSend` in level3.js, which calls the lambda's `sendMessage` in persephone.js, which calls one of four third-party APIs. Each level creates its own Task, and they all need converting.
+
+### persephone.js sendMessage
+
+The deepest call site. sendMessage creates a Task, passes it as a mutable accumulator into one of four provider functions (`sendMessageAmazonEmail`, `sendMessageTwilioEmail`, `sendMessageAmazonPhone`, `sendMessageTwilioPhone`), catches errors, finishes, audits, and returns the whole thing.
+
+The Task here serves as a bag of: `.parameters` (from/to addresses derived from inputs), `.request` (provider-specific request shape), `.response` (raw API response), `.success` (set by each provider function after inspecting the response), and `.error` (caught exception). The provider functions read from `task.parameters` and write to `task.request`, `task.response`, and `task.success`.
+
+Refactor: replace `Task(...)` with a plain object. The `.parameters` property stays — it's how the provider functions get their inputs. Keep `.request`, `.response`, `.error` for the audit log. Add manual `.duration`. The four provider functions change `task` → `task` (same parameter name is fine — it's still a plain object they mutate). The `task.finish()` call becomes `task.duration = Now() - t`. The audit log `logAudit('message', {task})` stays as-is since it's logging a plain object now.
+
+The caller in message.js does `return await sendMessage(...)` — the return value flows through doorLambdaShut's `makePlain()`. With Task gone it's already plain, so makePlain is a harmless no-op. The worker caller (otpSend, line 230) does `await fetchLambda(...)` and discards the result.
+
+### level3.js otpSend
+
+Two Task calls in this function:
+
+1. **Line 198: `Task({name: 'otp permit'})`** — Created at the top, used for early returns when rate limiting. The properties read by the caller (otp.js) are `.success` and `.reason` (`'CoolHard.'` or `'CoolSoft.'`). Then at line 264 this task is thrown away and a new one is created for the success path. Refactor: replace with `return {success: false, reason: 'CoolHard.'}` directly. No accumulator needed.
+
+2. **Line 264: `Task({name: 'otp send'})`** — Created only on the success path (after sending). Just `task.success = true; return task`. Becomes `return {success: true}`.
+
+### level3.js otpEnter
+
+One Task call at line 271. Every branch returns the task with `.success` and optionally `.reason` and `.lives`. All early returns. Refactor: direct `return {success: false, reason: 'Expired.'}` or `return {success: false, reason: 'Wrong.', lives}` or `return {success: true}`.
+
+### otp.js doorHandleBelow
+
+The consumer of otpSend and otpEnter. Three branches set `let task`:
+
+- `SendTurnstile.` → `task = await otpSend(...)` — gets a response object
+- `FoundEnvelope.` → `task = Task({name: 'otp found envelope'}); task.success = true` — becomes `task = {success: true}`
+- `Enter.` → `task = await otpEnter(...)` — gets a response object
+
+After the branches, shared code pins `.envelope` and `.otps` onto the task, then `task.finish(); return task`. With plain objects this becomes `task.success = true` (wait — success is already set by each branch). Actually, the shared code doesn't set success — each branch already has it. The `task.finish()` call currently runs bubble-up logic, but every branch already sets `.success` explicitly, so it's inert. Remove `task.finish()` and just `return task`.
+
+The page components read from the response: `.otps` (array of challenge info), `.envelope` (encrypted cookie), `.success` (checked implicitly by fetchWorker), `.reason` (`'CoolSoft.'`, `'CoolHard.'`, `'Wrong.'`, `'Expired.'`), and `.lives` (remaining guesses).
+
+### Execution order
+
+Work bottom-up:
+
+1. **persephone.js sendMessage** — convert Task to plain object, keep the provider function pattern, keep audit
+2. **level3.js otpSend** — replace two Task calls with direct returns
+3. **level3.js otpEnter** — replace Task with direct returns
+4. **otp.js** — replace FoundEnvelope Task with `{success: true}`, remove `task.finish()`, rename `task` to `response`
+
+After these four, zero `Task(` calls remain outside the definition itself. Stage 5 cleanup can proceed.
+
 ## Stage 4: Standardize response conventions
 
 After Task is gone, establish naming conventions for return objects. Not enforced, not a class — just uniform patterns across handlers.
