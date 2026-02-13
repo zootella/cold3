@@ -28,7 +28,7 @@ const computedState = computed(() => {
 })
 
 async function onClick() {
-	let response = await Worker('/otp', 'Enter.', {
+	let response = await fetchWorker('/otp', 'Enter.', {
 		tag: props.otp.tag,//hidden from the user but kept with the form
 		guess: takeNumerals(refGuess.value),
 		envelope: refCookie.value,//give the server back it's encrypted envelope, which we kept through a browser refresh in a cookie

@@ -25,11 +25,11 @@ The app is now broken. Some ref is null, some store is half-loaded, the componen
 
 "Reload Site" is a plain <a href="/"> -- no JavaScript, just a full page navigation that kills the SPA and starts fresh. "Report Error" navigates to /error2, a regular page (not a Nuxt convention) that attempts to use the broken SPA to report what happened. On mount, error2 takes the error details from the store into a local variable and immediately clears the store. This clearing matters: if the report itself throws, errorPlugin's guard (if pageStore.errorDetails) sees null, processes the new error normally, and sends the user back to error.vue. Without clearing first, the guard would block the second error.
 
-Error2 auto-submits the report via a hidden Button (for Turnstile and Worker), then hard-replaces home. If the POST throws, errorPlugin catches it and the user lands on error.vue again. If there's nothing to report (direct navigation or drag-refresh), it bounces home immediately.
+Error2 auto-submits the report via a hidden Button (for Turnstile and fetchWorker), then hard-replaces home. If the POST throws, errorPlugin catches it and the user lands on error.vue again. If there's nothing to report (direct navigation or drag-refresh), it bounces home immediately.
 
 This is never an infinite loop. The only path to error2 is the user's click on error.vue. That manual click is the circuit breaker.
 
-We follow Nuxt's intended error patterns -- hooks, showError(), error.vue -- but we don't use all of them. We don't use createError() -- our errors originate as toss() or natural exceptions. We don't use clearError() -- we exit error state with a full page navigation that has zero dependence on Nuxt cleaning up correctly. We don't use NuxtErrorBoundary -- try-catch-classify-rethrow is more precise. We don't use useError() or useFetch/useAsyncData error refs -- our data fetching goes through Worker and Pinia stores.
+We follow Nuxt's intended error patterns -- hooks, showError(), error.vue -- but we don't use all of them. We don't use createError() -- our errors originate as toss() or natural exceptions. We don't use clearError() -- we exit error state with a full page navigation that has zero dependence on Nuxt cleaning up correctly. We don't use NuxtErrorBoundary -- try-catch-classify-rethrow is more precise. We don't use useError() or useFetch/useAsyncData error refs -- our data fetching goes through fetchWorker and Pinia stores.
 */
 
 </script>

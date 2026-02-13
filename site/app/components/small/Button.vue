@@ -40,7 +40,7 @@ async function onClick() {
 
 const refButton = ref(null)
 async function onClick() {
-	await refButton.value.post('/endpoint', 'Action.', {name: refName.value})//use Button's .post() method instead of Worker()
+	await refButton.value.post('/endpoint', 'Action.', {name: refName.value})//use Button's .post() method instead of fetchWorker()
 }
 
 <Button :useTurnstile="true" :click="onClick" ref="refButton">Submit</Button>
@@ -81,14 +81,14 @@ defineExpose({//exposes methods to parent via template ref; super useful and sta
 	click: async () => {//lets @keyup.enter do the same thing as clicking the button
 		await onClick()//call the same thing that our template does below when the user clicks the html button
 	},
-	post: async (path, action, body) => {//if you're using turnstile, call .post() instead of Worker(); we add the token for you
+	post: async (path, action, body) => {//if you're using turnstile, call .post() instead of fetchWorker(); we add the token for you
 		if (!body) body = {}
 		if (props.useTurnstile && useTurnstileHere()) {
 			body.turnstileToken = await pageStore.getTurnstileToken()//this can take a few seconds
 		}
-		return await Worker(path, action, body)//throws on non-2XX; button remains doing but whole page enters error state
+		return await fetchWorker(path, action, body)//throws on non-2XX; button remains doing but whole page enters error state
 	},
-	getTurnstileToken: async () => {//get turnstile token to pass to store methods that use Worker directly
+	getTurnstileToken: async () => {//get turnstile token to pass to store methods that use fetchWorker directly
 		if (props.useTurnstile && useTurnstileHere()) {
 			return await pageStore.getTurnstileToken()//this can take a few seconds
 		} else { return '' }

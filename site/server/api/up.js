@@ -8,7 +8,7 @@ export default defineEventHandler(async (workerEvent) => {
 })
 async function doorHandleBelow({door, body, action}) {
 
-	if (action == 'Up2.')  return {success: true, note: (await Lambda({from: 'Worker.', route: '/message', action: 'Up2.'})).note}
+	if (action == 'Up2.')  return {success: true, note: (await fetchLambda({from: 'Worker.', route: '/message', action: 'Up2.'})).note}
 	if (action == 'Up3Worker.') return {success: true, summary: (await runTestsSticker()).summary}
-	if (action == 'Up3Lambda.') return {success: true, summary: (await Lambda({from: 'Worker.', route: '/message', action: 'Up3.'})).summary}
+	if (action == 'Up3Lambda.') return {success: true, summary: (await fetchLambda({from: 'Worker.', route: '/message', action: 'Up3.'})).summary}
 }

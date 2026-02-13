@@ -547,10 +547,7 @@ test(() => {
 	other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 	*/
 
-export const fetchWorker = noop
-export const fetchLambda = noop//placeholders so we don't have to change exports right away
-
-export async function Worker(route, action, body = {}) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
+export async function fetchWorker(route, action, body = {}) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRoute(route); checkAction(action)
 
 	route = '/api'+route
@@ -562,7 +559,7 @@ export async function Worker(route, action, body = {}) {//from a Pinia store, Vu
 
 	return await $fetch(route, {method: 'POST', headers, body})//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
 }
-export async function Lambda({from, route, action, body = {}}) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
+export async function fetchLambda({from, route, action, body = {}}) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
 	checkAction(from); checkRoute(route); checkAction(action)
 
 	body = makePlain({...body, action})

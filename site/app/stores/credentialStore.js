@@ -23,61 +23,61 @@ function apply(task) {//update all refs from response - called after any action 
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
-	let task = await Worker('/credential', 'Get.')
+	let task = await fetchWorker('/credential', 'Get.')
 	apply(task)
 }
 
 async function signOut() {
-	let task = await Worker('/credential', 'SignOut.')
+	let task = await fetchWorker('/credential', 'SignOut.')
 	apply(task)
 }
 
 async function checkName({name1, name2, turnstileToken}) {
-	let task = await Worker('/credential', 'CheckNameTurnstile.', {name1, name2, turnstileToken})
+	let task = await fetchWorker('/credential', 'CheckNameTurnstile.', {name1, name2, turnstileToken})
 	return task.nameIsAvailable
 }
 
 async function signUpAndSignIn({name1, name2, hash, cycles, turnstileToken}) {
-	let task = await Worker('/credential', 'SignUpAndSignInTurnstile.', {name1, name2, hash, cycles, turnstileToken})
+	let task = await fetchWorker('/credential', 'SignUpAndSignInTurnstile.', {name1, name2, hash, cycles, turnstileToken})
 	apply(task)
 	return task
 }
 
 async function getPasswordCycles({userIdentifier, turnstileToken}) {//returns cycles for sign-in attempt, not stored (pre-auth, for target user not current user)
-	let task = await Worker('/credential', 'GetPasswordCyclesTurnstile.', {userIdentifier, turnstileToken})
+	let task = await fetchWorker('/credential', 'GetPasswordCyclesTurnstile.', {userIdentifier, turnstileToken})
 	return task
 }
 
 async function signIn({userIdentifier, hash}) {
-	let task = await Worker('/credential', 'SignIn.', {userIdentifier, hash})
+	let task = await fetchWorker('/credential', 'SignIn.', {userIdentifier, hash})
 	apply(task)
 	return task
 }
 
 async function setName({name1, name2}) {
-	let task = await Worker('/credential', 'SetName.', {name1, name2})
+	let task = await fetchWorker('/credential', 'SetName.', {name1, name2})
 	apply(task)
 	return task
 }
 
 async function removeName() {
-	let task = await Worker('/credential', 'RemoveName.')
+	let task = await fetchWorker('/credential', 'RemoveName.')
 	apply(task)
 }
 
 async function setPassword({currentHash, newHash, newCycles}) {
-	let task = await Worker('/credential', 'SetPassword.', {currentHash, newHash, newCycles})
+	let task = await fetchWorker('/credential', 'SetPassword.', {currentHash, newHash, newCycles})
 	apply(task)
 	return task
 }
 
 async function removePassword() {
-	let task = await Worker('/credential', 'RemovePassword.')
+	let task = await fetchWorker('/credential', 'RemovePassword.')
 	apply(task)
 }
 
 async function closeAccount() {
-	let task = await Worker('/credential', 'CloseAccount.')
+	let task = await fetchWorker('/credential', 'CloseAccount.')
 	apply(task)
 }
 

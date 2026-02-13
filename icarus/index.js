@@ -153,7 +153,7 @@ awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 sayFloppyDisk, runTestsSticker,
 
-Task, Worker, Lambda, fetchWorker, fetchLambda, fetchProvider,
+Task, fetchWorker, fetchLambda, fetchProvider,
 originOauth, originApex, lambda23,
 sealEnvelope, openEnvelope,
 composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,

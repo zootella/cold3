@@ -22,7 +22,7 @@ const computedState = computed(() => {
 async function clicked(action) {
 	refDoing.value = true
 	let t = Now()
-	let r = await Worker('/trail', action, {message: refMessage.value})
+	let r = await fetchWorker('/trail', action, {message: refMessage.value})
 	refNow.value = sayTick(t)
 	refDuration.value = Now() - t
 

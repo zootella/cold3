@@ -23,7 +23,7 @@ bundleValid, validateEmailOrPhone,
 } from './level1.js'
 import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
-Task, Worker, Lambda, fetchWorker, fetchLambda, fetchProvider, Key,
+Task, fetchWorker, fetchLambda, fetchProvider, Key,
 
 /* level 2 query */
 SQL, grid, getDatabase,
@@ -227,7 +227,7 @@ export async function otpSend({letter, v, provider, browserHash}) {
 
 	// 📬 Step 3 Send: Have Network 23 actually send the email or SMS
 	if (!isInSimulationMode()) {//ttd january, have grid tests work but not actually send messages or need net23 local running
-		await Lambda({from: 'Worker.', route: '/message', action: 'Send.', body: {
+		await fetchLambda({from: 'Worker.', route: '/message', action: 'Send.', body: {
 			provider: o.provider,
 			service: o.address.type,//"Email." or "Phone." from verifyEmailOrPhone
 			address: o.address.f1,//form 1, canonical, for use with APIs

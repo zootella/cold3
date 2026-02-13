@@ -27,7 +27,7 @@ async function onPasswordEnter() {
 		saltData: Data({base62: Key('password, salt, public')}),
 	})
 	refStatus.value = 'Checking...'
-	let response = await Worker('/media', 'MediaUploadPermission.', {hash})
+	let response = await fetchWorker('/media', 'MediaUploadPermission.', {hash})
 	if (response.success) {
 		refPermissionEnvelope.value = response.permissionEnvelope//now we've got the envelope we'll use to talk to the lambda directly
 		await mount()
@@ -35,7 +35,7 @@ async function onPasswordEnter() {
 }
 
 async function lambda(body) {
-	//ttd february, here's the argument soon for Lambda({from: 'Page.', route, action, body})
+	//ttd february, here's the argument soon for fetchLambda({from: 'Page.', route, action, body})
 	return await $fetch(lambda23('/upload'), {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls; here, the page needs to use the /upload lambda directly
 		method: 'POST',
 		body: {...body, permissionEnvelope: refPermissionEnvelope.value},
@@ -114,7 +114,7 @@ async function mount() {
 			t3 = Now()
 			log(`#️⃣ page hashed ${saySize4(upload.file.size)} in ${commas(t3 - t2)}ms (${commas(Math.round(upload.file.size / (t3 - t2)))} bytes/ms)`, `tip hashed in ${t2 - t1}ms`, `tip ${upload.tipHash} and ${upload.pieceHash} piece hashes`)
 
-			let response = await Worker('/media', 'MediaUploadHash.', {
+			let response = await fetchWorker('/media', 'MediaUploadHash.', {
 				name: upload.file.name, size: upload.file.size,
 				tipHash: upload.tipHash, pieceHash: upload.pieceHash,
 			})//again fast, tell the worker the hashes we got; ttd january it'll look in the database to see if the bucket already has the file, for instance, and, if so, we can short-circuit to success through uppy to the file manager for the user on the page
@@ -138,7 +138,7 @@ async function mount() {
 		log(`#️⃣ lambda hashed ${saySize4(upload.file.size)} in ${commas(result.duration)}ms (${commas(Math.round(upload.file.size / result.duration))} bytes/ms)`, `tip ${result.tipHash} and ${result.pieceHash} piece hashes`)//page on mac can do 200k bytes/ms; lambda 50k bytes/ms so 1gb file takes 20s, near the 30s API Gateway ceiling
 
 		//report everything to Worker including Lambda's attestation
-		await Worker('/media', 'MediaUploadHash.', {
+		await fetchWorker('/media', 'MediaUploadHash.', {
 			tag: upload.tag,
 			name: upload.file.name,
 			size: upload.file.size,

@@ -16,7 +16,7 @@ const serverDuration = ref(-1)//within that, how long the server took to get tog
 
 const loaded = ref(false)//prevent unnecessary reload on client after rendered and bridged from server
 async function load() { if (loaded.value) return; loaded.value = true//runs on the server first, then a no-op on the client
-	let r = await Worker('/load', 'Get.')
+	let r = await fetchWorker('/load', 'Get.')
 	serverDuration.value = r.duration//save the duration measured by the server (well, in SSR this is the server, too, but still)
 }
 async function mounted() {//runs on the client, only, when app.vue is mounted
@@ -29,7 +29,7 @@ async function mounted() {//runs on the client, only, when app.vue is mounted
 	)
 	pageDuration.value = Math.floor(performance.now())//whole milliseconds since the browser began navigating to the site
 	log(`server render took ${serverDuration.value}ms ⏱️ ${pageDuration.value}ms navigation to mounted 🧾 ${w}`)//log to browser console, even deployed
-	await Worker('/report', 'Hello.', {
+	await fetchWorker('/report', 'Hello.', {
 		sticker: Sticker(),
 		d1: pageDuration.value,//biggest first
 		d2: serverDuration.value,//details within

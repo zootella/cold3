@@ -17,7 +17,7 @@ onMounted(async () => {
 	}
 
 
-	let response = await Worker('/totp', 'Status.')
+	let response = await fetchWorker('/totp', 'Status.')
 	log('response from Status.', look(response))
 	/*
 	possibilities at the start:
@@ -50,7 +50,7 @@ const refCode = ref('')
 const refButton = ref(null)
 
 async function onEnroll() {
-	let response = await Worker('/totp', 'Enroll1.')
+	let response = await fetchWorker('/totp', 'Enroll1.')
 	log('response from enroll 1', look(response))
 	if (response.outcome == 'Candidate.') {
 
@@ -68,7 +68,7 @@ async function onEnroll() {
 }
 
 async function onValidate() {
-	let response = await Worker('/totp', 'Enroll2.', {
+	let response = await fetchWorker('/totp', 'Enroll2.', {
 		envelope: refCookie.value,
 		code: refCode.value,
 	})
