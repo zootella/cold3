@@ -44,15 +44,28 @@ topic instead (posts, credentials, etc.). a single topic store can mix methods i
 the loaded flag and import.meta.server check can be per-method, not per-store. the store is organized around
 its topic, and each method declares its own relationship to the rendering lifecycle through which pattern it uses
 
-[III] deduplication — two patterns: the loaded flag (used here, mainStore, credentialStore) is coarse: second
-caller returns immediately with no data, no promise. works because Vue reactivity updates the component when the
-store refs change later. on the server this is fine because SSR renders components sequentially — by the time
-the second component renders, the first one's await has completed and the store has data
+[III] deduplication — three tiers, from simplest to most capable
 
-promise caching (used in renderStore) is finer-grained: second caller awaits the same promise as the first.
-needed when callers want to await the actual result, or when fetches are per-key (different users, different
-posts). see renderStore's mapNormalizedToPromise for the implementation. for topic stores with per-item
-fetches like postStore.getPost(id), this is the pattern to use
+the loaded flag (used here, mainStore, credentialStore) means "never run again." multiple components can read
+the same store ref, so they don't need a return value from the function — they subscribe to the ref. when
+HitComponent appears twice on a page, both bind to flexStore.hits. the loaded flag prevents a second fetch:
+loaded.value = true runs synchronously before any yield, so the second caller returns immediately regardless
+of timing. the first fetch completes in the background, updates the ref, and Vue's reactivity delivers the
+result to every bound component at once. on the server this is even simpler — SSR renders sequentially, so by
+the time the second component renders, the first one's await has completed and the store already has data
+
+sequentialShared (defined in icarus, not yet used in any store) solves a different problem: not "never run
+again" but "don't overlap." it wraps an async function so concurrent callers share one in-flight promise, but
+allows fresh calls after it resolves. you'd reach for it when a method should be callable more than once — a
+refresh, a polling loop, a retry — but simultaneous calls should coalesce into one network request. any future
+store method that re-fetches without a permanent loaded guard would need it
+
+renderStore.getUser() goes a step further. it deduplicates per key — two components requesting the same user
+share one fetch, while requests for different users proceed independently. this requires a map of promises, not
+a single variable, so sequentialShared doesn't fit. on top of the transient promise map sits a permanent result
+cache (mapNormalizedToUser): once a user is fetched, the object is stored and future calls return it without
+touching the network. two tiers, one transient and one permanent, keyed by normalized name. for topic stores
+with per-item fetches like postStore.getPost(id), this is the pattern to use
 */
 
 export const useFlexStore = defineStore('flexStore', () => {

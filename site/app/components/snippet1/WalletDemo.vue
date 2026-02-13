@@ -6,7 +6,7 @@ sayTick, originApex, anyIncludeAny,
 } from 'icarus'
 
 /*
-ttd december, notes before moving stuff here in WalletDemo to stores/page2.js
+ttd december, notes before moving stuff here in WalletDemo to the right pinia store
 
 for coding and smoke testing right now, all this state is in a component
 in a moment, we'll refactor much of this from here into a pinia store
