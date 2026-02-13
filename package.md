@@ -1,5 +1,5 @@
 
-# Essays and guides
+# Essays, guides, and notes about scaffolding, frameworks, and packages
 
 ## 🥀 Code rot
 
