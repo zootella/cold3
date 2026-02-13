@@ -501,6 +501,7 @@ test(() => {
 // |  _|  __/ || (__| | | |
 // |_|  \___|\__\___|_| |_|
 //                         
+//fetchpass, review
 	/*
 	[i] a summary of our fetch functions
 
@@ -546,46 +547,39 @@ test(() => {
 	other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 	*/
 
-export async function Worker(url, action, body) {
-	return await fetchWorker('/api' + url, {body: {...body, action}})
-}
-export async function Lambda(url, action, body) {
-	return await fetchLambda(url, {body: {...body, action}})
-}
+export const fetchWorker = noop
+export const fetchLambda = noop//placeholders so we don't have to change exports right away
 
-export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
-	checkRelativeUrl(url)
-	if (!options) options = {}//totally fine to call fetchWorker('/hello') with no options; we'll prepare an empty request body
-	if (!options.method) options.method = 'POST'//allow get, but default to post
-	if (!options.body) options.body = {}
+export async function Worker(route, action, body = {}) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
+	checkRoute(route); checkAction(action)
+
+	route = '/api'+route
+	body = makePlain({...body, action})//$fetch automatically stringifies, but would throw on a method or circular reference
 
 	let browserTag//with universal rendering, we may already be on the server! if so, we must forward the browser tag cookie
 	if (import.meta.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag
-	if (browserTag) {
-		if (!options.headers) options.headers = {}
-		options.headers.cookie = `${composeCookieName()}=${composeCookieValue(browserTag)}`
-	}
+	let headers = browserTag ? {cookie: `${composeCookieName()}=${composeCookieValue(browserTag)}`} : {}
 
-	options.body = makePlain(options.body)//$fetch automatically stringifies, but would throw on a method or circular reference
-	return await $fetch(url, options)//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
+	return await $fetch(route, {method: 'POST', headers, body})//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
 }
-export async function fetchLambda(url, options) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
-	checkRelativeUrl(url)
-	if (!options) options = {}
-	options.method = 'POST'//force post
-	if (!options.body) options.body = {}
-	options.body = makePlain(options.body)
-	options.body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})
-	return await $fetch(lambda23(url), options)
+export async function Lambda({from, route, action, body = {}}) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
+	checkAction(from); checkRoute(route); checkAction(action)
+
+	body = makePlain({...body, action})
+	body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})
+
+	return await $fetch(lambda23(route), {method: 'POST', body})
 }
-export async function fetchProvider(url, options) {//from a worker or lambda, fetch to a third-party REST API
-	checkAbsoluteUrl(url)
+export async function fetchProvider({url, options}) {//from a worker or lambda, fetch to a third-party REST API
+	checkUrl(url)
 	checkText(options.method)//must explicitly indicate method
 
 	let f = typeof $fetch == 'function' ? $fetch : ofetch//nuxt and nitro define $fetch; elsewhere fall back to ofetch which matches
 
 	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
 }
+
+//fetchpass, review
 	/*
 	fetchWorker and fetchLambda talk to your own endpoints; fetchProvider is for third-party APIs, so the pattern is different:
 	(1) your own endpoints respond with a task as the body; here, make your own task at the top
@@ -598,19 +592,17 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 
 	let task = Task({name: 'fetch example'})//(1)
 	try {//(2)
-		task.response = await fetchProvider(url, {
+		task.response = await fetchProvider({url, options: {
 			method: 'POST',//(3)
 			headers: {},//(4)
 			body: makePlain(body),//(5)
-		})
+		}})
 		if (task.response.success && hasText(task.response.otherDetail)) task.success = true//(6)
 	} catch (e) { task.error = e }
 	task.finish()
 	if (!task.success) toss('act apporpriately for a failed result')
 	return task//(7)
 	*/
-function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
-function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
 export function lambda23(route) {//get the url of a Network 23 lambda function route, like '/message' or '/upload', running cloud or local
 	if (isCloud()) {
 		let keys = {
@@ -629,59 +621,15 @@ export function originApex()  { return isCloud() ? `https://${Key('domain, publi
 //similarly, the sveltekit site for oauth has these origins for cloud and local, and the main Nuxt site is at the apex domain
 //serverless framework's default port is 3000, but we customized to 4000; Nuxt has Nitro's default 3000; SvelteKit has Vite's default 5173, same as vite running icarus
 
+function checkUrl(s) { checkText(s); new URL(s) }//the browser's URL constructor will throw if the given text is not an absolute URL
+function checkRoute(s) { checkText(s); if (!s.startsWith('/')) toss('form', {s}) }//confirm a route that starts with slash like "/hi"
+function checkAction(s) { checkText(s); if (!s.endsWith('.')) toss('form', {s}) }//confirm an action that ends with period like "Get."
 
 
 
 
 
 
-
-	/*
-	notes coming back here months later, ttd december
-	ok both fetchWorker and fetchLambda are convenience wrappers on top of $fetch, that's fine
-	but in use, you want them to work differently, to be more convenient
-	url should be route, it's not a complete url, right?
-	POST should be required; if you're adding GET to workers, you'll have to go back in here and change things for that
-	let task = await fetchWorker('/api/name', 'Status.', {count: 7})
-	action should be explicit and required
-	i think you don't need to expose options, just body
-	should this return a task, and then you do task.response, even though if there's an exception it throws rather than pins, that would get you the duration time without you having to measure it yourself
-	ok but looking at this now you also wrote it this way to align with fetchProvider, where you do need options, so you could do another layer on top of fetchWorker and fetchLambda like postWorker() and postLambda()
-	yeah and if you do those, then that's where they fill in all the defaults, like empty body, net23 envelope, that stuff
-
-	ok, thsi is a complex refactor, lots of complex areas that could or dont or shouldn't interact
-	one way to do this is, imagine the page doesn't care about how long turnstile or the worker call takes; you've observed it as always 3 seconds, faster on firefox, for months now, it's not interesting. also if something interesting did happen, well you can't know because the page doesn't have a trusted way to report back to hq. also also maybe you won't need turnstile nearly anywhere. or maybe you'll use 800ms of hashcash instead, or something
-	so the play here is probably to leave Task and turnstile out of Post, and add turnstile (but not Task, not duration reporting) to Button
-
-	ok to do this first you need to add actions to up, main, vhs demo, those
-	before you reutrn here, do a separate refactor where you (1) add turnstile to Button and (2) migrate remaining parent users of PostButton to Button and (3) eliminate PostButton entirely; then return here
-	and then you probably always want to keep fetchLambda and fetchWorker as their api aligns with fetchProvider
-	except you don't use them anywhere, instead you always use Post and Lambda
-	and ok also there's no Task or duration anywhere in this anymore, and you've figured out you do want (and it's working so that) any exception any depth in the stack automatically throws up through 500s and crashes the page without leaking information, that's great
-	ok cool, you've got a pretty good plan forming here now
-	*/
-	//oh, realized this is another attempt at Worker() and Lambda()
-	export async function _Post(route, action, body) {//draft convenience method for Worker, ttd december
-		checkText(route); if (!route.startsWith('/api/')) toss('form', {route, action, body})
-		checkText(action)
-		if (!body) body = {}
-
-		let options = {}
-		options.method = 'POST'
-		options.body = body
-		options.body.action = action
-		return await fetchWorker(route, options)
-	}
-	export async function _Lambda(route, action, body) {
-		checkText(route); if (!route.startsWith('/')) toss('form', {route, action, body})
-		checkText(action)
-		if (!body) body = {}
-
-		let options = {}
-		options.body = body
-		options.body.action = action
-		return await fetchLambda(route, options)
-	}
 
 
 
@@ -1382,14 +1330,14 @@ async function sendLog(s) {
 	let task = Task({name: 'fetch datadog'})
 	try {
 
-		task.response = await fetchProvider(Key('datadog endpoint, public'), {
+		task.response = await fetchProvider({url: Key('datadog endpoint, public'), options: {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 				'DD-API-KEY': Key('datadog api key, secret')
 			},
 			body: s,//$fetch/ofetch see this JSON string and won't double stringify it
-		})
+		}})
 		//datadog should return HTTP status 202 and empty body on success, but there's no easy way to see that without dropping down to browser fetch
 
 	} catch (e) { task.error = e }
@@ -1449,7 +1397,7 @@ export async function checkTurnstileToken(token, ip) {
 		body.append('response', token)
 		body.append('remoteip', ip)
 
-		task.response = await fetchProvider(Key('turnstile url, public'), {method: 'POST', body})
+		task.response = await fetchProvider({url: Key('turnstile url, public'), options: {method: 'POST', body}})
 		if (task.response.success && hasText(task.response.hostname)) task.success = true//make sure the API response looks good
 
 	} catch (e) { task.error = e }
