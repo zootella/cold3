@@ -17,7 +17,7 @@ onMounted(async () => {
 	}
 
 
-	let response = await fetchWorker('/api/totp', {body: {action: 'Status.'}})
+	let response = await Worker('/totp', 'Status.')
 	log('response from Status.', look(response))
 	/*
 	possibilities at the start:
@@ -50,7 +50,7 @@ const refCode = ref('')
 const refButton = ref(null)
 
 async function onEnroll() {
-	let response = await fetchWorker('/api/totp', {body: {action: 'Enroll1.'}})
+	let response = await Worker('/totp', 'Enroll1.')
 	log('response from enroll 1', look(response))
 	if (response.outcome == 'Candidate.') {
 
@@ -68,11 +68,10 @@ async function onEnroll() {
 }
 
 async function onValidate() {
-	let response = await fetchWorker('/api/totp', {body: {
-		action: 'Enroll2.',
+	let response = await Worker('/totp', 'Enroll2.', {
 		envelope: refCookie.value,
-		code: refCode.value
-	}})
+		code: refCode.value,
+	})
 	log('response from enroll 2', look(response))
 	if (response.outcome == 'Enrolled.') {
 		refCookie.value = null//clear the cookie

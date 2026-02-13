@@ -546,6 +546,13 @@ Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the bro
 other multi million download npm libraries, like axios, node-fetch, ky, and superagent
 */
 
+export async function Worker(url, action, body) {
+	return await fetchWorker('/api' + url, {body: {...body, action}})
+}
+export async function Lambda(url, action, body) {
+	return await fetchLambda(url, {body: {...body, action}})
+}
+
 export async function fetchWorker(url, options) {//from a Pinia store, Vue component, or Nuxt api handler, fetch to a server api in a cloudflare worker
 	checkRelativeUrl(url)
 	if (!options) options = {}//totally fine to call fetchWorker('/hello') with no options; we'll prepare an empty request body
@@ -653,7 +660,8 @@ except you don't use them anywhere, instead you always use Post and Lambda
 and ok also there's no Task or duration anywhere in this anymore, and you've figured out you do want (and it's working so that) any exception any depth in the stack automatically throws up through 500s and crashes the page without leaking information, that's great
 ok cool, you've got a pretty good plan forming here now
 */
-export async function Post(route, action, body) {//draft convenience method for fetchWorker, ttd december
+//oh, realized this is another attempt at Worker() and Lambda()
+export async function _Post(route, action, body) {//draft convenience method for fetchWorker, ttd december
 	checkText(route); if (!route.startsWith('/api/')) toss('form', {route, action, body})
 	checkText(action)
 	if (!body) body = {}
@@ -665,7 +673,7 @@ export async function Post(route, action, body) {//draft convenience method for 
 	return await fetchWorker(route, options)
 	//hi claude, ok, is this draft ready to simplify existing calls to fetchWorker?
 }
-export async function Lambda(route, action, body) {
+export async function _Lambda(route, action, body) {
 	checkText(route); if (!route.startsWith('/')) toss('form', {route, action, body})
 	checkText(action)
 	if (!body) body = {}

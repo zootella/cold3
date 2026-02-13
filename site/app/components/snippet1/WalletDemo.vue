@@ -217,7 +217,7 @@ async function onProve() {
 	refProving.value = true
 
 	//step 1: get nonce and message from server
-	let response1 = await fetchWorker('/api/wallet', {body: {action: 'Prove1.', address: refConnectedAddress.value}})
+	let response1 = await Worker('/wallet', 'Prove1.', {address: refConnectedAddress.value})
 	log('Prove1 response:', look(response1))
 	let {nonce, message, envelope} = response1
 
@@ -232,7 +232,7 @@ async function onProve() {
 
 	if (signature) {
 		//step 3: send signature to server for verification
-		let response2 = await fetchWorker('/api/wallet', {body: {action: 'Prove2.', address: refConnectedAddress.value, nonce, message, signature, envelope}})
+		let response2 = await Worker('/wallet', 'Prove2.', {address: refConnectedAddress.value, nonce, message, signature, envelope})
 		log('Prove2 response:', look(response2))
 		if (response2.outcome == 'Proven.') {
 			refInstructionalMessage.value = 'Server confirms proof you control this address. 🖌'

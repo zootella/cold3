@@ -11,7 +11,7 @@ let envelope = route.query.envelope
 checkText(envelope)
 
 //tell the oauth endpoint that we've got this message about the user returning with proof
-let response = await fetchWorker('/api/oauth', {method: 'POST', body: {action: 'OauthDone.', envelope}})
+let response = await Worker('/oauth', 'OauthDone.', {envelope})
 //ttd november, move the user's oauth state into the upcoming credential store; then fetch calls like above will live there
 //navigateTo in SSR returns a 302, rebooting the tab, so the destination page will fetch oauth status again, but that's fine
 log('hi from oauth2.vue after posting the envelope', look({response}))

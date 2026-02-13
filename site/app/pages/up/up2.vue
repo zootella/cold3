@@ -4,7 +4,7 @@ const note2     = useState('up2_ref2',      () => '(reload to fetch lambda in se
 const duration2 = useState('up2_duration2', () => -1)
 onServerPrefetch(async () => {
 	let t = Now()
-	note2.value = (await fetchWorker('/api/up', {body: {action: 'Up2.'}})).note
+	note2.value = (await Worker('/up', 'Up2.')).note
 	duration2.value = Now() - t
 })
 

@@ -13,8 +13,7 @@ const refButton = ref(null)//using Button to get turnstile for free, but display
 onMounted(async () => {
 	await nextTick()//⚠️ yield so TurnstileComponent in BottomBar (a later sibling in app.vue) mounts and registers its getToken function before we call post(); otherwise turnstile won't work
 	if (details) {
-		await refButton.value.post('/api/report', {//auto-trigger: Button handles turnstile, doing state, and shows "Reporting..."
-			action: 'PageErrorTurnstile.',
+		await refButton.value.post('/report', 'PageErrorTurnstile.', {//auto-trigger: Button handles turnstile, doing state, and shows "Reporting..."
 			sticker: Sticker(),
 			graphics: getBrowserGraphics(),
 			details: details,

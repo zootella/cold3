@@ -17,8 +17,7 @@ const computedState = computed(() => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/api/otp', {
-		action: 'SendTurnstile.',
+	let response = await refButton.value.post('/otp', 'SendTurnstile.', {
 		address: refAddress.value,
 		provider: refProvider.value,
 		envelope: refCookie.value || undefined,

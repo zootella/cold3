@@ -22,7 +22,7 @@ dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 
 Key, doorWorker, doorLambda,
-Task, fetchWorker, fetchLambda, fetchProvider,
+Task, Worker, Lambda, fetchWorker, fetchLambda, fetchProvider,
 sealEnvelope, openEnvelope,
 composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
 

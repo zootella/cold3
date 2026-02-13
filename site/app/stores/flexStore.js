@@ -85,7 +85,7 @@ async function incrementHits() {
 
 async function _fetchHit(action) {
 	let t = Now()
-	let response = await fetchWorker('/api/hit', {body: {action}})
+	let response = await Worker('/hit', action)
 
 	hits.value = response.hits
 	duration.value = Now() - t

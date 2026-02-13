@@ -22,7 +22,7 @@ const computedState = computed(() => {
 async function clicked(action) {
 	refDoing.value = true
 	let t = Now()
-	let r = await fetchWorker('/api/trail', {method: 'POST', body: {action, message: refMessage.value}})
+	let r = await Worker('/trail', action, {message: refMessage.value})
 	refNow.value = sayTick(t)
 	refDuration.value = Now() - t
 

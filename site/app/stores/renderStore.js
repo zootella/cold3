@@ -42,7 +42,7 @@ async function getUser({part1}) {//given route part1, get user information to re
 
 	//if we make it here we need to get information about the part1 user name from the api endpoint
 	async function f(part1) {//gave this function a name to make the promise flow easier to follow
-		let task = await fetchWorker('/api/render', {body: {action: 'Get.', part1}})
+		let task = await Worker('/render', 'Get.', {part1})
 		if (!task.success || !task.user) return null//not found because we don't have a record of this user in the database
 		let user = task.user//user information we looked up
 

@@ -267,6 +267,7 @@ noop(() => {//fuzz test round trip
 //ttd april2025, not using tossTask or TaskError, get rid of it if you confirm you don't need it
 function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
 export function toss(message, watch) { throw new TossError(message, watch) }//use like toss('title', {watch1, watch2}) with watch variables for context
+//note to work here next
 
 class TestError extends Error {
 	constructor() {

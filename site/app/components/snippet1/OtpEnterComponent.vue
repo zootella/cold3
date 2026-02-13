@@ -28,11 +28,11 @@ const computedState = computed(() => {
 })
 
 async function onClick() {
-	let response = await fetchWorker('/api/otp', {body: {action: 'Enter.',
+	let response = await Worker('/otp', 'Enter.', {
 		tag: props.otp.tag,//hidden from the user but kept with the form
 		guess: takeNumerals(refGuess.value),
 		envelope: refCookie.value,//give the server back it's encrypted envelope, which we kept through a browser refresh in a cookie
-	}})
+	})
 	log('otp enter post response', look(response))
 	if (response.success) {
 		pageStore.addNotification("✔️ address verified (new otp system)")
