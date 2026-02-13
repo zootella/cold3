@@ -14,71 +14,71 @@ const userDisplayName = computed(() => {//best available display name for page
 	return userTag.value//fallback to tag if no name set
 })
 
-function apply(task) {//update all refs from response - called after any action that returns state
-	if (!task.success) return//returned task without success on taken name, wrong password, paths like those that still aren't toss
-	browserHash.value = task.browserHash || ''
-	userTag.value = task.userTag || ''
-	name.value = task.userName || null//we're careful to not collide with Task's .name, which is the task name, not the user name
-	passwordCycles.value = task.passwordCycles || 0
+function apply(response) {//update all refs from response - called after any action that returns state
+	if (!response.success) return//taken name, wrong password, paths like those that still aren't toss
+	browserHash.value = response.browserHash || ''
+	userTag.value = response.userTag || ''
+	name.value = response.user || null
+	passwordCycles.value = response.passwordCycles || 0
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
-	let task = await fetchWorker('/credential', 'Get.')
-	apply(task)
+	let response = await fetchWorker('/credential', 'Get.')
+	apply(response)
 }
 
 async function signOut() {
-	let task = await fetchWorker('/credential', 'SignOut.')
-	apply(task)
+	let response = await fetchWorker('/credential', 'SignOut.')
+	apply(response)
 }
 
 async function checkName({name1, name2, turnstileToken}) {
-	let task = await fetchWorker('/credential', 'CheckNameTurnstile.', {name1, name2, turnstileToken})
-	return task.nameIsAvailable
+	let response = await fetchWorker('/credential', 'CheckNameTurnstile.', {name1, name2, turnstileToken})
+	return response.nameIsAvailable
 }
 
 async function signUpAndSignIn({name1, name2, hash, cycles, turnstileToken}) {
-	let task = await fetchWorker('/credential', 'SignUpAndSignInTurnstile.', {name1, name2, hash, cycles, turnstileToken})
-	apply(task)
-	return task
+	let response = await fetchWorker('/credential', 'SignUpAndSignInTurnstile.', {name1, name2, hash, cycles, turnstileToken})
+	apply(response)
+	return response
 }
 
 async function getPasswordCycles({userIdentifier, turnstileToken}) {//returns cycles for sign-in attempt, not stored (pre-auth, for target user not current user)
-	let task = await fetchWorker('/credential', 'GetPasswordCyclesTurnstile.', {userIdentifier, turnstileToken})
-	return task
+	let response = await fetchWorker('/credential', 'GetPasswordCyclesTurnstile.', {userIdentifier, turnstileToken})
+	return response
 }
 
 async function signIn({userIdentifier, hash}) {
-	let task = await fetchWorker('/credential', 'SignIn.', {userIdentifier, hash})
-	apply(task)
-	return task
+	let response = await fetchWorker('/credential', 'SignIn.', {userIdentifier, hash})
+	apply(response)
+	return response
 }
 
 async function setName({name1, name2}) {
-	let task = await fetchWorker('/credential', 'SetName.', {name1, name2})
-	apply(task)
-	return task
+	let response = await fetchWorker('/credential', 'SetName.', {name1, name2})
+	apply(response)
+	return response
 }
 
 async function removeName() {
-	let task = await fetchWorker('/credential', 'RemoveName.')
-	apply(task)
+	let response = await fetchWorker('/credential', 'RemoveName.')
+	apply(response)
 }
 
 async function setPassword({currentHash, newHash, newCycles}) {
-	let task = await fetchWorker('/credential', 'SetPassword.', {currentHash, newHash, newCycles})
-	apply(task)
-	return task
+	let response = await fetchWorker('/credential', 'SetPassword.', {currentHash, newHash, newCycles})
+	apply(response)
+	return response
 }
 
 async function removePassword() {
-	let task = await fetchWorker('/credential', 'RemovePassword.')
-	apply(task)
+	let response = await fetchWorker('/credential', 'RemovePassword.')
+	apply(response)
 }
 
 async function closeAccount() {
-	let task = await fetchWorker('/credential', 'CloseAccount.')
-	apply(task)
+	let response = await fetchWorker('/credential', 'CloseAccount.')
+	apply(response)
 }
 
 return {

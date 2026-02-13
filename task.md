@@ -7,23 +7,21 @@ What Task does today: stamps `.tag`, `.tick`, `.sticker`, and `.finish()` onto a
 
 What we actually use: `.success` (everywhere), `.outcome` (credential and totp handlers), `.duration` (one place — mainStore reads it from the load api response), and custom properties pinned by each handler. Everything else — `.name`, `.tag`, `.tick`, `.sticker`, `.done`, the auto-detect logic, TaskError, tossTask — is dead weight.
 
-## Stage 1: Remove dead code
+## Stage 1: Remove dead code ✅
 
-TaskError and tossTask are never called. Remove them.
+Removed: TaskError, tossTask, Task test block, door.task (created and finished but never read), stale ttd comments. Tests pass.
 
-```
-icarus/level0.js:267  //ttd comment
-icarus/level0.js:268  function tossTask(task) { ... }
-icarus/level0.js:280  class TaskError extends Error { ... }
-```
+## Stage 2: Trivial de-Task — handlers that only use success
 
-Also remove the Task test block in level2.js (lines 482-496) — it tests Task behavior we're eliminating.
+Three worker API handlers use Task purely as `{}` with `.success = true` at the end. No `.duration`, no `.outcome`, no early returns. Mechanical replacement.
 
-Smoke test: `pnpm test` (or however tests run) to confirm nothing references these.
+| File | Pattern |
+|---|---|
+| hit.js | Pins `.hits`, finishes with success |
+| render.js | Pins custom properties, finishes with success |
+| report.js | Pins custom properties, finishes with success |
 
-## Stage 2: Refactor simple Task call sites to plain objects
-
-Six worker API handlers use Task as a glorified `{}`. They create a Task, pin properties, call `task.finish({success: true})`, and return. Replace with a plain object and explicit `.success = true`.
+Also convert `persephone.js warm()` — trivially returns `{success: true}`.
 
 **Before:**
 ```javascript
@@ -41,40 +39,23 @@ response.success = true
 return response
 ```
 
-Call sites to convert (all in `site/server/api/`):
+Smoke test after batch.
 
-| File | Name | Notes |
-|---|---|---|
-| hit.js | 'hit api' | Straightforward |
-| load.js | 'load api' | mainStore reads `.duration` — add `duration: Now() - t` manually, or drop it |
-| render.js | 'render api' | Straightforward |
-| report.js | 'report api' | Straightforward |
-| credential.js | 'credential api' | Largest handler — many early-return failures with `.outcome` |
-| otp.js | 'otp found envelope' | Has conditional Task creation |
+## Stage 3: Non-trivial de-Task — handlers with duration, outcome, early returns, or try/catch
 
-For load.js: mainStore.js:20 reads `r.duration`. Either keep a manual `response.duration = Now() - t` or remove the display of server duration. Decide at the time.
+These need individual attention:
 
-For credential.js: the pattern `task.finish({success: false, outcome: 'InvalidCredentials.'}); return task` becomes `return {success: false, outcome: 'InvalidCredentials.'}`. Simpler.
+**credential.js** — Largest handler. Many early-return failures with `.outcome` like `task.finish({success: false, outcome: 'InvalidCredentials.'}); return task`. Becomes `return {success: false, outcome: 'InvalidCredentials.'}`.
 
-Also convert `persephone.js warm()` — trivially returns `{success: true}`.
+**load.js** — mainStore.js:20 reads `.duration`. Needs manual `duration: Now() - t`.
 
-Smoke test after each file or batch.
+**otp.js** — Has conditional Task creation.
 
-## Stage 3: Tackle the non-trivial call sites
+**persephone.js sendMessage** — Wraps four third-party messaging APIs. Creates a Task, passes it into provider-specific functions that set `.request`, `.response`, and `.success`, catches errors into `.error`, calls `.finish()`, and audits.
 
-Three remaining callers use Task's try/catch pattern with `.response` and `.error`:
+**level2.js sendLog (datadog)** — Fire-and-forget. Nobody reads the result. Remove Task entirely, keep try/catch.
 
-**persephone.js sendMessage** — wraps four third-party messaging APIs (Amazon SES/SNS, Twilio/SendGrid). Currently creates a Task, passes it into provider-specific functions that set `.request`, `.response`, and `.success`, catches errors into `.error`, calls `.finish()`, and audits.
-
-Refactor: the task object becomes a plain response object. The try/catch stays (it's essential for foreign APIs). The provider functions set `.success` directly. Duration calculated manually if the audit log wants it.
-
-**level2.js sendLog (datadog)** — wraps fetchProvider. Currently creates a Task, pins `.response`, catches `.error`, calls `.finish()`. Nobody reads the result — sendLog is fire-and-forget.
-
-Refactor: remove Task entirely. Keep the try/catch. The catch block is the only thing that matters (protecting our code from datadog failures).
-
-**level2.js checkTurnstileToken** — wraps fetchProvider. Creates a Task, pins `.response`, checks `.success`, catches `.error`, calls `.finish()`. On failure, audits and tosses with `{task}`.
-
-Refactor: plain response object. The audit log currently receives `{task}` — change to pass the relevant pieces directly.
+**level2.js checkTurnstileToken** — On failure, audits and tosses with `{task}`. Change to pass relevant pieces directly.
 
 ## Stage 4: Standardize response conventions
 
@@ -107,7 +88,5 @@ Once all call sites are converted:
 - Remove `Task` from level3.js import
 - Remove `Task` from the three auto-import blocks (icarusServerPlugin.js x2, icarusComposable.js)
 - Remove `Task` from persephone.js import
-- Remove `door.task = Task(...)` from doorWorkerOpen and doorLambdaOpen
-- Remove `door.task.finish()` from doorWorkerShut and doorLambdaShut
 - Update the fetchProvider essay example (the one you just wrote) to not use Task
 - Delete this file (task.md)

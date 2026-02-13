@@ -264,10 +264,7 @@ noop(() => {//fuzz test round trip
 //  \__\___/|___/___/
 //                   
 
-//ttd april2025, not using tossTask or TaskError, get rid of it if you confirm you don't need it
-function tossTask(task) { throw new TaskError(task) }//throw a failed Task as an exception
 export function toss(message, watch) { throw new TossError(message, watch) }//use like toss('title', {watch1, watch2}) with watch variables for context
-//note to work here next
 
 class TestError extends Error {
 	constructor() {
@@ -275,17 +272,6 @@ class TestError extends Error {
 		this.name = 'TestError'//you have to set this, otherwise it's just "Error"
 
 		if (Error.captureStackTrace) Error.captureStackTrace(this, ok)//omit lines in the stack trace above the call to ok(false)
-	}
-}
-class TaskError extends Error {
-	constructor(task) {
-		super(task.name)//task name is e.message
-		this.name = 'TaskError'
-
-		this.cause = task.error; task.error = '(moved up to .cause)'//avoid a confusing duplicate
-		this.task = task
-
-		if (Error.captureStackTrace) Error.captureStackTrace(this, tossTask)
 	}
 }
 class TossError extends Error {//custom error to identify it's one of ours, and include watch variables

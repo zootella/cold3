@@ -457,7 +457,7 @@ export function Task(task) {//use like let task = Task({name: 'some title'})
 	task.sticker = sticker.all//where we're running to perform this task
 	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
 	return task
-}//ttd april2025, yeah, make this finish(task, {success: true}) so Task is a POJO you can really use everywhere, maybe call it done() or finished()
+}
 function _taskFinish(task, more) {//mark this task done, adding more properites about how it concluded
 	Object.assign(task, more)//be careful, as this overwrites anything already in task!
 
@@ -479,21 +479,6 @@ function _taskFinish(task, more) {//mark this task done, adding more properites 
 	task.done = Now()//check .done to know it's done, and also when
 	task.duration = task.done - task.tick//how long it took, nice that times are automatic
 }
-test(() => {
-	let t1 = Task({name: 't1'})
-	t1.finish({success: true})
-	ok(t1.tick && t1.done)//tick and done are the start and end times
-
-	let t2 = Task({name: 't2'})
-	t2.response = {success: false}//this task got a response that didn't succeed
-	t2.finish()//finish bubbles up the failure
-	ok(t2.hasOwnProperty('success') && t2.success == false)
-
-	let t3 = Task({name: 't3'})
-	t3.result = {success: true}//success also bubbles up
-	t3.finish()
-	ok(t3.success == true)
-})
 
 //   __      _       _     
 //  / _| ___| |_ ___| |__  
@@ -720,8 +705,6 @@ async function doorWorkerOpen({method, workerEvent}) {
 	await decryptKeys('worker', sources)
 
 	let door = {}//make door object to bundle everything together about this request we're doing
-	door.task = Task({name: 'door worker'})
-
 	door.workerEvent = workerEvent//save everything they gave us about the request
 	door.headers = getWorkerHeaders(workerEvent)
 	door.origin = headerOrigin({headers: door.headers})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
@@ -754,7 +737,6 @@ async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 	await decryptKeys('lambda', sources)
 
 	let door = {}//our object that bundles together everything about this incoming request
-	door.task = Task({name: 'door lambda'})
 	door.from = from
 
 	door.lambdaEvent = lambdaEvent//save everything amazon is telling us about it
@@ -811,12 +793,10 @@ async function doorLambdaCheck({door, actions}) {
 async function doorWorkerShut({door, response, error}) {
 	door.response = response
 	door.error = error
-	door.task.finish()
 
 	let r
 	if (error) {//processing this request caused an error
 		logAlert('door worker shut', {body: door.body, response, error})//tell staff about it
-		//^ttd april2025, trying to make this less verbose so it's useful to read while coding, before and for the longest time, you had the whole door in there
 		r = null//return no response
 	} else if (door.method == 'POST') {
 		r = makePlain(response)//nuxt will stringify and add status code and headers, make plain to see into errors and not throw if there's a method or a circular reference!
@@ -827,7 +807,6 @@ async function doorWorkerShut({door, response, error}) {
 async function doorLambdaShut({door, response, error}) {
 	door.response = response
 	door.error = error
-	door.task.finish()
 
 	let r
 	if (error) {

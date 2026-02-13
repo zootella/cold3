@@ -30,7 +30,6 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 		},
 	}
 
-	let task = Task({name: 'report api'})
 	if (action == 'PageErrorTurnstile.') {
 
 		await awaitLogAlert('reported page error', r)
@@ -59,6 +58,5 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 
 		//trying to do things like the above two in parallel with keepPromise, you were getting 4s delays on the page, "gave up waiting" errors in datadog, and 409 (Conflict) errors in supabase dashboard logs. so, you're going to do things one at a time from now on. but still, this is worrysome
 	}
-	task.finish({success: true})
-	return task
+	return {success: true}
 }

@@ -83,9 +83,7 @@ export async function bucketDynamicImport() {
 }
 
 export async function warm() {
-	let task = Task({name: 'warm'})
-	task.finish({success: true})
-	return task
+	return {success: true}
 }
 
 //                       _ _                   _                     

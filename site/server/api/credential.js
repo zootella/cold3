@@ -12,56 +12,56 @@ export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
-async function attachState(task, browserHash) {//attach current credential state to task response
-	task.browserHash = browserHash
+async function attachState(response, browserHash) {//attach current credential state to response
+	response.browserHash = browserHash
 	let user = await credentialBrowserGet({browserHash})
 	if (user) {
-		task.userTag = user.userTag
+		response.userTag = user.userTag
 		let name = await credentialNameGet({userTag: user.userTag})
-		if (name) task.userName = name.name
+		if (name) response.user = name.name
 		let password = await credentialPasswordGet({userTag: user.userTag})
-		if (password) task.passwordCycles = password.cycles
+		if (password) response.passwordCycles = password.cycles
 	}
 }
 async function doorHandleBelow({door, body, action, browserHash}) {
-	let task = Task({name: 'credential api'})
+	let response = {}
 
 	if (action == 'Get.') {
-		await attachState(task, browserHash)
+		await attachState(response, browserHash)
 
 	} else if (action == 'CheckNameTurnstile.') {
 		let v = await credentialNameCheck({raw1: body.name1, raw2: body.name2})
-		task.nameIsAvailable = !!v
+		response.nameIsAvailable = !!v
 
 	} else if (action == 'SignUpAndSignInTurnstile.') {
 		//create new user with three credentials
 		let userTag = Tag()
 		let v = await credentialNameSet({userTag, raw1: body.name1, raw2: body.name2})
-		if (!v) { task.finish({success: false, outcome: 'NameNotAvailable.'}); return task }
+		if (!v) return {success: false, outcome: 'NameNotAvailable.'}
 		await credentialPasswordSet({userTag, hash: body.hash, cycles: body.cycles})
 		await credentialBrowserSet({userTag, browserHash})
-		await attachState(task, browserHash)
+		await attachState(response, browserHash)
 
 	} else if (action == 'GetPasswordCyclesTurnstile.') {
 		let v = validateName(body.userIdentifier, Limit.name)
-		if (!v.ok) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		if (!v.ok) return {success: false, outcome: 'InvalidCredentials.'}
 		let nameRecord = await credentialNameGet({f0: v.f0})
-		if (!nameRecord) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		if (!nameRecord) return {success: false, outcome: 'InvalidCredentials.'}
 		let password = await credentialPasswordGet({userTag: nameRecord.userTag})
-		if (!password) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
-		task.cycles = password.cycles
+		if (!password) return {success: false, outcome: 'InvalidCredentials.'}
+		response.cycles = password.cycles
 
 	} else if (action == 'SignIn.') {
 		let v = validateName(body.userIdentifier, Limit.name)
-		if (!v.ok) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		if (!v.ok) return {success: false, outcome: 'InvalidCredentials.'}
 		let nameRecord = await credentialNameGet({f0: v.f0})
-		if (!nameRecord) { task.finish({success: false, outcome: 'InvalidCredentials.'}); return task }
+		if (!nameRecord) return {success: false, outcome: 'InvalidCredentials.'}
 		let password = await credentialPasswordGet({userTag: nameRecord.userTag})
 		if (!password || !hasTextSame(body.hash, password.hash)) {
-			task.finish({success: false, outcome: 'InvalidCredentials.'}); return task
+			return {success: false, outcome: 'InvalidCredentials.'}
 		}
 		await credentialBrowserSet({userTag: nameRecord.userTag, browserHash})
-		await attachState(task, browserHash)
+		await attachState(response, browserHash)
 
 	} else {//remaining actions all require that there's a user signed into the requesting browser
 		let user = await credentialBrowserGet({browserHash})
@@ -69,7 +69,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		if (action == 'SetName.') {
 			let v = await credentialNameSet({userTag: user.userTag, raw1: body.name1, raw2: body.name2})
-			if (!v) { task.finish({success: false, outcome: 'NameNotAvailable.'}); return task }
+			if (!v) return {success: false, outcome: 'NameNotAvailable.'}
 
 		} else if (action == 'RemoveName.') {
 			await credentialNameRemove({userTag: user.userTag})
@@ -79,7 +79,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			let existing = await credentialPasswordGet({userTag: user.userTag})
 			if (existing) {
 				if (!body.currentHash || !hasTextSame(body.currentHash, existing.hash)) {
-					task.finish({success: false, outcome: 'WrongPassword.'}); return task
+					return {success: false, outcome: 'WrongPassword.'}
 				}
 			}
 			await credentialPasswordSet({userTag: user.userTag, hash: body.newHash, cycles: body.newCycles})
@@ -93,9 +93,9 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		} else if (action == 'CloseAccount.') {
 			await credentialCloseAccount({userTag: user.userTag})
 		}
-		await attachState(task, browserHash)
+		await attachState(response, browserHash)
 	}
 
-	task.finish({success: true})
-	return task
+	response.success = true
+	return response
 }
