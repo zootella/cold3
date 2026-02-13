@@ -195,17 +195,16 @@ export async function otpSend({letter, v, provider, browserHash}) {
 	//^ttd january, credential system will replace this
 
 	// 📬 Step 1 Permit: Are we allowed to send another code to this address right now?
-	let task = Task({name: 'otp permit'})
 	let now = Now()//we use trail to count, how many codes have we sent this address
 	let rows5 = await trailGet(safefill`OTP opened challenge: address ${v.f0}`, otpConstants.week)//in the last 5 days?
 	let rows1 = rows5.filter(row => row.row_tick >= now - otpConstants.day)//in the last 1 day?
 	if (rows1.length >= otpConstants.limitHard) {//too many! 24 codes in the last 24 hours!
-		task.success = false; task.reason = 'CoolHard.'; return task//here, we enforce the "hard" limit, which is important to prevent an attacker from spamming their friend with useless unwanted codes
+		return {success: false, reason: 'CoolHard.'}//here, we enforce the "hard" limit, which is important to prevent an attacker from spamming their friend with useless unwanted codes
 	}
 	if (rows5.length >= otpConstants.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
 		let cool = rows5[0].row_tick + otpConstants.minutes//tick when this address cools down; first row in array is most recent
 		if (now < cool) {
-			task.success = false; task.reason = 'CoolSoft.'; return task//here, we enforce the "soft" limit, to slow the user down, encourage them to actually check their spam folder rather than spamming themselves another code
+			return {success: false, reason: 'CoolSoft.'}//here, we enforce the "soft" limit, to slow the user down, encourage them to actually check their spam folder rather than spamming themselves another code
 		}
 	}//if we make it here, we're allowed to send the address a new code
 	let strength = rows5.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard//choose code length 4 or 6
@@ -261,18 +260,15 @@ export async function otpSend({letter, v, provider, browserHash}) {
 	await browserChallengedAddress({browserHash, provider: o.provider, type: o.address.type, v: o.address})
 	//^ttd january, credential system will replace this
 
-	task = Task({name: 'otp send'})
-	task.success = true
-	return task//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
+	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
 
 //the person at browserHash used the box on the page to enter a code, which could be right or wrong
 export async function otpEnter({letter, tag, guess, browserHash}) {
-	let task = Task({name: 'otp enter'})
 
 	//find otp by tag (otp.js filters expired otps before calling us, so if we find it, it's valid)
 	let o = letter.otps.find(o => o.tag == tag)
-	if (!o) { task.success = false; task.reason = 'Expired.'; return task }//probably expired, maybe never existed, either way lead the user to try again with a new challenge
+	if (!o) return {success: false, reason: 'Expired.'}//probably expired, maybe never existed, either way lead the user to try again with a new challenge
 
 	let rows = await trailGetAny([
 		safefill`OTP opened challenge: tag ${tag}`,
@@ -288,7 +284,7 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 	let closed = rows.find(r => r.hash == closedHash)//true if we found proof we closed this challenge in the same time horizon
 	let missed = rows.filter(r => r.hash == missedHash).length//number of wrong guesses we recorded on this challenge
 
-	if (!(opened && !closed && missed < otpConstants.guesses)) { task.success = false; task.reason = 'Expired.'; return task }//make sure trail agrees that this is a challenge we opened, didn't close, and still has guesses; very unlikely, possible with race condition, or tampering; ok to treat like "Expired, please request a new code" rather than blowing up the page
+	if (!(opened && !closed && missed < otpConstants.guesses)) return {success: false, reason: 'Expired.'}//make sure trail agrees that this is a challenge we opened, didn't close, and still has guesses; very unlikely, possible with race condition, or tampering; ok to treat like "Expired, please request a new code" rather than blowing up the page
 
 	if (hasTextSame(guess, o.answer)) {// ✍🏻 correct guess
 
@@ -296,8 +292,7 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 		letter.otps = letter.otps.filter(o => o.tag != tag)//kill the satisified challenge in the letter
 		await browserValidatedAddress({browserHash, provider: o.provider, type: o.address.type, v: o.address})//ttd january, this is where we'll add note of the demonstrated proof to credential_table, soon, but not now
 
-		task.success = true
-		return task
+		return {success: true}
 
 	} else {// ✍🏻 wrong guess
 
@@ -309,16 +304,11 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 			await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//mark it as such
 			letter.otps = letter.otps.filter(o => o.tag != tag)//letter is a convenience; trail is a necessity here--otherwise an attacker could just replay the same valid envelope, guessing sequentially until they hit the correct answer!
 
-			task.success = false
-			task.reason = 'Expired.'//treat exhausted guesses like expired; user remedy is the same: request a new code
-			return task
+			return {success: false, reason: 'Expired.'}//treat exhausted guesses like expired; user remedy is the same: request a new code
 
 		} else {// ✍🏻 person can guess again
 
-			task.success = false
-			task.reason = 'Wrong.'
-			task.lives = lives//tell the person how many guesses they have left; may encourage them to type more carefully
-			return task
+			return {success: false, reason: 'Wrong.', lives}//tell the person how many guesses they have left; may encourage them to type more carefully
 		}
 	}
 }

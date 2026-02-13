@@ -93,7 +93,8 @@ export async function sendMessage({provider, service, address, subjectText, mess
 	let sticker = ` ${Sticker()}.${provider}${service}`
 	messageText = replaceOne(messageText, 'STICKER', sticker)
 	messageHtml = replaceOne(messageHtml, 'STICKER', sticker)
-	let task = Task({name: 'message', provider, service, parameters: {address, subjectText, messageText, messageHtml}})
+	let task = {name: 'message', provider, service, parameters: {address, subjectText, messageText, messageHtml}}
+	let t = Now()
 	try {
 		if (service == 'Email.') {
 			task.parameters.fromName = Key('message brand')
@@ -107,7 +108,7 @@ export async function sendMessage({provider, service, address, subjectText, mess
 			else if (provider == 'Twilio.') await sendMessageTwilioPhone(task)
 		}
 	} catch (e) { task.error = e }
-	task.finish()
+	task.duration = Now() - t
 	logAudit('message', {task})
 	return task
 }

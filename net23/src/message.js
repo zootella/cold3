@@ -1,6 +1,6 @@
 
 import {
-Sticker, stickerParts, doorLambda, toss, log, look, defined, Task,
+Sticker, stickerParts, doorLambda, toss, log, look, defined,
 runTests, runTestsSticker,
 } from 'icarus'//remember the automatic nuxt icarus imports aren't here on the lambda side
 

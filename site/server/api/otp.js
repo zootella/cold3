@@ -19,7 +19,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	}
 	letter.otps = letter.otps.filter(o => Now() <= o.start + otpConstants.expiration)//filter to only keep not yet expired challenges
 
-	let task//each action below sets this task reference, which we return as the response body
+	let response//each action below sets this response reference, which we return as the response body
 	if (action == 'SendTurnstile.') {//the person at the page has entered their email or phone to get a code there; this action needs turnstile protection to prevent a script kiddie from hitting here to spam strangers or run up our amazon or twilio bill 💩💸
 
 		let {address, provider} = body
@@ -31,30 +31,28 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		else if (provider == 'T') provider = 'Twilio.'
 		else toss('form')//temporary to get started; the round robin system, not the page, should choose the provider, ttd january
 
-		task = await otpSend({letter, v, provider, browserHash})
+		response = await otpSend({letter, v, provider, browserHash})
 
 	} else if (action == 'FoundEnvelope.') {//the page found a otp cookie it can't read from less than 20 minutes ago; we'll open it and reply with the question parts of the challenges it contains for this browser, if any haven't expired yet
 
-		task = Task({name: 'otp found envelope'})
-		task.success = true
+		response = {success: true}
 
 	} else if (action == 'Enter.') {//the person at page has entered their guess at a code their browser knows about
 
 		let {tag, guess} = body//tag identifes the challenge; guess is what they entered (hopefully correctly from their email or texts)
 		checkTag(tag); checkNumerals(guess)
-		task = await otpEnter({letter, tag, guess, browserHash})
+		response = await otpEnter({letter, tag, guess, browserHash})
 	}
 
 	if (letter.otps.length > 0) {//we have active challenges for this browser
 		letter.browserHash = browserHash//lock this letter to the connected browser
-		task.envelope = await sealEnvelope('Otp.', otpConstants.expiration, letter)//encrypt it for the browser to keep for up to 20 minutes in a cookie
+		response.envelope = await sealEnvelope('Otp.', otpConstants.expiration, letter)//encrypt it for the browser to keep for up to 20 minutes in a cookie
 	}
-	task.otps = letter.otps.map(o => ({//we always return an array of non-secret information about currently active challenges
+	response.otps = letter.otps.map(o => ({//we always return an array of non-secret information about currently active challenges
 		tag: o.tag,//a tag identifies each challenge; the page will tell us which one it's guessing at
 		start: o.start,//the birthdate of this challenge, which lives for 20 minutes
 		address: o.address,//the full address object with ok, f0, f1, f2, and type
 		//the secret code we sent, like "123456" is o.answer; it's encrypted into envelope, and critically not leaked here to the page!
 	}))
-	task.finish()
-	return task
+	return response
 }
