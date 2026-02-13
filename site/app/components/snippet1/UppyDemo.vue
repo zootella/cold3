@@ -5,7 +5,6 @@ import '@uppy/dashboard/css/style.min.css'//Uppy CSS: static imports for Dashboa
 
 import {
 uppyDynamicImport,
-lambda23,
 passwordHash, Data,
 hashFile, hashStream, saySize4,
 } from 'icarus'
@@ -34,14 +33,6 @@ async function onPasswordEnter() {
 	} else { refStatus.value = 'Wrong password' }
 }
 
-async function lambda(body) {
-	//ttd february, here's the argument soon for fetchLambda({from: 'Page.', route, action, body})
-	return await $fetch(lambda23('/upload'), {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls; here, the page needs to use the /upload lambda directly
-		method: 'POST',
-		body: {...body, permissionEnvelope: refPermissionEnvelope.value},
-	})
-}
-
 async function mount() {
 	const {uppy_core, uppy_dashboard, uppy_aws_s3} = await uppyDynamicImport()
 	uppy = new uppy_core.default()
@@ -61,7 +52,7 @@ async function mount() {
 
 			} else {
 
-				let response = await lambda({action: 'UploadCreate.', contentType: upload.file.type})
+				let response = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadCreate.', body: {contentType: upload.file.type, permissionEnvelope: refPermissionEnvelope.value}})
 				//tag's tale 2/4: page receives tag from Lambda, stores in upload.tag
 				upload.key = response.key//the bucket path the lambda chose for this individual file upload attempt
 				upload.tag = response.tag//and the tag it picked for it, which is also baked into key, but here separate so we dont' have to do the work of parsing it out
@@ -71,24 +62,24 @@ async function mount() {
 
 		// 🟠 Sign
 		async signPart(file, {uploadId, key, partNumber}) {
-			let response = await lambda({action: 'UploadSign.', uploadId, key, partNumber})
+			let response = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadSign.', body: {uploadId, key, partNumber, permissionEnvelope: refPermissionEnvelope.value}})
 			return {url: response.url}
 		},
 
 		// 🟠 Complete
 		async completeMultipartUpload(file, {uploadId, key, parts}) {
-			await lambda({action: 'UploadComplete.', uploadId, key, parts})
+			await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadComplete.', body: {uploadId, key, parts, permissionEnvelope: refPermissionEnvelope.value}})
 			return {}
 		},
 
 		// 🟠 Abort
 		async abortMultipartUpload(file, {uploadId, key}) {
-			await lambda({action: 'UploadAbort.', uploadId, key})
+			await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadAbort.', body: {uploadId, key, permissionEnvelope: refPermissionEnvelope.value}})
 		},
 
 		// 🟠 List
 		async listParts(file, {uploadId, key}) {
-			let response = await lambda({action: 'UploadList.', uploadId, key})
+			let response = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadList.', body: {uploadId, key, permissionEnvelope: refPermissionEnvelope.value}})
 			return response.parts
 		},
 	})
@@ -131,10 +122,11 @@ async function mount() {
 		if (!upload) return
 
 		//ask Lambda to hash the uploaded file (one call, computes both hashes)
-		let result = await lambda({action: 'UploadHash.',
+		let result = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadHash.', body: {
 			tag: upload.tag,
 			key: upload.key,
-		})//takes a moment as the lambda hashes the whole file; ttd january maybe research how to get progress, or just show a spinner
+			permissionEnvelope: refPermissionEnvelope.value,
+		}})//takes a moment as the lambda hashes the whole file; ttd january maybe research how to get progress, or just show a spinner
 		log(`#️⃣ lambda hashed ${saySize4(upload.file.size)} in ${commas(result.duration)}ms (${commas(Math.round(upload.file.size / result.duration))} bytes/ms)`, `tip ${result.tipHash} and ${result.pieceHash} piece hashes`)//page on mac can do 200k bytes/ms; lambda 50k bytes/ms so 1gb file takes 20s, near the 30s API Gateway ceiling
 
 		//report everything to Worker including Lambda's attestation

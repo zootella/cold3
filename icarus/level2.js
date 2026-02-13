@@ -19,7 +19,7 @@ enterSimulationMode, isInSimulationMode, ageNow, prefixTags,
 random32,
 } from './level0.js'
 import {//from level1
-Limit, checkActions,
+Limit, checkAction, checkActions,
 pgliteDynamicImport,
 } from './level1.js'
 
@@ -557,22 +557,23 @@ export async function fetchWorker(route, action, body = {}) {//from a Pinia stor
 	if (import.meta.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag
 	let headers = browserTag ? {cookie: `${composeCookieName()}=${composeCookieValue(browserTag)}`} : {}
 
-	return await $fetch(route, {method: 'POST', headers, body})//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
+	const f = $fetch//used from Nuxt front end, so we always have Nuxt's $fetch
+	return await f(route, {method: 'POST', headers, body})//(Note 1) throws if worker responds non-2XX; worker is first-party so that's what we want
 }
-export async function fetchLambda({from, route, action, body = {}}) {//from a Nuxt api handler worker only, fetch to a Network 23 Lambda
-	checkAction(from); checkRoute(route); checkAction(action)
+export async function fetchLambda({from, route, action, body = {}}) {//fetch to a Network 23 Lambda from a worker (with sealed envelope) or page (without)
+	checkActions({action: from, actions: ['Page.', 'Worker.']}); checkRoute(route); checkAction(action)
 
 	body = makePlain({...body, action})
-	body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})
+	if (from == 'Worker.') body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})//workers prove identity with a sealed envelope; pages can't (no server key), so each page->lambda route handles its own auth
 
-	return await $fetch(lambda23(route), {method: 'POST', body})
+	const f = $fetch//used from Nuxt front end or Nuxt back end, either way, we always have Nuxt's $fetch
+	return await f(lambda23(route), {method: 'POST', body})
 }
 export async function fetchProvider({url, options}) {//from a worker or lambda, fetch to a third-party REST API
 	checkUrl(url)
 	checkText(options.method)//must explicitly indicate method
 
-	let f = typeof $fetch == 'function' ? $fetch : ofetch//nuxt and nitro define $fetch; elsewhere fall back to ofetch which matches
-
+	const f = typeof $fetch == 'function' ? $fetch : ofetch//worker has Nuxt's $fetch; lambda uses ofetch directly, same underlying module
 	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
 }
 
@@ -620,7 +621,6 @@ export function originApex()  { return isCloud() ? `https://${Key('domain, publi
 
 function checkUrl(s) { checkText(s); new URL(s) }//the browser's URL constructor will throw if the given text is not an absolute URL
 function checkRoute(s) { checkText(s); if (!s.startsWith('/')) toss('form', {s}) }//confirm a route that starts with slash like "/hi"
-function checkAction(s) { checkText(s); if (!s.endsWith('.')) toss('form', {s}) }//confirm an action that ends with period like "Get."
 
 
 

@@ -205,7 +205,7 @@ checkName,
 validateName,
 
 validateTitle, validatePost,
-checkActions,
+checkAction, checkActions,
 checkEmail, validateEmail, validateEmailOrPhone,
 checkPhone, validatePhone,
 checkCard, validateCard,

@@ -584,22 +584,22 @@ export function validatePost(raw, limit) {//returns an array of paragraphs
 //  \__,_|\___|\__|_|\___/|_| |_|
 //                               
 
-export function checkActions({action, actions}) {//this actions check is an optional convenience for api endpoint code, and is not required
-	if (actions?.length) {//this api endpoint is coded to use the actions check, so now the page's body.action must be in the allowed list
-		checkText(action)//so, optional for the endpoint, but when used, required for the page
-		if (!/^[A-Z]/.test(action))    toss('form', {action, actions})
-		if (!/\.$/.test(action))       toss('form', {action, actions})
-		if (!actions.includes(action)) toss('action not supported', {action, actions})//the action the page posted isn't in the api endpoint code's list of allowed actions
-	}
+export function checkAction(action) { if (!hasAction(action)) toss('form', {action}) }
+export function checkActions({action, actions}) { if (actions?.length && !hasActions({action, actions})) toss('form', {action, actions}) }//optional convenience for api endpoint code; only checks if actions list is provided
+function hasAction(action) {
+	return hasText(action) && /^[A-Z][A-Za-z0-9]*\.$/.test(action)
+}
+function hasActions({action, actions}) {
+	return hasAction(action) && actions.length && actions.includes(action)
 }
 test(() => {
-	checkActions({action: 'Do.', actions: ['Do.', 'Some.', 'Thing.']})
+	ok(!hasAction(''))
+	ok(!hasAction('Go'))//period required
+	ok(hasAction('Go.'))
+	ok(hasAction('Go2.'))//number is fine
 
-	let actions = ['Get.', 'Set.', 'Delete.']
-	ok(actions.includes('Get.'))
-	ok(!actions.includes('Shift.'))
-	ok(!actions.includes(''))
-	ok(!actions.includes('get.'))
+	ok(hasActions({action: 'Action2.', actions: ['Action1.', 'Action2.']}))
+	ok(!hasActions({action: 'Action3.', actions: ['Action1.', 'Action2.']}))//named but missing
 })
 
 //             _ _     _       _       
