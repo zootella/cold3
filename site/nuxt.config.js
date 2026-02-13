@@ -55,7 +55,7 @@ configuration.components = {
 }
 
 //for tailwind
-configuration.css = ['./app/assets/css/style.css']
+configuration.css = ['~/assets/css/style.css']
 configuration.vite.plugins.push(tailwindcss())
 
 //for google fonts

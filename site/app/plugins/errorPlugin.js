@@ -1,17 +1,19 @@
 
-//search tag: errorfile
-
 export default defineNuxtPlugin((nuxtApp) => {
 
-	//Gets failures during SSR, plugin initialization, and the very first hydrate/mount on the client
+	//startup: SSR failures, plugin initialization, first hydrate/mount
 	nuxtApp.hook('app:error', async (error) => {
 		return await handleError({source: 'Nuxt.', error})
 	})
 
-	//Gets errors within render functions, lifecycle hooks, setup, watchers, event handlers, and so on
+	//runtime: render functions, lifecycle hooks, setup, watchers, event handlers
 	nuxtApp.hook('vue:error', async (error, instance, info) => {
 		return await handleError({source: 'Vue.', error, instance, info})
 	})
+
+	//these two hooks provide complete coverage. Vue also has config.errorHandler, but we don't use it: with errorHandler, Vue considers the error "handled" and stops propagation, so you'd have to rethrow to reach error.vue. with vue:error, the error keeps propagating naturally and our handler piggybacks on it to call showError(). vue:error also supports async, which we need for server-side Datadog logging
+
+	//additionally, we intentionally avoid three client-side listeners: router.onError, window 'error', and window 'unhandledrejection'. router.onError is narrow (navigation failures only) but redundant; app:error already covers those. the two window listeners are the opposite problem: they catch every uncaught error on the page, including from third-party scripts and browser extensions
 })
 
 async function handleError(details) {

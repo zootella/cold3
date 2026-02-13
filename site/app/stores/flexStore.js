@@ -63,6 +63,7 @@ const duration = ref(-1)
 const sticker = ref('')
 
 async function getHits() { if (loaded.value) return; loaded.value = true//only go through here once, server and client combined
+	notDefined//errorfile, we'll be able to get this to throw during the server render or the client spa
 	let p = _fetchHit('Get.')//start getting the information
 	if (import.meta.server) await p//if we're still on the server render, wait here to deliver a filled-in page
 }
