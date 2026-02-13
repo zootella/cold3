@@ -91,7 +91,7 @@ whether they use oauth v1 or 2, and PKCS, and so on
 | |_| | | |  __/ | |_| | | (_| | | | | | | |  __/ | |  __/_ _ _ 
  \__|_| |_|\___|  \__|_|  \__,_|_|_| |_| |_|\___|_|  \___(_|_|_)
                                                                 
-a long trail led to @auth/sveltekit...
+🥾 a long trail led to @auth/sveltekit...
 (1) there are turnkey identity providers like auth0.com
 but a service provider can become slow, unreliable, expensive,
 or require immediate developer attention to stay aligned with an update,
