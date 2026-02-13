@@ -88,7 +88,7 @@ defineExpose({//exposes methods to parent via template ref; super useful and sta
 		}
 		return await Worker(path, action, body)//throws on non-2XX; button remains doing but whole page enters error state
 	},
-	getTurnstileToken: async () => {//get turnstile token to pass to store methods that use fetchWorker directly
+	getTurnstileToken: async () => {//get turnstile token to pass to store methods that use Worker directly
 		if (props.useTurnstile && useTurnstileHere()) {
 			return await pageStore.getTurnstileToken()//this can take a few seconds
 		} else { return '' }

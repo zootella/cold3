@@ -150,7 +150,7 @@ Our Lambda receives the request and checkOriginOmitted in level2.js examines the
 	},
 	body: {
 		action: 'Gate.',
-		envelope: true,//with envelope true set here, our test runner below will mint a valid Network23. envelope, just like trusted code in the worker does on each call to fetchLambda
+		envelope: true,//with envelope true set here, our test runner below will mint a valid Network23. envelope, just like trusted code in the worker does on each call to Lambda
 	},
 	expect: {
 		status: 200,
@@ -237,7 +237,7 @@ async function runTest({route, method, headers, body, expect}) {
 	else toss('code')
 
 	if (body) {//prepare reqest body
-		if (body.envelope) body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})//fresh keycard just like fetchLambda mints
+		if (body.envelope) body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})//fresh keycard just like Lambda mints
 		body = makeText(body)//stringify
 	}
 

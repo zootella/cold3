@@ -501,50 +501,50 @@ test(() => {
 // |  _|  __/ || (__| | | |
 // |_|  \___|\__\___|_| |_|
 //                         
-/*
-[i] a summary of our fetch functions
+	/*
+	[i] a summary of our fetch functions
 
-use fetchWorker in components and stores; works fine on both server and client in universal rendering
-use fetchLambda in workers, only; only a worker can POST to the Application Programming Interfaces of Network 23
-use fetchProvider in workers and lambdas; only trusted code can contact third party providers
+	use fetchWorker in components and stores; works fine on both server and client in universal rendering
+	use fetchLambda in workers, only; only a worker can POST to the Application Programming Interfaces of Network 23
+	use fetchProvider in workers and lambdas; only trusted code can contact third party providers
 
-fetchWorker and fetchLambda use Nuxt's $fetch
-fetchProvider uses $fetch in a worker and ofetch in a lambda
+	fetchWorker and fetchLambda use Nuxt's $fetch
+	fetchProvider uses $fetch in a worker and ofetch in a lambda
 
-[ii] how exceptions work with these
+	[ii] how exceptions work with these
 
-all three throw exceptions upwards
-- fetchWorker and fetchLambda call our own code, so we want an exception to continue up the stack
-- your code using a third party API should try { fetchProvider } catch (e) { logAudit(...) }, catching an exception from an endpoint outsidd of our control
+	all three throw exceptions upwards
+	- fetchWorker and fetchLambda call our own code, so we want an exception to continue up the stack
+	- your code using a third party API should try { fetchProvider } catch (e) { logAudit(...) }, catching an exception from an endpoint outsidd of our control
 
-[iii] behaviors and protections our fetch functions add
+	[iii] behaviors and protections our fetch functions add
 
-generally:
-- default or mandatory POST method
-- forward browser tag cookie so the server rendering from the very first GET works
-- make the body a POJO so stringification done later doesn't blow up
-fetchLambda:
-- include the Network 23 sealed envelope
-fetchProvider:
-- pick which fetch function to call depending on what's available where we're running
+	generally:
+	- default or mandatory POST method
+	- forward browser tag cookie so the server rendering from the very first GET works
+	- make the body a POJO so stringification done later doesn't blow up
+	fetchLambda:
+	- include the Network 23 sealed envelope
+	fetchProvider:
+	- pick which fetch function to call depending on what's available where we're running
 
-[iv] below that, what calls what, adding which features
+	[iv] below that, what calls what, adding which features
 
-$fetch, from Nuxt:
-- knows about Nuxt's universal rendering, short circuiting to a function call when a component or store is SSR
-- adds the base URL for API routes
-and calls ofetch, formerly ohmyfetch, https://www.npmjs.com/package/ofetch 1.7 million weekly downloads, which:
-- stringifies and parses the JSON body
-- throws errors for non-2XX response codes
-- has more features Nuxt might be using, like request and response interceptors, and retry and timeout features
-which calls the browser's native fetch()
+	$fetch, from Nuxt:
+	- knows about Nuxt's universal rendering, short circuiting to a function call when a component or store is SSR
+	- adds the base URL for API routes
+	and calls ofetch, formerly ohmyfetch, https://www.npmjs.com/package/ofetch 1.7 million weekly downloads, which:
+	- stringifies and parses the JSON body
+	- throws errors for non-2XX response codes
+	- has more features Nuxt might be using, like request and response interceptors, and retry and timeout features
+	which calls the browser's native fetch()
 
-[v] nearby alternatives in JavaScriptland that we're *not* using
+	[v] nearby alternatives in JavaScriptland that we're *not* using
 
-Nuxt's useFetch and useAsyncData, which knows about universal rendering and returns reactive data
-Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the browser tag cookie manually
-other multi million download npm libraries, like axios, node-fetch, ky, and superagent
-*/
+	Nuxt's useFetch and useAsyncData, which knows about universal rendering and returns reactive data
+	Nuxt's useRequestFetch and requestFetch; fetchWorker has code to forward the browser tag cookie manually
+	other multi million download npm libraries, like axios, node-fetch, ky, and superagent
+	*/
 
 export async function Worker(url, action, body) {
 	return await fetchWorker('/api' + url, {body: {...body, action}})
@@ -586,29 +586,29 @@ export async function fetchProvider(url, options) {//from a worker or lambda, fe
 
 	return await f(url, options)//f is $fetch in worker, ofetch in lambda, and both throw on a non-2XX response code
 }
-/*
-fetchWorker and fetchLambda talk to your own endpoints; fetchProvider is for third-party APIs, so the pattern is different:
-(1) your own endpoints respond with a task as the body; here, make your own task at the top
-(2) if your own endpoints respond 500, you *want* to keep throwing upwards; here instead, use a try{} block to protect yourself from third-party behavior outside your control
-(3) fetchWorker and fetchLambda use POST by default; here, you must set the method explicitly
-(4) you might need to include some headers
-(5) fetchWorker and fetchLambda call makePlain(body) to avoid stringification exceptions, and can do this because with your own endpoints, the body is always JSON; here, body might be text or multipart form, so you have to call makePlain() if you need to
-(6) examine the response from the third-party API, and set task.success upon proof it worked
-(7) returning the wrapped task matches returning the response body task from one of your own endpoints
+	/*
+	fetchWorker and fetchLambda talk to your own endpoints; fetchProvider is for third-party APIs, so the pattern is different:
+	(1) your own endpoints respond with a task as the body; here, make your own task at the top
+	(2) if your own endpoints respond 500, you *want* to keep throwing upwards; here instead, use a try{} block to protect yourself from third-party behavior outside your control
+	(3) fetchWorker and fetchLambda use POST by default; here, you must set the method explicitly
+	(4) you might need to include some headers
+	(5) fetchWorker and fetchLambda call makePlain(body) to avoid stringification exceptions, and can do this because with your own endpoints, the body is always JSON; here, body might be text or multipart form, so you have to call makePlain() if you need to
+	(6) examine the response from the third-party API, and set task.success upon proof it worked
+	(7) returning the wrapped task matches returning the response body task from one of your own endpoints
 
-let task = Task({name: 'fetch example'})//(1)
-try {//(2)
-	task.response = await fetchProvider(url, {
-		method: 'POST',//(3)
-		headers: {},//(4)
-		body: makePlain(body),//(5)
-	})
-	if (task.response.success && hasText(task.response.otherDetail)) task.success = true//(6)
-} catch (e) { task.error = e }
-task.finish()
-if (!task.success) toss('act apporpriately for a failed result')
-return task//(7)
-*/
+	let task = Task({name: 'fetch example'})//(1)
+	try {//(2)
+		task.response = await fetchProvider(url, {
+			method: 'POST',//(3)
+			headers: {},//(4)
+			body: makePlain(body),//(5)
+		})
+		if (task.response.success && hasText(task.response.otherDetail)) task.success = true//(6)
+	} catch (e) { task.error = e }
+	task.finish()
+	if (!task.success) toss('act apporpriately for a failed result')
+	return task//(7)
+	*/
 function checkRelativeUrl(url) { checkText(url); if (url[0] != '/') toss('data', {url}) }
 function checkAbsoluteUrl(url) { checkText(url); new URL(url) }//the browser's URL constructor will throw if the given url is not absolute
 export function lambda23(route) {//get the url of a Network 23 lambda function route, like '/message' or '/upload', running cloud or local
@@ -636,53 +636,52 @@ export function originApex()  { return isCloud() ? `https://${Key('domain, publi
 
 
 
-/*
-notes coming back here months later, ttd december
-ok both fetchWorker and fetchLambda are convenience wrappers on top of $fetch, that's fine
-but in use, you want them to work differently, to be more convenient
-url should be route, it's not a complete url, right?
-POST should be required; if you're adding GET to workers, you'll have to go back in here and change things for that
-let task = await fetchWorker('/api/name', 'Status.', {count: 7})
-action should be explicit and required
-i think you don't need to expose options, just body
-should this return a task, and then you do task.response, even though if there's an exception it throws rather than pins, that would get you the duration time without you having to measure it yourself
-ok but looking at this now you also wrote it this way to align with fetchProvider, where you do need options, so you could do another layer on top of fetchWorker and fetchLambda like postWorker() and postLambda()
-yeah and if you do those, then that's where they fill in all the defaults, like empty body, net23 envelope, that stuff
+	/*
+	notes coming back here months later, ttd december
+	ok both fetchWorker and fetchLambda are convenience wrappers on top of $fetch, that's fine
+	but in use, you want them to work differently, to be more convenient
+	url should be route, it's not a complete url, right?
+	POST should be required; if you're adding GET to workers, you'll have to go back in here and change things for that
+	let task = await fetchWorker('/api/name', 'Status.', {count: 7})
+	action should be explicit and required
+	i think you don't need to expose options, just body
+	should this return a task, and then you do task.response, even though if there's an exception it throws rather than pins, that would get you the duration time without you having to measure it yourself
+	ok but looking at this now you also wrote it this way to align with fetchProvider, where you do need options, so you could do another layer on top of fetchWorker and fetchLambda like postWorker() and postLambda()
+	yeah and if you do those, then that's where they fill in all the defaults, like empty body, net23 envelope, that stuff
 
-ok, thsi is a complex refactor, lots of complex areas that could or dont or shouldn't interact
-one way to do this is, imagine the page doesn't care about how long turnstile or the worker call takes; you've observed it as always 3 seconds, faster on firefox, for months now, it's not interesting. also if something interesting did happen, well you can't know because the page doesn't have a trusted way to report back to hq. also also maybe you won't need turnstile nearly anywhere. or maybe you'll use 800ms of hashcash instead, or something
-so the play here is probably to leave Task and turnstile out of Post, and add turnstile (but not Task, not duration reporting) to Button
+	ok, thsi is a complex refactor, lots of complex areas that could or dont or shouldn't interact
+	one way to do this is, imagine the page doesn't care about how long turnstile or the worker call takes; you've observed it as always 3 seconds, faster on firefox, for months now, it's not interesting. also if something interesting did happen, well you can't know because the page doesn't have a trusted way to report back to hq. also also maybe you won't need turnstile nearly anywhere. or maybe you'll use 800ms of hashcash instead, or something
+	so the play here is probably to leave Task and turnstile out of Post, and add turnstile (but not Task, not duration reporting) to Button
 
-ok to do this first you need to add actions to up, main, vhs demo, those
-before you reutrn here, do a separate refactor where you (1) add turnstile to Button and (2) migrate remaining parent users of PostButton to Button and (3) eliminate PostButton entirely; then return here
-and then you probably always want to keep fetchLambda and fetchWorker as their api aligns with fetchProvider
-except you don't use them anywhere, instead you always use Post and Lambda
-and ok also there's no Task or duration anywhere in this anymore, and you've figured out you do want (and it's working so that) any exception any depth in the stack automatically throws up through 500s and crashes the page without leaking information, that's great
-ok cool, you've got a pretty good plan forming here now
-*/
-//oh, realized this is another attempt at Worker() and Lambda()
-export async function _Post(route, action, body) {//draft convenience method for fetchWorker, ttd december
-	checkText(route); if (!route.startsWith('/api/')) toss('form', {route, action, body})
-	checkText(action)
-	if (!body) body = {}
+	ok to do this first you need to add actions to up, main, vhs demo, those
+	before you reutrn here, do a separate refactor where you (1) add turnstile to Button and (2) migrate remaining parent users of PostButton to Button and (3) eliminate PostButton entirely; then return here
+	and then you probably always want to keep fetchLambda and fetchWorker as their api aligns with fetchProvider
+	except you don't use them anywhere, instead you always use Post and Lambda
+	and ok also there's no Task or duration anywhere in this anymore, and you've figured out you do want (and it's working so that) any exception any depth in the stack automatically throws up through 500s and crashes the page without leaking information, that's great
+	ok cool, you've got a pretty good plan forming here now
+	*/
+	//oh, realized this is another attempt at Worker() and Lambda()
+	export async function _Post(route, action, body) {//draft convenience method for Worker, ttd december
+		checkText(route); if (!route.startsWith('/api/')) toss('form', {route, action, body})
+		checkText(action)
+		if (!body) body = {}
 
-	let options = {}
-	options.method = 'POST'
-	options.body = body
-	options.body.action = action
-	return await fetchWorker(route, options)
-	//hi claude, ok, is this draft ready to simplify existing calls to fetchWorker?
-}
-export async function _Lambda(route, action, body) {
-	checkText(route); if (!route.startsWith('/')) toss('form', {route, action, body})
-	checkText(action)
-	if (!body) body = {}
+		let options = {}
+		options.method = 'POST'
+		options.body = body
+		options.body.action = action
+		return await fetchWorker(route, options)
+	}
+	export async function _Lambda(route, action, body) {
+		checkText(route); if (!route.startsWith('/')) toss('form', {route, action, body})
+		checkText(action)
+		if (!body) body = {}
 
-	let options = {}
-	options.body = body
-	options.body.action = action
-	return await fetchLambda(route, options)
-}
+		let options = {}
+		options.body = body
+		options.body.action = action
+		return await fetchLambda(route, options)
+	}
 
 
 

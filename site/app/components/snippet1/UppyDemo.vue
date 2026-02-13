@@ -35,6 +35,7 @@ async function onPasswordEnter() {
 }
 
 async function lambda(body) {
+	//ttd february, here's the argument soon for Lambda({from: 'Page.', route, action, body})
 	return await $fetch(lambda23('/upload'), {//use Nuxt $fetch rather than browser fetch to throw on non 2XX; fetchLambda is only for worker<->lambda calls; here, the page needs to use the /upload lambda directly
 		method: 'POST',
 		body: {...body, permissionEnvelope: refPermissionEnvelope.value},
