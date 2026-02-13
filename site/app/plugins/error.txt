@@ -42,14 +42,6 @@ also because action is different, you can't sequentialShared _fetchHit
 you've got to add a layer between the calls above and _fetchHit below
 */
 
-/*
-good older note about how the same code mistake could throw in the client spa, or during a server render (3) ttd february
-
-so if things are designed correctly and working well, the client throw will blow up the page, letting the user report
-and the server throw will log the exception to datadog--but what does the page look like?
-
-note that if there's an error in server rendering, things are so broken that we don't get to error.vue at all. the browser gets a static page titled Nuxt with a green glow at the bottom, and you tried to customize that, first with 500.html, then with a nuxt config error handler that used h3 to return a html string, but nothing worked; ok, added a notDefined to flexStore.getHits to try running into that in the client spa, and separately, the server render!
-*/
 
 
 
