@@ -1263,9 +1263,9 @@ async function prepareLog(status, type, label, headline, watch) {
 	return {s, l}//return stringified s, and readable for local development l, forms
 }
 async function sendLog(s) {
-	let task = Task({name: 'fetch datadog'})
+	let task = {name: 'fetch datadog'}
+	let t = Now()
 	try {
-
 		task.response = await fetchProvider({url: Key('datadog endpoint, public'), options: {
 			method: 'POST',
 			headers: {
@@ -1274,10 +1274,8 @@ async function sendLog(s) {
 			},
 			body: s,//$fetch/ofetch see this JSON string and won't double stringify it
 		}})
-		//datadog should return HTTP status 202 and empty body on success, but there's no easy way to see that without dropping down to browser fetch
-
 	} catch (e) { task.error = e }
-	task.finish()//even though we don't do anything with a failed task, the try block protects our code from the unpredictable behavior of this third-party API we're calling with fetch provider
+	task.duration = Now() - t//the try block protects our code from the unpredictable behavior of this third-party API we're calling with fetch provider
 }
 
 
@@ -1325,7 +1323,7 @@ export async function checkTurnstileToken(token, ip) {
 	//turn this true and deploy to demonstrate turnstile protection
 	if (false) token = 'Extra'+token//add some extra stuff at the start of the token to mess it up
 
-	let task = Task({name: 'fetch turnstile'})
+	let response, error
 	try {
 
 		let body = new FormData()
@@ -1333,14 +1331,12 @@ export async function checkTurnstileToken(token, ip) {
 		body.append('response', token)
 		body.append('remoteip', ip)
 
-		task.response = await fetchProvider({url: Key('turnstile url, public'), options: {method: 'POST', body}})
-		if (task.response.success && hasText(task.response.hostname)) task.success = true//make sure the API response looks good
+		response = await fetchProvider({url: Key('turnstile url, public'), options: {method: 'POST', body}})
 
-	} catch (e) { task.error = e }
-	task.finish()
-	if (!task.success) {
-		logAudit('turnstile', {token, ip, task})//for third party messaging APIs, we audit success and failure; here just failure
-		toss('turnstile challenge failed', {token, ip, task})
+	} catch (e) { error = e }
+	if (!response?.success || !hasText(response?.hostname)) {
+		logAudit('turnstile', {token, ip, response, error})//for third party messaging APIs, we audit success and failure; here just failure
+		toss('turnstile challenge failed', {token, ip, response, error})
 	}
 }
 

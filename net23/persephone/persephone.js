@@ -82,10 +82,6 @@ export async function bucketDynamicImport() {
 	return _bucket
 }
 
-export async function warm() {
-	return {success: true}
-}
-
 //                       _ _                   _                     
 //   ___ _ __ ___   __ _(_) |   __ _ _ __   __| |  ___ _ __ ___  ___ 
 //  / _ \ '_ ` _ \ / _` | | |  / _` | '_ \ / _` | / __| '_ ` _ \/ __|

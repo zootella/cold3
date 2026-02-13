@@ -5,7 +5,7 @@ runTests, runTestsSticker,
 } from 'icarus'//remember the automatic nuxt icarus imports aren't here on the lambda side
 
 import {
-sendMessage, warm,
+sendMessage,
 } from '../persephone/persephone.js'
 
 export const handler = async (lambdaEvent, lambdaContext) => {
@@ -18,7 +18,6 @@ async function doorHandleBelow({door, body, action}) {
 
 	} else if (action == 'Up2.') {
 
-		await warm()
 		return {success: true, note: `lambda says: ${Sticker()}, up2done`}
 
 	} else if (action == 'Up3.') {
