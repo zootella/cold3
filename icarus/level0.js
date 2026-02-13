@@ -181,6 +181,19 @@ test(() => {
 		ok(tickToText(t) == s)
 		ok(textToTick(s) == t)
 	}
+	function t(t, s, d) {
+		ok(t == Date.parse(d))
+		f(t, s)
+	}
+	f(631152000000, '1990')//every millisecond since 1970 has a single understandable text form; it's one-to-one, so, reversible
+	t(1322319720000, '2011nov26.1502', '2011-11-26T15:02:00Z')//Curiosity launch
+	t(1344230277300, '2012aug6.0517.57300', '2012-08-06T05:17:57.3Z')//and landing
+})
+test(() => {
+	function f(t, s) {
+		ok(tickToText(t) == s)
+		ok(textToTick(s) == t)
+	}
 	f(631152000000, '1990')//start of year
 	f(633830400000, '1990feb')//start of month (not jan, so we show month but omit day 1)
 	f(633916800000, '1990feb2')//start of day
