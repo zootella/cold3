@@ -14,7 +14,7 @@ checkHash, checkInt, roundDown, hashText, given,
 otpGenerate, otpPrefix,
 makePlain, makeObject, makeText,
 safefill, deindent,
-isInSimulationMode, ageNow, prefixTags,
+isInSimulationMode, ageNow,
 random32,
 } from './level0.js'
 import {//from level1
@@ -199,12 +199,12 @@ export async function otpSend({letter, v, provider, browserHash}) {
 	let rows5 = await trailGet(safefill`OTP opened challenge: address ${v.f0}`, otpConstants.week)//in the last 5 days?
 	let rows1 = rows5.filter(row => row.row_tick >= now - otpConstants.day)//in the last 1 day?
 	if (rows1.length >= otpConstants.limitHard) {//too many! 24 codes in the last 24 hours!
-		return {success: false, reason: 'CoolHard.'}//here, we enforce the "hard" limit, which is important to prevent an attacker from spamming their friend with useless unwanted codes
+		return {success: false, outcome: 'CoolHard.'}//here, we enforce the "hard" limit, which is important to prevent an attacker from spamming their friend with useless unwanted codes
 	}
 	if (rows5.length >= otpConstants.limitSoft) {//we've sent 2+ codes to this address in the last 5 days
 		let cool = rows5[0].row_tick + otpConstants.minutes//tick when this address cools down; first row in array is most recent
 		if (now < cool) {
-			return {success: false, reason: 'CoolSoft.'}//here, we enforce the "soft" limit, to slow the user down, encourage them to actually check their spam folder rather than spamming themselves another code
+			return {success: false, outcome: 'CoolSoft.'}//here, we enforce the "soft" limit, to slow the user down, encourage them to actually check their spam folder rather than spamming themselves another code
 		}
 	}//if we make it here, we're allowed to send the address a new code
 	let strength = rows5.length < otpConstants.limitStrong ? otpConstants.short : otpConstants.standard//choose code length 4 or 6
@@ -268,7 +268,7 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 
 	//find otp by tag (otp.js filters expired otps before calling us, so if we find it, it's valid)
 	let o = letter.otps.find(o => o.tag == tag)
-	if (!o) return {success: false, reason: 'Expired.'}//probably expired, maybe never existed, either way lead the user to try again with a new challenge
+	if (!o) return {success: false, outcome: 'Expired.'}//probably expired, maybe never existed, either way lead the user to try again with a new challenge
 
 	let rows = await trailGetAny([
 		safefill`OTP opened challenge: tag ${tag}`,
@@ -284,7 +284,7 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 	let closed = rows.find(r => r.hash == closedHash)//true if we found proof we closed this challenge in the same time horizon
 	let missed = rows.filter(r => r.hash == missedHash).length//number of wrong guesses we recorded on this challenge
 
-	if (!(opened && !closed && missed < otpConstants.guesses)) return {success: false, reason: 'Expired.'}//make sure trail agrees that this is a challenge we opened, didn't close, and still has guesses; very unlikely, possible with race condition, or tampering; ok to treat like "Expired, please request a new code" rather than blowing up the page
+	if (!(opened && !closed && missed < otpConstants.guesses)) return {success: false, outcome: 'Expired.'}//make sure trail agrees that this is a challenge we opened, didn't close, and still has guesses; very unlikely, possible with race condition, or tampering; ok to treat like "Expired, please request a new code" rather than blowing up the page
 
 	if (hasTextSame(guess, o.answer)) {// ✍🏻 correct guess
 
@@ -304,11 +304,11 @@ export async function otpEnter({letter, tag, guess, browserHash}) {
 			await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//mark it as such
 			letter.otps = letter.otps.filter(o => o.tag != tag)//letter is a convenience; trail is a necessity here--otherwise an attacker could just replay the same valid envelope, guessing sequentially until they hit the correct answer!
 
-			return {success: false, reason: 'Expired.'}//treat exhausted guesses like expired; user remedy is the same: request a new code
+			return {success: false, outcome: 'Expired.'}//treat exhausted guesses like expired; user remedy is the same: request a new code
 
 		} else {// ✍🏻 person can guess again
 
-			return {success: false, reason: 'Wrong.', lives}//tell the person how many guesses they have left; may encourage them to type more carefully
+			return {success: false, outcome: 'Wrong.', lives}//tell the person how many guesses they have left; may encourage them to type more carefully
 		}
 	}
 }
@@ -338,7 +338,7 @@ grid(async () => {//otp: multiple addresses in one letter - alice's email and ph
 	let t = letter.otps.find(o => o.address.type == 'Phone.')
 
 	//she guesses wrong for email, then correct for phone, then correct for email
-	ageNow(Time.minute); ok((await otpEnter({letter, tag: e.tag, guess: '101', browserHash})).reason == 'Wrong.')
+	ageNow(Time.minute); ok((await otpEnter({letter, tag: e.tag, guess: '101', browserHash})).outcome == 'Wrong.')
 	ageNow(Time.minute); ok((await otpEnter({letter, tag: t.tag, guess: t.answer, browserHash})).success); ok(letter.otps.length == 1)
 	ageNow(Time.minute); ok((await otpEnter({letter, tag: e.tag, guess: e.answer, browserHash})).success); ok(letter.otps.length == 0)
 })
@@ -352,7 +352,7 @@ grid(async () => {//otp: code expires after 20 minutes
 	ageNow(30*Time.minute)//wait past the 20 minute expiration
 	let enterResult = await otpEnter({letter, tag: o.tag, guess: o.answer, browserHash})
 	ok(!enterResult.success)
-	ok(enterResult.reason == 'Expired.')
+	ok(enterResult.outcome == 'Expired.')
 })
 grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts code
 	let browserHash = random32()
@@ -365,16 +365,16 @@ grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts co
 	let o4 = letter.otps.find(o => o.address.f0 == 'wrong4@example.com')
 	const replay = () => ({otps: [{...o3}, {...o4}]})//an attacker can't look within or modify or create the encrypted envelope, but they can get one and then replay it over and over. tabletop this in tests to demonstrate that trail table provides the defense
 
-	ok((await otpEnter({letter: replay(), tag: o3.tag, guess: '101', browserHash})).reason == 'Wrong.')
-	ok((await otpEnter({letter: replay(), tag: o3.tag, guess: '102', browserHash})).reason == 'Wrong.')
-	ok((await otpEnter({letter: replay(), tag: o3.tag, guess: '103', browserHash})).reason == 'Wrong.')//three wrong guesses
+	ok((await otpEnter({letter: replay(), tag: o3.tag, guess: '101', browserHash})).outcome == 'Wrong.')
+	ok((await otpEnter({letter: replay(), tag: o3.tag, guess: '102', browserHash})).outcome == 'Wrong.')
+	ok((await otpEnter({letter: replay(), tag: o3.tag, guess: '103', browserHash})).outcome == 'Wrong.')//three wrong guesses
 	ok((await otpEnter({letter: replay(), tag: o3.tag, guess: o3.answer, browserHash})).success)//fourt correct guess accepted
 
-	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: '101', browserHash})).reason == 'Wrong.')
-	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: '102', browserHash})).reason == 'Wrong.')
-	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: '103', browserHash})).reason == 'Wrong.')//three wrong guesses
-	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: '104', browserHash})).reason == 'Expired.')//fourth wrong is expired
-	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: o4.answer, browserHash})).reason == 'Expired.')//fifth correct rejected
+	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: '101', browserHash})).outcome == 'Wrong.')
+	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: '102', browserHash})).outcome == 'Wrong.')
+	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: '103', browserHash})).outcome == 'Wrong.')//three wrong guesses
+	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: '104', browserHash})).outcome == 'Expired.')//fourth wrong is expired
+	ok((await otpEnter({letter: replay(), tag: o4.tag, guess: o4.answer, browserHash})).outcome == 'Expired.')//fifth correct rejected
 })
 grid(async () => {//otp: replacement code kills previous code to same address
 	let browserHash = random32()
@@ -391,7 +391,7 @@ grid(async () => {//otp: replacement code kills previous code to same address
 	ok(o2.tag != o1.tag)//it's a different code
 
 	let replay = () => ({otps: [{...o1}, {...o2}]})//attacker is replaying the envelope but trail table still protects us
-	ok((await otpEnter({letter: replay(), tag: o1.tag, guess: o1.answer, browserHash})).reason == 'Expired.')//correct but invalidated
+	ok((await otpEnter({letter: replay(), tag: o1.tag, guess: o1.answer, browserHash})).outcome == 'Expired.')//correct but invalidated
 	ok((await otpEnter({letter: replay(), tag: o2.tag, guess: o2.answer, browserHash})).success)//second code works
 })
 grid(async () => {//otp: attacker replaying envelope still can't get more guesses
@@ -402,11 +402,11 @@ grid(async () => {//otp: attacker replaying envelope still can't get more guesse
 	let o = letter.otps[0]
 	const replay = () => ({otps: [{...o}]})
 
-	ok((await otpEnter({letter: replay(), tag: o.tag, guess: '101', browserHash})).reason == 'Wrong.')
-	ok((await otpEnter({letter: replay(), tag: o.tag, guess: '102', browserHash})).reason == 'Wrong.')
-	ok((await otpEnter({letter: replay(), tag: o.tag, guess: '103', browserHash})).reason == 'Wrong.')
-	ok((await otpEnter({letter: replay(), tag: o.tag, guess: '104', browserHash})).reason == 'Expired.')//all wrong
-	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).reason == 'Expired.')//correct but invalidated
+	ok((await otpEnter({letter: replay(), tag: o.tag, guess: '101', browserHash})).outcome == 'Wrong.')
+	ok((await otpEnter({letter: replay(), tag: o.tag, guess: '102', browserHash})).outcome == 'Wrong.')
+	ok((await otpEnter({letter: replay(), tag: o.tag, guess: '103', browserHash})).outcome == 'Wrong.')
+	ok((await otpEnter({letter: replay(), tag: o.tag, guess: '104', browserHash})).outcome == 'Expired.')//all wrong
+	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).outcome == 'Expired.')//correct but invalidated
 })
 grid(async () => {//otp: hard limit of 24 codes per address per day
 	let v = validateEmailOrPhone('hardlimit@example.com')//attacker targets a single address
@@ -418,13 +418,13 @@ grid(async () => {//otp: hard limit of 24 codes per address per day
 	ageNow((22*Time.hour)+(4*Time.minute))//move clock to 00:04 next day; first message is still 1 minute within 24 hour horizon
 	
 	let r = await otpSend({letter: {otps: []}, v, provider: 'A', browserHash: random32()})
-	ok(!r.success); ok(r.reason == 'CoolHard.')//blocked from sending another message
+	ok(!r.success); ok(r.outcome == 'CoolHard.')//blocked from sending another message
 
 	ageNow(2*Time.minute)//move forward 2 minutes, now the first message is 1 minute over the horizon
 	r = await otpSend({letter: {otps: []}, v, provider: 'A', browserHash: random32()})
 	ok(r.success)//message 25 is allowed now
 	r = await otpSend({letter: {otps: []}, v, provider: 'A', browserHash: random32()})
-	ok(!r.success); ok(r.reason == 'CoolHard.')//but not message 26
+	ok(!r.success); ok(r.outcome == 'CoolHard.')//but not message 26
 })
 
 grid(async () => {//otp: soft limit requires 1 minute between codes after first 2 codes in past 5 days
@@ -433,14 +433,14 @@ grid(async () => {//otp: soft limit requires 1 minute between codes after first 
 
 	ok((await send()).success)//code sent at 00:00:00
 	ok((await send()).success)//code sent at 00:00:00, first two go out back-to-back
-	ok((await send()).reason == 'CoolSoft.')//third attempt blocked
+	ok((await send()).outcome == 'CoolSoft.')//third attempt blocked
 	ageNow(90*Time.second)
 	ok((await send()).success)//code sent at 00:01:30, third allowed after more than a minute
-	ok((await send()).reason == 'CoolSoft.')//fourth attempt blocked
+	ok((await send()).outcome == 'CoolSoft.')//fourth attempt blocked
 
 	ageNow((5*Time.day)-(30*Time.second))//first 2 codes fell over horizon, third is 30s from edge
 	ok((await send()).success)//fourth code goes out
-	ok((await send()).reason == 'CoolSoft.')//fifth needs another minute
+	ok((await send()).outcome == 'CoolSoft.')//fifth needs another minute
 })
 grid(async () => {//otp: first code to an address in 5d window is short (4 digits), then standard (6), then short again
 	let v = validateEmailOrPhone('codelength@example.com')
@@ -466,7 +466,7 @@ grid(async () => {//otp: getting a challenge correct closes it on the trail
 
 	const replay = () => ({otps: [{...o}]})
 	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).success)//correct
-	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).reason == 'Expired.')//replay envelope to try to get that same right answer on that same challenge correcct again; trail knows it's closed
+	ok((await otpEnter({letter: replay(), tag: o.tag, guess: o.answer, browserHash})).outcome == 'Expired.')//replay envelope to try to get that same right answer on that same challenge correcct again; trail knows it's closed
 })
 
 

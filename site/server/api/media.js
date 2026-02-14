@@ -28,7 +28,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		} else {
 			return {
 				success: false,
-				reason: 'BadPassword.',
+				outcome: 'BadPassword.',
 			}
 		}
 

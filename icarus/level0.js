@@ -1183,18 +1183,8 @@ export function Tag() {//generate a new universally unique double-clickable tag 
 			'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
 			tagLength)
 	}
-	let tag = _tagMaker()
-	if (_simulationMode) {
-		const minimumRandom = 6//when running grid tests, tags must still have at least 6 digits that are random
-		let prefix = `${_tagPrefix}${_tagNumber++}zz`
-		if (prefix.length + minimumRandom > tagLength) toss('data')
-		return prefix + tag.slice(prefix.length)//overlay the test prefix to make a tag like "Testing2zziqJLsrLBaHU"
-	} else {
-		return tag
-	}
+	return _tagMaker()
 }
-let _tagPrefix = 'Test', _tagNumber = 1
-export function prefixTags(s) { _tagPrefix = s; _tagNumber = 1 }
 
 //make sure a tag is exactly 21 letters and numbers, for the database
 export function checkTagOrBlank(s) { if (s === ''); else checkTag(s); return s }

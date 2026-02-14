@@ -36,10 +36,10 @@ async function onClick() {
 	log('otp enter post task', look(task))
 	if (task.success) {
 		pageStore.addNotification("✔️ address verified (new otp system)")
-	} else if (task.reason == 'Wrong.') {
+	} else if (task.outcome == 'Wrong.') {
 		//box stays, user can try again; lives is always 1+ here
 		//-[]box should indicate incorrect guess, clear the field, tell the user to try again
-	} else if (task.reason == 'Expired.') {
+	} else if (task.outcome == 'Expired.') {
 		//box will disappear when we set pageStore.otps below
 		pageStore.addNotification('code expired or exhausted; request a new code to try again')
 	}

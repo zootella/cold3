@@ -15,7 +15,7 @@ sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 runTests,
 safefill, deindent, cutAfterLast,
-enterSimulationMode, isInSimulationMode, ageNow, prefixTags,
+enterSimulationMode, isInSimulationMode, ageNow,
 random32,
 } from './level0.js'
 import {//from level1
@@ -1867,14 +1867,6 @@ grid(() => {
 	let t2 = Now()
 	ok(t2 - t1 >= Time.minute)
 
-	prefixTags('Test')//this is the default staring prefix
-	ok(Tag().startsWith('Test1'))//and tags start with a prefix and number, "Test" to begin by default
-	ok(Tag().startsWith('Test2'))
-	ok(Tag().startsWith('Test3'))
-	prefixTags('Note')//we can change it whenever
-	ok(Tag().startsWith('Note1'))//and with each change, the number resets
-	for (let i = 0; i < 50; i++) Tag()
-	ok(Tag().startsWith('Note52'))
 })
 
 //grid tests use PGlite to create an empty and ephemeral version of the database tables

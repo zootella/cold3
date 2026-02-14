@@ -109,7 +109,7 @@ async function mount() {
 				name: upload.file.name, size: upload.file.size,
 				tipHash: upload.tipHash, pieceHash: upload.pieceHash,
 			})//again fast, tell the worker the hashes we got; ttd january it'll look in the database to see if the bucket already has the file, for instance, and, if so, we can short-circuit to success through uppy to the file manager for the user on the page
-			if (task.reason == 'UploadDuplicate.') { upload.cancel = true }//set flag; caller will handle uppy.removeFile
+			if (task.outcome == 'UploadDuplicate.') { upload.cancel = true }//set flag; caller will handle uppy.removeFile
 			return task
 		}
 	})
