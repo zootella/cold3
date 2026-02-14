@@ -17,27 +17,27 @@ const computedState = computed(() => {
 })
 
 async function onClick() {
-	let response = await refButton.value.post('/otp', 'SendTurnstile.', {
+	let task = await refButton.value.post('/otp', 'SendTurnstile.', {
 		address: refAddress.value,
 		provider: refProvider.value,
 		envelope: refCookie.value || undefined,
 	})
-	log('otp send post response', look(response))
+	log('otp send post task', look(task))
 
-	if (response.success) {
+	if (task.success) {
 		//automatically, an enter box will appear
 		//- collapse the controls in this box, as the user doesn't need to use them again
-	} else if (response.reason == 'CoolSoft.') {
+	} else if (task.reason == 'CoolSoft.') {
 		//automatically, nothing changes
 		//- collapse the controls in this box, as the user can't use them for another minute
 		pageStore.addNotification("To keep things secure, we can't send another code to that address right away. Wait one minute, and try again, please.")//ttd january, it may instead make sense to write that into the enter box, letting them choose a different address, or something
-	} else if (response.reason == 'CoolHard.') {
+	} else if (task.reason == 'CoolHard.') {
 		//automatically, nothing changes
 		//- collapse the controls in this box, as the user can't use them for another minute
 		pageStore.addNotification("Our system has noticed too much happening too fast. To keep things secure, that address is locked down for 24 hours.")
 	}
-	refCookie.value = hasText(response.envelope) ? response.envelope : null//update or clear the temporary envelope cookie
-	pageStore.otps = response.otps
+	refCookie.value = hasText(task.envelope) ? task.envelope : null//update or clear the temporary envelope cookie
+	pageStore.otps = task.otps
 }
 
 </script>

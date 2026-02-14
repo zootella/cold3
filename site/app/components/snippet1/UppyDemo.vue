@@ -26,9 +26,9 @@ async function onPasswordEnter() {
 		saltData: Data({base62: Key('password, salt, public')}),
 	})
 	refStatus.value = 'Checking...'
-	let response = await fetchWorker('/media', 'MediaUploadPermission.', {hash})
-	if (response.success) {
-		refPermissionEnvelope.value = response.permissionEnvelope//now we've got the envelope we'll use to talk to the lambda directly
+	let task = await fetchWorker('/media', 'MediaUploadPermission.', {hash})
+	if (task.success) {
+		refPermissionEnvelope.value = task.permissionEnvelope//now we've got the envelope we'll use to talk to the lambda directly
 		await mount()
 	} else { refStatus.value = 'Wrong password' }
 }
@@ -52,18 +52,18 @@ async function mount() {
 
 			} else {
 
-				let response = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadCreate.', body: {contentType: upload.file.type, permissionEnvelope: refPermissionEnvelope.value}})
+				let task = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadCreate.', body: {contentType: upload.file.type, permissionEnvelope: refPermissionEnvelope.value}})
 				//tag's tale 2/4: page receives tag from Lambda, stores in upload.tag
-				upload.key = response.key//the bucket path the lambda chose for this individual file upload attempt
-				upload.tag = response.tag//and the tag it picked for it, which is also baked into key, but here separate so we dont' have to do the work of parsing it out
-				return {uploadId: response.uploadId, key: response.key}
+				upload.key = task.key//the bucket path the lambda chose for this individual file upload attempt
+				upload.tag = task.tag//and the tag it picked for it, which is also baked into key, but here separate so we dont' have to do the work of parsing it out
+				return {uploadId: task.uploadId, key: task.key}
 			}
 		},
 
 		// 🟠 Sign
 		async signPart(file, {uploadId, key, partNumber}) {
-			let response = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadSign.', body: {uploadId, key, partNumber, permissionEnvelope: refPermissionEnvelope.value}})
-			return {url: response.url}
+			let task = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadSign.', body: {uploadId, key, partNumber, permissionEnvelope: refPermissionEnvelope.value}})
+			return {url: task.url}
 		},
 
 		// 🟠 Complete
@@ -79,8 +79,8 @@ async function mount() {
 
 		// 🟠 List
 		async listParts(file, {uploadId, key}) {
-			let response = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadList.', body: {uploadId, key, permissionEnvelope: refPermissionEnvelope.value}})
-			return response.parts
+			let task = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadList.', body: {uploadId, key, permissionEnvelope: refPermissionEnvelope.value}})
+			return task.parts
 		},
 	})
 
@@ -105,12 +105,12 @@ async function mount() {
 			t3 = Now()
 			log(`#️⃣ page hashed ${saySize4(upload.file.size)} in ${commas(t3 - t2)}ms (${commas(Math.round(upload.file.size / (t3 - t2)))} bytes/ms)`, `tip hashed in ${t2 - t1}ms`, `tip ${upload.tipHash} and ${upload.pieceHash} piece hashes`)
 
-			let response = await fetchWorker('/media', 'MediaUploadHash.', {
+			let task = await fetchWorker('/media', 'MediaUploadHash.', {
 				name: upload.file.name, size: upload.file.size,
 				tipHash: upload.tipHash, pieceHash: upload.pieceHash,
 			})//again fast, tell the worker the hashes we got; ttd january it'll look in the database to see if the bucket already has the file, for instance, and, if so, we can short-circuit to success through uppy to the file manager for the user on the page
-			if (response.reason == 'UploadDuplicate.') { upload.cancel = true }//set flag; caller will handle uppy.removeFile
-			return response
+			if (task.reason == 'UploadDuplicate.') { upload.cancel = true }//set flag; caller will handle uppy.removeFile
+			return task
 		}
 	})
 
@@ -122,12 +122,12 @@ async function mount() {
 		if (!upload) return
 
 		//ask Lambda to hash the uploaded file (one call, computes both hashes)
-		let result = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadHash.', body: {
+		let task = await fetchLambda({from: 'Page.', route: '/upload', action: 'UploadHash.', body: {
 			tag: upload.tag,
 			key: upload.key,
 			permissionEnvelope: refPermissionEnvelope.value,
 		}})//takes a moment as the lambda hashes the whole file; ttd january maybe research how to get progress, or just show a spinner
-		log(`#️⃣ lambda hashed ${saySize4(upload.file.size)} in ${commas(result.duration)}ms (${commas(Math.round(upload.file.size / result.duration))} bytes/ms)`, `tip ${result.tipHash} and ${result.pieceHash} piece hashes`)//page on mac can do 200k bytes/ms; lambda 50k bytes/ms so 1gb file takes 20s, near the 30s API Gateway ceiling
+		log(`#️⃣ lambda hashed ${saySize4(upload.file.size)} in ${commas(task.duration)}ms (${commas(Math.round(upload.file.size / task.duration))} bytes/ms)`, `tip ${task.tipHash} and ${task.pieceHash} piece hashes`)//page on mac can do 200k bytes/ms; lambda 50k bytes/ms so 1gb file takes 20s, near the 30s API Gateway ceiling
 
 		//report everything to Worker including Lambda's attestation
 		await fetchWorker('/media', 'MediaUploadHash.', {
@@ -136,11 +136,11 @@ async function mount() {
 			size: upload.file.size,
 			tipHash: upload.tipHash,
 			pieceHash: upload.pieceHash,
-			hashEnvelope: result.hashEnvelope,
+			hashEnvelope: task.hashEnvelope,
 		})
 
 		//ttd january, at this point the page can compare the hashes, but not sure if we do this or not
-		if (!(hasTextSame(upload.tipHash, result.tipHash) && hasTextSame(upload.pieceHash, result.pieceHash))) log('hash mismatch, ttd january')
+		if (!(hasTextSame(upload.tipHash, task.tipHash) && hasTextSame(upload.pieceHash, task.pieceHash))) log('hash mismatch, ttd january')
 	})
 }
 

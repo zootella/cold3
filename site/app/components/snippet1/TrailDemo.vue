@@ -22,15 +22,15 @@ const computedState = computed(() => {
 async function clicked(action) {
 	refDoing.value = true
 	let t = Now()
-	let r = await fetchWorker('/trail', action, {message: refMessage.value})
+	let task = await fetchWorker('/trail', action, {message: refMessage.value})
 	refNow.value = sayTick(t)
 	refDuration.value = Now() - t
 
-	refHash.value = r.hash
+	refHash.value = task.hash
 	let s = ''
 	if (action == 'Get.') {
-		s = `${r.count} records in the last 30 seconds`
-		if (r.count) s += `; most recent ${Now() - r.recent}ms ago`
+		s = `${task.count} records in the last 30 seconds`
+		if (task.count) s += `; most recent ${Now() - task.recent}ms ago`
 	}
 	refResults.value = s
 	refDoing.value = false

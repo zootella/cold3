@@ -3,9 +3,9 @@
 const refSource = ref(null)
 const refNote = ref('Requesting signed URL...')
 
-let response = await fetchWorker('/media', 'MediaDeliverySign.')
-refSource.value = response.source
-refNote.value = `Received image source URL "${response.source}" signed by ${response.sticker}`
+let task = await fetchWorker('/media', 'MediaDeliverySign.')
+refSource.value = task.source
+refNote.value = `Received image source URL "${task.source}" signed by ${task.sticker}`
 //runs right here on the margin to do this in SSR
 
 </script>

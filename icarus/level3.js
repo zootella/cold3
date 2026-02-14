@@ -23,7 +23,7 @@ bundleValid, validateEmailOrPhone,
 } from './level1.js'
 import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
-Task, fetchWorker, fetchLambda, fetchProvider, Key,
+fetchWorker, fetchLambda, fetchProvider, Key,
 
 /* level 2 query */
 SQL, grid, getDatabase,

@@ -15,8 +15,8 @@ function functionState(provider) {
 
 async function clicked(provider) {
 	refClickedProvider.value = provider//note we don't need to set null because href= is going to tear down the whole Nuxt application
-	let response = await fetchWorker('/oauth', 'OauthStart.')
-	window.location.href = `${originOauth()}/continue/${provider}?envelope=${response.envelope}`//encoding? base62 don't need no stinkin' encoding 👒
+	let task = await fetchWorker('/oauth', 'OauthStart.')
+	window.location.href = `${originOauth()}/continue/${provider}?envelope=${task.envelope}`//encoding? base62 don't need no stinkin' encoding 👒
 }
 
 </script>

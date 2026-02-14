@@ -85,9 +85,9 @@ async function incrementHits() {
 
 async function _fetchHit(action) {
 	let t = Now()
-	let response = await fetchWorker('/hit', action)
+	let task = await fetchWorker('/hit', action)
 
-	hits.value = response.hits
+	hits.value = task.hits
 	duration.value = Now() - t
 	sticker.value = Sticker()//will say Local or CloudPageServer on server render, *PageClient after that
 }

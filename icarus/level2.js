@@ -448,37 +448,44 @@ export async function openEnvelope(action, envelope, options) {
 // | || (_| \__ \   < 
 //  \__\__,_|___/_|\_\
 //                    
+/*
+task 📋 A task is a plain object — no class, no factory, no methods. Handlers build one up and return it as the body of the response they return. The convention is four properties.
 
-//Task notes time and duration, where code ran, keeps an error, bundles all that together, and bubbles up success
-export function Task(task) {//use like let task = Task({name: 'some title'})
-	let sticker = stickerParts()
-	task.tag = sticker.tag//tag to identify this task
-	task.tick = sticker.now//start time
-	task.sticker = sticker.all//where we're running to perform this task
-	task.finish = (more) => _taskFinish(task, more)//call like task.finish({k1: v1, k2: v2, ...}) adding more details
-	return task
+let task = {
+	success: true,//if everything worked out
+	outcome: 'BadSomething.',//or, a reason it didn't
+	duration: Now() - t,//if you care about how long something took
+	error: e,//caught from an unreliable service provider; our own code will just throw up and blow up
 }
-function _taskFinish(task, more) {//mark this task done, adding more properites about how it concluded
-	Object.assign(task, more)//be careful, as this overwrites anything already in task!
+return task//the task object is the response body to the POST
 
-	//(1) detect and surface failure
-	if (//code using this Task may have set task.response = true; override that with false if
-		//(1a) there's a response that isn't successful, or
-		(task.response && task.response.hasOwnProperty('success') && task.response.success == false) ||
-		//(1b) same thing, but we saved it named result instead, or
-		(task.result   && task.result.hasOwnProperty('success')   && task.result.success   == false) ||
-		//(1c) there's an error
-		task.error
-	) { task.success = false } else if (//alternatively, (2) bubble up success
-		(!task.hasOwnProperty('success')) && (//if this task doesn't have success set either way yet, and
-			task.response?.success ||//the response succeeded
-			task.result?.success//or we called it result
-		)
-	) { task.success = true }//mark that success here
+.success is checked. If things worked out, .success === true, meaning the operation completed as intended; false means it didn't, but in a way the caller can handle gracefully — a taken name, wrong password, expired code. The page checks .success to decide what to do next on the happy or near-happy paths.
 
-	task.done = Now()//check .done to know it's done, and also when
-	task.duration = task.done - task.tick//how long it took, nice that times are automatic
-}
+.outcome appears when !task.success, sorting what went wrong, giving the caller a machine-readable reason: 'InvalidCredentials.', 'NameNotAvailable.', 'CoolHard.', 'Expired.'. Action-style dotted string, same format as our action names. Not every failure needs one — if the only possible failure is "didn't work," falsey .success alone is enough.
+
+.duration is optional. Measured manually with let t = Now() at the start and task.duration = Now() - t at the end.
+
+.error is for service provider calls — the try-catch around fetchProvider, where a foreign API can fail in ways we can't predict. If our own code has a bug, it throws and propagates up, blowing up the page and logging an alert to staff. But when some third party service provider misbehaves, we catch the exception into .error and keep going.
+
+Everything else is custom: .hits, .user, .cycles, .envelope, .otps, .lives, whatever the handler needs to communicate back. The task is just a bag of results shaped for its caller, as our convention for the response body from an api call.
+*/
+test(() => {
+	let task = {success: true}//valid simple minimal and used lots of places
+	if (task.success) ok(true)//returned as the response body, here's how you check it in the caller
+
+	task = {outcome: 'WrongPassword.'}//didn't set success true
+	ok(!task.success)//caller can still check for it
+	ok(task.outcome == 'WrongPassword.')//and sort the unhappy path trail we're on, and choose where to go from here
+	//none of this involves an exception; we reserve those for truly exceptional cases, user malice and staff mistake, not chaos user
+
+	let t = Now()//sometimes you may want to record how long something took
+	//do something that maybe takes some time...
+	task.duration = Now() - t//here's the pattern to use to do that
+
+	try {//let's say you're calling a third party api, either their code in our bundle, or HTTP out to their endpoint
+		ok(true)//who knows what can happen in here
+	} catch (e) { task.error = e }//instead of letting their mistake blow up our page, catch and pin the Error object they made
+})
 
 //   __      _       _     
 //  / _| ___| |_ ___| |__  
@@ -499,7 +506,8 @@ fetchLambda seals an envelope when called from a worker — a time-limited crypt
 
 fetchProvider is deliberately minimal — doesn't default a method, doesn't makePlain the body, doesn't add headers. Third-party APIs vary too much. The pattern for using it:
 
-	let task = Task({name: 'example'})
+	let task = {name: 'example'}
+	let t = Now()
 	try {
 		task.response = await fetchProvider({url, options: {
 			method: 'POST',
@@ -508,10 +516,10 @@ fetchProvider is deliberately minimal — doesn't default a method, doesn't make
 		}})
 		if (task.response.success && hasText(task.response.id)) task.success = true
 	} catch (e) { task.error = e }
-	task.finish()
+	task.duration = Now() - t
 	return task
 
-Wrap in try-catch because foreign APIs fail. Call makePlain yourself because the body might be FormData or a string, not always JSON. Examine the response and set task.success on proof it worked. Return the task — matches the shape of your own endpoint responses.
+Wrap in try-catch because foreign APIs fail. Call makePlain yourself because the body might be FormData or a string, not always JSON. Examine the response and set task.success on proof it worked.
 
 We don't use Nuxt's useFetch or useAsyncData — those return reactive refs for data that renders into the page; our fetching goes through Pinia stores with their own loading state. We don't use useRequestFetch — fetchWorker forwards the browser tag cookie manually, which is the only header that matters. We don't use axios, node-fetch, ky, or superagent — ofetch is already in the tree via Nuxt, throws on non-2XX by default, and does everything we need.
 */
@@ -1323,7 +1331,7 @@ export async function checkTurnstileToken(token, ip) {
 	//turn this true and deploy to demonstrate turnstile protection
 	if (false) token = 'Extra'+token//add some extra stuff at the start of the token to mess it up
 
-	let response, error
+	let task = {name: 'check turnstile'}
 	try {
 
 		let body = new FormData()
@@ -1331,12 +1339,12 @@ export async function checkTurnstileToken(token, ip) {
 		body.append('response', token)
 		body.append('remoteip', ip)
 
-		response = await fetchProvider({url: Key('turnstile url, public'), options: {method: 'POST', body}})
+		task.response = await fetchProvider({url: Key('turnstile url, public'), options: {method: 'POST', body}})
 
-	} catch (e) { error = e }
-	if (!response?.success || !hasText(response?.hostname)) {
-		logAudit('turnstile', {token, ip, response, error})//for third party messaging APIs, we audit success and failure; here just failure
-		toss('turnstile challenge failed', {token, ip, response, error})
+	} catch (e) { task.error = e }
+	if (!task.response?.success || !hasText(task.response?.hostname)) {
+		logAudit('turnstile', {token, ip, task})//for third party messaging APIs, we audit success and failure; here just failure
+		toss('turnstile challenge failed', {token, ip, task})
 	}
 }
 

@@ -28,23 +28,23 @@ const computedState = computed(() => {
 })
 
 async function onClick() {
-	let response = await fetchWorker('/otp', 'Enter.', {
+	let task = await fetchWorker('/otp', 'Enter.', {
 		tag: props.otp.tag,//hidden from the user but kept with the form
 		guess: takeNumerals(refGuess.value),
 		envelope: refCookie.value,//give the server back it's encrypted envelope, which we kept through a browser refresh in a cookie
 	})
-	log('otp enter post response', look(response))
-	if (response.success) {
+	log('otp enter post task', look(task))
+	if (task.success) {
 		pageStore.addNotification("✔️ address verified (new otp system)")
-	} else if (response.reason == 'Wrong.') {
+	} else if (task.reason == 'Wrong.') {
 		//box stays, user can try again; lives is always 1+ here
 		//-[]box should indicate incorrect guess, clear the field, tell the user to try again
-	} else if (response.reason == 'Expired.') {
+	} else if (task.reason == 'Expired.') {
 		//box will disappear when we set pageStore.otps below
 		pageStore.addNotification('code expired or exhausted; request a new code to try again')
 	}
-	refCookie.value = hasText(response.envelope) ? response.envelope : null//update or clear the temporary envelope cookie
-	pageStore.otps = response.otps
+	refCookie.value = hasText(task.envelope) ? task.envelope : null//update or clear the temporary envelope cookie
+	pageStore.otps = task.otps
 }
 function clickedCantFind() {
 	log('clicked cant find')

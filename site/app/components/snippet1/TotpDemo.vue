@@ -17,8 +17,8 @@ onMounted(async () => {
 	}
 
 
-	let response = await fetchWorker('/totp', 'Status.')
-	log('response from Status.', look(response))
+	let task = await fetchWorker('/totp', 'Status.')
+	log('task from Status.', look(task))
 	/*
 	possibilities at the start:
 	- no user signed in
@@ -50,17 +50,17 @@ const refCode = ref('')
 const refButton = ref(null)
 
 async function onEnroll() {
-	let response = await fetchWorker('/totp', 'Enroll1.')
-	log('response from enroll 1', look(response))
-	if (response.outcome == 'Candidate.') {
+	let task = await fetchWorker('/totp', 'Enroll1.')
+	log('task from enroll 1', look(task))
+	if (task.outcome == 'Candidate.') {
 
-		log('previous and next client cookie values', refCookie.value, response.enrollment.envelope)
-		refCookie.value = response.enrollment.envelope
+		log('previous and next client cookie values', refCookie.value, task.enrollment.envelope)
+		refCookie.value = task.enrollment.envelope
 
 		if (browserIsBesideAppStore()) {//on a phone, redirect to authenticator app
-			window.location.href = response.enrollment.uri//ttd november, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
+			window.location.href = task.enrollment.uri//ttd november, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
 		} else {//on desktop, show the qr code
-			refUri.value = response.enrollment.uri
+			refUri.value = task.enrollment.uri
 		}
 	} else {
 		//bad response that isn't a 500
@@ -68,12 +68,12 @@ async function onEnroll() {
 }
 
 async function onValidate() {
-	let response = await fetchWorker('/totp', 'Enroll2.', {
+	let task = await fetchWorker('/totp', 'Enroll2.', {
 		envelope: refCookie.value,
 		code: refCode.value,
 	})
-	log('response from enroll 2', look(response))
-	if (response.outcome == 'Enrolled.') {
+	log('task from enroll 2', look(task))
+	if (task.outcome == 'Enrolled.') {
 		refCookie.value = null//clear the cookie
 		//success handling
 	} else {
