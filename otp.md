@@ -166,99 +166,264 @@ address_table
 service_table
 many of which are just stubs and notes--those tables can go away, but our user stories about them remain to be completed!
 
-# Evaluation Results
+# reduced notesfile
 
-completed january 2025
 
-## code length comparison
 
-### api endpoints
 
-| system | files | lines |
-|--------|-------|-------|
-| otp | 1 file (otp.js) | 60 |
-| code | 2 files (send.js + enter.js) | 53 |
 
-otp is slightly longer (+7 lines) but consolidated into one file with action dispatch.
 
-### helper functions (level3.js)
 
-| function | otp | code |
-|----------|-----|------|
-| send | 26 | 24 |
-| permit | 30 | 27 |
-| compose | 18 | 19 |
-| sent | 30 | 15 |
-| enter | 56 | 40 |
-| **subtotal** | **160** | **125** |
 
-otp helper functions are +35 lines longer.
+```
+"Code J 7148 from brand. Don't tell anyone, they could steal your whole account!"
+Code J [    ] [Enter] _I can't find it_
 
-### code-only infrastructure (otp doesn't need)
+We emailed Code J to you at name@example.com 25sec ago from our email noreply@example.com.
+Check your spam or promotions folders
+_Correct my email_, _Send a new code_ or _Try another way_
 
-| code system only | lines |
-|-----------------|-------|
-| browserToCodes() | 28 |
-| code_get, code_get_browser, code_get_address | 14 |
-| code_set_lives, code_add | 27 |
-| code_table schema | 16 |
-| **subtotal** | **85** |
+We texted Code J to you at +1 909 555 1234 1min 25sec ago from our number 888 123 4567.
+Check your messages!
+_Correct my number_, _Send a new code_ or _Try another way_
 
-### vue components
+^and have those count up in time on the page, soft melt to next five second increment
+or actually just say the time it was sent, because that will match the email time
+and you don't have to refresh the duration that counts forward
+```
 
-| component | otp | code |
-|-----------|-----|------|
-| EnterList | 35 | 19 |
-| EnterComponent | 77 | 78 |
-| RequestComponent | 62 | 62 |
-| **subtotal** | **174** | **159** |
 
-otp components are +15 lines longer (mostly the onMounted envelope check in EnterList).
 
-## summary totals
+```
+more text you could add later to the code email:
+Codes last 20 minutes.
+A browser in 🇺🇸 Akron OH 44321 US requested a code to this address.
+Not you? Visit the site and review your security settings!
 
-| layer | otp | code | difference |
-|-------|-----|------|------------|
-| api endpoints | 60 | 53 | +7 |
-| helper functions | 160 | 125 | +35 |
-| db infrastructure | 0 | 85 | -85 |
-| vue components | 174 | 159 | +15 |
-| **total** | **394** | **422** | **-28** |
+and as another feature after that:
+https://www.npmjs.com/package/ua-parser-js 15mm weekly downloads
+"A Chrome browser on a Samsung Galaxy phone"
+"A Firefox browser on a Microsoft Surface tablet"
+"A Safari browser on an Apple iPad tablet"
+"An Edge browser on a Windows laptop"
+"A Chrome browser on a MacBook desktop"
+"A Samsung Internet browser on a Samsung Galaxy Tab tablet"
+"A Brave browser on a Linux desktop"
+"A Chrome browser on a Google Pixel phone"
+and be ready to shorten the sentence rather than saying unknown or default, maybe clearlist common ones so only they show up
+so even if you get "Samsung Internet" from ua parser you just say "A browser" because the user might be using that, but not know it by that brand
+Firefox, Chrome, Safari, "browser"
+iPhone, Samsung, Mac
+phone, tablet, laptop, PC, "device"
+yeah, you could make this complicated
+```
 
-otp is 28 lines shorter overall, despite having longer helper functions.
 
-## complexity analysis
 
-### otp advantages
 
-1. no dedicated table - eliminates schema, migrations, 5 db helper functions
-2. single endpoint - one file to understand vs two
-3. self-contained state - the envelope cookie carries everything needed
-4. simpler enter logic - no db row lookup, just open envelope and check trail
 
-### otp disadvantages
 
-1. otpEnter is more complex (56 vs 40 lines) - must query trail for opened/closed/missed messages and compute hashes to verify
-2. otpSent is longer (30 vs 15 lines) - manages letter array + trail messages vs single db insert
-3. cookie management - client must pass envelope back on every request
-4. EnterList needs onMounted - must ask server about existing envelope on page load
+```
+trailtable lets you hash a message that says anything
+and see how many times it's been recorded
+and when each time was recorded
 
-### maintenance considerations
+start with simplest happy path interaction
 
-code system: to understand the flow, you trace through 2 endpoints, the code_table schema, and 5 db helper functions. state lives in the database.
+new person navigates to page
+browser assigns browser tag
+they don't have a user tag
 
-otp system: to understand the flow, you trace through 1 endpoint and the envelope/trail patterns. state lives in the encrypted cookie + trail messages.
+person enters new valid sms number, presses send code
+server assigns user tag, provisional user
+server texts code
 
-the otp system has fewer moving parts (no table, no db helpers) but the parts it does have are individually more complex (otpEnter's triple-trail-query pattern).
+person enters code into box
+server has proof that this user controls this address
+user isn't provisional anymore, now they're standard
+server signs user into browser
 
-## verdict
+user goes to browser on different device
+browser assigns browser tag
 
-the systems are close in total code size. otp wins by 28 lines, but that masks a tradeoff:
+user enters same valid sms number, presses send code
+server finds existing user tag, but doesn't sign in user
+server texts code
 
-- otp removes 85 lines of db infrastructure
-- otp adds 57 lines of envelope/trail logic
+user enters code into box
+server has proof that this is the same user as before
+server signs user into browser
+```
 
-for maintainability, roughly even. the question is which pattern is easier to reason about:
 
-- code: familiar crud pattern, state in database rows
-- otp: stateless server pattern, state in encrypted cookie + audit trail
+
+
+
+```
+standard user signed into this browser, address controlled:
+	a signed in standard user typed another user's address--send no code!
+standard user signed into this browser, address not controlled:
+	user is adding additional address, send a code
+no standard user signed into this browser, address controlled:
+	user is signing into additional browser, send a code
+no standard user signed into this browser, address not controlled:
+	person is all new, send a code
+
+ok, now all you have to define is
+how do you get user tag is here and standard (you have a function for this)
+tell me about this address, is it controlled by a user or not (next, make tables and functions for this)
+```
+
+
+
+
+
+```
+soon, to make sure you've got the provisional user tag right
+users will type in dob first
+and imagine the flow that starts with credit card number
+
+another common path
+the user is lazy, and never enters the code
+they return to the same browser
+they start a "i want back in here" flow on another browser
+you need to solve this without:
+- annoying the user
+- letting the user fat finger their way to a starting mess of two accounts
+```
+
+
+
+
+
+
+```
+quick thinking about the actual flow
+common lazy happy path
+user visits site on phone
+Sign Up, Log In separate
+chooses Sign Up
+enters birthday
+E-mail, Phone, other ways, separate
+chooses Email
+enters address
+ignores code
+
+returns next day
+still signed in? yes, because provisional user tied to browser tag
+
+goes to laptop
+chooses Sign In
+enters birthday
+E-mail, Phone, other ways, separate
+chooses Email
+enters address
+(at this oint the system can detect things generally look lazy and clean:)
+- this user is new and low risk
+- the address is only mentioned twice
+so, we sign the user in (now they do have to have a user tag, maybe they got it yesterday on their phone)
+and also repeat the code (maybe they'll enter it now)
+
+hmmm... still thinking and gaming out you need to do here
+```
+
+
+
+```
+a user might request a code to their address once to sign up
+and again, the next day, to sign in a second device
+
+another user might specify codes to that address as their second factor authentication
+either for sudo hour
+or for a single transaction
+
+the first user will have two codes sent
+the second user will have lots of codes sent
+
+it would be great if address_table just recorded challenges and validations
+and didn't care what they were for
+but of course, if user1 has validated address1 with code1
+and then (either to second factor or sign in another device) requests code2
+but never validates it (they get sidetracked)
+user1 *still* controls address1!
+so make sure your rules allow for that
+```
+
+
+
+
+
+```
+later, be able to add
+"Is +1 789 555 1234 still your number? [Yes] [No]"
+"Is name@example.com still your email? [Yes] [No]"
+do that if the haven't validated it in 6 months or whatever, either initial validation, or a later validation for sudo hour or individual destructive transaction permission
+also, if they say no, but that's the only way you have to identify them, what do you do?
+```
+
+
+
+
+
+
+
+
+```
+	can't find it
+	- just sent it, so wait
+	- sent a minute ago, so actually check
+	- sent two minutes ago, and can
+
+	_i cant find it_
+
+	>just sent
+	wait
+	>sent a minute ago
+	actually check
+
+
+
+
+	what's the minimal ui copy here?
+	Check your email|texts for the code we sent
+```
+
+
+
+
+
+
+
+
+
+
+
+```
+We've seen this address at another browser: require verification; outcomes verified and signed in
+Address totally new: challenge address but let them in anyway; new user tag; signed into that browser
+
+Then move on to:
+User lifecycle: hide, suspend, delete
+User profile and page, name, status, route, permission to view, to edit
+User rank: fan, creator, staff, god
+User provisional, full
+
+And do more types for addresses:
+Oauth twitter, google,
+MetaMask, wallet connect, rainbow, wagmi, trust wallet, Coinbase wallet, Robinhood wallet
+Totp with qr and protocol, mobile detect
+```
+
+
+
+
+
+
+
+```
+			reason: 'CoolHard.',
+			explanation: 'We can only send 10 codes in 24 hours.',
+
+				reason: 'CoolSoft.',
+				explanation: 'Must wait 5 minutes between codes.',
+```
