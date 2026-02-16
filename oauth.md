@@ -2,49 +2,23 @@
 
 ## Status
 
-Happy and sad paths both work end-to-end. Discord smoke test passes on desktop for both authorize and cancel. Security design is sound — envelopes are encrypted, time-limited, and bound to the browser via browserHash. The flow files are breadcrumbed with "on the oauth trail" for navigation.
+Happy path, sad path (cancel at provider), and Back button all work. Discord smoke test passes on desktop, local and cloud. Security design is sound — envelopes are encrypted, time-limited, and bound to the browser via browserHash. The flow files are breadcrumbed with "on the oauth trail" for navigation.
 
 Mobile: researched and no action needed (see reference section below).
 
-## Sad Path — Single Road Back (done)
+## Sad Path — Cancel at Provider (done)
 
-### The problem we solved
+When the user cancels at the provider, Auth.js redirects to `pages.signIn` with `?error=OAuthCallbackError`. Neither `signIn` nor `redirect` callbacks fire — the error short-circuits before `handleAuthorized()`. Verified against `@auth/core` source.
 
-When the user cancelled at Discord's auth page, the `signIn` callback in auth.js did not fire (it only fires on success). Auth.js redirected to its own default sign-in page at `oauth.cold3.cc/auth/signin?error=OAuthCallbackError`. The user was stranded on a generic Auth.js page with no way back to cold3.cc.
+We use `pages: { signIn: '/signin' }` — Auth.js's documented, stable API for controlling where errors go. The `/signin` route seals an error envelope and redirects to `oauth2.vue`. Same road as the happy path, different on-ramp. OauthDone checks `letter.success` and returns `OauthProven.` or `OauthBad.`.
 
-### What Auth.js actually does on cancel (verified against @auth/core source)
+We rejected intercepting the redirect in SvelteKit's `handle` hook (checking the Location header) because it depends on implementation details that could change in a semver update.
 
-When the provider returns `?error=access_denied`, the `oauth4webapi` library's `validateAuthResponse()` throws an `AuthorizationResponseError`. Auth.js catches this in `handleOAuth()`, wraps it in an `OAuthCallbackError` (a subclass of `SignInError`, which has `kind = "signIn"`), and re-throws. The top-level `Auth()` catch block does a raw `Response.redirect()` to `pages.signIn` (NOT `pages.error`) with `?error=OAuthCallbackError`.
+## Back Button — bfcache Restoration (done)
 
-Neither `signIn` nor `redirect` callbacks fire. The error short-circuits before `handleAuthorized()` is ever called. There is no `error` event in Auth.js v5 either. The `redirect` callback only fires as a sub-step of `handleAuthorized()`, which requires a successful OAuth exchange.
+When the user clicks Back from the provider page, the browser restores the Nuxt page from bfcache with all JavaScript state frozen — buttons stuck in the doing/ghost state from when `window.location.href` fired. OauthDemo listens for `pageshow` with `event.persisted` (the browser's signal that the page was thawed, not freshly loaded) and resets `refClickedProvider`. Incrementing a `:key` ref on the wrapping div forces Vue to destroy and recreate the Button components, resetting their internal `refDoing` state.
 
-We considered intercepting the redirect response in SvelteKit's `handle` hook (checking the Location header for `error=OAuthCallbackError`), but this depends on implementation details — the redirect status code, the header format, the error class name — none of which are public API. A semver-compatible Auth.js update could change any of these silently. The cancel flow would break, and we wouldn't catch it immediately since smoke tests cover happy path first.
-
-### The design
-
-Use `pages.signIn` — Auth.js's documented, stable configuration for controlling where errors go. Added a SvelteKit `/signin` route that seals an error envelope and redirects to `oauth2.vue`. Different on-ramp, same road back.
-
-**Happy path**: Provider success → `signIn` callback fires, seals envelope with `{success: true, account, profile, user, browserHash}` → returns `oauth2.vue?envelope=...` → `redirect` passes it through
-
-**Sad path**: Provider cancel → Auth.js redirects to `/signin?error=OAuthCallbackError` → route's server load seals envelope with `{error, browserHash}` → redirects to `oauth2.vue?envelope=...`
-
-Both paths arrive at oauth2.vue with an envelope. oauth2.vue posts to OauthDone either way. OauthDone opens the envelope, checks `letter.success` — returns `OauthProven.` or `OauthBad.` with a route.
-
-### What changed
-
-**`oauth/src/auth.js`** — added `pages: { signIn: '/signin' }` to authOptions. Added `success: true` to the happy-path envelope. Renamed source notes from b-series to a-series (a10, a20, etc.) to match the source location guide.
-
-**`oauth/src/routes/signin/+page.server.js`** (new) — on the oauth trail. Reads `?error=` from Auth.js, seals an error envelope, redirects to `oauth2.vue`. Calls `decryptKeys` itself since it runs outside the `SvelteKitAuth` closure — this is a separate HTTP request from the one that hit the auth handler. Source notes b10, b20.
-
-**`oauth/src/routes/signin/+page.svelte`** (new) — empty component, should never render. Exists because SvelteKit requires `+page.svelte` to render a route; the load function always redirects before rendering.
-
-**`oauth/src/routes/continue/[provider]/+page.svelte`** — migrated from deprecated `$app/stores` to `$app/state` (Svelte 5 runes). `$page.params.provider` → `page.params.provider`.
-
-**`site/server/api/oauth.js`** — OauthDone handler now checks `letter.success` to distinguish happy from sad. Returns `OauthProven.` or `OauthBad.`.
-
-### Back button behavior
-
-Clicking Back at the provider page (instead of Cancel) is a browser-level action — the provider never sends a callback. The user navigates back to the SvelteKit `/continue/[provider]` page, where the envelope has expired (2-second limit), and the catch block redirects home. Not as clean as Cancel, but the user is not stranded.
+`pageshow` is a raw browser API with no Vue/Nuxt wrapper — the framework was frozen during bfcache, so it can't intercept its own thawing. `window.addEventListener` inside `onMounted` is the idiomatic Nuxt pattern for client-only browser APIs.
 
 ## Other Audit Findings (acceptable as-is)
 
