@@ -2,17 +2,15 @@
 
 ## Status
 
-The happy path works end-to-end. Discord smoke test passes on desktop. Security design is sound — envelopes are encrypted, time-limited, and bound to the browser via browserHash. The flow files are breadcrumbed with "on the oauth trail" for navigation.
+Happy and sad paths both work end-to-end. Discord smoke test passes on desktop for both authorize and cancel. Security design is sound — envelopes are encrypted, time-limited, and bound to the browser via browserHash. The flow files are breadcrumbed with "on the oauth trail" for navigation.
 
 Mobile: researched and no action needed (see reference section below).
 
-## Next: Sad Path — Single Road Back
+## Sad Path — Single Road Back (done)
 
-The first hardening task is handling the sad path: user clicks cancel at the provider instead of authorizing.
+### The problem we solved
 
-### The problem
-
-Currently, when the user cancels at Discord's auth page, the `signIn` callback in auth.js does NOT fire (it only fires on success). Auth.js redirects to its own default sign-in page at `oauth.cold3.cc/auth/signin?error=OAuthCallbackError`. The user is stranded on a generic Auth.js page with no way back to cold3.cc.
+When the user cancelled at Discord's auth page, the `signIn` callback in auth.js did not fire (it only fires on success). Auth.js redirected to its own default sign-in page at `oauth.cold3.cc/auth/signin?error=OAuthCallbackError`. The user was stranded on a generic Auth.js page with no way back to cold3.cc.
 
 ### What Auth.js actually does on cancel (verified against @auth/core source)
 
@@ -24,109 +22,29 @@ We considered intercepting the redirect response in SvelteKit's `handle` hook (c
 
 ### The design
 
-Use `pages.signIn` — Auth.js's documented, stable configuration for controlling where errors go. Add a small SvelteKit error-landing route that seals an error envelope and redirects to `oauth2.vue`. Different on-ramp, same road back.
+Use `pages.signIn` — Auth.js's documented, stable configuration for controlling where errors go. Added a SvelteKit `/signin` route that seals an error envelope and redirects to `oauth2.vue`. Different on-ramp, same road back.
 
-**Happy path** (unchanged): Provider success → `signIn` callback fires, seals envelope with `{account, profile, user, browserHash}` → returns `oauth2.vue?envelope=...` → `redirect` passes it through
+**Happy path**: Provider success → `signIn` callback fires, seals envelope with `{success: true, account, profile, user, browserHash}` → returns `oauth2.vue?envelope=...` → `redirect` passes it through
 
-**Sad path** (new): Provider cancel → Auth.js redirects to our custom `pages.signIn` route with `?error=OAuthCallbackError` → route's server load seals envelope with `{error, browserHash}` → redirects to `oauth2.vue?envelope=...`
+**Sad path**: Provider cancel → Auth.js redirects to `/signin?error=OAuthCallbackError` → route's server load seals envelope with `{error, browserHash}` → redirects to `oauth2.vue?envelope=...`
 
-Both paths arrive at oauth2.vue with an envelope. oauth2.vue posts to OauthDone either way. OauthDone opens the envelope, sees proof or error, returns the right route.
+Both paths arrive at oauth2.vue with an envelope. oauth2.vue posts to OauthDone either way. OauthDone opens the envelope, checks `letter.success` — returns `OauthProven.` or `OauthBad.` with a route.
 
-### Implementation
+### What changed
 
-Three files change. oauth2.vue does not change — it already just posts the envelope and navigates to whatever route the endpoint returns.
+**`oauth/src/auth.js`** — added `pages: { signIn: '/signin' }` to authOptions. Added `success: true` to the happy-path envelope. Renamed source notes from b-series to a-series (a10, a20, etc.) to match the source location guide.
 
-**File 1: `oauth/src/auth.js` — add `pages.signIn` config**
+**`oauth/src/routes/signin/+page.server.js`** (new) — on the oauth trail. Reads `?error=` from Auth.js, seals an error envelope, redirects to `oauth2.vue`. Calls `decryptKeys` itself since it runs outside the `SvelteKitAuth` closure — this is a separate HTTP request from the one that hit the auth handler. Source notes b10, b20.
 
-Add to `authOptions`:
-```javascript
-pages: {
-	signIn: '/auth-error',
-},
-```
+**`oauth/src/routes/signin/+page.svelte`** (new) — empty component, should never render. Exists because SvelteKit requires `+page.svelte` to render a route; the load function always redirects before rendering.
 
-This tells Auth.js to redirect cancel/error to our route instead of its default sign-in page. The happy path is unaffected — it never hits `pages.signIn` because the `signIn` callback returns a URL directly.
+**`oauth/src/routes/continue/[provider]/+page.svelte`** — migrated from deprecated `$app/stores` to `$app/state` (Svelte 5 runes). `$page.params.provider` → `page.params.provider`.
 
-**File 2: new route `oauth/src/routes/auth-error/+page.server.js`**
+**`site/server/api/oauth.js`** — OauthDone handler now checks `letter.success` to distinguish happy from sad. Returns `OauthProven.` or `OauthBad.`.
 
-```javascript
-//on the oauth trail: SvelteKit error landing (user cancelled at provider)
+### Back button behavior
 
-import {
-	log, look, Limit,
-	Key, decryptKeys,
-	sealEnvelope, hashText,
-	composeCookieName, parseCookieValue,
-	originApex,
-} from 'icarus'
-import {redirect} from '@sveltejs/kit'
-
-export async function load(event) {
-	let sources = []
-	if (typeof process !== 'undefined' && process.env) {
-		sources.push({note: 'b10', environment: process.env})
-	}
-	if (event?.platform?.env) {
-		sources.push({note: 'b20', environment: event?.platform?.env})
-	}
-	await decryptKeys('auth-error', sources)
-
-	let errorCode = event.url.searchParams.get('error') || 'unknown'
-
-	let browserTag = parseCookieValue(event.cookies.get(composeCookieName()))
-	let browserHash = browserTag ? await hashText(browserTag) : null
-
-	let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {error: errorCode, browserHash})
-	log('oauth sad path, sealing error envelope', look({errorCode}))
-
-	throw redirect(303, `${originApex()}/oauth2?envelope=${envelope}`)
-}
-```
-
-This route only fires on the sad path. It calls `decryptKeys` itself since it runs outside the `SvelteKitAuth` closure (same sources pattern as auth.js). No `+page.svelte` needed — the load function always redirects, never renders.
-
-**File 3: `site/server/api/oauth.js` — expand OauthDone handler**
-
-Currently:
-```javascript
-} else if (action == 'OauthDone.') {
-	let letter = await openEnvelope('OauthDone.', body.envelope, {browserHash})
-	log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
-	return {
-		outcome: 'OauthProven.',
-		route: '/',
-	}
-}
-```
-
-Change to:
-```javascript
-} else if (action == 'OauthDone.') {
-	let letter = await openEnvelope('OauthDone.', body.envelope, {browserHash})
-	log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
-
-	if (letter.error) {
-		log('oauth sad path', look({error: letter.error}))
-		return {
-			outcome: 'OauthCancelled.',
-			route: '/',
-		}
-	}
-
-	return {
-		outcome: 'OauthProven.',
-		route: '/',
-	}
-}
-```
-
-browserHash check in `openEnvelope` runs for both paths. On the sad path, if the browserTag cookie was missing mid-flow, the envelope's browserHash will be null. If the worker's browserHash is present but the envelope's is null, `openEnvelope` catches the mismatch — correct, we don't accept envelopes from a different browser. If both are null (cookie gone on both sides), the check is skipped — acceptable for the sad path since we're not granting permissions, just showing "try again."
-
-### Test plan
-
-1. Click "Continue with Discord" → on Discord's auth page click Cancel → should come back to cold3.cc home, not Auth.js error page
-2. Confirm happy path still works (click Authorize at Discord → comes back with proof)
-3. Check logs for both paths to see what `errorCode` Auth.js actually passes
+Clicking Back at the provider page (instead of Cancel) is a browser-level action — the provider never sends a callback. The user navigates back to the SvelteKit `/continue/[provider]` page, where the envelope has expired (2-second limit), and the catch block redirects home. Not as clean as Cancel, but the user is not stranded.
 
 ## Other Audit Findings (acceptable as-is)
 

@@ -19,31 +19,34 @@ import redditProvider  from '@auth/sveltekit/providers/reddit'
 export const {handle, signIn, signOut} = SvelteKitAuth(async (event) => {
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
-		sources.push({note: 'b10', environment: process.env})
-	}//seeing b10 cloud only
+		sources.push({note: 'a10', environment: process.env})
+	}//seeing a10 cloud only
 	if (event?.platform?.env) {
-		sources.push({note: 'b20', environment: event?.platform?.env})
-	}//seeing b20 both local and cloud
+		sources.push({note: 'a20', environment: event?.platform?.env})
+	}//seeing a20 both local and cloud
 	await decryptKeys('auth', sources)
 	/*
 	note that SvelteKit's pattern for handling secrets is like:
 import {SECRET_KEY_S1} from '$env/static/private'  //read static value built into server bundle when we deployed to cloudflare
 import {env}           from '$env/dynamic/private' //read dynamic value from .env when running locally
 	if (hasText(SECRET_KEY_S1)) {
-		sources.push({note: 'b30', environment: {SECRET_KEY_S1}}) //wrap it back into an object to match what decryptKeys expects
+		sources.push({note: 'a30', environment: {SECRET_KEY_S1}}) //wrap it back into an object to match what decryptKeys expects
 	if (env) {
-		sources.push({note: 'b40', environment: env})
+		sources.push({note: 'a40', environment: env})
 
-	About b20: Cloudflare injects secrets from the dashboard (or wrangler.toml) into the request event at runtime, per-request. Not bundled — provided by the platform.
+	About a20: Cloudflare injects secrets from the dashboard (or wrangler.toml) into the request event at runtime, per-request. Not bundled — provided by the platform.
 
-	About b10: The .env file in ./oauth/ gets bundled into the server bundle at build time. We see b10 in cloud only, meaning the build inlines these values into the deployed Worker code. Is this safe? Yes, because SvelteKit builds separate server and client bundles, and auth.js is only imported by hooks.server.js — a server-only entry point. The bundler has no import path to pull this code into the client bundle. But we're relying on import graph analysis, not enforcement.
+	About a10: The .env file in ./oauth/ gets bundled into the server bundle at build time. We see a10 in cloud only, meaning the build inlines these values into the deployed Worker code. Is this safe? Yes, because SvelteKit builds separate server and client bundles, and auth.js is only imported by hooks.server.js — a server-only entry point. The bundler has no import path to pull this code into the client bundle. But we're relying on import graph analysis, not enforcement.
 
-	To switch to SvelteKit's intended pattern: use $env/static/private (build-time) or $env/dynamic/private (runtime) as shown above, adding sources b30/b40. The additional protection: if anyone accidentally imported auth.js from a .svelte component, SvelteKit would error at build time rather than silently bundling secrets into client code. icarus decryptKeys() works with plain objects, so either approach is compatible — the $env pattern just adds a build-time guardrail we currently get architecturally.
+	To switch to SvelteKit's intended pattern: use $env/static/private (build-time) or $env/dynamic/private (runtime) as shown above, adding sources a30/a40. The additional protection: if anyone accidentally imported auth.js from a .svelte component, SvelteKit would error at build time rather than silently bundling secrets into client code. icarus decryptKeys() works with plain objects, so either approach is compatible — the $env pattern just adds a build-time guardrail we currently get architecturally.
 
 	ttd january, not going to mess with this now, but maybe should later, along with using xray.js to confirm the tracer locations
 	*/
 
 	let authOptions = {
+		pages: {
+			signIn: '/signin',//tell Auth the route to our customized sign in page; the way we're using Auth, this only matters when the user clicks Cancel no at the provider, Auth gives us news of their refusal at this page
+		},
 		providers: [
 			googleProvider({clientId:  Key('oauth, google, id'),  clientSecret: Key('oauth, google, secret')}),
 			twitterProvider({clientId: Key('oauth, twitter, id'), clientSecret: Key('oauth, twitter, secret')}),
@@ -61,7 +64,7 @@ import {env}           from '$env/dynamic/private' //read dynamic value from .en
 				let browserHash = await hashText(browserTag)//browser tag is sensitive; hash it immediately
 
 				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
-				let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {account, profile, user, browserHash})//oauth envelope [3] seal done
+				let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {success: true, account, profile, user, browserHash})//oauth envelope [3] seal done
 
 				let url = `${originApex()}/oauth2?envelope=${envelope}`
 				log('Auth.js signIn() handler', look({account, profile, user, url}), `url length ${url.length}`)//claude thinks no provider will give us objects that get close to cloudflare's url length limit of 16,000 characters, which is great; see how big google and others are, ttd november

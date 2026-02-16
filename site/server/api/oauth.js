@@ -21,9 +21,11 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//we've made sure the browserHash sveltekit computed from the browserTag matches, but still need to
 		//save the proven credentials in the database
 		//and chose what route to send the user, ttd november
+		//also, note that if the user clicked cancel at the provider, we'll get a letter here with detail about that
+		let outcome = letter.success ? 'OauthProven.' : 'OauthBad.'
 
 		return {
-			outcome: 'OauthProven.',
+			outcome,
 			route: '/',//ttd november, will change to welcome, home, or dashboard depending on the user's aim proving oauth
 		}
 	}
