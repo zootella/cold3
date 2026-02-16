@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb13.0617.748
+  generated: 2026feb16.0356.12402
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -105,8 +105,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
-      current: 3.989.0 on 2026feb12 0m old
-      latest: 3.989.0 on 2026feb12 0m old
+      current: 3.990.0 on 2026feb13 0m old
+      latest: 3.990.0 on 2026feb13 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -117,8 +117,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
-      current: 3.989.0 on 2026feb12 0m old
-      latest: 3.989.0 on 2026feb12 0m old
+      current: 3.990.0 on 2026feb13 0m old
+      latest: 3.990.0 on 2026feb13 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -129,8 +129,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
-      current: 3.989.0 on 2026feb12 0m old
-      latest: 3.989.0 on 2026feb12 0m old
+      current: 3.990.0 on 2026feb13 0m old
+      latest: 3.990.0 on 2026feb13 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -141,8 +141,8 @@ modules:
     versions:
       declared: ^3.985.0
       installed: 3.985.0 on 2026feb06 0m old
-      current: 3.989.0 on 2026feb12 0m old
-      latest: 3.989.0 on 2026feb12 0m old
+      current: 3.990.0 on 2026feb13 0m old
+      latest: 3.990.0 on 2026feb13 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -225,8 +225,8 @@ modules:
     versions:
       declared: ^2.50.2
       installed: 2.50.2 on 2026feb02 0m old
-      current: 2.51.0 on 2026feb12 0m old
-      latest: 2.51.0 on 2026feb12 0m old
+      current: 2.52.0 on 2026feb15 0m old
+      latest: 2.52.0 on 2026feb15 0m old
     downloads:
       weekly: 876,575
       on: 2026feb4.1825.16236
@@ -420,7 +420,7 @@ modules:
     from: icarus
     versions:
       declared: ^1.12.36
-      installed: 1.12.36 on 2026jan30 0m old
+      installed: 1.12.36 on 2026jan30 1m old
     downloads:
       weekly: 12,299,472
       on: 2026feb4.1821.46960
@@ -472,7 +472,7 @@ modules:
     from: icarus
     versions:
       declared: ^1.5.1
-      installed: 1.5.1 on 2025nov01 3m old
+      installed: 1.5.1 on 2025nov01 4m old
     downloads:
       weekly: 3,791,474
       on: 2026feb4.1821.46960
@@ -569,8 +569,8 @@ modules:
     versions:
       declared: ^5.50.0
       installed: 5.50.0 on 2026feb06 0m old
-      current: 5.50.3 on 2026feb12 0m old
-      latest: 5.50.3 on 2026feb12 0m old
+      current: 5.51.2 on 2026feb15 0m old
+      latest: 5.51.2 on 2026feb15 0m old
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
@@ -624,9 +624,9 @@ modules:
       - site
     versions:
       declared: ^2.45.1
-      installed: 2.45.1 on 2026jan29 0m old
-      current: 2.45.3 on 2026feb11 0m old
-      latest: 2.45.3 on 2026feb11 0m old
+      installed: 2.45.1 on 2026jan29 1m old
+      current: 2.46.1 on 2026feb16 0m old
+      latest: 2.46.1 on 2026feb16 0m old
     downloads:
       weekly: 2,639,619
       on: 2026feb4.1821.46960
@@ -692,7 +692,7 @@ modules:
     from: root
     versions:
       declared: ^2.8.2
-      installed: 2.8.2 on 2025nov30 2m old
+      installed: 2.8.2 on 2025nov30 3m old
     downloads:
       weekly: 101,991,403
       on: 2026feb4.1821.46960

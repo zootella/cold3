@@ -7,7 +7,6 @@ notesfile
 
 
 
-
 Design Intent Summary
 Core Philosophy:
 Build components that follow simple, recognizable patterns from Vue/Nuxt best practices—prioritizing function, idiomatic patterns, then clarity. Focus on craftsmanship and learning, not complexity or invention.
@@ -108,6 +107,7 @@ doesn't change functionality, just the visual label. nice UX polish for mobile
 
 
 
+```
 visually simple--like you drew it all with a thick crayon
 - flat--as opposed to shadows, bubbles, shine, any z dimensional cues, accomplish things without those!
 - completely communicative--the user knows where the focus is, which fields are valid, what the button can do and is doing
@@ -200,15 +200,7 @@ or maybe you just bring in the library to get the mobile-style checkbox ((x) ) t
 oh, can you set the placeholder text in one font and color (diatype, gray)
 and the text the user types in another (noto sans mono, black)
 is that easy, or does that involve changing the style of the contained text if the contents are blank or not?
-
-
-
-
-
-
-
-
-
+```
 
 
 

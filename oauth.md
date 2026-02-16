@@ -1,76 +1,131 @@
-# OAuth: Hardening Plan
+# OAuth Hardening
 
-The happy path works. Discord smoke test passes. Security is sound. What's next is filing off the rough edges.
+## Status
 
-## Error Handling Gaps
+The happy path works end-to-end. Discord smoke test passes on desktop. Security design is sound — envelopes are encrypted, time-limited, and bound to the browser via browserHash. The flow files are breadcrumbed with "on the oauth trail" for navigation.
 
-Six gaps found by auditing the flow files (search "on the oauth trail" to see them).
+Mobile: researched and no action needed (see reference section below).
 
-**1. User cancels at the provider**
+## Next: Sad Path — Single Road Back
 
-When the user clicks "Cancel" on Discord's (or any provider's) auth page, Auth.js catches the cancellation and redirects to `/auth/error` — its own built-in error page, not ours. There's no custom error callback in auth.js to intercept this and send the user back to the Nuxt site gracefully. The SvelteKit app has no `+error.svelte` pages at all.
+The first hardening task is handling the sad path: user clicks cancel at the provider instead of authorizing.
 
-**2. Refresh on the SvelteKit `/continue/[provider]` page**
+### The problem
 
-The `OauthContinue` envelope has a 2-second lifetime (`Limit.handoffWorker`). First load: envelope valid, page renders, hidden form submits to Auth.js. Refresh after that: envelope expired, `openEnvelope` throws, user silently redirected to apex home with no message explaining what happened.
+Currently, when the user cancels at Discord's auth page, the `signIn` callback in auth.js does NOT fire (it only fires on success). Auth.js redirects to its own default sign-in page at `oauth.cold3.cc/auth/signin?error=OAuthCallbackError`. The user is stranded on a generic Auth.js page with no way back to cold3.cc.
 
-**3. No `+error.svelte` in the SvelteKit app**
+### The design
 
-When anything goes wrong on the SvelteKit side, the user either sees Auth.js's default error page or gets silently redirected. No custom error UI exists in the oauth workspace.
+Funnel all completions — happy and sad — through the same pathway back to Nuxt. The `redirect` callback in Auth.js fires for every redirect Auth.js makes, including error redirects. It runs server-side inside the `SvelteKitAuth(async (event) => {...})` closure, so it has access to `event`, cookies, `sealEnvelope`, everything. No extra SvelteKit route or HTTP round trip needed.
 
-**4. `fetchWorker` failure in OauthDemo.vue**
+**Happy path** (unchanged): Provider success → `signIn` fires, seals envelope with `{account, profile, user, browserHash}` → returns `oauth2.vue?envelope=...` → `redirect` passes it through unchanged
 
-No try/catch around the `clicked()` function. If `fetchWorker('/oauth', 'OauthStart.')` fails or returns without an `envelope` property, the error either bubbles to error.vue (generic "Something went wrong") or navigates to `?envelope=undefined`, which SvelteKit tries to decrypt and fails.
+**Sad path** (new): Provider cancel → `signIn` does NOT fire → Auth.js calls `redirect` with a URL pointing to its own error page → `redirect` detects this, seals envelope with `{error, browserHash}` → returns `oauth2.vue?envelope=...`
 
-**5. Direct navigation to `oauth2.vue`**
+Same road. oauth2.vue posts to OauthDone either way. OauthDone opens the envelope, sees proof or error, returns the right route. OauthDone becomes "done with the auth.js flow" not "success."
 
-Missing, garbage, or expired envelope all produce the same generic error.vue. No distinction between "you didn't start the flow" vs "your flow expired" vs "corrupted URL." No "please start over" message.
+### Implementation
 
-**6. Envelopes are time-limited, not single-use**
+Two files change. oauth2.vue does not change — it already just posts the envelope and navigates to whatever route the endpoint returns.
 
-`sealEnvelope`/`openEnvelope` in icarus/level2.js use expiration timestamps, not a server-side "already consumed" check. The `OauthDone` envelope can theoretically be replayed within its 2-second window. Narrow, but worth noting. No server-side replay tracking exists.
+**File 1: `oauth/src/auth.js` — expand `redirect` callback (line 70)**
 
-## Mobile OAuth: What Actually Happens
+Currently:
+```javascript
+async redirect({url, baseUrl}) {
+	return url
+}
+```
 
-The concern: on mobile, the user might not be signed into the provider on mobile web, but have the native app installed. Does the OS intercept the OAuth URL and yank the user out of the browser?
+Change to:
+```javascript
+async redirect({url, baseUrl}) {
+	if (url.startsWith(originApex())) return url //happy path envelope from signIn, pass through
 
-**The answer: providers deliberately exclude OAuth paths from deep linking.** The reason is there's no reliable way to get the user back to the right browser tab afterward.
+	//sad path: Auth.js is trying to redirect to its own error page; intercept and send back through our road
+	let errorCode = new URL(url, baseUrl).searchParams.get('error') || 'unknown'
+	let browserTag = parseCookieValue(event.cookies.get(composeCookieName()))
+	let browserHash = browserTag ? await hashText(browserTag) : null
+	let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {error: errorCode, browserHash})
+	return `${originApex()}/oauth2?envelope=${envelope}`
+},
+```
 
-### Per-provider breakdown
+How to distinguish happy from sad: happy path URLs already contain `originApex()` (signIn composed them). Error URLs point to Auth.js's own pages on the SvelteKit site. `event` is available from the outer closure. All imports are already at the top of auth.js.
 
-**Discord** — AASA file explicitly excludes OAuth URLs that have a `response_type` parameter (which all standard authorization code flows do). Discord engineering explained: "can't reliably send the user back to the right browser." Stays in mobile browser on both iOS and Android.
+**File 2: `site/server/api/oauth.js` — expand OauthDone handler (line 17)**
 
-**Google** — `accounts.google.com` doesn't register Universal Links for its OAuth endpoint at all. Stays in browser everywhere.
+Currently:
+```javascript
+} else if (action == 'OauthDone.') {
+	let letter = await openEnvelope('OauthDone.', body.envelope, {browserHash})
+	log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
+	return {
+		outcome: 'OauthProven.',
+		route: '/',
+	}
+}
+```
 
-**X/Twitter** — AASA excludes `/i/oauth2/*` and `/oauth/*`. On iOS this works. On Android, there's a documented history (2022-2024) of the X app intercepting the URL anyway, flash-opening, then failing. This is the one provider where mobile can break through no fault of ours. Multiple threads in the X developer community confirm the issue with no developer-side workaround.
+Change to:
+```javascript
+} else if (action == 'OauthDone.') {
+	let letter = await openEnvelope('OauthDone.', body.envelope, {browserHash})
+	log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
 
-### The expected mobile UX
+	if (letter.error) {
+		//sad path: user cancelled or provider returned an error
+		log('oauth sad path', look({error: letter.error}))
+		return {
+			outcome: 'OauthCancelled.',
+			route: '/',
+		}
+	}
 
-The standard UX for "Continue with [Provider]" on mobile web in 2025-2026: tap button, provider auth page loads in the same browser tab, consent/login, redirect back, done. Single tab, no native app, no popup. This is what users expect.
+	//happy path: user proved they control a third-party account
+	return {
+		outcome: 'OauthProven.',
+		route: '/',
+	}
+}
+```
 
-### Cross-subdomain cookie considerations
+browserHash check in `openEnvelope` runs for both paths. On the sad path, if the browserTag cookie was missing mid-flow, the envelope's browserHash will be null. If the worker's browserHash is present but the envelope's is null, `openEnvelope` catches the mismatch — correct, we don't accept envelopes from a different browser. If both are null (cookie gone on both sides), the check is skipped — acceptable for the sad path since we're not granting permissions, just showing "try again."
 
-Our flow is: Nuxt (cold3.cc) → SvelteKit (oauth.cold3.cc) → Provider → SvelteKit → Nuxt. Four hops.
+### Test plan
 
-- The browserTag cookie works across subdomains because `cookieOptions.browser` sets `domain: Key('domain, public')` in cloud (icarus/level2.js:378-379) and uses `sameSite: 'Lax'`, which sends on top-level GET navigations from a different site.
-- Auth.js state cookies (CSRF, PKCE) default to `SameSite=Lax`, which is correct. `Strict` would break the redirect back from the provider.
-- Auth.js production cookies use `__Host-` prefix by default, which cannot have a `Domain` attribute. If we ever need cross-subdomain session sharing from Auth.js cookies (we don't currently — we use envelopes), we'd need to override to `__Secure-` prefix.
-- Safari ITP: our 4-hop chain is fine for OAuth (ITP targets third-party iframes, not top-level navigations).
+1. Click "Continue with Discord" → on Discord's auth page click Cancel → should come back to cold3.cc home, not Auth.js error page
+2. Confirm happy path still works (click Authorize at Discord → comes back with proof)
+3. Check logs for both paths to see what `errorCode` Auth.js actually passes
 
-### In-app browsers
+## Other Audit Findings (acceptable as-is)
 
-If the user starts from inside another app's in-app browser (e.g., clicking a link in the Discord app), that browser has an isolated cookie jar. The flow works, but the user may need to re-authenticate with the provider since their system browser session cookies aren't available. Annoying but not flow-breaking.
+These were identified in the audit but don't need dedicated solutions:
 
-### The X/Twitter Android problem in detail
+- **Refresh on SvelteKit `/continue/[provider]`** — 2-second envelope expires, already redirects to home. Acceptable for a page the user is on for 200ms.
+- **No `+error.svelte` in SvelteKit** — the redirect callback now catches error redirects. Remaining uncovered case is server crashes, which a custom error page doesn't meaningfully help.
+- **`fetchWorker` failure in OauthDemo.vue** — standard fetch error handling. Defer until the real UI replaces the demo component.
+- **Direct navigation to `oauth2.vue`** — generic error.vue is fine for this edge case nobody will hit.
+- **Envelopes not single-use** — 2-second replay window plus browserHash binding. Theoretical, not practical.
 
-If the X app is installed on Android and the user navigates to `twitter.com/i/oauth2/authorize`, the X app may intercept the URL, flash open briefly, then close without completing authorization. Reported since 2022, reports continued through 2024. No reliable developer-side workaround exists. Sources:
+## Future Work
+
+- **Connect a second provider** — Google is the safest choice (no Android deep-link weirdness, massive user base). X/Twitter surfaces mobile bugs but is problematic for users.
+
+## Reference: Mobile OAuth Research
+
+No action needed on our part. Researched Feb 2026.
+
+Providers deliberately exclude OAuth paths from native app deep linking because there's no reliable way to get the user back to the right browser tab afterward. The standard mobile UX is: tap button, provider auth page loads in the same browser tab, consent/login, redirect back. Single tab, no native app, no popup.
+
+**Discord** — AASA file explicitly excludes OAuth URLs with `response_type` parameter. Discord engineering: "can't reliably send the user back to the right browser." Stays in mobile browser on both iOS and Android.
+
+**Google** — `accounts.google.com` doesn't register Universal Links for its OAuth endpoint. Stays in browser everywhere.
+
+**X/Twitter** — AASA excludes `/i/oauth2/*` and `/oauth/*`. Works on iOS. On Android, documented history (2022-2024) of the X app intercepting the URL, flash-opening, then failing. No developer-side workaround. Sources:
 - https://devcommunity.x.com/t/web-oauth-2-0-is-broken-on-android-if-twitter-app-is-installed/169698
 - https://devcommunity.x.com/t/android-twitter-app-crashes-if-the-launch-is-triggered-by-a-deep-link-to-https-twitter-com-i-oauth2-authorize/194392
 
-## Next Steps
+**Cross-subdomain cookies** — browserTag cookie works across subdomains because `cookieOptions.browser` sets `domain: Key('domain, public')` in cloud (icarus/level2.js:378) and uses `sameSite: 'Lax'`. Auth.js state cookies default to `SameSite=Lax`, which is correct. Auth.js production cookies use `__Host-` prefix (no `Domain` attribute) — if we ever need cross-subdomain Auth.js session sharing (we don't, we use envelopes), we'd override to `__Secure-` prefix.
 
-Three threads to pull on:
-
-1. **Harden the off-happy-path UX** — work through the six gaps above
-2. **Connect a second provider** — Google is the safest choice (no Android deep-link weirdness, massive user base). X/Twitter is the most likely to surface mobile-specific bugs, which makes it useful for testing but problematic for users.
-3. **Mobile testing** — Discord and Google should just work in mobile browser. X on Android is the wild card. Also test in-app browsers (Discord, Reddit) as referral sources.
+**In-app browsers** — isolated cookie jar from the system browser. The flow works but the user may need to re-authenticate with the provider. Not an OAuth-specific problem, just awareness for support.
