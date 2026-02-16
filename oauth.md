@@ -14,46 +14,78 @@ The first hardening task is handling the sad path: user clicks cancel at the pro
 
 Currently, when the user cancels at Discord's auth page, the `signIn` callback in auth.js does NOT fire (it only fires on success). Auth.js redirects to its own default sign-in page at `oauth.cold3.cc/auth/signin?error=OAuthCallbackError`. The user is stranded on a generic Auth.js page with no way back to cold3.cc.
 
+### What Auth.js actually does on cancel (verified against @auth/core source)
+
+When the provider returns `?error=access_denied`, the `oauth4webapi` library's `validateAuthResponse()` throws an `AuthorizationResponseError`. Auth.js catches this in `handleOAuth()`, wraps it in an `OAuthCallbackError` (a subclass of `SignInError`, which has `kind = "signIn"`), and re-throws. The top-level `Auth()` catch block does a raw `Response.redirect()` to `pages.signIn` (NOT `pages.error`) with `?error=OAuthCallbackError`.
+
+Neither `signIn` nor `redirect` callbacks fire. The error short-circuits before `handleAuthorized()` is ever called. There is no `error` event in Auth.js v5 either. The `redirect` callback only fires as a sub-step of `handleAuthorized()`, which requires a successful OAuth exchange.
+
+We considered intercepting the redirect response in SvelteKit's `handle` hook (checking the Location header for `error=OAuthCallbackError`), but this depends on implementation details — the redirect status code, the header format, the error class name — none of which are public API. A semver-compatible Auth.js update could change any of these silently. The cancel flow would break, and we wouldn't catch it immediately since smoke tests cover happy path first.
+
 ### The design
 
-Funnel all completions — happy and sad — through the same pathway back to Nuxt. The `redirect` callback in Auth.js fires for every redirect Auth.js makes, including error redirects. It runs server-side inside the `SvelteKitAuth(async (event) => {...})` closure, so it has access to `event`, cookies, `sealEnvelope`, everything. No extra SvelteKit route or HTTP round trip needed.
+Use `pages.signIn` — Auth.js's documented, stable configuration for controlling where errors go. Add a small SvelteKit error-landing route that seals an error envelope and redirects to `oauth2.vue`. Different on-ramp, same road back.
 
-**Happy path** (unchanged): Provider success → `signIn` fires, seals envelope with `{account, profile, user, browserHash}` → returns `oauth2.vue?envelope=...` → `redirect` passes it through unchanged
+**Happy path** (unchanged): Provider success → `signIn` callback fires, seals envelope with `{account, profile, user, browserHash}` → returns `oauth2.vue?envelope=...` → `redirect` passes it through
 
-**Sad path** (new): Provider cancel → `signIn` does NOT fire → Auth.js calls `redirect` with a URL pointing to its own error page → `redirect` detects this, seals envelope with `{error, browserHash}` → returns `oauth2.vue?envelope=...`
+**Sad path** (new): Provider cancel → Auth.js redirects to our custom `pages.signIn` route with `?error=OAuthCallbackError` → route's server load seals envelope with `{error, browserHash}` → redirects to `oauth2.vue?envelope=...`
 
-Same road. oauth2.vue posts to OauthDone either way. OauthDone opens the envelope, sees proof or error, returns the right route. OauthDone becomes "done with the auth.js flow" not "success."
+Both paths arrive at oauth2.vue with an envelope. oauth2.vue posts to OauthDone either way. OauthDone opens the envelope, sees proof or error, returns the right route.
 
 ### Implementation
 
-Two files change. oauth2.vue does not change — it already just posts the envelope and navigates to whatever route the endpoint returns.
+Three files change. oauth2.vue does not change — it already just posts the envelope and navigates to whatever route the endpoint returns.
 
-**File 1: `oauth/src/auth.js` — expand `redirect` callback (line 70)**
+**File 1: `oauth/src/auth.js` — add `pages.signIn` config**
 
-Currently:
+Add to `authOptions`:
 ```javascript
-async redirect({url, baseUrl}) {
-	return url
-}
-```
-
-Change to:
-```javascript
-async redirect({url, baseUrl}) {
-	if (url.startsWith(originApex())) return url //happy path envelope from signIn, pass through
-
-	//sad path: Auth.js is trying to redirect to its own error page; intercept and send back through our road
-	let errorCode = new URL(url, baseUrl).searchParams.get('error') || 'unknown'
-	let browserTag = parseCookieValue(event.cookies.get(composeCookieName()))
-	let browserHash = browserTag ? await hashText(browserTag) : null
-	let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {error: errorCode, browserHash})
-	return `${originApex()}/oauth2?envelope=${envelope}`
+pages: {
+	signIn: '/auth-error',
 },
 ```
 
-How to distinguish happy from sad: happy path URLs already contain `originApex()` (signIn composed them). Error URLs point to Auth.js's own pages on the SvelteKit site. `event` is available from the outer closure. All imports are already at the top of auth.js.
+This tells Auth.js to redirect cancel/error to our route instead of its default sign-in page. The happy path is unaffected — it never hits `pages.signIn` because the `signIn` callback returns a URL directly.
 
-**File 2: `site/server/api/oauth.js` — expand OauthDone handler (line 17)**
+**File 2: new route `oauth/src/routes/auth-error/+page.server.js`**
+
+```javascript
+//on the oauth trail: SvelteKit error landing (user cancelled at provider)
+
+import {
+	log, look, Limit,
+	Key, decryptKeys,
+	sealEnvelope, hashText,
+	composeCookieName, parseCookieValue,
+	originApex,
+} from 'icarus'
+import {redirect} from '@sveltejs/kit'
+
+export async function load(event) {
+	let sources = []
+	if (typeof process !== 'undefined' && process.env) {
+		sources.push({note: 'b10', environment: process.env})
+	}
+	if (event?.platform?.env) {
+		sources.push({note: 'b20', environment: event?.platform?.env})
+	}
+	await decryptKeys('auth-error', sources)
+
+	let errorCode = event.url.searchParams.get('error') || 'unknown'
+
+	let browserTag = parseCookieValue(event.cookies.get(composeCookieName()))
+	let browserHash = browserTag ? await hashText(browserTag) : null
+
+	let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {error: errorCode, browserHash})
+	log('oauth sad path, sealing error envelope', look({errorCode}))
+
+	throw redirect(303, `${originApex()}/oauth2?envelope=${envelope}`)
+}
+```
+
+This route only fires on the sad path. It calls `decryptKeys` itself since it runs outside the `SvelteKitAuth` closure (same sources pattern as auth.js). No `+page.svelte` needed — the load function always redirects, never renders.
+
+**File 3: `site/server/api/oauth.js` — expand OauthDone handler**
 
 Currently:
 ```javascript
@@ -74,7 +106,6 @@ Change to:
 	log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
 
 	if (letter.error) {
-		//sad path: user cancelled or provider returned an error
 		log('oauth sad path', look({error: letter.error}))
 		return {
 			outcome: 'OauthCancelled.',
@@ -82,7 +113,6 @@ Change to:
 		}
 	}
 
-	//happy path: user proved they control a third-party account
 	return {
 		outcome: 'OauthProven.',
 		route: '/',
@@ -103,7 +133,7 @@ browserHash check in `openEnvelope` runs for both paths. On the sad path, if the
 These were identified in the audit but don't need dedicated solutions:
 
 - **Refresh on SvelteKit `/continue/[provider]`** — 2-second envelope expires, already redirects to home. Acceptable for a page the user is on for 200ms.
-- **No `+error.svelte` in SvelteKit** — the redirect callback now catches error redirects. Remaining uncovered case is server crashes, which a custom error page doesn't meaningfully help.
+- **No `+error.svelte` in SvelteKit** — remaining uncovered case is server crashes, which a custom error page doesn't meaningfully help.
 - **`fetchWorker` failure in OauthDemo.vue** — standard fetch error handling. Defer until the real UI replaces the demo component.
 - **Direct navigation to `oauth2.vue`** — generic error.vue is fine for this edge case nobody will hit.
 - **Envelopes not single-use** — 2-second replay window plus browserHash binding. Theoretical, not practical.
