@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb17.2027.40252
+  generated: 2026feb17.2119.31610
   🏺 Declared release 6+ months earlier than installed:
     - "@tailwindcss/postcss"
     - "@types/react"
@@ -143,8 +143,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.991.0 on 2026feb16 0m old
-      current: 3.991.0 on 2026feb16 0m old
-      latest: 3.991.0 on 2026feb16 0m old
+      current: 3.992.0 on 2026feb17 0m old
+      latest: 3.992.0 on 2026feb17 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -155,8 +155,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.991.0 on 2026feb16 0m old
-      current: 3.991.0 on 2026feb16 0m old
-      latest: 3.991.0 on 2026feb16 0m old
+      current: 3.992.0 on 2026feb17 0m old
+      latest: 3.992.0 on 2026feb17 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -167,8 +167,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.991.0 on 2026feb16 0m old
-      current: 3.991.0 on 2026feb16 0m old
-      latest: 3.991.0 on 2026feb16 0m old
+      current: 3.992.0 on 2026feb17 0m old
+      latest: 3.992.0 on 2026feb17 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -179,8 +179,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.991.0 on 2026feb16 0m old
-      current: 3.991.0 on 2026feb16 0m old
-      latest: 3.991.0 on 2026feb16 0m old
+      current: 3.992.0 on 2026feb17 0m old
+      latest: 3.992.0 on 2026feb17 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -447,7 +447,9 @@ modules:
   "@vueuse/core":
     homepage: https://github.com/vueuse/vueuse#readme
     description: Collection of essential Vue Composition Utilities
-    from: shad4nuxt
+    from:
+      - site
+      - shad4nuxt
     versions:
       declared: ^14.2.1 on 2026feb10 0m old
       installed: 14.2.1 on 2026feb10 0m old
@@ -787,7 +789,9 @@ modules:
   reka-ui:
     homepage: https://github.com/unovue/reka-ui
     description: Vue port for Radix UI Primitives.
-    from: shad4nuxt
+    from:
+      - site
+      - shad4nuxt
     versions:
       declared: ^2.8.0 on 2026jan28 0m old
       installed: 2.8.0 on 2026jan28 0m old
@@ -982,8 +986,8 @@ modules:
     versions:
       declared: ^2.45.1 on 2026jan29 0m old
       installed: 2.46.1 on 2026feb16 0m old
-      current: 2.46.1 on 2026feb16 0m old
-      latest: 2.46.1 on 2026feb16 0m old
+      current: 2.46.2 on 2026feb17 0m old
+      latest: 2.46.2 on 2026feb17 0m old
     downloads:
       weekly: 2,639,619
       on: 2026feb4.1821.46960

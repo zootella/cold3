@@ -324,6 +324,18 @@ Both Nuxt UI and shadcn-vue bet on Reka UI, which is healthy right now but singl
 
 For a modern Nuxt project: Nuxt UI if you want the blessed, best-integrated path and don't mind its opinions; shadcn-vue if you want the "own your source" pattern and are comfortable being one step behind the React ecosystem.
 
+### The copy-not-install model
+
+Before shadcn, component libraries were npm packages. You `npm install` a library like Material UI or Vuetify, import its components, and configure them through props and theming. When the library ships a fix or a new feature, you bump the version and get it. The library owns the code; you own the configuration.
+
+shadcn invented (or at least popularized) a different pattern: the CLI copies component source files into your project and then the connection to the registry is severed. `pnpm dlx shadcn-vue@latest add switch` downloads a Switch.vue, drops it into your `components/ui/` directory, and exits. That file is now yours — plain source code in your repo, no different from a component you wrote yourself. There is no `shadcn-vue` entry in your runtime dependencies. There is no version to bump. The CLI is a delivery mechanism, not a dependency.
+
+This is a shadcn-specific idea. It's not a Tailwind thing (Tailwind is just the styling system the copied files use), not a Vue or React thing (both sides work the same way), and not a reka-ui thing (reka-ui is a normal npm package that updates traditionally). The pattern exists because shadcn's creator believed component libraries impose too much abstraction: you can't easily see what a `<UButton variant="soft">` actually renders, and when you need it to do something the prop API doesn't support, you're stuck filing an issue or forking.
+
+**Why it's better:** Total control. You can read every line of every component. You can change anything — markup, styling, behavior, accessibility attributes — without fighting an abstraction layer. You can delete components you don't use. You can move files wherever you want. There's no risk of a library update breaking your UI, because there are no library updates. For teams building a distinctive visual identity, this matters: a designer can open Switch.vue and change exactly how it looks and animates, without learning a theme API or overriding CSS variables through an indirection layer.
+
+**Why it could be worse:** You're responsible for maintenance. If reka-ui ships an accessibility fix for SwitchRoot, shadcn-vue will update its registry to use it, but your copied Switch.vue stays as it was the day you added it. You'd have to notice the update, re-run the add command, and diff the new output against your (possibly customized) version. For a team without frontend expertise, this means accessibility and behavior bugs can silently accumulate. Traditional component libraries handle this for you — bump the version, get the fix. The copy model also means every project has its own slightly different copy of every component, which makes knowledge less transferable across teams and projects.
+
 ### shadcn-vue vs Nuxt UI: two paths for a modern Nuxt stack
 
 The stack we scaffolded in this experiment — Nuxt + Tailwind + shadcn-vue — mirrors the React side as closely as possible. You run `shadcn-vue add button`, a `.vue` file lands in your `components/ui/` directory, and it's yours. You can read every line, modify anything, and there's no version to upgrade — the component is just source code in your repo. This is the shadcn philosophy: your project doesn't *depend on* shadcn-vue at runtime, it just used the CLI once to generate files. The tradeoff is that you're responsible for those files. If shadcn-vue ships an improved Button next month, you don't get it automatically — you'd re-run the add command and diff the result, or just keep what you have.
@@ -340,6 +352,21 @@ For our purposes — evaluating the scaffolding steps and understanding the laye
 
 ## Integrating shadcn-vue into the site workspace
 
+### Done
+
+- CSS merge: shadcn theme tokens (@theme inline, :root, .dark) merged into site/app/assets/css/style.css alongside pre-existing styles. File reorganized into four chapters (Fonts, Directives, Theme Definition, Style Rules), section-by-section walkthrough and commenting complete.
+- CSS verification: site renders identically in local dev and deployed. No visual regressions from the merge.
+- components.json and lib/utils.ts created by shadcn-vue init.
+- All shadcn runtime dependencies added to site's package.json: reka-ui, class-variance-authority, clsx, tailwind-merge, lucide-vue-next, @vueuse/core as dependencies; tw-animate-css as devDependency.
+- First shadcn component added: Switch (proves full stack — reka-ui primitives + @vueuse/core + cn() + theme tokens).
+
+### Still to do
+
+- Update sem.yaml to track the new dependencies
+- Delete shad4next/ and shad4nuxt/ scaffold workspaces once integration is confirmed working
+
+### Integration decisions (keep, revisit later)
+
 **`@tailwindcss/forms` — keep for now, remove later.** The forms plugin normalizes bare `<input>` elements to look consistent cross-browser and respond to Tailwind utilities. The site has ~16 bare `<input>` elements across ChooseNameForm, SignInForm, PasswordBox, OtpRequestComponent, TotpDemo, and others. Without the plugin, these would revert to platform-native styling. shadcn's `<Input>` component styles itself from scratch via Reka UI + Tailwind classes, making the plugin redundant for any form element that migrates to a shadcn component. Plan: keep `@plugin "@tailwindcss/forms"` until existing forms are migrated to shadcn components, then remove it and the `@tailwindcss/forms` devDependency.
 
 **Global link styles — keep hardcoded colors for now, migrate to semantic tokens later.** The site has global `a` styles using hardcoded Tailwind colors (text-blue-600, text-purple-600, etc.). These work alongside shadcn — no conflict — but they won't respond to dark mode or theme changes. To make them dark-mode-ready, swap to semantic tokens: `text-primary` for links, `text-muted-foreground` for visited, `text-destructive` for active, with `/70` opacity for hover states. This loses the blue/purple identity and takes on the neutral palette. Alternatively, define custom `--link`/`--link-visited` CSS variables with light and dark values for branded link colors that still respond to theme switching.
@@ -347,3 +374,17 @@ For our purposes — evaluating the scaffolding steps and understanding the laye
 **Existing component classes (`.my-button`, `.ghost`, `.ready`, `.doing`, `.my-link`) — keep entirely.** 44 occurrences across 17 files. The three-state pattern (ghost/ready/doing = disabled/available/in-progress) has no shadcn equivalent. One name to watch: shadcn's Button has `variant="ghost"` which resolves to hover classes via CVA, while the site's `.ghost` CSS class applies `bg-gray-400`. These won't collide in practice (variant prop vs CSS class), but avoid putting both on the same element. Eventually, migrate page-by-page: replace `my-button`/`my-link` usage with shadcn `<Button>` variants, and express the three-state pattern as custom shadcn variants or a composable that selects the right variant prop.
 
 **Button naming collision — resolve before using shadcn Button.** The site has `components/small/Button.vue` (16 usages, handles three-state ghost/ready/doing + async click + turnstile) and shadcn would add `components/ui/button/Button.vue`. With `pathPrefix: false` in nuxt.config, Nuxt's auto-import registers both as just `<Button>`, causing ambiguity. The simplest fix: use explicit imports for shadcn components (`import { Button } from '~/components/ui/button'`) in any file that needs them, leaving the existing auto-imported `<Button>` untouched. This requires zero changes to existing code. Alternative approaches: rename the existing Button (16-file migration), or re-enable `pathPrefix: true` (changes all auto-import names sitewide). Resolve this before the first page that needs a shadcn Button.
+
+## Package management: what's settled, what's left
+
+The shadcn infrastructure is now fully installed. The six runtime dependencies in site's package.json (reka-ui, class-variance-authority, clsx, tailwind-merge, lucide-vue-next, @vueuse/core) plus tw-animate-css as a devDependency cover everything that the vast majority of shadcn components need.
+
+**Adding most components won't change package.json.** Running `pnpm dlx shadcn-vue@latest add card` (or dialog, dropdown, tabs, sheet, alert, etc.) copies .vue source files into the repo. Those files import from the deps already installed. No new packages.
+
+**A few specialized components bring their own dependency.** Toast pulls in `vue-sonner`. Form pulls in `vee-validate` and `@vee-validate/zod`. Charts would pull in a charting library. These are deliberate feature additions, not infrastructure churn — one or two new packages at the point you decide to use that component.
+
+**Design and branding work has zero package impact.** A designer customizing the visual identity edits CSS values (`:root` color tokens, font stacks) and component templates. No packages added or changed.
+
+**The `pnpm dlx shadcn-vue@latest` command is a code generator, not a dependency.** It downloads temporarily, copies source files into the repo, and exits. Same pattern as `nuxi init` or `create-next-app` — a scaffolding tool, not a runtime concern. It will never appear in package.json or sem.yaml.
+
+**Remaining sem.yaml changes are subtractive.** Deleting shad4next and shad4nuxt removes scaffold-only entries (radix-ui, react, react-dom, next, shadcn, @types/react, eslint, typescript, etc.). Later, when forms migrate to shadcn components, @tailwindcss/forms gets removed. The dependency surface gets smaller from here, not larger.
