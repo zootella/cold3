@@ -1,5 +1,9 @@
 summary:
-  generated: 2026feb17.0212.46095
+  generated: 2026feb17.0243.24812
+  📌 Exact version pinned:
+    - "@pinia/nuxt"
+    - nuxt-og-image
+    - satori
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -7,15 +11,12 @@ summary:
     - is-mobile
     - qrcode
     - serverless-offline
-  🏺 Declared release 6+ months earlier than installed:
-    - "@sveltejs/adapter-cloudflare"
-    - "@vercel/nft"
-    - "@wagmi/connectors"
-    - "@wagmi/core"
-    - nuxt
-    - serverless
-    - viem
-    - vue
+  🐣 Pre-1.0 version installed:
+    - "@electric-sql/pglite"
+    - "@pinia/nuxt"
+    - "@tailwindcss/forms"
+    - satori
+    - sharp
   🎁 Major new version available:
     - "@sveltejs/vite-plugin-svelte"
     - "@vitejs/plugin-vue"
@@ -25,16 +26,6 @@ summary:
   🩸 Latest tag is behind installed:
     - nuxt-og-image
     - vidstack
-  🐣 Pre-1.0 version installed:
-    - "@electric-sql/pglite"
-    - "@pinia/nuxt"
-    - "@tailwindcss/forms"
-    - satori
-    - sharp
-  📌 Exact version pinned:
-    - "@pinia/nuxt"
-    - nuxt-og-image
-    - satori
   downloads:
     5 figure:
       vidstack: 32,747
@@ -102,8 +93,10 @@ modules:
     description: Authentication for SvelteKit.
     from: oauth
     versions:
-      declared: ^1.11.1
-      installed: 1.11.1 on 2025oct26 4m old
+      declared: ^1.11.1 on 2025oct26 3m old
+      installed: 1.11.1 on 2025oct26 3m old
+      current: 1.11.1 on 2025oct26 3m old
+      latest: 1.11.1 on 2025oct26 3m old
     downloads:
       weekly: 44,327
       on: 2026feb4.1825.16236
@@ -114,6 +107,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.991.0 on 2026feb16 0m old
+      current: 3.991.0 on 2026feb16 0m old
+      latest: 3.991.0 on 2026feb16 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -124,6 +119,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.991.0 on 2026feb16 0m old
+      current: 3.991.0 on 2026feb16 0m old
+      latest: 3.991.0 on 2026feb16 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -134,6 +131,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.991.0 on 2026feb16 0m old
+      current: 3.991.0 on 2026feb16 0m old
+      latest: 3.991.0 on 2026feb16 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -144,6 +143,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.991.0 on 2026feb16 0m old
+      current: 3.991.0 on 2026feb16 0m old
+      latest: 3.991.0 on 2026feb16 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -152,8 +153,10 @@ modules:
     description: PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3.7mb gzipped.
     from: root
     versions:
-      declared: ^0.3.15
+      declared: ^0.3.15 on 2026jan15 1m old
       installed: 0.3.15 on 2026jan15 1m old 🐣 Pre-1.0 version installed
+      current: 0.3.15 on 2026jan15 1m old
+      latest: 0.3.15 on 2026jan15 1m old
     downloads:
       weekly: 4,678,176
       on: 2026feb4.1821.46960
@@ -162,8 +165,10 @@ modules:
     description: Nuxt Module for pinia
     from: site
     versions:
-      declared: 0.11.3
-      installed: 0.11.3 on 2025nov05 3m old 🐣 Pre-1.0 version installed 📌 Exact version pinned
+      declared: 0.11.3 on 2025nov05 3m old 📌 Exact version pinned
+      installed: 0.11.3 on 2025nov05 3m old 🐣 Pre-1.0 version installed
+      current: 0.11.3 on 2025nov05 3m old
+      latest: 0.11.3 on 2025nov05 3m old
     downloads:
       weekly: 574,156
       on: 2026feb4.1829.44951
@@ -172,8 +177,10 @@ modules:
     description: A high-performance SVG renderer and toolkit, powered by Rust based resvg and napi-rs
     from: site
     versions:
-      declared: ^2.6.2
-      installed: 2.6.2 on 2024mar26 23m old 🕰️ Installed version 1+ year old
+      declared: ^2.6.2 on 2024mar26 22m old
+      installed: 2.6.2 on 2024mar26 22m old 🕰️ Installed version 1+ year old
+      current: 2.6.2 on 2024mar26 22m old
+      latest: 2.6.2 on 2024mar26 22m old
     downloads:
       weekly: 499,219
       on: 2026feb6.2044.50125
@@ -182,8 +189,10 @@ modules:
     description: A high-performance SVG renderer and toolkit, powered by Rust based resvg and napi-rs
     from: site
     versions:
-      declared: ^2.6.2
-      installed: 2.6.2 on 2024mar26 23m old 🕰️ Installed version 1+ year old
+      declared: ^2.6.2 on 2024mar26 22m old
+      installed: 2.6.2 on 2024mar26 22m old 🕰️ Installed version 1+ year old
+      current: 2.6.2 on 2024mar26 22m old
+      latest: 2.6.2 on 2024mar26 22m old
     downloads:
       weekly: 381,134
       on: 2026feb6.0027.3002
@@ -192,8 +201,10 @@ modules:
     description: Twilio SendGrid NodeJS mail service
     from: net23
     versions:
-      declared: ^8.1.6
-      installed: 8.1.6 on 2025sep19 5m old
+      declared: ^8.1.6 on 2025sep19 4m old
+      installed: 8.1.6 on 2025sep19 4m old
+      current: 8.1.6 on 2025sep19 4m old
+      latest: 8.1.6 on 2025sep19 4m old
     downloads:
       weekly: 2,857,956
       on: 2026feb4.1825.16236
@@ -202,8 +213,10 @@ modules:
     description: Isomorphic Javascript SDK for Supabase
     from: icarus
     versions:
-      declared: ^2.95.3
+      declared: ^2.95.3 on 2026feb06 0m old
       installed: 2.95.3 on 2026feb06 0m old
+      current: 2.95.3 on 2026feb06 0m old
+      latest: 2.95.3 on 2026feb06 0m old
     downloads:
       weekly: 9,033,555
       on: 2026feb4.1821.46960
@@ -212,8 +225,10 @@ modules:
     description: Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages
     from: oauth
     versions:
-      declared: ^7.2.6 on 2026jan23 1m old
+      declared: ^7.2.6 on 2026jan23 0m old
       installed: 7.2.7 on 2026feb12 0m old
+      current: 7.2.7 on 2026feb12 0m old
+      latest: 7.2.7 on 2026feb12 0m old
     downloads:
       weekly: 82,257
       on: 2026feb4.1825.16236
@@ -224,6 +239,8 @@ modules:
     versions:
       declared: ^2.50.2 on 2026feb02 0m old
       installed: 2.52.0 on 2026feb15 0m old
+      current: 2.52.0 on 2026feb15 0m old
+      latest: 2.52.0 on 2026feb15 0m old
     downloads:
       weekly: 876,575
       on: 2026feb4.1825.16236
@@ -232,7 +249,7 @@ modules:
     description: The official [Svelte](https://svelte.dev) plugin for [Vite](https://vitejs.dev).
     from: oauth
     versions:
-      declared: ^5.1.1
+      declared: ^5.1.1 on 2025jul11 7m old
       installed: 5.1.1 on 2025jul11 7m old
       current: 5.1.1 on 2025jul11 7m old
       latest: 6.2.4 on 2026jan09 1m old 🎁 Major new version available
@@ -244,8 +261,10 @@ modules:
     description: A plugin that provides a basic reset for form styles that makes form elements easy to override with utilities.
     from: site
     versions:
-      declared: ^0.5.11
+      declared: ^0.5.11 on 2025dec17 2m old
       installed: 0.5.11 on 2025dec17 2m old 🐣 Pre-1.0 version installed
+      current: 0.5.11 on 2025dec17 2m old
+      latest: 0.5.11 on 2025dec17 2m old
     downloads:
       weekly: 2,680,926
       on: 2026feb4.1829.44951
@@ -254,8 +273,10 @@ modules:
     description: A utility-first CSS framework for rapidly building custom user interfaces.
     from: site
     versions:
-      declared: ^4.1.18
+      declared: ^4.1.18 on 2025dec11 2m old
       installed: 4.1.18 on 2025dec11 2m old
+      current: 4.1.18 on 2025dec11 2m old
+      latest: 4.1.18 on 2025dec11 2m old
     downloads:
       weekly: 6,607,358
       on: 2026feb5.2153.32117
@@ -266,6 +287,8 @@ modules:
     versions:
       declared: ^2.1.3 on 2026feb06 0m old
       installed: 2.1.4 on 2026feb08 0m old
+      current: 2.1.4 on 2026feb08 0m old
+      latest: 2.1.4 on 2026feb08 0m old
     downloads:
       weekly: 1,494,102
       on: 2026feb4.1829.44951
@@ -276,8 +299,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.1.0
-      installed: 5.1.0 on 2025dec02 3m old
+      declared: ^5.1.0 on 2025dec02 2m old
+      installed: 5.1.0 on 2025dec02 2m old
+      current: 5.1.0 on 2025dec02 2m old
+      latest: 5.1.0 on 2025dec02 2m old
     downloads:
       weekly: 292,709
       on: 2026feb4.1821.46960
@@ -288,8 +313,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.2.0
-      installed: 5.2.0 on 2025dec02 3m old
+      declared: ^5.2.0 on 2025dec02 2m old
+      installed: 5.2.0 on 2025dec02 2m old
+      current: 5.2.0 on 2025dec02 2m old
+      latest: 5.2.0 on 2025dec02 2m old
     downloads:
       weekly: 543,303
       on: 2026feb4.1821.46960
@@ -300,8 +327,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.1.1
+      declared: ^5.1.1 on 2026feb03 0m old
       installed: 5.1.1 on 2026feb03 0m old
+      current: 5.1.1 on 2026feb03 0m old
+      latest: 5.1.1 on 2026feb03 0m old
     downloads:
       weekly: 381,907
       on: 2026feb4.1821.46960
@@ -310,8 +339,10 @@ modules:
     description: "[![CI Status](https://github.com/vercel/nft/actions/workflows/ci.yml/badge.svg)](https://github.com/vercel/nft/actions/workflows/ci.yml)"
     from: net23
     versions:
-      declared: ^1.3.0 on 2026jan21 1m old
+      declared: ^1.3.0 on 2026jan21 0m old
       installed: 1.3.1 on 2026feb10 0m old
+      current: 1.3.1 on 2026feb10 0m old
+      latest: 1.3.1 on 2026feb10 0m old
     downloads:
       weekly: 5,524,454
       on: 2026feb4.1825.16236
@@ -320,7 +351,7 @@ modules:
     description: The official plugin for Vue SFC support in Vite.
     from: icarus
     versions:
-      declared: ^5.2.4
+      declared: ^5.2.4 on 2025may09 9m old
       installed: 5.2.4 on 2025may09 9m old
       current: 5.2.4 on 2025may09 9m old
       latest: 6.0.4 on 2026feb02 0m old 🎁 Major new version available
@@ -336,6 +367,8 @@ modules:
     versions:
       declared: ^7.1.6 on 2026feb01 0m old
       installed: 7.2.0 on 2026feb16 0m old
+      current: 7.2.0 on 2026feb16 0m old
+      latest: 7.2.0 on 2026feb16 0m old
     downloads:
       weekly: 508,960
       on: 2026feb4.1821.46960
@@ -348,6 +381,8 @@ modules:
     versions:
       declared: ^3.3.2 on 2026feb01 0m old
       installed: 3.3.4 on 2026feb16 0m old
+      current: 3.3.4 on 2026feb16 0m old
+      latest: 3.3.4 on 2026feb16 0m old
     downloads:
       weekly: 485,845
       on: 2026feb4.1821.46960
@@ -356,8 +391,10 @@ modules:
     description: A library for determining credit card type
     from: icarus
     versions:
-      declared: ^10.1.2
-      installed: 10.1.2 on 2026jan28 1m old
+      declared: ^10.1.2 on 2026jan28 0m old
+      installed: 10.1.2 on 2026jan28 0m old
+      current: 10.1.2 on 2026jan28 0m old
+      latest: 10.1.2 on 2026jan28 0m old
     downloads:
       weekly: 1,258,798
       on: 2026feb4.1821.46960
@@ -366,8 +403,10 @@ modules:
     description: It's a very fast and efficient glob library for Node.js
     from: root
     versions:
-      declared: ^3.3.3
+      declared: ^3.3.3 on 2025jan05 13m old
       installed: 3.3.3 on 2025jan05 13m old 🕰️ Installed version 1+ year old
+      current: 3.3.3 on 2025jan05 13m old
+      latest: 3.3.3 on 2025jan05 13m old
     downloads:
       weekly: 94,186,895
       on: 2026feb4.1821.46960
@@ -376,8 +415,10 @@ modules:
     description: fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.
     from: net23
     versions:
-      declared: ^11.3.3
-      installed: 11.3.3 on 2025dec18 2m old
+      declared: ^11.3.3 on 2025dec18 1m old
+      installed: 11.3.3 on 2025dec18 1m old
+      current: 11.3.3 on 2025dec18 1m old
+      latest: 11.3.3 on 2025dec18 1m old
     downloads:
       weekly: 140,054,511
       on: 2026feb4.1825.16236
@@ -386,7 +427,7 @@ modules:
     description: Minimal H(TTP) framework built for high performance and portability.
     from: icarus
     versions:
-      declared: ^1.15.5
+      declared: ^1.15.5 on 2026jan15 1m old
       installed: 1.15.5 on 2026jan15 1m old
       current: 1.15.5 on 2026jan15 1m old
       latest: 2.0.1-rc.14 on 2026feb05 0m old 🎁 Major new version available
@@ -398,8 +439,10 @@ modules:
     description: Check if mobile browser.
     from: icarus
     versions:
-      declared: ^5.0.0
+      declared: ^5.0.0 on 2024oct16 16m old
       installed: 5.0.0 on 2024oct16 16m old 🕰️ Installed version 1+ year old
+      current: 5.0.0 on 2024oct16 16m old
+      latest: 5.0.0 on 2024oct16 16m old
     downloads:
       weekly: 1,235,533
       on: 2026feb4.1821.46960
@@ -408,8 +451,10 @@ modules:
     description: A simpler (and smaller) rewrite of Google Android's libphonenumber library in javascript
     from: icarus
     versions:
-      declared: ^1.12.36
-      installed: 1.12.36 on 2026jan30 1m old
+      declared: ^1.12.36 on 2026jan30 0m old
+      installed: 1.12.36 on 2026jan30 0m old
+      current: 1.12.36 on 2026jan30 0m old
+      latest: 1.12.36 on 2026jan30 0m old
     downloads:
       weekly: 12,299,472
       on: 2026feb4.1821.46960
@@ -418,8 +463,10 @@ modules:
     description: A tiny (118 bytes), secure URL-friendly unique string ID generator
     from: root
     versions:
-      declared: ^5.1.6
-      installed: 5.1.6 on 2025sep22 5m old
+      declared: ^5.1.6 on 2025sep22 4m old
+      installed: 5.1.6 on 2025sep22 4m old
+      current: 5.1.6 on 2025sep22 4m old
+      latest: 5.1.6 on 2025sep22 4m old
     downloads:
       weekly: 94,895,352
       on: 2026feb4.1821.46960
@@ -428,8 +475,10 @@ modules:
     description: Build and Deploy Universal JavaScript Servers
     from: site
     versions:
-      declared: ^2.13.1
+      declared: ^2.13.1 on 2026jan15 1m old
       installed: 2.13.1 on 2026jan15 1m old
+      current: 2.13.1 on 2026jan15 1m old
+      latest: 2.13.1 on 2026jan15 1m old
     downloads:
       weekly: 1,164,344
       on: 2026feb4.1829.44951
@@ -438,8 +487,10 @@ modules:
     description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
     from: site
     versions:
-      declared: ^4.3.0 on 2026jan22 1m old
+      declared: ^4.3.0 on 2026jan22 0m old
       installed: 4.3.1 on 2026feb07 0m old
+      current: 4.3.1 on 2026feb07 0m old
+      latest: 4.3.1 on 2026feb07 0m old
     downloads:
       weekly: 1,163,970
       on: 2026feb4.1829.44951
@@ -448,8 +499,8 @@ modules:
     description: Enlightened OG Image generation for Nuxt.
     from: site
     versions:
-      declared: 6.0.0-beta.15
-      installed: 6.0.0-beta.15 on 2026feb05 0m old 📌 Exact version pinned
+      declared: 6.0.0-beta.15 on 2026feb05 0m old 📌 Exact version pinned
+      installed: 6.0.0-beta.15 on 2026feb05 0m old
       current: 6.0.0-beta.15 on 2026feb05 0m old
       latest: 5.1.13 on 2025dec11 2m old 🩸 Latest tag is behind installed
     downloads:
@@ -460,8 +511,10 @@ modules:
     description: A better fetch API. Works on node, browser and workers.
     from: icarus
     versions:
-      declared: ^1.5.1
-      installed: 1.5.1 on 2025nov01 4m old
+      declared: ^1.5.1 on 2025nov01 3m old
+      installed: 1.5.1 on 2025nov01 3m old
+      current: 1.5.1 on 2025nov01 3m old
+      latest: 1.5.1 on 2025nov01 3m old
     downloads:
       weekly: 3,791,474
       on: 2026feb4.1821.46960
@@ -470,8 +523,10 @@ modules:
     description: One Time Password (HOTP/TOTP) library for Node.js, Deno, Bun and browsers
     from: root
     versions:
-      declared: ^9.5.0
+      declared: ^9.5.0 on 2026feb04 0m old
       installed: 9.5.0 on 2026feb04 0m old
+      current: 9.5.0 on 2026feb04 0m old
+      latest: 9.5.0 on 2026feb04 0m old
     downloads:
       weekly: 906,306
       on: 2026feb4.1821.46960
@@ -480,8 +535,10 @@ modules:
     description: Intuitive, type safe and flexible Store for Vue
     from: site
     versions:
-      declared: ^3.0.4
+      declared: ^3.0.4 on 2025nov05 3m old
       installed: 3.0.4 on 2025nov05 3m old
+      current: 3.0.4 on 2025nov05 3m old
+      latest: 3.0.4 on 2025nov05 3m old
     downloads:
       weekly: 2,840,519
       on: 2026feb4.1829.44951
@@ -492,8 +549,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^1.5.4
+      declared: ^1.5.4 on 2024aug05 18m old
       installed: 1.5.4 on 2024aug05 18m old 🕰️ Installed version 1+ year old
+      current: 1.5.4 on 2024aug05 18m old
+      latest: 1.5.4 on 2024aug05 18m old
     downloads:
       weekly: 6,394,940
       on: 2026feb4.1821.46960
@@ -502,8 +561,8 @@ modules:
     description: Enlightened library to convert HTML and CSS to SVG.
     from: site
     versions:
-      declared: 0.15.2
-      installed: 0.15.2 on 2025jun09 8m old 🐣 Pre-1.0 version installed 📌 Exact version pinned
+      declared: 0.15.2 on 2025jun09 8m old 📌 Exact version pinned
+      installed: 0.15.2 on 2025jun09 8m old 🐣 Pre-1.0 version installed
       current: 0.15.2 on 2025jun09 8m old
       latest: 0.19.2 on 2026feb10 0m old
     downloads:
@@ -514,8 +573,10 @@ modules:
     description: The semantic version parser used by npm.
     from: root
     versions:
-      declared: ^7.7.4
+      declared: ^7.7.4 on 2026feb05 0m old
       installed: 7.7.4 on 2026feb05 0m old
+      current: 7.7.4 on 2026feb05 0m old
+      latest: 7.7.4 on 2026feb05 0m old
     downloads:
       weekly: 514,720,390
       on: 2026feb4.1821.46960
@@ -524,8 +585,10 @@ modules:
     description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
     from: net23
     versions:
-      declared: ^4.31.2 on 2026jan27 1m old
+      declared: ^4.31.2 on 2026jan27 0m old
       installed: 4.32.0 on 2026feb12 0m old
+      current: 4.32.0 on 2026feb12 0m old
+      latest: 4.32.0 on 2026feb12 0m old
     downloads:
       weekly: 1,185,950
       on: 2026feb4.1825.16236
@@ -534,8 +597,10 @@ modules:
     description: Emulate AWS λ and API Gateway locally when developing your Serverless project
     from: net23
     versions:
-      declared: ^14.4.0
+      declared: ^14.4.0 on 2024dec09 14m old
       installed: 14.4.0 on 2024dec09 14m old 🕰️ Installed version 1+ year old
+      current: 14.4.0 on 2024dec09 14m old
+      latest: 14.4.0 on 2024dec09 14m old
     downloads:
       weekly: 561,989
       on: 2026feb4.1825.16236
@@ -544,8 +609,10 @@ modules:
     description: High performance Node.js image processing, the fastest module to resize JPEG, PNG, WebP, GIF, AVIF and TIFF images
     from: net23
     versions:
-      declared: ^0.34.5
+      declared: ^0.34.5 on 2025nov06 3m old
       installed: 0.34.5 on 2025nov06 3m old 🐣 Pre-1.0 version installed
+      current: 0.34.5 on 2025nov06 3m old
+      latest: 0.34.5 on 2025nov06 3m old
     downloads:
       weekly: 35,411,185
       on: 2026feb4.1825.16236
@@ -556,6 +623,8 @@ modules:
     versions:
       declared: ^5.50.0 on 2026feb06 0m old
       installed: 5.51.2 on 2026feb15 0m old
+      current: 5.51.2 on 2026feb15 0m old
+      latest: 5.51.2 on 2026feb15 0m old
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
@@ -564,8 +633,10 @@ modules:
     description: A utility-first CSS framework for rapidly building custom user interfaces.
     from: site
     versions:
-      declared: ^4.1.18
+      declared: ^4.1.18 on 2025dec11 2m old
       installed: 4.1.18 on 2025dec11 2m old
+      current: 4.1.18 on 2025dec11 2m old
+      latest: 4.1.18 on 2025dec11 2m old
     downloads:
       weekly: 47,765,674
       on: 2026feb5.2153.32117
@@ -574,8 +645,10 @@ modules:
     description: A Twilio helper library
     from: net23
     versions:
-      declared: ^5.12.1
+      declared: ^5.12.1 on 2026feb05 0m old
       installed: 5.12.1 on 2026feb05 0m old
+      current: 5.12.1 on 2026feb05 0m old
+      latest: 5.12.1 on 2026feb05 0m old
     downloads:
       weekly: 2,767,196
       on: 2026feb4.1825.16236
@@ -584,8 +657,10 @@ modules:
     description: Universal Storage Layer
     from: site
     versions:
-      declared: ^1.17.4
+      declared: ^1.17.4 on 2026jan15 1m old
       installed: 1.17.4 on 2026jan15 1m old
+      current: 1.17.4 on 2026jan15 1m old
+      latest: 1.17.4 on 2026jan15 1m old
     downloads:
       weekly: 3,638,203
       on: 2026feb4.1829.44951
@@ -594,10 +669,10 @@ modules:
     description: Build awesome media experiences on the web.
     from: site
     versions:
-      declared: ^1.12.13
-      installed: 1.12.13 on 2025feb16 12m old
-      current: 1.12.13 on 2025feb16 12m old
-      latest: 0.6.15 on 2024apr19 22m old 🩸 Latest tag is behind installed
+      declared: ^1.12.13 on 2025feb16 11m old
+      installed: 1.12.13 on 2025feb16 11m old
+      current: 1.12.13 on 2025feb16 11m old
+      latest: 0.6.15 on 2024apr19 21m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 32,747
       on: 2026feb4.1829.44951
@@ -608,8 +683,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^2.45.1 on 2026jan29 1m old
+      declared: ^2.45.1 on 2026jan29 0m old
       installed: 2.46.1 on 2026feb16 0m old
+      current: 2.46.1 on 2026feb16 0m old
+      latest: 2.46.1 on 2026feb16 0m old
     downloads:
       weekly: 2,639,619
       on: 2026feb4.1821.46960
@@ -620,9 +697,9 @@ modules:
       - icarus
       - oauth
     versions:
-      declared: ^6.4.1
-      installed: 6.4.1 on 2025oct20 4m old
-      current: 6.4.1 on 2025oct20 4m old
+      declared: ^6.4.1 on 2025oct20 3m old
+      installed: 6.4.1 on 2025oct20 3m old
+      current: 6.4.1 on 2025oct20 3m old
       latest: 7.3.1 on 2026jan07 1m old 🎁 Major new version available
     downloads:
       weekly: 53,611,431
@@ -634,8 +711,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^3.5.27 on 2026jan19 1m old
+      declared: ^3.5.27 on 2026jan19 0m old
       installed: 3.5.28 on 2026feb09 0m old
+      current: 3.5.28 on 2026feb09 0m old
+      latest: 3.5.28 on 2026feb09 0m old
     downloads:
       weekly: 8,549,415
       on: 2026feb4.1825.16236
@@ -646,7 +725,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^4.6.4
+      declared: ^4.6.4 on 2025dec11 2m old
       installed: 4.6.4 on 2025dec11 2m old
       current: 4.6.4 on 2025dec11 2m old
       latest: 5.0.2 on 2026feb02 0m old 🎁 Major new version available
@@ -662,6 +741,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 0m old
       installed: 4.65.0 on 2026feb12 0m old
+      current: 4.65.0 on 2026feb12 0m old
+      latest: 4.65.0 on 2026feb12 0m old
     downloads:
       weekly: 3,405,027
       on: 2026feb4.1829.44951
@@ -670,8 +751,10 @@ modules:
     description: JavaScript parser and stringifier for YAML
     from: root
     versions:
-      declared: ^2.8.2
-      installed: 2.8.2 on 2025nov30 3m old
+      declared: ^2.8.2 on 2025nov30 2m old
+      installed: 2.8.2 on 2025nov30 2m old
+      current: 2.8.2 on 2025nov30 2m old
+      latest: 2.8.2 on 2025nov30 2m old
     downloads:
       weekly: 101,991,403
       on: 2026feb4.1821.46960
@@ -680,8 +763,10 @@ modules:
     description: TypeScript-first schema declaration and validation library with static type inference
     from: icarus
     versions:
-      declared: ^4.3.6
-      installed: 4.3.6 on 2026jan22 1m old
+      declared: ^4.3.6 on 2026jan22 0m old
+      installed: 4.3.6 on 2026jan22 0m old
+      current: 4.3.6 on 2026jan22 0m old
+      latest: 4.3.6 on 2026jan22 0m old
     downloads:
       weekly: 87,621,926
       on: 2026feb4.1825.16236

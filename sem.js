@@ -11,61 +11,77 @@ sem.js — version analysis for all workspaces in the monorepo
 Reads every package.json and pnpm-lock.yaml, fetches live data from npm, writes sem.yaml.
 Each module gets flagged with notes. Here's what they mean and what to do:
 
-🕰️ Installed version 1+ year old
-   Two very different situations with the same signal. A stable utility like is-mobile
-   sitting at 5.0.0 for 16 months is probably done — fine. A dev tool like serverless-offline
-   at 14.4.0 for 14 months is probably expiring — they've moved on. Look and decide which.
+Flags on declared:
 
-🏺 Declared release 6+ months earlier than installed
+🏺 Declared release 6+ months earlier than installed (the urn)
    The version in package.json is an archaeological artifact. You declared ^2.39.8 but you're
    running 2.94.1 — that old version will never appear again. Action: bump the declared version
    forward in package.json. Mechanical, low risk, just closing the gap. (ncu does this.)
 
-⏰ Current version 6+ months newer
-   There's a newer version within your declared semver range that you're not running. Your
-   lockfile is holding you back. Action: upgrade-wash && install to resolve fresh.
+📌 Exact version pinned (the pushpin)
+   No caret or tilde — you won't get patches automatically. Usually intentional: matching a
+   scaffold's known-good version, or avoiding a specific broken release. Action: check
+   periodically whether the pin is still needed, especially after scaffolding updates.
 
-🎁 Major new version available
-   Breaking changes, intentional decision required. Some major bumps are trivial (dotenv 16→17),
-   others are real work (wagmi 2→3, zod 3→4). Action: evaluate the changelog, test, upgrade.
+Flags on installed:
 
-🩸 Latest tag is behind installed
-   You're on a version newer than what npm calls "latest" — typically because you installed from
-   a @next or prerelease tag. They already made the version you're running; the question is
-   whether they'll promote it to stable, or you're riding a prerelease channel indefinitely.
-   Action: watch the project, decide if you're comfortable on that channel.
+🕰️ Installed version 1+ year old (the mantle clock)
+   Two very different situations with the same signal. A stable utility like is-mobile
+   sitting at 5.0.0 for 16 months is probably done — fine. A dev tool like serverless-offline
+   at 14.4.0 for 14 months is probably expiring — they've moved on. Look and decide which.
 
-🐣 Pre-1.0 version installed
+🐣 Pre-1.0 version installed (the hatchling)
    No semver stability guarantee — minor versions can contain breaking changes. For some packages
    this is genuinely early (pglite 0.3.x), for others it's just convention (sharp 0.34.x, 35M
    weekly downloads, been pre-1.0 for a decade). Action: know that semver minor = breaking for
    these packages.
 
-📌 Exact version pinned
-   No caret or tilde — you won't get patches automatically. Usually intentional: matching a
-   scaffold's known-good version, or avoiding a specific broken release. Action: check
-   periodically whether the pin is still needed, especially after scaffolding updates.
-
-🪦 Installed version marked deprecated on npm
+🪦 Installed version marked deprecated on npm (the tombstone)
    The maintainer is telling you to stop using this version. Action: look for the recommended
    replacement or upgrade path.
+
+Flags on current:
+
+⏰ Current version 6+ months newer (the alarm clock)
+   There's a newer version within your declared semver range that you're not running. Your
+   lockfile is holding you back. Action: upgrade-wash && install to resolve fresh.
+
+Flags on latest:
+
+🎁 Major new version available (the wrapped present)
+   Breaking changes, intentional decision required. Some major bumps are trivial (dotenv 16→17),
+   others are real work (wagmi 2→3, zod 3→4). Action: evaluate the changelog, test, upgrade.
+
+🩸 Latest tag is behind installed (the blood drop)
+   You're on a version newer than what npm calls "latest" — typically because you installed from
+   a @next or prerelease tag. They already made the version you're running; the question is
+   whether they'll promote it to stable, or you're riding a prerelease channel indefinitely.
+   Action: watch the project, decide if you're comfortable on that channel.
 */
 
-// Note constants
-const note_old_installed = '🕰️ Installed version 1+ year old';                    const duration_old_installed = Time.year
-const note_old_declared = '🏺 Declared release 6+ months earlier than installed'; const duration_old_declared = 2*Time.week
-const note_stale_current = '⏰ Current version 6+ months newer';                  const duration_stale_current = 6*Time.month
+// Flags on declared
+const note_old_declared = '🏺 Declared release 6+ months earlier than installed'; const duration_old_declared = 6*Time.month
+const note_exact_pin = '📌 Exact version pinned'
+
+// Flags on installed
+const note_old_installed = '🕰️ Installed version 1+ year old'; const duration_old_installed = Time.year
+const note_version_zero = '🐣 Pre-1.0 version installed'
+const note_deprecated = '🪦 Installed version marked deprecated on npm'
+
+// Flags on current
+const note_stale_current = '⏰ Current version 6+ months newer'; const duration_stale_current = 6*Time.month
+
+// Flags on latest
 const note_major_available = '🎁 Major new version available'
 const note_latest_behind = '🩸 Latest tag is behind installed'
-const note_version_zero = '🐣 Pre-1.0 version installed'
-const note_exact_pin = '📌 Exact version pinned'
-const note_deprecated = '🪦 Installed version marked deprecated on npm'
+
+const duration_stale_download_counts = Time.month//get fresh weekly download counts if our records for a module are more than a month old
 
 // Helper to format version with publication date and age
 function formatVersion(version, tick, now) {
 	if (!version) return 'not found'
 	if (!tick) return version
-	let ageMonths = Math.round((now - tick) / Time.month)
+	let ageMonths = Math.floor((now - tick) / Time.month)
 	return `${version} on ${sayDate(tick)} ${ageMonths}m old`
 }
 
@@ -207,7 +223,7 @@ async function main() {
 	}
 
 	// Build list of modules needing fetch: missing first, then stale (>1 month old)
-	let oneMonthAgo = now - Time.month
+	let oneMonthAgo = now - duration_stale_download_counts
 
 	let allNeedsFetch = [...modules.values()]
 		.map(m => ({name: m.name, on: downloadsData.get(m.name)?.on || null}))
@@ -256,7 +272,7 @@ async function main() {
 			if (declaredBase) {
 				m.declaredTime = tick(npm.time[declaredBase.version])
 				if (m.declaredTime) {
-					let ageMonths = Math.round((now - m.declaredTime) / Time.month)
+					let ageMonths = Math.floor((now - m.declaredTime) / Time.month)
 					m.declaredAge = `on ${sayDate(m.declaredTime)} ${ageMonths}m old`
 				} else {
 					// Version specified in package.json doesn't exist on npm
@@ -273,51 +289,57 @@ async function main() {
 	// Build output and collect summary data
 	let output = {}
 	let summary = {
-		[note_old_installed]: [],
 		[note_old_declared]: [],
+		[note_exact_pin]: [],
+		[note_old_installed]: [],
+		[note_version_zero]: [],
+		[note_deprecated]: [],
 		[note_stale_current]: [],
 		[note_major_available]: [],
 		[note_latest_behind]: [],
-		[note_version_zero]: [],
-		[note_exact_pin]: [],
-		[note_deprecated]: [],
 	}
 
 	for (let m of sorted) {
-		// Check if all versions are the same (before adding notes)
-		let allSame = m.installedLine === m.currentLine && m.currentLine === m.latestLine
-
-		// Build notes to append
+		// Build notes to append to each version line
+		let declaredNote = ''
 		let installedNote = ''
 		let currentNote = ''
 		let latestNote = ''
 
-		if (m.installedTime && now - m.installedTime > duration_old_installed) {
-			installedNote += ' ' + note_old_installed
-			summary[note_old_installed].push(m.name)
-		}
+		// Flags on declared
 		if (m.declaredTime && m.installedTime && !isMajorVersionHigher(m.installed, m.latest)) {
 			let gap = m.installedTime - m.declaredTime
 			if (gap > duration_old_declared) {
+				declaredNote += ' ' + note_old_declared
 				summary[note_old_declared].push(m.name)
 			}
+		}
+		if (!m.semver.startsWith('^') && !m.semver.startsWith('~')) {
+			declaredNote += ' ' + note_exact_pin
+			summary[note_exact_pin].push(m.name)
+		}
+
+		// Flags on installed
+		if (m.installedTime && now - m.installedTime > duration_old_installed) {
+			installedNote += ' ' + note_old_installed
+			summary[note_old_installed].push(m.name)
 		}
 		if (m.installed && semver.major(m.installed) === 0) {
 			installedNote += ' ' + note_version_zero
 			summary[note_version_zero].push(m.name)
 		}
-		if (!m.semver.startsWith('^') && !m.semver.startsWith('~')) {
-			installedNote += ' ' + note_exact_pin
-			summary[note_exact_pin].push(m.name)
-		}
 		if (m.deprecated) {
 			installedNote += ' ' + note_deprecated
 			summary[note_deprecated].push(m.name)
 		}
+
+		// Flags on current
 		if (m.installedTime && m.currentTime && m.currentTime - m.installedTime > duration_stale_current) {
-			currentNote = ' ' + note_stale_current
+			currentNote += ' ' + note_stale_current
 			summary[note_stale_current].push(m.name)
 		}
+
+		// Flags on latest
 		if (isMajorVersionHigher(m.installed, m.latest)) {
 			latestNote += ' ' + note_major_available
 			summary[note_major_available].push(m.name)
@@ -327,18 +349,13 @@ async function main() {
 			summary[note_latest_behind].push(m.name)
 		}
 
-		// Format declared with date if available and different from installed
-		let declaredWithDate = m.declaredAge && m.installed !== semver.minVersion(m.semver)?.version
-			? `${m.semver} ${m.declaredAge}`
-			: m.semver
+		let declaredLine = (m.declaredAge ? `${m.semver} ${m.declaredAge}` : m.semver) + declaredNote
 
 		output[m.name] = {
 			homepage: m.homepage || null,
 			description: m.description || null,
 			from: m.sources.length === 1 ? m.sources[0] : m.sources,
-			versions: allSame
-			? { declared: declaredWithDate, installed: m.installedLine + installedNote + currentNote + latestNote }
-			: { declared: declaredWithDate, installed: m.installedLine + installedNote, current: m.currentLine + currentNote, latest: m.latestLine + latestNote },
+			versions: { declared: declaredLine, installed: m.installedLine + installedNote, current: m.currentLine + currentNote, latest: m.latestLine + latestNote },
 			downloads: m.downloads ? {weekly: commas(m.downloads.weekly), on: tickToText(m.downloads.on)} : {weekly: null, on: null},
 		}
 	}
