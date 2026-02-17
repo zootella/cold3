@@ -24,10 +24,10 @@ onUnmounted(() => { window.removeEventListener('pageshow', onShow) })
 function onShow(event) {
 	if (event.persisted) {//true if the browser just thawed the page state from bfcache, meaning the user clicked Back from one of the oauth permission pages like Google or Discord
 		refClickedProvider.value = null//reset our memory of which one they clicked so they can choose again
-		refKey.value++//neat Vue trick to get a single dom element to render anew
+		refKey.value = Tag()//neat Vue trick to get a single dom element to render anew
 	}
 }
-const refKey = ref(0)//increment to force Vue to recreate
+const refKey = ref(Tag())//change to force Vue to recreate
 
 </script>
 <template>
