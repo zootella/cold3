@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb17.1649.50505
+  generated: 2026feb17.1705.56815
   🏺 Declared release 6+ months earlier than installed:
     - "@tailwindcss/postcss"
     - "@types/react"
@@ -488,6 +488,7 @@ modules:
     homepage: https://github.com/joe-bell/cva#readme
     description: Class Variance Authority 🧬
     from:
+      - site
       - shad4next
       - shad4nuxt
     versions:
@@ -502,6 +503,7 @@ modules:
     homepage: https://github.com/lukeed/clsx#readme
     description: A tiny (239B) utility for constructing className strings conditionally.
     from:
+      - site
       - shad4next
       - shad4nuxt
     versions:
@@ -623,7 +625,9 @@ modules:
   lucide-vue-next:
     homepage: https://lucide.dev
     description: A Lucide icon library package for Vue 3 applications.
-    from: shad4nuxt
+    from:
+      - site
+      - shad4nuxt
     versions:
       declared: ^0.574.0 on 2026feb17 0m old
       installed: 0.574.0 on 2026feb17 0m old 🐣 Pre-1.0 version installed
@@ -880,6 +884,7 @@ modules:
     homepage: https://github.com/dcastil/tailwind-merge
     description: Merge Tailwind CSS classes without style conflicts
     from:
+      - site
       - shad4next
       - shad4nuxt
     versions:
@@ -909,6 +914,7 @@ modules:
     homepage: https://github.com/Wombosvideo/tw-animate-css#readme
     description: TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.
     from:
+      - site
       - shad4next
       - shad4nuxt
     versions:
