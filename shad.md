@@ -1,233 +1,38 @@
 
-# shadcn/ui in Next.js and Nuxt
+# shadcn/ui in Nuxt
 
-This is an experiment scaffolding to shadcn with two mainstream stacks: Next.js, and Nuxt. The purpose is to evaluate the steps and modules. Our goal is to define and document scaffolding steps, and demonstrate that a simple hello world works on both sides.
+Reference document for adding shadcn-vue to an existing Nuxt 4 + Tailwind v4 project. Covers scaffolding steps, gotchas, dependency audit, and integration decisions. Originally written while evaluating shadcn across both Next.js and Nuxt stacks.
 
-As an example, consider a pnpm monorepo with two workspaces:
+## Scaffolding reference
 
-```
-./shade.md - this document
-./package.json - monorepo root
-./next/package.json
-./nuxt/package.json
-```
-
-We're using pnpm 10.28.2 and Tailwind v4.
-
----
-
-## Steps
-
-### Scaffold Next.js
-
-Run `create-next-app` into the `next/` workspace directory. It will prompt you interactively — choose TypeScript, Tailwind, ESLint, App Router, `@/*` import alias, and decline React Compiler.
+To begin, here are some steps to scaffold shadcn/ui in Next.js
 
 ```bash
 pnpm create next-app next
-```
-
-If running inside a monorepo, clean up the lockfile and workspace config that `create-next-app` generates (they conflict with the monorepo root):
-
-```bash
-rm next/pnpm-lock.yaml next/pnpm-workspace.yaml
-pnpm install
-```
-
-Verify: `pnpm --filter next dev` should serve the stock Next.js page on localhost:3000.
-
-### Init shadcn/ui in Next.js
-
-From inside the `next/` directory:
-
-```bash
 cd next
 pnpm dlx shadcn@latest init --defaults
 pnpm dlx shadcn@latest add button switch card
 ```
+The init step writes `components.json` and `lib/utils.ts`, updates `app/globals.css` with CSS variable theming, and installs runtime dependencies (radix-ui, class-variance-authority, clsx, tailwind-merge, lucide-react, tw-animate-css). The CLI adds itself as a local devDependency. Component files land in `components/ui/` as source you own.
 
-`init` detects Next.js + Tailwind v4, writes `components.json` and `lib/utils.ts`, updates `app/globals.css` with CSS variable theming, and installs runtime dependencies (radix-ui, class-variance-authority, clsx, tailwind-merge, lucide-react, tw-animate-css). It also adds the shadcn CLI itself as a local devDependency.
-
-`add button switch card` copies component source files into `components/ui/` — one `.tsx` file per component. These are yours to edit.
-
-Verify: `pnpm --filter next build` should compile cleanly.
-
-### Scaffold Nuxt
-
-Scaffold Nuxt into the `nuxt/` workspace directory using `nuxi init`. Choose the minimal template, decline module browsing.
-
-If running inside a monorepo, you may need to approve native build scripts that pnpm 10 blocks by default. Add `onlyBuiltDependencies` to the root `package.json`:
-
-```json
-"pnpm": {
-  "onlyBuiltDependencies": ["esbuild", "@parcel/watcher", "sharp", "unrs-resolver"]
-}
-```
-
-Then `pnpm install` from the monorepo root. Verify: `cd nuxt && pnpm dev` should serve the stock Nuxt welcome page.
-
-### Get Tailwind v4 in Nuxt
-
-From inside the `nuxt/` directory, install Tailwind v4 via the Vite plugin (not PostCSS — Nuxt is Vite-native):
+Compare to shadcn-vue in Nuxt:
 
 ```bash
-cd nuxt
 pnpm add -D tailwindcss @tailwindcss/vite
-```
-
-Wire Tailwind into `nuxt.config.ts`:
-
-```ts
-import tailwindcss from '@tailwindcss/vite'
-
-export default defineNuxtConfig({
-  vite: {
-    plugins: [tailwindcss()],
-  },
-  css: ['~/assets/css/main.css'],
-})
-```
-
-Create `app/assets/css/main.css` with `@import "tailwindcss";`.
-
-### Init shadcn-vue in Nuxt
-
-From inside the `nuxt/` directory:
-
-```bash
 pnpm dlx shadcn-vue@latest init --defaults
 pnpm dlx shadcn-vue@latest add button switch card
 ```
+After the first add, wire into `nuxt.config.ts` with `vite: { plugins: [tailwindcss()] }` and `css: ['~/assets/css/main.css']`, then create `app/assets/css/main.css` with `@import "tailwindcss"`. The init step writes `components.json` and `app/lib/utils.ts`, updates the CSS file with theme variables, and installs runtime dependencies (reka-ui, class-variance-authority, clsx, tailwind-merge, lucide-vue-next, @vueuse/core, tw-animate-css). Unlike the React side, the shadcn-vue CLI is not installed locally — it runs via `pnpm dlx` each time. Component files (`.vue`) land in `app/components/ui/`.
 
-`init` detects Nuxt 4 + Tailwind v4, writes `components.json` and `app/lib/utils.ts`, updates the CSS file with theme variables, and installs runtime dependencies (reka-ui, class-variance-authority, clsx, tailwind-merge, lucide-vue-next, @vueuse/core, tw-animate-css). Unlike the React side, the shadcn-vue CLI is not installed locally — it runs via `pnpm dlx` each time.
-
-`add button switch card` copies 12 `.vue` source files into `app/components/ui/`. No new dependencies — the runtime packages from `init` already cover everything. These files are yours to edit.
-
-**Gotcha — CSS path in Nuxt 4:** shadcn-vue init may create `assets/css/main.css` at the project root, but Nuxt 4 uses `app/` as the source root, so `~/assets` resolves to `app/assets/`. Move the file if needed: `mv assets/css/main.css app/assets/css/main.css`
-
-**Gotcha — component name warnings:** Nuxt auto-imports see both `Button.vue` and `index.ts` in the same dir and warn about duplicate component names. Harmless — we import explicitly.
-
-Verify: `pnpm --filter nuxt build` should compile cleanly.
-
-## Results
-
-### Package.json comparison
-
-```jsonc
-{
-  "name": "next",
-  "dependencies": {
-
-    // FRAMEWORK — create-next-app
-    "next": "16.1.6",                      // the framework itself
-    "react": "19.2.3",                     // framework: React runtime
-    "react-dom": "19.2.3",                // framework: React DOM renderer
-
-    // HEADLESS UI — added by shadcn init
-    "radix-ui": "^1.4.3",                 // headless ui: accessible unstyled primitives (dialog, switch, slot, etc.)
-
-    // SHADCN PLUMBING — added by shadcn init, used inside every generated component
-    "class-variance-authority": "^0.7.1",  // shadcn plumbing: defines component variants (size, color) as typed maps
-    "clsx": "^2.1.1",                      // shadcn plumbing: builds className strings from conditionals
-    "tailwind-merge": "^3.4.1",            // shadcn plumbing: deduplicates conflicting tailwind classes (e.g. px-2 + px-4 → px-4)
-    "lucide-react": "^0.564.0"             // shadcn plumbing: icon set used by generated components
-  },
-  "devDependencies": {
-    // STYLING — tailwind v4 via PostCSS (Next.js path)
-    "tailwindcss": "^4",                   // styling: the tailwind engine
-    "@tailwindcss/postcss": "^4",          // styling: PostCSS plugin that wires tailwind into Next.js build
-    "tw-animate-css": "^1.4.0",            // styling: animation utilities for tailwind v4 (added by shadcn init)
-
-    // TOOLING — create-next-app
-    "typescript": "^5",                    // tooling: TypeScript compiler
-    "@types/node": "^20",                  // tooling: Node.js type definitions
-    "@types/react": "^19",                 // tooling: React type definitions
-    "@types/react-dom": "^19",             // tooling: React DOM type definitions
-    "eslint": "^9",                        // tooling: linter
-    "eslint-config-next": "16.1.6",        // tooling: Next.js ESLint rules
-
-    // CLI — added by shadcn init
-    "shadcn": "^3.8.4"                     // cli: the shadcn CLI (adds components, manages config)
-  }
-}
-```
-
-```jsonc
-{
-  "name": "nuxt",
-  "dependencies": {
-
-    // FRAMEWORK — nuxi init
-    "nuxt": "^4.3.1",                     // the framework itself (includes vue compiler, nitro server, vite)
-    "vue": "^3.5.28",                      // framework: Vue runtime
-    "vue-router": "^4.6.4",               // framework: Vue router
-
-    // HEADLESS UI — added by shadcn-vue init
-    "reka-ui": "^2.8.0",                  // headless ui: Vue equivalent of Radix (accessible unstyled primitives)
-
-    // SHADCN PLUMBING — added by shadcn-vue init, used inside every generated component
-    "class-variance-authority": "^0.7.1",  // shadcn plumbing: defines component variants (same as React side)
-    "clsx": "^2.1.1",                      // shadcn plumbing: builds class strings from conditionals
-    "tailwind-merge": "^3.4.1",            // shadcn plumbing: deduplicates conflicting tailwind classes
-    "lucide-vue-next": "^0.564.0",         // shadcn plumbing: icon set (Vue version of lucide-react)
-    "@vueuse/core": "^14.2.1"              // shadcn plumbing: Vue composition utilities (reactiveOmit, etc. used in components)
-  },
-  "devDependencies": {
-    // STYLING — tailwind v4 via Vite plugin (Nuxt path — cleaner than PostCSS)
-    "tailwindcss": "^4.1.18",             // styling: the tailwind engine
-    "@tailwindcss/vite": "^4.1.18",       // styling: Vite plugin that wires tailwind into Nuxt build
-    "tw-animate-css": "^1.4.0"            // styling: animation utilities for tailwind v4 (added by shadcn-vue init)
-
-    // NOTE: no typescript/eslint/types here — Nuxt bundles these internally
-    // NOTE: no shadcn-vue CLI in devDependencies — it runs via pnpm dlx, not installed locally
-  }
-}
-```
+shadcn-vue init may create `assets/css/main.css` at the project root, but Nuxt 4 uses `app/` as the source root, so `~/assets` resolves to `app/assets/`. Move the file if needed: `mv assets/css/main.css app/assets/css/main.css`. Also, watch out for overlapping component names: Nuxt auto-imports see both `Button.vue` and `index.ts` in the same dir and warn about duplicate component names. Harmless — we import explicitly.
 
 ### Component patterns
 
-Button, switch, and card are three of the ~50+ components in shadcn's registry. We picked them because they cover three different component patterns. **Button** is a styled interactive primitive — it wraps a Reka UI `Primitive` element (or Radix `Slot` on the React side) and adds variant props (default, secondary, outline, destructive, ghost, link) and size props through CVA. **Switch** is an accessible stateful control — it wraps Reka UI's `SwitchRoot` and `SwitchThumb` (or their Radix equivalents), which provide keyboard support, aria attributes, and focus management, styled as the sliding pill toggle familiar from mobile UIs. **Card** is purely structural — it's actually seven sub-components (Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardAction) that are just styled `<div>`s and headings with no headless-UI dependency at all. Together, the three demonstrate that shadcn components range from headless-primitive wrappers to plain layout containers, and the demo page proves all three patterns work end to end.
-
-### Framework
-
-Next.js has three packages: `next` itself, `react`, and `react-dom`. React is split into two because the core runtime (components, hooks, reconciler) is separate from the DOM renderer — this is the same split that lets React Native share the core but swap in a different renderer. In practice you always install both together for web apps. On the Nuxt side it's also three: `nuxt`, `vue`, and `vue-router`. Vue doesn't split its runtime from its renderer the way React does, but routing is a separate package rather than built into the framework. Nuxt bundles a lot more internally than Next.js does — TypeScript, ESLint, and Vite are all built in, which is why the Nuxt devDependencies list is so much shorter.
-
-### Shadcn plumbing
-
-These are the utility libraries that shadcn's generated components use internally. Every Button, Switch, Card, and Dialog that shadcn produces imports from these. They're not things you interact with directly in application code — they're the glue inside the component files.
-
-Three packages are identical in both stacks — same library, same version, framework-agnostic:
-
-- **class-variance-authority** (CVA) — defines component variants as typed maps. This is how a Button knows that `variant="destructive"` means one set of classes and `size="sm"` means another. CVA takes a base class string plus a variants object and returns a function that resolves the right classes for any combination of props. It has nothing to do with React or Vue — it's pure CSS class logic.
-
-- **clsx** — a tiny utility that builds class strings from conditionals. It lets you write `clsx("base", isActive && "active", disabled && "opacity-50")` instead of manual string concatenation. Again, framework-agnostic — it just takes values and returns a string.
-
-- **tailwind-merge** — deduplicates conflicting Tailwind classes. If a component has `px-2` in its base styles but you pass `px-4` as a className override, tailwind-merge knows these conflict and keeps only `px-4`. Without it, both classes would apply and the result would be unpredictable (whichever appears last in the CSS file wins, which depends on Tailwind's internal ordering). These three are wrapped together in the `cn()` helper that shadcn generates in `lib/utils.ts`: `cn()` calls `clsx()` to merge the conditionals, then `twMerge()` to deduplicate the result.
-
-The icon libraries are framework-specific variants of the same project:
-
-- **lucide-react** (Next.js) and **lucide-vue-next** (Nuxt) — both from the Lucide project (a fork of Feather Icons). Same icon set, same visual designs, just packaged as React components on one side and Vue components on the other. shadcn's generated components use these for things like chevrons in dropdowns, X buttons in dialogs, check marks in checkboxes, and the Sun/Moon icons we used in our demo.
-
-One package is Nuxt-only:
-
-- **@vueuse/core** — a collection of Vue composition utilities. shadcn-vue's generated components use specific functions from it like `reactiveOmit` (to forward props while excluding certain keys — e.g. the Switch component uses it to separate the `class` prop from the rest before forwarding). Reka UI itself provides `useForwardPropsEmits` for proxying props and events through wrapper components. React doesn't need an equivalent of either because JSX spread (`{...props}`) and destructuring handle these patterns natively. Vue's template syntax is more structured, so it needs helper utilities to achieve the same prop-forwarding patterns.
-
-### Dev dependencies
-
-This is where the two stacks diverge most sharply — not in what they can do, but in how much they ask you to manage yourself. Next.js has 11 devDependencies; Nuxt has 3. The gap isn't because Nuxt does less. It's because Nuxt bundles more internally.
-
-**Styling** is the one area of genuine overlap. Both stacks have `tailwindcss` and `tw-animate-css` (a CSS-only animation utility that shadcn's components reference for transitions and keyframes). The difference is the integration plugin: Next.js uses `@tailwindcss/postcss` because Next.js runs Tailwind through its PostCSS pipeline, while Nuxt uses `@tailwindcss/vite` because Nuxt's build is Vite-native and Tailwind v4 has a first-class Vite plugin. The end result is identical — your Tailwind classes compile to the same CSS — but the wiring is different. PostCSS integration means Tailwind runs as one step in a chain of CSS transforms; Vite plugin integration means Tailwind hooks directly into Vite's module graph and gets features like HMR for free. The Vite path is newer and slightly faster in dev, but both are fully supported by the Tailwind team.
-
-**TypeScript** accounts for four of Next.js's devDependencies that Nuxt doesn't need at all: `typescript` itself, `@types/node`, `@types/react`, and `@types/react-dom`. Next.js requires you to install and manage TypeScript as an explicit dependency — it detects a `tsconfig.json` and uses whatever TypeScript version you've installed. This means you control the TypeScript version, but you're also responsible for keeping it and the type packages updated. Nuxt takes a different approach: it ships TypeScript support internally via `nuxi typecheck` and auto-generates a `.nuxt/tsconfig.json` that extends your project config. Vue's type system is also different — Vue components are typed through `defineProps<T>()` and `.vue` file SFC compilation rather than separate `@types/` packages, so there's simply nothing to install.
-
-**Linting** accounts for two more: `eslint` and `eslint-config-next`. The Next.js scaffold includes ESLint preconfigured with Next.js-specific rules (things like checking that `<Image>` is used instead of `<img>`, that metadata exports are valid, that server/client boundaries are respected). This is useful but it's your responsibility to maintain. The Nuxt minimal template doesn't scaffold any linting at all — if you want ESLint, you'd add the `@nuxt/eslint` module, which auto-configures flat config for Vue SFC linting, Nuxt-specific rules, and TypeScript-aware parsing. It's available but opt-in rather than default.
-
-**CLI tooling** is one last difference. The Next.js side has `shadcn` (the shadcn CLI) installed as a local devDependency. This was done by `shadcn init` — it added itself to the project so that future `pnpm shadcn add` commands work without `dlx`. On the Nuxt side, we ran `pnpm dlx shadcn-vue@latest` every time — it downloads on-the-fly and doesn't persist in package.json. Neither approach is better; it's just a difference in how the two CLIs chose to set themselves up. You could install shadcn-vue locally too, or remove the shadcn dependency from Next.js and use dlx there — it's a convenience choice, not architectural.
-
-The takeaway: Nuxt's 3 devDependencies vs Next.js's 11 isn't a feature gap. Both stacks have TypeScript, linting, Tailwind, and a component CLI. The difference is that Nuxt absorbs most of this into its framework module system, while Next.js keeps each tool as an explicit, user-managed dependency. The Nuxt approach means less to install and update; the Next.js approach means more visibility and control over each tool's version. This is the same philosophical split that shows up everywhere in the two frameworks — Nuxt is more opinionated and batteries-included, Next.js gives you more pieces to assemble yourself.
+shadcn components fall into three patterns. *Button* is a styled interactive primitive — wraps a Reka UI `Primitive` element and adds variant/size props through CVA. *Switch* is an accessible stateful control — wraps Reka UI's `SwitchRoot` and `SwitchThumb` for keyboard support, ARIA attributes, and focus management. *Card* is purely structural — styled `<div>`s and headings with no headless-UI dependency. These range from headless-primitive wrappers to plain layout containers.
 
 ## Background
 
-### Modern React Frontend Stack
+Modern React frontend stack:
 
 * **Next.js** (App Router) — the framework. Handles routing, server rendering, and the React Server Components architecture where components are server-only by default and only ship JavaScript to the client when explicitly marked with `"use client"`.
 
@@ -241,7 +46,7 @@ The takeaway: Nuxt's 3 devDependencies vs Next.js's 11 isn't a feature gap. Both
 
 Tailwind handles all visual styling. Radix handles interactive behavior and accessibility. shadcn/ui composes the two into ready-made components. Next.js orchestrates everything with server/client rendering. You customize the look through CSS variables for global consistency and direct component edits for brand-specific details.
 
-### Modern Vue/Nuxt Frontend Stack
+Compare to a modern Vue/Nuxt frontend stack:
 
 * **Nuxt 4** — the framework. Handles routing, universal server rendering (classic model: server renders first page, client hydrates, then SPA navigation). Deploys serverless via Nitro to Cloudflare Workers, Vercel, Netlify, etc. No React Server Components equivalent — Vue's approach to the bundle size problem will come through Vapor Mode (compilation-based, not yet stable) rather than per-component server/client splitting.
 
@@ -253,9 +58,7 @@ Tailwind handles all visual styling. Radix handles interactive behavior and acce
 
 * **Branding and theming** — same approach as the React stack. CSS custom properties (`--primary`, `--radius`, etc.) for global theming, direct component file edits for brand-specific touches.
 
-### Key differences between the two stacks
-
-The rendering model is the big one. Nuxt 4 uses classic universal rendering — full hydration of the entire page on the client. Every component ships its JavaScript. You don't get RSC's selective hydration or the "server components never ship JS" benefit. For many consumer apps this is perfectly fine, but for very content-heavy pages the client bundle will be larger.
+The rendering model is the biggest difference. Nuxt 4 uses classic universal rendering — full hydration of the entire page on the client. Every component ships its JavaScript. You don't get RSC's selective hydration or the "server components never ship JS" benefit. For many consumer apps this is perfectly fine, but for very content-heavy pages the client bundle will be larger.
 
 The ecosystem maturity is the second difference. shadcn-vue and Reka UI are community-driven ports, not first-party. They're well-maintained and Evan You himself has endorsed them, but they trail the React originals in component count, documentation depth, and ecosystem momentum. You'll occasionally hit a component that exists in shadcn/ui but not yet in shadcn-vue.
 
@@ -265,38 +68,7 @@ So the stack is structurally the same pattern, just with Vue equivalents at each
 
 ### Headless UI ecosystem
 
-**Packages discussed in this section:**
-
-- Radix UI (React, headless primitives, ~2.5M/wk — or 66M/wk for @radix-ui/react-slot)
-    https://www.radix-ui.com/
-    https://github.com/radix-ui/primitives
-    https://www.npmjs.com/package/radix-ui
-- Reka UI (Vue, headless primitives — Vue equivalent of Radix, ~650K/wk)
-    https://reka-ui.com/
-    https://github.com/unovue/reka-ui
-    https://www.npmjs.com/package/reka-ui
-- Base UI (React, headless primitives — Radix successor by original authors, ~890K/wk)
-    https://base-ui.com/
-    https://github.com/mui/base-ui
-    https://www.npmjs.com/package/@base-ui/react
-- Ark UI (React/Vue/Solid, headless primitives via Zag.js state machines, ~460K/wk)
-    https://ark-ui.com/
-    https://github.com/chakra-ui/ark
-    https://www.npmjs.com/package/@ark-ui/react
-- shadcn/ui (React, styled component layer on Radix + Tailwind, ~1.2M/wk)
-    https://ui.shadcn.com/
-    https://github.com/shadcn-ui/ui
-    https://www.npmjs.com/package/shadcn
-- shadcn-vue (Vue, styled component layer on Reka + Tailwind, ~47K/wk)
-    https://www.shadcn-vue.com/
-    https://github.com/unovue/shadcn-vue
-    https://www.npmjs.com/package/shadcn-vue
-- Nuxt UI (Vue/Nuxt, official component library on Reka + Tailwind, ~214K/wk)
-    https://ui.nuxt.com/
-    https://github.com/nuxt/ui
-    https://www.npmjs.com/package/@nuxt/ui
-
-Next.js gets `radix-ui`, Nuxt gets `reka-ui`. These solve the same problem: building interactive UI controls (dialogs, dropdowns, switches, tooltips) that are accessible out of the box — keyboard navigation, focus trapping, ARIA attributes, screen reader announcements — without imposing any visual design. They're "headless" because they handle behavior and accessibility but have zero styling. You never interact with these directly in application code; shadcn's generated components wrap them and add styling.
+Next.js gets Radix UI, Nuxt gets Reka UI. These solve the same problem: building interactive UI controls (dialogs, dropdowns, switches, tooltips) that are accessible out of the box — keyboard navigation, focus trapping, ARIA attributes, screen reader announcements — without imposing any visual design. They're "headless" because they handle behavior and accessibility but have zero styling. You never interact with these directly in application code; shadcn's generated components wrap them and add styling.
 
 **Radix UI** was created around 2018 by the team at Modulz, a startup founded by Colm Tuite and Stephen Haney. In June 2022, WorkOS (an enterprise SSO/auth API company) acquired Modulz as part of its $80M Series B. The Radix team joined WorkOS, and the library continued under WorkOS stewardship. It has ~18.5k GitHub stars and the most-used package (`@radix-ui/react-slot`) sees ~18M weekly npm downloads — massive adoption driven largely by shadcn/ui depending on it.
 
@@ -304,25 +76,7 @@ However, Radix has a complicated recent history. After the acquisition, many of 
 
 Notably, shadcn himself (who joined Vercel in 2023 as a Design Engineer — he is *not* a WorkOS employee) responded measured: Radix is "mature, well-designed, battle-tested and used in millions of production apps" and "code doesn't stop working because maintainers move on." As of January 2026, shadcn/ui officially supports **both Radix and Base UI** as backend primitive libraries, giving projects an escape hatch if Radix maintenance doesn't improve.
 
-**Reka UI** has a different story. It was created by Zernonia, a frontend developer from Malaysia, in 2023 as "Radix Vue" — a Vue port of Radix's primitives. It rebranded to Reka UI ("reka" means "design" in Malay) with its v2 release in February 2025, reflecting that it had evolved beyond a straight port into its own project with Vue-idiomatic patterns and components Radix doesn't have. It has ~6k GitHub stars and is at v2.8.0 with frequent releases. Evan You (Vue's creator) has endorsed it. Crucially, it's the primitive layer underneath **Nuxt UI** (the official Nuxt component library), which ensures ongoing demand and relevance.
-
-Reka UI has no corporate backing — no WorkOS equivalent behind it. That's both a risk and a feature: there's a real bus-factor concern around Zernonia as the primary maintainer (190+ contributors, but core direction flows through a small team), but there's also no risk of a corporate acquisition disrupting the project the way it disrupted Radix. The two projects are completely independent — there's no formal sync or tracking of releases between them.
-
-### What should a modern Nuxt site use?
-
-For Nuxt specifically, the realistic options for a component/UI layer are:
-
-**Nuxt UI (v3)** is the "official" path. Built by NuxtLabs (the Nuxt team), it sits on top of Reka UI + Tailwind and is deeply integrated with the Nuxt ecosystem. It's essentially what shadcn/ui is to Next.js, but more first-party. Higher-level and more opinionated than shadcn-vue — it's a proper component library rather than a "copy source into your project" approach.
-
-**shadcn-vue** is the shadcn pattern (you own the source code) ported to Vue. Community-maintained, it trails the React original in component count. Also sits on Reka UI underneath.
-
-**Ark UI** is the interesting alternative, from the Chakra UI team. It uses **Zag.js** — framework-agnostic state machines — instead of Reka UI. It has a Vue adapter. Rather than porting Radix's approach per-framework, Zag encodes component behavior in framework-agnostic state machines and then thin adapters connect to React, Vue, or Solid. This is the only option that avoids a Reka UI dependency entirely.
-
-**What doesn't exist:** a Vue equivalent of Base UI. Base UI is React-only. So the Radix-to-Base-UI escape hatch that shadcn/ui has on the React side simply doesn't apply in the Vue world.
-
-Both Nuxt UI and shadcn-vue bet on Reka UI, which is healthy right now but single-maintainer. The risk picture is actually *simpler* on the Nuxt side than the React side — there's no acquisition drama, no competing successors, Reka UI is actively maintained and has Nuxt UI as a major downstream consumer ensuring it stays relevant. The React side has more options but also more fragmentation (Radix vs Base UI vs React Aria vs Ariakit).
-
-For a modern Nuxt project: Nuxt UI if you want the blessed, best-integrated path and don't mind its opinions; shadcn-vue if you want the "own your source" pattern and are comfortable being one step behind the React ecosystem.
+**Reka UI** is the Vue equivalent — created as "Radix Vue" in 2023, rebranded at v2 in 2025. It has no corporate backer and no React-side drama. The full origin story and risk profile are in the dependency audit below. One important ecosystem note: Base UI is React-only, so there is no Vue equivalent of the Radix-to-Base-UI escape hatch. Both shadcn-vue and Nuxt UI bet on Reka UI as their sole primitive layer.
 
 ### The copy-not-install model
 
@@ -336,36 +90,23 @@ This is a shadcn-specific idea. It's not a Tailwind thing (Tailwind is just the 
 
 **Why it could be worse:** You're responsible for maintenance. If reka-ui ships an accessibility fix for SwitchRoot, shadcn-vue will update its registry to use it, but your copied Switch.vue stays as it was the day you added it. You'd have to notice the update, re-run the add command, and diff the new output against your (possibly customized) version. For a team without frontend expertise, this means accessibility and behavior bugs can silently accumulate. Traditional component libraries handle this for you — bump the version, get the fix. The copy model also means every project has its own slightly different copy of every component, which makes knowledge less transferable across teams and projects.
 
-### shadcn-vue vs Nuxt UI: two paths for a modern Nuxt stack
+### shadcn-vue vs Nuxt UI
 
-The stack we scaffolded in this experiment — Nuxt + Tailwind + shadcn-vue — mirrors the React side as closely as possible. You run `shadcn-vue add button`, a `.vue` file lands in your `components/ui/` directory, and it's yours. You can read every line, modify anything, and there's no version to upgrade — the component is just source code in your repo. This is the shadcn philosophy: your project doesn't *depend on* shadcn-vue at runtime, it just used the CLI once to generate files. The tradeoff is that you're responsible for those files. If shadcn-vue ships an improved Button next month, you don't get it automatically — you'd re-run the add command and diff the result, or just keep what you have.
+For Nuxt, the two realistic options for a component/UI layer are **shadcn-vue** and **Nuxt UI** — both built on Reka UI + Tailwind. A third option is **Ark UI** from the Chakra UI team, which uses Zag.js (framework-agnostic state machines) instead of Reka UI and has a Vue adapter — the only path that avoids a Reka UI dependency entirely.
 
-Nuxt UI takes a different approach. It's a proper npm dependency — you install `@nuxt/ui`, register it as a Nuxt module, and use components like `<UButton>` and `<UCard>` directly. You don't own the source; you configure behavior through props and theming. It's higher-level: Nuxt UI includes things like app layouts, navigation menus, command palettes, and form validation out of the box. It's also deeper integrated with Nuxt — auto-imports work seamlessly, the module hooks into Nuxt's build system, and the Nuxt DevTools know about it. When the Nuxt team ships a new version, you upgrade the package and get improvements (and potentially breaking changes).
+The stack we scaffolded — Nuxt + Tailwind + shadcn-vue — mirrors the React side as closely as possible. You run `shadcn-vue add button`, a `.vue` file lands in your `components/ui/` directory, and it's yours. You can read every line, modify anything, and there's no version to upgrade — the component is just source code in your repo. Your project doesn't *depend on* shadcn-vue at runtime; it just used the CLI once to generate files. The tradeoff is that you're responsible for those files — if shadcn-vue ships an improved Button next month, you don't get it automatically.
+
+Nuxt UI takes a different approach. It's a proper npm dependency — you install `@nuxt/ui`, register it as a Nuxt module, and use components like `<UButton>` and `<UCard>` directly. You don't own the source; you configure behavior through props and theming. It's higher-level: Nuxt UI includes app layouts, navigation menus, command palettes, and form validation out of the box. It's also deeper integrated with Nuxt — auto-imports work seamlessly, the module hooks into Nuxt's build system, and the Nuxt DevTools know about it. When the Nuxt team ships a new version, you upgrade the package and get improvements (and potentially breaking changes).
 
 Under the hood, they share the same foundation. Both use Reka UI for headless primitives and Tailwind for styling. Both use the same CSS variable theming system. A `<Button>` from shadcn-vue and a `<UButton>` from Nuxt UI are doing fundamentally the same thing — wrapping a Reka UI primitive, applying Tailwind classes through CVA variants, and respecting your theme tokens. The difference is ownership and abstraction level.
 
-The practical choice depends on what kind of project you're building. shadcn-vue makes sense when you want maximum control over your component code — when you know you'll be customizing components heavily, when you want to understand every line of your UI layer, or when you're building something with a distinctive visual identity that doesn't fit neatly into a configurable theme system. It also makes sense if you're trying to keep your dependency on any single project minimal, since the generated files have no runtime dependency on shadcn-vue itself.
-
-Nuxt UI makes sense when you want to move fast and stay on a maintained, well-integrated path — when you'd rather configure a `<UButton variant="soft" color="primary">` through props than edit the button's source file directly. It's the better choice for teams that want a consistent, batteries-included component library where someone else handles accessibility updates, bug fixes, and new component additions. It's also the better choice if you're already invested in the Nuxt ecosystem (Nuxt Content, Nuxt DevTools, etc.) since it's built to work with all of it.
+shadcn-vue makes sense when you want maximum control over your component code — when you'll be customizing components heavily, when you want to understand every line of your UI layer, or when you're building something with a distinctive visual identity that doesn't fit neatly into a configurable theme system. Nuxt UI makes sense when you want to move fast on a maintained, well-integrated path — configure through props rather than edit source, get accessibility updates and bug fixes automatically, and stay in the blessed Nuxt ecosystem.
 
 For our purposes — evaluating the scaffolding steps and understanding the layers — shadcn-vue was the right choice. It made the stack legible: you can open every component file and see exactly how Reka UI, CVA, and Tailwind compose together. Nuxt UI would have hidden all of that behind a module registration and prop-driven API. But for a production Nuxt project where you want the most maintained, least-friction path, Nuxt UI (at 214K downloads/week vs shadcn-vue's 47K) is the stronger bet.
 
-## Integrating shadcn-vue into the site workspace
+## Integration decisions
 
-### Done
-
-- CSS merge: shadcn theme tokens (@theme inline, :root, .dark) merged into site/app/assets/css/style.css alongside pre-existing styles. File reorganized into four chapters (Fonts, Directives, Theme Definition, Style Rules), section-by-section walkthrough and commenting complete.
-- CSS verification: site renders identically in local dev and deployed. No visual regressions from the merge.
-- components.json and lib/utils.ts created by shadcn-vue init.
-- All shadcn runtime dependencies added to site's package.json: reka-ui, class-variance-authority, clsx, tailwind-merge, lucide-vue-next, @vueuse/core as dependencies; tw-animate-css as devDependency.
-- First shadcn component added: Switch (proves full stack — reka-ui primitives + @vueuse/core + cn() + theme tokens).
-
-### Still to do
-
-- Update sem.yaml to track the new dependencies
-- Delete shad4next/ and shad4nuxt/ scaffold workspaces once integration is confirmed working
-
-### Integration decisions (keep, revisit later)
+shadcn-vue is integrated into the site workspace. CSS theme tokens merged into style.css, components.json and lib/utils.ts created, all runtime dependencies installed, first component (Switch) working end to end. What follows are decisions made during integration that need to be revisited as the site evolves.
 
 **`@tailwindcss/forms` — keep for now, remove later.** The forms plugin normalizes bare `<input>` elements to look consistent cross-browser and respond to Tailwind utilities. The site has ~16 bare `<input>` elements across ChooseNameForm, SignInForm, PasswordBox, OtpRequestComponent, TotpDemo, and others. Without the plugin, these would revert to platform-native styling. shadcn's `<Input>` component styles itself from scratch via Reka UI + Tailwind classes, making the plugin redundant for any form element that migrates to a shadcn component. Plan: keep `@plugin "@tailwindcss/forms"` until existing forms are migrated to shadcn components, then remove it and the `@tailwindcss/forms` devDependency.
 
@@ -374,6 +115,79 @@ For our purposes — evaluating the scaffolding steps and understanding the laye
 **Existing component classes (`.my-button`, `.ghost`, `.ready`, `.doing`, `.my-link`) — keep entirely.** 44 occurrences across 17 files. The three-state pattern (ghost/ready/doing = disabled/available/in-progress) has no shadcn equivalent. One name to watch: shadcn's Button has `variant="ghost"` which resolves to hover classes via CVA, while the site's `.ghost` CSS class applies `bg-gray-400`. These won't collide in practice (variant prop vs CSS class), but avoid putting both on the same element. Eventually, migrate page-by-page: replace `my-button`/`my-link` usage with shadcn `<Button>` variants, and express the three-state pattern as custom shadcn variants or a composable that selects the right variant prop.
 
 **Button naming collision — resolve before using shadcn Button.** The site has `components/small/Button.vue` (16 usages, handles three-state ghost/ready/doing + async click + turnstile) and shadcn would add `components/ui/button/Button.vue`. With `pathPrefix: false` in nuxt.config, Nuxt's auto-import registers both as just `<Button>`, causing ambiguity. The simplest fix: use explicit imports for shadcn components (`import { Button } from '~/components/ui/button'`) in any file that needs them, leaving the existing auto-imported `<Button>` untouched. This requires zero changes to existing code. Alternative approaches: rename the existing Button (16-file migration), or re-enable `pathPrefix: true` (changes all auto-import names sitewide). Resolve this before the first page that needs a shadcn Button.
+
+## New dependency audit
+
+Adding shadcn-vue to the site introduced seven new entries in sem.yaml: six runtime dependencies and one devDependency. No new package has fewer than six-figure weekly downloads, and three are in the eight-figure range. None are deep transitive dependency trees pulling in dozens of sub-packages; they're all leaf-level libraries that do one thing. Here's the case file on each, ordered from most to least risk.
+
+**lucide-vue-next (559,102 downloads; Low risk)**
+```yaml
+  lucide-vue-next:
+    homepage: https://lucide.dev
+    description: A Lucide icon library package for Vue 3 applications.
+    versions: ^0.574.0 on 2026feb17 0m old 🐣 Pre-1.0 version installed
+```
+Icon library. Vue 3 icon components from the Lucide project (a community fork of Feather Icons). The download count looks small next to the framework-agnostic packages in this list, but it's the Vue slice of the dominant icon library — Lucide ships framework packages for React, Vue, Svelte, Angular, and others from the same monorepo (lucide-icons/lucide on GitHub, 12K+ stars), and the React version alone does millions more. The "pre-1.0" flag is misleading: Lucide uses the minor version as a rolling release counter, bumping it with every batch of new icons — version 0.574 means "574th release," not "unstable beta." The Vue package is a thin wrapper that generates a `.vue` component per icon — low surface area. If Lucide went dormant, existing icons would keep working; you'd just stop getting new ones. Icons are a leaf dependency — nothing else in the stack depends on Lucide.
+
+**reka-ui (648,108 downloads; Moderate risk)**
+```yaml
+  reka-ui:
+    homepage: https://github.com/unovue/reka-ui
+    description: Vue port for Radix UI Primitives.
+    versions: ^2.8.0 on 2026jan28 0m old
+```
+Headless primitive layer: accessible, unstyled interactive components (switch, dialog, dropdown, tooltip) that handle keyboard navigation, focus trapping, and ARIA attributes. Every shadcn component that does anything interactive wraps a Reka UI primitive. Created by Zernonia (Malaysian frontend developer) in 2023 as "Radix Vue", rebranded to Reka UI at v2 in Feb 2025. This is the highest-risk new dependency. It's the most complex of the seven, the most actively evolving, and it has the smallest team relative to its scope — a small core around Zernonia, no corporate backing. The mitigating factor is that Nuxt UI (the official Nuxt component library) depends on Reka UI as its primitive layer, so the Nuxt team has a direct stake in its continued health. That downstream dependency and 190+ contributors provide some insurance, but the project's dependence on a single primary maintainer is a real risk. Actively maintained with frequent releases as of today.
+
+**@vueuse/core (5,215,878 downloads)**
+```yaml
+  "@vueuse/core":
+    homepage: https://github.com/vueuse/vueuse#readme
+    description: Collection of essential Vue Composition Utilities
+    versions: ^14.2.1 on 2026feb10 0m old
+```
+Vue composition utilities: reactive helpers, browser API wrappers, and the specific functions (`reactiveOmit`, etc.) that shadcn-vue's generated components use for prop forwarding. By Anthony Fu, a Vue core team member who works at NuxtLabs and maintains a large number of foundational Vue/Vite ecosystem packages (Vitest, UnoCSS, Slidev, unplugin, and more). Deeply embedded in the Vue ecosystem. Anthony Fu is still one person, so there's theoretically a single-maintainer risk, but vueuse has many contributors and the Vue core team has institutional interest in it continuing. The lowest-risk dependency in this list by a wide margin.
+
+**tw-animate-css (5,809,004 downloads; Low risk)**
+```yaml
+  tw-animate-css:
+    homepage: https://github.com/Wombosvideo/tw-animate-css#readme
+    description: TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.
+    versions: ^1.4.0 on 2025sep24 4m old
+```
+devDependency — CSS animation utilities for Tailwind v4, a replacement for `tailwindcss-animate` which only supported Tailwind v3. By Wombosvideo on GitHub, a pseudonymous individual maintainer — the thinnest organizational backing of anything in this list. It's a devDependency because it's a CSS import (`@import "tw-animate-css"` in style.css) that provides keyframe animations shadcn components reference for transitions like fade, slide, and scale. The downloads are almost certainly carried by shadcn adoption rather than independent demand. The saving grace is that the package is essentially a CSS file — no JavaScript runtime, no complex logic. If the maintainer vanished, you could inline the keyframes into your own stylesheet and delete the dependency entirely.
+
+**class-variance-authority (14,234,458 downloads)**
+```yaml
+  class-variance-authority:
+    homepage: https://github.com/joe-bell/cva#readme
+    description: Class Variance Authority
+    versions: ^0.7.1 on 2024nov26 14m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
+```
+Component variant resolver (CVA). Defines component variants as typed maps: this is how a Button knows that `variant="destructive"` means one set of classes and `size="sm"` means another. By Joe Bell, individual maintainer. Both sem.yaml flags lit up (14 months old, pre-1.0), but neither is concerning here — the flags look alarming until you see what the package actually is: one function that takes a variants config object and returns a class-string resolver. The API surface is tiny, there are no external dependencies, and CVA doesn't know about Tailwind — it just concatenates strings, so there's nothing for Tailwind v4 to break. This is a package that doesn't need frequent releases because there's very little left to change. If it were abandoned tomorrow, 0.7.1 would keep working indefinitely.
+
+**tailwind-merge (22,247,382 downloads)**
+```yaml
+  tailwind-merge:
+    homepage: https://github.com/dcastil/tailwind-merge
+    description: Merge Tailwind CSS classes without style conflicts
+    versions: ^3.4.1 on 2026feb15 0m old
+```
+Tailwind class deduplicator. If a component has `px-2` in its base styles and you pass `px-4` as an override, tailwind-merge knows these conflict and keeps only `px-4`. By Dany Castillo (dcastil), individual maintainer. Unlike clsx and CVA, tailwind-merge has to understand Tailwind's class grammar — it needs to know that `px-2` and `px-4` conflict but `px-2` and `py-4` don't. This makes it the one dependency in the list that needs ongoing maintenance: when Tailwind adds new utilities, tailwind-merge needs to learn them. The v3 major was specifically for Tailwind v4 support. Release cadence is healthy — multiple releases per month through 2025-2026.
+
+**clsx (49,310,969 downloads)**
+```yaml
+  clsx:
+    homepage: https://github.com/lukeed/clsx#readme
+    description: A tiny (239B) utility for constructing className strings conditionally.
+    versions: ^2.1.1 on 2024apr23 21m old 🕰️ Installed version 1+ year old
+```
+Conditional class string builder: `clsx("base", isActive && "active")` returns `"base active"`. By Luke Edwards (lukeed), a prolific open-source author known for tiny, single-purpose packages. The package is 239 bytes. The API is one function. There is nothing to maintain, nothing to break, nothing to update. The 21-month gap since the last release isn't neglect, it's completion. This is what a finished package looks like.
+
+### Summary
+
+Five of the seven packages have a single primary maintainer: reka-ui (Zernonia), tw-animate-css (Wombosvideo), tailwind-merge (Dany Castillo), CVA (Joe Bell), and clsx (Luke Edwards). @vueuse/core is led by Anthony Fu but has broad contributor base and Vue core team backing. Lucide is maintained by a small core team. Of these, only reka-ui represents a real risk — it's the most complex package in the list, the most important to the stack, and the one most likely to need active maintenance as the Vue ecosystem evolves. tw-animate-css has the thinnest backing (pseudonymous sole maintainer, downloads carried by shadcn) but it's a CSS file you could inline tomorrow. The other three sole-maintainer packages (tailwind-merge, CVA, clsx) are either finished software that won't need updates or so heavily adopted at tens of millions of weekly downloads that the community would absorb them long before they became a problem.
+
+None of these seven have corporate backing — which means no venture-funded pivot risk and no acquisition drama like Radix had on the React side.
 
 ## Package management: what's settled, what's left
 

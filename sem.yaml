@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb17.2130.20812
+  generated: 2026feb17.2340.16817
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -97,6 +97,7 @@ summary:
       nanoid: 94,895,352
     9 figure:
       yaml: 101,991,403
+      typescript: 119,077,520
       fs-extra: 140,054,511
       semver: 514,720,390
 modules:
@@ -748,6 +749,18 @@ modules:
     downloads:
       weekly: 2,767,196
       on: 2026feb4.1825.16236
+  typescript:
+    homepage: https://www.typescriptlang.org/
+    description: TypeScript is a language for application scale JavaScript development
+    from: site
+    versions:
+      declared: ^5.9.3 on 2025sep30 4m old
+      installed: 5.9.3 on 2025sep30 4m old
+      current: 5.9.3 on 2025sep30 4m old
+      latest: 5.9.3 on 2025sep30 4m old
+    downloads:
+      weekly: 119,077,520
+      on: 2026feb17.2340.16817
   unstorage:
     homepage: https://unstorage.unjs.io
     description: Universal Storage Layer
@@ -768,7 +781,7 @@ modules:
       declared: ^1.12.13 on 2025feb16 12m old
       installed: 1.12.13 on 2025feb16 12m old 🕰️ Installed version 1+ year old
       current: 1.12.13 on 2025feb16 12m old
-      latest: 0.6.15 on 2024apr19 21m old 🩸 Latest tag is behind installed
+      latest: 0.6.15 on 2024apr19 22m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 32,747
       on: 2026feb4.1829.44951

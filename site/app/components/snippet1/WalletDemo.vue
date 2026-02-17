@@ -138,7 +138,7 @@ async function onQuotes() {
 		refEtherPrice.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
 
 	} catch (e) {
-		if (anyIncludeAny([e.message, e.name], ['fetch', 'timeout', 'network', '429', 'rate'])) {
+		if (anyIncludeAny([e.message, e.name], ['fetch', 'timeout', 'network', '429', 'rate', '500', 'failed'])) {
 			log('detected network timeout or connection error to alchemy', look({e}))
 		} else { log('⛔ on quotes caught:', look(e)); throw e }
 	}
