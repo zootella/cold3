@@ -16,7 +16,7 @@ Each module gets flagged with notes. Here's what they mean and what to do:
    sitting at 5.0.0 for 16 months is probably done — fine. A dev tool like serverless-offline
    at 14.4.0 for 14 months is probably expiring — they've moved on. Look and decide which.
 
-🏺 Declared release 1+ year earlier than installed
+🏺 Declared release 6+ months earlier than installed
    The version in package.json is an archaeological artifact. You declared ^2.39.8 but you're
    running 2.94.1 — that old version will never appear again. Action: bump the declared version
    forward in package.json. Mechanical, low risk, just closing the gap. (ncu does this.)
@@ -52,9 +52,9 @@ Each module gets flagged with notes. Here's what they mean and what to do:
 */
 
 // Note constants
-const note_old_installed = '🕰️ Installed version 1+ year old'
-const note_old_declared = '🏺 Declared release 1+ year earlier than installed'
-const note_stale_current = '⏰ Current version 6+ months newer'
+const note_old_installed = '🕰️ Installed version 1+ year old';                    const duration_old_installed = Time.year
+const note_old_declared = '🏺 Declared release 6+ months earlier than installed'; const duration_old_declared = 2*Time.week
+const note_stale_current = '⏰ Current version 6+ months newer';                  const duration_stale_current = 6*Time.month
 const note_major_available = '🎁 Major new version available'
 const note_latest_behind = '🩸 Latest tag is behind installed'
 const note_version_zero = '🐣 Pre-1.0 version installed'
@@ -62,39 +62,17 @@ const note_exact_pin = '📌 Exact version pinned'
 const note_deprecated = '🪦 Installed version marked deprecated on npm'
 
 // Helper to format version with publication date and age
-function formatVersion(version, isoString, now) {
+function formatVersion(version, tick, now) {
 	if (!version) return 'not found'
-	if (!isoString) return version
-	let tick = new Date(isoString).getTime()
+	if (!tick) return version
 	let ageMonths = Math.round((now - tick) / Time.month)
 	return `${version} on ${sayDate(tick)} ${ageMonths}m old`
-}
-
-// Helper to check if date2 is more than 6 months after date1
-function isMoreThan6MonthsNewer(date1, date2) {
-	if (!date1 || !date2) return false
-	let d1 = new Date(date1)
-	let d2 = new Date(date2)
-	let sixMonthsLater = new Date(d1)
-	sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6)
-	return d2 > sixMonthsLater
 }
 
 // Helper to check if latest major version is higher than installed
 function isMajorVersionHigher(installed, latest) {
 	if (!installed || !latest) return false
-	let installedMajor = semver.major(installed)
-	let latestMajor = semver.major(latest)
-	return latestMajor > installedMajor
-}
-
-// Helper to check if a date is more than 1 year old
-function isMoreThan1YearOld(dateStr) {
-	if (!dateStr) return false
-	let d = new Date(dateStr)
-	let oneYearAgo = new Date()
-	oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-	return d < oneYearAgo
+	return semver.major(latest) > semver.major(installed)
 }
 
 // Fetch version info from npm registry
@@ -218,7 +196,7 @@ async function main() {
 		if (!s) return null
 		return textToTick(s)
 	}
-	let today = Now()
+	let now = Now()
 	let downloadsData = new Map()
 	for (let m of modules.values()) {
 		let prev = previousData[m.name]?.downloads
@@ -229,7 +207,7 @@ async function main() {
 	}
 
 	// Build list of modules needing fetch: missing first, then stale (>1 month old)
-	let oneMonthAgo = Now() - Time.month
+	let oneMonthAgo = now - Time.month
 
 	let allNeedsFetch = [...modules.values()]
 		.map(m => ({name: m.name, on: downloadsData.get(m.name)?.on || null}))
@@ -249,7 +227,7 @@ async function main() {
 		log(`Download counts: ${missing} missing, ${stale} stale; fetching ${toFetch.length} of ${allNeedsFetch.length}`)
 		for (let {name} of toFetch) {
 			let weekly = await fetchDownloads(name)
-			if (weekly !== null) downloadsData.set(name, {weekly, on: today})
+			if (weekly !== null) downloadsData.set(name, {weekly, on: now})
 			await new Promise(r => setTimeout(r, 300))
 		}
 	} else {
@@ -262,12 +240,13 @@ async function main() {
 		if (npm) {
 			m.latestInRange = semver.maxSatisfying(npm.versions, m.semver)
 			m.latest = npm.latest
-			m.installedTime = npm.time[m.installed]
-			m.currentTime = npm.time[m.latestInRange]
-			m.latestTime = npm.time[m.latest]
-			m.installedLine = formatVersion(m.installed, m.installedTime, today)
-			m.currentLine = formatVersion(m.latestInRange, m.currentTime, today)
-			m.latestLine = formatVersion(m.latest, m.latestTime, today)
+			let tick = iso => iso ? new Date(iso).getTime() : null
+			m.installedTime = tick(npm.time[m.installed])
+			m.currentTime = tick(npm.time[m.latestInRange])
+			m.latestTime = tick(npm.time[m.latest])
+			m.installedLine = formatVersion(m.installed, m.installedTime, now)
+			m.currentLine = formatVersion(m.latestInRange, m.currentTime, now)
+			m.latestLine = formatVersion(m.latest, m.latestTime, now)
 			m.description = npm.description
 			m.homepage = npm.homepage
 			m.deprecated = npm.versionsData[m.installed]?.deprecated || null
@@ -275,11 +254,10 @@ async function main() {
 			// Get the base version from declared semver to show when it was released
 			let declaredBase = semver.minVersion(m.semver)
 			if (declaredBase) {
-				m.declaredTime = npm.time[declaredBase.version]
+				m.declaredTime = tick(npm.time[declaredBase.version])
 				if (m.declaredTime) {
-					let tick = new Date(m.declaredTime).getTime()
-					let ageMonths = Math.round((today - tick) / Time.month)
-					m.declaredAge = `on ${sayDate(tick)} ${ageMonths}m old`
+					let ageMonths = Math.round((now - m.declaredTime) / Time.month)
+					m.declaredAge = `on ${sayDate(m.declaredTime)} ${ageMonths}m old`
 				} else {
 					// Version specified in package.json doesn't exist on npm
 					m.declaredAge = `⚠️ ${declaredBase.version} not found on npm`
@@ -314,16 +292,13 @@ async function main() {
 		let currentNote = ''
 		let latestNote = ''
 
-		if (isMoreThan1YearOld(m.installedTime)) {
+		if (m.installedTime && now - m.installedTime > duration_old_installed) {
 			installedNote += ' ' + note_old_installed
 			summary[note_old_installed].push(m.name)
 		}
 		if (m.declaredTime && m.installedTime && !isMajorVersionHigher(m.installed, m.latest)) {
-			// Check if declared is more than 1 year older than installed (and no major version jump)
-			let declaredDate = new Date(m.declaredTime)
-			let oneYearLater = new Date(declaredDate)
-			oneYearLater.setFullYear(oneYearLater.getFullYear() + 1)
-			if (new Date(m.installedTime) > oneYearLater) {
+			let gap = m.installedTime - m.declaredTime
+			if (gap > duration_old_declared) {
 				summary[note_old_declared].push(m.name)
 			}
 		}
@@ -339,7 +314,7 @@ async function main() {
 			installedNote += ' ' + note_deprecated
 			summary[note_deprecated].push(m.name)
 		}
-		if (isMoreThan6MonthsNewer(m.installedTime, m.currentTime)) {
+		if (m.installedTime && m.currentTime && m.currentTime - m.installedTime > duration_stale_current) {
 			currentNote = ' ' + note_stale_current
 			summary[note_stale_current].push(m.name)
 		}
@@ -388,7 +363,7 @@ async function main() {
 
 	let finalOutput = {
 		summary: {
-			generated: tickToText(Now()),
+			generated: tickToText(now),
 			...filteredSummary,
 			downloads: downloadsByMagnitude,
 		},

@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb17.0146.27305
+  generated: 2026feb17.0212.46095
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -7,7 +7,15 @@ summary:
     - is-mobile
     - qrcode
     - serverless-offline
-    - vidstack
+  🏺 Declared release 6+ months earlier than installed:
+    - "@sveltejs/adapter-cloudflare"
+    - "@vercel/nft"
+    - "@wagmi/connectors"
+    - "@wagmi/core"
+    - nuxt
+    - serverless
+    - viem
+    - vue
   🎁 Major new version available:
     - "@sveltejs/vite-plugin-svelte"
     - "@vitejs/plugin-vue"
@@ -587,7 +595,7 @@ modules:
     from: site
     versions:
       declared: ^1.12.13
-      installed: 1.12.13 on 2025feb16 12m old 🕰️ Installed version 1+ year old
+      installed: 1.12.13 on 2025feb16 12m old
       current: 1.12.13 on 2025feb16 12m old
       latest: 0.6.15 on 2024apr19 22m old 🩸 Latest tag is behind installed
     downloads:
