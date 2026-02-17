@@ -1,8 +1,16 @@
 summary:
-  generated: 2026feb17.0244.19806
+  generated: 2026feb17.1602.23768
+  🏺 Declared release 6+ months earlier than installed:
+    - "@tailwindcss/postcss"
+    - "@types/react"
+    - "@types/react-dom"
   📌 Exact version pinned:
     - "@pinia/nuxt"
+    - eslint-config-next
+    - next
     - nuxt-og-image
+    - react
+    - react-dom
     - satori
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
@@ -11,6 +19,7 @@ summary:
     - is-mobile
     - qrcode
     - serverless-offline
+    - vidstack
   🐣 Pre-1.0 version installed:
     - "@electric-sql/pglite"
     - "@pinia/nuxt"
@@ -19,7 +28,9 @@ summary:
     - sharp
   🎁 Major new version available:
     - "@sveltejs/vite-plugin-svelte"
+    - "@types/node"
     - "@vitejs/plugin-vue"
+    - eslint
     - h3
     - vite
     - vue-router
@@ -75,17 +86,27 @@ summary:
       vue: 8,549,415
       "@supabase/supabase-js": 9,033,555
     8 figure:
+      "@tailwindcss/postcss": 12,022,163
       libphonenumber-js: 12,299,472
       "@aws-sdk/client-s3": 16,370,151
+      eslint-config-next: 16,677,784
+      next: 24,831,396
       sharp: 35,411,185
       tailwindcss: 47,765,674
+      "@types/react-dom": 47,906,380
       vite: 53,611,431
+      react-dom: 67,955,390
+      "@types/react": 69,678,969
+      react: 74,390,031
+      eslint: 80,325,944
       zod: 87,621,926
       fast-glob: 94,186,895
       nanoid: 94,895,352
     9 figure:
       yaml: 101,991,403
+      typescript: 121,395,266
       fs-extra: 140,054,511
+      "@types/node": 225,277,131
       semver: 514,720,390
 modules:
   "@auth/sveltekit":
@@ -215,8 +236,8 @@ modules:
     versions:
       declared: ^2.95.3 on 2026feb06 0m old
       installed: 2.95.3 on 2026feb06 0m old
-      current: 2.95.3 on 2026feb06 0m old
-      latest: 2.95.3 on 2026feb06 0m old
+      current: 2.96.0 on 2026feb17 0m old
+      latest: 2.96.0 on 2026feb17 0m old
     downloads:
       weekly: 9,033,555
       on: 2026feb4.1821.46960
@@ -268,6 +289,18 @@ modules:
     downloads:
       weekly: 2,680,926
       on: 2026feb4.1829.44951
+  "@tailwindcss/postcss":
+    homepage: https://tailwindcss.com
+    description: PostCSS plugin for Tailwind CSS, a utility-first CSS framework for rapidly building custom user interfaces
+    from: shad4next
+    versions:
+      declared: ^4 on 2025jan21 12m old 🏺 Declared release 6+ months earlier than installed
+      installed: 4.1.18 on 2025dec11 2m old
+      current: 4.1.18 on 2025dec11 2m old
+      latest: 4.1.18 on 2025dec11 2m old
+    downloads:
+      weekly: 12,022,163
+      on: 2026feb17.1602.6019
   "@tailwindcss/vite":
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
@@ -280,6 +313,42 @@ modules:
     downloads:
       weekly: 6,607,358
       on: 2026feb5.2153.32117
+  "@types/node":
+    homepage: https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node
+    description: TypeScript definitions for node
+    from: shad4next
+    versions:
+      declared: ^20 on 2023may05 33m old
+      installed: 20.19.33 on 2026feb08 0m old
+      current: 20.19.33 on 2026feb08 0m old
+      latest: 25.2.3 on 2026feb10 0m old 🎁 Major new version available
+    downloads:
+      weekly: 225,277,131
+      on: 2026feb17.1602.6019
+  "@types/react":
+    homepage: https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react
+    description: TypeScript definitions for react
+    from: shad4next
+    versions:
+      declared: ^19 on 2024dec05 14m old 🏺 Declared release 6+ months earlier than installed
+      installed: 19.2.14 on 2026feb11 0m old
+      current: 19.2.14 on 2026feb11 0m old
+      latest: 19.2.14 on 2026feb11 0m old
+    downloads:
+      weekly: 69,678,969
+      on: 2026feb17.1602.6019
+  "@types/react-dom":
+    homepage: https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-dom
+    description: TypeScript definitions for react-dom
+    from: shad4next
+    versions:
+      declared: ^19 on 2024dec05 14m old 🏺 Declared release 6+ months earlier than installed
+      installed: 19.2.3 on 2025nov12 3m old
+      current: 19.2.3 on 2025nov12 3m old
+      latest: 19.2.3 on 2025nov12 3m old
+    downloads:
+      weekly: 47,906,380
+      on: 2026feb17.1602.6019
   "@unhead/vue":
     homepage: https://unhead.unjs.io
     description: Full-stack <head> manager built for Vue.
@@ -398,6 +467,30 @@ modules:
     downloads:
       weekly: 1,258,798
       on: 2026feb4.1821.46960
+  eslint:
+    homepage: https://eslint.org
+    description: An AST-based pattern checker for JavaScript.
+    from: shad4next
+    versions:
+      declared: ^9 on 2024apr05 22m old
+      installed: 9.39.2 on 2025dec12 2m old
+      current: 9.39.2 on 2025dec12 2m old
+      latest: 10.0.0 on 2026feb06 0m old 🎁 Major new version available
+    downloads:
+      weekly: 80,325,944
+      on: 2026feb17.1602.6019
+  eslint-config-next:
+    homepage: https://nextjs.org/docs/app/api-reference/config/eslint
+    description: ESLint configuration used by Next.js.
+    from: shad4next
+    versions:
+      declared: 16.1.6 on 2026jan27 0m old 📌 Exact version pinned
+      installed: 16.1.6 on 2026jan27 0m old
+      current: 16.1.6 on 2026jan27 0m old
+      latest: 16.1.6 on 2026jan27 0m old
+    downloads:
+      weekly: 16,677,784
+      on: 2026feb17.1602.6019
   fast-glob:
     homepage: https://github.com/mrmlnc/fast-glob#readme
     description: It's a very fast and efficient glob library for Node.js
@@ -415,10 +508,10 @@ modules:
     description: fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.
     from: net23
     versions:
-      declared: ^11.3.3 on 2025dec18 1m old
-      installed: 11.3.3 on 2025dec18 1m old
-      current: 11.3.3 on 2025dec18 1m old
-      latest: 11.3.3 on 2025dec18 1m old
+      declared: ^11.3.3 on 2025dec18 2m old
+      installed: 11.3.3 on 2025dec18 2m old
+      current: 11.3.3 on 2025dec18 2m old
+      latest: 11.3.3 on 2025dec18 2m old
     downloads:
       weekly: 140,054,511
       on: 2026feb4.1825.16236
@@ -453,8 +546,8 @@ modules:
     versions:
       declared: ^1.12.36 on 2026jan30 0m old
       installed: 1.12.36 on 2026jan30 0m old
-      current: 1.12.36 on 2026jan30 0m old
-      latest: 1.12.36 on 2026jan30 0m old
+      current: 1.12.37 on 2026feb17 0m old
+      latest: 1.12.37 on 2026feb17 0m old
     downloads:
       weekly: 12,299,472
       on: 2026feb4.1821.46960
@@ -470,6 +563,18 @@ modules:
     downloads:
       weekly: 94,895,352
       on: 2026feb4.1821.46960
+  next:
+    homepage: https://nextjs.org
+    description: The React Framework
+    from: shad4next
+    versions:
+      declared: 16.1.6 on 2026jan27 0m old 📌 Exact version pinned
+      installed: 16.1.6 on 2026jan27 0m old
+      current: 16.1.6 on 2026jan27 0m old
+      latest: 16.1.6 on 2026jan27 0m old
+    downloads:
+      weekly: 24,831,396
+      on: 2026feb17.1602.6019
   nitropack:
     homepage: https://github.com/nitrojs/nitro#readme
     description: Build and Deploy Universal JavaScript Servers
@@ -485,7 +590,9 @@ modules:
   nuxt:
     homepage: https://nuxt.com
     description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
-    from: site
+    from:
+      - site
+      - shad4nuxt
     versions:
       declared: ^4.3.0 on 2026jan22 0m old
       installed: 4.3.1 on 2026feb07 0m old
@@ -556,6 +663,30 @@ modules:
     downloads:
       weekly: 6,394,940
       on: 2026feb4.1821.46960
+  react:
+    homepage: https://react.dev/
+    description: React is a JavaScript library for building user interfaces.
+    from: shad4next
+    versions:
+      declared: 19.2.3 on 2025dec11 2m old 📌 Exact version pinned
+      installed: 19.2.3 on 2025dec11 2m old
+      current: 19.2.3 on 2025dec11 2m old
+      latest: 19.2.4 on 2026jan26 0m old
+    downloads:
+      weekly: 74,390,031
+      on: 2026feb17.1602.6019
+  react-dom:
+    homepage: https://react.dev/
+    description: React package for working with the DOM.
+    from: shad4next
+    versions:
+      declared: 19.2.3 on 2025dec11 2m old 📌 Exact version pinned
+      installed: 19.2.3 on 2025dec11 2m old
+      current: 19.2.3 on 2025dec11 2m old
+      latest: 19.2.4 on 2026jan26 0m old
+    downloads:
+      weekly: 67,955,390
+      on: 2026feb17.1602.6019
   satori:
     homepage: https://github.com/vercel/satori#readme
     description: Enlightened library to convert HTML and CSS to SVG.
@@ -623,15 +754,17 @@ modules:
     versions:
       declared: ^5.50.0 on 2026feb06 0m old
       installed: 5.51.2 on 2026feb15 0m old
-      current: 5.51.2 on 2026feb15 0m old
-      latest: 5.51.2 on 2026feb15 0m old
+      current: 5.51.3 on 2026feb17 0m old
+      latest: 5.51.3 on 2026feb17 0m old
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
   tailwindcss:
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
-    from: site
+    from:
+      - site
+      - shad4next
     versions:
       declared: ^4.1.18 on 2025dec11 2m old
       installed: 4.1.18 on 2025dec11 2m old
@@ -652,6 +785,18 @@ modules:
     downloads:
       weekly: 2,767,196
       on: 2026feb4.1825.16236
+  typescript:
+    homepage: https://www.typescriptlang.org/
+    description: TypeScript is a language for application scale JavaScript development
+    from: shad4next
+    versions:
+      declared: ^5 ⚠️ 5.0.0 not found on npm
+      installed: 5.9.3 on 2025sep30 4m old
+      current: 5.9.3 on 2025sep30 4m old
+      latest: 5.9.3 on 2025sep30 4m old
+    downloads:
+      weekly: 121,395,266
+      on: 2026feb17.1602.6019
   unstorage:
     homepage: https://unstorage.unjs.io
     description: Universal Storage Layer
@@ -669,9 +814,9 @@ modules:
     description: Build awesome media experiences on the web.
     from: site
     versions:
-      declared: ^1.12.13 on 2025feb16 11m old
-      installed: 1.12.13 on 2025feb16 11m old
-      current: 1.12.13 on 2025feb16 11m old
+      declared: ^1.12.13 on 2025feb16 12m old
+      installed: 1.12.13 on 2025feb16 12m old 🕰️ Installed version 1+ year old
+      current: 1.12.13 on 2025feb16 12m old
       latest: 0.6.15 on 2024apr19 21m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 32,747
@@ -710,6 +855,7 @@ modules:
     from:
       - icarus
       - site
+      - shad4nuxt
     versions:
       declared: ^3.5.27 on 2026jan19 0m old
       installed: 3.5.28 on 2026feb09 0m old
@@ -724,6 +870,7 @@ modules:
     from:
       - icarus
       - site
+      - shad4nuxt
     versions:
       declared: ^4.6.4 on 2025dec11 2m old
       installed: 4.6.4 on 2025dec11 2m old
@@ -741,8 +888,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 0m old
       installed: 4.65.0 on 2026feb12 0m old
-      current: 4.65.0 on 2026feb12 0m old
-      latest: 4.65.0 on 2026feb12 0m old
+      current: 4.66.0 on 2026feb17 0m old
+      latest: 4.66.0 on 2026feb17 0m old
     downloads:
       weekly: 3,405,027
       on: 2026feb4.1829.44951
