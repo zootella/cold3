@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb17.1602.23768
+  generated: 2026feb17.1649.50505
   🏺 Declared release 6+ months earlier than installed:
     - "@tailwindcss/postcss"
     - "@types/react"
@@ -15,6 +15,8 @@ summary:
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
+    - class-variance-authority
+    - clsx
     - fast-glob
     - is-mobile
     - qrcode
@@ -24,6 +26,9 @@ summary:
     - "@electric-sql/pglite"
     - "@pinia/nuxt"
     - "@tailwindcss/forms"
+    - class-variance-authority
+    - lucide-react
+    - lucide-vue-next
     - satori
     - sharp
   🎁 Major new version available:
@@ -51,8 +56,10 @@ summary:
       "@resvg/resvg-js": 499,219
       "@wagmi/connectors": 508,960
       "@uppy/core": 543,303
+      lucide-vue-next: 559,102
       serverless-offline: 561,989
       "@pinia/nuxt": 574,156
+      reka-ui: 648,108
       satori: 650,032
       "@sveltejs/kit": 876,575
       otpauth: 906,306
@@ -60,11 +67,13 @@ summary:
       nuxt: 1,163,970
       nitropack: 1,164,344
       serverless: 1,185,950
+      shadcn: 1,201,808
       is-mobile: 1,235,533
       "@sveltejs/vite-plugin-svelte": 1,245,973
       credit-card-type: 1,258,798
       "@unhead/vue": 1,494,102
       "@aws-sdk/client-ses": 2,333,005
+      radix-ui: 2,492,982
       viem: 2,639,619
       svelte: 2,657,105
       "@tailwindcss/forms": 2,680,926
@@ -79,7 +88,9 @@ summary:
       "@electric-sql/pglite": 4,678,176
       vue-router: 4,742,858
       "@vitejs/plugin-vue": 4,786,123
+      "@vueuse/core": 5,215,878
       "@vercel/nft": 5,524,454
+      tw-animate-css: 5,809,004
       qrcode: 6,394,940
       "@tailwindcss/vite": 6,607,358
       "@aws-sdk/s3-request-presigner": 6,635,744
@@ -88,12 +99,16 @@ summary:
     8 figure:
       "@tailwindcss/postcss": 12,022,163
       libphonenumber-js: 12,299,472
+      class-variance-authority: 14,234,458
       "@aws-sdk/client-s3": 16,370,151
       eslint-config-next: 16,677,784
+      tailwind-merge: 22,247,382
       next: 24,831,396
+      lucide-react: 25,175,236
       sharp: 35,411,185
       tailwindcss: 47,765,674
       "@types/react-dom": 47,906,380
+      clsx: 49,310,969
       vite: 53,611,431
       react-dom: 67,955,390
       "@types/react": 69,678,969
@@ -304,7 +319,9 @@ modules:
   "@tailwindcss/vite":
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
-    from: site
+    from:
+      - site
+      - shad4nuxt
     versions:
       declared: ^4.1.18 on 2025dec11 2m old
       installed: 4.1.18 on 2025dec11 2m old
@@ -427,6 +444,18 @@ modules:
     downloads:
       weekly: 4,786,123
       on: 2026feb4.1825.16236
+  "@vueuse/core":
+    homepage: https://github.com/vueuse/vueuse#readme
+    description: Collection of essential Vue Composition Utilities
+    from: shad4nuxt
+    versions:
+      declared: ^14.2.1 on 2026feb10 0m old
+      installed: 14.2.1 on 2026feb10 0m old
+      current: 14.2.1 on 2026feb10 0m old
+      latest: 14.2.1 on 2026feb10 0m old
+    downloads:
+      weekly: 5,215,878
+      on: 2026feb17.1642.4974
   "@wagmi/connectors":
     homepage: https://github.com/wevm/wagmi#readme
     description: Collection of connectors for Wagmi
@@ -455,6 +484,34 @@ modules:
     downloads:
       weekly: 485,845
       on: 2026feb4.1821.46960
+  class-variance-authority:
+    homepage: https://github.com/joe-bell/cva#readme
+    description: Class Variance Authority 🧬
+    from:
+      - shad4next
+      - shad4nuxt
+    versions:
+      declared: ^0.7.1 on 2024nov26 14m old
+      installed: 0.7.1 on 2024nov26 14m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
+      current: 0.7.1 on 2024nov26 14m old
+      latest: 0.7.1 on 2024nov26 14m old
+    downloads:
+      weekly: 14,234,458
+      on: 2026feb17.1642.4974
+  clsx:
+    homepage: https://github.com/lukeed/clsx#readme
+    description: A tiny (239B) utility for constructing className strings conditionally.
+    from:
+      - shad4next
+      - shad4nuxt
+    versions:
+      declared: ^2.1.1 on 2024apr23 21m old
+      installed: 2.1.1 on 2024apr23 21m old 🕰️ Installed version 1+ year old
+      current: 2.1.1 on 2024apr23 21m old
+      latest: 2.1.1 on 2024apr23 21m old
+    downloads:
+      weekly: 49,310,969
+      on: 2026feb17.1642.4974
   credit-card-type:
     homepage: https://github.com/braintree/credit-card-type
     description: A library for determining credit card type
@@ -551,6 +608,30 @@ modules:
     downloads:
       weekly: 12,299,472
       on: 2026feb4.1821.46960
+  lucide-react:
+    homepage: https://lucide.dev
+    description: A Lucide icon library package for React applications.
+    from: shad4next
+    versions:
+      declared: ^0.574.0 on 2026feb17 0m old
+      installed: 0.574.0 on 2026feb17 0m old 🐣 Pre-1.0 version installed
+      current: 0.574.0 on 2026feb17 0m old
+      latest: 0.574.0 on 2026feb17 0m old
+    downloads:
+      weekly: 25,175,236
+      on: 2026feb17.1642.4974
+  lucide-vue-next:
+    homepage: https://lucide.dev
+    description: A Lucide icon library package for Vue 3 applications.
+    from: shad4nuxt
+    versions:
+      declared: ^0.574.0 on 2026feb17 0m old
+      installed: 0.574.0 on 2026feb17 0m old 🐣 Pre-1.0 version installed
+      current: 0.574.0 on 2026feb17 0m old
+      latest: 0.574.0 on 2026feb17 0m old
+    downloads:
+      weekly: 559,102
+      on: 2026feb17.1642.4974
   nanoid:
     homepage: https://github.com/ai/nanoid#readme
     description: A tiny (118 bytes), secure URL-friendly unique string ID generator
@@ -663,6 +744,18 @@ modules:
     downloads:
       weekly: 6,394,940
       on: 2026feb4.1821.46960
+  radix-ui:
+    homepage: https://radix-ui.com/primitives
+    description: "[![Radix Primitives Logo](https://raw.githubusercontent.com/radix-ui/primitives/main/primitives.png)](https://radix-ui.com/primitives)"
+    from: shad4next
+    versions:
+      declared: ^1.4.3 on 2025aug13 6m old
+      installed: 1.4.3 on 2025aug13 6m old
+      current: 1.4.3 on 2025aug13 6m old
+      latest: 1.4.3 on 2025aug13 6m old
+    downloads:
+      weekly: 2,492,982
+      on: 2026feb17.1642.4974
   react:
     homepage: https://react.dev/
     description: React is a JavaScript library for building user interfaces.
@@ -687,6 +780,18 @@ modules:
     downloads:
       weekly: 67,955,390
       on: 2026feb17.1602.6019
+  reka-ui:
+    homepage: https://github.com/unovue/reka-ui
+    description: Vue port for Radix UI Primitives.
+    from: shad4nuxt
+    versions:
+      declared: ^2.8.0 on 2026jan28 0m old
+      installed: 2.8.0 on 2026jan28 0m old
+      current: 2.8.0 on 2026jan28 0m old
+      latest: 2.8.0 on 2026jan28 0m old
+    downloads:
+      weekly: 648,108
+      on: 2026feb17.1642.4974
   satori:
     homepage: https://github.com/vercel/satori#readme
     description: Enlightened library to convert HTML and CSS to SVG.
@@ -735,6 +840,18 @@ modules:
     downloads:
       weekly: 561,989
       on: 2026feb4.1825.16236
+  shadcn:
+    homepage: https://github.com/shadcn-ui/ui#readme
+    description: Add components to your apps.
+    from: shad4next
+    versions:
+      declared: ^3.8.5 on 2026feb16 0m old
+      installed: 3.8.5 on 2026feb16 0m old
+      current: 3.8.5 on 2026feb16 0m old
+      latest: 3.8.5 on 2026feb16 0m old
+    downloads:
+      weekly: 1,201,808
+      on: 2026feb17.1642.4974
   sharp:
     homepage: https://sharp.pixelplumbing.com
     description: High performance Node.js image processing, the fastest module to resize JPEG, PNG, WebP, GIF, AVIF and TIFF images
@@ -759,12 +876,27 @@ modules:
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
+  tailwind-merge:
+    homepage: https://github.com/dcastil/tailwind-merge
+    description: Merge Tailwind CSS classes without style conflicts
+    from:
+      - shad4next
+      - shad4nuxt
+    versions:
+      declared: ^3.4.1 on 2026feb15 0m old
+      installed: 3.4.1 on 2026feb15 0m old
+      current: 3.4.1 on 2026feb15 0m old
+      latest: 3.4.1 on 2026feb15 0m old
+    downloads:
+      weekly: 22,247,382
+      on: 2026feb17.1642.4974
   tailwindcss:
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
     from:
       - site
       - shad4next
+      - shad4nuxt
     versions:
       declared: ^4.1.18 on 2025dec11 2m old
       installed: 4.1.18 on 2025dec11 2m old
@@ -773,6 +905,20 @@ modules:
     downloads:
       weekly: 47,765,674
       on: 2026feb5.2153.32117
+  tw-animate-css:
+    homepage: https://github.com/Wombosvideo/tw-animate-css#readme
+    description: TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.
+    from:
+      - shad4next
+      - shad4nuxt
+    versions:
+      declared: ^1.4.0 on 2025sep24 4m old
+      installed: 1.4.0 on 2025sep24 4m old
+      current: 1.4.0 on 2025sep24 4m old
+      latest: 1.4.0 on 2025sep24 4m old
+    downloads:
+      weekly: 5,809,004
+      on: 2026feb17.1642.4974
   twilio:
     homepage: https://github.com/twilio/twilio-node#readme
     description: A Twilio helper library
