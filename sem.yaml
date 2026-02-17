@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb17.0145.12003
+  generated: 2026feb17.0146.27305
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -104,10 +104,8 @@ modules:
     description: AWS SDK for JavaScript S3 Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.985.0
-      installed: 3.985.0 on 2026feb06 0m old
-      current: 3.991.0 on 2026feb16 0m old
-      latest: 3.991.0 on 2026feb16 0m old
+      declared: ^3.985.0 on 2026feb06 0m old
+      installed: 3.991.0 on 2026feb16 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -116,10 +114,8 @@ modules:
     description: AWS SDK for JavaScript Ses Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.985.0
-      installed: 3.985.0 on 2026feb06 0m old
-      current: 3.991.0 on 2026feb16 0m old
-      latest: 3.991.0 on 2026feb16 0m old
+      declared: ^3.985.0 on 2026feb06 0m old
+      installed: 3.991.0 on 2026feb16 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -128,10 +124,8 @@ modules:
     description: AWS SDK for JavaScript Sns Client for Node.js, Browser and React Native
     from: net23
     versions:
-      declared: ^3.985.0
-      installed: 3.985.0 on 2026feb06 0m old
-      current: 3.991.0 on 2026feb16 0m old
-      latest: 3.991.0 on 2026feb16 0m old
+      declared: ^3.985.0 on 2026feb06 0m old
+      installed: 3.991.0 on 2026feb16 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -140,10 +134,8 @@ modules:
     description: "[![NPM version](https://img.shields.io/npm/v/@aws-sdk/s3-request-presigner/latest.svg)](https://www.npmjs.com/package/@aws-sdk/s3-request-presigner) [![NPM downloads](https://img.shields.io/npm/dm/@aws-sdk/s3-request-presigner.svg)](https://www.npmjs.com/"
     from: net23
     versions:
-      declared: ^3.985.0
-      installed: 3.985.0 on 2026feb06 0m old
-      current: 3.991.0 on 2026feb16 0m old
-      latest: 3.991.0 on 2026feb16 0m old
+      declared: ^3.985.0 on 2026feb06 0m old
+      installed: 3.991.0 on 2026feb16 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -212,10 +204,8 @@ modules:
     description: Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages
     from: oauth
     versions:
-      declared: ^7.2.6
-      installed: 7.2.6 on 2026jan23 1m old
-      current: 7.2.7 on 2026feb12 0m old
-      latest: 7.2.7 on 2026feb12 0m old
+      declared: ^7.2.6 on 2026jan23 1m old
+      installed: 7.2.7 on 2026feb12 0m old
     downloads:
       weekly: 82,257
       on: 2026feb4.1825.16236
@@ -224,10 +214,8 @@ modules:
     description: SvelteKit is the fastest way to build Svelte apps
     from: oauth
     versions:
-      declared: ^2.50.2
-      installed: 2.50.2 on 2026feb02 0m old
-      current: 2.52.0 on 2026feb15 0m old
-      latest: 2.52.0 on 2026feb15 0m old
+      declared: ^2.50.2 on 2026feb02 0m old
+      installed: 2.52.0 on 2026feb15 0m old
     downloads:
       weekly: 876,575
       on: 2026feb4.1825.16236
@@ -268,10 +256,8 @@ modules:
     description: Full-stack <head> manager built for Vue.
     from: site
     versions:
-      declared: ^2.1.3
-      installed: 2.1.3 on 2026feb06 0m old
-      current: 2.1.4 on 2026feb08 0m old
-      latest: 2.1.4 on 2026feb08 0m old
+      declared: ^2.1.3 on 2026feb06 0m old
+      installed: 2.1.4 on 2026feb08 0m old
     downloads:
       weekly: 1,494,102
       on: 2026feb4.1829.44951
@@ -316,10 +302,8 @@ modules:
     description: "[![CI Status](https://github.com/vercel/nft/actions/workflows/ci.yml/badge.svg)](https://github.com/vercel/nft/actions/workflows/ci.yml)"
     from: net23
     versions:
-      declared: ^1.3.0
-      installed: 1.3.0 on 2026jan21 1m old
-      current: 1.3.1 on 2026feb10 0m old
-      latest: 1.3.1 on 2026feb10 0m old
+      declared: ^1.3.0 on 2026jan21 1m old
+      installed: 1.3.1 on 2026feb10 0m old
     downloads:
       weekly: 5,524,454
       on: 2026feb4.1825.16236
@@ -342,10 +326,8 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^7.1.6
-      installed: 7.1.6 on 2026feb01 0m old
-      current: 7.2.0 on 2026feb16 0m old
-      latest: 7.2.0 on 2026feb16 0m old
+      declared: ^7.1.6 on 2026feb01 0m old
+      installed: 7.2.0 on 2026feb16 0m old
     downloads:
       weekly: 508,960
       on: 2026feb4.1821.46960
@@ -356,10 +338,8 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^3.3.2
-      installed: 3.3.2 on 2026feb01 0m old
-      current: 3.3.4 on 2026feb16 0m old
-      latest: 3.3.4 on 2026feb16 0m old
+      declared: ^3.3.2 on 2026feb01 0m old
+      installed: 3.3.4 on 2026feb16 0m old
     downloads:
       weekly: 485,845
       on: 2026feb4.1821.46960
@@ -536,10 +516,8 @@ modules:
     description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
     from: net23
     versions:
-      declared: ^4.31.2
-      installed: 4.31.2 on 2026jan27 1m old
-      current: 4.32.0 on 2026feb12 0m old
-      latest: 4.32.0 on 2026feb12 0m old
+      declared: ^4.31.2 on 2026jan27 1m old
+      installed: 4.32.0 on 2026feb12 0m old
     downloads:
       weekly: 1,185,950
       on: 2026feb4.1825.16236
@@ -568,10 +546,8 @@ modules:
     description: Cybernetically enhanced web apps
     from: oauth
     versions:
-      declared: ^5.50.0
-      installed: 5.50.0 on 2026feb06 0m old
-      current: 5.51.2 on 2026feb15 0m old
-      latest: 5.51.2 on 2026feb15 0m old
+      declared: ^5.50.0 on 2026feb06 0m old
+      installed: 5.51.2 on 2026feb15 0m old
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
@@ -624,10 +600,8 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^2.45.1
-      installed: 2.45.1 on 2026jan29 1m old
-      current: 2.46.1 on 2026feb16 0m old
-      latest: 2.46.1 on 2026feb16 0m old
+      declared: ^2.45.1 on 2026jan29 1m old
+      installed: 2.46.1 on 2026feb16 0m old
     downloads:
       weekly: 2,639,619
       on: 2026feb4.1821.46960
@@ -652,10 +626,8 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^3.5.27
-      installed: 3.5.27 on 2026jan19 1m old
-      current: 3.5.28 on 2026feb09 0m old
-      latest: 3.5.28 on 2026feb09 0m old
+      declared: ^3.5.27 on 2026jan19 1m old
+      installed: 3.5.28 on 2026feb09 0m old
     downloads:
       weekly: 8,549,415
       on: 2026feb4.1825.16236
@@ -680,10 +652,8 @@ modules:
       - oauth
       - site
     versions:
-      declared: ^4.63.0
-      installed: 4.63.0 on 2026feb05 0m old
-      current: 4.65.0 on 2026feb12 0m old
-      latest: 4.65.0 on 2026feb12 0m old
+      declared: ^4.63.0 on 2026feb05 0m old
+      installed: 4.65.0 on 2026feb12 0m old
     downloads:
       weekly: 3,405,027
       on: 2026feb4.1829.44951
