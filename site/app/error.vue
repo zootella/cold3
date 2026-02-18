@@ -34,7 +34,7 @@ We follow Nuxt's intended error patterns -- hooks, showError(), error.vue -- but
 
 </script>
 <template>
-<div class="page-container text-center space-y-2">
+<div class="my-column text-center space-y-2">
 
 <p>Something went wrong. Sorry about that.</p>
 

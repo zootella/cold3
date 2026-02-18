@@ -108,17 +108,17 @@ For our purposes — evaluating the scaffolding steps and understanding the laye
 
 shadcn-vue is integrated into the site workspace. CSS theme tokens merged into style.css, components.json and lib/utils.ts created, all runtime dependencies installed, first component (Switch) working end to end. What follows are decisions made during integration that need to be revisited as the site evolves.
 
-**`@tailwindcss/forms` — keep for now, remove later.** The forms plugin normalizes bare `<input>` elements to look consistent cross-browser and respond to Tailwind utilities. The site has ~16 bare `<input>` elements across ChooseNameForm, SignInForm, PasswordBox, OtpRequestComponent, TotpDemo, and others. Without the plugin, these would revert to platform-native styling. shadcn's `<Input>` component styles itself from scratch via Reka UI + Tailwind classes, making the plugin redundant for any form element that migrates to a shadcn component. Plan: keep `@plugin "@tailwindcss/forms"` until existing forms are migrated to shadcn components, then remove it and the `@tailwindcss/forms` devDependency.
+**`@tailwindcss/forms` — kept for now.** The forms plugin normalizes bare `<input>` elements to look consistent cross-browser and respond to Tailwind utilities. The site has ~16 bare `<input>` elements across ChooseNameForm, SignInForm, PasswordBox, OtpRequestComponent, TotpDemo, and others. Without the plugin, these would revert to platform-native styling. shadcn's `<Input>` component styles itself from scratch via Reka UI + Tailwind classes, making the plugin redundant for any form element that migrates to a shadcn component.
 
-**Global link styles — keep hardcoded colors for now, migrate to semantic tokens later.** The site has global `a` styles using hardcoded Tailwind colors (text-blue-600, text-purple-600, etc.). These work alongside shadcn — no conflict — but they won't respond to dark mode or theme changes. To make them dark-mode-ready, swap to semantic tokens: `text-primary` for links, `text-muted-foreground` for visited, `text-destructive` for active, with `/70` opacity for hover states. This loses the blue/purple identity and takes on the neutral palette. Alternatively, define custom `--link`/`--link-visited` CSS variables with light and dark values for branded link colors that still respond to theme switching.
+**Global link styles — dark: stopgap applied.** The site has global `a` styles using hardcoded Tailwind colors (text-blue-600, text-purple-600, etc.) with dark: variants added as a stopgap. These work alongside shadcn — no conflict — and links are visible on dark backgrounds, but the colors don't respond to theme token changes.
 
-**Existing component classes (`.my-button`, `.ghost`, `.ready`, `.doing`, `.my-link`) — keep entirely.** 44 occurrences across 17 files. The three-state pattern (ghost/ready/doing = disabled/available/in-progress) has no shadcn equivalent. One name to watch: shadcn's Button has `variant="ghost"` which resolves to hover classes via CVA, while the site's `.ghost` CSS class applies `bg-gray-400`. These won't collide in practice (variant prop vs CSS class), but avoid putting both on the same element. Eventually, migrate page-by-page: replace `my-button`/`my-link` usage with shadcn `<Button>` variants, and express the three-state pattern as custom shadcn variants or a composable that selects the right variant prop.
+**Existing component classes (`.my-button`, `.ghost`, `.ready`, `.doing`, `.my-link`) — kept entirely.** 44 occurrences across 17 files. The three-state pattern (ghost/ready/doing = disabled/available/in-progress) has no shadcn equivalent. One name to watch: shadcn's Button has `variant="ghost"` which resolves to hover classes via CVA, while the site's `.ghost` CSS class applies `bg-gray-400`. These won't collide in practice (variant prop vs CSS class), but avoid putting both on the same element.
 
-**Button naming collision — resolve before using shadcn Button.** The site has `components/small/Button.vue` (16 usages, handles three-state ghost/ready/doing + async click + turnstile) and shadcn would add `components/ui/button/Button.vue`. With `pathPrefix: false` in nuxt.config, Nuxt's auto-import registers both as just `<Button>`, causing ambiguity. The simplest fix: use explicit imports for shadcn components (`import { Button } from '~/components/ui/button'`) in any file that needs them, leaving the existing auto-imported `<Button>` untouched. This requires zero changes to existing code. Alternative approaches: rename the existing Button (16-file migration), or re-enable `pathPrefix: true` (changes all auto-import names sitewide). Resolve this before the first page that needs a shadcn Button.
+**Button naming collision — unresolved.** The site has `components/small/Button.vue` (~45 usages across ~20 files, handles three-state ghost/ready/doing + async click + turnstile) and shadcn would add `components/ui/button/Button.vue`. With `pathPrefix: false` in nuxt.config, Nuxt's auto-import registers both as just `<Button>`, causing ambiguity. The planned approach (see Button section under More to do) is to rebuild the site's Button on top of shadcn's Button internally, so only one `<Button>` ever exists in the auto-import namespace.
 
 ## New dependency audit
 
-Adding shadcn-vue to the site introduced seven new entries in sem.yaml: six runtime dependencies and one devDependency. No new package has fewer than six-figure weekly downloads, and three are in the eight-figure range. None are deep transitive dependency trees pulling in dozens of sub-packages; they're all leaf-level libraries that do one thing. Here's the case file on each, ordered from most to least risk.
+Adding shadcn-vue to the site introduced eight new entries in sem.yaml: six runtime dependencies and two devDependencies. No new package has fewer than six-figure weekly downloads, and four are in the eight-figure range. None are deep transitive dependency trees pulling in dozens of sub-packages; they're all leaf-level libraries that do one thing. Here's the case file on each, ordered from most to least risk.
 
 **lucide-vue-next (559,102 downloads; Low risk)**
 ```yaml
@@ -183,15 +183,24 @@ Tailwind class deduplicator. If a component has `px-2` in its base styles and yo
 ```
 Conditional class string builder: `clsx("base", isActive && "active")` returns `"base active"`. By Luke Edwards (lukeed), a prolific open-source author known for tiny, single-purpose packages. The package is 239 bytes. The API is one function. There is nothing to maintain, nothing to break, nothing to update. The 21-month gap since the last release isn't neglect, it's completion. This is what a finished package looks like.
 
+**typescript (119,077,520 downloads)**
+```yaml
+  typescript:
+    homepage: https://www.typescriptlang.org/
+    description: TypeScript is a language for application scale JavaScript development
+    versions: ^5.9.3 on 2025sep30 4m old
+```
+devDependency — not installed by `shadcn-vue init`, but required by it. shadcn-vue's generated components use `defineProps<SwitchRootProps>()` with imported types, and Vite's dev-mode SFC compiler needs TypeScript to resolve those imports. Without it, the dev server throws on any shadcn component that references an external type. Production builds appear to handle type resolution through a different path and succeed without TypeScript installed, but local development is blocked. Microsoft's TypeScript — no maintenance risk discussion needed.
+
 ### Summary
 
 Five of the seven packages have a single primary maintainer: reka-ui (Zernonia), tw-animate-css (Wombosvideo), tailwind-merge (Dany Castillo), CVA (Joe Bell), and clsx (Luke Edwards). @vueuse/core is led by Anthony Fu but has broad contributor base and Vue core team backing. Lucide is maintained by a small core team. Of these, only reka-ui represents a real risk — it's the most complex package in the list, the most important to the stack, and the one most likely to need active maintenance as the Vue ecosystem evolves. tw-animate-css has the thinnest backing (pseudonymous sole maintainer, downloads carried by shadcn) but it's a CSS file you could inline tomorrow. The other three sole-maintainer packages (tailwind-merge, CVA, clsx) are either finished software that won't need updates or so heavily adopted at tens of millions of weekly downloads that the community would absorb them long before they became a problem.
 
-None of these seven have corporate backing — which means no venture-funded pivot risk and no acquisition drama like Radix had on the React side.
+None of the first seven have corporate backing — which means no venture-funded pivot risk and no acquisition drama like Radix had on the React side. TypeScript is the exception: Microsoft-backed, 119M weekly downloads, zero risk.
 
 ## Package management: what's settled, what's left
 
-The shadcn infrastructure is now fully installed. The six runtime dependencies in site's package.json (reka-ui, class-variance-authority, clsx, tailwind-merge, lucide-vue-next, @vueuse/core) plus tw-animate-css as a devDependency cover everything that the vast majority of shadcn components need.
+The shadcn infrastructure is now fully installed. The six runtime dependencies in site's package.json (reka-ui, class-variance-authority, clsx, tailwind-merge, lucide-vue-next, @vueuse/core) plus tw-animate-css and typescript as devDependencies cover everything that the vast majority of shadcn components need.
 
 **Adding most components won't change package.json.** Running `pnpm dlx shadcn-vue@latest add card` (or dialog, dropdown, tabs, sheet, alert, etc.) copies .vue source files into the repo. Those files import from the deps already installed. No new packages.
 
@@ -201,4 +210,89 @@ The shadcn infrastructure is now fully installed. The six runtime dependencies i
 
 **The `pnpm dlx shadcn-vue@latest` command is a code generator, not a dependency.** It downloads temporarily, copies source files into the repo, and exits. Same pattern as `nuxi init` or `create-next-app` — a scaffolding tool, not a runtime concern. It will never appear in package.json or sem.yaml.
 
-**Remaining sem.yaml changes are subtractive.** Deleting shad4next and shad4nuxt removes scaffold-only entries (radix-ui, react, react-dom, next, shadcn, @types/react, eslint, typescript, etc.). Later, when forms migrate to shadcn components, @tailwindcss/forms gets removed. The dependency surface gets smaller from here, not larger.
+**Remaining sem.yaml changes are subtractive.** No new infrastructure packages needed for most additional shadcn components. The dependency surface gets smaller from here, not larger.
+
+## Alternatives considered
+
+Five Vue component libraries that came up during evaluation. Each has reasons it's not the right fit, but since shadcn components are source code you own and the styling is just Tailwind CSS, any visual effect from these libraries can be recreated in your own component files.
+
+**[Nuxt UI](https://ui.nuxt.com/)** (172K weekly downloads) — the closest competitor and the only one that's a genuinely strong alternative. Built on the same foundation (Reka UI + Tailwind), maintained by the Nuxt team, deeply integrated with Nuxt's module system and DevTools. The tradeoff is philosophical: Nuxt UI is a package dependency you configure through props and theming, not source code you own. You get automatic updates and a higher-level API, but you lose the ability to read and modify every line of every component. The full comparison is in the Background section above.
+
+**[PrimeVue](https://primevue.org/)** (419K weekly downloads) — the largest Vue component library by download count, with 90+ components. Vue 3 compatible, actively maintained by PrimeTek (a company, not a solo maintainer). PrimeVue has its own styling ecosystem: PrimeFlex (their utility CSS), theme presets, and a Tailwind integration layer. Their newer "Volt" sub-project actually copies unstyled components into your codebase (similar to shadcn's model), but it's tied to PrimeVue's unstyled core as a runtime dependency. The issue is ecosystem lock-in — PrimeVue's theming, icons (PrimeIcons), and component API are their own world. You'd be learning and maintaining PrimeVue's abstractions rather than working directly with Tailwind utilities and Reka UI primitives.
+
+**[Naive UI](https://www.naiveui.com/)** (74K weekly downloads) — a Vue 3-native library with 80+ components, TypeScript-first, built-in dark mode, and virtual list performance optimizations. Doesn't use Tailwind at all — it uses CSS-in-JS theming where you don't even import a CSS file. That's elegant in isolation but fundamentally incompatible with a Tailwind-based workflow. You can't apply `class="px-4 text-sm"` to a Naive UI component and have it work predictably, because the component's styles are generated at runtime through a different system. Maintained by a small team (tusen-ai), no corporate backer.
+
+**[Vuesax](https://vuesax.com/)** (3K weekly downloads, last published 5 years ago) — the most visually distinctive library in this list. Glassmorphism, gradient borders, fluid animations, a design language that doesn't look like every other component library. But it's Vue 2 only and abandoned. The official Vue 3 rewrite (vuesax-next) was abandoned at 30% completion. A community fork (vuesax3) exists but is incomplete with broken components. You can't use it, but you can study its design choices — the frosted-glass cards, the color-shifting buttons, the animated switches — and build those effects in shadcn component files using Tailwind's backdrop-blur, gradient, and transition utilities.
+
+**[Ant Design Vue](https://antdv.com/)** (113K weekly downloads, last published 1 year ago) — the Vue port of Alibaba's Ant Design system. Enterprise-focused: comprehensive, well-documented, strong TypeScript support, 50+ components. Uses its own CSS framework (Less/CSS modules), not Tailwind. The design language is deliberately corporate and neutral — clean but generic, optimized for admin dashboards rather than consumer-facing products with a distinctive brand. The 1-year gap since last publish is a yellow flag, though the GitHub repo shows more recent activity.
+
+## More to do from here
+
+### Brand expression on the cheap
+
+shadcn/ui is the new Bootstrap. To an unfamiliar eye it looks clean and professional — neutral colors, consistent spacing, rounded corners, accessible by default. To an experienced eye it looks like every other startup that ran `shadcn init` and shipped the defaults. The same gray palette, the same 0.625rem radius, the same Geist or Inter font stack. It's a good starting point that announces "we haven't started designing yet."
+
+What funded companies do is hire a brand agency — six or seven figures — to create a visual identity system: a proprietary color palette, a custom or licensed typeface, a spacing and radius language, a set of motion principles, illustration and icon guidelines, and a component library that expresses all of these consistently. The deliverable is a Figma system and a set of design tokens that engineering implements. The result is a site that feels like *this company* rather than *a website*.
+
+The challenge is to get that effect without the agency. shadcn's copy-not-install model makes this unusually feasible, because you own every component file and the entire theme is CSS custom properties you can edit directly. The levers:
+
+**Typeface.** The single highest-impact change. The site already has Diatype Rounded and Lemon Wide loaded as custom fonts. Using a distinctive typeface consistently — in headings, buttons, nav, and form labels — immediately separates the site from the shadcn default look. The font stack in `@theme` controls this globally.
+
+**Scale and weight.** Default shadcn components feel small and light. Increasing padding, font size, border width, and border radius across the board — making things bigger, thicker, more confident — creates a bolder presence. This is a CSS variables change: `--radius`, plus component-level padding and font-size tweaks in the copied .vue files.
+
+**Color with intent.** Replace the neutral gray palette in `:root` and `.dark` with brand colors. A distinctive primary, a warm or cool accent, semantic colors (success, warning, destructive) that feel considered rather than default. Even one or two signature colors applied consistently — a specific blue for primary actions, a specific warm tone for backgrounds — break the generic look.
+
+**A few truly custom details.** One or two bespoke component treatments that no shadcn site has. A button with a swimming gradient background while loading. A card with a subtle parallax hover. An input that glows on focus. These don't need to be on every component — two or three signature moments create the impression that the whole site was custom-designed. Because you own the component source, these are just Tailwind classes and CSS transitions in the .vue files.
+
+### Animation
+
+Animation is great for the demo, horrible for the product. A fade-in that feels slick in a Dribbble video feels slow when a user is trying to get something done. The goal is a site that appears faster than anything the user has seen before — every interaction should feel instant.
+
+**Default: cut all transition durations in half, or remove them.** shadcn components ship with `tw-animate-css` animations (fade, slide, scale) used on dropdowns, dialogs, tooltips, and popovers. These are tuned for showcase feel, not production speed. The quickest fix is halving the keyframe durations in the tw-animate-css import or overriding them in style.css. For components like tooltips and dropdowns that appear on hover or click, consider removing the animation entirely — the content should just be there.
+
+**Respect `prefers-reduced-motion`.** Some users have OS-level reduced motion enabled for accessibility or preference reasons. Tailwind v4 has `motion-safe:` and `motion-reduce:` variants. Any animation we keep should be wrapped in `motion-safe:` so it disappears for users who don't want it. This is also the easiest way to implement a "no animations" mode — flip the OS setting and the whole site goes static.
+
+### Icons
+
+`lucide-vue-next` is installed as a shadcn dependency but not imported anywhere yet. The site already has inline SVGs copied from lucide.dev that can be replaced with Lucide components.
+
+*PasswordBox.vue* has two inline SVGs for the show/hide eye toggle (the comment on line 49 says "icons from lucide.dev"). Replace with `import { Eye, EyeOff } from 'lucide-vue-next'`. The SVG markup, viewBox, stroke attributes, and sizing all go away — Lucide components handle that internally, and size/color are controlled through props or Tailwind classes on the component.
+
+QrCode.vue's programmatic SVG and app.vue's emoji favicon are not icon-library candidates.
+
+### Button
+
+The site's `components/small/Button.vue` is a behavior component with ~45 template usages. It manages three states (ghost/ready/doing), awaits async click handlers, guards against double-clicks, exposes `.click()` and `.post()` methods via `defineExpose`, and orchestrates Turnstile token acquisition. Parents control it through `:state`, `:click`, `:labeling`, `:link`, and `:useTurnstile` props.
+
+shadcn's Button is an appearance component. CVA maps variant and size props to Tailwind classes — `variant="destructive"` gives you red, `variant="ghost"` gives you transparent with hover, `size="sm"` adjusts padding. No behavior, no state management, no async handling.
+
+The goal is to rebuild Button.vue on top of shadcn's Button. Replace the raw `<button>` element in Button.vue's template with shadcn's `<Button>`, keeping all existing behavior. The three-state visual system (ghost/ready/doing) becomes custom CVA variants or extends shadcn's variant map. The `:link` prop's two-appearance-mode toggle (`my-button` vs `my-link`) maps to shadcn's existing `variant="link"`. All 45 call sites stay untouched — they still use `<Button :click="..." :state="...">` exactly as before, but the rendered output gets shadcn's styling and theming for free.
+
+There won't be two Buttons side by side. Our Button wraps shadcn's Button internally with an explicit import. The auto-import name `<Button>` stays on our component, which is what every page uses. No naming collision to resolve.
+
+`NavigateButton.vue` wraps NuxtLink with `my-button ready` classes but has zero usages in the codebase. Delete it.
+
+### Components
+
+The CSS classes `my-button`, `my-link`, `ghost`, `ready`, and `doing` in style.css define the site's current button visual vocabulary: two shapes (button vs link) and three states (disabled, available, in-progress). Almost all 44 occurrences flow through Button.vue's single template line `:class="[link ? 'my-link' : 'my-button', computedState]"`. Once Button.vue is rebuilt on shadcn's Button (above), these CSS classes become dead code inside Button.vue — the appearance moves to CVA variants.
+
+Outside Button.vue, only `error.vue` uses the classes directly (`my-button ready` on a NuxtLink and an anchor). error.vue is deliberately minimal — no custom components, no stores — so it can't use Button.vue. After migration, error.vue's links would use shadcn utility classes directly or keep their own minimal styling.
+
+The `.ghost` name overlaps with shadcn's `variant="ghost"`. They don't collide technically (CSS class vs CVA prop), but the confusion is worth cleaning up. Renaming the site's ghost state to something like `unavailable` during the Button rebuild would be cleaner.
+
+The forms plugin (`@tailwindcss/forms`) normalizes bare `<input>` elements. The site has ~16 bare inputs across 6 files. As each migrates to shadcn's `<Input>` component (which styles itself from scratch), the plugin becomes less necessary. Remove the `@plugin` directive in style.css and the devDependency when the last bare input is gone.
+
+### Dark mode
+
+The CSS infrastructure is in place but dormant. style.css has `@custom-variant dark (&:is(.dark *))` for Tailwind's class-based dark mode, complete `:root` (light) and `.dark` (dark) color token blocks, and `dark:` variants on links and `pre`/`code`. shadcn components ship with `dark:` utility classes built in. Nothing is activated because nothing adds the `.dark` class to the DOM yet.
+
+**Default to system preference.** The initial theme should follow the user's OS setting (`prefers-color-scheme`), not hardcode light. On first visit, a user with dark OS settings should see the dark theme immediately — no flash of light mode.
+
+**Tristate toggle: light / dark / system.** A persistent UI control (top bar or settings page) offers three choices. "System" follows `prefers-color-scheme` and updates live if the OS setting changes. "Light" and "dark" are manual overrides. A sun/moon icon button is the standard toggle pattern: sun icon when in dark mode (click to go light), moon icon when in light mode (click to go dark). `lucide-vue-next` is already installed as a shadcn dependency — `import { Sun, Moon } from 'lucide-vue-next'` gives you the icon components. No icons are imported anywhere yet; this would be the first use.
+
+**Persistence.** Store the user's choice in localStorage for anonymous visitors and in the user's account record for signed-in users. The choice must be applied before first paint to avoid a flash of the wrong theme. This means reading localStorage in a `<script>` tag in the document `<head>`, before Vue hydrates, before any component mounts. For SSR, reading a cookie (set alongside localStorage) lets the server render the correct theme on the first response, eliminating the flash entirely.
+
+**@nuxtjs/color-mode.** The Nuxt ecosystem has a first-party module that handles system preference detection, localStorage/cookie persistence, SSR-safe rendering, and a `useColorMode()` composable. It adds the `.dark` class to `<html>`, which is exactly what the `@custom-variant dark (&:is(.dark *))` declaration expects. Whether to use it or hand-roll depends on how much control we want vs how much plumbing we want to skip.
+
+**Brand design language.** The color tokens in `:root` and `.dark` are currently shadcn's neutral defaults. Establishing a brand palette means choosing primary, accent, and semantic colors (success, warning, destructive) that work in both light and dark modes, then updating the oklch values. The global link styles (currently hardcoded Tailwind colors with `dark:` stopgaps) should migrate to CSS variable tokens (`--link`, `--link-visited`) as part of this, so links respond to theme switching through the same token system as everything else.
+

@@ -1,4 +1,5 @@
 {
+	"_comment": "shadcn-vue init created utils.ts and components.json, which won't change again, even as we add more shadcn/ui components",
 	"$schema": "https://shadcn-vue.com/schema.json",
 	"style": "new-york",
 	"typescript": true,

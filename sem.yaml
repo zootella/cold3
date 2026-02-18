@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb17.2340.16817
+  generated: 2026feb18.0238.49921
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -391,9 +391,9 @@ modules:
       - site
     versions:
       declared: ^7.1.6 on 2026feb01 0m old
-      installed: 7.2.0 on 2026feb16 0m old
-      current: 7.2.0 on 2026feb16 0m old
-      latest: 7.2.0 on 2026feb16 0m old
+      installed: 7.2.1 on 2026feb18 0m old
+      current: 7.2.1 on 2026feb18 0m old
+      latest: 7.2.1 on 2026feb18 0m old
     downloads:
       weekly: 508,960
       on: 2026feb4.1821.46960
@@ -405,9 +405,9 @@ modules:
       - site
     versions:
       declared: ^3.3.2 on 2026feb01 0m old
-      installed: 3.3.4 on 2026feb16 0m old
-      current: 3.3.4 on 2026feb16 0m old
-      latest: 3.3.4 on 2026feb16 0m old
+      installed: 3.4.0 on 2026feb18 0m old
+      current: 3.4.0 on 2026feb18 0m old
+      latest: 3.4.0 on 2026feb18 0m old
     downloads:
       weekly: 485,845
       on: 2026feb4.1821.46960

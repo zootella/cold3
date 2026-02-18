@@ -26,7 +26,7 @@ function hardReplace() { window.location.replace('/') }//outside of Nuxt routing
 
 </script>
 <template>
-<div class="page-container text-center space-y-2">
+<div class="my-column text-center space-y-2">
 
 <p>Something went wrong. Sorry about that.</p>
 
