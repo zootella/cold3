@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb19.1925.40908
+  generated: 2026feb19.1930.38694
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -38,6 +38,7 @@ summary:
       nuxt-og-image: 74,014
       "@sveltejs/adapter-cloudflare": 82,257
     6 figure:
+      "@nuxtjs/color-mode": 267,011
       "@uppy/aws-s3": 292,709
       "@resvg/resvg-wasm": 381,134
       "@uppy/dashboard": 381,907
@@ -173,6 +174,18 @@ modules:
     downloads:
       weekly: 4,678,176
       on: 2026feb4.1821.46960
+  "@nuxtjs/color-mode":
+    homepage: https://github.com/nuxt-modules/color-mode#readme
+    description: Dark and light mode for Nuxt with auto detection
+    from: site
+    versions:
+      declared: ^4.0.0 on 2025nov11 3m old
+      installed: 4.0.0 on 2025nov11 3m old
+      current: 4.0.0 on 2025nov11 3m old
+      latest: 4.0.0 on 2025nov11 3m old
+    downloads:
+      weekly: 267,011
+      on: 2026feb19.1930.38694
   "@pinia/nuxt":
     homepage: https://pinia.vuejs.org/ssr/nuxt.html
     description: Nuxt Module for pinia
