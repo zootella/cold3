@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb19.1930.38694
+  generated: 2026feb19.2003.32982
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -121,8 +121,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.993.0 on 2026feb18 0m old
-      latest: 3.993.0 on 2026feb18 0m old
+      current: 3.994.0 on 2026feb19 0m old
+      latest: 3.994.0 on 2026feb19 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -133,8 +133,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.993.0 on 2026feb18 0m old
-      latest: 3.993.0 on 2026feb18 0m old
+      current: 3.994.0 on 2026feb19 0m old
+      latest: 3.994.0 on 2026feb19 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -145,8 +145,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.993.0 on 2026feb18 0m old
-      latest: 3.993.0 on 2026feb18 0m old
+      current: 3.994.0 on 2026feb19 0m old
+      latest: 3.994.0 on 2026feb19 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -157,8 +157,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.993.0 on 2026feb18 0m old
-      latest: 3.993.0 on 2026feb18 0m old
+      current: 3.994.0 on 2026feb19 0m old
+      latest: 3.994.0 on 2026feb19 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236

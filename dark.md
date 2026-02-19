@@ -38,20 +38,15 @@ The site has full CSS dark mode infrastructure — `:root` and `.dark` blocks wi
 ### 1. Install and register the module
 
 ```bash
-pnpm add -D @nuxtjs/color-mode --filter site
+pnpm add @nuxtjs/color-mode --filter site
 ```
 
-In `nuxt.config.js`, add to modules and configure:
+In `nuxt.config.js`, add to modules:
 ```js
 configuration.modules.push('@nuxtjs/color-mode')
-configuration.colorMode = {
-  classSuffix: '',       // produces class="dark" not class="dark-mode"
-  preference: 'system',  // default to OS preference
-  fallback: 'light',     // if system preference unavailable
-}
 ```
 
-`classSuffix: ''` is critical — the module defaults to appending `-mode` (producing `.dark-mode`), but our CSS expects `.dark`.
+The v4 defaults already match our needs: `preference: 'system'`, `fallback: 'light'`, `classSuffix: ''` (produces `.dark` not `.dark-mode` — the `-mode` suffix was a v3 default), `storage: 'localStorage'`. No `colorMode` config block is needed unless we want to override something.
 
 ### 2. CSS — no changes needed
 
@@ -84,8 +79,8 @@ Add `<ColorModeToggle>` to `NavigationBar.vue` (or wherever the site's persisten
 
 | File | Change |
 |------|--------|
-| `site/package.json` | New devDependency: @nuxtjs/color-mode |
-| `site/nuxt.config.js` | Register module, configure classSuffix/preference/fallback |
+| `site/package.json` | New dependency: @nuxtjs/color-mode (already added) |
+| `site/nuxt.config.js` | Register module (v4 defaults are correct, no config block needed) |
 | `site/app/components/small/ColorModeToggle.vue` | **New file** — toggle button with icon |
 | `site/app/components/NavigationBar.vue` (or equivalent) | Add `<ColorModeToggle>` |
 
@@ -127,43 +122,27 @@ The consensus among UX engineers is to present a two-state toggle (sun/moon icon
 
 In server-side rendered applications, the server has no access to the user's OS theme preference. `prefers-color-scheme` is a browser-side concept. If the server renders HTML without the correct theme class, the browser paints that HTML before any JavaScript executes, causing a visible flash of the wrong theme before client-side hydration corrects it.
 
-The solution is a small synchronous inline script in the document `<head>` that runs `matchMedia('(prefers-color-scheme: dark)')` and sets the appropriate class on `<html>` before first paint. Because this script is synchronous and executes before rendering, the first paint is correct with no flash, even on a first visit with no cookie.
-
-For returning users who have explicitly chosen a theme, a cookie provides the preference to the server at request time, allowing correct SSR rendering without relying on the inline script fallback.
+The solution is a small synchronous inline script in the document `<head>`. This script runs before the browser paints anything — it reads localStorage for a stored preference, and if none exists (first visit), calls `matchMedia('(prefers-color-scheme: dark)')` to detect the OS preference. Either way, it adds the correct class to `<html>` before first paint. No cookie is needed. The server doesn't need to know the theme because the HTML is the same for both modes — only the CSS interpretation changes, driven by CSS custom properties that flip when the `.dark` class is present. The inline script bridges the gap between "server can't know" and "browser hasn't hydrated yet" entirely client-side, using only synchronous browser APIs that return immediately.
 
 ## Cookie Compliance
 
-### Regulatory Constraint
-
-Our requirement is that the site does not do anything that requires a consent popup, which harms user experience. The privacy policy discloses cookies in use generally, but no popup-level confirmation is required for any site functionality.
-
-### Strictly Necessary Exemption
-
-The ePrivacy Directive exempts cookies that are strictly necessary to provide a service explicitly requested by the user. The key insight is that a theme preference cookie is not set on first visit. It is only created when the user explicitly clicks the toggle, requesting a specific theme override. At that point, the cookie is strictly necessary to deliver the experience the user requested across page loads.
-
-### Compliant Model
-
-- **First visit, no interaction:** No cookie exists. The site follows the OS preference via CSS and the inline head script. Nothing is stored on the user's device.
-- **User clicks the toggle:** A cookie is set with the value "light" or "dark". This is in response to an explicit user action requesting a specific experience.
-- **User reverts to system:** The cookie is deleted (not set to "system"). The absence of a cookie is the system-following state.
-
-This model means the cookie is only present when the user has an active override, and its creation is directly tied to an explicit user action.
+Not applicable. The implementation uses localStorage, not cookies. No cookie is ever created for color mode. localStorage is a browser-side storage mechanism not transmitted in HTTP requests, so it is not covered by the ePrivacy Directive's cookie consent requirements. The site requires no consent popup for dark mode.
 
 ## Evaluation of Implementation Options
 
 We evaluated four approaches for our stack (Nuxt 4, Tailwind 4, shadcn-vue, deployed on Cloudflare Workers).
 
-### Option 1: @nuxtjs/color-mode — Not Recommended
+### Option 1: @nuxtjs/color-mode — Recommended
 
-The purpose-built Nuxt ecosystem module. It handles the tristate, persistence, and reactive OS changes. However, its cookie behavior is opaque and may not match our compliance model. The module's own documentation acknowledges a flash problem with system preference during SSR, recommending a placeholder-based workaround rather than solving it cleanly. It defaults to localStorage (not cookie), and its behavior around when it writes storage is outside our control and could change between versions.
+The purpose-built Nuxt ecosystem module. It handles the tristate, persistence, and reactive OS changes. Source code review of v4.0.0 confirms: a synchronous inline script injected into `<head>` by a Nitro plugin reads localStorage and calls `matchMedia` before first paint — no flash, even on first visit with system preference and no stored value. The `<ColorScheme>` component (wrapping `<ClientOnly>`) is for hiding theme-dependent *text* (like the word "dark"), not for flash prevention — the flash is already handled by the inline script. The module defaults to localStorage (not cookie), so no cookie compliance question arises. The `classSuffix` default changed to `""` in v4, producing `.dark` directly. 267k weekly npm downloads, single-purpose, 5 runtime dependencies all from the Nuxt/unjs ecosystem.
 
 ### Option 2: VueUse useColorMode — Not Recommended
 
-Already in our dependencies via `@vueuse/core`. It handles tristate logic and reactive state. However, it is client-side only (localStorage by default) with no SSR awareness. Solving the flash problem would require manually wiring it to a cookie via Nuxt's `useCookie`, at which point we are effectively rebuilding Option 3 with extra indirection.
+Already in our dependencies via `@vueuse/core`. It handles tristate logic and reactive state. However, it runs during or after hydration, not before first paint — known flash-of-wrong-theme problem (GitHub issues #2035, #1378). Solving the flash requires hand-writing a synchronous inline head script, at which point you're reimplementing the core of @nuxtjs/color-mode.
 
-### Option 3: Roll Our Own — Recommended
+### Option 3: Roll Our Own — Not Recommended
 
-A small composable using Nuxt's `useCookie` for persistence and `matchMedia` for OS preference detection, plus a synchronous inline script in the `<head>` for flash prevention. Approximately 30–40 lines of code. Full control over cookie timing (compliance) and flash behavior. The tradeoff is that we own maintenance and must handle edge cases ourselves, but these are well-understood problems.
+A composable using localStorage for persistence and `matchMedia` for OS preference detection, plus a synchronous inline script in the `<head>` for flash prevention. The original estimate of 30–40 lines was optimistic — the module's client plugin alone is 108 lines handling edge cases like forced color mode per route, transition disabling, hydration mismatch recovery (`unknown` flag), and matchMedia listener lifecycle. Rolling our own would mean reimplementing a well-tested wheel for no practical benefit.
 
 ### Option 4: CSS-Only, No Toggle — Viable Fallback Only
 
@@ -171,24 +150,99 @@ Pure CSS `prefers-color-scheme` with no storage and no user override. Zero compl
 
 ## Recommendation
 
-**Roll our own implementation (Option 3).** This approach wins on three axes:
+**Use @nuxtjs/color-mode (Option 1).** Source code review of v4.0.0 confirms it meets all requirements:
 
-1. **Cookie compliance.** We control exactly when the cookie is created (only on explicit user toggle action) and deleted (when the user reverts to system). No third-party module can change this behavior in an update.
-2. **Flash avoidance.** A synchronous inline script in the document head detects the OS preference via matchMedia and sets the correct class before first paint. This eliminates the flash even on first visit when no cookie exists, which the Nuxt color-mode module does not cleanly solve.
-3. **Transparency.** A small composable we wrote and understand is easier to reason about, debug, and maintain than a module whose internals we would need to audit for cookie behavior and Nuxt 4 compatibility.
-
-### Implementation Outline
-
-The implementation consists of three parts:
-
-1. **Inline head script:** A small synchronous script injected into the document `<head>` that checks for a theme cookie. If present, applies that value. If absent, reads matchMedia for OS preference. Sets the dark/light class on `<html>` before paint.
-2. **Composable (useTheme):** A Vue composable that manages the reactive tristate. Uses Nuxt's `useCookie` for SSR-accessible persistence. Listens for OS preference changes via matchMedia when in system mode. Provides a toggle function and a reset-to-system function.
-3. **Toggle UI component:** A sun/moon button using shadcn-vue components. The prominent control toggles between light and dark. A settings option (dropdown or settings page) exposes the full tristate including the system option, which deletes the cookie.
+1. **No flash.** The inline head script runs synchronously before first paint. On first visit with no stored value, it calls `matchMedia("(prefers-color-scheme: dark)")` to detect OS preference. On return visits, it reads localStorage. Either way, the correct class lands on `<html>` before the browser paints anything. No cookie is needed — the server doesn't need to know the theme because the HTML is identical for both modes.
+2. **No cookies.** The module uses localStorage by default. No cookie is ever created. No consent popup required.
+3. **Small and auditable.** Four files totaling ~180 lines of runtime code, all readable. We audited it and understand exactly what each piece does (see "How @nuxtjs/color-mode Works" section below).
 
 ## Next Steps
 
-- Confirm cookie compliance interpretation with our compliance team
-- Implement the composable and inline head script
-- Audit all color combinations in both modes against WCAG contrast ratios
+- Register the module in nuxt.config.js (already installed in package.json)
 - Build the toggle UI component with shadcn-vue
+- Audit all color combinations in both modes against WCAG contrast ratios
 - Address images, SVGs, and third-party embeds that need per-theme variants
+
+# How @nuxtjs/color-mode Works
+
+Source code review of v4.0.0, installed at `site/node_modules/@nuxtjs/color-mode/dist/`. The module has four runtime pieces plus a build-time setup step. All source paths below are relative to the `dist/` directory.
+
+## Build-time: module setup (`module.mjs`)
+
+When Nuxt boots, the module's `setup()` function runs. It reads the raw template `script.min.js`, performs string replacement to bake the configured options (storage type, storage key, class prefix/suffix, preference, fallback, global name) directly into the script text as string literals. The result is a self-contained JavaScript string with no external references.
+
+It then registers four things with Nuxt:
+- A **Nitro plugin** (`runtime/nitro-plugin.js`) that injects the baked script into every SSR response
+- A **client plugin** (`runtime/plugin.client.js`) for reactive state after hydration
+- A **server plugin** (`runtime/plugin.server.js`) for SSR state
+- An auto-imported **composable** (`runtime/composables.js`) providing `useColorMode()`
+
+It also registers a `<ColorScheme>` component, which is just a `<ClientOnly>` wrapper for hiding theme-dependent text during SSR — it has nothing to do with flash prevention.
+
+The module hooks into `tailwindcss:config` to set `darkMode` on Tailwind's config object, but this hook only fires for the `@nuxtjs/tailwindcss` Nuxt module. Our site uses `@tailwindcss/vite` directly, so this hook never fires. Our existing `@custom-variant dark (&:is(.dark *))` in style.css handles the same job on the Tailwind side.
+
+## Piece 1: The inline head script (`script.min.js` → injected by `runtime/nitro-plugin.js`)
+
+This is the most important piece. The Nitro plugin is 6 lines — it hooks `render:html` and pushes `<script>${script}</script>` into `htmlContext.head`. The script itself, after template replacement, runs synchronously in the browser before first paint.
+
+What the script does, step by step:
+
+1. Reads storage. With the default `localStorage` setting, calls `window.localStorage.getItem("nuxt-color-mode")`. On first visit, this returns `null`.
+2. Falls back to preference. If storage returned nothing, uses the configured preference — default `"system"`.
+3. Resolves system preference. If the value is `"system"`, calls `window.matchMedia("(prefers-color-scheme: dark)")` and iterates `["dark", "light"]` to find which matches. If matchMedia is unavailable (rare), falls back to `"light"`.
+4. Checks for forced mode. Reads `document.documentElement.getAttribute("data-color-mode-forced")` — a per-page override mechanism. If present, overrides the resolved value.
+5. Adds the class. Calls `document.documentElement.classList.add("dark")` (or `"light"`). With the default empty `classPrefix` and `classSuffix`, this produces exactly `.dark` — matching our CSS `.dark { ... }` block and Tailwind's `@custom-variant dark (&:is(.dark *))`.
+6. Pins state to window. Sets `window.__NUXT_COLOR_MODE__` to an object with `{ preference, value, getColorScheme, addColorScheme, removeColorScheme }`. The client plugin reads this after hydration.
+
+Because this script is synchronous and lives in `<head>`, it executes before the browser parses or paints `<body>`. The `.dark` class is on `<html>` before any content is visible. This is why there is no flash — not even on first visit with no stored preference. The matchMedia call is synchronous and returns immediately.
+
+## Piece 2: Server plugin (`runtime/plugin.server.js`, 34 lines)
+
+Runs during SSR on the server. Creates reactive state via `useState("color-mode")` with `unknown: true`. The server cannot access localStorage (it doesn't exist server-side), so the state is a placeholder.
+
+If `storage` is configured as `"cookie"` (not the default), the server plugin reads the cookie from request headers via `useRequestHeaders(["cookie"])` and parses the storage key from the cookie string. This lets the server know the user's preference for SSR. But even then, the server plugin does not add a class to `<html>` — that is always the inline script's job.
+
+The `unknown: true` flag tells the client plugin that the server didn't know the real preference. The client plugin resolves this after mount (see below).
+
+## Piece 3: Client plugin (`runtime/plugin.client.js`, 108 lines)
+
+Runs after hydration in the browser. This is where the reactive runtime lives.
+
+**Initialization.** Reads `window.__NUXT_COLOR_MODE__` (set by the inline script) to get the current preference and resolved value. Creates reactive state via `useState("color-mode")`.
+
+**Route-level forced color mode.** Hooks `router.afterEach` and checks `to.meta.colorMode`. If a route defines a forced color mode, applies it and sets `colorMode.forced = true`, preventing other watchers from overriding it.
+
+**Preference watcher.** Watches `colorMode.preference` with `immediate: true`. When preference changes:
+- If `"system"`, resolves via `matchMedia` and starts the OS change listener.
+- Otherwise, applies the explicit value.
+- Persists to storage. With the default localStorage, calls `window.localStorage.setItem("nuxt-color-mode", preference)`. On first visit, this writes `"system"` to localStorage immediately — before any user interaction. For localStorage this is fine (no regulatory significance). If storage were `"cookie"`, this would write a cookie on first visit, which would be a compliance problem.
+
+**Value watcher.** When `colorMode.value` changes, removes the old class from `<html>` and adds the new one. Optionally disables CSS transitions during the swap (if `disableTransition` is configured) by injecting and removing a `<style>` element.
+
+**OS preference listener.** When preference is `"system"`, attaches a `change` event listener to `window.matchMedia("(prefers-color-scheme: dark)")`. If the user changes their OS theme while the page is open, the site follows. The listener is created once and not duplicated.
+
+**Hydration recovery.** On `app:mounted`, if `colorMode.unknown` is true (meaning the server couldn't determine the preference), reads the real values from the inline script's global and updates the reactive state. This bridges the gap between the server's placeholder state and the client's actual state without causing a visible flash.
+
+**Provides state.** Calls `nuxtApp.provide("colorMode", colorMode)`, making `$colorMode` available in templates and `useColorMode()` in composables.
+
+## Piece 4: The composable (`runtime/composables.js`, 4 lines)
+
+```js
+export const useColorMode = () => {
+  return useState("color-mode").value;
+};
+```
+
+Returns the reactive state object with properties `preference` (read/write — set this to `"light"`, `"dark"`, or `"system"`), `value` (read-only — the resolved color, always `"light"` or `"dark"`), `unknown`, and `forced`. The toggle component will write to `preference`; everything else reacts.
+
+## How it connects to the rest of the stack
+
+**Browser/JavaScript.** The inline script uses `window.matchMedia`, `document.documentElement.classList`, and `window.localStorage` — all standard browser APIs. It pins the `__NUXT_COLOR_MODE__` global to `window` as a handoff mechanism between the synchronous head script and the async Vue hydration.
+
+**Nuxt.** The module registers itself via `defineNuxtModule` and uses `@nuxt/kit` APIs: `addPlugin` for the client/server plugins, `addTemplate` for the baked options file, `addComponent` for the `<ColorScheme>` wrapper, `addImports` for the `useColorMode()` auto-import. The Nitro plugin hooks `render:html` to inject the head script during SSR. State is shared via `useState("color-mode")`, Nuxt's built-in SSR-safe reactive state mechanism.
+
+**Tailwind.** The module has a `tailwindcss:config` hook that sets `darkMode` on Tailwind's config, but this only fires for the `@nuxtjs/tailwindcss` Nuxt module. We use `@tailwindcss/vite` directly (Tailwind as a Vite plugin, not a Nuxt module), so this hook is inert. Our dark mode integration with Tailwind is handled by `@custom-variant dark (&:is(.dark *))` in `app/assets/css/style.css`, which tells Tailwind that `dark:` utilities should match elements inside a `.dark` ancestor. The module puts `.dark` on `<html>`, Tailwind's custom variant matches it — they connect through the CSS class name and nothing else.
+
+**shadcn/ui.** The module has no direct interaction with shadcn. shadcn components use Tailwind's `dark:` utilities and CSS custom properties that reference the tokens defined in the `:root` and `.dark` blocks in style.css. When the module puts `.dark` on `<html>`, the `.dark { ... }` CSS block activates, the custom properties change values, and every shadcn component using `bg-background`, `text-foreground`, `bg-primary`, etc. updates automatically. The `cn()` utility in `app/lib/utils.ts` passes through `dark:` classes unchanged.
+
+**CSS variable flow.** The chain is: module adds `.dark` to `<html>` → CSS `.dark` block overrides custom properties (`--background`, `--foreground`, etc.) → `@theme inline` block maps these to Tailwind tokens (`--color-background`, `--color-primary`, etc.) → utility classes (`bg-background`, `text-primary`) and `dark:` variant classes resolve to the dark values.
