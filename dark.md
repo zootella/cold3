@@ -17,6 +17,18 @@ Goals:
 - or after a user's sun or moon click, follows that setting
 - that setting is per browser, not per user
 
+## notes, scraps
+
+how do QR codes look at work through dark mode changes?
+
+is the sun moon control really good looking, like as good looking as those on the best sites of the web?
+
+test that before a click, the site follows the os setting, and after a click, it follows the clicked local setting
+
+confirm tehre's no flicker even on first load
+
+how do i manually delete the local storage thing to test a user's first visit?
+
 # Color Mode Implementation Plan
 
 ## Context
@@ -37,16 +49,13 @@ The site has full CSS dark mode infrastructure — `:root` and `.dark` blocks wi
 
 ### 1. Install and register the module
 
-```bash
-pnpm add @nuxtjs/color-mode --filter site
-```
+The module is already installed in `site/package.json`. Register it in `nuxt.config.js`:
 
-In `nuxt.config.js`, add to modules:
 ```js
 configuration.modules.push('@nuxtjs/color-mode')
 ```
 
-The v4 defaults already match our needs: `preference: 'system'`, `fallback: 'light'`, `classSuffix: ''` (produces `.dark` not `.dark-mode` — the `-mode` suffix was a v3 default), `storage: 'localStorage'`. No `colorMode` config block is needed unless we want to override something.
+The v4 defaults already match our needs: `preference: 'system'`, `fallback: 'light'`, `classSuffix: ''` (produces `.dark` not `.dark-mode` — the `-mode` suffix was a v3 default), `storage: 'localStorage'`. No `colorMode` config block is needed.
 
 ### 2. CSS — no changes needed
 
@@ -59,30 +68,64 @@ The existing setup already works:
 
 No CSS changes required. The moment `.dark` lands on `<html>`, everything activates.
 
-### 3. Build a color mode toggle component
+### 3. Two controls
 
-Create `app/components/small/ColorModeToggle.vue` — a button that cycles light → dark → system. Uses `useColorMode()` from the module and Sun/Moon/Monitor icons from lucide-vue-next (already installed, first real use).
+**DarkSwitch** (`app/components/small/DarkSwitch.vue`) — a compact icon button in the site header. Shows Sun icon in light mode, Moon icon in dark mode. Clicking toggles to the opposite. Lives in TopBar alongside NotificationList and OtpEnterList.
 
-### 4. Place the toggle
+**LocalPanel** (`app/components/small/LocalPanel.vue`) — a settings panel on page1, next to CredentialPanel. Contains three radio inputs with text labels: Light, Dark, System. Follows the bordered-box pattern established by CredentialPanel and CredentialCorner (`border border-gray-300 p-2`, italic label in upper right).
 
-Add `<ColorModeToggle>` to `NavigationBar.vue` (or wherever the site's persistent nav controls live).
+### 4. DarkSwitch design
 
-### 5. Verify
+The standard shadcn dark mode toggle is a Button (not a Switch — nobody in the shadcn ecosystem uses the Switch component for this). The canonical pattern is an icon-sized button with overlapping Sun and Moon icons that animate via CSS `dark:` rotation and scale transitions:
 
-- Dev server: toggle works, theme switches instantly, no flash on refresh
-- Check system preference: set OS to dark, visit with no stored preference → dark theme
-- Check persistence: pick dark, refresh → stays dark
-- Check SSR: view page source → `<script>` in `<head>` that reads localStorage
-- Check live OS change: toggle OS dark/light while page is open → follows if set to "system"
+```
+Sun:  rotate-0 scale-100  →  dark:-rotate-90 dark:scale-0
+Moon: rotate-90 scale-0   →  dark:rotate-0 dark:scale-100
+```
 
-## Files to modify
+Both icons render simultaneously. CSS `dark:` variants hide one and show the other with a smooth rotation effect. No JavaScript animation needed.
 
-| File | Change |
-|------|--------|
-| `site/package.json` | New dependency: @nuxtjs/color-mode (already added) |
-| `site/nuxt.config.js` | Register module (v4 defaults are correct, no config block needed) |
-| `site/app/components/small/ColorModeToggle.vue` | **New file** — toggle button with icon |
-| `site/app/components/NavigationBar.vue` (or equivalent) | Add `<ColorModeToggle>` |
+The button itself is styled to match shadcn's Button variant="outline" size="icon" — a small bordered square: `inline-flex items-center justify-center rounded-md border border-input bg-background h-9 w-9 hover:bg-accent hover:text-accent-foreground`. We apply these classes directly on a `<button>` element rather than adding a shadcn Button component, because a shadcn `Button.vue` would name-conflict with the existing `small/Button.vue` (Nuxt auto-imports both as `<Button>` since `pathPrefix: false`).
+
+Icons are Sun and Moon from lucide-vue-next (already installed, first real use of the icon library).
+
+### 5. Interaction model
+
+**DarkSwitch (the icon button):**
+- Before any user interaction, the switch reflects the system-resolved state. A light desktop user sees Sun. A dark desktop user sees Moon.
+- Clicking creates a localStorage override to the **opposite** of the current resolved value. Light user clicks → overrides to dark (Moon). Dark user clicks → overrides to light (Sun).
+- Clicking again flips the override. The user is now toggling between two explicit overrides — they've left "system" mode.
+- The switch always shows the resolved value (`useColorMode().value`), not the preference. Whether in system mode or override mode, Sun means light and Moon means dark.
+
+**LocalPanel (the radio group):**
+- Three options: Light, Dark, System. All write directly to `useColorMode().preference`.
+- The selected radio reflects the current preference, not the resolved value. A user in system mode on a dark desktop sees "System" selected, not "Dark".
+- Choosing "System" clears the override — the site follows the OS again. This is the only way to return to system mode after DarkSwitch has created an override.
+- Choosing "Light" or "Dark" creates the same override that DarkSwitch would.
+
+**Walkthrough:** A light desktop user visits for the first time. No localStorage entry exists. The inline head script calls matchMedia, resolves to light, adds class `light` to `<html>`. The user sees a light site with Sun in DarkSwitch. They click DarkSwitch — preference is set to `"dark"`, localStorage stores `"dark"`, the site goes dark, Moon appears. They click again — preference flips to `"light"`, site goes light, Sun appears. They're now locked to light. If they change their OS to dark, the site stays light. To get back to following the OS, they go to LocalPanel and select System. The localStorage entry updates to `"system"`, the site resolves via matchMedia again, and future OS changes are followed.
+
+### 6. Verify
+
+- Dev server: DarkSwitch toggles, theme switches instantly, no flash on refresh
+- System preference: set OS to dark, visit with no stored preference → dark theme, Moon in DarkSwitch
+- Persistence: pick dark via DarkSwitch, refresh → stays dark
+- SSR: view page source → `<script>` in `<head>` that reads localStorage
+- Live OS change: toggle OS dark/light while page is open → follows if LocalPanel is set to System
+- LocalPanel: selecting System after override → site follows OS again
+- LocalPanel: selecting Light/Dark → matches DarkSwitch behavior
+
+## Code changes
+
+**`site/nuxt.config.js`** — Add `configuration.modules.push('@nuxtjs/color-mode')` in the modules section, after pinia and og-image.
+
+**`site/app/components/small/DarkSwitch.vue`** — New file. A `<button>` element (not the site's existing Button component) styled to match shadcn's Button variant="outline" size="icon" appearance — a 9×9 bordered square using the theme's `border-input`, `bg-background`, and `hover:bg-accent` tokens. Contains Sun and Moon icons from lucide-vue-next, both rendered simultaneously in the same space (Moon is `absolute` to overlap Sun). CSS `dark:` variants on each icon handle the visual swap: Sun rotates out and scales to 0 in dark mode while Moon rotates in and scales to 100, with `transition-all` for smooth animation. No JavaScript animation. The click handler calls `useColorMode()` and sets `preference` to the opposite of the current `value` — so it always flips from whatever the user is currently seeing, regardless of whether they're in system mode or an explicit override. An `sr-only` span provides an accessible label.
+
+**`site/app/components/small/LocalPanel.vue`** — New file. Follows the bordered-box visual pattern from CredentialPanel and CredentialCorner (`border border-gray-300 p-2`, italic label). Contains a fieldset with three radio inputs labeled Light, Dark, and System. The radio group v-models directly to `useColorMode().preference`, so selecting an option immediately writes to the module's reactive state, which persists to localStorage and resolves the theme. The `@tailwindcss/forms` plugin (already installed) provides baseline radio styling. No script logic beyond calling `useColorMode()`.
+
+**`site/app/components/bars/TopBar.vue`** — Add `<DarkSwitch />` in the template before NotificationList and OtpEnterList. DarkSwitch is a visible persistent control; the other two are conditional overlays that appear on top of page content.
+
+**`site/app/pages/page1.vue`** — Add `<LocalPanel />` in the template after CredentialPanel and before PasswordDemo.
 
 # Dark Mode Implementation: Research Findings and Technical Decision
 
