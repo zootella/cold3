@@ -7,6 +7,7 @@ const pageStore = usePageStore()
 </script>
 <template>
 
+<DarkSwitch />
 <NotificationList />
 <OtpEnterList />
 

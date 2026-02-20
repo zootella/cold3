@@ -6,6 +6,7 @@
 <CredentialCorner />
 <CredentialChallenge />
 <CredentialPanel />
+<LocalPanel />
 
 <PasswordDemo />
 

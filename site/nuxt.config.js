@@ -71,6 +71,9 @@ configuration.app.head.link.push({
 //for pinia
 configuration.modules.push('@pinia/nuxt')
 
+//for dark mode
+configuration.modules.push('@nuxtjs/color-mode')
+
 //for nuxt-og-image
 configuration.modules.push('nuxt-og-image')
 configuration.site = {
