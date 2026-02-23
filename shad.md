@@ -1,4 +1,15 @@
 
+# Adding a shadcn component
+
+From the `site/` directory (where `components.json` lives — the CLI won't find it from the repo root):
+
+```bash
+cd site
+pnpm dlx shadcn-vue@latest add radio-group
+```
+
+Replace `radio-group` with any component name. The CLI scaffolds `.vue` files into `app/components/ui/` as source you own. Browse available components at https://www.shadcn-vue.com/docs/components
+
 # shadcn/ui in Nuxt
 
 Reference document for adding shadcn-vue to an existing Nuxt 4 + Tailwind v4 project. Covers scaffolding steps, gotchas, dependency audit, and integration decisions. Originally written while evaluating shadcn across both Next.js and Nuxt stacks.

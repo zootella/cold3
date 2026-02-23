@@ -16,6 +16,8 @@ https://www.denso-wave.com/en/technology/vol1.html - from 1994 🇯🇵; the blo
 
 https://www.npmjs.com/package/qrcode - leader with 3 million weekly downloads
 https://github.com/soldair/node-qrcode
+
+Note about Dark Mode 🌓 Black-on-white is correct regardless of page theme. The ISO 18004 QR spec defines dark modules on a light background as the standard orientation. Modern scanners can handle inverted codes, but reliability drops in practice. Well-designed dark mode sites keep QR codes in their own white container that doesn't invert.
 */
 
 const sourceRef = ref('')//img src data URL of btoa'ed SVG
@@ -84,6 +86,12 @@ const placeholder = `
 	filter: none !important;
 	opacity: 1 !important; /* !important means, make this CSS rule win over others */
 }
-/* ttd august2025, testing on a fancy galaxy phone, dark mode, Samsung Internet app: a white background page is black, and the QR code is gray and dim (still scans right away from an iPhone, though). Chrome on the same phone doesn't do this. Added styles above to try to cut through this super aggressive dark mode, unsuccessfully. Android devices will redirect to the otpauth URL rather than showing it as a QR code anyway, of course */
+/*
+Note about Samsung Internet 🪐 On a fancy Android phone, Chrome is fine, but Samsung's own browser app shows a strange two-tone gray for QR codes in both light and dark mode. Samsung Internet has a browser-level "dark mode" feature (separate from the site's CSS dark mode) that force-darkens page content using its own color manipulation algorithm. It doesn't read the .dark class or CSS variables — it intercepts at the rendering layer and tries to recolor everything, even content that already handles dark mode correctly.
+
+The color-scheme CSS property (.myLightOnly above) tells browsers "I already handle dark mode, don't force-darken me," but Samsung Internet's forced mode is notoriously aggressive and ignores it.
+
+Tested that an iPhone can still scan the dim gray QR code from a Galaxy Fold, but probably not as reliably. Also, for otpauth, we'll redirect to the URL rather than using this component to show a QR code visually, anyway.
+*/
 
 </style>

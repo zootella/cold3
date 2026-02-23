@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb20.0319.13580
+  generated: 2026feb23.1803.23028
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -121,8 +121,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.994.0 on 2026feb19 0m old
-      latest: 3.994.0 on 2026feb19 0m old
+      current: 3.995.0 on 2026feb20 0m old
+      latest: 3.995.0 on 2026feb20 0m old
     downloads:
       weekly: 16,370,151
       on: 2026feb4.1825.16236
@@ -133,8 +133,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.994.0 on 2026feb19 0m old
-      latest: 3.994.0 on 2026feb19 0m old
+      current: 3.995.0 on 2026feb20 0m old
+      latest: 3.995.0 on 2026feb20 0m old
     downloads:
       weekly: 2,333,005
       on: 2026feb4.1825.16236
@@ -145,8 +145,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.994.0 on 2026feb19 0m old
-      latest: 3.994.0 on 2026feb19 0m old
+      current: 3.995.0 on 2026feb20 0m old
+      latest: 3.995.0 on 2026feb20 0m old
     downloads:
       weekly: 2,695,891
       on: 2026feb4.1825.16236
@@ -157,8 +157,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.994.0 on 2026feb19 0m old
-      latest: 3.994.0 on 2026feb19 0m old
+      current: 3.995.0 on 2026feb20 0m old
+      latest: 3.995.0 on 2026feb20 0m old
     downloads:
       weekly: 6,635,744
       on: 2026feb4.1825.16236
@@ -251,7 +251,7 @@ modules:
     description: Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages
     from: oauth
     versions:
-      declared: ^7.2.6 on 2026jan23 0m old
+      declared: ^7.2.6 on 2026jan23 1m old
       installed: 7.2.7 on 2026feb12 0m old
       current: 7.2.8 on 2026feb18 0m old
       latest: 7.2.8 on 2026feb18 0m old
@@ -265,8 +265,8 @@ modules:
     versions:
       declared: ^2.50.2 on 2026feb02 0m old
       installed: 2.52.0 on 2026feb15 0m old
-      current: 2.52.2 on 2026feb18 0m old
-      latest: 2.52.2 on 2026feb18 0m old
+      current: 2.53.0 on 2026feb20 0m old
+      latest: 2.53.0 on 2026feb20 0m old
     downloads:
       weekly: 876,575
       on: 2026feb4.1825.16236
@@ -301,8 +301,8 @@ modules:
     versions:
       declared: ^4.1.18 on 2025dec11 2m old
       installed: 4.1.18 on 2025dec11 2m old
-      current: 4.2.0 on 2026feb18 0m old
-      latest: 4.2.0 on 2026feb18 0m old
+      current: 4.2.1 on 2026feb23 0m old
+      latest: 4.2.1 on 2026feb23 0m old
     downloads:
       weekly: 6,607,358
       on: 2026feb5.2153.32117
@@ -365,10 +365,10 @@ modules:
     description: "[![CI Status](https://github.com/vercel/nft/actions/workflows/ci.yml/badge.svg)](https://github.com/vercel/nft/actions/workflows/ci.yml)"
     from: net23
     versions:
-      declared: ^1.3.0 on 2026jan21 0m old
+      declared: ^1.3.0 on 2026jan21 1m old
       installed: 1.3.1 on 2026feb10 0m old
-      current: 1.3.1 on 2026feb10 0m old
-      latest: 1.3.1 on 2026feb10 0m old
+      current: 1.3.2 on 2026feb23 0m old
+      latest: 1.3.2 on 2026feb23 0m old
     downloads:
       weekly: 5,524,454
       on: 2026feb4.1825.16236
@@ -441,10 +441,10 @@ modules:
     description: A tiny (239B) utility for constructing className strings conditionally.
     from: site
     versions:
-      declared: ^2.1.1 on 2024apr23 21m old
-      installed: 2.1.1 on 2024apr23 21m old 🕰️ Installed version 1+ year old
-      current: 2.1.1 on 2024apr23 21m old
-      latest: 2.1.1 on 2024apr23 21m old
+      declared: ^2.1.1 on 2024apr23 22m old
+      installed: 2.1.1 on 2024apr23 22m old 🕰️ Installed version 1+ year old
+      current: 2.1.1 on 2024apr23 22m old
+      latest: 2.1.1 on 2024apr23 22m old
     downloads:
       weekly: 49,310,969
       on: 2026feb17.1642.4974
@@ -537,10 +537,10 @@ modules:
     description: A tiny (118 bytes), secure URL-friendly unique string ID generator
     from: root
     versions:
-      declared: ^5.1.6 on 2025sep22 4m old
-      installed: 5.1.6 on 2025sep22 4m old
-      current: 5.1.6 on 2025sep22 4m old
-      latest: 5.1.6 on 2025sep22 4m old
+      declared: ^5.1.6 on 2025sep22 5m old
+      installed: 5.1.6 on 2025sep22 5m old
+      current: 5.1.6 on 2025sep22 5m old
+      latest: 5.1.6 on 2025sep22 5m old
     downloads:
       weekly: 94,895,352
       on: 2026feb4.1821.46960
@@ -561,7 +561,7 @@ modules:
     description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
     from: site
     versions:
-      declared: ^4.3.0 on 2026jan22 0m old
+      declared: ^4.3.0 on 2026jan22 1m old
       installed: 4.3.1 on 2026feb07 0m old
       current: 4.3.1 on 2026feb07 0m old
       latest: 4.3.1 on 2026feb07 0m old
@@ -637,8 +637,8 @@ modules:
     versions:
       declared: ^2.8.0 on 2026jan28 0m old
       installed: 2.8.0 on 2026jan28 0m old
-      current: 2.8.0 on 2026jan28 0m old
-      latest: 2.8.0 on 2026jan28 0m old
+      current: 2.8.2 on 2026feb20 0m old
+      latest: 2.8.2 on 2026feb20 0m old
     downloads:
       weekly: 648,108
       on: 2026feb17.1642.4974
@@ -709,8 +709,8 @@ modules:
     versions:
       declared: ^5.50.0 on 2026feb06 0m old
       installed: 5.51.3 on 2026feb17 0m old
-      current: 5.53.0 on 2026feb18 0m old
-      latest: 5.53.0 on 2026feb18 0m old
+      current: 5.53.3 on 2026feb23 0m old
+      latest: 5.53.3 on 2026feb23 0m old
     downloads:
       weekly: 2,657,105
       on: 2026feb4.1829.44951
@@ -733,8 +733,8 @@ modules:
     versions:
       declared: ^4.1.18 on 2025dec11 2m old
       installed: 4.1.18 on 2025dec11 2m old
-      current: 4.2.0 on 2026feb18 0m old
-      latest: 4.2.0 on 2026feb18 0m old
+      current: 4.2.1 on 2026feb23 0m old
+      latest: 4.2.1 on 2026feb23 0m old
     downloads:
       weekly: 47,765,674
       on: 2026feb5.2153.32117
@@ -743,10 +743,10 @@ modules:
     description: TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.
     from: site
     versions:
-      declared: ^1.4.0 on 2025sep24 4m old
-      installed: 1.4.0 on 2025sep24 4m old
-      current: 1.4.0 on 2025sep24 4m old
-      latest: 1.4.0 on 2025sep24 4m old
+      declared: ^1.4.0 on 2025sep24 5m old
+      installed: 1.4.0 on 2025sep24 5m old
+      current: 1.4.0 on 2025sep24 5m old
+      latest: 1.4.0 on 2025sep24 5m old
     downloads:
       weekly: 5,809,004
       on: 2026feb17.1642.4974
@@ -863,8 +863,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 0m old
       installed: 4.66.0 on 2026feb17 0m old
-      current: 4.67.0 on 2026feb19 0m old
-      latest: 4.67.0 on 2026feb19 0m old
+      current: 4.67.1 on 2026feb23 0m old
+      latest: 4.67.1 on 2026feb23 0m old
     downloads:
       weekly: 3,405,027
       on: 2026feb4.1829.44951
@@ -885,10 +885,10 @@ modules:
     description: TypeScript-first schema declaration and validation library with static type inference
     from: icarus
     versions:
-      declared: ^4.3.6 on 2026jan22 0m old
-      installed: 4.3.6 on 2026jan22 0m old
-      current: 4.3.6 on 2026jan22 0m old
-      latest: 4.3.6 on 2026jan22 0m old
+      declared: ^4.3.6 on 2026jan22 1m old
+      installed: 4.3.6 on 2026jan22 1m old
+      current: 4.3.6 on 2026jan22 1m old
+      latest: 4.3.6 on 2026jan22 1m old
     downloads:
       weekly: 87,621,926
       on: 2026feb4.1825.16236
