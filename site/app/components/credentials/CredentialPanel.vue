@@ -2,12 +2,12 @@
 /*
 CredentialPanel.vue - credential management for signed-in users
 
-Shows: account controls (sign out, close account), name editor, password editor
-Modes: refEditing enum ('' | 'account' | 'name' | 'password') for mutually exclusive editing
+Shows: account controls (sign out, close account), name editor, password editor, TOTP enrollment
+Modes: refEditing enum ('' | 'account' | 'name' | 'password' | 'totp') for mutually exclusive editing
        each section has Edit link that expands controls, Cancel collapses back
 Parent: just render <CredentialPanel />, no props needed; assumes user is signed in
 Server contact: loads credentialStore, calls store methods for sign out, name changes, password changes
-Nested: uses ChooseNameForm for name editing, SetPasswordForm for password editing
+Nested: uses ChooseNameForm for name editing, SetPasswordForm for password editing, TotpPanel for TOTP
 */
 
 import {
@@ -16,7 +16,7 @@ import {
 const credentialStore = useCredentialStore()
 await credentialStore.load()//runs on server render, then no-op on client due to loaded ref
 
-const refEditing = ref('')//'' | 'account' | 'name' | 'password'
+const refEditing = ref('')//'' | 'account' | 'name' | 'password' | 'totp'
 function onCancel() {
 	refEditing.value = ''
 	refNameOutput.value = ''
@@ -164,6 +164,13 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 		</SetPasswordForm>
 	</template>
 </div>
+
+<TotpPanel
+	v-if="credentialStore.userTag"
+	:editing="refEditing === 'totp'"
+	@edit="refEditing = 'totp'"
+	@cancel="onCancel"
+/>
 
 </div>
 </template>

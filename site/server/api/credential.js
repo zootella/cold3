@@ -5,11 +5,14 @@ validateName,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
+credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 credentialCloseAccount,
+totpEnroll, totpValidate, totpIdentifier,
+checkTotpCode, Data, isExpired,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
 async function attachState(task, browserHash) {//attach current credential state to task
@@ -21,6 +24,14 @@ async function attachState(task, browserHash) {//attach current credential state
 		if (name) task.user = name.name
 		let password = await credentialPasswordGet({userTag: user.userTag})
 		if (password) task.passwordCycles = password.cycles
+		let totpSecret = await credentialTotpGet({userTag: user.userTag})
+		if (totpSecret) {
+			task.totpEnrolled = true
+			task.totpIdentifier = await totpIdentifier({secret: Data({base32: totpSecret})})
+		} else {
+			task.totpEnrolled = false
+			task.totpIdentifier = ''
+		}
 	}
 }
 async function doorHandleBelow({door, body, action, browserHash}) {
@@ -89,6 +100,40 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		} else if (action == 'SignOut.') {
 			await credentialBrowserRemove({userTag: user.userTag})
+
+		} else if (action == 'TotpEnroll1.') {
+			let existing = await credentialTotpGet({userTag: user.userTag})
+			if (existing) return {success: false, outcome: 'AlreadyEnrolled.'}
+			let userName = await credentialNameGet({userTag: user.userTag})
+			let enrollment = await totpEnroll({
+				label: '@'+(userName?.name?.f1 || user.userTag),
+				issuer: Key('domain, public'),
+				addIdentifier: true,
+			})
+			enrollment.envelope = await sealEnvelope('EnrollTotpEnvelope.', Limit.expirationUser, {
+				secret: enrollment.secret,
+				message: safefill`TOTP enrollment: browser ${browserHash}, user ${user.userTag}, secret ${enrollment.secret}`,
+			})
+			task.enrollment = enrollment
+
+		} else if (action == 'TotpEnroll2.') {
+			checkTotpCode(body.code)
+			let existing = await credentialTotpGet({userTag: user.userTag})
+			if (existing) return {success: false, outcome: 'AlreadyEnrolled.'}
+			let letter = await openEnvelope('EnrollTotpEnvelope.', body.envelope, {skipExpirationCheck: true})
+			let secret = letter.secret
+			if (isExpired(letter.expiration)) return {success: false, outcome: 'BadSecret.'}
+			if (!hasTextSame(
+				letter.message,
+				safefill`TOTP enrollment: browser ${browserHash}, user ${user.userTag}, secret ${secret}`)) {
+				return {success: false, outcome: 'BadSecret.'}
+			}
+			let valid = await totpValidate({secret: Data({base32: secret}), code: body.code})
+			if (!valid) return {success: false, outcome: 'BadCode.'}
+			await credentialTotpSet({userTag: user.userTag, secret})
+
+		} else if (action == 'TotpRemove.') {
+			await credentialTotpRemove({userTag: user.userTag})
 
 		} else if (action == 'CloseAccount.') {
 			await credentialCloseAccount({userTag: user.userTag})

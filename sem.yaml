@@ -1,3 +1,12 @@
+category:
+  (No category)
+    module-a: (No category)
+    module-b: (No category)
+  Category 1
+    module-c: Category 1 (icarus) and some additional text
+    module-c2: Category 1 (icarus, site) and some different additional text
+  Category 2
+    module-d: Category 2 (root) here is some text in the category note after the colon; before the first colon is the category name
 summary:
   generated: 2026feb23.2045.996
   📌 Exact version pinned:
@@ -105,7 +114,7 @@ modules:
   "@auth/sveltekit":
     homepage: https://sveltekit.authjs.dev
     description: Authentication for SvelteKit.
-    note: Here is some user-defined text that I would like carried forward from one generation of sem.yaml to the next, Claude.
+    category: Category 1: And here i may type a note about this module being in this category, after a colon
     from: oauth
     versions:
       declared: ^1.11.1 on 2025oct26 3m old
