@@ -12,6 +12,7 @@ Nested: uses QrCode for QR display
 
 import {
 browserIsBesideAppStore,
+takeNumerals, totpConstants,
 } from 'icarus'
 
 const props = defineProps({
@@ -30,7 +31,13 @@ const refCode = ref('')
 const refOutput = ref('')
 const refButton = ref(null)
 
+const computedCode = computed(() => takeNumerals(refCode.value))
+const computedCodeValid = computed(() => computedCode.value.length === totpConstants.codeLength)
+
 function onEdit() { emit('edit') }
+async function onEditAndEnroll() {
+	await onEnroll()
+}
 function onCancel() {
 	refStep.value = 1
 	refUri.value = ''
@@ -52,18 +59,21 @@ async function onEnroll() {
 	refEnvelope.value = task.enrollment.envelope
 	refIdentifier.value = task.enrollment.identifier || ''
 	if (browserIsBesideAppStore()) {
+		emit('edit')
 		window.location.href = task.enrollment.uri
 	} else {
 		refUri.value = task.enrollment.uri
 		refStep.value = 2
+		emit('edit')
 	}
 }
 
 async function onValidate() {
+	if (!computedCodeValid.value) return
 	refOutput.value = 'Validating...'
 	let task = await credentialStore.totpEnroll2({
 		envelope: refEnvelope.value || refCookie.value,
-		code: refCode.value,
+		code: computedCode.value,
 	})
 	if (task.success) {
 		refCookie.value = null
@@ -72,8 +82,7 @@ async function onValidate() {
 	} else if (task.outcome == 'BadCode.') {
 		refOutput.value = 'Code is incorrect. Try again.'
 	} else if (task.outcome == 'BadSecret.') {
-		refOutput.value = 'Enrollment expired. Please start over.'
-		refStep.value = 1
+		onCancel()
 	} else {
 		refOutput.value = `Error: ${task.outcome}`
 	}
@@ -86,71 +95,49 @@ async function onRemove() {
 
 </script>
 <template>
-<div v-if="credentialStore.totpEnrolled">
-	<p class="my-space">
-		user has TOTP <code>[{{credentialStore.totpIdentifier}}]</code> enrolled
-		<Button v-show="!editing" link :click="onEdit">Edit</Button>
-	</p>
-	<template v-if="editing">
-		<p class="my-space">
-			<Button :click="onRemove">Remove TOTP</Button>
-			<Button :click="onCancel">Cancel</Button>
-		</p>
-	</template>
-</div>
-<div v-else>
-	<p class="my-space">
-		no totp enrollment for this user
-		<Button v-show="!editing" link :click="onEdit">Enroll</Button>
-	</p>
-	<template v-if="editing">
+<Card class="px-6">
 
-		<template v-if="refStep === 1">
+<p class="my-space">
+	Authenticator App
+	<code v-if="credentialStore.totpEnrolled">[{{credentialStore.totpIdentifier}}]</code>
+	<Button v-if="credentialStore.totpEnrolled" v-show="!editing" link :click="onEdit">Edit</Button>
+	<Button v-else v-show="!editing" link :click="onEditAndEnroll" labeling="Generating...">Add</Button>
+</p>
+
+<template v-if="editing">
+	<p v-if="credentialStore.totpEnrolled" class="my-space">
+		<Button :click="onRemove">Remove TOTP</Button>
+		<Button :click="onCancel">Cancel</Button>
+	</p>
+	<template v-else-if="refStep === 2 && refUri">
+		<div class="space-y-2">
+			<div class="flex justify-center py-2">
+				<div class="shrink-0">
+					<QrCode :address="refUri" />
+				</div>
+			</div>
+			<p v-if="refIdentifier">Scan with your authenticator app, look for the new entry labeled <code>[{{ refIdentifier }}]</code>, and enter the current 6-digit code to confirm:</p>
+			<Input
+				v-model="refCode"
+				type="text"
+				inputmode="numeric"
+				:maxlength="Limit.input"
+				class="font-mono w-32"
+				@keyup.enter="refButton.click()"
+			/>
 			<p class="my-space">
-				<Button labeling="Requesting enrollment..." :click="onEnroll">Enroll</Button>
+				<Button
+					ref="refButton"
+					labeling="Validating..."
+					:click="onValidate"
+					:state="computedCodeValid ? 'ready' : 'ghost'"
+				>Enter</Button>
 				<Button :click="onCancel">Cancel</Button>
 				<span v-if="refOutput">{{ refOutput }}</span>
 			</p>
-		</template>
-
-		<template v-if="refStep === 2">
-			<div v-if="refUri" class="space-y-2">
-				<div class="flex justify-center py-2">
-					<div class="shrink-0">
-						<QrCode :address="refUri" />
-					</div>
-				</div>
-				<p v-if="refIdentifier" class="text-sm">Look for the entry marked <code>[{{ refIdentifier }}]</code> in your authenticator app.</p>
-				<p class="text-sm">Enter the 6-digit code from your authenticator app:</p>
-				<input
-					v-model="refCode"
-					type="text"
-					inputmode="numeric"
-					maxlength="6"
-					placeholder="000000"
-					class="px-3 py-2 border border-gray-300 rounded-sm w-full text-center text-lg tracking-widest font-mono"
-					@keyup.enter="refButton.click()"
-				/>
-				<p class="my-space">
-					<Button
-						ref="refButton"
-						labeling="Validating..."
-						:click="onValidate"
-					>Validate Code</Button>
-					<Button :click="onCancel">Cancel</Button>
-					<span v-if="refOutput">{{ refOutput }}</span>
-				</p>
-			</div>
-		</template>
-
+		</div>
 	</template>
-</div>
 </template>
-<style scoped>
-@reference "tailwindcss";
 
-.my-space {
-	@apply flex flex-wrap items-baseline gap-2;
-}
-
-</style>
+</Card>
+</template>

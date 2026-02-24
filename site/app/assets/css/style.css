@@ -186,4 +186,7 @@
 	.my-link.ready       { @apply bg-transparent text-blue-600;   }
 	.my-link.ready:hover { @apply bg-transparent text-blue-400;   }
 	.my-link.doing       { @apply bg-transparent text-orange-500; }
+
+	/* inline flex row for buttons, text, and controls that sit side by side */
+	.my-space { @apply flex flex-wrap items-baseline gap-2; }
 }
