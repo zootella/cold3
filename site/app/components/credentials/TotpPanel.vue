@@ -34,6 +34,16 @@ const refButton = ref(null)
 const computedCode = computed(() => takeNumerals(refCode.value))
 const computedCodeValid = computed(() => computedCode.value.length === totpConstants.codeLength)
 
+onMounted(() => {
+	if (credentialStore.enrollment) {
+		refUri.value = credentialStore.enrollment.uri
+		refEnvelope.value = credentialStore.enrollment.envelope
+		refIdentifier.value = credentialStore.enrollment.identifier || ''
+		refStep.value = 2
+		emit('edit')
+	}
+})
+
 function onEdit() { emit('edit') }
 async function onEditAndEnroll() {
 	await onEnroll()
@@ -95,7 +105,7 @@ async function onRemove() {
 
 </script>
 <template>
-<Card class="px-6">
+<Card class="px-4 py-4 gap-2">
 
 <p class="my-space">
 	Authenticator App
@@ -110,31 +120,39 @@ async function onRemove() {
 		<Button :click="onCancel">Cancel</Button>
 	</p>
 	<template v-else-if="refStep === 2 && refUri">
-		<div class="space-y-2">
-			<div class="flex justify-center py-2">
-				<div class="shrink-0">
-					<QrCode :address="refUri" />
-				</div>
+		<div class="flex gap-4">
+			<div class="shrink-0">
+				<QrCode :address="refUri" />
 			</div>
-			<p v-if="refIdentifier">Scan with your authenticator app, look for the new entry labeled <code>[{{ refIdentifier }}]</code>, and enter the current 6-digit code to confirm:</p>
-			<Input
-				v-model="refCode"
-				type="text"
-				inputmode="numeric"
-				:maxlength="Limit.input"
-				class="font-mono w-32"
-				@keyup.enter="refButton.click()"
-			/>
-			<p class="my-space">
-				<Button
-					ref="refButton"
-					labeling="Validating..."
-					:click="onValidate"
-					:state="computedCodeValid ? 'ready' : 'ghost'"
-				>Enter</Button>
-				<Button :click="onCancel">Cancel</Button>
-				<span v-if="refOutput">{{ refOutput }}</span>
-			</p>
+			<div class="space-y-2">
+				<p v-if="refIdentifier">
+Protect your account with two-factor authentication.
+You'll need an authenticator app on your phone—<i>Google Authenticator</i>, <i>Authy</i>, and others all work.
+Scan the QR, then enter the 6 digits you get below.
+				</p>
+				<Input
+					v-model="refCode"
+					type="text"
+					inputmode="numeric"
+					:maxlength="Limit.input"
+					class="font-mono w-32"
+					@keyup.enter="refButton.click()"
+				/>
+				<p class="my-space">
+					<Button
+						ref="refButton"
+						labeling="Validating..."
+						:click="onValidate"
+						:state="computedCodeValid ? 'ready' : 'ghost'"
+					>Enter</Button>
+					<Button :click="onCancel">Cancel</Button>
+					<span v-if="refOutput">{{ refOutput }}</span>
+				</p>
+				<p v-if="refIdentifier">
+Have a lot of these?
+Look for the listing labeled <code>[{{ refIdentifier }}]</code> in your authenticator app.
+				</p>
+			</div>
 		</div>
 	</template>
 </template>

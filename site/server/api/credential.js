@@ -39,6 +39,25 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	if (action == 'Get.') {
 		await attachState(task, browserHash)
+		if (hasText(body.envelope)) {//client found an enrollment envelope cookie from a previous session
+			try {
+				let letter = await openEnvelope('EnrollTotpEnvelope.', body.envelope, {skipExpirationCheck: true})
+				if (!isExpired(letter.expiration) && !task.totpEnrolled) {
+					let secret = letter.secret
+					let enrollment = await totpEnroll({
+						secret: Data({base32: secret}),
+						label: '@'+(task.user?.f1 || task.userTag || 'user'),
+						issuer: Key('domain, public'),
+						addIdentifier: true,
+					})
+					task.enrollment = {
+						uri: enrollment.uri,
+						envelope: body.envelope,
+						identifier: enrollment.identifier,
+					}
+				}
+			} catch (e) {/*stale or invalid envelope, silently ignore*/}
+		}
 
 	} else if (action == 'CheckNameTurnstile.') {
 		let v = await credentialNameCheck({raw1: body.name1, raw2: body.name2})

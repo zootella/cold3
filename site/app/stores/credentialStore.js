@@ -10,6 +10,7 @@ const name = ref(null)//the user's name {f0, f1, f2}, or null if not signed in o
 const passwordCycles = ref(0)//the signed-in user's password hash cycles, or 0 if not signed in or no password (set via apply after auth)
 const totpEnrolled = ref(false)//true if the user has a verified TOTP enrollment
 const totpIdentifier = ref('')//short identifier like "X2B" to help user find the right authenticator entry
+const enrollment = ref(null)//in-flight TOTP enrollment recovered from envelope cookie, or null
 
 const userDisplayName = computed(() => {//best available display name for page
 	if (name.value?.f2) return name.value.f2
@@ -24,10 +25,13 @@ function apply(task) {//update all refs from task - called after any action that
 	passwordCycles.value = task.passwordCycles || 0
 	totpEnrolled.value = task.totpEnrolled || false
 	totpIdentifier.value = task.totpIdentifier || ''
+	enrollment.value = task.enrollment || null
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
-	let task = await fetchWorker('/credential', 'Get.')
+	let totpCookie = useTotpCookie()
+	let body = hasText(totpCookie.value) ? {envelope: totpCookie.value} : {}
+	let task = await fetchWorker('/credential', 'Get.', body)
 	apply(task)
 }
 
@@ -111,6 +115,7 @@ return {
 	passwordCycles,
 	totpEnrolled,
 	totpIdentifier,
+	enrollment,
 	signOut,
 	checkName,
 	signUpAndSignIn,
