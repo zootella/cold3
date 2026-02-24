@@ -11,7 +11,7 @@ const refClickedProvider = ref(null)
 function functionState(provider) {
 	if (!refClickedProvider.value) return 'ready'
 	return refClickedProvider.value == provider ? 'doing' : 'ghost'
-}//interestingly, this works with this function in the template, rather than needing to use a computed property, ttd december
+}//interestingly, this works with this function in the template, rather than needing to use a computed property, ttd december2025
 
 async function clicked(provider) {
 	refClickedProvider.value = provider//note we don't need to set null because href= is going to tear down the whole Nuxt application

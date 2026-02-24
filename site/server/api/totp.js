@@ -32,7 +32,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	checkTag(userTag)
 
 	if (action == 'Enroll1.' || action == 'Enroll2.') { if (secret) return {outcome: 'BadAlreadyEnrolled.'} }
-	else if (action == 'Validate.' || action == 'Remove.') { if (!secret) return {outcome: 'BadNotEnrolled.'} }//ttd november, once in place, these should probably be toss 500 rather than return bad, unlike the plausible bad flows below which are correct to return rather than throw
+	else if (action == 'Validate.' || action == 'Remove.') { if (!secret) return {outcome: 'BadNotEnrolled.'} }//ttd november2025, once in place, these should probably be toss 500 rather than return bad, unlike the plausible bad flows below which are correct to return rather than throw
 
 	if (action == 'Enroll2.' || action == 'Validate.') checkTotpCode(body.code)
 
@@ -92,7 +92,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		let valid = await totpValidate({secret, code: body.code})
 		if (valid) {//guess at code from page is correct
 
-			log(`ttd november 🎃 user ${userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
+			log(`ttd november2025 🎃 user ${userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
 			await trailAdd(
 				safefill`TOTP right guess: secret ${secret}`//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
 			)
@@ -107,7 +107,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		}
 
 	//an enrolled user wants to remove their totp enrollment, likely to setup a different one
-	//right now we make this available without additional verification, ttd november
+	//right now we make this available without additional verification, ttd november2025
 	} else if (action == 'Remove.') {
 
 		await credentialTotpRemove({userTag})

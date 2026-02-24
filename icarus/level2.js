@@ -666,7 +666,7 @@ export async function doorLambda(method, {
 			await doorLambdaCheck({door, actions})
 			response = await doorHandleBelow({
 				door,
-				query: door.query,//lambda GET not in use, but here for the future, ttd november
+				query: door.query,//lambda GET not in use, but here for the future, ttd november2025
 				body: door.body,
 				action: door.body?.action,
 			})
@@ -696,7 +696,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
 		sources.push({note: 'c10', environment: process.env})
-	}//seeing c10 both local and cloud; local makes sense, but not sure if cloud is coming from bundle or dashboard, ttd november
+	}//seeing c10 both local and cloud; local makes sense, but not sure if cloud is coming from bundle or dashboard, ttd november2025
 	if (workerEvent.context?.cloudflare?.env) {
 		sources.push({note: 'c20', environment: workerEvent.context.cloudflare.env})
 	}//seeing c20 local always and cloud sometimes, which is super weird
@@ -709,7 +709,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	if (typeof useRuntimeConfig == 'function') {
 		let c = useRuntimeConfig(workerEvent)
 		if (c) sources.push({note: 'c50', environment: c})//seeing flow reach here local and cloud
-	}//seeing c50 never, which is ironic as this is the correct Nuxt way to do things! ttd december probably because you aren't setting nuxt.config.js configuration.runtimeConfig.name1 = process.env.name1 so you could do that
+	}//seeing c50 never, which is ironic as this is the correct Nuxt way to do things! ttd december2025 probably because you aren't setting nuxt.config.js configuration.runtimeConfig.name1 = process.env.name1 so you could do that
 	await decryptKeys('worker', sources)
 
 	let door = {}//make door object to bundle everything together about this request we're doing
@@ -757,7 +757,7 @@ async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 		door.query = lambdaEvent.queryStringParameters
 
 		//authenticate lambda get request: (0) block entirely!
-		toss('lambda get not in use', {door})//when you do uploads, you'll probably need to add requests for signed URLs to upload to S3 here, ttd november
+		toss('lambda get not in use', {door})//when you do uploads, you'll probably need to add requests for signed URLs to upload to S3 here, ttd november2025
 
 	} else if (method == 'POST') {
 		door.bodyText = lambdaEvent.body//with amazon, we get here after the body has arrived, and we have to parse it

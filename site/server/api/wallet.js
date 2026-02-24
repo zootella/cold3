@@ -44,7 +44,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		let valid = await verifyMessage({address, message, signature})//viem confirms those two things for us
 		if (!valid) return {outcome: 'BadSignature.'}
 
-		log(`🖌 server has proof that browser ${browserHash} controls wallet ${address}`)//and we'll save that in the database to sign this user up or in, essentially, ttd november
+		log(`🖌 server has proof that browser ${browserHash} controls wallet ${address}`)//and we'll save that in the database to sign this user up or in, essentially, ttd november2025
 
 		//more to do here about that after we smoke test and security audit this above...
 

@@ -13,7 +13,7 @@ onMounted(async () => {
 
 	if (hasText(refCookie.value)) {
 		log('component loaded with stored cookie! 🔔🍪🔔', refCookie.value)
-		//in this case, we need to move right to step 2, ttd november
+		//in this case, we need to move right to step 2, ttd november2025
 	}
 
 
@@ -33,7 +33,7 @@ onMounted(async () => {
 	*/
 
 	/*
-	ttd november, bookmark next:
+	ttd november2025, bookmark next:
 	split totp demo into two controls
 	TotpEnrollDemo
 	TotpValidateDemo
@@ -58,7 +58,7 @@ async function onEnroll() {
 		refCookie.value = task.enrollment.envelope
 
 		if (browserIsBesideAppStore()) {//on a phone, redirect to authenticator app
-			window.location.href = task.enrollment.uri//ttd november, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
+			window.location.href = task.enrollment.uri//ttd november2025, this is the plain html way, claude says best for otpauth on mobile; Nuxt has navigateTo, Vue Router has useRouter().push()
 		} else {//on desktop, show the qr code
 			refUri.value = task.enrollment.uri
 		}

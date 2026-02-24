@@ -1438,7 +1438,7 @@ test(async () => {
 	ok(d2.base16() == '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')//found on the web
 	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
 	ok(d2.base32().length == hash_length)
-	ok((await Data({text: 'hello'}).hash()).base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//hash method with await is somewhat clumsy, ttd november
+	ok((await Data({text: 'hello'}).hash()).base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//hash method with await is somewhat clumsy, ttd november2025
 })
 export function random32() {//return 32 random bytes in base32, quickly making a fake new hash value for testing
 	return Data({random: hash_size}).base32()
@@ -2143,7 +2143,7 @@ noop(async () => {
 	let valid = await hashCashValidate({ticket, now})
 	log(look({now, ticket, duration, valid}))
 	/*
-	ttd november, but to use this you'd have to add the bucket of easy puzzles improvement:
+	ttd november2025, but to use this you'd have to add the bucket of easy puzzles improvement:
 	Generate N=10 independent nonces and mine them in parallel at easier difficulty (reduce by ~log₂(N) bits). Take the first 10 solutions that complete and abort the rest using AbortController - just check signal?.aborted in your tight loop and return null when cancelled. This works because you're racing independent attempts: fast winners finish while unlucky slow ones get cancelled, giving much tighter timing variance.
 	With N=10, your variance drops ~3x: instead of "50% chance of 2x longer/shorter", you get "50% chance of ~20% longer/shorter". For 1 second target with N=10 proofs, use difficulty=10 for individual proofs (vs difficulty=14 for a single proof). Each proof averages ~10ms, so 10 proofs ≈ 100ms total with predictable timing.
 	*/
@@ -2626,7 +2626,7 @@ noop(() => {//play around with deindent
 		C
 	`)
 })
-//ttd november, ok now at last you've got deindent finished in the bike shed, you could look around to see where you can use it to improve code readability
+//ttd november2025, ok now at last you've got deindent finished in the bike shed, you could look around to see where you can use it to improve code readability
 
 
 
@@ -3503,7 +3503,7 @@ let contents = `
 	ok(!lookupKey(list, 'tag3'))
 	ok(!lookupKey(list, 'tag5'))//not in use at all
 })
-//ttd december, you could make this simpler to not split up tags, block double spaces, and only sort public names that end ", public"; you don't need to have tags where you can reverse order, you do want seal to block setting a duplicate
+//ttd december2025, you could make this simpler to not split up tags, block double spaces, and only sort public names that end ", public"; you don't need to have tags where you can reverse order, you do want seal to block setting a duplicate
 
 
 

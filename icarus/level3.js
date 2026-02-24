@@ -532,7 +532,7 @@ ALTER INDEX index1 RENAME TO index2;
 
 
 /*
-ttd november
+ttd november2025
 lots of things you can think of as credentials, and move and handle here, many entirely
 
 []totp codes
@@ -893,10 +893,10 @@ CREATE INDEX credential6 ON credential_table (hide, type_text, k2_text) WHERE k2
 CREATE INDEX credential7 ON credential_table (hide, type_text, k3_text) WHERE k3_text != '';
 CREATE INDEX credential8 ON credential_table (hide, type_text, k4_text) WHERE k4_text != '';
 `)
-//ttd november, should event be a tag instead of a number? it's a litle arcane
+//ttd november2025, should event be a tag instead of a number? it's a litle arcane
 
 export async function credentialGet({userTag}) {//get all the credential information about the given user
-	//ttd november
+	//ttd november2025
 }
 export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', k1 = '', k2 = '', k3 = '', k4 = ''}) {
 	checkTag(userTag); checkText(type); checkInt(event, 1)//these three are required, everything else is optional
@@ -925,7 +925,7 @@ export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 
 
 
 
-//ttd november, you think that address_table can be completely moved into credential_table
+//ttd november2025, you think that address_table can be completely moved into credential_table
 
 //            _     _                     _        _     _      
 //   __ _  __| | __| |_ __ ___  ___ ___  | |_ __ _| |__ | | ___ 
@@ -936,7 +936,7 @@ export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 
 
 //--this user mentioned, or proved they can read messages sent to, this address
 //address_table, ttd february2025
-//actually don't use; instead do this in credential table above, ttd november
+//actually don't use; instead do this in credential table above, ttd november2025
 
 /*
 simplest question to answer: is this address

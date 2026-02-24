@@ -104,7 +104,7 @@ notes about imports:
 - switching some to dynamic could save bundle size, but would spread async up the call tree
 - code for a dynamic import must name the module as a string literal argument, otherwise the bundler won't know to include it!
 - persephone.js as dynamic imports in addition to these. moving them here as amaonDynamicImport/twilioDynamicImport/sharpDynamicImport might work and be a consistancy flex, but we won't ever need them outside lambda, and here they could only confuse the SvelteKit and Nuxt bundlers
-- many users won't ever enter a phone number, or email, or use a wallet, upload a file, or see a qr code. Nuxt's client bundler does a good job of code splitting so pages load fast and bundled modules that won't get called are not delivered at all. but importing everything here in level1.js and then importing icarus everywhere messes that up. as a monolith, the client bundle is still small, but later we might want to go back and refactor to let code splitting work ⬛️🐵 ttd december
+- many users won't ever enter a phone number, or email, or use a wallet, upload a file, or see a qr code. Nuxt's client bundler does a good job of code splitting so pages load fast and bundled modules that won't get called are not delivered at all. but importing everything here in level1.js and then importing icarus everywhere messes that up. as a monolith, the client bundle is still small, but later we might want to go back and refactor to let code splitting work ⬛️🐵 ttd december2025
 */
 
 

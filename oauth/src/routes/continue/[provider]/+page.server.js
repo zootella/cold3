@@ -17,6 +17,6 @@ export async function load(event) {//note that at this point, the code in auth.j
 		return {}//GET looks good to start the oauth flow; in sveltekit return nothing or an empty object to deliver the page
 
 	} catch (e) {
-		throw redirect(303, `${originApex()}`)//ttd november, this is unusual in that you are navigating to the nuxt error page, rather than having the component that it corresponds to take over the nuxt spa, but this should be ok (claude, let's confirm)
+		throw redirect(303, `${originApex()}`)//ttd november2025, this is unusual in that you are navigating to the nuxt error page, rather than having the component that it corresponds to take over the nuxt spa, but this should be ok (claude, let's confirm)
 	}
 }

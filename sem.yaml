@@ -105,6 +105,7 @@ modules:
   "@auth/sveltekit":
     homepage: https://sveltekit.authjs.dev
     description: Authentication for SvelteKit.
+    note: Here is some user-defined text that I would like carried forward from one generation of sem.yaml to the next, Claude.
     from: oauth
     versions:
       declared: ^1.11.1 on 2025oct26 3m old

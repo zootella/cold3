@@ -6,7 +6,7 @@ sayTick, originApex, anyIncludeAny,
 } from 'icarus'
 
 /*
-ttd december, notes before moving stuff here in WalletDemo to the right pinia store
+ttd december2025, notes before moving stuff here in WalletDemo to the right pinia store
 
 for coding and smoke testing right now, all this state is in a component
 in a moment, we'll refactor much of this from here into a pinia store
@@ -94,7 +94,7 @@ onMounted(async () => {
 				},
 				onDisplayUri: (uri) => {
 					refUri.value = uri//show QR code when WalletConnect generates the URI
-					//ttd december, when wagmi state is in a store, this uri and the context of a walletconnect flow should still be in the upper component--if the user clicks away to a different route in the spa, wagmi's load and configuration should persist, but a previous or half-completed connection flow should not! you'll have to get this right when you move wagmi into the credential pinia store soon
+					//ttd december2025, when wagmi state is in a store, this uri and the context of a walletconnect flow should still be in the upper component--if the user clicks away to a different route in the spa, wagmi's load and configuration should persist, but a previous or half-completed connection flow should not! you'll have to get this right when you move wagmi into the credential pinia store soon
 				},
 			}),
 		],
@@ -116,7 +116,7 @@ onMounted(async () => {
 })
 onUnmounted(() => {
 	if (_wagmiUnwatch) _wagmiUnwatch()
-	//ttd december, ok when you've moved wagmi into the pinia store, you won't need to unwatch anything
+	//ttd december2025, ok when you've moved wagmi into the pinia store, you won't need to unwatch anything
 })
 
 async function onQuotes() {

@@ -20,17 +20,17 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
 		//we've made sure the browserHash sveltekit computed from the browserTag matches, but still need to
 		//save the proven credentials in the database
-		//and chose what route to send the user, ttd november
+		//and chose what route to send the user, ttd november2025
 		//also, note that if the user clicked cancel at the provider, we'll get a letter here with detail about that
 		let outcome = letter.success ? 'OauthProven.' : 'OauthBad.'
 
 		return {
 			outcome,
-			route: '/',//ttd november, will change to welcome, home, or dashboard depending on the user's aim proving oauth
+			route: '/',//ttd november2025, will change to welcome, home, or dashboard depending on the user's aim proving oauth
 		}
 	}
 	/*
-	ttd november, when you've got the smoke test, clean up the names around
+	ttd november2025, when you've got the smoke test, clean up the names around
 	OauthStart, OauthContinue, OauthDone
 	between nuxt worker post actions and envelopes
 	*/

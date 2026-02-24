@@ -320,7 +320,7 @@ It's like syntax highlighting but for developer attention. The strict operators 
 |_.__/ \__,_|___/\___|\__,_| |___/\___|\___|\__,_|_|  |_|\__|\__, |  \___||___/___/\__,_|\__, |
                                                              |___/                       |___/ 
 
-(notes to clean up, chat will add detail and draft tight prose) ttd november
+(notes to clean up, chat will add detail and draft tight prose) ttd november2025
 
 net23, essay on security
 
@@ -1163,7 +1163,7 @@ ok so then you can use the xray script to see everywhere they exist in build art
 all the way along and up to the bundles that get sent to cloudflare and amazon
 well, that's the idea, at least--you may have to unzip net23.zip, and a secret could be hidden from xray, but revealable to anyone, if it's in base62
 but at least this will let you confirm what's in .env and .dev.vars and how nuxt for cloudflare includes things and passes them around
-ttd november
+ttd november2025
 
 an easy way to think about this:
 XrayServerValue - on development workstation? yes; in server bundle? yes; in client bundle? NO
@@ -1186,7 +1186,7 @@ but they can get into the (less secured) shelf of server code bundles (what gets
 so they could get server key, but not the dashboard key
 and both keys are necessary to decrypt the keys that get gets like Key('whatever')
 
-ttd november
+ttd november2025
 
 
 
