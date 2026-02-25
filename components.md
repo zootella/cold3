@@ -184,6 +184,61 @@ One naming overlap to watch during the Button rebuild: the site's CSS class `.gh
 
 **[Vuesax](https://vuesax.com/docs/components/)** (3 thousand downloads/week, last published 5 years ago) is the most visually distinctive library in this list — glassmorphism, gradient borders, fluid animations. But it's Vue 2 only and abandoned. The official Vue 3 rewrite was abandoned at 30% completion. You can't use it, but you can study its design choices and build those effects in shadcn component files using Tailwind's backdrop-blur, gradient, and transition utilities.
 
+# New sections
+
+## Factoring
+
+what's the right way to factor components?
+for instance, consider this handful:
+<input> plain html single line input
+<PasswordBox> current granular component designed to hold a password, with fancy features like the hide/show eye icon control
+ok but now we have shadui/cn and reka, which has
+<Input>
+so i feel like we export from reka, leave that as-is in the Reka folder, and then build our own granular components on top? so maybe two that do this are
+
+Reka/<Input>
+Reka/<RekaButton>
+small/<Button>
+
+ok so right now, because we made these before we had reka, we have PasswordBox built on plain html input
+and Button built on plain html input
+and that's fine, but when we add reka to the stack, how do we do it?
+not just naming (we'll keep names unique) but as far as depth and factoring of the stack
+one way is we don't keep anything in Reka, we add, then steal away, and edit, intentionally
+if we later want a newwer version of what comes from Reka, we re-export, and compare, manually
+you sorta like this, it's simple and you're in control
+
+alternatively, we could leave reka stuff in reka
+or even always prefix them RekaInput
+and then make our own Input build on top of that
+this is another layer of the stack
+and then the idea is when reka updates, you jsut delete the old RekaInput and make a newer better RekaInput
+and then fix our Input on top
+
+ok and then thinking about these, which are real world examples you can start trying to accomplish things in to see what works, what's easy, what's brittle
+PasswordBox - designed to hold a password
+CodeBox - designed to accept a OTP or TOTP code
+and then do you set them up with rules
+like for CodeBox, good means contains 6 numerals, tell me those 6 numerals
+and then they communicate up to tehir parent "things look good"
+because the larger form which these controls don't know about will make a button ghosted or clickable depending on that, essentially
+how does that work
+also because CodeBox, to use that for totp and otp, totp is always 6 digits, while otp is 4 or 6 so green there is 1+ really
+
+
+
+we could export reka
+
+
+
+
+
+
+
+
+
+
+
 # Notes
 
 notesfile

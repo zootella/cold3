@@ -15,7 +15,7 @@ export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
-async function attachState(task, browserHash) {//attach current credential state to task
+async function attachState(task, browserHash) {//attach complete credential state to task — every credential type, every time, so one call gives the store everything it needs to render the full credential panel
 	task.browserHash = browserHash
 	let user = await credentialBrowserGet({browserHash})
 	if (user) {

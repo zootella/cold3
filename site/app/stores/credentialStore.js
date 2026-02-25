@@ -1,5 +1,6 @@
 //manages user credentials and browser sessions
 //follows mainStore pattern: loads during server render, loaded ref prevents re-fetch on client
+//all calls to /api/credential go through this store — components never import fetchWorker directly
 
 export const useCredentialStore = defineStore('credentialStore', () => {
 

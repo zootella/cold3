@@ -55,6 +55,7 @@ function onCancel() {
 	refIdentifier.value = ''
 	refCode.value = ''
 	refOutput.value = ''
+	refCookie.value = null//clear the enrollment envelope cookie so a cancelled enrollment doesn't reappear after page refresh via Get.'s envelope recovery
 	emit('cancel')
 }
 
