@@ -73,10 +73,10 @@ export function stickerParts() {
 	let sticker = {}
 
 	//from wrapper
-	sticker.sealed     = textToTick(wrapper.tick)  //1750962934957, when the shrinkwrap was sealed
+	sticker.sealed     = textToTick(wrapper.tick) //1750962934957, when the shrinkwrap was sealed
 	sticker.sealedText = sayDate(sticker.sealed)  //"2025jun26", the UTC day that tick happened in
 	sticker.hash       = wrapper.hash             //"PKM3EYYNZLNJHSQLOI67R6BLEY77EUNDDLQV2MX6PJ3RLX2BS5GQ" ‹52›
-	sticker.hashText   = wrapper.prefix //"PKM3EYY" short human-readable form of the wrapper hash, computed by seal
+	sticker.hashText   = wrapper.prefix           //"PKM3EYY" short human-readable form of the wrapper hash, computed by seal
 
 	//about this Sticker we're making right now
 	sticker.tag     = Tag()                //"9GkRWuj1CU2ButpEh0lly" a Sticker includes a new unique tag which may be useful
