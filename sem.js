@@ -136,12 +136,18 @@ async function fetchDownloads(name, retries = 2) {
 
 async function main() {
 
-	// Read existing sem.yaml to preserve download data
+	// Read existing sem.yaml to preserve download data and notes
 	let previousData = {}
+	let previousNotes = {}
 	if (fs.existsSync('sem.yaml')) {
 		try {
 			let parsed = yaml.parse(fs.readFileSync('sem.yaml', 'utf8')) || {}
 			previousData = parsed.modules || parsed.details || parsed
+			for (let [, entries] of Object.entries(parsed.summary?.notes || {})) {
+				for (let [name, note] of Object.entries(entries || {})) {
+					previousNotes[name] = note
+				}
+			}
 		} catch (e) {
 			// ignore parse errors, start fresh
 		}
@@ -281,6 +287,7 @@ async function main() {
 			}
 		}
 		m.downloads = downloadsData.get(m.name) || null
+		m.note = previousNotes[m.name] || previousData[m.name]?.note || null
 	}
 
 	// Sort by package name
@@ -351,13 +358,15 @@ async function main() {
 
 		let declaredLine = (m.declaredAge ? `${m.semver} ${m.declaredAge}` : m.semver) + declaredNote
 
-		output[m.name] = {
+		let entry = {
 			homepage: m.homepage || null,
 			description: m.description || null,
-			from: m.sources.length === 1 ? m.sources[0] : m.sources,
-			versions: { declared: declaredLine, installed: m.installedLine + installedNote, current: m.currentLine + currentNote, latest: m.latestLine + latestNote },
-			downloads: m.downloads ? {weekly: commas(m.downloads.weekly), on: tickToText(m.downloads.on)} : {weekly: null, on: null},
 		}
+		if (m.note) entry.note = m.note
+		entry.from = m.sources.length === 1 ? m.sources[0] : m.sources
+		entry.versions = { declared: declaredLine, installed: m.installedLine + installedNote, current: m.currentLine + currentNote, latest: m.latestLine + latestNote }
+		entry.downloads = m.downloads ? {weekly: commas(m.downloads.weekly), on: tickToText(m.downloads.on)} : {weekly: null, on: null}
+		output[m.name] = entry
 	}
 
 	// Filter out empty summary categories
@@ -378,9 +387,33 @@ async function main() {
 			downloadsByMagnitude[group][m.name] = commas(m.downloads.weekly)
 		})
 
+	// Collect user notes for summary, grouped by category (text before first colon)
+	let noteGroups = {}
+	for (let m of sorted) {
+		let category = 'no note'
+		if (m.note) {
+			let colon = m.note.indexOf(':')
+			category = colon > 0 ? m.note.slice(0, colon).trim() : 'no category'
+		}
+		if (!noteGroups[category]) noteGroups[category] = {}
+		noteGroups[category][m.name] = m.note || null
+	}
+	// Sort categories alphabetically, but push 'uncategorized' and 'no note' to the end
+	let categoryOrder = Object.keys(noteGroups).sort((a, b) => {
+		let tail = ['no category', 'no note']
+		let ai = tail.indexOf(a), bi = tail.indexOf(b)
+		if (ai >= 0 && bi >= 0) return ai - bi
+		if (ai >= 0) return 1
+		if (bi >= 0) return -1
+		return a.localeCompare(b)
+	})
+	let notesSummary = {}
+	for (let cat of categoryOrder) notesSummary[cat] = noteGroups[cat]
+
 	let finalOutput = {
 		summary: {
 			generated: tickToText(now),
+			notes: notesSummary,
 			...filteredSummary,
 			downloads: downloadsByMagnitude,
 		},

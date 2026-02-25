@@ -1,5 +1,75 @@
 summary:
-  generated: 2026feb25.2229.16460
+  generated: 2026feb25.2252.52515
+  notes:
+    category one:
+      nanoid: "category one: let's see if this moves up"
+      serverless: "category one: second note about a category we've already put something in"
+    category two:
+      satori: "category two: this is something to think about"
+      semver: "category two: second category"
+    no category:
+      "@auth/sveltekit": Testing out changing a note just in the summary up top.
+      credit-card-type: Oh, i have a lot to say about this one...
+    no note:
+      "@aws-sdk/client-s3": null
+      "@aws-sdk/client-ses": null
+      "@aws-sdk/client-sns": null
+      "@aws-sdk/s3-request-presigner": null
+      "@electric-sql/pglite": null
+      "@nuxtjs/color-mode": null
+      "@pinia/nuxt": null
+      "@resvg/resvg-js": null
+      "@resvg/resvg-wasm": null
+      "@scure/bip39": null
+      "@sendgrid/mail": null
+      "@supabase/supabase-js": null
+      "@sveltejs/adapter-cloudflare": null
+      "@sveltejs/kit": null
+      "@sveltejs/vite-plugin-svelte": null
+      "@tailwindcss/forms": null
+      "@tailwindcss/vite": null
+      "@unhead/vue": null
+      "@uppy/aws-s3": null
+      "@uppy/core": null
+      "@uppy/dashboard": null
+      "@vercel/nft": null
+      "@vitejs/plugin-vue": null
+      "@vueuse/core": null
+      "@wagmi/connectors": null
+      "@wagmi/core": null
+      class-variance-authority: null
+      clsx: null
+      fast-glob: null
+      fs-extra: null
+      h3: null
+      is-mobile: null
+      libphonenumber-js: null
+      lucide-vue-next: null
+      nitropack: null
+      nuxt: null
+      nuxt-og-image: null
+      ofetch: null
+      otpauth: null
+      pinia: null
+      qrcode: null
+      reka-ui: null
+      serverless-offline: null
+      sharp: null
+      svelte: null
+      tailwind-merge: null
+      tailwindcss: null
+      tw-animate-css: null
+      twilio: null
+      typescript: null
+      unstorage: null
+      vidstack: null
+      viem: null
+      vite: null
+      vue: null
+      vue-router: null
+      wrangler: null
+      yaml: null
+      zod: null
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -109,6 +179,7 @@ modules:
   "@auth/sveltekit":
     homepage: https://sveltekit.authjs.dev
     description: Authentication for SvelteKit.
+    note: Testing out changing a note just in the summary up top.
     from: oauth
     versions:
       declared: ^1.11.1 on 2025oct26 4m old
@@ -467,6 +538,7 @@ modules:
   credit-card-type:
     homepage: https://github.com/braintree/credit-card-type
     description: A library for determining credit card type
+    note: Oh, i have a lot to say about this one...
     from: icarus
     versions:
       declared: ^10.1.2 on 2026jan28 0m old
@@ -551,6 +623,7 @@ modules:
   nanoid:
     homepage: https://github.com/ai/nanoid#readme
     description: A tiny (118 bytes), secure URL-friendly unique string ID generator
+    note: "category one: let's see if this moves up"
     from: root
     versions:
       declared: ^5.1.6 on 2025sep22 5m old
@@ -661,6 +734,7 @@ modules:
   satori:
     homepage: https://github.com/vercel/satori#readme
     description: Enlightened library to convert HTML and CSS to SVG.
+    note: "category two: this is something to think about"
     from: site
     versions:
       declared: 0.15.2 on 2025jun09 8m old 📌 Exact version pinned
@@ -673,6 +747,7 @@ modules:
   semver:
     homepage: https://github.com/npm/node-semver#readme
     description: The semantic version parser used by npm.
+    note: "category two: second category"
     from: root
     versions:
       declared: ^7.7.4 on 2026feb05 0m old
@@ -685,6 +760,7 @@ modules:
   serverless:
     homepage: https://github.com/serverless/serverless#readme
     description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
+    note: "category one: second note about a category we've already put something in"
     from: net23
     versions:
       declared: ^4.31.2 on 2026jan27 0m old
