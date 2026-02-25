@@ -18,6 +18,7 @@ hashText, given,
 makePlain, makeObject, makeText,
 totpValidate,
 safefill, deindent, commas,
+prefix7, prefix3, prefix1, prefix2, prefix3d, prefix4, prefix2x2, prefix5,
 } from './level0.js'
 
 //(1) static imports
@@ -2127,50 +2128,6 @@ noop(() => {//and a rudimentary fuzz buster:
 
 
 
-export function prefix7(data) {//just the first 7 of the base32, what disk uses
-	return data.base32().slice(0, 7)//base32 chars are 5-bit groups from the binary — no mod, zero bias
-}
-export function prefix3(data) {//just the first 3, what i type manually into git messages
-	return data.base32().slice(0, 3)//same as prefix7, no mod, zero bias
-}
-const prefix_alphabet = 'ABCDEFHJKMNPQRTUVWXYZ'//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
-export function prefix1(data) {//single letter from prefix_alphabet, same approach as otpPrefix
-	let v = new DataView(data.array().buffer)
-	let u = v.getUint32(0, false)
-	return prefix_alphabet[u % prefix_alphabet.length]//2^32 mod 21 = 4, so 4 of 21 letters are ~0.0000005% more likely
-}
-export function prefix2(data) {//one letter and one digit like "a2", 260 unique values, 50% collision after ~19 hashes
-	let v = new DataView(data.array().buffer)
-	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)//bytes 0-3 for letter, 2^32 mod 26 = 22, ~0.0000006% bias
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')//bytes 4-7 for digits, 2^32 mod 10000 = 7296, ~0.0002% bias
-	return letter + digits.slice(0, 1)
-}
-export function prefix3d(data) {//one letter and two digits like "a23", 2600 unique values, 50% collision after ~60 hashes
-	let v = new DataView(data.array().buffer)
-	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
-	return letter + digits.slice(0, 2)
-}
-export function prefix4(data) {//one letter and three digits like "a234", 26000 unique values, 50% collision after ~190 hashes
-	let v = new DataView(data.array().buffer)
-	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
-	return letter + digits.slice(0, 3)
-}
-export function prefix2x2(data) {//two letters and two digits like "ab34", 67600 unique values, 50% collision after ~307 hashes
-	let v = new DataView(data.array().buffer)
-	let u = v.getUint32(0, false)
-	let letter1 = String.fromCharCode(97 + u % 26)//same first letter as prefix2/3d/4/5
-	let letter2 = String.fromCharCode(97 + Math.floor(u / 26) % 26)//second letter from same uint32
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
-	return letter1 + letter2 + digits.slice(0, 2)//same first two digits as prefix3d
-}
-export function prefix5(data) {//one letter and four digits like "a2345", 260000 unique values, 50% collision after ~601 hashes
-	let v = new DataView(data.array().buffer)
-	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
-	return letter + digits
-}
 export async function prefix39(data) {//BIP-39 word (first 4 chars) + 2 or 3 digits, always 6 chars, 297500 unique values
 	let wordlist = await wordlistDynamicImport()
 	let v = new DataView(data.array().buffer)

@@ -3,7 +3,7 @@ import {//from wrapper
 wrapper,
 } from './wrapper.js'
 import {//from level0
-Time, inSeconds, Now, sayDate, sayTick, isExpired,
+Time, inSeconds, Now, sayDate, sayTick, isExpired, textToTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, checkTextSame, newline,
 Tag, checkTag, hasTag,
@@ -73,10 +73,10 @@ export function stickerParts() {
 	let sticker = {}
 
 	//from wrapper
-	sticker.sealed     = wrapper.tick             //1750962934957, when the shrinkwrap was sealed
-	sticker.sealedText = sayDate(wrapper.tick)    //"2025jun26", the UTC day that tick happened in
+	sticker.sealed     = textToTick(wrapper.tick)  //1750962934957, when the shrinkwrap was sealed
+	sticker.sealedText = sayDate(sticker.sealed)  //"2025jun26", the UTC day that tick happened in
 	sticker.hash       = wrapper.hash             //"PKM3EYYNZLNJHSQLOI67R6BLEY77EUNDDLQV2MX6PJ3RLX2BS5GQ" ‹52›
-	sticker.hashText   = wrapper.hash.slice(0, 7) //"PKM3EYY" just the start of the wrapper hash
+	sticker.hashText   = wrapper.prefix //"PKM3EYY" short human-readable form of the wrapper hash, computed by seal
 
 	//about this Sticker we're making right now
 	sticker.tag     = Tag()                //"9GkRWuj1CU2ButpEh0lly" a Sticker includes a new unique tag which may be useful
@@ -193,13 +193,15 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
 const floppyDiskLabelWidth = 16
 export function sayFloppyDisk(wrapper) {
-	let date = sayDate(wrapper.tick)
+	let tick = textToTick(wrapper.tick)
+	let date = sayDate(tick)
 	let year = date.slice(0, 4)
-	let hash = wrapper.hash.slice(0, 7)
+	let hash = wrapper.prefix
+	let label = wrapper.label//ttd february, trying out prefix39 label on the disk
 	let full = Math.floor(wrapper.codeSize*100/floppyDiskCapacity)
 
 	let line1 = extend(' ', `${wrapper.name} ~ ${hash}`)
-	let line2 = extend('_', `${sayDate(wrapper.tick)}`)
+	let line2 = extend('_', `${date}`)
 	let line3 = extend('_', `${wrapper.codeFiles}_files`)
 	let line4 = extend('_', `${wrapper.codeSize}_bytes`)
 	let line5 = extend('_', `disk_filled_${full}%`)
@@ -208,7 +210,7 @@ export function sayFloppyDisk(wrapper) {
 	return {
 		disk: `
  ____________________
-| |${line1        }| |
+| |${line1        }| |  ~ ${label}
 |.|________________|H|
 | |${line2        }| |
 | |${line3        }| |

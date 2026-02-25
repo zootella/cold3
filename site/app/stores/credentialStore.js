@@ -10,7 +10,7 @@ const userTag = ref('')//the signed-in user, or empty if not signed in
 const name = ref(null)//the user's name {f0, f1, f2}, or null if not signed in or no name
 const passwordCycles = ref(0)//the signed-in user's password hash cycles, or 0 if not signed in or no password (set via apply after auth)
 const totpEnrolled = ref(false)//true if the user has a verified TOTP enrollment
-const totpIdentifier = ref('')//short identifier like "X2B" to help user find the right authenticator entry
+const totpIdentifier = ref('')//short identifier like "g3" to help user find the right authenticator entry
 const enrollment = ref(null)//in-flight TOTP enrollment recovered from envelope cookie, or null
 
 const userDisplayName = computed(() => {//best available display name for page

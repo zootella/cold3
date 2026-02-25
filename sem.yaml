@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb25.2118.12442
+  generated: 2026feb25.2220.6041
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -445,10 +445,10 @@ modules:
     description: Class Variance Authority 🧬
     from: site
     versions:
-      declared: ^0.7.1 on 2024nov26 14m old
-      installed: 0.7.1 on 2024nov26 14m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
-      current: 0.7.1 on 2024nov26 14m old
-      latest: 0.7.1 on 2024nov26 14m old
+      declared: ^0.7.1 on 2024nov26 15m old
+      installed: 0.7.1 on 2024nov26 15m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
+      current: 0.7.1 on 2024nov26 15m old
+      latest: 0.7.1 on 2024nov26 15m old
     downloads:
       weekly: 15,316,126
       on: 2026feb25.1843.6515

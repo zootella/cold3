@@ -11,7 +11,7 @@ Data, decryptData, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
-otpGenerate, otpPrefix,
+otpGenerate, otpPrefix, prefix_alphabet,
 makePlain, makeObject, makeText,
 safefill, deindent,
 isInSimulationMode, ageNow,
@@ -161,7 +161,7 @@ export const otpConstants = {//factory settings for OTP codes to prove email and
 	short:       4,//can be short like "1234".
 	standard:    6,//after that, longer like "123456"
 
-	alphabet: 'ABCDEFHJKMNPQRTUVWXYZ',//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
+	alphabet: prefix_alphabet,//21 letters that don't look like numbers "ABCDEFHJKMNPQRTUVWXYZ" omitting gG~9, iI~1, lL~1, oO~0, sS~5
 	/*
 	For a 50% chance to guess correctly we need N guesses such that:
 		(1 - p)^N = 0.5   where p = 1/(total possible codes)

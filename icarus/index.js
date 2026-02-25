@@ -194,6 +194,7 @@ export {
 
 qrcodeDynamicImport, uppyDynamicImport, wevmDynamicImport,
 nodeDynamicImport, fuzzDynamicImport, pgliteDynamicImport,
+prefix39,
 
 sayPlural, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
@@ -285,5 +286,6 @@ commas,
 anyIncludeAny,
 
 liveBox,//move to whichever level you need it!
+prefix_alphabet, prefix7, prefix3, prefix1, prefix2, prefix3d, prefix4, prefix2x2, prefix5,
 
 } from './level0.js'

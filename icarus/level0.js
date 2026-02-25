@@ -1298,12 +1298,7 @@ test(() => {
 //choose a letter from the given alphabet that is a result of the hash of s
 export async function otpPrefix(s, alphabet) {
 	checkText(s); checkText(alphabet)
-
-	let d = await Data({text: s}).hash()
-	let v = new DataView(d.array().buffer)//from Data's array, get the buffer, we'll use just the first 4 bytes
-	let u = v.getUint32(0, false)//big endian, the Internet's default, but doesn't really matter here
-	let i = u % alphabet.length//modulo down to index in range
-	return alphabet[i]//return alphabet letter at that index, will be even across alphabet
+	return prefix1(await Data({text: s}).hash(), alphabet)
 }
 test(async () => {
 	ok(await otpPrefix('3IXdnF46zWIYmRb9TYFuw', 'ABCD') == 'A')
@@ -1991,8 +1986,8 @@ export async function totpEnroll({label, issuer, addIdentifier, secret}) {//only
 	let uri = `otpauth://totp/${encodeURIComponent(`${issuer}:${label}`)}?${params}`
 	return {secret: secret.base32(), identifier, title, uri}
 }
-//show the user text like "[X2B]" hashed from the secret
-export async function totpIdentifier({secret}) { return (await hashText(secret.base32())).slice(0, 3) }
+//show the user text like "[g3]" hashed from the secret
+export async function totpIdentifier({secret}) { return prefix2(await Data({text: secret.base32()}).hash()) }
 
 //determine if a code is valid for a secret now, pass in a time for testing
 export async function totpValidate({secret, code, now}) {//only pass in tick count now for testing
@@ -2032,9 +2027,9 @@ test(async () => {
 		label: 'Alice', issuer: 'ExampleSite', addIdentifier: true,
 	})
 	ok(enrollment.secret == 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR')
-	ok(enrollment.identifier == '25I')
-	ok(enrollment.title == 'ExampleSite: Alice [25I]')
-	ok(enrollment.uri == 'otpauth://totp/ExampleSite%3AAlice%20%5B25I%5D?secret=SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR&algorithm=SHA1&digits=6&period=30&issuer=ExampleSite')
+	ok(enrollment.identifier == 'g3')
+	ok(enrollment.title == 'ExampleSite: Alice [g3]')
+	ok(enrollment.uri == 'otpauth://totp/ExampleSite%3AAlice%20%5Bg3%5D?secret=SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR&algorithm=SHA1&digits=6&period=30&issuer=ExampleSite')
 
 	//enroll: special characters in label
 	ok((await totpEnroll({secret: Data({base16: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'}), label: '@_Alice-Jones_ [HI] <tag>', issuer: 'examplesite.com'})).uri == 'otpauth://totp/examplesite.com%3A%40_Alice-Jones_%20%5BHI%5D%20%3Ctag%3E?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com')
@@ -3718,6 +3713,50 @@ test(() => {
 
 
 
+export function prefix7(data) {//just the first 7 of the base32, what disk uses
+	return data.base32().slice(0, 7)//base32 chars are 5-bit groups from the binary — no mod, zero bias
+}
+export function prefix3(data) {//just the first 3, what i type manually into git messages
+	return data.base32().slice(0, 3)//same as prefix7, no mod, zero bias
+}
+export const prefix_alphabet = 'ABCDEFHJKMNPQRTUVWXYZ'//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
+export function prefix1(data, alphabet = prefix_alphabet) {//single letter from alphabet, defaults to prefix_alphabet (21 letters)
+	let v = new DataView(data.array().buffer)
+	let u = v.getUint32(0, false)
+	return alphabet[u % alphabet.length]//2^32 mod 21 = 4, so 4 of 21 letters are ~0.0000005% more likely (for default alphabet)
+}
+export function prefix2(data) {//one letter and one digit like "a2", 260 unique values, 50% collision after ~19 hashes
+	let v = new DataView(data.array().buffer)
+	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)//bytes 0-3 for letter, 2^32 mod 26 = 22, ~0.0000006% bias
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')//bytes 4-7 for digits, 2^32 mod 10000 = 7296, ~0.0002% bias
+	return letter + digits.slice(0, 1)
+}
+export function prefix3d(data) {//one letter and two digits like "a23", 2600 unique values, 50% collision after ~60 hashes
+	let v = new DataView(data.array().buffer)
+	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
+	return letter + digits.slice(0, 2)
+}
+export function prefix4(data) {//one letter and three digits like "a234", 26000 unique values, 50% collision after ~190 hashes
+	let v = new DataView(data.array().buffer)
+	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
+	return letter + digits.slice(0, 3)
+}
+export function prefix2x2(data) {//two letters and two digits like "ab34", 67600 unique values, 50% collision after ~307 hashes
+	let v = new DataView(data.array().buffer)
+	let u = v.getUint32(0, false)
+	let letter1 = String.fromCharCode(97 + u % 26)//same first letter as prefix2/3d/4/5
+	let letter2 = String.fromCharCode(97 + Math.floor(u / 26) % 26)//second letter from same uint32
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
+	return letter1 + letter2 + digits.slice(0, 2)//same first two digits as prefix3d
+}
+export function prefix5(data) {//one letter and four digits like "a2345", 260000 unique values, 50% collision after ~601 hashes
+	let v = new DataView(data.array().buffer)
+	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
+	return letter + digits
+}
 
 
 

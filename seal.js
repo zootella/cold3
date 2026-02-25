@@ -1,8 +1,9 @@
 
 import {
 wrapper, sayFloppyDisk, runTests, Time,
-log, look, newline, Data, Now, Tag,
+log, look, newline, Data, Now, Tag, tickToText,
 parseKeyFile, randomBetween, encryptData, cutAfterLast, cutRandomWords,
+prefix7, prefix39,
 } from 'icarus'
 import {promises as fs} from 'fs'
 import path from 'path'
@@ -163,17 +164,21 @@ async function affixSeal(properties, manifest) {
 	let publicData = Data({text: blocks.publicBlock})//encode the public keys; client and server code will use them
 
 	//compose contents for the new wrapper.js
-	let o = {...wrapper}//copy all the properties into a new object
-	o.tick = Now()//update individual properties in the new object
-	o.local = ((new Date()).getTimezoneOffset()) * Time.minute
-	o.cloud = wrapper.cloud
-	o.hash = hash.base32()
-	o.codeFiles = codeFiles
-	o.codeSize = codeSize
-	o.totalFiles = totalFiles
-	o.totalSize = totalSize
-	o.secretKeys = 'FujiTracer'+'S10_'+cutRandomWords(cipherData.base62(), 10, 20)//secrets available only to server bundles
-	o.publicKeys = 'FujiTracer'+'P10_'+cutRandomWords(publicData.base62(), 10, 20)//intentionally, acceptably, and necessarily public factory presets and client side bundle keys, still politely obscured
+	let o = {
+		name: wrapper.name,
+		tick: tickToText(Now()),
+		local: ((new Date()).getTimezoneOffset()) * Time.minute,
+		cloud: wrapper.cloud,
+		hash: hash.base32(),
+		prefix: prefix7(hash),//short human-readable form of the hash; change to prefix39 etc. to try other forms
+		label: await prefix39(hash),//BIP-39 word + 2 digits, like "Deci71", trying this out ttd february
+		codeFiles,
+		codeSize,
+		totalFiles,
+		totalSize,
+		secretKeys: 'FujiTracer'+'S10_'+cutRandomWords(cipherData.base62(), 10, 20),//secrets available only to server bundles
+		publicKeys: 'FujiTracer'+'P10_'+cutRandomWords(publicData.base62(), 10, 20),//intentionally, acceptably, and necessarily public factory presets and client side bundle keys, still politely obscured
+	}
 
 	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
 	await writeWrapper(o)
