@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb25.1843.39340
+  generated: 2026feb25.2118.12442
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -25,6 +25,7 @@ summary:
   ⏰ Current version 6+ months newer:
     - serverless-offline
   🎁 Major new version available:
+    - "@scure/bip39"
     - "@sveltejs/vite-plugin-svelte"
     - "@vitejs/plugin-vue"
     - h3
@@ -73,6 +74,7 @@ summary:
       twilio: 3,039,559
       unstorage: 4,060,099
       wrangler: 4,268,110
+      "@scure/bip39": 4,614,643
       ofetch: 4,635,769
       h3: 4,645,027
       vue-router: 5,024,545
@@ -123,8 +125,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.997.0 on 2026feb24 0m old
-      latest: 3.997.0 on 2026feb24 0m old
+      current: 3.998.0 on 2026feb25 0m old
+      latest: 3.998.0 on 2026feb25 0m old
     downloads:
       weekly: 17,875,343
       on: 2026feb25.1842.21833
@@ -135,8 +137,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.997.0 on 2026feb24 0m old
-      latest: 3.997.0 on 2026feb24 0m old
+      current: 3.998.0 on 2026feb25 0m old
+      latest: 3.998.0 on 2026feb25 0m old
     downloads:
       weekly: 2,322,525
       on: 2026feb25.1842.21833
@@ -147,8 +149,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.997.0 on 2026feb24 0m old
-      latest: 3.997.0 on 2026feb24 0m old
+      current: 3.998.0 on 2026feb25 0m old
+      latest: 3.998.0 on 2026feb25 0m old
     downloads:
       weekly: 2,822,051
       on: 2026feb25.1842.21833
@@ -159,8 +161,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.997.0 on 2026feb24 0m old
-      latest: 3.997.0 on 2026feb24 0m old
+      current: 3.998.0 on 2026feb25 0m old
+      latest: 3.998.0 on 2026feb25 0m old
     downloads:
       weekly: 7,313,226
       on: 2026feb25.1842.21833
@@ -224,6 +226,18 @@ modules:
     downloads:
       weekly: 426,128
       on: 2026feb25.1843.6515
+  "@scure/bip39":
+    homepage: https://paulmillr.com/noble/#scure
+    description: Secure, audited & minimal implementation of BIP39 mnemonic phrases
+    from: root
+    versions:
+      declared: ^1.6.0 on 2025apr24 10m old
+      installed: 1.6.0 on 2025apr24 10m old
+      current: 1.6.0 on 2025apr24 10m old
+      latest: 2.0.1 on 2025oct07 4m old 🎁 Major new version available
+    downloads:
+      weekly: 4,614,643
+      on: 2026feb25.2005.18378
   "@sendgrid/mail":
     homepage: https://sendgrid.com
     description: Twilio SendGrid NodeJS mail service

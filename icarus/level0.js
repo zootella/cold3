@@ -3740,8 +3740,6 @@ test(() => {
 
 
 
-
-
 export function sample1() {
 	return 'hello from sample1 in icarus level0'
 }

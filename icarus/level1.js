@@ -62,8 +62,8 @@ export async function wevmDynamicImport() {//viem and wagmi are by the same team
 	return _wevm
 }
 
-//(3) dynamic imports that use vite ignore to stay out of all bundles [see also (4) in net23/persephone.js]
-let _node, _fuzz, _grid
+//(3) dynamic imports that use vite ignore to stay out of all bundles
+let _node, _fuzz, _grid, _wordlist
 export async function nodeDynamicImport() {//modules for calls from lambda and local node testing; don't call from web worker or page!
 	if (!_node) {
 		let [fs, stream] = await Promise.all([
@@ -93,6 +93,17 @@ export async function pgliteDynamicImport() {//modules for local unit tests that
 	}
 	return _grid
 }
+export async function wordlistDynamicImport() {//BIP-39 english wordlist, 2048 words, 13kb raw / 5kb brotli
+	if (!_wordlist) {
+		let [english] = await Promise.all([
+			import(/* @vite-ignore */ '@scure/bip39/wordlists/english'),
+		])
+		_wordlist = english.wordlist
+	}
+	return _wordlist
+}
+
+//(4) see also a fourth group of imports in net23/persephone.js
 
 /*
 notes about imports:
@@ -2105,6 +2116,129 @@ noop(() => {//and a rudimentary fuzz buster:
 	run2(seconds, timeRange, 16)
 	run2(seconds, timeRange, 256)
 })
+
+
+
+
+
+
+
+
+
+
+
+export function prefix7(data) {//just the first 7 of the base32, what disk uses
+	return data.base32().slice(0, 7)//base32 chars are 5-bit groups from the binary — no mod, zero bias
+}
+export function prefix3(data) {//just the first 3, what i type manually into git messages
+	return data.base32().slice(0, 3)//same as prefix7, no mod, zero bias
+}
+const prefix_alphabet = 'ABCDEFHJKMNPQRTUVWXYZ'//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
+export function prefix1(data) {//single letter from prefix_alphabet, same approach as otpPrefix
+	let v = new DataView(data.array().buffer)
+	let u = v.getUint32(0, false)
+	return prefix_alphabet[u % prefix_alphabet.length]//2^32 mod 21 = 4, so 4 of 21 letters are ~0.0000005% more likely
+}
+export function prefix2(data) {//one letter and one digit like "a2", 260 unique values, 50% collision after ~19 hashes
+	let v = new DataView(data.array().buffer)
+	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)//bytes 0-3 for letter, 2^32 mod 26 = 22, ~0.0000006% bias
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')//bytes 4-7 for digits, 2^32 mod 10000 = 7296, ~0.0002% bias
+	return letter + digits.slice(0, 1)
+}
+export function prefix3d(data) {//one letter and two digits like "a23", 2600 unique values, 50% collision after ~60 hashes
+	let v = new DataView(data.array().buffer)
+	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
+	return letter + digits.slice(0, 2)
+}
+export function prefix4(data) {//one letter and three digits like "a234", 26000 unique values, 50% collision after ~190 hashes
+	let v = new DataView(data.array().buffer)
+	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
+	return letter + digits.slice(0, 3)
+}
+export function prefix2x2(data) {//two letters and two digits like "ab34", 67600 unique values, 50% collision after ~307 hashes
+	let v = new DataView(data.array().buffer)
+	let u = v.getUint32(0, false)
+	let letter1 = String.fromCharCode(97 + u % 26)//same first letter as prefix2/3d/4/5
+	let letter2 = String.fromCharCode(97 + Math.floor(u / 26) % 26)//second letter from same uint32
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
+	return letter1 + letter2 + digits.slice(0, 2)//same first two digits as prefix3d
+}
+export function prefix5(data) {//one letter and four digits like "a2345", 260000 unique values, 50% collision after ~601 hashes
+	let v = new DataView(data.array().buffer)
+	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
+	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
+	return letter + digits
+}
+export async function prefix39(data) {//BIP-39 word (first 4 chars) + 2 or 3 digits, always 6 chars, 297500 unique values
+	let wordlist = await wordlistDynamicImport()
+	let v = new DataView(data.array().buffer)
+	let w = wordlist[v.getUint16(0, false) % 2048]//bytes 0-1 for word, 2^16 mod 2^11 = 0, zero bias
+	let word = w.slice(0, 4)
+	word = word[0].toUpperCase() + word.slice(1)
+	let d = (v.getUint32(2, false) % 1000).toString().padStart(3, '0')//bytes 2-5 for digits, 2^32 mod 1000 = 296, ~0.00002% bias
+	let digits = word.length < 4 ? d : d.slice(0, 2)//3-letter words get 3 digits, 4-letter words get 2, always 6 chars total
+	return word + digits
+}
+noop(async () => {
+	let d = Data({random: 32})//32 bytes, same size as a SHA-256 hash
+
+	log('', deindent`
+		${d.base16()}  ~base16
+		${d.base32()}  ~base32
+		${d.base62()}  ~base62
+		${d.base64()}  ~base64
+
+		${prefix7(d)}  ~prefix7, 34 billion values, 50% collision after ~218,000 hashes
+		${prefix3(d)}  ~prefix3, 32,768 values, 50% collision after ~213 hashes
+		${prefix1(d)}  ~prefix1, 21 values, 50% collision after ~5 hashes (use for OTP)
+		${prefix2(d)}  ~prefix2, 260 values, 50% collision after ~19 hashes (use for TOTP)
+		${prefix3d(d)}  ~prefix3d, 2,600 values, 50% collision after ~60 hashes
+		${prefix4(d)}  ~prefix4, 26,000 values, 50% collision after ~190 hashes
+		${prefix2x2(d)}  ~prefix2x2, 67,600 values, 50% collision after ~307 hashes
+		${prefix5(d)}  ~prefix5, 260,000 values, 50% collision after ~601 hashes
+		${await prefix39(d)}  ~prefix39, 297,500 values, 50% collision after ~655 hashes (use for seal/wrapper/Sticker)
+	`)
+})
+/*
+ways to show a long hash value uniquely and tersely:
+
+otpPrefix(s, alphabet) - hashes the text s, reads first 4 bytes as uint32, mods by alphabet length to pick one letter.
+	used to prefix an otp code with a letter like "A-1234" so the user can tell which code goes with which action.
+
+totpIdentifier({secret}) - hashes the secret's base32, slices first 3 characters of the base32 result.
+	appended to totp label as "[X2B]" so the user can find the right entry in their authenticator app.
+
+sayFloppyDisk(wrapper) - clips first 7 characters of wrapper.hash (already base32) for the ascii art disk label.
+	shown as "name ~ PKM3EYY" on the floppy disk, identifying a build. And for git commit messages, manually type just the first three, like "PKM"
+
+hashSummary(data) - reads first 4 bytes as uint32, mods by 2600 to produce one letter and two digits like "a23".
+	2600 unique values, uniform distribution from a single mod operation.
+
+ttd february, rigth now this is standalone and in addition to implementations in different sections
+but you can see that you like:
+
+D  ~prefix1, 21 values, 50% collision after ~5 hashes (use for OTP)
+e0  ~prefix2, 260 values, 50% collision after ~19 hashes (use for TOTP)
+Bare74  ~prefix39, 297,500 values, 50% collision after ~655 hashes (use for seal/wrapper/Sticker)
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
