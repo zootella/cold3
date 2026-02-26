@@ -1,7 +1,8 @@
 summary:
-  generated: 2026feb26.0243.34349
+  generated: 2026feb26.1650.33270
   notes:
     build:
+      "@scure/bip39": "build: mnemonic phrases for seal"
       "@vercel/nft": "build: node file trace to build lean net23.zip"
       "@vitejs/plugin-vue": "build: vue vite plugin in icarus TDD runner; held at v5, v6 arrives with vite 7 and nuxt 5"
       fast-glob: "build: used by pnpm seal"
@@ -59,7 +60,6 @@ summary:
       svelte: "sveltekit: ui framework; barely used, 2 pages in oauth"
     test:
       "@electric-sql/pglite": "test: wasm postgres for local dev tests"
-      "@scure/bip39": "test: mnemonic phrases; dynamic import in level1 fuzz tests; major v2 available"
       nanoid: "test: url-friendly unique id generator"
       otpauth: "test: totp library; in root for fuzz tests in level1"
     validate:
@@ -315,7 +315,7 @@ modules:
   "@scure/bip39":
     homepage: https://paulmillr.com/noble/#scure
     description: Secure, audited & minimal implementation of BIP39 mnemonic phrases
-    note: "test: mnemonic phrases; dynamic import in level1 fuzz tests; major v2 available"
+    note: "build: mnemonic phrases for seal"
     from: root
     versions:
       declared: ^1.6.0 on 2025apr24 10m old
@@ -346,8 +346,8 @@ modules:
     versions:
       declared: ^2.95.3 on 2026feb06 0m old
       installed: 2.96.0 on 2026feb17 0m old
-      current: 2.97.0 on 2026feb18 0m old
-      latest: 2.97.0 on 2026feb18 0m old
+      current: 2.98.0 on 2026feb26 0m old
+      latest: 2.98.0 on 2026feb26 0m old
     downloads:
       weekly: 13,452,607
       on: 2026feb25.2300.37693
@@ -424,8 +424,8 @@ modules:
     versions:
       declared: ^2.1.3 on 2026feb06 0m old
       installed: 2.1.4 on 2026feb08 0m old
-      current: 2.1.7 on 2026feb25 0m old
-      latest: 2.1.7 on 2026feb25 0m old
+      current: 2.1.9 on 2026feb26 0m old
+      latest: 2.1.9 on 2026feb26 0m old
     downloads:
       weekly: 1,637,741
       on: 2026feb25.2307.15278
@@ -642,8 +642,8 @@ modules:
     versions:
       declared: ^1.12.36 on 2026jan30 0m old
       installed: 1.12.37 on 2026feb17 0m old
-      current: 1.12.37 on 2026feb17 0m old
-      latest: 1.12.37 on 2026feb17 0m old
+      current: 1.12.38 on 2026feb26 0m old
+      latest: 1.12.38 on 2026feb26 0m old
     downloads:
       weekly: 12,950,010
       on: 2026feb25.2300.37693
@@ -1018,8 +1018,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 0m old
       installed: 4.66.0 on 2026feb17 0m old
-      current: 4.68.1 on 2026feb24 0m old
-      latest: 4.68.1 on 2026feb24 0m old
+      current: 4.69.0 on 2026feb26 0m old
+      latest: 4.69.0 on 2026feb26 0m old
     downloads:
       weekly: 4,268,110
       on: 2026feb25.2307.15278
