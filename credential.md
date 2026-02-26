@@ -31,6 +31,22 @@ The fix: use `browserIsBesideAppStore()` to choose which control to show, but do
 
 The enrollment flow becomes the same on both platforms: Add → enrollment UI appears (QR on desktop, button on mobile) with code input → user gets the code into their authenticator one way or the other → enters 6-digit code → done.
 
+### Implementation notes (pick up here)
+
+**The bug.** `onEnroll()` lines 72-74 in TotpPanel.vue have a mobile branch that does `emit('edit')` then `window.location.href = uri` without ever setting `refUri` or `refStep = 2`. When the user swipes back from the authenticator, the panel is expanded but the step-2 template guard (`v-else-if="refStep === 2 && refUri"`) doesn't match. Empty card. Mobile browsers often restore from bfcache rather than reloading, so the broken Vue state persists as-is.
+
+**The fix, in four parts.**
+
+**(1) Add a const and a function.** After `const refCookie = useTotpCookie()`, add `const refMobile = browserIsBesideAppStore()`. Add a function `onOpenAuthenticator()` that does `window.location.href = refUri.value`.
+
+**(2) Unify `onEnroll()`.** Remove the `if (browserIsBesideAppStore())` branch entirely. The function should always do: set `refUri.value`, set `refStep.value = 2`, then `emit('edit')`. Same path on both platforms. The mobile-specific behavior moves to the template.
+
+**(3) Template: QR on desktop, button on mobile.** Inside the step-2 template block (`v-else-if="refStep === 2 && refUri"`), use `refMobile` to switch what shows. Desktop: the existing QR + side-by-side layout with instruction text "Scan the QR, then enter the 6 digits you get below." Mobile: a "Load in Authenticator App" button (calls `onOpenAuthenticator`) with instruction text adjusted for tapping instead of scanning. Both show the code input and Enter/Cancel buttons. The `flex gap-4` layout with `shrink-0` QR div is desktop-only; mobile gets a simpler vertical layout.
+
+**(4) bfcache recovery (later, not this step).** When the user taps the button and swipes back, we'll need a `pageshow` listener like OauthDemo.vue uses. Check `event.persisted` — if true, the browser thawed from bfcache after the authenticator app. We don't need this yet because the current smoke test stops before clicking the button. The pattern to follow is in `site/app/components/snippet1/OauthDemo.vue` lines 22-29.
+
+**Smoke test for this step.** Desktop: happy and sad paths still work (nothing changes for desktop flow). Mobile (iPhone Chrome): tap Add, see the "Load in Authenticator App" button appear (no QR), stop there — don't tap the button yet.
+
 ## Current endpoint and store map
 
 **`/api/credential` + `credentialStore`** — the main credential system. Handles Browser, Password, Name, and TOTP. Every successful response includes `attachState` (full credential snapshot). Store exposes refs and methods for all credential types. Used by CredentialPanel and its sub-components (SetPasswordForm, TotpPanel, etc).
