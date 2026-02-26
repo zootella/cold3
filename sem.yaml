@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb26.1728.13249
+  generated: 2026feb26.2145.18910
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -203,8 +203,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.998.0 on 2026feb25 0m old
-      latest: 3.998.0 on 2026feb25 0m old
+      current: 3.999.0 on 2026feb26 0m old
+      latest: 3.999.0 on 2026feb26 0m old
     downloads:
       weekly: 17,875,343
       on: 2026feb25.2302.49295
@@ -216,8 +216,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.998.0 on 2026feb25 0m old
-      latest: 3.998.0 on 2026feb25 0m old
+      current: 3.999.0 on 2026feb26 0m old
+      latest: 3.999.0 on 2026feb26 0m old
     downloads:
       weekly: 2,322,525
       on: 2026feb25.2302.49295
@@ -229,8 +229,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.998.0 on 2026feb25 0m old
-      latest: 3.998.0 on 2026feb25 0m old
+      current: 3.999.0 on 2026feb26 0m old
+      latest: 3.999.0 on 2026feb26 0m old
     downloads:
       weekly: 2,822,051
       on: 2026feb25.2302.49295
@@ -242,8 +242,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.998.0 on 2026feb25 0m old
-      latest: 3.998.0 on 2026feb25 0m old
+      current: 3.999.0 on 2026feb26 0m old
+      latest: 3.999.0 on 2026feb26 0m old
     downloads:
       weekly: 7,313,226
       on: 2026feb25.2302.49295

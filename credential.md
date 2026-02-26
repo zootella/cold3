@@ -65,26 +65,20 @@ Right now OTP and TOTP each have their own cookie and envelope: `temporary_envel
 
 The future direction is a single `CredentialEnvelope` cookie that can hold in-flight state for multiple credential operations simultaneously — a TOTP enrollment and an OTP verification happening in the same session, stored in one envelope with slots for each. `Get.` already does this for TOTP; extending it to OTP means OTP's `FoundEnvelope.` action becomes unnecessary.
 
-## TOTP mobile: split enrollment into two visual stages (next)
+## TOTP mobile: split enrollment into two visual stages (done)
 
 On mobile, showing the "Load in Authenticator App" button and the code input + Enter/Cancel all at once is a lot for a small screen. Split the mobile flow into two visual stages: first the button, then (after tapping it) the code input. Desktop is unchanged.
 
-`refStep` currently has two values. Add a third:
+Initially implemented with `refStep` (integer 1/2/3), then refactored to declarative booleans. `refUri` (truthy = enrollment active) and `refOpened` (boolean = mobile user has tapped Load) replaced the integer state machine. Each template element knows when to appear: QR shows when `refUri && !refMobile`, Load button shows when `refUri && refMobile`, code input shows when `refUri && (!refMobile || refOpened)`. No step numbers to mentally map.
 
-- **Step 1**: Add button (both platforms, as now)
-- **Step 2**: Desktop: QR + code input (as now). Mobile: just the "Load in Authenticator App" button + instruction text.
-- **Step 3**: Mobile only — code input + Enter/Cancel + identifier tip (after returning from authenticator)
+Sub-components extracted to `components/totp/`: `TotpText1.vue` (shared instruction text, slot for mid-sentence injection), `TotpText2.vue` (identifier tip, prop-driven with self-guarding v-if), `TotpInput.vue` (numeric code input, defineModel for v-model).
 
-**Changes in TotpPanel.vue:**
+## Unify TOTP endpoint into credential endpoint (next)
 
-**(1) Update `refStep` comment** (line 27) to document all three steps.
+Right now `/api/credential.js` has its own copy of the TOTP enrollment and remove logic (TotpEnroll1, TotpEnroll2, TotpRemove actions), duplicated from `/api/totp.js`. The credential.js copy is stripped of comments, logs, and trail/rate-limiting code that the original has. This is wrong — the logic should live in one place.
 
-**(2) `onOpenAuthenticator`** — set `refStep.value = 3` before the redirect. When the user returns (warm page or bfcache thaw), they land at step 3 with the code input showing.
+**Direction:** export the core TOTP handler functions from `totp.js` and call them from `credential.js`. The logic stays in `totp.js` (with its comments, logs, and ttd notes intact). `credential.js`'s TOTP action branches become thin delegations. `attachState` still runs after in `credential.js` to return the full credential snapshot — the store and client are unaffected.
 
-**(3) Template** — split the current mobile `v-if="refMobile"` div into two blocks:
-- `refStep === 2 && refMobile`: instruction text + "Load in Authenticator App" button only
-- `refStep === 3`: code input + Enter/Cancel + identifier tip
+Something like: `totp.js` exports functions like `handleTotpEnroll1({userTag, userName, browserHash})`, `handleTotpEnroll2({userTag, browserHash, envelope, code})`, `handleTotpRemove({userTag})` that return result objects. `credential.js` calls these and puts results on `task`. The demo endpoint (`TotpDemo.vue`) also calls the same exported functions through its own `doorHandleBelow`.
 
-**(4) `onMounted` recovery** stays at step 2. On full reload, a mobile user sees the button again — correct, since they need to re-open the authenticator to get a current code anyway.
-
-**(5) `onCancel`** already resets `refStep` to 1 — no change needed.
+The demo endpoint (`/api/totp`) stays alive — it has `Status.` and `Validate.` actions that credential doesn't need, and `TotpDemo.vue` still uses it directly. But the enrollment and remove logic is no longer duplicated.

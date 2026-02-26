@@ -34,9 +34,9 @@ const refKey = ref(Tag())//change to force Vue to recreate
 <div class="border border-gray-300 p-2" :key="refKey"><!-- changing key makes Vue destroy and recreate this div and all child components, resetting their internal state -->
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>OauthDemo</i></p>
 
-<div><Button :state="functionState('google')"  :click="() => clicked('google') ">Continue with Google</Button></div>
-<div><Button :state="functionState('twitter')" :click="() => clicked('twitter')">Continue with 𝕏</Button></div>
-<div><Button :state="functionState('discord')" :click="() => clicked('discord')">Continue with Discord</Button> test flow here</div>
+<div><Button :state="functionState('google')"  :click="() => clicked('google') ">Continue with Google ➜</Button></div>
+<div><Button :state="functionState('twitter')" :click="() => clicked('twitter')">Continue with 𝕏 ➜</Button></div>
+<div><Button :state="functionState('discord')" :click="() => clicked('discord')">Continue with Discord ➜</Button> test flow here</div>
 
 </div>
 </template>
