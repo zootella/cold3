@@ -752,6 +752,7 @@ export function Data(p) {//a Data wraps Uint8Array for type and bounds checks an
 	let d = {type: 'Data'}//note the type
 	d.size   = function() { return _array.length }//size in bytes
 	d.array  = function() { return _array        }
+	d.view = function() { return new DataView(_array.buffer, _array.byteOffset, _array.byteLength) }//return a DataView over the same memory, calling .view() doesn't copy any bytes; DataView has no cursor, every read takes an offset from the start, so you don't have to worry about moving an internal position
 	d.text   = function() { if (_text)   { return _text;  } else { _text   = arrayToText(_array,   true); return _text   } }
 	d.base16 = function() { if (_base16) { return _base16 } else { _base16 = arrayToBase16(_array, true); return _base16 } }
 	d.base32 = function() { if (_base32) { return _base32 } else { _base32 = arrayToBase32(_array, true); return _base32 } }
@@ -3721,30 +3722,30 @@ export function prefix3(data) {//just the first 3, what i type manually into git
 }
 export const prefix_alphabet = 'ABCDEFHJKMNPQRTUVWXYZ'//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
 export function prefix1(data, alphabet = prefix_alphabet) {//single letter from alphabet, defaults to prefix_alphabet (21 letters)
-	let v = new DataView(data.array().buffer)
+	let v = data.view()
 	let u = v.getUint32(0, false)
 	return alphabet[u % alphabet.length]//2^32 mod 21 = 4, so 4 of 21 letters are ~0.0000005% more likely (for default alphabet)
 }
 export function prefix2(data) {//one letter and one digit like "a2", 260 unique values, 50% collision after ~19 hashes
-	let v = new DataView(data.array().buffer)
+	let v = data.view()
 	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)//bytes 0-3 for letter, 2^32 mod 26 = 22, ~0.0000006% bias
 	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')//bytes 4-7 for digits, 2^32 mod 10000 = 7296, ~0.0002% bias
 	return letter + digits.slice(0, 1)
 }
 export function prefix3d(data) {//one letter and two digits like "a23", 2600 unique values, 50% collision after ~60 hashes
-	let v = new DataView(data.array().buffer)
+	let v = data.view()
 	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
 	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
 	return letter + digits.slice(0, 2)
 }
 export function prefix4(data) {//one letter and three digits like "a234", 26000 unique values, 50% collision after ~190 hashes
-	let v = new DataView(data.array().buffer)
+	let v = data.view()
 	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
 	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
 	return letter + digits.slice(0, 3)
 }
 export function prefix2x2(data) {//two letters and two digits like "ab34", 67600 unique values, 50% collision after ~307 hashes
-	let v = new DataView(data.array().buffer)
+	let v = data.view()
 	let u = v.getUint32(0, false)
 	let letter1 = String.fromCharCode(97 + u % 26)//same first letter as prefix2/3d/4/5
 	let letter2 = String.fromCharCode(97 + Math.floor(u / 26) % 26)//second letter from same uint32
@@ -3752,7 +3753,7 @@ export function prefix2x2(data) {//two letters and two digits like "ab34", 67600
 	return letter1 + letter2 + digits.slice(0, 2)//same first two digits as prefix3d
 }
 export function prefix5(data) {//one letter and four digits like "a2345", 260000 unique values, 50% collision after ~601 hashes
-	let v = new DataView(data.array().buffer)
+	let v = data.view()
 	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
 	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
 	return letter + digits

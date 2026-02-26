@@ -2130,7 +2130,7 @@ noop(() => {//and a rudimentary fuzz buster:
 
 export async function prefix39(data) {//BIP-39 word (first 4 chars) + 2 or 3 digits, always 6 chars, 297500 unique values
 	let wordlist = await wordlistDynamicImport()
-	let v = new DataView(data.array().buffer)
+	let v = data.view()
 	let w = wordlist[v.getUint16(0, false) % 2048]//bytes 0-1 for word, 2^16 mod 2^11 = 0, zero bias
 	let word = w.slice(0, 4)
 	word = word[0].toUpperCase() + word.slice(1)
