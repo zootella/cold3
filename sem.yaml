@@ -1,75 +1,81 @@
 summary:
-  generated: 2026feb25.2252.52515
+  generated: 2026feb26.0016.2756
   notes:
-    category one:
-      nanoid: "category one: let's see if this moves up"
-      serverless: "category one: second note about a category we've already put something in"
-    category two:
-      satori: "category two: this is something to think about"
-      semver: "category two: second category"
-    no category:
-      "@auth/sveltekit": Testing out changing a note just in the summary up top.
-      credit-card-type: Oh, i have a lot to say about this one...
-    no note:
-      "@aws-sdk/client-s3": null
-      "@aws-sdk/client-ses": null
-      "@aws-sdk/client-sns": null
-      "@aws-sdk/s3-request-presigner": null
-      "@electric-sql/pglite": null
-      "@nuxtjs/color-mode": null
-      "@pinia/nuxt": null
-      "@resvg/resvg-js": null
-      "@resvg/resvg-wasm": null
-      "@scure/bip39": null
-      "@sendgrid/mail": null
-      "@supabase/supabase-js": null
-      "@sveltejs/adapter-cloudflare": null
-      "@sveltejs/kit": null
-      "@sveltejs/vite-plugin-svelte": null
-      "@tailwindcss/forms": null
-      "@tailwindcss/vite": null
-      "@unhead/vue": null
-      "@uppy/aws-s3": null
-      "@uppy/core": null
-      "@uppy/dashboard": null
-      "@vercel/nft": null
-      "@vitejs/plugin-vue": null
-      "@vueuse/core": null
-      "@wagmi/connectors": null
-      "@wagmi/core": null
-      class-variance-authority: null
-      clsx: null
-      fast-glob: null
-      fs-extra: null
-      h3: null
-      is-mobile: null
-      libphonenumber-js: null
-      lucide-vue-next: null
-      nitropack: null
-      nuxt: null
-      nuxt-og-image: null
-      ofetch: null
-      otpauth: null
-      pinia: null
-      qrcode: null
-      reka-ui: null
-      serverless-offline: null
-      sharp: null
-      svelte: null
-      tailwind-merge: null
-      tailwindcss: null
-      tw-animate-css: null
-      twilio: null
-      typescript: null
-      unstorage: null
-      vidstack: null
-      viem: null
-      vite: null
-      vue: null
-      vue-router: null
-      wrangler: null
-      yaml: null
-      zod: null
+    build:
+      "@vercel/nft": "build: node file trace to build lean net23.zip"
+      "@vitejs/plugin-vue": "build: vue vite plugin in icarus TDD runner; held at v5, v6 arrives with vite 7 and nuxt 5"
+      fast-glob: "build: used by pnpm seal"
+      fs-extra: "build: used by build.js and size.js for net23.zip packaging"
+      semver: "build: used by sem.js"
+      vite: "build: held at v6, nuxt 4 constraint; icarus and oauth declare directly for their own builds"
+      yaml: "build: used by sem.js to read and write sem.yaml"
+    front:
+      "@nuxtjs/color-mode": "front: dark/light mode with auto detection"
+      "@tailwindcss/forms": "front: form control normalization plugin, loaded via @plugin in css"
+      "@tailwindcss/vite": "front: vite plugin registered in nuxt.config.js"
+      "@vueuse/core": "front: vue composition utilities collection"
+      class-variance-authority: "front: variant styling for components; shadcn pattern, pre-1.0 but 15m weekly downloads"
+      clsx: "front: classname conditional builder; shadcn pattern"
+      lucide-vue-next: "front: icon library for vue; pre-1.0 by convention"
+      reka-ui: "front: radix primitives port for vue; shadcn-vue foundation"
+      tailwind-merge: "front: merges classes without style conflicts; shadcn pattern"
+      tailwindcss: "front: v4 direct dependency, no longer through @nuxtjs/tailwindcss module"
+      tw-animate-css: "front: v4 replacement for tailwindcss-animate"
+      typescript: "front: site devDependency"
+    lambda:
+      "@aws-sdk/client-s3": "lambda: s3 storage; already on lambda, dev dep for local; presigner shares version"
+      "@aws-sdk/client-ses": "lambda: email sending; already on lambda, dev dep for local"
+      "@aws-sdk/client-sns": "lambda: sms sending; already on lambda, dev dep for local"
+      "@aws-sdk/s3-request-presigner": "lambda: presigned upload urls; moves with the client-s3 group"
+      "@sendgrid/mail": "lambda: twilio sendgrid email delivery from lambda"
+      sharp: "lambda: image processing; needs native modules via build.js into net23.zip"
+      twilio: "lambda: sms delivery from lambda"
+    nuxt:
+      "@pinia/nuxt": "nuxt: pinia integration module; exact pin from nuxi module add, pre-1.0"
+      h3: "nuxt: http framework; held at v1, v2 arrives with nitro v3 and nuxt 5; abstracted behind getWorker* functions"
+      nitropack: "nuxt: server engine; bundles h3 v1, will bring h3 v2 with nitro v3"
+      nuxt: "nuxt: web framework; annual upgrade cadence, sweet spot is midwinter"
+      ofetch: "nuxt: fetch wrapper; in icarus so lambda code can use it directly without nuxt"
+      pinia: "nuxt: state management; paired with @pinia/nuxt"
+      vue: "nuxt: ui framework; also in icarus for TDD"
+      vue-router: "nuxt: routing; held at v4, v5 is a major rewrite that nuxt must adopt first"
+    og:
+      "@resvg/resvg-js": "og: svg to png via native n-api for local dev; nuxt-og-image selects from nitro preset"
+      "@resvg/resvg-wasm": "og: svg to png via rust/wasm for production workers; largest artifact is 2.48mb"
+      "@unhead/vue": "og: head management peer dep; injected by nuxi module add, load-bearing for og-image"
+      nuxt-og-image: "og: pinned to v6 beta; v5 broke on nitro 2.13.1 wasm bundling; single maintainer"
+      satori: "og: html/css to svg by vercel; pinned 0.15.2, 0.16+ blocked on workers wasm restrictions"
+      unstorage: "og: cache driver abstraction; injected by nuxi module add, now using lru-cache driver"
+    provider:
+      "@supabase/supabase-js": "provider: database; works local and deployed, worker and lambda"
+      serverless: "provider: framework cli for deploying to aws lambda"
+      serverless-offline: "provider: local lambda emulator for dev"
+      wrangler: "provider: cloudflare cli; oauth and site workspaces"
+    sveltekit:
+      "@auth/sveltekit": "sveltekit: the reason the oauth workspace exists; no @auth/nuxt adapter available"
+      "@sveltejs/adapter-cloudflare": "sveltekit: deploys oauth to workers; adapter-auto removed as scaffolding bloat"
+      "@sveltejs/kit": "sveltekit: framework for the oauth workspace"
+      "@sveltejs/vite-plugin-svelte": "sveltekit: held at v5, v6 tracks vite 7"
+      svelte: "sveltekit: ui framework; barely used, 2 pages in oauth"
+    test:
+      "@electric-sql/pglite": "test: wasm postgres for local dev tests"
+      "@scure/bip39": "test: mnemonic phrases; dynamic import in level1 fuzz tests; major v2 available"
+      nanoid: "test: url-friendly unique id generator"
+      otpauth: "test: totp library; in root for fuzz tests in level1"
+    validate:
+      credit-card-type: "validate: card brand detection from number"
+      libphonenumber-js: "validate: phone number parsing and validation"
+      viem: "validate: ethereum interface; in icarus and site for address validation, adds 10mb to net23.zip"
+      zod: "validate: email validation with zod mini"
+    widget:
+      "@uppy/aws-s3": "widget: s3 upload destination via presigned urls, includes multipart"
+      "@uppy/core": "widget: file upload orchestrator; state, events, restrictions, plugin system"
+      "@uppy/dashboard": "widget: full-featured upload ui; drag-drop, progress, previews"
+      "@wagmi/connectors": "widget: wallet adapters for metamask, walletconnect, etc; moves with wagmi/core"
+      "@wagmi/core": "widget: wallet connection state management; moves with wagmi/connectors"
+      is-mobile: "widget: browser detection; runs everywhere, only meaningful in browser"
+      qrcode: "widget: qr code generation; works in node and browser, crashes in worker/ssr — guarded with client-only rendering"
+      vidstack: "widget: video player; latest tag is behind installed, riding post-1.0 channel"
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -179,7 +185,7 @@ modules:
   "@auth/sveltekit":
     homepage: https://sveltekit.authjs.dev
     description: Authentication for SvelteKit.
-    note: Testing out changing a note just in the summary up top.
+    note: "sveltekit: the reason the oauth workspace exists; no @auth/nuxt adapter available"
     from: oauth
     versions:
       declared: ^1.11.1 on 2025oct26 4m old
@@ -188,10 +194,11 @@ modules:
       latest: 1.11.1 on 2025oct26 4m old
     downloads:
       weekly: 51,451
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@aws-sdk/client-s3":
     homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-s3
     description: AWS SDK for JavaScript S3 Client for Node.js, Browser and React Native
+    note: "lambda: s3 storage; already on lambda, dev dep for local; presigner shares version"
     from: net23
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
@@ -200,10 +207,11 @@ modules:
       latest: 3.998.0 on 2026feb25 0m old
     downloads:
       weekly: 17,875,343
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@aws-sdk/client-ses":
     homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-ses
     description: AWS SDK for JavaScript Ses Client for Node.js, Browser and React Native
+    note: "lambda: email sending; already on lambda, dev dep for local"
     from: net23
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
@@ -212,10 +220,11 @@ modules:
       latest: 3.998.0 on 2026feb25 0m old
     downloads:
       weekly: 2,322,525
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@aws-sdk/client-sns":
     homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-sns
     description: AWS SDK for JavaScript Sns Client for Node.js, Browser and React Native
+    note: "lambda: sms sending; already on lambda, dev dep for local"
     from: net23
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
@@ -224,10 +233,11 @@ modules:
       latest: 3.998.0 on 2026feb25 0m old
     downloads:
       weekly: 2,822,051
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@aws-sdk/s3-request-presigner":
     homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/packages/s3-request-presigner
     description: "[![NPM version](https://img.shields.io/npm/v/@aws-sdk/s3-request-presigner/latest.svg)](https://www.npmjs.com/package/@aws-sdk/s3-request-presigner) [![NPM downloads](https://img.shields.io/npm/dm/@aws-sdk/s3-request-presigner.svg)](https://www.npmjs.com/"
+    note: "lambda: presigned upload urls; moves with the client-s3 group"
     from: net23
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
@@ -236,10 +246,11 @@ modules:
       latest: 3.998.0 on 2026feb25 0m old
     downloads:
       weekly: 7,313,226
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@electric-sql/pglite":
     homepage: https://pglite.dev
     description: PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3.7mb gzipped.
+    note: "test: wasm postgres for local dev tests"
     from: root
     versions:
       declared: ^0.3.15 on 2026jan15 1m old
@@ -248,10 +259,11 @@ modules:
       latest: 0.3.15 on 2026jan15 1m old
     downloads:
       weekly: 5,494,859
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   "@nuxtjs/color-mode":
     homepage: https://github.com/nuxt-modules/color-mode#readme
     description: Dark and light mode for Nuxt with auto detection
+    note: "front: dark/light mode with auto detection"
     from: site
     versions:
       declared: ^4.0.0 on 2025nov11 3m old
@@ -260,10 +272,11 @@ modules:
       latest: 4.0.0 on 2025nov11 3m old
     downloads:
       weekly: 284,476
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   "@pinia/nuxt":
     homepage: https://pinia.vuejs.org/ssr/nuxt.html
     description: Nuxt Module for pinia
+    note: "nuxt: pinia integration module; exact pin from nuxi module add, pre-1.0"
     from: site
     versions:
       declared: 0.11.3 on 2025nov05 3m old 📌 Exact version pinned
@@ -272,10 +285,11 @@ modules:
       latest: 0.11.3 on 2025nov05 3m old
     downloads:
       weekly: 602,335
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   "@resvg/resvg-js":
     homepage: https://github.com/yisibl/resvg-js#readme
     description: A high-performance SVG renderer and toolkit, powered by Rust based resvg and napi-rs
+    note: "og: svg to png via native n-api for local dev; nuxt-og-image selects from nitro preset"
     from: site
     versions:
       declared: ^2.6.2 on 2024mar26 23m old
@@ -284,10 +298,11 @@ modules:
       latest: 2.6.2 on 2024mar26 23m old
     downloads:
       weekly: 585,359
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   "@resvg/resvg-wasm":
     homepage: https://github.com/yisibl/resvg-js#readme
     description: A high-performance SVG renderer and toolkit, powered by Rust based resvg and napi-rs
+    note: "og: svg to png via rust/wasm for production workers; largest artifact is 2.48mb"
     from: site
     versions:
       declared: ^2.6.2 on 2024mar26 23m old
@@ -296,10 +311,11 @@ modules:
       latest: 2.6.2 on 2024mar26 23m old
     downloads:
       weekly: 426,128
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   "@scure/bip39":
     homepage: https://paulmillr.com/noble/#scure
     description: Secure, audited & minimal implementation of BIP39 mnemonic phrases
+    note: "test: mnemonic phrases; dynamic import in level1 fuzz tests; major v2 available"
     from: root
     versions:
       declared: ^1.6.0 on 2025apr24 10m old
@@ -308,10 +324,11 @@ modules:
       latest: 2.0.1 on 2025oct07 4m old 🎁 Major new version available
     downloads:
       weekly: 4,614,643
-      on: 2026feb25.2005.18378
+      on: 2026feb25.2300.37693
   "@sendgrid/mail":
     homepage: https://sendgrid.com
     description: Twilio SendGrid NodeJS mail service
+    note: "lambda: twilio sendgrid email delivery from lambda"
     from: net23
     versions:
       declared: ^8.1.6 on 2025sep19 5m old
@@ -320,10 +337,11 @@ modules:
       latest: 8.1.6 on 2025sep19 5m old
     downloads:
       weekly: 3,012,014
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@supabase/supabase-js":
     homepage: https://github.com/supabase/supabase-js/tree/master/packages/core/supabase-js
     description: Isomorphic Javascript SDK for Supabase
+    note: "provider: database; works local and deployed, worker and lambda"
     from: icarus
     versions:
       declared: ^2.95.3 on 2026feb06 0m old
@@ -332,10 +350,11 @@ modules:
       latest: 2.97.0 on 2026feb18 0m old
     downloads:
       weekly: 13,452,607
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   "@sveltejs/adapter-cloudflare":
     homepage: https://svelte.dev/docs/kit/adapter-cloudflare
     description: Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages
+    note: "sveltekit: deploys oauth to workers; adapter-auto removed as scaffolding bloat"
     from: oauth
     versions:
       declared: ^7.2.6 on 2026jan23 1m old
@@ -344,10 +363,11 @@ modules:
       latest: 7.2.8 on 2026feb18 0m old
     downloads:
       weekly: 92,560
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@sveltejs/kit":
     homepage: https://svelte.dev
     description: SvelteKit is the fastest way to build Svelte apps
+    note: "sveltekit: framework for the oauth workspace"
     from: oauth
     versions:
       declared: ^2.50.2 on 2026feb02 0m old
@@ -356,10 +376,11 @@ modules:
       latest: 2.53.2 on 2026feb25 0m old
     downloads:
       weekly: 1,142,961
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@sveltejs/vite-plugin-svelte":
     homepage: https://github.com/sveltejs/vite-plugin-svelte#readme
     description: The official [Svelte](https://svelte.dev) plugin for [Vite](https://vitejs.dev).
+    note: "sveltekit: held at v5, v6 tracks vite 7"
     from: oauth
     versions:
       declared: ^5.1.1 on 2025jul11 7m old
@@ -368,10 +389,11 @@ modules:
       latest: 6.2.4 on 2026jan09 1m old 🎁 Major new version available
     downloads:
       weekly: 1,460,728
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@tailwindcss/forms":
     homepage: https://github.com/tailwindlabs/tailwindcss-forms#readme
     description: A plugin that provides a basic reset for form styles that makes form elements easy to override with utilities.
+    note: "front: form control normalization plugin, loaded via @plugin in css"
     from: site
     versions:
       declared: ^0.5.11 on 2025dec17 2m old
@@ -380,10 +402,11 @@ modules:
       latest: 0.5.11 on 2025dec17 2m old
     downloads:
       weekly: 2,857,015
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2309.58529
   "@tailwindcss/vite":
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
+    note: "front: vite plugin registered in nuxt.config.js"
     from: site
     versions:
       declared: ^4.1.18 on 2025dec11 2m old
@@ -392,10 +415,11 @@ modules:
       latest: 4.2.1 on 2026feb23 0m old
     downloads:
       weekly: 9,821,963
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   "@unhead/vue":
     homepage: https://unhead.unjs.io
     description: Full-stack <head> manager built for Vue.
+    note: "og: head management peer dep; injected by nuxi module add, load-bearing for og-image"
     from: site
     versions:
       declared: ^2.1.3 on 2026feb06 0m old
@@ -404,10 +428,11 @@ modules:
       latest: 2.1.7 on 2026feb25 0m old
     downloads:
       weekly: 1,637,741
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   "@uppy/aws-s3":
     homepage: https://uppy.io
     description: Upload to Amazon S3 with Uppy
+    note: "widget: s3 upload destination via presigned urls, includes multipart"
     from:
       - icarus
       - site
@@ -418,10 +443,11 @@ modules:
       latest: 5.1.0 on 2025dec02 2m old
     downloads:
       weekly: 284,222
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   "@uppy/core":
     homepage: https://uppy.io
     description: "Core module for the extensible JavaScript file upload widget with support for drag&drop, resumable uploads, previews, restrictions, file processing/encoding, remote providers like Instagram, Dropbox, Google Drive, S3 and more :dog:"
+    note: "widget: file upload orchestrator; state, events, restrictions, plugin system"
     from:
       - icarus
       - site
@@ -432,10 +458,11 @@ modules:
       latest: 5.2.0 on 2025dec02 2m old
     downloads:
       weekly: 580,625
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   "@uppy/dashboard":
     homepage: https://uppy.io
     description: Universal UI plugin for Uppy.
+    note: "widget: full-featured upload ui; drag-drop, progress, previews"
     from:
       - icarus
       - site
@@ -446,10 +473,11 @@ modules:
       latest: 5.1.1 on 2026feb03 0m old
     downloads:
       weekly: 373,654
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   "@vercel/nft":
     homepage: https://github.com/vercel/nft#readme
     description: "[![CI Status](https://github.com/vercel/nft/actions/workflows/ci.yml/badge.svg)](https://github.com/vercel/nft/actions/workflows/ci.yml)"
+    note: "build: node file trace to build lean net23.zip"
     from: net23
     versions:
       declared: ^1.3.0 on 2026jan21 1m old
@@ -458,10 +486,11 @@ modules:
       latest: 1.3.2 on 2026feb23 0m old
     downloads:
       weekly: 8,365,702
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@vitejs/plugin-vue":
     homepage: https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue#readme
     description: The official plugin for Vue SFC support in Vite.
+    note: "build: vue vite plugin in icarus TDD runner; held at v5, v6 arrives with vite 7 and nuxt 5"
     from: icarus
     versions:
       declared: ^5.2.4 on 2025may09 9m old
@@ -470,10 +499,11 @@ modules:
       latest: 6.0.4 on 2026feb02 0m old 🎁 Major new version available
     downloads:
       weekly: 5,115,452
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   "@vueuse/core":
     homepage: https://github.com/vueuse/vueuse#readme
     description: Collection of essential Vue Composition Utilities
+    note: "front: vue composition utilities collection"
     from: site
     versions:
       declared: ^14.2.1 on 2026feb10 0m old
@@ -482,10 +512,11 @@ modules:
       latest: 14.2.1 on 2026feb10 0m old
     downloads:
       weekly: 5,372,302
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   "@wagmi/connectors":
     homepage: https://github.com/wevm/wagmi#readme
     description: Collection of connectors for Wagmi
+    note: "widget: wallet adapters for metamask, walletconnect, etc; moves with wagmi/core"
     from:
       - icarus
       - site
@@ -496,10 +527,11 @@ modules:
       latest: 7.2.1 on 2026feb18 0m old
     downloads:
       weekly: 540,179
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   "@wagmi/core":
     homepage: https://github.com/wevm/wagmi#readme
     description: VanillaJS library for Ethereum
+    note: "widget: wallet connection state management; moves with wagmi/connectors"
     from:
       - icarus
       - site
@@ -510,10 +542,11 @@ modules:
       latest: 3.4.0 on 2026feb18 0m old
     downloads:
       weekly: 520,143
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   class-variance-authority:
     homepage: https://github.com/joe-bell/cva#readme
     description: Class Variance Authority 🧬
+    note: "front: variant styling for components; shadcn pattern, pre-1.0 but 15m weekly downloads"
     from: site
     versions:
       declared: ^0.7.1 on 2024nov26 15m old
@@ -522,10 +555,11 @@ modules:
       latest: 0.7.1 on 2024nov26 15m old
     downloads:
       weekly: 15,316,126
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   clsx:
     homepage: https://github.com/lukeed/clsx#readme
     description: A tiny (239B) utility for constructing className strings conditionally.
+    note: "front: classname conditional builder; shadcn pattern"
     from: site
     versions:
       declared: ^2.1.1 on 2024apr23 22m old
@@ -534,11 +568,11 @@ modules:
       latest: 2.1.1 on 2024apr23 22m old
     downloads:
       weekly: 52,480,200
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   credit-card-type:
     homepage: https://github.com/braintree/credit-card-type
     description: A library for determining credit card type
-    note: Oh, i have a lot to say about this one...
+    note: "validate: card brand detection from number"
     from: icarus
     versions:
       declared: ^10.1.2 on 2026jan28 0m old
@@ -547,10 +581,11 @@ modules:
       latest: 10.1.2 on 2026jan28 0m old
     downloads:
       weekly: 1,302,757
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   fast-glob:
     homepage: https://github.com/mrmlnc/fast-glob#readme
     description: It's a very fast and efficient glob library for Node.js
+    note: "build: used by pnpm seal"
     from: root
     versions:
       declared: ^3.3.3 on 2025jan05 13m old
@@ -559,10 +594,11 @@ modules:
       latest: 3.3.3 on 2025jan05 13m old
     downloads:
       weekly: 98,312,827
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   fs-extra:
     homepage: https://github.com/jprichardson/node-fs-extra
     description: fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.
+    note: "build: used by build.js and size.js for net23.zip packaging"
     from: net23
     versions:
       declared: ^11.3.3 on 2025dec18 2m old
@@ -571,10 +607,11 @@ modules:
       latest: 11.3.3 on 2025dec18 2m old
     downloads:
       weekly: 146,501,384
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   h3:
     homepage: https://h3.dev
     description: Minimal H(TTP) framework built for high performance and portability.
+    note: "nuxt: http framework; held at v1, v2 arrives with nitro v3 and nuxt 5; abstracted behind getWorker* functions"
     from: icarus
     versions:
       declared: ^1.15.5 on 2026jan15 1m old
@@ -583,10 +620,11 @@ modules:
       latest: 2.0.1-rc.14 on 2026feb05 0m old 🎁 Major new version available
     downloads:
       weekly: 4,645,027
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   is-mobile:
     homepage: https://github.com/juliangruber/is-mobile
     description: Check if mobile browser.
+    note: "widget: browser detection; runs everywhere, only meaningful in browser"
     from: icarus
     versions:
       declared: ^5.0.0 on 2024oct16 16m old
@@ -595,10 +633,11 @@ modules:
       latest: 5.0.0 on 2024oct16 16m old
     downloads:
       weekly: 1,425,849
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   libphonenumber-js:
     homepage: https://gitlab.com/catamphetamine/libphonenumber-js#readme
     description: A simpler (and smaller) rewrite of Google Android's libphonenumber library in javascript
+    note: "validate: phone number parsing and validation"
     from: icarus
     versions:
       declared: ^1.12.36 on 2026jan30 0m old
@@ -607,10 +646,11 @@ modules:
       latest: 1.12.37 on 2026feb17 0m old
     downloads:
       weekly: 12,950,010
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   lucide-vue-next:
     homepage: https://lucide.dev
     description: A Lucide icon library package for Vue 3 applications.
+    note: "front: icon library for vue; pre-1.0 by convention"
     from: site
     versions:
       declared: ^0.574.0 on 2026feb17 0m old
@@ -619,11 +659,11 @@ modules:
       latest: 0.575.0 on 2026feb19 0m old
     downloads:
       weekly: 611,113
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   nanoid:
     homepage: https://github.com/ai/nanoid#readme
     description: A tiny (118 bytes), secure URL-friendly unique string ID generator
-    note: "category one: let's see if this moves up"
+    note: "test: url-friendly unique id generator"
     from: root
     versions:
       declared: ^5.1.6 on 2025sep22 5m old
@@ -632,10 +672,11 @@ modules:
       latest: 5.1.6 on 2025sep22 5m old
     downloads:
       weekly: 111,178,850
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   nitropack:
     homepage: https://github.com/nitrojs/nitro#readme
     description: Build and Deploy Universal JavaScript Servers
+    note: "nuxt: server engine; bundles h3 v1, will bring h3 v2 with nitro v3"
     from: site
     versions:
       declared: ^2.13.1 on 2026jan15 1m old
@@ -644,10 +685,11 @@ modules:
       latest: 2.13.1 on 2026jan15 1m old
     downloads:
       weekly: 1,243,602
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2309.58529
   nuxt:
     homepage: https://nuxt.com
     description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
+    note: "nuxt: web framework; annual upgrade cadence, sweet spot is midwinter"
     from: site
     versions:
       declared: ^4.3.0 on 2026jan22 1m old
@@ -656,10 +698,11 @@ modules:
       latest: 4.3.1 on 2026feb07 0m old
     downloads:
       weekly: 1,239,486
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   nuxt-og-image:
     homepage: https://nuxtseo.com/og-image
     description: Enlightened OG Image generation for Nuxt.
+    note: "og: pinned to v6 beta; v5 broke on nitro 2.13.1 wasm bundling; single maintainer"
     from: site
     versions:
       declared: 6.0.0-beta.15 on 2026feb05 0m old 📌 Exact version pinned
@@ -668,10 +711,11 @@ modules:
       latest: 5.1.13 on 2025dec11 2m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 88,145
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   ofetch:
     homepage: https://github.com/unjs/ofetch#readme
     description: A better fetch API. Works on node, browser and workers.
+    note: "nuxt: fetch wrapper; in icarus so lambda code can use it directly without nuxt"
     from: icarus
     versions:
       declared: ^1.5.1 on 2025nov01 3m old
@@ -680,10 +724,11 @@ modules:
       latest: 1.5.1 on 2025nov01 3m old
     downloads:
       weekly: 4,635,769
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   otpauth:
     homepage: https://github.com/hectorm/otpauth
     description: One Time Password (HOTP/TOTP) library for Node.js, Deno, Bun and browsers
+    note: "test: totp library; in root for fuzz tests in level1"
     from: root
     versions:
       declared: ^9.5.0 on 2026feb04 0m old
@@ -692,10 +737,11 @@ modules:
       latest: 9.5.0 on 2026feb04 0m old
     downloads:
       weekly: 1,115,935
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   pinia:
     homepage: https://pinia.vuejs.org
     description: Intuitive, type safe and flexible Store for Vue
+    note: "nuxt: state management; paired with @pinia/nuxt"
     from: site
     versions:
       declared: ^3.0.4 on 2025nov05 3m old
@@ -704,10 +750,11 @@ modules:
       latest: 3.0.4 on 2025nov05 3m old
     downloads:
       weekly: 2,975,634
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   qrcode:
     homepage: http://github.com/soldair/node-qrcode
     description: QRCode / 2d Barcode api with both server side and client side support using canvas
+    note: "widget: qr code generation; works in node and browser, crashes in worker/ssr — guarded with client-only rendering"
     from:
       - icarus
       - site
@@ -718,10 +765,11 @@ modules:
       latest: 1.5.4 on 2024aug05 18m old
     downloads:
       weekly: 7,162,241
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   reka-ui:
     homepage: https://github.com/unovue/reka-ui
     description: Vue port for Radix UI Primitives.
+    note: "front: radix primitives port for vue; shadcn-vue foundation"
     from: site
     versions:
       declared: ^2.8.0 on 2026jan28 0m old
@@ -730,11 +778,11 @@ modules:
       latest: 2.8.2 on 2026feb20 0m old
     downloads:
       weekly: 717,628
-      on: 2026feb25.1843.34430
+      on: 2026feb25.2307.15278
   satori:
     homepage: https://github.com/vercel/satori#readme
     description: Enlightened library to convert HTML and CSS to SVG.
-    note: "category two: this is something to think about"
+    note: "og: html/css to svg by vercel; pinned 0.15.2, 0.16+ blocked on workers wasm restrictions"
     from: site
     versions:
       declared: 0.15.2 on 2025jun09 8m old 📌 Exact version pinned
@@ -743,11 +791,11 @@ modules:
       latest: 0.19.2 on 2026feb10 0m old
     downloads:
       weekly: 724,868
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   semver:
     homepage: https://github.com/npm/node-semver#readme
     description: The semantic version parser used by npm.
-    note: "category two: second category"
+    note: "build: used by sem.js"
     from: root
     versions:
       declared: ^7.7.4 on 2026feb05 0m old
@@ -756,11 +804,11 @@ modules:
       latest: 7.7.4 on 2026feb05 0m old
     downloads:
       weekly: 588,610,700
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   serverless:
     homepage: https://github.com/serverless/serverless#readme
     description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
-    note: "category one: second note about a category we've already put something in"
+    note: "provider: framework cli for deploying to aws lambda"
     from: net23
     versions:
       declared: ^4.31.2 on 2026jan27 0m old
@@ -769,10 +817,11 @@ modules:
       latest: 4.33.0 on 2026feb19 0m old
     downloads:
       weekly: 1,243,796
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   serverless-offline:
     homepage: https://github.com/dherault/serverless-offline
     description: Emulate AWS λ and API Gateway locally when developing your Serverless project
+    note: "provider: local lambda emulator for dev"
     from: net23
     versions:
       declared: ^14.4.0 on 2024dec09 14m old
@@ -781,10 +830,11 @@ modules:
       latest: 14.5.0 on 2026feb24 0m old
     downloads:
       weekly: 603,092
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   sharp:
     homepage: https://sharp.pixelplumbing.com
     description: High performance Node.js image processing, the fastest module to resize JPEG, PNG, WebP, GIF, AVIF and TIFF images
+    note: "lambda: image processing; needs native modules via build.js into net23.zip"
     from: net23
     versions:
       declared: ^0.34.5 on 2025nov06 3m old
@@ -793,10 +843,11 @@ modules:
       latest: 0.34.5 on 2025nov06 3m old
     downloads:
       weekly: 37,923,332
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   svelte:
     homepage: https://svelte.dev
     description: Cybernetically enhanced web apps
+    note: "sveltekit: ui framework; barely used, 2 pages in oauth"
     from: oauth
     versions:
       declared: ^5.50.0 on 2026feb06 0m old
@@ -805,10 +856,11 @@ modules:
       latest: 5.53.5 on 2026feb25 0m old
     downloads:
       weekly: 3,009,906
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2307.15278
   tailwind-merge:
     homepage: https://github.com/dcastil/tailwind-merge
     description: Merge Tailwind CSS classes without style conflicts
+    note: "front: merges classes without style conflicts; shadcn pattern"
     from: site
     versions:
       declared: ^3.4.1 on 2026feb15 0m old
@@ -817,10 +869,11 @@ modules:
       latest: 3.5.0 on 2026feb18 0m old
     downloads:
       weekly: 32,427,697
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   tailwindcss:
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
+    note: "front: v4 direct dependency, no longer through @nuxtjs/tailwindcss module"
     from: site
     versions:
       declared: ^4.1.18 on 2025dec11 2m old
@@ -829,10 +882,11 @@ modules:
       latest: 4.2.1 on 2026feb23 0m old
     downloads:
       weekly: 60,494,373
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   tw-animate-css:
     homepage: https://github.com/Wombosvideo/tw-animate-css#readme
     description: TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.
+    note: "front: v4 replacement for tailwindcss-animate"
     from: site
     versions:
       declared: ^1.4.0 on 2025sep24 5m old
@@ -841,10 +895,11 @@ modules:
       latest: 1.4.0 on 2025sep24 5m old
     downloads:
       weekly: 7,939,755
-      on: 2026feb25.1843.34430
+      on: 2026feb25.2309.58529
   twilio:
     homepage: https://github.com/twilio/twilio-node#readme
     description: A Twilio helper library
+    note: "lambda: sms delivery from lambda"
     from: net23
     versions:
       declared: ^5.12.1 on 2026feb05 0m old
@@ -853,10 +908,11 @@ modules:
       latest: 5.12.2 on 2026feb18 0m old
     downloads:
       weekly: 3,039,559
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   typescript:
     homepage: https://www.typescriptlang.org/
     description: TypeScript is a language for application scale JavaScript development
+    note: "front: site devDependency"
     from: site
     versions:
       declared: ^5.9.3 on 2025sep30 4m old
@@ -865,10 +921,11 @@ modules:
       latest: 5.9.3 on 2025sep30 4m old
     downloads:
       weekly: 131,004,723
-      on: 2026feb25.1843.34430
+      on: 2026feb25.2309.58529
   unstorage:
     homepage: https://unstorage.unjs.io
     description: Universal Storage Layer
+    note: "og: cache driver abstraction; injected by nuxi module add, now using lru-cache driver"
     from: site
     versions:
       declared: ^1.17.4 on 2026jan15 1m old
@@ -877,10 +934,11 @@ modules:
       latest: 1.17.4 on 2026jan15 1m old
     downloads:
       weekly: 4,060,099
-      on: 2026feb25.1842.34714
+      on: 2026feb25.2307.15278
   vidstack:
     homepage: null
     description: Build awesome media experiences on the web.
+    note: "widget: video player; latest tag is behind installed, riding post-1.0 channel"
     from: site
     versions:
       declared: ^1.12.13 on 2025feb16 12m old
@@ -889,10 +947,11 @@ modules:
       latest: 0.6.15 on 2024apr19 22m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 36,027
-      on: 2026feb25.1842.34714
+      on: 2026feb25.2309.58529
   viem:
     homepage: https://viem.sh
     description: TypeScript Interface for Ethereum
+    note: "validate: ethereum interface; in icarus and site for address validation, adds 10mb to net23.zip"
     from:
       - icarus
       - site
@@ -903,10 +962,11 @@ modules:
       latest: 2.46.3 on 2026feb24 0m old
     downloads:
       weekly: 2,805,783
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   vite:
     homepage: https://vite.dev
     description: Native-ESM powered web dev build tool
+    note: "build: held at v6, nuxt 4 constraint; icarus and oauth declare directly for their own builds"
     from:
       - icarus
       - oauth
@@ -917,10 +977,11 @@ modules:
       latest: 7.3.1 on 2026jan07 1m old 🎁 Major new version available
     downloads:
       weekly: 73,828,336
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   vue:
     homepage: https://github.com/vuejs/core/tree/main/packages/vue#readme
     description: The progressive JavaScript framework for building modern web UI.
+    note: "nuxt: ui framework; also in icarus for TDD"
     from:
       - icarus
       - site
@@ -931,10 +992,11 @@ modules:
       latest: 3.5.29 on 2026feb24 0m old
     downloads:
       weekly: 9,053,210
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   vue-router:
     homepage: https://router.vuejs.org
     description: "> - This is the repository for Vue Router 4 (for Vue 3) > - For Vue Router 3 (for Vue 2) see [vuejs/vue-router](https://github.com/vuejs/vue-router). >   To see what versions are currently supported, please refer to the [Security Policy](./packages/router"
+    note: "nuxt: routing; held at v4, v5 is a major rewrite that nuxt must adopt first"
     from:
       - icarus
       - site
@@ -945,10 +1007,11 @@ modules:
       latest: 5.0.3 on 2026feb19 0m old 🎁 Major new version available
     downloads:
       weekly: 5,024,545
-      on: 2026feb25.1842.21833
+      on: 2026feb25.2302.49295
   wrangler:
     homepage: https://github.com/cloudflare/workers-sdk#readme
     description: Command-line interface for all things Cloudflare Workers
+    note: "provider: cloudflare cli; oauth and site workspaces"
     from:
       - oauth
       - site
@@ -959,10 +1022,11 @@ modules:
       latest: 4.68.1 on 2026feb24 0m old
     downloads:
       weekly: 4,268,110
-      on: 2026feb25.1843.6515
+      on: 2026feb25.2307.15278
   yaml:
     homepage: https://eemeli.org/yaml/
     description: JavaScript parser and stringifier for YAML
+    note: "build: used by sem.js to read and write sem.yaml"
     from: root
     versions:
       declared: ^2.8.2 on 2025nov30 2m old
@@ -971,10 +1035,11 @@ modules:
       latest: 2.8.2 on 2025nov30 2m old
     downloads:
       weekly: 111,133,380
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2300.37693
   zod:
     homepage: https://zod.dev
     description: TypeScript-first schema declaration and validation library with static type inference
+    note: "validate: email validation with zod mini"
     from: icarus
     versions:
       declared: ^4.3.6 on 2026jan22 1m old
@@ -983,4 +1048,4 @@ modules:
       latest: 4.3.6 on 2026jan22 1m old
     downloads:
       weekly: 98,535,491
-      on: 2026feb25.1842.7485
+      on: 2026feb25.2302.49295

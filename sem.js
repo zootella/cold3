@@ -287,7 +287,7 @@ async function main() {
 			}
 		}
 		m.downloads = downloadsData.get(m.name) || null
-		m.note = previousNotes[m.name] || previousData[m.name]?.note || null
+		m.note = (m.name in previousNotes) ? previousNotes[m.name] : (previousData[m.name]?.note || null)
 	}
 
 	// Sort by package name
@@ -398,7 +398,7 @@ async function main() {
 		if (!noteGroups[category]) noteGroups[category] = {}
 		noteGroups[category][m.name] = m.note || null
 	}
-	// Sort categories alphabetically, but push 'uncategorized' and 'no note' to the end
+	// Sort categories alphabetically, but push 'no category' and 'no note' to the end
 	let categoryOrder = Object.keys(noteGroups).sort((a, b) => {
 		let tail = ['no category', 'no note']
 		let ai = tail.indexOf(a), bi = tail.indexOf(b)
