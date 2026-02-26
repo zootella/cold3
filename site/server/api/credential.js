@@ -122,7 +122,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		} else if (action == 'TotpEnroll1.') {
 			let existing = await credentialTotpGet({userTag: user.userTag})
-			if (existing) return {success: false, outcome: 'AlreadyEnrolled.'}
+			if (existing) toss('state', {action, user, browserHash, existing})//client thought enrollment was possible
 			let userName = await credentialNameGet({userTag: user.userTag})
 			let enrollment = await totpEnroll({
 				label: '@'+(userName?.name?.f1 || user.userTag),
@@ -138,14 +138,14 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		} else if (action == 'TotpEnroll2.') {
 			checkTotpCode(body.code)
 			let existing = await credentialTotpGet({userTag: user.userTag})
-			if (existing) return {success: false, outcome: 'AlreadyEnrolled.'}
+			if (existing) toss('state', {action, user, browserHash, existing})//client thought enrollment was possible
 			let letter = await openEnvelope('EnrollTotpEnvelope.', body.envelope, {skipExpirationCheck: true})
 			let secret = letter.secret
-			if (isExpired(letter.expiration)) return {success: false, outcome: 'BadSecret.'}
+			if (isExpired(letter.expiration)) return {success: false, outcome: 'Expired.'}
 			if (!hasTextSame(
 				letter.message,
 				safefill`TOTP enrollment: browser ${browserHash}, user ${user.userTag}, secret ${secret}`)) {
-				return {success: false, outcome: 'BadSecret.'}
+				toss('state', {action, user, browserHash, letter})//envelope tampered or transplanted
 			}
 			let valid = await totpValidate({secret: Data({base32: secret}), code: body.code})
 			if (!valid) return {success: false, outcome: 'BadCode.'}

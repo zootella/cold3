@@ -21,7 +21,7 @@ TOTP is now a first-class credential in `/api/credential` and `credentialStore`,
 
 `Get.` already absorbs the FoundEnvelope pattern for TOTP: if the client includes an enrollment envelope cookie in the Get body, the server opens it and returns the enrollment data (URI, identifier) alongside the regular credential snapshot. One fetch on page load recovers an in-progress enrollment — no separate round-trip. This is the model for how OTP's `FoundEnvelope.` should eventually work too.
 
-## TOTP mobile enrollment flow (next)
+## TOTP mobile enrollment flow (done)
 
 The enrollment UI needs to handle two contexts: desktop (user scans a QR code with their phone) and mobile (the user's phone IS the device — they can't scan their own screen).
 
@@ -43,9 +43,9 @@ The enrollment flow becomes the same on both platforms: Add → enrollment UI ap
 
 **(3) Template: QR on desktop, button on mobile.** Inside the step-2 template block (`v-else-if="refStep === 2 && refUri"`), use `refMobile` to switch what shows. Desktop: the existing QR + side-by-side layout with instruction text "Scan the QR, then enter the 6 digits you get below." Mobile: a "Load in Authenticator App" button (calls `onOpenAuthenticator`) with instruction text adjusted for tapping instead of scanning. Both show the code input and Enter/Cancel buttons. The `flex gap-4` layout with `shrink-0` QR div is desktop-only; mobile gets a simpler vertical layout.
 
-**(4) bfcache recovery (later, not this step).** When the user taps the button and swipes back, we'll need a `pageshow` listener like OauthDemo.vue uses. Check `event.persisted` — if true, the browser thawed from bfcache after the authenticator app. We don't need this yet because the current smoke test stops before clicking the button. The pattern to follow is in `site/app/components/snippet1/OauthDemo.vue` lines 22-29.
+**(4) bfcache recovery — not needed.** When the user taps the button and swipes back from the authenticator, there are three possibilities: (a) page still warm, (b) bfcache thaw, (c) full reload. Cases (a) and (b) both preserve Vue state — `refStep` is 2, `refUri` is set, the code input is waiting — so there's nothing to recover. Case (c) is already handled by `onMounted`'s cookie recovery via `credentialStore.enrollment` from `Get.`'s envelope pattern. OauthDemo.vue uses a `pageshow` listener for the opposite reason — OAuth needs to *reset* state when the user comes back (they abandoned the flow), whereas TOTP coming back means the flow is *continuing* into already-correct state.
 
-**Smoke test for this step.** Desktop: happy and sad paths still work (nothing changes for desktop flow). Mobile (iPhone Chrome): tap Add, see the "Load in Authenticator App" button appear (no QR), stop there — don't tap the button yet.
+**Smoke test.** Desktop: happy and sad paths still work (nothing changes for desktop flow). Mobile (iPhone Chrome, Galaxy Fold Chrome): tap Add, see the "Load in Authenticator App" button appear (no QR), tap the button, authenticator opens with the code, swipe back, code input still there, enter 6 digits, enrolled.
 
 ## Current endpoint and store map
 
@@ -64,3 +64,27 @@ Actions: `SendTurnstile.`, `FoundEnvelope.`, `Enter.`
 Right now OTP and TOTP each have their own cookie and envelope: `temporary_envelope_otp` (sealed with action `'Otp.'`) and `temporary_envelope_totp` (sealed with action `'EnrollTotpEnvelope.'`). These exist independently because OTP and TOTP were built at different times. This works but doesn't scale — each new multi-step credential flow shouldn't bring its own cookie.
 
 The future direction is a single `CredentialEnvelope` cookie that can hold in-flight state for multiple credential operations simultaneously — a TOTP enrollment and an OTP verification happening in the same session, stored in one envelope with slots for each. `Get.` already does this for TOTP; extending it to OTP means OTP's `FoundEnvelope.` action becomes unnecessary.
+
+## TOTP mobile: split enrollment into two visual stages (next)
+
+On mobile, showing the "Load in Authenticator App" button and the code input + Enter/Cancel all at once is a lot for a small screen. Split the mobile flow into two visual stages: first the button, then (after tapping it) the code input. Desktop is unchanged.
+
+`refStep` currently has two values. Add a third:
+
+- **Step 1**: Add button (both platforms, as now)
+- **Step 2**: Desktop: QR + code input (as now). Mobile: just the "Load in Authenticator App" button + instruction text.
+- **Step 3**: Mobile only — code input + Enter/Cancel + identifier tip (after returning from authenticator)
+
+**Changes in TotpPanel.vue:**
+
+**(1) Update `refStep` comment** (line 27) to document all three steps.
+
+**(2) `onOpenAuthenticator`** — set `refStep.value = 3` before the redirect. When the user returns (warm page or bfcache thaw), they land at step 3 with the code input showing.
+
+**(3) Template** — split the current mobile `v-if="refMobile"` div into two blocks:
+- `refStep === 2 && refMobile`: instruction text + "Load in Authenticator App" button only
+- `refStep === 3`: code input + Enter/Cancel + identifier tip
+
+**(4) `onMounted` recovery** stays at step 2. On full reload, a mobile user sees the button again — correct, since they need to re-open the authenticator to get a current code anyway.
+
+**(5) `onCancel`** already resets `refStep` to 1 — no change needed.
