@@ -1,251 +1,138 @@
 
-How quick, simple, and cheap can the web2 stack be in 2024?
-Part of the larger experiment organized at [coldstart](https://github.com/zootella/coldstart).
+```
+ ____________________
+| |cold3 @Chal48   | |
+|.|________________|H|
+| |2026mar01_______| |
+| |188_files_______| |
+| |1,138,349_chars_| |
+| |77%_full________| |
+| |________________| |
+|                    |
+|    ____________    |
+|   |   |  _     |   |
+|   |   | | |    |   |
+|   |   | |_|    | V |
+|___|___|________|___|
+```
+
+How quick, simple, and cheap can the web2+3 stack be?
 [One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
 exploring pouring and curing a
-tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
+tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/). ⬛🙈
 
-This is 🍺 [cold3.cc](https://cold3.cc/) on [Cloudflare](https://developers.cloudflare.com/) using [Nuxt](https://nuxt.com/).
+```bash
+#💾 monorepo root, a completely serverless web2+3 stack
+cd .
+pnpm sem #fetch npm registry, compare with installed versions, write sem.yaml
+pnpm seal #hash all files into wrapper.txt, generate wrapper.js, run tests
+pnpm test #run unit tests, then database tests with pglite
 
-Notes:
+pnpm cors #run CORS and security tests against deployed lambdas
+pnpm og #fetch a deployed page, extract og:image, verify fresh render and cache behavior
+pnpm xray TERM #ripgrep the entire tree including node_modules to confirm secrets aren't leaking
 
-```
-./ is the Nuxt site for Cloudflare
-$ npm run local
-$ npm run deploy
+pnpm wash #delete all node_modules and build artifacts, keep lockfile
+pnpm upgrade-wash #wash, then also delete the lockfile for a fresh install of current versions in range
 
-./net23 is a Serverless Framework project for AWS
-$ npm run local
-$ npm run deploy
+#🟨 shared isomorphic library, four levels from pure JS up to application logic
+cd icarus
+pnpm icarus #vite dev server for lightning quick Ctrl+S TDD
 
-./icarus is a Vite project to code the library with TDD
-$ npm run icarus
+#🌍 Nuxt website, universal rendering, Cloudflare Workers, Supabase, Tailwind, shadcn/ui
+cd site
+pnpm local #Nuxt dev server
+pnpm build #Nuxt production build
+pnpm preview #build and run locally with wrangler dev to test the worker
+pnpm cloud #flip wrapper.cloud to true, build, deploy to Cloudflare, flip back, run tests
+pnpm size #nuxi analyze, opens rollup visualizer for client and nitro bundles
 
-./library is a Node project with common functions used everywhere
-$ node test
-```
+#📚 Lambda functions for AWS and heavyweight Node modules, Serverless Framework
+cd net23
+pnpm local #serverless offline with hot reload
+pnpm build #bundle, package, and measure size
+pnpm cloud #bundle, deploy to AWS Lambda, and test
+pnpm www #sync static files to S3
 
-ttd february, here's where now you talk about pnpm wash, install, test, build, sem, seal, then diff, only at the end local
-
-## Make a new site on Cloudflare
-
-```
-$ npm create cloudflare@latest
-$ cd cold3
-```
-
- * Sign into Cloudflare and keep that browser forward, as the terminal will pop open a tab to authenticate
- * Use a fancy terminal like PowerShell; MING64 can't do the interactive menus
- * Chose *Website or web app*, *Nuxt*; yes, *use Git for version control*, and yes, *Deploy your application to Cloudflare*
- * Previously fixed error during `create` by updating npm with `$ npm install -g npm`
-
-## Check or correct wrangler authentication
-
-```
-$ npx wrangler --version
-$ npx wrangler whoami
-$ npx wrangler login
-```
-
-Previously fixed a mess on Windows where wrangler was installed globally, and had an expired or incorrectly permissioned OAuth token.
-Wranger should be installed in the project, only.
-Deleted `C:\Users\UserName\AppData\Roaming\npm\wrangler.ps1` and `C:\Users\UserName\.wrangler`.
-Also deleted `cold3/.wrangler` and `cold3/node_modules` and repeated `npm install`.
-
-## Make a new repo on GitHub
-
-```
-$ git remote add origin git@github.com:zootella/cold3.git
-$ git branch -M main
-$ git push -u origin main
+#👥 SvelteKit site for Auth.js OAuth authentication, Cloudflare Workers
+cd oauth
+pnpm local #Vite dev server
+pnpm build #Vite production build
+pnpm cloud #set cloud mode, build, deploy to Cloudflare Workers, restore local mode, test
+pnpm preview #build and preview with wrangler dev
 ```
 
-GitHub, *Repositories*, *New*.
-Type name and description, but start with no readme, gitignore, or license to make a completely blank repository
+[Node 22](https://nodejs.org/) and
+[pnpm 10](https://pnpm.io/).
 
-## Push to GitHub
+Intentionally avoiding
+[React](https://react.dev/),
+[hooks](https://react.dev/reference/react/hooks),
+[Next.js](https://nextjs.org/), and
+[webpack](https://webpack.js.org/). 🤮
 
-```
-$ git status
-$ git add .
-$ git commit -a -n -m "note"
-$ git push
-```
+Input validation with
+[Zod](https://zod.dev/),
+[libphonenumber-js](https://gitlab.com/catamphetamine/libphonenumber-js), and
+Braintree's [credit-card-type](https://github.com/braintree/credit-card-type).
 
-Pushing to GitHub does not start Cloudflare deploy; they're separate and I like that better.
+AWS Lambda functions via
+[Serverless Framework 4](https://www.serverless.com/) with
+[S3](https://aws.amazon.com/s3/) for storage.
+Lambdas run heavyweight Node modules web workers can't.
+Messaging with
+[SES](https://aws.amazon.com/ses/),
+[SNS](https://aws.amazon.com/sns/),
+[Twilio](https://www.twilio.com/), and
+[SendGrid](https://sendgrid.com/).
+The build uses Vercel's [NFT](https://github.com/vercel/nft) to trace and include only necessary files,
+and packs [Sharp](https://sharp.pixelplumbing.com/) for image manipulation
+with native binaries for
+[Graviton](https://aws.amazon.com/ec2/graviton/) on
+[Amazon Linux 2023](https://aws.amazon.com/linux/amazon-linux-2023/).
 
-## Run locally and deploy to Cloudflare
+Site built with the
+[Nuxt 4](https://nuxt.com/) framework on
+[Vue 3](https://vuejs.org/) for reactive UI,
+[Nitro 2](https://nitro.build/) as the server engine.
+Universal rendering with state in
+[Pinia 3](https://pinia.vuejs.org/).
+Deployed to
+[Cloudflare Workers](https://developers.cloudflare.com/workers/) with
+[wrangler 4](https://developers.cloudflare.com/workers/wrangler/).
+Database on
+[Supabase](https://supabase.com/) Postgres, tested locally with
+[PGlite](https://pglite.dev/).
 
-```
-$ npm run local
-$ npm run deploy
+OAuth via
+[Auth.js](https://authjs.dev/) in
+[SvelteKit 2](https://svelte.dev/docs/kit/) on
+[Svelte 5](https://svelte.dev/), also deploying to Cloudflare Workers.
 
-previously
-$ npm run dev
-$ npm run pages:dev
-$ npm run pages:deploy
-```
+[Vite 6](https://vite.dev/) for dev across _icarus_, _site_, and _oauth_ workspaces.
+[Rollup 4](https://rollupjs.org/) for production bundles,
+client and server, in both Nuxt and SvelteKit.
 
- * Vite is on another port, but Nuxt up top runs locally at 3000
- * Unlike Amplify, builds locally and pushes static assets, which is faster
- * `dev` runs Vite for Nuxt, while `pages:dev` and `pages:deploy` run Wrangler, which in turn runs Vite for Nuxt
- * `pages:dev` works great everywhere; in React-land, a problem between Wrangler and webpack breaks local development
+Styles using
+[Tailwind 4](https://tailwindcss.com/) with components from
+[shadcn-vue](https://www.shadcn-vue.com/) on
+[Reka UI](https://reka-ui.com/) primitives,
+the Vue path to [shadcn/ui](https://ui.shadcn.com/).
+Icons from [Lucide](https://lucide.dev/).
+[Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans),
+[Noto Sans Mono](https://fonts.google.com/noto/specimen/Noto+Sans+Mono), and
+[Roboto](https://fonts.google.com/specimen/Roboto) from Google Fonts, plus
+[ABC Diatype Rounded](https://abcdinamo.com/typefaces/diatype-rounded) and
+[Lemon Wide](https://rajputrajesh-448.gumroad.com/l/Lemon9) as local _.woff2_ files.
 
-## Nuxt commands
+File uploads with
+[Uppy](https://uppy.io/) to S3 via presigned URLs.
+Video with
+[Vidstack](https://vidstack.io/).
+Open graph images rendered by (again) Vercel's
+[Satori](https://github.com/vercel/satori) within
+[nuxt-og-image](https://nuxtseo.com/og-image).
 
-```
-$ npx nuxi add component ColdComponent
-$ npx nuxi add page page1
-```
-
-Git diff makes it look like these commands aren't adding configuration outside the obvious news folders and files, which is good.
-
-## Domains and DNS
-
-Getting the domain name attached was all about clicking forms in web dashboards.
-Registered the domain at a separate registrar, not Cloudflare.
-
-Followed both of these trails in the Cloudflare dashboard:
- * dash top, *Websites*, *Add a site* button
- * dash top, *Workers & Pages*, *Overview*, `cold3`, *Custom domains* tab
-
-Typed just `cold3.cc` even though some examples start `www`.
-*Begin DNS transfer* is correct.
-Beneath paid options, the *Free* one is fine.
-Turned off *Proxied* and instead choose *DNS only*, even though individual records ended up *Proxied* as shown below.
-
-Cloudflare gave you two nameservers, which you pasted into the registrar, there switching from parking *Basic DNS* to third-party *Custom DNS*.
-
-Cloudflare imported existing DNS records from the registrar, which were all about parking and you should discard entirely. Removed `MX` and `TXT` records and edited to have just two like this:
-
-```
-AAAA   www       100::            Proxied  Auto
-CNAME  cold3.cc  cold3.pages.dev  Proxied  Auto
-```
-
-During DNS propegation, Cloudflare had a button *Check nameservers now*, and after, the message *Good news! Cloudflare is now protecting your site*.
-Text said wait 24 hours, but things started working in less than 30 minutes.
-After that was the *Quick Start Guide*, wizard steps where you configured:
-
-```
-Automatic HTTPS Rewrites: ON
-Always use HTTPS: ON
-Brotli: ON
-```
-
-Then in the *Workers & Pages* area, *Custom Domains*, *Set up a custom domain*.
-There was a note about changing an `A` record to a `CNAME` record, then *Activate domain*.
-A row expanded with more stuff to click, ignored that, in less than a minute the yellow *Verifying* changed to green *Active*.
-
-These steps were enough to get `http://` to redirect to `https://`, but more was necessary to get `www.cold3.cc` to redirect to just `cold3.cc`:
-Dash top, left column, *Bulk Redirects*.
-One rule will contain one list, and that list will contain one or several redirects.
-Make one like this:
-
-```
-Source URL     Target URL        Status
-www.cold3.cc/  https://cold3.cc  301
-```
-
-## Test redirects
-
-Here are some links to test `http -> https` and `www -> (no subdomain)`.
-The redirects need to keep the route.
-
-No route:
-[plain www](http://www.cold3.cc),
-[plain apex](http://cold3.cc), and
-[secure www](https://www.cold3.cc) should all redirect to
-[secure apex](https://cold3.cc)
-
-Route to `page1`:
-[plain www](http://www.cold3.cc/page1),
-[plain apex](http://cold3.cc/page1), and
-[secure www](https://www.cold3.cc/page1) should all redirect to
-[secure apex](https://cold3.cc/page1)
-
-To get this working, you went into another part of the Cloudflare dashboard.
-Dash top, *Websites*, `cold3.cc`, *Rules*, *Page Rules*, this uses one of your three free ones.
-
-```
-www.cold3.cc/*       url
-Forwarding URL       setting
-301                  status code
-https://cold3.cc/$1  destination
-```
-
-## icarus, and library
-
-```
-$ cd icarus
-$ npm run icarus
-
-http://localhost:5173/
-```
-
-* And then see `log()` output and work on library functions; `Ctrl+S` closes the loop. Enjoy lightning-quick TDD red-green-refactor cycles and developer bliss.
-* `level0.js` requires no imports; `level1.js` needs the imports in package.json. Functions in here could be useful to other projects. Project-specific stuff goes in named `.js` files alongside.
-* Design guideline to keep components as short and empty as possible, and factor everything down as far as possible.
-
-## Roster
-
-Stack
-
-[Nuxt](https://nuxt.com/) the framework, which includes:
-[Vue](https://vuejs.org/) for components and dom-diffing;
-[Vue Router](https://router.vuejs.org/) for pages and routes;
-[Vite](https://vitejs.dev/) the bundler;
-[Nitro](https://nitro.unjs.io/) the server engine; and
-[nuxi](https://nuxt.com/docs/api/commands/add) Nuxt's command line interface.
-
-Hosting
-
-[Cloudflare Pages](https://pages.cloudflare.com/) and
-[Workers](https://developers.cloudflare.com/workers/)
-
-big areas still to explore, try out, and choose:
-
-* spelunking to a serverless database with pinia, some orm, a proven serverless database provider avoiding vendor lock-in. maybe supabase, prisma, drizzle orm. find []local offline development, []spreadsheet-like visual data editor, and []csv export and import
-* pretty components and fonts, maybe nuxt ui which is on tailwindcss, or primevue, vuesax
-* authentication, including wallets
-* media file upload, resize, encode, download. maybe separate and ec2
-* open graph protocol cards
-
-## (notes, drafts)
-
-```
->security
-
-best thinking you've found on security
-https://owasp.org/www-project-top-ten/
-
-nuxt module that does it for you
-https://nuxt.com/modules/security
-
-but csrf is off by default
-https://nuxt-security.vercel.app/documentation/middleware/csrf
-
-security related list of things to do
-make two example projects side by side to compare and test in a cleanroom
-at some point, you need to restart the project with current wranger and nuxt
-add the security module
-configure to turn on csrf protection
-measure how much this slows things down
-understand how you can still test apis running locally
-see that before you could hit an api directly in the browser, now you can't
-even better, simulate hitting an api from another domain
-
->form validation
-
-https://ui.nuxt.com/components/form
-mentions Yup, Zod, Joi, or Valibot
-zod and joi look current and popular
-pick one for email; write your test about gmail periods and lowercase names
-
-it seems these don't do phone numbers, and this does
-https://www.npmjs.com/package/libphonenumber-js
-```
-
-ttd march2025
-[]move this into the top of net23.txt, which is about the monorepo generally, and is exhaustive. the narrative and guide and ledger that began here outgrew a readme and created net23.txt
-[]exclude README.txt from the shrinkwrap seal, and make seal generate one with the disk that shows the hash
+Web3 using
+[wagmi](https://wagmi.sh/) and
+[viem](https://viem.sh/).

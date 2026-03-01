@@ -18,7 +18,7 @@ hash_size, hash_length, hashText, given,
 makePlain, makeObject, makeText,
 totpValidate,
 safefill, deindent, commas,
-prefix7, prefix3, prefix1, prefix2, prefix3d, prefix4, prefix2x2, prefix5,
+prefix1, prefix2,
 } from './level0.js'
 
 //(1) static imports
@@ -2125,7 +2125,12 @@ noop(() => {//and a rudimentary fuzz buster:
 
 
 
-
+//                  __ _      
+//  _ __  _ __ ___ / _(_)_  __
+// | '_ \| '__/ _ \ |_| \ \/ /
+// | |_) | | |  __/  _| |>  < 
+// | .__/|_|  \___|_| |_/_/\_\
+// |_|                        
 
 export async function prefix39(data) {//BIP-39 word (first 4 chars) + 2 or 3 digits, always 6 chars, 297500 unique values
 	let wordlist = await wordlistDynamicImport()
@@ -2146,14 +2151,8 @@ noop(async () => {
 		${d.base62()}  ~base62
 		${d.base64()}  ~base64
 
-		${prefix7(d)}  ~prefix7, 34 billion values, 50% collision after ~218,000 hashes
-		${prefix3(d)}  ~prefix3, 32,768 values, 50% collision after ~213 hashes
 		${prefix1(d)}  ~prefix1, 21 values, 50% collision after ~5 hashes (use for OTP)
 		${prefix2(d)}  ~prefix2, 260 values, 50% collision after ~19 hashes (use for TOTP)
-		${prefix3d(d)}  ~prefix3d, 2,600 values, 50% collision after ~60 hashes
-		${prefix4(d)}  ~prefix4, 26,000 values, 50% collision after ~190 hashes
-		${prefix2x2(d)}  ~prefix2x2, 67,600 values, 50% collision after ~307 hashes
-		${prefix5(d)}  ~prefix5, 260,000 values, 50% collision after ~601 hashes
 		${await prefix39(d)}  ~prefix39, 297,500 values, 50% collision after ~655 hashes (use for seal/wrapper/Sticker)
 	`)
 })
@@ -2166,8 +2165,8 @@ otpPrefix(s, alphabet) - hashes the text s, reads first 4 bytes as uint32, mods 
 totpIdentifier({secret}) - hashes the secret's base32, slices first 3 characters of the base32 result.
 	appended to totp label as "[X2B]" so the user can find the right entry in their authenticator app.
 
-sayFloppyDisk(wrapper) - clips first 7 characters of wrapper.hash (already base32) for the ascii art disk label.
-	shown as "name ~ PKM3EYY" on the floppy disk, identifying a build. And for git commit messages, manually type just the first three, like "PKM"
+sayFloppy(wrapper) - uses wrapper.label (BIP-39 word + 2-3 digits from prefix39) for the ascii art disk label.
+	shown as "name ~ Word12" on the floppy disk, identifying a build
 
 hashSummary(data) - reads first 4 bytes as uint32, mods by 2600 to produce one letter and two digits like "a23".
 	2600 unique values, uniform distribution from a single mod operation.

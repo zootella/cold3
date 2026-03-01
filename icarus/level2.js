@@ -14,7 +14,7 @@ parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
 sameIgnoringCase, sameIgnoringTrailingSlash,
 randomBetween,
 runTests,
-safefill, deindent, cutAfterLast,
+safefill, deindent, cutAfterLast, commas,
 enterSimulationMode, isInSimulationMode, ageNow,
 random32,
 } from './level0.js'
@@ -76,7 +76,7 @@ export function stickerParts() {
 	sticker.sealed     = textToTick(wrapper.tick) //1750962934957, when the shrinkwrap was sealed
 	sticker.sealedText = sayDate(sticker.sealed)  //"2025jun26", the UTC day that tick happened in
 	sticker.hash       = wrapper.hash             //"PKM3EYYNZLNJHSQLOI67R6BLEY77EUNDDLQV2MX6PJ3RLX2BS5GQ" ‹52›
-	sticker.hashText   = wrapper.prefix           //"PKM3EYY" short human-readable form of the wrapper hash, computed by seal
+	sticker.hashText   = wrapper.label            //"Word12" short human-readable form of the wrapper hash, computed by seal
 
 	//about this Sticker we're making right now
 	sticker.tag     = Tag()                //"9GkRWuj1CU2ButpEh0lly" a Sticker includes a new unique tag which may be useful
@@ -88,7 +88,7 @@ export function stickerParts() {
 	sticker.found = e.found //"Achr.Asaf.Docu.Loca.Self.Stor.Wind" tags we sensed
 	sticker.where = e.where //"LocalVite" from those, where we think this is we're running
 
-	//"LocalVite.2025jun26.PKM3EYY.Fri10:21a59.370s.9GkRWuj1CU2ButpEh0lly", or assemble the parts above how you want
+	//"LocalVite.2025jun26.Word12.Fri10:21a59.370s.9GkRWuj1CU2ButpEh0lly", or assemble the parts above how you want
 	sticker.all = [sticker.where, sticker.sealedText, sticker.hashText, sticker.nowText, sticker.tag].join('.')
 	return sticker
 }
@@ -188,63 +188,41 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 
 
 
-//move floppy disk to library2, as it's specific to this application
 
-const floppyDiskCapacity = 1474560//1.44 MB capacity of a 3.5" floppy disk
-const floppyDiskLabelWidth = 16
-export function sayFloppyDisk(wrapper) {
+const floppy_capacity = 1_474_560//1.44 MB capacity of a 3.5" floppy disk
+const floppy_width = 16
+export function sayFloppy(wrapper) {
 	let tick = textToTick(wrapper.tick)
 	let date = sayDate(tick)
 	let year = date.slice(0, 4)
-	let hash = wrapper.prefix
-	let label = wrapper.label//ttd february, trying out prefix39 label on the disk
-	let full = Math.floor(wrapper.codeSize*100/floppyDiskCapacity)
+	let label = wrapper.label
+	let full = Math.floor(wrapper.codeSize*100/floppy_capacity)
 
-	let line1 = extend(' ', `${wrapper.name} ~ ${hash}`)
-	let line2 = extend('_', `${date}`)
-	let line3 = extend('_', `${wrapper.codeFiles}_files`)
-	let line4 = extend('_', `${wrapper.codeSize}_bytes`)
-	let line5 = extend('_', `disk_filled_${full}%`)
-	function extend(padding, line) { return line.padEnd(floppyDiskLabelWidth, padding).slice(0, floppyDiskLabelWidth) }
-
+	let line1 = `${wrapper.name} @${label}`.padEnd(floppy_width)
+	let line2 = `${date}`.padEnd(floppy_width, '_')
+	let line3 = `${wrapper.codeFiles}_files`.padEnd(floppy_width, '_')
+	let line4 = `${commas(wrapper.codeSize)}_chars`.padEnd(floppy_width, '_')
+	let line5 = `${full}%_full`.padEnd(floppy_width, '_')
 	return {
-		disk: `
- ____________________
-| |${line1        }| |  ~ ${label}
-|.|________________|H|
-| |${line2        }| |
-| |${line3        }| |
-| |${line4        }| |
-| |${line5        }| |
-| |________________| |
-|                    |
-|    ____________    |
-|   |   |  _     |   |
-|   |   | | |    |   |
-|   |   | |_|    | V |
-|___|___|________|___|
-`,
-		hash, year, full
+		disk: newline + ' ' + deindent`
+			 ____________________
+			| |${line1        }| |
+			|.|________________|H|
+			| |${line2        }| |
+			| |${line3        }| |
+			| |${line4        }| |
+			| |${line5        }| |
+			| |________________| |
+			|                    |
+			|    ____________    |
+			|   |   |  _     |   |
+			|   |   | | |    |   |
+			|   |   | |_|    | V |
+			|___|___|________|___|
+			`,//ASCII art
+		label, year, full,//facts used to make it
 	}
 }
-noop(() => {
-	let disk = sayFloppyDisk(wrapper)
-	let markdown = `${'```'}${disk.disk}
-${'```'}
-
-How quick, simple, and cheap can the web2 stack be in ${disk.year}?
-[One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
-exploring pouring and curing a
-tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/).
-`
-	log(markdown)
-})
-//ttd march2025, you got this into yarn test and seal, next it could go into README.md
-/*
-$ node disk, just shows it, rather than seal which makes it
-*/
-//ok, total vanity, but here's the ascii disk in a readme.md for github
-//ttd november2024, disk: exclude it from hashing, include it in git, and []move existing notes to the top of net23.txt
 
 
 

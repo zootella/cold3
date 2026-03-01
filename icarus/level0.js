@@ -1467,7 +1467,7 @@ export function liveBox(s) {//move to another level by moving this, as well as t
 }
 
 const password_salt_size = 16//PBKDF2 uses 16 bytes of salt
-const password_hash_size = 32//and produces 32 byte values because the derived key is AES-256
+const password_hash_size = 32//and produces 32 byte values (same as hash_size) because the derived key is AES-256
 const password_laps = 3//run three laps of the speed test to discount a slow warmup
 const password_duration_target = 500//take half a second on the user's computer to secure their password
 const password_iterations_per_cycle = 100_000//for convenience, we'll count interations in units of 100k each
@@ -3710,16 +3710,13 @@ test(() => {
 
 
 
+//                  __ _      
+//  _ __  _ __ ___ / _(_)_  __
+// | '_ \| '__/ _ \ |_| \ \/ /
+// | |_) | | |  __/  _| |>  < 
+// | .__/|_|  \___|_| |_/_/\_\
+// |_|                        
 
-
-
-
-export function prefix7(data) {//just the first 7 of the base32, what disk uses
-	return data.base32().slice(0, 7)//base32 chars are 5-bit groups from the binary — no mod, zero bias
-}
-export function prefix3(data) {//just the first 3, what i type manually into git messages
-	return data.base32().slice(0, 3)//same as prefix7, no mod, zero bias
-}
 export const prefix_alphabet = 'ABCDEFHJKMNPQRTUVWXYZ'//21 letters that don't look like numbers, omitting gG~9, iI~1, lL~1, oO~0, sS~5
 export function prefix1(data, alphabet = prefix_alphabet) {//single letter from alphabet, defaults to prefix_alphabet (21 letters)
 	let v = data.view()
@@ -3731,32 +3728,6 @@ export function prefix2(data) {//one letter and one digit like "a2", 260 unique 
 	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)//bytes 0-3 for letter, 2^32 mod 26 = 22, ~0.0000006% bias
 	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')//bytes 4-7 for digits, 2^32 mod 10000 = 7296, ~0.0002% bias
 	return letter + digits.slice(0, 1)
-}
-export function prefix3d(data) {//one letter and two digits like "a23", 2600 unique values, 50% collision after ~60 hashes
-	let v = data.view()
-	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
-	return letter + digits.slice(0, 2)
-}
-export function prefix4(data) {//one letter and three digits like "a234", 26000 unique values, 50% collision after ~190 hashes
-	let v = data.view()
-	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
-	return letter + digits.slice(0, 3)
-}
-export function prefix2x2(data) {//two letters and two digits like "ab34", 67600 unique values, 50% collision after ~307 hashes
-	let v = data.view()
-	let u = v.getUint32(0, false)
-	let letter1 = String.fromCharCode(97 + u % 26)//same first letter as prefix2/3d/4/5
-	let letter2 = String.fromCharCode(97 + Math.floor(u / 26) % 26)//second letter from same uint32
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
-	return letter1 + letter2 + digits.slice(0, 2)//same first two digits as prefix3d
-}
-export function prefix5(data) {//one letter and four digits like "a2345", 260000 unique values, 50% collision after ~601 hashes
-	let v = data.view()
-	let letter = String.fromCharCode(97 + v.getUint32(0, false) % 26)
-	let digits = (v.getUint32(4, false) % 10000).toString().padStart(4, '0')
-	return letter + digits
 }
 
 

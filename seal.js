@@ -1,9 +1,9 @@
 
 import {
-wrapper, sayFloppyDisk, runTests, Time,
+wrapper, sayFloppy, runTests, Time,
 log, look, newline, Data, Now, Tag, tickToText,
 parseKeyFile, randomBetween, encryptData, cutAfterLast, cutRandomWords,
-prefix7, prefix39,
+prefix39,
 } from 'icarus'
 import {promises as fs} from 'fs'
 import path from 'path'
@@ -37,6 +37,7 @@ process.loadEnvFile()//put .env properties on process.env
 */
 const pathWrapperTxt = 'wrapper.txt'
 const pathWrapperJs  = 'icarus/wrapper.js'
+const pathReadme     = 'README.md'//github.com renders as cover
 async function main() {
 	let list = await listFiles()
 	let properties = await hashFiles(list)
@@ -92,9 +93,10 @@ async function listFiles() {
 			'**/.DS_Store',//Mac Finder metadata files; they are everywhere
 			'**/.claude',//claude code settings; machine-specific tooling, not application
 
-			//also leave out the two that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
+			//also leave out the files that this script generates; less blockchain-ey, but possible to return to the hash before a change. these absolutely get checked into git, though!
 			pathWrapperTxt,
-			pathWrapperJs
+			pathWrapperJs,
+			pathReadme
 		]
 	})
 	return paths.sort()//alphebetize, unfortunately does not keep folders grouped together like they look in File Manager
@@ -128,6 +130,19 @@ async function writeWrapper(o) {
 	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`
 	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
 	await fs.writeFile(pathWrapperJs, s)
+}
+
+async function writeReadme(o) {
+
+	//write the floppy disk ascii art to the top of README.md, preserving the rest of the file
+	let {disk} = sayFloppy(o)
+	let readme = await fs.readFile(pathReadme, 'utf8')
+	let lines = readme.split(/\r?\n/)
+	let fence1 = lines.findIndex(line => line.trimEnd() == '```')
+	let fence2 = lines.findIndex((line, i) => i > fence1 && line.trimEnd() == '```')
+	let body = lines.slice(fence2 + 1).join(newline)
+	let s = newline + '```' + disk + '```' + newline + body
+	await fs.writeFile(pathReadme, s)
 }
 
 const envKeysFileName = '.env.keys'
@@ -170,8 +185,7 @@ async function affixSeal(properties, manifest) {
 		local: ((new Date()).getTimezoneOffset()) * Time.minute,
 		cloud: wrapper.cloud,
 		hash: hash.base32(),
-		prefix: prefix7(hash),//short human-readable form of the hash; change to prefix39 etc. to try other forms
-		label: await prefix39(hash),//BIP-39 word + 2 digits, like "Deci71", trying this out ttd february
+		label: await prefix39(hash),//short human-readable form of the hash, BIP-39 word + 2-3 digits, like "Deci71"
 		codeFiles,
 		codeSize,
 		totalFiles,
@@ -180,6 +194,6 @@ async function affixSeal(properties, manifest) {
 		publicKeys: 'FujiTracer'+'P10_'+cutRandomWords(publicData.base62(), 10, 20),//intentionally, acceptably, and necessarily public factory presets and client side bundle keys, still politely obscured
 	}
 
-	//overwrite wrapper.js, which the rest of the code imports to show the version information like name, date, and hash
-	await writeWrapper(o)
+	await writeWrapper(o)//overwrite wrapper.js, which tells running code the version information like name, date, and hash
+	await writeReadme(o)//overwrite the top of README.md with the current disk with this information for github.com
 }

@@ -151,7 +151,7 @@ keepPromise, awaitDoorPromises,
 dog, logAudit, logAlert,
 awaitDog, awaitLogAudit, awaitLogAlert,
 useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
-sayFloppyDisk, runTestsSticker,
+sayFloppy, runTestsSticker,
 
 fetchWorker, fetchLambda, fetchProvider,
 originOauth, originApex, lambda23,
@@ -286,6 +286,6 @@ commas,
 anyIncludeAny,
 
 liveBox,//move to whichever level you need it!
-prefix_alphabet, prefix7, prefix3, prefix1, prefix2, prefix3d, prefix4, prefix2x2, prefix5,
+prefix_alphabet, prefix1, prefix2,
 
 } from './level0.js'

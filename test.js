@@ -1,6 +1,6 @@
 
 import {
-wrapper, sayFloppyDisk, runTests, runDatabaseTests,
+wrapper, sayFloppy, runTests, runDatabaseTests,
 log, addLogSink, look, newline,
 } from 'icarus'
 import {promises as fs} from 'fs'
@@ -10,11 +10,10 @@ async function main() {
 		addLogSink((s) => { fs.appendFile('test.log', s.trimEnd()+newline) })
 	}
 
-	log(
-		sayFloppyDisk(wrapper).disk,//show 💾 with the current percent filled and shrinkwrap seal hash
-		(await runTests()).message,//run tests and log out the results
-		(await runDatabaseTests()).message,//followed by database tests using pglite, which are slower; we run manually and locally
-		''
-	)
+	let r1 = await runTests()//isomorphic unit tests in JavaScript like test(async () => { ok(true) })
+	let r2 = await runDatabaseTests()//pglite tests that simulate database table state, still all ephemeral in memory
+	log(sayFloppy(wrapper).disk, r1.message, r2.message, '')
+
+	if (!(r1.success && r2.success)) process.exit(1)//exit code 1 tells the shell a step failed, stopping any && chain
 }
 main().catch(e => { log('🚧 Error:', look(e)); process.exit(1) })
