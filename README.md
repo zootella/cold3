@@ -1,7 +1,7 @@
 
 ```
  ____________________
-| |cold3 @Opin96   | |
+| |cold3 @Copp83   | |
 |.|________________|H|
 | |2026mar01_______| |
 | |188_files_______| |
@@ -110,7 +110,7 @@ OAuth via
 [SvelteKit 2](https://svelte.dev/docs/kit/) on
 [Svelte 5](https://svelte.dev/), also deploying to Cloudflare Workers.
 
-[Vite 6](https://vite.dev/) for dev across _icarus_, _site_, and _oauth_ workspaces.
+[Vite 6](https://vite.dev/) for local development across _icarus_, _site_, and _oauth_ workspaces.
 [Rollup 4](https://rollupjs.org/) for production bundles,
 client and server, in both Nuxt and SvelteKit.
 
