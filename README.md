@@ -1,7 +1,7 @@
 
 ```
  ____________________
-| |cold3 @Chal48   | |
+| |cold3 @Spon52   | |
 |.|________________|H|
 | |2026mar01_______| |
 | |188_files_______| |
@@ -30,10 +30,10 @@ pnpm test #run unit tests, then database tests with pglite
 
 pnpm cors #run CORS and security tests against deployed lambdas
 pnpm og #fetch a deployed page, extract og:image, verify fresh render and cache behavior
-pnpm xray TERM #ripgrep the entire tree including node_modules to confirm secrets aren't leaking
+pnpm xray TERM #confirm locations of settings and secrets across builds
 
-pnpm wash #delete all node_modules and build artifacts, keep lockfile
-pnpm upgrade-wash #wash, then also delete the lockfile for a fresh install of current versions in range
+pnpm wash #delete node modules but not lockfile like this is a fresh box
+pnpm upgrade-wash #also delete lockfile to install most recent versions in range
 
 #🟨 shared isomorphic library, four levels from pure JS up to application logic
 cd icarus
