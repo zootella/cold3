@@ -1,7 +1,7 @@
 
 ```
  ____________________
-| |cold3 @Stoo52   | |
+| |cold3 @Opin96   | |
 |.|________________|H|
 | |2026mar01_______| |
 | |188_files_______| |
@@ -72,9 +72,9 @@ Intentionally avoiding
 [webpack](https://webpack.js.org/). 🤮
 
 Input validation with
-[Zod](https://zod.dev/),
-[libphonenumber-js](https://gitlab.com/catamphetamine/libphonenumber-js), and
-Braintree's [credit-card-type](https://github.com/braintree/credit-card-type).
+[Zod](https://zod.dev/packages/mini),
+[libphonenumber-js](https://gitlab.com/catamphetamine/libphonenumber-js) from Android, and
+[credit-card-type](https://github.com/braintree/credit-card-type) from Braintree.
 
 AWS Lambda functions via
 [Serverless Framework 4](https://www.serverless.com/) with
@@ -84,7 +84,7 @@ Messaging with
 [SES](https://aws.amazon.com/ses/),
 [SNS](https://aws.amazon.com/sns/),
 [Twilio](https://www.twilio.com/), and
-[SendGrid](https://sendgrid.com/).
+[SendGrid](https://www.twilio.com/docs/sendgrid).
 The build uses Vercel's [NFT](https://github.com/vercel/nft) to trace and include only necessary files,
 and packs [Sharp](https://sharp.pixelplumbing.com/) for image manipulation
 with native binaries for

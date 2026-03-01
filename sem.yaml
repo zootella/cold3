@@ -1,5 +1,5 @@
 summary:
-  generated: 2026mar1.2223.20170
+  generated: 2026mar1.2227.5724
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
