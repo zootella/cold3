@@ -1406,8 +1406,8 @@ test(() => {
 //                        
 
 //compute the 32 byte SHA-256 hash value of data
-const hash_size = 32//the hash value is 32 bytes
-const hash_length = 52//which is 52 characters in base 32 without padding
+export const hash_size = 32//the hash value is 32 bytes
+export const hash_length = 52//which is 52 characters in base 32 without padding
 export function checkHash(s) {
 	checkText(s); if (s.length != hash_length) toss('data', {s})
 	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
@@ -1429,7 +1429,7 @@ test(async () => {
 test(async () => {
 	let d = Data({random: 500})//hash 500 random bytes, different every time we run the test
 	let h = await hashData(d)
-	ok(h.size() == 32)//32 byte hash value, around 44 base62 characters
+	ok(h.size() == hash_size)//32 byte hash value, around 44 base62 characters
 	let d2 = await hashData(Data({text: 'hello'}))
 	ok(d2.base16() == '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824')//found on the web
 	ok(d2.base32() == 'FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA')//not found on the web
@@ -1467,7 +1467,7 @@ export function liveBox(s) {//move to another level by moving this, as well as t
 }
 
 const password_salt_size = 16//PBKDF2 uses 16 bytes of salt
-const password_hash_size = 32//and produces hash values 16 bytes in size, just like SHA256
+const password_hash_size = 32//and produces 32 byte values because the derived key is AES-256
 const password_laps = 3//run three laps of the speed test to discount a slow warmup
 const password_duration_target = 500//take half a second on the user's computer to secure their password
 const password_iterations_per_cycle = 100_000//for convenience, we'll count interations in units of 100k each
@@ -1725,11 +1725,11 @@ export async function hmacSign(hashAlgorithm, secretData, messageData) {//given 
 	|___/_._o________o_._\___| wtx */return Data({buffer: b})
 }
 test(async () => {
-	//log(Data({random: 32}).base16())//uncomment to generate secure random secret to share and store securely
+	//log(Data({random: hash_size}).base16())//uncomment to generate secure random secret to share and store securely
 
 	let sharedSecretData = Data({base16: 'f9b9079fa7021b0c67f26de8758cde5b02e1944dade0e9041d00e808a4b21cc7'})//example shared secret both sides have secure
 	let signature = await hmacSign('SHA-256', sharedSecretData, Data({text: 'example message'}))
-	ok(signature.size() == 32)//hmac hashes are 32 bytes
+	ok(signature.size() == hash_size)//hmac hashes are 32 bytes
 	ok(signature.base16() == '1b8f8b63c8bacedebe05f030e05f325c185cb8fe771abcb07987688e823928b4')
 	ok(signature.base64() == 'G4+LY8i6zt6+BfAw4F8yXBhcuP53GryweYdojoI5KLQ=')
 

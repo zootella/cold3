@@ -7,7 +7,7 @@ Time, inSeconds, Now, sayDate, sayTick, isExpired, textToTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 checkInt, hasText, checkText, checkTextSame, newline,
 Tag, checkTag, hasTag,
-Data, encryptSymmetric, encryptData, decryptData, hashText, hmacSign,
+Data, encryptSymmetric, encryptData, decryptData, hash_length, hashText, hmacSign,
 makePlain, makeObject, makeText,
 replaceAll, replaceOne, toTextOrBlank,
 parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
@@ -1747,7 +1747,7 @@ function isQueryTag(s) {//a tag must be 21 letters and numbers
 	return typeof s == 'string' && s.length == 21 && /^[A-Za-z0-9]+$/.test(s)
 }
 function isQueryHash(s) {//a sha256 hash value in base32 without padding is 52 A-Z and 2-7
-	return typeof s == 'string' && s.length == 52 && /^[A-Z2-7]+$/.test(s)
+	return typeof s == 'string' && s.length == hash_length && /^[A-Z2-7]+$/.test(s)
 }
 function isQueryInt(i) {//make sure i is an integer within range, negative is fine
 	return (

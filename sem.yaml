@@ -1,5 +1,5 @@
 summary:
-  generated: 2026feb26.2145.18910
+  generated: 2026mar1.1759.13394
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -203,8 +203,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.999.0 on 2026feb26 0m old
-      latest: 3.999.0 on 2026feb26 0m old
+      current: 3.1000.0 on 2026feb27 0m old
+      latest: 3.1000.0 on 2026feb27 0m old
     downloads:
       weekly: 17,875,343
       on: 2026feb25.2302.49295
@@ -216,8 +216,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.999.0 on 2026feb26 0m old
-      latest: 3.999.0 on 2026feb26 0m old
+      current: 3.1000.0 on 2026feb27 0m old
+      latest: 3.1000.0 on 2026feb27 0m old
     downloads:
       weekly: 2,322,525
       on: 2026feb25.2302.49295
@@ -229,8 +229,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.999.0 on 2026feb26 0m old
-      latest: 3.999.0 on 2026feb26 0m old
+      current: 3.1000.0 on 2026feb27 0m old
+      latest: 3.1000.0 on 2026feb27 0m old
     downloads:
       weekly: 2,822,051
       on: 2026feb25.2302.49295
@@ -242,8 +242,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.999.0 on 2026feb26 0m old
-      latest: 3.999.0 on 2026feb26 0m old
+      current: 3.1000.0 on 2026feb27 0m old
+      latest: 3.1000.0 on 2026feb27 0m old
     downloads:
       weekly: 7,313,226
       on: 2026feb25.2302.49295
@@ -372,8 +372,8 @@ modules:
     versions:
       declared: ^2.50.2 on 2026feb02 0m old
       installed: 2.52.0 on 2026feb15 0m old
-      current: 2.53.2 on 2026feb25 0m old
-      latest: 2.53.2 on 2026feb25 0m old
+      current: 2.53.4 on 2026feb28 0m old
+      latest: 2.53.4 on 2026feb28 0m old
     downloads:
       weekly: 1,142,961
       on: 2026feb25.2302.49295
@@ -575,10 +575,10 @@ modules:
     note: "validate: card brand detection from number"
     from: icarus
     versions:
-      declared: ^10.1.2 on 2026jan28 0m old
-      installed: 10.1.2 on 2026jan28 0m old
-      current: 10.1.2 on 2026jan28 0m old
-      latest: 10.1.2 on 2026jan28 0m old
+      declared: ^10.1.2 on 2026jan28 1m old
+      installed: 10.1.2 on 2026jan28 1m old
+      current: 10.1.2 on 2026jan28 1m old
+      latest: 10.1.2 on 2026jan28 1m old
     downloads:
       weekly: 1,302,757
       on: 2026feb25.2300.37693
@@ -640,7 +640,7 @@ modules:
     note: "validate: phone number parsing and validation"
     from: icarus
     versions:
-      declared: ^1.12.36 on 2026jan30 0m old
+      declared: ^1.12.36 on 2026jan30 1m old
       installed: 1.12.37 on 2026feb17 0m old
       current: 1.12.38 on 2026feb26 0m old
       latest: 1.12.38 on 2026feb26 0m old
@@ -772,8 +772,8 @@ modules:
     note: "front: radix primitives port for vue; shadcn-vue foundation"
     from: site
     versions:
-      declared: ^2.8.0 on 2026jan28 0m old
-      installed: 2.8.0 on 2026jan28 0m old
+      declared: ^2.8.0 on 2026jan28 1m old
+      installed: 2.8.0 on 2026jan28 1m old
       current: 2.8.2 on 2026feb20 0m old
       latest: 2.8.2 on 2026feb20 0m old
     downloads:
@@ -811,7 +811,7 @@ modules:
     note: "provider: framework cli for deploying to aws lambda"
     from: net23
     versions:
-      declared: ^4.31.2 on 2026jan27 0m old
+      declared: ^4.31.2 on 2026jan27 1m old
       installed: 4.32.0 on 2026feb12 0m old
       current: 4.33.0 on 2026feb19 0m old
       latest: 4.33.0 on 2026feb19 0m old
@@ -852,8 +852,8 @@ modules:
     versions:
       declared: ^5.50.0 on 2026feb06 0m old
       installed: 5.51.3 on 2026feb17 0m old
-      current: 5.53.5 on 2026feb25 0m old
-      latest: 5.53.5 on 2026feb25 0m old
+      current: 5.53.6 on 2026feb27 0m old
+      latest: 5.53.6 on 2026feb27 0m old
     downloads:
       weekly: 3,009,906
       on: 2026feb25.2307.15278
@@ -956,7 +956,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^2.45.1 on 2026jan29 0m old
+      declared: ^2.45.1 on 2026jan29 1m old
       installed: 2.46.2 on 2026feb17 0m old
       current: 2.46.3 on 2026feb24 0m old
       latest: 2.46.3 on 2026feb24 0m old
@@ -1029,10 +1029,10 @@ modules:
     note: "build: used by sem.js to read and write sem.yaml"
     from: root
     versions:
-      declared: ^2.8.2 on 2025nov30 2m old
-      installed: 2.8.2 on 2025nov30 2m old
-      current: 2.8.2 on 2025nov30 2m old
-      latest: 2.8.2 on 2025nov30 2m old
+      declared: ^2.8.2 on 2025nov30 3m old
+      installed: 2.8.2 on 2025nov30 3m old
+      current: 2.8.2 on 2025nov30 3m old
+      latest: 2.8.2 on 2025nov30 3m old
     downloads:
       weekly: 111,133,380
       on: 2026feb25.2300.37693

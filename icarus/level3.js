@@ -7,7 +7,7 @@ Time, inSeconds, Now, sayDate, sayTick,
 log, logTo, say, look, defined, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank, newline,
 Tag, checkTagOrBlank, checkTag,
-Data, decryptData, hasTextSame,
+Data, decryptData, hash_size, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
 checkHash, checkInt, roundDown, hashText, given,
@@ -95,7 +95,7 @@ async function _vhsSign(secret, path, now, expiration, seed) {//so we've factore
 }
 test(async () => {
 	let secret = Data({base16: '8d64b043e91a4e08e492ae37b8ac96bdb89877865b9dbcbe7789766216854f90'})//example test secret
-	ok(secret.size() == 32)
+	ok(secret.size() == hash_size)
 	let path = '/folder1/folder2/'
 	let now = 1733858021895
 	let expiration = 2*Time.hour

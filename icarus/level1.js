@@ -14,7 +14,7 @@ tagLength, Tag, checkTagOrBlank, checkTag, hasTag,
 Bin, Data, checkSizeStartEnd, randomBetween, mulberryData,
 cut,
 fraction, exponent, int, big, newline,
-hashText, given,
+hash_size, hash_length, hashText, given,
 makePlain, makeObject, makeText,
 totpValidate,
 safefill, deindent, commas,
@@ -214,7 +214,7 @@ export const Limit = Object.freeze({
 
 	//program types
 	tag: tagLength,//tags are exactly 21 characters, like "JhpmKdxqPtxv6zXZWglBL"
-	hash: 52,//a sha256 hash value in base32 without padding is exactly 52 characters, like "FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA"
+	hash: hash_length,//a sha256 hash value in base32 without padding is exactly 52 characters, like "FTZE3OS7WCRQ4JXIHMVMLOPCTYNRMHS4D6TUEXTTAQZWFE4LTASA"
 
 	//user submission limits
 	name: 42,//user names and route slugs, super sized from twitter 15, 20 reddit, 30 gmail, and 32 tumblr
@@ -1279,7 +1279,7 @@ async function cycle4648(size) { const {otpauth} = await fuzzDynamicImport()
 	ok(d1.base16() == d2.base16())
 }
 noop(async () => {
-	async function f1() { let size = 32;                     await cycle4648(size) }//a sha256 hash value is 32 bytes (256 bits) 52 base32 characters
+	async function f1() { let size = hash_size;              await cycle4648(size) }//a sha256 hash value is 32 bytes (256 bits) 52 base32 characters
 	async function f2() { let size = 20;                     await cycle4648(size) }//a standard TOTP secret is 20 bytes (160 bits) 32 base32 characters
 	async function f3() { let size = randomBetween(1, 8);    await cycle4648(size) }//short
 	async function f4() { let size = randomBetween(1, 1024); await cycle4648(size) }//longer
@@ -1564,7 +1564,6 @@ export const hashProtocol = {
 	pieces: Object.freeze({title: 'Fuji.Pieces.SHA256.4MiB.', size: 4*Size.mb}),
 	tips:   Object.freeze({title: 'Fuji.Tips.SHA256.4KiB.',   size: 4*Size.kb}),
 }
-const hash_value_size = 32//a SHA-256 hash value is 32 bytes
 test(() => { ok(hashProtocol.pieces.size == 4_194_304); ok(hashProtocol.tips.size == 4096) })
 /*
 4 MiB hashes in ~10ms similar to the frequency of page animation frames,
@@ -1625,7 +1624,7 @@ export async function hashStream({stream, size, protocol = hashProtocol, onProgr
 
 	//for the pieces hash, the summary we'll hash is the title followed by hashes of pieces of file data (hashing hashes, not file data)
 	let piecesTitle = Data({text: `${protocol.pieces.title}${size}.`})
-	let piecesBin = Bin(piecesTitle.size() + (hash_value_size * measurePieces.pieces))//space for title followed by hashes of every piece
+	let piecesBin = Bin(piecesTitle.size() + (hash_size * measurePieces.pieces))//space for title followed by hashes of every piece
 	piecesBin.add(piecesTitle)
 
 	//for for the tips hash, the summary we'll hash is the title followed by stripes of file data (hashing file data, not hashes)
@@ -2139,7 +2138,7 @@ export async function prefix39(data) {//BIP-39 word (first 4 chars) + 2 or 3 dig
 	return word + digits
 }
 noop(async () => {
-	let d = Data({random: 32})//32 bytes, same size as a SHA-256 hash
+	let d = Data({random: hash_size})//32 bytes, same size as a SHA-256 hash
 
 	log('', deindent`
 		${d.base16()}  ~base16
