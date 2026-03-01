@@ -1,7 +1,7 @@
 
 ```
  ____________________
-| |cold3 @Fanc29   | |
+| |cold3 @Stoo52   | |
 |.|________________|H|
 | |2026mar01_______| |
 | |188_files_______| |
@@ -18,8 +18,8 @@
 
 How quick, simple, and cheap can the web2+3 stack be?
 [One person](https://world.hey.com/dhh/the-one-person-framework-711e6318)
-exploring pouring and curing a
-tiny [monolith](https://signalvnoise.com/svn3/the-majestic-monolith/). ⬛🙈
+pouring and curing a tiny
+[monolith](https://signalvnoise.com/svn3/the-majestic-monolith/) ⬛🙈
 
 ```bash
 #monorepo root, a completely serverless web2+3 stack 💾
@@ -36,11 +36,11 @@ pnpm wash #delete node modules but not lockfile like this is a fresh box
 pnpm upgrade-wash #also delete lockfile to install most recent versions in range
 
 #shared isomorphic library, four levels from pure JS up to application logic 🟨
-cd icarus
+cd ./icarus
 pnpm icarus #vite dev server for lightning quick Ctrl+S TDD
 
 #Nuxt website, universal rendering, Cloudflare Workers, Supabase, Tailwind, shadcn/ui 🌍
-cd site
+cd ../site
 pnpm local #Nuxt dev server
 pnpm build #Nuxt production build
 pnpm preview #build and run locally with wrangler dev to test the worker
@@ -48,14 +48,14 @@ pnpm cloud #flip wrapper.cloud to true, build, deploy to Cloudflare, flip back, 
 pnpm size #nuxi analyze, opens rollup visualizer for client and nitro bundles
 
 #Lambda functions for AWS and heavyweight Node modules, Serverless Framework 📚
-cd net23
+cd ../net23
 pnpm local #serverless offline with hot reload
 pnpm build #bundle, package, and measure size
 pnpm cloud #bundle, deploy to AWS Lambda, and test
 pnpm www #sync static files to S3
 
 #SvelteKit site for Auth.js OAuth authentication, Cloudflare Workers 👥
-cd oauth
+cd ../oauth
 pnpm local #Vite dev server
 pnpm build #Vite production build
 pnpm cloud #set cloud mode, build, deploy to Cloudflare Workers, restore local mode, test
@@ -101,7 +101,8 @@ Deployed to
 [Cloudflare Workers](https://developers.cloudflare.com/workers/) with
 [wrangler 4](https://developers.cloudflare.com/workers/wrangler/).
 Database on
-[Supabase](https://supabase.com/) Postgres, tested locally with
+[Supabase](https://supabase.com/)
+[Postgres](https://www.postgresql.org/), tested locally with
 [PGlite](https://pglite.dev/).
 
 OAuth via
