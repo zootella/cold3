@@ -1,5 +1,5 @@
 summary:
-  generated: 2026mar2.1936.52908
+  generated: 2026mar3.2302.15017
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -203,8 +203,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.1000.0 on 2026feb27 0m old
-      latest: 3.1000.0 on 2026feb27 0m old
+      current: 3.1001.0 on 2026mar03 0m old
+      latest: 3.1001.0 on 2026mar03 0m old
     downloads:
       weekly: 17,875,343
       on: 2026feb25.2302.49295
@@ -216,8 +216,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.1000.0 on 2026feb27 0m old
-      latest: 3.1000.0 on 2026feb27 0m old
+      current: 3.1001.0 on 2026mar03 0m old
+      latest: 3.1001.0 on 2026mar03 0m old
     downloads:
       weekly: 2,322,525
       on: 2026feb25.2302.49295
@@ -229,8 +229,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.1000.0 on 2026feb27 0m old
-      latest: 3.1000.0 on 2026feb27 0m old
+      current: 3.1001.0 on 2026mar03 0m old
+      latest: 3.1001.0 on 2026mar03 0m old
     downloads:
       weekly: 2,822,051
       on: 2026feb25.2302.49295
@@ -242,8 +242,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.1000.0 on 2026feb27 0m old
-      latest: 3.1000.0 on 2026feb27 0m old
+      current: 3.1001.0 on 2026mar03 0m old
+      latest: 3.1001.0 on 2026mar03 0m old
     downloads:
       weekly: 7,313,226
       on: 2026feb25.2302.49295
@@ -437,10 +437,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.1.0 on 2025dec02 2m old
-      installed: 5.1.0 on 2025dec02 2m old
-      current: 5.1.0 on 2025dec02 2m old
-      latest: 5.1.0 on 2025dec02 2m old
+      declared: ^5.1.0 on 2025dec02 3m old
+      installed: 5.1.0 on 2025dec02 3m old
+      current: 5.1.0 on 2025dec02 3m old
+      latest: 5.1.0 on 2025dec02 3m old
     downloads:
       weekly: 284,222
       on: 2026feb25.2300.37693
@@ -452,10 +452,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.2.0 on 2025dec02 2m old
-      installed: 5.2.0 on 2025dec02 2m old
-      current: 5.2.0 on 2025dec02 2m old
-      latest: 5.2.0 on 2025dec02 2m old
+      declared: ^5.2.0 on 2025dec02 3m old
+      installed: 5.2.0 on 2025dec02 3m old
+      current: 5.2.0 on 2025dec02 3m old
+      latest: 5.2.0 on 2025dec02 3m old
     downloads:
       weekly: 580,625
       on: 2026feb25.2300.37693
@@ -603,8 +603,8 @@ modules:
     versions:
       declared: ^11.3.3 on 2025dec18 2m old
       installed: 11.3.3 on 2025dec18 2m old
-      current: 11.3.3 on 2025dec18 2m old
-      latest: 11.3.3 on 2025dec18 2m old
+      current: 11.3.4 on 2026mar03 0m old
+      latest: 11.3.4 on 2026mar03 0m old
     downloads:
       weekly: 146,501,384
       on: 2026feb25.2302.49295
@@ -718,10 +718,10 @@ modules:
     note: "nuxt: fetch wrapper; in icarus so lambda code can use it directly without nuxt"
     from: icarus
     versions:
-      declared: ^1.5.1 on 2025nov01 3m old
-      installed: 1.5.1 on 2025nov01 3m old
-      current: 1.5.1 on 2025nov01 3m old
-      latest: 1.5.1 on 2025nov01 3m old
+      declared: ^1.5.1 on 2025nov01 4m old
+      installed: 1.5.1 on 2025nov01 4m old
+      current: 1.5.1 on 2025nov01 4m old
+      latest: 1.5.1 on 2025nov01 4m old
     downloads:
       weekly: 4,635,769
       on: 2026feb25.2300.37693
@@ -774,8 +774,8 @@ modules:
     versions:
       declared: ^2.8.0 on 2026jan28 1m old
       installed: 2.8.0 on 2026jan28 1m old
-      current: 2.8.2 on 2026feb20 0m old
-      latest: 2.8.2 on 2026feb20 0m old
+      current: 2.9.0 on 2026mar03 0m old
+      latest: 2.9.0 on 2026mar03 0m old
     downloads:
       weekly: 717,628
       on: 2026feb25.2307.15278
@@ -788,7 +788,7 @@ modules:
       declared: 0.15.2 on 2025jun09 8m old 📌 Exact version pinned
       installed: 0.15.2 on 2025jun09 8m old 🐣 Pre-1.0 version installed
       current: 0.15.2 on 2025jun09 8m old
-      latest: 0.21.0 on 2026mar02 0m old
+      latest: 0.24.1 on 2026mar03 0m old
     downloads:
       weekly: 724,868
       on: 2026feb25.2307.15278
@@ -852,8 +852,8 @@ modules:
     versions:
       declared: ^5.50.0 on 2026feb06 0m old
       installed: 5.51.3 on 2026feb17 0m old
-      current: 5.53.6 on 2026feb27 0m old
-      latest: 5.53.6 on 2026feb27 0m old
+      current: 5.53.7 on 2026mar03 0m old
+      latest: 5.53.7 on 2026mar03 0m old
     downloads:
       weekly: 3,009,906
       on: 2026feb25.2307.15278
@@ -1018,8 +1018,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 0m old
       installed: 4.66.0 on 2026feb17 0m old
-      current: 4.69.0 on 2026feb26 0m old
-      latest: 4.69.0 on 2026feb26 0m old
+      current: 4.70.0 on 2026mar03 0m old
+      latest: 4.70.0 on 2026mar03 0m old
     downloads:
       weekly: 4,268,110
       on: 2026feb25.2307.15278
