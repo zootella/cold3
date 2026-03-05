@@ -1,5 +1,5 @@
 summary:
-  generated: 2026mar5.0120.32654
+  generated: 2026mar5.1639.57811
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -370,7 +370,7 @@ modules:
     note: "sveltekit: framework for the oauth workspace"
     from: oauth
     versions:
-      declared: ^2.50.2 on 2026feb02 0m old
+      declared: ^2.50.2 on 2026feb02 1m old
       installed: 2.52.0 on 2026feb15 0m old
       current: 2.53.4 on 2026feb28 0m old
       latest: 2.53.4 on 2026feb28 0m old
@@ -788,7 +788,7 @@ modules:
       declared: 0.15.2 on 2025jun09 8m old 📌 Exact version pinned
       installed: 0.15.2 on 2025jun09 8m old 🐣 Pre-1.0 version installed
       current: 0.15.2 on 2025jun09 8m old
-      latest: 0.24.1 on 2026mar03 0m old
+      latest: 0.25.0 on 2026mar05 0m old
     downloads:
       weekly: 724,868
       on: 2026feb25.2307.15278
