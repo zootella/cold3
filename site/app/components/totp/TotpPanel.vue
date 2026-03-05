@@ -98,7 +98,7 @@ async function onRemove() {
 				<QrCode :address="refUri" />
 			</div>
 			<div class="space-y-2">
-				<TotpText1> on your phone</TotpText1>
+				<TotpText1 />
 				<p>
 Scan the QR, then enter the 6 digits you get below.
 				</p>
