@@ -41,9 +41,9 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	if (action == 'Enroll1.') {
 
 		let enrollment = await totpEnroll({//make a new provisional enrollment; this generates enrollment.secret
-			label: '@'+(userName?.name?.f1 || userTag),//display name if available, fallback to userTag (matches credentialStore.userDisplayName) ttd january, replace this with nothing if not f1
-			issuer: Key('domain, public'),
-			addIdentifier: true,
+			account: '@'+(userName?.name?.f1 || userTag),//display name if available, fallback to userTag (matches credentialStore.userDisplayName) ttd january, replace this with nothing if not f1
+			brand: Key('domain, public'),
+			label: true,
 		})
 		enrollment.envelope = await sealEnvelope('EnrollTotp.', Limit.expirationUser, {
 			secret: enrollment.secret,

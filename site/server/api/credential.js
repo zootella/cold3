@@ -7,12 +7,13 @@ credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 credentialCloseAccount,
-totpEnroll, totpValidate, totpIdentifier,
-checkTotpCode, Data, isExpired,
+totpEnroll, totpValidate, totpIdentifier, totpConstants,
+checkTotpCode, checkTotpSecret, Data, isExpired,
+trailCount, trailAdd,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
 async function attachState(task, browserHash) {//attach complete credential state to task — every credential type, every time, so one call gives the store everything it needs to render the full credential panel
@@ -46,9 +47,9 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 					let secret = letter.secret
 					let enrollment = await totpEnroll({
 						secret: Data({base32: secret}),
-						label: '@'+(task.user?.f1 || task.userTag || 'user'),
-						issuer: Key('domain, public'),
-						addIdentifier: true,
+						account: '@'+(task.user?.f1 || task.userTag || 'user'),
+						brand: Key('domain, public'),
+						label: true,
 					})
 					task.enrollment = {
 						uri: enrollment.uri,
@@ -120,39 +121,82 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		} else if (action == 'SignOut.') {
 			await credentialBrowserRemove({userTag: user.userTag})
 
+		//TOTP enrollment step 1: the user at browser wants to setup totp as a second factor. here at the server, we make sure they're not already enrolled, and generate a new random secret for the qr code
 		} else if (action == 'TotpEnroll1.') {
 			let existing = await credentialTotpGet({userTag: user.userTag})
 			if (existing) toss('state', {action, user, browserHash, existing})//client thought enrollment was possible
-			let userName = await credentialNameGet({userTag: user.userTag})
-			let enrollment = await totpEnroll({
-				label: '@'+(userName?.name?.f1 || user.userTag),
-				issuer: Key('domain, public'),
-				addIdentifier: true,
-			})
+
+			let userName = await credentialNameGet({userTag: user.userTag})//get name information for this user, if they have one
+			let account = userName?.name?.f1 ? `@${userName.name.f1}` : null//later use email if the user has that, ttd march
+			let enrollment = await totpEnroll({brand: Key('domain, public'), account, label: true})
 			enrollment.envelope = await sealEnvelope('EnrollTotpEnvelope.', Limit.expirationUser, {
 				secret: enrollment.secret,
 				message: safefill`TOTP enrollment: browser ${browserHash}, user ${user.userTag}, secret ${enrollment.secret}`,
 			})
 			task.enrollment = enrollment
 
+		//TOTP enrollment step 2: the user has gotten the secret into their authenticator app, and has their first code to validate. if they're right, we create their enrollment
 		} else if (action == 'TotpEnroll2.') {
 			checkTotpCode(body.code)
 			let existing = await credentialTotpGet({userTag: user.userTag})
 			if (existing) toss('state', {action, user, browserHash, existing})//client thought enrollment was possible
 			let letter = await openEnvelope('EnrollTotpEnvelope.', body.envelope, {skipExpirationCheck: true})
+
+			//decrypt the secret from the page, possibly via a cookie through a refresh
 			let secret = letter.secret
+			checkTotpSecret(secret)
+
+			//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
 			if (isExpired(letter.expiration)) return {success: false, outcome: 'Expired.'}
 			if (!hasTextSame(
 				letter.message,
 				safefill`TOTP enrollment: browser ${browserHash}, user ${user.userTag}, secret ${secret}`)) {
 				toss('state', {action, user, browserHash, letter})//envelope tampered or transplanted
-			}
+			}//➡️ passing this check is proof it's the real secret from step 1!
+
+			//make sure the user can generate a valid code
 			let valid = await totpValidate({secret: Data({base32: secret}), code: body.code})
-			if (!valid) return {success: false, outcome: 'BadCode.'}
+			if (!valid) return {success: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the page still has the secret at this point!
+
+			//save this new enrollment for this user
 			await credentialTotpSet({userTag: user.userTag, secret})
 
+		//an enrolled user wants to remove their totp enrollment, likely to setup a different one
+		//right now we make this available without additional verification, ttd november2025
 		} else if (action == 'TotpRemove.') {
 			await credentialTotpRemove({userTag: user.userTag})
+
+		//having previously enrolled, the user is signing in with totp
+		//here on the server, we validate the code
+		} else if (action == 'TotpValidate.') {
+			let secret = await credentialTotpGet({userTag: user.userTag})
+			if (!secret) toss('state')
+			checkTotpSecret(secret)
+			checkTotpCode(body.code)
+
+			//protect guesses on this secret from a brute force attack, which would succeed quickly
+			let n = await trailCount(
+				safefill`TOTP wrong guess: secret ${secret}`,
+				totpConstants.guardHorizon
+			)
+			if (n >= totpConstants.guardWrongGuesses) return {success: false, outcome: 'Later.'}
+
+			//validate the page's guess
+			let valid = await totpValidate({secret: Data({base32: secret}), code: body.code})
+			if (valid) {//guess at code from page is correct
+
+				log(`ttd november2025 🎃 user ${user.userTag} validated a code correctly, so we can let them in or sudo a transaction or something`)
+				await trailAdd(
+					safefill`TOTP right guess: secret ${secret}`//we can use this to detect if a user has a totp they haven't used in months, and maybe lost
+				)
+
+			} else {//guess at code from page is wrong
+
+				await trailAdd(
+					safefill`TOTP wrong guess: secret ${secret}`
+				)
+				return {success: false, outcome: 'Wrong.'}
+			}
 
 		} else if (action == 'CloseAccount.') {
 			await credentialCloseAccount({userTag: user.userTag})

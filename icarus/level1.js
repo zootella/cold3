@@ -519,7 +519,7 @@ test(() => {
 	ok(_checkName({f1: 'Name-1', f0: 'name-1'}) == 'Ok.')//...and together
 	ok(_checkName({f1: 'Name-1', f0: 'name-2'}) != 'Ok.')//...but not together!
 })
-const reservedRoutes = new Set(`_nuxt _og _payload about account admin administrator app ban billing blog community config contact creator dashboard developer dm e f fan faq feed feedback forum help home i legal login logout manage me messages moderator my notifications official privacy profile q qr register report root search settings shop signin signout signup staff status store subscribe support system terms unsubscribe user verify`.trim().split(/\s+/))//profile pages are on the root route; prevent a user from clashing with a utility or brochure page!
+const reservedRoutes = new Set(`_nuxt _og _payload about account admin administrator anon app ban billing blog community config contact creator dashboard developer dm e f fan faq feed feedback forum help home i legal login logout manage me messages moderator my notifications official privacy profile q qr register report root search settings shop signin signout signup staff status store subscribe support system terms unsubscribe user verify`.trim().split(/\s+/))//profile pages are on the root route; prevent a user from clashing with a utility or brochure page!
 export function validateName(raw, limit) {//raw text from either the first (page) or second (link/route) boxes in the choose or change your user name form
 	let cropped = cropToLimit(raw, limit, Limit.name)
 	let f2 = trimLine(cropped)//"東京❤️女の子" valid for display on the page

@@ -1965,29 +1965,32 @@ test(() => {
 })
 
 //make the qr code for the user to scan to set up their authenticator app
-export async function totpEnroll({label, issuer, addIdentifier, secret}) {//only pass in secret for testing
-	if (!secret) secret = Data({random: totpConstants.secretSize})//generate a new random secret for this enrollment
+export async function totpEnroll({brand, account, secret, label}) {//call with label: true to get the helpful "... [a5]"
+	if (!hasText(brand)) brand = `example.com`//shouldn't be blank, but just in case
+	if (!hasText(account)) account = `@anon`
 
-	//make the otpauth://totp/... URI for the redirect or QR code
-	checkText(label); checkText(issuer)
-	if (label.includes(':') || issuer.includes(':')) toss('colon reserved', {label, issuer})
-
-	//extra stuff beyond standard and common implementation to help the user find the right listing
+	if (!secret) secret = Data({random: totpConstants.secretSize})//generate a new secret, or given one from step 1 or for testing
 	let identifier = await totpIdentifier({secret})
-	if (addIdentifier) label += ` [${identifier}]`//the page could tell the user to look for the listing marked "...[ABC]"
-	let title = `${issuer}: ${label}`//or the title of the listing in Google Authenticator; others are similar
+	if (label) account += ` [${identifier}]`//like "a2" to identify, but not help reveal, the secret
 
-	let params = new URLSearchParams({
+	return {
 		secret: secret.base32(),
-		algorithm: totpConstants.algorithm,
-		digits: totpConstants.codeLength.toString(),
-		period: totpConstants.period.toString(),
-		issuer: issuer,
-	})
-	let uri = `otpauth://totp/${encodeURIComponent(`${issuer}:${label}`)}?${params}`
-	return {secret: secret.base32(), identifier, title, uri}
+		identifier,
+		title: brand + ': ' + account,//compose text to match how the authenticator app will show this listing (colon with space)
+		uri: (
+			'otpauth://totp/' +
+			encodeURIComponent(brand + ':' + account) + '?' +//uri must contain path, should be site:user (colon without space)
+			new URLSearchParams({
+				secret: secret.base32(),
+				algorithm: totpConstants.algorithm,
+				digits: totpConstants.codeLength.toString(),
+				period: totpConstants.period.toString(),
+				issuer: brand,//site brand name like "example.com" should be in path before colon above, and also here in params
+			})
+		),
+	}
 }
-//show the user text like "[g3]" hashed from the secret
+//compute the given totp secret's hash identifier like "g3" to show the user text like "... [g3]" to make it easier to find in the authenticator app
 export async function totpIdentifier({secret}) { return prefix2(await Data({text: secret.base32()}).hash()) }
 
 //determine if a code is valid for a secret now, pass in a time for testing
@@ -2025,18 +2028,25 @@ test(async () => {
 	//enroll: URI formatting, identifier, all fields
 	let enrollment = await totpEnroll({
 		secret: Data({base32: 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR'}),
-		label: 'Alice', issuer: 'ExampleSite', addIdentifier: true,
+		account: 'Alice', brand: 'ExampleSite', label: true,
 	})
 	ok(enrollment.secret == 'SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR')
 	ok(enrollment.identifier == 'g3')
 	ok(enrollment.title == 'ExampleSite: Alice [g3]')
 	ok(enrollment.uri == 'otpauth://totp/ExampleSite%3AAlice%20%5Bg3%5D?secret=SA4HLDKMWX7O5EQSMP737UQMW6HUEQHR&algorithm=SHA1&digits=6&period=30&issuer=ExampleSite')
 
-	//enroll: special characters in label
-	ok((await totpEnroll({secret: Data({base16: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef'}), label: '@_Alice-Jones_ [HI] <tag>', issuer: 'examplesite.com'})).uri == 'otpauth://totp/examplesite.com%3A%40_Alice-Jones_%20%5BHI%5D%20%3Ctag%3E?secret=32W35366VW7O7XVNX3X55LN657PK3PXP&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com')
+	//enroll: special characters in account get correctly URI-encoded
+	let e2 = await totpEnroll({
+		secret: Data({base32: 'CODR6DBT7Q67CPU62ELIYOBH5MND2CUN'}),
+		account: 'alice@gmail.com',
+		brand: 'myapp.io',
+		label: true,
+	})
+	ok(e2.identifier == 'w3')
+	ok(e2.uri == 'otpauth://totp/myapp.io%3Aalice%40gmail.com%20%5Bw3%5D?secret=CODR6DBT7Q67CPU62ELIYOBH5MND2CUN&algorithm=SHA1&digits=6&period=30&issuer=myapp.io')
 
 	//enroll: random secret path produces well-shaped URI
-	let uri = (await totpEnroll({label: '@alice.jones', issuer: 'examplesite.com'})).uri
+	let uri = (await totpEnroll({account: '@alice.jones', brand: 'examplesite.com'})).uri
 	ok(uri.startsWith('otpauth://totp/examplesite.com%3A%40alice.jones?secret='))
 	ok(uri.endsWith('&algorithm=SHA1&digits=6&period=30&issuer=examplesite.com'))
 })

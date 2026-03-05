@@ -12,7 +12,7 @@ const refUri = ref('')
 
 let enrollment
 async function generate() {
-	enrollment = await totpEnroll({label: refLabel.value, issuer: refIssuer.value, addIdentifier: true})
+	enrollment = await totpEnroll({account: refLabel.value, brand: refIssuer.value, label: true})
 	refUri.value = enrollment.uri
 }
 
