@@ -4,7 +4,7 @@ log, look, Size,
 } from 'icarus'
 import {execSync} from 'child_process'
 
-//make sure secrets are only the places they should be with this powerful search tool
+//make sure secrets are only the places they should be with this powerful search tool 🩻
 async function main() {
 	let searchTerm = process.argv[2]//use like $ yarn xray SEARCH_TERM
 	if (!searchTerm) process.exit(1)
