@@ -3,10 +3,8 @@
 </script>
 <template>
 
-<TotpDemo />
 <HitComponent />
 <SwitchDemo />
-<TotpDemo1 />
 <OtpRequestComponent />
 
 </template>

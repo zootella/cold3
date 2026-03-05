@@ -55,11 +55,8 @@ they're also pretty simple--they make straightforward guarantees
 the first is trail_table, and functions above like trailRecent through trailAddMany
 you can see grid() tests below the exported functions as a demosntration of capability
 
-the second used system is envelope, with functions like
-for a demonstration of production system using envelope correctly, check out totp in these files on either side of the api boundary:
-TotpDemo.vue, which keeps the encrypted envelope from the server in a cookie before returning it, keeping state between enrollment steps
-totp.js, the api endpoint
-envelope helper functions are sealEnvelope, openEnvelope, and isExpired
+the second used system is envelope, with functions like sealEnvelope, openEnvelope, and isExpired
+for a demonstration of production system using envelope correctly, check out TOTP enrollment in TotpPanel.vue (client side, persists envelope in a cookie via useTotpCookie) and credential.js TotpEnroll1/TotpEnroll2 actions (server side, seals and opens the envelope)
 
 ## (5) diff.diff
 

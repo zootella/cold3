@@ -3,17 +3,15 @@
 
 ## Direction: unify credentials through one endpoint, one store, one envelope
 
-Right now the credential system is spread across multiple endpoints, stores, cookies, and components — each built at different times for different purposes. `/api/credential` handles Browser, Password, Name, and now TOTP. `/api/otp` handles email/phone verification codes. `/api/totp` is the original standalone TOTP endpoint used by the demos. Each has its own patterns for state management: credentialStore for credentials, pageStore.otps for OTP challenges, direct fetchWorker calls for the TOTP demos. OTP and TOTP each have their own cookie (`temporary_envelope_otp`, `temporary_envelope_totp`) holding their own envelopes with different action labels.
+The credential system flows through one endpoint (`/api/credential`), one store (`credentialStore`), and one pattern. `/api/otp` handles email/phone verification codes and will eventually migrate in too.
 
-This works, but it's heading toward a world where every new credential type or verification flow brings its own endpoint, store, cookie, envelope format, and POST. A user navigating to their account page would trigger a fan of fetch calls — one per system — each independently loading, each with its own error handling and state management. That's the wrong direction.
+`Get.` returns a complete snapshot of every credential type in one response, `attachState` assembles that snapshot, and `apply()` in the store unpacks it into refs. Adding a new credential type means extending attachState and apply — not creating a new endpoint.
 
-The right direction is consolidation. Credentials of many different types should flow through `credentialStore` and `/api/credential`. The endpoint already demonstrates the pattern: `Get.` returns a complete snapshot of every credential type in one response, `attachState` assembles that snapshot, and `apply()` in the store unpacks it into refs. Adding a new credential type means extending attachState and apply — not creating a new endpoint.
-
-**Envelopes should unify too.** Right now OTP and TOTP each seal their own envelope into their own cookie. But imagine a user doing account security housekeeping — enrolling TOTP while also verifying a new email address. That's two overlapping multi-step flows, each needing envelope persistence across page refresh. Rather than multiplying cookies, we should move toward a single `CredentialEnvelope` that can hold in-flight state for multiple credential operations simultaneously. One cookie, one envelope, multiple slots inside it for whatever's in progress.
+**Envelopes should unify too.** Right now OTP and TOTP each seal their own envelope into their own cookie. Rather than multiplying cookies, we should move toward a single `CredentialEnvelope` that can hold in-flight state for multiple credential operations simultaneously. One cookie, one envelope, multiple slots inside it for whatever's in progress.
 
 **Reducing fetch calls is the goal.** A page load should be one GET to the credential endpoint. That one response tells credentialStore everything: which credentials exist, what their display values are, and whether any multi-step flows were interrupted. Components render from the store. When a user takes an action (enroll, remove, verify), that's one POST, and the response includes a fresh attachState snapshot so the store stays in sync. The number of fetch calls should be proportional to the number of user actions, not the number of credential types.
 
-This is the direction we're blowing in. The standalone `/api/totp` and `/api/otp` endpoints will eventually become unnecessary as their functionality migrates into `/api/credential`.
+`/api/otp` will eventually become unnecessary as its functionality migrates into `/api/credential`.
 
 ## TOTP integration (done)
 
@@ -51,13 +49,11 @@ The enrollment flow becomes the same on both platforms: Add → enrollment UI ap
 
 **`/api/credential` + `credentialStore`** — the main credential system. Handles Browser, Password, Name, and TOTP. Every successful response includes `attachState` (full credential snapshot). Store exposes refs and methods for all credential types. Used by CredentialPanel and its sub-components (SetPasswordForm, TotpPanel, etc).
 
-Actions: `Get.`, `SignUpAndSignInTurnstile.`, `SignIn.`, `SignOut.`, `SetName.`, `RemoveName.`, `SetPassword.`, `RemovePassword.`, `CheckNameTurnstile.`, `GetPasswordCyclesTurnstile.`, `CloseAccount.`, `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`
+Actions: `Get.`, `SignUpAndSignInTurnstile.`, `SignIn.`, `SignOut.`, `SetName.`, `RemoveName.`, `SetPassword.`, `RemovePassword.`, `CheckNameTurnstile.`, `GetPasswordCyclesTurnstile.`, `CloseAccount.`, `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`, `TotpValidate.`
 
 **`/api/otp` + `pageStore.otps` + `useOtpCookie()`** — one-time passwords for email/phone verification. Envelope pattern: `FoundEnvelope.` lets the page recover active challenges from a cookie after refresh. Server opens the envelope and returns the non-secret display parts.
 
 Actions: `SendTurnstile.`, `FoundEnvelope.`, `Enter.`
-
-**`/api/totp` (standalone, no store)** — the original TOTP endpoint, used by TotpDemo.vue. Calls go through `fetchWorker` directly, not through any store. Has its own `Status.`, `Enroll1.`, `Enroll2.`, `Validate.`, `Remove.` actions. Will eventually be retired as its functionality is now in `/api/credential`.
 
 ## Note: two cookies, future unification
 
@@ -73,12 +69,6 @@ Initially implemented with `refStep` (integer 1/2/3), then refactored to declara
 
 Sub-components extracted to `components/totp/`: `TotpText1.vue` (shared instruction text, slot for mid-sentence injection), `TotpText2.vue` (identifier tip, prop-driven with self-guarding v-if), `TotpInput.vue` (numeric code input, defineModel for v-model).
 
-## Unify TOTP endpoint into credential endpoint (next)
+## Unify TOTP endpoint into credential endpoint (done)
 
-Right now `/api/credential.js` has its own copy of the TOTP enrollment and remove logic (TotpEnroll1, TotpEnroll2, TotpRemove actions), duplicated from `/api/totp.js`. The credential.js copy is stripped of comments, logs, and trail/rate-limiting code that the original has. This is wrong — the logic should live in one place.
-
-**Direction:** export the core TOTP handler functions from `totp.js` and call them from `credential.js`. The logic stays in `totp.js` (with its comments, logs, and ttd notes intact). `credential.js`'s TOTP action branches become thin delegations. `attachState` still runs after in `credential.js` to return the full credential snapshot — the store and client are unaffected.
-
-Something like: `totp.js` exports functions like `handleTotpEnroll1({userTag, userName, browserHash})`, `handleTotpEnroll2({userTag, browserHash, envelope, code})`, `handleTotpRemove({userTag})` that return result objects. `credential.js` calls these and puts results on `task`. The demo endpoint (`TotpDemo.vue`) also calls the same exported functions through its own `doorHandleBelow`.
-
-The demo endpoint (`/api/totp`) stays alive — it has `Status.` and `Validate.` actions that credential doesn't need, and `TotpDemo.vue` still uses it directly. But the enrollment and remove logic is no longer duplicated.
+`/api/credential.js` now has all TOTP logic: `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`, `TotpValidate.`. The standalone `/api/totp.js` endpoint and its demo components (`TotpDemo.vue`, `TotpDemo1.vue`) have been deleted. The credential endpoint is the single home for TOTP, with full comments, rate limiting, and trail logging. A latent bug in the old totp.js (`totpValidate` called without `Data({base32:})` wrapping) was fixed in the process.
