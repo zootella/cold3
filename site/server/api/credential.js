@@ -6,14 +6,16 @@ credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
+credentialWalletGet, credentialWalletSet, credentialWalletRemove,
 credentialCloseAccount,
 totpEnroll, totpValidate, totpIdentifier, totpConstants,
-checkTotpCode, checkTotpSecret, Data, isExpired,
+checkTotpCode, checkTotpSecret, checkWallet, Data, isExpired,
 trailCount, trailAdd,
 } from 'icarus'
+import {verifyMessage} from 'viem'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
 async function attachState(task, browserHash) {//attach complete credential state to task — every credential type, every time, so one call gives the store everything it needs to render the full credential panel
@@ -33,6 +35,7 @@ async function attachState(task, browserHash) {//attach complete credential stat
 			task.totpEnrolled = false
 			task.totpIdentifier = ''
 		}
+		task.wallet = (await credentialWalletGet({userTag: user.userTag})) || ''//checksummed address, or empty
 	}
 }
 async function doorHandleBelow({door, body, action, browserHash}) {
@@ -197,6 +200,51 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 				)
 				return {success: false, outcome: 'Wrong.'}
 			}
+
+		//wallet proof step 1: page requests nonce to prove it controls an Ethereum address
+		//the nonce and message go into an envelope so we can verify they haven't been tampered with on step 2
+		} else if (action == 'WalletProve1.') {
+			let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
+			let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
+			let message = safefill`Add your wallet with an instant, zero-gas signature of code ${nonce}`//keepin copy short and non-scary for MetaMask's tiny little window
+
+			let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {
+				message: safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`,
+			})
+			task.walletProve = {message, nonce, envelope}
+
+		//wallet proof step 2: page calls back with signature of the nonce we gave it
+		} else if (action == 'WalletProve2.') {
+
+			//begin by making sure the page gave us all the parts we need and they look correct
+			let address = checkWallet(body.address).f0
+			let nonce = checkTag(body.nonce)//the page echos back the nonce; we must still be sure it's the same one as from before!
+			let message = checkText(body.message)//should be the same message we sent; must contain the nonce
+			let signature = checkText(body.signature)//signature looks like 0x followed by 130 or 132 base16 characters
+
+			//confirm (1) the page has given us back the same real valid nonce and message we gave it in step 1 above
+			let letter = await openEnvelope('ProveWallet.', body.envelope, {skipExpirationCheck: true})
+			if (isExpired(letter.expiration)) return {success: false, outcome: 'Expired.'}//user walked away
+			if (!hasTextSame(
+				letter.message,
+				safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`)) {
+				toss('state', {action, browserHash, letter})//envelope tampered or transplanted
+			}
+
+			//confirm (2) the message contains the nonce
+			if (!message.includes(nonce)) toss('state', {action, browserHash, nonce, message})//not possible at this point, but included for completeness
+
+			//confirm (3) the signature is of the message, and (4) the address created the signature
+			let valid = await verifyMessage({address, message, signature})//viem confirms those two things for us
+			if (!valid) return {success: false, outcome: 'BadSignature.'}
+
+			//save this proven wallet address as a credential for this user
+			log(`🖌 server has proof that browser ${browserHash} controls wallet ${address}`)
+			await credentialWalletSet({userTag: user.userTag, address})
+
+		//user wants to remove their connected wallet
+		} else if (action == 'WalletRemove.') {
+			await credentialWalletRemove({userTag: user.userTag})
 
 		} else if (action == 'CloseAccount.') {
 			await credentialCloseAccount({userTag: user.userTag})

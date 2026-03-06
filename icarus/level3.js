@@ -593,6 +593,31 @@ export async function credentialTotpRemove({userTag}) {
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.'})
 }
 
+//                    _            _   _       _                 _ _      _   
+//   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| | __      ____ _| | | ___| |_ 
+//  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | \ \ /\ / / _` | | |/ _ \ __|
+// | (__| | |  __/ (_| |  __/ | | | |_| | (_| | |  \ V  V / (_| | | |  __/ |_ 
+//  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|   \_/\_/ \__,_|_|_|\___|\__|
+//                                                                            
+
+//wallet: a user can have zero or one verified Ethereum wallet address; f0 is the checksummed address
+export async function credentialWalletGet({userTag}) {
+	checkTag(userTag)
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
+	let row = rows[0]
+	if (row) return row.f0_text//return the checksummed address
+	return false//no wallet connected
+}
+export async function credentialWalletSet({userTag, address}) {
+	checkTag(userTag); checkText(address)
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.'})
+	await credentialSet({userTag, type: 'Ethereum.', event: 4, f0: address})
+}
+export async function credentialWalletRemove({userTag}) {
+	checkTag(userTag)
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.'})
+}
+
 //                    _            _   _       _   _                                     
 //   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| | | |__  _ __ _____      _____  ___ _ __ 
 //  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__|
@@ -720,6 +745,20 @@ grid(async () => {//totp: set, re-enroll, verify single active, remove
 	ok(rows.length == 1)//only one active totp after re-enroll
 	await credentialTotpRemove({userTag})
 	ok((await credentialTotpGet({userTag})) == false)//now gone
+})
+grid(async () => {//wallet: set, change, verify single active, remove
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	ok((await credentialWalletGet({userTag})) == false)//no wallet yet
+	await credentialWalletSet({userTag, address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'})//connect first wallet
+	ok((await credentialWalletGet({userTag})) == '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')//verify connected
+	await credentialWalletSet({userTag, address: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'})//switch to different wallet
+	ok((await credentialWalletGet({userTag})) == '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B')//verify switched
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
+	ok(rows.length == 1)//only one active wallet after switch
+	await credentialWalletRemove({userTag})
+	ok((await credentialWalletGet({userTag})) == false)//now gone
 })
 grid(async () => {//browser: sign out removes all sessions for one user
 	let {clear} = await getDatabase()

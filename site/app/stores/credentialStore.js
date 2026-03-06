@@ -12,6 +12,7 @@ const passwordCycles = ref(0)//the signed-in user's password hash cycles, or 0 i
 const totpEnrolled = ref(false)//true if the user has a verified TOTP enrollment
 const totpIdentifier = ref('')//short identifier like "g3" to help user find the right authenticator entry
 const enrollment = ref(null)//in-flight TOTP enrollment recovered from envelope cookie, or null
+const wallet = ref('')//checksummed Ethereum address the user has proven they control, or empty
 
 const userDisplayName = computed(() => {//best available display name for page
 	if (name.value?.f2) return name.value.f2
@@ -27,6 +28,7 @@ function apply(task) {//update all refs from task - called after any action that
 	totpEnrolled.value = task.totpEnrolled || false
 	totpIdentifier.value = task.totpIdentifier || ''
 	enrollment.value = task.enrollment || null
+	wallet.value = task.wallet || ''
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
@@ -102,6 +104,23 @@ async function totpRemove() {
 	apply(task)
 }
 
+async function walletProve1({address}) {
+	let task = await fetchWorker('/credential', 'WalletProve1.', {address})
+	apply(task)
+	return task
+}
+
+async function walletProve2({address, nonce, message, signature, envelope}) {
+	let task = await fetchWorker('/credential', 'WalletProve2.', {address, nonce, message, signature, envelope})
+	apply(task)
+	return task
+}
+
+async function walletRemove() {
+	let task = await fetchWorker('/credential', 'WalletRemove.')
+	apply(task)
+}
+
 async function closeAccount() {
 	let task = await fetchWorker('/credential', 'CloseAccount.')
 	apply(task)
@@ -129,6 +148,10 @@ return {
 	totpEnroll1,
 	totpEnroll2,
 	totpRemove,
+	wallet,
+	walletProve1,
+	walletProve2,
+	walletRemove,
 	closeAccount,
 }
 

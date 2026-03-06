@@ -295,22 +295,53 @@ Cancellation: if the user clicks Cancel at the provider, Auth.js redirects to Sv
 
 **Envelope stays as-is.** The three-envelope chain (OauthContinue sealed by Nuxt, opened by SvelteKit; OauthDone sealed by SvelteKit, opened by Nuxt) is inherent to the cross-origin redirect flow and doesn't change. No cookies involved.
 
-## Wallet — small effort
+## Wallet — small effort, doing first (next)
 
-Also a working proof-of-concept. Integration means:
+Working proof-of-concept in `/api/wallet.js` and `WalletDemo.vue`. Same two-step playbook as TOTP integration: build alongside, smoke test, then delete the standalone version.
 
-**Server side.** Move `Prove1.` and `Prove2.` into `/api/credential.js`. On successful signature verification, write a credential_table row: type `'Ethereum.'`, event 4, with the wallet address in f0 (normalized/checksummed), k1 for any additional data. `attachState` extends to return connected wallets.
+### What exists now
 
-**Store.** `credentialStore` gains a ref for connected wallets and methods for prove/remove.
+**Server (`wallet.js`)** — two actions:
+- `Prove1.` — validates address with `checkWallet`, generates nonce (`Tag()`), composes human-readable message, seals `ProveWallet.` envelope containing `browserHash + address + nonce + message`. Returns message, nonce, envelope to client.
+- `Prove2.` — receives address, nonce, message, signature, and envelope back. Opens envelope, checks expiration, verifies message matches (anti-tamper with safefill), confirms nonce is in message, calls viem's `verifyMessage` to cryptographically confirm the signature. Currently logs success but doesn't save to database.
 
-**Components.** A `WalletPanel.vue` in CredentialPanel. Shows connected wallet addresses with Remove buttons, and a Connect button.
+**Client (`WalletDemo.vue`)** — much larger, handles:
+- Dynamic import of wagmi/viem via `wevmDynamicImport()` (heavy libraries, loaded on demand)
+- wagmi config with two connectors: injected (MetaMask) and WalletConnect (QR code + relay)
+- Connection state, QR code display, reconnection on mount
+- ETH price and block number quotes from Alchemy (demo decoration, not credential-related)
+- The prove flow: `Prove1.` → wagmi `signMessage` → `Prove2.`
+- Error handling for wallet-specific edge cases (provider not found, user rejected, timeout, network errors)
 
-**Envelope stays as-is.** Wallet envelopes stay in request bodies. The signing happens in-page via wallet popup, no navigation.
+**Envelope stays in request body.** The signing happens in-page via wallet popup, no navigation away. No cookie needed.
 
-**Wrinkle: wagmi state.** `WalletDemo.vue` manages wagmi config and watchers locally. This state management needs thought when moving into CredentialPanel — wagmi initialization, provider detection, and connection state are more complex than other credential types.
+### Step 1: build wallet into credential system alongside existing demo
+
+Same approach as TOTP — copy, don't move. WalletDemo.vue and wallet.js stay untouched.
+
+**Server side.** Add `WalletProve1.` and `WalletProve2.` actions to `/api/credential.js`. Copy the logic from wallet.js with all comments, notes, and concerns intact. On `WalletProve2.` success, additionally write a credential_table row: type `'Ethereum.'`, event 4, f0=checksummed address. Add `WalletRemove.` action. Extend `attachState` to return the user's wallet address (0 or 1 per user). Import `checkWallet` from icarus and `verifyMessage` from viem.
+
+**Store.** Add to `credentialStore`: `wallet` ref (string, checksummed address or empty), `apply()` unpacks `task.wallet`. Methods: `walletProve1({address})`, `walletProve2({address, nonce, message, signature, envelope})`, `walletRemove()`.
+
+**Components.** Create `WalletPanel.vue` in `components/wallet/`. Wire into `CredentialPanel.vue` alongside TotpPanel. Needs wagmi plumbing — the connection and signing logic from WalletDemo. The ETH quotes are demo decoration and don't come along.
+
+**Wagmi state question.** WalletDemo.vue manages wagmi config and watchers locally in the component. The ttd notes discuss moving this to a Pinia store so wagmi loads once and persists across navigation. For now, keep wagmi state in WalletPanel the same way WalletDemo does it — component-local. The store refactor is a separate concern and can happen later without touching credential_table integration.
+
+**Smoke test.** Connect with MetaMask (injected), prove ownership, verify credential_table row appears and CredentialPanel shows the wallet. Same with WalletConnect (QR code on desktop, deep link on mobile). Remove wallet, verify row is gone from attachState. WalletDemo.vue still works independently on its demo page.
+
+### Step 2: delete standalone wallet demo
+
+After smoke test passes, identify and delete everything standalone:
+- `site/server/api/wallet.js`
+- `site/app/components/snippet1/WalletDemo.vue`
+- Remove `<WalletDemo />` from whatever page hosts it
+- Confirm nothing in wallet.js has insights that credential.js lacks
+- Update credential.md
 
 ## Sequencing
 
-OAuth and Wallet first — they're the smallest integrations. OAuth is just adding a database write and attachState extension to the existing `OauthDone.` handler. Wallet is moving `Prove1.`/`Prove2.` into credential.js and adding a database write on success. Both are self-contained and don't interact with each other.
+Wallet first — it's the smallest integration and the prove flow is self-contained (no redirects, no cookies, no cross-origin). Good proof that the pattern works for non-TOTP credential types.
 
-OTP last — it's the most impactful (email/phone are core identity credentials) but has the most architectural questions to resolve (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment). Getting OAuth and Wallet integrated first means credential_table has more types flowing through it, and the pattern is well-exercised before tackling the hard one.
+OAuth second — also small, but the cross-origin SvelteKit flow adds complexity to understand. The integration point is narrow (just `OauthDone.`), but the full flow spans three sites.
+
+OTP last — most impactful (email/phone are core identity credentials) but has the most architectural questions to resolve (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment). Getting Wallet and OAuth integrated first means credential_table has more types flowing through it, and the pattern is well-exercised before tackling the hard one.
