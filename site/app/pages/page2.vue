@@ -5,6 +5,5 @@
 
 <TrailDemo />
 <OauthDemo />
-<WalletDemo />
 
 </template>

@@ -327,6 +327,8 @@ Same approach as TOTP — copy, don't move. WalletDemo.vue and wallet.js stay un
 
 **Wagmi state question.** WalletDemo.vue manages wagmi config and watchers locally in the component. The ttd notes discuss moving this to a Pinia store so wagmi loads once and persists across navigation. For now, keep wagmi state in WalletPanel the same way WalletDemo does it — component-local. The store refactor is a separate concern and can happen later without touching credential_table integration.
 
+**wagmi vs credential_table.** These are independent and don't need synchronization. The database credential (`credentialStore.wallet`) is the source of truth for "this user has proven they control address X" — persists across devices, sessions, browsers. wagmi's localStorage (`@wagmi/core.store`) is transient browser state for "this browser has an active connection to a wallet." The credential panel shows the proven address from the database regardless of wagmi connection state. wagmi only matters during the prove flow when the user is actively editing. One thing to think about later: if the user has already proven address A and connects address A again, the UI still shows "Prove Ownership" rather than recognizing it's already proven. Polish, not a bug.
+
 **Smoke test.** Connect with MetaMask (injected), prove ownership, verify credential_table row appears and CredentialPanel shows the wallet. Same with WalletConnect (QR code on desktop, deep link on mobile). Remove wallet, verify row is gone from attachState. WalletDemo.vue still works independently on its demo page.
 
 ### Step 2: delete standalone wallet demo

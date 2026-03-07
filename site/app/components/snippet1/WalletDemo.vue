@@ -45,6 +45,13 @@ One nuance: The onDisplayUri callback in connector config can directly set store
 store state. No subscription pattern needed.
 */
 
+const props = defineProps({
+	editing: {type: Boolean, default: false},//parent controls whether this section is expanded
+})
+const emit = defineEmits(['edit', 'cancel'])
+
+const credentialStore = useCredentialStore()
+
 /* [1][may move to store!] first, these references will probably move to a pinia store */
 
 const refConnectedAddress = ref(null)//wallet address the user connected,
@@ -107,7 +114,7 @@ onMounted(async () => {
 		}
 	})
 
-	await onQuotes()//get current eth price and block number; uses alchemy but the user doesn't have to have a wallet
+	//await onQuotes()//get current eth price and block number; uses alchemy but the user doesn't have to have a wallet; ttd march move onQuotes elsewhere, it's not a credential concern
 
 	await wagmi_core.reconnect(_wagmiConfig)//wagmi keeps notes about this in localStorage @wagmi/core.store
 	let account = wagmi_core.getConnection(_wagmiConfig)//bring in account after reconnect
@@ -142,6 +149,15 @@ async function onQuotes() {
 			log('detected network timeout or connection error to alchemy', look({e}))
 		} else { log('⛔ on quotes caught:', look(e)); throw e }
 	}
+}
+
+function onCancel() {
+	refInstructionalMessage.value = ''
+	refUri.value = ''
+	emit('cancel')
+}
+async function onRemove() {
+	await credentialStore.walletRemove()
 }
 
 async function onInjectedConnect() {
@@ -217,9 +233,8 @@ async function onProve() {
 	refProving.value = true
 
 	//step 1: get nonce and message from server
-	let response1 = await fetchWorker('/wallet', 'Prove1.', {address: refConnectedAddress.value})
-	log('Prove1 response:', look(response1))
-	let {nonce, message, envelope} = response1
+	let task = await credentialStore.walletProve1({address: refConnectedAddress.value})
+	let {nonce, message, envelope} = task.walletProve
 
 	//step 2: request signature from connected wallet
 	let signature, signError
@@ -232,11 +247,14 @@ async function onProve() {
 
 	if (signature) {
 		//step 3: send signature to server for verification
-		let response2 = await fetchWorker('/wallet', 'Prove2.', {address: refConnectedAddress.value, nonce, message, signature, envelope})
-		log('Prove2 response:', look(response2))
-		if (response2.outcome == 'Proven.') {
+		let task2 = await credentialStore.walletProve2({address: refConnectedAddress.value, nonce, message, signature, envelope})
+		if (task2.success) {
 			refInstructionalMessage.value = 'Server confirms proof you control this address. 🖌'
-		} else {
+			emit('cancel')//collapse, wallet now shows in the list above
+		} else if (task2.outcome == 'BadSignature.') {
+			refInstructionalMessage.value = 'Signature verification failed.'
+		} else if (task2.outcome == 'Expired.') {
+			refInstructionalMessage.value = 'Request expired. Please try again.'
 		}
 
 	} else {
@@ -264,32 +282,51 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 
 </script>
 <template>
-<div class="border border-gray-300 p-2 space-y-2">
-<p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>WalletDemo</i></p>
+<Card class="px-4 py-4 gap-2">
 
+<!--
 <p>
 	Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code> in <code>{{refQuotesDuration}}ms</code>.
 	There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.
 	<Button link :click="onQuotes">Check again</Button>
 </p>
+-->
 
-<div v-if="!refIsConnected">
-	<div class="flex gap-2">
-		<Button :state="computedStateConnecting" :click="onInjectedConnect">Browser Wallet</Button>
-		<Button :state="computedStateConnecting" :click="onWalletConnect">WalletConnect</Button>
-	</div>
-	<div v-if="refUri" class="mt-4 space-y-2">
-		<QrCode :address="refUri" />
-		<p>Scan the code above with your wallet app, or switch to it on this device with the button below.</p>
-		<Button :click="redirect">Open in Wallet App</Button>
-	</div>
-</div>
-<div v-else>
-	<p>Connected: <code>{{refConnectedAddress}}</code></p>
-	<Button :state="computedStateProving" :click="onDisconnect">Disconnect Wallet</Button>
-	<Button :state="computedStateProving" :click="onProve" labeling="Requesting Signature...">Prove Ownership</Button>
-</div>
-<p>{{refInstructionalMessage}}</p>
+<p class="my-space">
+	Ethereum Wallet
+	<Button v-show="!editing" link :click="() => emit('edit')">{{ credentialStore.wallet ? 'Edit' : 'Add' }}</Button>
+</p>
 
-</div>
+<template v-if="credentialStore.wallet">
+	<p class="my-space">
+		<code class="break-all text-sm">{{ credentialStore.wallet }}</code>
+		<Button v-if="editing" link :click="onRemove">Remove</Button>
+	</p>
+</template>
+
+<template v-if="editing">
+	<template v-if="!refIsConnected">
+		<p class="my-space">
+			<Button :state="computedStateConnecting" :click="onInjectedConnect" labeling="Connecting...">Browser Wallet</Button>
+			<Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button>
+			<Button :click="onCancel">Cancel</Button>
+		</p>
+		<div v-if="refUri" class="space-y-2">
+			<QrCode :address="refUri" />
+			<p>Scan the code with your wallet app, or open it on this device.</p>
+			<Button :click="redirect">Open in Wallet App</Button>
+		</div>
+	</template>
+	<template v-else>
+		<p>Connected: <code class="break-all text-sm">{{ refConnectedAddress }}</code></p>
+		<p class="my-space">
+			<Button :state="computedStateProving" :click="onProve" labeling="Requesting Signature...">Prove Ownership</Button>
+			<Button :state="computedStateProving" :click="onDisconnect">Disconnect</Button>
+			<Button :click="onCancel">Cancel</Button>
+		</p>
+	</template>
+	<p v-if="refInstructionalMessage">{{ refInstructionalMessage }}</p>
+</template>
+
+</Card>
 </template>

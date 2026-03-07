@@ -1,5 +1,5 @@
 summary:
-  generated: 2026mar5.1639.57811
+  generated: 2026mar7.2232.31989
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -203,8 +203,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.1002.0 on 2026mar04 0m old
-      latest: 3.1002.0 on 2026mar04 0m old
+      current: 3.1004.0 on 2026mar06 0m old
+      latest: 3.1004.0 on 2026mar06 0m old
     downloads:
       weekly: 17,875,343
       on: 2026feb25.2302.49295
@@ -216,8 +216,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.1002.0 on 2026mar04 0m old
-      latest: 3.1002.0 on 2026mar04 0m old
+      current: 3.1004.0 on 2026mar06 0m old
+      latest: 3.1004.0 on 2026mar06 0m old
     downloads:
       weekly: 2,322,525
       on: 2026feb25.2302.49295
@@ -229,8 +229,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.1002.0 on 2026mar04 0m old
-      latest: 3.1002.0 on 2026mar04 0m old
+      current: 3.1004.0 on 2026mar06 0m old
+      latest: 3.1004.0 on 2026mar06 0m old
     downloads:
       weekly: 2,822,051
       on: 2026feb25.2302.49295
@@ -242,8 +242,8 @@ modules:
     versions:
       declared: ^3.985.0 on 2026feb06 0m old
       installed: 3.992.0 on 2026feb17 0m old
-      current: 3.1002.0 on 2026mar04 0m old
-      latest: 3.1002.0 on 2026mar04 0m old
+      current: 3.1004.0 on 2026mar06 0m old
+      latest: 3.1004.0 on 2026mar06 0m old
     downloads:
       weekly: 7,313,226
       on: 2026feb25.2302.49295
@@ -279,10 +279,10 @@ modules:
     note: "nuxt: pinia integration module; exact pin from nuxi module add, pre-1.0"
     from: site
     versions:
-      declared: 0.11.3 on 2025nov05 3m old 📌 Exact version pinned
-      installed: 0.11.3 on 2025nov05 3m old 🐣 Pre-1.0 version installed
-      current: 0.11.3 on 2025nov05 3m old
-      latest: 0.11.3 on 2025nov05 3m old
+      declared: 0.11.3 on 2025nov05 4m old 📌 Exact version pinned
+      installed: 0.11.3 on 2025nov05 4m old 🐣 Pre-1.0 version installed
+      current: 0.11.3 on 2025nov05 4m old
+      latest: 0.11.3 on 2025nov05 4m old
     downloads:
       weekly: 602,335
       on: 2026feb25.2307.15278
@@ -467,10 +467,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.1.1 on 2026feb03 0m old
-      installed: 5.1.1 on 2026feb03 0m old
-      current: 5.1.1 on 2026feb03 0m old
-      latest: 5.1.1 on 2026feb03 0m old
+      declared: ^5.1.1 on 2026feb03 1m old
+      installed: 5.1.1 on 2026feb03 1m old
+      current: 5.1.1 on 2026feb03 1m old
+      latest: 5.1.1 on 2026feb03 1m old
     downloads:
       weekly: 373,654
       on: 2026feb25.2300.37693
@@ -588,10 +588,10 @@ modules:
     note: "build: used by pnpm seal"
     from: root
     versions:
-      declared: ^3.3.3 on 2025jan05 13m old
-      installed: 3.3.3 on 2025jan05 13m old 🕰️ Installed version 1+ year old
-      current: 3.3.3 on 2025jan05 13m old
-      latest: 3.3.3 on 2025jan05 13m old
+      declared: ^3.3.3 on 2025jan05 14m old
+      installed: 3.3.3 on 2025jan05 14m old 🕰️ Installed version 1+ year old
+      current: 3.3.3 on 2025jan05 14m old
+      latest: 3.3.3 on 2025jan05 14m old
     downloads:
       weekly: 98,312,827
       on: 2026feb25.2300.37693
@@ -731,10 +731,10 @@ modules:
     note: "test: totp library; in root for fuzz tests in level1"
     from: root
     versions:
-      declared: ^9.5.0 on 2026feb04 0m old
-      installed: 9.5.0 on 2026feb04 0m old
-      current: 9.5.0 on 2026feb04 0m old
-      latest: 9.5.0 on 2026feb04 0m old
+      declared: ^9.5.0 on 2026feb04 1m old
+      installed: 9.5.0 on 2026feb04 1m old
+      current: 9.5.0 on 2026feb04 1m old
+      latest: 9.5.0 on 2026feb04 1m old
     downloads:
       weekly: 1,115,935
       on: 2026feb25.2300.37693
@@ -744,10 +744,10 @@ modules:
     note: "nuxt: state management; paired with @pinia/nuxt"
     from: site
     versions:
-      declared: ^3.0.4 on 2025nov05 3m old
-      installed: 3.0.4 on 2025nov05 3m old
-      current: 3.0.4 on 2025nov05 3m old
-      latest: 3.0.4 on 2025nov05 3m old
+      declared: ^3.0.4 on 2025nov05 4m old
+      installed: 3.0.4 on 2025nov05 4m old
+      current: 3.0.4 on 2025nov05 4m old
+      latest: 3.0.4 on 2025nov05 4m old
     downloads:
       weekly: 2,975,634
       on: 2026feb25.2307.15278
@@ -759,10 +759,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^1.5.4 on 2024aug05 18m old
-      installed: 1.5.4 on 2024aug05 18m old 🕰️ Installed version 1+ year old
-      current: 1.5.4 on 2024aug05 18m old
-      latest: 1.5.4 on 2024aug05 18m old
+      declared: ^1.5.4 on 2024aug05 19m old
+      installed: 1.5.4 on 2024aug05 19m old 🕰️ Installed version 1+ year old
+      current: 1.5.4 on 2024aug05 19m old
+      latest: 1.5.4 on 2024aug05 19m old
     downloads:
       weekly: 7,162,241
       on: 2026feb25.2300.37693
@@ -1018,8 +1018,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 0m old
       installed: 4.66.0 on 2026feb17 0m old
-      current: 4.70.0 on 2026mar03 0m old
-      latest: 4.70.0 on 2026mar03 0m old
+      current: 4.71.0 on 2026mar05 0m old
+      latest: 4.71.0 on 2026mar05 0m old
     downloads:
       weekly: 4,268,110
       on: 2026feb25.2307.15278
