@@ -6,7 +6,7 @@ sayTick, originApex, anyIncludeAny,
 } from 'icarus'
 
 /*
-ttd december2025, notes before moving stuff here in WalletDemo to the right pinia store
+ttd december2025, notes from the wallet demo from before we moved this here to the credential panel
 
 for coding and smoke testing right now, all this state is in a component
 in a moment, we'll refactor much of this from here into a pinia store

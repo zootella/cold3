@@ -172,7 +172,7 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 	@cancel="onCancel"
 />
 
-<WalletDemo
+<WalletPanel
 	v-if="credentialStore.userTag"
 	:editing="refEditing === 'wallet'"
 	@edit="refEditing = 'wallet'"

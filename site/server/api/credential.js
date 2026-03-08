@@ -37,6 +37,7 @@ async function attachState(task, browserHash) {//attach complete credential stat
 		}
 		task.wallet = (await credentialWalletGet({userTag: user.userTag})) || ''//checksummed address, or empty
 	}
+	//ttd march, lots of database chatter here, replace with a single query for all rows about userTag, and then careful trusted server side logic to sift through them to figure out what's applicable and what's historical. and in this process, decide if you're going to hide rows or not
 }
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let task = {}
@@ -238,7 +239,8 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			let valid = await verifyMessage({address, message, signature})//viem confirms those two things for us
 			if (!valid) return {success: false, outcome: 'BadSignature.'}
 
-			//save this proven wallet address as a credential for this user
+			//save this proven wallet address as a credential for this user; ttd november2025, we'll save that in the database to sign this user up or in, essentially
+			//more to do here about that after we smoke test and security audit this above...
 			log(`🖌 server has proof that browser ${browserHash} controls wallet ${address}`)
 			await credentialWalletSet({userTag: user.userTag, address})
 
