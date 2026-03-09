@@ -5,5 +5,6 @@
 
 <TrailDemo />
 <OauthDemo />
+<PriceDemo />
 
 </template>

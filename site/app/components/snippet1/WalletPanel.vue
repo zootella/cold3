@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-anyIncludeAny, sayTick,
+anyIncludeAny,
 } from 'icarus'
 
 const props = defineProps({
@@ -10,11 +10,7 @@ const props = defineProps({
 const emit = defineEmits(['edit', 'cancel'])
 
 const credentialStore = useCredentialStore()
-
-const refBlockNumber = ref('Loading...')//current Ethereum block number,
-const refEtherPrice = ref('')//$ETH price,
-const refTimePulled = ref('')//and the time when we pulled those quotes
-const refQuotesDuration = ref(-1)//how long it took for the page to get the quotes from alchemy
+const wagmiStore = useWagmiStore()
 
 //transient flow state — resets when user navigates away, which is the right behavior
 const refUri = ref('')//walletconnect uri we show as a qr code
@@ -23,33 +19,8 @@ const refConnecting = ref(false)//true while either connect flow is in progress,
 const refProving = ref(false)//true while prove or disconnect is in progress, to ghost the other button
 
 onMounted(async () => {
-	await credentialStore.loadWagmi()
+	await wagmiStore.load()
 })
-
-async function onQuotes() {
-	try {
-
-		//get the current ethereum block number
-		let t = Now()
-		let n = await credentialStore.wagmiGetBlockNumber()
-		refBlockNumber.value = commas(n)
-		refTimePulled.value = sayTick(Now())//there's a new block every 12 seconds
-
-		//to get the ETH price right now, we'll read a chainlink oracle contract
-		let b = await credentialStore.wagmiReadContract({
-			address: '0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419',//updates hourly, or when ETH moves >0.5%
-			abi: [{inputs: [], name: 'latestAnswer', outputs: [{type: 'int256'}], stateMutability: 'view', type: 'function'}],
-			functionName: 'latestAnswer',
-		})
-		refQuotesDuration.value = Now() - t
-		refEtherPrice.value = (Number(b) / 100_000_000).toFixed(2)//b is a bigint; chainlink contract reports price * 10^8; js removes underscores from number and bigint literals so humans can add them for readability
-
-	} catch (e) {
-		if (anyIncludeAny([e.message, e.name], ['fetch', 'timeout', 'network', '429', 'rate', '500', 'failed'])) {
-			log('detected network timeout or connection error to alchemy', look({e}))
-		} else { log('⛔ on quotes caught:', look(e)); throw e }
-	}
-}
 
 function onCancel() {
 	refInstructionalMessage.value = ''
@@ -63,7 +34,7 @@ async function onRemove() {
 async function onInjectedConnect() {
 	refConnecting.value = true
 	try {
-		await credentialStore.wagmiConnectInjected()
+		await wagmiStore.connectInjected()
 	} catch (e) {
 		if (e.name == 'ProviderNotFoundError') {
 			refInstructionalMessage.value = 'Provider not found error; instructions to get metamask'
@@ -78,7 +49,7 @@ async function onInjectedConnect() {
 async function onWalletConnect() {
 	refConnecting.value = true
 	try {
-		await credentialStore.wagmiConnectWalletConnect({
+		await wagmiStore.connectWalletConnect({
 			onDisplayUri: (uri) => { refUri.value = uri }
 		})
 		refUri.value = ''//hide QR code on success
@@ -99,7 +70,7 @@ async function onWalletConnect() {
 async function onDisconnect() {
 	refProving.value = true
 	try {
-		await credentialStore.wagmiDisconnect()
+		await wagmiStore.disconnect()
 	} catch (e) { log('⛔ on disconnect caught:', look(e)) }//catch and swallow
 	refProving.value = false
 	refInstructionalMessage.value = 'Disconnected wallet.'
@@ -109,13 +80,13 @@ async function onProve() {
 	refProving.value = true
 
 	//step 1: get nonce and message from server
-	let task = await credentialStore.walletProve1({address: credentialStore.connectedAddress})
+	let task = await credentialStore.walletProve1({address: wagmiStore.connectedAddress})
 	let {nonce, message, envelope} = task.walletProve
 
 	//step 2: request signature from connected wallet
 	let signature, signError
 	try {
-		signature = await credentialStore.wagmiSignMessage({message})
+		signature = await wagmiStore.signMessage({message})
 	} catch (e) {
 		log('⛔ wagmi sign message threw; expected when user declines or times out signature request', look(e))
 		signError = e
@@ -123,7 +94,7 @@ async function onProve() {
 
 	if (signature) {
 		//step 3: send signature to server for verification
-		let task2 = await credentialStore.walletProve2({address: credentialStore.connectedAddress, nonce, message, signature, envelope})
+		let task2 = await credentialStore.walletProve2({address: wagmiStore.connectedAddress, nonce, message, signature, envelope})
 		if (task2.success) {
 			refInstructionalMessage.value = 'Server confirms proof you control this address. 🖌'
 			emit('cancel')//collapse, wallet now shows in the list above
@@ -171,7 +142,7 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 </template>
 
 <template v-if="editing">
-	<template v-if="!credentialStore.isConnected">
+	<template v-if="!wagmiStore.isConnected">
 		<p class="my-space">
 			<Button :state="computedStateConnecting" :click="onInjectedConnect" labeling="Connecting...">Browser Wallet</Button>
 			<Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button>
@@ -184,7 +155,7 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 		</div>
 	</template>
 	<template v-else>
-		<p>Connected: <code class="break-all text-sm">{{ credentialStore.connectedAddress }}</code></p>
+		<p>Connected: <code class="break-all text-sm">{{ wagmiStore.connectedAddress }}</code></p>
 		<p class="my-space">
 			<Button :state="computedStateProving" :click="onProve" labeling="Requesting Signature...">Prove Ownership</Button>
 			<Button :state="computedStateProving" :click="onDisconnect">Disconnect</Button>
