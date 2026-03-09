@@ -122,8 +122,82 @@ This use case is well-established, not exotic:
 
 We currently have separate "Browser Wallet" and "WalletConnect" buttons. The modern pattern is a single "Connect Wallet" button that opens a modal handling all wallet types. [Reown AppKit](https://reown.com/appkit) (formerly Web3Modal, from the WalletConnect team) provides this — it discovers installed extensions via [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963), offers WalletConnect QR for mobile wallets, and optionally supports social logins via embedded wallets. This is a separate UX question from the credential architecture, but worth noting.
 
+## Store exports: three groups to review
+
+After the refactor, credentialStore exports 13 wallet-related items. They fall into three groups:
+
+**Database credential** — `wallet`, `walletProve1`, `walletProve2`, `walletRemove`. Same shape as name, password, totp. These belong here, no question.
+
+**Wagmi connection state** — `connectedAddress`, `isConnected`, `loadWagmi`. The point of this refactor. These belong here too — the store owns wagmi's lifecycle now.
+
+**Wagmi operation passthroughs** — `wagmiConnectInjected`, `wagmiConnectWalletConnect`, `wagmiDisconnect`, `wagmiSignMessage`, `wagmiGetBlockNumber`, `wagmiReadContract`. These are thin wrappers that just forward to `wagmi_core.*(_wagmiConfig, ...)`. The first four are used by WalletPanel during connect/prove flows. The last two (`wagmiGetBlockNumber`, `wagmiReadContract`) are only used by `onQuotes`, which isn't a credential concern at all — it's Ethereum price and block number display.
+
+The credentialStore is becoming a pass-through layer for raw wagmi_core calls, which is different from what the rest of the store does. Every other exported method is a meaningful credential operation (check a name, sign in, enroll TOTP). These are just "call this library function with the config I'm holding."
+
+Worth thinking about: should the wagmi passthroughs stay here, move to a separate wagmiStore, or should WalletPanel get direct access to the config somehow? The third group especially — onQuotes could live in a completely different component that has nothing to do with credentials.
+
 ## Relationship to other credential work
 
 This is a UX polish task, not a data integration task. The wallet credential is already fully integrated into credential_table, credentialStore, and the API endpoint. The wagmi-to-store refactor improves the user experience (no re-initialization on navigation) but doesn't change any security properties, data flow, or API surface.
 
 It's independent of the OTP and OAuth integration work described in credential.md, and independent of the future event-row/watermark refactor. Can be done in any order relative to those.
+
+# Code comments and notes
+
+Hi claude, please don't delete the sections below. They're here for us to review, use parts of if necessary. When the time is right, I'll delete them.
+
+```js
+/*
+ttd december2025, notes from the wallet demo from before we moved this here to the credential panel
+
+for coding and smoke testing right now, all this state is in a component
+in a moment, we'll refactor much of this from here into a pinia store
+that way, wagmi will be loaded once the first time a navigated tab needs it
+and stay around as the user clicks away from, and back to, components that use it
+ok but some things to think about in preparation for that refactor:
+(1) some stuff, like wagmi configured and loaded modules, go in the store
+(2) other stuff, like uri, like anything related to a previously completed or half completed and abandoned connection or proof flow, should *not* go in the store--here, we want the user's navigation away to cancel and reset the abandoned operation
+(3) right now we are calling _wagmiUnwatch onUnmounted; in a store that won't happen we'll just keep it going until the whole tab is torn down
+(4) we've got some pinia stores intended to begin with the server render as part of universal rendering; other stores are intended and coded so that they don't do anything on a server render portion, and work entirely on the client. for this web3 wallet stuff, we want that--client only
+
+wagmi's own architecture intends one single instance that lives with the tab
+and state related to an in-progress connect and prove flow is baked in
+so, we're not going to try to separate that. as claude explains:
+
+Wagmi's architecture:
+ - Single config, single set of connector instances, single WebSocket to relay
+ - In-flight operations (pending session proposals, pending signature requests) are bound to that config
+ - No clean "abort and reset" API - operations complete on their own (timeout, user action) or stay pending
+
+The simple path forward:
+ - Move everything wagmi-related into the store: imports, config, connection state, flow state, all of it
+ - Component becomes a pure view layer - reads store state, calls store methods, shows appropriate UI
+ - If user navigates away mid-QR-code and comes back, component re-mounts and displays the same QR code from store
+   state
+ - The pending WalletConnect session proposal is still alive, user can still scan it
+ - If they don't want to, they wait for timeout (5 min) or we could add a "Cancel" that calls disconnect
+
+What this means practically:
+ - refUri, refConnectedAddress, refIsConnected, refInstructionalMessage, all button states - all move to store
+ - onInjectedConnect, onWalletConnect, onDisconnect, onProve - all move to store
+ - _wagmiConfig, _wagmiUnwatch - move to store (and we stop unwatching on unmount since store persists)
+ - Component just does: const store = usePage2Store(); await store.load() then renders based on store state
+
+One nuance: The onDisplayUri callback in connector config can directly set store.uri since it's a closure over
+store state. No subscription pattern needed.
+*/
+```
+
+```html
+<!--
+<p>
+	Current Ethereum price <code>${{refEtherPrice}}</code> and block number <code>{{refBlockNumber}}</code> at <code>{{refTimePulled}}</code> in <code>{{refQuotesDuration}}ms</code>.
+	There's a new block every 12 seconds, and the Chainlink oracle contract updates every hour or half percent change.
+	<Button link :click="onQuotes">Check again</Button>
+</p>
+-->
+```
+
+
+
+

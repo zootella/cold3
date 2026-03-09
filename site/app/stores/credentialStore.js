@@ -1,3 +1,5 @@
+import {wevmDynamicImport, originApex} from 'icarus'
+
 //manages user credentials and browser sessions
 //follows mainStore pattern: loads during server render, loaded ref prevents re-fetch on client
 //all calls to /api/credential go through this store — components never import fetchWorker directly
@@ -13,6 +15,82 @@ const totpEnrolled = ref(false)//true if the user has a verified TOTP enrollment
 const totpIdentifier = ref('')//short identifier like "g3" to help user find the right authenticator entry
 const enrollment = ref(null)//in-flight TOTP enrollment recovered from envelope cookie, or null
 const wallet = ref('')//checksummed Ethereum address the user has proven they control, or empty
+
+//wagmi connection state — live from the browser, independent of the database credential
+//persists for the lifetime of the tab; components read these refs, store manages wagmi internally
+const connectedAddress = ref(null)//wallet address currently connected via wagmi, or null
+const isConnected = ref(false)//true if a wallet is currently connected via wagmi
+
+let _wagmiConfig = null
+let _wagmiModules = null
+let _wagmiLoaded = false
+
+async function loadWagmi() { if (_wagmiLoaded) return; _wagmiLoaded = true
+	_wagmiModules = await wevmDynamicImport()
+	let {viem, viem_chains, wagmi_core, wagmi_connectors} = _wagmiModules
+	_wagmiConfig = wagmi_core.createConfig({
+		chains: [viem_chains.mainnet],
+		transports: {
+			[viem_chains.mainnet.id]: viem.http(Key('alchemy url, public')),
+		},
+		connectors: [
+			wagmi_connectors.injected(),
+			wagmi_connectors.walletConnect({
+				projectId: Key('walletconnect project id, public'),
+				showQrModal: false,
+				metadata: {
+					name: Key('domain, public'),
+					description: Key('domain, public'),
+					url: originApex(),
+				},
+			}),
+		],
+	})
+	wagmi_core.watchConnection(_wagmiConfig, {
+		onChange(account) {
+			connectedAddress.value = account.address ?? null
+			isConnected.value = account.isConnected
+		}
+	})
+	await wagmi_core.reconnect(_wagmiConfig)
+	let account = wagmi_core.getConnection(_wagmiConfig)
+	connectedAddress.value = account.address ?? null
+	isConnected.value = account.isConnected
+}
+
+async function wagmiConnectInjected() {
+	let {wagmi_core, wagmi_connectors} = _wagmiModules
+	await wagmi_core.connect(_wagmiConfig, {connector: wagmi_connectors.injected()})
+}
+
+async function wagmiConnectWalletConnect({onDisplayUri}) {
+	let {wagmi_core} = _wagmiModules
+	let connectors = wagmi_core.getConnectors(_wagmiConfig)
+	let connector = connectors.find(c => c.id == 'walletConnect')
+	let provider = await connector.getProvider()
+	provider.on('display_uri', onDisplayUri)
+	await wagmi_core.connect(_wagmiConfig, {connector})
+}
+
+async function wagmiDisconnect() {
+	let {wagmi_core} = _wagmiModules
+	await wagmi_core.disconnect(_wagmiConfig)
+}
+
+async function wagmiSignMessage({message}) {
+	let {wagmi_core} = _wagmiModules
+	return await wagmi_core.signMessage(_wagmiConfig, {message})
+}
+
+async function wagmiGetBlockNumber() {
+	let {wagmi_core} = _wagmiModules
+	return await wagmi_core.getBlockNumber(_wagmiConfig)
+}
+
+async function wagmiReadContract(args) {
+	let {wagmi_core} = _wagmiModules
+	return await wagmi_core.readContract(_wagmiConfig, args)
+}
 
 const userDisplayName = computed(() => {//best available display name for page
 	if (name.value?.f2) return name.value.f2
@@ -149,6 +227,15 @@ return {
 	totpEnroll2,
 	totpRemove,
 	wallet,
+	connectedAddress,
+	isConnected,
+	loadWagmi,
+	wagmiConnectInjected,
+	wagmiConnectWalletConnect,
+	wagmiDisconnect,
+	wagmiSignMessage,
+	wagmiGetBlockNumber,
+	wagmiReadContract,
 	walletProve1,
 	walletProve2,
 	walletRemove,
