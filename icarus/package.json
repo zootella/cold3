@@ -22,6 +22,7 @@
 		"@uppy/dashboard": "^5.1.1",
 		"@wagmi/connectors": "^7.1.6",
 		"@wagmi/core": "^3.3.2",
+		"@walletconnect/ethereum-provider": "^2.23.8",
 		"credit-card-type": "^10.1.2",
 		"h3": "^1.15.5",
 		"is-mobile": "^5.0.0",

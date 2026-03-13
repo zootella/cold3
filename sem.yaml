@@ -1,5 +1,5 @@
 summary:
-  generated: 2026mar13.1806.45740
+  generated: 2026mar13.1848.39297
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -76,6 +76,8 @@ summary:
       is-mobile: "widget: browser detection; runs everywhere, only meaningful in browser"
       qrcode: "widget: qr code generation; works in node and browser, crashes in worker/ssr — guarded with client-only rendering"
       vidstack: "widget: video player; latest tag is behind installed, riding post-1.0 channel"
+    no note:
+      "@walletconnect/ethereum-provider": null
   🏺 Declared release 6+ months earlier than installed:
     - serverless-offline
   📌 Exact version pinned:
@@ -126,6 +128,7 @@ summary:
       "@pinia/nuxt": 602,335
       serverless-offline: 603,092
       lucide-vue-next: 611,113
+      "@walletconnect/ethereum-provider": 631,651
       reka-ui: 717,628
       satori: 724,868
     7 figure:
@@ -541,6 +544,20 @@ modules:
     downloads:
       weekly: 520,143
       on: 2026feb25.2300.37693
+  "@walletconnect/ethereum-provider":
+    homepage: https://github.com/walletconnect/walletconnect-monorepo/
+    description: Ethereum Provider for WalletConnect Protocol
+    from:
+      - icarus
+      - site
+    versions:
+      declared: ^2.23.8 on 2026mar10 0m old
+      installed: 2.23.8 on 2026mar10 0m old
+      current: 2.23.8 on 2026mar10 0m old
+      latest: 2.23.8 on 2026mar10 0m old
+    downloads:
+      weekly: 631,651
+      on: 2026mar13.1848.39297
   class-variance-authority:
     homepage: https://github.com/joe-bell/cva#readme
     description: Class Variance Authority 🧬

@@ -32,6 +32,7 @@
 		"@vueuse/core": "^14.2.1",
 		"@wagmi/connectors": "^7.1.6",
 		"@wagmi/core": "^3.3.2",
+		"@walletconnect/ethereum-provider": "^2.23.8",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"icarus": "workspace:*",
