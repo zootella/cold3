@@ -16,7 +16,7 @@ const wagmiStore = useWagmiStore()
 const refUri = ref('')//walletconnect uri we show as a qr code
 const refInstructionalMessage = ref('')//message to user if there was a problem in the connect and prove flow
 const refConnecting = ref(false)//true while either connect flow is in progress, to ghost the other button
-const refProving = ref(false)//true while prove or disconnect is in progress, to ghost the other button
+const refProving = ref(false)//true while prove is in progress
 
 onMounted(async () => {
 	await wagmiStore.load()
@@ -29,21 +29,26 @@ function onCancel() {
 }
 async function onRemove() {
 	await credentialStore.walletRemove()
+	try { await wagmiStore.disconnect() } catch (e) {}//also drop the wagmi connection; swallow if already disconnected
+	emit('cancel')
 }
 
-async function onInjectedConnect() {
+async function onInjectedConnectAndProve() {
 	refConnecting.value = true
 	try {
 		await wagmiStore.connectInjected()
 	} catch (e) {
-		if (e.name == 'ProviderNotFoundError') {
+		if (e.name == 'ConnectorAlreadyConnectedError') {
+			//already connected — fall through to prove
+		} else if (e.name == 'ProviderNotFoundError') {
 			refInstructionalMessage.value = 'Provider not found error; instructions to get metamask'
+			refConnecting.value = false; return
 		} else if (e.name == 'UserRejectedRequestError') {
 			refInstructionalMessage.value = 'User rejected request error; instructions to try again'
-		} else if (e.name == 'ConnectorAlreadyConnectedError') {
-			refInstructionalMessage.value = 'Wallet already connected; can ignore'
-		} else { log('⛔ on connect caught:', look(e)); throw e }//other exceptions crash the page
+			refConnecting.value = false; return
+		} else { log('⛔ on connect caught:', look(e)); refConnecting.value = false; throw e }
 	}
+	await proveConnectedWallet()
 	refConnecting.value = false
 }
 async function onWalletConnect() {
@@ -67,23 +72,10 @@ async function onWalletConnect() {
 	}
 	refConnecting.value = false
 }
-async function onDisconnect() {
-	refProving.value = true
-	try {
-		await wagmiStore.disconnect()
-	} catch (e) { log('⛔ on disconnect caught:', look(e)) }//catch and swallow
-	refProving.value = false
-	refInstructionalMessage.value = 'Disconnected wallet.'
-}
-
-async function onProve() {
-	refProving.value = true
-
-	//step 1: get nonce and message from server
+async function proveConnectedWallet() {
 	let task = await credentialStore.walletProve1({address: wagmiStore.connectedAddress})
 	let {nonce, message, envelope} = task.walletProve
 
-	//step 2: request signature from connected wallet
 	let signature, signError
 	try {
 		signature = await wagmiStore.signMessage({message})
@@ -93,26 +85,27 @@ async function onProve() {
 	}
 
 	if (signature) {
-		//step 3: send signature to server for verification
 		let task2 = await credentialStore.walletProve2({address: wagmiStore.connectedAddress, nonce, message, signature, envelope})
 		if (task2.success) {
 			refInstructionalMessage.value = 'Server confirms proof you control this address. 🖌'
-			emit('cancel')//collapse, wallet now shows in the list above
+			emit('cancel')
 		} else if (task2.outcome == 'BadSignature.') {
 			refInstructionalMessage.value = 'Signature verification failed.'
 		} else if (task2.outcome == 'Expired.') {
 			refInstructionalMessage.value = 'Request expired. Please try again.'
 		}
-
 	} else {
-		//user declined or timed out signature request; not happy path but not rare either
 		if (anyIncludeAny([signError?.message, signError?.name], ['expired', 'timeout'])) {
 			refInstructionalMessage.value = 'Signature request timed out. Please try again.'
 		} else {
 			refInstructionalMessage.value = 'Signature request declined. Please try again.'
 		}
 	}
+}
 
+async function onProve() {
+	refProving.value = true
+	await proveConnectedWallet()
 	refProving.value = false
 }
 
@@ -142,9 +135,12 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 </template>
 
 <template v-if="editing">
-	<template v-if="!wagmiStore.isConnected">
+	<template v-if="credentialStore.wallet">
+		<p class="my-space"><Button :click="onCancel">Cancel</Button></p>
+	</template>
+	<template v-else-if="!wagmiStore.isConnected || refConnecting">
 		<p class="my-space">
-			<Button :state="computedStateConnecting" :click="onInjectedConnect" labeling="Connecting...">Browser Wallet</Button>
+			<Button :state="computedStateConnecting" :click="onInjectedConnectAndProve" labeling="Connecting...">Browser Wallet</Button>
 			<Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button>
 			<Button :click="onCancel">Cancel</Button>
 		</p>
@@ -158,7 +154,6 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 		<p>Connected: <code class="break-all text-sm">{{ wagmiStore.connectedAddress }}</code></p>
 		<p class="my-space">
 			<Button :state="computedStateProving" :click="onProve" labeling="Requesting Signature...">Prove Ownership</Button>
-			<Button :state="computedStateProving" :click="onDisconnect">Disconnect</Button>
 			<Button :click="onCancel">Cancel</Button>
 		</p>
 	</template>
