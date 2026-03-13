@@ -35,6 +35,7 @@ async function onRemove() {
 
 async function onInjectedConnectAndProve() {
 	refConnecting.value = true
+	refInstructionalMessage.value = ''
 	try {
 		await wagmiStore.connectInjected()
 	} catch (e) {
@@ -53,6 +54,7 @@ async function onInjectedConnectAndProve() {
 }
 async function onWalletConnect() {
 	refConnecting.value = true
+	refInstructionalMessage.value = ''
 	try {
 		await wagmiStore.connectWalletConnect({
 			onDisplayUri: (uri) => { refUri.value = uri }
@@ -105,6 +107,7 @@ async function proveConnectedWallet() {
 
 async function onProve() {
 	refProving.value = true
+	refInstructionalMessage.value = ''
 	await proveConnectedWallet()
 	refProving.value = false
 }

@@ -18,6 +18,7 @@ export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
+// 🟠 get
 async function attachState(task, browserHash) {//attach complete credential state to task — every credential type, every time, so one call gives the store everything it needs to render the full credential panel
 	task.browserHash = browserHash
 	let user = await credentialBrowserGet({browserHash})
@@ -42,6 +43,7 @@ async function attachState(task, browserHash) {//attach complete credential stat
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let task = {}
 
+	// 🟠 get
 	if (action == 'Get.') {
 		await attachState(task, browserHash)
 		if (hasText(body.envelope)) {//client found an enrollment envelope cookie from a previous session
@@ -64,10 +66,12 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			} catch (e) {/*stale or invalid envelope, silently ignore*/}
 		}
 
+	// 🟠 name
 	} else if (action == 'CheckNameTurnstile.') {
 		let v = await credentialNameCheck({raw1: body.name1, raw2: body.name2})
 		task.nameIsAvailable = !!v
 
+	// 🟠 name and password
 	} else if (action == 'SignUpAndSignInTurnstile.') {
 		//create new user with three credentials
 		let userTag = Tag()
@@ -77,6 +81,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		await credentialBrowserSet({userTag, browserHash})
 		await attachState(task, browserHash)
 
+	// 🟠 name and password
 	} else if (action == 'GetPasswordCyclesTurnstile.') {
 		let v = validateName(body.userIdentifier, Limit.name)
 		if (!v.ok) return {success: false, outcome: 'InvalidCredentials.'}
@@ -86,6 +91,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (!password) return {success: false, outcome: 'InvalidCredentials.'}
 		task.cycles = password.cycles
 
+	// 🟠 name and password
 	} else if (action == 'SignIn.') {
 		let v = validateName(body.userIdentifier, Limit.name)
 		if (!v.ok) return {success: false, outcome: 'InvalidCredentials.'}
@@ -102,13 +108,16 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		let user = await credentialBrowserGet({browserHash})
 		if (!user) toss('state')
 
+		// 🟠 name
 		if (action == 'SetName.') {
 			let v = await credentialNameSet({userTag: user.userTag, raw1: body.name1, raw2: body.name2})
 			if (!v) return {success: false, outcome: 'NameNotAvailable.'}
 
+		// 🟠 name
 		} else if (action == 'RemoveName.') {
 			await credentialNameRemove({userTag: user.userTag})
 
+		// 🟠 password
 		} else if (action == 'SetPassword.') {
 			//if user has a password, verify current password before allowing change
 			let existing = await credentialPasswordGet({userTag: user.userTag})
@@ -119,12 +128,15 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			}
 			await credentialPasswordSet({userTag: user.userTag, hash: body.newHash, cycles: body.newCycles})
 
+		// 🟠 password
 		} else if (action == 'RemovePassword.') {
 			await credentialPasswordRemove({userTag: user.userTag})
 
+		// 🟠 sign out
 		} else if (action == 'SignOut.') {
 			await credentialBrowserRemove({userTag: user.userTag})
 
+		// 🟠 totp
 		//TOTP enrollment step 1: the user at browser wants to setup totp as a second factor. here at the server, we make sure they're not already enrolled, and generate a new random secret for the qr code
 		} else if (action == 'TotpEnroll1.') {
 			let existing = await credentialTotpGet({userTag: user.userTag})
@@ -139,6 +151,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			})
 			task.enrollment = enrollment
 
+		// 🟠 totp
 		//TOTP enrollment step 2: the user has gotten the secret into their authenticator app, and has their first code to validate. if they're right, we create their enrollment
 		} else if (action == 'TotpEnroll2.') {
 			checkTotpCode(body.code)
@@ -165,11 +178,13 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			//save this new enrollment for this user
 			await credentialTotpSet({userTag: user.userTag, secret})
 
+		// 🟠 totp
 		//an enrolled user wants to remove their totp enrollment, likely to setup a different one
 		//right now we make this available without additional verification, ttd november2025
 		} else if (action == 'TotpRemove.') {
 			await credentialTotpRemove({userTag: user.userTag})
 
+		// 🟠 totp
 		//having previously enrolled, the user is signing in with totp
 		//here on the server, we validate the code
 		} else if (action == 'TotpValidate.') {
@@ -202,6 +217,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 				return {success: false, outcome: 'Wrong.'}
 			}
 
+		// 🟠 wallet
 		//wallet proof step 1: page requests nonce to prove it controls an Ethereum address
 		//the nonce and message go into an envelope so we can verify they haven't been tampered with on step 2
 		} else if (action == 'WalletProve1.') {
@@ -214,6 +230,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			})
 			task.walletProve = {message, nonce, envelope}
 
+		// 🟠 wallet
 		//wallet proof step 2: page calls back with signature of the nonce we gave it
 		} else if (action == 'WalletProve2.') {
 
@@ -244,13 +261,16 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			log(`🖌 server has proof that browser ${browserHash} controls wallet ${address}`)
 			await credentialWalletSet({userTag: user.userTag, address})
 
+		// 🟠 wallet
 		//user wants to remove their connected wallet
 		} else if (action == 'WalletRemove.') {
 			await credentialWalletRemove({userTag: user.userTag})
 
+		// 🟠 account
 		} else if (action == 'CloseAccount.') {
 			await credentialCloseAccount({userTag: user.userTag})
 		}
+
 		await attachState(task, browserHash)
 	}
 
