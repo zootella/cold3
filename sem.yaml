@@ -1,5 +1,5 @@
 summary:
-  generated: 2026mar13.1848.39297
+  generated: 2026mar13.1856.56050
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -73,13 +73,10 @@ summary:
       "@uppy/dashboard": "widget: full-featured upload ui; drag-drop, progress, previews"
       "@wagmi/connectors": "widget: wallet adapters for metamask, walletconnect, etc; moves with wagmi/core"
       "@wagmi/core": "widget: wallet connection state management; moves with wagmi/connectors"
+      "@walletconnect/ethereum-provider": "widget: wagmi uses this on the walletconnect flow, our code doesn't directly"
       is-mobile: "widget: browser detection; runs everywhere, only meaningful in browser"
       qrcode: "widget: qr code generation; works in node and browser, crashes in worker/ssr — guarded with client-only rendering"
       vidstack: "widget: video player; latest tag is behind installed, riding post-1.0 channel"
-    no note:
-      "@walletconnect/ethereum-provider": null
-  🏺 Declared release 6+ months earlier than installed:
-    - serverless-offline
   📌 Exact version pinned:
     - "@pinia/nuxt"
     - nuxt-og-image
@@ -202,7 +199,7 @@ modules:
     note: "lambda: s3 storage; already on lambda, dev dep for local; presigner shares version"
     from: net23
     versions:
-      declared: ^3.985.0 on 2026feb06 1m old
+      declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1008.0 on 2026mar12 0m old
       current: 3.1008.0 on 2026mar12 0m old
       latest: 3.1008.0 on 2026mar12 0m old
@@ -215,7 +212,7 @@ modules:
     note: "lambda: email sending; already on lambda, dev dep for local"
     from: net23
     versions:
-      declared: ^3.985.0 on 2026feb06 1m old
+      declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1008.0 on 2026mar12 0m old
       current: 3.1008.0 on 2026mar12 0m old
       latest: 3.1008.0 on 2026mar12 0m old
@@ -228,7 +225,7 @@ modules:
     note: "lambda: sms sending; already on lambda, dev dep for local"
     from: net23
     versions:
-      declared: ^3.985.0 on 2026feb06 1m old
+      declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1008.0 on 2026mar12 0m old
       current: 3.1008.0 on 2026mar12 0m old
       latest: 3.1008.0 on 2026mar12 0m old
@@ -241,7 +238,7 @@ modules:
     note: "lambda: presigned upload urls; moves with the client-s3 group"
     from: net23
     versions:
-      declared: ^3.985.0 on 2026feb06 1m old
+      declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1008.0 on 2026mar12 0m old
       current: 3.1008.0 on 2026mar12 0m old
       latest: 3.1008.0 on 2026mar12 0m old
@@ -481,7 +478,7 @@ modules:
     note: "build: node file trace to build lean net23.zip"
     from: net23
     versions:
-      declared: ^1.3.0 on 2026jan21 1m old
+      declared: ^1.3.2 on 2026feb23 0m old
       installed: 1.3.2 on 2026feb23 0m old
       current: 1.3.2 on 2026feb23 0m old
       latest: 1.3.2 on 2026feb23 0m old
@@ -547,6 +544,7 @@ modules:
   "@walletconnect/ethereum-provider":
     homepage: https://github.com/walletconnect/walletconnect-monorepo/
     description: Ethereum Provider for WalletConnect Protocol
+    note: "widget: wagmi uses this on the walletconnect flow, our code doesn't directly"
     from:
       - icarus
       - site
@@ -616,7 +614,7 @@ modules:
     note: "build: used by build.js and size.js for net23.zip packaging"
     from: net23
     versions:
-      declared: ^11.3.3 on 2025dec18 2m old
+      declared: ^11.3.4 on 2026mar03 0m old
       installed: 11.3.4 on 2026mar03 0m old
       current: 11.3.4 on 2026mar03 0m old
       latest: 11.3.4 on 2026mar03 0m old
@@ -826,7 +824,7 @@ modules:
     note: "provider: framework cli for deploying to aws lambda"
     from: net23
     versions:
-      declared: ^4.31.2 on 2026jan27 1m old
+      declared: ^4.33.0 on 2026feb19 0m old
       installed: 4.33.0 on 2026feb19 0m old
       current: 4.33.0 on 2026feb19 0m old
       latest: 4.33.0 on 2026feb19 0m old
@@ -839,7 +837,7 @@ modules:
     note: "provider: local lambda emulator for dev"
     from: net23
     versions:
-      declared: ^14.4.0 on 2024dec09 15m old 🏺 Declared release 6+ months earlier than installed
+      declared: ^14.5.0 on 2026feb24 0m old
       installed: 14.5.0 on 2026feb24 0m old
       current: 14.5.0 on 2026feb24 0m old
       latest: 14.5.0 on 2026feb24 0m old
@@ -917,7 +915,7 @@ modules:
     note: "lambda: sms delivery from lambda"
     from: net23
     versions:
-      declared: ^5.12.1 on 2026feb05 1m old
+      declared: ^5.13.0 on 2026mar12 0m old
       installed: 5.13.0 on 2026mar12 0m old
       current: 5.13.0 on 2026mar12 0m old
       latest: 5.13.0 on 2026mar12 0m old
