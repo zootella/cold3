@@ -4,11 +4,6 @@ import {
 anyIncludeAny,
 } from 'icarus'
 
-const props = defineProps({
-	editing: {type: Boolean, default: false},//parent controls whether this section is expanded
-})
-const emit = defineEmits(['edit', 'cancel'])
-
 const credentialStore = useCredentialStore()
 const wagmiStore = useWagmiStore()
 
@@ -16,24 +11,22 @@ const wagmiStore = useWagmiStore()
 const refUri = ref('')//walletconnect uri we show as a qr code
 const refInstructionalMessage = ref('')//message to user if there was a problem in the connect and prove flow
 const refConnecting = ref(false)//true while either connect flow is in progress, to ghost the other button
-const refProving = ref(false)//true while prove is in progress
 
 onMounted(async () => {
 	await wagmiStore.load()
 })
 
-function onCancel() {
-	refInstructionalMessage.value = ''
-	refUri.value = ''
-	emit('cancel')
-}
 async function onRemove() {
+	refInstructionalMessage.value = ''
 	await credentialStore.walletRemove()
-	try { await wagmiStore.disconnect() } catch (e) {}//also drop the wagmi connection; swallow if already disconnected
-	emit('cancel')
 }
 
-async function onInjectedConnectAndProve() {
+async function onDisconnect() {
+	refInstructionalMessage.value = ''
+	try { await wagmiStore.disconnect() } catch (e) {}
+}
+
+async function onInjectedConnect() {
 	refConnecting.value = true
 	refInstructionalMessage.value = ''
 	try {
@@ -49,7 +42,7 @@ async function onInjectedConnectAndProve() {
 			refConnecting.value = false; return
 		} else { log('⛔ on connect caught:', look(e)); refConnecting.value = false; throw e }
 	}
-	await proveConnectedWallet()
+	if (!credentialStore.wallet) await proveConnectedWallet()//chain into prove only if no proof exists
 	refConnecting.value = false
 }
 async function onWalletConnect() {
@@ -60,6 +53,7 @@ async function onWalletConnect() {
 			onDisplayUri: (uri) => { refUri.value = uri }
 		})
 		refUri.value = ''//hide QR code on success
+		if (!credentialStore.wallet) await proveConnectedWallet()//chain into prove only if no proof exists
 	} catch (e) {
 		refUri.value = ''//hide QR code on any error
 		if (e.name == 'UserRejectedRequestError') {
@@ -89,8 +83,7 @@ async function proveConnectedWallet() {
 	if (signature) {
 		let task2 = await credentialStore.walletProve2({address: wagmiStore.connectedAddress, nonce, message, signature, envelope})
 		if (task2.success) {
-			refInstructionalMessage.value = 'Server confirms proof you control this address. 🖌'
-			emit('cancel')
+			refInstructionalMessage.value = 'Proof verified.'
 		} else if (task2.outcome == 'BadSignature.') {
 			refInstructionalMessage.value = 'Signature verification failed.'
 		} else if (task2.outcome == 'Expired.') {
@@ -105,18 +98,8 @@ async function proveConnectedWallet() {
 	}
 }
 
-async function onProve() {
-	refProving.value = true
-	refInstructionalMessage.value = ''
-	await proveConnectedWallet()
-	refProving.value = false
-}
-
 const computedStateConnecting = computed(() => {
 	return refConnecting.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state
-})
-const computedStateProving = computed(() => {
-	return refProving.value ? 'ghost' : 'ready'//clicked button shows 'doing' via Button's internal state
 })
 
 function redirect() { window.location.href = refUri.value }//deep-link to wallet app on mobile
@@ -125,43 +108,27 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 <template>
 <Card class="px-4 py-4 gap-2">
 
+<p class="my-space">Ethereum Wallet</p>
+
 <p class="my-space">
-	Ethereum Wallet
-	<Button v-show="!editing" link :click="() => emit('edit')">{{ credentialStore.wallet ? 'Edit' : 'Add' }}</Button>
+	Proof: <template v-if="credentialStore.wallet"><code class="break-all text-sm">{{ credentialStore.wallet }}</code> <Button link :click="onRemove">Remove</Button></template><template v-else>none</template>
 </p>
 
-<template v-if="credentialStore.wallet">
-	<p class="my-space">
-		<code class="break-all text-sm">{{ credentialStore.wallet }}</code>
-		<Button v-if="editing" link :click="onRemove">Remove</Button>
-	</p>
-</template>
+<p class="my-space">
+	Connection: <template v-if="wagmiStore.isConnected"><code class="break-all text-sm">{{ wagmiStore.connectedAddress }}</code> <Button link :click="onDisconnect">Disconnect</Button></template><template v-else>none</template>
+</p>
 
-<template v-if="editing">
-	<template v-if="credentialStore.wallet">
-		<p class="my-space"><Button :click="onCancel">Cancel</Button></p>
-	</template>
-	<template v-else-if="!wagmiStore.isConnected || refConnecting">
-		<p class="my-space">
-			<Button :state="computedStateConnecting" :click="onInjectedConnectAndProve" labeling="Connecting...">Browser Wallet</Button>
-			<Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button>
-			<Button :click="onCancel">Cancel</Button>
-		</p>
-		<div v-if="refUri" class="space-y-2">
-			<QrCode :address="refUri" />
-			<p>Scan the code with your wallet app, or open it on this device.</p>
-			<Button :click="redirect">Open in Wallet App</Button>
-		</div>
-	</template>
-	<template v-else>
-		<p>Connected: <code class="break-all text-sm">{{ wagmiStore.connectedAddress }}</code></p>
-		<p class="my-space">
-			<Button :state="computedStateProving" :click="onProve" labeling="Requesting Signature...">Prove Ownership</Button>
-			<Button :click="onCancel">Cancel</Button>
-		</p>
-	</template>
-	<p v-if="refInstructionalMessage">{{ refInstructionalMessage }}</p>
-</template>
+<p class="my-space">
+	<Button :state="computedStateConnecting" :click="onInjectedConnect" labeling="Connecting...">Browser Wallet</Button>
+	<Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button>
+</p>
+<div v-if="refUri" class="space-y-2">
+	<QrCode :address="refUri" />
+	<p>Scan the code with your wallet app, or open it on this device.</p>
+	<Button :click="redirect">Open in Wallet App</Button>
+</div>
+
+<p v-if="refInstructionalMessage">{{ refInstructionalMessage }}</p>
 
 </Card>
 </template>

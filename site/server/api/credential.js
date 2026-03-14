@@ -6,7 +6,7 @@ credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
-credentialWalletGet, credentialWalletSet, credentialWalletRemove,
+credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialSet,
 credentialCloseAccount,
 totpEnroll, totpValidate, totpIdentifier, totpConstants,
 checkTotpCode, checkTotpSecret, checkWallet, Data, isExpired,
@@ -222,12 +222,15 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//the nonce and message go into an envelope so we can verify they haven't been tampered with on step 2
 		} else if (action == 'WalletProve1.') {
 			let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
+			await credentialSet({userTag: user.userTag, type: 'Ethereum.', event: 2, f0: address})//event 2: user's browser mentioned this address
+
 			let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
 			let message = safefill`Add your wallet with an instant, zero-gas signature of code ${nonce}`//keepin copy short and non-scary for MetaMask's tiny little window
 
 			let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {
 				message: safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`,
 			})
+			await credentialSet({userTag: user.userTag, type: 'Ethereum.', event: 3, f0: address})//event 3: server challenges this address with a nonce
 			task.walletProve = {message, nonce, envelope}
 
 		// 🟠 wallet

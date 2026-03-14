@@ -142,6 +142,100 @@ This is a UX polish task, not a data integration task. The wallet credential is 
 
 It's independent of the OTP and OAuth integration work described in credential.md, and independent of the future event-row/watermark refactor. Can be done in any order relative to those.
 
+## Event lifecycle in credential_table
+
+credential_table has four event numbers (level3.js line 910): 1 removed, 2 mentioned, 3 challenged, 4 validated. Until now, every credential type wrote only event 4 — the final validated state. Wallet is the first to use the intermediate events.
+
+### Where each event fires
+
+**Event 2 (mentioned)** — `WalletProve1.`, right after `checkWallet`. The user's browser has told the server "I'm connected to this address." No proof yet, just a claim.
+
+**Event 3 (challenged)** — `WalletProve1.`, after the envelope is sealed. The server has generated a nonce and is sending it back as a challenge. Events 2 and 3 happen in the same request, back-to-back — the user mentioned an address, and the server immediately challenged it.
+
+**Event 4 (validated)** — `WalletProve2.`, after signature verification. `credentialWalletSet` writes this. The user has proven control.
+
+**Event 1 (removed)** — not written as a row. `credentialWalletRemove` calls `queryHide` on all Ethereum rows for this user. The hide mechanism is the removal.
+
+### The hide wrinkle
+
+`credentialWalletSet` (which writes event 4) calls `queryHide` on all existing Ethereum rows for this user before writing the new event 4 row. This hides the event 2 and 3 rows from the same prove flow. `credentialWalletGet` queries `event: 4` only, so intermediate rows never interfere with reads even if they aren't hidden.
+
+If a user starts the flow but never signs (abandons at the signature prompt), the event 2 and 3 rows remain unhidden with no event 4. This is fine — `credentialWalletGet` ignores them. And it's actually useful: you can see that someone tried to prove a wallet but didn't complete.
+
+### Should we hide at all?
+
+The current pattern is: hide all previous rows of this type, then write the new one. This keeps queries fast — at most one unhidden row per type per user. But credential_table rows are small, users have few credentials, and the event history (mentioned → challenged → validated, or mentioned → challenged → abandoned) has diagnostic value.
+
+If we stop hiding, queries pull a few more rows but `credentialWalletGet` already filters by `event: 4` — it would still return the right answer. The question is whether the history is worth keeping visible. Not urgent now, but worth revisiting when more credential types use all four events and we want to see the full lifecycle without digging through hidden rows.
+
+# Exploration of SIWE--what's required at an engineering-level
+
+To change our wallet identity flow to support the new SIWE standard, we shouldn't need a new package. viem already ships SIWE utilities under `viem/siwe`:
+
+```js
+import { createSiweMessage, verifySiweMessage } from 'viem/siwe'
+```
+
+This is the cleanest path since you're already on viem full-stack and it avoids the `siwe` npm package from Spruce, which historically dragged in `ethers` as a dependency and has had Cloudflare Workers compatibility issues with Node APIs.
+
+**What changes on the client:**
+
+Step 1 stays the same — server sends back a nonce. But instead of signing your short friendly message, you construct the SIWE message:
+
+```js
+const message = createSiweMessage({
+  domain: 'cold3.cc',
+  address,
+  statement: 'Sign in to cold3',
+  uri: 'https://cold3.cc',
+  version: '1',
+  chainId: 1,
+  nonce,       // from your server, same as now
+  issuedAt: new Date(),
+})
+// then signMessage({ message }) same as before
+```
+
+That gives you the EIP-4361 formatted string. The wallet signs it, you send the message + signature back to step 2 — same flow.
+
+**What changes on the server (Workers):**
+
+This is where it's actually a pretty minimal diff against what you have. In step 2, instead of checking that the message contains the nonce via string inclusion and then calling `verifyMessage` separately, `verifySiweMessage` does it all in one shot:
+
+```js
+const valid = await verifySiweMessage(publicClient, {
+  message,
+  signature,
+  nonce,            // expected nonce
+  domain: 'cold3.cc',
+  // verifies signature + checks fields match
+})
+```
+
+This replaces both your `verifyMessage` call and your manual nonce/message checks. It confirms the signature is valid, the address matches, and the nonce and domain are what you expect.
+
+Your envelope mechanism can stay as-is — it's still protecting the nonce round-trip. You'd just change what gets sealed inside it to reference the SIWE nonce instead of your custom interpolated string, and confirm the envelope's nonce matches before calling `verifySiweMessage`.
+
+**What you'd gain:**
+
+Domain binding in the signed message, which closes a relay attack. A malicious site can open its own legitimate session with cold3.cc, get its own browserHash cookie and envelope, then hand your wallet the nonce to sign. Your envelope system can't catch this — the envelope is internally consistent because the attacker *is* the client. SIWE stops it because the message has a structured domain field that MetaMask can parse — if the domain doesn't match the site the user is on, MetaMask warns or blocks the signature entirely. The user doesn't need to read the fine print; the wallet enforces it. And on the backend, the server rejects any signature where the domain field doesn't match.
+
+EIP-1271 support for smart contract wallets (Safe, Argent, etc.). Your current `verifyMessage` only works for EOA signatures. `verifySiweMessage` handles both EOAs and contract wallets via the public client, so you're future-proofed as account abstraction adoption grows.
+
+Instant recognition by security auditors and other engineers. Your custom flow is secure but requires reading the code to verify that. SIWE is a known standard — anyone reviewing your auth can confirm correctness at a glance.
+
+Native interop with the WalletConnect ecosystem. Their auth flows speak SIWE, and they're extending it to SIWX (Sign In With X) for multichain. You'd be on the rails instead of adjacent to them.
+
+Structured, parseable messages. If you ever need to extract fields from a signed message downstream (logging, analytics, debugging), you get typed fields for free instead of regex on your custom string.
+
+**What you'd lose:**
+
+Your friendly one-liner in the MetaMask popup. The message becomes a structured SIWE block — more verbose, less conversational. But that structure is what lets MetaMask parse the domain and enforce the mismatch check. A freeform message is friendlier copy, but it's also opaque to the wallet — MetaMask can't reason about it or protect the user. That's the tradeoff: not just friendly vs verbose, but unenforceable vs enforceable.
+
+**Total scope:**
+
+A pomodoro. The data flow is the same, the envelope mechanism stays, you're just swapping the message format and replacing your `verifyMessage` + string-inclusion checks with a single `verifySiweMessage` call. No new dependencies.
+
 # Connect, prove, and state reconciliation
 
 ## The two independent states
@@ -215,4 +309,42 @@ On paper: wagmi (none/A/B) × db (none/A/B) × action (connect A / connect B) = 
 **(16) Same wallet, different connector.** User proved A via MetaMask, later wants to use A via WalletConnect instead. Current UI requires Remove, then re-connect+prove via WalletConnect. Two extra steps, but re-proving is just one signature. Known limitation — avoiding the complexity of showing connect buttons when proof exists.
 
 **(17) Different wallet.** User proved A, wants to switch to B. Same as (16): Remove A, then connect+prove B. Remove-first is the only path.
+
+# Current sprint: dev panel and event lifecycle
+
+## What changed (diff.diff, uncommitted)
+
+Three files changed against the last commit (Grac42).
+
+### WalletPanel.vue — reshaped into a dev/QA panel
+
+The old WalletPanel was designed for end users: an expand/collapse editing flow controlled by the parent CredentialPanel, with conditional template branches that hid plumbing. This made it hard to test because you couldn't see or independently control the two layers (database proof vs wagmi connection).
+
+The new panel is always expanded and shows both layers as status lines:
+
+- **Proof:** shows the proven address from credential_table, or "none". Remove button clears only the db credential.
+- **Connection:** shows the wagmi-connected address, or "none". Disconnect button clears only the wagmi connection.
+- **Connect buttons** (Browser Wallet, WalletConnect) are always visible. If no proof exists, connect chains directly into the prove flow (nonce → sign → verify). If proof already exists, connect just connects — no auto-prove, user must Remove first to re-prove.
+
+Removed: `editing` prop, `defineEmits`, `onCancel`, `emit('cancel')`, `emit('edit')`, `onProve` standalone button, `refProving`, `computedStateProving`. The parent CredentialPanel still passes `:editing` and `@edit`/`@cancel` — these are harmlessly ignored.
+
+### credential.js — event 2 and 3 writes in WalletProve1
+
+Added `credentialSet` to the import from icarus. In the `WalletProve1.` handler, two new writes:
+
+- `credentialSet({..., event: 2, f0: address})` right after `checkWallet` — records that the user's browser mentioned this address.
+- `credentialSet({..., event: 3, f0: address})` after `sealEnvelope` — records that the server challenged this address with a nonce.
+
+Event 4 (validated) in `WalletProve2.` and the hide/remove logic are unchanged. Wallet is now the first credential type to use all four event numbers.
+
+### wallet.md — event lifecycle documentation
+
+New section "Event lifecycle in credential_table" documents where each event fires, the hide wrinkle (credentialWalletSet hides event 2/3 rows when writing event 4), and the open question about whether hiding is necessary at all.
+
+## What's next
+
+- Smoke test this diff against the test scenarios above (happy paths first, then departures)
+- The test scenarios in the section above were written for the old collapsed UI and reference things like "Cancel" buttons and the "Connected: 0x... + Prove + Cancel" intermediate state that no longer exist in the dev panel — will need updating after smoke test confirms the new panel works
+- CredentialPanel still has the editing/emit wiring for WalletPanel — can be cleaned up after we're confident in the new shape
+- `@walletconnect/ethereum-provider` was added to both icarus and site package.json in the prior commit (Grac42) to fix WalletConnect under pnpm strict resolution — that's already landed, not in this diff
 
