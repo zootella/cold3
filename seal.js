@@ -127,7 +127,11 @@ async function composeWrapper(properties) {
 async function writeWrapper(o) {
 
 	//write the given object to the file wrapper.js in icarus, ready for running JavaScript code to import
-	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`
+	let {disk} = sayFloppy(o)//generate floppy art
+	let f = disk.replace(/\r\n/g, '\n').replace(/\n/g, '\n    ').trimEnd() + '\n  '//indent 4 spaces for readability
+	o.floppy = true//place a marker for it
+	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`//stringify the wrapper object
+	s = s.replace('"floppy": true', '"floppy": `' + f + '`')//replace the marker with a readable template literal
 	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
 	await fs.writeFile(pathWrapperJs, s)
 }
@@ -179,20 +183,17 @@ async function affixSeal(properties, manifest) {
 	let publicData = Data({text: blocks.publicBlock})//encode the public keys; client and server code will use them
 
 	//compose contents for the new wrapper.js
-	let o = {
-		name: wrapper.name,
-		tick: tickToText(Now()),
-		local: ((new Date()).getTimezoneOffset()) * Time.minute,
-		cloud: wrapper.cloud,
-		hash: hash.base32(),
-		label: await prefix39(hash),//short human-readable form of the hash, BIP-39 word + 2-3 digits, like "Deci71"
-		codeFiles,
-		codeSize,
-		totalFiles,
-		totalSize,
-		secretKeys: 'FujiTracer'+'S10_'+cutRandomWords(cipherData.base62(), 10, 20),//secrets available only to server bundles
-		publicKeys: 'FujiTracer'+'P10_'+cutRandomWords(publicData.base62(), 10, 20),//intentionally, acceptably, and necessarily public factory presets and client side bundle keys, still politely obscured
-	}
+	let o = {...wrapper}//start from the existing wrapper to carry forward any extra properties,
+	o.tick = tickToText(Now())//then update properties with new values
+	o.local = ((new Date()).getTimezoneOffset()) * Time.minute
+	o.hash = hash.base32()
+	o.label = await prefix39(hash)//short human-readable form of the hash, BIP-39 word + 2-3 digits, like "Deci71"
+	o.codeFiles = codeFiles
+	o.codeSize = codeSize
+	o.totalFiles = totalFiles
+	o.totalSize = totalSize
+	o.secretKeys = 'FujiTracer'+'S10_'+cutRandomWords(cipherData.base62(), 10, 20)//secrets available only to server bundles
+	o.publicKeys = 'FujiTracer'+'P10_'+cutRandomWords(publicData.base62(), 10, 20)//intentionally, acceptably, and necessarily public factory presets and client side bundle keys, still politely obscured
 
 	await writeWrapper(o)//overwrite wrapper.js, which tells running code the version information like name, date, and hash
 	await writeReadme(o)//overwrite the top of README.md with the current disk with this information for github.com
