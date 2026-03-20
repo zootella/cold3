@@ -19,6 +19,7 @@ onMounted(async () => {
 async function onRemove() {
 	refInstructionalMessage.value = ''
 	await credentialStore.walletRemove()
+	try { await wagmiStore.disconnect() } catch (e) {}//clear wagmi connection too — no reason to stay connected to a wallet we just unproved
 }
 
 async function onDisconnect() {
@@ -29,11 +30,12 @@ async function onDisconnect() {
 async function onInjectedConnect() {
 	refConnecting.value = true
 	refInstructionalMessage.value = ''
+	let address
 	try {
-		await wagmiStore.connectInjected()
+		address = await wagmiStore.connectInjected()
 	} catch (e) {
 		if (e.name == 'ConnectorAlreadyConnectedError') {
-			//already connected — fall through to prove
+			address = wagmiStore.connectedAddress//already connected — use the existing address
 		} else if (e.name == 'ProviderNotFoundError') {
 			refInstructionalMessage.value = 'Provider not found error; instructions to get metamask'
 			refConnecting.value = false; return
@@ -42,18 +44,18 @@ async function onInjectedConnect() {
 			refConnecting.value = false; return
 		} else { log('⛔ on connect caught:', look(e)); refConnecting.value = false; throw e }
 	}
-	if (!credentialStore.wallet) await proveConnectedWallet()//chain into prove only if no proof exists
+	await afterConnect(address)
 	refConnecting.value = false
 }
 async function onWalletConnect() {
 	refConnecting.value = true
 	refInstructionalMessage.value = ''
 	try {
-		await wagmiStore.connectWalletConnect({
+		let address = await wagmiStore.connectWalletConnect({
 			onDisplayUri: (uri) => { refUri.value = uri }
 		})
 		refUri.value = ''//hide QR code on success
-		if (!credentialStore.wallet) await proveConnectedWallet()//chain into prove only if no proof exists
+		await afterConnect(address)
 	} catch (e) {
 		refUri.value = ''//hide QR code on any error
 		if (e.name == 'UserRejectedRequestError') {
@@ -68,8 +70,23 @@ async function onWalletConnect() {
 	}
 	refConnecting.value = false
 }
-async function proveConnectedWallet() {
-	let task = await credentialStore.walletProve1({address: wagmiStore.connectedAddress})
+
+//after a successful connect, decide what to do based on existing proof state
+//address comes from connect()'s return value, not the reactive store, to avoid watchConnection timing races
+//no proof → prove this wallet. same wallet already proven → nothing to do. different wallet proven → disconnect and tell user to remove first
+async function afterConnect(address) {
+	let proven = credentialStore.wallet
+	if (!proven) {
+		await proveConnectedWallet(address)//no proof yet — prove the wallet we just connected
+	} else if (proven.toLowerCase() === address.toLowerCase()) {
+		//this wallet is already proven — nothing to do
+	} else {
+		try { await wagmiStore.disconnect() } catch (e) {}//different wallet — disconnect it
+		refInstructionalMessage.value = 'A different wallet is already proven. Remove it first, then connect and prove the new one.'
+	}
+}
+async function proveConnectedWallet(address) {
+	let task = await credentialStore.walletProve1({address})
 	let {nonce, message, envelope} = task.walletProve
 
 	let signature, signError
@@ -81,7 +98,7 @@ async function proveConnectedWallet() {
 	}
 
 	if (signature) {
-		let task2 = await credentialStore.walletProve2({address: wagmiStore.connectedAddress, nonce, message, signature, envelope})
+		let task2 = await credentialStore.walletProve2({address, nonce, message, signature, envelope})
 		if (task2.success) {
 			refInstructionalMessage.value = 'Proof verified.'
 		} else if (task2.outcome == 'BadSignature.') {
@@ -111,16 +128,11 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 <p class="my-space">Ethereum Wallet</p>
 
 <p class="my-space">
-	Proof: <template v-if="credentialStore.wallet"><code class="break-all text-sm">{{ credentialStore.wallet }}</code> <Button link :click="onRemove">Remove</Button></template><template v-else>none</template>
+	<template v-if="credentialStore.wallet"><code class="break-all text-sm">{{ credentialStore.wallet }}</code> proven <Button link :click="onRemove">Remove</Button></template><template v-else>not proven</template>
 </p>
 
 <p class="my-space">
-	Connection: <template v-if="wagmiStore.isConnected"><code class="break-all text-sm">{{ wagmiStore.connectedAddress }}</code> <Button link :click="onDisconnect">Disconnect</Button></template><template v-else>none</template>
-</p>
-
-<p class="my-space">
-	<Button :state="computedStateConnecting" :click="onInjectedConnect" labeling="Connecting...">Browser Wallet</Button>
-	<Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button>
+	<template v-if="wagmiStore.isConnected"><code class="break-all text-sm">{{ wagmiStore.connectedAddress }}</code> connected <Button link :click="onDisconnect">Disconnect</Button></template><template v-else>connect <Button :state="computedStateConnecting" :click="onInjectedConnect" labeling="Connecting...">Injected</Button> <Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button></template>
 </p>
 <div v-if="refUri" class="space-y-2">
 	<QrCode :address="refUri" />

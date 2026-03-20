@@ -57,7 +57,8 @@ async function load() { if (_loaded) return; _loaded = true
 //watchConnection fires onChange after these resolve, updating connectedAddress and isConnected
 async function connectInjected() {
 	let {wagmi_core, wagmi_connectors} = _modules
-	await wagmi_core.connect(_config, {connector: wagmi_connectors.injected()})
+	let result = await wagmi_core.connect(_config, {connector: wagmi_connectors.injected()})
+	return result.accounts[0]//return the connected address directly; don't rely on watchConnection having fired yet
 }
 
 async function connectWalletConnect({onDisplayUri}) {
@@ -66,7 +67,8 @@ async function connectWalletConnect({onDisplayUri}) {
 	let connector = connectors.find(c => c.id == 'walletConnect')
 	let provider = await connector.getProvider()
 	provider.on('display_uri', onDisplayUri)
-	await wagmi_core.connect(_config, {connector})
+	let result = await wagmi_core.connect(_config, {connector})
+	return result.accounts[0]//return the connected address directly; don't rely on watchConnection having fired yet
 }
 
 async function disconnect() {

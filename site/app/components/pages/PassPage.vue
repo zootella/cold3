@@ -1,9 +1,9 @@
 <script setup>
 
 function generateAll() {
-	const quantity = 200
 	let s = ''
-	for (let i = 0; i < quantity; i++) s += generateOne() + ', '
+	for (let i = 0; i < 100; i++) s += generateOne() + ', '
+	for (let i = 0; i < 20; i++) s += Tag() + ', '
 	return s + ' all generated locally'
 }
 function generateOne() {
