@@ -3,43 +3,13 @@
 
 ## Current state
 
-Wallet is a fully integrated credential. The prove flow works end-to-end: WalletPanel.vue connects a wallet (injected or WalletConnect), requests a signature, and the server verifies it and writes a row to credential_table (type `'Ethereum.'`, f0=checksummed address). `credentialStore.wallet` holds the proven address. Remove works. `attachState` includes it. Done.
+Wallet is a fully integrated credential. The prove flow works end-to-end: WalletPanel.vue connects a wallet (injected or WalletConnect), requests a signature, and the server verifies it and writes a row to credential_table (type `'Ethereum.'`, f0=checksummed address). `credentialStore.wallet` holds the proven address. Remove works. `attachState` includes it.
 
 The two-step prove flow uses an envelope in the request body (not a cookie) because the signing happens in-page via a wallet popup — there's no navigation away, so no need for cookie persistence. This is different from TOTP and OTP, which use cookie-persisted envelopes because the user might refresh mid-enrollment.
 
-## Wagmi state is component-local
+Wagmi lifecycle lives in `wagmiStore` (Pinia) — config, modules, watchConnection subscription, and reactive connection state (`connectedAddress`, `isConnected`) persist for the tab lifetime. Transient flow state (WalletConnect URI, instructional messages, connecting flag) stays in WalletPanel as component-local refs that reset on mount.
 
-Everything wagmi-related lives inside WalletPanel.vue as component-local refs and lets:
-
-- `_wagmiConfig` — wagmi's config object, created in `onMounted` with chain config, Alchemy transport, and two connectors (injected + WalletConnect)
-- `_wagmiUnwatch` — the watchConnection handle, cleaned up in `onUnmounted`
-- `refConnectedAddress`, `refIsConnected` — connection state from wagmi
-- `refUri` — the WalletConnect URI for QR code display
-- `refInstructionalMessage` — error/status text shown to the user
-- `refConnecting`, `refProving` — flow-in-progress flags for button ghosting
-- `viem`, `viem_chains`, `wagmi_core`, `wagmi_connectors` — dynamically imported modules
-
-When the user navigates away from the credential panel, `onUnmounted` fires, the watcher is cleaned up, and all this state is gone. If they navigate back, `onMounted` runs again: modules are re-imported, wagmi is reconfigured, `reconnect` is called to recover any session wagmi saved to localStorage.
-
-This works, but it's wasteful. Wagmi's own architecture intends a single config instance that lives with the tab. We're creating and destroying it on every mount/unmount cycle.
-
-## What belongs in a store vs. what stays in the component
-
-Not everything should move to the store. The split is between persistent tab state and transient flow state.
-
-**Persistent tab state (move to store):** wagmi config, imported modules, the watchConnection subscription, and the reconnected connection state (address, isConnected). These should be created once when first needed and live until the tab closes. No reason to tear them down on navigation.
-
-**Transient flow state (stays in component or resets on mount):** the WalletConnect URI, instructional messages, connecting/proving flags. These represent an in-progress user interaction. If the user navigates away mid-QR-code, the abandoned attempt should not greet them when they come back. The component mounting fresh is the right behavior — it's a natural cancellation.
-
-The tension is that wagmi bakes flow state into its config. A pending WalletConnect session proposal (the thing that generated the URI) lives inside wagmi's connector instance, which lives in the config. You can't cleanly separate "keep the config alive" from "reset the pending proposal." The session proposal has a 5-minute timeout from the relay server, so it will expire on its own, but in the meantime the user might see a stale QR code if we naively persist the URI from the store.
-
-Options:
-
-1. **Clear flow refs on mount.** Store holds config and connection state. Component reads connection state from store but manages its own flow refs. On mount, flow refs start empty regardless of what wagmi's internal state is. If there's a stale session proposal inside wagmi, it times out silently. User sees a clean slate.
-
-2. **Add a cancel.** When the component unmounts, call `disconnect` on any pending WalletConnect session (if wagmi exposes that). Clean separation, but wagmi doesn't have a great API for aborting a pending session proposal — operations complete on their own (timeout, user action) or stay pending.
-
-3. **Don't bother.** The current approach works. The cost is re-importing modules and reconfiguring wagmi on each mount. `wevmDynamicImport()` caches the import, so module loading is fast after the first time. `reconnect` recovers the connection from localStorage. The main waste is creating a new WalletConnect connector (which opens a new WebSocket to the relay), but this is a sub-second operation.
+The dev panel (WalletPanel in `components/snippet1/`) is always expanded, showing both layers as status lines: proof (database) and connection (wagmi), each with independent controls. Connect buttons appear only when not connected. `afterConnect(address)` handles the three-way decision after any successful connect: no proof → prove, same wallet proven → noop, different wallet proven → disconnect and message. The address flows as a direct parameter from `connect()`'s return value through the entire chain, not from reactive state.
 
 ## Two sources of truth, intentionally
 
@@ -48,8 +18,6 @@ Options:
 - A user can have a proven wallet credential with no active wagmi connection. They proved ownership last week; the credential panel shows their address from the database. Wagmi isn't even loaded yet.
 - A user can have an active wagmi connection with no proven credential. They just connected MetaMask but haven't clicked "Prove Ownership" yet.
 - The two align only during the prove flow: connect (wagmi state) → sign (wagmi state) → verify and save (database state).
-
-The credential panel already handles this correctly. It shows `credentialStore.wallet` as the proven address regardless of wagmi connection state. The editing UI shows wagmi's connection state for the connect/prove buttons.
 
 ## Two directions of input
 
@@ -106,7 +74,7 @@ When a user switches accounts in MetaMask while the page is open, the provider f
 2. **Show a warning banner** — "Your wallet changed. Sign in again to update your identity"
 3. **Ignore it** — the session remains tied to the original proven address
 
-We currently don't handle `accountsChanged` explicitly. Wagmi's `watchConnection` picks up the change and updates `refConnectedAddress`, but the proven credential in the database is unaffected. This is effectively option 3.
+We currently don't handle `accountsChanged` explicitly. Wagmi's `watchConnection` picks up the change and updates `wagmiStore.connectedAddress`, but the proven credential in the database is unaffected. This is effectively option 3. The dev panel makes this visible — proof line stays, connection line updates.
 
 ### Sites using wallet as identity
 
@@ -120,31 +88,11 @@ This use case is well-established, not exotic:
 
 ### Single connect button replacing separate wallet buttons
 
-We currently have separate "Browser Wallet" and "WalletConnect" buttons. The modern pattern is a single "Connect Wallet" button that opens a modal handling all wallet types. [Reown AppKit](https://reown.com/appkit) (formerly Web3Modal, from the WalletConnect team) provides this — it discovers installed extensions via [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963), offers WalletConnect QR for mobile wallets, and optionally supports social logins via embedded wallets. This is a separate UX question from the credential architecture, but worth noting.
-
-## Store exports: three groups to review
-
-After the refactor, credentialStore exports 13 wallet-related items. They fall into three groups:
-
-**Database credential** — `wallet`, `walletProve1`, `walletProve2`, `walletRemove`. Same shape as name, password, totp. These belong here, no question.
-
-**Wagmi connection state** — `connectedAddress`, `isConnected`, `loadWagmi`. The point of this refactor. These belong here too — the store owns wagmi's lifecycle now.
-
-**Wagmi operation passthroughs** — `wagmiConnectInjected`, `wagmiConnectWalletConnect`, `wagmiDisconnect`, `wagmiSignMessage`, `wagmiGetBlockNumber`, `wagmiReadContract`. These are thin wrappers that just forward to `wagmi_core.*(_wagmiConfig, ...)`. The first four are used by WalletPanel during connect/prove flows. The last two (`wagmiGetBlockNumber`, `wagmiReadContract`) are only used by `onQuotes`, which isn't a credential concern at all — it's Ethereum price and block number display.
-
-The credentialStore is becoming a pass-through layer for raw wagmi_core calls, which is different from what the rest of the store does. Every other exported method is a meaningful credential operation (check a name, sign in, enroll TOTP). These are just "call this library function with the config I'm holding."
-
-Worth thinking about: should the wagmi passthroughs stay here, move to a separate wagmiStore, or should WalletPanel get direct access to the config somehow? The third group especially — onQuotes could live in a completely different component that has nothing to do with credentials.
-
-## Relationship to other credential work
-
-This is a UX polish task, not a data integration task. The wallet credential is already fully integrated into credential_table, credentialStore, and the API endpoint. The wagmi-to-store refactor improves the user experience (no re-initialization on navigation) but doesn't change any security properties, data flow, or API surface.
-
-It's independent of the OTP and OAuth integration work described in credential.md, and independent of the future event-row/watermark refactor. Can be done in any order relative to those.
+We currently have separate "Injected" and "WalletConnect" buttons. The modern pattern is a single "Connect Wallet" button that opens a modal handling all wallet types. [Reown AppKit](https://reown.com/appkit) (formerly Web3Modal, from the WalletConnect team) provides this — it discovers installed extensions via [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963), offers WalletConnect QR for mobile wallets, and optionally supports social logins via embedded wallets. This is a separate UX question from the credential architecture, but worth noting.
 
 ## Event lifecycle in credential_table
 
-credential_table has four event numbers (level3.js line 910): 1 removed, 2 mentioned, 3 challenged, 4 validated. Until now, every credential type wrote only event 4 — the final validated state. Wallet is the first to use the intermediate events.
+credential_table has four event numbers (level3.js line 910): 1 removed, 2 mentioned, 3 challenged, 4 validated. Wallet is the first credential type to use the intermediate events.
 
 ### Where each event fires
 
@@ -168,7 +116,7 @@ The current pattern is: hide all previous rows of this type, then write the new 
 
 If we stop hiding, queries pull a few more rows but `credentialWalletGet` already filters by `event: 4` — it would still return the right answer. The question is whether the history is worth keeping visible. Not urgent now, but worth revisiting when more credential types use all four events and we want to see the full lifecycle without digging through hidden rows.
 
-# Exploration of SIWE--what's required at an engineering-level
+# Exploration of SIWE — what's required at an engineering level
 
 To change our wallet identity flow to support the new SIWE standard, we shouldn't need a new package. viem already ships SIWE utilities under `viem/siwe`:
 
@@ -236,115 +184,66 @@ Your friendly one-liner in the MetaMask popup. The message becomes a structured 
 
 A pomodoro. The data flow is the same, the envelope mechanism stays, you're just swapping the message format and replacing your `verifyMessage` + string-inclusion checks with a single `verifySiweMessage` call. No new dependencies.
 
-# Connect, prove, and state reconciliation
+# Dev panel test scenarios
 
-## The two independent states
+The dev panel always shows two status lines. The proof line shows the proven address from credential_table or "not proven". The connection line shows the wagmi-connected address with Disconnect, or connect buttons (Injected, WalletConnect) when not connected.
 
-**Database proof** (`credentialStore.wallet`) — the server has verified a signature and stored a checksummed address in credential_table. This is the credential. Survives page reloads, different browsers, everything.
+## Happy paths
 
-**Wagmi connection** (`wagmiStore.isConnected`, `wagmiStore.connectedAddress`) — the browser has a live session with a wallet (MetaMask, WalletConnect, etc.). Transient browser state. Can appear or disappear based on MetaMask settings, localStorage, WalletConnect session expiry. Not a credential.
+**(1) Clean slate → injected connect+prove.** Proof: not proven. Connection: connect [Injected] [WalletConnect]. Click Injected. MetaMask pops connect, then immediately sign (afterConnect sees no proof, chains to prove). Server verifies. Both lines update to show the address.
 
-## What the UI shows in each starting state
+**(2) Clean slate → WalletConnect connect+prove.** Same starting state. Click WalletConnect. QR code appears. Scan with phone wallet. Phone shows sign request (afterConnect chains to prove). Server verifies. Both lines update.
 
-The template gates on these two values. When editing:
+**(3) Proven + connected → Remove.** Both lines show addresses. Click Remove. DB clears, wagmi disconnects. Both lines reset: "not proven" and connect buttons.
 
-**No proof, not connected** — connect buttons (Browser Wallet, WalletConnect, Cancel). This is the entry point. Injected connect chains directly into prove. WalletConnect shows QR first, then Prove after connection.
+**(4) Proven + connected → Disconnect.** Both lines show addresses. Click Disconnect. Connection clears, connect buttons appear. Proof line unchanged — the credential survives disconnection.
 
-**No proof, connected** — "Connected: 0x..." + Prove + Cancel. Only reachable via WalletConnect (injected auto-proves) or if wagmi reconnected on mount to a previous session.
+**(5) Proven, not connected → reconnect same wallet.** Proof shows address A. Connection shows connect buttons. Click Injected, connect to A. afterConnect sees same address, noop. Connection line updates to A. No signature popup.
 
-**Proof exists** — proven address + Remove + Cancel. Connect buttons are not shown. The user must Remove before they can connect a different wallet. This is intentional — it prunes the "proof of A, connect B" branch entirely.
+**(6) Proven, not connected → connect different wallet.** Proof shows A. Click Injected, connect to B. afterConnect sees mismatch, disconnects B, shows "A different wallet is already proven. Remove it first, then connect and prove the new one." Connection returns to connect buttons.
 
-## The 18 → 6 collapse
+## Starting states (page load with prior wagmi session in localStorage)
 
-On paper: wagmi (none/A/B) × db (none/A/B) × action (connect A / connect B) = 18. But most are unreachable or identical:
+**(7) Wagmi reconnects, no proof.** wagmiStore.load() reconnects from localStorage. Proof: not proven. Connection: address + Disconnect. User can Disconnect, or Remove+reconnect to prove (reconnecting same address would chain to prove since no proof exists — but connect buttons are hidden while connected).
 
-- **db has proof → connect buttons hidden.** The user can't initiate a connect action when proof exists. They must Remove first, which clears proof AND disconnects wagmi, returning to (none, none). This eliminates 12 of the 18 cells (all rows where db ≠ none).
-- **wagmi connected → connect buttons hidden.** When wagmi is connected and no proof exists, the UI shows Prove, not connect buttons. The user can prove or cancel. This eliminates the "wagmi=A, action=connect B" and "wagmi=B, action=connect A" cells.
-- **A vs B is relative, not absolute.** "db=A, connect A" and "db=B, connect B" are the same scenario (proof matches). The absolute addresses don't matter, only whether they match.
+**(8) Wagmi reconnects, proof matches.** Both lines show same address. Everything consistent.
 
-## Actual test scenarios
+**(9) Wagmi reconnects, proof doesn't match.** Proof: A. Connection: B. Remove clears both. Disconnect clears B only, proof A remains.
 
-### Happy paths
+## Injected flow departures
 
-**(1) Clean slate → injected connect+prove.** wagmi: none. db: none. User clicks Browser Wallet. MetaMask pops connect, then immediately sign. Server verifies. Panel collapses, proven address appears. One button click, two wallet popups.
+**(10) User rejects connect.** MetaMask popup appears, user clicks Cancel. ProviderNotFoundError or UserRejectedRequestError caught. Message shown. Connect buttons remain.
 
-**(2) Clean slate → WalletConnect connect, then prove.** wagmi: none. db: none. User clicks WalletConnect. QR code appears. User scans, wallet connects. UI shows "Connected: 0x..." + Prove. User clicks Prove. Wallet app requests signature. Server verifies. Panel collapses.
+**(11) User rejects sign.** Connect succeeded, afterConnect chained to prove, sign popup appears, user declines. proveConnectedWallet catches the error, shows "Signature request declined." Connection line now shows connected address + Disconnect (wagmi connected, not proven).
 
-**(3) Proof exists → remove.** wagmi: maybe connected, doesn't matter. db: proof of A. User clicks Edit, sees address + Remove + Cancel. Clicks Remove. Server clears credential, wagmi disconnects, panel collapses. Back to clean slate.
+**(12) Server rejects signature.** Prove flow completes but server returns BadSignature or Expired. Message shown. Connection line shows connected address.
 
-### Starting states (what the page looks like before any action)
+**(13) MetaMask account switch mid-flow.** walletProve1 gets nonce for A. MetaMask switches to B before sign popup. signMessage signs with B's key. walletProve2 sends address A but signature is from B. Server rejects — BadSignature.
 
-**(4) Wagmi reconnects on mount, no proof.** wagmi: A (from localStorage/reconnect). db: none. User clicks Edit, sees "Connected: 0x..." + Prove + Cancel. Can prove A, or cancel and ignore.
+## WalletConnect flow departures
 
-**(5) Wagmi reconnects on mount, proof matches.** wagmi: A. db: A. User clicks Edit, sees proven address + Remove + Cancel. Wagmi connection is invisible — the proof is what matters. Everything is consistent, nothing to do.
+**(14) User rejects or times out during connect.** QR code shown, user never scans or rejects on phone. Error caught, QR hidden, message shown. Connect buttons remain.
 
-**(6) Wagmi reconnects on mount, proof doesn't match.** wagmi: B. db: A. User clicks Edit, sees proven address of A + Remove + Cancel. Wagmi's connection to B is invisible. If user Removes, both proof and wagmi connection clear.
+**(15) WalletConnect session expires after connect.** Connected but not yet proven. wagmi fires onChange, isConnected goes false. Connection line flips to connect buttons. User starts over.
 
-### Injected flow departures (branches off happy path 1)
+## External state changes
 
-**(7) User rejects connect.** MetaMask popup appears, user clicks Cancel. Error caught, instructional message shown, stays on connect buttons.
+**(16) MetaMask disconnect while proof exists.** wagmi fires onChange, connection clears. Proof unchanged. Connection line shows connect buttons.
 
-**(8) User rejects sign.** MetaMask connect succeeds, sign popup appears, user clicks Cancel. `proveConnectedWallet` catches the error, shows message. Since `refConnecting` is still true during prove, template stays on connect buttons view. After the error, `refConnecting` goes false, wagmi is connected, no proof — template flips to "Connected: 0x..." + Prove + Cancel. User can retry prove.
+**(17) MetaMask account switch while proof exists.** Connection line updates to new address. Proof line unchanged. The two lines visibly disagree — this is correct, the credential is the database proof.
 
-**(9) Server rejects signature.** (Branches off happy path 1 or 2.) Prove flow completes but server returns BadSignature or Expired. Message shown. User can retry.
+## Known limitations
 
-**(10) MetaMask account switch mid-flow.** User clicks Browser Wallet, connects with A, `walletProve1` gets a nonce for A. MetaMask switches to B before the sign popup. `signMessage` signs with B's key. `walletProve2` sends address B but the envelope contains A's nonce. Server rejects — lands in the BadSignature path of (9). Unlikely but not impossible.
+**(18) Same wallet, different connector.** Proved via Injected, want to use via WalletConnect instead. Must Remove, then reconnect+prove. Re-proving is just one signature.
 
-### WalletConnect flow departures (branches off happy path 2)
+**(19) Different wallet.** Must Remove current proof, then connect+prove the new one. afterConnect enforces this.
 
-**(11) User rejects or times out during connect.** QR code shown, user never scans or rejects on phone. Error caught, message shown, stays on connect buttons.
+# Next steps
 
-**(12) Session expires after connect, before prove.** User scans QR, wallet connects, UI shows Prove. User walks away. WalletConnect relay session expires (5 min). wagmi fires `onChange`, `isConnected` goes false. Template flips back to connect buttons. User returns, starts over.
+**SIWE migration** — swap custom message format for EIP-4361. Small, self-contained. See analysis above.
 
-**(13) Session expires mid-prove.** User clicks Prove, `walletProve1` succeeds, sign request sent to phone via relay. Session expires before user signs. `signMessage` throws. Message shown. wagmi may report disconnected — template flips to connect buttons. User can start over.
+**Consumer UI for WalletPanel** — collapse the dev panel's two status lines into a single coherent view. Probably: proven address (or "Connect Wallet" button), with edit mode for Remove. afterConnect logic and wagmiStore carry over unchanged; purely a template question.
 
-### External state changes (chaos user — wallet changes outside our UI)
+**Clean up CredentialPanel wiring** — CredentialPanel still passes `:editing` and `@edit`/`@cancel` to WalletPanel, harmlessly ignored. Dead code to remove.
 
-**(14) MetaMask disconnect while proof exists.** User proved via injected, then disconnects MetaMask from its own UI. wagmi fires `onChange`, `isConnected` goes false. Proof still in db. User clicks Edit → proven address + Remove + Cancel. Invisible, everything fine. Proof is the credential, not the connection.
-
-**(15) MetaMask account switch while proof exists.** User proved A, switches MetaMask to B. wagmi fires `onChange`, `connectedAddress` becomes B. Template still shows proof of A + Remove + Cancel. Invisible. If user Removes, wagmi disconnects (from B) and proof of A clears.
-
-### Connector switching (known limitations)
-
-**(16) Same wallet, different connector.** User proved A via MetaMask, later wants to use A via WalletConnect instead. Current UI requires Remove, then re-connect+prove via WalletConnect. Two extra steps, but re-proving is just one signature. Known limitation — avoiding the complexity of showing connect buttons when proof exists.
-
-**(17) Different wallet.** User proved A, wants to switch to B. Same as (16): Remove A, then connect+prove B. Remove-first is the only path.
-
-# Current sprint: dev panel and event lifecycle
-
-## What changed (diff.diff, uncommitted)
-
-Three files changed against the last commit (Grac42).
-
-### WalletPanel.vue — reshaped into a dev/QA panel
-
-The old WalletPanel was designed for end users: an expand/collapse editing flow controlled by the parent CredentialPanel, with conditional template branches that hid plumbing. This made it hard to test because you couldn't see or independently control the two layers (database proof vs wagmi connection).
-
-The new panel is always expanded and shows both layers as status lines:
-
-- **Proof:** shows the proven address from credential_table, or "none". Remove button clears only the db credential.
-- **Connection:** shows the wagmi-connected address, or "none". Disconnect button clears only the wagmi connection.
-- **Connect buttons** (Browser Wallet, WalletConnect) are always visible. If no proof exists, connect chains directly into the prove flow (nonce → sign → verify). If proof already exists, connect just connects — no auto-prove, user must Remove first to re-prove.
-
-Removed: `editing` prop, `defineEmits`, `onCancel`, `emit('cancel')`, `emit('edit')`, `onProve` standalone button, `refProving`, `computedStateProving`. The parent CredentialPanel still passes `:editing` and `@edit`/`@cancel` — these are harmlessly ignored.
-
-### credential.js — event 2 and 3 writes in WalletProve1
-
-Added `credentialSet` to the import from icarus. In the `WalletProve1.` handler, two new writes:
-
-- `credentialSet({..., event: 2, f0: address})` right after `checkWallet` — records that the user's browser mentioned this address.
-- `credentialSet({..., event: 3, f0: address})` after `sealEnvelope` — records that the server challenged this address with a nonce.
-
-Event 4 (validated) in `WalletProve2.` and the hide/remove logic are unchanged. Wallet is now the first credential type to use all four event numbers.
-
-### wallet.md — event lifecycle documentation
-
-New section "Event lifecycle in credential_table" documents where each event fires, the hide wrinkle (credentialWalletSet hides event 2/3 rows when writing event 4), and the open question about whether hiding is necessary at all.
-
-## What's next
-
-- Smoke test this diff against the test scenarios above (happy paths first, then departures)
-- The test scenarios in the section above were written for the old collapsed UI and reference things like "Cancel" buttons and the "Connected: 0x... + Prove + Cancel" intermediate state that no longer exist in the dev panel — will need updating after smoke test confirms the new panel works
-- CredentialPanel still has the editing/emit wiring for WalletPanel — can be cleaned up after we're confident in the new shape
-- `@walletconnect/ethereum-provider` was added to both icarus and site package.json in the prior commit (Grac42) to fix WalletConnect under pnpm strict resolution — that's already landed, not in this diff
-
+**Account switching** — decide whether to handle `accountsChanged` (option 1: invalidate, option 2: warning banner, or stay with option 3: ignore). Not urgent — option 3 is safe, just not maximally helpful.

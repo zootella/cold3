@@ -54,7 +54,7 @@ async function load() { if (_loaded) return; _loaded = true
 
 //connection methods — thin wrappers over wagmi_core; errors propagate to the calling component
 //which handles them as user-facing messages (ProviderNotFoundError, UserRejectedRequestError, etc.)
-//watchConnection fires onChange after these resolve, updating connectedAddress and isConnected
+//callers use the returned address for logic; watchConnection separately updates the reactive refs for display
 async function connectInjected() {
 	let {wagmi_core, wagmi_connectors} = _modules
 	let result = await wagmi_core.connect(_config, {connector: wagmi_connectors.injected()})

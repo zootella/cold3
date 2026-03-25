@@ -13,16 +13,6 @@ The credential system flows through one endpoint (`/api/credential`), one store 
 
 `/api/otp` will eventually become unnecessary as its functionality migrates into `/api/credential`.
 
-## TOTP integration (done)
-
-TOTP is now a first-class credential in `/api/credential` and `credentialStore`, alongside Browser, Password, and Name. Actions: `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`. UI lives in `TotpPanel.vue`, wired into `CredentialPanel.vue`.
-
-`Get.` already absorbs the FoundEnvelope pattern for TOTP: if the client includes an enrollment envelope cookie in the Get body, the server opens it and returns the enrollment data (URI, identifier) alongside the regular credential snapshot. One fetch on page load recovers an in-progress enrollment — no separate round-trip. This is the model for how OTP's `FoundEnvelope.` should eventually work too.
-
-## TOTP mobile enrollment flow (done)
-
-Desktop shows a QR code; mobile shows a "Load in Authenticator App" button. Both paths land in the same enrollment UI state with the code input ready. Key design choice: don't auto-redirect on mobile — let the user tap voluntarily, so when they swipe back from the authenticator the Vue state is intact (bfcache preserves it, full reload recovers via the envelope cookie in `Get.`).
-
 ## Current endpoint and store map
 
 **`/api/credential` + `credentialStore`** — the main credential system. Handles Browser, Password, Name, TOTP, and Wallet. Every successful response includes `attachState` (full credential snapshot). Store exposes refs and methods for all credential types. Used by CredentialPanel and its sub-components (SetPasswordForm, TotpPanel, WalletPanel, etc).
@@ -38,10 +28,6 @@ Actions: `SendTurnstile.`, `FoundEnvelope.`, `Enter.`
 Right now OTP and TOTP each have their own cookie and envelope: `temporary_envelope_otp` (sealed with action `'Otp.'`) and `temporary_envelope_totp` (sealed with action `'EnrollTotpEnvelope.'`). These exist independently because OTP and TOTP were built at different times. This works but doesn't scale — each new multi-step credential flow shouldn't bring its own cookie.
 
 The future direction is a single `CredentialEnvelope` cookie that can hold in-flight state for multiple credential operations simultaneously — a TOTP enrollment and an OTP verification happening in the same session, stored in one envelope with slots for each. `Get.` already does this for TOTP; extending it to OTP means OTP's `FoundEnvelope.` action becomes unnecessary.
-
-## TOTP mobile: split enrollment into two visual stages (done)
-
-On mobile, the button and code input show in two stages rather than all at once. Declarative booleans (`refUri`, `refOpened`) replaced an integer step machine — each template element's v-if reads naturally. Sub-components in `components/totp/`: `TotpText1.vue`, `TotpText2.vue`, `TotpInput.vue`.
 
 # Envelope and cookie analysis across credential types
 
@@ -79,9 +65,9 @@ The tension: TOTP has one slot per user, but OTP has an array of simultaneous ch
 
 # Credential events and audit trail
 
-## Current state: hide does the work, event is dead weight
+## Current state: hide does the work, events are underused
 
-`credential_table` has an `event` column defined as: 1 removed, 2 mentioned, 3 challenged, 4 validated. But every credential function hardcodes `event: 4`. Removal uses `queryHide` (sets the `hide` column), which makes rows invisible to `queryGet`. Events 1, 2, and 3 are never written. The event column exists but earns nothing.
+`credential_table` has an `event` column defined as: 1 removed, 2 mentioned, 3 challenged, 4 validated. Most credential functions hardcode `event: 4`. Removal uses `queryHide` (sets the `hide` column), which makes rows invisible to `queryGet`. Wallet is the first type to use events 2 and 3 (WalletProve1 writes mentioned and challenged rows), but the rest of the system still only writes event 4.
 
 The `hide` mechanism is convenient (level2 query helpers skip hidden rows by default) but destroys history. A user who enrolls TOTP, removes it, enrolls again — the first enrollment is gone. No record of credential lifecycle.
 
@@ -176,7 +162,7 @@ Two cookies, two composable usages, two envelope seal/open pairs, and two recove
 
 **TOTP** — k1=secret (base32). Two-step enrollment with envelope cookie. UI in TotpPanel with sub-components (TotpInput, TotpText1, TotpText2). Mobile detection via `browserIsBesideAppStore()`. `credentialTotpGet/Set/Remove`.
 
-**Wallet/Ethereum** — f0=checksummed address. Two-step prove flow with envelope in request body (no cookie — signing happens in-page via wallet popup). UI in WalletPanel with wagmi/viem loaded on demand via `wevmDynamicImport()`. Two connectors: injected (MetaMask) and WalletConnect. `credentialWalletGet/Set/Remove`.
+**Wallet/Ethereum** — f0=checksummed address. Two-step prove flow with envelope in request body (no cookie — signing happens in-page via wallet popup). UI in WalletPanel, wagmi lifecycle in wagmiStore (Pinia), wagmi/viem loaded on demand via `wevmDynamicImport()`. Two connectors: injected and WalletConnect. First credential type to write events 2/3 (mentioned/challenged in WalletProve1). `credentialWalletGet/Set/Remove`.
 
 ## Standalone, planned for integration
 
@@ -218,12 +204,6 @@ Cancellation: if the user clicks Cancel at the provider, Auth.js redirects to Sv
 
 **The integration point is just step 7.** The SvelteKit side, the envelope flow, and the redirects all stay as-is. `OauthDone.` on success writes a credential_table row (type `'Google.'`/`'Twitter.'`/`'Discord.'`, event 4, k1=provider's user ID, f0=provider account name or email) and calls `attachState`. On cancellation: no row, just return a route. Store gains a ref for linked providers; OauthPanel.vue in CredentialPanel shows linked/unlinked providers. The envelope chain is inherent to the cross-origin flow and doesn't change.
 
-## Wallet integration (done)
-
-Wallet is now a first-class credential. `WalletProve1.`/`WalletProve2.`/`WalletRemove.` in `/api/credential.js`, WalletPanel.vue in CredentialPanel. The standalone `/api/wallet.js` and `WalletDemo.vue` have been deleted.
-
-Design note: wagmi state (connection, watchers) is component-local in WalletPanel, not in a Pinia store. `credentialStore.wallet` (database) is the source of truth for "this user has proven they control address X." wagmi's localStorage is transient browser state for "this browser has an active wallet connection." These are independent — the credential panel shows the proven address regardless of wagmi connection state.
-
 ## Sequencing
 
-Wallet done. OAuth next — small, the integration point is narrow (just `OauthDone.`), but the full flow spans three sites. OTP last — most impactful but has the most architectural questions (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment).
+Wallet done (see wallet.md for dev panel, test scenarios, and SIWE migration plan). OAuth next — small, the integration point is narrow (just `OauthDone.`), but the full flow spans three sites. OTP last — most impactful but has the most architectural questions (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment).
