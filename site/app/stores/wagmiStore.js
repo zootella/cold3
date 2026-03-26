@@ -2,7 +2,7 @@ import {wevmDynamicImport, originApex} from 'icarus'
 
 //owns the wagmi lifecycle: dynamic import, config, connection watching, reconnect
 //persists for the lifetime of the tab — components and other stores share one wagmi instance
-//client-only — loadWagmi is called from onMounted, never during SSR
+//client-only — load is called from onMounted, never during SSR
 
 export const useWagmiStore = defineStore('wagmiStore', () => {
 

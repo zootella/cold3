@@ -16,7 +16,7 @@ The dev panel (WalletPanel in `components/snippet1/`) is always expanded, showin
 `credentialStore.wallet` (database) and wagmi's connection state (browser) are independent and should stay that way.
 
 - A user can have a proven wallet credential with no active wagmi connection. They proved ownership last week; the credential panel shows their address from the database. Wagmi isn't even loaded yet.
-- A user can have an active wagmi connection with no proven credential. They just connected MetaMask but haven't clicked "Prove Ownership" yet.
+- A user can have an active wagmi connection with no proven credential. Wagmi reconnected from localStorage on mount, but the user hasn't proven yet (or proof was removed while the connection persisted).
 - The two align only during the prove flow: connect (wagmi state) → sign (wagmi state) → verify and save (database state).
 
 ## Two directions of input
@@ -214,9 +214,9 @@ The dev panel always shows two status lines. The proof line shows the proven add
 
 **(10) User rejects connect.** MetaMask popup appears, user clicks Cancel. ProviderNotFoundError or UserRejectedRequestError caught. Message shown. Connect buttons remain.
 
-**(11) User rejects sign.** Connect succeeded, afterConnect chained to prove, sign popup appears, user declines. proveConnectedWallet catches the error, shows "Signature request declined." Connection line now shows connected address + Disconnect (wagmi connected, not proven).
+**(11) User rejects sign.** Connect succeeded, afterConnect chained to prove, sign popup appears, user declines. proveConnectedWallet catches the error, disconnects (shaving the connected-but-unproven dead end), shows "Signature request declined." Both lines reset to clean slate.
 
-**(12) Server rejects signature.** Prove flow completes but server returns BadSignature or Expired. Message shown. Connection line shows connected address.
+**(12) Server rejects signature.** Prove flow completes but server returns BadSignature or Expired. Disconnects (same as sign decline — no reason to stay connected after a failed prove), shows message. Both lines reset to clean slate.
 
 **(13) MetaMask account switch mid-flow.** walletProve1 gets nonce for A. MetaMask switches to B before sign popup. signMessage signs with B's key. walletProve2 sends address A but signature is from B. Server rejects — BadSignature.
 

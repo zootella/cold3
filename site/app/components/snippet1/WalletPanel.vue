@@ -19,12 +19,12 @@ onMounted(async () => {
 async function onRemove() {
 	refInstructionalMessage.value = ''
 	await credentialStore.walletRemove()
-	try { await wagmiStore.disconnect() } catch (e) {}//clear wagmi connection too — no reason to stay connected to a wallet we just unproved
+	await disconnect()//was (proven, connected) → now (none, none); full reset back to connect buttons
 }
 
 async function onDisconnect() {
 	refInstructionalMessage.value = ''
-	try { await wagmiStore.disconnect() } catch (e) {}
+	await disconnect()//was (proven, connected) → now (proven, none); proof survives, connect buttons reappear
 }
 
 async function onInjectedConnect() {
@@ -81,7 +81,7 @@ async function afterConnect(address) {
 	} else if (proven.toLowerCase() === address.toLowerCase()) {
 		//this wallet is already proven — nothing to do
 	} else {
-		try { await wagmiStore.disconnect() } catch (e) {}//different wallet — disconnect it
+		await disconnect()//was (proven A, connected B) → now (proven A, none); reject the mismatch, keep existing proof
 		refInstructionalMessage.value = 'A different wallet is already proven. Remove it first, then connect and prove the new one.'
 	}
 }
@@ -93,7 +93,7 @@ async function proveConnectedWallet(address) {
 	try {
 		signature = await wagmiStore.signMessage({message})
 	} catch (e) {
-		log('⛔ wagmi sign message threw; expected when user declines or times out signature request', look(e))
+		log('⚠️ wagmi sign message threw; expected when user declines or times out signature request', look(e))
 		signError = e
 	}
 
@@ -102,16 +102,28 @@ async function proveConnectedWallet(address) {
 		if (task2.success) {
 			refInstructionalMessage.value = 'Proof verified.'
 		} else if (task2.outcome == 'BadSignature.') {
+			await disconnect()//was (none, connected) → now (none, none); server rejected the signature
 			refInstructionalMessage.value = 'Signature verification failed.'
 		} else if (task2.outcome == 'Expired.') {
+			await disconnect()//was (none, connected) → now (none, none); envelope expired while user was signing
 			refInstructionalMessage.value = 'Request expired. Please try again.'
 		}
 	} else {
+		await disconnect()//was (none, connected) → now (none, none); prove failed so shave the dead-end state back to connect buttons
 		if (anyIncludeAny([signError?.message, signError?.name], ['expired', 'timeout'])) {
 			refInstructionalMessage.value = 'Signature request timed out. Please try again.'
 		} else {
 			refInstructionalMessage.value = 'Signature request declined. Please try again.'
 		}
+	}
+}
+
+async function disconnect() {//best-effort wagmi disconnect
+	try {
+		await wagmiStore.disconnect()//tell wagmi to drop the connection to the wallet extension or WalletConnect relay
+	} catch (e) {//throws if already disconnected, relay unreachable, or WalletConnect WebSocket already dead
+		log('❎ wagmi disconnect threw; expected when connection is already gone or relay is unreachable', look(e))
+		//swallowing is correct: the throw means "already disconnected or can't reach the relay" which is the state we wanted; worst case wagmi's reactive isConnected stays true showing a stale connection line, but that's cosmetic display state, not credential state — no proof or signing action depends on it, and the next connect attempt self-corrects
 	}
 }
 

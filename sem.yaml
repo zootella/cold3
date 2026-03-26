@@ -1,5 +1,5 @@
 summary:
-  generated: 2026mar25.1620.17850
+  generated: 2026mar25.2333.10096
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -204,8 +204,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1008.0 on 2026mar12 0m old
-      current: 3.1016.0 on 2026mar24 0m old
-      latest: 3.1016.0 on 2026mar24 0m old
+      current: 3.1017.0 on 2026mar25 0m old
+      latest: 3.1017.0 on 2026mar25 0m old
     downloads:
       weekly: 17,875,343
       on: 2026feb25.2302.49295
@@ -217,8 +217,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1008.0 on 2026mar12 0m old
-      current: 3.1016.0 on 2026mar24 0m old
-      latest: 3.1016.0 on 2026mar24 0m old
+      current: 3.1017.0 on 2026mar25 0m old
+      latest: 3.1017.0 on 2026mar25 0m old
     downloads:
       weekly: 2,322,525
       on: 2026feb25.2302.49295
@@ -230,8 +230,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1008.0 on 2026mar12 0m old
-      current: 3.1016.0 on 2026mar24 0m old
-      latest: 3.1016.0 on 2026mar24 0m old
+      current: 3.1017.0 on 2026mar25 0m old
+      latest: 3.1017.0 on 2026mar25 0m old
     downloads:
       weekly: 2,822,051
       on: 2026feb25.2302.49295
@@ -243,8 +243,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1008.0 on 2026mar12 0m old
-      current: 3.1016.0 on 2026mar24 0m old
-      latest: 3.1016.0 on 2026mar24 0m old
+      current: 3.1017.0 on 2026mar25 0m old
+      latest: 3.1017.0 on 2026mar25 0m old
     downloads:
       weekly: 7,313,226
       on: 2026feb25.2302.49295
@@ -724,7 +724,7 @@ modules:
       declared: 6.0.0-beta.15 on 2026feb05 1m old 📌 Exact version pinned
       installed: 6.0.0-beta.15 on 2026feb05 1m old
       current: 6.0.0-beta.15 on 2026feb05 1m old
-      latest: 6.2.1 on 2026mar25 0m old
+      latest: 6.2.2 on 2026mar25 0m old
     downloads:
       weekly: 88,145
       on: 2026feb25.2307.15278
@@ -905,10 +905,10 @@ modules:
     note: "front: v4 replacement for tailwindcss-animate"
     from: site
     versions:
-      declared: ^1.4.0 on 2025sep24 5m old
-      installed: 1.4.0 on 2025sep24 5m old
-      current: 1.4.0 on 2025sep24 5m old
-      latest: 1.4.0 on 2025sep24 5m old
+      declared: ^1.4.0 on 2025sep24 6m old
+      installed: 1.4.0 on 2025sep24 6m old
+      current: 1.4.0 on 2025sep24 6m old
+      latest: 1.4.0 on 2025sep24 6m old
     downloads:
       weekly: 7,939,755
       on: 2026feb25.2309.58529
