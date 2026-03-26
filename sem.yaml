@@ -1,5 +1,5 @@
 summary:
-  generated: 2026mar26.2042.36001
+  generated: 2026mar26.2055.31708
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -79,6 +79,7 @@ summary:
       vidstack: "widget: video player; latest tag is behind installed, riding post-1.0 channel"
   📌 Exact version pinned:
     - "@pinia/nuxt"
+    - nuxt-og-image
     - satori
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
@@ -720,9 +721,9 @@ modules:
     note: "og: pinned to v6 beta; v5 broke on nitro 2.13.1 wasm bundling; single maintainer"
     from: site
     versions:
-      declared: ^6.2.6 on 2026mar26 0m old
-      installed: 6.2.6 on 2026mar26 0m old
-      current: 6.2.6 on 2026mar26 0m old
+      declared: 6.0.0-beta.15 on 2026feb05 1m old 📌 Exact version pinned
+      installed: 6.0.0-beta.15 on 2026feb05 1m old
+      current: 6.0.0-beta.15 on 2026feb05 1m old
       latest: 6.2.6 on 2026mar26 0m old
     downloads:
       weekly: 88,145
