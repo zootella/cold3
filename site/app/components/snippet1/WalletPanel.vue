@@ -14,6 +14,7 @@ const refConnecting = ref(false)//true while either connect flow is in progress,
 
 onMounted(async () => {
 	await wagmiStore.load()
+	if (wagmiStore.isConnected && !credentialStore.wallet) await disconnect()//was (none, connected) → now (none, none); stale connection from localStorage with no proof is a dead end — shave it on mount
 })
 
 async function onRemove() {
