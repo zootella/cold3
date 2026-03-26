@@ -1,4 +1,5 @@
 <script setup>
+//ttd march, current granular state and control for smoke testing; need to simplify down to, or replace this with, simpler consumer panel
 
 import {
 anyIncludeAny,

@@ -204,7 +204,7 @@ The dev panel always shows two status lines. The proof line shows the proven add
 
 ## Starting states (page load with prior wagmi session in localStorage)
 
-**(7) Wagmi reconnects, no proof.** wagmiStore.load() reconnects from localStorage. Proof: not proven. Connection: address + Disconnect. User can Disconnect, or Remove+reconnect to prove (reconnecting same address would chain to prove since no proof exists — but connect buttons are hidden while connected).
+**(7) Wagmi reconnects, no proof.** wagmiStore.load() reconnects from localStorage, but onMounted shaves the stale connection immediately — user never sees the dead-end (none, connected) state. Page loads at clean slate: not proven, connect buttons.
 
 **(8) Wagmi reconnects, proof matches.** Both lines show same address. Everything consistent.
 
@@ -243,7 +243,5 @@ The dev panel always shows two status lines. The proof line shows the proven add
 **SIWE migration** — swap custom message format for EIP-4361. Small, self-contained. See analysis above.
 
 **Consumer UI for WalletPanel** — collapse the dev panel's two status lines into a single coherent view. Probably: proven address (or "Connect Wallet" button), with edit mode for Remove. afterConnect logic and wagmiStore carry over unchanged; purely a template question.
-
-**Clean up CredentialPanel wiring** — CredentialPanel still passes `:editing` and `@edit`/`@cancel` to WalletPanel, harmlessly ignored. Dead code to remove.
 
 **Account switching** — decide whether to handle `accountsChanged` (option 1: invalidate, option 2: warning banner, or stay with option 3: ignore). Not urgent — option 3 is safe, just not maximally helpful.
