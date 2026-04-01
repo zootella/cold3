@@ -12,7 +12,9 @@ totpEnroll, totpValidate, totpIdentifier, totpConstants,
 checkTotpCode, checkTotpSecret, checkWallet, Data, isExpired,
 trailCount, trailAdd,
 } from 'icarus'
-import {verifyMessage} from 'viem'
+import {createPublicClient, http} from 'viem'
+import {mainnet} from 'viem/chains'
+import {verifySiweMessage} from 'viem/siwe'
 
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
@@ -218,45 +220,39 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			}
 
 		// 🟠 wallet
-		//wallet proof step 1: page requests nonce to prove it controls an Ethereum address
-		//the nonce and message go into an envelope so we can verify they haven't been tampered with on step 2
+		//wallet proof step 1: page requests nonce for SIWE (Sign-In with Ethereum, EIP-4361)
+		//server generates the nonce and seals it with address+browserHash in an envelope for tamper protection
+		//the page will construct the SIWE message client-side, sign it, and send it back in step 2
 		} else if (action == 'WalletProve1.') {
 			let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
 			await credentialSet({userTag: user.userTag, type: 'Ethereum.', event: 2, f0: address})//event 2: user's browser mentioned this address
 
-			let nonce = Tag()//generate a new random nonce for this enrollment; 21 base62 characters is random enough; MetaMask may show this
-			let message = safefill`Add your wallet with an instant, zero-gas signature of code ${nonce}`//keepin copy short and non-scary for MetaMask's tiny little window
-
-			let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {
-				message: safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`,
-			})
+			let nonce = Tag()//generate a new random nonce; 21 base62 characters; the page will embed this in the SIWE message
+			let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {nonce, address, browserHash})
 			await credentialSet({userTag: user.userTag, type: 'Ethereum.', event: 3, f0: address})//event 3: server challenges this address with a nonce
-			task.walletProve = {message, nonce, envelope}
+			task.walletProve = {nonce, envelope}
 
 		// 🟠 wallet
-		//wallet proof step 2: page calls back with signature of the nonce we gave it
+		//wallet proof step 2: page calls back with a signed SIWE message
+		//the page constructed the SIWE message client-side using createSiweMessage (viem/siwe) and signed it with the wallet
 		} else if (action == 'WalletProve2.') {
 
-			//begin by making sure the page gave us all the parts we need and they look correct
 			let address = checkWallet(body.address).f0
-			let nonce = checkTag(body.nonce)//the page echos back the nonce; we must still be sure it's the same one as from before!
-			let message = checkText(body.message)//should be the same message we sent; must contain the nonce
-			let signature = checkText(body.signature)//signature looks like 0x followed by 130 or 132 base16 characters
+			let message = checkText(body.message)//the SIWE-formatted message the page constructed and signed
+			let signature = checkText(body.signature)//0x followed by 130 or 132 base16 characters
 
-			//confirm (1) the page has given us back the same real valid nonce and message we gave it in step 1 above
+			//open the envelope from step 1 to recover the nonce, address, and browserHash we sealed
 			let letter = await openEnvelope('ProveWallet.', body.envelope, {skipExpirationCheck: true})
 			if (isExpired(letter.expiration)) return {success: false, outcome: 'Expired.'}//user walked away
-			if (!hasTextSame(
-				letter.message,
-				safefill`Ethereum signature: browser ${browserHash}, wallet ${address}, nonce ${nonce}, message ${message}`)) {
-				toss('state', {action, browserHash, letter})//envelope tampered or transplanted
-			}
+			if (letter.browserHash !== browserHash) toss('state', {action, browserHash, letter})//envelope from a different browser
+			if (letter.address !== address) toss('state', {action, browserHash, letter})//envelope was for a different address
 
-			//confirm (2) the message contains the nonce
-			if (!message.includes(nonce)) toss('state', {action, browserHash, nonce, message})//not possible at this point, but included for completeness
-
-			//confirm (3) the signature is of the message, and (4) the address created the signature
-			let valid = await verifyMessage({address, message, signature})//viem confirms those two things for us
+			//verifySiweMessage does it all: parses the SIWE message, checks nonce and address match, verifies the signature
+			//supports both EOA (ecrecover) and smart contract wallets (EIP-1271 on-chain call via the publicClient)
+			let valid = await verifySiweMessage(
+				createPublicClient({chain: mainnet, transport: http(Key('alchemy url, secret'))}),//secret server only Alchemy key with no Origin header requirements, separate from the Origin restricted client side key
+				{message, signature, nonce: letter.nonce, address}
+			)
 			if (!valid) return {success: false, outcome: 'BadSignature.'}
 
 			//save this proven wallet address as a credential for this user; ttd november2025, we'll save that in the database to sign this user up or in, essentially

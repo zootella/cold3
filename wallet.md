@@ -116,73 +116,11 @@ The current pattern is: hide all previous rows of this type, then write the new 
 
 If we stop hiding, queries pull a few more rows but `credentialWalletGet` already filters by `event: 4` — it would still return the right answer. The question is whether the history is worth keeping visible. Not urgent now, but worth revisiting when more credential types use all four events and we want to see the full lifecycle without digging through hidden rows.
 
-# Exploration of SIWE — what's required at an engineering level
+# SIWE (done)
 
-To change our wallet identity flow to support the new SIWE standard, we shouldn't need a new package. viem already ships SIWE utilities under `viem/siwe`:
+Wallet proof uses SIWE (Sign-In with Ethereum, EIP-4361) via `viem/siwe`. The client builds the SIWE message with `createSiweMessage` (dynamic import), the server verifies with `verifySiweMessage` using a server-side Alchemy public client. The envelope mechanism is unchanged — it seals `{nonce, address, browserHash}` for tamper protection across the two-step flow.
 
-```js
-import { createSiweMessage, verifySiweMessage } from 'viem/siwe'
-```
-
-This is the cleanest path since you're already on viem full-stack and it avoids the `siwe` npm package from Spruce, which historically dragged in `ethers` as a dependency and has had Cloudflare Workers compatibility issues with Node APIs.
-
-**What changes on the client:**
-
-Step 1 stays the same — server sends back a nonce. But instead of signing your short friendly message, you construct the SIWE message:
-
-```js
-const message = createSiweMessage({
-  domain: 'cold3.cc',
-  address,
-  statement: 'Sign in to cold3',
-  uri: 'https://cold3.cc',
-  version: '1',
-  chainId: 1,
-  nonce,       // from your server, same as now
-  issuedAt: new Date(),
-})
-// then signMessage({ message }) same as before
-```
-
-That gives you the EIP-4361 formatted string. The wallet signs it, you send the message + signature back to step 2 — same flow.
-
-**What changes on the server (Workers):**
-
-This is where it's actually a pretty minimal diff against what you have. In step 2, instead of checking that the message contains the nonce via string inclusion and then calling `verifyMessage` separately, `verifySiweMessage` does it all in one shot:
-
-```js
-const valid = await verifySiweMessage(publicClient, {
-  message,
-  signature,
-  nonce,            // expected nonce
-  domain: 'cold3.cc',
-  // verifies signature + checks fields match
-})
-```
-
-This replaces both your `verifyMessage` call and your manual nonce/message checks. It confirms the signature is valid, the address matches, and the nonce and domain are what you expect.
-
-Your envelope mechanism can stay as-is — it's still protecting the nonce round-trip. You'd just change what gets sealed inside it to reference the SIWE nonce instead of your custom interpolated string, and confirm the envelope's nonce matches before calling `verifySiweMessage`.
-
-**What you'd gain:**
-
-Domain binding in the signed message, which closes a relay attack. A malicious site can open its own legitimate session with cold3.cc, get its own browserHash cookie and envelope, then hand your wallet the nonce to sign. Your envelope system can't catch this — the envelope is internally consistent because the attacker *is* the client. SIWE stops it because the message has a structured domain field that MetaMask can parse — if the domain doesn't match the site the user is on, MetaMask warns or blocks the signature entirely. The user doesn't need to read the fine print; the wallet enforces it. And on the backend, the server rejects any signature where the domain field doesn't match.
-
-EIP-1271 support for smart contract wallets (Safe, Argent, etc.). Your current `verifyMessage` only works for EOA signatures. `verifySiweMessage` handles both EOAs and contract wallets via the public client, so you're future-proofed as account abstraction adoption grows.
-
-Instant recognition by security auditors and other engineers. Your custom flow is secure but requires reading the code to verify that. SIWE is a known standard — anyone reviewing your auth can confirm correctness at a glance.
-
-Native interop with the WalletConnect ecosystem. Their auth flows speak SIWE, and they're extending it to SIWX (Sign In With X) for multichain. You'd be on the rails instead of adjacent to them.
-
-Structured, parseable messages. If you ever need to extract fields from a signed message downstream (logging, analytics, debugging), you get typed fields for free instead of regex on your custom string.
-
-**What you'd lose:**
-
-Your friendly one-liner in the MetaMask popup. The message becomes a structured SIWE block — more verbose, less conversational. But that structure is what lets MetaMask parse the domain and enforce the mismatch check. A freeform message is friendlier copy, but it's also opaque to the wallet — MetaMask can't reason about it or protect the user. That's the tradeoff: not just friendly vs verbose, but unenforceable vs enforceable.
-
-**Total scope:**
-
-A pomodoro. The data flow is the same, the envelope mechanism stays, you're just swapping the message format and replacing your `verifyMessage` + string-inclusion checks with a single `verifySiweMessage` call. No new dependencies.
+What this gives us: domain binding (MetaMask enforces origin match, closing relay attacks), EIP-1271 smart contract wallet support (Safe, Argent, etc. via on-chain verification), standard recognition by auditors, and native WalletConnect/SIWX interop. Two Alchemy keys: the existing origin-restricted client key, and a new unrestricted server key for the Worker's public client.
 
 # Dev panel test scenarios
 
@@ -240,8 +178,6 @@ The dev panel always shows two status lines. The proof line shows the proven add
 
 # Next steps
 
-**SIWE migration** — swap custom message format for EIP-4361. Small, self-contained. See analysis above.
-
-**Consumer UI for WalletPanel** — collapse the dev panel's two status lines into a single coherent view. Probably: proven address (or "Connect Wallet" button), with edit mode for Remove. afterConnect logic and wagmiStore carry over unchanged; purely a template question.
+**Consumer UI for WalletPanel** — collapse the dev panel's two status lines into a single coherent view. Probably: proven address (or "Connect Wallet" button), with edit mode for Remove. afterConnect logic and wagmiStore carry over unchanged; purely a template question. Deferred until credential system is stable across all types — the dev panel is a diagnostic tool needed for ongoing integration work.
 
 **Account switching** — decide whether to handle `accountsChanged` (option 1: invalidate, option 2: warning banner, or stay with option 3: ignore). Not urgent — option 3 is safe, just not maximally helpful.

@@ -1,4 +1,7 @@
-import {wevmDynamicImport, originApex} from 'icarus'
+
+import {
+wevmDynamicImport, originApex,
+} from 'icarus'
 
 //owns the wagmi lifecycle: dynamic import, config, connection watching, reconnect
 //persists for the lifetime of the tab — components and other stores share one wagmi instance
@@ -76,6 +79,12 @@ async function disconnect() {
 	await wagmi_core.disconnect(_config)
 }
 
+//SIWE — used by WalletPanel to construct the EIP-4361 message before signing
+function createSiweMessage(params) {
+	let {viem_siwe} = _modules
+	return viem_siwe.createSiweMessage(params)
+}
+
 //signing — used by WalletPanel during the prove flow; contacts the local wallet or sends
 //the request to the phone app via the WalletConnect relay; throws on user decline or timeout
 async function signMessage({message}) {
@@ -102,6 +111,7 @@ return {
 	connectInjected,
 	connectWalletConnect,
 	disconnect,
+	createSiweMessage,
 	signMessage,
 	getBlockNumber,
 	readContract,

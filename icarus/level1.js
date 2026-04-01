@@ -52,13 +52,14 @@ export async function uppyDynamicImport() {//🧐🎩
 }
 export async function wevmDynamicImport() {//viem and wagmi are by the same team, https://wevm.dev/
 	if (import.meta.client && !_wevm) {//tree shake viem and wagmi out of the server build entirely
-		let [viem, viem_chains, wagmi_core, wagmi_connectors] = await Promise.all([
+		let [viem, viem_chains, viem_siwe, wagmi_core, wagmi_connectors] = await Promise.all([
 			import('viem'),
 			import('viem/chains'),
+			import('viem/siwe'),
 			import('@wagmi/core'),
 			import('@wagmi/connectors'),//these modules are big, and static imports break the deploy to Cloudflare
 		])
-		_wevm = {viem, viem_chains, wagmi_core, wagmi_connectors}
+		_wevm = {viem, viem_chains, viem_siwe, wagmi_core, wagmi_connectors}
 	}
 	return _wevm
 }

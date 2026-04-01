@@ -15,7 +15,10 @@ const refConnecting = ref(false)//true while either connect flow is in progress,
 
 onMounted(async () => {
 	await wagmiStore.load()
-	if (wagmiStore.isConnected && !credentialStore.wallet) await disconnect()//was (none, connected) → now (none, none); stale connection from localStorage with no proof is a dead end — shave it on mount
+	if (//shave stale connection on mount: either
+		wagmiStore.isConnected &&//no proof (dead end), or
+		credentialStore.wallet?.toLowerCase() != wagmiStore.connectedAddress?.toLowerCase()//proof doesn't match connection
+	) await disconnect()//proven wallet remains, but disconnect on page
 })
 
 async function onRemove() {
@@ -89,7 +92,19 @@ async function afterConnect(address) {
 }
 async function proveConnectedWallet(address) {
 	let task = await credentialStore.walletProve1({address})
-	let {nonce, message, envelope} = task.walletProve
+	let {nonce, envelope} = task.walletProve
+
+	//construct the SIWE message client-side; wallets like MetaMask parse this structured format and enforce domain binding
+	let message = wagmiStore.createSiweMessage({
+		domain: window.location.host,//wallet should not allow a mismatched domain
+		address,
+		statement: 'Sign in with Ethereum',
+		uri: window.location.origin,
+		version: '1',
+		chainId: 1,//ethereum mainnet
+		nonce,//from the server, sealed in the envelope
+		issuedAt: new Date(),//Date object; wagmi will format to ISO 8601 internally
+	})
 
 	let signature, signError
 	try {
@@ -100,7 +115,7 @@ async function proveConnectedWallet(address) {
 	}
 
 	if (signature) {
-		let task2 = await credentialStore.walletProve2({address, nonce, message, signature, envelope})
+		let task2 = await credentialStore.walletProve2({address, message, signature, envelope})
 		if (task2.success) {
 			refInstructionalMessage.value = 'Proof verified.'
 		} else if (task2.outcome == 'BadSignature.') {
