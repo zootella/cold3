@@ -528,6 +528,9 @@ blocks of code have { spaces } while {objectProperty: 'literals'} do not
 omit semicolons that are not necessary to enforce proper code flow
 so if you have two statements on the same line, then you have to have a semicolon between them
 
+trailing commas in object literals and similar multi-line structures
+so you can reorder properties or add new ones without touching the comma on the previous line
+
 string literals in single quotes, unless double or backtick necessary
 in comments, double quotes
 

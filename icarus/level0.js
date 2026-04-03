@@ -1757,7 +1757,7 @@ async function rsaMakeKeys() {//~427 byte public key, ~1,669 byte private key
 		['encrypt', 'decrypt'])
 	return {
 		publicKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.publicKey))}),
-		privateKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.privateKey))})
+		privateKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.privateKey))}),
 	}
 }
 export async function rsaEncrypt(publicKey, plain) {
@@ -1817,74 +1817,42 @@ curveDerive(myPrivateKey, theirPublicKey)  derive a shared 32 byte secret from t
 
 ECDSA and ECDH both use the P-256 curve (~128 bits of security) and SHA-256, and compose with the existing AES-256-GCM symmetric encryption (encryptData/decryptData) for the sign-then-encrypt pattern.
 */
-
 export async function curveMakeSigningKeys() {//generate a new ECDSA P-256 signing keypair, 158 byte public key, 206 byte private key
-	let keys = await curve_createKeys()
+	let keys = await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify'])
 	return {
-		publicKey: Data({text: makeText(await curve_exportKey(keys.publicKey))}),
-		privateKey: Data({text: makeText(await curve_exportKey(keys.privateKey))})
+		publicKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.publicKey))}),
+		privateKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.privateKey))}),
 	}
 }
 export async function curveSign(key, plainText) {//sign plaintext with a private key, returns signature Data
-	let privateKey = await curve_importKey(makeObject(key.text()))
-	return await curve_sign(privateKey, plainText)
+	let privateKey = await crypto.subtle.importKey('jwk', makeObject(key.text()), {name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign'])
+	return Data({buffer: await crypto.subtle.sign({name: 'ECDSA', hash: {name: 'SHA-256'}}, privateKey, Data({text: plainText}).array())})
 }
 export async function curveVerify(key, signatureData, plainText) {//verify a signature with a public key, returns boolean
-	let publicKey = await curve_importKey(makeObject(key.text()))
-	return await curve_verify(publicKey, signatureData, plainText)
+	let publicKey = await crypto.subtle.importKey('jwk', makeObject(key.text()), {name: 'ECDSA', namedCurve: 'P-256'}, true, ['verify'])
+	return await crypto.subtle.verify({name: 'ECDSA', hash: {name: 'SHA-256'}}, publicKey, signatureData.array(), Data({text: plainText}).array())
 }
 export async function curveMakeAgreementKeys() {//generate a new ECDH P-256 keypair for key agreement, 150 byte public key, 224 byte private key
-	let keys = await ecdh_createKeys()
+	let keys = await crypto.subtle.generateKey({name: 'ECDH', namedCurve: 'P-256'}, true, ['deriveKey', 'deriveBits'])
 	return {
-		publicKey: Data({text: makeText(await ecdh_exportKey(keys.publicKey))}),
-		privateKey: Data({text: makeText(await ecdh_exportKey(keys.privateKey))})
+		publicKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.publicKey))}),
+		privateKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.privateKey))}),
 	}
 }
 export async function curveDerive(myPrivateKey, theirPublicKey) {//derive a shared 32 byte secret from my private key and their public key
-	let myPrivate = await ecdh_importKey(makeObject(myPrivateKey.text()))
-	let theirPublic = await ecdh_importKey(makeObject(theirPublicKey.text()))
+	let myPrivate = await crypto.subtle.importKey('jwk', makeObject(myPrivateKey.text()), {name: 'ECDH', namedCurve: 'P-256'}, true, ['deriveKey', 'deriveBits'])
+	let theirPublic = await crypto.subtle.importKey('jwk', makeObject(theirPublicKey.text()), {name: 'ECDH', namedCurve: 'P-256'}, true, [])
 	let bits = await crypto.subtle.deriveBits({name: 'ECDH', public: theirPublic}, myPrivate, 256)
 	return Data({buffer: await crypto.subtle.digest('SHA-256', bits)})//hash the raw x-coordinate to remove bias and produce a uniform key
 }
 noop(async () => {//use to make new keypairs
-	let sign = await curveMakeSigningKeys()
-	let agree = await curveMakeAgreementKeys()
-	log(sign.publicKey.base62(), sign.privateKey.base62())
-	log(agree.publicKey.base62(), agree.privateKey.base62())
+	let s = await curveMakeSigningKeys()
+	let a = await curveMakeAgreementKeys()
+	log(look({
+		'ECDSA P-256 keypair for signing':      {publicKey62: s.publicKey.base62(), privateKey62: s.privateKey.base62()},
+		'ECDH P-256 keypair for key agreement': {publicKey62: a.publicKey.base62(), privateKey62: a.privateKey.base62()},
+	}))
 })
-
-async function curve_createKeys() {//returns {publicKey: CryptoKey, privateKey: CryptoKey}
-	return await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify'])
-}
-//used once, could inline
-async function curve_exportKey(key) {//returns an object with format notes and values named d, x, and y
-	return await crypto.subtle.exportKey('jwk', key)
-}
-//also let's inline
-async function curve_importKey(keyObject) {
-	return await crypto.subtle.importKey('jwk', keyObject, {name: 'ECDSA', namedCurve: 'P-256'}, true, keyObject.key_ops)
-}
-//this one's earned its place
-async function curve_sign(privateKey, plainText) {
-	return Data({buffer: await crypto.subtle.sign({name: 'ECDSA', hash: {name: 'SHA-256'}}, privateKey, Data({text: plainText}).array())})
-}
-//inline
-async function curve_verify(publicKey, signatureData, plainText) {
-	return await crypto.subtle.verify({name: 'ECDSA', hash: {name: 'SHA-256'}}, publicKey, signatureData.array(), Data({text: plainText}).array())
-}
-//inline
-async function ecdh_createKeys() {
-	return await crypto.subtle.generateKey({name: 'ECDH', namedCurve: 'P-256'}, true, ['deriveKey', 'deriveBits'])
-}
-//inline
-async function ecdh_exportKey(key) {
-	return await crypto.subtle.exportKey('jwk', key)
-}
-//hi claude, ok, so for a function like this that's called twice, but inside one single function, we could inline that, but to keep things dry, we could also define the function inside the function. so i think do that for ecdh_exportKey, and curve_exportKey above
-async function ecdh_importKey(keyObject) {
-	return await crypto.subtle.importKey('jwk', keyObject, {name: 'ECDH', namedCurve: 'P-256'}, true, keyObject.key_ops)
-}
-//oh, and this one, too
 
 test(async () => {//sign and verify with fresh keys each run
 	let keys = await curveMakeSigningKeys()
