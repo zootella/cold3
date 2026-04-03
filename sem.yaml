@@ -1,5 +1,5 @@
 summary:
-  generated: 2026apr1.1745.11355
+  generated: 2026apr3.1813.10599
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -112,7 +112,7 @@ summary:
     - vidstack
   downloads:
     5 figure:
-      vidstack: 36,027
+      vidstack: 40,422
       "@auth/sveltekit": 56,716
     6 figure:
       "@sveltejs/adapter-cloudflare": 110,231
@@ -133,16 +133,16 @@ summary:
       reka-ui: 935,466
     7 figure:
       otpauth: 1,121,048
-      nitropack: 1,243,602
       serverless: 1,300,208
       nuxt: 1,441,466
+      nitropack: 1,449,236
       credit-card-type: 1,513,349
       "@sveltejs/kit": 1,715,186
       "@unhead/vue": 1,937,104
       is-mobile: 2,218,045
       "@sveltejs/vite-plugin-svelte": 2,518,906
       "@aws-sdk/client-ses": 2,543,626
-      "@tailwindcss/forms": 2,857,015
+      "@tailwindcss/forms": 3,126,292
       viem: 3,133,557
       "@aws-sdk/client-sns": 3,186,684
       "@sendgrid/mail": 3,417,869
@@ -159,7 +159,7 @@ summary:
       "@vueuse/core": 6,296,835
       "@vitejs/plugin-vue": 6,578,563
       "@electric-sql/pglite": 6,842,562
-      tw-animate-css: 7,939,755
+      tw-animate-css: 8,465,468
       qrcode: 9,351,297
       "@aws-sdk/s3-request-presigner": 9,964,045
     8 figure:
@@ -176,11 +176,11 @@ summary:
       vite: 96,746,056
     9 figure:
       fast-glob: 130,862,800
-      typescript: 131,004,723
       yaml: 137,874,421
       zod: 151,023,710
       nanoid: 154,514,275
       fs-extra: 168,050,408
+      typescript: 179,184,721
       semver: 663,519,138
 modules:
   "@auth/sveltekit":
@@ -204,8 +204,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1021.0 on 2026mar31 0m old
-      latest: 3.1021.0 on 2026mar31 0m old
+      current: 3.1023.0 on 2026apr02 0m old
+      latest: 3.1023.0 on 2026apr02 0m old
     downloads:
       weekly: 22,605,535
       on: 2026apr1.1724.39555
@@ -217,8 +217,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1021.0 on 2026mar31 0m old
-      latest: 3.1021.0 on 2026mar31 0m old
+      current: 3.1023.0 on 2026apr02 0m old
+      latest: 3.1023.0 on 2026apr02 0m old
     downloads:
       weekly: 2,543,626
       on: 2026apr1.1724.39555
@@ -230,8 +230,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1021.0 on 2026mar31 0m old
-      latest: 3.1021.0 on 2026mar31 0m old
+      current: 3.1023.0 on 2026apr02 0m old
+      latest: 3.1023.0 on 2026apr02 0m old
     downloads:
       weekly: 3,186,684
       on: 2026apr1.1724.39555
@@ -243,8 +243,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1021.0 on 2026mar31 0m old
-      latest: 3.1021.0 on 2026mar31 0m old
+      current: 3.1023.0 on 2026apr02 0m old
+      latest: 3.1023.0 on 2026apr02 0m old
     downloads:
       weekly: 9,964,045
       on: 2026apr1.1724.39555
@@ -257,7 +257,7 @@ modules:
       declared: ^0.3.15 on 2026jan15 2m old
       installed: 0.3.16 on 2026mar10 0m old 🐣 Pre-1.0 version installed
       current: 0.3.16 on 2026mar10 0m old
-      latest: 0.4.2 on 2026mar25 0m old
+      latest: 0.4.3 on 2026apr02 0m old
     downloads:
       weekly: 6,842,562
       on: 2026mar31.1618.27326
@@ -402,8 +402,8 @@ modules:
       current: 0.5.11 on 2025dec17 3m old
       latest: 0.5.11 on 2025dec17 3m old
     downloads:
-      weekly: 2,857,015
-      on: 2026feb25.2309.58529
+      weekly: 3,126,292
+      on: 2026apr3.0155.3296
   "@tailwindcss/vite":
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
@@ -438,10 +438,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.1.0 on 2025dec02 3m old
-      installed: 5.1.0 on 2025dec02 3m old
-      current: 5.1.0 on 2025dec02 3m old
-      latest: 5.1.0 on 2025dec02 3m old
+      declared: ^5.1.0 on 2025dec02 4m old
+      installed: 5.1.0 on 2025dec02 4m old
+      current: 5.1.0 on 2025dec02 4m old
+      latest: 5.1.0 on 2025dec02 4m old
     downloads:
       weekly: 309,161
       on: 2026mar31.1618.27326
@@ -453,10 +453,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.2.0 on 2025dec02 3m old
-      installed: 5.2.0 on 2025dec02 3m old
-      current: 5.2.0 on 2025dec02 3m old
-      latest: 5.2.0 on 2025dec02 3m old
+      declared: ^5.2.0 on 2025dec02 4m old
+      installed: 5.2.0 on 2025dec02 4m old
+      current: 5.2.0 on 2025dec02 4m old
+      latest: 5.2.0 on 2025dec02 4m old
     downloads:
       weekly: 663,947
       on: 2026mar31.1618.27326
@@ -617,10 +617,10 @@ modules:
     note: "build: used by build.js and size.js for net23.zip packaging"
     from: net23
     versions:
-      declared: ^11.3.4 on 2026mar03 0m old
-      installed: 11.3.4 on 2026mar03 0m old
-      current: 11.3.4 on 2026mar03 0m old
-      latest: 11.3.4 on 2026mar03 0m old
+      declared: ^11.3.4 on 2026mar03 1m old
+      installed: 11.3.4 on 2026mar03 1m old
+      current: 11.3.4 on 2026mar03 1m old
+      latest: 11.3.4 on 2026mar03 1m old
     downloads:
       weekly: 168,050,408
       on: 2026apr1.1724.39555
@@ -697,11 +697,11 @@ modules:
     versions:
       declared: ^2.13.1 on 2026jan15 2m old
       installed: 2.13.2 on 2026mar20 0m old
-      current: 2.13.2 on 2026mar20 0m old
-      latest: 2.13.2 on 2026mar20 0m old
+      current: 2.13.3 on 2026apr02 0m old
+      latest: 2.13.3 on 2026apr02 0m old
     downloads:
-      weekly: 1,243,602
-      on: 2026feb25.2309.58529
+      weekly: 1,449,236
+      on: 2026apr3.0155.3296
   nuxt:
     homepage: https://nuxt.com
     description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
@@ -734,10 +734,10 @@ modules:
     note: "nuxt: fetch wrapper; in icarus so lambda code can use it directly without nuxt"
     from: icarus
     versions:
-      declared: ^1.5.1 on 2025nov01 4m old
-      installed: 1.5.1 on 2025nov01 4m old
-      current: 1.5.1 on 2025nov01 4m old
-      latest: 1.5.1 on 2025nov01 4m old
+      declared: ^1.5.1 on 2025nov01 5m old
+      installed: 1.5.1 on 2025nov01 5m old
+      current: 1.5.1 on 2025nov01 5m old
+      latest: 1.5.1 on 2025nov01 5m old
     downloads:
       weekly: 5,965,003
       on: 2026mar31.1618.27326
@@ -829,8 +829,8 @@ modules:
     versions:
       declared: ^4.33.0 on 2026feb19 1m old
       installed: 4.33.0 on 2026feb19 1m old
-      current: 4.33.2 on 2026apr01 0m old
-      latest: 4.33.2 on 2026apr01 0m old
+      current: 4.33.3 on 2026apr02 0m old
+      latest: 4.33.3 on 2026apr02 0m old
     downloads:
       weekly: 1,300,208
       on: 2026apr1.1724.39555
@@ -910,8 +910,8 @@ modules:
       current: 1.4.0 on 2025sep24 6m old
       latest: 1.4.0 on 2025sep24 6m old
     downloads:
-      weekly: 7,939,755
-      on: 2026feb25.2309.58529
+      weekly: 8,465,468
+      on: 2026apr3.0155.3296
   twilio:
     homepage: https://github.com/twilio/twilio-node#readme
     description: A Twilio helper library
@@ -936,8 +936,8 @@ modules:
       current: 5.9.3 on 2025sep30 6m old
       latest: 6.0.2 on 2026mar23 0m old 🎁 Major new version available
     downloads:
-      weekly: 131,004,723
-      on: 2026feb25.2309.58529
+      weekly: 179,184,721
+      on: 2026apr3.0155.3296
   unstorage:
     homepage: https://unstorage.unjs.io
     description: Universal Storage Layer
@@ -962,8 +962,8 @@ modules:
       current: 1.12.13 on 2025feb16 13m old
       latest: 0.6.15 on 2024apr19 23m old 🩸 Latest tag is behind installed
     downloads:
-      weekly: 36,027
-      on: 2026feb25.2309.58529
+      weekly: 40,422
+      on: 2026apr3.0155.3296
   viem:
     homepage: https://viem.sh
     description: TypeScript Interface for Ethereum
@@ -1004,8 +1004,8 @@ modules:
     versions:
       declared: ^3.5.27 on 2026jan19 2m old
       installed: 3.5.31 on 2026mar25 0m old
-      current: 3.5.31 on 2026mar25 0m old
-      latest: 3.5.31 on 2026mar25 0m old
+      current: 3.5.32 on 2026apr03 0m old
+      latest: 3.5.32 on 2026apr03 0m old
     downloads:
       weekly: 11,357,396
       on: 2026apr1.1724.39555
@@ -1034,8 +1034,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 1m old
       installed: 4.77.0 on 2026mar24 0m old
-      current: 4.79.0 on 2026mar31 0m old
-      latest: 4.79.0 on 2026mar31 0m old
+      current: 4.80.0 on 2026apr02 0m old
+      latest: 4.80.0 on 2026apr02 0m old
     downloads:
       weekly: 5,678,310
       on: 2026apr1.1745.11355

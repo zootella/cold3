@@ -1747,33 +1747,33 @@ test(async () => {
 // |_|  |___/\__,_|
 //                 
 
-async function rsaMakeKeys() {//returns public and private keys in base62
+async function rsaMakeKeys() {//~427 byte public key, ~1,669 byte private key
 	let keys = await crypto.subtle.generateKey({
-		name: 'RSA-OAEP',//rsa encryption scheme with Optimal Asymmetric Encryption Padding
+		name: 'RSA-OAEP',//Rivest-Shamir-Adleman (1977) encryption with Optimal Asymmetric Encryption Padding
 		modulusLength: 2048,//modulus length in bits
 		publicExponent: new Uint8Array([1, 0, 1]),//standard public exponent 65537 or 0x10001
 		hash: {name: 'SHA-256'}},
 		true,
 		['encrypt', 'decrypt'])
 	return {
-		keyPublicBase62: objectToBase62(await crypto.subtle.exportKey('jwk', keys.publicKey)),
-		keyPrivateBase62: objectToBase62(await crypto.subtle.exportKey('jwk', keys.privateKey))
+		publicKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.publicKey))}),
+		privateKey: Data({text: makeText(await crypto.subtle.exportKey('jwk', keys.privateKey))})
 	}
 }
-export async function rsaEncrypt(keyPublicBase62, plainText) {
-	let keyPublicImported = await rsa_importKey(base62ToObject(keyPublicBase62), ['encrypt'])
+export async function rsaEncrypt(publicKey, plain) {
+	let imported = await rsa_importKey(makeObject(publicKey.text()), ['encrypt'])
 	let b = await crypto.subtle.encrypt(
 		{name: 'RSA-OAEP'},
-		keyPublicImported,
-		Data({text: plainText}).array())
-	return Data({buffer: b}).base62()
+		imported,
+		plain.array())
+	return Data({buffer: b})
 }
-export async function rsaDecrypt(keyPrivateBase62, cipherBase62) {
-	let keyPrivateImported = await rsa_importKey(base62ToObject(keyPrivateBase62), ['decrypt'])
+export async function rsaDecrypt(privateKey, cipher) {
+	let imported = await rsa_importKey(makeObject(privateKey.text()), ['decrypt'])
 	let b = await crypto.subtle.decrypt({name: 'RSA-OAEP'},
-		keyPrivateImported,
-		Data({base62: cipherBase62}).array())
-	return Data({buffer: b}).text()
+		imported,
+		cipher.array())
+	return Data({buffer: b})
 }
 async function rsa_importKey(key, use) {
 	return await crypto.subtle.importKey(
@@ -1783,118 +1783,250 @@ async function rsa_importKey(key, use) {
 		true,
 		use)
 }
-export function objectToBase62(o) { return Data({text: makeText(o)}).base62() }
-export function base62ToObject(s) { return makeObject(Data({base62: s}).text()) }
 noop(async () => {
-	let plainText = (await createKey()).base62()//recall that public and private key encryption is for encrypting symmetric keys, not long messages
+	let plain = await createKey()//recall that public and private key encryption is for encrypting symmetric keys, not long messages
 	let t1 = Now()
 	let keys = await rsaMakeKeys()
-	let encrypted = await rsaEncrypt(keys.keyPublicBase62, plainText)
+	let encrypted = await rsaEncrypt(keys.publicKey, plain)
 	let t2 = Now()
-	let decrypted = await rsaDecrypt(keys.keyPrivateBase62, encrypted)
+	let decrypted = await rsaDecrypt(keys.privateKey, encrypted)
 	let t3 = Now()
-	ok(decrypted == plainText)
+	ok(decrypted.base62() == plain.base62())
 	log(
 		'', `${t2-t1}ms to make a key and encrypt; ${t3-t2}ms to decrypt`,//50-150ms, and 1-2ms
-		'', 'plainText:',        plainText,
-		'', 'keyPublicBase62:',  keys.keyPublicBase62,
-		'', 'keyPrivateBase62:', keys.keyPrivateBase62,
-		'', 'encrypted:', encrypted,
-		'', 'decrypted:', decrypted)
+		'', 'plain:', plain.base62(),
+		'', 'encrypted:', encrypted.base62(),
+		'', 'decrypted:', decrypted.base62())
 })
 
-//      _             
-//  ___(_) __ _ _ __  
-// / __| |/ _` | '_ \ 
-// \__ \ | (_| | | | |
-// |___/_|\__, |_| |_|
-//        |___/       
+//   ___ _   _ _ ____   _____ 
+//  / __| | | | '__\ \ / / _ \
+// | (__| |_| | |   \ V /  __/
+//  \___|\__,_|_|    \_/ \___|
+//                            
 
-async function curveCreateKeys() {
+/*
+The curve suite: ECDSA (Elliptic Curve Digital Signature Algorithm) signing + ECDH (Elliptic Curve Diffie-Hellman, after Whitfield Diffie and Martin Hellman's 1976 key exchange) key agreement, both on the NIST P-256 curve, all on crypto.subtle.
+
+Five exported functions, all taking and returning Data objects:
+curveMakeSigningKeys()                     generate an ECDSA P-256 keypair for signing, returns {publicKey, privateKey}
+curveSign(key, text)                       sign plaintext with a private key, returns signature Data
+curveVerify(key, signature, text)          verify a signature with a public key, returns boolean
+curveMakeAgreementKeys()                   generate an ECDH P-256 keypair for key agreement, returns {publicKey, privateKey}
+curveDerive(myPrivateKey, theirPublicKey)  derive a shared 32 byte secret from two parties' keys
+
+ECDSA and ECDH both use the P-256 curve (~128 bits of security) and SHA-256, and compose with the existing AES-256-GCM symmetric encryption (encryptData/decryptData) for the sign-then-encrypt pattern.
+*/
+
+export async function curveMakeSigningKeys() {//generate a new ECDSA P-256 signing keypair, 158 byte public key, 206 byte private key
 	let keys = await curve_createKeys()
 	return {
-		keyPublicBase62: objectToBase62(await curve_exportKey(keys.publicKey)),
-		keyPrivateBase62: objectToBase62(await curve_exportKey(keys.privateKey))
+		publicKey: Data({text: makeText(await curve_exportKey(keys.publicKey))}),
+		privateKey: Data({text: makeText(await curve_exportKey(keys.privateKey))})
 	}
 }
-noop(async () => {//use to make a new keypair for the worker and lambda
-	log(look(await curveCreateKeys()))
-})
-export async function curveSign(keyPrivateBase62, plainText) {
-	let privateKeyObject = base62ToObject(keyPrivateBase62)
-	let privateKey = await curve_importKey(privateKeyObject)
+export async function curveSign(key, plainText) {//sign plaintext with a private key, returns signature Data
+	let privateKey = await curve_importKey(makeObject(key.text()))
 	return await curve_sign(privateKey, plainText)
 }
-export async function curveVerify(keyPublicBase62, signatureData, plainText) {
-	let publicKeyObject = base62ToObject(keyPublicBase62)
-	let publicKey = await curve_importKey(publicKeyObject)
+export async function curveVerify(key, signatureData, plainText) {//verify a signature with a public key, returns boolean
+	let publicKey = await curve_importKey(makeObject(key.text()))
 	return await curve_verify(publicKey, signatureData, plainText)
 }
-test(async () => {//this test makes a new key pair each time it runs
-
-	//sign a message
-	let keys = await curveCreateKeys()
-	let trueMessage = 'here is a plaintext message to sign. file 456789, please.'
-	let signatureData = await curveSign(keys.keyPrivateBase62, trueMessage)
-	ok(signatureData.size() == 64)//signature is 64 bytes, around 87 base62 characters
-	let signatureDataRemade = Data({base62: signatureData.base62()})//go through text like we sent it over the wire
-
-	//check for a valid signature
-	ok(await curveVerify(keys.keyPublicBase62, signatureDataRemade, trueMessage))
-
-	//reject transplated signature
-	let signatureDataWrong = Data({base16: '701a04a33314603371b7833301191deea5cf1d70ce93ffb0707fdb8ca400e1132351ac2e11bb12472d2992e61d3d668e5442caa620d3aaf34db61d26aeffbad9'})
-	ok(!(await curveVerify(keys.keyPublicBase62, signatureDataWrong, trueMessage)))
-
-	//reject message tampering
-	let wrongMessage = 'here is a plaintext message to sign. file 111222, please.'
-	ok(!(await curveVerify(keys.keyPublicBase62, signatureDataRemade, wrongMessage)))
-})
-test(async () => {//this test imports premade keys, as they will come from access secrets
-
-	const privateKeyBase62 = 'Up9YScOXEX9IBJ8sDX8h8bIXEX9KD75pCbP5JrkQINCtKtoQSMapTrW4BMkQU49ZNqLbMcebTtzpP6eQDa5u8XlXPNWr8YerScLaB29gPNaVRu0q8YeR8cDePtvXNHlXQuGw8YdXGKCXB29v8YdXUYaaDN1qJZ5JRKG8MbeQPtwxOa9bGLDrG3PpCrjpHNIoLN9KSJ9uGLP0Sp8h8cZXEX8uGb9pP4wwDbLeCLGoH3L4H6PmRNG2Jc5QIqLoHZoKPMwFSKGgKsLmMYag8cr'
-	const publicKeyBase62 = 'Up9YScOXEX9IBJ8sDX8h8bLvT28xT79sPHlXQtLwNtiS7CXEahXTbLpQMPw8arh8bkrUH8x8ZL38XlXU28x8cdwPJLlCrw0Kts4H5efMbTmUb9HPZLJT4ItSYD8CZarCLLpL74pTrLMINCXB29w8YdXDrPXSbGEUJPaQJ5KSKjsG4WbRbsrIZwoMZCsSKeCL6LmJu54QsDLRadwQp9iI'
-
-	let trueMessage = 'another plaintext message. file 852963, please.'
-	let wrongMessage = 'another plaintext message. file 333444, please.'
-
-	let premadeSignatureData = Data(
-		{base62: '5pinSlkiWpC73iszJtg5QUsFKcAfxP5lQaOnzEP6MeJUWiQ7ihLRNUpKzF6QiS5Zl6OhksO9Zz9jmoMSFRXlIcQI'})
-	let wrongSignatureData = Data(
-		{base62: 'ZLOrDBRVT4gf5FS53He0WFNqCKp4tI2rY9fVYf5bG7ZqGQyHFjM97YCHr660soNiVvxPUuU1KkZuhUtwAia3k8'})
-
-	//confirm the premade keys work to sign and verify, making a new signature
-	let liveSignatureData = await curveSign(privateKeyBase62, trueMessage)
-	ok(await curveVerify(publicKeyBase62, liveSignatureData, trueMessage))//valid
-	ok(!(await curveVerify(publicKeyBase62, wrongSignatureData, trueMessage)))//wrong signature
-	ok(!(await curveVerify(publicKeyBase62, liveSignatureData, wrongMessage)))//tampered message
-
-	//lastly, check valid and invalid with premade keys and signature, all from base62 text pasted above
-	ok(await curveVerify(publicKeyBase62, premadeSignatureData, trueMessage))
-	ok(!(await curveVerify(publicKeyBase62, wrongSignatureData, trueMessage)))
-	ok(!(await curveVerify(publicKeyBase62, premadeSignatureData, wrongMessage)))
+export async function curveMakeAgreementKeys() {//generate a new ECDH P-256 keypair for key agreement, 150 byte public key, 224 byte private key
+	let keys = await ecdh_createKeys()
+	return {
+		publicKey: Data({text: makeText(await ecdh_exportKey(keys.publicKey))}),
+		privateKey: Data({text: makeText(await ecdh_exportKey(keys.privateKey))})
+	}
+}
+export async function curveDerive(myPrivateKey, theirPublicKey) {//derive a shared 32 byte secret from my private key and their public key
+	let myPrivate = await ecdh_importKey(makeObject(myPrivateKey.text()))
+	let theirPublic = await ecdh_importKey(makeObject(theirPublicKey.text()))
+	let bits = await crypto.subtle.deriveBits({name: 'ECDH', public: theirPublic}, myPrivate, 256)
+	return Data({buffer: await crypto.subtle.digest('SHA-256', bits)})//hash the raw x-coordinate to remove bias and produce a uniform key
+}
+noop(async () => {//use to make new keypairs
+	let sign = await curveMakeSigningKeys()
+	let agree = await curveMakeAgreementKeys()
+	log(sign.publicKey.base62(), sign.privateKey.base62())
+	log(agree.publicKey.base62(), agree.privateKey.base62())
 })
 
 async function curve_createKeys() {//returns {publicKey: CryptoKey, privateKey: CryptoKey}
 	return await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify'])
 }
+//used once, could inline
 async function curve_exportKey(key) {//returns an object with format notes and values named d, x, and y
 	return await crypto.subtle.exportKey('jwk', key)
 }
+//also let's inline
 async function curve_importKey(keyObject) {
 	return await crypto.subtle.importKey('jwk', keyObject, {name: 'ECDSA', namedCurve: 'P-256'}, true, keyObject.key_ops)
 }
+//this one's earned its place
 async function curve_sign(privateKey, plainText) {
 	return Data({buffer: await crypto.subtle.sign({name: 'ECDSA', hash: {name: 'SHA-256'}}, privateKey, Data({text: plainText}).array())})
 }
+//inline
 async function curve_verify(publicKey, signatureData, plainText) {
-	return await crypto.subtle.verify({ name: 'ECDSA', hash: {name: 'SHA-256'}}, publicKey, signatureData.array(), Data({text: plainText}).array())
+	return await crypto.subtle.verify({name: 'ECDSA', hash: {name: 'SHA-256'}}, publicKey, signatureData.array(), Data({text: plainText}).array())
 }
-noop(async () => {//see what these objects look like before we stringify and base62 them
-	let keys = await curve_createKeys()
-	let exportedPublicKey = await curve_exportKey(keys.publicKey)
-	let exportedPrivateKey = await curve_exportKey(keys.privateKey)
-	log(look({keys, exportedPublicKey, exportedPrivateKey}))
+//inline
+async function ecdh_createKeys() {
+	return await crypto.subtle.generateKey({name: 'ECDH', namedCurve: 'P-256'}, true, ['deriveKey', 'deriveBits'])
+}
+//inline
+async function ecdh_exportKey(key) {
+	return await crypto.subtle.exportKey('jwk', key)
+}
+//hi claude, ok, so for a function like this that's called twice, but inside one single function, we could inline that, but to keep things dry, we could also define the function inside the function. so i think do that for ecdh_exportKey, and curve_exportKey above
+async function ecdh_importKey(keyObject) {
+	return await crypto.subtle.importKey('jwk', keyObject, {name: 'ECDH', namedCurve: 'P-256'}, true, keyObject.key_ops)
+}
+//oh, and this one, too
+
+test(async () => {//sign and verify with fresh keys each run
+	let keys = await curveMakeSigningKeys()
+	let trueMessage = 'here is a plaintext message to sign. file 456789, please.'
+	let signatureData = await curveSign(keys.privateKey, trueMessage)
+	ok(signatureData.size() == 64)//signature is 64 bytes, around 87 base62 characters
+	let signatureDataRemade = Data({base62: signatureData.base62()})//go through text like we sent it over the wire
+
+	ok(await curveVerify(keys.publicKey, signatureDataRemade, trueMessage))
+
+	let signatureDataWrong = Data({base16: '701a04a33314603371b7833301191deea5cf1d70ce93ffb0707fdb8ca400e1132351ac2e11bb12472d2992e61d3d668e5442caa620d3aaf34db61d26aeffbad9'})
+	ok(!(await curveVerify(keys.publicKey, signatureDataWrong, trueMessage)))//transplanted signature
+
+	let wrongMessage = 'here is a plaintext message to sign. file 111222, please.'
+	ok(!(await curveVerify(keys.publicKey, signatureDataRemade, wrongMessage)))//tampered message
+})
+test(async () => {//sign and verify with premade keys, as they will come from access secrets
+	let privateKeyData = Data({base62: 'Up9YScOXEX9IBJ8sDX8h8bIXEX9KD75pCbP5JrkQINCtKtoQSMapTrW4BMkQU49ZNqLbMcebTtzpP6eQDa5u8XlXPNWr8YerScLaB29gPNaVRu0q8YeR8cDePtvXNHlXQuGw8YdXGKCXB29v8YdXUYaaDN1qJZ5JRKG8MbeQPtwxOa9bGLDrG3PpCrjpHNIoLN9KSJ9uGLP0Sp8h8cZXEX8uGb9pP4wwDbLeCLGoH3L4H6PmRNG2Jc5QIqLoHZoKPMwFSKGgKsLmMYag8cr'})//206 bytes
+	let publicKeyData = Data({base62: 'Up9YScOXEX9IBJ8sDX8h8bLvT28xT79sPHlXQtLwNtiS7CXEahXTbLpQMPw8arh8bkrUH8x8ZL38XlXU28x8cdwPJLlCrw0Kts4H5efMbTmUb9HPZLJT4ItSYD8CZarCLLpL74pTrLMINCXB29w8YdXDrPXSbGEUJPaQJ5KSKjsG4WbRbsrIZwoMZCsSKeCL6LmJu54QsDLRadwQp9iI'})//158 bytes
+
+	let trueMessage = 'another plaintext message. file 852963, please.'
+	let wrongMessage = 'another plaintext message. file 333444, please.'
+
+	let premadeSignatureData = Data({base62: '5pinSlkiWpC73iszJtg5QUsFKcAfxP5lQaOnzEP6MeJUWiQ7ihLRNUpKzF6QiS5Zl6OhksO9Zz9jmoMSFRXlIcQI'})
+	let wrongSignatureData = Data({base62: 'ZLOrDBRVT4gf5FS53He0WFNqCKp4tI2rY9fVYf5bG7ZqGQyHFjM97YCHr660soNiVvxPUuU1KkZuhUtwAia3k8'})
+
+	let liveSignatureData = await curveSign(privateKeyData, trueMessage)
+	ok(await curveVerify(publicKeyData, liveSignatureData, trueMessage))//valid
+	ok(!(await curveVerify(publicKeyData, wrongSignatureData, trueMessage)))//wrong signature
+	ok(!(await curveVerify(publicKeyData, liveSignatureData, wrongMessage)))//tampered message
+
+	ok(await curveVerify(publicKeyData, premadeSignatureData, trueMessage))
+	ok(!(await curveVerify(publicKeyData, wrongSignatureData, trueMessage)))
+	ok(!(await curveVerify(publicKeyData, premadeSignatureData, wrongMessage)))
+})
+test(async () => {//alice and bob derive the same shared secret from each other's public keys
+	let alice = await curveMakeAgreementKeys()
+	let bob = await curveMakeAgreementKeys()
+
+	let secretAlice = await curveDerive(alice.privateKey, bob.publicKey)
+	let secretBob = await curveDerive(bob.privateKey, alice.publicKey)
+	ok(secretAlice.base62() == secretBob.base62())//same shared secret from both sides
+	ok(secretAlice.size() == 32)//32 bytes, ready to use as an AES-256 key
+})
+test(async () => {//premade ecdh keys produce the expected shared secret
+	let alicePrivate = Data({base62: 'Up9gPNaVRu0q8YeR8bGaSbatPKkaUH8h8bGaSbatPK9eT7CXNHlXPNWr8YerScLaB29gT7ZXEX95Ip8h8cjXEX9MQJDIGNPCTtTZGtLwQpsZSMaKTaTwHMItG6iGZiPsIrOs0LIY0lHrLgD7SXB29w8YdXIu8wUcWrM50fGriIHsAK70hNsTwT3aYCZadQaGuE4IuKbLDTqamPrLMC3jXB29YScOXEX9IBJ8sDX8h8bIXEX8kDqT8HteuIqGBD5WxNriPZPESZk2H6iNtPwGMD2J3KtC4PAUZ5xK4ecINSXVI'})//224 bytes
+	let bobPublic = Data({base62: 'Up9gPNaVRu0q8YeRNHlXPNWr8YerScLaB29gT7ZXEX95Ip8h8cjXEX8lT4vkPMZsLZ9KTYWgTbzkObCoHboqRa08IM8kD5TKIsaeR3abP4okLu9c8XlXUH8x8Y0CL6LbKb9gLcarOZW9MY0IDLiPJLpPJWxSNLgObzoTbobJKCrHreYGYPg8XlXOu9t8YdXK2rpDJOXVI'})//150 bytes
+	let bobPrivate = Data({base62: 'Up9gPNaVRu0q8YeR8bGaSbatPKkaUH8h8bGaSbatPK9eT7CXNHlXPNWr8YerScLaB29gT7ZXEX95Ip8h8cjXEX8lT4vkPMZsLZ9KTYWgTbzkObCoHboqRa08IM8kD5TKIsaeR3abP4okLu9c8XlXUH8x8Y0CL6LbKb9gLcarOZW9MY0IDLiPJLpPJWxSNLgObzoTbobJKCrHreYGYPg8XlXOu9t8YdXK2rpDJOXB29Z8YdXTN5eGuDXHNeJOKsDQZDZH7aEMcTXJsDQC5L9D30hRZLrM6GMD4ZqDaeeRp9iI'})//224 bytes
+	let alicePublic = Data({base62: 'Up9gPNaVRu0q8YeRNHlXPNWr8YerScLaB29gT7ZXEX95Ip8h8cjXEX9MQJDIGNPCTtTZGtLwQpsZSMaKTaTwHMItG6iGZiPsIrOs0LIY0lHrLgD7SXB29w8YdXIu8wUcWrM50fGriIHsAK70hNsTwT3aYCZadQaGuE4IuKbLDTqamPrLMC3jXB29YScOXEX9IBJ8sDX9iI'})//150 bytes
+
+	let secretAlice = await curveDerive(alicePrivate, bobPublic)
+	let secretBob = await curveDerive(bobPrivate, alicePublic)
+	ok(secretAlice.base62() == secretBob.base62())
+	ok(secretAlice.base62() == 'Y0N4czvmiVylHBsDiLdSMdoYiTQ394MYYLXgsgryNar8')//known value from these keys
+
+	let evePrivate = Data({base62: 'Up9gPNaVRu0q8YeR8bGaSbatPKkaUH8h8bGaSbatPK9eT7CXNHlXPNWr8YerScLaB29gT7ZXEX95Ip8h8cjXEX9qTJLlLK5pUbsIQtwuE2s5RNGtRuLrSZ58RbiS4zrMKwDL3LnE6ohL6DHRp8h8cZXEX8vT4wQKcTICtStTZkLTK57Qq5XQtDAIuWePbPQGr5GHbSqJ3aMDaLHBKLY8XlXOu9t8YdXK2rpDJOXB29Z8YdXSKadLpsfTsOvLZakHYaBINW6DLDsPKDMRcDXRKw2PtouQ4sgHuLEPK9eE29iI'})//224 bytes
+	let secretEve = await curveDerive(evePrivate, bobPublic)
+	ok(secretEve.base62() != secretAlice.base62())//eve can't derive the same secret
+})
+
+test(async () => {//alice signs an open letter that anyone can verify is from her
+	let alice = await curveMakeSigningKeys()
+
+	let letter = 'To whom it may concern: the bridge grant is approved and construction may begin.'
+	let signature = await curveSign(alice.privateKey, letter)
+
+	ok(await curveVerify(alice.publicKey, signature, letter))//anyone with alice's public key can verify
+
+	let tampered = 'To whom it may concern: the bridge grant is denied.'
+	ok(!(await curveVerify(alice.publicKey, signature, tampered)))//tampered letter fails
+})
+test(async () => {//alice sends bob a private message; bob knows only alice could have sent it
+	let aliceSign = await curveMakeSigningKeys()//alice's signing keypair (ECDSA)
+	let aliceAgree = await curveMakeAgreementKeys()//alice's key agreement keypair (ECDH)
+	let bobAgree = await curveMakeAgreementKeys()//bob's key agreement keypair (ECDH)
+
+	//alice composes and signs her message
+	let message = 'Dear Bob, meet me at the library at noon.'
+	let signature = await curveSign(aliceSign.privateKey, message)
+
+	//alice derives the shared secret with bob and encrypts message+signature together
+	let sharedKey = await curveDerive(aliceAgree.privateKey, bobAgree.publicKey)
+	let envelope = await encryptData(sharedKey, Data({text: makeText({message, signature: signature.base62()})}))
+
+	//bob derives the same shared secret and opens the envelope
+	let sharedKeyBob = await curveDerive(bobAgree.privateKey, aliceAgree.publicKey)
+	let opened = makeObject((await decryptData(sharedKeyBob, envelope)).text())
+	ok(opened.message == message)//bob reads the message
+
+	//bob verifies alice's signature to confirm she wrote it
+	ok(await curveVerify(aliceSign.publicKey, Data({base62: opened.signature}), opened.message))
+})
+
+/*
+RSA vs Elliptic Curve: Choosing between the two approaches to send a private message.
+
+RSA was published in 1977 by Ron Rivest, Adi Shamir, and Leonard Adleman, deriving its security from the difficulty of factoring large numbers. Elliptic Curve Cryptography (ECC) was independently proposed by Neal Koblitz and Victor Miller in 1985, using the discrete logarithm problem on elliptic curves to achieve equivalent security with dramatically smaller keys. Both are available in the Web Crypto API (crypto.subtle), both are secure, and both work in browsers, Node, and Workers.
+
+The key difference is setup: RSA lets Alice send Bob a private message knowing only Bob's public key -- Alice needs no keypair of her own. She encrypts with Bob's public key, Bob decrypts with his private key, and that's it. Alice is cryptographically anonymous in the exchange. But this means Bob has no proof who sent the message -- anyone who knows his public key could have encrypted it. To add authentication, Alice would also need a separate signing keypair (ECDSA, the Elliptic Curve Digital Signature Algorithm).
+
+With the Elliptic Curve approach using ECDH (Elliptic Curve Diffie-Hellman key agreement), both Alice and Bob need keypairs. They each derive the same shared secret from their own private key and the other's public key, then use that shared secret with AES to encrypt and decrypt. Authentication is implicit -- only Alice and Bob's specific keys could produce that shared secret. For non-repudiation (proving to a third party that Alice sent it), she also signs with ECDSA.
+
+So RSA is simpler when you just want to drop a message in someone's mailbox -- the sender doesn't need to be set up. In practice though, most systems already have users with keypairs, so this advantage rarely applies. Once both parties have keys, the Elliptic Curve approach is preferred: P-256 keys are 150-224 bytes vs RSA-2048's ~427 byte public and ~1,669 byte private key, the security levels are matched across signing and agreement (both P-256, ~128 bits vs RSA-2048's ~112 bits), and the curve suite reuses a single set of primitives.
+
+Both are demonstrated side by side below, sending the same message from Alice to Bob.
+*/
+test(async () => {//rsa approach: alice sends bob a private message using only bob's public key
+
+	//bob has an RSA keypair--alice doesn't need one to send him a message
+	let bobRsaPublic = Data({base62: 'Up9gPNaVRu0q8YeR8bLmOu9wS7IXNHlXPNWr8YerScLaB29WR6SXEX9HKr4kJr55K2rpDJOXB29gT7ZXEX9HKr4XB29m8YdXELTgSsecHqarPNLdSbW0ILWqKtwdCb9CP4waQYjlPs0MKZ5PHMiH5DCQMroUZwPPcGLS4GhOrkwIrlrJueLJ6WvPsL5MKsbKb9HQ5WWQq9DIZTNEM97QY50SZTlKsDxKKhpGtwDE456IaWVNs5gQL9BJ6WLJ5iPbLIMZLcSY5GHa5eIbWdKr5gC4IpQ69ZQbstC5TBJ6T4UZkoRKetGrL0JbsFLaT4TJDmQKa0GKsEMY0sLuTbIY9cM55EPrLWQ49PIaWbRbw2S70ZLLalLJCtJsiHN9hCsSrHq08IJD4LLagKrTcIXsXIq5gCbiT6kfSu1rCsKwQrsGLs0nDNPEHZ9mJJWVDKIqPKaeQMsCGb5AQ7exCMZrJYTrNqGhTc0sPrk0Sq5DSLGqLratTsTeU4WnDceDOL9fULaPMMeuQNaBDYaJE4ouJMDuSMlkIMaITZ9CJZGQKH8h8bKXEX90KK528cr'})//~427 bytes
+	let bobRsaPrivate = Data({base62: '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'})//~1,669 bytes
+
+	//alice encrypts a message using bob's public key--no keypair of her own needed
+	let message = 'Dear Bob, the documents are in the top drawer.'
+	let encrypted = await rsaEncrypt(bobRsaPublic, Data({text: message}))
+
+	//bob decrypts with his private key
+	let decrypted = (await rsaDecrypt(bobRsaPrivate, encrypted)).text()
+	ok(decrypted == message)
+
+	//but bob has no proof alice sent this--anyone with his public key could have encrypted it
+	//to prove it's from alice, she would also need a signing keypair (ECDSA) and sign the message separately
+})
+test(async () => {//curve approach: same message, but both alice and bob have keypairs
+
+	//both alice and bob have ECDH keypairs--note these are much smaller than RSA keys
+	let aliceAgree = await curveMakeAgreementKeys()
+	let bobAgree = await curveMakeAgreementKeys()
+
+	let message = 'Dear Bob, the documents are in the top drawer.'
+
+	//alice derives the shared secret and encrypts
+	let sharedKey = await curveDerive(aliceAgree.privateKey, bobAgree.publicKey)
+	let envelope = await encryptData(sharedKey, Data({text: message}))
+
+	//bob derives the same shared secret and decrypts
+	let sharedKeyBob = await curveDerive(bobAgree.privateKey, aliceAgree.publicKey)
+	let decrypted = (await decryptData(sharedKeyBob, envelope)).text()
+	ok(decrypted == message)
+
+	//bob already knows only alice could have sent this--only their two keypairs produce this shared secret
+	//no separate signing step needed for mutual authentication, though alice would still add ECDSA for non-repudiation
 })
 
 //        __       __  ____  _____  ___    _        _         
