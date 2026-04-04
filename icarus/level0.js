@@ -3878,29 +3878,34 @@ Outline has two serialization formats:
 One value type (bytes), one tree structure, deterministic sort, a text form and a binary form. It runs anywhere JavaScript does — browser, Node, Worker — with no dependencies, no schema files, and no build step.
 */
 export function Outline(name, value) {
-	let o = {type: 'Outline'}//make a new outline, which could be a root or nested among others in an outline's contents
+	let o = {type: 'Outline'}//the outline object we'll build and return
 	let _name = ''//outlines can have names, [a-z0-9] only, or no name at all
 	let _value = null//and hold one Data value, optional, null for no value
 	let _contents = []//and hold contents, an array of lower nested outlines
 	o.length = () => _contents.length//how many we have
+
+	const _k = (k) => {//normalize and validate a name for the setter and all lookups: falsy becomes blank, anything invalid tosses
+		if (!k) return ''
+		if (!(typeof k == 'string' && /^[a-z0-9]*$/.test(k))) toss('data', {k})
+		return k
+	}
 
 	/*
 	combined getters and setters for the name and value of this outline
 
 	o.name() returns o's current name
 	o.name('') sets o's name to blank, totally fine and useful in Outline
-	o.name('key1') set o's name to "key1" only numerals and lowercase letters are allowed
+	o.name('key1') sets o's name to "key1" only numerals and lowercase letters are allowed
 
 	o.value() gets the value, a Data with bytes, or null if there's no value here (could still be contents, though!)
 	o.value(Data({text: 'alice@example.com'})) sets the value
 	o.value(null) clears the value; Data cannot be empty but outlines absolutely can be nameless and/or valueless
 
-	the name [a-z0-9] requirement may seem restrictive, but prevents the case ambiguity you've likely encountered when examining a JavaScript object of HTTP headers (did the cloud provider lowercase? could there be "origin" *and* "Origin" in here?!!) and discourages overloading values into keys (if you want dots and slashes, build that into the outline below)
+	the name [a-z0-9] requirement may seem restrictive, but prevents the case ambiguity you've likely encountered when examining a JavaScript object of HTTP headers (did the cloud provider lowercase? could there be "origin" *and* "Origin" in here?!!) and discourages overloading values into keys (if you want dots and slashes, build that into nested contents)
 	*/
 	o.name = (p) => {
 		if (p === undefined) return _name//get
-		else if (!(typeof p == 'string' && /^[a-z0-9]*$/.test(p))) toss('data', {p})//set, make sure the new name is ok
-		else _name = p
+		_name = _k(p)//set, normalizing and validating through the shared helper
 	}
 	o.value = (p) => {
 		if (p === undefined) return _value//get
@@ -3919,26 +3924,29 @@ export function Outline(name, value) {
 		else if (a.type == 'Data') _contents.push(Outline('', a))//add a new unnamed outline with this value
 		else toss('type', {a})
 	}
-	o.has = (k) => _contents.some(c => c.name() == k)//true if contents includes an outline with name k
+	o.has = (k) => { k = _k(k); return _contents.some(c => c.name() == k) }//true if contents includes an outline with name k
 
 	/*
 	o.n() for "navigate": find the first outline in contents with name k, toss if not found
 	o.m() for "make": like n, but creates the outline if it doesn't exist yet
 	o.list() returns all unnamed contents
-	o.list('type1') or pull named sublists, all contents named "type1"
+	o.list('type1') or filter out a named sublist, all contents named "type1"
 	*/
 	o.n = (k) => {
+		k = _k(k)
 		let found = _contents.find(c => c.name() == k)
 		if (!found) toss('data', {k})
 		return found
 	}
 	o.m = (k) => {
+		k = _k(k)
 		if (!o.has(k)) o.add(Outline(k))
 		return o.n(k)
 	}
-	o.list = (k) => _contents.filter(c => c.name() == (k === undefined ? '' : k))
+	o.list = (k) => { k = _k(k); return _contents.filter(c => c.name() == k) }
 
 	o.remove = (k) => {//remove all outlines in contents with name k, iterates backwards so splicing doesn't skip
+		k = _k(k)
 		for (let i = _contents.length - 1; i >= 0; i--) {
 			if (_contents[i].name() == k) _contents.splice(i, 1)
 		}
@@ -3968,23 +3976,22 @@ export function Outline(name, value) {
 //                                                    
 
 function outlineToText(o) {//express an outline as indented lines of text for code, documentation, and diffs
-	const compose = (o, indent) => {//recursive: one line for this outline, then its contents at deeper indent
+	const _compose = (o, indent) => {//recursive: one line for this outline, then its contents at deeper indent
 		let s = indent + o.name() + ':' + dataToQuoted(o.value()) + newline
-		for (let i = 0; i < o.length(); i++) s += compose(o.get(i), indent + '  ')//two spaces per level
+		for (let i = 0; i < o.length(); i++) s += _compose(o.get(i), indent + '  ')//two spaces per level
 		return s
 	}
-	return compose(o, '')
+	return _compose(o, '')
 }
 export function textToOutline(s) {//parse a text ouline into its object form
 	let lines = s.split('\n').map(line => line.endsWith('\r') ? line.slice(0, -1) : line).filter(line => line.trim().length > 0)//accept both \r\n and \n line endings, skip blank lines
 	if (!lines.length) toss('data', {s})
 
-	//first pass: parse each line into a new outline, remembering how many spaces indented it was
-	let outlines = []
-	let indents = []
+	//first pass: parse each line into a new outline, remembering how much whitespace indented it was
+	let outlines = []//parallel arrays: outlines[i] is the outline parsed from line i,
+	let indents = []//and indents[i] is the whitespace count that preceded it--the second pass below uses these to rebuild the tree structure
 	for (let line of lines) {
-		let indent = 0
-		while (indent < line.length && line[indent] == ' ') indent++
+		let indent = line.match(/^[ \t]*/)[0].length//count leading spaces or tabs; 2-space, 4-space, or tab indentation all work
 		let c = cut(line.slice(indent), ':')
 		if (!c.found) toss('data', {line})//every line must have a colon separating name from quoted value
 		let o = Outline()
@@ -3996,16 +4003,16 @@ export function textToOutline(s) {//parse a text ouline into its object form
 	}
 
 	//second pass: walk the flat list, grouping each outline with the ones indented deeper after it
-	let pos = 0
-	const group = () => {
-		let o = outlines[pos]
-		let indent = indents[pos]
-		pos++
-		while (pos < outlines.length && indents[pos] > indent) o.add(group())//recursively grab everything deeper than us
+	let w = 0//walker, moves forward through the outlines array as group consumes entries
+	const _group = () => {
+		let o = outlines[w]
+		let indent = indents[w]
+		w++
+		while (w < outlines.length && indents[w] > indent) o.add(_group())//recursively grab everything deeper than us
 		return o
 	}
-	let root = group()
-	if (pos != outlines.length) toss('data', {s})//everything should have grouped into one root; leftovers mean bad indentation
+	let root = _group()
+	if (w != outlines.length) toss('data', {s})//leftover lines mean the input has multiple roots or bad indentation; a valid text outline describes exactly one outline
 	return root
 }
 
@@ -4016,72 +4023,77 @@ export function textToOutline(s) {//parse a text ouline into its object form
 //  \___/ \__,_|\__|_|_|_| |_|\___|  \__,_|\__,_|\__\__,_|
 //                                                        
 
-function outlineToData(o) {//serialize an outline to binary data; no encoding or escaping so no size growth, unlike JSON
+function outlineToData(o) {//serialize an outline to binary data for disk or wire
 	o.sort()//sort depth-first before we walk the tree, so the output is deterministic
 
 	//first pass: measure the exact size we'll need, so we can allocate one buffer and write into it
-	const sizeOf = (o) => {
-		let nameBytes = o.name().length//name is a-z 0-9, always 1 byte per char in utf8
+	let sizes = new Map()//memoize each outline's total byte size, so the second pass looks up contents sizes in O(1) instead of recomputing
+	const _measure = (o) => {
+		if (sizes.has(o)) return sizes.get(o)
+		let nameBytes = o.name().length//names are [a-z0-9], so string length equals utf-8 byte count
 		let valueBytes = o.value() ? o.value().size() : 0
 		let contentsBytes = 0
-		for (let i = 0; i < o.length(); i++) contentsBytes += sizeOf(o.get(i))
-		return spanEncode(nameBytes).length + nameBytes +//three (span, bytes) pairs: name, value, contents
+		for (let i = 0; i < o.length(); i++) contentsBytes += _measure(o.get(i))
+		let total =
+			spanEncode(nameBytes).length + nameBytes +//three (span, bytes) pairs: name, value, contents
 			spanEncode(valueBytes).length + valueBytes +
 			spanEncode(contentsBytes).length + contentsBytes
+		sizes.set(o, total)
+		return total
 	}
-	let buffer = new Uint8Array(sizeOf(o))
-	let pos = 0
+	let buffer = new Uint8Array(_measure(o))
+	let w = 0//walker, moves forward through buffer as we write bytes into it
 
 	//second pass: write the bytes in the same order we just measured
-	const write = (bytes) => { buffer.set(bytes, pos); pos += bytes.length }
-	const compose = (o) => {
-		let nameArray = new TextEncoder().encode(o.name())
+	const _write = (bytes) => { buffer.set(bytes, w); w += bytes.length }
+	const _compose = (o) => {
+		let nameArray = Uint8Array.from(o.name(), c => c.charCodeAt(0))
 		let valueArray = o.value() ? o.value().array() : new Uint8Array(0)
 		let contentsSize = 0
-		for (let i = 0; i < o.length(); i++) contentsSize += sizeOf(o.get(i))
+		for (let i = 0; i < o.length(); i++) contentsSize += _measure(o.get(i))//O(1) lookup from the memoized map
 
-		write(spanEncode(nameArray.length));  write(nameArray)//name span and bytes
-		write(spanEncode(valueArray.length)); write(valueArray)//value span and bytes
-		write(spanEncode(contentsSize))//contents span, then each contained outline recursively
-		for (let i = 0; i < o.length(); i++) compose(o.get(i))
+		_write(spanEncode(nameArray.length));  _write(nameArray)//name span and bytes
+		_write(spanEncode(valueArray.length)); _write(valueArray)//value span and bytes
+		_write(spanEncode(contentsSize))//contents span, then each contained outline recursively
+		for (let i = 0; i < o.length(); i++) _compose(o.get(i))
 	}
-	compose(o)
+	_compose(o)
 	return Data({array: buffer})
 }
 export function dataToOutline(d) {//parse binary data into an outline object
 	let a = d.array()
-	let pos = 0
+	let w = 0//walker, moves forward through a as we read bytes out of it
 
-	const readSpan = () => {//read a size prefix, advancing pos
-		let {value, bytesRead} = spanDecode(a, pos)
-		pos += bytesRead
+	const _span = () => {//read a size prefix, advancing the walker
+		let {value, bytesRead} = spanDecode(a, w)
+		w += bytesRead
 		return value
 	}
-	const readBytes = (n) => {//read n bytes, advancing pos
-		if (pos + n > a.length) toss('data')
-		let bytes = a.slice(pos, pos + n)
-		pos += n
+	const _read = (n) => {//read n bytes, advancing the walker
+		if (w + n > a.length) toss('data')
+		let bytes = a.slice(w, w + n)
+		w += n
 		return bytes
 	}
-	const parse = () => {//recursively parse one outline: name span + bytes, value span + bytes, contents span + recursive
+	const _parse = () => {//recursively parse one outline: name span + bytes, value span + bytes, contents span + recursive
 		let o = Outline()
 
-		let nameSize = readSpan()
-		if (nameSize > 0) o.name(new TextDecoder().decode(readBytes(nameSize)))//blank name stays as default ''
+		let nameSize = _span()
+		if (nameSize > 0) o.name(String.fromCharCode(..._read(nameSize)))
 
-		let valueSize = readSpan()
-		if (valueSize > 0) o.value(Data({array: readBytes(valueSize)}))//zero size stays as default null
+		let valueSize = _span()
+		if (valueSize > 0) o.value(Data({array: _read(valueSize)}))//zero size stays as default null
 
-		let contentsSize = readSpan()
-		let contentsEnd = pos + contentsSize
-		while (pos < contentsEnd) o.add(parse())//parse contained outlines until we've consumed exactly contentsSize bytes
-		if (pos != contentsEnd) toss('data')//overran or underran the contents region, input is malformed
+		let contentsSize = _span()
+		let contentsEnd = w + contentsSize
+		while (w < contentsEnd) o.add(_parse())//parse contained outlines until we've consumed exactly contentsSize bytes
+		if (w != contentsEnd) toss('data')//overran or underran the contents region, input is malformed
 
 		return o
 	}
-	let result = parse()
-	if (pos != a.length) toss('data')//trailing bytes after the root outline mean malformed input
-	return result
+	let root = _parse()
+	if (w != a.length) toss('data')//trailing bytes after the root outline mean malformed input
+	return root
 }
 
 //              _   _ _                                                       
@@ -4151,7 +4163,10 @@ function spanDecode(a, offset) {//returns {value, bytesRead} so the caller can a
 		if (i >= a.length) toss('data')
 		let y = a[i++]
 		n |= (y & 0x7f) << shift//accumulate the 7 value bits at their proper place
-		if ((y & 0x80) == 0) return {value: n, bytesRead: i - offset}//high bit clear means this is the last byte
+		if ((y & 0x80) == 0) {//high bit clear means this is the last byte
+			if (count > 0 && y == 0) toss('data')//reject non-canonical encoding: a multi-byte span whose top byte contributes no bits could have fit in fewer bytes
+			return {value: n, bytesRead: i - offset}
+		}
 		shift += 7
 	}
 	toss('data')//ran past the 4 byte limit without finding a terminating byte
@@ -4173,7 +4188,7 @@ function spanDecode(a, offset) {//returns {value, bytesRead} so the caller can a
 unlike the base encoding of Data, quoted is *not* round-trip!
 a heuristic below balances brevity and readability when choosing which ASCII bytes to expose in quotes
 */
-function quotable(c) {
+function _quotable(c) {
 	return (//true if the given character c is understandable to read in quotes,
 		c >= 0x20 &&//space,
 		c <= 0x7e &&//through tilde,
@@ -4186,18 +4201,18 @@ export function dataToQuoted(nullOrData) {//encode the given Data or null as tex
 	let a = nullOrData.array()
 
 	let textCount = 0
-	for (let i = 0; i < a.length; i++) { if (quotable(a[i])) textCount++ }
+	for (let i = 0; i < a.length; i++) { if (_quotable(a[i])) textCount++ }
 	if (textCount * 2 < a.length) return nullOrData.base16()//under half quotable? it's random or binary, just use base16; ties go to quoted
 
 	let s = ''
 	let i = 0
 	while (i < a.length) {//alternate between:
-		if (quotable(a[i])) {//runs of quotable text, and
+		if (_quotable(a[i])) {//runs of quotable text, and
 			s += '"'
-			while (i < a.length && quotable(a[i])) s += String.fromCharCode(a[i++])
+			while (i < a.length && _quotable(a[i])) s += String.fromCharCode(a[i++])
 			s += '"'
 		} else {//runs of unquotable bytes in base16
-			while (i < a.length && !quotable(a[i])) s += a[i++].toString(16).padStart(2, '0')
+			while (i < a.length && !_quotable(a[i])) s += a[i++].toString(16).padStart(2, '0')
 		}
 	}
 	return s
@@ -4219,9 +4234,10 @@ function _quotedToData(s) {//separate for testing
 			let close = s.indexOf('"', i)
 			if (close == -1) return false//no closing quote
 			for (let j = i; j < close; j++) {//strict: every character inside must be something dataToQuoted would have quoted
-				if (!quotable(s.charCodeAt(j))) return false//rejects control chars, high bytes, unicode, and the quote char itself
+				let c = s.charCodeAt(j)
+				if (!_quotable(c)) return false//rejects control chars, high bytes, unicode, and the quote char itself
+				bytes.push(c)//quotable guarantees ASCII, one byte per char
 			}
-			for (let b of Data({text: s.slice(i, close)}).array()) bytes.push(b)//through Data for NFC normalization
 			i = close + 1
 		} else {//outside quotes, consume base16 digit pairs
 			if (i + 1 >= s.length) return false//a lone base16 digit with no pair is invalid
