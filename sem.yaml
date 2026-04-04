@@ -1,5 +1,5 @@
 summary:
-  generated: 2026apr3.1858.2329
+  generated: 2026apr3.2204.46622
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -204,8 +204,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1023.0 on 2026apr02 0m old
-      latest: 3.1023.0 on 2026apr02 0m old
+      current: 3.1024.0 on 2026apr03 0m old
+      latest: 3.1024.0 on 2026apr03 0m old
     downloads:
       weekly: 22,605,535
       on: 2026apr1.1724.39555
@@ -217,8 +217,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1023.0 on 2026apr02 0m old
-      latest: 3.1023.0 on 2026apr02 0m old
+      current: 3.1024.0 on 2026apr03 0m old
+      latest: 3.1024.0 on 2026apr03 0m old
     downloads:
       weekly: 2,543,626
       on: 2026apr1.1724.39555
@@ -230,8 +230,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1023.0 on 2026apr02 0m old
-      latest: 3.1023.0 on 2026apr02 0m old
+      current: 3.1024.0 on 2026apr03 0m old
+      latest: 3.1024.0 on 2026apr03 0m old
     downloads:
       weekly: 3,186,684
       on: 2026apr1.1724.39555
@@ -243,8 +243,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 0m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1023.0 on 2026apr02 0m old
-      latest: 3.1023.0 on 2026apr02 0m old
+      current: 3.1024.0 on 2026apr03 0m old
+      latest: 3.1024.0 on 2026apr03 0m old
     downloads:
       weekly: 9,964,045
       on: 2026apr1.1724.39555
@@ -373,8 +373,8 @@ modules:
     versions:
       declared: ^2.50.2 on 2026feb02 1m old
       installed: 2.55.0 on 2026mar12 0m old
-      current: 2.55.0 on 2026mar12 0m old
-      latest: 2.55.0 on 2026mar12 0m old
+      current: 2.56.1 on 2026apr03 0m old
+      latest: 2.56.1 on 2026apr03 0m old
     downloads:
       weekly: 1,715,186
       on: 2026apr1.1724.39555
@@ -522,7 +522,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^7.1.6 on 2026feb01 1m old
+      declared: ^7.1.6 on 2026feb01 2m old
       installed: 7.2.1 on 2026feb18 1m old
       current: 7.2.1 on 2026feb18 1m old
       latest: 8.0.0 on 2026mar23 0m old 🎁 Major new version available
@@ -537,7 +537,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^3.3.2 on 2026feb01 1m old
+      declared: ^3.3.2 on 2026feb01 2m old
       installed: 3.4.1 on 2026mar23 0m old
       current: 3.4.1 on 2026mar23 0m old
       latest: 3.4.1 on 2026mar23 0m old

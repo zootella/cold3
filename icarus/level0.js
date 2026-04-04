@@ -3856,6 +3856,190 @@ export function prefix2(data) {//one letter and one digit like "a2", 260 unique 
 
 
 
+//              _   _ _            
+//   ___  _   _| |_| (_)_ __   ___ 
+//  / _ \| | | | __| | | '_ \ / _ \
+// | (_) | |_| | |_| | | | | |  __/
+//  \___/ \__,_|\__|_|_|_| |_|\___|
+//                                 
+
+export function Outline() {
+	//hi claude, made this new area for you as we do the work to bring the functionality and design of ../node's Outline here into level0!
+}
+
+
+
+
+
+
+
+
+
+
+
+//                    _           _                            _ _             
+//   __ _ _   _  ___ | |_ ___  __| |   ___ _ __   ___ ___   __| (_)_ __   __ _ 
+//  / _` | | | |/ _ \| __/ _ \/ _` |  / _ \ '_ \ / __/ _ \ / _` | | '_ \ / _` |
+// | (_| | |_| | (_) | ||  __/ (_| | |  __/ | | | (_| (_) | (_| | | | | | (_| |
+//  \__, |\__,_|\___/ \__\___|\__,_|  \___|_| |_|\___\___/ \__,_|_|_| |_|\__, |
+//     |_|                                                               |___/ 
+/*
+Quoted Encoding: A human-readable format for binary data that mixes quoted ASCII text with base16
+
+«"Hello"0d0a» is easier to read than base16 '48656c6c6f0d0a'
+«"A"00» shows the bits of a null terminator in a language-agnostic way, unlike 'A\0'
+«» blank text is valid quoted encoding to express nothing, size zero bytes
+
+unlike the base encoding of Data, quoted is *not* round-trip!
+a heuristic below balances brevity and readability when choosing which ASCII bytes to expose in quotes
+*/
+function quotable(c) {
+	return (//true if the given character c is understandable to read in quotes,
+		c >= 0x20 &&//space,
+		c <= 0x7e &&//through tilde,
+		c != 0x22//but not the double quotation mark itself, which is our delimiter!
+	)
+}
+export function dataToQuoted(nullOrData) {//encode the given Data or null as text in quoted encoding
+	if (nullOrData === null) return ''//a Data cannot be empty, so null means nothing; a blank string is valid quoted encoding for zero bytes
+
+	let a = nullOrData.array()
+
+	let textCount = 0
+	for (let i = 0; i < a.length; i++) { if (quotable(a[i])) textCount++ }
+	if (textCount * 2 < a.length) return nullOrData.base16()//under half quotable? it's random or binary, just use base16; ties go to quoted
+
+	let s = ''
+	let i = 0
+	while (i < a.length) {//alternate between:
+		if (quotable(a[i])) {//runs of quotable text, and
+			s += '"'
+			while (i < a.length && quotable(a[i])) s += String.fromCharCode(a[i++])
+			s += '"'
+		} else {//runs of unquotable bytes in base16
+			while (i < a.length && !quotable(a[i])) s += a[i++].toString(16).padStart(2, '0')
+		}
+	}
+	return s
+}
+export function quotedToData(s) {//convert quoted text back to Data, or null for zero size
+	let nullOrData = _quotedToData(s)
+	if (nullOrData === false) toss('data', {s})
+	return nullOrData
+}
+function _quotedToData(s) {//separate for testing
+	if (!s.length) return null//blank string "" is valid quoted encoding to describe zero bytes of nothing
+
+	//walk through the string, alternating between quoted sections and base16 pairs
+	let bytes = []
+	let i = 0
+	while (i < s.length) {
+		if (s[i] == '"') {//opening quote starts a text section
+			i++
+			let close = s.indexOf('"', i)
+			if (close == -1) return false//no closing quote
+			for (let j = i; j < close; j++) {//strict: every character inside must be something dataToQuoted would have quoted
+				if (!quotable(s.charCodeAt(j))) return false//rejects control chars, high bytes, unicode, and the quote char itself
+			}
+			for (let b of Data({text: s.slice(i, close)}).array()) bytes.push(b)//through Data for NFC normalization
+			i = close + 1
+		} else {//outside quotes, consume base16 digit pairs
+			if (i + 1 >= s.length) return false//a lone base16 digit with no pair is invalid
+			let c0 = s[i], c1 = s[i + 1]
+			if (!/[0-9a-f]/.test(c0) || !/[0-9a-f]/.test(c1)) return false//lowercase base16 only
+			bytes.push(parseInt(c0 + c1, 16))
+			i += 2
+		}
+	}
+	return Data({array: new Uint8Array(bytes)})
+}
+test(() => {//quoted encoding demonstration and round trips
+	ok(dataToQuoted(null) == '')//Data cannot hold zero bytes, but null and blank string are valid to describe nothing here
+	ok(quotedToData('') === null)
+
+	ok(quotedToData('48656c6c6f').text() == 'Hello')
+	ok(quotedToData('48"ello"').text() == 'Hello')//multiple different valid encoded forms decode to the same data, unlike the encoding formats built into Data, which are all guaranteed and checked to be round-trip one-to-one
+	function f(s, q) {//remaining tests use examples which happen to be round trip-able
+		ok(dataToQuoted(Data({text: s})) == q)
+		ok(quotedToData(q).text() == s)
+	}
+
+	f('hello', '"hello"')//pure text gets quoted
+	f('a', '"a"')
+	f(' ', '" "')
+
+	f('A\0', '"A"00')//text with terminators
+	f('AB\0', '"AB"00')
+	f('Hello\r\n', '"Hello"0d0a')
+	f('Hello\0', '"Hello"00')
+	f('\tIndented', '09"Indented"')
+
+	f('"', '22')
+	f('"hello"', '22"hello"22')
+	f('The quote " character\r\n', '"The quote "22" character"0d0a')//intentional design choice picking " because it looks like 22 ;)
+})
+test(() => {//_quotedToData returns null for empty, false for invalid
+	ok('' == dataToQuoted(null))//blank is valid quoted encoding for zero bytes,
+	ok(null === quotedToData(''))//since Data cannot have size 0, quotedToData returns null to indicate nothing
+
+	ok(false === _quotedToData('00ff0g'))//g is not valid base16
+	ok(false !== _quotedToData('"x"00"y"00"z"'))//this is fine
+	ok(false === _quotedToData('"x"00"y"00"z' ))//missing a quote
+	ok(false === _quotedToData( 'x"00"y"00"z"'))
+	ok(false === _quotedToData('g'))//single non-base16 character
+	ok(false === _quotedToData('000'))//odd number of base16 digits
+	ok(false === _quotedToData('"中文"'))//only ASCII allowed inside quotes
+	ok(false === _quotedToData('"Hello\n"'))
+	ok(false === _quotedToData('0D0A'))//uppercase base16 rejected, lowercase only
+})
+noop(() => {//visual inspection: 50 random 32-byte values (sha256 hash length) in quoted encoding
+	let s = ''
+	for (let i = 0; i < 50; i++) s += newline + dataToQuoted(Data({random: hash_size}))
+	log(s)
+})
+noop(() => {//length demonstration: quoted encoding on random 32-byte data (sha256 hash length)
+	let plain = 0, shorter = 0, same = 0, longer = 0, total = 0
+	const base16_length = hash_size * 2
+	let deadline = Date.now() + 1000
+	while (Date.now() < deadline) {
+		let d = Data({random: hash_size})
+		let q = dataToQuoted(d)
+		let isPlain = (q == d.base16())
+		if      (isPlain)                  plain++
+		else if (q.length < base16_length) shorter++
+		else if (q.length > base16_length) longer++
+		else                               same++
+		total++
+	}
+	let quoted = shorter + same + longer
+	log(newline + deindent`
+		${commas(total)} random ${hash_size}-byte values in 1 second
+		${(plain/total*100).toFixed(3)}% stayed plain base16
+		${(quoted/total*100).toFixed(3)}% got quoted sections: ${(shorter/total*100).toFixed(3)}% shorter, ${(same/total*100).toFixed(3)}% same, ${(longer/total*100).toFixed(3)}% longer
+	`)
+})
+noop(() => {//fuzz test quote/unquote round trip with random data
+	const seconds = 4
+	let cycles = 0
+	let start = Now()
+	while (Now() < start + (seconds*Time.second)) {
+		let d = Data({random: randomBetween(1, Size.kb)})
+		let q = dataToQuoted(d)
+		let u = quotedToData(q)
+		ok(u.base16() == d.base16())
+		cycles++
+	}
+	log(`${commas(cycles)} quoted encoding round trips in ${seconds} seconds`)
+})
+
+
+
+
+
+
+
+
+
 
 
 
