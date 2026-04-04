@@ -3891,27 +3891,23 @@ export function Outline(name, value) {
 	o.name('') sets o's name to blank, totally fine and useful in Outline
 	o.name('key1') set o's name to "key1" only numerals and lowercase letters are allowed
 
-	this is very restrictive, but prevents the case ambiguity you've likely encountered when examining a JavaScript object of HTTP headers (did the cloud provider lowercase? could there be "origin" *and* "Origin" in here?!!) and discourages overloading values into keys (if you want dots and slashes, build that into the outline below)
+	o.value() gets the value, a Data with bytes, or null if there's no value here (could still be contents, though!)
+	o.value(Data({text: 'alice@example.com'})) sets the value
+	o.value(null) clears the value; Data cannot be empty but outlines absolutely can be nameless and/or valueless
+
+	the name [a-z0-9] requirement may seem restrictive, but prevents the case ambiguity you've likely encountered when examining a JavaScript object of HTTP headers (did the cloud provider lowercase? could there be "origin" *and* "Origin" in here?!!) and discourages overloading values into keys (if you want dots and slashes, build that into the outline below)
 	*/
 	o.name = (p) => {
 		if (p === undefined) return _name//get
 		else if (!(typeof p == 'string' && /^[a-z0-9]*$/.test(p))) toss('data', {p})//set, make sure the new name is ok
 		else _name = p
 	}
-	/*
-	combined getter and setter for the value of this outline
-
-	o.value() gets the value, a Data with bytes, or null if there's no value here (could still be contents, though!)
-	o.value(Data({text: 'alice@example.com'})) sets the value
-	o.value(null) clears the value; Data cannot be empty but outlines absolutely can be nameless and/or valueless
-	*/
 	o.value = (p) => {
 		if (p === undefined) return _value//get
 		else if (p === null) _value = null//set clear
 		else if (p.type == 'Data') _value = p//set to the given Data
 		else toss('type', {p})
 	}
-
 
 	o.get = (i) => {//get the outline at index i in contents
 		if (i < 0 || i >= _contents.length) toss('bounds', {i})
@@ -3925,16 +3921,22 @@ export function Outline(name, value) {
 	}
 	o.has = (k) => _contents.some(c => c.name() == k)//true if contents includes an outline with name k
 
-	o.n = (k) => {//n for navigate: find the first outline in contents with name k, toss if not found
+	/*
+	o.n() for "navigate": find the first outline in contents with name k, toss if not found
+	o.m() for "make": like n, but creates the outline if it doesn't exist yet
+	o.list() returns all unnamed contents
+	o.list('type1') or pull named sublists, all contents named "type1"
+	*/
+	o.n = (k) => {
 		let found = _contents.find(c => c.name() == k)
 		if (!found) toss('data', {k})
 		return found
 	}
-	o.m = (k) => {//m for "make": like n, but creates the outline if it doesn't exist yet
+	o.m = (k) => {
 		if (!o.has(k)) o.add(Outline(k))
 		return o.n(k)
 	}
-	o.list = (k) => _contents.filter(c => c.name() == (k === undefined ? '' : k))//all outlines in contents with name k, or all unnamed if k omitted
+	o.list = (k) => _contents.filter(c => c.name() == (k === undefined ? '' : k))
 
 	o.remove = (k) => {//remove all outlines in contents with name k, iterates backwards so splicing doesn't skip
 		for (let i = _contents.length - 1; i >= 0; i--) {
@@ -3958,42 +3960,14 @@ export function Outline(name, value) {
 	return o
 }
 
-//compare two outlines for sort order: name first, then value, then nested contents recursively down the whole tree
-function compareOutline(o1, o2) {
+//              _   _ _              _            _   
+//   ___  _   _| |_| (_)_ __   ___  | |_ _____  _| |_ 
+//  / _ \| | | | __| | | '_ \ / _ \ | __/ _ \ \/ / __|
+// | (_) | |_| | |_| | | | | |  __/ | ||  __/>  <| |_ 
+//  \___/ \__,_|\__|_|_|_| |_|\___|  \__\___/_/\_\\__|
+//                                                    
 
-	//name first
-	if (o1.name() < o2.name()) return -1//o1 wins with a lighter name
-	if (o1.name() > o2.name()) return 1//o2 wins with its lighter name
-
-	//same name, so we move on to compare value
-	let v1 = o1.value()
-	let v2 = o2.value()
-	if (v1 === null && v2 !== null) return -1//null sorts before any value
-	if (v1 !== null && v2 === null) return 1
-	if (v1 !== null && v2 !== null) {
-		let a1 = v1.array(), a2 = v2.array()
-		let overlappingValueSize = Math.min(a1.length, a2.length)//compare byte-by-byte up to the shorter length
-		for (let i = 0; i < overlappingValueSize; i++) {
-			if (a1[i] < a2[i]) return -1//first differing byte decides the order
-			if (a1[i] > a2[i]) return 1
-		}//all overlapping value bytes match
-		if (a1.length < a2.length) return -1//shorter value sorts first
-		if (a1.length > a2.length) return 1
-	}
-
-	//value tied, so we examine contents pairwise
-	let overlappingContentsCount = Math.min(o1.length(), o2.length())
-	for (let i = 0; i < overlappingContentsCount; i++) {//compare contents pairwise at each index
-		let c = compareOutline(o1.get(i), o2.get(i))
-		if (c) return c//o.sort() calls us after sorting deeper levels first, so contents at each level are already in order
-	}
-	if (o1.length() < o2.length()) return -1//all shared contents match, fewer contents sorts first
-	if (o1.length() > o2.length()) return 1
-	return 0//a complete and deep tie: identical name, value, and contents
-}
-
-//turn an outline into indented lines, suitable for source code template literals, markdown documentation, and diffs
-function outlineToText(o) {
+function outlineToText(o) {//express an outline as indented lines of text for code, documentation, and diffs
 	const compose = (o, indent) => {//recursive: one line for this outline, then its contents at deeper indent
 		let s = indent + o.name() + ':' + dataToQuoted(o.value()) + newline
 		for (let i = 0; i < o.length(); i++) s += compose(o.get(i), indent + '  ')//two spaces per level
@@ -4001,9 +3975,7 @@ function outlineToText(o) {
 	}
 	return compose(o, '')
 }
-
-//parse indented lines back into an outline
-export function textToOutline(s) {
+export function textToOutline(s) {//parse a text ouline into its object form
 	let lines = s.split('\n').map(line => line.endsWith('\r') ? line.slice(0, -1) : line).filter(line => line.trim().length > 0)//accept both \r\n and \n line endings, skip blank lines
 	if (!lines.length) toss('data', {s})
 
@@ -4037,39 +4009,14 @@ export function textToOutline(s) {
 	return root
 }
 
-//--- binary serialization ---
+//              _   _ _                  _       _        
+//   ___  _   _| |_| (_)_ __   ___    __| | __ _| |_ __ _ 
+//  / _ \| | | | __| | | '_ \ / _ \  / _` |/ _` | __/ _` |
+// | (_) | |_| | |_| | | | | |  __/ | (_| | (_| | || (_| |
+//  \___/ \__,_|\__|_|_|_| |_|\___|  \__,_|\__,_|\__\__,_|
+//                                                        
 
-/*
-Span: a variable-length integer encoding for size prefixes in the binary format. Each byte contributes 7 bits of value; the high bit is 1 to continue, 0 to stop. Least-significant byte first (little-endian), matching LEB128 (WebAssembly, DWARF debug info) and Protocol Buffers' varint. Capped at 4 bytes (28 bits), giving a maximum value of 268,435,455 — about 256 MB. Outlines are designed to be small packets, not bulk storage, so this ceiling is generous. An Outline that approaches this size is almost certainly a misuse.
-*/
-function spanEncode(n) {
-	if (n < 0 || n >= 0x10000000) toss('bounds', {n})//max 268,435,455 (~256 MB)
-	let bytes = []
-	do {
-		let b = n & 0x7f//take the lowest 7 bits
-		n >>>= 7//shift them off, ready to take the next 7
-		if (n > 0) b |= 0x80//set the high bit to signal "more bytes follow" to the decoder
-		bytes.push(b)
-	} while (n > 0)
-	return new Uint8Array(bytes)
-}
-
-function spanDecode(a, offset) {//returns {value, bytesRead} so the caller can advance its cursor
-	let n = 0
-	let shift = 0
-	let i = offset
-	for (let count = 0; count < 4; count++) {//at most 4 bytes; more than that means malformed input
-		if (i >= a.length) toss('data')
-		let y = a[i++]
-		n |= (y & 0x7f) << shift//accumulate the 7 value bits at their proper place
-		if ((y & 0x80) == 0) return {value: n, bytesRead: i - offset}//high bit clear means this is the last byte
-		shift += 7
-	}
-	toss('data')//ran past the 4 byte limit without finding a terminating byte
-}
-
-//turn an outline into its binary form: sorted so identical information always produces identical bytes
-function outlineToData(o) {
+function outlineToData(o) {//serialize an outline to binary data; no encoding or escaping so no size growth, unlike JSON
 	o.sort()//sort depth-first before we walk the tree, so the output is deterministic
 
 	//first pass: measure the exact size we'll need, so we can allocate one buffer and write into it
@@ -4101,9 +4048,7 @@ function outlineToData(o) {
 	compose(o)
 	return Data({array: buffer})
 }
-
-//parse binary form back into an outline
-export function dataToOutline(d) {
+export function dataToOutline(d) {//parse binary data into an outline object
 	let a = d.array()
 	let pos = 0
 
@@ -4134,21 +4079,83 @@ export function dataToOutline(d) {
 
 		return o
 	}
-
 	let result = parse()
 	if (pos != a.length) toss('data')//trailing bytes after the root outline mean malformed input
 	return result
 }
 
+//              _   _ _                                                       
+//   ___  _   _| |_| (_)_ __   ___    ___ ___  _ __ ___  _ __   __ _ _ __ ___ 
+//  / _ \| | | | __| | | '_ \ / _ \  / __/ _ \| '_ ` _ \| '_ \ / _` | '__/ _ \
+// | (_) | |_| | |_| | | | | |  __/ | (_| (_) | | | | | | |_) | (_| | | |  __/
+//  \___/ \__,_|\__|_|_|_| |_|\___|  \___\___/|_| |_| |_| .__/ \__,_|_|  \___|
+//                                                      |_|                   
 
+function compareOutline(o1, o2) {//compare two outlines for sort order: name first, then value, then nested contents recursively down the whole tree
 
+	//name first
+	if (o1.name() < o2.name()) return -1//o1 wins with a lighter name
+	if (o1.name() > o2.name()) return 1//o2 wins with its lighter name
 
+	//same name, so we move on to compare value
+	let v1 = o1.value()
+	let v2 = o2.value()
+	if (v1 === null && v2 !== null) return -1//null sorts before any value
+	if (v1 !== null && v2 === null) return 1
+	if (v1 !== null && v2 !== null) {
+		let a1 = v1.array(), a2 = v2.array()
+		let overlappingValueSize = Math.min(a1.length, a2.length)//compare byte-by-byte up to the shorter length
+		for (let i = 0; i < overlappingValueSize; i++) {
+			if (a1[i] < a2[i]) return -1//first differing byte decides the order
+			if (a1[i] > a2[i]) return 1
+		}//all overlapping value bytes match
+		if (a1.length < a2.length) return -1//shorter value sorts first
+		if (a1.length > a2.length) return 1
+	}
 
+	//value tied, so we examine contents pairwise
+	let overlappingContentsCount = Math.min(o1.length(), o2.length())
+	for (let i = 0; i < overlappingContentsCount; i++) {//compare contents pairwise at each index
+		let c = compareOutline(o1.get(i), o2.get(i))
+		if (c) return c//o.sort() calls us after sorting deeper levels first, so contents at each level are already in order
+	}
+	if (o1.length() < o2.length()) return -1//all shared contents match, fewer contents sorts first
+	if (o1.length() > o2.length()) return 1
+	return 0//a complete and deep tie: identical name, value, and contents
+}
 
-
-
-
-
+//  ___ _ __   __ _ _ __  
+// / __| '_ \ / _` | '_ \ 
+// \__ \ |_) | (_| | | | |
+// |___/ .__/ \__,_|_| |_|
+//     |_|                
+/*
+Span: a variable-length integer encoding for size prefixes in the binary format. Each byte contributes 7 bits of value; the high bit is 1 to continue, 0 to stop. Least-significant byte first (little-endian), matching LEB128 (WebAssembly, DWARF debug info) and Protocol Buffers' varint. Capped at 4 bytes (28 bits), giving a maximum value of 268,435,455 — about 256 MB. Outlines are designed to be small packets, not bulk storage, so this ceiling is generous. An Outline that approaches this size is almost certainly a misuse.
+*/
+function spanEncode(n) {
+	if (n < 0 || n >= 0x10000000) toss('bounds', {n})//max 268,435,455 (~256 MB)
+	let bytes = []
+	do {
+		let b = n & 0x7f//take the lowest 7 bits
+		n >>>= 7//shift them off, ready to take the next 7
+		if (n > 0) b |= 0x80//set the high bit to signal "more bytes follow" to the decoder
+		bytes.push(b)
+	} while (n > 0)
+	return new Uint8Array(bytes)
+}
+function spanDecode(a, offset) {//returns {value, bytesRead} so the caller can advance its cursor
+	let n = 0
+	let shift = 0
+	let i = offset
+	for (let count = 0; count < 4; count++) {//at most 4 bytes; more than that means malformed input
+		if (i >= a.length) toss('data')
+		let y = a[i++]
+		n |= (y & 0x7f) << shift//accumulate the 7 value bits at their proper place
+		if ((y & 0x80) == 0) return {value: n, bytesRead: i - offset}//high bit clear means this is the last byte
+		shift += 7
+	}
+	toss('data')//ran past the 4 byte limit without finding a terminating byte
+}
 
 //                    _           _                            _ _             
 //   __ _ _   _  ___ | |_ ___  __| |   ___ _ __   ___ ___   __| (_)_ __   __ _ 
