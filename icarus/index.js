@@ -255,6 +255,7 @@ safefill, deindent,
 
 Bin, Data, checkSizeStartEnd, mulberryData, cutRandomWords,
 base62ToInt, intToBase62, dataToQuoted, quotedToData,
+Outline, textToOutline, dataToOutline,
 
 Tag, checkTagOrBlank, checkTag, hasTag,
 randomBetweenLight, randomBetween, otpPrefix, otpGenerate,
