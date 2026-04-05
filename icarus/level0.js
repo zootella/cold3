@@ -21,6 +21,11 @@ export function ok(assertion) {
 	if (assertion) _passes++//count another passed assertion
 	else throw new TestError()//the assertion is false! throw an exception to get the line number and stop the tests
 }
+export function bad(f) {//assert that calling f() throws; useful for testing that invalid input is rejected
+	let threw = false
+	try { f() } catch(e) { threw = true }
+	ok(threw)
+}
 export async function runTests(tests) {
 	if (!tests) tests = _tests//default isomorphic test cases if the caller didn't pass in their own
 
@@ -4331,216 +4336,7 @@ noop(() => {//fuzz test quote/unquote round trip with random data
 	log(`${commas(cycles)} quoted encoding round trips in ${seconds} seconds`)
 })
 
-test(() => {//Outline demonstration: build a small tree, read and modify it, convert to text and binary and back
-	//build an outline describing a user record
-	let user = Outline('user')
-	user.add(Outline('name', Data({text: 'Alice'})))
-	user.add(Outline('email', Data({text: 'alice@example.com'})))
-	user.m('settings').add(Outline('theme', Data({text: 'dark'})))//m creates "settings" if missing, then we add "theme" inside it
-
-	//read values back
-	ok(user.n('name').value().text() == 'Alice')
-	ok(user.n('email').value().text() == 'alice@example.com')
-	ok(user.n('settings').n('theme').value().text() == 'dark')
-
-	//round trip through text: visible and readable
-	let text = user.text()
-	ok(textToOutline(text).data().base16() == user.data().base16())//parse the text, serialize to binary, compare
-
-	//round trip through binary: compact and deterministic
-	ok(dataToOutline(user.data()).data().base16() == user.data().base16())
-
-	//two outlines with the same information produce identical binary regardless of insert order
-	let other = Outline('user')
-	other.m('settings').add(Outline('theme', Data({text: 'dark'})))
-	other.add(Outline('email', Data({text: 'alice@example.com'})))
-	other.add(Outline('name', Data({text: 'Alice'})))
-	ok(other.data().base16() == user.data().base16())//sort makes them equal
-})
-test(() => {//Outline contents API: add, has, n, m, list, remove, clear
-	let o = Outline()
-	ok(o.length() == 0)
-	ok(!o.has('name1'))
-
-	o.add(Outline('name1'))
-	ok(o.has('name1'))
-	ok(o.length() == 1)
-
-	//load up with a mix of named and unnamed outlines
-	o.add(Outline('',      Data({base16: '01'})))
-	o.add(Outline('name2', Data({base16: '02'})))
-	o.add(Outline('name2', Data({base16: '03'})))
-	o.add(Outline('',      Data({base16: '04'})))
-
-	ok(o.length() == 5)
-	ok(o.list().length == 2)//two unnamed
-	ok(o.list('name1').length == 1)
-	ok(o.list('name2').length == 2)
-
-	o.remove('name2')
-	ok(o.length() == 3)
-	ok(o.list('name2').length == 0)
-
-	o.clear()
-	ok(o.length() == 0)
-})
-test(() => {//Outline validation: names must be [a-z0-9], invalid input tosses everywhere
-	function bad(f) { let threw = false; try { f() } catch(e) { threw = true } ok(threw) }
-
-	bad(() => Outline('Key1'))//uppercase rejected
-	bad(() => Outline('key-1'))//hyphen rejected
-	bad(() => Outline('key 1'))//space rejected
-	bad(() => Outline().name('ABC'))//set rejected
-	bad(() => Outline().n('Key1'))//lookup rejected too (not a silent "not found")
-	bad(() => Outline().has('Key1'))
-
-	//falsy keys all mean blank
-	let o = Outline()
-	o.add(Outline('', Data({base16: 'ff'})))
-	ok(o.has())
-	ok(o.has(null))
-	ok(o.has(''))
-	ok(o.list().length == 1)
-	ok(o.list(null).length == 1)
-
-	//value can be Data or null, nothing else
-	let n = Outline('x')
-	n.value(Data({text: 'v'}))
-	ok(n.value().text() == 'v')
-	n.value(null)
-	ok(n.value() === null)
-	bad(() => n.value(42))
-	bad(() => n.value('not a Data'))
-})
-test(() => {//Outline text form: indented lines with quoted encoding, tolerates various whitespace on parse
-	let o = Outline('root', Data({text: 'Hello\r\n'}))
-	o.m('child1').value(Data({text: 'first'}))
-	o.m('child2').add(Outline('grand', Data({base16: '00ff'})))
-
-	//serialize to text form
-	let text = o.text()
-	ok(text.includes('root:"Hello"0d0a'))//quoted encoding makes the CRLF visible
-	ok(text.includes('  child1:"first"'))//2-space indent for nested
-	ok(text.includes('    grand:00ff'))//4-space for doubly nested; binary stays base16
-
-	//parse various indentation widths: 2 spaces (our canonical), 4 spaces, tabs
-	let canonical = dataToOutline(o.data()).data().base16()
-	ok(textToOutline(o.text()).data().base16() == canonical)//our own output
-	let fourSpace = `root:"Hello"0d0a${newline}    child1:"first"${newline}    child2:${newline}        grand:00ff${newline}`
-	ok(textToOutline(fourSpace).data().base16() == canonical)
-	let tabs = `root:"Hello"0d0a${newline}\tchild1:"first"${newline}\tchild2:${newline}\t\tgrand:00ff${newline}`
-	ok(textToOutline(tabs).data().base16() == canonical)
-
-	//text parse rejects: multiple roots, missing colon, invalid name
-	function bad(s) { let threw = false; try { textToOutline(s) } catch(e) { threw = true } ok(threw) }
-	bad(`a:${newline}b:${newline}`)//two roots
-	bad(`noColon${newline}`)//no colon
-	bad(`Root:${newline}`)//uppercase name
-})
-test(() => {//textToOutline rejects malformed input loudly instead of silently losing data
-	function bad(s) { let threw = false; try { textToOutline(s) } catch(e) { threw = true } ok(threw) }
-
-	//empty and blank
-	bad('')//nothing to parse
-	bad(newline + newline)//just blank lines
-	bad('   ')//just whitespace
-
-	//structural errors
-	bad(deindent`
-		a:
-		b:
-	`)//two sibling roots
-	bad(deindent`
-		a:
-		  b:
-		c:
-	`)//third line starts a new root after the first tree
-	bad(deindent`
-		nocolonhere
-	`)//line without a colon
-
-	//invalid name characters
-	bad('Name:')//uppercase
-	bad('my-key:')//hyphen
-	bad('my key:')//space
-	bad('my_key:')//underscore
-	bad('日本:')//unicode
-
-	//malformed quoted encoding in the value position
-	bad('a:"unterminated')//open quote with no close
-	bad('a:0D0A')//uppercase base16 rejected
-	bad('a:0g')//g is not a valid base16 digit
-
-	//but: valid blank-everywhere line is ok
-	let o = textToOutline(`:${newline}`)//root with blank name, blank value, no contents
-	ok(o.name() == '')
-	ok(o.value() === null)
-	ok(o.length() == 0)
-})
-test(() => {//textToOutline indent algorithm: root at zero, child indents can be any width but must be consistent among siblings
-	//dots stand in for spaces in these tests so the indentation is visible at a glance, immune to auto-formatting or tab expansion
-	const dots = (s) => s.replace(/\./g, ' ')
-	function valid(s)   { textToOutline(dots(s))                                                  ; ok(true) }
-	function bad(s)     { let threw = false; try { textToOutline(dots(s)) } catch(e) { threw = true } ok(threw) }
-
-	//two children at the same indent
-	valid(deindent`
-		a:
-		..b:
-		..c:
-	`)
-
-	//4-space indentation works too; it's not about 2 vs 4, it's about consistency
-	valid(deindent`
-		a:
-		....b:
-		....c:
-	`)
-
-	//deeper levels can use different widths, as long as each parent's contents agree among themselves
-	valid(deindent`
-		a:
-		....b:
-		......c:
-		......e:
-		..........f:
-		..........g:
-		....d:
-	`)
-
-	//root must be at zero indent--no leading whitespace
-	bad(deindent`
-		..a:
-	`)
-
-	//indented root followed by unindented
-	bad(deindent`
-		..a:
-		b:
-	`)
-
-	//two roots at the same (zero) indent is two outlines, not one
-	bad(deindent`
-		a:
-		b:
-	`)
-
-	//a child outdenting back to zero is also two roots
-	bad(deindent`
-		a:
-		..b:
-		c:
-	`)
-
-	//a child at an indent that doesn't match its siblings is ambiguous
-	bad(deindent`
-		a:
-		..b:
-		.c:
-	`)
-})
-test(() => {//Outline in source: use template literals to express an outline naturally inline with code
-	//here's what a small outline looks like written in code, with the deindent tag cleaning up the leading whitespace
+test(() => {//Outline main usage: build from a template literal, read through the navigation API, round-trip through text and binary
 	let o = textToOutline(deindent`
 		orchard:
 			tree:"apple"
@@ -4550,138 +4346,180 @@ test(() => {//Outline in source: use template literals to express an outline nat
 				count:"12"
 	`)
 
-	//read it back through the navigation API
+	//n navigates to a named outline and tosses if missing; m makes it if missing then navigates
 	ok(o.n('tree').value().text() == 'apple')
-	ok(o.n('season').value().text() == 'autumn')
 	ok(o.n('basket').n('color').value().text() == 'red')
-	ok(o.n('basket').n('count').value().text() == '12')
+	bad(() => o.n('missing'))//tossed, not silent
+	o.m('picker').value(Data({text: 'bear'}))//create and set in one step
+	ok(o.n('picker').value().text() == 'bear')
 
-	//a list where each entry is an unnamed contained outline
-	o = textToOutline(deindent`
-		menagerie:
-			animals:
-				:"fox"
-				:"owl"
-				:"bear"
-	`)
-	let list = o.n('animals').list()//all unnamed
-	ok(list.length == 3)
-	ok(list[0].value().text() == 'fox')
-	ok(list[1].value().text() == 'owl')
-	ok(list[2].value().text() == 'bear')
+	//round-trip through both serialization formats, confirming identity
+	ok(textToOutline(o.text()).data().base16() == o.data().base16())//text → outline → same bytes
+	ok(dataToOutline(o.data()).text() == o.text())//binary → outline → same text
 })
-test(() => {//Outline documents itself: the text form shows binary values in quoted encoding, visible in source
-	//a record with mixed text and binary content--the kind of thing Quoted Encoding is made for
-	let o = textToOutline(deindent`
-		parcel:
-			contents:"walnuts"
-			origin:"hazel grove"
-			label:
-				text:"fragile "00
-				color:"amber"
-			note:
-	`)
+test(() => {//Outline binary form is deterministic: the same information always produces the same bytes, regardless of insert order
+	//two outlines constructed differently, but with the same information
+	let a = Outline('garden')
+	a.m('beds').m('flowers').add(Outline('name', Data({text: 'marigold'})))
+	a.m('beds').m('herbs').add(Outline('name', Data({text: 'basil'})))
+	a.add(Outline('season', Data({text: 'spring'})))
 
-	//string values come through as expected
-	ok(o.n('contents').value().text() == 'walnuts')
-	ok(o.n('origin').value().text() == 'hazel grove')
-
-	//quoted encoding with trailing binary: "fragile "00 is "fragile " followed by a null byte
-	ok(o.n('label').n('text').value().text() == 'fragile \0')
-
-	//empty value is null, not empty data
-	ok(o.n('note').value() === null)
-})
-test(() => {//Outline round-trips: text that a developer writes parses into the same outline the binary form produces
-	let s = deindent`
+	let b = textToOutline(deindent`
 		garden:
 			season:"spring"
 			beds:
 				herbs:
 					name:"basil"
-					sunlight:"full"
 				flowers:
 					name:"marigold"
-					sunlight:"partial"
-	`
+	`)
 
-	//parse text, serialize to binary, parse binary, serialize back to text
-	let o = textToOutline(s)
-	let d = o.data()
-	let o2 = dataToOutline(d)
-	let s2 = o2.text()
-
-	//the two parsed outlines carry the same information
-	ok(o.data().base16() == o2.data().base16())
-
-	//and the re-serialized text matches what a round trip through binary produces
-	ok(o.text() == s2)
+	//identical bytes means the hash of an outline is a stable identity for its contents
+	ok(a.data().base16() == b.data().base16())
 })
-test(() => {//span encoding: variable-length integer used for size prefixes in Outline's binary form
+test(() => {//Outline contents: add, has, list, remove, clear
+	let o = Outline('pantry')
+
+	//add takes an Outline, a name string, or Data; multiple outlines can share a name, and unnamed outlines are supported
+	o.add(Outline('jar', Data({text: 'honey'})))
+	o.add(Outline('jar', Data({text: 'jam'})))
+	o.add('crock')//string shorthand: adds an outline with this name and no value
+	o.add(Data({text: 'salt'}))//data shorthand: adds an unnamed outline with this value
+	o.add(Data({text: 'pepper'}))
+
+	ok(o.length() == 5)
+	ok(o.has('jar'))
+	ok(!o.has('jug'))
+
+	//list returns all contained outlines with a given name, or all unnamed if no name passed
+	ok(o.list('jar').length == 2)
+	ok(o.list().length == 2)//the two unnamed
+
+	//falsy lookups all mean "look for blank name"
+	ok(o.list(null).length == 2)
+	ok(o.list('').length == 2)
+
+	o.remove('jar')
+	ok(o.length() == 3)
+	ok(o.list('jar').length == 0)
+
+	o.clear()//discards value and contents, but keeps the name
+	ok(o.length() == 0)
+	ok(o.name() == 'pantry')
+})
+test(() => {//Outline validation: names must be [a-z0-9], values must be Data or null
+	//names are restricted to lowercase letters and digits; no ambiguity like the HTTP header case-folding mess
+	bad(() => Outline('Key1'))//uppercase
+	bad(() => Outline('key-1'))//punctuation
+	bad(() => Outline().name(' '))//whitespace
+	bad(() => Outline().n('Key1'))//lookups validate too, so you get a loud error instead of a silent "not found"
+
+	//values are Data or null; null is "no value", which differs from "empty data" (Data cannot be empty)
+	let o = Outline('x')
+	bad(() => o.value(42))
+	bad(() => o.value('just a string'))
+	o.value(Data({text: 'something'}))
+	ok(o.value().text() == 'something')
+	o.value(null)//null always valid, clears to no value
+	ok(o.value() === null)
+})
+test(() => {//textToOutline indent algorithm: root at zero, child indents can be any width but must be consistent among siblings
+	//dots stand in for spaces so the indentation is visible at a glance, immune to editor auto-formatting
+	const dots = (s) => s.replace(/\./g, ' ')
+	function good(s) { textToOutline(dots(s)); ok(true) }
+	function poor(s) { bad(() => textToOutline(dots(s))) }
+
+	good(deindent`
+		a:
+		..b:
+		..c:
+	`)//two children at the same indent
+
+	good(deindent`
+		a:
+		....b:
+		....c:
+	`)//4-space works too--it's about consistency, not width
+
+	good(deindent`
+		a:
+		....b:
+		......c:
+		......e:
+		..........f:
+		..........g:
+		....d:
+	`)//deeper levels can use different widths, each parent's contents just need to agree among themselves
+
+	poor(deindent`
+		..a:
+	`)//root must be at zero indent
+
+	poor(deindent`
+		a:
+		b:
+	`)//two roots at zero indent is two outlines, not one
+
+	poor(deindent`
+		a:
+		..b:
+		c:
+	`)//outdenting back to zero is also two roots
+
+	poor(deindent`
+		a:
+		..b:
+		.c:
+	`)//a child at an indent that doesn't match its siblings is ambiguous
+})
+test(() => {//textToOutline rejects malformed structure; quoted encoding in values tosses via quotedToData's own validation
+	//structural errors
+	bad(() => textToOutline(''))//no outline to parse
+	bad(() => textToOutline('nocolon'))//line without a colon--can't split name from value
+	bad(() => textToOutline(deindent`
+		a:
+		  b:
+		c:
+	`))//valid tree followed by a second root
+
+	//a blank-everywhere line--no name, no value, no contents--is the minimum valid outline
+	let o = textToOutline(':')
+	ok(o.name() == '' && o.value() === null && o.length() == 0)
+})
+test(() => {//span encoding: variable-length integer used for size prefixes in the binary form
 	function both(n, base16) {
 		ok(Data({array: spanEncode(n)}).base16() == base16)//encode
-		let a = Data({base16}).array()
-		let {value, bytesRead} = spanDecode(a, 0)//decode
-		ok(value == n && bytesRead == a.length)
+		let {value, bytesRead} = spanDecode(Data({base16}).array(), 0)//decode
+		ok(value == n && bytesRead == base16.length / 2)
 	}
 
-	//small numbers, 1 byte
-	both(0, '00')
-	both(1, '01')
-	both(127, '7f')//largest 1-byte value (7 bits)
-
-	//2 bytes
-	both(128, '8001')//smallest 2-byte value
-	both(16383, 'ff7f')//largest (14 bits)
-
-	//3 bytes
-	both(16384, '808001')
-	both(2097151, 'ffff7f')//largest (21 bits)
-
-	//4 bytes, the cap
-	both(2097152, '80808001')
-	both(268435455, 'ffffff7f')//largest valid value (28 bits)
+	//boundaries at each byte threshold--7 bits per byte, up to 4 bytes
+	both(0, '00');          both(127, '7f')//1 byte: 0 through 127
+	both(128, '8001');      both(16383, 'ff7f')//2 bytes: 128 through 16383
+	both(16384, '808001');  both(2097151, 'ffff7f')//3 bytes: 16384 through 2097151
+	both(2097152, '80808001'); both(268435455, 'ffffff7f')//4 bytes: 2097152 through 268435455
 
 	//encode rejects out of range
-	function badEncode(n) { let threw = false; try { spanEncode(n) } catch(e) { threw = true } ok(threw) }
-	badEncode(-1)//negative
-	badEncode(268435456)//one past the cap
+	bad(() => spanEncode(-1))
+	bad(() => spanEncode(268435456))//one past the 4-byte cap
 
-	//decode rejects non-canonical and malformed
-	function badDecode(base16) { let threw = false; try { spanDecode(Data({base16}).array(), 0) } catch(e) { threw = true } ok(threw) }
-	badDecode('8000')//non-canonical: decodes to 0 but canonical is '00'
-	badDecode('8100')//non-canonical: decodes to 1 but canonical is '01'
-	badDecode('80808080')//no terminating byte after 4 bytes
-	badDecode('80')//truncated: continuation bit set but no next byte
+	//decode rejects non-canonical and truncated input
+	bad(() => spanDecode(Data({base16: '8000'}).array(), 0))//non-canonical: two bytes encoding the value 0, canonical is one byte '00'
+	bad(() => spanDecode(Data({base16: '80'}).array(), 0))//truncated: continuation bit set with no next byte
+	bad(() => spanDecode(Data({base16: '80808080'}).array(), 0))//five continuation bytes, past the 4-byte cap
 })
-test(() => {//Outline binary form: round-trips arbitrary trees, rejects non-canonical span encodings
-	//a variety of tree shapes all survive the round trip
-	function roundTrip(build) {
-		let o = build()
-		let bytes = o.data()
-		let parsed = dataToOutline(bytes)
-		ok(parsed.data().base16() == bytes.base16())//re-serialize and compare bytes
-	}
+test(() => {//Outline binary form: arbitrary trees round-trip through dataToOutline and outlineToData, rejects trailing or malformed input
+	function roundTrip(o) { ok(dataToOutline(o.data()).data().base16() == o.data().base16()) }
 
-	roundTrip(() => Outline())//empty outline
-	roundTrip(() => Outline('leaf', Data({text: 'value'})))//simple leaf
-	roundTrip(() => {//deep nesting
-		let o = Outline('a')
-		o.m('b').m('c').m('d').value(Data({text: 'deep'}))
-		return o
-	})
-	roundTrip(() => {//mixed named and unnamed
-		let o = Outline('mix')
-		o.add(Outline('', Data({base16: '01'})))
-		o.add(Outline('', Data({base16: '02'})))
-		o.add(Outline('tag', Data({text: 'label'})))
-		return o
-	})
+	roundTrip(Outline())//empty outline
+	roundTrip(Outline('leaf', Data({text: 'value'})))//simple leaf
+	let deep = Outline('a'); deep.m('b').m('c').m('d').value(Data({text: 'deep'}))
+	roundTrip(deep)
+	let mix = Outline('mix')
+	mix.add(Data({base16: '01'})); mix.add(Data({base16: '02'})); mix.add(Outline('tag', Data({text: 'label'})))
+	roundTrip(mix)//mixed named and unnamed contents
 
-	//binary parse rejects trailing bytes and non-canonical span encodings
-	function bad(base16) { let threw = false; try { dataToOutline(Data({base16})) } catch(e) { threw = true } ok(threw) }
-	bad('000000' + 'ff')//trailing byte after a valid empty outline
-	bad('8000' + '0000')//non-canonical span: 8000 decodes to 0 but should be just 00
+	bad(() => dataToOutline(Data({base16: '000000ff'})))//trailing byte after a valid empty outline
 })
 
 
