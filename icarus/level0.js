@@ -3877,10 +3877,35 @@ The closest inspiration is Bencoding (Bram Cohen, 2001), the serialization forma
 MessagePack (Furuhashi, 2008), CBOR (RFC 7049, 2013), and Protocol Buffers (Google, 2008) solve a different problem. They are general-purpose serialization formats with rich type systems — integers, floats, strings, arrays, maps, booleans, nulls, extension types. Powerful, but more complex than needed when all your values are just bytes. Protobuf additionally requires schema files compiled ahead of time. Outline is deliberately simpler.
 
 Outline has two serialization formats:
-- Text: indented lines like «name:"value"0d0a» using Quoted Encoding (above). Visible in source code as template literals, explains itself in markdown documentation, diffs alongside code in version control.
+- Text: indented lines like «name:"value"0d0a» using quoted encoding with dataToQuoted(). Visible in source code as template literals, explains itself in markdown documentation, diffs alongside code in version control. The parser is lenient about indentation width (2 spaces, 4 spaces, tabs) and accepts trailing whitespace and # comments on each line, so pasted or hand-edited text tolerates reasonable sloppiness.
 - Binary: span-prefixed length encoding (name size, name, value size, value, contents size, contents) with no delimiters or escaping. Compact and unambiguous — data stays the same size on the wire, unlike JSON which inflates binary with escape sequences.
 
 One value type (bytes), one tree structure, deterministic sort, a text form and a binary form. It runs anywhere JavaScript does — browser, Node, Worker — with no dependencies, no schema files, and no build step.
+
+Rules for designing an outline that you're going to use in your application:
+- Names are short, lowercase, a-z and 0-9 only. Blank names are fine, duplicate names are fine.
+- Insertion order cannot matter. Sorting is deterministic and automatic, so the same information always serializes to the same bytes. If your data has ordering that matters, encode the order explicitly--for example, wrap each item in an outline named "1", "2", "3".
+- Names are labels, not data. Don't generate names from data or encode meaning in them; that's what values are for.
+- Values are bytes, as raw and granular as possible. No compression, no structured formats, no length-prefixed sub-records; if you have structure, use nested contents instead of packing it into a value.
+- No version numbers or vendor codes. An outline grows by adding new names; readers ignore names they don't recognize.
+- Outlines are short packets, not bulk storage. A typical outline is well under 8 KB as binary.
+- Outlines must be strict trees. No cycles, no shared subtrees--the same outline instance appearing in two places is rejected at serialization time. This matches the text form, which has no way to express sharing.
+*/
+/*ttd april, the original draft:
+// rules for designing your outline
+// tag names can only be numbers and lowercase letters, as short as possible
+// blank ok, duplicate tag names ok
+// order can't matter
+// tag names can't contain data, or be generated from data, that's what values are for
+// values can't contain outline data, that's what contents are for
+// numbers are text numerals in values, no numbers in bits
+// values shouldn't have compression or encoding that requires more transformation, data in its most raw form
+// values shouldn't have structure that requires more parsing, data in its most granular form
+// no version numbers, the outline grows without breaking compatibility
+// no vendor codes, the outline is a single unified common area
+// an outline should be short, 8k or less when turned into data
+
+// Make an outline to express a short well structured message of binary data that will be effortless to extend in the future
 */
 export function Outline(name, value) {
 	let o = {type: 'Outline'}//the outline object we'll build and return
@@ -3962,7 +3987,7 @@ export function Outline(name, value) {
 	}
 	o.sort = () => {//sort all nested contents recursively so identical information produces identical serialization
 		_contents.forEach(c => c.sort())//sort from the deepest levels up
-		_contents.sort(compareOutline)//then sort this level
+		_contents.sort(_outlineCompare)//then sort this level
 	}
 
 	o.text = () => outlineToText(o)//text serialization, visible in source and documentation
@@ -3973,14 +3998,15 @@ export function Outline(name, value) {
 	return o
 }
 
-//              _   _ _              _            _   
-//   ___  _   _| |_| (_)_ __   ___  | |_ _____  _| |_ 
-//  / _ \| | | | __| | | '_ \ / _ \ | __/ _ \ \/ / __|
-// | (_) | |_| | |_| | | | | |  __/ | ||  __/>  <| |_ 
-//  \___/ \__,_|\__|_|_|_| |_|\___|  \__\___/_/\_\\__|
-//                                                    
+//  _            _                     _       _       _        
+// | |_ _____  _| |_    __ _ _ __   __| |   __| | __ _| |_ __ _ 
+// | __/ _ \ \/ / __|  / _` | '_ \ / _` |  / _` |/ _` | __/ _` |
+// | ||  __/>  <| |_  | (_| | | | | (_| | | (_| | (_| | || (_| |
+//  \__\___/_/\_\\__|  \__,_|_| |_|\__,_|  \__,_|\__,_|\__\__,_|
+//                                                              
 
 function outlineToText(o) {//express an outline as indented lines of text for code, documentation, and diffs
+	_outlineFlat(o)
 	const _compose = (o, indent) => {//recursive: one line for this outline, then its contents at deeper indent
 		let s = indent + o.name() + ':' + dataToQuoted(o.value()) + newline
 		for (let i = 0; i < o.length(); i++) s += _compose(o.get(i), indent + '  ')//two spaces per level
@@ -3999,9 +4025,22 @@ export function textToOutline(s) {//parse a text outline into its object form
 		let indent = line.match(/^[ \t]*/)[0].length
 		let c = cut(line.slice(indent), ':')
 		if (!c.found) toss('data', {line})//every line must have a colon separating name from quoted value
+
+		//find where the value ends: walk forward through c.after tracking quote state, stop at the first whitespace or # outside quotes
+		let valueEnd = c.after.length
+		let inQuote = false
+		for (let j = 0; j < c.after.length; j++) {
+			let ch = c.after[j]
+			if (ch == '"') { inQuote = !inQuote; continue }
+			if (!inQuote && (ch == ' ' || ch == '\t' || ch == '#')) { valueEnd = j; break }
+		}
+		let valuePart = c.after.slice(0, valueEnd)
+		let tail = c.after.slice(valueEnd)
+		if (!/^[ \t]*(#.*)?$/.test(tail)) toss('data', {line})//trailing content after the value must be whitespace, or a # comment to end of line
+
 		let o = Outline()
 		o.name(c.before)
-		let v = quotedToData(c.after)
+		let v = quotedToData(valuePart)
 		if (v !== null) o.value(v)//null means the quoted form was blank, leave the value null
 		parsed.push({o, indent})
 	}
@@ -4024,14 +4063,8 @@ export function textToOutline(s) {//parse a text outline into its object form
 	return root
 }
 
-//              _   _ _                  _       _        
-//   ___  _   _| |_| (_)_ __   ___    __| | __ _| |_ __ _ 
-//  / _ \| | | | __| | | '_ \ / _ \  / _` |/ _` | __/ _` |
-// | (_) | |_| | |_| | | | | |  __/ | (_| | (_| | || (_| |
-//  \___/ \__,_|\__|_|_|_| |_|\___|  \__,_|\__,_|\__\__,_|
-//                                                        
-
 function outlineToData(o) {//serialize an outline to binary data for disk or wire
+	_outlineFlat(o)//guard against user-supplied cycles before sort
 	o.sort()//sort depth-first before we walk the tree, so the output is deterministic
 
 	//first pass: measure the exact size we'll need, so we can allocate one buffer and write into it
@@ -4104,14 +4137,16 @@ export function dataToOutline(d) {//parse binary data into an outline object
 	return root
 }
 
-//              _   _ _                                                       
-//   ___  _   _| |_| (_)_ __   ___    ___ ___  _ __ ___  _ __   __ _ _ __ ___ 
-//  / _ \| | | | __| | | '_ \ / _ \  / __/ _ \| '_ ` _ \| '_ \ / _` | '__/ _ \
-// | (_) | |_| | |_| | | | | |  __/ | (_| (_) | | | | | | |_) | (_| | | |  __/
-//  \___/ \__,_|\__|_|_|_| |_|\___|  \___\___/|_| |_| |_| .__/ \__,_|_|  \___|
-//                                                      |_|                   
-
-function compareOutline(o1, o2) {//compare two outlines for sort order: name first, then value, then nested contents recursively down the whole tree
+function _outlineFlat(o) {//make sure o doesn't have a cycle or duplicate
+	let seen = new WeakSet()
+	const _walk = (x) => {
+		if (seen.has(x)) toss('cycle', {o, x})//cycle or DAG: x already appears somewhere else in the tree
+		seen.add(x)
+		for (let i = 0; i < x.length(); i++) _walk(x.get(i))
+	}
+	_walk(o)
+}
+function _outlineCompare(o1, o2) {//compare two outlines for sort order: name first, then value, then nested contents recursively down the whole tree
 
 	//name first
 	if (o1.name() < o2.name()) return -1//o1 wins with a lighter name
@@ -4136,7 +4171,7 @@ function compareOutline(o1, o2) {//compare two outlines for sort order: name fir
 	//value tied, so we examine contents pairwise
 	let overlappingContentsCount = Math.min(o1.length(), o2.length())
 	for (let i = 0; i < overlappingContentsCount; i++) {//compare contents pairwise at each index
-		let c = compareOutline(o1.get(i), o2.get(i))
+		let c = _outlineCompare(o1.get(i), o2.get(i))
 		if (c) return c//o.sort() calls us after sorting deeper levels first, so contents at each level are already in order
 	}
 	if (o1.length() < o2.length()) return -1//all shared contents match, fewer contents sorts first
@@ -4486,6 +4521,152 @@ test(() => {//textToOutline rejects malformed structure; quoted encoding in valu
 	let o = textToOutline(':')
 	ok(o.name() == '' && o.value() === null && o.length() == 0)
 })
+test(() => {//textToOutline accepts trailing whitespace and # comments on each line, so pasted or hand-edited text tolerates reasonable sloppiness
+	//dots stand in for spaces so the trailing whitespace is visible
+	const dots = (s) => s.replace(/\./g, ' ')
+	function good(s) { textToOutline(dots(s)); ok(true) }
+	function poor(s) { bad(() => textToOutline(dots(s))) }
+
+	//baseline: no trailing content
+	good(deindent`
+		a:
+		..b:"7"
+	`)
+
+	//trailing whitespace after the value
+	good(deindent`
+		a:
+		..b:"7".
+	`)
+
+	//# starts a comment; everything from # to end of line is ignored
+	good(deindent`
+		a:
+		..b:"7"#comment
+	`)
+
+	//whitespace between the value and the comment is fine
+	good(deindent`
+		a:
+		..b:"7".#comment
+	`)
+
+	//# inside a quoted value is not a comment marker
+	good(deindent`
+		a:
+		..b:"room #9"
+	`)
+
+	//trailing content that is neither whitespace nor a comment is rejected
+	poor(deindent`
+		a:
+		..b:"7".extra
+	`)
+})
+test(() => {//Outline group: various tree shapes all round-trip through text -> outline -> data -> outline -> text
+	//copied directly from ../node's 12-year-old tests--every shape the original indent-grouping handled, our stack-based parser must also handle
+	function all(s) {
+		let o = textToOutline(s)
+		let d = o.data()
+		let o2 = dataToOutline(d)
+		ok(s == o2.text())//text round-trips through both forms and back
+		ok(d.base16() == o2.data().base16())//binary round-trips
+	}
+
+	all(deindent`
+		a:
+	`)
+	all(deindent`
+		a:
+		  b:
+	`)
+	all(deindent`
+		a:
+		  b:
+		  c:
+	`)
+	all(deindent`
+		a:
+		  b:
+		    c:
+	`)
+	all(deindent`
+		a:
+		  b:
+		    c:
+		  d:
+	`)
+	all(deindent`
+		a:
+		  b:
+		    c:
+		    d:
+	`)
+	all(deindent`
+		a:
+		  b:
+		    c:
+		      d:
+	`)
+	all(deindent`
+		a:
+		  b:
+		    c:
+		      d:
+		  e:
+	`)
+	all(deindent`
+		a:
+		  b:
+		    c:
+		      d:
+		    e:
+	`)
+	all(deindent`
+		a:
+		  b:
+		    c:
+		      d:
+		      e:
+	`)
+	all(deindent`
+		a:
+		  b:
+		    c:
+		      d:
+		        e:
+	`)
+
+	//one big shape with lots of variety--lots of depths, lots of siblings at each level
+	all(deindent`
+		a:
+		  b:
+		  c:
+		    d:
+		    e:
+		      f:
+		      g:
+		        h:
+		        i:
+		          j:
+		          k:
+		    l:
+		      m:
+		      n:
+		  o:
+		    p:
+		      q:
+		  r:
+		  s:
+		  t:
+		  u:
+		    v:
+		      w:
+		      x:
+		    y:
+		  z:
+	`)
+})
 test(() => {//span encoding: variable-length integer used for size prefixes in the binary form
 	function both(n, base16) {
 		ok(Data({array: spanEncode(n)}).base16() == base16)//encode
@@ -4520,6 +4701,36 @@ test(() => {//Outline binary form: arbitrary trees round-trip through dataToOutl
 	roundTrip(mix)//mixed named and unnamed contents
 
 	bad(() => dataToOutline(Data({base16: '000000ff'})))//trailing byte after a valid empty outline
+})
+test(() => {//Outline serialization rejects cycles with a clean data toss, not an unhelpful RangeError from stack exhaustion
+	//require a clean toss, not a stack overflow--the point is to give the caller a meaningful error
+	function rejectsCycle(f) {
+		let err
+		try { f() } catch(e) { err = e }
+		ok(err && err.name != 'RangeError')
+	}
+
+	//simplest cycle: an outline that contains itself
+	let self = Outline('self')
+	self.add(self)
+	rejectsCycle(() => self.data())
+	rejectsCycle(() => self.text())
+
+	//longer cycle: two outlines containing each other
+	let a = Outline('a')
+	let b = Outline('b')
+	a.add(b)
+	b.add(a)
+	rejectsCycle(() => a.data())
+	rejectsCycle(() => a.text())
+
+	//DAG (the same outline instance referenced from two sibling subtrees) is also rejected--the text form can't express sharing, so the binary form won't either
+	let shared = Outline('shared', Data({text: 'value'}))
+	let dag = Outline('dag')
+	dag.m('left').add(shared)
+	dag.m('right').add(shared)
+	rejectsCycle(() => dag.data())
+	rejectsCycle(() => dag.text())
 })
 
 
