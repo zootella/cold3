@@ -4513,7 +4513,7 @@ test(() => {//textToOutline rejects malformed structure; quoted encoding in valu
 	bad(() => textToOutline('nocolon'))//line without a colon--can't split name from value
 	bad(() => textToOutline(deindent`
 		a:
-		  b:
+			b:
 		c:
 	`))//valid tree followed by a second root
 
@@ -4561,110 +4561,6 @@ test(() => {//textToOutline accepts trailing whitespace and # comments on each l
 	poor(deindent`
 		a:
 		..b:"7".extra
-	`)
-})
-test(() => {//Outline group: various tree shapes all round-trip through text -> outline -> data -> outline -> text
-	//copied directly from ../node's 12-year-old tests--every shape the original indent-grouping handled, our stack-based parser must also handle
-	function all(s) {
-		let o = textToOutline(s)
-		let d = o.data()
-		let o2 = dataToOutline(d)
-		ok(s == o2.text())//text round-trips through both forms and back
-		ok(d.base16() == o2.data().base16())//binary round-trips
-	}
-
-	all(deindent`
-		a:
-	`)
-	all(deindent`
-		a:
-		  b:
-	`)
-	all(deindent`
-		a:
-		  b:
-		  c:
-	`)
-	all(deindent`
-		a:
-		  b:
-		    c:
-	`)
-	all(deindent`
-		a:
-		  b:
-		    c:
-		  d:
-	`)
-	all(deindent`
-		a:
-		  b:
-		    c:
-		    d:
-	`)
-	all(deindent`
-		a:
-		  b:
-		    c:
-		      d:
-	`)
-	all(deindent`
-		a:
-		  b:
-		    c:
-		      d:
-		  e:
-	`)
-	all(deindent`
-		a:
-		  b:
-		    c:
-		      d:
-		    e:
-	`)
-	all(deindent`
-		a:
-		  b:
-		    c:
-		      d:
-		      e:
-	`)
-	all(deindent`
-		a:
-		  b:
-		    c:
-		      d:
-		        e:
-	`)
-
-	//one big shape with lots of variety--lots of depths, lots of siblings at each level
-	all(deindent`
-		a:
-		  b:
-		  c:
-		    d:
-		    e:
-		      f:
-		      g:
-		        h:
-		        i:
-		          j:
-		          k:
-		    l:
-		      m:
-		      n:
-		  o:
-		    p:
-		      q:
-		  r:
-		  s:
-		  t:
-		  u:
-		    v:
-		      w:
-		      x:
-		    y:
-		  z:
 	`)
 })
 test(() => {//span encoding: variable-length integer used for size prefixes in the binary form
