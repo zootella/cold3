@@ -2,21 +2,27 @@
 import {//from wrapper
 wrapper,
 } from './wrapper.js'
-import {//from level0
-Time, inSeconds, Now, sayDate, sayTick, isExpired, textToTick,
-log, logTo, say, look, defined, noop, test, ok, toss,
-checkInt, hasText, checkText, checkTextSame, newline,
+import {//from core
+Time, inSeconds, textToTick,
+say, look, defined, checkTextSame, newline,
 Tag, checkTag, hasTag,
 Data, encryptSymmetric, encryptData, decryptData, hash_length, hashText, hmacSign,
 makePlain, makeObject, makeText,
-replaceAll, replaceOne, toTextOrBlank,
+replaceAll, replaceOne,
+randomBetween,
+safefill, deindent, cutAfterLast,
+random32,
+} from './core.js'
+import {//from level0
+Now, sayDate, sayTick, isExpired,
+log, logTo, noop, test, ok, toss,
+checkInt, hasText, checkText,
+toTextOrBlank,
 parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
 sameIgnoringCase, sameIgnoringTrailingSlash,
-randomBetween,
 runTests,
-safefill, deindent, cutAfterLast, commas,
+commas,
 enterSimulationMode, isInSimulationMode, ageNow,
-random32,
 } from './level0.js'
 import {//from level1
 Limit, checkAction, checkActions,

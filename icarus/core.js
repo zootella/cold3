@@ -1,4 +1,13 @@
 
+import {//from level0
+noop, test, ok, bad,
+Now, sayTick,
+toss, log, commas,
+checkInt, checkText, hasText, checkTextOrBlank, isNumerals, textToInt,
+mulberryData,
+checkNumerals,
+_customErrorKeys,
+} from './level0.js'
 
 //simple ergonimic cipherpunk primitives widely useful
 
@@ -193,6 +202,49 @@ noop(() => {//fuzz test round trip
 
 
 export const newline = '\r\n'//we use the Microsoft Windows-style newline, valid on windows, mac, and linux
+export const nleasy = '\r\n'
+export const nlreview = '\r\n'
+/*
+hi claude, ill explain the above
+
+(1) a sorting pass
+
+note how right now, all three of these, newline, nleasy, and nlreviw, are defined to be the same windows newline
+the goal is to analyize all uses of newline in the codebase, and then change them to either nleasy or nlreview
+so before this pass, newline is used many places, nleasy and nlreview nowhere
+and after this pass newline is used nowhere, nleasy is used many places, and nlreview is also used
+and both before and after this pass, there are no actual code changes, as all three are defined identically
+
+how do you decide to replace a use of newline with either nleasy or nlreview?
+if the use is absoltely trivial, then it's a candidate for nleasy
+if anything about the use indicates oterwise, then use nlreview
+so if you're not sure, nlreview is the correct choice
+
+what does it mean for a use to be trivial?
+it means that if we redefined nleasy to '\n', nothing at all would break
+and nothing of consequence would change
+no build output woudl be different
+no test (no test **as written** now with WINDOWS NEWLINES, *not* as also edited away from windows newlines!) would fail
+
+actually, let's do a search and discussion first, to talk about how to sort things
+
+(2) the easy refactoring pass
+
+once sorted, then we'll
+2a - replace uses of nleasy to just inline '\n' like normal modern javascript does
+2b - confirm no build outputs are different or tests fail
+2c - scrutinize the diff
+
+(3) the review refactoring pass
+
+then with the easy ones out of the way, we'll tackle the nlreview
+this will involve changing code and tests
+and careful, individual review of uses around packets, formats, files, and builds
+
+when we're done, we will get rid of all three definitions here
+have a modern codebsae which uses single byte newlines as literal \n correctly and freely
+and leave that bad old world of windows and notepad.exe and 0d0a behind us
+*/
 
 /*
 ttd march2025
@@ -484,7 +536,7 @@ function arrayToBase64(a, trip) {
 	return s
 }
 
-function checkSame(o1, o2) {
+export function checkSame(o1, o2) {
 	if (o1 !== o2) toss('round trip mismatch', {o1, o2})
 }
 function checkSameArray(a1, a2) {
@@ -3807,11 +3859,11 @@ https://www.npmjs.com/package/nanoid
 https://github.com/ai/nanoid
 https://zelark.github.io/nano-id-cc/ collision calculator
 */
-noop(async () => { const {nanoid} = await fuzzDynamicImport()
+noop(async () => { const {nanoid} = await (await import('./level1.js')).fuzzDynamicImport()
 	//here's what your Tag() function looked like before you extracted the implementation from nanoid to move it down to level0
 	function nanoidTag() {
 		const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'//removed -_ for double-clickability, reducing 149 to 107 billion years, according to https://zelark.github.io/nano-id-cc/
-		return nanoid.customAlphabet(alphabet, Limit.tag)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
+		return nanoid.customAlphabet(alphabet, tagLength)()//tag length 21, long enough to be unique, short enough to be reasonable, and nanoid's default length
 	}
 	for (let i = 0; i < 20; i++) log(`${nanoidTag()} from nanoid and ${Tag()} from Tag()`)//sanity check that they look the same
 })
@@ -3831,7 +3883,7 @@ base32 has (b) and (c) like base16 while being much shorter
 Data() has short zero dependency implementations of base16, 32, 62, and 64
 turn on this fuzz tester to use the base32 implementation that comes with otpauth to confirm our base32 implementation matches
 */
-async function cycle4648(size) { const {otpauth} = await fuzzDynamicImport()
+async function cycle4648(size) { const {otpauth} = await (await import('./level1.js')).fuzzDynamicImport()
 	let d0 = Data({random: size})
 	let s1 = d0.base32()//we've written our own implementation of base32 encoding into Data
 	let s2 = otpauth.Secret.fromHex(d0.base16()).base32//confirm it matches the behavior in the popular otpauth module
@@ -3862,7 +3914,7 @@ async function testCycle(m, f) {
 /*
 RFC6238: time-based one-time password
 */
-async function cycle6238() { const {otpauth} = await fuzzDynamicImport()
+async function cycle6238() { const {otpauth} = await (await import('./level1.js')).fuzzDynamicImport()
 	let d = Data({random: 20})//random shared secret for a totp enrollment
 	let t = randomBetween(0, 100*Time.year)//random timestamp between 1970 and 2070
 
@@ -4452,7 +4504,7 @@ ${hashedStream.pieceHash.base32()} piece hash from stream
 
 //turn on: try out on the command line with real files $ yarn test ~/Downloads/big.mov
 noop(async () => {
-	const node = await nodeDynamicImport()
+	const node = await (await import('./level1.js')).nodeDynamicImport()
 	let name = process.argv[2]
 	let size = node.fs.statSync(name).size
 	let stream = node.stream.Readable.toWeb(node.fs.createReadStream(name))//convert from Node-style stream to isomorphic WHATWG stream

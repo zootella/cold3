@@ -2,23 +2,27 @@
 import {//from wrapper
 wrapper,
 } from './wrapper.js'
-import {//from level0
-Time, inSeconds,
-Now, sayDate, sayTick,
-noop, test, ok, toss, checkInt, hasText, Size,
-checkNumerals, takeNumerals,
-log,
+import {//from core
+Time, inSeconds, Size,
 say, look, defined,
-checkText,
 tagLength, Tag, checkTagOrBlank, checkTag, hasTag,
-Bin, Data, checkSizeStartEnd, randomBetween, mulberryData,
+Bin, Data, checkSizeStartEnd, randomBetween,
 cut,
 fraction, exponent, int, big, newline,
 hash_size, hash_length, hashText, given,
 makePlain, makeObject, makeText,
 totpValidate,
-safefill, deindent, commas,
+safefill, deindent,
 prefix1, prefix2,
+} from './core.js'
+import {//from level0
+Now, sayDate, sayTick,
+noop, test, ok, toss, checkInt, hasText,
+checkNumerals, takeNumerals,
+log,
+checkText,
+mulberryData,
+commas,
 } from './level0.js'
 
 //(1) static imports

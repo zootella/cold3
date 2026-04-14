@@ -197,7 +197,6 @@ qrcodeDynamicImport, uppyDynamicImport, wevmDynamicImport,
 nodeDynamicImport, fuzzDynamicImport, pgliteDynamicImport,
 prefix39,
 
-sayPlural, sayHugeInteger, saySize4, sayNumber4,
 middleDot, thinSpace,
 Limit, cropToLimit,
 trimLines, trimLine,
@@ -216,8 +215,6 @@ checkWallet, validateWallet,
 
 browserIsBesideAppStore, getBrowserGraphics,
 
-hashFile, hashStream, hashProtocol,
-
 generatePosts, postDatabase,
 
 indexRecords, addRecords, mergeRecords,
@@ -235,8 +232,8 @@ helpful javascript functions with no module imports
 */
 export {
 
-Time, inSeconds, Size, noop,
-Now, sayDate, sayTick, tickToText, textToTick,
+noop,
+Now, sayDate, sayTick,
 test, ok, runTests,
 toss,
 log, addLogSink, logTo,
@@ -246,35 +243,13 @@ enterSimulationMode, isInSimulationMode, ageNow,
 checkText, hasText, checkInt, minInt,
 toBoolean, toTextOrBlank,
 intToText, textToInt,
-checkTextSame, hasTextSame, checkTextOrBlank, hasTextOrBlank,
+checkTextOrBlank, hasTextOrBlank,
 checkNumerals, isNumerals, takeNumerals,
-newline,
-cut, cutLast, cutAfterLast,
-replaceAll, replaceOne,
-safefill, deindent,
 
-Bin, Data, checkSizeStartEnd, mulberryData, cutRandomWords,
-base62ToInt, intToBase62, dataToQuoted, quotedToData,
-Outline, textToOutline, dataToOutline,
-
-Tag, checkTagOrBlank, checkTag, hasTag,
-randomBetweenLight, randomBetween, otpPrefix, otpGenerate,
-hash_size, hash_length, checkHash, hashData, hashText, random32,
-passwordStrength, passwordCycles, passwordHash,
-encryptData, decryptData, encryptSymmetric,
-hmacSign,
-rsaEncrypt, rsaDecrypt,
-curveMakeSigningKeys, curveSign, curveVerify, curveMakeAgreementKeys, curveDerive,
-totpEnroll, totpIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
+mulberryData, cutRandomWords,
 
 tickToDay, dayToTick,
 sayTimePage, sayWhenPage, sayWhenFeed,
-fraction, exponent, int, big,
-defined, given,
-squareEncode, squareDecode, checkSquare,
-correctLength,
-say, look,
-makePlain, makeObject, makeText,
 
 parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
 sequentialShared, sequentialSeparate,
@@ -286,7 +261,46 @@ isExpired,
 commas,
 anyIncludeAny,
 
-liveBox,//move to whichever level you need it!
+} from './level0.js'
+
+/*
+demoted to become npm's @zootella/core: simple ergonomic cipherpunk primitives widely and wiledly useful
+*/
+export {
+
+Time, inSeconds, Size,
+tickToText, textToTick,
+newline,
+cut, cutLast, cutAfterLast,
+replaceAll, replaceOne,
+safefill, deindent,
+
+Bin, Data, checkSizeStartEnd,
+base62ToInt, intToBase62, dataToQuoted, quotedToData,
+Outline, textToOutline, dataToOutline,
+
+Tag, tagLength, checkTagOrBlank, checkTag, hasTag,
+randomBetweenLight, randomBetween, otpPrefix, otpGenerate,
+hash_size, hash_length, checkHash, hashData, hashText, random32,
+passwordStrength, passwordCycles, passwordHash,
+encryptData, decryptData, encryptSymmetric,
+hmacSign,
+rsaEncrypt, rsaDecrypt,
+curveMakeSigningKeys, curveSign, curveVerify, curveMakeAgreementKeys, curveDerive,
+totpEnroll, totpIdentifier, totpValidate, totpGenerate, totpConstants, checkTotpSecret, checkTotpCode,
+
+checkTextSame, hasTextSame,
+fraction, exponent, int, big,
+defined, given,
+squareEncode, squareDecode, checkSquare,
+correctLength,
+say, look,
+makePlain, makeObject, makeText,
+
+sayPlural, sayHugeInteger, saySize4, sayNumber4,
+hashFile, hashStream, hashProtocol,
+
+liveBox,
 prefix_alphabet, prefix1, prefix2,
 
-} from './level0.js'
+} from './core.js'

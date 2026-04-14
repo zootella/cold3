@@ -2,20 +2,25 @@
 import {//from wrapper
 wrapper,
 } from './wrapper.js'
-import {//from level0
-Time, inSeconds, Now, sayDate, sayTick,
-log, logTo, say, look, defined, noop, test, ok, toss,
-textToInt, hasText, checkText, checkTextOrBlank, newline,
+import {//from core
+Time, inSeconds,
+say, look, defined, newline,
 Tag, checkTagOrBlank, checkTag,
 Data, decryptData, hash_size, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
-checkHash, checkInt, roundDown, hashText, given,
+checkHash, hashText, given,
 otpGenerate, otpPrefix, prefix_alphabet,
 makePlain, makeObject, makeText,
 safefill, deindent,
-isInSimulationMode, ageNow,
 random32,
+} from './core.js'
+import {//from level0
+Now, sayDate, sayTick,
+log, logTo, noop, test, ok, toss,
+textToInt, hasText, checkText, checkTextOrBlank,
+checkInt, roundDown,
+isInSimulationMode, ageNow,
 } from './level0.js'
 import {//from level1
 Limit, checkName, validateName,

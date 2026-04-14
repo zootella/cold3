@@ -2,6 +2,15 @@
 import {//from wrapper
 wrapper,
 } from './wrapper.js'
+import {//from core
+Time, Size, inSeconds,
+newline, cut2, replaceAll,
+say, look, defined, given,
+int, big,
+Data, randomBetween,
+makePlain,
+checkSame,
+} from './core.js'
 
 //level0 functions work anywhere javascript does (well, current browsers and node20+), and without any module imports!
 
@@ -131,7 +140,7 @@ class TossError extends Error {//custom error to identify it's one of ours, and 
 		if (Error.captureStackTrace) Error.captureStackTrace(this, toss)
 	}
 }
-const _customErrorKeys = [//list the Error properties we expect for look() to find them below
+export const _customErrorKeys = [//list the Error properties we expect for look() to find them below
 	'name', 'message', 'stack', 'cause',//standard JavaScript Error properties
 	'task', 'watch', 'when', 'tick',//our custom additions
 	'details', 'info', 'metadata',//common additional property names, and ones we might use in the future
