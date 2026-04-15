@@ -4,7 +4,7 @@ wrapper,
 } from './wrapper.js'
 import {//from core
 Time, inSeconds, textToTick,
-say, look, defined, checkTextSame, newline,
+say, look, defined, checkTextSame, newline, nleasy, nlreview,
 Tag, checkTag, hasTag,
 Data, encryptSymmetric, encryptData, decryptData, hash_length, hashText, hmacSign,
 makePlain, makeObject, makeText,
@@ -210,7 +210,7 @@ export function sayFloppy(wrapper) {
 	let line4 = `${commas(wrapper.codeSize)}_chars`.padEnd(floppy_width, '_')
 	let line5 = `${full}%_full`.padEnd(floppy_width, '_')
 	return {
-		disk: newline + ' ' + deindent`
+		disk: nlreview + ' ' + deindent`
 			 ____________________
 			| |${line1        }| |
 			|.|________________|H|
@@ -1243,7 +1243,7 @@ async function prepareLog(status, type, label, headline, watch) {
 	//set the watch object, and compose the message
 	if (headline != '↓') headline = `"${headline}"`//put quotes around a headline
 	d.watch = watch//machine parsable; human readable is later lines of message using look() below
-	d.message = `${sayTick(sticker.now)} [${label}] ${headline} ${sticker.where}.${sticker.sealedText}.${sticker.hashText} ${sticker.tag} ‹SIZE›${newline}${look(watch)}`
+	d.message = `${sayTick(sticker.now)} [${label}] ${headline} ${sticker.where}.${sticker.sealedText}.${sticker.hashText} ${sticker.tag} ‹SIZE›${nlreview}${look(watch)}`
 
 	//prepare the body
 	let b, s, size, m, l

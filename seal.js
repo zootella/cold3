@@ -1,7 +1,7 @@
 
 import {
 wrapper, sayFloppy, runTests, Time,
-log, look, newline, Data, Now, Tag, tickToText,
+log, look, newline, nleasy, nlreview, Data, Now, Tag, tickToText,
 parseKeyFile, randomBetween, encryptData, cutAfterLast, cutRandomWords,
 prefix39,
 } from 'icarus'
@@ -119,7 +119,7 @@ async function composeWrapper(properties) {
 
 	//compose the contents of wrapper.txt, a listing of hashes, paths, and sizes
 	let lines = properties.map(p => `${p.hash.base32()} ${p.path}:${p.size}`)//put size after : because it can't be part of a filename on windows or mac
-	let manifest = lines.join(newline)+newline
+	let manifest = lines.join(nlreview)+nlreview
 	await fs.writeFile(pathWrapperTxt, manifest)//write the file to disk
 	return manifest//also return the file contents as we'll hash them next
 }
@@ -132,7 +132,7 @@ async function writeWrapper(o) {
 	o.floppy = true//place a marker for it
 	let s = `export const wrapper = Object.freeze(${JSON.stringify(o, null, 2)})`//stringify the wrapper object
 	s = s.replace('"floppy": true', '"floppy": `' + f + '`')//replace the marker with a readable template literal
-	s = s.replace(/\n/g, newline)+newline//switch newlines to \r\n to work well on both mac and windows
+	s = s.replace(/\n/g, nlreview)+nlreview//switch newlines to \r\n to work well on both mac and windows
 	await fs.writeFile(pathWrapperJs, s)
 }
 
@@ -144,8 +144,8 @@ async function writeReadme(o) {
 	let lines = readme.split(/\r?\n/)
 	let fence1 = lines.findIndex(line => line.trimEnd() == '```')
 	let fence2 = lines.findIndex((line, i) => i > fence1 && line.trimEnd() == '```')
-	let body = lines.slice(fence2 + 1).join(newline)
-	let s = newline + '```' + disk + '```' + newline + body
+	let body = lines.slice(fence2 + 1).join(nlreview)
+	let s = nlreview + '```' + disk + '```' + nlreview + body
 	await fs.writeFile(pathReadme, s)
 }
 

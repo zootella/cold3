@@ -1,13 +1,13 @@
 
 import {
 wrapper, sayFloppy, runTests, runDatabaseTests,
-log, addLogSink, look, newline,
+log, addLogSink, look, newline, nleasy, nlreview,
 } from 'icarus'
 import {promises as fs} from 'fs'
 async function main() {
 	process.loadEnvFile()//load .env to be able to access secrets
 	if (false) {//optionally have log() also write to a file
-		addLogSink((s) => { fs.appendFile('test.log', s.trimEnd()+newline) })
+		addLogSink((s) => { fs.appendFile('test.log', s.trimEnd()+nlreview) })
 	}
 
 	let r1 = await runTests()//isomorphic unit tests in JavaScript like test(async () => { ok(true) })

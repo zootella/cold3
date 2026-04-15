@@ -205,6 +205,7 @@ export const newline = '\r\n'//we use the Microsoft Windows-style newline, valid
 export const nleasy = '\r\n'
 export const nlreview = '\r\n'
 /*
+ttd april
 hi claude, ill explain the above
 
 (1) a sorting pass
@@ -244,6 +245,11 @@ and careful, individual review of uses around packets, formats, files, and build
 when we're done, we will get rid of all three definitions here
 have a modern codebsae which uses single byte newlines as literal \n correctly and freely
 and leave that bad old world of windows and notepad.exe and 0d0a behind us
+*/
+/*
+ttd april
+also realized, need to grep "\r\n" javascript string literal windows newline
+and "0d0a", base16 windows newline bytes, so this note is to make passes to address those, too
 */
 
 /*
@@ -1198,7 +1204,7 @@ export async function decryptData(keyData, cipherData) {
 }
 noop(async () => {//here's how you make new keys to store one in .env and cloudflare secrets
 	let s = ''
-	for (let i = 0; i < 100; i++) s += newline+(await createKey()).base62()
+	for (let i = 0; i < 100; i++) s += nleasy+(await createKey()).base62()
 	log(s)
 })
 test(async () => {
@@ -2153,7 +2159,7 @@ export function deindent(words, ...fields) {
 		return line.slice(remove)
 	})
 
-	return lines.join(newline) + newline//reassemble lines with trailing newlines
+	return lines.join(nlreview) + nlreview//reassemble lines with trailing newlines
 }
 test(() => {//sanity check
 	let name1 = 'Alice'
@@ -2177,7 +2183,7 @@ test(() => {//sanity check
 	ok(s1 == s2)
 })
 noop(() => {//play around with deindent
-	function f(s) { log(`${newline}↓${newline}${s}↑`) }//newlines so you can see output between vertical arrows
+	function f(s) { log(`${nleasy}↓${nleasy}${s}↑`) }//newlines so you can see output between vertical arrows
 	f(deindent`
 		A
 			B
@@ -2561,7 +2567,7 @@ function lookDeep(o, depth, depthLimit) {//depth is the depth of o, 0 on the mar
 	let c = ''
 	if (r.container) {
 		if (depth < depthLimit) {//1 container, dive deeper because we're not yet at our depth limit
-			c += '  '.repeat(depth) + r.container[0] + lookSayLength(r.n) + newline
+			c += '  '.repeat(depth) + r.container[0] + lookSayLength(r.n) + nlreview
 			for (let k of lookKeys(o, lookKeysOptions)) { let v = o[k]//k is a property name in o, and v is its value
 				let margin         = '  '.repeat(depth+1)
 				let functionPrefix = (lookForType(v).type == 'function') ? '()' : ''
@@ -2569,14 +2575,14 @@ function lookDeep(o, depth, depthLimit) {//depth is the depth of o, 0 on the mar
 				let value          = lookDeep(v, depth+1, depthLimit).trimStart()//recurses!
 				c += margin + parameterName + value
 			}
-			c += `${'  '.repeat(depth)}${r.container[1]}${newline}`
+			c += `${'  '.repeat(depth)}${r.container[1]}${nlreview}`
 		} else {//2 container but we're at depth limit
 			c += `${r.container[0]}⭳⭳⭳${r.container[1]}${lookSayLength(r.n)}`
 		}
 	} else {//3 not a container
 		c += '  '.repeat(depth) + (r.show ? r.show : r.type) + lookSayLength(r.n)
 	}
-	return c.split('\n').map(line => line.trimEnd()).filter(line => line.length > 0).join(newline)+newline//remove blank lines and get one newline at the end
+	return c.split('\n').map(line => line.trimEnd()).filter(line => line.length > 0).join(nlreview)+nlreview//remove blank lines and get one newline at the end
 }
 function lookSayLength(n) { return n > 9 ? ` ‹${n}›` : '' }//9 and smaller count them yourself!
 
@@ -2750,7 +2756,7 @@ function lookSayString(s) {//s is given text
 	else                                                               quotes = `""`//most of the time, use ""
 
 	let m//m is modified for display
-	if (stack) m = s.split(/[\r\n]+/).filter(line => line.trim() != '').map(line => line.replace(/^ {4}/, '»')).join(newline)//to prepare a stack trace for display, split s into lines, filter out blank lines, replace 4 spaces at the start with a double arrow, and reassemble
+	if (stack) m = s.split(/[\r\n]+/).filter(line => line.trim() != '').map(line => line.replace(/^ {4}/, '»')).join(nlreview)//to prepare a stack trace for display, split s into lines, filter out blank lines, replace 4 spaces at the start with a double arrow, and reassemble
 	else m = s.replace(/\t/g, '»').replace(/[\r\n]+/g, '¶')//otherwise, show tabs and newlines
 
 	//compose the display text c like "short" or "long... that ends ellipsis instead of closing quote
@@ -3152,7 +3158,7 @@ export function Outline(name, value) {
 function outlineToText(o) {//express an outline as indented lines of text for code, documentation, and diffs
 	_outlineFlat(o)
 	const _compose = (o, indent) => {//recursive: one line for this outline, then its contents at deeper indent
-		let s = indent + o.name() + ':' + dataToQuoted(o.value()) + newline
+		let s = indent + o.name() + ':' + dataToQuoted(o.value()) + nlreview
 		for (let i = 0; i < o.length(); i++) s += _compose(o.get(i), indent + '  ')//two spaces per level
 		return s
 	}
@@ -3453,7 +3459,7 @@ test(() => {//quoted encoding demonstration and round trips
 
 	f('A\0', '"A"00')//text with terminators
 	f('AB\0', '"AB"00')
-	f('Hello\r\n', '"Hello"0d0a')
+	f('Hello\r\n', '"Hello"0d0a')//retro Windows-style
 	f('Hello\0', '"Hello"00')
 	f('\tIndented', '09"Indented"')
 
@@ -3477,7 +3483,7 @@ test(() => {//_quotedToData returns null for empty, false for invalid
 })
 noop(() => {//visual inspection: 50 random 32-byte values (sha256 hash length) in quoted encoding
 	let s = ''
-	for (let i = 0; i < 50; i++) s += newline + dataToQuoted(Data({random: hash_size}))
+	for (let i = 0; i < 50; i++) s += nleasy + dataToQuoted(Data({random: hash_size}))
 	log(s)
 })
 noop(() => {//length demonstration: quoted encoding on random 32-byte data (sha256 hash length)
@@ -3495,7 +3501,7 @@ noop(() => {//length demonstration: quoted encoding on random 32-byte data (sha2
 		total++
 	}
 	let quoted = shorter + same + longer
-	log(newline + deindent`
+	log(nleasy + deindent`
 		${commas(total)} random ${hash_size}-byte values in 1 second
 		${(plain/total*100).toFixed(3)}% stayed plain base16
 		${(quoted/total*100).toFixed(3)}% got quoted sections: ${(shorter/total*100).toFixed(3)}% shorter, ${(same/total*100).toFixed(3)}% same, ${(longer/total*100).toFixed(3)}% longer
@@ -4523,52 +4529,3 @@ noop(async () => {
 		Summed ${saySize4(size)} in ${commas(hash.duration)}ms (${commas(Math.round(hash.totalSize / hash.duration))} bytes/ms)
 	`)//seeing ~950k+ on your Mac
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
