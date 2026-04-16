@@ -2368,7 +2368,7 @@ And so, the road has led us here--to assembling raw SQL. Katy, bar the door!
 A very short list of acceptable characters, letters, numerals, -_,.?!@# and space,
 allow emails and common page text to be unaffected.
 Everything else gets turned into base 16 bytes using JavaScript's universal and default UTF-8
-These byte blocks appear in square braces, like end of line[0d0a]
+These byte blocks appear in square braces, like end of line[0a]
 "In PostgreSQL and MySQL, square brackets do not have any special meaning in standard SQL syntax." ChatGPT assures me.
 
 SQL injection attacks are scary, and 𐌊𐌉𐌃𐌔 Ꝋ𐌍 𐌉𐌍𐌔𐌕𐌀Ᏽ𐌐𐌀𐌌 are weird!
@@ -3026,7 +3026,7 @@ The closest inspiration is Bencoding (Bram Cohen, 2001), the serialization forma
 MessagePack (Furuhashi, 2008), CBOR (RFC 7049, 2013), and Protocol Buffers (Google, 2008) solve a different problem. They are general-purpose serialization formats with rich type systems — integers, floats, strings, arrays, maps, booleans, nulls, extension types. Powerful, but more complex than needed when all your values are just bytes. Protobuf additionally requires schema files compiled ahead of time. Outline is deliberately simpler.
 
 Outline has two serialization formats:
-- Text: indented lines like «name:"value"0d0a» using quoted encoding with dataToQuoted(). Visible in source code as template literals, explains itself in markdown documentation, diffs alongside code in version control. The parser is lenient about indentation width (2 spaces, 4 spaces, tabs) and accepts trailing whitespace and # comments on each line, so pasted or hand-edited text tolerates reasonable sloppiness.
+- Text: indented lines like «name:"value"0a» using quoted encoding with dataToQuoted(). Visible in source code as template literals, explains itself in markdown documentation, diffs alongside code in version control. The parser is lenient about indentation width (2 spaces, 4 spaces, tabs) and accepts trailing whitespace and # comments on each line, so pasted or hand-edited text tolerates reasonable sloppiness.
 - Binary: span-prefixed length encoding (name size, name, value size, value, contents size, contents) with no delimiters or escaping. Compact and unambiguous — data stays the same size on the wire, unlike JSON which inflates binary with escape sequences.
 
 One value type (bytes), one tree structure, deterministic sort, a text form and a binary form. It runs anywhere JavaScript does — browser, Node, Worker — with no dependencies, no schema files, and no build step.
@@ -3373,7 +3373,7 @@ function spanDecode(a, offset) {//returns {value, bytesRead} so the caller can a
 /*
 "Quoted" Encoding: A text format for binary data that mixes quoted ASCII text with base16
 
-«"Hello"0d0a» is easier to read than base16 '48656c6c6f0d0a'
+«"Hello"0a» is easier to read than base16 '48656c6c6f0a'
 «"A"00» shows the bits of a null terminator in a language-agnostic way, unlike 'A\0'
 «» blank text is valid quoted encoding to express nothing, size zero bytes
 
