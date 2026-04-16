@@ -201,8 +201,8 @@ noop(() => {//fuzz test round trip
 //                   
 
 
-export const nleasy = '\r\n'
-export const nlreview = '\r\n'
+export const nleasy = '\n'
+export const nlreview = '\n'
 /*
 ttd april
 hi claude, ill explain the above
@@ -2163,7 +2163,7 @@ export function deindent(words, ...fields) {
 test(() => {//sanity check
 	let name1 = 'Alice'
 	let name2 = 'Bob'
-	ok(deindent`Hello ${name1} and ${name2}` == 'Hello Alice and Bob\r\n')
+	ok(deindent`Hello ${name1} and ${name2}` == 'Hello Alice and Bob\n')
 
 	//now you can indent a multiline string with the surrounding code
 	let s1 = deindent`
@@ -2391,7 +2391,7 @@ test(() => {
 	ok(squareEncode('Hello is cześć in Polish, 你好 in Chinese, 안녕하세요 in Korean, こんにちは in Japanese, and مرحبا in Arabic') == 'Hello is cze[c59bc487] in Polish, [e4bda0e5a5bd] in Chinese, [ec9588eb8595ed9598ec84b8ec9a94] in Korean, [e38193e38293e381abe381a1e381af] in Japanese, and [d985d8b1d8add8a8d8a7] in Arabic')
 	ok(squareEncode('💘🍓 𝓗єŁ𝓁𝕆 ⛵😾') == '[f09f9298f09f8d93] [f09d9397d194c581f09d9381f09d9586] [e29bb5f09f98be]')	
 
-	ok(squareEncode('\ttab and\r\nnext line') == '[09]tab and[0d0a]next line')
+	ok(squareEncode(`\ttab and\r\nnext line`) == '[09]tab and[0d0a]next line')//intentionally uses windows newline
 	ok(squareEncode('[[[][][][]]][][[]') == '[5b5b5b5d5b5d5b5d5b5d5d5d5b5d5b5b5d]')
 })
 
@@ -3458,13 +3458,13 @@ test(() => {//quoted encoding demonstration and round trips
 
 	f('A\0', '"A"00')//text with terminators
 	f('AB\0', '"AB"00')
-	f('Hello\r\n', '"Hello"0d0a')//retro Windows-style
+	f(`Hello\r\n`, '"Hello"0d0a')//retro Windows-style
 	f('Hello\0', '"Hello"00')
 	f('\tIndented', '09"Indented"')
 
 	f('"', '22')
 	f('"hello"', '22"hello"22')
-	f('The quote " character\r\n', '"The quote "22" character"0d0a')//intentional design choice picking " because it looks like 22 ;)
+	f(`The quote " character\n`, '"The quote "22" character"0a')//intentional design choice picking " because it looks like 22 ;)
 })
 test(() => {//_quotedToData returns null for empty, false for invalid
 	ok('' == dataToQuoted(null))//blank is valid quoted encoding for zero bytes,

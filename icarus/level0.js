@@ -288,7 +288,7 @@ test(() => {
 	ok(!hasText(''))//empty string
 	ok(!hasText(' '))//just spaces
 	ok(!hasText(7))//non-string
-	ok(!hasText('\r\n'))//nonprinting characters
+	ok(!hasText('\t\r\n'))//nonprinting characters
 })
 
 export function checkInt(i, m) { if (!minInt(i, m)) toss('bounds', {i, m}) }
@@ -400,7 +400,7 @@ test(() => {
 	ok(takeNumerals('') == '')
 	ok(takeNumerals('A') == '')
 	ok(takeNumerals('0123456789') == '0123456789')
-	ok(takeNumerals('  012345\t6789\r\n') == '0123456789')
+	ok(takeNumerals(`  012345\t6789\n`) == '0123456789')
 	ok(takeNumerals(' 0123456789 一二三 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ .-_ 🌴? yes ') == '0123456789')
 })
 

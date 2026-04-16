@@ -232,7 +232,7 @@ export function trimLines(s, limit) {
 	return {lines, text: lines.join('\n')}//text for the database, lines for the page
 }
 test(() => {
-	ok(trimLines('A\r\nB').lines.length == 2)
+	ok(trimLines(`A\r\nB`).lines.length == 2)//windows-style
 	ok(trimLines('\nA\n\nB\n').lines.length == 2)
 
 	//add some tests to confirm no blank lines, and .text ends \n
@@ -254,11 +254,12 @@ test(() => {
 	ok(trimLine(' ') == '')
 
 	ok(trimLine('\nA\nB\n') == 'A B')
-	ok(trimLine('\tIndented  wide\r\n') == 'Indented wide')
+	ok(trimLine(`\tIndented  wide\n`) == 'Indented wide')
 
 	ok(trimLine(`$12${thinSpace+thinSpace}345${middleDot}67`) == `$12${thinSpace}345${middleDot}67`)
 	ok(trimLine('  First\u00A0 Last  ') == 'First\u00A0Last')//unicode nonbreaking space
 })
+//ttd april, get rid of these, the right pattern is just a regex wehre you're using them
 
 //      _                __                              _       
 //  ___| |_   _  __ _   / _| ___  _ __   _ __ ___  _   _| |_ ___ 
@@ -311,7 +312,7 @@ test(() => {
 	ok(slug('_._._.another..day._._._') == '_.another.day._')
 	ok(slug('007agent007') == 'agent007')
 	ok(slug(`The Price is $12${thinSpace+thinSpace}345${middleDot}67, please.`) == 'The-Price-is-12-345-67-please')
-	ok(slug('\tt1\tt2\nNet\nWin\r\nOS9\rUni\u2028And null\0') == 't1-t2-Net-Win-OS9-Uni-And-null')//a little System 9 in there, for you
+	ok(slug(`\tt1\tt2\nNet\nWin\r\nOS9\rUni\u2028And null\0`) == 't1-t2-Net-Win-OS9-Uni-And-null')//a little System 9 in there, for you
 })
 
 //                                               _                   _       
@@ -672,7 +673,7 @@ test(() => {
 	//sanity check
 	ok(!validateEmail('').ok)
 	ok(validateEmail('name@example.com').ok)
-	ok(validateEmail(' First.Last@EXAMPLE.COM\r\n').ok)
+	ok(validateEmail(` First.Last@EXAMPLE.COM\n`).ok)
 
 	//mistakes
 	ok(!validateEmail('name#example.com').ok)//spaces
@@ -768,7 +769,7 @@ test(() => {
 	f('US', '+14155552671',   '415 555 2671',     '+1 415 555 2671')
 	f('US', '+14155552671',   '415.555.2671',     '+1 415 555 2671')
 	f('US', '+14155552671',   '415-555-2671',     '+1 415 555 2671')
-	f('US', '+14155552671', ' \t415 5552671\r\n', '+1 415 555 2671')
+	f('US', '+14155552671', ` \t415 5552671\n`, '+1 415 555 2671')
 
 	//around the world
 	f('US', '+14155552671',   '+14155552671',    '+1 415 555 2671')//United States
@@ -869,7 +870,7 @@ test(() => {
 	b('4111 1111 1111 1111',     '4111 1111 1111 1111', '4111111111111111')
 	b('4111111111111111',        '4111 1111 1111 1111', '4111111111111111')
 	b('4111-1111-1111-1111',     '4111 1111 1111 1111', '4111111111111111')
-	b('4111 1111 1111 1111\r\n', '4111 1111 1111 1111', '4111111111111111')
+	b(`4111 1111 1111 1111\n`, '4111 1111 1111 1111', '4111111111111111')
 	b('3782 822463 10005',  '3782 822463 10005', '378282246310005')
 	b('3782 8224 6310 005', '3782 822463 10005', '378282246310005')
 })
@@ -1047,7 +1048,7 @@ test(() => {
 	ok(validateWallet('0XD8DA6BF26964AF9D7EED9E03E53415D37AA96045').ok)//uppercased even including "0X" ok
 	ok(validateWallet(  'd8da6bf26964af9d7eed9e03e53415d37aa96045').ok)//no prefix also ok
 
-	ok(validateWallet('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\r\n').ok)//edge space is fine
+	ok(validateWallet(`0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045\n`).ok)//edge space is fine
 	ok(validateWallet('  0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045  ').ok)
 	ok(!validateWallet('0x d8dA6BF26964aF9D7eEd9e03E53415D37aA96045').ok)//interior space is not
 
@@ -1473,7 +1474,7 @@ noop(() => {
 	for (let i = quantity; i >= 1; i--) {
 		earlier = randomBetween(durationShort, durationLong)
 		when -= earlier
-		s += `\r\n{tag: '${tag()}', post: ${i}, quantity: ${quantity}, tick: ${when} },`
+		s += `\n{tag: '${tag()}', post: ${i}, quantity: ${quantity}, tick: ${when} },`
 	}
 	//log(s)
 })
