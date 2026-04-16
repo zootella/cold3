@@ -3,7 +3,7 @@ import {
 
 //manual icarus import block for persephone
 wrapper, Sticker, stickerParts, isLocal, isCloud,
-Now, Time, inSeconds, Size, Limit, newline, nleasy, nlreview,
+Now, Time, inSeconds, Size, Limit, nleasy, nlreview,
 defined, toss, log, look,
 noop, test, ok,
 

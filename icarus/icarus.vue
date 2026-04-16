@@ -1,7 +1,7 @@
 <script setup>
 
 import {
-runTests, liveBox, addLogSink, newline, nleasy, nlreview,
+runTests, liveBox, addLogSink, nleasy, nlreview,
 } from './index.js'
 
 import {ref, onMounted} from 'vue'//these imports are automatic in Nuxt, but here in just Vite+Vue!

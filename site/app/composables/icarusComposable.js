@@ -29,7 +29,7 @@ export {//exporting this full list of icarus functions and objects makes them av
 
 //manual icarus import block for nuxt client
 wrapper, Sticker, stickerParts, isLocal, isCloud,
-Now, Time, inSeconds, Size, Limit, newline, nleasy, nlreview,
+Now, Time, inSeconds, Size, Limit, nleasy, nlreview,
 defined, toss, log, look,
 noop, test, ok,
 

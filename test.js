@@ -1,7 +1,7 @@
 
 import {
 wrapper, sayFloppy, runTests, runDatabaseTests,
-log, addLogSink, look, newline, nleasy, nlreview,
+log, addLogSink, look, nleasy, nlreview,
 } from 'icarus'
 import {promises as fs} from 'fs'
 async function main() {

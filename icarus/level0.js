@@ -4,7 +4,7 @@ wrapper,
 } from './wrapper.js'
 import {//from core
 Time, Size, inSeconds,
-newline, nleasy, nlreview, cut2, replaceAll,
+nleasy, nlreview, cut2, replaceAll,
 say, look, defined, given,
 int, big,
 Data, randomBetween,

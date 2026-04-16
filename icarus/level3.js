@@ -4,7 +4,7 @@ wrapper,
 } from './wrapper.js'
 import {//from core
 Time, inSeconds,
-say, look, defined, newline,
+say, look, defined,
 Tag, checkTagOrBlank, checkTag,
 Data, decryptData, hash_size, hasTextSame,
 replaceAll, replaceOne,

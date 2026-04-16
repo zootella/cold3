@@ -201,7 +201,6 @@ noop(() => {//fuzz test round trip
 //                   
 
 
-export const newline = '\r\n'//we use the Microsoft Windows-style newline, valid on windows, mac, and linux
 export const nleasy = '\r\n'
 export const nlreview = '\r\n'
 /*
@@ -4529,3 +4528,46 @@ noop(async () => {
 		Summed ${saySize4(size)} in ${commas(hash.duration)}ms (${commas(Math.round(hash.totalSize / hash.duration))} bytes/ms)
 	`)//seeing ~950k+ on your Mac
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

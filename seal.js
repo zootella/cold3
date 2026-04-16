@@ -1,7 +1,7 @@
 
 import {
 wrapper, sayFloppy, runTests, Time,
-log, look, newline, nleasy, nlreview, Data, Now, Tag, tickToText,
+log, look, nleasy, nlreview, Data, Now, Tag, tickToText,
 parseKeyFile, randomBetween, encryptData, cutAfterLast, cutRandomWords,
 prefix39,
 } from 'icarus'
