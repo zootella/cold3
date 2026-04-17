@@ -1,13 +1,13 @@
 <script setup>
 
 import {
-runTests, liveBox, addLogSink, nlreview,
+runTests, liveBox, addLogSink,
 } from './index.js'
 
 import {ref, onMounted} from 'vue'//these imports are automatic in Nuxt, but here in just Vite+Vue!
 
 let logs = ''//just for the icarus page, make a local record all the logs code everywhere makes
-addLogSink((s) => { logs += (logs.length ? nlreview : '') + s })//don't start with a blank line
+addLogSink((s) => { logs += (logs.length ? '\n' : '') + s })//don't start with a blank line
 
 const refResults = ref('')
 const refLiveBox = ref('')

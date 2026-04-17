@@ -1,6 +1,6 @@
 
 import {
-log, look, commas, nlreview, deindent,
+log, look, commas, deindent,
 } from 'icarus'
 import path from 'path'
 import {execSync} from 'child_process'
@@ -16,7 +16,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	await fs.copy('persephone',     'dist/persephone')//other files in the net23 folder are left behind; note net23.zip will gain pnpm-lock.yaml from pnpm install; it's not too big and having the exact dependency versions locked in the deployed artifact could be valuable for debugging
 
 	let c = await fs.readFile('serverless.yml', 'utf8')
-	c = c.split(/\r?\n/).filter(line => !line.includes('BuildRemove')).join(nlreview)//strip lines marked BuildRemove; they let serverless-offline emulate API Gateway-style; we deploy to Lambda Function URLs instead
+	c = c.split(/\r?\n/).filter(line => !line.includes('BuildRemove')).join('\n')//strip lines marked BuildRemove; they let serverless-offline emulate API Gateway-style; we deploy to Lambda Function URLs instead
 	await fs.writeFile('dist/serverless.yml', c)
 
 	//make a package.json for dist based on net23's, with icarus's dependencies merged in

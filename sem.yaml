@@ -1,5 +1,5 @@
 summary:
-  generated: 2026apr15.2004.16416
+  generated: 2026apr17.0744.14849
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -205,8 +205,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 1m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1030.0 on 2026apr13 0m old
-      latest: 3.1030.0 on 2026apr13 0m old
+      current: 3.1031.0 on 2026apr16 0m old
+      latest: 3.1031.0 on 2026apr16 0m old
     downloads:
       weekly: 22,605,535
       on: 2026apr1.1724.39555
@@ -218,8 +218,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 1m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1030.0 on 2026apr13 0m old
-      latest: 3.1030.0 on 2026apr13 0m old
+      current: 3.1031.0 on 2026apr16 0m old
+      latest: 3.1031.0 on 2026apr16 0m old
     downloads:
       weekly: 2,543,626
       on: 2026apr1.1724.39555
@@ -231,8 +231,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 1m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1030.0 on 2026apr13 0m old
-      latest: 3.1030.0 on 2026apr13 0m old
+      current: 3.1031.0 on 2026apr16 0m old
+      latest: 3.1031.0 on 2026apr16 0m old
     downloads:
       weekly: 3,186,684
       on: 2026apr1.1724.39555
@@ -244,8 +244,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 1m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1030.0 on 2026apr13 0m old
-      latest: 3.1030.0 on 2026apr13 0m old
+      current: 3.1031.0 on 2026apr16 0m old
+      latest: 3.1031.0 on 2026apr16 0m old
     downloads:
       weekly: 9,964,045
       on: 2026apr1.1724.39555
@@ -255,7 +255,7 @@ modules:
     note: "test: wasm postgres for local dev tests"
     from: root
     versions:
-      declared: ^0.3.15 on 2026jan15 2m old
+      declared: ^0.3.15 on 2026jan15 3m old
       installed: 0.3.16 on 2026mar10 1m old 🐣 Pre-1.0 version installed
       current: 0.3.16 on 2026mar10 1m old
       latest: 0.4.4 on 2026apr09 0m old
@@ -348,8 +348,8 @@ modules:
     versions:
       declared: ^2.95.3 on 2026feb06 2m old
       installed: 2.100.1 on 2026mar26 0m old
-      current: 2.103.2 on 2026apr15 0m old
-      latest: 2.103.2 on 2026apr15 0m old
+      current: 2.103.3 on 2026apr16 0m old
+      latest: 2.103.3 on 2026apr16 0m old
     downloads:
       weekly: 17,396,361
       on: 2026mar31.1618.27326
@@ -526,7 +526,7 @@ modules:
       declared: ^7.1.6 on 2026feb01 2m old
       installed: 7.2.1 on 2026feb18 1m old
       current: 7.2.1 on 2026feb18 1m old
-      latest: 8.0.1 on 2026apr06 0m old 🎁 Major new version available
+      latest: 8.0.2 on 2026apr16 0m old 🎁 Major new version available
     downloads:
       weekly: 594,549
       on: 2026mar31.1618.27326
@@ -540,8 +540,8 @@ modules:
     versions:
       declared: ^3.3.2 on 2026feb01 2m old
       installed: 3.4.1 on 2026mar23 0m old
-      current: 3.4.2 on 2026apr06 0m old
-      latest: 3.4.2 on 2026apr06 0m old
+      current: 3.4.3 on 2026apr16 0m old
+      latest: 3.4.3 on 2026apr16 0m old
     downloads:
       weekly: 590,127
       on: 2026mar31.1618.27326
@@ -631,7 +631,7 @@ modules:
     note: "nuxt: http framework; held at v1, v2 arrives with nitro v3 and nuxt 5; abstracted behind getWorker* functions"
     from: icarus
     versions:
-      declared: ^1.15.5 on 2026jan15 2m old
+      declared: ^1.15.5 on 2026jan15 3m old
       installed: 1.15.10 on 2026mar22 0m old
       current: 1.15.11 on 2026apr01 0m old
       latest: 2.0.1-rc.20 on 2026mar27 0m old 🎁 Major new version available
@@ -696,7 +696,7 @@ modules:
     note: "nuxt: server engine; bundles h3 v1, will bring h3 v2 with nitro v3"
     from: site
     versions:
-      declared: ^2.13.1 on 2026jan15 2m old
+      declared: ^2.13.1 on 2026jan15 3m old
       installed: 2.13.2 on 2026mar20 0m old
       current: 2.13.3 on 2026apr02 0m old
       latest: 2.13.3 on 2026apr02 0m old
@@ -725,7 +725,7 @@ modules:
       declared: 6.0.0-beta.15 on 2026feb05 2m old 📌 Exact version pinned
       installed: 6.0.0-beta.15 on 2026feb05 2m old
       current: 6.0.0-beta.15 on 2026feb05 2m old
-      latest: 6.4.2 on 2026apr15 0m old
+      latest: 6.4.3 on 2026apr16 0m old
     downloads:
       weekly: 135,191
       on: 2026apr1.1745.11355
@@ -880,7 +880,7 @@ modules:
     note: "front: merges classes without style conflicts; shadcn pattern"
     from: site
     versions:
-      declared: ^3.4.1 on 2026feb15 1m old
+      declared: ^3.4.1 on 2026feb15 2m old
       installed: 3.5.0 on 2026feb18 1m old
       current: 3.5.0 on 2026feb18 1m old
       latest: 3.5.0 on 2026feb18 1m old
@@ -935,7 +935,7 @@ modules:
       declared: ^5.9.3 on 2025sep30 6m old
       installed: 5.9.3 on 2025sep30 6m old
       current: 5.9.3 on 2025sep30 6m old
-      latest: 6.0.2 on 2026mar23 0m old 🎁 Major new version available
+      latest: 6.0.3 on 2026apr16 0m old 🎁 Major new version available
     downloads:
       weekly: 179,184,721
       on: 2026apr3.0155.3296
@@ -945,7 +945,7 @@ modules:
     note: "og: cache driver abstraction; injected by nuxi module add, now using lru-cache driver"
     from: site
     versions:
-      declared: ^1.17.4 on 2026jan15 2m old
+      declared: ^1.17.4 on 2026jan15 3m old
       installed: 1.17.5 on 2026mar26 0m old
       current: 1.17.5 on 2026mar26 0m old
       latest: 1.17.5 on 2026mar26 0m old
@@ -975,8 +975,8 @@ modules:
     versions:
       declared: ^2.45.1 on 2026jan29 2m old
       installed: 2.47.6 on 2026mar21 0m old
-      current: 2.48.0 on 2026apr15 0m old
-      latest: 2.48.0 on 2026apr15 0m old
+      current: 2.48.1 on 2026apr17 0m old
+      latest: 2.48.1 on 2026apr17 0m old
     downloads:
       weekly: 3,133,557
       on: 2026mar31.1618.27326
