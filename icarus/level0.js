@@ -4,7 +4,7 @@ wrapper,
 } from './wrapper.js'
 import {//from core
 Time, Size, inSeconds,
-nleasy, nlreview, cut2, replaceAll,
+nlreview, cut2, replaceAll,
 say, look, defined, given,
 int, big,
 Data, randomBetween,
@@ -54,7 +54,7 @@ export async function runTests(tests) {
 				success: false,
 				time:    t,
 				error:   e,
-				message: `${look(e)}${nleasy}on ${sayTick(t)}` 
+				message: `${look(e)}${nlreview}on ${sayTick(t)}` 
 			}
 		}
 	}
@@ -161,7 +161,7 @@ function composeLog(...a) {
 	} else if (a.length == 1) {//timestamp and the one argument
 		s = say(a[0])
 	} else {//timestamp and newlines between multiple arguments
-		a.forEach(e => { s += nleasy + say(e) })
+		a.forEach(e => { s += nlreview + say(e) })
 	}
 	let arrow = s.trimEnd().includes('\n') ? ' ↓' : ' →'//point arrow down if multiple lines below
 	return sayTick(Now()) + arrow + (s.length ? (' ' + s) : '')

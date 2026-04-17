@@ -201,7 +201,6 @@ noop(() => {//fuzz test round trip
 //                   
 
 
-export const nleasy = '\n'
 export const nlreview = '\n'
 /*
 ttd april
@@ -1203,7 +1202,7 @@ export async function decryptData(keyData, cipherData) {
 }
 noop(async () => {//here's how you make new keys to store one in .env and cloudflare secrets
 	let s = ''
-	for (let i = 0; i < 100; i++) s += nleasy+(await createKey()).base62()
+	for (let i = 0; i < 100; i++) s += nlreview+(await createKey()).base62()
 	log(s)
 })
 test(async () => {
@@ -2182,7 +2181,7 @@ test(() => {//sanity check
 	ok(s1 == s2)
 })
 noop(() => {//play around with deindent
-	function f(s) { log(`${nleasy}↓${nleasy}${s}↑`) }//newlines so you can see output between vertical arrows
+	function f(s) { log(`${nlreview}↓${nlreview}${s}↑`) }//newlines so you can see output between vertical arrows
 	f(deindent`
 		A
 			B
@@ -3482,7 +3481,7 @@ test(() => {//_quotedToData returns null for empty, false for invalid
 })
 noop(() => {//visual inspection: 50 random 32-byte values (sha256 hash length) in quoted encoding
 	let s = ''
-	for (let i = 0; i < 50; i++) s += nleasy + dataToQuoted(Data({random: hash_size}))
+	for (let i = 0; i < 50; i++) s += nlreview + dataToQuoted(Data({random: hash_size}))
 	log(s)
 })
 noop(() => {//length demonstration: quoted encoding on random 32-byte data (sha256 hash length)
@@ -3500,7 +3499,7 @@ noop(() => {//length demonstration: quoted encoding on random 32-byte data (sha2
 		total++
 	}
 	let quoted = shorter + same + longer
-	log(nleasy + deindent`
+	log(nlreview + deindent`
 		${commas(total)} random ${hash_size}-byte values in 1 second
 		${(plain/total*100).toFixed(3)}% stayed plain base16
 		${(quoted/total*100).toFixed(3)}% got quoted sections: ${(shorter/total*100).toFixed(3)}% shorter, ${(same/total*100).toFixed(3)}% same, ${(longer/total*100).toFixed(3)}% longer
@@ -4528,7 +4527,6 @@ noop(async () => {
 		Summed ${saySize4(size)} in ${commas(hash.duration)}ms (${commas(Math.round(hash.totalSize / hash.duration))} bytes/ms)
 	`)//seeing ~950k+ on your Mac
 })
-
 
 
 

@@ -1,6 +1,6 @@
 
 import {
-log, look, commas, nleasy, nlreview, deindent,
+log, look, commas, nlreview, deindent,
 } from 'icarus'
 import path from 'path'
 import {execSync} from 'child_process'

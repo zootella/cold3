@@ -270,7 +270,7 @@ export {
 
 Time, inSeconds, Size,
 tickToText, textToTick,
-nleasy, nlreview,
+nlreview,
 cut, cutLast, cutAfterLast,
 replaceAll, replaceOne,
 safefill, deindent,

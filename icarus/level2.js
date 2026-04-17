@@ -4,7 +4,7 @@ wrapper,
 } from './wrapper.js'
 import {//from core
 Time, inSeconds, textToTick,
-say, look, defined, checkTextSame, nleasy, nlreview,
+say, look, defined, checkTextSame, nlreview,
 Tag, checkTag, hasTag,
 Data, encryptSymmetric, encryptData, decryptData, hash_length, hashText, hmacSign,
 makePlain, makeObject, makeText,
