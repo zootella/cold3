@@ -1,5 +1,5 @@
 summary:
-  generated: 2026apr17.0744.14849
+  generated: 2026apr18.2123.21959
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -205,8 +205,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 1m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1031.0 on 2026apr16 0m old
-      latest: 3.1031.0 on 2026apr16 0m old
+      current: 3.1032.0 on 2026apr17 0m old
+      latest: 3.1032.0 on 2026apr17 0m old
     downloads:
       weekly: 22,605,535
       on: 2026apr1.1724.39555
@@ -218,8 +218,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 1m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1031.0 on 2026apr16 0m old
-      latest: 3.1031.0 on 2026apr16 0m old
+      current: 3.1032.0 on 2026apr17 0m old
+      latest: 3.1032.0 on 2026apr17 0m old
     downloads:
       weekly: 2,543,626
       on: 2026apr1.1724.39555
@@ -231,8 +231,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 1m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1031.0 on 2026apr16 0m old
-      latest: 3.1031.0 on 2026apr16 0m old
+      current: 3.1032.0 on 2026apr17 0m old
+      latest: 3.1032.0 on 2026apr17 0m old
     downloads:
       weekly: 3,186,684
       on: 2026apr1.1724.39555
@@ -244,8 +244,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 1m old
       installed: 3.1018.0 on 2026mar26 0m old
-      current: 3.1031.0 on 2026apr16 0m old
-      latest: 3.1031.0 on 2026apr16 0m old
+      current: 3.1032.0 on 2026apr17 0m old
+      latest: 3.1032.0 on 2026apr17 0m old
     downloads:
       weekly: 9,964,045
       on: 2026apr1.1724.39555
@@ -398,10 +398,10 @@ modules:
     note: "front: form control normalization plugin, loaded via @plugin in css"
     from: site
     versions:
-      declared: ^0.5.11 on 2025dec17 3m old
-      installed: 0.5.11 on 2025dec17 3m old 🐣 Pre-1.0 version installed
-      current: 0.5.11 on 2025dec17 3m old
-      latest: 0.5.11 on 2025dec17 3m old
+      declared: ^0.5.11 on 2025dec17 4m old
+      installed: 0.5.11 on 2025dec17 4m old 🐣 Pre-1.0 version installed
+      current: 0.5.11 on 2025dec17 4m old
+      latest: 0.5.11 on 2025dec17 4m old
     downloads:
       weekly: 3,126,292
       on: 2026apr3.0155.3296
@@ -412,9 +412,9 @@ modules:
     from: site
     versions:
       declared: ^4.1.18 on 2025dec11 4m old
-      installed: 4.2.2 on 2026mar18 0m old
-      current: 4.2.2 on 2026mar18 0m old
-      latest: 4.2.2 on 2026mar18 0m old
+      installed: 4.2.2 on 2026mar18 1m old
+      current: 4.2.2 on 2026mar18 1m old
+      latest: 4.2.2 on 2026mar18 1m old
     downloads:
       weekly: 13,564,840
       on: 2026apr1.1745.11355
@@ -526,7 +526,7 @@ modules:
       declared: ^7.1.6 on 2026feb01 2m old
       installed: 7.2.1 on 2026feb18 1m old
       current: 7.2.1 on 2026feb18 1m old
-      latest: 8.0.2 on 2026apr16 0m old 🎁 Major new version available
+      latest: 8.0.3 on 2026apr17 0m old 🎁 Major new version available
     downloads:
       weekly: 594,549
       on: 2026mar31.1618.27326
@@ -540,8 +540,8 @@ modules:
     versions:
       declared: ^3.3.2 on 2026feb01 2m old
       installed: 3.4.1 on 2026mar23 0m old
-      current: 3.4.3 on 2026apr16 0m old
-      latest: 3.4.3 on 2026apr16 0m old
+      current: 3.4.4 on 2026apr17 0m old
+      latest: 3.4.4 on 2026apr17 0m old
     downloads:
       weekly: 590,127
       on: 2026mar31.1618.27326
@@ -644,10 +644,10 @@ modules:
     note: "widget: browser detection; runs everywhere, only meaningful in browser"
     from: icarus
     versions:
-      declared: ^5.0.0 on 2024oct16 17m old
-      installed: 5.0.0 on 2024oct16 17m old 🕰️ Installed version 1+ year old
-      current: 5.0.0 on 2024oct16 17m old
-      latest: 5.0.0 on 2024oct16 17m old
+      declared: ^5.0.0 on 2024oct16 18m old
+      installed: 5.0.0 on 2024oct16 18m old 🕰️ Installed version 1+ year old
+      current: 5.0.0 on 2024oct16 18m old
+      latest: 5.0.0 on 2024oct16 18m old
     downloads:
       weekly: 2,218,045
       on: 2026mar31.1618.27326
@@ -894,9 +894,9 @@ modules:
     from: site
     versions:
       declared: ^4.1.18 on 2025dec11 4m old
-      installed: 4.2.2 on 2026mar18 0m old
-      current: 4.2.2 on 2026mar18 0m old
-      latest: 4.2.2 on 2026mar18 0m old
+      installed: 4.2.2 on 2026mar18 1m old
+      current: 4.2.2 on 2026mar18 1m old
+      latest: 4.2.2 on 2026mar18 1m old
     downloads:
       weekly: 90,092,687
       on: 2026apr1.1745.11355
