@@ -39,42 +39,11 @@ At the protocol level, connecting a wallet (exposing the address via [`eth_reque
 
 For identity-only flows (no transaction, no token approval), most modern sites go straight from connect approval to signature prompt. An intermediate "confirm your address" screen adds friction without adding security. Exception: if the app supports multiple addresses or chains, an intermediate selector screen makes sense.
 
-### Sign-In with Ethereum (SIWE / EIP-4361)
-
-[EIP-4361](https://eips.ethereum.org/EIPS/eip-4361) (finalized as [ERC-4361](https://docs.login.xyz/general-information/siwe-overview/eip-4361)) defines a standard human-readable message format for wallet-based authentication. The user sees something like:
-
-```
-example.com wants you to sign in with your Ethereum account:
-0xA0Cf...251e
-
-Sign in to Example App
-
-URI: https://example.com
-Version: 1
-Chain ID: 1
-Nonce: 65ed4681...
-Issued At: 2026-03-08T12:00:00Z
-```
-
-Key fields: `domain` (the requesting site — [MetaMask](https://docs.metamask.io/wallet/how-to/sign-data/siwe/) warns if it doesn't match the actual origin), `nonce` (server-generated, prevents replay), `expiration-time` (optional TTL). The [SIWE library](https://docs.siwe.xyz/) and [Ox](https://oxlib.sh/guides/siwe) both provide implementations.
-
-Our current flow does essentially the same thing — nonce from server, message containing nonce, verify signature with [viem](https://viem.sh/docs/actions/public/verifyMessage)'s `verifyMessage` — but with a custom message format rather than the SIWE standard.
-
 ### Session-bound identity is the dominant pattern
 
 After signature verification, the server issues a session (cookie or JWT) tied to the proven address. The wallet can disconnect, switch accounts, or be uninstalled — the session remains valid until it expires. The "currently connected address" in the wallet becomes irrelevant after authentication. This is how traditional auth works (you don't re-enter your password on every page load), and it's how identity-focused web3 sites work too.
 
 Our architecture already follows this pattern. `credentialStore.wallet` is the database truth from the session. Wagmi connection state is transient and independent.
-
-### Account switching behavior
-
-When a user switches accounts in MetaMask while the page is open, the provider fires [`accountsChanged`](https://docs.metamask.io/wallet/reference/provider-api/). Sites handle this three ways, in order of how common:
-
-1. **Invalidate session and prompt re-sign** — most secure, most common for identity-critical apps
-2. **Show a warning banner** — "Your wallet changed. Sign in again to update your identity"
-3. **Ignore it** — the session remains tied to the original proven address
-
-We currently don't handle `accountsChanged` explicitly. Wagmi's `watchConnection` picks up the change and updates `wagmiStore.connectedAddress`, but the proven credential in the database is unaffected. This is effectively option 3. The dev panel makes this visible — proof line stays, connection line updates.
 
 ### Sites using wallet as identity
 
@@ -85,10 +54,6 @@ This use case is well-established, not exotic:
 - [Farcaster](https://www.farcaster.xyz/) — decentralized social protocol. Identity anchored on-chain (Ethereum/OP Mainnet), data off-chain. Onboarding via wallet signature or embedded wallets through [Privy](https://www.privy.io/).
 - [Lens Protocol](https://www.lens.xyz/) — social graph where profile NFTs (ERC-721) on Polygon are your identity. Wallet connection proves you own the profile.
 - [ENS](https://ens.domains/) — .eth domain names resolve to wallet addresses. Sites use ENS as a human-readable identity layer on top of raw addresses.
-
-### Single connect button replacing separate wallet buttons
-
-We currently have separate "Injected" and "WalletConnect" buttons. The modern pattern is a single "Connect Wallet" button that opens a modal handling all wallet types. [Reown AppKit](https://reown.com/appkit) (formerly Web3Modal, from the WalletConnect team) provides this — it discovers installed extensions via [EIP-6963](https://eips.ethereum.org/EIPS/eip-6963), offers WalletConnect QR for mobile wallets, and optionally supports social logins via embedded wallets. This is a separate UX question from the credential architecture, but worth noting.
 
 ## Event lifecycle in credential_table
 
@@ -109,18 +74,6 @@ credential_table has four event numbers (level3.js line 910): 1 removed, 2 menti
 `credentialWalletSet` (which writes event 4) calls `queryHide` on all existing Ethereum rows for this user before writing the new event 4 row. This hides the event 2 and 3 rows from the same prove flow. `credentialWalletGet` queries `event: 4` only, so intermediate rows never interfere with reads even if they aren't hidden.
 
 If a user starts the flow but never signs (abandons at the signature prompt), the event 2 and 3 rows remain unhidden with no event 4. This is fine — `credentialWalletGet` ignores them. And it's actually useful: you can see that someone tried to prove a wallet but didn't complete.
-
-### Should we hide at all?
-
-The current pattern is: hide all previous rows of this type, then write the new one. This keeps queries fast — at most one unhidden row per type per user. But credential_table rows are small, users have few credentials, and the event history (mentioned → challenged → validated, or mentioned → challenged → abandoned) has diagnostic value.
-
-If we stop hiding, queries pull a few more rows but `credentialWalletGet` already filters by `event: 4` — it would still return the right answer. The question is whether the history is worth keeping visible. Not urgent now, but worth revisiting when more credential types use all four events and we want to see the full lifecycle without digging through hidden rows.
-
-# SIWE (done)
-
-Wallet proof uses SIWE (Sign-In with Ethereum, EIP-4361) via `viem/siwe`. The client builds the SIWE message with `createSiweMessage` (dynamic import), the server verifies with `verifySiweMessage` using a server-side Alchemy public client. The envelope mechanism is unchanged — it seals `{nonce, address, browserHash}` for tamper protection across the two-step flow.
-
-What this gives us: domain binding (MetaMask enforces origin match, closing relay attacks), EIP-1271 smart contract wallet support (Safe, Argent, etc. via on-chain verification), standard recognition by auditors, and native WalletConnect/SIWX interop. Two Alchemy keys: the existing origin-restricted client key, and a new unrestricted server key for the Worker's public client.
 
 # Dev panel test scenarios
 
@@ -168,7 +121,7 @@ The dev panel always shows two status lines. The proof line shows the proven add
 
 **(16) MetaMask disconnect while proof exists.** wagmi fires onChange, connection clears. Proof unchanged. Connection line shows connect buttons.
 
-**(17) MetaMask account switch while proof exists.** Connection line updates to new address. Proof line unchanged. The two lines visibly disagree — this is correct, the credential is the database proof.
+**(17) MetaMask account switch while proof exists.** Proof shows A, connection shows A. User switches to B in MetaMask. Connection line briefly updates to B, then the live watcher fires `afterAccountChange`, disconnects B, and shows the different-wallet message. Proof line unchanged.
 
 ## Known limitations
 
@@ -179,5 +132,3 @@ The dev panel always shows two status lines. The proof line shows the proven add
 # Next steps
 
 **Consumer UI for WalletPanel** — collapse the dev panel's two status lines into a single coherent view. Probably: proven address (or "Connect Wallet" button), with edit mode for Remove. afterConnect logic and wagmiStore carry over unchanged; purely a template question. Deferred until credential system is stable across all types — the dev panel is a diagnostic tool needed for ongoing integration work.
-
-**Account switching** — decide whether to handle `accountsChanged` (option 1: invalidate, option 2: warning banner, or stay with option 3: ignore). Not urgent — option 3 is safe, just not maximally helpful.

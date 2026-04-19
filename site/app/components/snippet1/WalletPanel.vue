@@ -13,12 +13,24 @@ const refUri = ref('')//walletconnect uri we show as a qr code
 const refInstructionalMessage = ref('')//message to user if there was a problem in the connect and prove flow
 const refConnecting = ref(false)//true while either connect flow is in progress, to ghost the other button
 
+//shown whenever a different wallet is connected while one is already proven — from a button click (afterConnect) or a live account switch (afterAccountChange)
+const messageDifferentWallet = 'A different wallet is already proven. Remove it first, then connect and prove the new one.'
+
 onMounted(async () => {
 	await wagmiStore.load()
 	if (//shave stale connection on mount: either
 		wagmiStore.isConnected &&//no proof (dead end), or
 		credentialStore.wallet?.toLowerCase() != wagmiStore.connectedAddress?.toLowerCase()//proof doesn't match connection
 	) await disconnect()//proven wallet remains, but disconnect on page
+})
+
+//react to live account-switch events (accountsChanged from MetaMask, session updates from WalletConnect)
+//registered at setup so Vue properly scopes the watcher to the component instance for cleanup on unmount
+//checking previousAddress skips mount-time reactive churn (null → A during load) and disconnects (A → null); only a real live switch sees two non-null addresses
+watch(() => wagmiStore.connectedAddress, (address, previousAddress) => {
+	if (!address || !previousAddress) return//not a switch: either a fresh connect, a disconnect, or the initial mount-time load
+	if (address.toLowerCase() === previousAddress.toLowerCase()) return//same address, nothing to do
+	afterAccountChange(address)
 })
 
 async function onRemove() {
@@ -87,8 +99,17 @@ async function afterConnect(address) {
 		//this wallet is already proven — nothing to do
 	} else {
 		await disconnect()//was (proven A, connected B) → now (proven A, none); reject the mismatch, keep existing proof
-		refInstructionalMessage.value = 'A different wallet is already proven. Remove it first, then connect and prove the new one.'
+		refInstructionalMessage.value = messageDifferentWallet
 	}
+}
+//called when wagmi reports a new connected address mid-session, e.g. user switched accounts in MetaMask while the tab was open
+//mirrors afterConnect's different-wallet branch: disconnect and message; skips when no proof so the prove flow isn't interrupted
+async function afterAccountChange(address) {
+	let proven = credentialStore.wallet
+	if (!proven) return//no proof yet — happy path or in-flight prove flow owns this connection
+	if (proven.toLowerCase() === address.toLowerCase()) return//matches the proven wallet, nothing to do
+	await disconnect()//was (proven A, connected B) → now (proven A, none); reject the mismatch, keep existing proof
+	refInstructionalMessage.value = messageDifferentWallet
 }
 async function proveConnectedWallet(address) {
 	let task = await credentialStore.walletProve1({address})

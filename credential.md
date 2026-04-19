@@ -206,4 +206,4 @@ Cancellation: if the user clicks Cancel at the provider, Auth.js redirects to Sv
 
 ## Sequencing
 
-Wallet done (see wallet.md for dev panel, test scenarios, and SIWE migration plan). OAuth next — small, the integration point is narrow (just `OauthDone.`), but the full flow spans three sites. OTP last — most impactful but has the most architectural questions (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment).
+Wallet done (see wallet.md for dev panel and test scenarios). OAuth next — small, the integration point is narrow (just `OauthDone.`), but the full flow spans three sites. OTP last — most impactful but has the most architectural questions (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment).
