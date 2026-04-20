@@ -553,8 +553,9 @@ export function lambda23(route) {//get the url of a Network 23 lambda function r
 		return 'http://localhost:4000/prod' + route//using Node to emulate Lambda and API Gateway (which we don't use in production at all anymore) serverless-offline runs lambdas here, with a great developer experience including hot module replacement 🥵
 	}
 }
-export function originOauth() { return isCloud() ? `https://oauth.${Key('domain, public')}` : `http://localhost:5173` }//vite port
-export function originApex()  { return isCloud() ? `https://${Key('domain, public')}`       : `http://localhost:3000` }//nitro port
+export function originOauth()  { return isCloud() ? `https://oauth.${Key('domain, public')}` : `http://localhost:5173` }//vite port
+export function originApex()   { return isCloud() ? `https://${Key('domain, public')}`       : `http://localhost:3000` }//nitro port
+export function originDomain() { return isCloud() ? Key('domain, public')                    : `localhost:3000` }//just domain
 //similarly, the sveltekit site for oauth has these origins for cloud and local, and the main Nuxt site is at the apex domain
 //serverless framework's default port is 3000, but we customized to 4000; Nuxt has Nitro's default 3000; SvelteKit has Vite's default 5173, same as vite running icarus
 

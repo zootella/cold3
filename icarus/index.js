@@ -155,7 +155,7 @@ useTurnstileHere, addTurnstileHeadScript, checkTurnstileToken,
 sayFloppy, runTestsSticker,
 
 fetchWorker, fetchLambda, fetchProvider,
-originOauth, originApex, lambda23,
+originOauth, originApex, originDomain, lambda23,
 sealEnvelope, openEnvelope,
 composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
 

@@ -207,3 +207,9 @@ Cancellation: if the user clicks Cancel at the provider, Auth.js redirects to Sv
 ## Sequencing
 
 Wallet done (see wallet.md for dev panel and test scenarios). OAuth next — small, the integration point is narrow (just `OauthDone.`), but the full flow spans three sites. OTP last — most impactful but has the most architectural questions (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment).
+
+## Consumer identity menu (deferred)
+
+Once all credential types are integrated (OAuth and OTP alongside Browser, Name, Password, TOTP, Wallet), the per-type dev panels collapse into a single unified "ways to identify yourself" menu. Discord and X sign-ins alongside MetaMask and WalletConnect wallet connections alongside email/phone OTP alongside TOTP and password, one coherent surface for the user.
+
+Under the hood nothing changes — per-type stores, endpoints, and reconciliation logic carry over unchanged. It's purely a template and UX question. The dev panels (CredentialPanel and its sub-components) stay as a diagnostic tool during integration; replacing them before the underlying credential system is stable would just mean throwing away the replacement.

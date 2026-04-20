@@ -1,4 +1,8 @@
 <script setup>
+//two sources of truth, intentionally: credentialStore.wallet (database, settled history) and wagmiStore connection state (live, volatile, from wagmi in the browser)
+//these are independent — they can agree, disagree, or one can be present without the other; the reconciliation below (mount shave, afterConnect, afterAccountChange) exists because of this
+//no other credential has this shape — browser, name, password, totp are database-only on read; only wallet has client-side state that independently matters
+
 //ttd march, current granular state and control for smoke testing; need to simplify down to, or replace this with, simpler consumer panel
 
 import {
@@ -125,6 +129,7 @@ async function proveConnectedWallet(address) {
 		chainId: 1,//ethereum mainnet
 		nonce,//from the server, sealed in the envelope
 		issuedAt: new Date(),//Date object; wagmi will format to ISO 8601 internally
+		expirationTime: new Date(Now() + Limit.expirationUser),//20 minutes, same as envelope lifespan; verifySiweMessage on the server will enforce
 	})
 
 	let signature, signError

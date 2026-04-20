@@ -11,6 +11,7 @@ credentialCloseAccount,
 totpEnroll, totpValidate, totpIdentifier, totpConstants,
 checkTotpCode, checkTotpSecret, checkWallet, Data, isExpired,
 trailCount, trailAdd,
+originDomain,
 } from 'icarus'
 import {createPublicClient, http} from 'viem'
 import {mainnet} from 'viem/chains'
@@ -247,11 +248,12 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			if (letter.browserHash !== browserHash) toss('state', {action, browserHash, letter})//envelope from a different browser
 			if (letter.address !== address) toss('state', {action, browserHash, letter})//envelope was for a different address
 
-			//verifySiweMessage does it all: parses the SIWE message, checks nonce and address match, verifies the signature
+			//verifySiweMessage does it all: parses the SIWE message, checks domain, nonce, address, and expirationTime, verifies the signature
 			//supports both EOA (ecrecover) and smart contract wallets (EIP-1271 on-chain call via the publicClient)
+			//passing domain and time enforces that the SIWE message was signed for our origin and is still within its self-declared lifetime; defense-in-depth alongside the envelope's nonce+expiration
 			let valid = await verifySiweMessage(
 				createPublicClient({chain: mainnet, transport: http(Key('alchemy url, secret'))}),//secret server only Alchemy key with no Origin header requirements, separate from the Origin restricted client side key
-				{message, signature, nonce: letter.nonce, address}
+				{message, signature, domain: originDomain(), nonce: letter.nonce, address, time: new Date()}
 			)
 			if (!valid) return {success: false, outcome: 'BadSignature.'}
 

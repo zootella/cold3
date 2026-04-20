@@ -11,26 +11,6 @@ Wagmi lifecycle lives in `wagmiStore` (Pinia) — config, modules, watchConnecti
 
 The dev panel (WalletPanel in `components/snippet1/`) is always expanded, showing both layers as status lines: proof (database) and connection (wagmi), each with independent controls. Connect buttons appear only when not connected. `afterConnect(address)` handles the three-way decision after any successful connect: no proof → prove, same wallet proven → noop, different wallet proven → disconnect and message. The address flows as a direct parameter from `connect()`'s return value through the entire chain, not from reactive state.
 
-## Two sources of truth, intentionally
-
-`credentialStore.wallet` (database) and wagmi's connection state (browser) are independent and should stay that way.
-
-- A user can have a proven wallet credential with no active wagmi connection. They proved ownership last week; the credential panel shows their address from the database. Wagmi isn't even loaded yet.
-- A user can have an active wagmi connection with no proven credential. Wagmi reconnected from localStorage on mount, but the user hasn't proven yet (or proof was removed while the connection persisted).
-- The two align only during the prove flow: connect (wagmi state) → sign (wagmi state) → verify and save (database state).
-
-## Two directions of input
-
-The wallet credential is unusual among credentials because the system receives facts from two independent directions, without the user taking any credential action.
-
-**Up from the database:** the server knows whether this user has a proven wallet address. This is settled history — a signature was verified, a row was written. It arrives via `attachState` on page load, same as every other credential.
-
-**Down from the client:** wagmi, a third-party library running in the browser, knows whether a wallet is currently connected to this page. This is live, volatile state. It can change at any moment — the user switches accounts in MetaMask, disconnects from the extension, or a WalletConnect session times out. It arrives via `watchConnection` callbacks and `reconnect` on mount.
-
-These two inputs are completely independent. The database doesn't know or care what wagmi thinks. Wagmi doesn't know or care what's in the database. They can agree, disagree, or one can be present while the other is absent. The system we build in the middle — the store, the component, the UI logic — has to reconcile these two streams of facts into something coherent for the user and actionable for us.
-
-No other credential has this shape. Browser, Name, Password, and TOTP are all database-only on read — the server tells you what exists, and the client has nothing to add until the user takes an action. Wallet is the one where the client independently contributes state that matters.
-
 ## How the real world does this
 
 ### Two popups are unavoidable
@@ -129,6 +109,3 @@ The dev panel always shows two status lines. The proof line shows the proven add
 
 **(19) Different wallet.** Must Remove current proof, then connect+prove the new one. afterConnect enforces this.
 
-# Next steps
-
-**Consumer UI for WalletPanel** — collapse the dev panel's two status lines into a single coherent view. Probably: proven address (or "Connect Wallet" button), with edit mode for Remove. afterConnect logic and wagmiStore carry over unchanged; purely a template question. Deferred until credential system is stable across all types — the dev panel is a diagnostic tool needed for ongoing integration work.
