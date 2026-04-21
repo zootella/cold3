@@ -46,6 +46,7 @@ import {env}           from '$env/dynamic/private' //read dynamic value from .en
 	let authOptions = {
 		pages: {
 			signIn: '/signin',//tell Auth the route to our customized sign in page; the way we're using Auth, this only matters when the user clicks Cancel no at the provider, Auth gives us news of their refusal at this page
+			error: '/autherror',//tell Auth the route to our customized error landing; Auth.js catches unhandled exceptions in our signIn/redirect/session callbacks (wraps them as AccessDenied) and redirects there; our handler routes into nuxt's error flow so the user sees error.vue with our branding instead of Auth.js's generic gray error page
 		},
 		providers: [
 			googleProvider({clientId:  Key('oauth, google, id'),  clientSecret: Key('oauth, google, secret')}),
