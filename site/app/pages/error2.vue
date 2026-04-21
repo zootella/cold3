@@ -20,7 +20,10 @@ onMounted(async () => {
 			graphics: getBrowserGraphics(),
 			details: details,
 		})
+	} else {
+		//note that details is null when we arrived here after an SSR-originated fatal: errorPlugin's server branch logged the error directly to Datadog and never wrote to pageStore, so a report here would be a duplicate anyway
 	}
+
 	hardReplace()//if here with nothing to report, bounce home immediately; or, after successful report, go home
 })
 
