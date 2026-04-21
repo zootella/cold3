@@ -6,7 +6,7 @@ export const usePageStore = defineStore('pageStore', () => {
 const renderTurnstileWidget = ref(false)//Button sets to true, causing BottomBar to render TurnstileComponent
 const getTurnstileToken = ref(null)//TurnstileComponent sets a reference to its getToken function, and Button calls it
 
-//page reported error
+//on the error trail: Nuxt error details store
 const errorDetails = ref(null)//hold error details from the error plugin, through error.vue, for error2 to report them
 
 //notifcations

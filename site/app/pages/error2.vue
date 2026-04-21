@@ -1,5 +1,7 @@
 <script setup> definePageMeta({layout: false})//no layout wrapper, so this page visually matches error.vue (which renders outside the app entirely). TopBar and BottomBar still render -- they're in app.vue, outside NuxtLayout. omitting definePageMeta would use the default layout and add its chrome
 
+//on the error trail: Nuxt error report page
+
 import {
 getBrowserGraphics,
 } from 'icarus'

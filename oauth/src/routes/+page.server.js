@@ -8,6 +8,6 @@ import {redirect} from '@sveltejs/kit'
 
 export function load() {
 	redirect(
-		301,//permanent redirect
+		303,//see other
 		originApex())//go to cloud or local nuxt site home
 }

@@ -6,6 +6,8 @@
 |  __/ |  | | | (_) | |  \__ \
  \___|_|  |_|  \___/|_|  |___/
 
+on the error trail: Nuxt error page
+
 🪲 We throw for bugs in our own code. A caught bug is a hidden bug. toss('state') when a signed-out browser reaches a signed-in code path, toss('action') when the action string is unrecognized, toss deep in icarus when a type check fails. The exception bubbles up uncaught and blows up the page. This is intentional.
 
 💣 We catch around foreign code. Wallet libraries, QR generators, blockchain RPCs -- we can't control their quality. We wrap every call in try-catch and classify inside the catch: known errors (network timeout, user rejected signature, provider not found) get handled inline with a message or fallback. Unknown errors get rethrown so they blow up the page like bugs. The axis isn't how important the feature is -- a QR code can be critical. The axis is whose code it is.
