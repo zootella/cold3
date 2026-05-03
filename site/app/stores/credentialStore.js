@@ -13,6 +13,7 @@ const totpEnrolled = ref(false)//true if the user has a verified TOTP enrollment
 const totpIdentifier = ref('')//short identifier like "g3" to help user find the right authenticator entry
 const enrollment = ref(null)//in-flight TOTP enrollment recovered from envelope cookie, or null
 const wallet = ref('')//checksummed Ethereum address the user has proven they control, or empty
+const oauths = ref([])//array of linked third-party accounts: [{type, providerId, handle, email, name}, ...]
 
 const userDisplayName = computed(() => {//best available display name for page
 	if (name.value?.f2) return name.value.f2
@@ -29,6 +30,7 @@ function apply(task) {//update all refs from task - called after any action that
 	totpIdentifier.value = task.totpIdentifier || ''
 	enrollment.value = task.enrollment || null
 	wallet.value = task.wallet || ''
+	oauths.value = task.oauths || []
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
@@ -121,6 +123,17 @@ async function walletRemove() {
 	apply(task)
 }
 
+async function oauthStart({name}) {//request the handoff envelope for the cross-origin flow; name is auth.js's lowercase id ('google','twitter','discord'). if server returns no envelope, another tab raced us — apply(task) brings our refs to the server's view so the panel shows true linked state and user can try again
+	let task = await fetchWorker('/credential', 'OauthStart.', {name})
+	apply(task)
+	return task
+}
+
+async function oauthRemove({provider}) {//unlink a specific provider; provider is one of the tags from oauthProviders() (see .env.keys 'oauth, providers')
+	let task = await fetchWorker('/credential', 'OauthRemove.', {provider})
+	apply(task)
+}
+
 async function closeAccount() {
 	let task = await fetchWorker('/credential', 'CloseAccount.')
 	apply(task)
@@ -152,6 +165,9 @@ return {
 	walletProve1,
 	walletProve2,
 	walletRemove,
+	oauths,
+	oauthStart,
+	oauthRemove,
 	closeAccount,
 }
 

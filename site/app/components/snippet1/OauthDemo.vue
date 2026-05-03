@@ -1,4 +1,4 @@
-<script setup>//on the oauth trail: Nuxt component
+<script setup>//on the oauth trail: Nuxt component (ttd april, will soon be replaced by OauthPanel in the credential system)
 
 import {
 originOauth,

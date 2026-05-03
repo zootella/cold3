@@ -10,8 +10,8 @@ const route = useRoute()
 let envelope = route.query.envelope
 checkText(envelope)
 
-//tell the oauth endpoint that we've got this message about the user returning with proof
-let task = await fetchWorker('/oauth', 'OauthDone.', {envelope})
+//hand the return envelope to /credential's OauthDone action — the server opens it (with browserHash check), writes a credential_table row on success, and returns the route for us to navigate to next
+let task = await fetchWorker('/credential', 'OauthDone.', {envelope})//deliver envelope3 from the SvelteKit server to the Nuxt server, this is the letter about the conclusion of the user's oauth flow, including proof they control an account with a provider
 //ttd november2025, move the user's oauth state into the upcoming credential store; then fetch calls like above will live there
 //navigateTo in SSR sets response headers for a redirect (303 per redirectCode below), rebooting the tab, so the destination page will fetch oauth status again, but that's fine
 log('hi from oauth2.vue after posting the envelope', look({task}))

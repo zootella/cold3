@@ -16,7 +16,7 @@ import {
 const credentialStore = useCredentialStore()
 await credentialStore.load()//runs on server render, then no-op on client due to loaded ref
 
-const refEditing = ref('')//'' | 'account' | 'name' | 'password' | 'totp' | 'wallet'
+const refEditing = ref('')//'' | 'account' | 'name' | 'password' | 'totp' | 'wallet' | 'oauth'
 function onCancel() {
 	refEditing.value = ''
 	refNameOutput.value = ''
@@ -176,6 +176,13 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 	v-if="credentialStore.userTag"
 	:editing="refEditing === 'wallet'"
 	@edit="refEditing = 'wallet'"
+	@cancel="onCancel"
+/>
+
+<OauthPanel
+	v-if="credentialStore.userTag"
+	:editing="refEditing === 'oauth'"
+	@edit="refEditing = 'oauth'"
 	@cancel="onCancel"
 />
 

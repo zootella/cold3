@@ -127,6 +127,8 @@ credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameCheck, credentialNameSet, credentialNameRemove,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove,
+credentialOauthChallenge, credentialOauthSet, credentialOauthRemove, credentialOauthGet,
+oauthProviders,
 credentialCloseAccount,
 credentialGet, credentialSet,
 

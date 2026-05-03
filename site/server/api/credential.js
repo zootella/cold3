@@ -7,6 +7,7 @@ credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialSet,
+credentialOauthChallenge, credentialOauthSet, credentialOauthRemove, credentialOauthGet, oauthProviders,
 credentialCloseAccount,
 totpEnroll, totpValidate, totpIdentifier, totpConstants,
 checkTotpCode, checkTotpSecret, checkWallet, Data, isExpired,
@@ -18,7 +19,7 @@ import {mainnet} from 'viem/chains'
 import {verifySiweMessage} from 'viem/siwe'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthStart.', 'OauthDone.', 'OauthRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
 // 🟠 get
@@ -40,6 +41,7 @@ async function attachState(task, browserHash) {//attach complete credential stat
 			task.totpIdentifier = ''
 		}
 		task.wallet = (await credentialWalletGet({userTag: user.userTag})) || ''//checksummed address, or empty
+		task.oauths = await credentialOauthGet({userTag: user.userTag, providers: oauthProviders().map(p => p.tag)})//single query gets supported providers like ['Google.', 'Twitter.', 'Discord.']
 	}
 	//ttd march, lots of database chatter here, replace with a single query for all rows about userTag, and then careful trusted server side logic to sift through them to figure out what's applicable and what's historical. and in this process, decide if you're going to hide rows or not
 }
@@ -266,6 +268,53 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//user wants to remove their connected wallet
 		} else if (action == 'WalletRemove.') {
 			await credentialWalletRemove({userTag: user.userTag})
+
+		// 🟠 oauth
+		//the user has clicked to begin an oauth flow through a third party provider they chose
+		} else if (action == 'OauthStart.') {
+			checkText(body.name)//sanity check what the untrusted page posted at us
+			let provider = oauthProviders().find(p => p.name == body.name)
+			if (!provider) toss('state', {action, name: body.name})//page tried to use provider we don't support
+
+			let existing = await credentialOauthGet({userTag: user.userTag, providers: [provider.tag]})
+			if (existing.length) {
+				task.outcome = 'OauthAlreadyLinked.'//tell OauthPanel the flow is blocked (no envelope)
+			} else {
+				await credentialOauthChallenge({userTag: user.userTag, provider: provider.tag})//audit-trail event-3 row; the user may or may not come back with proof
+				task.outcome = 'OauthContinue.'
+				task.envelopeRedirect = await sealEnvelope('OauthContinue.', Limit.handoffWorker, {})//oauth envelope step 1: seal continue envelope
+			}
+
+		// 🟠 oauth
+		//the oauth flow is done, SvelteKit redirected back to oauth2.vue, which leads here, all in a server render
+		} else if (action == 'OauthDone.') {
+			let letter = await openEnvelope('OauthDone.', body.envelope, {browserHash})//oauth envelope step 4: open done envelope
+			if (letter.success) {
+				let {account, profile} = letter
+				logAudit('oauth done letter', { browserHash, userTag: user.userTag, letter })//accumulate real examples of oauth provider responses, which have lots of provider-specific details, and can be different or broken in unexpected ways at any time
+
+				let providerInfo = oauthProviders().find(p => p.name == account?.provider)
+				if (!providerInfo) toss('state', {action, provider: account?.provider})//provider came back that isn't in our whitelist — auth.js is configured wider than .env.keys, or the letter was tampered
+				let handle = profile?.username || profile?.screen_name || profile?.data?.username || ''//best-effort across providers: Discord username, Twitter data.username (Google has no handle)
+				let email = profile?.email || ''//provider-reported email; credentialOauthSet will validate and greedy-fill f0/1/2, silently leaving them blank on validation failure
+				let name = profile?.name || profile?.global_name || profile?.data?.name || ''
+				let wrote = await credentialOauthSet({
+					userTag: user.userTag,
+					provider: providerInfo.tag,
+					providerId: account.providerAccountId,//stable unique ID from the provider
+					handle, name, email,
+					account, profile, user: letter.user,//auth.js/provider slice preserved in k4 for audit and re-parsing
+				})
+				if (!wrote) task.outcome = 'OauthAlreadyLinked.'//DB blocked: user already has a linked row (tab race or stale envelope)
+			}
+			task.route = '/page1'//hardcoded to page1 where CredentialPanel lives today; ttd april: change to user account settings route
+
+		// 🟠 oauth
+		//the user wants to discard their proof of control of a third party account with an oauth provider
+		} else if (action == 'OauthRemove.') {
+			checkText(body.provider)
+			if (!oauthProviders().some(p => p.tag == body.provider)) toss('state', {action, provider: body.provider})//whitelist check on the provider tag against the server's configured list
+			await credentialOauthRemove({userTag: user.userTag, provider: body.provider})
 
 		// 🟠 account
 		} else if (action == 'CloseAccount.') {

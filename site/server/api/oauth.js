@@ -11,12 +11,12 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		return {
 			outcome: 'OauthContinue.',
-			envelope: await sealEnvelope('OauthContinue.', Limit.handoffWorker, {}),//oauth envelope [1] seal continue
+			envelope: await sealEnvelope('OauthContinue.', Limit.handoffWorker, {}),//oauth envelope step 1: seal continue envelope (deprecating flow)
 		}
 
 	} else if (action == 'OauthDone.') {
 
-		let letter = await openEnvelope('OauthDone.', body.envelope, {browserHash})//oauth envelope [4] open done
+		let letter = await openEnvelope('OauthDone.', body.envelope, {browserHash})//oauth envelope step 4: open done envelope (deprecating flow)
 		log('letter arrived in worker 📩 now in oauth.js OauthDone!!', look(letter))
 		//we've made sure the browserHash sveltekit computed from the browserTag matches, but still need to
 		//save the proven credentials in the database
