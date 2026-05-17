@@ -25,6 +25,7 @@ isInSimulationMode, ageNow,
 import {//from level1
 Limit, checkName, validateName,
 bundleValid, validateEmail, validateEmailOrPhone,
+checkAction,
 } from './level1.js'
 import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
@@ -565,12 +566,12 @@ export async function credentialPasswordGet({userTag}) {
 }
 export async function credentialPasswordSet({userTag, hash, cycles}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
 	await credentialSet({userTag, type: 'Password.', event: 4, k1: hash, k2: cycles+''})
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
 }
 
 //                    _            _   _       _   _        _         
@@ -590,12 +591,12 @@ export async function credentialTotpGet({userTag}) {
 }
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
 	await credentialSet({userTag, type: 'Totp.', event: 4, k1: secret})
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
 }
 
 //                    _            _   _       _                 _ _      _   
@@ -615,12 +616,12 @@ export async function credentialWalletGet({userTag}) {
 }
 export async function credentialWalletSet({userTag, address}) {
 	checkTag(userTag); checkText(address)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
 	await credentialSet({userTag, type: 'Ethereum.', event: 4, f0: address})
 }
 export async function credentialWalletRemove({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
 }
 
 //                    _            _   _       _                     _   _     
@@ -630,47 +631,96 @@ export async function credentialWalletRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \___/ \__,_|\__,_|\__|_| |_|
 //                                                                             
 
-//oauth: a user can link 0+ oauth accounts, limited to one per supported provider. all oauth rows share type='Oauth.'; the provider ('Discord.', 'Google.', ...) lives in k1 so oauth is a single credential type rather than one type per provider
-export async function credentialOauthChallenge({userTag, provider}) {//audit-trail row written at OauthStart so we have a record that the user initiated a flow, whether they complete it or not; never blocks, never garbage-collected
-	checkTag(userTag); checkText(provider)
-	await credentialSet({userTag, type: 'Oauth.', event: 3, k1: provider})
-}
-export async function credentialOauthSet({userTag, provider, providerId, handle = '', name = '', email = '', account = {}, profile = {}, user = {}}) {//returns true on new link, false if already linked for this provider. we block instead of overwriting so a tab race or stale envelope can't silently switch the user's provider account — call credentialOauthRemove first to change. email is greedy: if the letter has one, we validate and fill f0/1/2; validation failure silently leaves them blank (email in an Oauth. row is provider-reported, not validated — a separate promote step will decide trust policy later)
-	checkTag(userTag); checkText(provider); checkText(providerId)
-	let existing = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: provider, event: 4})
-	if (existing.length) return false//already linked; caller must prompt user to Remove first to switch accounts
-	let f0 = '', f1 = '', f2 = ''
-	if (hasText(email)) { let v = validateEmail(email); if (v.ok) { f0 = v.f0; f1 = v.f1; f2 = v.f2 } }
-	await credentialSet({
-		userTag, type: 'Oauth.', event: 4,
-		f0, f1, f2,
-		k1: provider,//provider tag like 'Discord.'
-		k2: providerId,//stable unique id from the provider
-		k3: handle || name,//display identifier for the panel
-		k4: JSON.stringify({account, profile, user}),//auth.js/provider slice (drops our envelope wrapper) for audit and future re-parsing beyond datadog's retention
-	})
-	return true
-}
-export async function credentialOauthRemove({userTag, provider}) {
-	checkTag(userTag); checkText(provider)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: provider})
-}
-export async function credentialOauthGet({userTag, providers}) {//one DB query for this user's validated oauth rows, then JS filters by the passed provider list (typically oauthProviders() whitelist, e.g. ['Google.', 'Twitter.', 'Discord.']); pattern toward ttd march's vision of one broad query per page load with logic sifting by type
-	checkTag(userTag)
-	if (!providers?.length) return []//nothing to match against, nothing to return
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 4})
-	let providerSet = new Set(providers)
-	return rows
-		.filter(r => providerSet.has(r.k1_text))
-		.map(r => ({provider: r.k1_text, providerId: r.k2_text, handle: r.k3_text, email: r.f2_text}))
-}
-
-//list of oauth providers the site has configured for use; may be shorter than auth.js list
-export function oauthProviders() {
+export function oauthProviders() {//factory preset list of oauth providers; Auth.js might have more listed in preparation
 	return Key('oauth, providers, public').split(';').map(item => {
 		let [tag, name, display] = item.split('/')
 		return {tag, name, display}
 	})
+}
+export function credentialOauthParse(provider, proof) {//back from provider's oauth flow, parse from proof {account, profile, user}
+	checkAction(provider)
+	let email, handle, name
+
+	let v
+	if (hasText(proof.user?.email)) v = validateEmail(proof.user.email)//Auth.js normalizes per-provider email quirks to here
+	if (v?.ok) email = v
+
+	if (provider == 'Discord.') {
+		handle = proof.profile.username
+		name = proof.profile.global_name//may be null when user hasn't set a display name
+
+	} else if (provider == 'Google.') {
+		name = proof.profile.name
+		if (email?.isGmail) handle = email.f2//Google has no @-handle concept; for gmail/googlemail use the f2 presented form so Helga still sees googlemail.com if that's what she registered with. unification lives in f0 for matching, not display
+
+	} else if (provider == 'Twitter.') {
+		handle = proof.profile.data?.username//profile.data is the Twitter v2 wrapper, optional in case the shape changes
+		name = proof.profile.data?.name
+
+	} else if (provider == 'GitHub.') {
+		handle = proof.profile.login
+		name = proof.profile.name//may be null when user hasn't filled in their profile name
+	}
+
+	return {
+		provider, proof,//pass through
+		identifier: proof.account.providerAccountId,//the provider's stable id for this user, who usually never sees it. Auth.js promises always text. Most providers have long numerals (not GUIDs) like Discord 18-digit "987654321098765432", Google 21 digit, Twitter and GitHub much shorter
+		handle,//provider's @-style username — Discord "alex_dev_42" (lowercase, unique), Twitter "mkbhd" no @ in value, GitHub "sindresorhus". Google doesn't have one so we pin the user's gmail display form. Platforms often let users change this
+		name,//provider's display name — freely typed, often changes, often contains spaces/emoji/punctuation: "Marques Brownlee", "李明", "Sindre Sorhus". No enforced format. may be empty/undefined
+		email,//validated email forms {f0, f1, f2} if greedy-validation succeeded, otherwise undefined falsey. availability varies: Google near-guaranteed (OIDC), Discord common (but null if user hasn't verified), GitHub common (auth.js fetches /user/emails when public email is private), Twitter never (Auth.js OAuth 2 doesn't return email)
+	}
+}
+
+/*
+oauth: a user can link any number of oauth accounts but only have one account for each provider
+all oauth rows share type Oauth. the provider like Discord. or Google. lives in k1
+*/
+export async function credentialOauthChallenge({userTag, provider}) {//record we're sending the user into a third party oauth flow
+	checkTag(userTag); checkAction(provider)
+	await credentialSet({userTag, type: 'Oauth.', event: 3, k1: provider})//event 3 challenged; be able to see how long users take or if for whatever reason they don't make it through in significant numbers
+}
+
+/*
+record proof a user controls a third party oauth account, with information about it
+returns true recorded, false no change because existing record for this user and provider, a tab race could cause this
+ui will let user change their account with a provider by removing an old one and then adding a new one
+caller is expected to have run credentialOauthParse on the proof and pass the resulting fields here; this function is dumb storage and does no provider-specific parsing of its own
+*/
+export async function credentialOauthSet({userTag, provider, proof, identifier, handle, name, email}) {
+	checkTag(userTag); checkAction(provider); checkText(identifier)
+
+	let existing = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: provider, event: 4})
+	if (existing.length) return false//already linked; caller must prompt user to Remove first to switch accounts
+	/*
+	ttd may, more to do here soon:
+	- if the email is trustworthy, like an @gmail.com or @googlemail.com from provider Google., or oauth proof indicates with a flag that this user has verified this email with them, then we should make another row event 4 setting that email as proven with us, too, without sending the user through our own otp flow
+	- but what if that email is already taken by another user? (weird, maybe reject the oauth) or by this user, already (that will be common and is fine) think about cross-currents like that
+	- also watch out for and block duplicates related to the provider's id, like what if another user here has already proven this provider's third party account, with the providerId, probably the same person, but who knows? figure out what to do there
+	*/
+
+	await credentialSet({
+		userTag, type: 'Oauth.', event: 4,
+		f0: email?.f0, f1: email?.f1, f2: email?.f2,//store email from provider here
+		k1: provider,//provider name like 'Discord.'
+		k2: identifier,//user's account number with that provider; user doesn't know it, stays the same through handle edits
+		k3: handle,//provider's @-style handle (or gmail address as stand-in for Google)
+		k4: name,//provider's display name, separate from handle so both are queryable; panel's fallback chain handles the "show whichever we have" case
+		//(leaving k5-7 blank for future use, then at the end, for auditability, we save the whole proof)
+		k8: makeText(proof),//auth.js/provider slice (drops our envelope wrapper) for audit and future re-parsing beyond datadog's retention
+	})
+	return true
+}
+export async function credentialOauthRemove({userTag, provider}) {
+	checkTag(userTag); checkAction(provider)
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: provider, event: 4})
+}
+export async function credentialOauthGet({userTag}) {//list this user's linked oauth credentials across providers we currently support
+	checkTag(userTag)
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 4})
+	let providerSet = new Set(oauthProviders().map(p => p.tag))
+	return rows
+		.filter(r => providerSet.has(r.k1_text))
+		.map(r => ({provider: r.k1_text, identifier: r.k2_text, handle: r.k3_text, name: r.k4_text, email: r.f2_text}))
 }
 
 //                    _            _   _       _   _                                     
@@ -694,7 +744,7 @@ export async function credentialBrowserSet({userTag, browserHash}) {//sign this 
 }
 export async function credentialBrowserRemove({userTag}) {//sign this user out everywhere
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Browser.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Browser.', event: 4})
 }
 
 //                    _            _   _       _                              
@@ -733,7 +783,7 @@ export async function credentialNameSet({userTag, raw1, raw2}) {
 	checkTag(userTag)
 	let v = await credentialNameCheck({raw1, raw2})
 	if (!v) return false
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.', event: 4})
 	await credentialSet({userTag, type: 'Name.', event: 4, f0: v.f0, f1: v.f1, f2: v.f2})
 	return v
 }
@@ -756,7 +806,7 @@ export async function credentialNameCheck({//returns false taken or not valid, o
 //remove a user's name credential, freeing it for others
 export async function credentialNameRemove({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.'})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.', event: 4})
 }
 
 //                    _            _   _       _        _                                                   _
@@ -766,10 +816,10 @@ export async function credentialNameRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \___|_|\___/|___/\___|  \__,_|\___\___\___/ \__,_|_| |_|\__|
 //
 
-//permanently close a user's account, hiding all their credentials
+//permanently close a user's account, hiding all their validated credentials across types — challenge-row audit trail (event=3) is preserved
 export async function credentialCloseAccount({userTag}) {
 	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag})//hide all credential types at once
+	await queryHide('credential_table', {user_tag: userTag, event: 4})//hide active credentials across all types in one shot; event-3 challenges stay visible as audit
 }
 
 grid(async () => {//password: set, change, verify single active, remove
@@ -815,13 +865,12 @@ grid(async () => {//wallet: set, change, verify single active, remove
 	await credentialWalletRemove({userTag})
 	ok((await credentialWalletGet({userTag})) == false)//now gone
 })
-grid(async () => {//oauth: link multiple providers, re-link single active per provider, remove, get with whitelist filter
+grid(async () => {//oauth: link multiple providers, re-link single active per provider, remove
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	let providers = ['Google.', 'Twitter.', 'Discord.']
 
-	ok((await credentialOauthGet({userTag, providers})).length == 0)//nothing linked yet
+	ok((await credentialOauthGet({userTag})).length == 0)//nothing linked yet
 
 	//challenge row written at OauthStart; audit trail, never blocks
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
@@ -829,47 +878,45 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	ok(challenged.length == 1)
 
 	//link Discord; verify row fields via get+find
-	await credentialOauthSet({userTag, provider: 'Discord.', providerId: 'd123', handle: 'alice_d', email: 'alice@example.com', name: 'Alice D.', account: {a: 1}, profile: {p: 2}, user: {u: 3}})
-	let got = (await credentialOauthGet({userTag, providers})).find(o => o.provider == 'Discord.')
-	ok(got.providerId == 'd123' && got.handle == 'alice_d' && got.email == 'alice@example.com')
+	let aliceEmail = validateEmail('alice@example.com')
+	let aliceEmailObj = {f0: aliceEmail.f0, f1: aliceEmail.f1, f2: aliceEmail.f2}
+	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd123', handle: 'alice_d', name: 'Alice D.', email: aliceEmailObj, proof: {account: {a: 1}, profile: {p: 2}, user: {u: 3}}})
+	let got = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
+	ok(got.identifier == 'd123' && got.handle == 'alice_d' && got.email == 'alice@example.com')
 	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: 'Discord.', event: 4}))[0]
 	ok(discordRow.f0_text == 'alice@example.com' && discordRow.f2_text == 'alice@example.com')//validated email filled into f0/1/2
-	ok(JSON.parse(discordRow.k4_text).account.a == 1)//k4 preserves the auth.js slice
+	ok(makeObject(discordRow.k8_text).account.a == 1)//k8 preserves the auth.js slice (rightmost slot reserved for audit blob)
 
 	//link Google too; get returns both
-	await credentialOauthSet({userTag, provider: 'Google.', providerId: 'g456', handle: 'alice@gmail.com', email: 'alice@gmail.com', name: 'Alice G.'})
-	ok((await credentialOauthGet({userTag, providers})).length == 2)
+	await credentialOauthSet({userTag, provider: 'Google.', identifier: 'g456', handle: 'alice@gmail.com', name: 'Alice G.', email: aliceEmailObj})
+	ok((await credentialOauthGet({userTag})).length == 2)
 
 	//re-link attempt while Discord is still linked: Set blocks (returns false), original row preserved
-	ok((await credentialOauthSet({userTag, provider: 'Discord.', providerId: 'd789', handle: 'alice_new', email: 'alice@example.com'})) == false)
-	let stillOriginal = (await credentialOauthGet({userTag, providers})).find(o => o.provider == 'Discord.')
-	ok(stillOriginal.providerId == 'd123' && stillOriginal.handle == 'alice_d')//unchanged — not overwritten by the blocked Set
+	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})) == false)
+	let stillOriginal = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
+	ok(stillOriginal.identifier == 'd123' && stillOriginal.handle == 'alice_d')//unchanged — not overwritten by the blocked Set
 
 	//to switch accounts the user must Remove first, then Set succeeds and points at the new account
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
-	ok(await credentialOauthSet({userTag, provider: 'Discord.', providerId: 'd789', handle: 'alice_new', email: 'alice@example.com'}))//wrote now that the slot is free
+	ok(await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj}))//wrote now that the slot is free
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: 'Discord.', event: 4})
 	ok(rows.length == 1)//only one active Discord row
-	ok((await credentialOauthGet({userTag, providers})).find(o => o.provider == 'Discord.').providerId == 'd789')//new account wins
+	ok((await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.').identifier == 'd789')//new account wins
 
 	//remove Discord; Google remains
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
-	let afterRemove = await credentialOauthGet({userTag, providers})
+	let afterRemove = await credentialOauthGet({userTag})
 	ok(afterRemove.length == 1 && afterRemove.find(o => o.provider == 'Discord.') === undefined)
 
-	//whitelist filter: Twitch. isn't in the passed providers list, so even if a row exists it's not returned by get
-	await credentialOauthSet({userTag, provider: 'Twitch.', providerId: 't999', handle: 'alice_t'})
-	ok((await credentialOauthGet({userTag, providers})).length == 1)//still just Google — Twitch filtered out
-	ok((await credentialOauthGet({userTag, providers: [...providers, 'Twitch.']})).length == 2)//expand the whitelist and Twitch appears
+	//whitelist filter: Twitch. isn't in oauthProviders(), so even if a row exists it's not returned by get
+	await credentialOauthSet({userTag, provider: 'Twitch.', identifier: 't999', handle: 'alice_t'})
+	ok((await credentialOauthGet({userTag})).length == 1)//still just Google — Twitch filtered out
 
-	//empty providers list returns empty array regardless of linked rows
-	ok((await credentialOauthGet({userTag, providers: []})).length == 0)
-
-	//greedy email: malformed address silently leaves f0/1/2 blank (no throw)
+	//Set with no email: f0/1/2 stay blank
 	let userTag2 = Tag()
-	await credentialOauthSet({userTag: userTag2, provider: 'Discord.', providerId: 'd2', handle: 'bob', email: 'not-an-email'})
+	await credentialOauthSet({userTag: userTag2, provider: 'Discord.', identifier: 'd2', handle: 'bob'})
 	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', k1_text: 'Discord.', event: 4}))[0]
-	ok(bobRow.f0_text == '' && bobRow.f1_text == '' && bobRow.f2_text == '')//validation failed → f columns stay blank, no throw
+	ok(bobRow.f0_text == '' && bobRow.f1_text == '' && bobRow.f2_text == '')//no email passed → f columns blank
 })
 grid(async () => {//browser: sign out removes all sessions for one user
 	let {clear} = await getDatabase()
@@ -1025,11 +1072,15 @@ CREATE TABLE credential_table (
 	f1_text    TEXT      NOT NULL,  -- formal form of address, to send messages
 	f2_text    TEXT      NOT NULL,  -- page form of address, to show the user
 
-	-- alternatively or additionally, this credential may have some nested type, tag, hash, secret key, or other, or just a note:
+	-- alternatively or additionally, a credential of this type may have some tag, hash, secret key, or something else, maybe just a note:
 	k1_text    TEXT      NOT NULL,
 	k2_text    TEXT      NOT NULL,
 	k3_text    TEXT      NOT NULL,
-	k4_text    TEXT      NOT NULL
+	k4_text    TEXT      NOT NULL,
+	k5_text    TEXT      NOT NULL,
+	k6_text    TEXT      NOT NULL,
+	k7_text    TEXT      NOT NULL,
+	k8_text    TEXT      NOT NULL
 );
 
 CREATE INDEX credential1 ON credential_table (hide, user_tag, row_tick DESC);  -- filter by user
@@ -1038,26 +1089,30 @@ CREATE INDEX credential2 ON credential_table (hide, type_text, f0_text) WHERE f0
 CREATE INDEX credential3 ON credential_table (hide, type_text, f1_text) WHERE f1_text != '';
 CREATE INDEX credential4 ON credential_table (hide, type_text, f2_text) WHERE f2_text != '';
 
-CREATE INDEX credential5 ON credential_table (hide, type_text, k1_text) WHERE k1_text != '';
-CREATE INDEX credential6 ON credential_table (hide, type_text, k2_text) WHERE k2_text != '';
-CREATE INDEX credential7 ON credential_table (hide, type_text, k3_text) WHERE k3_text != '';
-CREATE INDEX credential8 ON credential_table (hide, type_text, k4_text) WHERE k4_text != '';
+CREATE INDEX credential5  ON credential_table (hide, type_text, k1_text) WHERE k1_text != '';
+CREATE INDEX credential6  ON credential_table (hide, type_text, k2_text) WHERE k2_text != '';
+CREATE INDEX credential7  ON credential_table (hide, type_text, k3_text) WHERE k3_text != '';
+CREATE INDEX credential8  ON credential_table (hide, type_text, k4_text) WHERE k4_text != '';
+CREATE INDEX credential9  ON credential_table (hide, type_text, k5_text) WHERE k5_text != '';
+CREATE INDEX credential10 ON credential_table (hide, type_text, k6_text) WHERE k6_text != '';
+CREATE INDEX credential11 ON credential_table (hide, type_text, k7_text) WHERE k7_text != '';
+CREATE INDEX credential12 ON credential_table (hide, type_text, k8_text) WHERE k8_text != '';
 `)
 //ttd november2025, should event be a tag instead of a number? it's a litle arcane
 
 export async function credentialGet({userTag}) {//get all the credential information about the given user
 	//ttd november2025
 }
-export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', k1 = '', k2 = '', k3 = '', k4 = ''}) {
+export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', k1 = '', k2 = '', k3 = '', k4 = '', k5 = '', k6 = '', k7 = '', k8 = ''}) {
 	checkTag(userTag); checkText(type); checkInt(event, 1)//these three are required, everything else is optional
 	checkTextOrBlank(f0); checkTextOrBlank(f1); checkTextOrBlank(f2)
-	checkTextOrBlank(k1); checkTextOrBlank(k2); checkTextOrBlank(k3); checkTextOrBlank(k4)
+	checkTextOrBlank(k1); checkTextOrBlank(k2); checkTextOrBlank(k3); checkTextOrBlank(k4); checkTextOrBlank(k5); checkTextOrBlank(k6); checkTextOrBlank(k7); checkTextOrBlank(k8)
 	await queryAddRow({table: 'credential_table', row: {
 		user_tag: userTag,
 		type_text: type,
 		event: event,
 		f0_text: f0, f1_text: f1, f2_text: f2,
-		k1_text: k1, k2_text: k2, k3_text: k3, k4_text: k4,
+		k1_text: k1, k2_text: k2, k3_text: k3, k4_text: k4, k5_text: k5, k6_text: k6, k7_text: k7, k8_text: k8,
 	}})
 }
 

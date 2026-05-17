@@ -27,22 +27,21 @@ const linked = computed(() => {//map keyed by provider tag for cheap template lo
 	return m
 })
 
-const refClickedProvider = ref(null)//provider.name ('google'|'twitter'|'discord') while a Link button is mid-redirect; drives Button state so siblings grey out. no need to reset after navigation because the whole SPA tears down
+const refClickedProvider = ref(null)//provider tag ('Discord.'|'Google.'|'Twitter.') while a Link button is mid-redirect; drives Button state so siblings grey out. no need to reset after navigation because the whole SPA tears down
 
-function linkState(name) {
+function linkState(tag) {
 	if (!refClickedProvider.value) return 'ready'
-	return refClickedProvider.value == name ? 'doing' : 'ghost'
+	return refClickedProvider.value == tag ? 'doing' : 'ghost'
 }//interestingly, this works with this function in the template, rather than needing to use a computed property, ttd december2025
 
-async function onLink(name) {
-	refClickedProvider.value = name//we don't reset to null on success because href= below tears down the whole Nuxt application; reset only happens on blocked/error paths
-	let task = await credentialStore.oauthStart({name})
+async function onLink(provider) {//provider is the full {tag, name, display} entry from oauthProviders()
+	refClickedProvider.value = provider.tag//we don't reset to null on success because href= below tears down the whole Nuxt application; reset only happens on blocked/error paths
+	let task = await credentialStore.oauthStart({provider: provider.tag})
 	if (!task.envelopeRedirect) {//server blocked (tab race — another tab linked this provider first)
 		refClickedProvider.value = null
 		return
 	}
-	const origin = originOauth()//will be "https://oauth.cold3.cc" cloud, or "http://localhost:5173" local
-	window.location.href = `${originOauth()}/continue/${name}?envelope=${task.envelopeRedirect}`//encoding? base62 don't need no stinkin' encoding 👒
+	window.location.href = `${originOauth()}/continue/${provider.name}?envelope=${task.envelopeRedirect}`//URL uses auth.js's lowercase id (provider.name) since that's what the sveltekit /continue/[provider] route matches on; this is the one place auth.js's id convention surfaces in the client
 }
 
 async function onRemove(provider) {
@@ -71,12 +70,12 @@ const refKey = ref(Tag())//change to force Vue to recreate
 	<p class="my-space">
 		<code>{{provider.display}}</code>
 		<template v-if="linked[provider.tag]">
-			linked as <code>{{linked[provider.tag].handle || linked[provider.tag].email || linked[provider.tag].providerId}}</code>
+			linked as <code>{{linked[provider.tag].handle || linked[provider.tag].name || linked[provider.tag].email || linked[provider.tag].identifier}}</code>
 			<Button v-if="editing" :click="() => onRemove(provider.tag)">Remove</Button>
 		</template>
 		<template v-else>
 			<template v-if="editing">
-				<Button :state="linkState(provider.name)" :click="() => onLink(provider.name)">Continue with {{provider.display}} ➜</Button>
+				<Button :state="linkState(provider.tag)" :click="() => onLink(provider)">Continue with {{provider.display}} ➜</Button>
 			</template>
 			<template v-else>not linked</template>
 		</template>

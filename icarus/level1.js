@@ -630,7 +630,8 @@ function zodEmailSchema() {
 	return _zodEmail
 }
 
-const periodIgnorers = ['gmail.com', 'googlemail.com', 'proton.me', 'protonmail.com', 'pm.me', 'protonmail.ch']//these providers, gmail and protonmail, deliver mail addressed to first.last@gmail.com to the user firstlast@gmail.com
+const gmailDomains = ['gmail.com', 'googlemail.com']//trademark disputes prevented Google from using gmail.com in Germany and the UK before 2012; helga1980@googlemail.com reserved helga1980@gmail.com from the start, and both deliver to her inbox
+const periodIgnorers = [...gmailDomains, 'proton.me', 'protonmail.com', 'pm.me', 'protonmail.ch']//gmail and protonmail ignore periods, delivering mail addressed to first.last@gmail.com to firstlast@gmail.com
 export function checkEmail(raw, limit) { let v = validateEmail(raw, limit); if (!v.ok) toss('form', {v}); return v }
 export function validateEmail(raw, limit) {
 	let cropped = cropToLimit(raw, limit, Limit.title)
@@ -656,17 +657,19 @@ export function validateEmail(raw, limit) {
 	/* (3) normalized step for email
 	here, we want to prevent MrMorgan@example.com from creating a second account as mrmorgan@example.com
 	additionally, we want to notice that mr.morgan@gmail.com is the same guy as mrmorgan@gmail.com; this is gmail-specific
+	we also unify gmail's domains: helga1980@googlemail.com normalized form is helga1980@gmail.com also her working address
 	if we find others like this, we can add them here, but database data won't have gone through the latest validator
 	*/
 	let name = p.before.toLowerCase()
 	let domain = p.after.toLowerCase()
+	let isGmail = gmailDomains.includes(domain)
 	name = cut(name, '+').before//name+spam@example.com is really name@example.com
 	if (periodIgnorers.includes(domain)) name = name.replace(/\./g, '')//first.last@gmail.com is really firstlast@gmail.com
-	let f0 = name + "@" + domain
+	let f0 = name + '@' + (isGmail ? 'gmail.com' : domain)//normalize googlemail.com to gmail.com to block that possible duplicate
 	let j3 = zodEmailSchema().safeParse(f0)
 	if (!j3.success) return {f1, f2, f0, raw, cropped, j3}
 
-	return {ok: true, f0, f1, f2, raw, cropped}
+	return {ok: true, f0, f1, f2, raw, cropped, domain, isGmail}
 }
 test(() => {
 
@@ -707,10 +710,21 @@ test(() => {
 	f(' first.last@hotmail.com ', 'first.last@hotmail.com', 'first.last@hotmail.com', 'first.last@hotmail.com')
 	f(' first.last@gmail.com ', 'first.last@gmail.com', 'first.last@gmail.com', 'firstlast@gmail.com')
 	f('a.b.c@proton.me', 'a.b.c@proton.me', 'a.b.c@proton.me', 'abc@proton.me')
+	//google's two mailbox domains unify in f0 (googlemail.com → gmail.com) so a user can't register both as separate accounts; formal and display forms keep what the user typed
+	f(' first.last@googlemail.com ', 'first.last@googlemail.com', 'first.last@googlemail.com', 'firstlast@gmail.com')
+	f(' Wolfgang.12@GoogleMail.com ', 'Wolfgang.12@GoogleMail.com', 'Wolfgang.12@googlemail.com', 'wolfgang12@gmail.com')
 	//outsmarting the +spam trick
 	f('bob+spam@yahoo.com', 'bob+spam@yahoo.com', 'bob+spam@yahoo.com', 'bob@yahoo.com')
 	f('bob+spam+note@yahoo.com', 'bob+spam+note@yahoo.com', 'bob+spam+note@yahoo.com', 'bob@yahoo.com')
 	f('a.b+spam@proton.me', 'a.b+spam@proton.me', 'a.b+spam@proton.me', 'ab@proton.me')
+
+	//domain and isGmail properties on the success return
+	let g1 = validateEmail('alice@gmail.com')
+	ok(g1.domain == 'gmail.com' && g1.isGmail)
+	let g2 = validateEmail('alice@googlemail.com')
+	ok(g2.domain == 'googlemail.com' && g2.isGmail)//domain field shows what the user typed (lowercased); isGmail aliases both
+	let g3 = validateEmail('alice@example.com')
+	ok(g3.domain == 'example.com' && !g3.isGmail)
 })
 
 //probably won't have these; instead should be part of the theorized validate form as a whole system? ttd march2025
