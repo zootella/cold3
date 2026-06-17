@@ -5,6 +5,7 @@ log, look, commas, deindent,
 import path from 'path'
 import {execSync} from 'child_process'
 import fs from 'fs-extra'
+import {rm} from 'fs/promises'
 import {nodeFileTrace} from '@vercel/nft'
 
 async function main() {//build a lean net23/dist/.serverless/net23.zip with the right native binaries for Lambda
@@ -71,7 +72,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 		await fs.ensureDir(path.dirname('dist/'+file))
 		await fs.copy('dist/' + file.replace('node_modules', 'node_modules_source'), 'dist/'+file)
 	}
-	await fs.remove('dist/node_modules_source')
+	await rm('dist/node_modules_source', {recursive: true, force: true, maxRetries: 10, retryDelay: 100})//Node's fs.rm retries on ENOTEMPTY; macOS Spotlight/Finder can write .DS_Store into a directory between the walk's empty step and its rmdir, racing fs-extra's non-retrying remove
 
 	let p = 'dist/node_modules/icarus/wrapper.js'
 	c = await fs.readFile(p, 'utf8')
