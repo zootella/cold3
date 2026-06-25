@@ -11,7 +11,7 @@ let envelope = route.query.envelope
 checkText(envelope)
 
 //hand the return envelope to /credential's OauthDone action — the server opens it (with browserHash check), writes a credential_table row on success, and returns the route for us to navigate to next
-const useLegacy = true//flip to true to restore OauthDemo's standalone return flow via the legacy /api/oauth.js endpoint; while true, OauthPanel's return won't write credential rows
+const useLegacy = false//flip to true to restore OauthDemo's standalone return flow via the legacy /api/oauth.js endpoint; while true, OauthPanel's return won't write credential rows
 let task = await fetchWorker(useLegacy ? '/oauth' : '/credential', 'OauthDone.', {envelope})//deliver envelope3 from the SvelteKit server to the Nuxt server, this is the letter about the conclusion of the user's oauth flow, including proof they control an account with a provider
 //ttd november2025, move the user's oauth state into the upcoming credential store; then fetch calls like above will live there
 //navigateTo in SSR sets response headers for a redirect (303 per redirectCode below), rebooting the tab, so the destination page will fetch oauth status again, but that's fine
