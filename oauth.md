@@ -38,7 +38,7 @@ claude responding:
 
 **type_text = 'Oauth.'** — clean. existing `credential1` index `(hide, user_tag, row_tick)` still covers "all this user's oauth credentials" in one query. no schema change needed, just the usage convention.
 
-**event 3 and 4** — both useful. i'd treat event-3 purely as audit trail ("user started a Discord flow at time T"), never as a lock. OauthStart's existing-link guard already checks event-4, and the tab race is "safely no-op" — so event-3 never needs to block anything, which also means we never have to garbage-collect abandoned event-3 rows from users who bailed at the provider.
+**event 3 and 4** — both useful. i'd treat event-3 purely as audit trail ("user started a Discord flow at time T"), never as a lock. OauthProve1's existing-link guard already checks event-4, and the tab race is "safely no-op" — so event-3 never needs to block anything, which also means we never have to garbage-collect abandoned event-3 rows from users who bailed at the provider.
 
 **f0/f1/f2 = email forms** — (updated after kevin's response) greedy fill: whenever the letter includes an email, write the three forms, regardless of whether the provider attested it verified or not. that keeps the insert logic simple — "if letter has email, write it" — and defers the trust decision to a separate future step.
 
@@ -61,7 +61,7 @@ re: your question about providers that return email without a verified flag — 
 | column | value |
 |---|---|
 | `type_text` | `'Oauth.'` |
-| `event` | `3` on OauthStart, `4` on OauthDone success, `1` on OauthRemove |
+| `event` | `3` on OauthProve1, `4` on OauthProve2 success, `1` on OauthRemove |
 | `f0/f1/f2` | email in normalized/formal/display form — greedy fill whenever letter has email; treat as *provider-reported, not validated* |
 | `k1` | provider (`'Discord.'`) |
 | `k2` | providerId (stable unique id from provider) |
@@ -72,7 +72,7 @@ re: your question about providers that return email without a verified flag — 
 
 - should the provider's `email_verified` flag get its own slot, or just live inside the k4 blob? matters for auditing "we trusted Discord's verified=true at the time we accepted the email" if the provider later shifts policy.
 - event-3 row payload: just `{type='Oauth.', event=3, k1=provider}` or also stamp the envelope tag / start time? row_tick already gives creation time, so maybe nothing else.
-- do we want to persist anything about failed OauthDone (user cancelled, Auth.js rejected)? could write an event-1 or a distinct event code as audit trail, or stay quiet (our current design).
+- do we want to persist anything about failed OauthProve2 (user cancelled, Auth.js rejected)? could write an event-1 or a distinct event code as audit trail, or stay quiet (our current design).
 
 ## Open items
 
@@ -85,7 +85,7 @@ we already have this guarantee for display names via credentialNameCheck. same g
 decision points:
 - strict rejection (like name collision) — `task.outcome = 'OauthClaimedElsewhere.'`, UI shows "this Google account is already linked to a different cold3 account"
 - or offer "sign into that existing account instead" as remediation — depends on sign-in-via-oauth, a separate flow we haven't designed yet
-- where to check: inside credentialOauthSet before the insert, or in a standalone credentialOauthCheck that OauthStart/OauthDone call explicitly (parallels credentialNameCheck)
+- where to check: inside credentialOauthSet before the insert, or in a standalone credentialOauthCheck that OauthProve1/OauthProve2 call explicitly (parallels credentialNameCheck)
 
 ### email inheritance from verified providers
 
@@ -102,12 +102,12 @@ what to decide:
 
 uncommon but not impossible: two tabs open on the credential panel, user links a provider in tab A, tab B (stale view, still shows the provider as unlinked) clicks Continue with the same provider. two places this race lands:
 
-- OauthStart catches it before the cross-origin redirect — server returns no envelope, outcome `OauthAlreadyLinked.`
-- credentialOauthSet catches it at the DB layer when both tabs cleared the start check — OauthDone sets outcome `OauthAlreadyLinked.`, writes nothing
+- OauthProve1 catches it before the cross-origin redirect — server returns no envelope, outcome `OauthAlreadyLinked.`
+- credentialOauthSet catches it at the DB layer when both tabs cleared the start check — OauthProve2 sets outcome `OauthAlreadyLinked.`, writes nothing
 
 design: **safely no-op, refresh panel state, no custom UI copy**. this is a chaos-user corner; custom messaging adds work and test surface for someone who probably isn't reading. the button resets, credentialStore's apply(task) picks up the server's fresh attachState response, the panel re-renders to show true linked state, user can try again.
 
-same treatment for user-cancelled-at-provider (`letter.success === false` in OauthDone): no-op, task.route navigates the user back to the panel via a page reload that re-runs the store load, state unchanged.
+same treatment for user-cancelled-at-provider (`letter.success === false` in OauthProve2): no-op, task.route navigates the user back to the panel via a page reload that re-runs the store load, state unchanged.
 
 smoke test to confirm the corner is safe end-to-end:
 - open two tabs on /page1
@@ -116,7 +116,7 @@ smoke test to confirm the corner is safe end-to-end:
 - confirm no blow-up; tab B's panel refreshes to show Discord linked
 - also confirm: cancel at the Google page — user lands back at /page1 with no change and no error
 
-### route back to origin after OauthDone
+### route back to origin after OauthProve2
 
 _ttd april._ task.route is hardcoded to '/page1' where CredentialPanel renders — fine today because linking always starts from CredentialPanel. will break when oauth becomes a sign-in or sign-up path: user clicks Continue with Google on the sign-in form, completes the flow, expects to land back at whatever they were doing before signing in, not on /page1.
 
@@ -127,20 +127,15 @@ alternatives to consider:
 - browser-side: stash start URL in a cookie or sessionStorage before redirecting to oauth.cold3.cc, read it back in oauth2.vue
 - hybrid: intent tag in envelope for the common case, query param on oauth2.vue return for cases that need it
 
-### naming cleanup for OauthStart / OauthContinue / OauthDone
+### naming cleanup for OauthStart / OauthContinue / OauthDone (done)
 
-current triple-use of `Oauth*` across three overlapping namespaces, no rule for which is which:
+triple-use of `Oauth*` across three overlapping namespaces resolved with these renames:
 
-- nuxt worker POST actions: `OauthStart.`, `OauthDone.`, `OauthRemove.`
-- envelope tags: `OauthContinue.`, `OauthDone.`
-- outcomes: `OauthContinue.`, `OauthAlreadyLinked.`, `OauthProven.`, `OauthBad.`
+- nuxt worker POST actions: `OauthProve1.`, `OauthProve2.`, `OauthRemove.` (was `OauthStart.`, `OauthDone.`, `OauthRemove.`) — numbered-suffix convention matches `TotpEnroll1./2.` and `WalletProve1./2.`
+- envelope tags: `OauthEnvelopeContinue.`, `OauthEnvelopeDone.` (was `OauthContinue.`, `OauthDone.`) — `OauthEnvelope` prefix gives them their own namespace
+- outcomes: `OauthContinue.`, `OauthAlreadyLinked.` (was also `OauthProven.`, `OauthBad.` — those were dead code in the deleted oauth.js demo flow, set but never read)
 
-reading credential.js cold, it's ambiguous whether `OauthContinue.` is an action, envelope tag, or outcome. same name with different meanings at each layer.
-
-ideas:
-- prefix envelope tags with `env` → `envOauthStart.`, `envOauthDone.`
-- keep action names matching the /credential endpoint boundary verb (Start/Done/Remove)
-- outcome names describe state, not verbs
+both collisions are resolved: `OauthDone.` no longer lives in two namespaces, and `OauthContinue.` is now only an outcome string. store function `oauthStart` renamed to `oauthProve1` to match the new action name.
 
 ### provider letter URL size audit
 
@@ -172,8 +167,7 @@ to confirm:
 
 low-stakes — just Vue trivia worth confirming before we propagate the pattern.
 
-## Vestigial code to delete once OauthPanel is stable
+## Vestigial code to delete once OauthPanel is stable (done)
 
-`site/app/components/snippet1/OauthDemo.vue` — superseded by OauthPanel; still referenced by page2.vue
-
-`site/server/api/oauth.js` — superseded by `/credential` actions OauthStart/OauthDone/OauthRemove; only caller is OauthDemo.vue above
+`site/app/components/snippet1/OauthDemo.vue` — deleted; OauthPanel.vue replaces it inside CredentialPanel
+`site/server/api/oauth.js` — deleted; `/credential` actions OauthProve1/OauthProve2/OauthRemove handle what oauth.js did, and write the credential_table row on success

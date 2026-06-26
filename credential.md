@@ -17,7 +17,7 @@ The credential system flows through one endpoint (`/api/credential`), one store 
 
 **`/api/credential` + `credentialStore`** — the main credential system. Handles Browser, Password, Name, TOTP, and Wallet. Every successful response includes `attachState` (full credential snapshot). Store exposes refs and methods for all credential types. Used by CredentialPanel and its sub-components (SetPasswordForm, TotpPanel, WalletPanel, etc).
 
-Actions: `Get.`, `SignUpAndSignInTurnstile.`, `SignIn.`, `SignOut.`, `SetName.`, `RemoveName.`, `SetPassword.`, `RemovePassword.`, `CheckNameTurnstile.`, `GetPasswordCyclesTurnstile.`, `CloseAccount.`, `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`, `TotpValidate.`, `WalletProve1.`, `WalletProve2.`, `WalletRemove.`
+Actions: `Get.`, `SignUpAndSignInTurnstile.`, `SignIn.`, `SignOut.`, `SetName.`, `RemoveName.`, `SetPassword.`, `RemovePassword.`, `CheckNameTurnstile.`, `GetPasswordCyclesTurnstile.`, `CloseAccount.`, `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`, `TotpValidate.`, `WalletProve1.`, `WalletProve2.`, `WalletRemove.`, `OauthProve1.`, `OauthProve2.`, `OauthRemove.`
 
 **`/api/otp` + `pageStore.otps` + `useOtpCookie()`** — one-time passwords for email/phone verification. Envelope pattern: `FoundEnvelope.` lets the page recover active challenges from a cookie after refresh. Server opens the envelope and returns the non-secret display parts.
 
@@ -164,15 +164,15 @@ Two cookies, two composable usages, two envelope seal/open pairs, and two recove
 
 **Wallet/Ethereum** — f0=checksummed address. Two-step prove flow with envelope in request body (no cookie — signing happens in-page via wallet popup). UI in WalletPanel, wagmi lifecycle in wagmiStore (Pinia), wagmi/viem loaded on demand via `wevmDynamicImport()`. Two connectors: injected and WalletConnect. First credential type to write events 2/3 (mentioned/challenged in WalletProve1). `credentialWalletGet/Set/Remove`.
 
+**OAuth** (Google, Twitter, Discord, GitHub) — cross-origin flow via SvelteKit workspace at oauth.cold3.cc. Two-step prove flow (`OauthProve1.` / `OauthProve2.`) with envelope in URL query parameter (no cookie — user leaves the site entirely). Provider list in `oauthProviders()` factory keyed off `.env.keys 'oauth, providers, public'`. UI in OauthPanel inside CredentialPanel. Per-row layout: k1=provider tag, k2=identifier, k3=handle, k4=name, k8=stringified `{account, profile, user}` audit blob. Writes event-3 (challenged) at OauthProve1 and event-4 (validated) at OauthProve2. `credentialOauthGet/Set/Remove/Parse/Challenge`.
+
 ## Standalone, planned for integration
 
 **Email/Phone (OTP)** — separate endpoint (`/api/otp`), separate store (`pageStore.otps`), separate components (`OtpRequestComponent`, `OtpEnterComponent`, `OtpEnterList`), separate cookie (`temporary_envelope_otp`). Currently uses `address_table`, which has a ttd note: "don't use, do this in credential_table instead." Multiple simultaneous challenges supported. This is the big one to bring in.
 
-**OAuth** (Google, Twitter, Discord) — `/api/oauth`, `OauthDemo.vue`. Three actions: `OauthStatus.`, `OauthStart.`, `OauthDone.`. Envelope travels through URL query parameter across the redirect. Can prove a user controls an OAuth account, but doesn't save to credential_table yet.
+# Integrating OTP into credential_table
 
-# Integrating OTP, OAuth, and Wallet into credential_table
-
-Before replacing envelope cookies with event-3 rows, the simpler prerequisite is getting OTP and OAuth into the unified credential system — the same way TOTP and Wallet were integrated. Actions in `/api/credential`, refs and methods in `credentialStore`, UI in `CredentialPanel`, rows in `credential_table`. The envelope/cookie mechanism stays the same for now; we're just consolidating where the logic lives.
+Before replacing envelope cookies with event-3 rows, the simpler prerequisite is getting OTP into the unified credential system — the same way TOTP, Wallet, and OAuth were integrated. Actions in `/api/credential`, refs and methods in `credentialStore`, UI in `CredentialPanel`, rows in `credential_table`. The envelope/cookie mechanism stays the same for now; we're just consolidating where the logic lives.
 
 ## OTP (Email/Phone) — medium effort
 
@@ -188,25 +188,25 @@ The largest integration — OTP has the most moving parts.
 
 **Wrinkle: the signup flow.** OTP is used both for credential management (signed-in user adds an email) and signup (new person proves address control). The credential endpoint requires a signed-in user for most actions. The signup path needs to work without one — either by making OTP actions available without a user (like `CheckNameTurnstile.` already is), or by creating a userTag early as discussed above.
 
-## OAuth — small effort
+## OAuth — done
 
-The proof-of-concept already works end-to-end. The OAuth flow crosses three sites: Nuxt (cold3.cc), SvelteKit (oauth.cold3.cc), and the provider (google.com, etc.). The flow is:
+OAuth is now fully integrated into the credential system. The flow crosses three sites: Nuxt (cold3.cc), SvelteKit (oauth.cold3.cc), and the provider (google.com, etc.):
 
-1. **OauthDemo.vue** calls `OauthStart.` on Nuxt, gets a `OauthContinue.` envelope back.
+1. **OauthPanel.vue** (inside CredentialPanel) calls `credentialStore.oauthProve1` which posts `OauthProve1.` on `/credential`, gets back an `OauthEnvelopeContinue.` envelope (with an event-3 challenge row written for audit).
 2. Browser redirects to `oauth.cold3.cc/continue/{provider}?envelope=...`
 3. **SvelteKit `+page.server.js`** opens the envelope to verify it's legit, renders the page.
-4. **SvelteKit `+page.svelte`** auto-submits a form POST to Auth.js, which handles the provider dance (Google, Twitter, Discord).
-5. **auth.js `signIn` callback** — after the provider dance succeeds, reads the browser's cookie to get `browserHash`, seals an `OauthDone.` envelope with the proven identity (`account`, `profile`, `user`, `browserHash`), and returns a redirect URL: `cold3.cc/oauth2?envelope=...`
-6. **oauth2.vue** (Nuxt page) receives the envelope from the query string, posts it to `OauthDone.`.
-7. **oauth.js `OauthDone.`** opens the envelope, verifies browserHash, has the proven identity. Currently just logs and returns a route.
+4. **SvelteKit `+page.svelte`** auto-submits a form POST to Auth.js, which handles the provider dance (Google, Twitter, Discord, GitHub).
+5. **auth.js `signIn` callback** — after the provider dance succeeds, reads the browser's cookie to get `browserHash`, seals an `OauthEnvelopeDone.` envelope with the proven identity (`account`, `profile`, `user`, `browserHash`), and returns a redirect URL: `cold3.cc/oauth2?envelope=...`
+6. **oauth2.vue** (Nuxt page) receives the envelope from the query string, posts it to `OauthProve2.` on `/credential`.
+7. **credential.js `OauthProve2.`** opens the envelope (with browserHash check), parses provider-specific fields via `credentialOauthParse`, and writes a credential_table row via `credentialOauthSet` (type `'Oauth.'`, event 4, k1=provider tag, k2=identifier, k3=handle, k4=name, k8=stringified audit blob). `attachState` brings the new linked provider back to the store on the next response.
 
-Cancellation: if the user clicks Cancel at the provider, Auth.js redirects to SvelteKit's `/signin` page, which seals an `OauthDone.` envelope with `{error: errorCode}` instead of `{success: true}`, and redirects back to `oauth2.vue` the same way.
+Cancellation: if the user clicks Cancel at the provider, Auth.js redirects to SvelteKit's `/signin` page, which seals an `OauthEnvelopeDone.` envelope with `{error: errorCode}` instead of `{success: true}`, and redirects back to `oauth2.vue` the same way. `OauthProve2.` opens the envelope, sees `letter.success` is false, and silently no-ops — the user lands back at `/page1` with no row written.
 
-**The integration point is just step 7.** The SvelteKit side, the envelope flow, and the redirects all stay as-is. `OauthDone.` on success writes a credential_table row (type `'Google.'`/`'Twitter.'`/`'Discord.'`, event 4, k1=provider's user ID, f0=provider account name or email) and calls `attachState`. On cancellation: no row, just return a route. Store gains a ref for linked providers; OauthPanel.vue in CredentialPanel shows linked/unlinked providers. The envelope chain is inherent to the cross-origin flow and doesn't change.
+The SvelteKit side, the envelope flow, and the redirects all stay as-is (only the envelope tag names changed to `OauthEnvelopeContinue.`/`OauthEnvelopeDone.`). The legacy `/api/oauth` endpoint and `OauthDemo.vue` snippet have been retired.
 
 ## Sequencing
 
-Wallet done (see wallet.md for dev panel and test scenarios). OAuth next — small, the integration point is narrow (just `OauthDone.`), but the full flow spans three sites. OTP last — most impactful but has the most architectural questions (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment).
+Wallet done (see wallet.md for dev panel and test scenarios). OAuth done. OTP remaining — most impactful but has the most architectural questions (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment).
 
 ## Consumer identity menu (deferred)
 

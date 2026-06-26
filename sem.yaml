@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jun26.0435.45182
+  generated: 2026jun26.1409.8971
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -304,10 +304,10 @@ modules:
     note: "og: svg to png via native n-api for local dev; nuxt-og-image selects from nitro preset"
     from: site
     versions:
-      declared: ^2.6.2 on 2024mar26 26m old
-      installed: 2.6.2 on 2024mar26 26m old 🕰️ Installed version 1+ year old
-      current: 2.6.2 on 2024mar26 26m old
-      latest: 2.6.2 on 2024mar26 26m old
+      declared: ^2.6.2 on 2024mar26 27m old
+      installed: 2.6.2 on 2024mar26 27m old 🕰️ Installed version 1+ year old
+      current: 2.6.2 on 2024mar26 27m old
+      latest: 2.6.2 on 2024mar26 27m old
     downloads:
       weekly: 1,641,787
       on: 2026jun17.1558.56293
@@ -317,10 +317,10 @@ modules:
     note: "og: svg to png via rust/wasm for production workers; largest artifact is 2.48mb"
     from: site
     versions:
-      declared: ^2.6.2 on 2024mar26 26m old
-      installed: 2.6.2 on 2024mar26 26m old 🕰️ Installed version 1+ year old
-      current: 2.6.2 on 2024mar26 26m old
-      latest: 2.6.2 on 2024mar26 26m old
+      declared: ^2.6.2 on 2024mar26 27m old
+      installed: 2.6.2 on 2024mar26 27m old 🕰️ Installed version 1+ year old
+      current: 2.6.2 on 2024mar26 27m old
+      latest: 2.6.2 on 2024mar26 27m old
     downloads:
       weekly: 883,957
       on: 2026jun17.1558.56293
@@ -801,8 +801,8 @@ modules:
     versions:
       declared: ^2.8.0 on 2026jan28 4m old
       installed: 2.9.2 on 2026mar13 3m old
-      current: 2.10.0 on 2026jun20 0m old
-      latest: 2.10.0 on 2026jun20 0m old
+      current: 2.10.1 on 2026jun26 0m old
+      latest: 2.10.1 on 2026jun26 0m old
     downloads:
       weekly: 1,335,046
       on: 2026jun17.1557.49499
@@ -851,8 +851,8 @@ modules:
     note: "provider: local lambda emulator for dev"
     from: net23
     versions:
-      declared: ^14.5.0 on 2026feb24 3m old
-      installed: 14.5.0 on 2026feb24 3m old
+      declared: ^14.5.0 on 2026feb24 4m old
+      installed: 14.5.0 on 2026feb24 4m old
       current: 14.7.4 on 2026jun23 0m old
       latest: 14.7.4 on 2026jun23 0m old
     downloads:
