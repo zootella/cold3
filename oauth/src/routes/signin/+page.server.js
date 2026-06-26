@@ -25,7 +25,7 @@ export async function load(event) {
 	let browserTag = parseCookieValue(event.cookies.get(composeCookieName()))
 	let browserHash = browserTag ? await hashText(browserTag) : null
 
-	let envelope = await sealEnvelope('OauthDone.', Limit.handoffWorker, {error: errorCode, browserHash})
+	let envelope = await sealEnvelope('OauthEnvelopeDone.', Limit.handoffWorker, {error: errorCode, browserHash})
 	log('oauth sad path, sealing error envelope', look({errorCode}))
 
 	throw redirect(303, `${originApex()}/oauth2?envelope=${envelope}`)

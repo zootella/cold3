@@ -872,7 +872,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 
 	ok((await credentialOauthGet({userTag})).length == 0)//nothing linked yet
 
-	//challenge row written at OauthStart; audit trail, never blocks
+	//challenge row written at OauthProve1; audit trail, never blocks
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
 	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3, k1_text: 'Discord.'})
 	ok(challenged.length == 1)

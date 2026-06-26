@@ -6,7 +6,7 @@ Credential panel for linked third-party oauth providers (Google, Twitter, Discor
 Reads credentialStore.oauths to show each provider's current linked state, with a Remove button per linked provider and a Continue-with-X button per unlinked provider (gated behind the editing prop). All wiring goes through credentialStore; no direct fetchWorker calls from the component.
 
 Parent: CredentialPanel
-Happy path link: Edit → click a provider → credentialStore.oauthStart seals the handoff envelope → we redirect the browser to the sveltekit oauth subdomain with the envelope → the cross-origin dance happens → user returns to oauth2.vue which posts the result to /credential OauthDone → credential_table row written, attachState brings it back in the store on next Get
+Happy path link: Edit → click a provider → credentialStore.oauthProve1 seals the handoff envelope → we redirect the browser to the sveltekit oauth subdomain with the envelope → the cross-origin dance happens → user returns to oauth2.vue which posts the result to /credential OauthProve2 → credential_table row written, attachState brings it back in the store on next Get
 Happy path unlink: Edit → click Remove next to a linked provider → credentialStore.oauthRemove hides the row → attachState refreshes
 */
 
@@ -36,11 +36,13 @@ function linkState(tag) {
 
 async function onLink(provider) {//provider is the full {tag, name, display} entry from oauthProviders()
 	refClickedProvider.value = provider.tag//we don't reset to null on success because href= below tears down the whole Nuxt application; reset only happens on blocked/error paths
-	let task = await credentialStore.oauthStart({provider: provider.tag})
+	let task = await credentialStore.oauthProve1({provider: provider.tag})
 	if (!task.envelopeRedirect) {//server blocked (tab race — another tab linked this provider first)
 		refClickedProvider.value = null
 		return
 	}
+	//originOauth() returns "https://oauth.cold3.cc" cloud, or "http://localhost:5173" local
+	//encoding? base62 don't need no stinkin' encoding 👒
 	window.location.href = `${originOauth()}/continue/${provider.name}?envelope=${task.envelopeRedirect}`//URL uses auth.js's lowercase id (provider.name) since that's what the sveltekit /continue/[provider] route matches on; this is the one place auth.js's id convention surfaces in the client
 }
 
