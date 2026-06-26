@@ -527,7 +527,7 @@ export async function fetchLambda({from, route, action, body = {}}) {//fetch to 
 	checkActions({action: from, actions: ['Page.', 'Worker.']}); checkRoute(route); checkAction(action)
 
 	body = makePlain({...body, action})
-	if (from == 'Worker.') body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})//workers prove identity with a sealed envelope; pages can't (no server key), so each page->lambda route handles its own auth
+	if (from == 'Worker.') body.envelope = await sealEnvelope('Network23.', Limit.handoff, {})//workers prove identity with a sealed envelope; pages can't (no server key), so each page->lambda route handles its own auth
 
 	const f = $fetch//used from Nuxt front end or Nuxt back end, either way, we always have Nuxt's $fetch
 	return await f(lambda23(route), {method: 'POST', body})

@@ -3460,7 +3460,7 @@ places to see (and check) envelope in action:
 (1) lambda (envelope sealed by nuxt worker, opened by lambda)
 in level2, doorWorkerOpen and doorLambdaOpen call openEnvelope if the body or query string has one
 doorLambdaCheck requires a letter in the body with action "Network23."
-calling net23, the worker sets an expiration Limit.handoffLambda 14 seconds later, allowing for the cold start
+calling net23, the worker sets an expiration Limit.handoff, allowing for the cold start
 
 (2) wallet (envelope sealed by nuxt worker, held by page, opened by worker)
 wallet.js seals an envelope with the nonce for the user's browser's ethereum wallet to sign
@@ -3486,7 +3486,7 @@ the nuxt site must take the user to the sveltekit site, which does the oauth dan
 - back in 1, the page redirects the browser to 3, including the envelope in the query string
 3 calls openEnvelope directly (no door system for sveltekit), checking the action and expiration
 ...the oauth dance happens...
-- in 5, signIn() seals the user's oauth {account, profile, user} in a second envelope "OauthDone." with the same 2 second Limit.handoffWorker, and with redirect() the browser, given that envelope, gives it to 6, navigating there
+- in 5, signIn() seals the user's oauth {account, profile, user} in a second envelope "OauthDone." with the same several-second Limit.handoff, and with redirect() the browser, given that envelope, gives it to 6, navigating there
 - back in nuxt, 6 gets passed the decrypted letter from the door system, and checks the action and expiration
 
 demo code will get replaced with final code, and filenames will change

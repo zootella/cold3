@@ -281,7 +281,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			} else {
 				await credentialOauthChallenge({userTag: user.userTag, provider: body.provider})//audit-trail event-3 row; the user may or may not come back with proof
 				task.outcome = 'OauthContinue.'
-				task.envelopeRedirect = await sealEnvelope('OauthEnvelopeContinue.', Limit.handoffWorker, {})//oauth envelope step 1: seal continue envelope
+				task.envelopeRedirect = await sealEnvelope('OauthEnvelopeContinue.', Limit.handoff, {})//oauth envelope step 1: seal continue envelope
 			}
 
 		// 🟠 oauth

@@ -65,7 +65,7 @@ import {env}           from '$env/dynamic/private' //read dynamic value from .en
 				let browserHash = await hashText(browserTag)//browser tag is sensitive; hash it immediately
 
 				//seal up all the details about the user's completed oauth flow in an encrypted envelope only our servers can open
-				let envelope = await sealEnvelope('OauthEnvelopeDone.', Limit.handoffWorker, {success: true, account, profile, user, browserHash})//oauth envelope step 3: seal done envelope
+				let envelope = await sealEnvelope('OauthEnvelopeDone.', Limit.handoff, {success: true, account, profile, user, browserHash})//oauth envelope step 3: seal done envelope
 
 				let url = `${originApex()}/oauth2?envelope=${envelope}`
 				log('Auth.js signIn() handler', look({account, profile, user, url}), `url length ${url.length}`)//provider responses should fit within cloudflare's url length limit of 16,000 characters

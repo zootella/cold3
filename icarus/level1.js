@@ -181,10 +181,7 @@ export const Limit = Object.freeze({
 	expirationUser: 20*Time.minute,//for interactions that involve manual steps, allow the user to walk away and come back
 
 	//and server communication
-	handoffWorker: 4*Time.second,//for worker to worker server requests and redirects, a tight window because cloudflare is fast
-	handoffLambda: 14*Time.second,//compared the the cold starts that lambda must do
-	//^from checkly, average and p95 millisecond response times are 387/745 for sveltekit worker; 5850/7380 for lambda, so setting the timeouts at twice the p95s
-	handoff: 8*Time.second,//for worker to worker and worker to lambda requests and redirects; checkly has p95 numbers 971ms for workers and 3.57s for lambda, we're picking twice that, ttd june replace the two handoffs with this new one
+	handoff: 8*Time.second,//for worker to worker and worker to lambda requests and redirects; checkly has p95 numbers 971ms for workers and 3.57s for lambda, we're picking twice that
 
 	//and media transfer
 	mediaDownload: 2*Time.hour,//a page that gets signatures for cloudfront gets them with this expiration in the future

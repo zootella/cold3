@@ -237,7 +237,7 @@ async function runTest({route, method, headers, body, expect}) {
 	else toss('code')
 
 	if (body) {//prepare reqest body
-		if (body.envelope) body.envelope = await sealEnvelope('Network23.', Limit.handoffLambda, {})//fresh keycard just like Lambda mints
+		if (body.envelope) body.envelope = await sealEnvelope('Network23.', Limit.handoff, {})//fresh keycard just like Lambda mints
 		body = makeText(body)//stringify
 	}
 

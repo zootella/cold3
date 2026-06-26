@@ -25,7 +25,7 @@ export async function load(event) {
 
 	const errorType = event.url.searchParams.get('error') || 'unknown'//Auth.js passes the error type name as a query parameter (e.g. "AccessDenied", "Configuration")
 
-	let envelope = await sealEnvelope('Error3.', Limit.handoffWorker, {error: {name: 'AuthError', message: `Auth.js rejected sign-in: ${errorType}`, authErrorType: errorType}})//we don't get the original exception from Auth.js here (it swallowed that inside its own try/catch), only the error type string — so we construct a POJO with what we have; makeText inside sealEnvelope handles it
+	let envelope = await sealEnvelope('Error3.', Limit.handoff, {error: {name: 'AuthError', message: `Auth.js rejected sign-in: ${errorType}`, authErrorType: errorType}})//we don't get the original exception from Auth.js here (it swallowed that inside its own try/catch), only the error type string — so we construct a POJO with what we have; makeText inside sealEnvelope handles it
 	log('Auth.js rejection landing, sealing Error3. envelope', look({errorType}))
 
 	throw redirect(303, `${originApex()}/error3?envelope=${envelope}`)

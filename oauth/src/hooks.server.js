@@ -21,7 +21,7 @@ async function fatalCatcher({event, resolve}) {//outer middleware around auth's 
 		if (isHttpError(e)) throw e//same for deliberate error() throws, should we ever use them
 
 		//real uncaught exception: seal the error in an envelope and redirect to nuxt error3 which logs to Datadog and renders error.vue
-		let envelope = await sealEnvelope('Error3.', Limit.handoffWorker, {error: e})
+		let envelope = await sealEnvelope('Error3.', Limit.handoff, {error: e})
 		throw redirect(303, `${originApex()}/error3?envelope=${envelope}`)
 	}
 }
