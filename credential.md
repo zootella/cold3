@@ -67,7 +67,7 @@ The tension: TOTP has one slot per user, but OTP has an array of simultaneous ch
 
 ## Current state: hide does the work, events are underused
 
-`credential_table` has an `event` column defined as: 1 removed, 2 mentioned, 3 challenged, 4 validated. Most credential functions hardcode `event: 4`. Removal uses `queryHide` (sets the `hide` column), which makes rows invisible to `queryGet`. Wallet is the first type to use events 2 and 3 (WalletProve1 writes mentioned and challenged rows), but the rest of the system still only writes event 4.
+`credential_table` has an `event` column defined as: 1 removed, 2 mentioned, 3 challenged, 4 validated. Most credential functions hardcode `event: 4`. Removal uses `queryHide` (sets the `hide` column), which makes rows invisible to `queryGet`. Wallet is the first type to use events 2 and 3 (WalletProve1 writes mentioned and challenged rows).
 
 The `hide` mechanism is convenient (level2 query helpers skip hidden rows by default) but destroys history. A user who enrolls TOTP, removes it, enrolls again — the first enrollment is gone. No record of credential lifecycle.
 
@@ -187,22 +187,6 @@ The largest integration — OTP has the most moving parts.
 **Components.** OTP components wire into `CredentialPanel`, calling `credentialStore` methods instead of `fetchWorker` directly.
 
 **Wrinkle: the signup flow.** OTP is used both for credential management (signed-in user adds an email) and signup (new person proves address control). The credential endpoint requires a signed-in user for most actions. The signup path needs to work without one — either by making OTP actions available without a user (like `CheckNameTurnstile.` already is), or by creating a userTag early as discussed above.
-
-## OAuth — done
-
-OAuth is now fully integrated into the credential system. The flow crosses three sites: Nuxt (cold3.cc), SvelteKit (oauth.cold3.cc), and the provider (google.com, etc.):
-
-1. **OauthPanel.vue** (inside CredentialPanel) calls `credentialStore.oauthProve1` which posts `OauthProve1.` on `/credential`, gets back an `OauthEnvelopeContinue.` envelope (with an event-3 challenge row written for audit).
-2. Browser redirects to `oauth.cold3.cc/continue/{provider}?envelope=...`
-3. **SvelteKit `+page.server.js`** opens the envelope to verify it's legit, renders the page.
-4. **SvelteKit `+page.svelte`** auto-submits a form POST to Auth.js, which handles the provider dance (Google, Twitter, Discord, GitHub).
-5. **auth.js `signIn` callback** — after the provider dance succeeds, reads the browser's cookie to get `browserHash`, seals an `OauthEnvelopeDone.` envelope with the proven identity (`account`, `profile`, `user`, `browserHash`), and returns a redirect URL: `cold3.cc/oauth2?envelope=...`
-6. **oauth2.vue** (Nuxt page) receives the envelope from the query string, posts it to `OauthProve2.` on `/credential`.
-7. **credential.js `OauthProve2.`** opens the envelope (with browserHash check), parses provider-specific fields via `credentialOauthParse`, and writes a credential_table row via `credentialOauthSet` (type `'Oauth.'`, event 4, k1=provider tag, k2=identifier, k3=handle, k4=name, k8=stringified audit blob). `attachState` brings the new linked provider back to the store on the next response.
-
-Cancellation: if the user clicks Cancel at the provider, Auth.js redirects to SvelteKit's `/signin` page, which seals an `OauthEnvelopeDone.` envelope with `{error: errorCode}` instead of `{success: true}`, and redirects back to `oauth2.vue` the same way. `OauthProve2.` opens the envelope, sees `letter.success` is false, and silently no-ops — the user lands back at `/page1` with no row written.
-
-The SvelteKit side, the envelope flow, and the redirects all stay as-is (only the envelope tag names changed to `OauthEnvelopeContinue.`/`OauthEnvelopeDone.`). The legacy `/api/oauth` endpoint and `OauthDemo.vue` snippet have been retired.
 
 ## Sequencing
 

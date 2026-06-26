@@ -3,77 +3,6 @@
 
 planning and testing notes for third-party oauth provider links (Google, Twitter, Discord, ...) as a credential type alongside Browser, Name, Password, TOTP, and Wallet.
 
-## Design Conversation
-
-hi claude, i think we should rethink how we use the credential table for the oauth flow
-
-	user_tag   CHAR(21)  NOT NULL,  -- the user who has mentioned, controls, or removed a credential, like an address
-	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Twitter.", "Ethereum.", "Totp.", "Password." or others
-	event      BIGINT    NOT NULL,  -- 2 mentioned, 3 challenged, 4 validated, 1 removed
-
-userTag we use, of course
-type_text is "Oauth."
-event we use, both 3 challenged before starting the oauth flow
-and 4 validated when we get back a response that attests proof from auth.js getting proof from the provider
-
-	f0_text    TEXT      NOT NULL,  -- normalized form of address or name, to match as unique
-	f1_text    TEXT      NOT NULL,  -- formal form of address, to send messages
-	f2_text    TEXT      NOT NULL,  -- page form of address, to show the user
-
-if the result contains an email address, validate it, and store it the three forms here, i think
-
-	k1_text    TEXT      NOT NULL,
-	k2_text    TEXT      NOT NULL,
-	k3_text    TEXT      NOT NULL,
-	k4_text    TEXT      NOT NULL
-
-and then here's how we should use the k1-4
-k1 is the provider name, like "Discord."
-what are other values common to valid oauth responses that we should pull out for these fields?
-and then one of them will probably be the entire stringified response, so we have it here as well as datadog, to begin
-
----
-
-claude responding:
-
-**type_text = 'Oauth.'** — clean. existing `credential1` index `(hide, user_tag, row_tick)` still covers "all this user's oauth credentials" in one query. no schema change needed, just the usage convention.
-
-**event 3 and 4** — both useful. i'd treat event-3 purely as audit trail ("user started a Discord flow at time T"), never as a lock. OauthProve1's existing-link guard already checks event-4, and the tab race is "safely no-op" — so event-3 never needs to block anything, which also means we never have to garbage-collect abandoned event-3 rows from users who bailed at the provider.
-
-**f0/f1/f2 = email forms** — (updated after kevin's response) greedy fill: whenever the letter includes an email, write the three forms, regardless of whether the provider attested it verified or not. that keeps the insert logic simple — "if letter has email, write it" — and defers the trust decision to a separate future step.
-
-semantic: email in an `Oauth.` row is **provider-reported, not validated**. taken with a grain of salt. UI that shows it should read "Discord reports this email" rather than "your verified email."
-
-future promote step (not in this pass — covered by "email inheritance from verified providers" ttd below): server-side logic walks the `Oauth.` rows, decides per-provider whether to trust the verification attestation, and either writes corresponding `Email.` rows (inheriting the provider's trust) or kicks off challenge/response validation flows. could also be "we trust all providers on our short whitelist unconditionally" — that policy call gets made later.
-
-re: your question about providers that return email without a verified flag — google and discord both include one (we just saw discord's `verified: true` in the smoke test, google includes `email_verified`). twitter conditionally returns email with elevated scope. i'm not 100% on every provider — some enterprise/minor providers might bare-email. but the greedy-fill policy makes this a non-issue at insert time, since we're not making any trust claim when we write.
-
-**what else is worth extracting into k2/k3/k4:**
-
-- **providerId** — yes, definitely. stable unique id used for dedupe and re-auth. → `k2`
-- **handle / display name** — yes, for the panel ("linked as @zootella"). discord gives `username`+`global_name`, google `name`, twitter `screen_name`+`name`. we already do the best-effort pick across providers. → `k3`
-- **profile image URL** — skip. avatars change; fetching fresh per render beats storing stale.
-
-**stringified `{account, profile, user}` in k4** — yes, worth it. scope it to just the provider-returned slice from auth.js's signIn — drop `success`, `browserHash`, `expiration`, `action` (those are envelope/wrapper metadata, not provider data, and already live elsewhere). disk is cheap, datadog retention is ~7-30 days, permanent per-user copy is useful for: (a) later inspection ("what did Discord actually tell us last March?"), (b) re-parsing if we extract more fields later, (c) user-data export down the road. the smoke test Discord slice was ~1.3KB — well within safe row sizes. spot-check google and twitter sizes before committing.
-
-**proposed mapping:**
-
-| column | value |
-|---|---|
-| `type_text` | `'Oauth.'` |
-| `event` | `3` on OauthProve1, `4` on OauthProve2 success, `1` on OauthRemove |
-| `f0/f1/f2` | email in normalized/formal/display form — greedy fill whenever letter has email; treat as *provider-reported, not validated* |
-| `k1` | provider (`'Discord.'`) |
-| `k2` | providerId (stable unique id from provider) |
-| `k3` | handle / display name (for panel) |
-| `k4` | stringified `{account, profile, user}` — just the auth.js/provider slice |
-
-**open for us to decide:**
-
-- should the provider's `email_verified` flag get its own slot, or just live inside the k4 blob? matters for auditing "we trusted Discord's verified=true at the time we accepted the email" if the provider later shifts policy.
-- event-3 row payload: just `{type='Oauth.', event=3, k1=provider}` or also stamp the envelope tag / start time? row_tick already gives creation time, so maybe nothing else.
-- do we want to persist anything about failed OauthProve2 (user cancelled, Auth.js rejected)? could write an event-1 or a distinct event code as audit trail, or stay quiet (our current design).
-
 ## Open items
 
 ### providerId uniqueness across cold3 accounts
@@ -127,16 +56,6 @@ alternatives to consider:
 - browser-side: stash start URL in a cookie or sessionStorage before redirecting to oauth.cold3.cc, read it back in oauth2.vue
 - hybrid: intent tag in envelope for the common case, query param on oauth2.vue return for cases that need it
 
-### naming cleanup for OauthStart / OauthContinue / OauthDone (done)
-
-triple-use of `Oauth*` across three overlapping namespaces resolved with these renames:
-
-- nuxt worker POST actions: `OauthProve1.`, `OauthProve2.`, `OauthRemove.` (was `OauthStart.`, `OauthDone.`, `OauthRemove.`) — numbered-suffix convention matches `TotpEnroll1./2.` and `WalletProve1./2.`
-- envelope tags: `OauthEnvelopeContinue.`, `OauthEnvelopeDone.` (was `OauthContinue.`, `OauthDone.`) — `OauthEnvelope` prefix gives them their own namespace
-- outcomes: `OauthContinue.`, `OauthAlreadyLinked.` (was also `OauthProven.`, `OauthBad.` — those were dead code in the deleted oauth.js demo flow, set but never read)
-
-both collisions are resolved: `OauthDone.` no longer lives in two namespaces, and `OauthContinue.` is now only an outcome string. store function `oauthStart` renamed to `oauthProve1` to match the new action name.
-
 ### provider letter URL size audit
 
 Auth.js composes a redirect URL at signIn() time carrying the full sealed envelope (account, profile, user from the provider). we already log `url.length` on every signIn, so Datadog has real data from Google, Discord, Twitter across whatever user varieties have signed in so far. Cloudflare's URL length limit is 16,000 characters — confirm we're comfortably under across providers and profile varieties.
@@ -167,7 +86,3 @@ to confirm:
 
 low-stakes — just Vue trivia worth confirming before we propagate the pattern.
 
-## Vestigial code to delete once OauthPanel is stable (done)
-
-`site/app/components/snippet1/OauthDemo.vue` — deleted; OauthPanel.vue replaces it inside CredentialPanel
-`site/server/api/oauth.js` — deleted; `/credential` actions OauthProve1/OauthProve2/OauthRemove handle what oauth.js did, and write the credential_table row on success

@@ -107,8 +107,6 @@ if (task.envelope !== undefined) credentialStore.setEnvelope(userTag, task.envel
 
 The server may return `task.envelope = null` to signal "clear it" (envelope expired server-side, user signed out, enrollment completed). The page treats null as "remove from storage." `task.envelope === undefined` means "the server didn't touch the envelope in this response" — the page leaves storage alone.
 
-(hi claude, let's talk about this. i realiez now we could simplify to have the expiration only in the envelope, and have every response set the local envelope. so if the server wants no change to the envelope, they send back the same envelope. and if there's a really stale envelope in local storage, it'll get deleted only on contact wtih the server--we really don' tneed to worry about th epage noticing stale before sending ,it's fine for the server to)
-
 ## [9] accepted tradeoff: SSR flash on enrollment-recovery refresh
 
 Today, `credentialStore.load()` reads `useTotpCookie()` during the SSR render and sends it as `body.envelope`. The server opens it and returns `task.enrollment` so the TOTP panel renders in-progress state on first paint.
