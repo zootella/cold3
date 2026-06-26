@@ -298,8 +298,8 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 				if (!providerInfo) toss('state', {action, provider: letter.account?.provider})//provider came back that isn't in our whitelist — auth.js is configured wider than .env.keys, or the letter was tampered
 
 				let parsed = credentialOauthParse(providerInfo.tag, proof)//per-provider field extraction + email validation lives in level3; this handler stays dumb
-				let wrote = await credentialOauthSet({userTag: user.userTag, ...parsed})
-				if (!wrote) task.outcome = 'OauthAlreadyLinked.'//DB blocked: user already has a linked row (tab race or stale envelope)
+				let result = await credentialOauthSet({userTag: user.userTag, ...parsed})
+				if (!result.ok) task.outcome = result.outcome//OauthAlreadyLinked. (this user re-linking) or OauthClaimedElsewhere. (another cold3 user already holds this providerId)
 			}
 			task.route = '/page1'//ttd november2025, will change to welcome, home, or dashboard depending on the user's aim proving oauth
 

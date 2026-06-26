@@ -682,20 +682,27 @@ export async function credentialOauthChallenge({userTag, provider}) {//record we
 
 /*
 record proof a user controls a third party oauth account, with information about it
-returns true recorded, false no change because existing record for this user and provider, a tab race could cause this
+returns {ok: true} on insert, or {ok: false, outcome: '...'} on collision; outcome is 'OauthAlreadyLinked.' (this user has another account for this provider) or 'OauthClaimedElsewhere.' (the providerId is held by a different cold3 account)
 ui will let user change their account with a provider by removing an old one and then adding a new one
 caller is expected to have run credentialOauthParse on the proof and pass the resulting fields here; this function is dumb storage and does no provider-specific parsing of its own
 */
 export async function credentialOauthSet({userTag, provider, proof, identifier, handle, name, email}) {
 	checkTag(userTag); checkAction(provider); checkText(identifier)
 
-	let existing = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: provider, event: 4})
-	if (existing.length) return false//already linked; caller must prompt user to Remove first to switch accounts
+	//check 1: this user already has SOME account linked for this provider
+	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: provider, event: 4})
+	if (mine.length) return {ok: false, outcome: 'OauthAlreadyLinked.'}//already linked; caller must prompt user to Remove first to switch accounts
+
+	//check 2: any OTHER user has THIS specific providerId linked — one provider identity, one cold3 account; queryGet filters hidden rows, so a removed claim is releasable to a new owner
+	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim
+	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', k1_text: provider, k2_text: identifier, event: 4})
+	if (claimed.some(r => r.user_tag != userTag)) return {ok: false, outcome: 'OauthClaimedElsewhere.'}
+
 	/*
-	ttd may, more to do here soon:
+	ttd may, more to complete and test here soon:
 	- if the email is trustworthy, like an @gmail.com or @googlemail.com from provider Google., or oauth proof indicates with a flag that this user has verified this email with them, then we should make another row event 4 setting that email as proven with us, too, without sending the user through our own otp flow
 	- but what if that email is already taken by another user? (weird, maybe reject the oauth) or by this user, already (that will be common and is fine) think about cross-currents like that
-	- also watch out for and block duplicates related to the provider's id, like what if another user here has already proven this provider's third party account, with the providerId, probably the same person, but who knows? figure out what to do there
+	- (done) also watch out for and block duplicates related to the provider's id, like what if another user here has already proven this provider's third party account, with the providerId, probably the same person, but who knows? figure out what to do there
 	*/
 
 	await credentialSet({
@@ -708,7 +715,7 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 		//(leaving k5-7 blank for future use, then at the end, for auditability, we save the whole proof)
 		k8: makeText(proof),//auth.js/provider slice (drops our envelope wrapper) for audit and future re-parsing beyond datadog's retention
 	})
-	return true
+	return {ok: true}
 }
 export async function credentialOauthRemove({userTag, provider}) {
 	checkTag(userTag); checkAction(provider)
@@ -891,14 +898,14 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthSet({userTag, provider: 'Google.', identifier: 'g456', handle: 'alice@gmail.com', name: 'Alice G.', email: aliceEmailObj})
 	ok((await credentialOauthGet({userTag})).length == 2)
 
-	//re-link attempt while Discord is still linked: Set blocks (returns false), original row preserved
-	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})) == false)
+	//re-link attempt while Discord is still linked: Set blocks with OauthAlreadyLinked., original row preserved
+	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).outcome == 'OauthAlreadyLinked.')
 	let stillOriginal = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
 	ok(stillOriginal.identifier == 'd123' && stillOriginal.handle == 'alice_d')//unchanged — not overwritten by the blocked Set
 
 	//to switch accounts the user must Remove first, then Set succeeds and points at the new account
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
-	ok(await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj}))//wrote now that the slot is free
+	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).ok)//wrote now that the slot is free
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: 'Discord.', event: 4})
 	ok(rows.length == 1)//only one active Discord row
 	ok((await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.').identifier == 'd789')//new account wins
@@ -917,6 +924,43 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthSet({userTag: userTag2, provider: 'Discord.', identifier: 'd2', handle: 'bob'})
 	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', k1_text: 'Discord.', event: 4}))[0]
 	ok(bobRow.f0_text == '' && bobRow.f1_text == '' && bobRow.f2_text == '')//no email passed → f columns blank
+})
+grid(async () => {//oauth: cross-user providerId uniqueness — one provider identity, one cold3 account; released claim is reclaimable
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let aliceTag = Tag(), bobTag = Tag()
+
+	//alice claims Discord with shared_id
+	ok((await credentialOauthSet({userTag: aliceTag, provider: 'Discord.', identifier: 'shared_id', handle: 'alice'})).ok)
+	ok((await credentialOauthGet({userTag: aliceTag})).find(o => o.provider == 'Discord.').identifier == 'shared_id')
+
+	//bob tries to claim the same providerId: blocked with OauthClaimedElsewhere., alice's row preserved
+	let blocked = await credentialOauthSet({userTag: bobTag, provider: 'Discord.', identifier: 'shared_id', handle: 'bob_tries'})
+	ok(!blocked.ok && blocked.outcome == 'OauthClaimedElsewhere.')
+	ok((await credentialOauthGet({userTag: aliceTag})).find(o => o.provider == 'Discord.').handle == 'alice')//alice unchanged
+	ok((await credentialOauthGet({userTag: bobTag})).length == 0)//bob has nothing written
+
+	//alice releases the claim — her row gets hidden, so the providerId becomes available again
+	await credentialOauthRemove({userTag: aliceTag, provider: 'Discord.'})
+
+	//bob can now claim the released providerId
+	ok((await credentialOauthSet({userTag: bobTag, provider: 'Discord.', identifier: 'shared_id', handle: 'bob_now'})).ok)
+	ok((await credentialOauthGet({userTag: bobTag})).find(o => o.provider == 'Discord.').handle == 'bob_now')
+
+	//alice can't reclaim what bob now holds
+	let blocked2 = await credentialOauthSet({userTag: aliceTag, provider: 'Discord.', identifier: 'shared_id', handle: 'alice_again'})
+	ok(!blocked2.ok && blocked2.outcome == 'OauthClaimedElsewhere.')
+
+	//alice can claim Discord with a DIFFERENT providerId — uniqueness is per (provider, identifier), not per provider
+	ok((await credentialOauthSet({userTag: aliceTag, provider: 'Discord.', identifier: 'alice_own_id', handle: 'alice_other'})).ok)
+	ok((await credentialOauthGet({userTag: aliceTag})).find(o => o.provider == 'Discord.').identifier == 'alice_own_id')
+
+	//cross-provider corner: two providers can hand out the same identifier string to two different cold3 users without colliding, because the uniqueness key is (provider, identifier) compound, not identifier alone
+	let charlieTag = Tag(), daveTag = Tag()
+	ok((await credentialOauthSet({userTag: charlieTag, provider: 'Google.', identifier: 'collision_id', handle: 'charlie_g'})).ok)
+	ok((await credentialOauthSet({userTag: daveTag, provider: 'Discord.', identifier: 'collision_id', handle: 'dave_d'})).ok)//same identifier string, different provider — both succeed
+	ok((await credentialOauthGet({userTag: charlieTag})).find(o => o.provider == 'Google.').identifier == 'collision_id')
+	ok((await credentialOauthGet({userTag: daveTag})).find(o => o.provider == 'Discord.').identifier == 'collision_id')
 })
 grid(async () => {//browser: sign out removes all sessions for one user
 	let {clear} = await getDatabase()
