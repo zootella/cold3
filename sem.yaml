@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jun27.2205.31247
+  generated: 2026jun27.2236.21145
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -44,8 +44,8 @@ summary:
       "@resvg/resvg-js": "og: svg to png via native n-api for local dev; nuxt-og-image selects from nitro preset"
       "@resvg/resvg-wasm": "og: svg to png via rust/wasm for production workers; largest artifact is 2.48mb"
       "@unhead/vue": "og: head management peer dep; injected by nuxi module add, load-bearing for og-image"
-      nuxt-og-image: "og: pinned to v6 beta; v5 broke on nitro 2.13.1 wasm bundling; single maintainer"
-      satori: "og: html/css to svg by vercel; pinned 0.15.2, 0.16+ blocked on workers wasm restrictions"
+      nuxt-og-image: "og: social share cards; single maintainer; unpinned from 6.0.0-beta.15 to current v6 when nuxt 4.4.6's island-hash fix forced past the beta; v5 once broke nitro wasm bundling"
+      satori: "og: html/css to svg by vercel; unpinned from 0.15.2 to current; 0.16+ once broke workers wasm; og-image 6.7.0 peers satori >=0.19.2"
       unstorage: "og: cache driver abstraction; injected by nuxi module add, now using lru-cache driver"
     provider:
       "@supabase/supabase-js": "provider: database; works local and deployed, worker and lambda"
@@ -727,7 +727,7 @@ modules:
   nuxt-og-image:
     homepage: https://nuxtseo.com/og-image
     description: Enlightened OG Image generation for Nuxt.
-    note: "og: pinned to v6 beta; v5 broke on nitro 2.13.1 wasm bundling; single maintainer"
+    note: "og: social share cards; single maintainer; unpinned from 6.0.0-beta.15 to current v6 when nuxt 4.4.6's island-hash fix forced past the beta; v5 once broke nitro wasm bundling"
     from: site
     versions:
       declared: ^6.7.0 on 2026jun24 0m old
@@ -807,7 +807,7 @@ modules:
   satori:
     homepage: https://github.com/vercel/satori#readme
     description: Enlightened library to convert HTML and CSS to SVG.
-    note: "og: html/css to svg by vercel; pinned 0.15.2, 0.16+ blocked on workers wasm restrictions"
+    note: "og: html/css to svg by vercel; unpinned from 0.15.2 to current; 0.16+ once broke workers wasm; og-image 6.7.0 peers satori >=0.19.2"
     from: site
     versions:
       declared: ^0.26.0 on 2026mar20 3m old
