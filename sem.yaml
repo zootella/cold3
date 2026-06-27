@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jun26.1409.8971
+  generated: 2026jun27.1955.32649
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -200,8 +200,8 @@ modules:
     note: "sveltekit: the reason the oauth workspace exists; no @auth/nuxt adapter available"
     from: oauth
     versions:
-      declared: ^1.11.1 on 2025oct26 7m old
-      installed: 1.11.1 on 2025oct26 7m old
+      declared: ^1.11.1 on 2025oct26 8m old
+      installed: 1.11.1 on 2025oct26 8m old
       current: 1.11.2 on 2026apr14 2m old
       latest: 1.11.2 on 2026apr14 2m old
     downloads:
@@ -494,8 +494,8 @@ modules:
     versions:
       declared: ^1.3.2 on 2026feb23 4m old
       installed: 1.5.0 on 2026mar20 3m old
-      current: 1.10.2 on 2026may28 0m old
-      latest: 1.10.2 on 2026may28 0m old
+      current: 1.10.2 on 2026may28 1m old
+      latest: 1.10.2 on 2026may28 1m old
     downloads:
       weekly: 6,977,250
       on: 2026jun17.1557.25111
@@ -576,10 +576,10 @@ modules:
     note: "front: variant styling for components; shadcn pattern, pre-1.0 but 15m weekly downloads"
     from: site
     versions:
-      declared: ^0.7.1 on 2024nov26 18m old
-      installed: 0.7.1 on 2024nov26 18m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
-      current: 0.7.1 on 2024nov26 18m old
-      latest: 0.7.1 on 2024nov26 18m old
+      declared: ^0.7.1 on 2024nov26 19m old
+      installed: 0.7.1 on 2024nov26 19m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
+      current: 0.7.1 on 2024nov26 19m old
+      latest: 0.7.1 on 2024nov26 19m old
     downloads:
       weekly: 54,188,815
       on: 2026jun17.1557.49499

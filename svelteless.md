@@ -1,231 +1,71 @@
 # svelteless
 
-A plan for moving OAuth proof entirely into Nuxt, eliminating the SvelteKit workspace.
+Moving OAuth proof entirely into the Nuxt apex server, retiring the SvelteKit workspace at `oauth.cold3.cc`. This was a hypothesis; a working spike has now proven it. This document records what we proved, why it works, how to bring Auth.js in so it stays stable, the plan to build the new flow, and the roadway we get to tear down once it lands.
 
-## How Auth.js is structured
+## What the spike proved
 
-Auth.js factors as a stack of three layers. Each layer is small. Almost all of the actual work happens in the bottom two — the top is framework-shaped ergonomics. Understanding the structure is what tells us where we should be operating.
+A throwaway feasibility spike ran the whole Discord OAuth flow inside a single Nitro endpoint, with `@auth/core` used directly — no SvelteKit, no adapter, no cross-origin envelope handoff. The cost was one new file (`site/server/api/auth/[...all].js`), `@auth/core` added to the `site` workspace, and one extra redirect URI in Discord's developer portal. Adding `@auth/core` changed the dependency graph by zero net packages — every one of its transitive deps was already in the store as `@auth/sveltekit`'s, so it was a new dependency edge and nothing more.
 
-### `@auth/core` — the engine
+Before any browser was involved, two server-side probes settled most of the question. `GET /api/auth/session` returned `200 null` — proving Nitro routes the catch-all, `@auth/core` bundles cleanly under Nitro, `decryptKeys` finds the keys, and `Auth()` accepts the config. `POST /api/auth/signin/discord` with an empty form body returned a `302` to `https://discord.com/api/oauth2/authorize` with `response_type=code`, `scope=identify email`, the real `client_id` (resolved from `Key('oauth, discord, id')`), `code_challenge`/`code_challenge_method=S256`, and `redirect_uri=http://localhost:3000/api/auth/callback/discord` computed exactly right. That the empty POST returned a redirect rather than `MissingCSRF` confirmed `skipCSRFCheck` does its job. And the response carried three `Set-Cookie` headers at once — the middleware's `browserTag` cookie sitting alongside Auth.js's `authjs.pkce.code_verifier` and `authjs.callback-url` — which confirmed in practice the one real integration risk: h3's `sendWebResponse` *appends* `set-cookie` (it does not clobber), so our middleware and Auth.js coexist on the same response.
 
-A single function: `Auth(request, config) → response`. Hand it a Web `Request`, get back a Web `Response`. That's the entire public API.
+Then the full round trip in a browser. Sign-in redirected to Discord's consent screen, Authorize bounced back to `/api/auth/callback/discord?code=…`, `oauth4webapi` exchanged the code for a real access token and refresh token server-to-server, fetched userinfo, and our `signIn` callback fired with live data: an `account` (with `providerAccountId`, tokens, `scope`), a `profile` (username, a `verified: true` email, avatar), and the normalized `user` (`{id, name, email, image}`) the provider module's `profile()` mapper produces. That `signIn` firing with real provider data is the entire question, answered yes.
 
-Internally, `Auth()` parses the URL pathname (under `config.basePath`, default `/auth`) into one of a fixed set of actions — `signin`, `callback`, `csrf`, `session`, `signout`, `verify-request`, `error`. Each action has a handler in `lib/actions/` that does the work: setting cookies, signing JWTs, validating CSRF, looking up sessions, calling user-supplied callbacks (`signIn`, `redirect`, `session`, `jwt`).
+Two honest caveats. The spike ran on `nuxt dev`, which is Node with emulated Cloudflare bindings — so it proves the Nitro glue and the full flow on Node, not on workerd. The engine itself on workerd is not in doubt: the production `oauth` worker runs this exact `@auth/core` + `oauth4webapi` token exchange against Discord on workerd every day. The single cell neither covers — our Nitro glue running *specifically* on workerd — closes with a `pnpm preview` (`nuxt build && wrangler dev`) pass before cutover. And one thing we learned that corrects an earlier worry: `decryptKeys`'s first argument is a cosmetic label, not a namespace selector — it decrypts the whole key block, so every secret (Discord's, Auth.js's) is reachable from the `site` worker exactly as it already is inside `doorWorker`. There was never a key-provisioning question.
 
-The actual OAuth protocol moves — generate authorize URL, exchange code for token, validate PKCE, fetch userinfo, validate ID tokens — are delegated to `oauth4webapi`, a separate package. `@auth/core` orchestrates around that: state cookies, error handling, callback hooks. JWT signing is delegated to `jose`. Default sign-in and error pages are rendered with `preact` — you only see them if you don't override `pages.signIn` or `pages.error`.
+## Why it works: the shape of Auth.js
 
-What `@auth/core` knows about: cookies, JWTs, OAuth state, the URL convention. What it doesn't know: HTTP servers, frameworks, routing systems, your application. It's deliberately ignorant of those — that's why it works anywhere you can produce a Web Request.
+Auth.js is three layers, and only the bottom two do the work. Understanding the split is what makes operating without the top layer sound rather than off-label.
 
-### Provider modules — one per OAuth provider
+`@auth/core` is the engine: a single function `Auth(request, config) → response`, Web `Request` in, Web `Response` out. It parses the URL under `config.basePath` into a fixed set of actions (`signin`, `callback`, `csrf`, `session`, `signout`, `error`), manages cookies and CSRF state, signs JWTs with `jose`, and delegates the actual OAuth protocol — authorize URLs, code exchange, PKCE, userinfo, ID-token validation — to `oauth4webapi`. It knows about cookies, JWTs, OAuth state, and a URL convention. It knows nothing about HTTP servers, frameworks, or routing. It has no Node-specific imports anywhere in its tree; all crypto is Web Crypto globals. `oauth4webapi` lists `cloudflare`/`workerd`/`workers` among its keywords and has zero dependencies. Both are by the same author and are reference-quality edge-compatible toolkits.
 
-In `@auth/core/providers/` there are dozens of these — Google, Twitter, Discord, GitHub, Apple, Auth0, plus many more. Each is a function that returns a config object describing one provider.
+Provider modules — `@auth/core/providers/google`, `discord`, and the rest — are pure config functions. Each returns an object describing one provider: for OIDC providers like Google, just `{id, name, type: 'oidc', issuer}` and the engine fetches the discovery doc at runtime; for plain OAuth2 like Discord, the explicit `authorization`/`token`/`userinfo` URLs plus a `profile()` mapper that normalizes the provider's response to `{id, name, email, image}`. The only runtime code is that mapper, which is pure data transformation. The Discord module's own doc comment prints the canonical usage — `Auth(request, {providers: [Discord({clientId, clientSecret})]})` — with no framework in sight. Framework-free use is the documented path, not a hack.
 
-For OIDC providers (OpenID Connect, like Google) the module is tiny because OIDC defines a discovery doc — the module just declares `{id, name, type: 'oidc', issuer}` and `@auth/core` fetches the discovery doc at runtime to learn the actual endpoints. Google's whole module (`providers/google.js:108-119`) is twelve lines of code.
+The framework adapters — `@auth/sveltekit`, `next-auth`, the rest — are the thin top layer. Each bridges its framework's HTTP idiom to `Auth()`. The SvelteKit adapter's entire `handle` hook is about twenty lines: read config, parse the action from the URL, call `Auth(request, config)`, return the response. The substance an adapter adds is not capability but a silent configuration pass — `setEnvDefaults`, called on every request, which sets `basePath`, `trustHost`, and `skipCSRFCheck`. That last one is the only piece of adapter magic that mattered to us: it is a symbol, and `@auth/core` enables CSRF-skipping only on an identity check against that exact symbol, which is why an adapter's empty form POST passes `validateCSRF` and ours must set `skipCSRFCheck` explicitly to do the same.
 
-For plain OAuth2 providers (like Discord, GitHub) the module supplies the endpoints explicitly: `authorization`, `token`, `userinfo` URLs, plus a `profile()` function that maps the provider's user response to a normalized `{id, name, email, image}` shape. GitHub's module additionally fetches `/user/emails` separately when the user's primary email isn't in the basic profile.
+Nuxt already supplies the bridge the adapter would. h3 (v1.15.10, what Nuxt 4.4 / Nitro 2.13 ships) provides `toWebRequest(event)` and `sendWebResponse(event, response)` — the latter splitting multiple `Set-Cookie` headers correctly — and the handler dispatch auto-sends a returned `Response`. So our endpoint is, at its core, `return Auth(toWebRequest(event), config)`. We operate at layers one and two, which never depended on layer three; we are not reviving the long-dormant community Nuxt adapter, we are skipping the adapter layer entirely, which the engine and providers were designed to allow.
 
-The pattern is consistent: a config object, no runtime code beyond the `profile()` mapper. The actual HTTP traffic happens inside `oauth4webapi`, which `@auth/core` calls during the `signin` and `callback` actions. Provider modules describe *what the provider's endpoints are*, not *how to talk to them*.
+## What we run today, and how we got here
 
-### Framework adapters — `@auth/sveltekit`, `@auth/nextjs`, the rest
+The current flow spans three places: the Nuxt apex (`cold3.cc`), a SvelteKit worker (`oauth.cold3.cc`) running `@auth/sveltekit`, and the provider. A click on "Continue with Discord" makes the apex seal an `OauthEnvelopeContinue.` envelope (`credential.js:284`) and redirect the browser to `oauth.cold3.cc/continue/discord`. SvelteKit opens that envelope to validate the handoff, POSTs an empty form to Auth.js's `/auth/signin/discord`, runs the OAuth flow, and in its `signIn` callback (`oauth/src/auth.js:60-73`) seals an `OauthEnvelopeDone.` envelope with `{success, account, profile, user, browserHash}` and redirects back to apex `oauth2.vue`, which posts it to `/credential` as `OauthProve2.` to write the row. A `browserHash` round-trip exists only because cookies cannot be read across subdomains: the apex sets the tag cookie at the apex domain so it spans subdomains, SvelteKit reads and hashes it, the apex re-hashes its own copy to confirm the same browser. A whole `Error3.` envelope trail exists only to carry an unexpected SvelteKit-side error back into the apex's `error.vue`.
 
-These are the framework-shaped wrappers. They exist because `@auth/core` only speaks Web Request/Response, and each framework has its own idiom for an HTTP handler — SvelteKit has hooks and `event.request`, Next.js has route handlers and middleware, Express has middleware-style `(req, res)`, Nuxt has h3 events. The adapter's job is to bridge that idiom to `Auth()`.
+It works, every day. But it is a separate full-stack framework, its own scaffold and build and deploy, a separate Worker on a separate subdomain, two cross-origin redirects and two encrypted envelopes per flow, a `browserHash` mechanism, and an error trail — all to host roughly twenty lines of adapter glue. We arrived here honestly. Turnkey identity (Auth0) carries vendor risk; Passport.js is Express middleware and we have no Node server; Auth.js had maintained adapters for Next.js and SvelteKit but not Nuxt (the Nuxt PR is orphaned); a first attempt at `@auth/core` directly in Nuxt did not work out; React was unappealing; so we built the SvelteKit workspace. The path the original analysis missed was the cross-cut — use `@auth/core` *together with* its provider modules but without any adapter. That path was always there in the docs; it lacked only a worked Nitro recipe. We now have one, proven.
 
-A framework adapter typically does three things.
+## Importing Auth.js so it stays stable, not brittle
 
-First, it exposes a request handler in the framework's idiom that dispatches URLs under `/auth/*` to `Auth()`. For SvelteKit this is the `handle` hook (`@auth/sveltekit/dist/index.js:328-349`) — twenty lines. For Next.js it's a route handler. The shape is identical: read the URL, dispatch on action, call `Auth()`, return the response.
+Using `@auth/core` without an adapter means we, not an adapter, choose its version — and Auth.js's versioning model makes the obvious move the wrong one.
 
-Second, it exposes sign-in and sign-out helpers — `signIn(provider)`, `signOut()` — that perform the POST to `/auth/signin/<provider>` from server-side or client-side framework code, so application code doesn't have to construct the form by hand.
+`@auth/core` is permanently pre-1.0 by design. It is a low-level engine meant to be consumed through an adapter, and each adapter pins the exact core version it was tested against: `@auth/sveltekit@1.11.2` depends on exactly `@auth/core@0.41.2` (no caret), `next-auth@4.24.14` on exactly `0.34.3`. Stability comes from that pinning, not from a 1.0 that will not arrive. So "avoid pre-1.0," our usual rule, has to be consciously waived for this one package — it is a 3.4M-weekly-download engine stabilized by adapter pinning, not hobby code.
 
-Third, it exposes a session-reading helper that calls `Auth()` internally with `action: 'session'` and unwraps the response into the framework's request context — typically `event.locals.auth()` in SvelteKit, `auth()` in Next.js. This is what an application calls to ask "is the current request signed in, and as whom."
+The trap is the npm `latest` dist-tag. For `@auth/core` it points at `0.34.3`, not the highest published `0.41.2`. The tag tracks `next-auth` v4, the highest-download stable adapter, which still pins the older `0.34.x` line (and with it `oauth4webapi` v2 and `jose` v5). A bare `pnpm add @auth/core` therefore installs `0.34.3` — an old engine, not the `0.41.x` line we proved and that the actively-maintained adapters use (`oauth4webapi` v3, `jose` v6). For this package, "install the latest" installs the wrong thing.
 
-Beyond those three things, an adapter often handles framework-specific environment variable conventions (SvelteKit reads `$env/dynamic/private`, Next.js reads `process.env`), sets up middleware-style protection patterns, and provides framework-specific TypeScript types. Doing all of this well — and tracking the framework's evolution as it changes — is what makes a real adapter a real project. The Auth.js project ships maintained adapters for Next.js, SvelteKit, Express, Qwik, and SolidStart. The Nuxt adapter PR has been languishing because doing it well is a non-trivial commitment no one has signed up to maintain.
+So the blessed core version for standalone use is whatever the current maintained adapter pins — today `0.41.2`, via `@auth/sveltekit`. We declare `@auth/core: "^0.41.2"` in `site`. A caret on a `0.x` version locks the minor (`>=0.41.2 <0.42.0`), so we get patch updates automatically but never an unvetted minor jump — conservative, but not a hard pin. We do not declare `oauth4webapi` or `jose` ourselves; they arrive transitively through `@auth/core` as `^3` and `^6`, both modern, stable, and zero-dependency, and letting core govern them keeps the versions from skewing.
 
-There's a fourth thing that's easy to miss: an adapter is also a *configuration machine* that silently rewrites the user's auth options on every request. `@auth/sveltekit/dist/env.js:4-11` exports a `setEnvDefaults` function called inside the handle hook on each request. It sets `config.basePath`, `config.trustHost`, and — critically — `config.skipCSRFCheck = skipCSRFCheck` (the symbol that disables Auth.js's CSRF check entirely). Application code never sees this rewrite happen. Next.js's adapter does similar work in its own `setEnvDefaults`. The choice of which Auth.js defaults to override, leave alone, or expose is part of what makes an adapter opinionated; it's also what makes "use the adapter" different from "use the engine plus the provider module" in ways that aren't visible from the application's config.
+The mitigation for the waived rule is a maintenance ritual: when `@auth/sveltekit` (or `next-auth` v5, once it leaves beta) bumps its pinned core, we follow. `sem` already surfaces exactly this — its "latest tag behind installed" flag *is* this situation — so the tooling watches the drift. And while the `oauth/` workspace still exists, its `@auth/sveltekit` dependency is a live oracle for which core version is currently blessed.
 
-### How the layers compose
+## The plan
 
-When an application calls `signIn('google')` through a SvelteKit adapter, this is the actual call path. The adapter's `signIn` helper builds a Web `Request` for POST `/auth/signin/google`. The Request is handed to `Auth()` from `@auth/core`. `Auth()` parses the URL, sees `action: signin, providerId: google`, looks up the Google provider config (from `@auth/core/providers/google`), and dispatches into `lib/actions/signin/`. That action uses `oauth4webapi` to construct Google's authorize URL with PKCE and state, sets cookies for the state and PKCE verifier, and returns a `Response` with a 302 redirect to Google. The adapter writes that Response back to the SvelteKit event. Browser follows the redirect.
+The work produces the new flow alongside the existing one, then cuts over; the SvelteKit workspace keeps running untouched until then. The permanent mount is `/api/oauth` — the spike used `/api/auth` only to match Auth.js's own examples while reading their material, and since `basePath` is arbitrary to Auth.js, that is a rename, not a risk.
 
-The adapter handled the framework-shaped input and output. `@auth/core` ran the state machine. The provider module supplied the URL shape. `oauth4webapi` did the protocol math. Each layer is small because each does one thing.
+**Port the config.** Move the providers list, `secret`, `trustHost`, and `session` settings from `oauth/src/auth.js` into `site/server/api/oauth/[...all].js`, with `skipCSRFCheck` and `basePath: '/api/oauth'`. Narrow the surface: return `404` before calling `Auth()` unless the action is `signin` or `callback` — the catch-all otherwise also answers `session`/`csrf`/`signout`, which are inert but needless. Point `pages.signIn` and `pages.error` at Nuxt routes on the same origin; there is no cross-origin handoff left to engineer. Add the production redirect URI `cold3.cc/api/oauth/callback/<provider>` to all four provider consoles (Google, Twitter, GitHub, Discord) alongside the existing `oauth.cold3.cc` ones — both stay valid, so there is no flag day.
 
-This factoring is what makes our off-label use viable. Layers one and two do not depend on layer three. We can take `@auth/core` and the provider modules, write a small Nitro endpoint that dispatches to `Auth()`, and we have everything that matters for OAuth proof — without writing or importing a framework adapter at all. We are not building the dormant Nuxt adapter the Auth.js community has been talking about for years; we are doing something much smaller, made possible by the fact that the engine and the providers were designed to work without an adapter in the first place.
+**Rewrite the `signIn` callback to write the credential row directly.** This is the real work, not mechanical. Today the callback seals an envelope because the database lives across a network boundary in the apex Worker. With Auth.js running *inside* the apex Worker, the callback reaches the same `door`, credential code, and database directly — so it does what `credential.js`'s `OauthProve2.` does today: `credentialOauthParse`, `credentialOauthSet`, the `OauthAlreadyLinked.` / `OauthClaimedElsewhere.` outcomes, and the route decision. The browser-tag check moves here too, reading `event.context.browserTag` directly — the middleware already populates it, as the spike's signin response confirmed — instead of the `browserHash` round-trip.
 
-The trade-off is that we lose the adapter's silent configuration. The defaults `@auth/sveltekit` was applying transparently — `skipCSRFCheck`, the basePath shape, the cookie-write path that forces `path: "/"` — are now ours to consciously decide. Some we replicate (set `skipCSRFCheck` to match our current security posture, which relies on browser same-origin protection plus our own checks). Some are different by construction (`basePath: '/api/auth'` for our Nuxt routing). Some are irrelevant to us (the cookie-write path is only used by adapter helpers we don't call). Path (c) is a small endpoint plus an explicit configuration that makes those choices visible.
+**Wire the client.** Replace `OauthPanel`'s `originOauth()` redirect (`OauthPanel.vue:44-46`) with a hidden form POST to `/api/oauth/signin/<provider>`. The component's state machine — `refClickedProvider`, `refKey`, the bfcache `pageshow` reset — stays; only the destination URL changes. The `oauthProve1` store call no longer needs to seal an envelope; it gates tab-races and returns.
 
-## The Rube Goldberg we have today
+**Confirm workerd, then cut over.** Declare `@auth/core: "^0.41.2"` per the section above, run a `pnpm preview` pass to close the one cell the Node-based spike did not cover, then run both flows in parallel for as long as we like before switching the client over.
 
-OAuth proof currently flows through three places: the Nuxt site at the apex (cold3.cc), a SvelteKit site at `oauth.cold3.cc` running `@auth/sveltekit` against Google, Twitter, Discord, GitHub, and the OAuth providers themselves.
+## The cleanup
 
-The user clicks "Continue with Google" on the apex site. Nuxt seals an `OauthEnvelopeContinue.` envelope (`site/server/api/credential.js:284`, inside the OauthProve1 action handler), and the browser is redirected to `oauth.cold3.cc/continue/google?envelope=...`. SvelteKit opens the envelope to validate the handoff (`oauth/src/routes/continue/[provider]/+page.server.js:9`), then the client page (`+page.svelte:10-17`) builds a hidden form that POSTs to Auth.js's `/auth/signin/google`. Auth runs the OAuth flow with Google, and in our `signIn` callback (`oauth/src/auth.js:60-73`) we seal an `OauthEnvelopeDone.` envelope containing `{success, account, profile, user, browserHash}` and return a redirect URL pointing back to apex `oauth2.vue`. There the envelope is opened, posted to `/credential` as `OauthProve2.`, the row is written to the database, and the browser navigates onward.
+Once the new flow is live and the client is switched, a large amount of machinery exists only to serve the cross-origin handoff and can come out. Roughly in the order it becomes safe:
 
-This works. It is correct. It is also a lot of moving parts:
+**The two encrypted envelopes per flow go to zero.** `OauthEnvelopeContinue.` (sealed at `credential.js:284`, opened in `oauth/src/routes/continue/[provider]/+page.server.js`) and `OauthEnvelopeDone.` (sealed in `oauth/src/auth.js` and the sad-path `signin/+page.server.js`, opened at `credential.js:290`), plus `oauth2.vue` which receives the Done envelope, plus the `task.envelopeRedirect` field.
 
-A whole separate workspace (`oauth/`) with its own scaffold, build, deploy. A separate Cloudflare Worker on a separate subdomain. Two cross-origin redirects per OAuth flow. Two encrypted envelopes per flow (`OauthEnvelopeContinue.` outbound, `OauthEnvelopeDone.` inbound). A `browserHash` mechanism (`oauth/src/auth.js:62-65`) that exists *only* because cookies cannot be read across subdomains — the apex sets a tag cookie at the apex domain so it covers subdomains, SvelteKit reads it on `oauth.cold3.cc`, hashes it before sealing, and the apex re-hashes its own copy on the way back to confirm the user's browser is the same one that started. An entire error trail (`Error3.` envelopes, `error3.vue`, `oauth/src/routes/autherror/+page.server.js`) for getting unexpected SvelteKit-side errors back into the Nuxt error rendering. Provider redirect_uris pointing at `oauth.cold3.cc/auth/callback/<provider>`.
+**The entire Error3 roadway goes.** It exists only to carry a SvelteKit-side error across origins into the apex's `error.vue`: `site/app/pages/error3.vue`, `site/server/api/error3.js`, the error half of `oauth/src/hooks.server.js` (`handleError` / `fatalCatcher`), `oauth/src/routes/autherror/*`, and the `Error3.` envelope kind. With Nuxt owning the flow, an error is local — `error.vue` renders it directly, no bounce.
 
-If the OAuth proof flow could happen in the apex Nuxt server itself, all of the above goes away.
+**The `browserHash` handoff collapses to a direct read.** The hash round-trip in `oauth/src/auth.js:63-65`, the sad path, and `OauthProve2.`'s `{browserHash}` open all reduce to the `signIn` callback reading `event.context.browserTag`. `browserHash` itself stays — wallet proof and `attachState` use it — but its cross-subdomain role dies.
 
-## Why we have it (and the path the original analysis missed)
+**Cross-origin plumbing goes.** `originOauth()` (`icarus/level2.js:556`) and the `OauthPanel` redirect it served. The `OauthProve1.` / `OauthProve2.` split merges into the single `signIn` callback.
 
-The trail comment in `oauth/src/auth.js:87-149` records the journey: turnkey identity providers (Auth0) carry vendor risk; Passport.js is Express middleware, which doesn't fit our serverless setup; the maintained `next-auth` (now Auth.js) had no Nuxt adapter; an attempt to use `@auth/core` directly in Nuxt didn't work out; SvelteKit had a maintained adapter, so we built a SvelteKit workspace.
+**The `oauth/` workspace goes last** — twenty-odd source files, `wrangler.jsonc`, the `oauth.cold3.cc` Worker and its DNS, and the `@auth/sveltekit` dependency (and with it the version oracle, which by then we no longer need).
 
-The thing the original analysis was missing is the cross-cut. At the time, the choice presented itself as binary: use a maintained framework adapter (path a), or use `@auth/core` directly without provider modules and write each provider's OAuth flow by hand (path b). Path (b) looked like a lot of work and brittle, so we went with (a) — tried `@auth/nuxt` first, found it incomplete and orphaned, and ended up on SvelteKit instead.
-
-What the analysis didn't see was a third path. Use `@auth/core` *together with* its provider modules, without a framework adapter (path c). The provider modules at `@auth/core/providers/*` are just config-returning functions — they don't depend on any framework adapter. `@auth/sveltekit` doesn't enable them; it just imports them and hands them to `Auth()` along with the request. We can do the same thing from a Nitro endpoint. The "framework module" layer gatekeeps ergonomics, not providers. Path (c) was visible in principle from the docs at the time, but without a worked Nitro-shaped recipe, the choice collapsed back to the binary.
-
-The other piece of evidence the original analysis didn't have: we are now operating `@auth/core` in production on Cloudflare Workers, today, through the SvelteKit workspace. The OAuth flow works end to end, every day. So `@auth/core` running on workerd is settled by direct observation, not architectural inference. The remaining question for path (c) is much narrower: does Nitro's Workers preset hand `Auth()` a Web Request the same way SvelteKit's Workers preset does. Both adapters end up calling `Auth(request, config)` with a Web Request derived from their framework's event. If they marshal the request equivalently, path (c) works. That is what the spike confirms.
-
-This document argues, with evidence, that path (c) is the right answer.
-
-## Evidence
-
-Each claim below cites the file we read.
-
-### `@auth/core` has no Node-specific code
-
-The package metadata at `node_modules/.pnpm/@auth+core@0.41.1/node_modules/@auth/core/package.json` lists runtime dependencies: `jose`, `oauth4webapi`, `@panva/hkdf`, `preact`, `preact-render-to-string`. All of these are deliberately written for any JS runtime that has Web Crypto and `fetch`. `nodemailer` and `@simplewebauthn/*` are optional peers, only loaded when email or passkey providers are configured — we don't use those.
-
-A grep for `from 'node:` and `require(` across the entire built tree (`*.js`, `lib/`, `providers/`) returns zero matches. There is no Node-specific import anywhere in `@auth/core`. The package is `"type": "module"`, ESM-only.
-
-### Crypto is Web Crypto via globals
-
-All crypto in `@auth/core` is the global `crypto` object: `crypto.randomUUID()` (`lib/init.js:77` and several callback files), `crypto.subtle.digest("SHA-256", ...)` (`lib/utils/web.js:77`), `crypto.getRandomValues()` (`lib/utils/web.js:87`). These are Web Crypto API calls. Cloudflare workerd exposes all three as globals. SvelteKit on Workers uses the same globals — there is nothing different about Nitro on Workers in this respect.
-
-### `oauth4webapi` is explicitly built for Workers
-
-`oauth4webapi`'s package.json keywords list (`node_modules/.pnpm/oauth4webapi@3.8.5/node_modules/oauth4webapi/package.json`) includes `cloudflare`, `workers`, `workerd`, `edge`, `bun`, `deno`. This is the OAuth state machine library Auth.js uses under the hood for the actual provider dance — generating authorize URLs, exchanging codes for tokens, validating PKCE, fetching userinfo. The author is `panva` (Filip Skokan), who also authors `jose`. Both libraries are reference-quality edge-compatible OAuth/JWT toolkits.
-
-### `Auth()` is the entire API surface
-
-`@auth/core/index.js:66-142` exports a single function: `Auth(request, config)`. It accepts a Web `Request`, returns a Web `Response`. Cookies are read from `request.headers.get('cookie')` (`lib/utils/web.js:33`). Cookies are written via `headers.append('Set-Cookie', ...)` (`lib/utils/web.js:55-62`). The cookie parser is vendored (`lib/vendored/cookie.js`) — no external runtime dep. The dispatch on action and provider lives in `parseActionAndProviderId` (`lib/utils/web.js:91-109`), keyed off the URL path under `config.basePath`.
-
-### Provider modules are pure config
-
-`providers/google.js:108-119` exports a function that returns `{id, name, type, issuer, style, options}`. `providers/twitter.js`, `providers/discord.js`, `providers/github.js` are the same shape with `authorization`, `token`, `userinfo`, `profile` fields filled in. There is no runtime code in a provider module that could fail on Workers. The HTTP calls happen inside `oauth4webapi`, called from `@auth/core`'s callback action.
-
-### The SvelteKit adapter is twenty lines
-
-`@auth/sveltekit/dist/index.js:328-349` — the entire `handle` function:
-
-```js
-async handle({ event, resolve }) {
-  const _config = typeof config === "object" ? config : await config(event);
-  setEnvDefaults(env, _config);
-  const action = url.pathname.slice(_config.basePath.length + 1).split("/")[0];
-  if (isAuthAction(action) && url.pathname.startsWith(_config.basePath + "/")) {
-    return Auth(request, _config);
-  }
-  return resolve(event);
-}
-```
-
-Read configuration (lazily if function-shaped), parse the action from the URL, hand the Request to `Auth()`, return the Response. The dispatch logic is twenty lines. The configuration policy is elsewhere — line 112 above calls `setEnvDefaults` from `dist/env.js`, which silently rewrites the config on every request (basePath forced to `/auth`, `skipCSRFCheck` set unconditionally, env-var fallbacks for secret and provider credentials). That part is what the architecture section above calls the adapter's "fourth thing." The `signIn`/`signOut`/`auth` helpers in `dist/actions.js` exist to support optional features (server-side form actions, per-request session lookup) that we don't use.
-
-### Nitro is already wired for Web Request/Response
-
-h3 v1.15.10 (the version Nuxt 4.3 / Nitro 2.13 ships with) provides `toWebRequest(event)` (`dist/index.mjs:339-347`) — converts an h3 event to a standard `Request`. And `sendWebResponse(event, response)` (lines 942-967) — writes a `Response` back to h3, with correct multi-cookie handling via `splitCookiesString` so the multiple cookies Auth.js sets arrive at the browser as multiple `Set-Cookie` headers, not one comma-joined header.
-
-Critically, h3's event handler dispatch detects when a handler returns a `Response` and calls `sendWebResponse` automatically (line 2104). So the Nitro endpoint shape is just `return Auth(toWebRequest(event), config)` — no manual conversion plumbing.
-
-## Anticipated friction points
-
-Several things could trip up the spike. None are structural blockers; each has a recognizable signature and a known fix.
-
-**Secret access path.** SvelteKit on Cloudflare Workers gets per-request env via `event.platform.env`. Nitro on Workers exposes it as `event.context.cloudflare.env` — different property path, same shape. Both also see bundled `.env` values via `process.env`. The icarus `decryptKeys` function takes an array of `{note, environment}` objects, so it doesn't care which property path produced the env — we just hand it both candidates and it merges. This is already how `oauth/src/auth.js:21-26` works on the SvelteKit side; the Nitro version is the same code with one property path swapped.
-
-**Redirect URI math.** Auth.js computes the OAuth redirect URI from the request URL plus `basePath` plus `/callback/<provider>`. With `basePath: '/api/auth'`, the redirect URI becomes `https://cold3.cc/api/auth/callback/google` instead of the current `https://oauth.cold3.cc/auth/callback/google`. We need to update the four provider developer consoles (Google, Twitter, Discord, GitHub) to add the new URI. Provider consoles allow multiple redirect URIs simultaneously, so we can add the new one alongside the old one and run both flows in parallel during migration. There is no flag day.
-
-**CSRF on the form POST — and what the SvelteKit adapter silently does.** `@auth/core/lib/index.js:60-62` calls `validateCSRF` unconditionally on the `signin` action, regardless of provider type. By that reading, our SvelteKit production's empty form POST (`oauth/src/routes/continue/[provider]/+page.svelte:10-17`) should throw `MissingCSRF`. It doesn't — production works every day. The reason is in `@auth/sveltekit/dist/env.js:7`: the adapter's `setEnvDefaults` (called inside `handle` on every request) sets `config.skipCSRFCheck = skipCSRFCheck` unconditionally. `@auth/core/lib/index.js:12` then reads `csrfDisabled = authOptions.skipCSRFCheck === skipCSRFCheck`, and `init.js:102-104` sets `options.csrfTokenVerified = true` directly when `csrfDisabled`. So `validateCSRF` always passes for SvelteKit users, transparent to their config. The implication for path (c): if we use `@auth/core` directly without replicating this default, our empty POST will fail. The fix is one line — `import { skipCSRFCheck } from '@auth/core'` and put `skipCSRFCheck` (the symbol value, used as a config key) into the `Auth()` config. This matches what SvelteKit's adapter does and keeps our security posture identical (we rely on browser same-origin protection plus our own checks, not Auth.js's CSRF mechanism). Alternatively, leave CSRF on and have the trigger fetch a token first; that's stricter but no longer a one-line spike.
-
-**Auth.js exposes endpoints we don't want.** A `[...all].js` catch-all under `/api/auth/` will route every action Auth.js knows about: `signin`, `callback`, `csrf`, `session`, `signout`, `verify-request`, `error`. The first two are what we want. The others are mostly inert — `session` returns `null` because we never write a session, `csrf` returns a token, `signout` clears cookies that aren't there. None of them leak our secrets or our database. But we should narrow the surface anyway: if the action is not `signin` or `callback`, return 404 before calling `Auth()`. Five lines, defense in depth, no behavior change for the user.
-
-**Auth.js's session cookie behavior.** The current config (`oauth/src/auth.js:78-81`) sets `maxAge: 60, updateAge: 0` — Auth.js issues a JWT session cookie that expires in sixty seconds and is never refreshed. We're using Auth purely for proof of account control, not session management. The same config ports unchanged to the Nitro endpoint and is already proven harmless in production.
-
-**`pages.signIn` and `pages.error`.** Currently both point at SvelteKit routes (`/signin`, `/autherror`) that re-seal envelopes back to apex. With everything on apex, we point them at Nuxt routes directly. `pages.error` becomes a Nuxt page (or we let Auth.js's default error redirect lead to a Nuxt route that calls `showError()`). `pages.signIn` is only used when the user clicks Cancel at the provider; same story — a Nuxt page that does whatever we want. The structure simplifies because there is no cross-origin handoff to engineer.
-
-## The spike: simplest thing that produces evidence
-
-Branch or temporary worktree, throwaway. The whole experiment is one new server file plus a browser POST against it. The integration question is whether `@auth/core` and a provider module — Discord, since it's already configured in our developer portal — run cleanly inside a Nitro endpoint on Workers and complete an OAuth round trip back to a callback that fires our `signIn` hook with real provider data.
-
-The new file at `site/server/api/auth/[...all].js` is the catch-all that owns every URL under `/api/auth/` — `/api/auth/signin/discord`, `/api/auth/callback/discord`, the rest. Auth.js routes on the path internally:
-
-```js
-//site/server/api/auth/[...all].js
-//on the oauth trail: spike — nuxt-only path using @auth/core directly, no sveltekit, no envelope handoff
-
-import {Auth, skipCSRFCheck} from '@auth/core'//skipCSRFCheck is the symbol that, when set in config, tells @auth/core's init to mark csrfTokenVerified=true; @auth/sveltekit/dist/env.js:7 sets this on every request, which is why our SvelteKit production's empty form POST passes validateCSRF
-import Discord from '@auth/core/providers/discord'
-import {toWebRequest} from 'h3'
-import {decryptKeys} from 'icarus'//explicit import: decryptKeys is not in icarusServerPlugin.js's auto-globalize list (it's normally called inside doorWorker, not directly from /server/api files)
-
-export default defineEventHandler(async (event) => {
-  let sources = []//collect env sources, same pattern as oauth/src/auth.js with the cloudflare path swapped to nitro's
-  if (defined(typeof process) && process.env)        sources.push({note: 'a10', environment: process.env})
-  if (event?.context?.cloudflare?.env)               sources.push({note: 'a20', environment: event.context.cloudflare.env})
-  await decryptKeys('worker', sources)//'worker' is the namespace site/server uses (see icarus/level2.js:700); whether 'auth' or 'worker' affects which keys are reachable is something the spike will surface
-
-  return Auth(toWebRequest(event), {
-    basePath: '/api/auth',
-    trustHost: true,
-    skipCSRFCheck,//replicates what @auth/sveltekit silently does on every request (env.js:7); without this, the empty form POST fails MissingCSRF
-    secret: Key('auth.js, secret'),
-    providers: [Discord({
-      clientId:     Key('oauth, discord, id'),
-      clientSecret: Key('oauth, discord, secret'),
-    })],
-    callbacks: {
-      async signIn({account, profile, user}) {
-        log('SPIKE signIn fired', look({account, profile, user}))//this firing with real Discord data is the answer the spike is looking for
-        return true//tells Auth.js to redirect to its default callbackUrl; for the spike that's enough
-      },
-    },
-  })
-})
-```
-
-The icarus utilities `Key`, `log`, `look`, `defined`, `Limit` are auto-globalized in `site/server/` via `site/server/plugins/icarusServerPlugin.js` (alongside `defineEventHandler` from Nuxt). `decryptKeys` is not in that plugin's import list — site/server normally only calls it indirectly via `doorWorker` — so it needs an explicit import in this new file, or you can add it to the plugin's list. Setup: `cd site && pnpm add @auth/core` once before the first build — currently `@auth/core` lives only in `oauth/` as a transitive dep of `@auth/sveltekit`.
-
-To trigger the flow, paste a snippet in the browser DevTools console that submits a hidden empty form to `/api/auth/signin/discord` — the same shape `oauth/src/routes/continue/[provider]/+page.svelte:10-17` uses against SvelteKit today:
-
-```js
-const f = document.createElement('form')
-f.method = 'POST'; f.action = '/api/auth/signin/discord'
-document.body.append(f); f.submit()
-```
-
-The empty form POST works because the `skipCSRFCheck` config above replicates what `@auth/sveltekit` does silently on every request. Without that one-line config addition, this POST would fail with `MissingCSRF` and we'd be testing the wrong question — that would be a false negative, not a real architecture failure.
-
-In the Discord developer portal, add `http://localhost:3000/api/auth/callback/discord` (or whatever the dev port is) to the application's redirect URI list, alongside the existing `https://oauth.cold3.cc/auth/callback/discord`. Both stay valid; the existing flow keeps working unchanged.
-
-Total cost: roughly thirty minutes wiring the file plus the `pnpm add`, ten minutes in the Discord developer portal, and however long it takes to click submit and read what happens. The "one day" budget is padding for an unexpected snag; the happy path is short.
-
-## Interpreting the result
-
-**Success looks like.** Click the button. Browser redirects to `discord.com/oauth2/authorize`. Consent screen appears. Click Authorize. Browser redirects back to `localhost:3000/api/auth/callback/discord?code=...`. The Nitro server log shows `signIn fired` with a real `account`, `profile`, and `user` object — provider id, email, name, image. Auth.js then redirects to its default `callbackUrl`. If this round trip completes, the architecture is proven and the path is open.
-
-**Failure modes and what each tells us.**
-
-*`Auth()` throws immediately on the first call,* before any redirect. Probably a runtime feature it expects but the Nitro Workers preset doesn't expose. The thrown error names the feature. Since `@auth/core` is already running on workerd in our SvelteKit workspace today, this would specifically mean Nitro is wrapping the request differently than SvelteKit does — a glue problem, not an Auth.js problem. The error message tells us where to patch the glue.
-
-*Redirect to Discord succeeds but `Auth()` fails after the callback.* Means the token exchange or profile fetch broke inside `oauth4webapi`. Nitro logs name the line. Since `oauth4webapi` is already running this exact flow against Discord in production via SvelteKit, this would point at something Nitro-specific in how the callback request is reaching the handler.
-
-*Discord's redirect to `/api/auth/callback/discord` returns a 404.* The Nitro catch-all isn't routing the way we expect. A path-config issue, not a compatibility issue. Adjust the file name, basePath, or directory layout, retry. Not a blocker.
-
-*Auth.js rejects the POST with `MissingCSRF`.* The `skipCSRFCheck` config we passed didn't take effect. Most likely cause: `skipCSRFCheck` was passed as a string or boolean rather than the symbol value imported from `@auth/core` — `@auth/core/lib/index.js:12` does an identity check (`authOptions.skipCSRFCheck === skipCSRFCheck`), so any value other than the exact imported symbol is rejected. Diagnostic: log the config object before calling `Auth()` and confirm `skipCSRFCheck` is a Symbol. Other possibility: `Auth()` is reading a different config than the one we built (e.g., the lazy-config function returned something different on this call). If both check out, fall back to the proper CSRF flow — `GET /api/auth/csrf` first, include the token as a `csrfToken` field in the form body — three lines added to the trigger.
-
-*Everything works locally but fails on cloud preview.* Means workerd in Cloudflare's actual Workers runtime has stricter limits than the local Nitro Workers simulation. Hardest failure to predict, easiest to read once it happens — Cloudflare's logs name the violation. Worth checking only after local passes.
-
-*signIn fires but with empty or wrong profile fields.* Provider scope or profile-mapping issue. Not a Nitro/Workers compatibility question — an Auth.js config question. Easy to fix.
-
-In every case, the failure narrows the question rather than reopening it. That's what makes this a good spike: success proves the whole path; any specific failure tells us what to fix or what to write off.
-
-## Implementation if the spike confirms
-
-The remaining work is producing the new flow alongside the existing one. Three pieces.
-
-**Port the config to the Nitro endpoint.** Move the contents of `oauth/src/auth.js` — providers list, `secret`, `trustHost`, `session` config — into `site/server/api/auth/[...all].js`. Add the action-narrowing 404 (return early unless action is `signin` or `callback`) before calling `Auth()`. Decide on `pages.signIn` and `pages.error` redirect targets — these are now Nuxt routes on the same origin, simpler than the cross-origin variants they replace. Add the production redirect URI (`https://cold3.cc/api/auth/callback/<provider>`) to each of the four provider consoles alongside the existing URI; both stay valid, so nothing breaks.
-
-**Rewrite the `signIn` callback to write the credential row directly.** This is the actual work. Today, SvelteKit's `signIn` (`oauth/src/auth.js:60-73`) seals an envelope and returns a redirect URL because the database lives in the apex Worker, on the other side of a network boundary. With Auth.js running inside the apex Worker, `signIn` has direct access to the same `door` infrastructure, the credential code, the database. The callback now does what `site/server/api/credential.js` does today for the `OauthProve2.` action — writes the credential row, decides where to send the user next, returns the redirect URL. This isn't mechanical; it's a careful merge of two pieces of code that today live on opposite sides of an envelope handoff. The browser-tag check happens here too, but reads the cookie directly from the request rather than going through the `browserHash` round-trip.
-
-**Wire the client.** Replace `OauthPanel.vue`'s `originOauth()` redirect with a hidden form POST to `/api/auth/signin/<provider>`. The component's existing state machine (refClickedProvider, refKey, the bfcache pageshow listener) stays — only the destination URL changes. The store call to `oauthProve1` no longer needs to seal an envelope; it can simply gate against tab-races and return.
-
-When these three are done, both flows exist side by side: the old SvelteKit-based path still works for its registered redirect URIs, and the new Nuxt-only path works for the new ones. From there, the cleanup — retiring the SvelteKit workspace, removing the old envelope kinds, deleting `oauth2.vue` and the browserHash mechanism, taking down the `oauth.cold3.cc` subdomain — is yours to do at your own pace.
+A few judgment calls belong to implementation, not to this plan, and should be decided deliberately rather than swept along: whether the tag cookie's `domain: Key('domain, public')` (`icarus/level2.js:365`) — which spans subdomains *only* "because oauth.cold3.cc needs to see the browser tag" — should become host-only once no subdomain reads it, a real security tightening; where the `credentialOauthChallenge` audit row (written today at `OauthProve1.`) should be written in the merged flow; and the exact Nuxt targets for `pages.signIn` and `pages.error`.
