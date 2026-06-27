@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jun27.2115.53872
+  generated: 2026jun27.2205.31247
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -85,8 +85,6 @@ summary:
     - vidstack
   📌 Exact version pinned:
     - "@pinia/nuxt"
-    - nuxt-og-image
-    - satori
   🕰️ Installed version 1+ year old:
     - "@resvg/resvg-js"
     - "@resvg/resvg-wasm"
@@ -97,7 +95,6 @@ summary:
     - fast-glob
     - is-mobile
     - qrcode
-    - satori
   🐣 Pre-1.0 version installed:
     - "@electric-sql/pglite"
     - "@pinia/nuxt"
@@ -733,9 +730,9 @@ modules:
     note: "og: pinned to v6 beta; v5 broke on nitro 2.13.1 wasm bundling; single maintainer"
     from: site
     versions:
-      declared: 6.0.0-beta.15 on 2026feb05 4m old 📌 Exact version pinned
-      installed: 6.0.0-beta.15 on 2026feb05 4m old
-      current: 6.0.0-beta.15 on 2026feb05 4m old
+      declared: ^6.7.0 on 2026jun24 0m old
+      installed: 6.7.0 on 2026jun24 0m old
+      current: 6.7.0 on 2026jun24 0m old
       latest: 6.7.0 on 2026jun24 0m old
     downloads:
       weekly: 124,751
@@ -813,9 +810,9 @@ modules:
     note: "og: html/css to svg by vercel; pinned 0.15.2, 0.16+ blocked on workers wasm restrictions"
     from: site
     versions:
-      declared: 0.15.2 on 2025jun09 12m old 📌 Exact version pinned
-      installed: 0.15.2 on 2025jun09 12m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
-      current: 0.15.2 on 2025jun09 12m old
+      declared: ^0.26.0 on 2026mar20 3m old
+      installed: 0.26.0 on 2026mar20 3m old 🐣 Pre-1.0 version installed
+      current: 0.26.0 on 2026mar20 3m old
       latest: 0.26.0 on 2026mar20 3m old
     downloads:
       weekly: 1,531,233
@@ -977,17 +974,17 @@ modules:
       weekly: 95,559
       on: 2026jun17.1558.56293
   viem:
-    homepage: null
-    description: null
+    homepage: https://viem.sh
+    description: TypeScript Interface for Ethereum
     note: "validate: ethereum interface; in icarus and site for address validation, adds 10mb to net23.zip"
     from:
       - icarus
       - site
     versions:
-      declared: ^2.45.1
-      installed: undefined
-      current: undefined
-      latest: undefined
+      declared: ^2.45.1 on 2026jan29 4m old
+      installed: 2.53.1 on 2026jun20 0m old
+      current: 2.53.1 on 2026jun20 0m old
+      latest: 2.53.1 on 2026jun20 0m old
     downloads:
       weekly: 4,750,445
       on: 2026jun17.1557.8470
