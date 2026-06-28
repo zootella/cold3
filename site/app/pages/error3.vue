@@ -1,10 +1,11 @@
 <script setup>
 
 /*
-on the oauth trail *and* on the error trail: Nuxt catcher's mitt for exceptions from SvelteKit (landing page)
+on the error trail: error3 landing page
 
-if SvelteKit throws during the oauth flow, we turn that into a 303 redirect back here in Nuxt-land
-this is how an exception on the SvelteKit side can blow up the page the same way
+a catcher (today: the oauth endpoint) sealed an error that arrived outside our normal page/fetchWorker flow into an
+Error3. envelope and redirected the browser here. we post it to /error3, whose toss logs it to Datadog and blows up
+error.vue — surfacing it the same way every other fatal error is. (error3.js has the full picture.)
 */
 
 const route = useRoute()

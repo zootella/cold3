@@ -7,7 +7,7 @@ credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialSet,
-credentialOauthChallenge, credentialOauthParse, credentialOauthSet, credentialOauthRemove, credentialOauthGet, oauthProviders,
+credentialOauthRemove, credentialOauthGet, oauthProviders,
 credentialCloseAccount,
 totpEnroll, totpValidate, totpIdentifier, totpConstants,
 checkTotpCode, checkTotpSecret, checkWallet, Data, isExpired,
@@ -19,7 +19,7 @@ import {mainnet} from 'viem/chains'
 import {verifySiweMessage} from 'viem/siwe'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthProve1.', 'OauthProve2.', 'OauthRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
 // 🟠 get
@@ -268,40 +268,6 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//user wants to remove their connected wallet
 		} else if (action == 'WalletRemove.') {
 			await credentialWalletRemove({userTag: user.userTag})
-
-		// 🟠 oauth
-		//the user has clicked to begin an oauth flow through a third party provider they chose
-		} else if (action == 'OauthProve1.') {
-			checkAction(body.provider)//sanity check what the untrusted page posted at us
-			if (!oauthProviders().some(p => p.tag == body.provider)) toss('state', {action, provider: body.provider})//page tried to use provider we don't support
-
-			let existing = await credentialOauthGet({userTag: user.userTag})
-			if (existing.some(o => o.provider == body.provider)) {
-				task.outcome = 'OauthAlreadyLinked.'//no envelopeRedirect set here; the client sees its absence and skips the redirect
-			} else {
-				await credentialOauthChallenge({userTag: user.userTag, provider: body.provider})//audit-trail event-3 row; the user may or may not come back with proof
-				task.outcome = 'OauthContinue.'
-				task.envelopeRedirect = await sealEnvelope('OauthEnvelopeContinue.', Limit.handoff, {})//oauth envelope step 1: seal continue envelope
-			}
-
-		// 🟠 oauth
-		//the oauth flow is done, SvelteKit redirected back to oauth2.vue, which leads here, all in a server render
-		} else if (action == 'OauthProve2.') {
-			let letter = await openEnvelope('OauthEnvelopeDone.', body.envelope, {browserHash})//oauth envelope step 4: open done envelope
-			log('letter arrived in worker 📩 now in credential.js OauthEnvelopeDone!!', look(letter))
-			//if letter.success is false (user cancelled at the provider or auth.js rejected) we silently no-op per oauth.md design — fall through to task.route and let the user land back at /page1, ttd june
-			if (letter.success) {
-				let proof = {account: letter.account, profile: letter.profile, user: letter.user}//the auth.js/provider slice; credentialOauthSet saves it whole in k8
-				logAudit('oauth done letter', {browserHash, userTag: user.userTag, letter})//accumulate real examples of oauth provider responses, which have lots of provider-specific details, and can be different or broken in unexpected ways at any time
-
-				let providerInfo = oauthProviders().find(p => p.name == letter.account?.provider)
-				if (!providerInfo) toss('state', {action, provider: letter.account?.provider})//provider came back that isn't in our whitelist — auth.js is configured wider than .env.keys, or the letter was tampered
-
-				let parsed = credentialOauthParse(providerInfo.tag, proof)//per-provider field extraction + email validation lives in level3; this handler stays dumb
-				let result = await credentialOauthSet({userTag: user.userTag, ...parsed})
-				if (!result.ok) task.outcome = result.outcome//OauthAlreadyLinked. (this user re-linking) or OauthClaimedElsewhere. (another cold3 user already holds this providerId)
-			}
-			task.route = '/page1'//ttd november2025, will change to welcome, home, or dashboard depending on the user's aim proving oauth
 
 		// 🟠 oauth
 		//the user wants to discard their proof of control of a third party account with an oauth provider

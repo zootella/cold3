@@ -123,12 +123,6 @@ async function walletRemove() {
 	apply(task)
 }
 
-async function oauthProve1({provider}) {//request the handoff envelope for the cross-origin flow; provider is a tag from oauthProviders() like 'Discord.'. if server returns no envelope, another tab raced us — apply(task) brings our refs to the server's view so the panel shows true linked state and user can try again
-	let task = await fetchWorker('/credential', 'OauthProve1.', {provider})
-	apply(task)
-	return task
-}
-
 async function oauthRemove({provider}) {//unlink a specific provider; provider is one of the tags from oauthProviders() (see .env.keys 'oauth, providers')
 	let task = await fetchWorker('/credential', 'OauthRemove.', {provider})
 	apply(task)
@@ -166,7 +160,6 @@ return {
 	walletProve2,
 	walletRemove,
 	oauths,
-	oauthProve1,
 	oauthRemove,
 	closeAccount,
 }

@@ -1,4 +1,4 @@
-//server side redirect away from the root of the oauth subdomain
+//server side redirect away from the root of the oauth subdomain (review in svelteless)
 
 import {
 originApex,

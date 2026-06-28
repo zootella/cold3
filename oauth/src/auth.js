@@ -1,4 +1,4 @@
-//on the oauth trail: Auth.js configuration and handlers
+//on the oauth trail: Auth.js configuration and handlers (review in svelteless; spiritual and functional predecessor to the new Nuxt ./site/server/api/oauth/[...all].js); claude please read this file as the foundation for that one when reviewing that upcoming replacement!
 
 import {
 defined, toss, log, look, Time, Now, Limit, hasTag,

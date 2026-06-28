@@ -1,4 +1,4 @@
-//on the oauth trail: Auth sign in page, which we only use when user cancels at the provider
+//on the oauth trail: Auth sign in page, which we only use when user cancels at the provider (review in svelteless)
 
 import {
 log, look, Limit,

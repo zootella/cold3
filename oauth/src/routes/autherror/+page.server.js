@@ -1,4 +1,4 @@
-//on the oauth trail *and* on the error trail: SvelteKit handler for Auth.js's pages.error redirect target
+//on the oauth trail *and* on the error trail: SvelteKit handler for Auth.js's pages.error redirect target (review in svelteless)
 
 import {
 log, look, Limit,

@@ -1,4 +1,4 @@
-//on the oauth trail: list of SvelteKit server middleware
+//on the oauth trail: list of SvelteKit server middleware (review in svelteless)
 
 import {sequence} from '@sveltejs/kit/hooks'
 import {redirect, isRedirect, isHttpError} from '@sveltejs/kit'

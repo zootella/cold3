@@ -3,15 +3,15 @@
 /*
 Credential panel for linked third-party oauth providers (Google, Twitter, Discord)
 
-Reads credentialStore.oauths to show each provider's current linked state, with a Remove button per linked provider and a Continue-with-X button per unlinked provider (gated behind the editing prop). All wiring goes through credentialStore; no direct fetchWorker calls from the component.
+Reads credentialStore.oauths to show each provider's current linked state, with a Remove button per linked provider and a Continue-with-X button per unlinked provider (gated behind the editing prop).
 
 Parent: CredentialPanel
-Happy path link: Edit → click a provider → credentialStore.oauthProve1 seals the handoff envelope → we redirect the browser to the sveltekit oauth subdomain with the envelope → the cross-origin dance happens → user returns to oauth2.vue which posts the result to /credential OauthProve2 → credential_table row written, attachState brings it back in the store on next Get
+Happy path link: Edit → click a provider → POST to /api/oauth/signin/<provider> → the oauth flow runs in our worker and writes the credential row → the browser lands back on the panel, which picks up the new row on its next Get
 Happy path unlink: Edit → click Remove next to a linked provider → credentialStore.oauthRemove hides the row → attachState refreshes
 */
 
 import {
-originOauth, oauthProviders,
+oauthProviders,
 } from 'icarus'
 
 const credentialStore = useCredentialStore()
@@ -34,16 +34,15 @@ function linkState(tag) {
 	return refClickedProvider.value == tag ? 'doing' : 'ghost'
 }//interestingly, this works with this function in the template, rather than needing to use a computed property, ttd december2025
 
-async function onLink(provider) {//provider is the full {tag, name, display} entry from oauthProviders()
-	refClickedProvider.value = provider.tag//we don't reset to null on success because href= below tears down the whole Nuxt application; reset only happens on blocked/error paths
-	let task = await credentialStore.oauthProve1({provider: provider.tag})
-	if (!task.envelopeRedirect) {//server blocked (tab race — another tab linked this provider first)
-		refClickedProvider.value = null
-		return
-	}
-	//originOauth() returns "https://oauth.cold3.cc" cloud, or "http://localhost:5173" local
-	//encoding? base62 don't need no stinkin' encoding 👒
-	window.location.href = `${originOauth()}/continue/${provider.name}?envelope=${task.envelopeRedirect}`//URL uses auth.js's lowercase id (provider.name) since that's what the sveltekit /continue/[provider] route matches on; this is the one place auth.js's id convention surfaces in the client
+function onLink(provider) {//provider is the full {tag, name, display} entry from oauthProviders()
+	refClickedProvider.value = provider.tag//we don't reset to null on success because the form submit below tears down the whole Nuxt application; reset only happens via the bfcache pageshow listener if the user clicks Back
+	//start the oauth flow: an empty form POST to our endpoint, which runs the dance and redirects on to the provider. provider.name is Auth.js's lowercase id, the one place that id convention surfaces in the client
+	const form = document.createElement('form')
+	form.method = 'POST'
+	form.action = `/api/oauth/signin/${provider.name}`
+	form.style.display = 'none'//hide the empty form node to avoid flashing the DOM
+	document.body.append(form)
+	form.submit()//navigates this tab into the oauth flow, tearing down the SPA
 }
 
 async function onRemove(provider) {

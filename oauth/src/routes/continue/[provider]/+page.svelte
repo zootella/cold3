@@ -1,4 +1,4 @@
-<script>//on the oauth trail: SvelteKit client page
+<script>//on the oauth trail: SvelteKit client page (review in svelteless)
 
 import {onMount} from 'svelte'
 import {page} from '$app/state'//get svelte's page state, which holds the url and parameters
