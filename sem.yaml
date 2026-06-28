@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jun27.2236.21145
+  generated: 2026jun28.0738.41575
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -77,6 +77,8 @@ summary:
       is-mobile: "widget: browser detection; runs everywhere, only meaningful in browser"
       qrcode: "widget: qr code generation; works in node and browser, crashes in worker/ssr — guarded with client-only rendering"
       vidstack: "widget: video player; latest tag is behind installed, riding post-1.0 channel"
+    no note:
+      "@auth/core": null
   🏺 Declared release 6+ months earlier than installed:
     - "@nuxtjs/color-mode"
     - "@tailwindcss/vite"
@@ -96,6 +98,7 @@ summary:
     - is-mobile
     - qrcode
   🐣 Pre-1.0 version installed:
+    - "@auth/core"
     - "@electric-sql/pglite"
     - "@pinia/nuxt"
     - "@tailwindcss/forms"
@@ -118,6 +121,7 @@ summary:
     - vite
     - vue-router
   🩸 Latest tag is behind installed:
+    - "@auth/core"
     - vidstack
   downloads:
     5 figure:
@@ -151,6 +155,7 @@ summary:
       "@sveltejs/vite-plugin-svelte": 2,545,412
       "@unhead/vue": 2,597,808
       "@aws-sdk/client-ses": 3,407,955
+      "@auth/core": 3,424,077
       "@aws-sdk/client-sns": 4,000,673
       "@tailwindcss/forms": 4,022,152
       "@sendgrid/mail": 4,116,989
@@ -192,6 +197,18 @@ summary:
       typescript: 219,990,444
       semver: 792,390,227
 modules:
+  "@auth/core":
+    homepage: https://authjs.dev
+    description: Authentication for the Web.
+    from: site
+    versions:
+      declared: ^0.41.2 on 2026apr14 2m old
+      installed: 0.41.2 on 2026apr14 2m old 🐣 Pre-1.0 version installed
+      current: 0.41.2 on 2026apr14 2m old
+      latest: 0.34.3 on 2025oct29 7m old 🩸 Latest tag is behind installed
+    downloads:
+      weekly: 3,424,077
+      on: 2026jun28.0415.10749
   "@auth/sveltekit":
     homepage: https://sveltekit.authjs.dev
     description: Authentication for SvelteKit.
@@ -1029,7 +1046,7 @@ modules:
       declared: ^4.6.4 on 2025dec11 6m old
       installed: 4.6.4 on 2025dec11 6m old
       current: 4.6.4 on 2025dec11 6m old
-      latest: 5.1.0 on 2026may28 0m old 🎁 Major new version available
+      latest: 5.1.0 on 2026may28 1m old 🎁 Major new version available
     downloads:
       weekly: 7,246,210
       on: 2026jun17.1557.25111
