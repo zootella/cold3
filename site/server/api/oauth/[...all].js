@@ -1,4 +1,3 @@
-//on the oauth trail: prove a user controls a third-party account and link it as a credential
 
 /*
 The user clicks "Continue with Discord" (or Google, Twitter, GitHub). This catch-all owns every url under /api/oauth/* —

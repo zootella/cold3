@@ -1,4 +1,4 @@
-<script setup>//on the oauth trail: Nuxt component
+<script setup>
 /*
 CredentialPanel.vue - credential management for signed-in users
 

@@ -1,5 +1,4 @@
-<script setup>//on the oauth trail: Nuxt component
-
+<script setup>
 /*
 Credential panel for linked third-party oauth providers (Google, Twitter, Discord)
 

@@ -631,6 +631,7 @@ export async function credentialWalletRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \___/ \__,_|\__,_|\__|_| |_|
 //                                                                             
 
+//our list of configured oauth providers
 export function oauthProviders() {//factory preset list of oauth providers; Auth.js might have more listed in preparation
 	return Key('oauth, providers, public').split(';').map(item => {
 		let [tag, name, display] = item.split('/')
