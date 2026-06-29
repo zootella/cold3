@@ -18,6 +18,17 @@ const credentialStore = useCredentialStore()
 
 const providers = oauthProviders()//[{tag, name, display}, ...] from .env.keys 'oauth, providers, public' — single source of truth
 
+//the oauth flow ends in a server redirect, not a fetchWorker call we'd read a task from — so the endpoint hands back any outcome the user needs to know about as a one-shot ?oauth-done hint on the url. map the known keys to fixed copy (never echo the raw param), capture it once for first paint, then strip it from the url so a reload or shared link doesn't replay it. success and the rare same-account re-prove carry no hint; the panel just shows the true linked state
+const route = useRoute()
+const oauthDoneCopy = {//known outcome keys → fixed copy; an unknown key renders nothing
+	Cancelled: `That sign-in didn't finish — you can try again. If a provider window surprised you, you may be signed in there as someone else, or using a different browser.`,
+	ClaimedElsewhere: `That account is already connected to a cold3 account. If that was you, sign in with the cold3 account you used before.`,
+}
+const refOauthDone = ref(oauthDoneCopy[route.query['oauth-done']] || '')//captured once at setup so it survives the url strip below
+onMounted(() => {//drop the hint from the url so reload/back/share don't replay it; the copy is already held in refOauthDone
+	if (import.meta.client && route.query['oauth-done']) history.replaceState(null, '', route.path)
+})
+
 const props = defineProps({editing: Boolean})
 const emit = defineEmits(['edit', 'cancel'])
 
@@ -67,6 +78,7 @@ const refKey = ref(Tag())//change to force Vue to recreate
 	oauth providers
 	<Button v-show="!editing" link :click="() => emit('edit')">Edit</Button>
 </p>
+<p v-if="refOauthDone" class="my-space">{{ refOauthDone }}</p>
 <div v-for="provider in providers" :key="provider.name">
 	<p class="my-space">
 		<code>{{provider.display}}</code>

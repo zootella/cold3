@@ -16,13 +16,13 @@ import googleProvider  from '@auth/core/providers/google'
 import twitterProvider from '@auth/core/providers/twitter'//𝕏, of course, but Auth.js still calls it twitter
 import githubProvider  from '@auth/core/providers/github'
 import discordProvider from '@auth/core/providers/discord'
-import twitchProvider  from '@auth/core/providers/twitch'
-import redditProvider  from '@auth/core/providers/reddit'//twitch and reddit are imported in preparation — not in the providers list below until we add their keys
+//import twitchProvider  from '@auth/core/providers/twitch'
+//import redditProvider  from '@auth/core/providers/reddit'//twitch and reddit, ready to go: uncomment these and add them to the providers list below once we have their keys — commented for now so the bundler doesn't warn about unused imports
 import {toWebRequest} from 'h3'//converts the nitro event to a web Request; h3 also auto-sends a returned web Response, so the handler is just: return Auth(toWebRequest(event), authOptions)
 import {
 decryptKeys, hashText, originApex,
 credentialBrowserGet, credentialOauthChallenge, credentialOauthParse, credentialOauthSet, oauthProviders,
-} from 'icarus'//Key, hasTag, log, look, logAudit, sealEnvelope, Limit, setResponseStatus, defined are auto-globalized in site/server by icarusServerPlugin; these are not, so import them (same pattern as credential.js)
+} from 'icarus'//Key, hasTag, toss, log, look, logAudit, sealEnvelope, Limit, setResponseStatus, defined are auto-globalized in site/server by icarusServerPlugin; these are not, so import them (same pattern as credential.js)
 
 export default defineEventHandler(async (event) => {//the outer membrane around the Auth.js callback we host — same shape as doorWorker: catch anything our own code or Auth.js throws and forward it to error3, rather than letting it escape as a bare 500. (we can't wear doorWorker itself here: it blocks GET, and the oauth flow's responses are redirects, not json tasks)
 	try {
@@ -43,6 +43,7 @@ async function runOauth(event) {//the flow itself; the membrane above runs this 
 	if (event?.context?.cloudflare?.env)          sources.push({note: 'a20', environment: event.context.cloudflare.env})//the cloudflare runtime env nitro hangs on the request event
 	await decryptKeys('oauth', sources)//must run here at the top so Key() works below and the credential functions can reach the database; self-guards with _alreadyDecrypted, so it's a no-op if doorWorker already decrypted in this isolate
 
+	let authError//@auth/core catches its in-flow errors and only hands us a normalized type via the ?error= redirect below — but its logger.error fires with the real error first, so we stash it here to report the underlying cause too
 	let authOptions = {
 		basePath: '/api/oauth',//Auth.js parses the action and provider from the path under this prefix; the redirect_uri it hands each provider becomes <origin>/api/oauth/callback/<provider>
 		trustHost: true,//trust the incoming request's Host and X-Forwarded-Host headers to work with Cloudflare's reverse proxy
@@ -77,22 +78,24 @@ async function runOauth(event) {//the flow itself; the membrane above runs this 
 				//write the credential row: parse the provider-specific fields and store the proof
 				let parsed = credentialOauthParse(providerInfo.tag, {account, profile, user})//per-provider field extraction lives in level3; this handler stays dumb
 				let result = await credentialOauthSet({userTag: signedIn.userTag, ...parsed})
-				logAudit('oauth done letter', {browserHash, userTag: signedIn.userTag, account, profile, user})//accumulate real examples of oauth provider responses, which carry lots of provider-specific detail and can be different or broken in unexpected ways at any time
-				log('Auth.js signIn() handler', look({account, profile, user}))//operational visibility in datadog, separate from the audit store above
-				//if result.ok is false (OauthAlreadyLinked. or OauthClaimedElsewhere.) we wrote nothing — a safe no-op; the panel reload shows the true state, no custom ui copy
+				logAudit('oauth done', {browserHash, userTag: signedIn.userTag, account, profile, user, outcome: result.outcome})//accumulate real examples of oauth provider responses, which carry lots of provider-specific detail and can be different or broken in unexpected ways at any time
+				log('Auth.js signIn() handler', look({account, profile, user, outcome: result.outcome}))//operational visibility in datadog, separate from the audit store above
 
-				return '/page1'//send the browser back to the credential panel
+				//on success the panel shows the freshly-linked row on its next Get, so it needs no message. on a collision we wrote nothing: OauthClaimedElsewhere. owes the user an explanation — they proved control, but another cold3 user already holds this provider identity — so hand back a one-shot ?oauth-done hint the panel reads and strips. OauthAlreadyLinked. is the rare same-account re-prove (a stale tab) and stays silent; the panel just shows it linked
+				if (result.outcome == 'OauthClaimedElsewhere.') return '/page1?oauth-done=ClaimedElsewhere'
+				return '/page1'//send the browser back to the credential panel; ttd november2025, will change to welcome, home, or dashboard depending on the user's aim proving oauth
 			},
 			//signIn returns a same-origin path, so Auth.js's default redirect handling is enough — no redirect() callback needed
 		},
-		session: {
-			maxAge: 60,//seconds; intending us to identify our user with this cookie, Auth's default is 30 days
-			updateAge: 0,//tell Auth.js to never refresh this cookie; it will expire naturally shortly
+		session: {//we never read Auth.js's session — our own browserTag identifies the user and signIn writes the row directly — so these just shrink the session cookie Auth.js sets anyway to a brief, unrefreshed life
+			maxAge: 60,//seconds; Auth's default is 30 days
+			updateAge: 0,//never refresh it; it expires on its own
 		},
 		secret: Key('auth.js, secret'),//Auth.js needs a random secret we define to sign things; we don't have to rotate it; generate with $ openssl rand -hex 32
+		logger: {error(e) { authError = e }},//capture the real error @auth/core caught before it normalizes to a ?error= type; setLogger only overrides the level we pass, so warn/debug keep their defaults
 	}
 
-	//when a flow starts (the signin action) record an audit-trail event-3 row that we're sending this user into the provider — the funnel "started" marker, paired with the "oauth done letter" completion logged in signIn above
+	//when a flow starts (the signin action) record an audit-trail event-3 row that we're sending this user into the provider — the funnel "started" marker, paired with the "oauth done" completion logged in signIn above
 	let [authAction, authProviderName] = (event.path.split('?')[0].split('/api/oauth/')[1] || '').split('/')//the action and provider Auth.js routes on, e.g. signin / discord
 	if (authAction == 'signin' && hasTag(event.context.browserTag)) {
 		let signedIn = await credentialBrowserGet({browserHash: await hashText(event.context.browserTag)})
@@ -104,12 +107,125 @@ async function runOauth(event) {//the flow itself; the membrane above runs this 
 
 	//Auth.js hands a cancel or an error back as a redirect to our pages.* carrying ?error=<type>. read it here (keys are decrypted) and sort it by governance: could only WE have caused this, or could the provider have?
 	let errorType = new URL(response.headers.get('location') || '/', originApex()).searchParams.get('error')
-	if (errorType == 'Configuration') {//auth.js erroring because of how we configured or use it — our bug to fix (add more types here if auth.js surfaces other our-fault errors)
-		//blow up the page (Datadog + error.vue) through the same error3 surface the rest of the site uses
-		let envelope = await sealEnvelope('Error3.', Limit.handoff, {error: {name: 'AuthError', message: `oauth setup error: ${errorType}`, authErrorType: errorType}})
-		return new Response(null, {status: 303, headers: {location: `/error3?envelope=${envelope}`}})
-	} else if (errorType) {//a provider changing things on us (loves us monday, hates us tuesday), or a user cancelling — not ours to fix
-		logAudit('oauth sad path', {errorType, path: event.path})//don't crash the site; record the provider interaction for the team to analyse, and let the user land back at the panel (the /page1 Auth already redirected to)
+	if (errorType == 'Configuration') {//our bug to fix. Configuration is also @auth/core's fallback bucket for any non-client-safe error (a bad secret, a malformed provider, our own signIn callback throwing), so it catches the unexpected too. (add more types here if auth.js surfaces other our-fault ones)
+		//@auth/core catches its in-flow errors and hands them back as this ?error= redirect rather than throwing, so the membrane never sees them on its own. bridge them: toss here, and the membrane above catches it and seals Error3. → error3.vue → Datadog + error.vue, the one place that does
+		toss('oauth', {errorType, path: event.path, error: authError})
+	} else if (errorType) {//a provider changing things on us (loves us monday, hates us tuesday), or a user cancelling at the provider — not ours to fix
+		logAudit('oauth sad path', {errorType, path: event.path, error: authError})//don't crash the site; record the provider interaction for the team to analyse — and the underlying error disambiguates the shared OAuthCallbackError type (a user declining vs our own misconfig, like a wrong secret or unregistered redirect uri)
+		//the attempt didn't complete — most often the user cancelled at the provider, sometimes startled the provider window even appeared. rather than drop them on a bare /page1 with no idea what happened, hand back a one-shot ?oauth-done hint the panel reads and strips, nudging them to try again
+		return new Response(null, {status: 303, headers: {location: '/page1?oauth-done=Cancelled'}})
 	}
 	return response
 }
+
+/*
+what module should we use for oauth?
+we want one high level enough that it has pluggable submodules specific to popular providers
+and will iron out all the wrinkles between Twitter and Discord,
+whether they use oauth v1 or 2, and PKCS, and so on
+ _   _            _             _ _   _
+| |_| |__   ___  | |_ _ __ __ _(_) | | |__   ___ _ __ ___
+| __| '_ \ / _ \ | __| '__/ _` | | | | '_ \ / _ \ '__/ _ \
+| |_| | | |  __/ | |_| | | (_| | | | | | | |  __/ | |  __/_ _ _
+ \__|_| |_|\___|  \__|_|  \__,_|_|_| |_| |_|\___|_|  \___(_|_|_)
+
+🥾 a long trail led to @auth/core...
+
+(1) there are turnkey identity providers like auth0.com
+but a service provider can become slow, unreliable, expensive,
+or require immediate developer attention to stay aligned with an update,
+or they can go out of business,
+or just deplatform you, without warning, cause, reinstatement, or recourse
+
+ok, so how about npm modules?
+(2) Passport.js is the leader, with 3.5 million weekly downloads,
+and with over 500 provider-specific strategies
+but, it's Express middleware, intended for a regular server and Node
+and we don't have Express, Node, or even a server!
+
+(3) Auth.js, formerly NextAuth, has 1.4 million weekly downloads
+https://www.npmjs.com/package/next-auth
+but is specific to Next.js, which is React; we are Nuxt and Vue
+
+but Auth's rebrand is about branching out to support all popular frameworks:
+https://authjs.dev/getting-started/integrations
+(4) and there's one for Nuxt, but it's status is "Open PR",
+linking to a github thread with lots of waiting and disappointment:
+https://github.com/nextauthjs/next-auth/pull/10684
+
+(5) so we tried to use @auth/core directly
+which is lower level than being React or Next or Nuxt-specific
+but still at a level where we get modules that know about specific providers
+but couldn't get it working in Nuxt
+
+(6) so we got things working at Auth.js on SvelteKit
+choosing SvelteKit instead of Next.js, because React is awful
+as Auth.js has currently mainted modules for those two frameworks (but not Nuxt)
+we had to create a third serverless workspace, oauth, alongside Nuxt and Lambda
+it's SvelteKit, cloudflare workers, oauth.cold3.cc subdomain
+
+getting the SvelteKit through an OAuth flow wasn't too hard
+but then everything about secrets
+and encrypted envelopes and redirects between Nuxt and SvelteKit was significant
+as well as the additional third project, scaffold, framework, workspace, deploy, and website
+
+another thing that made the search difficult is most of these solutions
+want to be your whole user identity and user management system
+but then they'd make a bunch of cookies that require a warning, or expire users after 30 days
+and come in with their own logic and practices for how a user changes how they sign in
+and through all that they, not us, own all the users. great for them and bad for us!
+
+we're looking for a way a person at a browser can prove to our server, just once, right now
+that they control a third party social media account
+and get some information about their identity there, like their id, name, and email
+
+in researching this now, also found this similar rant:
+https://www.better-auth.com/docs/comparison
+
+(7) and then, after living on the SvelteKit workspace for a while,
+we went back and got step (5) to work
+the thing the first @auth/core-in-Nuxt attempt missed was a cross-cut:
+use @auth/core *together with* its provider modules,
+but *without* any framework adapter at all!
+
+Auth.js is really three layers, and only the bottom two do the work
+@auth/core is the engine: one function, Auth(request, config) -> response,
+a web Request in and a web Response out, all Web Crypto, no Node,
+nothing that knows about an http server
+
+the provider modules (@auth/core/providers/discord, google, ...) are pure config:
+a clientId, a clientSecret, and a profile() mapper that normalizes the provider's answer
+and the framework adapters (@auth/sveltekit, next-auth) are the thin top layer:
+about twenty lines bridging a framework's http idiom to that one Auth() call
+the engine and the providers never needed the adapter
+
+And Nuxt already gives us the bridge the adapter would:
+h3 (what nitro runs) has toWebRequest(event) to make a web Request from the nitro event,
+and it auto-sends a returned web Response — so this whole endpoint is, at heart,
+return Auth(toWebRequest(event), authOptions)
+
+the one piece of adapter magic that actually mattered is skipCSRFCheck:
+it's a symbol, and @auth/core skips its csrf check only on an identity test against that exact symbol
+an adapter sets it for you inside a quiet setEnvDefaults pass
+we import the symbol and set it ourselves,
+because our client opens the flow with an empty form POST that carries none of Auth's csrf token
+
+the payoff is that the whole cross-origin contraption from (6) evaporates
+with the engine running inside the apex worker,
+our signIn callback reaches the database directly and writes the credential row right there
+the browser's identity comes straight off event.context.browserTag, where the middleware already left it,
+instead of a hash sealed at the apex and re-checked across a subdomain
+and the two cookies coexist on one response because h3's sendWebResponse appends Set-Cookie instead of clobbering,
+so the middleware's browser-tag cookie rides right alongside Auth.js's own
+
+one rule, because the versioning bites: @auth/core is permanently pre-1.0 on purpose:
+you pin it to the exact version the maintained adapter was built against
+(today ^0.41.2, what @auth/sveltekit blesses), NOT npm's `latest`,
+which still tracks next-auth v4 and points at an older line. so we pin to the adapter's pin,
+and follow it when it moves
+
+so the trail that wandered all the way out to a separate SvelteKit project on its own subdomain
+led back, in the end, to a dozen lines in one Nitro endpoint
+layers one and two were always enough;
+we just hadn't seen that layer three was a bridge Nuxt already had
+*/

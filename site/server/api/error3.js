@@ -5,8 +5,8 @@ Most errors reach error.vue on their own: a toss during a page render, or a fetc
 errorPlugin's hooks. But an error that arrives as a browser navigation straight to a server endpoint has no page or
 fetchWorker in the loop, so it can't reach those hooks. error3 is the bridge: a catcher seals the error into an Error3.
 envelope and redirects the browser to error3.vue, which posts it here; running inside doorWorker (keys decrypted), the
-toss below both logs to Datadog and blows up error.vue. The catchers that feed error3 today are the oauth endpoint's
-membrane and its governance block (site/server/api/oauth/[...all].js); before this migration, the SvelteKit oauth worker.
+toss below both logs to Datadog and blows up error.vue. The catchers that feed error3 are the oauth endpoint's
+membrane and its governance block (site/server/api/oauth/[...all].js).
 */
 
 export default defineEventHandler(async (workerEvent) => {

@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jun28.2134.10727
+  generated: 2026jun29.1837.12232
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -52,12 +52,6 @@ summary:
       serverless: "provider: framework cli for deploying to aws lambda"
       serverless-offline: "provider: local lambda emulator for dev"
       wrangler: "provider: cloudflare cli; oauth and site workspaces"
-    sveltekit:
-      "@auth/sveltekit": "sveltekit: the reason the oauth workspace exists; no @auth/nuxt adapter available"
-      "@sveltejs/adapter-cloudflare": "sveltekit: deploys oauth to workers; adapter-auto removed as scaffolding bloat"
-      "@sveltejs/kit": "sveltekit: framework for the oauth workspace"
-      "@sveltejs/vite-plugin-svelte": "sveltekit: held at v5, v6 tracks vite 7"
-      svelte: "sveltekit: ui framework; barely used, 2 pages in oauth"
     test:
       "@electric-sql/pglite": "test: wasm postgres for local dev tests"
       nanoid: "test: url-friendly unique id generator"
@@ -110,7 +104,6 @@ summary:
     - lucide-vue-next
   🎁 Major new version available:
     - "@scure/bip39"
-    - "@sveltejs/vite-plugin-svelte"
     - "@unhead/vue"
     - "@vitejs/plugin-vue"
     - "@wagmi/connectors"
@@ -125,11 +118,9 @@ summary:
     - vidstack
   downloads:
     5 figure:
-      "@auth/sveltekit": 81,953
       vidstack: 95,559
     6 figure:
       nuxt-og-image: 124,751
-      "@sveltejs/adapter-cloudflare": 164,142
       "@uppy/aws-s3": 479,157
       "@nuxtjs/color-mode": 500,430
       "@uppy/dashboard": 591,127
@@ -150,9 +141,7 @@ summary:
       "@resvg/resvg-js": 1,641,787
       nuxt: 1,733,987
       nitropack: 1,776,045
-      "@sveltejs/kit": 2,048,215
       is-mobile: 2,377,280
-      "@sveltejs/vite-plugin-svelte": 2,545,412
       "@unhead/vue": 2,597,808
       "@aws-sdk/client-ses": 3,407,955
       "@auth/core": 3,424,077
@@ -161,7 +150,6 @@ summary:
       "@sendgrid/mail": 4,116,989
       pinia: 4,242,857
       viem: 4,750,445
-      svelte: 4,855,655
       twilio: 4,949,219
       "@vercel/nft": 6,977,250
       vue-router: 7,246,210
@@ -209,19 +197,6 @@ modules:
     downloads:
       weekly: 3,424,077
       on: 2026jun28.0415.10749
-  "@auth/sveltekit":
-    homepage: https://sveltekit.authjs.dev
-    description: Authentication for SvelteKit.
-    note: "sveltekit: the reason the oauth workspace exists; no @auth/nuxt adapter available"
-    from: oauth
-    versions:
-      declared: ^1.11.1 on 2025oct26 8m old
-      installed: 1.11.2 on 2026apr14 2m old
-      current: 1.11.2 on 2026apr14 2m old
-      latest: 1.11.2 on 2026apr14 2m old
-    downloads:
-      weekly: 81,953
-      on: 2026jun17.1557.25111
   "@aws-sdk/client-s3":
     homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-s3
     description: AWS SDK for JavaScript S3 Client for Node.js, Browser and React Native
@@ -378,45 +353,6 @@ modules:
     downloads:
       weekly: 20,960,975
       on: 2026jun17.1557.8470
-  "@sveltejs/adapter-cloudflare":
-    homepage: https://svelte.dev/docs/kit/adapter-cloudflare
-    description: Adapts SvelteKit applications for Cloudflare Workers or Cloudflare Pages
-    note: "sveltekit: deploys oauth to workers; adapter-auto removed as scaffolding bloat"
-    from: oauth
-    versions:
-      declared: ^7.2.6 on 2026jan23 5m old
-      installed: 7.2.9 on 2026jun16 0m old
-      current: 7.2.9 on 2026jun16 0m old
-      latest: 7.2.9 on 2026jun16 0m old
-    downloads:
-      weekly: 164,142
-      on: 2026jun17.1557.25111
-  "@sveltejs/kit":
-    homepage: https://svelte.dev
-    description: SvelteKit is the fastest way to build Svelte apps
-    note: "sveltekit: framework for the oauth workspace"
-    from: oauth
-    versions:
-      declared: ^2.50.2 on 2026feb02 4m old
-      installed: 2.68.0 on 2026jun24 0m old
-      current: 2.68.0 on 2026jun24 0m old
-      latest: 2.68.0 on 2026jun24 0m old
-    downloads:
-      weekly: 2,048,215
-      on: 2026jun17.1557.25111
-  "@sveltejs/vite-plugin-svelte":
-    homepage: https://github.com/sveltejs/vite-plugin-svelte#readme
-    description: The official [Svelte](https://svelte.dev) plugin for [Vite](https://vitejs.dev).
-    note: "sveltekit: held at v5, v6 tracks vite 7"
-    from: oauth
-    versions:
-      declared: ^5.1.1 on 2025jul11 11m old
-      installed: 5.1.1 on 2025jul11 11m old
-      current: 5.1.1 on 2025jul11 11m old
-      latest: 7.1.2 on 2026may07 1m old 🎁 Major new version available
-    downloads:
-      weekly: 2,545,412
-      on: 2026jun17.1557.25111
   "@tailwindcss/forms":
     homepage: https://github.com/tailwindlabs/tailwindcss-forms#readme
     description: A plugin that provides a basic reset for form styles that makes form elements easy to override with utilities.
@@ -438,8 +374,8 @@ modules:
     versions:
       declared: ^4.1.18 on 2025dec11 6m old 🏺 Declared release 6+ months earlier than installed
       installed: 4.3.1 on 2026jun12 0m old
-      current: 4.3.1 on 2026jun12 0m old
-      latest: 4.3.1 on 2026jun12 0m old
+      current: 4.3.2 on 2026jun29 0m old
+      latest: 4.3.2 on 2026jun29 0m old
     downloads:
       weekly: 37,356,280
       on: 2026jun17.1558.56293
@@ -722,9 +658,9 @@ modules:
     from: site
     versions:
       declared: ^2.13.1 on 2026jan15 5m old
-      installed: 2.13.4 on 2026apr29 1m old
-      current: 2.13.4 on 2026apr29 1m old
-      latest: 2.13.4 on 2026apr29 1m old
+      installed: 2.13.4 on 2026apr29 2m old
+      current: 2.13.4 on 2026apr29 2m old
+      latest: 2.13.4 on 2026apr29 2m old
     downloads:
       weekly: 1,776,045
       on: 2026jun17.1558.56293
@@ -886,19 +822,6 @@ modules:
     downloads:
       weekly: 64,937,952
       on: 2026jun17.1557.25111
-  svelte:
-    homepage: https://svelte.dev
-    description: Cybernetically enhanced web apps
-    note: "sveltekit: ui framework; barely used, 2 pages in oauth"
-    from: oauth
-    versions:
-      declared: ^5.50.0 on 2026feb06 4m old
-      installed: 5.56.4 on 2026jun23 0m old
-      current: 5.56.4 on 2026jun23 0m old
-      latest: 5.56.4 on 2026jun23 0m old
-    downloads:
-      weekly: 4,855,655
-      on: 2026jun17.1558.56293
   tailwind-merge:
     homepage: https://github.com/dcastil/tailwind-merge
     description: Merge Tailwind CSS classes without style conflicts
@@ -920,8 +843,8 @@ modules:
     versions:
       declared: ^4.1.18 on 2025dec11 6m old 🏺 Declared release 6+ months earlier than installed
       installed: 4.3.1 on 2026jun12 0m old
-      current: 4.3.1 on 2026jun12 0m old
-      latest: 4.3.1 on 2026jun12 0m old
+      current: 4.3.2 on 2026jun29 0m old
+      latest: 4.3.2 on 2026jun29 0m old
     downloads:
       weekly: 120,379,051
       on: 2026jun17.1557.49499
@@ -1009,9 +932,7 @@ modules:
     homepage: https://vite.dev
     description: Native-ESM powered web dev build tool
     note: "build: held at v6, nuxt 4 constraint; icarus and oauth declare directly for their own builds"
-    from:
-      - icarus
-      - oauth
+    from: icarus
     versions:
       declared: ^6.4.1 on 2025oct20 8m old
       installed: 6.4.3 on 2026jun01 0m old
@@ -1054,9 +975,7 @@ modules:
     homepage: https://github.com/cloudflare/workers-sdk#readme
     description: Command-line interface for all things Cloudflare Workers
     note: "provider: cloudflare cli; oauth and site workspaces"
-    from:
-      - oauth
-      - site
+    from: site
     versions:
       declared: ^4.63.0 on 2026feb05 4m old
       installed: 4.105.0 on 2026jun25 0m old

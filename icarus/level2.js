@@ -294,7 +294,7 @@ function loadKeys() {
 export async function decryptKeys(sender, sources) {
 	if (_alreadyDecrypted) return; _alreadyDecrypted = true
 
-	if (false) {//switch on to see where we're finding the key across local|cloud × lambda|nuxt|sveltekit
+	if (false) {//switch on to see where we're finding the key across local|cloud × lambda|nuxt
 		let s = `Key found by ${isLocal() ? 'local' : 'cloud'} ${sender} 🔑`
 		let places = []
 		for (let source of sources) {
@@ -361,9 +361,9 @@ export const cookieOptions = {
 		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
 		maxAge: inSeconds(395*Time.day),//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
 		secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
-		//VESTIGIAL (next svelteless cleanup pass): the domain scoping below broadened this cookie to subdomains ONLY so oauth.cold3.cc could read the browser tag — that reader is same-origin now (event.context.browserTag). once the subdomain is deleted, drop `domain` for a host-only cookie (tighter, and matches the OTP/TOTP cookies below) unless another cold3.cc subdomain still needs it
+		//the domain option below widens this cookie from the exact host to all of its subdomains. we run no subdomains today, so we don't strictly need it — but it keeps the browser tag readable from one the day we add one. to tighten to a host-only cookie (like the OTP/TOTP cookies further down), drop the domain line
 		...(isCloud() && {//running deployed,
-			domain: Key('domain, public')//include domain option with value like 'example.com', no protocol or slash; this scopes access to include subdomains, because oauth.cold3.cc needs to see the browser tag
+			domain: Key('domain, public')//value like 'example.com', no protocol or slash; this is the line that widens the cookie to subdomains
 		}),//running locally, don't include domain property at all, clever use of the spread operator to accomplish this in a literal
 	}),
 	/*
@@ -387,7 +387,7 @@ export const cookieOptions = {
 //  \___|_| |_|\_/ \___|_|\___/| .__/ \___|
 //                             |_|
 
-//servers (nuxt, sveltekit workers, lambdas) send envelopes to each other 💌
+//servers (nuxt workers, lambdas) send envelopes to each other 💌
 //or have pages hold them to keep context between neighboring requests statelessly
 //symmetric encryption means envelopes are authentic with secret contents that prevent tampering
 //just watch out for a replayed envelope, or getting a valid envelope for one think and playing it right away someplace else
@@ -556,7 +556,7 @@ export function lambda23(route) {//get the url of a Network 23 lambda function r
 }
 export function originApex()   { return isCloud() ? `https://${Key('domain, public')}`       : `http://localhost:3000` }//nitro port
 export function originDomain() { return isCloud() ? Key('domain, public')                    : `localhost:3000` }//just domain
-//serverless framework's default port is 3000, but we customized to 4000; Nuxt has Nitro's default 3000; SvelteKit has Vite's default 5173, same as vite running icarus
+//serverless framework's default port is 3000, but we customized to 4000; Nuxt has Nitro's default 3000; icarus runs vite on its default 5173
 
 function checkUrl(s) { checkText(s); new URL(s) }//the browser's URL constructor will throw if the given text is not an absolute URL
 function checkRoute(s) { checkText(s); if (!s.startsWith('/')) toss('form', {s}) }//confirm a route that starts with slash like "/hi"

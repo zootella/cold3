@@ -76,9 +76,8 @@ async function listFiles() {
 			//note we include .env to be hashed in wrapper.txt, while .gitignore critically keeps secrets out of the repository
 
 			'**/*.d.ts',//typescript declaration files; type info for IDEs, no runtime effect; wrangler generates worker-configuration.d.ts
-			'**/.wrangler',//cloudflare tooling in oauth and site
+			'**/.wrangler',//cloudflare tooling in site
 			'**/.serverless',//serverless framework deployment state; net23/.serverless
-			'**/.svelte-kit',//sveltekit build output; oauth/.svelte-kit
 			'**/.nuxt',//nuxt dev server cache; site/.nuxt
 			'**/.output',//nuxt production build; site/.output
 			'**/.vite-inspect',//vite inspector plugin output, site/size/.vite-inspect
