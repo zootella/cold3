@@ -108,4 +108,16 @@ To verify, delete .output node_modules/.cache/nuxt && pnpm build, then check tha
 */
 if (true) configuration.vite.build = {rollupOptions: {external: ['@electric-sql/pglite']}}//if true to make this easily switchable
 
+//dev server only: pre-bundle the heavy deps icarus pulls in eagerly (viem, wagmi, pglite, uppy, ...) so Vite optimizes them once at startup instead of discovering them on the first page load and triggering a slow full reload. production builds with Rollup and ignore optimizeDeps entirely, so this is a dev-DX convenience, not a build setting. the list drifts as imports change — Vite prints the current set in the dev log ("Pre-bundle them in your nuxt.config") whenever it finds new ones. the real fix is the level1.js ttd about not importing all of icarus eagerly, which would also help the production bundle
+configuration.vite.optimizeDeps = {
+	include: [
+		'@electric-sql/pglite', '@scure/bip39/wordlists/english', '@supabase/supabase-js',
+		'@uppy/aws-s3', '@uppy/core', '@uppy/dashboard',
+		'@wagmi/connectors', '@wagmi/core', 'viem', 'viem/chains', 'viem/siwe',
+		'credit-card-type', 'is-mobile', 'libphonenumber-js', 'lucide-vue-next',
+		'nanoid', 'otpauth', 'qrcode', 'zod/mini',
+		'@vueuse/core', 'reka-ui', 'clsx', 'tailwind-merge',
+	],
+}
+
 export default defineNuxtConfig(configuration)

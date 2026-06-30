@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jun29.1925.2143
+  generated: 2026jun30.1728.20998
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -193,7 +193,7 @@ modules:
       declared: ^0.41.2 on 2026apr14 2m old
       installed: 0.41.2 on 2026apr14 2m old 🐣 Pre-1.0 version installed
       current: 0.41.2 on 2026apr14 2m old
-      latest: 0.34.3 on 2025oct29 7m old 🩸 Latest tag is behind installed
+      latest: 0.34.3 on 2025oct29 8m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 3,424,077
       on: 2026jun28.0415.10749
@@ -348,8 +348,8 @@ modules:
     versions:
       declared: ^2.95.3 on 2026feb06 4m old
       installed: 2.108.2 on 2026jun15 0m old
-      current: 2.108.2 on 2026jun15 0m old
-      latest: 2.108.2 on 2026jun15 0m old
+      current: 2.110.0 on 2026jun30 0m old
+      latest: 2.110.0 on 2026jun30 0m old
     downloads:
       weekly: 20,960,975
       on: 2026jun17.1557.8470
@@ -553,10 +553,10 @@ modules:
     note: "validate: card brand detection from number"
     from: icarus
     versions:
-      declared: ^10.1.2 on 2026jan28 4m old
+      declared: ^10.1.2 on 2026jan28 5m old
       installed: 10.2.0 on 2026jun08 0m old
-      current: 10.2.0 on 2026jun08 0m old
-      latest: 10.2.0 on 2026jun08 0m old
+      current: 10.3.0 on 2026jun30 0m old
+      latest: 10.3.0 on 2026jun30 0m old
     downloads:
       weekly: 1,581,847
       on: 2026jun17.1557.8470
@@ -581,8 +581,8 @@ modules:
     versions:
       declared: ^11.3.4 on 2026mar03 3m old
       installed: 11.3.5 on 2026may06 1m old
-      current: 11.3.5 on 2026may06 1m old
-      latest: 11.3.5 on 2026may06 1m old
+      current: 11.3.6 on 2026jun29 0m old
+      latest: 11.3.6 on 2026jun29 0m old
     downloads:
       weekly: 194,041,084
       on: 2026jun17.1557.25111
@@ -750,7 +750,7 @@ modules:
     note: "front: radix primitives port for vue; shadcn-vue foundation"
     from: site
     versions:
-      declared: ^2.8.0 on 2026jan28 4m old
+      declared: ^2.8.0 on 2026jan28 5m old
       installed: 2.10.1 on 2026jun26 0m old
       current: 2.10.1 on 2026jun26 0m old
       latest: 2.10.1 on 2026jun26 0m old
@@ -923,8 +923,8 @@ modules:
     versions:
       declared: ^2.45.1 on 2026jan29 4m old
       installed: 2.53.1 on 2026jun20 0m old
-      current: 2.53.1 on 2026jun20 0m old
-      latest: 2.53.1 on 2026jun20 0m old
+      current: 2.54.0 on 2026jun30 0m old
+      latest: 2.54.0 on 2026jun30 0m old
     downloads:
       weekly: 4,750,445
       on: 2026jun17.1557.8470
@@ -937,7 +937,7 @@ modules:
       declared: ^6.4.1 on 2025oct20 8m old
       installed: 6.4.3 on 2026jun01 0m old
       current: 6.4.3 on 2026jun01 0m old
-      latest: 8.1.0 on 2026jun23 0m old 🎁 Major new version available
+      latest: 8.1.2 on 2026jun30 0m old 🎁 Major new version available
     downloads:
       weekly: 141,791,010
       on: 2026jun17.1557.25111
@@ -979,8 +979,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 4m old
       installed: 4.105.0 on 2026jun25 0m old
-      current: 4.105.0 on 2026jun25 0m old
-      latest: 4.105.0 on 2026jun25 0m old
+      current: 4.106.0 on 2026jun30 0m old
+      latest: 4.106.0 on 2026jun30 0m old
     downloads:
       weekly: 14,733,220
       on: 2026jun17.1558.56293
