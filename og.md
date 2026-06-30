@@ -3,7 +3,7 @@
 
 Social share cards — the little preview images that appear when someone pastes a link on Twitter, Slack, iMessage, etc. An afterthought for users, critically important for the product, and one of the most technically sophisticated parts of the Cloudflare deployment.
 
-The site workspace uses `nuxt-og-image` 6.0.0-beta.15 to generate 1200x630 PNG images entirely inside the Cloudflare Worker at cold3.cc. No external services, no headless Chrome, no Node.js. Pure WASM.
+The site workspace uses `nuxt-og-image` (v6, currently `^6.7.0`) to generate 1200x630 PNG images entirely inside the Cloudflare Worker at cold3.cc. No external services, no headless Chrome, no Node.js. Pure WASM.
 
 ## Goals and Requirements
 
@@ -49,13 +49,13 @@ Limits: each `self.fetch()` counts toward the 32 Worker invocations per request 
 
 Two CDN caching designs were built and tested, both working and committed:
 
-**Design A — middleware + plugin** (commit `84f2132`). Cache reads in middleware10, cache writes in a separate Nitro plugin (`ogCachePlugin.js`) that hooks `beforeResponse`. The plugin captures `response.body` (the raw Buffer returned by nuxt-og-image's handler) and the response headers already set on the event by the module's cache.js, builds a Response, and `cache.put()`s it. This works because nuxt-og-image's handler `return`s the image buffer rather than calling `send()`. But if the module ever switched to `send()`, the `beforeResponse` hook would fire with `body: undefined` (h3 v1 issue #596) and caching would silently stop — no error, just every request falling through to a fresh render. Fragile coupling to a beta module's internals.
+**Design A — middleware + plugin** (commit `84f2132`). Cache reads in middleware10, cache writes in a separate Nitro plugin (`ogCachePlugin.js`) that hooks `beforeResponse`. The plugin captures `response.body` (the raw Buffer returned by nuxt-og-image's handler) and the response headers already set on the event by the module's cache.js, builds a Response, and `cache.put()`s it. This works because nuxt-og-image's handler `return`s the image buffer rather than calling `send()`. But if the module ever switched to `send()`, the `beforeResponse` hook would fire with `body: undefined` (h3 v1 issue #596) and caching would silently stop — no error, just every request falling through to a fresh render. Fragile coupling to the module's internals.
 
 **Design B — middleware + service binding** (commit `4a00c5e`, chosen). All cache logic in one file. The service binding gives us a complete Response object we fully control — headers, body, status — regardless of how the downstream handler produces it internally. No dependency on h3 hook behavior. Requires the SELF binding in wrangler.jsonc.
 
 No measurable performance difference. First-render times across all tests: 817ms (Design A), 1120ms/969ms/811ms/623ms (Design B) — the variance is satori/WASM cold-start noise, not overhead from the service binding. Cache hit times are equivalent (~38–44ms).
 
-**Decision:** Design B. The robustness argument is decisive — we're pinned to a beta module, and coupling our caching to its internal return-vs-send behavior is an unnecessary risk. The SELF binding is one line of configuration and eliminates that fragility entirely.
+**Decision:** Design B. The robustness argument is decisive — coupling our caching to the module's internal return-vs-send behavior is an unnecessary risk (doubly so when we chose this on a beta; we've since moved to stable `^6.7.0`, but the argument stands regardless). The SELF binding is one line of configuration and eliminates that fragility entirely.
 
 ## Configuration
 
@@ -85,9 +85,9 @@ configuration.ogImage = {
 
 All toplevel in `site/package.json`. The render pipeline is: nuxt-og-image orchestrates → satori converts HTML/CSS to SVG → resvg rasterizes SVG to PNG.
 
-**`nuxt-og-image`** (6.0.0-beta.15, pinned) — The Nuxt module that orchestrates everything. Handles route registration (`/_og/`), URL encoding, cache headers, and wiring the render pipeline together.
+**`nuxt-og-image`** (`^6.7.0`, unpinned) — The Nuxt module that orchestrates everything: route registration (`/_og/`), URL encoding and signing, cache headers, and wiring the render pipeline together. Was pinned to `6.0.0-beta.15` because v5 broke Nitro's WASM bundling; unpinned to current v6 once Nuxt 4.4.6's island-hash fix let us off the beta.
 
-**`satori`** (0.15.2, pinned) — Vercel's library that converts HTML/CSS to SVG. Takes the `.satori.vue` component output and produces an SVG. Uses yoga-wasm internally for flexbox layout.
+**`satori`** (`^0.26.0`, unpinned) — Vercel's library that converts HTML/CSS to SVG. Takes the `.satori.vue` component output and produces an SVG. Uses yoga-wasm internally for flexbox layout. Was pinned at `0.15.2` because 0.16+ tripped the workers WASM restrictions; unpinned because og-image 6.7.0 peers satori `>=0.19.2` (moving past the beta required it) and that WASM restriction is resolved.
 
 **`@resvg/resvg-wasm`** (^2.6.2) — Rasterizes the SVG from satori into a PNG. WASM build of the Rust resvg library. This is what runs in the Cloudflare Worker — no native bindings needed.
 
@@ -102,7 +102,7 @@ Key module source files (in `node_modules/nuxt-og-image/dist/runtime/server/`): 
 nuxt-og-image encodes all rendering parameters into the URL. The full URL is also the CDN cache key — each unique card gets its own cache entry automatically. Example:
 
 ```
-https://cold3.cc/_og/d/c_ProfileCard,title_%F0%9F%A7%94%F0%9F%8F%BB+name8942,sticker_CloudPageServer.2026feb07.SCRPUA5,q_e30,p_Ii9jYXJkL25hbWU4OTQyIg.png?_v=6bc16989-7e10-4dc3-8353-95b3cc6c9b7a
+https://cold3.cc/_og/d/c_ProfileCard,title_%F0%9F%A7%94%F0%9F%8F%BB+name8942,sticker_CloudPageServer.2026feb07.SCRPUA5,q_e30,p_Ii9jYXJkL25hbWU4OTQyIg,s_9f86d081884c7d65.png
 ```
 
 Segments are comma-separated key-value pairs, split on the first `_`:
@@ -113,10 +113,46 @@ Segments are comma-separated key-value pairs, split on the first `_`:
 - **`sticker_CloudPageServer.2026feb07.SCRPUA5`** — prop. The Sticker string identifying the build
 - **`q_e30`** — query options. Base64 of `{}` (empty object)
 - **`p_Ii9jYXJkL25hbWU4OTQyIg`** — page path. Base64 of `"/card/name8942"`
+- **`,s_<16 chars>`** — HMAC signature of the params, `hash(secret:params).slice(0,16)`. Present when `NUXT_OG_IMAGE_SECRET` is set; the segment the `/_og/` handler verifies (403 on mismatch). See [URL signing](#url-signing) below
 - **`.png`** — output format
-- **`?_v=6bc16989-...`** — Nuxt build ID. Cache-busts all cards on redeploy
 
-The URL is fully deterministic: same page + same props = same URL = same cache key. This is why `cacheKey = new Request(url)` in middleware.js works — Cloudflare's Cache API keys on the full URL.
+(v6 dropped the `?_v=<build ID>` query that beta.15 appended to cache-bust every card on redeploy. The signature segment differentiates builds now instead — and it only changes per build if the secret *isn't* stable, which is the whole point of setting one.)
+
+The URL is fully deterministic: same page + same props + same signing secret = same URL = same cache key. This is why `cacheKey = new Request(url)` in middleware.js works — Cloudflare's Cache API keys on the full URL. A stable `NUXT_OG_IMAGE_SECRET` is what keeps the signature — and therefore the URL and cache key — identical across deploys (see [URL signing](#url-signing)).
+
+## URL signing
+
+nuxt-og-image HMAC-signs each card URL with a secret. In v6 the signature is the `,s_<16 chars>` path segment described above — `signEncodedParams(params, secret) = hash(`${secret}:${params}`).slice(0, 16)` (`runtime/shared/urlEncoding.js`), compared constant-time. In production (`!import.meta.dev`) the `/_og/` handler verifies it before rendering and returns **403** on a mismatch (`runtime/server/og-image/context.js`). It's the gate that stops anyone hitting `/_og/<arbitrary params>` from driving the satori/WASM pipeline to render arbitrary images — load-bearing here precisely because our middleware renders on cache-miss, so a forged param set would otherwise just render.
+
+### why the secret must be stable
+
+If we don't set one, nuxt-og-image auto-generates a secret that **changes every build**. Since the signature is part of the URL (and v6 has no separate `?_v=` build-id param), a per-build secret means every card's URL changes on every deploy. Two consequences, both fixed by a stable secret:
+
+- **The edge cache churns every deploy.** New per-build signatures → new URLs → every entry is a cache miss → every card re-renders. A stable secret keeps the URLs identical across builds, so the cache *persists* across deploys — which is exactly what "🍞 cards don't go stale" wants: a re-render produces identical pixels, so re-rendering on deploy is pure cost.
+- **Already-shared previews 403.** A card URL baked into a tweet/WhatsApp/Slack unfurl carries the signature from the build that rendered the page. After a deploy with a new secret, once that URL's CDN entry has expired, the handler verifies the old signature against the new secret → 403 → broken preview, until the platform re-scrapes the page. Fresh renders always work (current secret); it's the already-circulating long tail that breaks. A stable secret keeps that old URL valid — it just re-renders on demand, identical pixels, no 403.
+
+### setup
+
+Plain env var `NUXT_OG_IMAGE_SECRET` — og-image reads it from the env directly, no `nuxt.config` wiring:
+
+- **local dev / `pnpm preview`:** the `NUXT_OG_IMAGE_SECRET=` line in `site/.env`.
+- **production:** a Cloudflare Worker secret on the `site4` worker.
+
+Local and prod are independent environments; each just needs *a* stable value. Generate with `openssl rand -hex 32` (or `npx nuxt-og-image generate-secret`). Save to production from the `site/` dir so it targets `site4` via `wrangler.jsonc`:
+
+```sh
+pnpm -C site exec wrangler secret put NUXT_OG_IMAGE_SECRET   # prompts; paste the value from site/.env
+```
+
+(or the Cloudflare dashboard: Workers & Pages → `site4` → Settings → Variables and Secrets). **Set once, don't rotate** — changing it re-triggers the one-time transition where old signatures 403 and the cache churns until pages re-render.
+
+### what a leaked secret could do (and couldn't)
+
+Forging valid signatures is the *entire* capability the secret grants. Concretely, someone who knew it could sign any params — e.g. `/_og/d/c_ProfileCard,title_<whatever they type>,...,s_<forged>` — and the worker would render it. The blast radius is two things, one capability: **unlimited renders** (each unique forged URL is a cache miss → a fresh ~700ms satori render the CDN can't absorb — a compute/DoS lever), and **our card with their words** (they can't escape our templating — only our registered `.satori.vue` components render, and only from the URL's props — but the prop text is theirs, so they can mint a cold3-branded card that says anything, hosted at `cold3.cc/_og/...`, and share it as if from us: a bounded reputation/phishing vector, not free-form images). It reaches nothing else: no accounts, sessions, permissions, data, or payments (those are real secrets in `Key()`); the renderer only paints the props it's handed, so there's no private data to leak and no code execution (the output is a PNG); and rotating the secret instantly invalidates every forged URL.
+
+### why this secret lives outside Key() (for now)
+
+A wiring problem, not a judgment that a single secret store doesn't matter — it does. og-image reads the secret via `useOgImageRuntimeConfig()` → `useRuntimeConfig()` at the moments it signs (page render) and verifies (the `/_og/` handler), and neither path runs our `decryptKeys`, so a `Key()` call there would have nothing decrypted to return. That — not its low-sensitivity — is the only reason it currently sits as a plain env var instead of in the encrypted `.env.keys` store. (Its low-sensitivity, above, is just why we tolerated the split rather than blocking on it.) Whether to inject a `Key()`-sourced value into `runtimeConfig` early in the request and retire the env var is under evaluation.
 
 ## How to Test
 
