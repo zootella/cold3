@@ -131,28 +131,15 @@ If we don't set one, nuxt-og-image auto-generates a secret that **changes every 
 - **The edge cache churns every deploy.** New per-build signatures → new URLs → every entry is a cache miss → every card re-renders. A stable secret keeps the URLs identical across builds, so the cache *persists* across deploys — which is exactly what "🍞 cards don't go stale" wants: a re-render produces identical pixels, so re-rendering on deploy is pure cost.
 - **Already-shared previews 403.** A card URL baked into a tweet/WhatsApp/Slack unfurl carries the signature from the build that rendered the page. After a deploy with a new secret, once that URL's CDN entry has expired, the handler verifies the old signature against the new secret → 403 → broken preview, until the platform re-scrapes the page. Fresh renders always work (current secret); it's the already-circulating long tail that breaks. A stable secret keeps that old URL valid — it just re-renders on demand, identical pixels, no 403.
 
-### setup
+### how the secret is sourced — Key(), not a scattered env var
 
-Plain env var `NUXT_OG_IMAGE_SECRET` — og-image reads it from the env directly, no `nuxt.config` wiring:
+The secret lives in our one encrypted key store (`.env.keys`), retrieved with `Key('og, secret')` — no plain env var, no Cloudflare Worker secret, nothing to keep in sync across environments. The wiring is in `site/server/plugins/icarusServerPlugin.js`: a `request` hook runs `decryptKeys` and sets `runtimeConfig.ogImage.secret = Key('og, secret')` once per isolate, before any page render signs a card or any `/_og/` request verifies one. og-image reads `runtimeConfig.ogImage.secret` first (its `useOgImageRuntimeConfig()`), so our injected value wins over the `NUXT_OG_IMAGE_SECRET` env fallback.
 
-- **local dev / `pnpm preview`:** the `NUXT_OG_IMAGE_SECRET=` line in `site/.env`.
-- **production:** a Cloudflare Worker secret on the `site4` worker.
-
-Local and prod are independent environments; each just needs *a* stable value. Generate with `openssl rand -hex 32` (or `npx nuxt-og-image generate-secret`). Save to production from the `site/` dir so it targets `site4` via `wrangler.jsonc`:
-
-```sh
-pnpm -C site exec wrangler secret put NUXT_OG_IMAGE_SECRET   # prompts; paste the value from site/.env
-```
-
-(or the Cloudflare dashboard: Workers & Pages → `site4` → Settings → Variables and Secrets). **Set once, don't rotate** — changing it re-triggers the one-time transition where old signatures 403 and the cache churns until pages re-render.
+Why a `request` hook rather than `nuxt.config`: og-image reads the secret at runtime, on paths (signing during render, verifying at `/_og/`) that never run `doorWorker`'s decrypt — and the Cloudflare env `decryptKeys` needs only exists on the request event, so it can't run at plugin init. Putting `decryptKeys` on the global request path is cheap (it self-guards — real work once per isolate, then cached) and warms keys for everything else too. The one `Key()` lookup is guarded: if `Key('og, secret')` isn't provisioned, the hook logs once and og-image falls back to auto-generating its own (with the per-build churn/403 caveats above) — an optional card secret must never take down the global request path. Provision it once (a value from `openssl rand -hex 32`); **don't rotate** — changing it re-triggers the one-time transition where old signatures 403 and the cache churns until pages re-render.
 
 ### what a leaked secret could do (and couldn't)
 
 Forging valid signatures is the *entire* capability the secret grants. Concretely, someone who knew it could sign any params — e.g. `/_og/d/c_ProfileCard,title_<whatever they type>,...,s_<forged>` — and the worker would render it. The blast radius is two things, one capability: **unlimited renders** (each unique forged URL is a cache miss → a fresh ~700ms satori render the CDN can't absorb — a compute/DoS lever), and **our card with their words** (they can't escape our templating — only our registered `.satori.vue` components render, and only from the URL's props — but the prop text is theirs, so they can mint a cold3-branded card that says anything, hosted at `cold3.cc/_og/...`, and share it as if from us: a bounded reputation/phishing vector, not free-form images). It reaches nothing else: no accounts, sessions, permissions, data, or payments (those are real secrets in `Key()`); the renderer only paints the props it's handed, so there's no private data to leak and no code execution (the output is a PNG); and rotating the secret instantly invalidates every forged URL.
-
-### why this secret lives outside Key() (for now)
-
-A wiring problem, not a judgment that a single secret store doesn't matter — it does. og-image reads the secret via `useOgImageRuntimeConfig()` → `useRuntimeConfig()` at the moments it signs (page render) and verifies (the `/_og/` handler), and neither path runs our `decryptKeys`, so a `Key()` call there would have nothing decrypted to return. That — not its low-sensitivity — is the only reason it currently sits as a plain env var instead of in the encrypted `.env.keys` store. (Its low-sensitivity, above, is just why we tolerated the split rather than blocking on it.) Whether to inject a `Key()`-sourced value into `runtimeConfig` early in the request and retire the env var is under evaluation.
 
 ## How to Test
 
