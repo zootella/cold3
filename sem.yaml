@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jul1.1941.2615
+  generated: 2026jul1.2021.9591
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -880,9 +880,9 @@ modules:
     note: "front: site devDependency"
     from: site
     versions:
-      declared: ^5.9.3 on 2025sep30 8m old
-      installed: 5.9.3 on 2025sep30 8m old
-      current: 5.9.3 on 2025sep30 8m old
+      declared: ^5.9.3 on 2025sep30 9m old
+      installed: 5.9.3 on 2025sep30 9m old
+      current: 5.9.3 on 2025sep30 9m old
       latest: 6.0.3 on 2026apr16 2m old 🎁 Major new version available
     downloads:
       weekly: 219,990,444
