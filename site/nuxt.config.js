@@ -1,6 +1,6 @@
 
 import {
-Time, inSeconds, Key, log, look,
+Time, inSeconds, Key, log, look, defined, decryptKeys,
 } from 'icarus'//local Node runs this file on $ nuxt dev, build, generate; we can use icarus helpers here
 import {vite as vidstack} from 'vidstack/plugins'
 import tailwindcss from '@tailwindcss/vite'
@@ -120,4 +120,17 @@ configuration.vite.optimizeDeps = {
 	],
 }
 
-export default defineNuxtConfig(configuration)
+/*
+give og-image a stable signing secret from our key store, resolved at build. left to itself og-image bakes a fresh randomBytes(32) into every build (its resolveSigningSecret), so each deploy re-signs every card — expiring the whole edge cache and 403-ing already-shared card urls until pages re-render (see og.md "URL signing"). must be build time, not a runtime request hook: Nitro deep-freezes runtimeConfig and og-image's signing path reads the frozen global with no event, so nothing can inject it later. baking it here is the same materialization og-image already does for its auto-secret — same slot, same exposure — just sourced once from Key() instead of random per build.
+
+async so we can decryptKeys before reading the secret-block Key; process.env holds the master key at build (.env locally, the deploy env in CI). no try — a build that can't produce the secret must fail loud here, not ship the churning default
+*/
+export default defineNuxtConfig(async () => {
+	let sources = []
+	if (defined(typeof process) && process.env) {//local Node running the build reads the .env file, and from that decrypts wrapper's secret keys 🔑
+		sources.push({note: 'b10', environment: process.env})
+	}
+	await decryptKeys('build', sources)
+	configuration.ogImage.security = {secret: Key('og, secret')}
+	return configuration
+})

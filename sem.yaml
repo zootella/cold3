@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jul1.0441.10846
+  generated: 2026jul1.1941.2615
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -205,8 +205,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1077.0 on 2026jun30 0m old
-      latest: 3.1077.0 on 2026jun30 0m old
+      current: 3.1078.0 on 2026jul01 0m old
+      latest: 3.1078.0 on 2026jul01 0m old
     downloads:
       weekly: 33,245,008
       on: 2026jun17.1557.25111
@@ -218,8 +218,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1077.0 on 2026jun30 0m old
-      latest: 3.1077.0 on 2026jun30 0m old
+      current: 3.1078.0 on 2026jul01 0m old
+      latest: 3.1078.0 on 2026jul01 0m old
     downloads:
       weekly: 3,407,955
       on: 2026jun17.1557.25111
@@ -231,8 +231,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1077.0 on 2026jun30 0m old
-      latest: 3.1077.0 on 2026jun30 0m old
+      current: 3.1078.0 on 2026jul01 0m old
+      latest: 3.1078.0 on 2026jul01 0m old
     downloads:
       weekly: 4,000,673
       on: 2026jun17.1557.25111
@@ -244,8 +244,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1077.0 on 2026jun30 0m old
-      latest: 3.1077.0 on 2026jun30 0m old
+      current: 3.1078.0 on 2026jul01 0m old
+      latest: 3.1078.0 on 2026jul01 0m old
     downloads:
       weekly: 15,377,787
       on: 2026jun17.1557.25111
@@ -618,7 +618,7 @@ modules:
     note: "validate: phone number parsing and validation"
     from: icarus
     versions:
-      declared: ^1.12.36 on 2026jan30 4m old
+      declared: ^1.12.36 on 2026jan30 5m old
       installed: 1.13.7 on 2026jun18 0m old
       current: 1.13.7 on 2026jun18 0m old
       latest: 1.13.7 on 2026jun18 0m old
@@ -818,7 +818,7 @@ modules:
       declared: ^0.34.5 on 2025nov06 7m old
       installed: 0.34.5 on 2025nov06 7m old 🐣 Pre-1.0 version installed
       current: 0.34.5 on 2025nov06 7m old
-      latest: 0.35.2 on 2026jun19 0m old
+      latest: 0.35.3 on 2026jul01 0m old
     downloads:
       weekly: 64,937,952
       on: 2026jun17.1557.25111
@@ -990,7 +990,7 @@ modules:
     note: "build: used by sem.js to read and write sem.yaml"
     from: root
     versions:
-      declared: ^2.8.2 on 2025nov30 6m old
+      declared: ^2.8.2 on 2025nov30 7m old
       installed: 2.9.0 on 2026may11 1m old
       current: 2.9.0 on 2026may11 1m old
       latest: 2.9.0 on 2026may11 1m old

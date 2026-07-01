@@ -113,12 +113,12 @@ Segments are comma-separated key-value pairs, split on the first `_`:
 - **`sticker_CloudPageServer.2026feb07.SCRPUA5`** — prop. The Sticker string identifying the build
 - **`q_e30`** — query options. Base64 of `{}` (empty object)
 - **`p_Ii9jYXJkL25hbWU4OTQyIg`** — page path. Base64 of `"/card/name8942"`
-- **`,s_<16 chars>`** — HMAC signature of the params, `hash(secret:params).slice(0,16)`. Present when `NUXT_OG_IMAGE_SECRET` is set; the segment the `/_og/` handler verifies (403 on mismatch). See [URL signing](#url-signing) below
+- **`,s_<16 chars>`** — HMAC signature of the params, `hash(secret:params).slice(0,16)`. Present whenever a signing secret is configured; the segment the `/_og/` handler verifies (403 on mismatch). See [URL signing](#url-signing) below
 - **`.png`** — output format
 
 (v6 dropped the `?_v=<build ID>` query that beta.15 appended to cache-bust every card on redeploy. The signature segment differentiates builds now instead — and it only changes per build if the secret *isn't* stable, which is the whole point of setting one.)
 
-The URL is fully deterministic: same page + same props + same signing secret = same URL = same cache key. This is why `cacheKey = new Request(url)` in middleware.js works — Cloudflare's Cache API keys on the full URL. A stable `NUXT_OG_IMAGE_SECRET` is what keeps the signature — and therefore the URL and cache key — identical across deploys (see [URL signing](#url-signing)).
+The URL is fully deterministic: same page + same props + same signing secret = same URL = same cache key. This is why `cacheKey = new Request(url)` in middleware.js works — Cloudflare's Cache API keys on the full URL. A stable signing secret — ours, baked in from `Key('og, secret')` at build — is what keeps the signature, and therefore the URL and cache key, identical across deploys (see [URL signing](#url-signing)).
 
 ## URL signing
 
@@ -131,11 +131,17 @@ If we don't set one, nuxt-og-image auto-generates a secret that **changes every 
 - **The edge cache churns every deploy.** New per-build signatures → new URLs → every entry is a cache miss → every card re-renders. A stable secret keeps the URLs identical across builds, so the cache *persists* across deploys — which is exactly what "🍞 cards don't go stale" wants: a re-render produces identical pixels, so re-rendering on deploy is pure cost.
 - **Already-shared previews 403.** A card URL baked into a tweet/WhatsApp/Slack unfurl carries the signature from the build that rendered the page. After a deploy with a new secret, once that URL's CDN entry has expired, the handler verifies the old signature against the new secret → 403 → broken preview, until the platform re-scrapes the page. Fresh renders always work (current secret); it's the already-circulating long tail that breaks. A stable secret keeps that old URL valid — it just re-renders on demand, identical pixels, no 403.
 
-### how the secret is sourced — Key(), not a scattered env var
+### how the secret is sourced — Key() at build time
 
-The secret lives in our one encrypted key store (`.env.keys`), retrieved with `Key('og, secret')` — no plain env var, no Cloudflare Worker secret, nothing to keep in sync across environments. The wiring is in `site/server/plugins/icarusServerPlugin.js`: a `request` hook runs `decryptKeys` and sets `runtimeConfig.ogImage.secret = Key('og, secret')` once per isolate, before any page render signs a card or any `/_og/` request verifies one. og-image reads `runtimeConfig.ogImage.secret` first (its `useOgImageRuntimeConfig()`), so our injected value wins over the `NUXT_OG_IMAGE_SECRET` env fallback.
+The secret lives in our one encrypted key store (`.env.keys`), retrieved with `Key('og, secret')` — no plain env var, no Cloudflare Worker secret, nothing to keep in sync across environments. It's supplied at **build time** in `site/nuxt.config.js`: the config is async so it can `await decryptKeys(...)` (the build machine's `process.env` carries the master key) and then set `configuration.ogImage.security = {secret: Key('og, secret')}`. og-image's `resolveSigningSecret` treats that as the explicit secret, bakes it into the build's runtime config, and uses it for both signing during render and verifying at `/_og/`.
 
-Why a `request` hook rather than `nuxt.config`: og-image reads the secret at runtime, on paths (signing during render, verifying at `/_og/`) that never run `doorWorker`'s decrypt — and the Cloudflare env `decryptKeys` needs only exists on the request event, so it can't run at plugin init. Putting `decryptKeys` on the global request path is cheap (it self-guards — real work once per isolate, then cached) and warms keys for everything else too. The one `Key()` lookup is guarded: if `Key('og, secret')` isn't provisioned, the hook logs once and og-image falls back to auto-generating its own (with the per-build churn/403 caveats above) — an optional card secret must never take down the global request path. Provision it once (a value from `openssl rand -hex 32`); **don't rotate** — changing it re-triggers the one-time transition where old signatures 403 and the cache churns until pages re-render.
+Why build time and not a runtime `request` hook (the first thing we tried, and it can't work): og-image's signing path is `getOgImagePath → useOgImageRuntimeConfig()` called with **no event**, so it reads the process-global runtime config — and Nitro **deep-freezes** that global (`nitropack/dist/runtime/internal/config.mjs`: `_sharedRuntimeConfig = _deepFreeze(...)`, unconditional, not dev-only). A request-time `runtimeConfig.ogImage.secret = …` throws `Cannot assign to read only property` and never reaches the signing path. There is no runtime seam that does.
+
+Isn't baking a secret into the artifact a step down from Key()'s "stays encrypted until runtime"? Not against the real baseline. og-image *already* bakes a secret into every build — a `randomBytes(32)` from that same `resolveSigningSecret` — shipped cleartext in the server bundle (server-side, never `public`). Our value occupies the identical slot with identical exposure; the only change is that it's stable and single-sourced from Key() instead of random per build. The value is still *defined* only in `.env.keys`.
+
+No `try` guards the build-time lookup, deliberately. A build that can't decrypt (master key absent) or can't find `Key('og, secret')` **must fail loudly** at `pnpm cloud` — the terminal is the alarm — not silently fall back to og-image's churning auto-secret the way the swallow-and-log request hook did, which made a dead secret look healthy. Requirement: the master key (`ACCESS_K10_SECRET`) must be present wherever `nuxt build` runs — `.env` locally, the CI/deploy environment otherwise.
+
+Provision `og, secret` once (a value from `openssl rand -hex 32`) in the key store; **don't rotate** — changing it re-triggers the one-time transition where old signatures 403 and the cache churns until pages re-render.
 
 ### what a leaked secret could do (and couldn't)
 

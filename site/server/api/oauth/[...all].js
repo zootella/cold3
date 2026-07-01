@@ -38,8 +38,12 @@ export default defineEventHandler(async (event) => {//the outer membrane around 
 async function runOauth(event) {//the flow itself; the membrane above runs this for every url under /api/oauth/* — Auth.js routes on the path internally (/api/oauth/signin/discord, /api/oauth/callback/discord, ...)
 
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
-	if (defined(typeof process) && process.env)   sources.push({note: 'a10', environment: process.env})//env built into the worker bundle at deploy
-	if (event?.context?.cloudflare?.env)          sources.push({note: 'a20', environment: event.context.cloudflare.env})//the cloudflare runtime env nitro hangs on the request event
+	if (defined(typeof process) && process.env) {
+		sources.push({note: 'o10', environment: process.env})
+	}//env built into the worker bundle at deploy
+	if (event?.context?.cloudflare?.env) {
+		sources.push({note: 'o20', environment: event.context.cloudflare.env})
+	}//the cloudflare runtime env nitro hangs on the request event
 	await decryptKeys('oauth', sources)//must run here at the top so Key() works below and the credential functions can reach the database; self-guards with _alreadyDecrypted, so it's a no-op if doorWorker already decrypted in this isolate
 
 	let authError//@auth/core catches its in-flow errors and only hands us a normalized type via the ?error= redirect below — but its logger.error fires with the real error first, so we stash it here to report the underlying cause too

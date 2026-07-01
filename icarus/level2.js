@@ -681,21 +681,21 @@ but should still be findable in the amazon or cloudflare dashboard
 async function doorWorkerOpen({method, workerEvent}) {
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
-		sources.push({note: 'c10', environment: process.env})
-	}//seeing c10 both local and cloud; local makes sense, but not sure if cloud is coming from bundle or dashboard, ttd november2025
+		sources.push({note: 'w10', environment: process.env})
+	}//seeing w10 both local and cloud; local makes sense, but not sure if cloud is coming from bundle or dashboard, ttd november2025
 	if (workerEvent.context?.cloudflare?.env) {
-		sources.push({note: 'c20', environment: workerEvent.context.cloudflare.env})
-	}//seeing c20 local always and cloud sometimes, which is super weird
+		sources.push({note: 'w20', environment: workerEvent.context.cloudflare.env})
+	}//seeing w20 local always and cloud sometimes, which is super weird
 	if (workerEvent.context?.env) {
-		sources.push({note: 'c30', environment: workerEvent.context.env})
-	}//seeing c30 never
+		sources.push({note: 'w30', environment: workerEvent.context.env})
+	}//seeing w30 never
 	if (workerEvent.platform?.env) {
-		sources.push({note: 'c40', environment: workerEvent.platform.env})
-	}//seeing c40 never
+		sources.push({note: 'w40', environment: workerEvent.platform.env})
+	}//seeing w40 never
 	if (typeof useRuntimeConfig == 'function') {
 		let c = useRuntimeConfig(workerEvent)
-		if (c) sources.push({note: 'c50', environment: c})//seeing flow reach here local and cloud
-	}//seeing c50 never, which is ironic as this is the correct Nuxt way to do things! ttd december2025 probably because you aren't setting nuxt.config.js configuration.runtimeConfig.name1 = process.env.name1 so you could do that
+		if (c) sources.push({note: 'w50', environment: c})//seeing flow reach here local and cloud
+	}//seeing w50 never, which is ironic as this is the correct Nuxt way to do things! ttd december2025 probably because you aren't setting nuxt.config.js configuration.runtimeConfig.name1 = process.env.name1 so you could do that
 	await decryptKeys('worker', sources)
 
 	let door = {}//make door object to bundle everything together about this request we're doing
@@ -726,8 +726,8 @@ async function doorWorkerOpen({method, workerEvent}) {
 async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 	let sources = []//unlike the cloudflare code above, the lambda event and context objects do not contain environment variables
 	if (defined(typeof process) && process.env) {
-		sources.push({note: 'd10', environment: process.env})
-	}//seeing d10 both local and cloud; must be built into server bundle because there is no dashboard source
+		sources.push({note: 'l10', environment: process.env})
+	}//seeing l10 both local and cloud; must be built into server bundle because there is no dashboard source
 	await decryptKeys('lambda', sources)
 
 	let door = {}//our object that bundles together everything about this incoming request
