@@ -197,3 +197,23 @@ Wallet done (see wallet.md for dev panel and test scenarios). OAuth done. OTP re
 Once all credential types are integrated (OAuth and OTP alongside Browser, Name, Password, TOTP, Wallet), the per-type dev panels collapse into a single unified "ways to identify yourself" menu. Discord and X sign-ins alongside MetaMask and WalletConnect wallet connections alongside email/phone OTP alongside TOTP and password, one coherent surface for the user.
 
 Under the hood nothing changes — per-type stores, endpoints, and reconciliation logic carry over unchanged. It's purely a template and UX question. The dev panels (CredentialPanel and its sub-components) stay as a diagnostic tool during integration; replacing them before the underlying credential system is stable would just mean throwing away the replacement.
+
+# Scenario brainstorm: realistic corner cases
+
+Complex-but-realistic scenarios collected ahead of the guards that will handle them. Later these become a test suite — simple and expressive, hitting the scenarios without being pedantic or verbose. The users in these stories are chaotic, not malicious.
+
+## The mistyped address
+
+Alice adds al@gmail.com but never completes the proof — we sent a code, she got sidetracked, the challenge expired. A week later, Alfred enters the same al@gmail.com. We allow it: Alice's unproven mention doesn't reserve the address for her exclusively.
+
+Then Alfred completes validation — and the story rewrites itself. The address was Alfred's all along; Alice had typed her own address wrong. Alfred now holds al@gmail.com as a proven credential. The table still remembers that Alice mentioned it — nothing is erased — but the address belongs to Alfred.
+
+Now Alice, still certain that address is hers, types it again. This time we don't send a code: the address is held by another user's completed proof. We record her mention — the table quietly accumulates evidence that she keeps trying — but no challenge goes out. The first time, we had no reason to doubt her, so we trusted her with a code. This time, we know she's wrong.
+
+The rules this scenario fixes:
+
+- An unproven mention reserves nothing. Only completed proof claims an address.
+- A proven claim blocks challenges to that address from *other* users. We record the mention, event 2, and stop there — no code is sent. (The holder herself can still be challenged at her own address — that's re-verification, sudo, or signing in a new device.)
+- History survives every turn. Alice's mentions, her expired challenge, Alfred's proof — all of it stays in the table.
+
+A neighboring corner: both users hold live challenges to the same address at once (rate limits allow two back-to-back codes), and Alfred validates first. If the claim check runs only at send time, Alice's still-live code would validate too, and two users would hold proof of the same address. So the check runs at enter time as well as send time — the second validation records the mention and declines the claim.

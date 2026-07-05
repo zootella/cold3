@@ -1,6 +1,8 @@
 # Contents
 
-A guide to six in-progress planning and architecture documents, all touching the credential system at different scopes. This is a high-level orientation: read this first to understand which of the six to open for a given concern, and where each sits relative to the others.
+A guide to five in-progress planning and architecture documents, all touching the credential system at different scopes. This is a high-level orientation: read this first to understand which of the five to open for a given concern, and where each sits relative to the others.
+
+A sixth document, svelteless.md, is done and retired: the spike confirmed, the SvelteKit workspace at oauth.cold3.cc is deleted, and the OAuth flow now runs on @auth/core directly inside the apex worker at `site/server/api/oauth/[...all].js`.
 
 ## oauth.md — open items for the OAuth credential type
 
@@ -9,10 +11,6 @@ After the demo flow was retired and OAuth was integrated into the unified `/cred
 ## otp.md — moving OTP into the credential stack
 
 Plan to bring email/phone OTP into `/api/credential` and `credentialStore` the same way TOTP, Wallet, and OAuth were brought in. OTP is the largest open integration: its own endpoint (`/api/otp`), its own store (`pageStore.otps`), its own components, its own cookie, its own `address_table`, and crucially the only credential type that touches the signup flow where a userTag may not yet exist. Single credential type, integration work modeled on what was just done for OAuth, but larger because more moving parts and one new architectural question (early userTag minting).
-
-## svelteless.md — eliminate the SvelteKit workspace for OAuth
-
-Architectural simplification: stop running a separate SvelteKit Worker at `oauth.cold3.cc` and run `@auth/core` directly inside the Nuxt apex. The insight is "path c" — use `@auth/core` together with its provider modules without any framework adapter at all, since adapters only handle framework-shaped input/output and the engine plus provider modules are framework-agnostic by design. Includes a worked spike plan against Discord that the architecture stands or falls on. Single credential type (OAuth) but architectural scope: removes a whole workspace if the spike confirms.
 
 ## storage.md — unify credential cookies into one localStorage entry
 
@@ -26,11 +24,11 @@ Direction-setting document for the credential system as a whole: one endpoint, o
 
 The deepest architectural document. Three orthogonal questions about how `credential_table` (and analogous tables) should be shaped: (1) ledger-vs-traditional — keep appending rows and flipping hide flags, or move to edit-in-place with a paired `audit_table`; (2) jsonb adoption — collapse `k1`–`k8` into one jsonb column so the recurring "what about k12 next year" smell goes away; (3) Datadog deprecation — replace `logAudit` with an `audit_table` that lives in our own database, since Datadog's fatal flaw (broken state can't reach Datadog) makes the audit channel unreliable exactly when it's needed. Each decision can be made independently but they share an "audit belongs in Supabase" direction. Whole application data layer; the broadest scope and the highest-cost migration.
 
-## How the six relate
+## How the five relate
 
 **By scope, narrowest to broadest:**
 
-- **One credential type**: oauth.md (refinement), otp.md (integration), svelteless.md (OAuth, architectural)
+- **One credential type**: oauth.md (refinement), otp.md (integration)
 - **Multiple credential types**: storage.md (cookies → localStorage across OTP and TOTP, extensible)
 - **Whole credential system**: credential.md (umbrella, direction-setting)
 - **Whole application data layer**: ledger.md (storage patterns underneath everything)
@@ -39,17 +37,16 @@ The deepest architectural document. Three orthogonal questions about how `creden
 
 - Refinement of an existing type: oauth.md
 - Integrating an existing flow into the unified system: otp.md
-- Architectural simplification (removing a workspace): svelteless.md
 - Storage mechanism refactor: storage.md
 - Direction-setting without one deliverable: credential.md
 - Fundamental data-layer pattern decision: ledger.md
 
 **Common threads:**
 
-All six involve credentials. oauth.md and svelteless.md both focus on the OAuth credential at different layers (refinement vs architecture). otp.md and credential.md both involve the OTP integration that's still pending. storage.md and credential.md both pull toward the unified-envelope direction (CredentialEnvelope). ledger.md sits underneath all the others: its outcome shapes the data layer that every credential type rests on.
+All five involve credentials. otp.md and credential.md both involve the OTP integration that's still pending. storage.md and credential.md both pull toward the unified-envelope direction (CredentialEnvelope). ledger.md sits underneath all the others: its outcome shapes the data layer that every credential type rests on.
 
 **Sprint sizing, rough:**
 
-oauth.md is the smallest — discrete open items, finish while context is hot. otp.md and storage.md are each focused refactor sprints. svelteless.md is a short spike followed by an implementation sprint if it confirms. credential.md spans multiple sub-initiatives across sprints rather than fitting in one. ledger.md is multi-sprint architectural work and hasn't started — the rest can be done independently of it.
+oauth.md is the smallest — discrete open items, finish while context is hot. otp.md and storage.md are each focused refactor sprints. credential.md spans multiple sub-initiatives across sprints rather than fitting in one. ledger.md is multi-sprint architectural work and hasn't started — the rest can be done independently of it.
 
 Together these likely exceed one sprint's worth of work; the natural sequencing follows the scope ordering above — finish the narrow-scope items first while context is fresh, then the cross-cutting refactors, with the umbrella and data-layer decisions emerging from the work below them.

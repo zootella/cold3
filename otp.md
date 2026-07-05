@@ -9,9 +9,8 @@ otp uses no dedicated database table--challenge state lives in a sealed cryptogr
 
 in icarus/level3.js, check out these functions and parts:
 
-otpSend, otpPermit, otpEnter
-codeCompose (shared formatting)
-Code.expiration and other constants (rate limits, digit length by address history)
+otpSend, otpEnter (a refactor unified the old otpPermit and codeCompose helpers into otpSend, where permit, compose, send, and record now live as commented steps)
+otpConstants (expiration, rate limits, digit length by address history)
 
 ## (2) api endpoints
 

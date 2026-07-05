@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jul1.2021.9591
+  generated: 2026jul5.1502.38622
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -205,8 +205,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1078.0 on 2026jul01 0m old
-      latest: 3.1078.0 on 2026jul01 0m old
+      current: 3.1079.0 on 2026jul02 0m old
+      latest: 3.1079.0 on 2026jul02 0m old
     downloads:
       weekly: 33,245,008
       on: 2026jun17.1557.25111
@@ -218,8 +218,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1078.0 on 2026jul01 0m old
-      latest: 3.1078.0 on 2026jul01 0m old
+      current: 3.1079.0 on 2026jul02 0m old
+      latest: 3.1079.0 on 2026jul02 0m old
     downloads:
       weekly: 3,407,955
       on: 2026jun17.1557.25111
@@ -231,8 +231,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1078.0 on 2026jul01 0m old
-      latest: 3.1078.0 on 2026jul01 0m old
+      current: 3.1079.0 on 2026jul02 0m old
+      latest: 3.1079.0 on 2026jul02 0m old
     downloads:
       weekly: 4,000,673
       on: 2026jun17.1557.25111
@@ -244,8 +244,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1078.0 on 2026jul01 0m old
-      latest: 3.1078.0 on 2026jul01 0m old
+      current: 3.1079.0 on 2026jul02 0m old
+      latest: 3.1079.0 on 2026jul02 0m old
     downloads:
       weekly: 15,377,787
       on: 2026jun17.1557.25111
@@ -258,7 +258,7 @@ modules:
       declared: ^0.3.15 on 2026jan15 5m old
       installed: 0.3.16 on 2026mar10 3m old 🐣 Pre-1.0 version installed
       current: 0.3.16 on 2026mar10 3m old
-      latest: 0.5.3 on 2026jun16 0m old
+      latest: 0.5.4 on 2026jul02 0m old
     downloads:
       weekly: 9,917,618
       on: 2026jun17.1557.8470
@@ -400,10 +400,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.1.0 on 2025dec02 6m old
-      installed: 5.1.0 on 2025dec02 6m old
-      current: 5.1.0 on 2025dec02 6m old
-      latest: 5.1.0 on 2025dec02 6m old
+      declared: ^5.1.0 on 2025dec02 7m old
+      installed: 5.1.0 on 2025dec02 7m old
+      current: 5.1.0 on 2025dec02 7m old
+      latest: 5.1.0 on 2025dec02 7m old
     downloads:
       weekly: 479,157
       on: 2026jun17.1557.8470
@@ -415,10 +415,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.2.0 on 2025dec02 6m old
-      installed: 5.2.0 on 2025dec02 6m old
-      current: 5.2.0 on 2025dec02 6m old
-      latest: 5.2.0 on 2025dec02 6m old
+      declared: ^5.2.0 on 2025dec02 7m old
+      installed: 5.2.0 on 2025dec02 7m old
+      current: 5.2.0 on 2025dec02 7m old
+      latest: 5.2.0 on 2025dec02 7m old
     downloads:
       weekly: 946,505
       on: 2026jun17.1557.8470
@@ -430,10 +430,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^5.1.1 on 2026feb03 4m old
-      installed: 5.1.1 on 2026feb03 4m old
-      current: 5.1.1 on 2026feb03 4m old
-      latest: 5.1.1 on 2026feb03 4m old
+      declared: ^5.1.1 on 2026feb03 5m old
+      installed: 5.1.1 on 2026feb03 5m old
+      current: 5.1.1 on 2026feb03 5m old
+      latest: 5.1.1 on 2026feb03 5m old
     downloads:
       weekly: 591,127
       on: 2026jun17.1557.8470
@@ -484,7 +484,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^7.1.6 on 2026feb01 4m old
+      declared: ^7.1.6 on 2026feb01 5m old
       installed: 7.2.1 on 2026feb18 4m old
       current: 7.2.1 on 2026feb18 4m old
       latest: 8.0.20 on 2026jun25 0m old 🎁 Major new version available
@@ -499,7 +499,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^3.3.2 on 2026feb01 4m old
+      declared: ^3.3.2 on 2026feb01 5m old
       installed: 3.5.5 on 2026jun25 0m old
       current: 3.5.5 on 2026jun25 0m old
       latest: 3.5.5 on 2026jun25 0m old
@@ -579,7 +579,7 @@ modules:
     note: "build: used by build.js and size.js for net23.zip packaging"
     from: net23
     versions:
-      declared: ^11.3.4 on 2026mar03 3m old
+      declared: ^11.3.4 on 2026mar03 4m old
       installed: 11.3.5 on 2026may06 1m old
       current: 11.3.6 on 2026jun29 0m old
       latest: 11.3.6 on 2026jun29 0m old
@@ -593,9 +593,9 @@ modules:
     from: icarus
     versions:
       declared: ^1.15.5 on 2026jan15 5m old
-      installed: 1.15.11 on 2026apr01 2m old
-      current: 1.15.11 on 2026apr01 2m old
-      latest: 2.0.1-rc.22 on 2026may05 1m old 🎁 Major new version available
+      installed: 1.15.11 on 2026apr01 3m old
+      current: 1.15.11 on 2026apr01 3m old
+      latest: 2.0.1-rc.22 on 2026may05 2m old 🎁 Major new version available
     downloads:
       weekly: 34,215,027
       on: 2026jun17.1557.8470
@@ -620,8 +620,8 @@ modules:
     versions:
       declared: ^1.12.36 on 2026jan30 5m old
       installed: 1.13.7 on 2026jun18 0m old
-      current: 1.13.7 on 2026jun18 0m old
-      latest: 1.13.7 on 2026jun18 0m old
+      current: 1.13.8 on 2026jul03 0m old
+      latest: 1.13.8 on 2026jul03 0m old
     downloads:
       weekly: 19,990,096
       on: 2026jun17.1557.8470
@@ -685,8 +685,8 @@ modules:
     versions:
       declared: ^6.7.0 on 2026jun24 0m old
       installed: 6.7.0 on 2026jun24 0m old
-      current: 6.7.0 on 2026jun24 0m old
-      latest: 6.7.0 on 2026jun24 0m old
+      current: 6.7.2 on 2026jul03 0m old
+      latest: 6.7.2 on 2026jul03 0m old
     downloads:
       weekly: 124,751
       on: 2026jun17.1557.49499
@@ -696,10 +696,10 @@ modules:
     note: "nuxt: fetch wrapper; in icarus so lambda code can use it directly without nuxt"
     from: icarus
     versions:
-      declared: ^1.5.1 on 2025nov01 7m old
-      installed: 1.5.1 on 2025nov01 7m old
-      current: 1.5.1 on 2025nov01 7m old
-      latest: 1.5.1 on 2025nov01 7m old
+      declared: ^1.5.1 on 2025nov01 8m old
+      installed: 1.5.1 on 2025nov01 8m old
+      current: 1.5.1 on 2025nov01 8m old
+      latest: 1.5.1 on 2025nov01 8m old
     downloads:
       weekly: 21,416,318
       on: 2026jun17.1557.8470
@@ -923,8 +923,8 @@ modules:
     versions:
       declared: ^2.45.1 on 2026jan29 5m old
       installed: 2.53.1 on 2026jun20 0m old
-      current: 2.54.1 on 2026jun30 0m old
-      latest: 2.54.1 on 2026jun30 0m old
+      current: 2.54.3 on 2026jul04 0m old
+      latest: 2.54.3 on 2026jul04 0m old
     downloads:
       weekly: 4,750,445
       on: 2026jun17.1557.8470
@@ -935,9 +935,9 @@ modules:
     from: icarus
     versions:
       declared: ^6.4.1 on 2025oct20 8m old
-      installed: 6.4.3 on 2026jun01 0m old
-      current: 6.4.3 on 2026jun01 0m old
-      latest: 8.1.2 on 2026jun30 0m old 🎁 Major new version available
+      installed: 6.4.3 on 2026jun01 1m old
+      current: 6.4.3 on 2026jun01 1m old
+      latest: 8.1.3 on 2026jul02 0m old 🎁 Major new version available
     downloads:
       weekly: 141,791,010
       on: 2026jun17.1557.25111
@@ -979,8 +979,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 4m old
       installed: 4.105.0 on 2026jun25 0m old
-      current: 4.106.0 on 2026jun30 0m old
-      latest: 4.106.0 on 2026jun30 0m old
+      current: 4.107.0 on 2026jul02 0m old
+      latest: 4.107.0 on 2026jul02 0m old
     downloads:
       weekly: 14,733,220
       on: 2026jun17.1558.56293
@@ -1004,9 +1004,9 @@ modules:
     from: icarus
     versions:
       declared: ^4.3.6 on 2026jan22 5m old
-      installed: 4.4.3 on 2026may04 1m old
-      current: 4.4.3 on 2026may04 1m old
-      latest: 4.4.3 on 2026may04 1m old
+      installed: 4.4.3 on 2026may04 2m old
+      current: 4.4.3 on 2026may04 2m old
+      latest: 4.4.3 on 2026may04 2m old
     downloads:
       weekly: 199,976,318
       on: 2026jun17.1557.25111

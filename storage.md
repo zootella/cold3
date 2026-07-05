@@ -122,3 +122,23 @@ This is accepted. The alternative — wrapping the recovery UI in `<ClientOnly>`
 **Should there be a periodic sweep of expired or other-userTag entries?** Not for now. The current design only cleans the userTag that's being asked about. If a single browser profile collects entries for many users over time, the count is bounded by the number of unique signers. A future `clientLoad`-style action could iterate `localStorage`, parse anything under the `cold3:credential-envelope:` prefix, and drop expired ones. Add if and when it matters.
 
 **Do we want cross-tab `storage` event handling?** With per-user keying, two tabs both signed in as user A would see each other's envelope updates. That's automatic — VueUse or hand-rolled, the `storage` event fires in the *other* tab when one writes. We're not subscribing to it today; if a real flow benefits from cross-tab reactivity, add a listener later.
+
+## [11] cheat sheet: provisional state across credential types
+
+Which credential types have provisional mid-flow state at all, which need that state to survive a page refresh, and how many of each credential a user can hold. The rule that falls out: persist provisional state when regenerating it would be expensive or user-visible — when an external side effect already happened — and start fresh when regeneration is one invisible click.
+
+**Browser** — no provisional state; sign-in is single-step. A user can be signed into any number of browsers, one row per browserHash.
+
+**Name** — no provisional state; set and remove are single-step. Zero or one.
+
+**Password** — no provisional state; single-step (a change carries the current password in the same request). Zero or one.
+
+**TOTP** — provisional: the enrollment secret, sealed in an envelope, parked in the `temporary_envelope_totp` cookie. Must survive refresh: the user already scanned the QR into their authenticator app, so discarding the secret orphans the entry they just created there — regeneration is expensive and user-visible. One enrollment in flight at a time; the credential itself is zero or one.
+
+**OTP (Email and Phone)** — provisional: the live challenge array, each challenge holding its answer code, sealed in an envelope, parked in the `temporary_envelope_otp` cookie. Must survive refresh: each code was already sent to a real inbox, so discarding it invalidates a code the user is about to type and forces a resend into the rate limits. Multiple simultaneous challenges (email and phone at once); the credentials are any number, zero or more, all peers with no main or default address.
+
+**Wallet** — provisional exists (the sealed nonce envelope from prove step 1) but is deliberately held in memory only, never persisted. Nothing external happened when it was minted — the nonce was sent nowhere — so a refresh loses it and the user restarts with one click, invisibly. Persisting it wouldn't help anyway: the wallet connection and pending popup die on refresh too, and no envelope of ours can restore those. It would be security-neutral to persist (nothing in the envelope helps an attacker who lacks the wallet's private key); it's just pointless. Zero or one wallet.
+
+**OAuth** — no page-held provisional state since svelteless: the flow is a browser navigation, and the transient state of the dance lives in Auth.js's own short-lived internal cookies. Any number of providers linked, at most one account per provider.
+
+The two cookie-persisted types — TOTP's single slot and OTP's challenge array — are exactly the two entries the unified envelope's typed slices must hold, and the two cookies this document retires.
