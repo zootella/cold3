@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jul5.1502.38622
+  generated: 2026jul9.2227.26559
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -205,8 +205,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1079.0 on 2026jul02 0m old
-      latest: 3.1079.0 on 2026jul02 0m old
+      current: 3.1084.0 on 2026jul09 0m old
+      latest: 3.1084.0 on 2026jul09 0m old
     downloads:
       weekly: 33,245,008
       on: 2026jun17.1557.25111
@@ -218,8 +218,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1079.0 on 2026jul02 0m old
-      latest: 3.1079.0 on 2026jul02 0m old
+      current: 3.1084.0 on 2026jul09 0m old
+      latest: 3.1084.0 on 2026jul09 0m old
     downloads:
       weekly: 3,407,955
       on: 2026jun17.1557.25111
@@ -231,8 +231,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1079.0 on 2026jul02 0m old
-      latest: 3.1079.0 on 2026jul02 0m old
+      current: 3.1084.0 on 2026jul09 0m old
+      latest: 3.1084.0 on 2026jul09 0m old
     downloads:
       weekly: 4,000,673
       on: 2026jun17.1557.25111
@@ -244,8 +244,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 3m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1079.0 on 2026jul02 0m old
-      latest: 3.1079.0 on 2026jul02 0m old
+      current: 3.1084.0 on 2026jul09 0m old
+      latest: 3.1084.0 on 2026jul09 0m old
     downloads:
       weekly: 15,377,787
       on: 2026jun17.1557.25111
@@ -281,10 +281,10 @@ modules:
     note: "nuxt: pinia integration module; exact pin from nuxi module add, pre-1.0"
     from: site
     versions:
-      declared: 0.11.3 on 2025nov05 7m old 📌 Exact version pinned
-      installed: 0.11.3 on 2025nov05 7m old 🐣 Pre-1.0 version installed
-      current: 0.11.3 on 2025nov05 7m old
-      latest: 0.11.3 on 2025nov05 7m old
+      declared: 0.11.3 on 2025nov05 8m old 📌 Exact version pinned
+      installed: 0.11.3 on 2025nov05 8m old 🐣 Pre-1.0 version installed
+      current: 0.11.3 on 2025nov05 8m old
+      latest: 0.11.3 on 2025nov05 8m old
     downloads:
       weekly: 801,667
       on: 2026jun17.1558.56293
@@ -346,10 +346,10 @@ modules:
     note: "provider: database; works local and deployed, worker and lambda"
     from: icarus
     versions:
-      declared: ^2.95.3 on 2026feb06 4m old
+      declared: ^2.95.3 on 2026feb06 5m old
       installed: 2.108.2 on 2026jun15 0m old
-      current: 2.110.0 on 2026jun30 0m old
-      latest: 2.110.0 on 2026jun30 0m old
+      current: 2.110.2 on 2026jul09 0m old
+      latest: 2.110.2 on 2026jul09 0m old
     downloads:
       weekly: 20,960,975
       on: 2026jun17.1557.8470
@@ -385,9 +385,9 @@ modules:
     note: "og: head management peer dep; injected by nuxi module add, load-bearing for og-image"
     from: site
     versions:
-      declared: ^2.1.3 on 2026feb06 4m old
-      installed: 2.1.15 on 2026may08 1m old
-      current: 2.1.15 on 2026may08 1m old
+      declared: ^2.1.3 on 2026feb06 5m old
+      installed: 2.1.15 on 2026may08 2m old
+      current: 2.1.15 on 2026may08 2m old
       latest: 3.1.7 on 2026jul01 0m old 🎁 Major new version available
     downloads:
       weekly: 2,597,808
@@ -456,9 +456,9 @@ modules:
     note: "build: vue vite plugin in icarus TDD runner; held at v5, v6 arrives with vite 7 and nuxt 5"
     from: icarus
     versions:
-      declared: ^5.2.4 on 2025may09 13m old
-      installed: 5.2.4 on 2025may09 13m old 🕰️ Installed version 1+ year old
-      current: 5.2.4 on 2025may09 13m old
+      declared: ^5.2.4 on 2025may09 14m old
+      installed: 5.2.4 on 2025may09 14m old 🕰️ Installed version 1+ year old
+      current: 5.2.4 on 2025may09 14m old
       latest: 6.0.7 on 2026may15 1m old 🎁 Major new version available
     downloads:
       weekly: 7,446,862
@@ -487,7 +487,7 @@ modules:
       declared: ^7.1.6 on 2026feb01 5m old
       installed: 7.2.1 on 2026feb18 4m old
       current: 7.2.1 on 2026feb18 4m old
-      latest: 8.0.20 on 2026jun25 0m old 🎁 Major new version available
+      latest: 8.0.22 on 2026jul08 0m old 🎁 Major new version available
     downloads:
       weekly: 859,237
       on: 2026jun17.1557.8470
@@ -501,8 +501,8 @@ modules:
     versions:
       declared: ^3.3.2 on 2026feb01 5m old
       installed: 3.5.5 on 2026jun25 0m old
-      current: 3.5.5 on 2026jun25 0m old
-      latest: 3.5.5 on 2026jun25 0m old
+      current: 3.6.1 on 2026jul08 0m old
+      latest: 3.6.1 on 2026jul08 0m old
     downloads:
       weekly: 867,487
       on: 2026jun17.1557.8470
@@ -554,7 +554,7 @@ modules:
     from: icarus
     versions:
       declared: ^10.1.2 on 2026jan28 5m old
-      installed: 10.2.0 on 2026jun08 0m old
+      installed: 10.2.0 on 2026jun08 1m old
       current: 10.3.0 on 2026jun30 0m old
       latest: 10.3.0 on 2026jun30 0m old
     downloads:
@@ -566,10 +566,10 @@ modules:
     note: "build: used by pnpm seal"
     from: root
     versions:
-      declared: ^3.3.3 on 2025jan05 17m old
-      installed: 3.3.3 on 2025jan05 17m old 🕰️ Installed version 1+ year old
-      current: 3.3.3 on 2025jan05 17m old
-      latest: 3.3.3 on 2025jan05 17m old
+      declared: ^3.3.3 on 2025jan05 18m old
+      installed: 3.3.3 on 2025jan05 18m old 🕰️ Installed version 1+ year old
+      current: 3.3.3 on 2025jan05 18m old
+      latest: 3.3.3 on 2025jan05 18m old
     downloads:
       weekly: 148,802,340
       on: 2026jun17.1557.8470
@@ -580,7 +580,7 @@ modules:
     from: net23
     versions:
       declared: ^11.3.4 on 2026mar03 4m old
-      installed: 11.3.5 on 2026may06 1m old
+      installed: 11.3.5 on 2026may06 2m old
       current: 11.3.6 on 2026jun29 0m old
       latest: 11.3.6 on 2026jun29 0m old
     downloads:
@@ -595,7 +595,7 @@ modules:
       declared: ^1.15.5 on 2026jan15 5m old
       installed: 1.15.11 on 2026apr01 3m old
       current: 1.15.11 on 2026apr01 3m old
-      latest: 2.0.1-rc.22 on 2026may05 2m old 🎁 Major new version available
+      latest: 2.0.1-rc.23 on 2026jul06 0m old 🎁 Major new version available
     downloads:
       weekly: 34,215,027
       on: 2026jun17.1557.8470
@@ -671,9 +671,9 @@ modules:
     from: site
     versions:
       declared: ^4.3.0 on 2026jan22 5m old
-      installed: 4.4.8 on 2026jun08 0m old
-      current: 4.4.8 on 2026jun08 0m old
-      latest: 4.4.8 on 2026jun08 0m old
+      installed: 4.4.8 on 2026jun08 1m old
+      current: 4.4.8 on 2026jun08 1m old
+      latest: 4.4.8 on 2026jun08 1m old
     downloads:
       weekly: 1,733,987
       on: 2026jun17.1558.56293
@@ -709,7 +709,7 @@ modules:
     note: "test: totp library; in root for fuzz tests in level1"
     from: root
     versions:
-      declared: ^9.5.0 on 2026feb04 4m old
+      declared: ^9.5.0 on 2026feb04 5m old
       installed: 9.5.1 on 2026apr25 2m old
       current: 9.5.1 on 2026apr25 2m old
       latest: 9.5.1 on 2026apr25 2m old
@@ -722,10 +722,10 @@ modules:
     note: "nuxt: state management; paired with @pinia/nuxt"
     from: site
     versions:
-      declared: ^3.0.4 on 2025nov05 7m old
-      installed: 3.0.4 on 2025nov05 7m old
-      current: 3.0.4 on 2025nov05 7m old
-      latest: 3.0.4 on 2025nov05 7m old
+      declared: ^3.0.4 on 2025nov05 8m old
+      installed: 3.0.4 on 2025nov05 8m old
+      current: 3.0.4 on 2025nov05 8m old
+      latest: 3.0.4 on 2025nov05 8m old
     downloads:
       weekly: 4,242,857
       on: 2026jun17.1557.49499
@@ -737,10 +737,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^1.5.4 on 2024aug05 22m old
-      installed: 1.5.4 on 2024aug05 22m old 🕰️ Installed version 1+ year old
-      current: 1.5.4 on 2024aug05 22m old
-      latest: 1.5.4 on 2024aug05 22m old
+      declared: ^1.5.4 on 2024aug05 23m old
+      installed: 1.5.4 on 2024aug05 23m old 🕰️ Installed version 1+ year old
+      current: 1.5.4 on 2024aug05 23m old
+      latest: 1.5.4 on 2024aug05 23m old
     downloads:
       weekly: 16,652,794
       on: 2026jun17.1557.8470
@@ -776,7 +776,7 @@ modules:
     note: "build: used by sem.js"
     from: root
     versions:
-      declared: ^7.7.4 on 2026feb05 4m old
+      declared: ^7.7.4 on 2026feb05 5m old
       installed: 7.8.5 on 2026jun19 0m old
       current: 7.8.5 on 2026jun19 0m old
       latest: 7.8.5 on 2026jun19 0m old
@@ -791,8 +791,8 @@ modules:
     versions:
       declared: ^4.33.0 on 2026feb19 4m old
       installed: 4.38.1 on 2026jun19 0m old
-      current: 4.38.1 on 2026jun19 0m old
-      latest: 4.38.1 on 2026jun19 0m old
+      current: 4.39.0 on 2026jul08 0m old
+      latest: 4.39.0 on 2026jul08 0m old
     downloads:
       weekly: 1,516,330
       on: 2026jun17.1557.25111
@@ -815,9 +815,9 @@ modules:
     note: "lambda: image processing; needs native modules via build.js into net23.zip"
     from: net23
     versions:
-      declared: ^0.34.5 on 2025nov06 7m old
-      installed: 0.34.5 on 2025nov06 7m old 🐣 Pre-1.0 version installed
-      current: 0.34.5 on 2025nov06 7m old
+      declared: ^0.34.5 on 2025nov06 8m old
+      installed: 0.34.5 on 2025nov06 8m old 🐣 Pre-1.0 version installed
+      current: 0.34.5 on 2025nov06 8m old
       latest: 0.35.3 on 2026jul01 0m old
     downloads:
       weekly: 64,937,952
@@ -870,7 +870,7 @@ modules:
       declared: ^5.13.0 on 2026mar12 3m old
       installed: 5.13.1 on 2026mar24 3m old
       current: 5.13.1 on 2026mar24 3m old
-      latest: 6.0.2 on 2026may07 1m old 🎁 Major new version available
+      latest: 6.0.2 on 2026may07 2m old 🎁 Major new version available
     downloads:
       weekly: 4,949,219
       on: 2026jun17.1557.25111
@@ -883,7 +883,7 @@ modules:
       declared: ^5.9.3 on 2025sep30 9m old
       installed: 5.9.3 on 2025sep30 9m old
       current: 5.9.3 on 2025sep30 9m old
-      latest: 6.0.3 on 2026apr16 2m old 🎁 Major new version available
+      latest: 7.0.2 on 2026jul08 0m old 🎁 Major new version available
     downloads:
       weekly: 219,990,444
       on: 2026jun17.1558.56293
@@ -923,8 +923,8 @@ modules:
     versions:
       declared: ^2.45.1 on 2026jan29 5m old
       installed: 2.53.1 on 2026jun20 0m old
-      current: 2.54.3 on 2026jul04 0m old
-      latest: 2.54.3 on 2026jul04 0m old
+      current: 2.55.0 on 2026jul08 0m old
+      latest: 2.55.0 on 2026jul08 0m old
     downloads:
       weekly: 4,750,445
       on: 2026jun17.1557.8470
@@ -937,7 +937,7 @@ modules:
       declared: ^6.4.1 on 2025oct20 8m old
       installed: 6.4.3 on 2026jun01 1m old
       current: 6.4.3 on 2026jun01 1m old
-      latest: 8.1.3 on 2026jul02 0m old 🎁 Major new version available
+      latest: 8.1.4 on 2026jul09 0m old 🎁 Major new version available
     downloads:
       weekly: 141,791,010
       on: 2026jun17.1557.25111
@@ -977,10 +977,10 @@ modules:
     note: "provider: cloudflare cli; oauth and site workspaces"
     from: site
     versions:
-      declared: ^4.63.0 on 2026feb05 4m old
+      declared: ^4.63.0 on 2026feb05 5m old
       installed: 4.105.0 on 2026jun25 0m old
-      current: 4.107.0 on 2026jul02 0m old
-      latest: 4.107.0 on 2026jul02 0m old
+      current: 4.110.0 on 2026jul09 0m old
+      latest: 4.110.0 on 2026jul09 0m old
     downloads:
       weekly: 14,733,220
       on: 2026jun17.1558.56293

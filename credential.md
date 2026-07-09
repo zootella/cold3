@@ -3,7 +3,7 @@
 
 ## Direction: unify credentials through one endpoint, one store, one envelope
 
-The credential system flows through one endpoint (`/api/credential`), one store (`credentialStore`), and one pattern. `/api/otp` handles email/phone verification codes and will eventually migrate in too.
+The credential system flows through one endpoint (`/api/credential`), one store (`credentialStore`), and one pattern. Email/phone verification codes migrated in from the old `/api/otp`, which is deleted.
 
 `Get.` returns a complete snapshot of every credential type in one response, `attachState` assembles that snapshot, and `apply()` in the store unpacks it into refs. Adding a new credential type means extending attachState and apply — not creating a new endpoint.
 
@@ -11,23 +11,21 @@ The credential system flows through one endpoint (`/api/credential`), one store 
 
 **Reducing fetch calls is the goal.** A page load should be one GET to the credential endpoint. That one response tells credentialStore everything: which credentials exist, what their display values are, and whether any multi-step flows were interrupted. Components render from the store. When a user takes an action (enroll, remove, verify), that's one POST, and the response includes a fresh attachState snapshot so the store stays in sync. The number of fetch calls should be proportional to the number of user actions, not the number of credential types.
 
-`/api/otp` will eventually become unnecessary as its functionality migrates into `/api/credential`.
+`/api/otp` is gone: `SendTurnstile.` and `Enter.` became `OtpSendTurnstile.` and `OtpEnter.` on `/api/credential` (both require a signed-in user — the early-userTag design will later open them to signup), and `FoundEnvelope.` dissolved into `Get.`.
 
 ## Current endpoint and store map
 
 **`/api/credential` + `credentialStore`** — the main credential system. Handles Browser, Password, Name, TOTP, and Wallet. Every successful response includes `attachState` (full credential snapshot). Store exposes refs and methods for all credential types. Used by CredentialPanel and its sub-components (SetPasswordForm, TotpPanel, WalletPanel, etc).
 
-Actions: `Get.`, `SignUpAndSignInTurnstile.`, `SignIn.`, `SignOut.`, `SetName.`, `RemoveName.`, `SetPassword.`, `RemovePassword.`, `CheckNameTurnstile.`, `GetPasswordCyclesTurnstile.`, `CloseAccount.`, `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`, `TotpValidate.`, `WalletProve1.`, `WalletProve2.`, `WalletRemove.`, `OauthProve1.`, `OauthProve2.`, `OauthRemove.`
+Actions: `Get.`, `SignUpAndSignInTurnstile.`, `SignIn.`, `SignOut.`, `SetName.`, `RemoveName.`, `SetPassword.`, `RemovePassword.`, `CheckNameTurnstile.`, `GetPasswordCyclesTurnstile.`, `CloseAccount.`, `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`, `TotpValidate.`, `WalletProve1.`, `WalletProve2.`, `WalletRemove.`, `OauthProve1.`, `OauthProve2.`, `OauthRemove.`, `OtpSendTurnstile.`, `OtpEnter.`, `EmailRemove.`, `PhoneRemove.`
 
-**`/api/otp` + `pageStore.otps` + `useOtpCookie()`** — one-time passwords for email/phone verification. Envelope pattern: `FoundEnvelope.` lets the page recover active challenges from a cookie after refresh. Server opens the envelope and returns the non-secret display parts.
-
-Actions: `SendTurnstile.`, `FoundEnvelope.`, `Enter.`
+**Email/phone one-time passwords** ride the same endpoint and store. Challenge state lives in `credentialStore.otps`, and the store is the only code that touches the `useOtpCookie()` cookie: any response that carries `task.otps` also carries `task.envelopeOtp` as the resealed ciphertext, or blank when nothing is live — the store keeps text, and on blank clears the cookie if it's holding one. Text or blank, plus the store's local knowledge of what it holds; no meanings loaded onto null versus undefined. Recovery after refresh rides `Get.`, which reads the cookie's envelope from `body.envelopeOtp` and returns the non-secret display parts, replacing the old `FoundEnvelope.` round trip.
 
 ## Note: two cookies, future unification
 
 Right now OTP and TOTP each have their own cookie and envelope: `temporary_envelope_otp` (sealed with action `'Otp.'`) and `temporary_envelope_totp` (sealed with action `'EnrollTotpEnvelope.'`). These exist independently because OTP and TOTP were built at different times. This works but doesn't scale — each new multi-step credential flow shouldn't bring its own cookie.
 
-The future direction is a single `CredentialEnvelope` cookie that can hold in-flight state for multiple credential operations simultaneously — a TOTP enrollment and an OTP verification happening in the same session, stored in one envelope with slots for each. `Get.` already does this for TOTP; extending it to OTP means OTP's `FoundEnvelope.` action becomes unnecessary.
+The future direction is a single `CredentialEnvelope` cookie that can hold in-flight state for multiple credential operations simultaneously — a TOTP enrollment and an OTP verification happening in the same session, stored in one envelope with slots for each. `Get.` now recovers both, as two named body fields: `envelope` (TOTP, keeping its original name) and `envelopeOtp`. That asymmetry is deliberate and temporary — it dissolves when the unified envelope in storage.md lands. `FoundEnvelope.` is gone.
 
 # Envelope and cookie analysis across credential types
 
@@ -47,7 +45,7 @@ These are multi-step flows where the user might refresh the page mid-enrollment.
 
 **TOTP** — 2-step enrollment. `TotpEnroll1.` generates a secret and seals it in an envelope (action `'EnrollTotpEnvelope.'`). The client stores this in the `temporary_envelope_totp` cookie. `TotpEnroll2.` opens the envelope, validates the user's 6-digit code, and saves the secret. One enrollment per user at a time. Recovery: `Get.` checks for this cookie and reopens the enrollment UI if found.
 
-**OTP** — 2-step challenge (send code, enter code). `SendTurnstile.` generates a code and seals it in an envelope (action `'Otp.'`). The client stores this in the `temporary_envelope_otp` cookie. `Enter.` opens the envelope and validates the user's guess. **Multiple simultaneous challenges** — the envelope holds an array of active challenges. A user signing up might authenticate both their email and phone number at the same time, producing two challenges in one envelope. Recovery: `FoundEnvelope.` opens the cookie and returns the non-secret display parts.
+**OTP** — 2-step challenge (send code, enter code). `OtpSendTurnstile.` generates a code and seals it in an envelope (action `'Otp.'`). The client stores this in the `temporary_envelope_otp` cookie. `OtpEnter.` opens the envelope and validates the user's guess. **Multiple simultaneous challenges** — the envelope holds an array of active challenges. A user signing up might authenticate both their email and phone number at the same time, producing two challenges in one envelope. Recovery: `Get.` opens the cookie's envelope (sent as `body.envelopeOtp`) and returns the non-secret display parts.
 
 Both cookies use `cookieOptions.envelope`: `httpOnly: false` (page script must read for recovery), `sameSite: 'Strict'`, `maxAge: 20 minutes`, `secure` in production.
 
@@ -166,11 +164,15 @@ Two cookies, two composable usages, two envelope seal/open pairs, and two recove
 
 **OAuth** (Google, Twitter, Discord, GitHub) — cross-origin flow via SvelteKit workspace at oauth.cold3.cc. Two-step prove flow (`OauthProve1.` / `OauthProve2.`) with envelope in URL query parameter (no cookie — user leaves the site entirely). Provider list in `oauthProviders()` factory keyed off `.env.keys 'oauth, providers, public'`. UI in OauthPanel inside CredentialPanel. Per-row layout: k1=provider tag, k2=identifier, k3=handle, k4=name, k8=stringified `{account, profile, user}` audit blob. Writes event-3 (challenged) at OauthProve1 and event-4 (validated) at OauthProve2. `credentialOauthGet/Set/Remove/Parse/Challenge`.
 
+**Email/Phone (OTP)** — any number of addresses per user, all peers, no main or default. f0/f1/f2 = normalized/formal/display forms from `validateEmailOrPhone`; type `'Email.'` or `'Phone.'`. Each address's lifecycle is event rows: 2 mentioned, 3 challenged (k1 = provider, `Amazon.`/`Twilio.`, so time-to-validate per provider is queryable), 4 validated — current status is the highest visible event, and remove hides the whole lifecycle. A proven address is held: no other user can be challenged at it or claim it (outcome `Held.`, checked at send and again at enter to close the race where two users held live codes). Otp flows require a signed-in user from send through enter, full stop — each sealed challenge records the userTag that started it, and enter refuses anyone else (outcome `SignedOut.`) — until the early-userTag design opens these flows to signup. Two-step challenge with envelope cookie, multiple simultaneous challenges; all codes are entered in the TopBar `OtpEnterList` box, one enter system for demo and credential flows alike. UI in EmailPanel and PhonePanel. One level3 family does all of it, taking type as a parameter: `credentialOtpSend/Enter/Get/Remove/Holder/Mentioned/Challenged/Validated` (the endpoint resolves the signed-in userTag and passes it down; browserHash stays at the endpoint with the envelope).
+
 ## Standalone, planned for integration
 
-**Email/Phone (OTP)** — separate endpoint (`/api/otp`), separate store (`pageStore.otps`), separate components (`OtpRequestComponent`, `OtpEnterComponent`, `OtpEnterList`), separate cookie (`temporary_envelope_otp`). Currently uses `address_table`, which has a ttd note: "don't use, do this in credential_table instead." Multiple simultaneous challenges supported. This is the big one to bring in.
+(none remaining — OTP was the last, integrated above; `address_table` was steered around rather than migrated, and its cleanup waits for the ledger work)
 
 # Integrating OTP into credential_table
+
+**This landed.** The plan below is kept for the record; where what shipped differs: `FoundEnvelope.` dissolved into `Get.` via a second named body field `envelopeOtp` rather than waiting for the unified envelope; `address_table` was steered around, not migrated; the signup wrinkle resolved for now as "otp flows require a signed-in user, the whole time, as the same user," pending the early-userTag design; and a claim guard shipped with the integration — a proven address returns `Held.` to everyone else, checked at send and at enter.
 
 Before replacing envelope cookies with event-3 rows, the simpler prerequisite is getting OTP into the unified credential system — the same way TOTP, Wallet, and OAuth were integrated. Actions in `/api/credential`, refs and methods in `credentialStore`, UI in `CredentialPanel`, rows in `credential_table`. The envelope/cookie mechanism stays the same for now; we're just consolidating where the logic lives.
 
@@ -190,7 +192,7 @@ The largest integration — OTP has the most moving parts.
 
 ## Sequencing
 
-Wallet done (see wallet.md for dev panel and test scenarios). OAuth done. OTP remaining — most impactful but has the most architectural questions (signup flow, address_table retirement, multiple simultaneous challenges, early userTag assignment).
+Wallet done (see wallet.md for dev panel and test scenarios). OAuth done. OTP done — the architectural questions that remain (signup flow, early userTag assignment, address_table cleanup) carry forward on their own.
 
 ## Consumer identity menu (deferred)
 
@@ -217,3 +219,27 @@ The rules this scenario fixes:
 - History survives every turn. Alice's mentions, her expired challenge, Alfred's proof — all of it stays in the table.
 
 A neighboring corner: both users hold live challenges to the same address at once (rate limits allow two back-to-back codes), and Alfred validates first. If the claim check runs only at send time, Alice's still-live code would validate too, and two users would hold proof of the same address. So the check runs at enter time as well as send time — the second validation records the mention and declines the claim.
+
+## Outcomes name remedies, not causes
+
+Users sharing browsers, tabs, and inboxes produce combinatorial chaos, and we can't add a new outcome and a new component branch for every permutation. What keeps the outcome vocabulary bounded is a rule: an outcome names the user's *remedy*, never the internal cause. `Expired.` already collapses at least four causes — timed out, guesses exhausted, replayed envelope, trail mismatch — into one outcome, because the remedy is identical: request a new code. `SignedOut.` collapses not-signed-in, signed-out-mid-flow, and wrong-user-at-a-shared-browser, because the remedy is one sentence. Causes are combinatorial; remedies are few by nature — try again, wait, get a new code, sign in, you can't do that.
+
+Guards follow the same discipline: each is a general invariant that answers scenarios nobody has imagined yet (`Held.` encodes "one holder per address"; `SignedOut.` encodes "same signed-in user, send through enter"), never a check written for one story. And component branches are copy only — the store applies state uniformly, so a new outcome costs one sentence per surface, not new state logic.
+
+There's a security dividend too: causes describe the system and other users, while a remedy describes only what this caller should do next — so a response vocabulary that never names causes can't inadvertently leak how a guard works, why it fired, or facts about other accounts to a malicious caller. The `Held.` oracle below is the one place a remedy unavoidably implies a fact about another user, which is why it gets its own entry.
+
+Red flags that mean this is breaking down: an outcome whose copy needs to vary by cause (remedies were merged wrongly); a component consulting local state to figure out what an outcome meant (ambiguity leaking out of the server); a proposed outcome that names a scenario instead of a rule; the same outcome-to-copy list appearing verbatim in a fourth component (time for a shared map, and not before).
+
+## Three tiers of page response, and where the middle one will live
+
+When a refusal arrives, the page has three tiers of response. A sad path or mild chaos within a valid session gets an in-place notification — the user can act on the remedy right where they are. When the spa catches itself holding session state the server contradicts (a ready button posts, and the server answers SignedOut.), the middle road: end the spa with a full navigation home, rebuilding everything from server truth — short of blowing up with error, but not continuing on state we know is wrong. And when the request is something only our own bug or potential malice could produce: toss, and the error page.
+
+The middle tier isn't a credential thing. A stale tab will eventually click for the next page of a feed too; the detection is the same everywhere (the store believed in a session, the server says there isn't one) and so is the response. So when a second surface needs this, the check moves to the seam every response passes through — fetchWorker, or apply in a store — rather than being copied into component branches. OtpRequestComponent's SignedOut. branch is the first instance and the reference for the pattern. Outcome copy stays per-surface; the stale-session response is surface-independent.
+
+**Known second surface, deferred to its own sprint.** Today every other signed-in credential action still answers the stale tab with tier three: the else-branch in credential.js is `if (!user) toss('state')`, so a stale tab clicking Sign Out — probably the single most likely stale-tab click on the site, after signing out from another device signs you out everywhere — gets the error page, as does Remove Password, TotpRemove, and the rest. That's tier-three punishment for tier-two innocence, and it's the trigger for the site-wide standardization: gate those actions gracefully and move the navigation response to the seam. Two design questions wait there. First, the enter box's SignedOut. currently covers both "no session at the server" (stale — navigate) and "signed in as someone other than the challenge's owner" (consistent state — must not navigate, or a shared browser reload-loops), so a seam-level rule needs those distinguished, probably by splitting the outcome into two remedies. Second, a navigation response living in a store is page-only code in universal territory — the pageStore ttd's warning — so the seam might belong in a component-layer wrapper instead. A sweep of existing full navigations (July 2026) found no other middle-tier instances to convert: everything else that leaves the spa is an external protocol handoff (otpauth:, wallet deep-link), a deliberate teardown into a server flow (the oauth form POST), an error-tier exit (error.vue, error2.vue), or a dev-tool reload button.
+
+## The Held. outcome is a quiet enumeration oracle — recorded, accepted
+
+The notification copy is deliberately vague, but the API response still says `outcome: 'Held.'`, and a signed-in user reading their own network tab can probe addresses one at a time: Held. means registered and proven here, success means unclaimed. Three properties temper it, all by design rather than luck: every probe costs a turnstile solve; probing requires a signed-in account, so it's attributable; and every probe writes an event-2 mention row under the prober's own userTag — an enumeration campaign generates its own evidence trail as it runs, and those mentions are exactly the "confused user keeps typing an address that isn't theirs" record from the mistyped-address scenario above, now doing double duty as audit.
+
+We don't hide the outcome, because making Held. indistinguishable from success would lie to the legitimate case it exists for — Alice, who typed her own address wrong and deserves to be blocked with a word. If probing ever shows up in the mention rows, the guard sketch is credential-level: rate-limit Held. responses per requesting user, and alert on mention-row bursts.

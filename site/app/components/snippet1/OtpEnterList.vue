@@ -3,31 +3,20 @@
 import {
 sayPlural,
 } from 'icarus'
-const pageStore = usePageStore()
-const refCookie = useOtpCookie()
+const credentialStore = useCredentialStore()
 
-onMounted(async () => {//this component is on TopBar, so we mount once and always at the start of the spa
-	if (
-		hasText(refCookie.value) &&//if we have an otp envelope cookie,
-		!pageStore.otps.length//(the page store can't know about any challenges yet, so the store array will be empty)
-	) {
-
-		//post the envelope to the server to tell us what it can about the open challenges
-		let task = await fetchWorker('/otp', 'FoundEnvelope.', {envelope: refCookie.value})
-		pageStore.otps = task.otps
-		refCookie.value = hasText(task.envelope) ? task.envelope : null//update or clear the temporary envelope cookie
-
-		log('otp found envelope task', look(task))//ttd january
-	}
-})
+//this component is on TopBar, so we mount once and always at the start of the spa
+//recovery of live challenges from the envelope cookie rides the store's one Get., replacing the old FoundEnvelope. round trip
+let p = credentialStore.load()
+if (import.meta.server) await p//flex: block the server render so live challenges paint with the page; on the client, loaded state arrived in the payload
 
 </script>
 <template>
-<div v-if="pageStore.otps.length" class="border border-gray-300 p-2">
+<div v-if="credentialStore.otps.length" class="border border-gray-300 p-2">
 <p class="text-xs text-gray-500 mb-2 text-right m-0 leading-none"><i>OtpEnterList</i></p>
 
-<p>this browser has ({{pageStore.otps.length}}) live otp{{sayPlural(pageStore.otps.length)}}:</p>
-<div v-for="element in pageStore.otps" :key="element.tag">
+<p>this browser has ({{credentialStore.otps.length}}) live otp{{sayPlural(credentialStore.otps.length)}}:</p>
+<div v-for="element in credentialStore.otps" :key="element.tag">
 	<OtpEnterComponent :otp="element" />
 </div>
 

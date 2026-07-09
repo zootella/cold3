@@ -4,7 +4,7 @@ import {
 takeNumerals,
 otpPrefix, otpConstants,
 } from 'icarus'
-const refCookie = useOtpCookie()
+const credentialStore = useCredentialStore()
 const pageStore = usePageStore()
 
 const props = defineProps({
@@ -28,23 +28,26 @@ const computedState = computed(() => {
 })
 
 async function onClick() {
-	let task = await fetchWorker('/otp', 'Enter.', {
+	let task = await credentialStore.otpEnter({
 		tag: props.otp.tag,//hidden from the user but kept with the form
 		guess: takeNumerals(refGuess.value),
-		envelope: refCookie.value,//give the server back it's encrypted envelope, which we kept through a browser refresh in a cookie
 	})
-	log('otp enter post task', look(task))
+	log('otp enter task', look(task))
 	if (task.success) {
 		pageStore.addNotification("✔️ address verified (new otp system)")
 	} else if (task.outcome == 'Wrong.') {
 		//box stays, user can try again; lives is always 1+ here
 		//-[]box should indicate incorrect guess, clear the field, tell the user to try again
 	} else if (task.outcome == 'Expired.') {
-		//box will disappear when we set pageStore.otps below
+		//box will disappear when the store's challenge list updates
 		pageStore.addNotification('code expired or exhausted; request a new code to try again')
+	} else if (task.outcome == 'Held.') {
+		//box will disappear the same way; the challenge is dead because the address is spoken for
+		pageStore.addNotification("That address can't be verified right now.")
+	} else if (task.outcome == 'SignedOut.') {
+		//box stays; the challenge is still live for the user who started it
+		pageStore.addNotification("Sign in as the account that requested this code, then try again.")
 	}
-	refCookie.value = hasText(task.envelope) ? task.envelope : null//update or clear the temporary envelope cookie
-	pageStore.otps = task.otps
 }
 function clickedCantFind() {
 	log('clicked cant find')

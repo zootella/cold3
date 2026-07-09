@@ -9,14 +9,14 @@ otp uses no dedicated database table--challenge state lives in a sealed cryptogr
 
 in icarus/level3.js, check out these functions and parts:
 
-otpSend, otpEnter (a refactor unified the old otpPermit and codeCompose helpers into otpSend, where permit, compose, send, and record now live as commented steps)
+credentialOtpSend, credentialOtpEnter (a refactor unified the old otpPermit and codeCompose helpers into the send function, where permit, compose, send, and record now live as commented steps; the credential prefix keeps them grep-distinct from the credentialStore methods otpSend and otpEnter that call down to them)
 otpConstants (expiration, rate limits, digit length by address history)
 
 ## (2) api endpoints
 
-the otp endpoint:
+otp actions live in the unified credential endpoint:
 
-./site/server/api/otp.js - actions to send, enter, or open a found cookie envelope
+./site/server/api/credential.js - OtpSendTurnstile. and OtpEnter. require a signed-in user; Get. recovers live challenges from the envelope cookie; EmailRemove. and PhoneRemove. manage saved addresses
 
 ## (3) vue components
 
@@ -56,23 +56,15 @@ but need to do more on the near-happy path, such as
 - the user experiences the soft or hard time limit, telling them to look for another minute, or come back tomorrow
 - the user clicks can't find code, we give them more details, or just a nudge to really look in that spam folder. we could have gmail specific instructions, even, as we know if we sent the email to Gmail
 
-## 8[]integration
+## 8[x]integration
 
-credential_table holds user identity credentials, like currently signed in browsers, registered user names, and standard passwords
-we'll integrate otp into credential table
-this will let a user who signes up by proving they control an email address sign into another device by again proving they can type a code sent to that address, for instance
+done: otp lives in the credential system now. /api/otp is deleted; OtpSendTurnstile. and OtpEnter. are actions on /api/credential. otp flows require a signed-in user from send through enter, full stop--each sealed challenge records the userTag that started it, and enter refuses anyone else--which matches every other credential flow and keeps the audit surface small. the flow writes credential_table rows--event 2 mentioned, 3 challenged (k1 remembers the provider), 4 validated--and EmailPanel and PhonePanel in CredentialPanel list and remove addresses. a proven address is held: nobody else can be challenged at it or claim it. the early-userTag design for signup is still ahead, and the old stub functions browserChallengedAddress and browserValidatedAddress were superseded by the credentialOtp family in level3.js.
 
-note: credential_table assumes a userTag exists, but otp is often used during signup before a user exists. the stub functions browserChallengedAddress and browserValidatedAddress need to handle pre-signup validation.
-
-additionally, otp will let us evaluate and monitor the performance of third party cloud service providers
+remaining from the original notes: sign-up and sign-in by code (the user stories below), and provider performance monitoring--the k1 provider column on event-3 rows is the first queryable piece of that
 for instance, let's say that Twilio stops working, but Amazon is still going strong
 or, more insidious, Amazon says it's working, but we (need to be able to) notice that users who we send codes through one provider take far longer to complete the flow compared to another provider
 
-we need to look at
-credential_table
-address_table
-service_table
-many of which are just stubs and notes--those tables can go away, but our user stories about them remain to be completed!
+address_table and service_table remain stubs and notes in level3.js--we steered around them here; those tables can go away, but our user stories about them remain to be completed!
 
 # reduced notesfile
 

@@ -14,6 +14,11 @@ const totpIdentifier = ref('')//short identifier like "g3" to help user find the
 const enrollment = ref(null)//in-flight TOTP enrollment recovered from envelope cookie, or null
 const wallet = ref('')//checksummed Ethereum address the user has proven they control, or empty
 const oauths = ref([])//array of linked third-party accounts: [{provider, identifier, handle, name, email}, ...]
+const emails = ref([])//the user's email addresses: [{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
+const phones = ref([])//the user's phone numbers, same shape
+const otps = ref([])//live otp code challenges at this browser: [{tag, start, address}, ...]; the answers stay sealed in the envelope cookie
+
+const otpCookie = useOtpCookie()//captured here at store setup so apply can reach it after awaits; the store is the only code that touches this cookie
 
 const userDisplayName = computed(() => {//best available display name for page
 	if (name.value?.f2) return name.value.f2
@@ -21,6 +26,11 @@ const userDisplayName = computed(() => {//best available display name for page
 })
 
 function apply(task) {//update all refs from task - called after any action that returns state
+	if (task.otps) {//an array, even an empty one, is current challenge truth, arriving even when the action's answer was no, like a wrong guess or a rate limit
+		otps.value = task.otps
+		if      (hasText(task.envelopeOtp)) otpCookie.value = task.envelopeOtp//the resealed envelope rides alongside; keep it
+		else if (hasText(otpCookie.value))  otpCookie.value = null//nothing live anymore, and we're holding a stale cookie; null here is just how useCookie deletes--the wire protocol is text or blank, and we only touch the cookie if we actually hold one
+	}
 	if (!task.success) return//taken name, wrong password, paths like those that still aren't toss
 	browserHash.value = task.browserHash || ''
 	userTag.value = task.userTag || ''
@@ -31,11 +41,15 @@ function apply(task) {//update all refs from task - called after any action that
 	enrollment.value = task.enrollment || null
 	wallet.value = task.wallet || ''
 	oauths.value = task.oauths || []
+	emails.value = task.emails || []
+	phones.value = task.phones || []
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
 	let totpCookie = useTotpCookie()
-	let body = hasText(totpCookie.value) ? {envelope: totpCookie.value} : {}
+	let body = {}
+	if (hasText(totpCookie.value)) body.envelope = totpCookie.value//in-flight totp enrollment to recover
+	if (hasText(otpCookie.value)) body.envelopeOtp = otpCookie.value//found otp envelope cookie; live challenges to recover, ttd january
 	let task = await fetchWorker('/credential', 'Get.', body)
 	apply(task)
 }
@@ -128,6 +142,28 @@ async function oauthRemove({provider}) {//unlink a specific provider; provider i
 	apply(task)
 }
 
+async function otpSend({address, provider, turnstileToken}) {//ask the server to email or text a code; provider is the single letter a or t from the box beside the address
+	let task = await fetchWorker('/credential', 'OtpSendTurnstile.', {address, provider, turnstileToken, envelopeOtp: otpCookie.value || undefined})
+	apply(task)
+	return task
+}
+
+async function otpEnter({tag, guess}) {//the person's guess at a code; task.success and task.outcome carry the verdict
+	let task = await fetchWorker('/credential', 'OtpEnter.', {tag, guess, envelopeOtp: otpCookie.value || undefined})
+	apply(task)
+	return task
+}
+
+async function emailRemove({f0}) {//remove an email address, proven or pending; f0 is the normalized form from the emails list
+	let task = await fetchWorker('/credential', 'EmailRemove.', {f0})
+	apply(task)
+}
+
+async function phoneRemove({f0}) {//remove a phone number the same way
+	let task = await fetchWorker('/credential', 'PhoneRemove.', {f0})
+	apply(task)
+}
+
 async function closeAccount() {
 	let task = await fetchWorker('/credential', 'CloseAccount.')
 	apply(task)
@@ -161,6 +197,9 @@ return {
 	walletRemove,
 	oauths,
 	oauthRemove,
+	emails, phones, otps,
+	otpSend, otpEnter,
+	emailRemove, phoneRemove,
 	closeAccount,
 }
 

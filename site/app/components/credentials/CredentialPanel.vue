@@ -2,8 +2,8 @@
 /*
 CredentialPanel.vue - credential management for signed-in users
 
-Shows: account controls (sign out, close account), name editor, password editor, TOTP enrollment, wallet
-Modes: refEditing enum ('' | 'account' | 'name' | 'password' | 'totp' | 'wallet') for mutually exclusive editing
+Shows: account controls (sign out, close account), name editor, password editor, TOTP enrollment, wallet, oauth, email, phone
+Modes: refEditing enum ('' | 'account' | 'name' | 'password' | 'totp' | 'wallet' | 'oauth' | 'email' | 'phone') for mutually exclusive editing
        each section has Edit link that expands controls, Cancel collapses back
 Parent: just render <CredentialPanel />, no props needed; assumes user is signed in
 Server contact: loads credentialStore, calls store methods for sign out, name changes, password changes
@@ -16,7 +16,7 @@ import {
 const credentialStore = useCredentialStore()
 await credentialStore.load()//runs on server render, then no-op on client due to loaded ref
 
-const refEditing = ref('')//'' | 'account' | 'name' | 'password' | 'totp' | 'wallet' | 'oauth'
+const refEditing = ref('')//'' | 'account' | 'name' | 'password' | 'totp' | 'wallet' | 'oauth' | 'email' | 'phone'
 function onCancel() {
 	refEditing.value = ''
 	refNameOutput.value = ''
@@ -183,6 +183,20 @@ async function onPasswordDone({currentHash, newHash, newCycles}) {
 	v-if="credentialStore.userTag"
 	:editing="refEditing === 'oauth'"
 	@edit="refEditing = 'oauth'"
+	@cancel="onCancel"
+/>
+
+<EmailPanel
+	v-if="credentialStore.userTag"
+	:editing="refEditing === 'email'"
+	@edit="refEditing = 'email'"
+	@cancel="onCancel"
+/>
+
+<PhonePanel
+	v-if="credentialStore.userTag"
+	:editing="refEditing === 'phone'"
+	@edit="refEditing = 'phone'"
 	@cancel="onCancel"
 />
 

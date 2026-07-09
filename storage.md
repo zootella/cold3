@@ -34,17 +34,17 @@ Two real people can share a browser profile on the same device. User A signs in,
 
 We commit to assigning a userTag early — even before authentication completes, sign-up creates a userTag for the in-flight person. Call this *Option D* from the design conversation: there's always a userTag to scope to, including for pre-authentication OTP flows. The specifics of how and when the early userTag is minted are deferred; the storage layer just requires that the calling code can pass one.
 
-A consequence: abandoned entries for *other* userTags linger in localStorage until something prompts contact with the server about that userTag (at which point the server says `Expired.` or `task.envelope = null` and the page deletes the entry). Bounded by the number of users who've shared this browser profile, so likely fine. Without a plaintext expiration on the page, a fully-local sweep can't tell stale from fresh — any sweep would have to round-trip through the server. Probably not worth building unless a real problem surfaces.
+A consequence: abandoned entries for *other* userTags linger in localStorage until something prompts contact with the server about that userTag (at which point the server says `Expired.` or returns the envelope as blank and the page deletes the entry). Bounded by the number of users who've shared this browser profile, so likely fine. Without a plaintext expiration on the page, a fully-local sweep can't tell stale from fresh — any sweep would have to round-trip through the server. Probably not worth building unless a real problem surfaces.
 
 ## [5] expiration is server-side only
 
 The envelope's ciphertext has its expiration baked in (`letter.expiration`, written by `sealEnvelope` at `level2.js:399`). Only the server can read it; only the server enforces it. The page never inspects expiration locally — it sends whatever envelope it has, and trusts the server's response to tell it what to keep.
 
-This trades a tiny cost for a meaningful simplification. If the page holds a stale envelope, it sends it; the server detects expiration (the existing manual `isExpired` checks in flows that use `skipExpirationCheck` at `credential.js:172, 249` already handle this); the response either returns a graceful `Expired.` outcome or sets `task.envelope = null` to signal "clear it"; the page deletes the stored entry on the response.
+This trades a tiny cost for a meaningful simplification. If the page holds a stale envelope, it sends it; the server detects expiration (the existing manual `isExpired` checks in flows that use `skipExpirationCheck` already handle this); the response either returns a graceful `Expired.` outcome or returns the envelope as blank to signal "clear it"; the page deletes the stored entry on the response.
 
 The cost is one round trip's worth of bytes for a stale envelope — typically the same round trip the page was making anyway, since envelope-relevant flows fire whether the stored value is fresh or stale. The gain is that the page has nothing to track. Expiration lives in exactly one place: encrypted inside the envelope, where the server already enforces it.
 
-Every server response from an envelope-relevant action carries a fresh truth. If the server processed something, it re-seals the letter (with `Now() + duration` baked in fresh by `sealEnvelope`) and returns the new ciphertext. If the server wants no logical change, it re-seals the existing letter unchanged — the page replaces what it had, and the expiration rolls forward as a side effect of re-sealing. If the server wants the envelope cleared, it returns `task.envelope = null`. Actions that have nothing to do with envelopes return `task.envelope === undefined`, and the page leaves storage alone.
+Every server response from an envelope-relevant action carries a fresh truth. If the server processed something, it re-seals the letter (with `Now() + duration` baked in fresh by `sealEnvelope`) and returns the new ciphertext. If the server wants no logical change, it re-seals the existing letter unchanged — the page replaces what it had, and the expiration rolls forward as a side effect of re-sealing. If the server wants the envelope cleared, it returns the envelope as blank text, and the page deletes the entry it holds. Actions that have nothing to do with envelopes don't carry the envelope field at all, and the page leaves storage alone. The protocol is text or blank, plus the page's local knowledge of what it's storing — we deliberately avoid loading distinct meanings onto null versus undefined (a lesson from the otp integration, where the first draft did exactly that).
 
 ## [6] key and value format
 
@@ -76,7 +76,7 @@ function getEnvelope(userTag) {//returns ciphertext string, or null if absent; s
 	}
 }
 
-function setEnvelope(userTag, envelope) {//pass null or empty to clear; otherwise replaces the stored ciphertext
+function setEnvelope(userTag, envelope) {//pass blank to clear; otherwise replaces the stored ciphertext
 	if (!import.meta.client) return
 	if (hasText(envelope)) {
 		localStorage.setItem(envelopeStorageKey(userTag), makeText({envelope}))
@@ -102,10 +102,10 @@ let task = await fetchWorker('/credential', 'Get.', body)
 Handling the response:
 
 ```js
-if (task.envelope !== undefined) credentialStore.setEnvelope(userTag, task.envelope)
+if (given(task.envelope)) credentialStore.setEnvelope(userTag, task.envelope)//text replaces the stored envelope, blank clears it
 ```
 
-The server may return `task.envelope = null` to signal "clear it" (envelope expired server-side, user signed out, enrollment completed). The page treats null as "remove from storage." `task.envelope === undefined` means "the server didn't touch the envelope in this response" — the page leaves storage alone.
+The server may return the envelope as blank text to signal "clear it" (envelope expired server-side, user signed out, enrollment completed) — the page removes the entry it's storing. A response that doesn't carry the envelope field didn't touch the envelope, and the page leaves storage alone.
 
 ## [9] accepted tradeoff: SSR flash on enrollment-recovery refresh
 

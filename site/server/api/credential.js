@@ -1,15 +1,17 @@
 
 import {
 hasTextSame,
-validateName, checkAction,
+validateName, checkAction, checkNumerals, validateEmailOrPhone,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialSet,
 credentialOauthRemove, credentialOauthGet, oauthProviders,
+credentialOtpSend, credentialOtpEnter, credentialOtpGet, credentialOtpRemove,
 credentialCloseAccount,
 totpEnroll, totpValidate, totpIdentifier, totpConstants,
+otpConstants,
 checkTotpCode, checkTotpSecret, checkWallet, Data, isExpired,
 trailCount, trailAdd,
 originDomain,
@@ -19,7 +21,7 @@ import {mainnet} from 'viem/chains'
 import {verifySiweMessage} from 'viem/siwe'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthRemove.', 'OtpSendTurnstile.', 'OtpEnter.', 'EmailRemove.', 'PhoneRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
 // 🟠 get
@@ -42,8 +44,36 @@ async function attachState(task, browserHash) {//attach complete credential stat
 		}
 		task.wallet = (await credentialWalletGet({userTag: user.userTag})) || ''//checksummed address, or empty
 		task.oauths = await credentialOauthGet({userTag: user.userTag})
+		task.emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//[{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
+		task.phones = await credentialOtpGet({userTag: user.userTag, type: 'Phone.'})
 	}
 	//ttd march, lots of database chatter here, replace with a single query for all rows about userTag, and then careful trusted server side logic to sift through them to figure out what's applicable and what's historical. and in this process, decide if you're going to hide rows or not
+}
+
+// 🟠 otp challenges
+async function openLetterOtp(body, browserHash) {//unpack this browser's active code challenges from the envelope the page kept in its cookie
+	let letter//letter contains this browser's active code challenges, and gets passed cookie <--> page <--> server and down the stack
+	if (hasText(body.envelopeOtp)) {
+		letter = await openEnvelope('Otp.', body.envelopeOtp, {browserHash, skipExpirationCheck: true})//envelope must be authentic and browser hash must match; we skip the envelope expiration check because an old envelope can't contain young codes, and we filter old codes out next
+	} else {
+		letter = {otps: []}//no challenges from earlier, but make an empty array in case we add one
+	}
+	letter.otps = letter.otps.filter(o => Now() <= o.start + otpConstants.expiration)//filter to only keep not yet expired challenges
+	return letter
+}
+async function attachLetterOtp(task, letter, browserHash) {//reseal the letter and attach the non-secret parts of active challenges to the response
+	if (letter.otps.length > 0) {//we have active challenges for this browser
+		letter.browserHash = browserHash//lock this letter to the connected browser
+		task.envelopeOtp = await sealEnvelope('Otp.', otpConstants.expiration, letter)//encrypt it for the browser to keep for up to 20 minutes in a cookie
+	} else {
+		task.envelopeOtp = ''//nothing live; blank text, and the page clears its cookie if it's holding one--text or blank, no meanings loaded onto null or undefined
+	}
+	task.otps = letter.otps.map(o => ({//we always return an array of non-secret information about currently active challenges
+		tag: o.tag,//a tag identifies each challenge; the page will tell us which one it's guessing at
+		start: o.start,//the birthdate of this challenge, which lives for 20 minutes
+		address: o.address,//the full address object with ok, f0, f1, f2, and type
+		//the secret code we sent, like "123456" is o.answer; it's encrypted into envelope, and critically not leaked here to the page!
+	}))
 }
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let task = {}
@@ -70,6 +100,13 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 				}
 			} catch (e) {/*stale or invalid envelope, silently ignore*/}
 		}
+		let letter//also recover any live otp code challenges at this browser, replacing the old FoundEnvelope. round trip
+		try {
+			letter = await openLetterOtp(body, browserHash)
+		} catch (e) {/*corrupt or transplanted envelope; recovery is best effort, so render the page without challenges rather than failing every load--and attachLetterOtp below returns a blank envelope, so the page clears the bad cookie it's holding*/
+			letter = {otps: []}
+		}
+		await attachLetterOtp(task, letter, browserHash)
 
 	// 🟠 name
 	} else if (action == 'CheckNameTurnstile.') {
@@ -108,6 +145,45 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		}
 		await credentialBrowserSet({userTag: nameRecord.userTag, browserHash})
 		await attachState(task, browserHash)
+
+	// 🟠 otp send
+	//the person at the page has entered their email or phone to get a code there; an otp flow requires being signed in, the whole time, as the same user--answered with a graceful SignedOut. rather than a toss, because the demo box on page4 is reachable signed out
+	//this action needs turnstile protection to prevent a script kiddie from hitting here to spam strangers or run up our amazon or twilio bill 💩💸
+	} else if (action == 'OtpSendTurnstile.') {
+		//look up the user signed in at this browser; ttd july, figure out for a new user joining with OTP, do we generate a provisional user tag early, or do we securely handle that flow another way?
+		let user = await credentialBrowserGet({browserHash})
+		//^ttd january, credential system will replace this
+		if (!user) return {success: false, outcome: 'SignedOut.'}//the page ghosts its controls when signed out, so this answers direct posts and stale panels
+
+		let {address, provider} = body
+		checkText(address); checkText(provider)
+		let v = validateEmailOrPhone(address)
+		if (!v.ok) toss('form')
+		provider = body.provider.trim().toUpperCase().slice(0, 1)
+		if      (provider == 'A') provider = 'Amazon.'
+		else if (provider == 'T') provider = 'Twilio.'
+		else toss('form')//temporary to get started; the round robin system, not the page, should choose the provider, ttd january
+
+		let letter = await openLetterOtp(body, browserHash)
+		task = await credentialOtpSend({letter, v, provider, userTag: user.userTag})//sets task.success itself, with task.outcome 'CoolSoft.', 'CoolHard.', or 'Held.' when the answer is no
+		await attachLetterOtp(task, letter, browserHash)
+		await attachState(task, browserHash)
+		return task//return here rather than falling through to the bottom, which would overwrite the success credentialOtpSend decided
+
+	// 🟠 otp enter
+	//the person at page has entered their guess at a code their browser knows about
+	} else if (action == 'OtpEnter.') {
+		let user = await credentialBrowserGet({browserHash})
+		if (!user) return {success: false, outcome: 'SignedOut.'}//if they sign back in as the user who started the challenge, it's still live in their cookie
+
+		let {tag, guess} = body//tag identifes the challenge; guess is what they entered (hopefully correctly from their email or texts)
+		checkTag(tag); checkNumerals(guess)
+
+		let letter = await openLetterOtp(body, browserHash)
+		task = await credentialOtpEnter({letter, tag, guess, userTag: user.userTag})//sets task.success itself, with task.outcome 'Wrong.', 'Expired.', 'Held.', or 'SignedOut.' (a different user's challenge) when the answer is no
+		await attachLetterOtp(task, letter, browserHash)
+		await attachState(task, browserHash)
+		return task
 
 	} else {//remaining actions all require that there's a user signed into the requesting browser
 		let user = await credentialBrowserGet({browserHash})
@@ -275,6 +351,16 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			checkAction(body.provider)
 			if (!oauthProviders().some(p => p.tag == body.provider)) toss('state', {action, provider: body.provider})//whitelist check on the provider tag against the server's configured list
 			await credentialOauthRemove({userTag: user.userTag, provider: body.provider})
+
+		// 🟠 email and phone
+		//the user wants to remove an address, proven or still pending; f0 is the normalized form from the list attachState returned
+		} else if (action == 'EmailRemove.') {
+			checkText(body.f0)
+			await credentialOtpRemove({userTag: user.userTag, type: 'Email.', f0: body.f0})//scoped to this user's own rows, so a bad f0 can only hide nothing
+
+		} else if (action == 'PhoneRemove.') {
+			checkText(body.f0)
+			await credentialOtpRemove({userTag: user.userTag, type: 'Phone.', f0: body.f0})
 
 		// 🟠 account
 		} else if (action == 'CloseAccount.') {

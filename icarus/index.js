@@ -113,7 +113,7 @@ wrapper
 export {
 
 vhsSign,
-otpConstants, otpSend, otpEnter,
+otpConstants,
 
 /* level 3 query */
 
@@ -129,6 +129,7 @@ credentialNameGet, credentialNameCheck, credentialNameSet, credentialNameRemove,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove,
 credentialOauthChallenge, credentialOauthParse, credentialOauthSet, credentialOauthRemove, credentialOauthGet,
 oauthProviders,
+credentialOtpSend, credentialOtpEnter, credentialOtpGet, credentialOtpRemove,
 credentialCloseAccount,
 credentialGet, credentialSet,
 
