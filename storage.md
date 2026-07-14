@@ -142,3 +142,28 @@ Which credential types have provisional mid-flow state at all, which need that s
 **OAuth** — no page-held provisional state since svelteless: the flow is a browser navigation, and the transient state of the dance lives in Auth.js's own short-lived internal cookies. Any number of providers linked, at most one account per provider.
 
 The two cookie-persisted types — TOTP's single slot and OTP's challenge array — are exactly the two entries the unified envelope's typed slices must hold, and the two cookies this document retires.
+
+## [12] where the code stands after the otp integration (July 2026)
+
+The otp sprint built most of this document's runway. Everything now flows through one endpoint and one store: `/api/otp` is deleted, recovery rides `Get.` (the old `FoundEnvelope.` round trip is gone), and credentialStore is the only code that touches the otp cookie — components never see it, which is the choke point sections [7] and [8] wanted. The response protocol is already this document's final form: the envelope rides as text or blank, the page clears only what it holds, and null/undefined carry no meanings (sections [5] and [8] were updated to match; the first draft overloaded them and we backed it out on principle). Get. reads the two cookies as two named body fields, `envelope` (TOTP) and `envelopeOtp` — the asymmetry that dissolves when this document's unified envelope lands.
+
+Two things changed the ground under section [4]'s per-user keying. Otp flows now require a signed-in user from send through enter, and each sealed challenge records the userTag that started it — so for every flow that exists today, there is always a userTag mid-flow, and per-user keying has what it needs without waiting for the early-userTag design. And openEnvelope's security checks (action scoping, expiration, browserHash binding) are now pinned by a grid test in level2, so the mechanism this document relocates is tested before it moves.
+
+## [13] the fork: relocate the envelope, or eliminate it into credential_table
+
+This document plans to **relocate** provisional credential state: the client keeps holding the sealed envelope, parked in localStorage instead of cookies. credential.md's "Provisional state: database rows replace envelopes and cookies" proposes to **eliminate** it: the server keeps in-flight state as credential_table event-3 rows, the client holds nothing, and recovery is just Get. querying the database. These are competing answers to the same question, and the sizing conversation for this sprint starts by choosing — not once for everything, but case by case, per credential type and per flow.
+
+The established positions going in:
+
+- Cookies can't be eliminated as they exist now: TOTP and OTP provisional two-step proof state must survive a reboot today, and cookies are the right place for that now. localStorage will be the right place later for whatever provisional state stays client-side — and some likely will. There will be provisional state in localStorage either way; the question is which state.
+- Where credential_table *can* hold provisional state, it probably should. But there may be real cases where the page is the right holder, so each type gets evaluated on its own.
+
+What the otp sprint changed about the eliminate option's cost: event-2 and event-3 rows are already written at mention and challenge, flows already require a userTag start to finish (so the "early userTag for signup" ripple — credential.md's biggest wrinkle for this refactor — is deferred with the signup work under *either* design), and challenges already record their provider and owner. The marginal cost of eliminate has dropped to: store the answer or secret in the row, and add expiration-by-row_tick and cancellation rules.
+
+For eliminate (rows): the client persistence machinery disappears rather than moving — no storage API, no recovery code, no SSR flash tradeoff (section [9] becomes moot), no per-user key sweeping (section [4]'s lingering entries never exist), no cookie or quota limits, and multiple simultaneous challenges are just rows. One source of truth, and Get. already assembles state from this table.
+
+For relocate (localStorage): sealing an envelope is stateless — no database write per step 1, where rows cost an insert per challenge. Secrets stay encrypted at rest on the client, where rows put short-lived codes and secrets in the table as plain text (credential.md judged that acceptable; it is still a difference). Expiration lives sealed inside the envelope and is enforced in exactly one place, where rows need application-level expiry logic. And a page-local storage pattern will likely exist regardless for things that aren't credentials at all — pre-user activity before any tag exists (credential.md's visitor-first flows) — so building the machinery isn't wasted even if credentials eventually leave it.
+
+A starting sketch for the case-by-case pass, against the [11] cheat sheet: OTP challenges are the strongest candidate for rows — server-generated, short-lived, already half-recorded in the table. TOTP enrollment could go either way — a single slot, recovery already rides Get., but the secret would sit in plain text for its twenty minutes. Wallet stays in memory under either design. Pre-user activity stays client-side until there's a tag.
+
+The endgame this fork controls: if OTP and TOTP provisional state both move to rows, the unified envelope of sections [1] through [10] shrinks dramatically or becomes moot, and this document mostly archives rather than builds. If either stays client-side, sections [6] through [8] get built for what remains. Decide the fork first; size second.

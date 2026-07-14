@@ -1,11 +1,11 @@
 
 ```
  ____________________
-| |cold3 @Prac69   | |
+| |cold3 @Dras47   | |
 |.|________________|H|
-| |2026jul09_______| |
+| |2026jul14_______| |
 | |173_files_______| |
-| |1,241,960_chars_| |
+| |1,244,880_chars_| |
 | |84%_full________| |
 | |________________| |
 |                    |
@@ -53,13 +53,6 @@ pnpm local #serverless offline with hot reload
 pnpm build #bundle, package, and measure size
 pnpm cloud #bundle, deploy to AWS Lambda, and test
 pnpm www #sync static files to S3
-
-#SvelteKit site for Auth.js OAuth authentication, Cloudflare Workers 👥
-cd ../oauth
-pnpm local #Vite dev server
-pnpm build #Vite production build
-pnpm cloud #set cloud mode, build, deploy to Cloudflare Workers, restore local mode, test
-pnpm preview #build and preview with wrangler dev
 ```
 
 [Node 22](https://nodejs.org/) and
@@ -106,13 +99,12 @@ Database on
 [PGlite](https://pglite.dev/).
 
 OAuth via
-[Auth.js](https://authjs.dev/) in
-[SvelteKit 2](https://svelte.dev/docs/kit/) on
-[Svelte 5](https://svelte.dev/), also deploying to Cloudflare Workers.
+[Auth.js](https://authjs.dev/)' engine, @auth/core,
+running directly inside the Nuxt apex worker, with no framework adapter.
 
-[Vite 6](https://vite.dev/) for local development across _icarus_, _site_, and _oauth_ workspaces.
+[Vite 6](https://vite.dev/) for local development across _icarus_ and _site_ workspaces.
 [Rollup 4](https://rollupjs.org/) for production bundles,
-client and server, in both Nuxt and SvelteKit.
+client and server.
 
 Styles using
 [Tailwind 4](https://tailwindcss.com/) with components from

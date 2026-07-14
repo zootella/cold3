@@ -791,14 +791,17 @@ export async function credentialOtpValidated({userTag, type, v}) {//the user typ
 	return true
 }
 
-export async function credentialOtpGet({userTag, type}) {//list a user's addresses of one type, each with its current status
+export async function credentialOtpGet({userTag, type}) {//list a user's addresses of one type; each entry is the newest row of its highest event--that one row is both the status and the face
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: type})//every visible event row, newest first
-	let m = new Map()//group by normalized address, keeping the highest event as the current status
+	let m = new Map()//group by normalized address
 	for (let row of rows) {
 		let x = m.get(row.f0_text)
 		if (!x) m.set(row.f0_text, x = {f0: row.f0_text, f1: row.f1_text, f2: row.f2_text, event: row.event})
-		if (row.event > x.event) x.event = row.event
+		else if (row.event > x.event) {//rows arrive newest first, so the first row we see at each rank is the newest of that rank
+			x.event = row.event
+			x.f1 = row.f1_text; x.f2 = row.f2_text//the face follows the proof; an abandoned mention of a variant form can't rewrite how a proven address shows
+		}
 	}
 	return [...m.values()]//[{f0, f1, f2, event}, ...] where event 4 is proven, 3 is code sent, 2 is only mentioned
 }
@@ -1200,6 +1203,16 @@ grid(async () => {//email and phone: the lifecycle sift, and highest event wins
 	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})//a later re-challenge she ignores, like an abandoned sudo check
 	list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list[0].event == 4)//highest event wins; the unanswered newer code doesn't demote her proof
+
+	//she starts adding the address typed differently--a variant raw form that normalizes to the same f0, like a dotted gmail
+	let v2 = {f0: v.f0, f1: 'Alice@Example.com', f2: 'Alice@Example.com'}//hand-built forms stand in for whatever a variant raw would validate to
+	await credentialOtpMentioned({userTag, type: v.type, v: v2})
+	list = await credentialOtpGet({userTag, type: 'Email.'})
+	ok(list.length == 1 && list[0].event == 4 && list[0].f2 == v.f2)//the face follows the proof; her abandoned mention doesn't rewrite how the proven address shows
+
+	ok(await credentialOtpValidated({userTag, type: v.type, v: v2}))//she completes the re-proof with the variant form
+	list = await credentialOtpGet({userTag, type: 'Email.'})
+	ok(list.length == 1 && list[0].event == 4 && list[0].f2 == v2.f2)//now the new face has a proof row behind it, and shows
 })
 
 grid(async () => {//email and phone: any number of peer addresses; remove hides the whole lifecycle

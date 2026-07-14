@@ -4,7 +4,7 @@ wrapper,
 } from './wrapper.js'
 import {//from core
 Time, inSeconds, textToTick,
-say, look, defined, checkTextSame,
+say, look, defined, checkTextSame, hasTextSame,
 Tag, checkTag, hasTag,
 Data, encryptSymmetric, encryptData, decryptData, hash_length, hashText, hmacSign,
 makePlain, makeObject, makeText,
@@ -429,7 +429,7 @@ export async function openEnvelope(action, envelope, options) {
 	return letter
 }
 
-//  _            _    
+//  _            _
 // | |_ __ _ ___| | __
 // | __/ _` / __| |/ /
 // | || (_| \__ \   < 
@@ -1417,6 +1417,31 @@ let _sql = []//SQL schema statements collected by SQL(); executed when we setup 
 let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
 export function SQL(s) { _sql.push(s) }
 export function grid(f) { _grid.push(f) }
+
+grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, error3, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first
+	let browserHash = random32()
+	let envelope = await sealEnvelope('TestEnvelope.', Time.minute, {message: 'hello', browserHash})
+
+	let letter = await openEnvelope('TestEnvelope.', envelope)//happy path: authentic, in date, action matches
+	ok(letter.message == 'hello')//contents round-trip through the ciphertext
+	ok(letter.action == 'TestEnvelope.')//sealEnvelope wrote the action into the letter
+	ok(!isExpired(letter.expiration))//and the expiration, still in the future
+	ok((await openEnvelope('TestEnvelope.', envelope, {browserHash})).message == 'hello')//and a matching browserHash, when the caller requires one
+
+	let tossed
+	tossed = false; try { await openEnvelope('OtherPurpose.', envelope) } catch (e) { tossed = true }
+	ok(tossed)//security check 1: a valid envelope sealed for one purpose won't open for another
+
+	tossed = false; try { await openEnvelope('TestEnvelope.', envelope, {browserHash: random32()}) } catch (e) { tossed = true }
+	ok(tossed)//security check 4: a different browser can't open a transplanted envelope
+
+	ageNow(2*Time.minute)//move the clock past the envelope's one minute life
+	tossed = false; try { await openEnvelope('TestEnvelope.', envelope) } catch (e) { tossed = true }
+	ok(tossed)//security check 3: expired tosses by default
+
+	letter = await openEnvelope('TestEnvelope.', envelope, {skipExpirationCheck: true})//flows that want a graceful outcome instead of a toss skip the check
+	ok(isExpired(letter.expiration))//and run this manual check themselves, as the totp and otp flows do
+})
 
 export async function getDatabase() {
 	if (isInSimulationMode()) {//running in local Node, $ yarn test has entered simulation mode to run grid tests
