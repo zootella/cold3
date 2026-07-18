@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jul14.2204.34389
+  generated: 2026jul18.1911.8649
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -123,27 +123,27 @@ summary:
       vidstack: 95,559
     6 figure:
       nuxt-og-image: 124,751
-      "@uppy/aws-s3": 479,157
       "@nuxtjs/color-mode": 500,430
-      "@uppy/dashboard": 591,127
+      "@uppy/aws-s3": 510,040
+      "@uppy/dashboard": 580,132
       serverless-offline: 719,302
       "@pinia/nuxt": 801,667
-      "@wagmi/connectors": 859,237
-      "@wagmi/core": 867,487
+      "@wagmi/connectors": 872,558
+      "@wagmi/core": 878,870
       "@resvg/resvg-wasm": 883,957
       lucide-vue-next: 889,515
-      "@uppy/core": 946,505
+      "@uppy/core": 990,873
     7 figure:
       "@walletconnect/ethereum-provider": 1,056,382
       reka-ui: 1,335,046
+      credit-card-type: 1,388,437
       serverless: 1,516,330
       satori: 1,531,233
-      credit-card-type: 1,581,847
-      otpauth: 1,597,609
       "@resvg/resvg-js": 1,641,787
+      otpauth: 1,710,783
       nuxt: 1,733,987
       nitropack: 1,776,045
-      is-mobile: 2,377,280
+      is-mobile: 2,546,476
       "@unhead/vue": 2,597,808
       "@aws-sdk/client-ses": 3,407,955
       "@auth/core": 3,424,077
@@ -151,50 +151,50 @@ summary:
       "@tailwindcss/forms": 4,022,152
       "@sendgrid/mail": 4,116,989
       pinia: 4,242,857
-      viem: 4,750,445
+      viem: 4,589,639
       twilio: 4,949,219
       "@vercel/nft": 6,977,250
       vue-router: 7,246,210
+      "@scure/bip39": 7,440,719
       "@vitejs/plugin-vue": 7,446,862
-      "@scure/bip39": 7,752,260
       "@vueuse/core": 8,541,630
-      "@electric-sql/pglite": 9,917,618
     8 figure:
+      "@electric-sql/pglite": 10,857,136
       vue: 13,918,490
       wrangler: 14,733,220
       "@aws-sdk/s3-request-presigner": 15,377,787
-      qrcode: 16,652,794
+      qrcode: 16,893,188
+      "@supabase/supabase-js": 19,091,355
+      libphonenumber-js: 19,641,750
       unstorage: 19,663,101
-      libphonenumber-js: 19,990,096
-      "@supabase/supabase-js": 20,960,975
-      ofetch: 21,416,318
+      ofetch: 22,959,341
       tw-animate-css: 30,331,190
       "@aws-sdk/client-s3": 33,245,008
-      h3: 34,215,027
       "@tailwindcss/vite": 37,356,280
+      h3: 37,425,942
       class-variance-authority: 54,188,815
       sharp: 64,937,952
       tailwind-merge: 70,656,268
     9 figure:
       clsx: 105,058,520
       tailwindcss: 120,379,051
+      fast-glob: 136,358,982
       vite: 141,791,010
-      fast-glob: 148,802,340
-      yaml: 167,589,050
-      nanoid: 170,866,642
+      yaml: 161,402,533
       fs-extra: 194,041,084
       zod: 199,976,318
+      nanoid: 209,839,767
       typescript: 219,990,444
-      semver: 792,390,227
+      semver: 745,551,727
 modules:
   "@auth/core":
     homepage: https://authjs.dev
     description: Authentication for the Web.
     from: site
     versions:
-      declared: ^0.41.2 on 2026apr14 2m old
-      installed: 0.41.2 on 2026apr14 2m old 🐣 Pre-1.0 version installed
-      current: 0.41.2 on 2026apr14 2m old
+      declared: ^0.41.2 on 2026apr14 3m old
+      installed: 0.41.2 on 2026apr14 3m old 🐣 Pre-1.0 version installed
+      current: 0.41.2 on 2026apr14 3m old
       latest: 0.34.3 on 2025oct29 8m old 🩸 Latest tag is behind installed
     downloads:
       weekly: 3,424,077
@@ -207,8 +207,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 4m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1087.0 on 2026jul14 0m old
-      latest: 3.1087.0 on 2026jul14 0m old
+      current: 3.1090.0 on 2026jul17 0m old
+      latest: 3.1090.0 on 2026jul17 0m old
     downloads:
       weekly: 33,245,008
       on: 2026jun17.1557.25111
@@ -220,8 +220,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 4m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1087.0 on 2026jul14 0m old
-      latest: 3.1087.0 on 2026jul14 0m old
+      current: 3.1090.0 on 2026jul17 0m old
+      latest: 3.1090.0 on 2026jul17 0m old
     downloads:
       weekly: 3,407,955
       on: 2026jun17.1557.25111
@@ -233,8 +233,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 4m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1087.0 on 2026jul14 0m old
-      latest: 3.1087.0 on 2026jul14 0m old
+      current: 3.1090.0 on 2026jul17 0m old
+      latest: 3.1090.0 on 2026jul17 0m old
     downloads:
       weekly: 4,000,673
       on: 2026jun17.1557.25111
@@ -246,8 +246,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 4m old
       installed: 3.1076.0 on 2026jun29 0m old
-      current: 3.1087.0 on 2026jul14 0m old
-      latest: 3.1087.0 on 2026jul14 0m old
+      current: 3.1090.0 on 2026jul17 0m old
+      latest: 3.1090.0 on 2026jul17 0m old
     downloads:
       weekly: 15,377,787
       on: 2026jun17.1557.25111
@@ -257,13 +257,13 @@ modules:
     note: "test: wasm postgres for local dev tests"
     from: root
     versions:
-      declared: ^0.3.15 on 2026jan15 5m old
+      declared: ^0.3.15 on 2026jan15 6m old
       installed: 0.3.16 on 2026mar10 4m old 🐣 Pre-1.0 version installed
       current: 0.3.16 on 2026mar10 4m old
       latest: 0.5.4 on 2026jul02 0m old
     downloads:
-      weekly: 9,917,618
-      on: 2026jun17.1557.8470
+      weekly: 10,857,136
+      on: 2026jul18.1911.8649
   "@nuxtjs/color-mode":
     homepage: null
     description: Dark and light mode for Nuxt with auto detection
@@ -286,7 +286,7 @@ modules:
       declared: 0.11.3 on 2025nov05 8m old 📌 Exact version pinned
       installed: 0.11.3 on 2025nov05 8m old 🐣 Pre-1.0 version installed
       current: 0.11.3 on 2025nov05 8m old
-      latest: 1.0.0 on 2026jul14 0m old 🎁 Major new version available
+      latest: 1.0.1 on 2026jul16 0m old 🎁 Major new version available
     downloads:
       weekly: 801,667
       on: 2026jun17.1558.56293
@@ -327,8 +327,8 @@ modules:
       current: 1.6.0 on 2025apr24 14m old
       latest: 2.2.0 on 2026apr21 2m old 🎁 Major new version available
     downloads:
-      weekly: 7,752,260
-      on: 2026jun17.1557.8470
+      weekly: 7,440,719
+      on: 2026jul18.1911.8649
   "@sendgrid/mail":
     homepage: https://sendgrid.com
     description: Twilio SendGrid NodeJS mail service
@@ -349,12 +349,12 @@ modules:
     from: icarus
     versions:
       declared: ^2.95.3 on 2026feb06 5m old
-      installed: 2.108.2 on 2026jun15 0m old
-      current: 2.110.5 on 2026jul14 0m old
-      latest: 2.110.5 on 2026jul14 0m old
+      installed: 2.108.2 on 2026jun15 1m old
+      current: 2.110.7 on 2026jul16 0m old
+      latest: 2.110.7 on 2026jul16 0m old
     downloads:
-      weekly: 20,960,975
-      on: 2026jun17.1557.8470
+      weekly: 19,091,355
+      on: 2026jul18.1911.8649
   "@tailwindcss/forms":
     homepage: https://github.com/tailwindlabs/tailwindcss-forms#readme
     description: A plugin that provides a basic reset for form styles that makes form elements easy to override with utilities.
@@ -376,8 +376,8 @@ modules:
     versions:
       declared: ^4.1.18 on 2025dec11 7m old 🏺 Declared release 6+ months earlier than installed
       installed: 4.3.2 on 2026jun29 0m old
-      current: 4.3.2 on 2026jun29 0m old
-      latest: 4.3.2 on 2026jun29 0m old
+      current: 4.3.3 on 2026jul16 0m old
+      latest: 4.3.3 on 2026jul16 0m old
     downloads:
       weekly: 37,356,280
       on: 2026jun17.1558.56293
@@ -407,8 +407,8 @@ modules:
       current: 5.1.0 on 2025dec02 7m old
       latest: 5.1.0 on 2025dec02 7m old
     downloads:
-      weekly: 479,157
-      on: 2026jun17.1557.8470
+      weekly: 510,040
+      on: 2026jul18.1911.8649
   "@uppy/core":
     homepage: https://uppy.io
     description: "Core module for the extensible JavaScript file upload widget with support for drag&drop, resumable uploads, previews, restrictions, file processing/encoding, remote providers like Instagram, Dropbox, Google Drive, S3 and more :dog:"
@@ -422,8 +422,8 @@ modules:
       current: 5.2.0 on 2025dec02 7m old
       latest: 5.2.0 on 2025dec02 7m old
     downloads:
-      weekly: 946,505
-      on: 2026jun17.1557.8470
+      weekly: 990,873
+      on: 2026jul18.1911.8649
   "@uppy/dashboard":
     homepage: https://uppy.io
     description: Universal UI plugin for Uppy.
@@ -437,8 +437,8 @@ modules:
       current: 5.1.1 on 2026feb03 5m old
       latest: 5.1.1 on 2026feb03 5m old
     downloads:
-      weekly: 591,127
-      on: 2026jun17.1557.8470
+      weekly: 580,132
+      on: 2026jul18.1911.8649
   "@vercel/nft":
     homepage: https://github.com/vercel/nft#readme
     description: Used to determine exactly which files (including `node_modules`) are necessary for the application runtime.
@@ -489,10 +489,10 @@ modules:
       declared: ^7.1.6 on 2026feb01 5m old
       installed: 7.2.1 on 2026feb18 4m old
       current: 7.2.1 on 2026feb18 4m old
-      latest: 8.0.22 on 2026jul08 0m old 🎁 Major new version available
+      latest: 8.0.24 on 2026jul17 0m old 🎁 Major new version available
     downloads:
-      weekly: 859,237
-      on: 2026jun17.1557.8470
+      weekly: 872,558
+      on: 2026jul18.1911.8649
   "@wagmi/core":
     homepage: https://github.com/wevm/wagmi#readme
     description: VanillaJS library for Ethereum
@@ -503,11 +503,11 @@ modules:
     versions:
       declared: ^3.3.2 on 2026feb01 5m old
       installed: 3.5.5 on 2026jun25 0m old
-      current: 3.6.1 on 2026jul08 0m old
-      latest: 3.6.1 on 2026jul08 0m old
+      current: 3.6.3 on 2026jul17 0m old
+      latest: 3.6.3 on 2026jul17 0m old
     downloads:
-      weekly: 867,487
-      on: 2026jun17.1557.8470
+      weekly: 878,870
+      on: 2026jul18.1911.8649
   "@walletconnect/ethereum-provider":
     homepage: https://github.com/walletconnect/walletconnect-monorepo/
     description: Ethereum Provider for WalletConnect Protocol
@@ -560,8 +560,8 @@ modules:
       current: 10.3.0 on 2026jun30 0m old
       latest: 10.3.0 on 2026jun30 0m old
     downloads:
-      weekly: 1,581,847
-      on: 2026jun17.1557.8470
+      weekly: 1,388,437
+      on: 2026jul18.1911.8649
   fast-glob:
     homepage: https://github.com/mrmlnc/fast-glob#readme
     description: It's a very fast and efficient glob library for Node.js
@@ -573,8 +573,8 @@ modules:
       current: 3.3.3 on 2025jan05 18m old
       latest: 3.3.3 on 2025jan05 18m old
     downloads:
-      weekly: 148,802,340
-      on: 2026jun17.1557.8470
+      weekly: 136,358,982
+      on: 2026jul18.1911.8649
   fs-extra:
     homepage: https://github.com/jprichardson/node-fs-extra
     description: fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.
@@ -594,26 +594,26 @@ modules:
     note: "nuxt: http framework; held at v1, v2 arrives with nitro v3 and nuxt 5; abstracted behind getWorker* functions"
     from: icarus
     versions:
-      declared: ^1.15.5 on 2026jan15 5m old
+      declared: ^1.15.5 on 2026jan15 6m old
       installed: 1.15.11 on 2026apr01 3m old
       current: 1.15.11 on 2026apr01 3m old
       latest: 2.0.1-rc.25 on 2026jul11 0m old 🎁 Major new version available
     downloads:
-      weekly: 34,215,027
-      on: 2026jun17.1557.8470
+      weekly: 37,425,942
+      on: 2026jul18.1911.8649
   is-mobile:
     homepage: https://github.com/juliangruber/is-mobile
     description: Check if mobile browser.
     note: "widget: browser detection; runs everywhere, only meaningful in browser"
     from: icarus
     versions:
-      declared: ^5.0.0 on 2024oct16 20m old
-      installed: 5.0.0 on 2024oct16 20m old 🕰️ Installed version 1+ year old
-      current: 5.0.0 on 2024oct16 20m old
-      latest: 5.0.0 on 2024oct16 20m old
+      declared: ^5.0.0 on 2024oct16 21m old
+      installed: 5.0.0 on 2024oct16 21m old 🕰️ Installed version 1+ year old
+      current: 5.0.0 on 2024oct16 21m old
+      latest: 5.0.0 on 2024oct16 21m old
     downloads:
-      weekly: 2,377,280
-      on: 2026jun17.1557.8470
+      weekly: 2,546,476
+      on: 2026jul18.1911.8649
   libphonenumber-js:
     homepage: https://gitlab.com/catamphetamine/libphonenumber-js#readme
     description: A simpler (and smaller) rewrite of Google Android's libphonenumber library in javascript
@@ -622,11 +622,11 @@ modules:
     versions:
       declared: ^1.12.36 on 2026jan30 5m old
       installed: 1.13.7 on 2026jun18 0m old
-      current: 1.13.8 on 2026jul03 0m old
-      latest: 1.13.8 on 2026jul03 0m old
+      current: 1.13.9 on 2026jul17 0m old
+      latest: 1.13.9 on 2026jul17 0m old
     downloads:
-      weekly: 19,990,096
-      on: 2026jun17.1557.8470
+      weekly: 19,641,750
+      on: 2026jul18.1911.8649
   lucide-vue-next:
     homepage: https://lucide.dev
     description: A Lucide icon library package for Vue 3 applications.
@@ -651,15 +651,15 @@ modules:
       current: 5.1.16 on 2026jun24 0m old
       latest: 6.0.0 on 2026jul12 0m old 🎁 Major new version available
     downloads:
-      weekly: 170,866,642
-      on: 2026jun17.1557.8470
+      weekly: 209,839,767
+      on: 2026jul18.1911.8649
   nitropack:
     homepage: https://github.com/nitrojs/nitro#readme
     description: Build and Deploy Universal JavaScript Servers
     note: "nuxt: server engine; bundles h3 v1, will bring h3 v2 with nitro v3"
     from: site
     versions:
-      declared: ^2.13.1 on 2026jan15 5m old
+      declared: ^2.13.1 on 2026jan15 6m old
       installed: 2.13.4 on 2026apr29 2m old
       current: 2.13.4 on 2026apr29 2m old
       latest: 2.13.4 on 2026apr29 2m old
@@ -703,8 +703,8 @@ modules:
       current: 1.5.1 on 2025nov01 8m old
       latest: 1.5.1 on 2025nov01 8m old
     downloads:
-      weekly: 21,416,318
-      on: 2026jun17.1557.8470
+      weekly: 22,959,341
+      on: 2026jul18.1911.8649
   otpauth:
     homepage: https://github.com/hectorm/otpauth
     description: One Time Password (HOTP/TOTP) library for Node.js, Deno, Bun and browsers
@@ -716,8 +716,8 @@ modules:
       current: 9.5.1 on 2026apr25 2m old
       latest: 9.5.1 on 2026apr25 2m old
     downloads:
-      weekly: 1,597,609
-      on: 2026jun17.1557.8470
+      weekly: 1,710,783
+      on: 2026jul18.1911.8649
   pinia:
     homepage: https://pinia.vuejs.org
     description: Intuitive, type safe and flexible Store for Vue
@@ -727,7 +727,7 @@ modules:
       declared: ^3.0.4 on 2025nov05 8m old
       installed: 3.0.4 on 2025nov05 8m old
       current: 3.0.4 on 2025nov05 8m old
-      latest: 4.0.0 on 2026jul14 0m old 🎁 Major new version available
+      latest: 4.0.2 on 2026jul15 0m old 🎁 Major new version available
     downloads:
       weekly: 4,242,857
       on: 2026jun17.1557.49499
@@ -744,8 +744,8 @@ modules:
       current: 1.5.4 on 2024aug05 23m old
       latest: 1.5.4 on 2024aug05 23m old
     downloads:
-      weekly: 16,652,794
-      on: 2026jun17.1557.8470
+      weekly: 16,893,188
+      on: 2026jul18.1911.8649
   reka-ui:
     homepage: https://github.com/unovue/reka-ui
     description: Vue port for Radix UI Primitives.
@@ -783,8 +783,8 @@ modules:
       current: 7.8.5 on 2026jun19 0m old
       latest: 7.8.5 on 2026jun19 0m old
     downloads:
-      weekly: 792,390,227
-      on: 2026jun17.1557.8470
+      weekly: 745,551,727
+      on: 2026jul18.1911.8649
   serverless:
     homepage: https://github.com/serverless/serverless#readme
     description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
@@ -830,7 +830,7 @@ modules:
     note: "front: merges classes without style conflicts; shadcn pattern"
     from: site
     versions:
-      declared: ^3.4.1 on 2026feb15 4m old
+      declared: ^3.4.1 on 2026feb15 5m old
       installed: 3.6.0 on 2026may10 2m old
       current: 3.6.0 on 2026may10 2m old
       latest: 3.6.0 on 2026may10 2m old
@@ -845,8 +845,8 @@ modules:
     versions:
       declared: ^4.1.18 on 2025dec11 7m old 🏺 Declared release 6+ months earlier than installed
       installed: 4.3.2 on 2026jun29 0m old
-      current: 4.3.2 on 2026jun29 0m old
-      latest: 4.3.2 on 2026jun29 0m old
+      current: 4.3.3 on 2026jul16 0m old
+      latest: 4.3.3 on 2026jul16 0m old
     downloads:
       weekly: 120,379,051
       on: 2026jun17.1557.49499
@@ -895,7 +895,7 @@ modules:
     note: "og: cache driver abstraction; injected by nuxi module add, now using lru-cache driver"
     from: site
     versions:
-      declared: ^1.17.4 on 2026jan15 5m old
+      declared: ^1.17.4 on 2026jan15 6m old
       installed: 1.17.5 on 2026mar26 3m old
       current: 1.17.5 on 2026mar26 3m old
       latest: 1.17.5 on 2026mar26 3m old
@@ -928,8 +928,8 @@ modules:
       current: 2.55.2 on 2026jul14 0m old
       latest: 2.55.2 on 2026jul14 0m old
     downloads:
-      weekly: 4,750,445
-      on: 2026jun17.1557.8470
+      weekly: 4,589,639
+      on: 2026jul18.1911.8649
   vite:
     homepage: https://vite.dev
     description: Native-ESM powered web dev build tool
@@ -939,7 +939,7 @@ modules:
       declared: ^6.4.1 on 2025oct20 8m old
       installed: 6.4.3 on 2026jun01 1m old
       current: 6.4.3 on 2026jun01 1m old
-      latest: 8.1.4 on 2026jul09 0m old 🎁 Major new version available
+      latest: 8.1.5 on 2026jul16 0m old 🎁 Major new version available
     downloads:
       weekly: 141,791,010
       on: 2026jun17.1557.25111
@@ -953,8 +953,8 @@ modules:
     versions:
       declared: ^3.5.27 on 2026jan19 5m old
       installed: 3.5.39 on 2026jun25 0m old
-      current: 3.5.39 on 2026jun25 0m old
-      latest: 3.5.39 on 2026jun25 0m old
+      current: 3.5.40 on 2026jul16 0m old
+      latest: 3.5.40 on 2026jul16 0m old
     downloads:
       weekly: 13,918,490
       on: 2026jun17.1557.25111
@@ -969,7 +969,7 @@ modules:
       declared: ^4.6.4 on 2025dec11 7m old
       installed: 4.6.4 on 2025dec11 7m old
       current: 4.6.4 on 2025dec11 7m old
-      latest: 5.1.0 on 2026may28 1m old 🎁 Major new version available
+      latest: 5.2.0 on 2026jul15 0m old 🎁 Major new version available
     downloads:
       weekly: 7,246,210
       on: 2026jun17.1557.25111
@@ -981,8 +981,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 5m old
       installed: 4.105.0 on 2026jun25 0m old
-      current: 4.110.0 on 2026jul09 0m old
-      latest: 4.110.0 on 2026jul09 0m old
+      current: 4.112.0 on 2026jul17 0m old
+      latest: 4.112.0 on 2026jul17 0m old
     downloads:
       weekly: 14,733,220
       on: 2026jun17.1558.56293
@@ -997,8 +997,8 @@ modules:
       current: 2.9.0 on 2026may11 2m old
       latest: 2.9.0 on 2026may11 2m old
     downloads:
-      weekly: 167,589,050
-      on: 2026jun17.1557.8470
+      weekly: 161,402,533
+      on: 2026jul18.1911.8649
   zod:
     homepage: https://zod.dev
     description: TypeScript-first schema declaration and validation library with static type inference
