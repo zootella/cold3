@@ -1,6 +1,6 @@
 # Contents
 
-A guide to five in-progress planning and architecture documents, all touching the credential system at different scopes. This is a high-level orientation: read this first to understand which of the five to open for a given concern, and where each sits relative to the others.
+A guide to the in-progress planning and architecture documents, all touching the credential system at different scopes. This is a high-level orientation: read this first to understand which of the five to open for a given concern, and where each sits relative to the others.
 
 A sixth document, svelteless.md, is done and retired: the spike confirmed, the SvelteKit workspace at oauth.cold3.cc is deleted, and the OAuth flow now runs on @auth/core directly inside the apex worker at `site/server/api/oauth/[...all].js`.
 
@@ -11,6 +11,14 @@ After the demo flow was retired, OAuth was integrated into the unified credentia
 ## otp.md — OTP in the credential stack (integration done, July 2026)
 
 The integration this document planned is complete: `/api/otp`, `pageStore.otps`, and the separate recovery flow migrated into `/api/credential` and `credentialStore`, with EmailPanel and PhonePanel in CredentialPanel, lifecycle rows (mentioned/challenged/validated) in credential_table, a claim guard so a proven address has one holder, and flows requiring a signed-in user from send through enter. The document remains as reference for the otp helpers and constants, plus one open agenda item: near-happy-path UI polish (wrong guesses, rate-limit messaging, can't-find-code help). Its signup-era notes feed the early-userTag design tracked in credential.md.
+
+## map.md — the current-state map of credential provisional state
+
+Created July 2026 to stage the storage.md sprint: before choosing between its futures, sketch the current situation completely and correctly. Holds the concerns list — the questions to ask of each credential type (signup use, page-held state, reload survival, event 2/3 records, multiplicity, browser binding, expiration enforcement) — plus system and flow concerns (shared browsers, the visitor-first story and the two-identities merge case), and the credential-type inventory: the seven integrated types with their type_text strings, the remnants outside the stack, and the types mentioned in notes but not planned for v1. Written under a strict rule: every mechanism claim traced to the enforcing line of code. The next step is the per-type grid — filling in each concern for each type, with smoke tests of the happy paths along the way.
+
+## digital-authentication.md — reference survey of the wider world
+
+A standalone, web-researched survey of digital authentication across the consumer internet era, organized by the arcs the industry followed — the password era, codes over every channel, federation, the multi-device world, the phishing-resistance turn, the fintech rails, KYC, biometrics, recovery, and the emerging wave — with retired-but-remembered methods kept and their fates marked. Grew out of map.md's scan for credential types worth considering for v1. Reference, not planning: nothing in it commits us to anything. Facts verified against sources July 2026.
 
 ## storage.md — unify credential cookies into one localStorage entry
 
@@ -24,14 +32,15 @@ Direction-setting document for the credential system as a whole: one endpoint, o
 
 The deepest architectural document. Three orthogonal questions about how `credential_table` (and analogous tables) should be shaped: (1) ledger-vs-traditional — keep appending rows and flipping hide flags, or move to edit-in-place with a paired `audit_table`; (2) jsonb adoption — collapse `k1`–`k8` into one jsonb column so the recurring "what about k12 next year" smell goes away; (3) Datadog deprecation — replace `logAudit` with an `audit_table` that lives in our own database, since Datadog's fatal flaw (broken state can't reach Datadog) makes the audit channel unreliable exactly when it's needed. Each decision can be made independently but they share an "audit belongs in Supabase" direction. Whole application data layer; the broadest scope and the highest-cost migration.
 
-## How the five relate
+## How these relate
 
 **By scope, narrowest to broadest:**
 
 - **One credential type**: oauth.md (refinement), otp.md (integration, done)
 - **Multiple credential types**: storage.md (cookies → localStorage across OTP and TOTP, extensible)
-- **Whole credential system**: credential.md (umbrella, direction-setting)
+- **Whole credential system**: credential.md (umbrella, direction-setting), map.md (current-state map, staging the storage sprint)
 - **Whole application data layer**: ledger.md (storage patterns underneath everything)
+- **Outside sprint sequencing**: digital-authentication.md (reference survey of the wider world)
 
 **By kind of change:**
 
