@@ -59,7 +59,7 @@ Every credential type in the system, plus what remains outside the stack, plus t
 
 - **Passkeys** (WebAuthn/CTAP/FIDO2) — appear once, in `icarus/user.txt`, inside an early sketch that argued against passwords partly because the passkey standard has become a Google-versus-Apple battle that traps users in the middle. That sketch's "no passwords at all" decision predates the Password type that shipped, and passkeys remain unplanned.
 - **Backup codes** — explicitly declined in a note in `icarus/core.js`: they're not part of the TOTP standard, and account recovery will lean on the user's other credentials as factors instead.
-- **Date of birth** — floated in user.txt as pre-verification matching information for the lazy-signup flow, then dismissed in the same note in favor of requiring the code on the second device.
+- **Date of birth** — floated in user.txt as pre-verification matching information for the lazy-signup flow, then dismissed in the same note in favor of requiring the code on the second device. Revived July 2026: the one-thumb signup design pairs DOB with the phone number as its knowledge factor.
 - **Other blockchains** — implied only by the `Ethereum.` type naming; no note names one.
 - **Turnstile** — deliberately not a credential type: it gates some actions as a bot check but proves nothing durable about a person.
 - **browserTag cookie** — also not a type of its own: the httpOnly cookie is the transport under the Browser credential.

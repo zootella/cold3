@@ -37,6 +37,10 @@ what to decide:
 - dependency: email-as-credential type needs to exist first. today address_table is challenge-based; migrating into credential_table is a separate ttd march item
 - conflict handling: user links Google with email alice@x.com, later challenge-verifies alice@y.com — keep both? replace?
 
+the same relationship can flow in the opposite direction: a user enters the add-email flow and types a @gmail.com address — instead of the normal otp challenge, detour them through the Google oauth flow. when they come back we've validated two credentials at once, the email and the google account link, with no code typed and no trip to the inbox. not necessarily simpler (the oauth dance has its own weight), but one flow yielding two credentials. the detour only works when the address's domain names its provider — @gmail.com does; a workspace domain hosted on google doesn't reveal itself — so otp stays the general path and this is an optimization for the recognizable case. one wrinkle to design for: the user typed alice@gmail.com but might complete the flow signed into google as bob@gmail.com, so the address we'd verify is the one the provider returns, not necessarily the one they typed. and the detour lands on the machinery above — it ends by writing the email credential from the provider's verified flag — so the forward direction depends on the inheritance decisions either way.
+
+the two directions are the same idea — proof of one credential type carrying over to another — and are filed together here deliberately. both stay deferred for now: the current work builds credential types secure and correct side by side in the unified stack, and cross-type relationships between them are their own later piece of design.
+
 ### tab race on link (concerns chaos user)
 
 uncommon but not impossible: two tabs open on the credential panel, user links a provider in tab A, tab B (stale view, still shows the provider as unlinked) clicks Continue with the same provider. since svelteless this race lands in one place:
