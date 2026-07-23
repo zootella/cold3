@@ -32,8 +32,8 @@ import {parsePhoneNumberFromString} from 'libphonenumber-js'//use to validate ph
 import isMobile from 'is-mobile'//use to guess if we're in a mobile browser next to an app store
 import {getAddress as viem_getAddress} from 'viem'
 
-//(2) dynamic imports that use import meta client to stay out of server bundles
-let _qrcode, _uppy, _wevm
+//(2) dynamic imports of big modules, kept dynamic so they stay out of bundles that don't need them
+let _qrcode, _uppy, _viem, _wagmi
 export async function qrcodeDynamicImport() {
 	if (import.meta.client && !_qrcode) {//use Nuxt's import meta to tree shake these modules out of the server build entirely
 		let [qrcode] = await Promise.all([
@@ -54,18 +54,27 @@ export async function uppyDynamicImport() {//🧐🎩
 	}
 	return _uppy
 }
-export async function wevmDynamicImport() {//viem and wagmi are by the same team, https://wevm.dev/
-	if (import.meta.client && !_wevm) {//tree shake viem and wagmi out of the server build entirely
-		let [viem, viem_chains, viem_siwe, wagmi_core, wagmi_connectors] = await Promise.all([
+export async function viemDynamicImport() {//viem is our ethereum library: the page signs SIWE messages with it, the worker validates them
+	if (!_viem) {//no import.meta.client guard, unlike its neighbors: the worker needs viem too
+		let [viem, viem_chains, viem_siwe, viem_utils] = await Promise.all([
 			import('viem'),
 			import('viem/chains'),
-			import('viem/siwe'),
+			import('viem/siwe'),//createSiweMessage on the page, parse/validate/verifySiweMessage on the worker
+			import('viem/utils'),//verifyMessage lives here as a pure function of message, signature, and address; the export of the same name from 'viem' is a client action that reaches the chain on every call
+		])
+		_viem = {viem, viem_chains, viem_siwe, viem_utils}
+	}
+	return _viem
+}
+export async function wagmiDynamicImport() {//wagmi is the wallet-connection layer over viem: injected wallets, WalletConnect, the QR and relay; wagmi and viem are by the same team https://wevm.dev/
+	if (import.meta.client && !_wagmi) {//server bundle builds with import.meta.client is false, so wagmi isn't included
+		let [wagmi_core, wagmi_connectors] = await Promise.all([
 			import('@wagmi/core'),
 			import('@wagmi/connectors'),//these modules are big, and static imports break the deploy to Cloudflare
 		])
-		_wevm = {viem, viem_chains, viem_siwe, wagmi_core, wagmi_connectors}
+		_wagmi = {wagmi_core, wagmi_connectors}
 	}
-	return _wevm
+	return _wagmi
 }
 
 //(3) dynamic imports that use vite ignore to stay out of all bundles

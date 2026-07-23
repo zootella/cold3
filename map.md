@@ -49,7 +49,7 @@ Every credential type in the system, plus what remains outside the stack, plus t
 - **Name** (`Name.`) — the username in three forms: f0 normalized for routes, f1 formal, f2 display.
 - **Password** (`Password.`) — k1 holds the hash, k2 the cycles; the page runs pbkdf2 before sending.
 - **TOTP** (`Totp.`) — authenticator app enrollment; k1 holds the base32 secret.
-- **Wallet** (`Ethereum.`) — a proven Ethereum address via Sign-In with Ethereum. The type string names the chain, so a second chain would arrive as a sibling type, not a change to this one.
+- **Wallet** (`Ethereum.`) — proven Ethereum addresses via Sign-In with Ethereum, up to two of them, and no two users can hold the same one. The type string names the chain, so a second chain would arrive as a sibling type, not a change to this one.
 - **OAuth** (`Oauth.`) — one type for every provider, k1 carrying the provider tag; Google, Twitter, Discord, and GitHub are configured today, and adding a provider is a configuration change, not a new type. (Twitch appears in the grid tests only as the fixture proving unlisted providers get filtered out.)
 - **Email and Phone** (`Email.`, `Phone.`) — two type strings sharing the one OTP mechanism; any number held, all peers with no main or default.
 
@@ -63,3 +63,43 @@ Every credential type in the system, plus what remains outside the stack, plus t
 - **Other blockchains** — implied only by the `Ethereum.` type naming; no note names one.
 - **Turnstile** — deliberately not a credential type: it gates some actions as a bot check but proves nothing durable about a person.
 - **browserTag cookie** — also not a type of its own: the httpOnly cookie is the transport under the Browser credential.
+
+# The grid
+
+The concerns above, answered type by type, one column at a time. This first pass covers four of the seven types — `Oauth.`, `Ethereum.`, `Email.`/`Phone.`, and `Totp.` — the four whose prove flow involves a party outside our page-and-server pair: a provider, a wallet, an inbox or handset, an authenticator app. That is also exactly the set with multi-step flows and provisional state, which is why they belong together. Browser, Name, and Password are single calls and join the grid later.
+
+## Signup: will we let new visitors sign up with this credential?
+
+Yes for OAuth, Wallet, and Email/Phone. No for TOTP.
+
+This whole column is aspirational. Today all four require a signed-in user before anything happens: the oauth signIn callback denies with `if (!signedIn) return false` in `site/server/api/oauth/[...all].js`, otp answers a graceful `SignedOut.` at both `OtpSendTurnstile.` and `OtpEnter.`, and wallet and totp sit behind the `if (!user) toss('state')` else-branch that guards every remaining action in `site/server/api/credential.js`. Opening these to signup is the work; the add-a-credential-to-an-existing-account direction is what runs now.
+
+The criterion behind the answers is whether the flow is one this credential's likely users have already completed many times elsewhere. A familiar flow arrives with the user's own folk rules attached — don't read the code to whoever just called you, check which account you're signed into — and those are defenses we get for free and could not install ourselves at any price.
+
+**OAuth** — yes. It is among the most-completed authentication rituals of the mobile era, so the expectation is universal. A brand-new visitor signs up straight through the provider, and an existing user who authenticates by email can run the same flow to prove they are somebody at Twitter, ending with two credentials, which is better for them and for us.
+
+**Wallet** — yes, on population-relative terms. Connect-and-sign is unfamiliar to nearly everyone and completely routine to crypto-native users, who are the only people who would reach for that door, and they arrive with their own folk rules about what a signature request should say.
+
+**Email and Phone** — yes. The one-time code to an address is the workhorse of the era and the expectation is as universal as oauth's.
+
+**TOTP** — no, by choice rather than by nature. Nothing structural forbids it: name plus TOTP would be the same shape as the name-plus-password signup already built, an identifier to type beside a secret to re-present. We decline for three reasons, in ascending order of weight. It is the highest-friction possible first step, demanding an app install and a QR scan before an account exists. A TOTP-only account leaves us no channel to reach the person, so no sign-in alert and no recovery. And users hold a strong *contrary* expectation — the authenticator app is the step that comes after you are identified — so offering it as a first credential would overwrite a correct model with a bespoke one, which leaves a user worse defended than an unfamiliar flow does.
+
+## Quantity: how many of this credential can one user hold?
+
+Zero is acceptable everywhere. No credential type is required, and none is more fundamental or authoritative than another — within this group the types are peers. The limits below are chosen rather than forced, and each one is enforced somewhere specific in the code.
+
+**OAuth** — one per provider, any number of providers. Enforced by check 1 in `credentialOauthSet`, which returns `OauthAlreadyLinked.` and writes nothing. A user wanting a different Twitter account cannot add a second; they remove the current link and then add the new one, and the grid test beneath that function walks exactly that path.
+
+**Wallet** — zero, one, or two, held as peers with no main or default. `walletConstants.limit` is 2, and `credentialWalletRefusal` in `icarus/level3.js` enforces it, along with the one-holder rule and a check against re-proving an address the user already holds. Two rather than one because it is the smallest limit that lets a wallet-only user rotate keys in the safe order — add the new wallet, confirm it, then retire the old — where a limit of one would force remove-then-add and leave a failed second proof standing on nothing but a browser session. Two rather than unlimited because wallets are free to mint by the thousand where real addresses are not, and because a proven wallet is a sign-in credential with no channel attached: nobody notices a stale one being used, and a key that leaks years later still opens the account, so the count of live keys should stay small and known.
+
+**Email and Phone** — any number, all peers, with no main or default. Nothing in the code caps them, deliberately: a user should add a personal address alongside an organizational one, so that losing the organization does not lose the account. Holding several also carries its own reassurance, because an address proven here cannot be claimed by anyone else.
+
+**TOTP** — one. Enforced twice over: `credentialTotpSet` hides the previous row before inserting, and both `credentialTotpEnroll1` and `credentialTotpEnroll2` refuse outright when the user is already enrolled.
+
+**Two enforcement styles, and TOTP is the outlier.** Wallet and OAuth both answer a caller who asks for one too many with a graceful outcome, writing nothing: `WalletFull.` and `WalletClaimedElsewhere.` for wallet, `OauthAlreadyLinked.` and `OauthClaimedElsewhere.` for oauth. TOTP instead tosses, so a second enrollment attempt lands on the error page. The realistic trigger for all of these is a panel that rendered before another tab changed something, which is tier-two innocence getting a tier-three answer, so totp's toss is the one left to reconsider whenever stale-tab handling gets standardized across the signed-in credential actions.
+
+**Where wallet's limit is enforced, and why in two places.** Both prove steps ask `credentialWalletRefusal`. `credentialWalletProve1` asks before any nonce is minted, so a user is never sent to their wallet to sign for a proof we would decline at the end — the signature request itself is the expensive, alarming thing, and a doomed flow should never reach it. `credentialWalletProve2` asks again through `credentialWalletSet`, because the minutes a user spends signing are long enough for another tab to fill the last slot or another account to claim the address. Both live in `icarus/level3.js` rather than at the endpoint, so nothing can reach the table around them and a grid test can walk the whole flow. The event-2 mention row is written before the refusal check, the way an otp mention is, so a refused attempt still leaves its trace.
+
+**No floor, yet.** Every remove action is available unconditionally, so a user can remove their name, password, totp, wallet, oauth links, and every address while remaining signed in on the Browser row alone — and then signing out closes the door behind them. The safeguard against emptying an account into an unreachable state is not built.
+
+**Proven addresses are unlimited but simultaneous challenges are not.** Every live otp challenge rides in one sealed envelope in one cookie, and the note inside `credentialOtpSend` puts about a dozen of them at the browser's 4KiB cookie limit. Nothing counts them, so the ceiling is real but unenforced, and reaching it fails at the browser rather than in our code. This is a property of where provisional state lives today, so the storage fork decides it.

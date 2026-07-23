@@ -10,6 +10,7 @@ Data, decryptData, hash_size, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
 checkHash, hashText, given,
+totpEnroll, totpValidate, totpGenerate, checkTotpCode, checkTotpSecret,
 otpGenerate, otpPrefix, prefix_alphabet,
 makePlain, makeObject, makeText,
 safefill, deindent,
@@ -19,17 +20,18 @@ import {//from level0
 Now, sayDate, sayTick,
 log, logTo, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank,
-checkInt, roundDown,
+checkInt, roundDown, isExpired,
 isInSimulationMode, ageNow,
 } from './level0.js'
 import {//from level1
 Limit, checkName, validateName,
 bundleValid, validateEmail, validateEmailOrPhone,
-checkAction,
+checkAction, viemDynamicImport,
 } from './level1.js'
 import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
 fetchWorker, fetchLambda, fetchProvider, Key,
+sealEnvelope, openEnvelope, originDomain,
 
 /* level 2 query */
 SQL, grid, getDatabase,
@@ -616,6 +618,87 @@ export async function credentialTotpRemove({userTag}) {
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
 }
 
+/*
+Enrolling an authenticator app is two steps with a gap in the middle that we can't see: step 1 generates a secret and
+shows it as a QR code, the user scans it into their app, and step 2 asks them to type the first code it produces.
+Nothing is saved until that code checks out, so between the steps the secret lives only in an envelope the page holds.
+
+The envelope is what makes step 2 safe, and the whole of its safety is one line of text sealed inside it, naming the
+browser, the user, and the secret together. Step 2 rebuilds that line from who is asking now and refuses anything that
+doesn't match, which is what stops an envelope carried to another browser, or picked up by the next person to sign in
+at a shared one. Because that line has to be built identically in three places, it is built in exactly one, below.
+
+The gap is also why the secret must survive a page refresh: by the time the page holds it, the user has already
+scanned it into their app, and throwing it away orphans the entry they just made there. So the page keeps the
+envelope, hands it back on the next load, and recover() decides whether there is really an enrollment to resume.
+*/
+
+function _totpEnrollMessage({browserHash, userTag, secret}) {//the binding sealed at step 1 and rechecked at step 2: this secret, for this browser, for this user, and no other combination
+	return safefill`TOTP enrollment: browser ${browserHash}, user ${userTag}, secret ${secret}`
+}
+async function _totpEnrollAccount(userTag) {//name the entry in the user's authenticator app, so they can tell ours apart from everyone else's
+	let userName = await credentialNameGet({userTag})
+	return userName?.name?.f1 ? `@${userName.name.f1}` : null//later use email if the user has that, ttd march
+}
+
+//totp enrollment step 1: the user wants an authenticator app as a second factor, so make them a secret and seal it for step 2
+//returns the enrollment for the page to show as a QR code, including the envelope it must hand back
+export async function credentialTotpEnroll1({userTag, browserHash}) {
+	checkTag(userTag); checkHash(browserHash)
+	let existing = await credentialTotpGet({userTag})
+	if (existing) toss('state', {userTag, browserHash, existing})//the page thought enrollment was possible, and one user holds one enrollment
+
+	let enrollment = await totpEnroll({brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
+	enrollment.envelope = await sealEnvelope('EnrollTotpEnvelope.', Limit.expirationUser, {
+		secret: enrollment.secret,
+		message: _totpEnrollMessage({browserHash, userTag, secret: enrollment.secret}),
+	})
+	return enrollment
+}
+
+//totp enrollment step 2: the secret is in their app and they've typed the first code it gave them
+//returns {ok: true} once the enrollment is saved, or {ok: false, outcome} for a sad path the page can act on
+export async function credentialTotpEnroll2({userTag, browserHash, envelope, code}) {
+	checkTag(userTag); checkHash(browserHash); checkTotpCode(code)
+	let existing = await credentialTotpGet({userTag})
+	if (existing) toss('state', {userTag, browserHash, existing})//as at step 1, the page thought enrollment was possible
+
+	let letter = await openEnvelope('EnrollTotpEnvelope.', envelope, {skipExpirationCheck: true})
+	let secret = letter.secret//the secret from step 1, come back to us through the page and possibly a cookie through a refresh
+	checkTotpSecret(secret)
+
+	if (isExpired(letter.expiration)) return {ok: false, outcome: 'Expired.'}//they took more than twenty minutes, so start them over
+	if (!hasTextSame(letter.message, _totpEnrollMessage({browserHash, userTag, secret}))) {
+		toss('state', {userTag, browserHash, letter})//envelope tampered or transplanted
+	}//➡️ passing this check is proof it's the real secret from step 1!
+
+	let valid = await totpValidate({secret: Data({base32: secret}), code})
+	if (!valid) return {ok: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the page still has the secret at this point!
+
+	await credentialTotpSet({userTag, secret})
+	return {ok: true}
+}
+
+//an enrollment was interrupted, and the page has handed back the envelope it kept
+//returns the enrollment to put back on the screen, or false when there's nothing here to resume
+export async function credentialTotpRecover({userTag, browserHash, envelope}) {
+	checkTag(userTag); checkHash(browserHash)
+
+	let letter
+	try {//this envelope came off a cookie the person at the page could have mangled, replaced, or pasted in, so a bad one means no recovery rather than a page that won't load
+		letter = await openEnvelope('EnrollTotpEnvelope.', envelope, {skipExpirationCheck: true})
+	} catch (e) { return false }
+
+	if (isExpired(letter.expiration)) return false//too old to resume, and the app entry they scanned is already orphaned
+	if (await credentialTotpGet({userTag})) return false//they finished this enrollment somewhere else, so nothing is in flight
+	if (!hasTextSame(letter.message, _totpEnrollMessage({browserHash, userTag, secret: letter.secret}))) {
+		return false//the envelope isn't this user's at this browser: two people share this browser profile, and the first one's enrollment is still sitting in the cookie
+	}
+
+	let enrollment = await totpEnroll({secret: Data({base32: letter.secret}), brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
+	return {uri: enrollment.uri, envelope, identifier: enrollment.identifier}//the same envelope goes back out; step 2 is still holding the only copy of the secret
+}
+
 //                    _            _   _       _                 _ _      _   
 //   ___ _ __ ___  __| | ___ _ __ | |_(_) __ _| | __      ____ _| | | ___| |_ 
 //  / __| '__/ _ \/ _` |/ _ \ '_ \| __| |/ _` | | \ \ /\ / / _` | | |/ _ \ __|
@@ -623,22 +706,143 @@ export async function credentialTotpRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|   \_/\_/ \__,_|_|_|\___|\__|
 //                                                                            
 
-//wallet: a user can have zero or one verified Ethereum wallet address; f0 is the checksummed address
-export async function credentialWalletGet({userTag}) {
+export const walletConstants = Object.freeze({
+
+	limit: 2,//a user can hold two proven addresses at once, and no more 🔑
+
+	/*
+	Two is the smallest limit that lets a wallet-only user rotate keys safely. Retiring an old wallet in favor of a
+	new one should go add-then-remove, so the account is never momentarily down to no credential at all. A limit of
+	one forces remove-then-add instead, and a user whose second proof then fails — a declined signature, the wrong
+	wallet connected, a closed tab — is left holding nothing but their browser session, which the next sign-out ends
+	permanently. We can't make anyone rotate in the safe order, but the limit is what makes the safe order available.
+
+	Having a limit at all, when a user may prove any number of email addresses, rests on two differences. Wallets are
+	free to mint by the thousand where real addresses are not, so a cap is the natural guard against a user who would
+	otherwise park thirty of them here. And a proven wallet is a sign-in credential with no channel attached to it:
+	nobody notices a stale one being used, and a key that leaks years from now still opens the account, where an
+	abandoned address at least has an inbox its owner still watches. A cap keeps the number of live keys small and
+	known, and makes each rotation a deliberate act rather than an accumulation.
+	*/
+})
+
+//wallet: a user can prove they control up to walletConstants.limit Ethereum addresses; f0 is the checksummed address, and no two users can hold the same one
+export async function credentialWalletGet({userTag}) {//list the addresses this user has proven, newest first
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
-	let row = rows[0]
-	if (row) return row.f0_text//return the checksummed address
-	return false//no wallet connected
+	return rows.map(row => row.f0_text)//[address, ...] checksummed, zero to the limit of them
 }
+
+export async function credentialWalletHolder({f0}) {//which user, if any, has proven they control this address?
+	checkText(f0)
+	let rows = await queryGet('credential_table', {type_text: 'Ethereum.', f0_text: f0, event: 4})
+	let row = rows[0]
+	if (row) return {userTag: row.user_tag}
+	return false//nobody has proven it; mentions and challenges reserve an address for no one
+}
+
+//may this user start proving this address right now? returns false to go ahead, or the outcome naming their remedy
+//both steps of the prove flow ask this: step 1 so a doomed attempt never reaches the wallet with a signature request the user can't spend, and step 2 because the answer can change in the minutes they spend signing
+export async function credentialWalletRefusal({userTag, address}) {
+	checkTag(userTag); checkText(address)
+	let holder = await credentialWalletHolder({f0: address})
+	if (holder && holder.userTag != userTag) return 'WalletClaimedElsewhere.'//one address, one holder; the account that has it must remove it before anyone else can prove it
+	let mine = await credentialWalletGet({userTag})//both sides of this comparison are checksummed, so they match exactly
+	if (mine.includes(address)) return 'WalletAlreadyProven.'//this user holds it already, so there's nothing here left to prove
+	if (mine.length >= walletConstants.limit) return 'WalletFull.'//at the limit; the remedy is to remove one and make room
+	return false
+}
+
+//record proof a user controls an Ethereum address; returns {ok: true} on insert, or {ok: false, outcome} when a rule declines it
+//the rules live here beside the write rather than up at the endpoint, so no path can reach the table around them
 export async function credentialWalletSet({userTag, address}) {
 	checkTag(userTag); checkText(address)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
+	let outcome = await credentialWalletRefusal({userTag, address})
+	if (outcome) return {ok: false, outcome}
 	await credentialSet({userTag, type: 'Ethereum.', event: 4, f0: address})
+	return {ok: true}
 }
-export async function credentialWalletRemove({userTag}) {
-	checkTag(userTag)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
+
+export async function credentialWalletRemove({userTag, f0}) {//hide this user's proof of one address, freeing their slot and releasing the address for anyone to prove
+	checkTag(userTag); checkText(f0)
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: f0, event: 4})
+}
+
+/*
+Proving a wallet is Sign-In with Ethereum, EIP-4361, in two steps. Step 1 we mint a nonce and hand it to the page,
+which builds the SIWE message and asks the wallet to sign it; step 2 the signed message comes back and we check it.
+The two steps are stateless on the server, tied together only by a sealed envelope the page carries between them,
+holding the nonce, the address, and the browserHash. That envelope is what makes step 2 safe: it proves the nonce
+is one we issued, to this browser, for this address, within the last twenty minutes.
+
+Both steps live here rather than at the endpoint so a grid test can walk the whole flow, including a real signature from
+a generated key. The endpoint above is left holding only what it alone knows: the shape of the request, and the
+browserHash from the door.
+
+Checking the signature is deliberately two steps, and the reason is worth knowing. viem's verifySiweMessage handles
+ordinary wallets and smart contract wallets by one uniform path, and that path reaches the chain for both — so using
+it alone would mean every wallet proof on the site depends on our chain provider being up, to answer a question that
+for an ordinary wallet is pure local arithmetic. Step 1 answers that question offline. Step 2 exists only for smart
+contract wallets, which genuinely cannot be checked without asking the contract, and which therefore degrade to "try
+again shortly" during an outage instead of being told their good signature is bad.
+*/
+
+//wallet prove step 1: the page has connected a wallet and wants to prove the person at this browser controls it
+//returns {outcome} when a rule declines the flow before it starts, or {nonce, envelope} to go ahead
+export async function credentialWalletProve1({userTag, browserHash, address}) {
+	checkTag(userTag); checkHash(browserHash); checkText(address)
+
+	await credentialSet({userTag, type: 'Ethereum.', event: 2, f0: address})//event 2: this browser mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
+
+	let outcome = await credentialWalletRefusal({userTag, address})
+	if (outcome) return {outcome}//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
+
+	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
+	let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {nonce, address, browserHash})
+	await credentialSet({userTag, type: 'Ethereum.', event: 3, f0: address})//event 3: we challenged this address with a nonce
+	return {nonce, envelope}
+}
+
+//wallet prove step 2: the page returns the SIWE message it built and the wallet's signature over it
+//returns {ok: true} once the proof is saved, or {ok: false, outcome} for a sad path the page can act on
+export async function credentialWalletProve2({userTag, browserHash, address, message, signature, envelope}) {
+	checkTag(userTag); checkHash(browserHash); checkText(address)
+	checkText(message)//the SIWE-formatted message the page constructed and signed
+	checkText(signature)//0x followed by 130 or 132 base16 characters
+
+	//open the envelope from step 1 to recover the nonce, address, and browserHash we sealed
+	let letter = await openEnvelope('ProveWallet.', envelope, {skipExpirationCheck: true})
+	if (isExpired(letter.expiration)) return {ok: false, outcome: 'Expired.'}//user walked away
+	if (letter.browserHash != browserHash) toss('state', {userTag, browserHash, letter})//envelope from a different browser
+	if (letter.address != address) toss('state', {userTag, browserHash, letter})//envelope was for a different address
+
+	//viem arrives through the dynamic import helper rather than a static import at the top of this file: these modules are big, static imports of them have broken the cloudflare deploy before, and the grid tests below name this function, which keeps whatever it references alive in every bundle a tree shaker looks at
+	let {viem, viem_chains, viem_siwe, viem_utils} = await viemDynamicImport()
+
+	let now = new Date()//one reading of the clock for both steps below, so a slow check can't judge the message by two different moments
+
+	// 🔑 step 1, offline: does the message say what it should, and did this address sign it?
+	//validateSiweMessage enforces that the message was signed for our origin, around the nonce we sealed, by the address being claimed, and inside the lifetime the message declares for itself--defense in depth alongside the envelope's own nonce and expiration
+	if (!viem_siwe.validateSiweMessage({message: viem_siwe.parseSiweMessage(message), domain: originDomain(), nonce: letter.nonce, address, time: now})) {
+		return {ok: false, outcome: 'BadSignature.'}//the message itself is wrong, and no wallet of any kind could make that right
+	}
+	let valid = await viem_utils.verifyMessage({address, message, signature})//recover the signer from the signature; an ordinary key-backed wallet--very nearly every wallet--proves itself right here, touching no network at all
+
+	// 🔑 step 2, on chain: a smart contract wallet holds no key to recover from, so step 1 says no even for a signature its own code would accept
+	//only that code can settle it, and it lives on the blockchain. this is the one path that needs a chain provider, and it's a corner of a corner: a minority of users bring wallets, and a minority of those are contracts
+	if (!valid && !isInSimulationMode()) {
+		let client = viem.createPublicClient({chain: viem_chains.mainnet, transport: viem.http(Key('alchemy url, secret'))})//secret server only Alchemy key with no Origin header requirements, separate from the Origin restricted client side key
+		try {
+			await client.getChainId()//ask something trivial first: verifySiweMessage answers false whether the contract declined or we simply couldn't reach it, and those two owe the user completely different words
+		} catch (e) {
+			return {ok: false, outcome: 'Later.'}//our provider is down, so we can't judge a contract wallet at all; the remedy is to wait and try again, which is what Later. means everywhere it appears
+		}
+		valid = await viem_siwe.verifySiweMessage(client, {message, signature, domain: originDomain(), nonce: letter.nonce, address, time: now})//EIP-1271: ask the wallet's own contract whether it accepts this signature
+	}
+	if (!valid) return {ok: false, outcome: 'BadSignature.'}
+
+	//save this proven wallet address as a credential for this user
+	return await credentialWalletSet({userTag, address})//the rules run again here, because the minutes the user spent signing were long enough for another tab or another account to change the answer
 }
 
 //                    _            _   _       _                     _   _     
@@ -939,19 +1143,256 @@ grid(async () => {//totp: set, re-enroll, verify single active, remove
 	await credentialTotpRemove({userTag})
 	ok((await credentialTotpGet({userTag})) == false)//now gone
 })
-grid(async () => {//wallet: set, change, verify single active, remove
+grid(async () => {//totp enroll: the whole flow, secret to saved enrollment, with a code the secret really makes
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag(), browserHash = random32()
+
+	let enrollment = await credentialTotpEnroll1({userTag, browserHash})//step 1: she asks to enroll and gets a secret to scan
+	ok(hasText(enrollment.secret) && hasText(enrollment.uri) && hasText(enrollment.envelope))
+	ok((await credentialTotpGet({userTag})) == false)//nothing saved yet; the secret lives only in the envelope she's holding
+
+	let code = await totpGenerate({secret: Data({base32: enrollment.secret}), now: Now()})//her authenticator app, which now has the secret
+	ok((await credentialTotpEnroll2({userTag, browserHash, envelope: enrollment.envelope, code})).ok)
+	ok((await credentialTotpGet({userTag})) == enrollment.secret)//step 2 checked the code and saved the enrollment
+})
+grid(async () => {//totp enroll: a wrong code is refused, and enrolling twice is a mistake by the page above us
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag(), browserHash = random32()
+	let enrollment = await credentialTotpEnroll1({userTag, browserHash})
+
+	let wrong = await credentialTotpEnroll2({userTag, browserHash, envelope: enrollment.envelope, code: '000000'})
+	ok(!wrong.ok && wrong.outcome == 'BadCode.')//six digits that aren't the six digits her app shows
+	ok((await credentialTotpGet({userTag})) == false)//and nothing saved, so she can try again with the code in front of her
+
+	let code = await totpGenerate({secret: Data({base32: enrollment.secret}), now: Now()})
+	ok((await credentialTotpEnroll2({userTag, browserHash, envelope: enrollment.envelope, code})).ok)
+
+	//now enrolled, both steps refuse to start over; the page ghosts these controls, so reaching here means it was wrong about the state
+	let tossed
+	tossed = false; try { await credentialTotpEnroll1({userTag, browserHash}) } catch (e) { tossed = true }
+	ok(tossed)
+	tossed = false; try { await credentialTotpEnroll2({userTag, browserHash, envelope: enrollment.envelope, code}) } catch (e) { tossed = true }
+	ok(tossed)
+})
+grid(async () => {//totp enroll: the sealed message binds the secret to one browser and one user
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let alice = Tag(), bob = Tag(), browserHash = random32()
+	let enrollment = await credentialTotpEnroll1({userTag: alice, browserHash})
+	let code = await totpGenerate({secret: Data({base32: enrollment.secret}), now: Now()})
+
+	let tossed
+	tossed = false; try { await credentialTotpEnroll2({userTag: alice, browserHash: random32(), envelope: enrollment.envelope, code}) } catch (e) { tossed = true }
+	ok(tossed)//alice's envelope carried to another browser can't finish there
+
+	tossed = false; try { await credentialTotpEnroll2({userTag: bob, browserHash, envelope: enrollment.envelope, code}) } catch (e) { tossed = true }
+	ok(tossed)//and bob, signed in at alice's browser, can't finish her enrollment as his own
+	ok((await credentialTotpGet({userTag: bob})) == false)//nothing written for him
+
+	ageNow(Limit.expirationUser + Time.minute)//alice walked away mid-enrollment and came back tomorrow
+	let late = await credentialTotpEnroll2({userTag: alice, browserHash, envelope: enrollment.envelope, code})
+	ok(!late.ok && late.outcome == 'Expired.')//answered gracefully, so the page can start her over
+})
+grid(async () => {//totp recover: an interrupted enrollment comes back, but only for the person who started it
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let alice = Tag(), bob = Tag(), browserHash = random32()
+	let enrollment = await credentialTotpEnroll1({userTag: alice, browserHash})
+
+	let resumed = await credentialTotpRecover({userTag: alice, browserHash, envelope: enrollment.envelope})
+	ok(resumed.uri == enrollment.uri)//she refreshed the page and gets the same qr code back, matching what she already scanned
+	ok(resumed.envelope == enrollment.envelope)//and the same envelope, because step 2 still needs the only copy of the secret
+
+	//bob signs in at the browser alice left, where her envelope is still sitting in the cookie
+	ok((await credentialTotpRecover({userTag: bob, browserHash, envelope: enrollment.envelope})) == false)//he sees an ordinary panel, not her qr code
+	ok((await credentialTotpRecover({userTag: alice, browserHash: random32(), envelope: enrollment.envelope})) == false)//nor does her envelope resume at some other browser
+
+	ok((await credentialTotpRecover({userTag: alice, browserHash, envelope: 'not-an-envelope'})) == false)//a mangled cookie means no recovery, not a page that won't load
+
+	//once she finishes, there's nothing left in flight to resume
+	let code = await totpGenerate({secret: Data({base32: enrollment.secret}), now: Now()})
+	ok((await credentialTotpEnroll2({userTag: alice, browserHash, envelope: enrollment.envelope, code})).ok)
+	ok((await credentialTotpRecover({userTag: alice, browserHash, envelope: enrollment.envelope})) == false)
+
+	ageNow(Limit.expirationUser + Time.minute)
+	ok((await credentialTotpRecover({userTag: bob, browserHash, envelope: enrollment.envelope})) == false)//and an expired envelope resumes for nobody
+})
+grid(async () => {//wallet: a user proves two addresses, and the third is refused until they remove one
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	ok((await credentialWalletGet({userTag})) == false)//no wallet yet
-	await credentialWalletSet({userTag, address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'})//connect first wallet
-	ok((await credentialWalletGet({userTag})) == '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045')//verify connected
-	await credentialWalletSet({userTag, address: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'})//switch to different wallet
-	ok((await credentialWalletGet({userTag})) == '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B')//verify switched
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
-	ok(rows.length == 1)//only one active wallet after switch
-	await credentialWalletRemove({userTag})
-	ok((await credentialWalletGet({userTag})) == false)//now gone
+	let wallet1 = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+	let wallet2 = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+	let wallet3 = '0x00000000219ab540356cBB839Cbe05303d7705Fa'
+
+	ok((await credentialWalletGet({userTag})).length == 0)//no wallets yet
+	ok((await credentialWalletSet({userTag, address: wallet1})).ok)//she proves her first wallet
+	ok((await credentialWalletSet({userTag, address: wallet2})).ok)//and a second beside it, which is what makes a safe rotation possible
+	ok((await credentialWalletGet({userTag})).length == 2)//both stand as peers; the second didn't replace the first
+
+	let full = await credentialWalletSet({userTag, address: wallet3})//a third is one too many
+	ok(!full.ok && full.outcome == 'WalletFull.')
+	ok((await credentialWalletGet({userTag})).length == 2)//and nothing was written or quietly replaced to make room
+	ok((await credentialWalletRefusal({userTag, address: wallet3})) == 'WalletFull.')//the endpoint asks this before step 1, so the wallet is never asked to sign for a proof we'd decline
+	ok((await credentialWalletRefusal({userTag, address: wallet1})) == 'WalletAlreadyProven.')//re-proving one she already holds gets its own outcome, because the remedy is different
+
+	await credentialWalletRemove({userTag, f0: wallet1})//she retires the old wallet
+	let mine = await credentialWalletGet({userTag})
+	ok(mine.length == 1 && mine[0] == wallet2)//removal takes only the address named, leaving the other proof alone
+	ok((await credentialWalletSet({userTag, address: wallet3})).ok)//and the freed slot accepts the new wallet
+})
+grid(async () => {//wallet: one address, one holder — alice and bob are married and share a wallet, but hold separate accounts here
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let alice = Tag(), bob = Tag()
+	let shared = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'//the household wallet they both use, and both consider theirs
+
+	ok((await credentialWalletSet({userTag: alice, address: shared})).ok)//alice proves it first
+	ok((await credentialWalletHolder({f0: shared})).userTag == alice)
+
+	//bob connects the same wallet at his own account; we refuse before the flow starts, so he is never asked to sign
+	ok((await credentialWalletRefusal({userTag: bob, address: shared})) == 'WalletClaimedElsewhere.')
+	let blocked = await credentialWalletSet({userTag: bob, address: shared})
+	ok(!blocked.ok && blocked.outcome == 'WalletClaimedElsewhere.')//and the write refuses too, for anything that reaches it another way
+	ok((await credentialWalletGet({userTag: bob})).length == 0)//nothing written for bob
+	ok((await credentialWalletHolder({f0: shared})).userTag == alice)//alice's proof stands untouched
+
+	//alice takes it off her account, and only then can bob put it on his
+	await credentialWalletRemove({userTag: alice, f0: shared})
+	ok((await credentialWalletHolder({f0: shared})) == false)//released, held by nobody
+	ok((await credentialWalletSet({userTag: bob, address: shared})).ok)
+	ok((await credentialWalletHolder({f0: shared})).userTag == bob)
+})
+grid(async () => {//wallet: a remove reaches only this user's own rows, and only the address named
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let alice = Tag(), bob = Tag()
+	let aliceWallet = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+	let bobWallet = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+	let strangerWallet = '0x00000000219ab540356cBB839Cbe05303d7705Fa'
+
+	ok((await credentialWalletSet({userTag: alice, address: aliceWallet})).ok)
+	ok((await credentialWalletSet({userTag: bob, address: bobWallet})).ok)
+
+	//bob names alice's address on a remove of his own; the query is scoped to his rows, so it finds nothing to hide
+	await credentialWalletRemove({userTag: bob, f0: aliceWallet})
+	ok((await credentialWalletHolder({f0: aliceWallet})).userTag == alice)//alice's proof stands
+	ok((await credentialWalletGet({userTag: bob}))[0] == bobWallet)//and bob's own is untouched
+
+	await credentialWalletRemove({userTag: bob, f0: strangerWallet})//naming an address nobody here has proven is the same nothing
+	ok((await credentialWalletGet({userTag: bob})).length == 1)
+})
+grid(async () => {//wallet: retired proofs hold neither a slot nor the address, however many pile up
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	let wallet1 = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+	let wallet2 = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+	let wallet3 = '0x00000000219ab540356cBB839Cbe05303d7705Fa'
+
+	for (let address of [wallet1, wallet2, wallet3]) {//three rotations in a row, each leaving a hidden row behind
+		ok((await credentialWalletSet({userTag, address})).ok)
+		await credentialWalletRemove({userTag, f0: address})
+	}
+	ok((await credentialWalletGet({userTag})).length == 0)//three retired rows sit under this user, and none of them holds a slot
+	ok((await credentialWalletSet({userTag, address: wallet1})).ok)//so the wallet retired first is free to come back
+	ok((await credentialWalletSet({userTag, address: wallet2})).ok)
+	ok((await credentialWalletGet({userTag})).length == 2)//and the limit counts only what's live
+})
+
+//the two helpers below let the grid tests that follow stand in for a real wallet: a generated key signs the very message
+//WalletPanel builds, and viem verifies an ordinary wallet's signature locally, so the whole prove flow runs offline
+async function _walletTestAccount(key) {//the keys passed in are the well known public test keys everyone in ethereum development uses; they guard nothing
+	const {privateKeyToAccount} = await import(/* @vite-ignore */ 'viem/accounts')//vite ignores this so signing machinery only a test needs stays out of every bundle
+	return privateKeyToAccount(key)
+}
+async function _walletTestSign({account, nonce}) {//build and sign the same SIWE message the page builds around a nonce from step 1
+	const {createSiweMessage} = await import(/* @vite-ignore */ 'viem/siwe')
+	let message = createSiweMessage({
+		domain: originDomain(), address: account.address, statement: 'Sign in with Ethereum',
+		uri: `http://${originDomain()}`, version: '1', chainId: 1, nonce,
+		issuedAt: new Date(Now()), expirationTime: new Date(Now() + Limit.expirationUser),
+	})
+	return {message, signature: await account.signMessage({message})}
+}
+
+grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a real signature
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag(), browserHash = random32()
+	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
+
+	let prove = await credentialWalletProve1({userTag, browserHash, address: account.address})//step 1: the page asks for a nonce
+	ok(!prove.outcome && hasText(prove.nonce) && hasText(prove.envelope))
+	ok((await credentialWalletGet({userTag})).length == 0)//nothing proven yet; step 1 only wrote the mention and the challenge
+
+	let signed = await _walletTestSign({account, nonce: prove.nonce})//the wallet signs what the page built
+	ok((await credentialWalletProve2({userTag, browserHash, address: account.address, ...signed, envelope: prove.envelope})).ok)
+	ok((await credentialWalletGet({userTag}))[0] == account.address)//step 2 checked the signature and saved the proof
+})
+grid(async () => {//wallet prove: the envelope ties step 2 to the browser and the address step 1 was for
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag(), browserHash = random32()
+	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
+	let other = await _walletTestAccount('0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba')
+
+	let prove = await credentialWalletProve1({userTag, browserHash, address: account.address})
+	let signed = await _walletTestSign({account, nonce: prove.nonce})
+	const submit = async (o) => await credentialWalletProve2(//everything correct except what the caller overrides
+		{userTag, browserHash, address: account.address, ...signed, envelope: prove.envelope, ...o})
+
+	let tossed
+	tossed = false; try { await submit({browserHash: random32()}) } catch (e) { tossed = true }
+	ok(tossed)//an envelope carried to another browser can't be spent there
+
+	tossed = false; try { await submit({address: other.address}) } catch (e) { tossed = true }
+	ok(tossed)//nor can an envelope sealed for one address be spent on another
+	ok((await credentialWalletGet({userTag})).length == 0)//neither attempt wrote anything
+
+	ageNow(Limit.expirationUser + Time.minute)//the user walked away mid-flow and came back tomorrow
+	ok((await submit({})).outcome == 'Expired.')//answered gracefully, because a slow user is not an attacker
+})
+grid(async () => {//wallet prove: only the connected wallet's own signature, over our own nonce, proves anything
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag(), browserHash = random32()
+	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
+	let other = await _walletTestAccount('0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba')
+	let prove = await credentialWalletProve1({userTag, browserHash, address: account.address})
+	const submit = async (signed) => await credentialWalletProve2(
+		{userTag, browserHash, address: account.address, ...signed, envelope: prove.envelope})
+
+	let forged = await _walletTestSign({account: other, nonce: prove.nonce})//somebody else signs the message this user was to sign
+	ok((await submit(forged)).outcome == 'BadSignature.')
+
+	let stale = await _walletTestSign({account, nonce: Tag()})//the right wallet signs, but over a nonce we never issued
+	ok((await submit(stale)).outcome == 'BadSignature.')
+	ok((await credentialWalletGet({userTag})).length == 0)//still nothing proven
+
+	let signed = await _walletTestSign({account, nonce: prove.nonce})
+	ok((await submit(signed)).ok)//the real thing works
+	let replay = await submit(signed)//and then the same envelope and signature are spent a second time
+	ok(!replay.ok && replay.outcome == 'WalletAlreadyProven.')//which proves nothing new, because the address already has its holder
+})
+grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wallet is never opened
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag(), browserHash = random32()
+	let wallet1 = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+	let wallet2 = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
+	let wallet3 = '0x00000000219ab540356cBB839Cbe05303d7705Fa'
+	await credentialWalletSet({userTag, address: wallet1})
+	await credentialWalletSet({userTag, address: wallet2})//this user is at the limit
+
+	let prove = await credentialWalletProve1({userTag, browserHash, address: wallet3})
+	ok(prove.outcome == 'WalletFull.')
+	ok(!prove.nonce && !prove.envelope)//nothing to sign against, so the page can't open a signature request
+
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3})
+	ok(rows.length == 1 && rows[0].event == 2)//the mention is on the record, and no challenge row, because we never challenged
 })
 grid(async () => {//oauth: link multiple providers, re-link single active per provider, remove
 	let {clear} = await getDatabase()

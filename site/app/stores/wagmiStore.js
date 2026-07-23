@@ -1,6 +1,6 @@
 
 import {
-wevmDynamicImport, originApex,
+viemDynamicImport, wagmiDynamicImport, originApex,
 } from 'icarus'
 
 //owns the wagmi lifecycle: dynamic import, config, connection watching, reconnect
@@ -15,13 +15,14 @@ const connectedAddress = ref(null)//wallet address currently connected via wagmi
 const isConnected = ref(false)//true if a wallet is currently connected via wagmi
 
 let _config = null//wagmi config; created once in load, holds chain/transport/connector setup
-let _modules = null//dynamically imported {viem, viem_chains, wagmi_core, wagmi_connectors}
+let _modules = null//the two dynamic imports merged: {viem, viem_chains, viem_siwe, viem_utils, wagmi_core, wagmi_connectors}
 let _loaded = false
 
-//idempotent — first caller does the dynamic import, config, and reconnect; subsequent callers are a no-op
+//idempotent — first caller does the dynamic imports, config, and reconnect; subsequent callers are a no-op
 //called from onMounted in any component that needs wagmi (WalletPanel, PriceDemo, etc.)
 async function load() { if (_loaded) return; _loaded = true
-	_modules = await wevmDynamicImport()
+	let [viemModules, wagmiModules] = await Promise.all([viemDynamicImport(), wagmiDynamicImport()])//viem is the shared crypto library, wagmi the page-only wallet layer over it
+	_modules = {...viemModules, ...wagmiModules}//merge so the store's other methods keep destructuring one bag
 	let {viem, viem_chains, wagmi_core, wagmi_connectors} = _modules
 	_config = wagmi_core.createConfig({//configure wagmi to use a wallet injected into the page and also WalletConnect
 		chains: [

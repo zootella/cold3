@@ -113,7 +113,7 @@ wrapper
 export {
 
 vhsSign,
-otpConstants,
+otpConstants, walletConstants,
 
 /* level 3 query */
 
@@ -124,9 +124,11 @@ trailRecent, trailCount, trailGet, trailGetAny, trailAdd, trailAddMany,
 
 credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
+credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameCheck, credentialNameSet, credentialNameRemove,
-credentialWalletGet, credentialWalletSet, credentialWalletRemove,
+credentialWalletGet, credentialWalletHolder, credentialWalletRefusal, credentialWalletSet, credentialWalletRemove,
+credentialWalletProve1, credentialWalletProve2,
 credentialOauthChallenge, credentialOauthParse, credentialOauthSet, credentialOauthRemove, credentialOauthGet,
 oauthProviders,
 credentialOtpSend, credentialOtpEnter, credentialOtpGet, credentialOtpRemove,
@@ -196,7 +198,7 @@ functions that use module imports
 */
 export {
 
-qrcodeDynamicImport, uppyDynamicImport, wevmDynamicImport,
+qrcodeDynamicImport, uppyDynamicImport, viemDynamicImport, wagmiDynamicImport,
 nodeDynamicImport, fuzzDynamicImport, pgliteDynamicImport,
 prefix39,
 

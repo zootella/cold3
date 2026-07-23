@@ -5,20 +5,17 @@ validateName, checkAction, checkNumerals, validateEmailOrPhone,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
-credentialTotpGet, credentialTotpSet, credentialTotpRemove,
-credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialSet,
+credentialTotpGet, credentialTotpRemove,
+credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover,
+credentialWalletGet, credentialWalletProve1, credentialWalletProve2, credentialWalletRemove,
 credentialOauthRemove, credentialOauthGet, oauthProviders,
 credentialOtpSend, credentialOtpEnter, credentialOtpGet, credentialOtpRemove,
 credentialCloseAccount,
-totpEnroll, totpValidate, totpIdentifier, totpConstants,
+totpValidate, totpIdentifier, totpConstants,
 otpConstants,
-checkTotpCode, checkTotpSecret, checkWallet, Data, isExpired,
+checkTotpCode, checkTotpSecret, checkWallet, Data,
 trailCount, trailAdd,
-originDomain,
 } from 'icarus'
-import {createPublicClient, http} from 'viem'
-import {mainnet} from 'viem/chains'
-import {verifySiweMessage} from 'viem/siwe'
 
 export default defineEventHandler(async (workerEvent) => {
 	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthRemove.', 'OtpSendTurnstile.', 'OtpEnter.', 'EmailRemove.', 'PhoneRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
@@ -42,7 +39,7 @@ async function attachState(task, browserHash) {//attach complete credential stat
 			task.totpEnrolled = false
 			task.totpIdentifier = ''
 		}
-		task.wallet = (await credentialWalletGet({userTag: user.userTag})) || ''//checksummed address, or empty
+		task.wallets = await credentialWalletGet({userTag: user.userTag})//[address, ...] checksummed, zero one or two
 		task.oauths = await credentialOauthGet({userTag: user.userTag})
 		task.emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//[{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
 		task.phones = await credentialOtpGet({userTag: user.userTag, type: 'Phone.'})
@@ -81,24 +78,9 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	// 🟠 get
 	if (action == 'Get.') {
 		await attachState(task, browserHash)
-		if (hasText(body.envelope)) {//client found an enrollment envelope cookie from a previous session
-			try {
-				let letter = await openEnvelope('EnrollTotpEnvelope.', body.envelope, {skipExpirationCheck: true})
-				if (!isExpired(letter.expiration) && !task.totpEnrolled) {
-					let secret = letter.secret
-					let enrollment = await totpEnroll({
-						secret: Data({base32: secret}),
-						account: '@'+(task.user?.f1 || task.userTag || 'user'),
-						brand: Key('domain, public'),
-						label: true,
-					})
-					task.enrollment = {
-						uri: enrollment.uri,
-						envelope: body.envelope,
-						identifier: enrollment.identifier,
-					}
-				}
-			} catch (e) {/*stale or invalid envelope, silently ignore*/}
+		if (task.userTag && hasText(body.envelope)) {//client found an enrollment envelope cookie from a previous session; an enrollment belongs to a user, so there's nothing to resume for a signed out browser
+			let enrollment = await credentialTotpRecover({userTag: task.userTag, browserHash, envelope: body.envelope})
+			if (enrollment) task.enrollment = enrollment
 		}
 		let letter//also recover any live otp code challenges at this browser, replacing the old FoundEnvelope. round trip
 		try {
@@ -220,44 +202,13 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		// 🟠 totp
 		//TOTP enrollment step 1: the user at browser wants to setup totp as a second factor. here at the server, we make sure they're not already enrolled, and generate a new random secret for the qr code
 		} else if (action == 'TotpEnroll1.') {
-			let existing = await credentialTotpGet({userTag: user.userTag})
-			if (existing) toss('state', {action, user, browserHash, existing})//client thought enrollment was possible
-
-			let userName = await credentialNameGet({userTag: user.userTag})//get name information for this user, if they have one
-			let account = userName?.name?.f1 ? `@${userName.name.f1}` : null//later use email if the user has that, ttd march
-			let enrollment = await totpEnroll({brand: Key('domain, public'), account, label: true})
-			enrollment.envelope = await sealEnvelope('EnrollTotpEnvelope.', Limit.expirationUser, {
-				secret: enrollment.secret,
-				message: safefill`TOTP enrollment: browser ${browserHash}, user ${user.userTag}, secret ${enrollment.secret}`,
-			})
-			task.enrollment = enrollment
+			task.enrollment = await credentialTotpEnroll1({userTag: user.userTag, browserHash})//the page shows this as a QR code and keeps the envelope for step 2
 
 		// 🟠 totp
 		//TOTP enrollment step 2: the user has gotten the secret into their authenticator app, and has their first code to validate. if they're right, we create their enrollment
 		} else if (action == 'TotpEnroll2.') {
-			checkTotpCode(body.code)
-			let existing = await credentialTotpGet({userTag: user.userTag})
-			if (existing) toss('state', {action, user, browserHash, existing})//client thought enrollment was possible
-			let letter = await openEnvelope('EnrollTotpEnvelope.', body.envelope, {skipExpirationCheck: true})
-
-			//decrypt the secret from the page, possibly via a cookie through a refresh
-			let secret = letter.secret
-			checkTotpSecret(secret)
-
-			//make sure the page has given us back the same real valid secret we gave it in enrollment step 1 above
-			if (isExpired(letter.expiration)) return {success: false, outcome: 'Expired.'}
-			if (!hasTextSame(
-				letter.message,
-				safefill`TOTP enrollment: browser ${browserHash}, user ${user.userTag}, secret ${secret}`)) {
-				toss('state', {action, user, browserHash, letter})//envelope tampered or transplanted
-			}//➡️ passing this check is proof it's the real secret from step 1!
-
-			//make sure the user can generate a valid code
-			let valid = await totpValidate({secret: Data({base32: secret}), code: body.code})
-			if (!valid) return {success: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the page still has the secret at this point!
-
-			//save this new enrollment for this user
-			await credentialTotpSet({userTag: user.userTag, secret})
+			let result = await credentialTotpEnroll2({userTag: user.userTag, browserHash, envelope: body.envelope, code: body.code})
+			if (!result.ok) return {success: false, outcome: result.outcome}
 
 		// 🟠 totp
 		//an enrolled user wants to remove their totp enrollment, likely to setup a different one
@@ -299,51 +250,29 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			}
 
 		// 🟠 wallet
-		//wallet proof step 1: page requests nonce for SIWE (Sign-In with Ethereum, EIP-4361)
-		//server generates the nonce and seals it with address+browserHash in an envelope for tamper protection
-		//the page will construct the SIWE message client-side, sign it, and send it back in step 2
+		//wallet proof step 1: page requests a nonce for SIWE (Sign-In with Ethereum, EIP-4361)
+		//the flow itself is in level3 where grid tests reach it; here we only normalize what the page sent and add the browserHash the door resolved
 		} else if (action == 'WalletProve1.') {
 			let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
-			await credentialSet({userTag: user.userTag, type: 'Ethereum.', event: 2, f0: address})//event 2: user's browser mentioned this address
-
-			let nonce = Tag()//generate a new random nonce; 21 base62 characters; the page will embed this in the SIWE message
-			let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {nonce, address, browserHash})
-			await credentialSet({userTag: user.userTag, type: 'Ethereum.', event: 3, f0: address})//event 3: server challenges this address with a nonce
-			task.walletProve = {nonce, envelope}
+			let prove = await credentialWalletProve1({userTag: user.userTag, browserHash, address})
+			if (prove.outcome) return {success: false, outcome: prove.outcome}//a rule declined before any nonce was minted, so the user's wallet is never opened for a proof we'd refuse
+			task.walletProve = prove//{nonce, envelope} for the page to sign against and hand back at step 2
 
 		// 🟠 wallet
-		//wallet proof step 2: page calls back with a signed SIWE message
-		//the page constructed the SIWE message client-side using createSiweMessage (viem/siwe) and signed it with the wallet
+		//wallet proof step 2: page calls back with the SIWE message it constructed using createSiweMessage (viem/siwe) and the wallet's signature over it
 		} else if (action == 'WalletProve2.') {
-
 			let address = checkWallet(body.address).f0
-			let message = checkText(body.message)//the SIWE-formatted message the page constructed and signed
-			let signature = checkText(body.signature)//0x followed by 130 or 132 base16 characters
-
-			//open the envelope from step 1 to recover the nonce, address, and browserHash we sealed
-			let letter = await openEnvelope('ProveWallet.', body.envelope, {skipExpirationCheck: true})
-			if (isExpired(letter.expiration)) return {success: false, outcome: 'Expired.'}//user walked away
-			if (letter.browserHash !== browserHash) toss('state', {action, browserHash, letter})//envelope from a different browser
-			if (letter.address !== address) toss('state', {action, browserHash, letter})//envelope was for a different address
-
-			//verifySiweMessage does it all: parses the SIWE message, checks domain, nonce, address, and expirationTime, verifies the signature
-			//supports both EOA (ecrecover) and smart contract wallets (EIP-1271 on-chain call via the publicClient)
-			//passing domain and time enforces that the SIWE message was signed for our origin and is still within its self-declared lifetime; defense-in-depth alongside the envelope's nonce+expiration
-			let valid = await verifySiweMessage(
-				createPublicClient({chain: mainnet, transport: http(Key('alchemy url, secret'))}),//secret server only Alchemy key with no Origin header requirements, separate from the Origin restricted client side key
-				{message, signature, domain: originDomain(), nonce: letter.nonce, address, time: new Date()}
-			)
-			if (!valid) return {success: false, outcome: 'BadSignature.'}
-
-			//save this proven wallet address as a credential for this user; ttd november2025, we'll save that in the database to sign this user up or in, essentially
-			//more to do here about that after we smoke test and security audit this above...
-			log(`🖌 server has proof that browser ${browserHash} controls wallet ${address}`)
-			await credentialWalletSet({userTag: user.userTag, address})
+			let result = await credentialWalletProve2({
+				userTag: user.userTag, browserHash, address,
+				message: body.message, signature: body.signature, envelope: body.envelope,
+			})
+			if (!result.ok) return {success: false, outcome: result.outcome}
 
 		// 🟠 wallet
-		//user wants to remove their connected wallet
+		//user wants to remove one of their proven wallets; f0 is the checksummed address from the list attachState returned
 		} else if (action == 'WalletRemove.') {
-			await credentialWalletRemove({userTag: user.userTag})
+			let address = checkWallet(body.f0).f0//correct the case checksum, the same way both prove steps do, because the rows are matched on f0 by equality
+			await credentialWalletRemove({userTag: user.userTag, f0: address})//scoped to this user's own rows, so an address they don't hold can only hide nothing
 
 		// 🟠 oauth
 		//the user wants to discard their proof of control of a third party account with an oauth provider

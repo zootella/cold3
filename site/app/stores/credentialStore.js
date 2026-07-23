@@ -12,7 +12,7 @@ const passwordCycles = ref(0)//the signed-in user's password hash cycles, or 0 i
 const totpEnrolled = ref(false)//true if the user has a verified TOTP enrollment
 const totpIdentifier = ref('')//short identifier like "g3" to help user find the right authenticator entry
 const enrollment = ref(null)//in-flight TOTP enrollment recovered from envelope cookie, or null
-const wallet = ref('')//checksummed Ethereum address the user has proven they control, or empty
+const wallets = ref([])//checksummed Ethereum addresses the user has proven they control: [address, ...] zero, one, or two
 const oauths = ref([])//array of linked third-party accounts: [{provider, identifier, handle, name, email}, ...]
 const emails = ref([])//the user's email addresses: [{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
 const phones = ref([])//the user's phone numbers, same shape
@@ -39,7 +39,7 @@ function apply(task) {//update all refs from task - called after any action that
 	totpEnrolled.value = task.totpEnrolled || false
 	totpIdentifier.value = task.totpIdentifier || ''
 	enrollment.value = task.enrollment || null
-	wallet.value = task.wallet || ''
+	wallets.value = task.wallets || []
 	oauths.value = task.oauths || []
 	emails.value = task.emails || []
 	phones.value = task.phones || []
@@ -132,8 +132,8 @@ async function walletProve2({address, message, signature, envelope}) {
 	return task
 }
 
-async function walletRemove() {
-	let task = await fetchWorker('/credential', 'WalletRemove.')
+async function walletRemove({f0}) {//remove one proven wallet; f0 is the checksummed address from the wallets list
+	let task = await fetchWorker('/credential', 'WalletRemove.', {f0})
 	apply(task)
 }
 
@@ -191,7 +191,7 @@ return {
 	totpEnroll1,
 	totpEnroll2,
 	totpRemove,
-	wallet,
+	wallets,
 	walletProve1,
 	walletProve2,
 	walletRemove,

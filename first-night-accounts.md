@@ -25,15 +25,19 @@ The credential work in this project has moved through three conceptual phases, a
 
 **Phase 3 — intercredential flows.** Once the types are secure and correct standing side by side, design the flows that cross between them — and between different people, devices, and sessions. This is where we put the whole cast on one whiteboard, decide what's easy and therefore common, resolve the conflicts, and keep it all secure. The flows in this document are that phase's early notes: none of it is built, and some of it revises rules the earlier phases shipped.
 
-## The design lens: easy, common, reasonably secure
+## The design lens: easy, common, reasonably secure, expected
 
-A useful vantage point for designing and testing these flows is to hold each one against three questions at once.
+A useful vantage point for designing and testing these flows is to hold each one against four questions at once.
 
 **(a) Easy — the user starts with one finger.** The flow completes without leaving the page or the app. Every extra step — checking an inbox, installing an authenticator, finding a password manager — loses some fraction of users, so the first-night path is built to demand none of them.
 
 **(b) Common — and non-completion is a first-class state.** High numbers of real users will make these exact choices, and will complete or skip the additional steps in predictable proportions. The unusual and important move is to treat *not finishing* as a normal, durable, supported state rather than as funnel abandonment. A user who ignores the code and comes back tomorrow is an ordinary case, not an error. So the system's model of a person stops being signed-up-or-not and becomes a set of rungs on a proof ladder — how far up someone has climbed, not whether they're "in."
 
 **(c) Reasonably secure — middle of the road.** The account resists a casual nearby attacker but is not trusted to hold content or money. What makes this sound rather than hopeful is that capability is gated on credentials: if posting and payments *require* climbing the ladder, then thin accounts are low-stakes **by rule, not by hope**, which caps what any convenient-door attacker can ever reach through a first-night account.
+
+**(d) Expected — the flow is one these users have already completed elsewhere.** Matching expectations is a security property and not only a usability one, and it works through two mechanisms. A person who has no script for a flow invents one, and invented behavior is where secrets leak: confronted with something unprecedented, a perfectly reasonable user screenshots it, mails it to themselves so it's on the laptop too, or asks a friend to help. And phishing resistance rests on the user's own sense that something is off, which is assembled entirely from flows they have completed elsewhere — so a site that routinely asks for unprecedented things has trained its users to comply with unprecedented things, which is exactly the posture an attacker wants them in.
+
+The payoff is that a familiar flow arrives with **folk rules** already attached. Don't read the code to whoever just called you, never share your password, check which account you're signed into before you tap approve — these are defenses the user carries into our flows for free, learned from every other service they use, and there is no price at which we could install them ourselves. A bespoke flow gets none of them and has to be defended entirely by mechanism. The test is population-relative rather than universal: connect-a-wallet-and-sign is unfamiliar to nearly everyone and completely routine to crypto-native users, so the question is always whether the people who would actually reach for this particular door have walked through it many times before. And the worst failure is not an absent expectation but a contrary one, because a flow that overwrites a correct model users already hold leaves them worse defended than they were before they met us.
 
 ## The flows
 
