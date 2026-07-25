@@ -167,3 +167,77 @@ For relocate (localStorage): sealing an envelope is stateless — no database wr
 A starting sketch for the case-by-case pass, against the [11] cheat sheet: OTP challenges are the strongest candidate for rows — server-generated, short-lived, already half-recorded in the table. TOTP enrollment could go either way — a single slot, recovery already rides Get., but the secret would sit in plain text for its twenty minutes. Wallet stays in memory under either design. Pre-user activity stays client-side until there's a tag.
 
 The endgame this fork controls: if OTP and TOTP provisional state both move to rows, the unified envelope of sections [1] through [10] shrinks dramatically or becomes moot, and this document mostly archives rather than builds. If either stays client-side, sections [6] through [8] get built for what remains. Decide the fork first; size second.
+
+## [14] the bigger picture: no sessions, and a deliberate cheat named brownie
+
+cold3 has no session object. The stack is a page at the top (one spa in one browser tab), Supabase tables at the bottom, and Cloudflare workers in the middle that hold nothing: the spa that was rendered by one worker instance can POST to a completely different instance and nothing breaks, because every request re-derives who is asking from scratch — browserTag cookie to browserHash to the credential_table lookup. This is the serverless shape on purpose. We've deliberately avoided the proprietary state homes that would compromise it (Cloudflare Durable Objects and the like), and we're not on an older framework that builds sessions into the floor — PHP is the canonical example, where `$_SESSION` is a server-side object the runtime keys off a session cookie automatically.
+
+The thing this document designs is a small, deliberate cheat in the session direction, and it gets a name: **brownie** — like a cookie, but bigger. A brownie is a localStorage entry, keyed to the user, holding one sealed envelope: the place the page keeps state that belongs to a person at a browser, is more convenient than the database, and is no longer welcome in a cookie.
+
+Two boundaries keep the cheat honest. The brownie is not a sign-in: the httpOnly browserTag cookie remains the only session credential, and a brownie proves nothing about who is asking — the server checks that the letter's owner matches the user the browserTag resolved to, and refuses otherwise. And the brownie does not keep a user signed in; sign-out and sign-in work exactly as they do today, and a signed-out user's brownie just sits sealed and useless until she returns or it expires.
+
+The first tenant is provisional credential state — the OTP and TOTP slices this document has always been about. But the container is built to take more. The clearest future case is sudo: a signed-in user completes a second-factor flow to gain elevated capability, either for a duration (an hour) or for a single command ("withdraw funds," imagining cold3 were a bank). Sudo state is scoped to exactly a user at a browser, which is exactly the brownie's scoping, so it would move in as one more item type. Other future uses with that shape find the same home ready.
+
+## [15] brownie mechanics: the key, the value, the letter
+
+One localStorage entry per user, whose key carries three parts separated by dots:
+
+```
+brownie.DWFWM4UEAFDLYRFAYI42YLEO7ZONVOT36AJM7TAKOY5BSN3HE3OQ.1784764575418
+```
+
+- `brownie.` marks the entry as ours, apart from anything other scripts or extensions have parked at the origin. (localStorage is origin-scoped — scheme, host, and port, with subdomains each getting their own — a touch narrower than the cookie's domain scoping. This prefix supersedes [6]'s `cold3:credential-envelope:` namespace.)
+- The middle part is `hashText(userTag)` — the per-user keying of [4], hashed rather than plaintext so that when Alice and Bob share one browser profile, Alice can't read Bob's userTag out of devtools. The 52-character base32 output is the same shape as browserHash, and the page can compute its own key cheaply since it knows its own userTag.
+- The last part is the epoch tick of the brownie's overall shelf life. This answers [4]'s open question about lingering entries: with the expiration readable in the key, a fully local sweep can tell stale from fresh with no server round trip. [5]'s principle survives with one carve-out — the page reads this plaintext expiration for hygiene deletion only, never to judge freshness for a flow; the enforced expiration is still the one sealed inside.
+
+The value is the bare base62 ciphertext from sealEnvelope — no JSON wrapper, superseding [6]'s `{"envelope":...}` format, since the expiration that wrapper reserved room for now lives in the key. The page treats it as opaque.
+
+The letter inside, which only the server can read:
+
+```js
+{
+	action: 'Brownie.',//sealEnvelope writes this itself; one action for the one unified envelope, superseding [3]'s 'CredentialEnvelope.' placeholder
+	expiration: 1784764575418,//sealEnvelope writes this too: the container's deadline, mirrored in plaintext as the key's last part
+	userTag: 'Wx8FRH7WvMpsdqZw7gjAH',//the owner; the server refuses a brownie whose owner isn't the signed-in user at the requesting browser
+	browserHash: 'DWFWM4UEAFDLYRFAYI42YLEO7ZONVOT36AJM7TAKOY5BSN3HE3OQ',//the browser; openEnvelope's existing check keeps every provisional flow single-browser, as today
+	//maybe more up here as uses arrive
+	items: [//self-describing objects, one per in-flight thing
+		{
+			type: 'Totp.',//every item names its type
+			expiration: 123456789,//and carries its own deadline
+			//...whatever else this type's flow needs
+		},
+	],
+}
+```
+
+No seed or nonce is needed to keep two sealed brownies from ever matching: symmetric_encrypt generates a fresh random 12-byte initialization vector for every encrypt operation (`icarus/core.js:1176`), so even an identical letter resealed produces different ciphertext. And a caller doesn't write action or expiration — sealEnvelope stamps both into the letter as it seals (`icarus/level2.js:399`).
+
+The items array is a dumb list. There's no container-level rule about whether a type appears once or many times — TOTP's one-slot rule and OTP's one-challenge-per-address rule are enforced by flow code, as they are now. Expirations layer: each item carries its own; the container's is the latest of them; the server derives sealEnvelope's duration as that maximum minus Now(), so the sealed expiration and the key's plaintext epoch agree. A page that tampers with its key's epoch only mis-times its own hygiene.
+
+makeText and makeObject do all stringification and parsing, as everywhere — they're already what encryptObject and decryptObject use inside.
+
+## [16] protocols: carrying, replacing, deleting, and tabs
+
+**Carrying up.** The page attaches its brownie ciphertext to the body of a POST. The server opens it, checks the letter's browserHash against the door's, checks the letter's userTag against the user this browser resolves to, and only then trusts the items. Replay and cross-play get the same treatment as today: a replayed envelope is answered by the trail table and credential rows being the truth (the otp guess-counting defenses carry over unchanged), and a cross-played brownie fails the userTag or browserHash check before its items are ever read.
+
+**Coming down.** The response protocol is exactly the one the otp integration settled: text or blank, no meanings loaded onto null versus undefined. A response that touched the brownie carries `task.brownie` (the resealed ciphertext) and `task.brownieExpiration` (the epoch for the key) when anything is live; it carries `task.brownie` as blank when the last item died. The server never seals an empty items array, because blank is the representation of empty — the precedent is attachLetterOtp answering `task.envelopeOtp = ''`. Blank is also the delete command; there is no separate one. A response that didn't touch the brownie carries neither field, and the page leaves storage alone.
+
+**Replacing means a new key.** Because the epoch lives in the key, a reseal produces a different key name, so replacement is write-new-then-delete-old rather than overwriting in place. Four rules keep that sane:
+
+- Readers never remember a full key. They scan for `brownie.<hash>.` fresh each time they need it — at POST time, not cached in a ref.
+- The writer writes the new entry, then removes any other entries under the same hash.
+- If a race between tabs leaves two entries under one hash, the newest epoch wins and the others are deleted on sight.
+- Sign-out deletes nothing. Alice's brownie waits, sealed, for her return — [4]'s shared-browser story working as intended.
+
+**Tabs.** Several tabs, one user, one origin: they necessarily share the one brownie, and that's fine. Each tab reads fresh at each use, so it posts the newest stored ciphertext; if it still manages to post a stale one, that's just the replay case the flows already defend, and the server's answer overwrites toward truth. The cross-tab `storage` event stays deferred, as [10] left it.
+
+**Startup hygiene.** Once per spa, client side only, the store sweeps: iterate localStorage keys, and for anything under `brownie.`, delete entries whose key epoch is past — any user's, general hygiene — along with anything malformed. Defensive parsing is right here, not noise: localStorage is page territory where old versions of us, other scripts, and extensions can leave junk, so this is a real trust boundary.
+
+**The seam, and where it starts.** All of this is client-only — the server has no localStorage, so none of it may run during SSR (the [9] flash tradeoff stands). The natural first seam is credentialStore, already the choke point that alone touches the otp cookie: brownie helpers live in the store, called where fetch bodies are built and responses handled, superseding [7]'s getEnvelope/setEnvelope sketch in name and key format while keeping its shape (client guards, malformed entries dropped). The wider seam — every POST carrying the brownie through fetchWorker, opened uniformly by doorWorker into something like door.brownie — is the likely end state once a second consumer beyond credentials exists, with sudo the candidate. Noted honestly: that would put the ciphertext on every request body, the same always-riding [1] holds against cookies, but deliberate, verified, and POST-only rather than automatic. Same discipline as the middle-tier navigation precedent: the first instance lives locally; the move to the seam waits for the second surface.
+
+## [17] build order: stand it up empty first
+
+Before moving anything in — before either envelope cookie is touched — build the brownie and watch it run empty. The pure parts (composing and parsing the three-part key, picking the newest entry for a hash, deciding what the sweep deletes) are string-and-time logic that belongs in icarus with grid tests beneath, testable without a browser. The store layer (scan, read, write, sweep at startup) wires in client-only and simply holds nothing yet: the sweep runs and finds nothing, no POST carries a brownie field, and devtools shows an empty shelf. Sanity-checking the machinery at zero is cheap, and it means the eventual first tenant debugs its flow, not its floor.
+
+Building the container now doesn't pre-decide the [13] fork. Even if the case-by-case pass sends both OTP challenges and TOTP enrollment to credential_table rows, the brownie stays justified as the home for sudo and whatever else needs user-at-browser scoping — the "machinery isn't wasted" argument [13] already makes. Which tenants move in, and when, remains the fork's question; this only builds the building.
