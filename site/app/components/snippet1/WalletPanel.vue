@@ -13,6 +13,9 @@ walletConstants,
 const credentialStore = useCredentialStore()
 const wagmiStore = useWagmiStore()
 
+const props = defineProps({editing: Boolean})//parent gates the connect/prove/remove controls behind an Edit link, like the email and phone panels; the proven list still shows when collapsed
+const emit = defineEmits(['edit', 'cancel'])
+
 //transient flow state — resets when user navigates away, which is the right behavior
 const refUri = ref('')//walletconnect uri we show as a qr code
 const refInstructionalMessage = ref('')//message to user if there was a problem in the connect and prove flow
@@ -205,25 +208,39 @@ function redirect() { window.location.href = refUri.value }//deep-link to wallet
 
 </script>
 <template>
-<Card class="px-4 py-4 gap-2">
+<Box>
 
-<p class="my-space">Ethereum Wallet</p>
+<p class="my-space">
+	Ethereum Wallet
+	<Button v-show="!editing" link :click="() => emit('edit')">Edit</Button>
+</p>
 
 <p v-for="address in credentialStore.wallets" :key="address" class="my-space">
-	<code class="break-all text-sm">{{ address }}</code> proven <Button link :click="() => onRemove(address)">Remove</Button>
+	<code class="break-all text-sm">{{ address }}</code> proven <Button v-if="editing" link :click="() => onRemove(address)">Remove</Button>
 </p>
 <p v-if="!credentialStore.wallets.length" class="my-space">not proven</p>
 
-<p class="my-space">
-	<template v-if="wagmiStore.isConnected"><code class="break-all text-sm">{{ wagmiStore.connectedAddress }}</code> connected <Button link :click="onDisconnect">Disconnect</Button></template><template v-else>connect <Button :state="computedStateConnecting" :click="onInjectedConnect" labeling="Connecting...">Injected</Button> <Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button></template>
-</p>
-<div v-if="refUri" class="space-y-2">
-	<QrCode :address="refUri" />
-	<p>Scan the code with your wallet app, or open it on this device.</p>
-	<Button :click="redirect">Open in Wallet App</Button>
-</div>
+<template v-if="editing">
+	<p v-if="wagmiStore.isConnected" class="my-space">
+		<code class="break-all text-sm">{{ wagmiStore.connectedAddress }}</code> connected <Button link :click="onDisconnect">Disconnect</Button>
+	</p>
+	<p v-if="hasRoom() && !wagmiStore.isConnected" class="my-space"><!-- add a wallet: only reachable with a free connection, since wagmi holds one at a time -->
+		connect <Button :state="computedStateConnecting" :click="onInjectedConnect" labeling="Connecting...">Injected</Button> <Button :state="computedStateConnecting" :click="onWalletConnect" labeling="Connecting...">WalletConnect</Button>
+	</p>
+	<p v-else-if="hasRoom()" class="my-space">Disconnect above, then connect a different wallet to add it.</p>
+	<p v-else class="my-space">You've proven {{ walletConstants.limit }} wallets, the most allowed. Remove one to add another.</p>
+	<div v-if="refUri" class="space-y-2">
+		<QrCode :address="refUri" />
+		<p>Scan the code with your wallet app, or open it on this device.</p>
+		<Button :click="redirect">Open in Wallet App</Button>
+	</div>
 
-<p v-if="refInstructionalMessage">{{ refInstructionalMessage }}</p>
+	<p v-if="refInstructionalMessage">{{ refInstructionalMessage }}</p>
 
-</Card>
+	<p class="my-space">
+		<Button :click="() => emit('cancel')">Cancel</Button>
+	</p>
+</template>
+
+</Box>
 </template>

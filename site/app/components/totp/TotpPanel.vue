@@ -78,7 +78,7 @@ async function onRemove() {
 
 </script>
 <template>
-<Card class="px-4 py-4 gap-2">
+<Box>
 
 <p class="my-space">
 	Authenticator App
@@ -139,5 +139,5 @@ Enter the 6-digit code from your authenticator app.
 	</template>
 </template>
 
-</Card>
+</Box>
 </template>

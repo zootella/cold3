@@ -189,4 +189,7 @@
 
 	/* inline flex row for buttons, text, and controls that sit side by side */
 	.my-space { @apply flex flex-wrap items-baseline gap-2; }
+
+	/* a bordered, lightly rounded box for a panel or one of its sections; the credential panel and every section inside it are these */
+	.my-box { @apply border border-gray-300 rounded p-2; }
 }

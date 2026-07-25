@@ -21,7 +21,7 @@ async function onRemove(f0) {
 
 </script>
 <template>
-<div>
+<Box>
 
 <p class="my-space">
 	email addresses
@@ -44,5 +44,5 @@ async function onRemove(f0) {
 	</p>
 </template>
 
-</div>
+</Box>
 </template>

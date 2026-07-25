@@ -71,7 +71,7 @@ const refKey = ref(Tag())//change to force Vue to recreate
 
 </script>
 <template>
-<div :key="refKey"><!-- changing refKey makes Vue destroy and recreate this div and all child components, resetting their internal state -->
+<Box :key="refKey"><!-- changing refKey makes Vue destroy and recreate this box and all child components, resetting their internal state -->
 
 <p class="my-space">
 	oauth providers
@@ -97,5 +97,5 @@ const refKey = ref(Tag())//change to force Vue to recreate
 	<Button :click="() => emit('cancel')">Cancel</Button>
 </p>
 
-</div>
+</Box>
 </template>

@@ -19,7 +19,7 @@ async function onRemove(f0) {
 
 </script>
 <template>
-<div>
+<Box>
 
 <p class="my-space">
 	phone numbers
@@ -42,5 +42,5 @@ async function onRemove(f0) {
 	</p>
 </template>
 
-</div>
+</Box>
 </template>
