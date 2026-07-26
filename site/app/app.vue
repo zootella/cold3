@@ -36,6 +36,12 @@ https://nuxt.com/docs/guide/concepts/rendering#universal-rendering
 const mainStore = useMainStore()
 await mainStore.load()//run store and component code on the server to render everything in response to a new tab's GET; comes with cookie
 onMounted(async () => { await mainStore.mounted() })//run on the page at the start; now you have browser graphics and navigation duration
+
+const brownieStore = useBrownieStore()
+onMounted(() => { brownieStore.mounted() })//brownie startup hygiene, client-only by the nature of this hook: sweep expired sealed envelope entries from localStorage
+
+const credentialStore = useCredentialStore()
+onMounted(async () => { await credentialStore.mounted() })//brownie recovery follow-up: the server render can't see localStorage, so if this user holds a brownie, send it up now to recover in-flight enrollments
 /*
 within universal rendering, some notes about this "all-at-once" page pattern we found:
 await on the margin makes this block on server rendering, which is what we want

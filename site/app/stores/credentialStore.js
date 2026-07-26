@@ -19,6 +19,7 @@ const phones = ref([])//the user's phone numbers, same shape
 const otps = ref([])//live otp code challenges at this browser: [{tag, start, address}, ...]; the answers stay sealed in the envelope cookie
 
 const otpCookie = useOtpCookie()//captured here at store setup so apply can reach it after awaits; the store is the only code that touches this cookie
+const brownieStore = useBrownieStore()//the brownie: this user's sealed envelope of in-flight credential items, parked in localStorage; this store asks it for ciphertext to send and hands it responses to apply
 
 const userDisplayName = computed(() => {//best available display name for page
 	if (name.value?.f2) return name.value.f2
@@ -30,6 +31,9 @@ function apply(task) {//update all refs from task - called after any action that
 		otps.value = task.otps
 		if      (hasText(task.envelopeOtp)) otpCookie.value = task.envelopeOtp//the resealed envelope rides alongside; keep it
 		else if (hasText(otpCookie.value))  otpCookie.value = null//nothing live anymore, and we're holding a stale cookie; null here is just how useCookie deletes--the wire protocol is text or blank, and we only touch the cookie if we actually hold one
+	}
+	if (hasTextOrBlank(task.brownie)) {//a response that touched the brownie carries it: text to keep, blank to delete; a response without the field leaves storage alone
+		brownieStore.setBrownie({userTag: task.userTag || userTag.value, envelope: task.brownie, expiration: task.brownieExpiration})//not awaited: localStorage settles on its own a beat later, and nothing below reads it back
 	}
 	if (!task.success) return//taken name, wrong password, paths like those that still aren't toss
 	browserHash.value = task.browserHash || ''
@@ -46,10 +50,18 @@ function apply(task) {//update all refs from task - called after any action that
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
-	let totpCookie = useTotpCookie()
 	let body = {}
-	if (hasText(totpCookie.value)) body.envelope = totpCookie.value//in-flight totp enrollment to recover
 	if (hasText(otpCookie.value)) body.envelopeOtp = otpCookie.value//found otp envelope cookie; live challenges to recover, ttd january
+	let task = await fetchWorker('/credential', 'Get.', body)
+	apply(task)
+}
+
+async function mounted() {//client-only follow-up called from app.vue: the server render can't see localStorage, so if this user holds a brownie, send it up now to recover in-flight enrollments
+	if (!userTag.value) return//a brownie is keyed to a signed-in user
+	let brownie = await brownieStore.getBrownie({userTag: userTag.value})
+	if (!hasText(brownie)) return//no brownie, no follow-up--the common case costs zero extra requests
+	let body = {brownie}
+	if (hasText(otpCookie.value)) body.envelopeOtp = otpCookie.value//Get. always answers with current challenge truth, so send the live challenges along rather than letting an empty answer clear them
 	let task = await fetchWorker('/credential', 'Get.', body)
 	apply(task)
 }
@@ -104,15 +116,20 @@ async function removePassword() {
 }
 
 async function totpEnroll1() {
-	let task = await fetchWorker('/credential', 'TotpEnroll1.')
+	let task = await fetchWorker('/credential', 'TotpEnroll1.', {brownie: await brownieStore.getBrownie({userTag: userTag.value}) || undefined})
 	apply(task)
 	return task
 }
 
-async function totpEnroll2({envelope, code}) {
-	let task = await fetchWorker('/credential', 'TotpEnroll2.', {envelope, code})
+async function totpEnroll2({code}) {
+	let task = await fetchWorker('/credential', 'TotpEnroll2.', {code, brownie: await brownieStore.getBrownie({userTag: userTag.value}) || undefined})
 	apply(task)
 	return task
+}
+
+async function totpEnrollCancel() {//the user backed out of a two-step enrollment; the server drops the in-flight item so a refresh doesn't resurrect it
+	let task = await fetchWorker('/credential', 'TotpEnrollCancel.', {brownie: await brownieStore.getBrownie({userTag: userTag.value}) || undefined})
+	apply(task)
 }
 
 async function totpRemove() {
@@ -171,6 +188,7 @@ async function closeAccount() {
 
 return {
 	loaded, load,
+	mounted,//app.vue calls once per spa after mount, for the brownie recovery follow-up
 	browserHash,
 	userTag,
 	name,
@@ -190,6 +208,7 @@ return {
 	removePassword,
 	totpEnroll1,
 	totpEnroll2,
+	totpEnrollCancel,
 	totpRemove,
 	wallets,
 	walletProve1,

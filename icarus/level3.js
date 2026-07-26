@@ -621,82 +621,76 @@ export async function credentialTotpRemove({userTag}) {
 /*
 Enrolling an authenticator app is two steps with a gap in the middle that we can't see: step 1 generates a secret and
 shows it as a QR code, the user scans it into their app, and step 2 asks them to type the first code it produces.
-Nothing is saved until that code checks out, so between the steps the secret lives only in an envelope the page holds.
+Nothing is saved until that code checks out, so between the steps the secret lives only as an item in the letter of
+the user's brownie--the sealed envelope of in-flight credential state the page parks in localStorage.
 
-The envelope is what makes step 2 safe, and the whole of its safety is one line of text sealed inside it, naming the
-browser, the user, and the secret together. Step 2 rebuilds that line from who is asking now and refuses anything that
-doesn't match, which is what stops an envelope carried to another browser, or picked up by the next person to sign in
-at a shared one. Because that line has to be built identically in three places, it is built in exactly one, below.
+The brownie is what makes step 2 safe: the endpoint seals the letter with the userTag and browserHash it belongs to,
+and both the endpoint at open and the functions below refuse a letter that isn't the signed-in user's at the
+requesting browser. That stops a letter carried to another browser, or picked up by the next person to sign in at a
+shared one--and the per-user localStorage key means an honest page never sends someone else's letter to begin with.
 
 The gap is also why the secret must survive a page refresh: by the time the page holds it, the user has already
 scanned it into their app, and throwing it away orphans the entry they just made there. So the page keeps the
-envelope, hands it back on the next load, and recover() decides whether there is really an enrollment to resume.
+brownie, sends it up after the next load, and recover() decides whether there is really an enrollment to resume.
 */
 
-function _totpEnrollMessage({browserHash, userTag, secret}) {//the binding sealed at step 1 and rechecked at step 2: this secret, for this browser, for this user, and no other combination
-	return safefill`TOTP enrollment: browser ${browserHash}, user ${userTag}, secret ${secret}`
-}
 async function _totpEnrollAccount(userTag) {//name the entry in the user's authenticator app, so they can tell ours apart from everyone else's
 	let userName = await credentialNameGet({userTag})
 	return userName?.name?.f1 ? `@${userName.name.f1}` : null//later use email if the user has that, ttd march
 }
 
-//totp enrollment step 1: the user wants an authenticator app as a second factor, so make them a secret and seal it for step 2
-//returns the enrollment for the page to show as a QR code, including the envelope it must hand back
-export async function credentialTotpEnroll1({userTag, browserHash}) {
-	checkTag(userTag); checkHash(browserHash)
+//totp enrollment step 1: the user wants an authenticator app as a second factor, so make them a secret and put it in their letter for step 2
+//returns the enrollment for the page to show as a QR code; the secret rides only in the letter, which the endpoint seals into the brownie
+export async function credentialTotpEnroll1({letter, userTag}) {
+	checkTag(userTag)
 	let existing = await credentialTotpGet({userTag})
-	if (existing) toss('state', {userTag, browserHash, existing})//the page thought enrollment was possible, and one user holds one enrollment
+	if (existing) toss('state', {userTag, existing})//the page thought enrollment was possible, and one user holds one enrollment
 
 	let enrollment = await totpEnroll({brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
-	enrollment.envelope = await sealEnvelope('EnrollTotpEnvelope.', Limit.expirationUser, {
-		secret: enrollment.secret,
-		message: _totpEnrollMessage({browserHash, userTag, secret: enrollment.secret}),
-	})
-	return enrollment
+	letter.items = letter.items.filter(i => i.type != 'Totp.')//one enrollment in flight at a time; starting again replaces an abandoned start
+	letter.items.push({type: 'Totp.', expiration: Now() + Limit.expirationUser, secret: enrollment.secret})//the item carries its own deadline; the letter the endpoint seals around it carries the user and browser binding
+	return {uri: enrollment.uri, identifier: enrollment.identifier}
 }
 
 //totp enrollment step 2: the secret is in their app and they've typed the first code it gave them
 //returns {ok: true} once the enrollment is saved, or {ok: false, outcome} for a sad path the page can act on
-export async function credentialTotpEnroll2({userTag, browserHash, envelope, code}) {
+export async function credentialTotpEnroll2({letter, userTag, browserHash, code}) {
 	checkTag(userTag); checkHash(browserHash); checkTotpCode(code)
 	let existing = await credentialTotpGet({userTag})
 	if (existing) toss('state', {userTag, browserHash, existing})//as at step 1, the page thought enrollment was possible
 
-	let letter = await openEnvelope('EnrollTotpEnvelope.', envelope, {skipExpirationCheck: true})
-	let secret = letter.secret//the secret from step 1, come back to us through the page and possibly a cookie through a refresh
-	checkTotpSecret(secret)
+	if (letter.userTag != userTag || letter.browserHash != browserHash) toss('state', {userTag, browserHash, letter})//letter transplanted to another browser, or another user at a shared one; the endpoint refuses this at open, and it's checked again here where grid tests walk the flow
 
-	if (isExpired(letter.expiration)) return {ok: false, outcome: 'Expired.'}//they took more than twenty minutes, so start them over
-	if (!hasTextSame(letter.message, _totpEnrollMessage({browserHash, userTag, secret}))) {
-		toss('state', {userTag, browserHash, letter})//envelope tampered or transplanted
-	}//➡️ passing this check is proof it's the real secret from step 1!
+	let item = letter.items.find(i => i.type == 'Totp.')//the enrollment from step 1, come back to us sealed through the page and a possible refresh
+	if (!item) return {ok: false, outcome: 'Expired.'}//gone: expired items are filtered at open, and a cancelled one was removed--either way the remedy is the same, start over
+	let secret = item.secret
+	checkTotpSecret(secret)
+	if (isExpired(item.expiration)) {//they took more than twenty minutes, so start them over; the endpoint filters expired items on open, and this covers callers below the endpoint
+		letter.items = letter.items.filter(i => i.type != 'Totp.')//dead, so it leaves the letter
+		return {ok: false, outcome: 'Expired.'}
+	}
 
 	let valid = await totpValidate({secret: Data({base32: secret}), code})
-	if (!valid) return {ok: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the page still has the secret at this point!
+	if (!valid) return {ok: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment; the item stays in the letter, so she can try again with the code in front of her
 
 	await credentialTotpSet({userTag, secret})
+	letter.items = letter.items.filter(i => i.type != 'Totp.')//finished; nothing left in flight to resume
 	return {ok: true}
 }
 
-//an enrollment was interrupted, and the page has handed back the envelope it kept
+//an enrollment was interrupted, and the page has sent up the brownie it kept
 //returns the enrollment to put back on the screen, or false when there's nothing here to resume
-export async function credentialTotpRecover({userTag, browserHash, envelope}) {
+export async function credentialTotpRecover({letter, userTag, browserHash}) {
 	checkTag(userTag); checkHash(browserHash)
 
-	let letter
-	try {//this envelope came off a cookie the person at the page could have mangled, replaced, or pasted in, so a bad one means no recovery rather than a page that won't load
-		letter = await openEnvelope('EnrollTotpEnvelope.', envelope, {skipExpirationCheck: true})
-	} catch (e) { return false }
-
-	if (isExpired(letter.expiration)) return false//too old to resume, and the app entry they scanned is already orphaned
+	if (letter.userTag != userTag || letter.browserHash != browserHash) return false//not this person's letter at this browser, so recovery shows nothing rather than someone else's enrollment; the per-user localStorage key means an honest page never lands here
+	let item = letter.items.find(i => i.type == 'Totp.')
+	if (!item) return false//nothing in flight to resume
+	if (isExpired(item.expiration)) return false//too old to resume, and the app entry they scanned is already orphaned
 	if (await credentialTotpGet({userTag})) return false//they finished this enrollment somewhere else, so nothing is in flight
-	if (!hasTextSame(letter.message, _totpEnrollMessage({browserHash, userTag, secret: letter.secret}))) {
-		return false//the envelope isn't this user's at this browser: two people share this browser profile, and the first one's enrollment is still sitting in the cookie
-	}
 
-	let enrollment = await totpEnroll({secret: Data({base32: letter.secret}), brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
-	return {uri: enrollment.uri, envelope, identifier: enrollment.identifier}//the same envelope goes back out; step 2 is still holding the only copy of the secret
+	let enrollment = await totpEnroll({secret: Data({base32: item.secret}), brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
+	return {uri: enrollment.uri, identifier: enrollment.identifier}//nothing goes back out separately; the brownie the page already holds is the persistence
 }
 
 //                    _            _   _       _                 _ _      _   
@@ -1147,77 +1141,87 @@ grid(async () => {//totp enroll: the whole flow, secret to saved enrollment, wit
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag(), browserHash = random32()
+	let letter = {userTag, browserHash, items: []}//the endpoint composes this from the brownie the page sent, or fresh when the page held nothing
 
-	let enrollment = await credentialTotpEnroll1({userTag, browserHash})//step 1: she asks to enroll and gets a secret to scan
-	ok(hasText(enrollment.secret) && hasText(enrollment.uri) && hasText(enrollment.envelope))
-	ok((await credentialTotpGet({userTag})) == false)//nothing saved yet; the secret lives only in the envelope she's holding
+	let enrollment = await credentialTotpEnroll1({letter, userTag})//step 1: she asks to enroll and gets a secret to scan
+	ok(hasText(enrollment.uri) && letter.items.length == 1)
+	let secret = letter.items[0].secret//the secret rides in the letter, which only the server can read once sealed
+	ok(hasText(secret))
+	ok((await credentialTotpGet({userTag})) == false)//nothing saved yet; the secret lives only in the letter she's holding sealed
 
-	let code = await totpGenerate({secret: Data({base32: enrollment.secret}), now: Now()})//her authenticator app, which now has the secret
-	ok((await credentialTotpEnroll2({userTag, browserHash, envelope: enrollment.envelope, code})).ok)
-	ok((await credentialTotpGet({userTag})) == enrollment.secret)//step 2 checked the code and saved the enrollment
+	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})//her authenticator app, which now has the secret
+	ok((await credentialTotpEnroll2({letter, userTag, browserHash, code})).ok)
+	ok((await credentialTotpGet({userTag})) == secret)//step 2 checked the code and saved the enrollment
+	ok(letter.items.length == 0)//and the finished enrollment left the letter
 })
 grid(async () => {//totp enroll: a wrong code is refused, and enrolling twice is a mistake by the page above us
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag(), browserHash = random32()
-	let enrollment = await credentialTotpEnroll1({userTag, browserHash})
+	let letter = {userTag, browserHash, items: []}
+	await credentialTotpEnroll1({letter, userTag})
+	let secret = letter.items[0].secret
 
-	let wrong = await credentialTotpEnroll2({userTag, browserHash, envelope: enrollment.envelope, code: '000000'})
+	let wrong = await credentialTotpEnroll2({letter, userTag, browserHash, code: '000000'})
 	ok(!wrong.ok && wrong.outcome == 'BadCode.')//six digits that aren't the six digits her app shows
-	ok((await credentialTotpGet({userTag})) == false)//and nothing saved, so she can try again with the code in front of her
+	ok((await credentialTotpGet({userTag})) == false)//and nothing saved
+	ok(letter.items.length == 1)//the item stays in the letter, so she can try again with the code in front of her
 
-	let code = await totpGenerate({secret: Data({base32: enrollment.secret}), now: Now()})
-	ok((await credentialTotpEnroll2({userTag, browserHash, envelope: enrollment.envelope, code})).ok)
+	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
+	ok((await credentialTotpEnroll2({letter, userTag, browserHash, code})).ok)
 
 	//now enrolled, both steps refuse to start over; the page ghosts these controls, so reaching here means it was wrong about the state
 	let tossed
-	tossed = false; try { await credentialTotpEnroll1({userTag, browserHash}) } catch (e) { tossed = true }
+	tossed = false; try { await credentialTotpEnroll1({letter, userTag}) } catch (e) { tossed = true }
 	ok(tossed)
-	tossed = false; try { await credentialTotpEnroll2({userTag, browserHash, envelope: enrollment.envelope, code}) } catch (e) { tossed = true }
+	tossed = false; try { await credentialTotpEnroll2({letter, userTag, browserHash, code}) } catch (e) { tossed = true }
 	ok(tossed)
 })
-grid(async () => {//totp enroll: the sealed message binds the secret to one browser and one user
+grid(async () => {//totp enroll: the sealed letter binds the secret to one browser and one user
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let alice = Tag(), bob = Tag(), browserHash = random32()
-	let enrollment = await credentialTotpEnroll1({userTag: alice, browserHash})
-	let code = await totpGenerate({secret: Data({base32: enrollment.secret}), now: Now()})
+	let letter = {userTag: alice, browserHash, items: []}//in production the per-user localStorage key and the endpoint's checks at open keep these from ever mismatching; here we walk the same rule where tests can reach it
+	await credentialTotpEnroll1({letter, userTag: alice})
+	let code = await totpGenerate({secret: Data({base32: letter.items[0].secret}), now: Now()})
 
 	let tossed
-	tossed = false; try { await credentialTotpEnroll2({userTag: alice, browserHash: random32(), envelope: enrollment.envelope, code}) } catch (e) { tossed = true }
-	ok(tossed)//alice's envelope carried to another browser can't finish there
+	tossed = false; try { await credentialTotpEnroll2({letter, userTag: alice, browserHash: random32(), code}) } catch (e) { tossed = true }
+	ok(tossed)//alice's letter carried to another browser can't finish there
 
-	tossed = false; try { await credentialTotpEnroll2({userTag: bob, browserHash, envelope: enrollment.envelope, code}) } catch (e) { tossed = true }
+	tossed = false; try { await credentialTotpEnroll2({letter, userTag: bob, browserHash, code}) } catch (e) { tossed = true }
 	ok(tossed)//and bob, signed in at alice's browser, can't finish her enrollment as his own
 	ok((await credentialTotpGet({userTag: bob})) == false)//nothing written for him
 
 	ageNow(Limit.expirationUser + Time.minute)//alice walked away mid-enrollment and came back tomorrow
-	let late = await credentialTotpEnroll2({userTag: alice, browserHash, envelope: enrollment.envelope, code})
+	let late = await credentialTotpEnroll2({letter, userTag: alice, browserHash, code})
 	ok(!late.ok && late.outcome == 'Expired.')//answered gracefully, so the page can start her over
+	ok(letter.items.length == 0)//and the dead item left the letter
 })
 grid(async () => {//totp recover: an interrupted enrollment comes back, but only for the person who started it
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let alice = Tag(), bob = Tag(), browserHash = random32()
-	let enrollment = await credentialTotpEnroll1({userTag: alice, browserHash})
+	let letter = {userTag: alice, browserHash, items: []}
+	let enrollment = await credentialTotpEnroll1({letter, userTag: alice})
 
-	let resumed = await credentialTotpRecover({userTag: alice, browserHash, envelope: enrollment.envelope})
+	let resumed = await credentialTotpRecover({letter, userTag: alice, browserHash})
 	ok(resumed.uri == enrollment.uri)//she refreshed the page and gets the same qr code back, matching what she already scanned
-	ok(resumed.envelope == enrollment.envelope)//and the same envelope, because step 2 still needs the only copy of the secret
 
-	//bob signs in at the browser alice left, where her envelope is still sitting in the cookie
-	ok((await credentialTotpRecover({userTag: bob, browserHash, envelope: enrollment.envelope})) == false)//he sees an ordinary panel, not her qr code
-	ok((await credentialTotpRecover({userTag: alice, browserHash: random32(), envelope: enrollment.envelope})) == false)//nor does her envelope resume at some other browser
-
-	ok((await credentialTotpRecover({userTag: alice, browserHash, envelope: 'not-an-envelope'})) == false)//a mangled cookie means no recovery, not a page that won't load
+	//bob signs in at the browser alice left; her letter is in her brownie, not his, but even handed her letter the flow refuses
+	ok((await credentialTotpRecover({letter, userTag: bob, browserHash})) == false)//he sees an ordinary panel, not her qr code
+	ok((await credentialTotpRecover({letter, userTag: alice, browserHash: random32()})) == false)//nor does her letter resume at some other browser
+	//a mangled brownie is caught a layer up: the endpoint's open fails and recovery proceeds with a fresh empty letter
 
 	//once she finishes, there's nothing left in flight to resume
-	let code = await totpGenerate({secret: Data({base32: enrollment.secret}), now: Now()})
-	ok((await credentialTotpEnroll2({userTag: alice, browserHash, envelope: enrollment.envelope, code})).ok)
-	ok((await credentialTotpRecover({userTag: alice, browserHash, envelope: enrollment.envelope})) == false)
+	let code = await totpGenerate({secret: Data({base32: letter.items[0].secret}), now: Now()})
+	ok((await credentialTotpEnroll2({letter, userTag: alice, browserHash, code})).ok)
+	ok((await credentialTotpRecover({letter, userTag: alice, browserHash})) == false)
 
+	let letter2 = {userTag: bob, browserHash, items: []}//bob starts his own enrollment and walks away
+	await credentialTotpEnroll1({letter: letter2, userTag: bob})
 	ageNow(Limit.expirationUser + Time.minute)
-	ok((await credentialTotpRecover({userTag: bob, browserHash, envelope: enrollment.envelope})) == false)//and an expired envelope resumes for nobody
+	ok((await credentialTotpRecover({letter: letter2, userTag: bob, browserHash})) == false)//an expired enrollment resumes for nobody
 })
 grid(async () => {//wallet: a user proves two addresses, and the third is refused until they remove one
 	let {clear} = await getDatabase()

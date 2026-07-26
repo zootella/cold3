@@ -65,8 +65,8 @@ composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
 Beyond that, we define some functions here. Why are these here intead of in one of the lower levels of the Icarus library? Because they need to call other Nuxt composables, like useCookie. These are defined here, but won't work in Icarus, which is isomorphic and framework-agnostic. Cookie *options* can live in icarus (plain objects), but the useCookie() *call* must happen here.
 */
 
-export function useOtpCookie() { return useCookie('temporary_envelope_otp', {...cookieOptions.envelope}) }
-export function useTotpCookie() { return useCookie('temporary_envelope_totp', {...cookieOptions.envelope}) }//useCookie probably doesn't change or add to the options object we give it, but let's spread a fresh copy for each call, just in case
+export function useOtpCookie() { return useCookie('temporary_envelope_otp', {...cookieOptions.envelope}) }//useCookie probably doesn't change or add to the options object we give it, but let's spread a fresh copy for each call, just in case
+//otp's is the one envelope cookie left: totp enrollment state now rides in the brownie, the per-user sealed envelope the page keeps in localStorage
 
 //  _     _     _                                    _                      _        _       
 // | |__ (_)___| |_ ___  _ __ _   _   _ __ ___ _ __ | | __ _  ___ ___   ___| |_ __ _| |_ ___ 
