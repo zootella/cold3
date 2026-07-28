@@ -517,12 +517,18 @@ export async function fetchWorker(route, action, body = {}) {//from a Pinia stor
 	route = '/api'+route
 	body = makePlain({...body, action})//$fetch automatically stringifies, but would throw on a method or circular reference
 
+	//if this browser has a brownie for its userTag, include it in the body we POST
+	let brownie = brownieGet()//most won't, only during a provisional enrollment flow, or sudo hour, and they expire quickly
+	if (brownie) body.brownie = brownie//also won't if page code has called here on the server render, no local storage means no brownie
+
 	let browserTag//with universal rendering, we may already be on the server! if so, we must forward the browser tag cookie
 	if (import.meta.server && typeof useNuxtApp == 'function') browserTag = useNuxtApp().ssrContext?.event?.context?.browserTag
 	let headers = browserTag ? {cookie: `${composeCookieName()}=${composeCookieValue(browserTag)}`} : {}
 
 	const f = $fetch//used from Nuxt front end, so we always have Nuxt's $fetch
-	return await f(route, {method: 'POST', headers, body})//throws if worker responds non-2XX; worker is first-party so that's what we want
+	let response = await f(route, {method: 'POST', headers, body})//throws if worker responds non-2XX; worker is first-party so that's what we want
+	if (response?.brownie) brownieApply(response.brownie)//a response that touched the brownie commands BrownieSet. or BrownieDelete.; a response without the field says nothing, and the page leaves its storage alone
+	return response
 }
 export async function fetchLambda({from, route, action, body = {}}) {//fetch to a Network 23 Lambda from a worker (with sealed envelope) or page (without)
 	checkActions({action: from, actions: ['Page.', 'Worker.']}); checkRoute(route); checkAction(action)
@@ -614,14 +620,17 @@ export async function doorWorker(method, {
 
 			door = await doorWorkerOpen({method, workerEvent})
 			await doorWorkerCheck({door, actions, useTurnstile})
+			let browserHash = await hashText(checkTag(door.workerEvent.context.browserTag))//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
+			door.brownie = await openBrownie({envelope: door.body?.brownie, browserHash})//if the page sent a brownie, pin the opened letter for request code to read and change in place; the door never matches users--request code touches only notes whose userTag matches the signed-in user it resolved from the database
 			response = await doorHandleBelow({
 				door,//give our handler the door object, and convenient shortcut access to:
 				query: door.query,//query string from a GET request
 				body: door.body,//content body from a POST
 				action: door.body?.action,
 				headers: door.headers,
-				browserHash: await hashText(checkTag(door.workerEvent.context.browserTag)),//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
+				browserHash,
 			})
+			response.brownie = await sealBrownie({letter: door.brownie, browserHash})//from what the letter now holds, command the page: a complete replacement to set, a delete when its notes are gone, or undefined, which vanishes when the response serializes
 
 		} catch (e1) { error = e1 }
 		try {
@@ -1085,8 +1094,57 @@ noop(() => {//first, a demonstration of a promise race
 	})
 })
 
+//      _                    _                             _      
+//   __| | ___   ___  _ __  | |__  _ __ _____      ___ __ (_) ___ 
+//  / _` |/ _ \ / _ \| '__| | '_ \| '__/ _ \ \ /\ / / '_ \| |/ _ \
+// | (_| | (_) | (_) | |    | |_) | | | (_) \ V  V /| | | | |  __/
+//  \__,_|\___/ \___/|_|    |_.__/|_|  \___/ \_/\_/ |_| |_|_|\___|
+//                                                                
 
+/*
+The brownie is a secure place for the user at a browser to keep state from the server--a sealed note that survives page refreshes and separate spa lifetimes. It is not authentication, and it is not a JWT: the browserTag cookie identifies the browser, and the Browser credential row in the database links that browser to the signed-in user. The brownie is entirely ephemeral--the notes inside are labeled to last twenty minutes, some perhaps an hour--and entirely opaque to the page, which parks ciphertext it can never read or forge. What it's for: holding the provisional records of a two-step flow, like the provisional secret of a totp enrollment between the qr scan and the first code, or granting this user at this browser sudo permission, for a span of time or for a single command, spent and revoked.
 
+The page's whole job is small: one localStorage entry under the hardcoded key "brownie", sent up in the body of any POST when held--which is rarely, since a brownie exists only mid-flow--and written or deleted as the response commands. BrownieSet. carries the replacement envelope, BrownieDelete. clears, and a response with no command changes nothing. That silence is load-bearing, because a response to a request that departed before the current brownie existed must not wrongly delete it.
+
+The letter inside carries browserHash and notes, and each note names its own type, expiration, and owner. A note's userTag ties it to a user, so housemates sharing a browser profile share the one brownie with their notes mixed in the same array--Alice finishing her totp flow reseals a letter still carrying the note Bob needs when he sits down next--and request code touches only notes whose userTag matches the signed-in user it resolved from the database. A note can also be owned by nobody yet, which is how a sign-up flow can hold provisional state before its person has a userTag.
+
+The door never tosses over a brownie, because the cookie and localStorage can fall into a combined state that would otherwise blow up every page load forever--a support call, and clearing localStorage by hand--where wiping the notes costs at worst a restarted twenty-minute flow. So every failure at open degrades to an empty letter, which the response turns into BrownieDelete., cleaning the browser up in one request: an envelope that will not open (someone in devtools retyping the entry as junk that isn't even base62, corruption, or a change to our own letter shape at a deploy, which is what clears every browser's stale brownie after one); a sealed browserHash that disagrees with the one the request's cookie proves (mild chaos, like deleted cookies giving this browser a new identity, or malice, like an extension feeding in a brownie stolen from an attacker's own signed-in browser); or notes missing their positive integer expirations. Expired notes are dropped one at a time, and a letter that empties commands its own deletion.
+*/
+
+function brownieGet() {//the sealed ciphertext this browser is holding, or blank for nothing--text or blank; private to level2, because fetchWorker below is the only caller
+	if (!defined(typeof localStorage)) return ''//no localStorage off the page; a plain platform check rather than a nuxt build flag, because icarus stays framework-agnostic
+	return localStorage.getItem('brownie') || ''
+}
+
+function brownieApply({action, envelope}) {//execute a response's command; private like brownieGet above, because fetchWorker below is the only caller
+	if (!defined(typeof localStorage)) return//no localStorage off the page
+	checkAction(action)
+	if (action == 'BrownieSet.') {//store the complete replacement the server sealed
+		checkText(envelope)
+		localStorage.setItem('brownie', envelope)
+	} else if (action == 'BrownieDelete.') {//nothing in flight anymore
+		localStorage.removeItem('brownie')
+	} else { toss('action', {action}) }//our own server speaks this protocol, so an unrecognized command is our own bug
+}
+
+async function openBrownie({envelope, browserHash}) {//open an arriving brownie envelope into its letter of notes, or false when none arrived--the pair to sealBrownie below
+	if (!hasText(envelope)) return false//no brownie sent, the common case; no letter, and the response will say nothing
+	let letter
+	try {
+		letter = await openEnvelope('Brownie.', envelope, {skipExpirationCheck: true})//decrypting proves the letter is authentic, stayed secret, and wasn't tampered with; the note expirations checked below are what govern the contents
+	} catch (e) { letter = {} }//an envelope that won't open--corruption, tampering, or sealed by an older shape of our own protocol; arrive empty, which the response turns into BrownieDelete., cleaning this browser up in one request
+	if (!hasTextSame(letter.browserHash, browserHash)) letter.notes = []//the browserHash from the request's cookie is the trusted one; a sealed one that disagrees is mild chaos (deleted cookies gave this browser a new identity) or malice (an extension fed in a brownie from another browser)--either way wipe the notes, never toss, because a toss here would blow up every page load until someone cleared localStorage by hand
+	letter.notes = Array.isArray(letter.notes) ? letter.notes.filter(n => Number.isSafeInteger(n?.expiration) && Now() <= n.expiration) : []//every note must carry its own expiration, a positive integer epoch still in the future; expired and malformed notes are discarded here, so request code only ever sees live ones
+	return letter
+}
+async function sealBrownie({letter, browserHash}) {//seal a request's brownie letter back up, returning the command that tells the page what to keep: BrownieSet. with the replacement envelope, BrownieDelete. when the notes are gone, or undefined for no letter and no command--undefined rather than false, because assigning it to response.brownie leaves the serialized response without the field at all, which is the protocol's silence
+	if (!letter) return//no brownie arrived and no request code created one; the response will say nothing, and the page will leave its storage alone
+	if (letter.notes.length == 0) return {action: 'BrownieDelete.'}//nothing in flight; the page clears what it holds. An explicit command, never inferred from silence
+	letter.browserHash = browserHash//stamp the browser binding fresh from the request's cookie, for openBrownie's comparison next time
+	let expiration = Math.max(...letter.notes.map(n => n.expiration))//sealEnvelope wants a duration, so give it the letter's true horizon, the latest note; enforcement stays per note at open
+	let envelope = await sealEnvelope('Brownie.', expiration - Now(), letter)
+	return {action: 'BrownieSet.', envelope}
+}
 
 
 

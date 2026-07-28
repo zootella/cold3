@@ -11,6 +11,7 @@ const props = defineProps({
 const emit = defineEmits(['edit', 'cancel'])
 
 const credentialStore = useCredentialStore()
+const refCookie = useTotpCookie()//persists enrollment envelope across page refresh
 const refMobile = browserIsBesideAppStore()//phone/tablet detection, constant for the session
 
 const refUri = ref('')//otpauth: URI; truthy means enrollment is active
@@ -23,29 +24,28 @@ const refEnterButton = ref(null)//Enter button for initial code validation
 const computedCode = computed(() => takeNumerals(refCode.value))//strip non-digits
 const computedCodeOk = computed(() => computedCode.value.length == totpConstants.codeLength)//true if box has what could be a valid code, good enough to post (but only the server knows if valid)
 
-watch(() => credentialStore.enrollment, (enrollment) => {//recover an interrupted enrollment; the brownie is client-only, so the store's follow-up fills this ref a beat after first paint rather than during the server render
-	if (!enrollment || refUri.value) return//nothing arriving, or the panel is already showing an enrollment
-	refUri.value = enrollment.uri
-	refIdentifier.value = enrollment.identifier || ''
-	refOpened.value = refMobile//on mobile, assume user already tapped Add before the refresh
-	emit('edit')
-}, {immediate: true})
+onMounted(() => {//recover interrupted enrollment from cookie via Get.'s envelope pattern
+	if (credentialStore.enrollment) {
+		refUri.value = credentialStore.enrollment.uri
+		refIdentifier.value = credentialStore.enrollment.identifier || ''
+		refOpened.value = refMobile//on mobile, assume user already tapped Load before refresh
+		emit('edit')
+	}
+})
 
-function resetUi() {//reset everything and collapse
+function onCancel() {//reset everything and collapse
 	refUri.value = ''
 	refOpened.value = false
 	refIdentifier.value = ''
 	refCode.value = ''
 	refStatus.value = ''
+	refCookie.value = null//clear so cancelled enrollment doesn't reappear after refresh
 	emit('cancel')
-}
-async function onCancel() {//the user backs out
-	if (refUri.value) await credentialStore.totpEnrollCancel()//an enrollment is in flight; the server drops its item from the brownie so a refresh doesn't resurrect it
-	resetUi()
 }
 
 async function onEnroll() {//ask server for provisional secret, start enrollment
-	let task = await credentialStore.totpEnroll1()//server tosses on chaos (already enrolled), fetchWorker throws, page blows up; the secret rides sealed in the brownie the store just applied
+	let task = await credentialStore.totpEnroll1()//server tosses on chaos (already enrolled), fetchWorker throws, page blows up
+	refCookie.value = task.enrollment.envelope//persist for page refresh recovery
 	refIdentifier.value = task.enrollment.identifier || ''
 	refUri.value = task.enrollment.uri//makes enrollment UI visible
 	emit('edit')
@@ -58,19 +58,22 @@ function onAdd() {//mobile: hand off to authenticator app
 
 async function onValidate() {//confirm the 6-digit code, finish enrollment
 	refStatus.value = 'Validating...'
-	let task = await credentialStore.totpEnroll2({code: computedCode.value})
-	if (task.success) {//success, user is enrolled in TOTP; the finished item already left the brownie server-side
-		resetUi()
+	let task = await credentialStore.totpEnroll2({
+		envelope: refCookie.value,
+		code: computedCode.value,
+	})
+	if (task.success) {//success, user is enrolled in TOTP
+		onCancel()//clears cookie, refs, and collapses
 	} else if (task.outcome == 'BadCode.') {//wrong digits, or correct digits but the 30-second TOTP window rolled over
 		refStatus.value = "That code didn't work. Please try again."
-	} else if (task.outcome == 'Expired.') {//enrollment expired, like they took more than 20 minutes on the happy path; the dead item already left the brownie server-side
-		resetUi()//rare, just start them over
+	} else if (task.outcome == 'Expired.') {//enrollment envelope expired, like they took more than 20 minutes on the happy path
+		onCancel()//rare, just start them over
 	}
 }
 
 async function onRemove() {
 	await credentialStore.totpRemove()
-	resetUi()
+	onCancel()
 }
 
 </script>

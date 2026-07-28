@@ -18,7 +18,7 @@ trailCount, trailAdd,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpEnrollCancel.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthRemove.', 'OtpSendTurnstile.', 'OtpEnter.', 'EmailRemove.', 'PhoneRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthRemove.', 'OtpSendTurnstile.', 'OtpEnter.', 'EmailRemove.', 'PhoneRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
 // 🟠 get
@@ -72,45 +72,15 @@ async function attachLetterOtp(task, letter, browserHash) {//reseal the letter a
 		//the secret code we sent, like "123456" is o.answer; it's encrypted into envelope, and critically not leaked here to the page!
 	}))
 }
-// 🟠 the brownie
-//the brownie is the per-user localStorage entry where the page parks its one sealed envelope of in-flight credential items. The page can't read or change the letter inside--it sends the ciphertext up in POST bodies, and we alone open it, check that it belongs to the signed-in user at this browser, and answer with a resealed replacement as text, or blank to say delete
-async function openLetterBrownie(body, browserHash, userTag) {//unpack the letter of in-flight items from the brownie the page sent, or start a fresh letter if it held nothing
-	let letter
-	if (hasText(body.brownie)) {
-		letter = await openEnvelope('Brownie.', body.brownie, {browserHash, skipExpirationCheck: true})//authentic and from this browser; the item expirations filtered next are what govern the contents
-		if (letter.userTag != userTag) toss('state', {userTag})//two users sharing a browser profile share a browserHash, so the check above can't tell them apart--this owner check is what keeps one housemate's brownie from crossing into the other's session. And the per-user localStorage key means an honest page never sends someone else's, so a mismatch here is tampering or our own bug
-	} else {
-		letter = {userTag, browserHash, items: []}//no brownie held; start fresh
-	}
-	letter.items = letter.items.filter(i => Now() <= i.expiration)//the server cleans expired items on open, the way openLetterOtp filters dead challenges
-	return letter
-}
-async function attachLetterBrownie(task, letter, browserHash, userTag) {//reseal the letter and attach it for the page to park in localStorage
-	if (letter.items.length > 0) {
-		letter.userTag = userTag; letter.browserHash = browserHash//stamp the letter's identity; openLetterBrownie and the level3 flows check these
-		let expiration = Math.max(...letter.items.map(i => i.expiration))//the container's shelf life is the latest of its items
-		task.brownie = await sealEnvelope('Brownie.', expiration - Now(), letter)//sealEnvelope writes letter.expiration as now plus duration, which lands exactly on that latest item
-		task.brownieExpiration = expiration//in plain sight beside the ciphertext, so the page can name its localStorage key and later sweep expired entries locally
-	} else {
-		task.brownie = ''//nothing in flight; blank text, and the page deletes the entry it's holding--text or blank, no meanings loaded onto null or undefined
-	}
-}
 async function doorHandleBelow({door, body, action, browserHash}) {
 	let task = {}
 
 	// 🟠 get
 	if (action == 'Get.') {
 		await attachState(task, browserHash)
-		if (task.userTag && hasText(body.brownie)) {//the page found this user's brownie in localStorage; localStorage is client-only, so this recovery arrives as a follow-up after mount rather than during the server render
-			let letterBrownie
-			try {
-				letterBrownie = await openLetterBrownie(body, browserHash, task.userTag)
-			} catch (e) {/*corrupt, transplanted, or cross-played; recovery is best effort, so render without it--and attachLetterBrownie below returns blank, so the page deletes the bad entry it's holding*/
-				letterBrownie = {userTag: task.userTag, browserHash, items: []}
-			}
-			let enrollment = await credentialTotpRecover({letter: letterBrownie, userTag: task.userTag, browserHash})
+		if (task.userTag && hasText(body.envelope)) {//client found an enrollment envelope cookie from a previous session; an enrollment belongs to a user, so there's nothing to resume for a signed out browser
+			let enrollment = await credentialTotpRecover({userTag: task.userTag, browserHash, envelope: body.envelope})
 			if (enrollment) task.enrollment = enrollment
-			await attachLetterBrownie(task, letterBrownie, browserHash, task.userTag)
 		}
 		let letter//also recover any live otp code challenges at this browser, replacing the old FoundEnvelope. round trip
 		try {
@@ -232,24 +202,13 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		// 🟠 totp
 		//TOTP enrollment step 1: the user at browser wants to setup totp as a second factor. here at the server, we make sure they're not already enrolled, and generate a new random secret for the qr code
 		} else if (action == 'TotpEnroll1.') {
-			let letter = await openLetterBrownie(body, browserHash, user.userTag)
-			task.enrollment = await credentialTotpEnroll1({letter, userTag: user.userTag})//the page shows this as a QR code; the secret rides only in the letter, sealed next
-			await attachLetterBrownie(task, letter, browserHash, user.userTag)
+			task.enrollment = await credentialTotpEnroll1({userTag: user.userTag, browserHash})//the page shows this as a QR code and keeps the envelope for step 2
 
 		// 🟠 totp
 		//TOTP enrollment step 2: the user has gotten the secret into their authenticator app, and has their first code to validate. if they're right, we create their enrollment
 		} else if (action == 'TotpEnroll2.') {
-			let letter = await openLetterBrownie(body, browserHash, user.userTag)
-			let result = await credentialTotpEnroll2({letter, userTag: user.userTag, browserHash, code: body.code})
-			await attachLetterBrownie(task, letter, browserHash, user.userTag)//sad paths carry the letter too: a wrong code keeps the enrollment for retry, an expired one left the letter and the page deletes on blank
-			if (!result.ok) { task.success = false; task.outcome = result.outcome; return task }//return task rather than a fresh object, so the brownie fields ride along
-
-		// 🟠 totp
-		//the user backed out of a two-step enrollment; drop the in-flight item so a refresh doesn't resurrect it--other items in the letter ride on undisturbed
-		} else if (action == 'TotpEnrollCancel.') {
-			let letter = await openLetterBrownie(body, browserHash, user.userTag)
-			letter.items = letter.items.filter(i => i.type != 'Totp.')
-			await attachLetterBrownie(task, letter, browserHash, user.userTag)
+			let result = await credentialTotpEnroll2({userTag: user.userTag, browserHash, envelope: body.envelope, code: body.code})
+			if (!result.ok) return {success: false, outcome: result.outcome}
 
 		// 🟠 totp
 		//an enrolled user wants to remove their totp enrollment, likely to setup a different one

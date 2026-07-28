@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jul25.2251.42195
+  generated: 2026jul26.2019.28663
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -294,10 +294,10 @@ modules:
     note: "og: svg to png via native n-api for local dev; nuxt-og-image selects from nitro preset"
     from: site
     versions:
-      declared: ^2.6.2 on 2024mar26 27m old
-      installed: 2.6.2 on 2024mar26 27m old 🕰️ Installed version 1+ year old
-      current: 2.6.2 on 2024mar26 27m old
-      latest: 2.6.2 on 2024mar26 27m old
+      declared: ^2.6.2 on 2024mar26 28m old
+      installed: 2.6.2 on 2024mar26 28m old 🕰️ Installed version 1+ year old
+      current: 2.6.2 on 2024mar26 28m old
+      latest: 2.6.2 on 2024mar26 28m old
     downloads:
       weekly: 1,998,081
       on: 2026jul18.2043.15133
@@ -307,10 +307,10 @@ modules:
     note: "og: svg to png via rust/wasm for production workers; largest artifact is 2.48mb"
     from: site
     versions:
-      declared: ^2.6.2 on 2024mar26 27m old
-      installed: 2.6.2 on 2024mar26 27m old 🕰️ Installed version 1+ year old
-      current: 2.6.2 on 2024mar26 27m old
-      latest: 2.6.2 on 2024mar26 27m old
+      declared: ^2.6.2 on 2024mar26 28m old
+      installed: 2.6.2 on 2024mar26 28m old 🕰️ Installed version 1+ year old
+      current: 2.6.2 on 2024mar26 28m old
+      latest: 2.6.2 on 2024mar26 28m old
     downloads:
       weekly: 1,830,577
       on: 2026jul18.2043.15133
@@ -500,7 +500,7 @@ modules:
       - site
     versions:
       declared: ^3.3.2 on 2026feb01 5m old
-      installed: 3.5.5 on 2026jun25 0m old
+      installed: 3.5.5 on 2026jun25 1m old
       current: 3.6.4 on 2026jul22 0m old
       latest: 3.6.4 on 2026jul22 0m old
     downloads:
@@ -751,9 +751,9 @@ modules:
     from: site
     versions:
       declared: ^2.8.0 on 2026jan28 5m old
-      installed: 2.10.1 on 2026jun26 0m old
-      current: 2.10.1 on 2026jun26 0m old
-      latest: 2.10.1 on 2026jun26 0m old
+      installed: 2.10.1 on 2026jun26 1m old
+      current: 2.10.1 on 2026jun26 1m old
+      latest: 2.10.1 on 2026jun26 1m old
     downloads:
       weekly: 1,373,166
       on: 2026jul18.2043.15133
@@ -802,7 +802,7 @@ modules:
     note: "provider: local lambda emulator for dev"
     from: net23
     versions:
-      declared: ^14.5.0 on 2026feb24 4m old
+      declared: ^14.5.0 on 2026feb24 5m old
       installed: 14.7.4 on 2026jun23 1m old
       current: 14.7.4 on 2026jun23 1m old
       latest: 14.7.4 on 2026jun23 1m old
@@ -894,9 +894,9 @@ modules:
     from: site
     versions:
       declared: ^1.17.4 on 2026jan15 6m old
-      installed: 1.17.5 on 2026mar26 3m old
-      current: 1.17.5 on 2026mar26 3m old
-      latest: 1.17.5 on 2026mar26 3m old
+      installed: 1.17.5 on 2026mar26 4m old
+      current: 1.17.5 on 2026mar26 4m old
+      latest: 1.17.5 on 2026mar26 4m old
     downloads:
       weekly: 21,023,155
       on: 2026jul18.2043.15133
@@ -978,7 +978,7 @@ modules:
     from: site
     versions:
       declared: ^4.63.0 on 2026feb05 5m old
-      installed: 4.105.0 on 2026jun25 0m old
+      installed: 4.105.0 on 2026jun25 1m old
       current: 4.114.0 on 2026jul23 0m old
       latest: 4.114.0 on 2026jul23 0m old
     downloads:
