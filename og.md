@@ -272,3 +272,21 @@ The solution is unstorage's `lru-cache` driver (backed by `lru-cache` v11, alrea
 `cacheMaxAgeSeconds` fans out to three places in nuxt-og-image's cache.js: (1) the `Cache-Control` header that enables the CDN, (2) the storage driver's `expiresAt` entry, (3) `maxAge` in h3's `handleCacheHeaders` for 304 conditional requests. Only (1) matters for us, but there's no way to set it independently.
 
 The `OG_IMAGE_CACHE` KV namespace and `kv_namespaces` wrangler config have been removed. Delete the KV namespace from the Cloudflare dashboard if not already done.
+
+### Duplicate "md" key warning at deploy (2026jul31)
+
+First seen 2026jul31 (wrangler 4.105.0, nuxt-og-image 6.7.0). It's wrangler's esbuild lint over the built worker, so it appears on `pnpm cloud` and `pnpm preview` but not plain `pnpm build`; reproduce without deploying via `npx wrangler --cwd .output deploy --dry-run`. Recorded so that when it disappears, changes shape, or someday matters, we have the diagnosis and not just the memory of seeing it:
+
+```
+▲ [WARNING] Duplicate key "md" in object literal [duplicate-object-key]
+    .output/server/chunks/_/renderer.mjs:1:26109:
+      1 │ ...Ce={sm:640,md:768,lg:1024,xl:1280,"2xl":1536,md:48},Pe=/^(sm|md|lg|xl|2xl):(.+)...
+```
+
+**What it is.** nuxt-og-image's satori transformer supports Tailwind-style classes in `.satori.vue` templates, merging hardcoded pixel breakpoint defaults with breakpoints scanned from our compiled CSS: `const BREAKPOINTS = { ...DEFAULT_BREAKPOINTS, ...tw4Breakpoints }` (module `runtime/server/og-image/core/plugins/styleDirectives.js`). `tw4Breakpoints` is a build-time virtual module scanned from the compiled CSS's `--breakpoint-*` variables. Tailwind v4 tree-shakes its theme down to the variables actually used (og-image's own tw4 provider notes the tree-shaking and works around it for fonts), and our components use exactly one responsive prefix — `md:`, in TermsComponent.vue and Reka/Input.vue — so the built entry.css carries only `--breakpoint-md` and the generated module is exactly `tw4Breakpoints = {"md":48}`. Nitro's Rollup inlines the two spreads into one literal with `md` in it twice; esbuild lints duplicate keys in output. Legal JavaScript — last key wins, which is precisely the override the spread intended — and the deploy proceeds normally.
+
+**Why 48 and not 768.** Tailwind v4 defines breakpoints in rem — `--breakpoint-md: 48rem`, which is 768px (tailwindcss.com/docs/responsive-design) — and og-image's scanner strips only a `px` suffix before `Number.parseInt` (`src/build/css/providers/tw4.ts`), so `"48rem"` parses to 48, then gets read as pixels. Verified still present on their main branch as of 2026jul31, apparently unreported, and untouched by releases 6.7.1–6.7.5 (takumi, island hash, query parsing, signing warning, lightning css) — so a routine version bump will *not* remove the warning; it persists until upstream handles rem values or reshapes the merge, or a future nitro/rollup stops inlining the spread, which would silence the warning while leaving `md: 48` quietly in place.
+
+**Why it's harmless to us, and what a problem would look like.** `BREAKPOINTS` is read in exactly two places, both in styleDirectives, both the gate `renderWidth >= BREAKPOINTS[bp]` over class tokens matching `^(sm|md|lg|xl|2xl):` in satori templates. HomeCard.satori.vue and ProfileCard.satori.vue use no responsive or dark prefixes, so the wrong value is never even read; the path can't touch the site's real CSS (browsers evaluate actual media queries), can't fail the build, can't error at runtime. If it ever bites, it looks like this: an `md:`-prefixed class added to a satori template applies at ≥48px render width instead of ≥768 — effectively always — visible only at custom render widths under 768, since the default 1200-wide canvas clears both values.
+
+**Expected movement.** Deterministic, not intermittent — same inputs, same warning, every build. Adding a second responsive prefix anywhere in the site adds a second warning (`lg:` would scan as 64, from "64rem"); removing the two `md:` usages removes it entirely. Nothing was changed on our side; this note is the whole response.

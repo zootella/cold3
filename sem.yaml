@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jul31.1940.14666
+  generated: 2026jul31.2304.17490
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -618,7 +618,7 @@ modules:
     note: "validate: phone number parsing and validation"
     from: icarus
     versions:
-      declared: ^1.12.36 on 2026jan30 5m old
+      declared: ^1.12.36 on 2026jan30 6m old
       installed: 1.13.7 on 2026jun18 1m old
       current: 1.13.10 on 2026jul30 0m old
       latest: 1.13.10 on 2026jul30 0m old
@@ -818,7 +818,7 @@ modules:
       declared: ^0.34.5 on 2025nov06 8m old
       installed: 0.34.5 on 2025nov06 8m old 🐣 Pre-1.0 version installed
       current: 0.34.5 on 2025nov06 8m old
-      latest: 0.35.3 on 2026jul01 0m old
+      latest: 0.35.3 on 2026jul01 1m old
     downloads:
       weekly: 67,890,476
       on: 2026jul18.2043.124
@@ -990,7 +990,7 @@ modules:
     note: "build: used by sem.js to read and write sem.yaml"
     from: root
     versions:
-      declared: ^2.8.2 on 2025nov30 7m old
+      declared: ^2.8.2 on 2025nov30 8m old
       installed: 2.9.0 on 2026may11 2m old
       current: 2.9.0 on 2026may11 2m old
       latest: 2.9.0 on 2026may11 2m old
