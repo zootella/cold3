@@ -622,6 +622,7 @@ export async function doorWorker(method, {
 			await doorWorkerCheck({door, actions, useTurnstile})
 			let browserHash = await hashText(checkTag(door.workerEvent.context.browserTag))//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
 			door.brownie = await openBrownie({envelope: door.body?.brownie, browserHash})//if the page sent a brownie, pin the opened letter for request code to read and change in place; the door never matches users--request code touches only notes whose userTag matches the signed-in user it resolved from the database
+			let brownieArrived = door.brownie ? makeText(door.brownie.notes) : ''//snapshot the notes as request code first sees them, so sealBrownie below can tell an untouched letter from a changed one
 			response = await doorHandleBelow({
 				door,//give our handler the door object, and convenient shortcut access to:
 				query: door.query,//query string from a GET request
@@ -630,7 +631,7 @@ export async function doorWorker(method, {
 				headers: door.headers,
 				browserHash,
 			})
-			response.brownie = await sealBrownie({letter: door.brownie, browserHash})//from what the letter now holds, command the page: a complete replacement to set, a delete when its notes are gone, or undefined, which vanishes when the response serializes
+			response.brownie = await sealBrownie({letter: door.brownie, browserHash, arrived: brownieArrived})//from what the letter now holds, command the page: a complete replacement when this request changed it, a delete when its notes are gone, or undefined, which vanishes when the response serializes--and also answers a carried letter left unchanged, so this response landing late can't clobber newer state with a stale copy
 
 		} catch (e1) { error = e1 }
 		try {
@@ -1112,18 +1113,19 @@ The door never tosses over a brownie, because the cookie and localStorage can fa
 */
 
 function brownieGet() {//the sealed ciphertext this browser is holding, or blank for nothing--text or blank; private to level2, because fetchWorker below is the only caller
-	if (!defined(typeof localStorage)) return ''//no localStorage off the page; a plain platform check rather than a nuxt build flag, because icarus stays framework-agnostic
-	return localStorage.getItem('brownie') || ''
+	try {
+		if (!defined(typeof localStorage)) return ''//no localStorage off the page; a plain platform check rather than a nuxt build flag, because icarus stays framework-agnostic
+		return localStorage.getItem('brownie') || ''
+	} catch (e) { return '' }//a browser set to block site data throws on any localStorage touch, even the typeof probe above--a legitimate try/catch at the platform boundary, degrading those browsers to holding nothing, the same way a blocked cookie behaved before
 }
 
 function brownieApply({action, envelope}) {//execute a response's command; private like brownieGet above, because fetchWorker below is the only caller
-	if (!defined(typeof localStorage)) return//no localStorage off the page
-	checkAction(action)
+	checkAction(action)//validate the command before touching storage, so a protocol mistake stays loud on every platform
 	if (action == 'BrownieSet.') {//store the complete replacement the server sealed
 		checkText(envelope)
-		localStorage.setItem('brownie', envelope)
+		try { if (defined(typeof localStorage)) localStorage.setItem('brownie', envelope) } catch (e) {}//no localStorage off the page; on it, blocked site data throws on any touch and a full quota throws on set--drop the command, and flows at this browser don't survive refresh, the same way a blocked cookie behaved before
 	} else if (action == 'BrownieDelete.') {//nothing in flight anymore
-		localStorage.removeItem('brownie')
+		try { if (defined(typeof localStorage)) localStorage.removeItem('brownie') } catch (e) {}//the same platform boundary as the set above
 	} else { toss('action', {action}) }//our own server speaks this protocol, so an unrecognized command is our own bug
 }
 
@@ -1133,13 +1135,14 @@ async function openBrownie({envelope, browserHash}) {//open an arriving brownie 
 	try {
 		letter = await openEnvelope('Brownie.', envelope, {skipExpirationCheck: true})//decrypting proves the letter is authentic, stayed secret, and wasn't tampered with; the note expirations checked below are what govern the contents
 	} catch (e) { letter = {} }//an envelope that won't open--corruption, tampering, or sealed by an older shape of our own protocol; arrive empty, which the response turns into BrownieDelete., cleaning this browser up in one request
-	if (!hasTextSame(letter.browserHash, browserHash)) letter.notes = []//the browserHash from the request's cookie is the trusted one; a sealed one that disagrees is mild chaos (deleted cookies gave this browser a new identity) or malice (an extension fed in a brownie from another browser)--either way wipe the notes, never toss, because a toss here would blow up every page load until someone cleared localStorage by hand
+	if (!hasText(letter.browserHash) || !hasTextSame(letter.browserHash, browserHash)) letter.notes = []//hasText first, because hasTextSame tosses over a blank, and a letter missing its browserHash, like the empty one a failed open leaves behind, must wipe here, not toss; the browserHash from the request's cookie is the trusted one; a sealed one that disagrees is mild chaos (deleted cookies gave this browser a new identity) or malice (an extension fed in a brownie from another browser)--either way wipe the notes, never toss, because a toss here would blow up every page load until someone cleared localStorage by hand
 	letter.notes = Array.isArray(letter.notes) ? letter.notes.filter(n => Number.isSafeInteger(n?.expiration) && Now() <= n.expiration) : []//every note must carry its own expiration, a positive integer epoch still in the future; expired and malformed notes are discarded here, so request code only ever sees live ones
 	return letter
 }
-async function sealBrownie({letter, browserHash}) {//seal a request's brownie letter back up, returning the command that tells the page what to keep: BrownieSet. with the replacement envelope, BrownieDelete. when the notes are gone, or undefined for no letter and no command--undefined rather than false, because assigning it to response.brownie leaves the serialized response without the field at all, which is the protocol's silence
+async function sealBrownie({letter, browserHash, arrived}) {//seal a request's brownie letter back up, returning the command that tells the page what to keep: BrownieSet. with the replacement envelope, BrownieDelete. when the notes are gone, or undefined for no command--undefined rather than false, because assigning it to response.brownie leaves the serialized response without the field at all, which is the protocol's silence
 	if (!letter) return//no brownie arrived and no request code created one; the response will say nothing, and the page will leave its storage alone
-	if (letter.notes.length == 0) return {action: 'BrownieDelete.'}//nothing in flight; the page clears what it holds. An explicit command, never inferred from silence
+	if (letter.notes.length == 0) return {action: 'BrownieDelete.'}//nothing in flight; the page clears what it holds. An explicit command, never inferred from silence--and decided before the unchanged check below, so a letter that arrived empty, like junk that wouldn't open, still gets cleaned up
+	if (arrived && makeText(letter.notes) == arrived) return//request code carried the letter and left it exactly as it arrived, so the response says nothing--most requests during a flow are unrelated to it, and a stale replacement from one of them, landing late, would clobber state the page stored after this request departed
 	letter.browserHash = browserHash//stamp the browser binding fresh from the request's cookie, for openBrownie's comparison next time
 	let expiration = Math.max(...letter.notes.map(n => n.expiration))//sealEnvelope wants a duration, so give it the letter's true horizon, the latest note; enforcement stays per note at open
 	let envelope = await sealEnvelope('Brownie.', expiration - Now(), letter)
@@ -1499,6 +1502,92 @@ grid(async () => {//envelope: the security checks in openEnvelope, which totp, o
 
 	letter = await openEnvelope('TestEnvelope.', envelope, {skipExpirationCheck: true})//flows that want a graceful outcome instead of a toss skip the check
 	ok(isExpired(letter.expiration))//and run this manual check themselves, as the totp and otp flows do
+})
+
+grid(async () => {//brownie: the door's open and seal, which degrade to delete and never toss over what a page held; down here beside the envelope test above for the same reason
+	let browserHash = random32(), alice = Tag(), bob = Tag()
+
+	//no brownie arrived, the common case: no letter, no command--the response says nothing
+	ok((await openBrownie({envelope: '', browserHash})) == false)
+	ok((await sealBrownie({letter: false, browserHash})) == undefined)
+
+	//request code starts a flow: the door seals the letter, and the same browser gets it back intact
+	let letter = {notes: [{type: 'Totp.', expiration: Now() + Time.minute, userTag: alice}]}
+	let command = await sealBrownie({letter, browserHash})
+	ok(command.action == 'BrownieSet.' && hasText(command.envelope))
+	let arrived = await openBrownie({envelope: command.envelope, browserHash})
+	ok(arrived.browserHash == browserHash)//sealBrownie stamped the browser binding for this comparison
+	ok(arrived.notes.length == 1 && arrived.notes[0].userTag == alice)
+
+	//someone in devtools retyped the entry as the literal word brownie: the letter arrives empty, and the response cleans the browser up in one request
+	let junk = await openBrownie({envelope: 'brownie', browserHash})
+	ok(junk.notes.length == 0)
+	ok((await sealBrownie({letter: junk, browserHash})).action == 'BrownieDelete.')
+
+	//the sealed browserHash disagrees with the one the request's cookie proves: wipe the notes, never toss
+	ok((await openBrownie({envelope: command.envelope, browserHash: random32()})).notes.length == 0)
+
+	//a note missing its positive integer expiration is dropped; its well-formed housemate rides on
+	let mixed = await sealEnvelope('Brownie.', Time.hour, {browserHash, notes: [
+		{type: 'Sudo.', userTag: bob},//sealed by a version of us that forgot the expiration
+		{type: 'Totp.', expiration: Now() + Time.hour, userTag: alice},
+	]})
+	ok((await openBrownie({envelope: mixed, browserHash})).notes.length == 1)
+
+	//our own letter shape changed at a deploy, like items before notes: arrives empty, and gets deleted
+	let older = await sealEnvelope('Brownie.', Time.minute, {browserHash, items: []})
+	ok((await openBrownie({envelope: older, browserHash})).notes.length == 0)
+
+	//expired notes drop one at a time, and a letter that empties commands its own deletion
+	letter = {notes: [
+		{type: 'Totp.', expiration: Now() + Time.minute, userTag: alice},
+		{type: 'Sudo.', expiration: Now() + Time.hour,   userTag: bob},
+	]}
+	command = await sealBrownie({letter, browserHash})
+	ageNow(2*Time.minute)//alice's minute passes, and bob's hour hasn't
+	arrived = await openBrownie({envelope: command.envelope, browserHash})
+	ok(arrived.notes.length == 1 && arrived.notes[0].userTag == bob)
+	ageNow(Time.hour)//now bob's hour passes, too
+	arrived = await openBrownie({envelope: command.envelope, browserHash})
+	ok(arrived.notes.length == 0)
+	ok((await sealBrownie({letter: arrived, browserHash})).action == 'BrownieDelete.')
+})
+
+grid(async () => {//brownie: a response to a request that carried the letter but left it unchanged says nothing, so landing late, it can't clobber newer state the page stored after it departed
+	let browserHash = random32(), alice = Tag(), bob = Tag()
+
+	//request code starts a flow where no brownie arrived: the response speaks
+	let letter = {notes: [{type: 'Totp.', expiration: Now() + Time.hour, userTag: alice}]}
+	let command = await sealBrownie({letter, browserHash, arrived: ''})//the door snapshots blank when no envelope arrived
+	ok(command.action == 'BrownieSet.')
+
+	//an unrelated request, like the telemetry hello every page load sends, carries the brownie up and never touches it: silence
+	letter = await openBrownie({envelope: command.envelope, browserHash})
+	let arrived = makeText(letter.notes)//the door snapshots the notes right after open, as request code first sees them
+	ok((await sealBrownie({letter, browserHash, arrived})) == undefined)
+
+	//request code changes the letter: the response speaks
+	letter = await openBrownie({envelope: command.envelope, browserHash})
+	arrived = makeText(letter.notes)
+	letter.notes.push({type: 'Sudo.', expiration: Now() + Time.hour, userTag: bob})
+	ok((await sealBrownie({letter, browserHash, arrived})).action == 'BrownieSet.')
+
+	//junk arrived and opened empty, and request code had nothing to change: delete still beats silence, cleaning the browser up in one request
+	letter = await openBrownie({envelope: 'brownie', browserHash})
+	arrived = makeText(letter.notes)
+	ok((await sealBrownie({letter, browserHash, arrived})).action == 'BrownieDelete.')
+
+	//a note that expires in flight drops at open, and dropping alone reads as unchanged: silence, because the stale ciphertext ages out at its own horizon anyway
+	letter = {notes: [
+		{type: 'Totp.', expiration: Now() + Time.minute, userTag: alice},
+		{type: 'Sudo.', expiration: Now() + Time.hour,   userTag: bob},
+	]}
+	command = await sealBrownie({letter, browserHash, arrived: ''})
+	ageNow(2*Time.minute)//alice's minute passes while the letter sits on the page
+	letter = await openBrownie({envelope: command.envelope, browserHash})
+	ok(letter.notes.length == 1)//her note dropped at open
+	arrived = makeText(letter.notes)
+	ok((await sealBrownie({letter, browserHash, arrived})) == undefined)
 })
 
 export async function getDatabase() {
