@@ -1118,6 +1118,9 @@ function brownieGet() {//the sealed ciphertext this browser is holding, or blank
 		return localStorage.getItem('brownie') || ''
 	} catch (e) { return '' }//a browser set to block site data throws on any localStorage touch, even the typeof probe above--a legitimate try/catch at the platform boundary, degrading those browsers to holding nothing, the same way a blocked cookie behaved before
 }
+export function brownieHeld() {//true when this browser is holding a brownie--presence only, never contents; lets the credential store skip its recovery follow-up when there's nothing to recover, which is almost always
+	return !!brownieGet()
+}
 
 function brownieApply({action, envelope}) {//execute a response's command; private like brownieGet above, because fetchWorker below is the only caller
 	checkAction(action)//validate the command before touching storage, so a protocol mistake stays loud on every platform
@@ -1135,7 +1138,7 @@ async function openBrownie({envelope, browserHash}) {//open an arriving brownie 
 	try {
 		letter = await openEnvelope('Brownie.', envelope, {skipExpirationCheck: true})//decrypting proves the letter is authentic, stayed secret, and wasn't tampered with; the note expirations checked below are what govern the contents
 	} catch (e) { letter = {} }//an envelope that won't open--corruption, tampering, or sealed by an older shape of our own protocol; arrive empty, which the response turns into BrownieDelete., cleaning this browser up in one request
-	if (!hasText(letter.browserHash) || !hasTextSame(letter.browserHash, browserHash)) letter.notes = []//hasText first, because hasTextSame tosses over a blank, and a letter missing its browserHash, like the empty one a failed open leaves behind, must wipe here, not toss; the browserHash from the request's cookie is the trusted one; a sealed one that disagrees is mild chaos (deleted cookies gave this browser a new identity) or malice (an extension fed in a brownie from another browser)--either way wipe the notes, never toss, because a toss here would blow up every page load until someone cleared localStorage by hand
+	if (!(hasText(letter.browserHash) && hasTextSame(letter.browserHash, browserHash))) letter.notes = []//wipe the notes unless the sealed browserHash matches the request's; hasText guards hasTextSame, which tosses over a blank
 	letter.notes = Array.isArray(letter.notes) ? letter.notes.filter(n => Number.isSafeInteger(n?.expiration) && Now() <= n.expiration) : []//every note must carry its own expiration, a positive integer epoch still in the future; expired and malformed notes are discarded here, so request code only ever sees live ones
 	return letter
 }
@@ -1148,6 +1151,44 @@ async function sealBrownie({letter, browserHash, arrived}) {//seal a request's b
 	let envelope = await sealEnvelope('Brownie.', expiration - Now(), letter)
 	return {action: 'BrownieSet.', envelope}
 }
+
+//request code's vocabulary for the letter: find, drop, and set notes, always scoped by owner, so one user's flow can never touch a housemate's note
+export function brownieNoteFind(letter, type, userTag) {//the note of this type owned by this user, or undefined
+	checkAction(type); checkTag(userTag)
+	return letter.notes.find(n => n.type == type && n.userTag == userTag)
+}
+export function brownieNoteDrop(letter, type, userTag) {//remove this user's note of this type; idempotent, because a stale tab can drop what's already gone
+	checkAction(type); checkTag(userTag)
+	letter.notes = letter.notes.filter(n => !(n.type == type && n.userTag == userTag))
+}
+export function brownieNoteSet(letter, note) {//put this note in the letter, replacing this user's previous note of the same type--one in flight per type per owner
+	checkAction(note.type); checkInt(note.expiration, 1); checkTag(note.userTag)//tripwires at the write, so a malformed note fails on the line that made it, not at the distant seal; requiring an owner means ownerless sign-up notes arrive as a deliberate relaxation later, not an accident now
+	brownieNoteDrop(letter, note.type, note.userTag)
+	letter.notes.push(note)
+}
+test(() => {//the helpers above, walked with two housemates sharing one letter
+	let alice = Tag(), bob = Tag()
+	let letter = {notes: []}
+
+	brownieNoteSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: alice, secret: 's1'})
+	brownieNoteSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: bob, secret: 's2'})//housemates' notes coexist
+	ok(letter.notes.length == 2)
+	ok(brownieNoteFind(letter, 'Totp.', alice).secret == 's1')//find answers each owner their own
+	ok(brownieNoteFind(letter, 'Totp.', bob).secret == 's2')
+
+	brownieNoteSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: alice, secret: 's3'})//set replaces the same owner's note of the same type
+	ok(letter.notes.length == 2)
+	ok(brownieNoteFind(letter, 'Totp.', alice).secret == 's3')
+
+	brownieNoteDrop(letter, 'Totp.', alice)
+	ok(!brownieNoteFind(letter, 'Totp.', alice))//hers is gone
+	ok(brownieNoteFind(letter, 'Totp.', bob).secret == 's2')//his rides on
+	brownieNoteDrop(letter, 'Totp.', alice)//dropping again is a harmless no-op
+	ok(letter.notes.length == 1)
+
+	let tossed = false; try { brownieNoteSet(letter, {type: 'Totp.', userTag: bob}) } catch (e) { tossed = true }
+	ok(tossed)//a note without its positive integer expiration is refused at the write
+})
 
 
 

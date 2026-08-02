@@ -46,11 +46,17 @@ function apply(task) {//update all refs from task - called after any action that
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
-	let totpCookie = useTotpCookie()
 	let body = {}
-	if (hasText(totpCookie.value)) body.envelope = totpCookie.value//in-flight totp enrollment to recover
 	if (hasText(otpCookie.value)) body.envelopeOtp = otpCookie.value//found otp envelope cookie; live challenges to recover, ttd january
 	let task = await fetchWorker('/credential', 'Get.', body)
+	apply(task)
+}
+
+async function mounted() {//called once per spa from app.vue's onMounted; the server render couldn't see localStorage, so if this browser holds a brownie, send it up now to recover in-flight enrollments
+	if (!brownieHeld()) return//almost always; a brownie exists only during the minutes of an in-flight flow
+	let body = {}
+	if (hasText(otpCookie.value)) body.envelopeOtp = otpCookie.value//send the live otp challenges along, so this response's otp truth doesn't wipe them
+	let task = await fetchWorker('/credential', 'Get.', body)//the brownie rides automatically; fetchWorker appends it to every POST from the page
 	apply(task)
 }
 
@@ -109,10 +115,15 @@ async function totpEnroll1() {
 	return task
 }
 
-async function totpEnroll2({envelope, code}) {
-	let task = await fetchWorker('/credential', 'TotpEnroll2.', {envelope, code})
+async function totpEnroll2({code}) {
+	let task = await fetchWorker('/credential', 'TotpEnroll2.', {code})
 	apply(task)
 	return task
+}
+
+async function totpCancel() {//the user backed out of an enrollment; the server removes the note, and the response's brownie command cleans the page up
+	let task = await fetchWorker('/credential', 'TotpCancel.')
+	apply(task)
 }
 
 async function totpRemove() {
@@ -170,7 +181,7 @@ async function closeAccount() {
 }
 
 return {
-	loaded, load,
+	loaded, load, mounted,
 	browserHash,
 	userTag,
 	name,
@@ -190,6 +201,7 @@ return {
 	removePassword,
 	totpEnroll1,
 	totpEnroll2,
+	totpCancel,
 	totpRemove,
 	wallets,
 	walletProve1,

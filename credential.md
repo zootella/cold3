@@ -7,7 +7,7 @@ The credential system flows through one endpoint (`/api/credential`), one store 
 
 `Get.` returns a complete snapshot of every credential type in one response, `attachState` assembles that snapshot, and `apply()` in the store unpacks it into refs. Adding a new credential type means extending attachState and apply — not creating a new endpoint.
 
-**Envelopes should unify too.** Right now OTP and TOTP each seal their own envelope into their own cookie. Rather than multiplying cookies, we should move toward a single `CredentialEnvelope` that can hold in-flight state for multiple credential operations simultaneously. One cookie, one envelope, multiple slots inside it for whatever's in progress.
+**Envelopes unified into the brownie.** This direction landed as the brownie (brownie.md): one localStorage entry, one sealed letter, self-describing notes for whatever's in progress. TOTP's enrollment moved in August 2026 and its cookie is retired; OTP's challenge envelope still rides its own cookie until the relocate-or-eliminate fork decides its future.
 
 **Reducing fetch calls is the goal.** A page load should be one GET to the credential endpoint. That one response tells credentialStore everything: which credentials exist, what their display values are, and whether any multi-step flows were interrupted. Components render from the store. When a user takes an action (enroll, remove, verify), that's one POST, and the response includes a fresh attachState snapshot so the store stays in sync. The number of fetch calls should be proportional to the number of user actions, not the number of credential types.
 
@@ -21,11 +21,9 @@ Actions: `Get.`, `SignUpAndSignInTurnstile.`, `SignIn.`, `SignOut.`, `SetName.`,
 
 **Email/phone one-time passwords** ride the same endpoint and store. Challenge state lives in `credentialStore.otps`, and the store is the only code that touches the `useOtpCookie()` cookie: any response that carries `task.otps` also carries `task.envelopeOtp` as the resealed ciphertext, or blank when nothing is live — the store keeps text, and on blank clears the cookie if it's holding one. Text or blank, plus the store's local knowledge of what it holds; no meanings loaded onto null versus undefined. Recovery after refresh rides `Get.`, which reads the cookie's envelope from `body.envelopeOtp` and returns the non-secret display parts, replacing the old `FoundEnvelope.` round trip.
 
-## Note: two cookies, future unification
+## Note: one cookie remaining
 
-Right now OTP and TOTP each have their own cookie and envelope: `temporary_envelope_otp` (sealed with action `'Otp.'`) and `temporary_envelope_totp` (sealed with action `'EnrollTotpEnvelope.'`). These exist independently because OTP and TOTP were built at different times. This works but doesn't scale — each new multi-step credential flow shouldn't bring its own cookie.
-
-The future direction is a single `CredentialEnvelope` cookie that can hold in-flight state for multiple credential operations simultaneously — a TOTP enrollment and an OTP verification happening in the same session, stored in one envelope with slots for each. `Get.` now recovers both, as two named body fields: `envelope` (TOTP, keeping its original name) and `envelopeOtp`. That asymmetry is deliberate and temporary — it dissolves when the unified envelope in storage.md lands. `FoundEnvelope.` is gone.
+TOTP's `temporary_envelope_totp` cookie is gone (August 2026) — enrollment's provisional secret rides as a note in the brownie, recovery comes back through `Get.` reading `door.brownie`, and the `envelope` body field retired with the cookie. OTP's `temporary_envelope_otp` (sealed with action `'Otp.'`) is the one envelope cookie left, still carried up as `body.envelopeOtp`, and it retires when the fork decides between relocating its challenges into brownie notes and eliminating them into event-3 rows. `FoundEnvelope.` is gone.
 
 # Envelope and cookie analysis across credential types
 
@@ -39,15 +37,15 @@ These credential types are single-step operations with no provisional state.
 
 **Password** — one call. Changing an existing password requires the current password in the same request, but that's validation, not a multi-step flow.
 
-## Envelope needed, cookie-persisted
+## Envelope needed, survives reload
 
-These are multi-step flows where the user might refresh the page mid-enrollment. The envelope is sealed by the server, stored in a client-readable cookie, and returned by the client on the next step.
+These are multi-step flows where the user might refresh the page mid-enrollment, so the sealed state has to survive a reload — today by a note in the brownie for TOTP, and by an envelope cookie for OTP.
 
-**TOTP** — 2-step enrollment. `TotpEnroll1.` generates a secret and seals it in an envelope (action `'EnrollTotpEnvelope.'`). The client stores this in the `temporary_envelope_totp` cookie. `TotpEnroll2.` opens the envelope, validates the user's 6-digit code, and saves the secret. One enrollment per user at a time. Recovery: `Get.` checks for this cookie and reopens the enrollment UI if found.
+**TOTP** — 2-step enrollment. `TotpEnroll1.` generates a secret and parks it as a `'Totp.'` note in the brownie's letter, owned by the user. `TotpEnroll2.` finds the note, validates the user's 6-digit code, and saves the secret; `TotpCancel.` drops it. One enrollment per user at a time. Recovery: `Get.` reads `door.brownie` and reopens the enrollment UI when a live note belongs to the signed-in user.
 
 **OTP** — 2-step challenge (send code, enter code). `OtpSendTurnstile.` generates a code and seals it in an envelope (action `'Otp.'`). The client stores this in the `temporary_envelope_otp` cookie. `OtpEnter.` opens the envelope and validates the user's guess. **Multiple simultaneous challenges** — the envelope holds an array of active challenges. A user signing up might authenticate both their email and phone number at the same time, producing two challenges in one envelope. Recovery: `Get.` opens the cookie's envelope (sent as `body.envelopeOtp`) and returns the non-secret display parts.
 
-Both cookies use `cookieOptions.envelope`: `httpOnly: false` (page script must read for recovery), `sameSite: 'Strict'`, `maxAge: 20 minutes`, `secure` in production.
+The OTP cookie uses `cookieOptions.envelope`: `httpOnly: false` (page script must read for recovery), `sameSite: 'Strict'`, `maxAge: 20 minutes`, `secure` in production.
 
 ## Envelope needed, no cookie
 
@@ -59,7 +57,7 @@ These flows use envelopes for tamper-proof state, but the envelope travels a dif
 
 ## Unification direction
 
-The tension: TOTP has one slot per user, but OTP has an array of simultaneous challenges. A unified `CredentialEnvelope` cookie would need to hold both — a TOTP enrollment slot and an OTP challenges array — since a user signing up might be verifying their email (OTP) while also enrolling TOTP in the same session. OAuth and wallet don't need cookies at all, so they stay out of the unified cookie.
+The brownie resolved the totp half of the old tension: one `'Totp.'` note per user, replaced on restart. The otp half is the open fork — several simultaneous challenges would become several notes, or one note holding the challenges array, or event-3 rows instead of client state at all. OAuth and wallet never needed reload-surviving state, so they stay out regardless.
 
 # Credential events and audit trail
 
@@ -128,7 +126,7 @@ The early userTag isn't only about credentials. The happy paths that matter most
 
 That's exactly what the early userTag is for. Under "a userTag is an identity we're tracking," pre-signup stars and follows are ordinary rows against the early tag, and signup moves nothing: the tag the person has been using simply acquires proven credentials. The genuinely hard case is the other direction — a visitor accumulates activity as a tracked identity, then signs in to an account that already exists — and now two userTags hold state that needs combining, deliberately and exactly once. The lazy-user flows sketched at the bottom of otp.md (enter a code tomorrow, sign in from a second device without finishing the first) are all variations of this.
 
-These flows matter to the storage decisions, not just to signup: what lives in tables against an early tag versus what the page holds locally before any tag exists is the same question storage.md's relocate-or-eliminate fork asks about provisional credential state. Designing the visitor-first flows may motivate or even decide those choices — get them right early, because they're the front door. The signup-side design these flows imply — one-finger first-night accounts, returning without a duplicate, the strengthening ladder — is its own line of work; the concern here is only what state such an early tag parks and where.
+These flows matter to the storage decisions, not just to signup: what lives in tables against an early tag versus what the page holds locally before any tag exists is the same question brownie.md's relocate-or-eliminate fork asks about otp's provisional state. Designing the visitor-first flows may motivate or even decide those choices — get them right early, because they're the front door. The signup-side design these flows imply — one-finger first-night accounts, returning without a duplicate, the strengthening ladder — is its own line of work; the concern here is only what state such an early tag parks and where.
 
 ## One query, application logic sifts
 
@@ -166,7 +164,7 @@ Two cookies, two composable usages, two envelope seal/open pairs, and two recove
 
 **Password** — k1=hash, k2=cycles. Single-step, client hashes with pbkdf2 before sending. `credentialPasswordGet/Set/Remove`.
 
-**TOTP** — k1=secret (base32). Two-step enrollment with envelope cookie. UI in TotpPanel with sub-components (TotpInput, TotpText1, TotpText2). Mobile detection via `browserIsBesideAppStore()`. The two-step flow and its refresh recovery live in level3 (`credentialTotpEnroll1/Enroll2/Recover`) so grid tests can walk them; the endpoint branches are thin. `credentialTotpGet/Set/Remove` for the stored enrollment.
+**TOTP** — k1=secret (base32). Two-step enrollment with the provisional secret riding as an owner-scoped note in the brownie (August 2026; the envelope cookie is retired). UI in TotpPanel with sub-components (TotpInput, TotpText1, TotpText2). Mobile detection via `browserIsBesideAppStore()`. The flow lives in level3 (`credentialTotpEnroll1/Enroll2/Recover/Cancel`) so grid tests can walk it against plain letters; the endpoint branches are thin. `credentialTotpGet/Set/Remove` for the stored enrollment.
 
 **Wallet/Ethereum** — f0=checksummed address; zero, one, or two proven addresses per user, held as peers, and no two users can hold the same one. Two-step prove flow with envelope in request body (no cookie — signing happens in-page via wallet popup). UI in WalletPanel, wagmi lifecycle in wagmiStore (Pinia), wagmi loaded on demand via `wagmiDynamicImport()` and viem via `viemDynamicImport()` (viem is full-stack — the worker validates SIWE signatures with it too). Two connectors: injected and WalletConnect. First credential type to write events 2/3 (mentioned/challenged in WalletProve1). The prove flow lives in level3 (`credentialWalletProve1/Prove2`) with the cap and one-holder rule enforced by `credentialWalletRefusal`/`credentialWalletHolder`; `credentialWalletGet/Set/Remove` round it out.
 

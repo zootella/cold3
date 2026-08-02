@@ -11,7 +11,6 @@ const props = defineProps({
 const emit = defineEmits(['edit', 'cancel'])
 
 const credentialStore = useCredentialStore()
-const refCookie = useTotpCookie()//persists enrollment envelope across page refresh
 const refMobile = browserIsBesideAppStore()//phone/tablet detection, constant for the session
 
 const refUri = ref('')//otpauth: URI; truthy means enrollment is active
@@ -24,29 +23,33 @@ const refEnterButton = ref(null)//Enter button for initial code validation
 const computedCode = computed(() => takeNumerals(refCode.value))//strip non-digits
 const computedCodeOk = computed(() => computedCode.value.length == totpConstants.codeLength)//true if box has what could be a valid code, good enough to post (but only the server knows if valid)
 
-onMounted(() => {//recover interrupted enrollment from cookie via Get.'s envelope pattern
-	if (credentialStore.enrollment) {
-		refUri.value = credentialStore.enrollment.uri
-		refIdentifier.value = credentialStore.enrollment.identifier || ''
+watch(() => credentialStore.enrollment, (enrollment) => {//recover an interrupted enrollment; the store's ref fills from the mounted follow-up Get., which lands after this panel is up--or is already set when the panel arrives later in the spa's life
+	if (enrollment && !refUri.value) {
+		refUri.value = enrollment.uri
+		refIdentifier.value = enrollment.identifier || ''
 		refOpened.value = refMobile//on mobile, assume user already tapped Load before refresh
 		emit('edit')
 	}
-})
+}, {immediate: true})
 
-function onCancel() {//reset everything and collapse
+function resetUi() {//clear the panel's local enrollment state and collapse
 	refUri.value = ''
 	refOpened.value = false
 	refIdentifier.value = ''
 	refCode.value = ''
 	refStatus.value = ''
-	refCookie.value = null//clear so cancelled enrollment doesn't reappear after refresh
 	emit('cancel')
+}
+
+async function onCancel() {//the user backs out
+	let enrolling = hasText(refUri.value)//the enrollment ui was up, so a note is riding in the brownie
+	resetUi()
+	if (enrolling) await credentialStore.totpCancel()//remove the note server-side, so the cancelled enrollment doesn't reappear after refresh
 }
 
 async function onEnroll() {//ask server for provisional secret, start enrollment
 	let task = await credentialStore.totpEnroll1()//server tosses on chaos (already enrolled), fetchWorker throws, page blows up
-	refCookie.value = task.enrollment.envelope//persist for page refresh recovery
-	refIdentifier.value = task.enrollment.identifier || ''
+	refIdentifier.value = task.enrollment.identifier || ''//the secret stays sealed in the brownie, which fetchWorker already stored; a refresh recovers from there
 	refUri.value = task.enrollment.uri//makes enrollment UI visible
 	emit('edit')
 }
@@ -58,22 +61,19 @@ function onAdd() {//mobile: hand off to authenticator app
 
 async function onValidate() {//confirm the 6-digit code, finish enrollment
 	refStatus.value = 'Validating...'
-	let task = await credentialStore.totpEnroll2({
-		envelope: refCookie.value,
-		code: computedCode.value,
-	})
-	if (task.success) {//success, user is enrolled in TOTP
-		onCancel()//clears cookie, refs, and collapses
+	let task = await credentialStore.totpEnroll2({code: computedCode.value})//the brownie carries the secret up alongside; nothing for the page to hand back
+	if (task.success) {//success, user is enrolled in TOTP; the server already took the note out of the letter
+		resetUi()
 	} else if (task.outcome == 'BadCode.') {//wrong digits, or correct digits but the 30-second TOTP window rolled over
 		refStatus.value = "That code didn't work. Please try again."
-	} else if (task.outcome == 'Expired.') {//enrollment envelope expired, like they took more than 20 minutes on the happy path
-		onCancel()//rare, just start them over
+	} else if (task.outcome == 'Expired.') {//they took more than twenty minutes; the server already dropped the dead note
+		resetUi()//rare, just start them over
 	}
 }
 
 async function onRemove() {
 	await credentialStore.totpRemove()
-	onCancel()
+	resetUi()//no note to cancel; enrollment can't be in flight while enrolled
 }
 
 </script>

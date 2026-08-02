@@ -36,6 +36,12 @@ https://nuxt.com/docs/guide/concepts/rendering#universal-rendering
 const mainStore = useMainStore()
 await mainStore.load()//run store and component code on the server to render everything in response to a new tab's GET; comes with cookie
 onMounted(async () => { await mainStore.mounted() })//run on the page at the start; now you have browser graphics and navigation duration
+
+const credentialStore = useCredentialStore()
+onMounted(async () => { await credentialStore.mounted() })//brownie recovery follow-up: the server render can't see localStorage, so if this browser holds a brownie, send it up now to recover in-flight enrollments
+/*
+Two separate onMounted calls above, on purpose. Vue's lifecycle hooks are registrars--each call appends a callback, and Vue invokes them in order without awaiting, so these two unrelated concerns run concurrently. Folding them into one callback with two awaited lines would serialize them, queuing brownie recovery behind the telemetry round trip, and would couple their failures, because the first line throwing means the second never runs. Each hook keeps its await even though nothing waits on it: Vue catches a rejection from a hook's returned promise and routes it to vue:error, where errorPlugin listens--two bare fire-and-forget lines would still be concurrent, but would turn failures into window-level unhandled rejections, which we deliberately don't listen for. Separate awaited hooks are the one shape that's concurrent, independent, and loud.
+*/
 /*
 within universal rendering, some notes about this "all-at-once" page pattern we found:
 await on the margin makes this block on server rendering, which is what we want

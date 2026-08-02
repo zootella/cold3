@@ -12,7 +12,7 @@ For instance, TOTP only helps an existing user additionally secure their account
 **Does the prove flow need the page to hold server state? (currently in an envelope)**
 For instance, Wallet: prove step 1 seals the SIWE nonce into an envelope, and the server needs the page to hold it and send it back alongside the signed message in step 2 — but we don't need to worry about a browser refresh, because a refresh kills the wallet connection and pending popup anyway, so no envelope of ours could resume the flow; the user restarts with one invisible click.
 
-**Does the prove flow need that state to survive a browser reload? (currently by envelope in a cookie)**
+**Does the prove flow need that state to survive a browser reload? (currently a brownie note for TOTP, an envelope cookie for OTP)**
 For instance, TOTP: by the time the page holds the sealed enrollment secret, the user has already scanned the QR code into their authenticator app. If a reload discards the secret, the entry they just created in their app is orphaned — regeneration is expensive and user-visible. OTP is the same shape: the code already landed in a real inbox, and discarding the challenge invalidates a code the user is about to type, forcing a resend into the rate limits.
 
 **Does the flow involve starting information we should record as mentioned or challenged? (with event 2 and 3 rows)**
@@ -25,7 +25,7 @@ For instance, a user holds zero or one TOTP enrollment, but any number of proven
 Today the answer is yes for every type. For instance, OTP: request a code from your laptop, and even if you read the email on your phone, the code must be typed back into the laptop, because the challenge lives at the browser that started it. The imaginable alternative — start a proof on one device, finish it on another — is supported nowhere today, and single-browser is simpler and more secure. The question per type is whether that ever needs to change.
 
 **Where is this flow's expiration enforced?**
-Provisional state must die on its own in tens of minutes — the concern is who checks the clock. For instance, TOTP: the deadline is baked inside the sealed envelope, so only the server can read it and only the server enforces it. The page can hold a stale envelope indefinitely, and finds out only when the server answers Expired.
+Provisional state must die on its own in tens of minutes — the concern is who checks the clock. For instance, TOTP: the deadline rides inside the sealed note, so only the server can read it and only the server enforces it — openBrownie filters expired notes at the door. The page can hold stale ciphertext indefinitely, and finds out only when recovery declines or the response commands a delete.
 
 ## System concerns
 

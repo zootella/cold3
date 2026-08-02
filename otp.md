@@ -39,7 +39,7 @@ the first is trail_table, and functions above like trailRecent through trailAddM
 you can see grid() tests below the exported functions as a demosntration of capability
 
 the second used system is envelope, with functions like sealEnvelope, openEnvelope, and isExpired
-for a demonstration of production system using envelope correctly, check out TOTP enrollment in TotpPanel.vue (client side, persists envelope in a cookie via useTotpCookie) and credential.js TotpEnroll1/TotpEnroll2 actions (server side, seals and opens the envelope)
+for a demonstration of a production system using envelope correctly, check out the wallet prove flow (credentialWalletProve1/Prove2 in level3.js, envelope riding in the request body)--totp, the old reference here, moved its provisional state into the brownie in August 2026, where the door seals and opens one letter for all flows
 
 
 # Agenda

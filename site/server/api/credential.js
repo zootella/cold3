@@ -6,7 +6,7 @@ credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpRemove,
-credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover,
+credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover, credentialTotpCancel,
 credentialWalletGet, credentialWalletProve1, credentialWalletProve2, credentialWalletRemove,
 credentialOauthRemove, credentialOauthGet, oauthProviders,
 credentialOtpSend, credentialOtpEnter, credentialOtpGet, credentialOtpRemove,
@@ -18,7 +18,7 @@ trailCount, trailAdd,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
-	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthRemove.', 'OtpSendTurnstile.', 'OtpEnter.', 'EmailRemove.', 'PhoneRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
+	return await doorWorker('POST', {actions: ['Get.', 'SignOut.', 'CheckNameTurnstile.', 'SignUpAndSignInTurnstile.', 'GetPasswordCyclesTurnstile.', 'SignIn.', 'SetName.', 'RemoveName.', 'SetPassword.', 'RemovePassword.', 'TotpEnroll1.', 'TotpEnroll2.', 'TotpCancel.', 'TotpRemove.', 'TotpValidate.', 'WalletProve1.', 'WalletProve2.', 'WalletRemove.', 'OauthRemove.', 'OtpSendTurnstile.', 'OtpEnter.', 'EmailRemove.', 'PhoneRemove.', 'CloseAccount.'], workerEvent, doorHandleBelow})
 })
 
 // 🟠 get
@@ -78,8 +78,8 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 	// 🟠 get
 	if (action == 'Get.') {
 		await attachState(task, browserHash)
-		if (task.userTag && hasText(body.envelope)) {//client found an enrollment envelope cookie from a previous session; an enrollment belongs to a user, so there's nothing to resume for a signed out browser
-			let enrollment = await credentialTotpRecover({userTag: task.userTag, browserHash, envelope: body.envelope})
+		if (task.userTag && door.brownie) {//the door opened the brownie if the page held one; an enrollment belongs to a user, so there's nothing to resume for a signed out browser
+			let enrollment = await credentialTotpRecover({letter: door.brownie, userTag: task.userTag})
 			if (enrollment) task.enrollment = enrollment
 		}
 		let letter//also recover any live otp code challenges at this browser, replacing the old FoundEnvelope. round trip
@@ -202,13 +202,19 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		// 🟠 totp
 		//TOTP enrollment step 1: the user at browser wants to setup totp as a second factor. here at the server, we make sure they're not already enrolled, and generate a new random secret for the qr code
 		} else if (action == 'TotpEnroll1.') {
-			task.enrollment = await credentialTotpEnroll1({userTag: user.userTag, browserHash})//the page shows this as a QR code and keeps the envelope for step 2
+			if (!door.brownie) door.brownie = {notes: []}//starting a flow where no brownie arrived; the door seals whatever the letter holds on the way out
+			task.enrollment = await credentialTotpEnroll1({letter: door.brownie, userTag: user.userTag})//the page shows this as a QR code; the secret stays sealed in the brownie
 
 		// 🟠 totp
 		//TOTP enrollment step 2: the user has gotten the secret into their authenticator app, and has their first code to validate. if they're right, we create their enrollment
 		} else if (action == 'TotpEnroll2.') {
-			let result = await credentialTotpEnroll2({userTag: user.userTag, browserHash, envelope: body.envelope, code: body.code})
+			let result = await credentialTotpEnroll2({letter: door.brownie || {notes: []}, userTag: user.userTag, code: body.code})//no brownie arrived means no note to find, and the graceful Expired. answer below
 			if (!result.ok) return {success: false, outcome: result.outcome}
+
+		// 🟠 totp
+		//the user backed out of an enrollment in flight; take their note out of the letter, and the door's delete or reseal cleans the page up
+		} else if (action == 'TotpCancel.') {
+			if (door.brownie) credentialTotpCancel({letter: door.brownie, userTag: user.userTag})//without a brownie there's nothing to cancel; a stale tab cancelling twice is a harmless no-op
 
 		// 🟠 totp
 		//an enrolled user wants to remove their totp enrollment, likely to setup a different one

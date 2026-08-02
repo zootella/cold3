@@ -1,5 +1,5 @@
 summary:
-  generated: 2026jul31.2304.17490
+  generated: 2026aug2.1939.38552
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -258,7 +258,7 @@ modules:
       declared: ^0.3.15 on 2026jan15 6m old
       installed: 0.3.16 on 2026mar10 4m old 🐣 Pre-1.0 version installed
       current: 0.3.16 on 2026mar10 4m old
-      latest: 0.5.4 on 2026jul02 0m old
+      latest: 0.5.4 on 2026jul02 1m old
     downloads:
       weekly: 10,857,136
       on: 2026jul18.1911.8649
@@ -593,8 +593,8 @@ modules:
     from: icarus
     versions:
       declared: ^1.15.5 on 2026jan15 6m old
-      installed: 1.15.11 on 2026apr01 3m old
-      current: 1.15.11 on 2026apr01 3m old
+      installed: 1.15.11 on 2026apr01 4m old
+      current: 1.15.11 on 2026apr01 4m old
       latest: 2.0.1-rc.26 on 2026jul24 0m old 🎁 Major new version available
     downloads:
       weekly: 37,425,942
@@ -696,10 +696,10 @@ modules:
     note: "nuxt: fetch wrapper; in icarus so lambda code can use it directly without nuxt"
     from: icarus
     versions:
-      declared: ^1.5.1 on 2025nov01 8m old
-      installed: 1.5.1 on 2025nov01 8m old
-      current: 1.5.1 on 2025nov01 8m old
-      latest: 1.5.1 on 2025nov01 8m old
+      declared: ^1.5.1 on 2025nov01 9m old
+      installed: 1.5.1 on 2025nov01 9m old
+      current: 1.5.1 on 2025nov01 9m old
+      latest: 1.5.1 on 2025nov01 9m old
     downloads:
       weekly: 22,959,341
       on: 2026jul18.1911.8649
@@ -880,9 +880,9 @@ modules:
     note: "front: site devDependency"
     from: site
     versions:
-      declared: ^5.9.3 on 2025sep30 9m old
-      installed: 5.9.3 on 2025sep30 9m old
-      current: 5.9.3 on 2025sep30 9m old
+      declared: ^5.9.3 on 2025sep30 10m old
+      installed: 5.9.3 on 2025sep30 10m old
+      current: 5.9.3 on 2025sep30 10m old
       latest: 7.0.2 on 2026jul08 0m old 🎁 Major new version available
     downloads:
       weekly: 218,992,255
@@ -935,8 +935,8 @@ modules:
     from: icarus
     versions:
       declared: ^6.4.1 on 2025oct20 9m old
-      installed: 6.4.3 on 2026jun01 1m old
-      current: 6.4.3 on 2026jun01 1m old
+      installed: 6.4.3 on 2026jun01 2m old
+      current: 6.4.3 on 2026jun01 2m old
       latest: 8.2.0 on 2026jul30 0m old 🎁 Major new version available
     downloads:
       weekly: 143,804,839

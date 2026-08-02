@@ -6,7 +6,7 @@ One further document, svelteless.md, is done and retired: the spike confirmed, t
 
 # For now — the front row
 
-The documents in active use. This guide (contents.md) is the orientation itself and belongs here too; the working trio is the umbrella you steer by, the current-state map whose per-type grid is the immediate next step, and the OTP integration kept open as the reference implementation that both the grid and the storage fork lean on.
+The documents in active use. This guide (contents.md) is the orientation itself and belongs here too; the working set is the umbrella you steer by, the current-state map whose per-type grid is the immediate next step, the OTP integration kept open as the reference implementation, and the brownie — built, shipped, and holding totp as its first tenant — whose relocate-or-eliminate fork for otp is the next sprint.
 
 ## credential.md — umbrella for the credential system
 
@@ -14,19 +14,19 @@ Direction-setting document for the credential system as a whole: one endpoint, o
 
 ## map.md — the current-state map of credential provisional state
 
-Created July 2026 to stage the storage.md sprint: before choosing between its futures, sketch the current situation completely and correctly. Holds the concerns list — the questions to ask of each credential type (signup use, page-held state, reload survival, event 2/3 records, multiplicity, browser binding, expiration enforcement) — plus system and flow concerns (shared browsers, the visitor-first story and the two-identities merge case), and the credential-type inventory: the seven integrated types with their type_text strings, the remnants outside the stack, and the types mentioned in notes but not planned for v1. Written under a strict rule: every mechanism claim traced to the enforcing line of code. The next step is the per-type grid — filling in each concern for each type, with smoke tests of the happy paths along the way.
+Created July 2026 to stage the storage sprint that became the brownie: before choosing between its futures, sketch the current situation completely and correctly. Holds the concerns list — the questions to ask of each credential type (signup use, page-held state, reload survival, event 2/3 records, multiplicity, browser binding, expiration enforcement) — plus system and flow concerns (shared browsers, the visitor-first story and the two-identities merge case), and the credential-type inventory: the seven integrated types with their type_text strings, the remnants outside the stack, and the types mentioned in notes but not planned for v1. Written under a strict rule: every mechanism claim traced to the enforcing line of code. The next step is the per-type grid — filling in each concern for each type, with smoke tests of the happy paths along the way.
 
 ## otp.md — OTP in the credential stack (integration done, July 2026)
 
 The integration this document planned is complete: `/api/otp`, `pageStore.otps`, and the separate recovery flow migrated into `/api/credential` and `credentialStore`, with EmailPanel and PhonePanel in CredentialPanel, lifecycle rows (mentioned/challenged/validated) in credential_table, a claim guard so a proven address has one holder, and flows requiring a signed-in user from send through enter. The document remains as reference for the otp helpers and constants, plus one open agenda item: near-happy-path UI polish (wrong guesses, rate-limit messaging, can't-find-code help). Its signup-era notes feed the early-userTag design tracked in credential.md.
 
+## brownie.md — sealed session state, full stack, first tenant moved in
+
+Created July 2026 out of the storage.md sprint it replaces: rather than a per-user credential envelope in localStorage, cold3 built the brownie — one localStorage entry holding one sealed letter of self-describing notes, each naming its own type, expiration, and owner, carried up on every POST by fetchWorker and opened, worked, and resealed by doorWorker. The document holds the twenty-years-of-sessions history the design stands on, the wire protocol and its load-bearing silences, the never-toss-over-a-brownie error posture, and the deliberately accepted last-writer-wins residual. TOTP enrollment moved in August 2026, retiring `temporary_envelope_totp`; the open section is the fork — relocate otp's challenges into notes, or eliminate them into credential_table event-3 rows — which retires the last side cookie under either arm.
+
 # For soon — the next pile
 
-Picked up once the front-row grid work lands. storage.md is the next focused sprint; ledger.md is grouped here for the parts the storage fork forces, though its full migration properly belongs later.
-
-## storage.md — unify credential cookies into one localStorage entry
-
-Storage refactor: retire `temporary_envelope_otp` and `temporary_envelope_totp` cookies and consolidate them into one user-keyed localStorage entry (`cold3:credential-envelope:<userTag>`) holding a single encrypted credential envelope with typed slices (OTP slice, TOTP slice, future wallet and OAuth slices). Server-side expiration only; the page treats the envelope as opaque ciphertext. Cross-credential storage refactor: bounded full-stack work that affects OTP, TOTP, the credential store, and components. The next focused sprint, and its sizing starts with the relocate-or-eliminate fork now written up in its section [13].
+Picked up once the front-row work lands. ledger.md is grouped here for the parts the otp fork forces, though its full migration properly belongs later. (storage.md, which held this pile's sprint, retired July 2026 — its plan evolved into the brownie, built and documented above.)
 
 ## ledger.md — data layer patterns for the whole application
 
@@ -55,7 +55,7 @@ The three piles above are the readiness view. Two other lenses cut across them.
 **By scope, narrowest to broadest:**
 
 - **One credential type**: oauth.md (refinement), otp.md (integration, done)
-- **Multiple credential types**: storage.md (cookies → localStorage across OTP and TOTP, extensible)
+- **Multiple credential types**: brownie.md (provisional state off cookies into one sealed localStorage letter; totp in, otp the open fork)
 - **Whole credential system**: credential.md (umbrella, direction-setting), map.md (current-state map, staging the storage sprint), first-night-accounts.md (forward-looking signup-flow preview)
 - **Whole application data layer**: ledger.md (storage patterns underneath everything)
 - **Outside sprint sequencing**: digital-authentication.md (reference survey of the wider world)
@@ -64,11 +64,11 @@ The three piles above are the readiness view. Two other lenses cut across them.
 
 - Refinement of an existing type: oauth.md
 - Integrating an existing flow into the unified system: otp.md (done)
-- Storage mechanism refactor: storage.md
+- Storage mechanism refactor: brownie.md
 - Direction-setting without one deliverable: credential.md
 - Forward design notes for an unstarted phase: first-night-accounts.md
 - Fundamental data-layer pattern decision: ledger.md
 
 **Common threads:**
 
-They all involve credentials. The OTP integration that otp.md planned and credential.md framed landed in July 2026. storage.md and credential.md now hold the two competing futures for provisional state — relocate the envelope to localStorage, or eliminate it into credential_table rows — written up as the fork in storage.md. first-night-accounts.md builds on credential.md's early-userTag and visitor-first material, carrying the signup-side design into its own document. ledger.md sits underneath all the others: its outcome shapes the data layer that every credential type rests on.
+They all involve credentials. The OTP integration that otp.md planned and credential.md framed landed in July 2026; the brownie stood up and took totp's provisional state in August. brownie.md holds the two competing futures for what remains — relocate otp's challenges into notes, or eliminate them into credential_table rows — written up as the fork in its section [7]. first-night-accounts.md builds on credential.md's early-userTag and visitor-first material, carrying the signup-side design into its own document. ledger.md sits underneath all the others: its outcome shapes the data layer that every credential type rests on.
