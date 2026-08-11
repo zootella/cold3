@@ -44,7 +44,7 @@ function resetUi() {//clear the panel's local enrollment state and collapse
 async function onCancel() {//the user backs out
 	let enrolling = hasText(refUri.value)//the enrollment ui was up, so a note is riding in the brownie
 	resetUi()
-	if (enrolling) await credentialStore.totpCancel()//remove the note server-side, so the cancelled enrollment doesn't reappear after refresh
+	if (enrolling) await credentialStore.totpClear()//remove the note server-side, so the cancelled enrollment doesn't reappear after refresh
 }
 
 async function onEnroll() {//ask server for provisional secret, start enrollment
@@ -73,7 +73,7 @@ async function onValidate() {//confirm the 6-digit code, finish enrollment
 
 async function onRemove() {
 	await credentialStore.totpRemove()
-	resetUi()//no note to cancel; enrollment can't be in flight while enrolled
+	resetUi()//no note to clear; enrollment can't be in flight while enrolled
 }
 
 </script>

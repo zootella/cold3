@@ -32,7 +32,7 @@ import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
 fetchWorker, fetchLambda, fetchProvider, Key,
 sealEnvelope, openEnvelope, originDomain,
-brownieNoteFind, brownieNoteDrop, brownieNoteSet,
+brownieGet, brownieGetAll, brownieRemove, brownieSet, brownieAdd,
 
 /* level 2 query */
 SQL, grid, getDatabase,
@@ -247,24 +247,26 @@ export async function credentialOtpSend({letter, v, provider, userTag}) {
 	}
 
 	// 📬 Step 4 Sent: Record to trail and update letter
-	let s = {//o is big, with text and HTML message text; pick just what credentialOtpEnter needs to keep the envelope cookie small
+	let s = {//o is big, with text and HTML message text; the note keeps just what credentialOtpEnter needs
+		type: o.address.type,//the note names the credential type its flow is proving, 'Email.' or 'Phone.', matching credential_table's ground truth
+		expiration: o.start + otpConstants.expiration,//the note's own deadline; the door filters expired notes at open, and trail enforces the same horizon for callers beneath the endpoint
 		tag: o.tag,
 		answer: o.answer,
 		start: o.start,
-		userTag,//the user who started this challenge, sealed in; credentialOtpEnter refuses anyone else
+		userTag,//the user who started this challenge, sealed in; credentialOtpEnter refuses anyone else, and display is scoped to the signed-in viewer
 		address: {
 			ok: o.address.ok,
 			f0: o.address.f0, f1: o.address.f1, f2: o.address.f2,
 			type: o.address.type,
 		},
-	}//about a dozen of these smaller objects encrypt and encode to fill the browser-enforced 4kib cookie size limit
-	let messages = []
-	let x = letter.otps.find(f => f.address.f0 == o.address.f0)//look for a preexisting challenge x to this same address
-	if (x) {//if we found one, the new one o must replace it
-		messages.push(safefill`OTP closed challenge: tag ${x.tag}`)//close x on the trail
-		letter.otps = letter.otps.filter(f => f.tag != x.tag)//remove x from the letter
 	}
-	letter.otps.push(s)
+	let messages = []
+	let x = brownieGetAll(letter, s.type, userTag).find(f => f.address.f0 == o.address.f0)//look for this user's preexisting challenge to this same address; scoped by owner, so a housemate's challenge to the same address rides on
+	if (x) {//if we found one, the new one must replace it
+		messages.push(safefill`OTP closed challenge: tag ${x.tag}`)//close x on the trail
+		letter.notes = letter.notes.filter(f => f.tag != x.tag)//remove x from the letter; challenge tags are globally unique
+	}
+	brownieAdd(letter, s)//add rather than set, because one user holds several live challenges at once, one per address
 	messages.push(safefill`OTP opened challenge: address ${o.address.f0}`)//record we bothered this address
 	messages.push(safefill`OTP opened challenge: tag ${o.tag}`)//record we created this challenge
 	await trailAddMany(messages)
@@ -279,8 +281,8 @@ export async function credentialOtpSend({letter, v, provider, userTag}) {
 export async function credentialOtpEnter({letter, tag, guess, userTag}) {
 	checkTag(userTag)//as at send, the endpoint resolved the signed-in user before calling us
 
-	//find otp by tag (credential.js filters expired otps before calling us, so if we find it, it's valid)
-	let o = letter.otps.find(o => o.tag == tag)
+	//find the challenge by tag alone, not by owner: a housemate entering at someone else's challenge must hear SignedOut. below, not Expired., because the remedies differ
+	let o = letter.notes.find(o => o.tag == tag)//the door filtered expired notes at open, and the trail check below enforces the same horizon for callers beneath the endpoint
 	if (!o) return {success: false, outcome: 'Expired.'}//probably expired, maybe never existed, either way lead the user to try again with a new challenge
 
 	let rows = await trailGetAny([
@@ -306,14 +308,14 @@ export async function credentialOtpEnter({letter, tag, guess, userTag}) {
 	let holder = await credentialOtpHolder({type: o.address.type, f0: o.address.f0})
 	if (holder && holder.userTag != userTag) {
 		await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//the challenge is dead no matter what the guess was; the address is spoken for
-		letter.otps = letter.otps.filter(f => f.tag != tag)
+		letter.notes = letter.notes.filter(f => f.tag != tag)
 		return {success: false, outcome: 'Held.'}
 	}
 
 	if (hasTextSame(guess, o.answer)) {// ✍🏻 correct guess
 
 		await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//kill the satisified challenge in the trail
-		letter.otps = letter.otps.filter(o => o.tag != tag)//kill the satisified challenge in the letter
+		letter.notes = letter.notes.filter(o => o.tag != tag)//kill the satisified challenge in the letter
 		await credentialOtpValidated({userTag, type: o.address.type, v: o.address})
 
 		return {success: true}
@@ -326,7 +328,7 @@ export async function credentialOtpEnter({letter, tag, guess, userTag}) {
 		if (lives <= 0) {// ✍🏻 expired by too many wrong guesses
 
 			await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//mark it as such
-			letter.otps = letter.otps.filter(o => o.tag != tag)//letter is a convenience; trail is a necessity here--otherwise an attacker could just replay the same valid envelope, guessing sequentially until they hit the correct answer!
+			letter.notes = letter.notes.filter(o => o.tag != tag)//letter is a convenience; trail is a necessity here--otherwise an attacker could just replay the same valid brownie, guessing sequentially until they hit the correct answer!
 
 			return {success: false, outcome: 'Expired.'}//treat exhausted guesses like expired; user remedy is the same: request a new code
 
@@ -339,39 +341,41 @@ export async function credentialOtpEnter({letter, tag, guess, userTag}) {
 
 grid(async () => {//otp: sanity check
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
-	let letter = {otps: []}
+	let letter = {notes: []}
 
 	let sendResult = await credentialOtpSend({letter, v: validateEmailOrPhone('test@example.com'), provider: 'Amazon.', userTag})
 	ok(sendResult.success)
-	ok(letter.otps.length == 1)//challenge information is in the letter for the envelope and cookie
-	let o = letter.otps[0]
+	ok(letter.notes.length == 1)//the challenge rides as a note in the brownie's letter
+	let o = letter.notes[0]
 	ok(o.tag && o.answer && o.start)
+	ok(o.type == 'Email.' && o.userTag == userTag)//the note names the credential type its flow is proving, and its owner
+	ok(o.expiration == o.start + otpConstants.expiration)//and carries its own deadline, which the door enforces at open
 
 	let enterResult = await credentialOtpEnter({letter, tag: o.tag, guess: o.answer, userTag})
 	ok(enterResult.success)
-	ok(letter.otps.length == 0)//challenge removed from letter after success
+	ok(letter.notes.length == 0)//challenge removed from letter after success
 })
 grid(async () => {//otp: multiple addresses in one letter - alice's email and phone
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
-	let letter = {otps: []}
+	let letter = {notes: []}
 
 	//alice requests a code to her email, then a minute later, her phone
 	await credentialOtpSend({letter, v: validateEmailOrPhone('alice@example.com'), provider: 'Twilio.', userTag}); ageNow(Time.minute)
-	await credentialOtpSend({letter, v: validateEmailOrPhone('(510) 555-1234'), provider: 'Amazon.', userTag}); ok(letter.otps.length == 2)
-	let e = letter.otps.find(o => o.address.type == 'Email.')
-	let t = letter.otps.find(o => o.address.type == 'Phone.')
+	await credentialOtpSend({letter, v: validateEmailOrPhone('(510) 555-1234'), provider: 'Amazon.', userTag}); ok(letter.notes.length == 2)
+	let e = letter.notes.find(o => o.address.type == 'Email.')
+	let t = letter.notes.find(o => o.address.type == 'Phone.')
 
 	//she guesses wrong for email, then correct for phone, then correct for email
 	ageNow(Time.minute); ok((await credentialOtpEnter({letter, tag: e.tag, guess: '101', userTag})).outcome == 'Wrong.')
-	ageNow(Time.minute); ok((await credentialOtpEnter({letter, tag: t.tag, guess: t.answer, userTag})).success); ok(letter.otps.length == 1)
-	ageNow(Time.minute); ok((await credentialOtpEnter({letter, tag: e.tag, guess: e.answer, userTag})).success); ok(letter.otps.length == 0)
+	ageNow(Time.minute); ok((await credentialOtpEnter({letter, tag: t.tag, guess: t.answer, userTag})).success); ok(letter.notes.length == 1)
+	ageNow(Time.minute); ok((await credentialOtpEnter({letter, tag: e.tag, guess: e.answer, userTag})).success); ok(letter.notes.length == 0)
 })
 grid(async () => {//otp: code expires after 20 minutes
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
-	let letter = {otps: []}
+	let letter = {notes: []}
 
 	ok((await credentialOtpSend({letter, v: validateEmailOrPhone('expire@example.com'), provider: 'Amazon.', userTag})).success)
-	let o = letter.otps[0]
+	let o = letter.notes[0]
 
 	ageNow(30*Time.minute)//wait past the 20 minute expiration
 	let enterResult = await credentialOtpEnter({letter, tag: o.tag, guess: o.answer, userTag})
@@ -380,14 +384,14 @@ grid(async () => {//otp: code expires after 20 minutes
 })
 grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts code
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
-	let letter = {otps: []}
+	let letter = {notes: []}
 
 	await credentialOtpSend({letter, v: validateEmailOrPhone('wrong3@example.com'), provider: 'Amazon.', userTag}); ageNow(Time.minute)
-	await credentialOtpSend({letter, v: validateEmailOrPhone('wrong4@example.com'), provider: 'Amazon.', userTag}); ok(letter.otps.length == 2)
+	await credentialOtpSend({letter, v: validateEmailOrPhone('wrong4@example.com'), provider: 'Amazon.', userTag}); ok(letter.notes.length == 2)
 
-	let o3 = letter.otps.find(o => o.address.f0 == 'wrong3@example.com')
-	let o4 = letter.otps.find(o => o.address.f0 == 'wrong4@example.com')
-	const replay = () => ({otps: [{...o3}, {...o4}]})//an attacker can't look within or modify or create the encrypted envelope, but they can get one and then replay it over and over. tabletop this in tests to demonstrate that trail table provides the defense
+	let o3 = letter.notes.find(o => o.address.f0 == 'wrong3@example.com')
+	let o4 = letter.notes.find(o => o.address.f0 == 'wrong4@example.com')
+	const replay = () => ({notes: [{...o3}, {...o4}]})//an attacker can't look within or modify or create the encrypted envelope, but they can get one and then replay it over and over. tabletop this in tests to demonstrate that trail table provides the defense
 
 	ok((await credentialOtpEnter({letter: replay(), tag: o3.tag, guess: '101', userTag})).outcome == 'Wrong.')
 	ok((await credentialOtpEnter({letter: replay(), tag: o3.tag, guess: '102', userTag})).outcome == 'Wrong.')
@@ -402,29 +406,29 @@ grid(async () => {//otp: 3 wrong guesses then correct works; 4 wrong exhausts co
 })
 grid(async () => {//otp: replacement code kills previous code to same address
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
-	let letter = {otps: []}
+	let letter = {notes: []}
 	let v = validateEmailOrPhone('replace@example.com')
 
 	await credentialOtpSend({letter, v, provider: 'Amazon.', userTag})
-	let o1 = letter.otps[0]
+	let o1 = letter.notes[0]
 
 	ageNow(Time.minute)//wait past soft limit cooldown
 	await credentialOtpSend({letter, v, provider: 'Amazon.', userTag})//second code will replace the first
-	ok(letter.otps.length == 1)//in the letter, old one removed, new one added
-	let o2 = letter.otps[0]
+	ok(letter.notes.length == 1)//in the letter, old one removed, new one added
+	let o2 = letter.notes[0]
 	ok(o2.tag != o1.tag)//it's a different code
 
-	let replay = () => ({otps: [{...o1}, {...o2}]})//attacker is replaying the envelope but trail table still protects us
+	let replay = () => ({notes: [{...o1}, {...o2}]})//attacker is replaying the envelope but trail table still protects us
 	ok((await credentialOtpEnter({letter: replay(), tag: o1.tag, guess: o1.answer, userTag})).outcome == 'Expired.')//correct but invalidated
 	ok((await credentialOtpEnter({letter: replay(), tag: o2.tag, guess: o2.answer, userTag})).success)//second code works
 })
 grid(async () => {//otp: attacker replaying envelope still can't get more guesses
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
-	let letter = {otps: []}
+	let letter = {notes: []}
 
 	await credentialOtpSend({letter, v: validateEmailOrPhone('replay@example.com'), provider: 'Amazon.', userTag})
-	let o = letter.otps[0]
-	const replay = () => ({otps: [{...o}]})
+	let o = letter.notes[0]
+	const replay = () => ({notes: [{...o}]})
 
 	ok((await credentialOtpEnter({letter: replay(), tag: o.tag, guess: '101', userTag})).outcome == 'Wrong.')
 	ok((await credentialOtpEnter({letter: replay(), tag: o.tag, guess: '102', userTag})).outcome == 'Wrong.')
@@ -434,7 +438,7 @@ grid(async () => {//otp: attacker replaying envelope still can't get more guesse
 })
 grid(async () => {//otp: hard limit of 24 codes per address per day
 	let v = validateEmailOrPhone('hardlimit@example.com')//attacker targets a single address
-	const send = async () => await credentialOtpSend({letter: {otps: []}, v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; the limits are per address, not per user
+	const send = async () => await credentialOtpSend({letter: {notes: []}, v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; the limits are per address, not per user
 	for (let i = 0; i < 24; i++) {//send 24 messages, 5 minutes apart
 		ageNow(5*Time.minute)//message 1 at 00:05, message 2 at 00:10, all the way to message 24 at 02:00
 		let r = await send()
@@ -454,7 +458,7 @@ grid(async () => {//otp: hard limit of 24 codes per address per day
 
 grid(async () => {//otp: soft limit requires 1 minute between codes after first 2 codes in past 5 days
 	let v = validateEmailOrPhone('softlimit@example.com')
-	const send = async () => await credentialOtpSend({letter: {otps: []}, v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; the limits are per address, not per user
+	const send = async () => await credentialOtpSend({letter: {notes: []}, v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; the limits are per address, not per user
 
 	ok((await send()).success)//code sent at 00:00:00
 	ok((await send()).success)//code sent at 00:00:00, first two go out back-to-back
@@ -469,30 +473,63 @@ grid(async () => {//otp: soft limit requires 1 minute between codes after first 
 })
 grid(async () => {//otp: first code to an address in 5d window is short (4 digits), then standard (6), then short again
 	let v = validateEmailOrPhone('codelength@example.com')
-	let letter = {otps: []}
+	let letter = {notes: []}
 	const send = async () => await credentialOtpSend({letter, v, provider: 'Amazon.', userTag: Tag()})//each send from a different user; code length follows the address's history alone
 
 	await send()//send two codes back to back
-	ok(letter.otps[0].answer.length == 4)//first one short
-	letter.otps = []
+	ok(letter.notes[0].answer.length == 4)//first one short
+	letter.notes = []
 	await send()
-	ok(letter.otps[0].answer.length == 6)//second one long
+	ok(letter.notes[0].answer.length == 6)//second one long
 
 	ageNow(5*Time.day + Time.minute)//move the clock forward 5d 1min, both codes fall off
-	letter.otps = []
+	letter.notes = []
 	await send()
-	ok(letter.otps[0].answer.length == 4)//third one back to being short again
+	ok(letter.notes[0].answer.length == 4)//third one back to being short again
 })
 grid(async () => {//otp: getting a challenge correct closes it on the trail
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
-	let letter = {otps: []}
+	let letter = {notes: []}
 
 	await credentialOtpSend({letter, v: validateEmailOrPhone('reenter@example.com'), provider: 'Amazon.', userTag})
-	let o = letter.otps[0]
+	let o = letter.notes[0]
 
-	const replay = () => ({otps: [{...o}]})
+	const replay = () => ({notes: [{...o}]})
 	ok((await credentialOtpEnter({letter: replay(), tag: o.tag, guess: o.answer, userTag})).success)//correct
 	ok((await credentialOtpEnter({letter: replay(), tag: o.tag, guess: o.answer, userTag})).outcome == 'Expired.')//replay envelope to try to get that same right answer on that same challenge correcct again; trail knows it's closed
+})
+grid(async () => {//otp and totp: one person's email, phone, and authenticator enrollment all in flight in one letter--mild chaos on a realistic happy path
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	let letter = {notes: []}
+
+	await credentialOtpSend({letter, v: validateEmailOrPhone(Tag() + '@example.com'), provider: 'Amazon.', userTag}); ageNow(Time.minute)
+	await credentialOtpSend({letter, v: validateEmailOrPhone('(510) 555-9876'), provider: 'Twilio.', userTag})
+	await credentialTotpEnroll1({letter, userTag})
+	ok(letter.notes.length == 3)//two challenges and an enrollment, side by side, all hers
+
+	let code = await totpGenerate({secret: Data({base32: brownieGet(letter, 'Totp.', userTag).secret}), now: Now()})
+	ok((await credentialTotpEnroll2({letter, userTag, code})).ok)//finishing the enrollment doesn't touch the challenges
+	ok(letter.notes.length == 2)
+
+	let e = letter.notes.find(n => n.type == 'Email.')
+	ok((await credentialOtpEnter({letter, tag: e.tag, guess: e.answer, userTag})).success)
+	let p = letter.notes.find(n => n.type == 'Phone.')
+	ok((await credentialOtpEnter({letter, tag: p.tag, guess: p.answer, userTag})).success)
+	ok(letter.notes.length == 0)//the letter empties, which the door would answer with BrownieDelete.
+})
+grid(async () => {//otp in the brownie: a challenge survives the seal and open between send and enter, the way it rides between requests
+	let userTag = Tag(), browserHash = random32()
+	let letter = {browserHash, notes: []}
+	await credentialOtpSend({letter, v: validateEmailOrPhone(Tag() + '@example.com'), provider: 'Amazon.', userTag})
+
+	let envelope = await sealEnvelope('Brownie.', Time.hour, letter)//what sealBrownie does, its derived horizon aside
+	let arrived = await openEnvelope('Brownie.', envelope, {skipExpirationCheck: true})
+	let o = arrived.notes[0]
+	ok(o.answer == letter.notes[0].answer && o.address.f0 == letter.notes[0].address.f0)//the challenge crossed the crypto intact
+	ok((await credentialOtpEnter({letter: arrived, tag: o.tag, guess: o.answer, userTag})).success)
+	ok(arrived.notes.length == 0)
 })
 
 
@@ -649,7 +686,7 @@ export async function credentialTotpEnroll1({letter, userTag}) {
 	if (existing) toss('state', {userTag, existing})//the page thought enrollment was possible, and one user holds one enrollment
 
 	let enrollment = await totpEnroll({brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
-	brownieNoteSet(letter, {type: 'Totp.', expiration: Now() + Limit.expirationUser, userTag, secret: enrollment.secret})//one enrollment in flight per user, so starting again replaces an abandoned start; the note carries its own deadline and owner, and the letter around it carries the browser binding
+	brownieSet(letter, {type: 'Totp.', expiration: Now() + Limit.expirationUser, userTag, secret: enrollment.secret})//one enrollment in flight per user, so starting again replaces an abandoned start; the note carries its own deadline and owner, and the letter around it carries the browser binding
 	return {uri: enrollment.uri, identifier: enrollment.identifier}
 }
 
@@ -660,12 +697,12 @@ export async function credentialTotpEnroll2({letter, userTag, code}) {
 	let existing = await credentialTotpGet({userTag})
 	if (existing) toss('state', {userTag, existing})//as at step 1, the page thought enrollment was possible
 
-	let note = brownieNoteFind(letter, 'Totp.', userTag)//the enrollment from step 1, come back sealed through the page and a possible refresh; scoped by owner
+	let note = brownieGet(letter, 'Totp.', userTag)//the enrollment from step 1, come back sealed through the page and a possible refresh; scoped by owner
 	if (!note) return {ok: false, outcome: 'Expired.'}//gone: expired notes are filtered at the door, a cancelled one was removed, and a housemate at a shared browser never had one--every way, the remedy is the same, start over
 	let secret = note.secret
 	checkTotpSecret(secret)
 	if (isExpired(note.expiration)) {//they took more than twenty minutes, so start them over; the door filters expired notes at open, and this covers callers below the endpoint
-		brownieNoteDrop(letter, 'Totp.', userTag)//dead, so it leaves the letter
+		brownieRemove(letter, 'Totp.', userTag)//dead, so it leaves the letter
 		return {ok: false, outcome: 'Expired.'}
 	}
 
@@ -673,7 +710,7 @@ export async function credentialTotpEnroll2({letter, userTag, code}) {
 	if (!valid) return {ok: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment, because the page is already showing the secret in the qr uri, so guarding guesses here would defend nothing; the note stays in the letter, so she can try again with the code in front of her
 
 	await credentialTotpSet({userTag, secret})
-	brownieNoteDrop(letter, 'Totp.', userTag)//finished; nothing left in flight to resume
+	brownieRemove(letter, 'Totp.', userTag)//finished; nothing left in flight to resume
 	return {ok: true}
 }
 
@@ -682,7 +719,7 @@ export async function credentialTotpEnroll2({letter, userTag, code}) {
 export async function credentialTotpRecover({letter, userTag}) {
 	checkTag(userTag)
 
-	let note = brownieNoteFind(letter, 'Totp.', userTag)//scoped by owner: bob, signed in at the browser alice left, finds nothing of his and sees an ordinary panel, not her qr code
+	let note = brownieGet(letter, 'Totp.', userTag)//scoped by owner: bob, signed in at the browser alice left, finds nothing of his and sees an ordinary panel, not her qr code
 	if (!note) return false//nothing in flight to resume
 	if (!hasText(note.secret)) return false//a note sealed by an older shape of our own protocol, missing what this deploy expects inside; decline rather than toss, because recover runs on every page load while a note rides--the door guards the letter's shape, but only the flow knows its note's
 	if (isExpired(note.expiration)) return false//too old to resume, and the app entry they scanned is already orphaned
@@ -694,9 +731,9 @@ export async function credentialTotpRecover({letter, userTag}) {
 
 //the user backed out of an enrollment in flight; take their note out of the letter, and the door's delete or reseal cleans the page up
 //idempotent, because a stale tab can cancel what another tab already finished or cancelled
-export function credentialTotpCancel({letter, userTag}) {
+export function credentialTotpClear({letter, userTag}) {
 	checkTag(userTag)
-	brownieNoteDrop(letter, 'Totp.', userTag)
+	brownieRemove(letter, 'Totp.', userTag)
 }
 
 //                    _            _   _       _                 _ _      _   
@@ -1172,9 +1209,9 @@ grid(async () => {//totp enroll: cancel empties the letter, a wrong code is refu
 	await credentialTotpEnroll1({letter, userTag})//starts over without cancelling,
 	ok(letter.notes.length == 1 && letter.notes[0].secret != abandoned)//and the restart replaced the abandoned start--one enrollment in flight per user
 
-	credentialTotpCancel({letter, userTag})//then backs out
+	credentialTotpClear({letter, userTag})//then backs out
 	ok(letter.notes.length == 0)//the abandoned enrollment left the letter
-	credentialTotpCancel({letter, userTag})//a stale tab cancels what's already gone, harmlessly
+	credentialTotpClear({letter, userTag})//a stale tab cancels what's already gone, harmlessly
 	ok(letter.notes.length == 0)
 
 	await credentialTotpEnroll1({letter, userTag})//she starts again and gets a fresh secret
@@ -1784,14 +1821,14 @@ grid(async () => {//otp into credential: the full flow writes lifecycle rows for
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	let letter = {otps: []}
+	let letter = {notes: []}
 	let v = validateEmailOrPhone(Tag() + '@example.com')//random address keeps trail rate limits from earlier test runs out of this test
 
 	ok((await credentialOtpSend({letter, v, provider: 'Amazon.', userTag})).success)
 	let list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list.length == 1 && list[0].event == 3)//the send wrote the mention and the challenge
 
-	let o = letter.otps[0]
+	let o = letter.notes[0]
 	ok((await credentialOtpEnter({letter, tag: o.tag, guess: o.answer, userTag})).success)
 	list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list[0].event == 4)//the correct code promoted the address to proven
@@ -1801,15 +1838,15 @@ grid(async () => {//otp into credential: a challenge belongs to the user who sta
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	let letter = {otps: []}
+	let letter = {notes: []}
 	let v = validateEmailOrPhone(Tag() + '@example.com')
 	ok((await credentialOtpSend({letter, v, provider: 'Amazon.', userTag})).success)
-	let o = letter.otps[0]
+	let o = letter.notes[0]
 
 	//a different user holding the correct code is refused, without spending a guess or killing the challenge
 	let userTag2 = Tag()
 	ok((await credentialOtpEnter({letter, tag: o.tag, guess: o.answer, userTag: userTag2})).outcome == 'SignedOut.')//correct code, wrong person
-	ok(letter.otps.length == 1)//the challenge stays live for its owner
+	ok(letter.notes.length == 1)//the challenge stays live for its owner
 	ok((await credentialOtpGet({userTag: userTag2, type: 'Email.'})).length == 0)//nothing recorded for the wrong person
 
 	//the owner finishes the flow
@@ -1824,33 +1861,50 @@ grid(async () => {//otp into credential: a held address can't be challenged or c
 
 	//alice proves the address
 	let alice = Tag()
-	let letter1 = {otps: []}
+	let letter1 = {notes: []}
 	await credentialOtpSend({letter: letter1, v, provider: 'Amazon.', userTag: alice})
-	ok((await credentialOtpEnter({letter: letter1, tag: letter1.otps[0].tag, guess: letter1.otps[0].answer, userTag: alice})).success)
+	ok((await credentialOtpEnter({letter: letter1, tag: letter1.notes[0].tag, guess: letter1.notes[0].answer, userTag: alice})).success)
 	ok((await credentialOtpHolder({type: v.type, f0: v.f0})).userTag == alice)
 
 	//alfred asks for a code to alice's address; his mention is recorded but no code goes out
 	let alfred = Tag()
-	let letter2 = {otps: []}
+	let letter2 = {notes: []}
 	let r = await credentialOtpSend({letter: letter2, v, provider: 'Amazon.', userTag: alfred})
 	ok(!r.success && r.outcome == 'Held.')
-	ok(letter2.otps.length == 0)//no challenge was created
+	ok(letter2.notes.length == 0)//no challenge was created
 	ok((await credentialOtpGet({userTag: alfred, type: 'Email.'}))[0].event == 2)//the mention is on the record
 
 	//alice herself can still request another code to her own address, for a future sudo check or new device
-	let letter3 = {otps: []}
+	let letter3 = {notes: []}
 	ok((await credentialOtpSend({letter: letter3, v, provider: 'Amazon.', userTag: alice})).success)
+})
+
+grid(async () => {//otp into credential: two users' challenges to one address coexist in one letter, and the enter-time claim check closes the race
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let alice = Tag(), bob = Tag()
+	let letter = {notes: []}//alice and bob share a browser profile, so their challenges share the one letter
+	let v = validateEmailOrPhone(Tag() + '@example.com')
+
+	await credentialOtpSend({letter, v, provider: 'Amazon.', userTag: alice})
+	await credentialOtpSend({letter, v, provider: 'Amazon.', userTag: bob})//nobody has proven the address yet, so bob can be challenged at it too
+	ok(letter.notes.length == 2)//replacement is scoped by owner: his send would replace his own earlier challenge, never hers
+
+	ok((await credentialOtpEnter({letter, tag: letter.notes[0].tag, guess: letter.notes[0].answer, userTag: alice})).success)//alice proves the address first
+	let late = await credentialOtpEnter({letter, tag: letter.notes[0].tag, guess: letter.notes[0].answer, userTag: bob})//bob's code is still live, and correct
+	ok(!late.success && late.outcome == 'Held.')//but the address found its holder while his code was in flight; the enter-time check closes the race the send-time check can't see
+	ok(letter.notes.length == 0)//and his dead challenge left the letter
 })
 
 grid(async () => {//otp into credential: removing an address mid-challenge means a late correct code doesn't resurrect it
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	let letter = {otps: []}
+	let letter = {notes: []}
 	let v = validateEmailOrPhone(Tag() + '@example.com')
 	await credentialOtpSend({letter, v, provider: 'Amazon.', userTag})
 	await credentialOtpRemove({userTag, type: 'Email.', f0: v.f0})//she removes the address while the challenge is still live
-	let o = letter.otps[0]
+	let o = letter.notes[0]
 	ok((await credentialOtpEnter({letter, tag: o.tag, guess: o.answer, userTag})).success)//the code itself is still correct, and the challenge closes normally
 	ok((await credentialOtpGet({userTag, type: 'Email.'})).length == 0)//but no proof was saved; the removed address stays removed
 })

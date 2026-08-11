@@ -368,16 +368,7 @@ export const cookieOptions = {
 	}),
 	/*
 	the 3 constants, 3 functions, and browser above are all for cookieMiddleware/browserTag/browserHash on the server side.
-	🍪 Additionally, Vue components for OTP and TOTP keep encrypted envelopes in temporary cookies to keep a note from the server between enrollment steps that survives browser reload, using these very different cookie settings:
 	*/
-	envelope: Object.freeze({
-		path: '/',//we could restrict to certain routes, but this is simpler
-		httpOnly: false,//true would mean page script couldn't read it
-		sameSite: 'Strict',//browser will include cookie in requests to our server only, which doesn't read it, this is the most restrictive setting, there isn't one for "don't send it at all"
-		maxAge: inSeconds(Limit.expirationUser),//the browser will delete this cookie 20 minutes after we last set .value; cookies are timed in seconds not milliseconds
-		secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
-		//leaving out domain, so cookie will only be readable at the same domain it's set, localhost or cold3.cc, no subdomains
-	}),
 }
 
 //                      _
@@ -518,7 +509,7 @@ export async function fetchWorker(route, action, body = {}) {//from a Pinia stor
 	body = makePlain({...body, action})//$fetch automatically stringifies, but would throw on a method or circular reference
 
 	//if this browser has a brownie for its userTag, include it in the body we POST
-	let brownie = brownieGet()//most won't, only during a provisional enrollment flow, or sudo hour, and they expire quickly
+	let brownie = brownieRead()//most won't, only during a provisional enrollment flow, or sudo hour, and they expire quickly
 	if (brownie) body.brownie = brownie//also won't if page code has called here on the server render, no local storage means no brownie
 
 	let browserTag//with universal rendering, we may already be on the server! if so, we must forward the browser tag cookie
@@ -1112,21 +1103,21 @@ The letter inside carries browserHash and notes, and each note names its own typ
 The door never tosses over a brownie, because the cookie and localStorage can fall into a combined state that would otherwise blow up every page load forever--a support call, and clearing localStorage by hand--where wiping the notes costs at worst a restarted twenty-minute flow. So every failure at open degrades to an empty letter, which the response turns into BrownieDelete., cleaning the browser up in one request: an envelope that will not open (someone in devtools retyping the entry as junk that isn't even base62, corruption, or a change to our own letter shape at a deploy, which is what clears every browser's stale brownie after one); a sealed browserHash that disagrees with the one the request's cookie proves (mild chaos, like deleted cookies giving this browser a new identity, or malice, like an extension feeding in a brownie stolen from an attacker's own signed-in browser); or notes missing their positive integer expirations. Expired notes are dropped one at a time, and a letter that empties commands its own deletion.
 */
 
-function brownieGet() {//the sealed ciphertext this browser is holding, or blank for nothing--text or blank; private to level2, because fetchWorker below is the only caller
+function brownieRead() {//the sealed ciphertext this browser is holding, or blank for nothing--text or blank; private to level2, with fetchWorker and brownieHeld its only callers
 	try {
 		if (!defined(typeof localStorage)) return ''//no localStorage off the page; a plain platform check rather than a nuxt build flag, because icarus stays framework-agnostic
 		return localStorage.getItem('brownie') || ''
-	} catch (e) { return '' }//a browser set to block site data throws on any localStorage touch, even the typeof probe above--a legitimate try/catch at the platform boundary, degrading those browsers to holding nothing, the same way a blocked cookie behaved before
+	} catch (e) { return '' }//a browser set to block site data throws on any localStorage touch, even the typeof probe above--a legitimate try/catch at the platform boundary, degrading those browsers to holding nothing, so flows there don't survive a refresh
 }
 export function brownieHeld() {//true when this browser is holding a brownie--presence only, never contents; lets the credential store skip its recovery follow-up when there's nothing to recover, which is almost always
-	return !!brownieGet()
+	return !!brownieRead()
 }
 
-function brownieApply({action, envelope}) {//execute a response's command; private like brownieGet above, because fetchWorker below is the only caller
+function brownieApply({action, envelope}) {//execute a response's command; private like brownieRead above, with fetchWorker its only caller
 	checkAction(action)//validate the command before touching storage, so a protocol mistake stays loud on every platform
 	if (action == 'BrownieSet.') {//store the complete replacement the server sealed
 		checkText(envelope)
-		try { if (defined(typeof localStorage)) localStorage.setItem('brownie', envelope) } catch (e) {}//no localStorage off the page; on it, blocked site data throws on any touch and a full quota throws on set--drop the command, and flows at this browser don't survive refresh, the same way a blocked cookie behaved before
+		try { if (defined(typeof localStorage)) localStorage.setItem('brownie', envelope) } catch (e) {}//no localStorage off the page; on it, blocked site data throws on any touch and a full quota throws on set--drop the command, and flows at this browser don't survive refresh
 	} else if (action == 'BrownieDelete.') {//nothing in flight anymore
 		try { if (defined(typeof localStorage)) localStorage.removeItem('brownie') } catch (e) {}//the same platform boundary as the set above
 	} else { toss('action', {action}) }//our own server speaks this protocol, so an unrecognized command is our own bug
@@ -1152,42 +1143,66 @@ async function sealBrownie({letter, browserHash, arrived}) {//seal a request's b
 	return {action: 'BrownieSet.', envelope}
 }
 
-//request code's vocabulary for the letter: find, drop, and set notes, always scoped by owner, so one user's flow can never touch a housemate's note
-export function brownieNoteFind(letter, type, userTag) {//the note of this type owned by this user, or undefined
+//request code's vocabulary for the letter: find, drop, set, and add notes, always scoped by owner, so one user's flow can never touch a housemate's note
+function brownieCheck(note) {//the tripwires every note write trips, so a malformed note fails on the line that made it, not at the distant seal: a note names its type, a positive integer expiration, and its owner--requiring an owner means ownerless sign-up notes arrive as a deliberate relaxation later, not an accident now
+	checkAction(note.type); checkInt(note.expiration, 1); checkTag(note.userTag)
+}
+export function brownieGet(letter, type, userTag) {//the note of this type owned by this user, or undefined--for singleton types like totp enrollment
 	checkAction(type); checkTag(userTag)
 	return letter.notes.find(n => n.type == type && n.userTag == userTag)
 }
-export function brownieNoteDrop(letter, type, userTag) {//remove this user's note of this type; idempotent, because a stale tab can drop what's already gone
+export function brownieGetAll(letter, type, userTag) {//all of this user's notes of this type, in the order they were added--for multiplicity types like otp challenges, several live at once
+	checkAction(type); checkTag(userTag)
+	return letter.notes.filter(n => n.type == type && n.userTag == userTag)
+}
+export function brownieRemove(letter, type, userTag) {//remove this user's notes of this type; idempotent, because a stale tab can drop what's already gone
 	checkAction(type); checkTag(userTag)
 	letter.notes = letter.notes.filter(n => !(n.type == type && n.userTag == userTag))
 }
-export function brownieNoteSet(letter, note) {//put this note in the letter, replacing this user's previous note of the same type--one in flight per type per owner
-	checkAction(note.type); checkInt(note.expiration, 1); checkTag(note.userTag)//tripwires at the write, so a malformed note fails on the line that made it, not at the distant seal; requiring an owner means ownerless sign-up notes arrive as a deliberate relaxation later, not an accident now
-	brownieNoteDrop(letter, note.type, note.userTag)
+export function brownieSet(letter, note) {//put this note in the letter, replacing this user's previous note of the same type--one in flight per type per owner
+	brownieCheck(note)//before the drop, so a malformed note tosses without having removed its predecessor
+	brownieRemove(letter, note.type, note.userTag)
+	letter.notes.push(note)
+}
+export function brownieAdd(letter, note) {//add this note alongside this user's others of the same type, for flows where several ride at once; note-level identity beyond type and owner, like a challenge's tag, is the flow's own domain
+	brownieCheck(note)
 	letter.notes.push(note)
 }
 test(() => {//the helpers above, walked with two housemates sharing one letter
 	let alice = Tag(), bob = Tag()
 	let letter = {notes: []}
 
-	brownieNoteSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: alice, secret: 's1'})
-	brownieNoteSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: bob, secret: 's2'})//housemates' notes coexist
+	brownieSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: alice, secret: 's1'})
+	brownieSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: bob, secret: 's2'})//housemates' notes coexist
 	ok(letter.notes.length == 2)
-	ok(brownieNoteFind(letter, 'Totp.', alice).secret == 's1')//find answers each owner their own
-	ok(brownieNoteFind(letter, 'Totp.', bob).secret == 's2')
+	ok(brownieGet(letter, 'Totp.', alice).secret == 's1')//find answers each owner their own
+	ok(brownieGet(letter, 'Totp.', bob).secret == 's2')
 
-	brownieNoteSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: alice, secret: 's3'})//set replaces the same owner's note of the same type
+	brownieSet(letter, {type: 'Totp.', expiration: Now() + Time.minute, userTag: alice, secret: 's3'})//set replaces the same owner's note of the same type
 	ok(letter.notes.length == 2)
-	ok(brownieNoteFind(letter, 'Totp.', alice).secret == 's3')
+	ok(brownieGet(letter, 'Totp.', alice).secret == 's3')
 
-	brownieNoteDrop(letter, 'Totp.', alice)
-	ok(!brownieNoteFind(letter, 'Totp.', alice))//hers is gone
-	ok(brownieNoteFind(letter, 'Totp.', bob).secret == 's2')//his rides on
-	brownieNoteDrop(letter, 'Totp.', alice)//dropping again is a harmless no-op
+	brownieRemove(letter, 'Totp.', alice)
+	ok(!brownieGet(letter, 'Totp.', alice))//hers is gone
+	ok(brownieGet(letter, 'Totp.', bob).secret == 's2')//his rides on
+	brownieRemove(letter, 'Totp.', alice)//dropping again is a harmless no-op
 	ok(letter.notes.length == 1)
 
-	let tossed = false; try { brownieNoteSet(letter, {type: 'Totp.', userTag: bob}) } catch (e) { tossed = true }
+	//multiplicity types use add and the plural find: alice holds two email challenges at once, beside her housemate's phone challenge
+	brownieAdd(letter, {type: 'Email.', expiration: Now() + Time.minute, userTag: alice, tag: 't1'})
+	brownieAdd(letter, {type: 'Email.', expiration: Now() + Time.minute, userTag: alice, tag: 't2'})
+	brownieAdd(letter, {type: 'Phone.', expiration: Now() + Time.minute, userTag: bob, tag: 't3'})
+	ok(brownieGetAll(letter, 'Email.', alice).length == 2)//both of hers, in the order she added them
+	ok(brownieGetAll(letter, 'Email.', alice)[0].tag == 't1')
+	ok(brownieGetAll(letter, 'Email.', bob).length == 0)//none of his are email
+	ok(brownieGetAll(letter, 'Phone.', bob).length == 1)
+
+	let tossed
+	tossed = false; try { brownieSet(letter, {type: 'Totp.', userTag: bob}) } catch (e) { tossed = true }
 	ok(tossed)//a note without its positive integer expiration is refused at the write
+	ok(brownieGet(letter, 'Totp.', bob).secret == 's2')//and set validates before it drops, so the malformed replacement didn't remove his good note
+	tossed = false; try { brownieAdd(letter, {type: 'Email.', userTag: alice, tag: 't4'}) } catch (e) { tossed = true }
+	ok(tossed)//add trips the same wires
 })
 
 

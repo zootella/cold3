@@ -11,14 +11,12 @@ const name = ref(null)//the user's name {f0, f1, f2}, or null if not signed in o
 const passwordCycles = ref(0)//the signed-in user's password hash cycles, or 0 if not signed in or no password (set via apply after auth)
 const totpEnrolled = ref(false)//true if the user has a verified TOTP enrollment
 const totpIdentifier = ref('')//short identifier like "g3" to help user find the right authenticator entry
-const enrollment = ref(null)//in-flight TOTP enrollment recovered from envelope cookie, or null
+const enrollment = ref(null)//in-flight TOTP enrollment recovered from the brownie by the mounted follow-up Get., or null
 const wallets = ref([])//checksummed Ethereum addresses the user has proven they control: [address, ...] zero, one, or two
 const oauths = ref([])//array of linked third-party accounts: [{provider, identifier, handle, name, email}, ...]
 const emails = ref([])//the user's email addresses: [{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
 const phones = ref([])//the user's phone numbers, same shape
-const otps = ref([])//live otp code challenges at this browser: [{tag, start, address}, ...]; the answers stay sealed in the envelope cookie
-
-const otpCookie = useOtpCookie()//captured here at store setup so apply can reach it after awaits; the store is the only code that touches this cookie
+const otps = ref([])//the signed-in user's live otp code challenges: [{tag, start, address}, ...]; the answers stay sealed in the brownie
 
 const userDisplayName = computed(() => {//best available display name for page
 	if (name.value?.f2) return name.value.f2
@@ -26,11 +24,7 @@ const userDisplayName = computed(() => {//best available display name for page
 })
 
 function apply(task) {//update all refs from task - called after any action that returns state
-	if (task.otps) {//an array, even an empty one, is current challenge truth, arriving even when the action's answer was no, like a wrong guess or a rate limit
-		otps.value = task.otps
-		if      (hasText(task.envelopeOtp)) otpCookie.value = task.envelopeOtp//the resealed envelope rides alongside; keep it
-		else if (hasText(otpCookie.value))  otpCookie.value = null//nothing live anymore, and we're holding a stale cookie; null here is just how useCookie deletes--the wire protocol is text or blank, and we only touch the cookie if we actually hold one
-	}
+	if (task.otps) otps.value = task.otps//an array, even an empty one, is current challenge truth, arriving even when the action's answer was no, like a wrong guess or a rate limit; owner-scoped by the server, with the answers sealed in the brownie
 	if (!task.success) return//taken name, wrong password, paths like those that still aren't toss
 	browserHash.value = task.browserHash || ''
 	userTag.value = task.userTag || ''
@@ -46,17 +40,13 @@ function apply(task) {//update all refs from task - called after any action that
 }
 
 async function load() { if (loaded.value) return; loaded.value = true
-	let body = {}
-	if (hasText(otpCookie.value)) body.envelopeOtp = otpCookie.value//found otp envelope cookie; live challenges to recover, ttd january
-	let task = await fetchWorker('/credential', 'Get.', body)
+	let task = await fetchWorker('/credential', 'Get.')
 	apply(task)
 }
 
-async function mounted() {//called once per spa from app.vue's onMounted; the server render couldn't see localStorage, so if this browser holds a brownie, send it up now to recover in-flight enrollments
+async function mounted() {//called once per spa from app.vue's onMounted; the server render couldn't see localStorage, so if this browser holds a brownie, send it up now to recover in-flight flows--totp enrollments and otp challenges alike
 	if (!brownieHeld()) return//almost always; a brownie exists only during the minutes of an in-flight flow
-	let body = {}
-	if (hasText(otpCookie.value)) body.envelopeOtp = otpCookie.value//send the live otp challenges along, so this response's otp truth doesn't wipe them
-	let task = await fetchWorker('/credential', 'Get.', body)//the brownie rides automatically; fetchWorker appends it to every POST from the page
+	let task = await fetchWorker('/credential', 'Get.')//the brownie rides automatically; fetchWorker appends it to every POST from the page
 	apply(task)
 }
 
@@ -121,8 +111,8 @@ async function totpEnroll2({code}) {
 	return task
 }
 
-async function totpCancel() {//the user backed out of an enrollment; the server removes the note, and the response's brownie command cleans the page up
-	let task = await fetchWorker('/credential', 'TotpCancel.')
+async function totpClear() {//the user backed out of an enrollment; the server removes the note, and the response's brownie command cleans the page up
+	let task = await fetchWorker('/credential', 'TotpClear.')
 	apply(task)
 }
 
@@ -154,13 +144,13 @@ async function oauthRemove({provider}) {//unlink a specific provider; provider i
 }
 
 async function otpSend({address, provider, turnstileToken}) {//ask the server to email or text a code; provider is the single letter a or t from the box beside the address
-	let task = await fetchWorker('/credential', 'OtpSendTurnstile.', {address, provider, turnstileToken, envelopeOtp: otpCookie.value || undefined})
+	let task = await fetchWorker('/credential', 'OtpSendTurnstile.', {address, provider, turnstileToken})
 	apply(task)
 	return task
 }
 
 async function otpEnter({tag, guess}) {//the person's guess at a code; task.success and task.outcome carry the verdict
-	let task = await fetchWorker('/credential', 'OtpEnter.', {tag, guess, envelopeOtp: otpCookie.value || undefined})
+	let task = await fetchWorker('/credential', 'OtpEnter.', {tag, guess})
 	apply(task)
 	return task
 }
@@ -201,7 +191,7 @@ return {
 	removePassword,
 	totpEnroll1,
 	totpEnroll2,
-	totpCancel,
+	totpClear,
 	totpRemove,
 	wallets,
 	walletProve1,
