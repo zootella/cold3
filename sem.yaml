@@ -1,5 +1,5 @@
 summary:
-  generated: 2026aug12.1741.1360
+  generated: 2026aug12.2030.32810
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -205,8 +205,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1108.0 on 2026aug11 0m old
-      latest: 3.1108.0 on 2026aug11 0m old
+      current: 3.1109.0 on 2026aug12 0m old
+      latest: 3.1109.0 on 2026aug12 0m old
     downloads:
       weekly: 32,869,651
       on: 2026jul18.2043.124
@@ -218,8 +218,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1108.0 on 2026aug11 0m old
-      latest: 3.1108.0 on 2026aug11 0m old
+      current: 3.1109.0 on 2026aug12 0m old
+      latest: 3.1109.0 on 2026aug12 0m old
     downloads:
       weekly: 3,185,574
       on: 2026jul18.2043.124
@@ -231,8 +231,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1108.0 on 2026aug11 0m old
-      latest: 3.1108.0 on 2026aug11 0m old
+      current: 3.1109.0 on 2026aug12 0m old
+      latest: 3.1109.0 on 2026aug12 0m old
     downloads:
       weekly: 3,929,471
       on: 2026jul18.2043.124
@@ -244,8 +244,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1108.0 on 2026aug11 0m old
-      latest: 3.1108.0 on 2026aug11 0m old
+      current: 3.1109.0 on 2026aug12 0m old
+      latest: 3.1109.0 on 2026aug12 0m old
     downloads:
       weekly: 14,947,489
       on: 2026jul18.2043.124
@@ -268,7 +268,7 @@ modules:
     note: "front: dark/light mode with auto detection"
     from: site
     versions:
-      declared: ^4.0.0 on 2025nov11 8m old 🏺 Declared release 6+ months earlier than installed
+      declared: ^4.0.0 on 2025nov11 9m old 🏺 Declared release 6+ months earlier than installed
       installed: 4.0.1 on 2026jun09 2m old
       current: 4.0.1 on 2026jun09 2m old
       latest: 4.0.1 on 2026jun09 2m old
