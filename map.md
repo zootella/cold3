@@ -12,7 +12,7 @@ For instance, TOTP only helps an existing user additionally secure their account
 **Does the prove flow need the page to hold server state? (currently in an envelope)**
 For instance, Wallet: prove step 1 seals the SIWE nonce into an envelope, and the server needs the page to hold it and send it back alongside the signed message in step 2 — but we don't need to worry about a browser refresh, because a refresh kills the wallet connection and pending popup anyway, so no envelope of ours could resume the flow; the user restarts with one invisible click.
 
-**Does the prove flow need that state to survive a browser reload? (currently a brownie note for TOTP, an envelope cookie for OTP)**
+**Does the prove flow need that state to survive a browser reload? (currently by notes in the brownie)**
 For instance, TOTP: by the time the page holds the sealed enrollment secret, the user has already scanned the QR code into their authenticator app. If a reload discards the secret, the entry they just created in their app is orphaned — regeneration is expensive and user-visible. OTP is the same shape: the code already landed in a real inbox, and discarding the challenge invalidates a code the user is about to type, forcing a resend into the rate limits.
 
 **Does the flow involve starting information we should record as mentioned or challenged? (with event 2 and 3 rows)**
@@ -102,4 +102,4 @@ Zero is acceptable everywhere. No credential type is required, and none is more 
 
 **No floor, yet.** Every remove action is available unconditionally, so a user can remove their name, password, totp, wallet, oauth links, and every address while remaining signed in on the Browser row alone — and then signing out closes the door behind them. The safeguard against emptying an account into an unreachable state is not built.
 
-**Proven addresses are unlimited but simultaneous challenges are not.** Every live otp challenge rides in one sealed envelope in one cookie, and the note inside `credentialOtpSend` puts about a dozen of them at the browser's 4KiB cookie limit. Nothing counts them, so the ceiling is real but unenforced, and reaching it fails at the browser rather than in our code. This is a property of where provisional state lives today, so the storage fork decides it.
+**Proven addresses are unlimited, and so are simultaneous challenges, by choice.** Every live otp challenge rides as its own note in the brownie, and nothing counts them — the real bounds are a turnstile solve per send and the per-address trail limits, which cap how fast challenges can accumulate. The old accidental ceiling (about a dozen challenges filling a 4KiB cookie) left with the cookie.

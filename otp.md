@@ -3,7 +3,7 @@
 
 one-time password challenges for email and phone verification
 a user provides an address, the server generates a short code and delivers it, and the user types it back to prove they control the address
-otp uses no dedicated database table--challenge state lives in a sealed cryptographic envelope stored in a browser cookie, the same pattern totp uses
+otp uses no dedicated database table--each live challenge rides as a note in the brownie, the sealed letter in localStorage that carries all provisional credential state, the same pattern totp uses
 
 ## (1) helper functions
 
@@ -16,7 +16,7 @@ otpConstants (expiration, rate limits, digit length by address history)
 
 otp actions live in the unified credential endpoint:
 
-./site/server/api/credential.js - OtpSendTurnstile. and OtpEnter. require a signed-in user; Get. recovers live challenges from the envelope cookie; EmailRemove. and PhoneRemove. manage saved addresses
+./site/server/api/credential.js - OtpSendTurnstile. and OtpEnter. require a signed-in user; every snapshot carries the viewer's live challenges from the brownie, so recovery is the page rendering the snapshot; EmailRemove. and PhoneRemove. manage saved addresses
 
 ## (3) vue components
 
