@@ -44,7 +44,7 @@ async function attachState(task, browserHash, letter) {//attach complete credent
 		task.emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//[{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
 		task.phones = await credentialOtpGet({userTag: user.userTag, type: 'Phone.'})
 	}
-	task.otps = []//current challenge truth rides every snapshot: the signed-in viewer's live code challenges, owner-scoped, or none--so signing out clears the enter boxes and signing in reveals them
+	task.otps = []//in-flight flow truth rides every snapshot, owner-scoped to the signed-in viewer or none--so signing out clears the enter boxes and enrollment ui, and signing in reveals them
 	if (user && letter) {
 		let otps = [...brownieGetAll(letter, 'Email.', user.userTag), ...brownieGetAll(letter, 'Phone.', user.userTag)].sort((a, b) => a.start - b.start)//both types, back in the order they were sent
 		task.otps = otps.map(o => ({//non-secret information about currently active challenges
@@ -53,6 +53,8 @@ async function attachState(task, browserHash, letter) {//attach complete credent
 			address: o.address,//the full address object with ok, f0, f1, f2, and type
 			//the secret code we sent, like "123456" is o.answer; it stays sealed in the brownie, and critically is not leaked here to the page!
 		}))
+		let enrollment = await credentialTotpRecover({letter, userTag: user.userTag})//the viewer's in-flight totp enrollment rides the same way; cheap, because recover answers false as soon as it finds no note
+		if (enrollment) task.enrollment = enrollment//{uri, identifier}, deterministic from the sealed secret, so every snapshot agrees; absent when nothing is in flight, which collapses the page's enrollment ui
 	}
 	//ttd march, lots of database chatter here, replace with a single query for all rows about userTag, and then careful trusted server side logic to sift through them to figure out what's applicable and what's historical. and in this process, decide if you're going to hide rows or not
 }
@@ -61,11 +63,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	// 🟠 get
 	if (action == 'Get.') {
-		await attachState(task, browserHash, door.brownie)//attachState reads the viewer's live otp challenges from the letter, so recovery after a refresh is part of the snapshot
-		if (task.userTag && door.brownie) {//the door opened the brownie if the page held one; an enrollment belongs to a user, so there's nothing to resume for a signed out browser
-			let enrollment = await credentialTotpRecover({letter: door.brownie, userTag: task.userTag})
-			if (enrollment) task.enrollment = enrollment
-		}
+		await attachState(task, browserHash, door.brownie)//the snapshot carries the viewer's live challenges and in-flight enrollment from the letter, so recovery after a refresh is just the page rendering the snapshot
 
 	// 🟠 name
 	} else if (action == 'CheckNameTurnstile.') {
@@ -177,13 +175,17 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//TOTP enrollment step 1: the user at browser wants to setup totp as a second factor. here at the server, we make sure they're not already enrolled, and generate a new random secret for the qr code
 		} else if (action == 'TotpEnroll1.') {
 			if (!door.brownie) door.brownie = {notes: []}//starting a flow where no brownie arrived; the door seals whatever the letter holds on the way out
-			task.enrollment = await credentialTotpEnroll1({letter: door.brownie, userTag: user.userTag})//the page shows this as a QR code; the secret stays sealed in the brownie
+			await credentialTotpEnroll1({letter: door.brownie, userTag: user.userTag})//puts the note in the letter; the tail's attachState reads it back into the snapshot, which is where the page gets the QR to show--the secret stays sealed in the brownie
 
 		// 🟠 totp
 		//TOTP enrollment step 2: the user has gotten the secret into their authenticator app, and has their first code to validate. if they're right, we create their enrollment
 		} else if (action == 'TotpEnroll2.') {
 			let result = await credentialTotpEnroll2({letter: door.brownie || {notes: []}, userTag: user.userTag, code: body.code})//no brownie arrived means no note to find, and the graceful Expired. answer below
-			if (!result.ok) return {success: false, outcome: result.outcome}
+			if (!result.ok) {//the failure response still carries the snapshot: BadCode. kept the note, so the enrollment ui stays; Expired. dropped it, so the ui collapses
+				task.success = false; task.outcome = result.outcome
+				await attachState(task, browserHash, door.brownie)
+				return task
+			}
 
 		// 🟠 totp
 		//the user backed out of an enrollment in flight; take their note out of the letter, and the door's delete or reseal cleans the page up

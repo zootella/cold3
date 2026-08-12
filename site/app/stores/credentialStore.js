@@ -11,7 +11,8 @@ const name = ref(null)//the user's name {f0, f1, f2}, or null if not signed in o
 const passwordCycles = ref(0)//the signed-in user's password hash cycles, or 0 if not signed in or no password (set via apply after auth)
 const totpEnrolled = ref(false)//true if the user has a verified TOTP enrollment
 const totpIdentifier = ref('')//short identifier like "g3" to help user find the right authenticator entry
-const enrollment = ref(null)//in-flight TOTP enrollment recovered from the brownie by the mounted follow-up Get., or null
+const enrollment = ref(null)//the signed-in user's in-flight TOTP enrollment {uri, identifier}, riding every snapshot while its note is in the brownie, or null
+const recovering = ref(false)//true while mounted()'s recovery Get. is in flight; the totp panel ghosts Add so a fresh enrollment can't race the arriving snapshot
 const wallets = ref([])//checksummed Ethereum addresses the user has proven they control: [address, ...] zero, one, or two
 const oauths = ref([])//array of linked third-party accounts: [{provider, identifier, handle, name, email}, ...]
 const emails = ref([])//the user's email addresses: [{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
@@ -24,7 +25,10 @@ const userDisplayName = computed(() => {//best available display name for page
 })
 
 function apply(task) {//update all refs from task - called after any action that returns state
-	if (task.otps) otps.value = task.otps//an array, even an empty one, is current challenge truth, arriving even when the action's answer was no, like a wrong guess or a rate limit; owner-scoped by the server, with the answers sealed in the brownie
+	if (task.otps) {//an array, even an empty one, marks a snapshot, so flow-state truth arrives even when the action's answer was no, like a wrong guess or a rate limit
+		otps.value = task.otps//the signed-in viewer's live code challenges, owner-scoped by the server, with the answers sealed in the brownie
+		enrollment.value = task.enrollment || null//and the viewer's in-flight totp enrollment; a snapshot without one collapses the enrollment ui, because the truth it renders from is gone
+	}
 	if (!task.success) return//taken name, wrong password, paths like those that still aren't toss
 	browserHash.value = task.browserHash || ''
 	userTag.value = task.userTag || ''
@@ -32,7 +36,6 @@ function apply(task) {//update all refs from task - called after any action that
 	passwordCycles.value = task.passwordCycles || 0
 	totpEnrolled.value = task.totpEnrolled || false
 	totpIdentifier.value = task.totpIdentifier || ''
-	enrollment.value = task.enrollment || null
 	wallets.value = task.wallets || []
 	oauths.value = task.oauths || []
 	emails.value = task.emails || []
@@ -46,8 +49,10 @@ async function load() { if (loaded.value) return; loaded.value = true
 
 async function mounted() {//called once per spa from app.vue's onMounted; the server render couldn't see localStorage, so if this browser holds a brownie, send it up now to recover in-flight flows--totp enrollments and otp challenges alike
 	if (!brownieHeld()) return//almost always; a brownie exists only during the minutes of an in-flight flow
+	recovering.value = true
 	let task = await fetchWorker('/credential', 'Get.')//the brownie rides automatically; fetchWorker appends it to every POST from the page
 	apply(task)
+	recovering.value = false
 }
 
 async function signOut() {
@@ -180,6 +185,7 @@ return {
 	totpEnrolled,
 	totpIdentifier,
 	enrollment,
+	recovering,
 	signOut,
 	checkName,
 	signUpAndSignIn,
