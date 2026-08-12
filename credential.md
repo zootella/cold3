@@ -7,7 +7,7 @@ The credential system flows through one endpoint (`/api/credential`), one store 
 
 `Get.` returns a complete snapshot of every credential type in one response, `attachState` assembles that snapshot, and `apply()` in the store unpacks it into refs. Adding a new credential type means extending attachState and apply — not creating a new endpoint.
 
-**Envelopes unified into the brownie.** This direction landed as the brownie (brownie.md): one localStorage entry, one sealed letter, self-describing notes for whatever's in progress. TOTP enrollments and OTP challenges both ride as notes; no temporary cookie remains, and the browserTag is cold3's one cookie.
+**Envelopes unified into the brownie.** This direction landed as the brownie — one localStorage entry, one sealed letter, self-describing notes for whatever's in progress; the design essay lives inline in icarus/level2.js above the brownie functions. TOTP enrollments and OTP challenges both ride as notes; no temporary cookie remains, and the browserTag is cold3's one cookie. The brownie's next tenant is the sudo note, which shapes itself when it arrives — a type, an expiration, an owner, whatever the elevated action needs.
 
 **Reducing fetch calls is the goal.** A page load should be one GET to the credential endpoint. That one response tells credentialStore everything: which credentials exist, what their display values are, and whether any multi-step flows were interrupted. Components render from the store. When a user takes an action (enroll, remove, verify), that's one POST, and the response includes a fresh attachState snapshot so the store stays in sync. The number of fetch calls should be proportional to the number of user actions, not the number of credential types.
 
