@@ -163,7 +163,7 @@ fetchWorker, fetchLambda, fetchProvider,
 brownieHeld, brownieGet, brownieGetAll, brownieRemove, brownieSet, brownieAdd,
 originApex, originDomain, lambda23,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
+composeCookieName, composeCookieValue, parseCookieValue,
 
 /* level 2 query */
 SQL, grid, getDatabase, runDatabaseTests,

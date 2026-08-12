@@ -136,6 +136,18 @@ mitigated by:
 
 function middlewareCookie(workerEvent) {
 
+	const cookieOptions = {//settings for the browser tag cookie, cold3's one cookie; built here per request rather than at module scope, because this file leans on the server plugin's pinned globals, which are only certain inside request handling
+		path: '/',//send for all routes
+		httpOnly: true,//page script can't see or change; more secure than local storage!
+		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
+		maxAge: inSeconds(395*Time.day),//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
+		secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
+		//the domain option below widens this cookie from the exact host to all of its subdomains. we run no subdomains today, so we don't strictly need it — but it keeps the browser tag readable from one the day we add one. to tighten to a host-only cookie, drop the domain line
+		...(isCloud() && {//running deployed,
+			domain: Key('domain, public')//value like 'example.com', no protocol or slash; this is the line that widens the cookie to subdomains
+		}),//running locally, don't include domain property at all, clever use of the spread operator to accomplish this in a literal
+	}
+
 	//the steps below are designed to recover an existing browser tag, making a new one if something doesn't look right, and not throw; we don't want a malformed cookie to make the site unloadable
 	let value, valueTag, browserTag
 	value = getCookie(workerEvent, composeCookieName())//get the cookie where we may have previously tagged this browser
@@ -151,5 +163,5 @@ function middlewareCookie(workerEvent) {
 
 	workerEvent.context.browserTag = browserTag//save the browser tag we just read or made in context, from H3, meant for us to add notes like this; door will find it here
 
-	setCookie(workerEvent, composeCookieName(), composeCookieValue(browserTag), cookieOptions.browser)//set response headers for when we send the response, telling the browser to save this tag for next time
+	setCookie(workerEvent, composeCookieName(), composeCookieValue(browserTag), cookieOptions)//set response headers for when we send the response, telling the browser to save this tag for next time
 }

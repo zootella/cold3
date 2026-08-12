@@ -354,22 +354,6 @@ export function parseCookieValue(value) {
 	return false//if any of that didn't work, don't throw, just return false
 }
 
-export const cookieOptions = {
-	browser: Object.freeze({
-		path: '/',//send for all routes
-		httpOnly: true,//page script can't see or change; more secure than local storage!
-		sameSite: 'Lax',//send with the very first GET; block cross‑site subrequests like iframes, AJAX calls, images, and forms
-		maxAge: inSeconds(395*Time.day),//expires in 395 days, under Chrome's 400 day cutoff; seconds not milliseconds
-		secure: isCloud(),//local development is http, cloud deployment is https, align with this to work both places
-		//the domain option below widens this cookie from the exact host to all of its subdomains. we run no subdomains today, so we don't strictly need it — but it keeps the browser tag readable from one the day we add one. to tighten to a host-only cookie (like the OTP/TOTP cookies further down), drop the domain line
-		...(isCloud() && {//running deployed,
-			domain: Key('domain, public')//value like 'example.com', no protocol or slash; this is the line that widens the cookie to subdomains
-		}),//running locally, don't include domain property at all, clever use of the spread operator to accomplish this in a literal
-	}),
-	/*
-	the 3 constants, 3 functions, and browser above are all for cookieMiddleware/browserTag/browserHash on the server side.
-	*/
-}
 
 //                      _
 //   ___ _ ____   _____| | ___  _ __   ___

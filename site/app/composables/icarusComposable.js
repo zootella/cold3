@@ -48,7 +48,7 @@ Key, doorWorker, doorLambda,
 fetchWorker, fetchLambda, fetchProvider, brownieHeld,
 brownieGet, brownieGetAll, brownieRemove, brownieSet, brownieAdd,
 sealEnvelope, openEnvelope,
-composeCookieName, composeCookieValue, parseCookieValue, cookieOptions,
+composeCookieName, composeCookieValue, parseCookieValue,
 
 } from 'icarus'
 
