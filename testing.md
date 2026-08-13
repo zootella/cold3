@@ -28,7 +28,7 @@ Which is why the rule is worth verifying rather than believing. Booby-trapping `
 
 ## Next structural change: move the grid tests to their own file
 
-**Unit tests stay inline, and grid tests move out**, probably to `./icarus/grid.js`. The two kinds want opposite things from their location.
+**Unit tests stay inline, and grid tests move out**, to `./icarus/grid.js`. The two kinds want opposite things from their location.
 
 A `test()` case belongs beside the function it exercises. It sanity-checks one thing and documents it at the same time, so having both on one screen is the point: you scroll to a function and its examples are right there, a Ctrl+F finds the code and its tests together, and renaming touches both at once without hunting.
 
@@ -37,6 +37,20 @@ A `grid()` case wants none of that. It is an integration test scoped as wide as 
 **And it should fix the bundling problem, for a reason worth stating precisely.** Registration happens at import time — `grid(f)` pushes a closure into a module-level array — so a test case is a live reference to every function it names. A tree shaker cannot drop a function that a test closure holds, and it cannot drop that function's imports either. That is how a server-only crypto path came within one commit of riding into the browser bundle during the wallet work.
 
 Moving the cases into `grid.js`, imported by the local command-line test runner and *not* through the icarus barrel, cuts that link entirely. Production bundles would stop containing test closures at all, unused exports would become genuinely droppable, and the dynamic-import gymnastics currently protecting heavy modules would be belt alongside braces rather than the only thing standing between viem and every page load.
+
+### Measured: where test code actually ships today (August 12, 2026)
+
+Greps against the day's build outputs, working tree clean at HEAD. The probes are strings unique to one kind of code: `TestEnvelope.` appears only in level2's envelope grid test, `wrong4@example.com` only in a level3 otp grid test, `Title of test error` only in a core.js `test()`. The controls that must be present: `OauthAlreadyLinked.` (level3 production) and `BrownieSet.` (level2 production, page-visible).
+
+**The site bundles are already clean.** In `site/.output`, both the worker bundle and the browser chunks carry the controls and carry the `test()` probe — the unit suite ships deployed on purpose, since up3 runs it live — but neither grid probe appears anywhere, and neither do the `SQL()` schema strings (`CREATE TABLE credential_table` is absent from every output file). icarus declares no `sideEffects` hint, so this is rollup's own analysis concluding the registrations are unobservable: nothing site-side imports `runDatabaseTests`, so pushes into `_grid` are writes nothing reads. That's cleverness, not a guarantee — the near-miss above shows how quietly the conclusion can flip — and the move replaces the cleverness with structure.
+
+**The lambda is where the weight actually is.** `net23/build.js` copies every top-level `.js` file in icarus into `dist/node_modules/icarus`, because the lambda imports icarus unbundled at runtime. So level2.js and level3.js ride to Amazon whole — all 58 grid registrations (10 in level2, 48 in level3) aboard, executing at every cold start to fill arrays nothing there will ever read. Confirmed by probe: `TestEnvelope.` is in `net23/dist/node_modules/icarus/level2.js` today. The move takes the closures out of the files that ship. One extra line makes it complete: the same copy loop would sweep `grid.js` into the artifact as dead bytes, so build.js should skip it.
+
+### Wiring, once the cases move
+
+The move itself is copy and paste: the 58 cases leave the level files for `grid.js`, which imports `grid` and every function the cases exercise from the level files directly — `index.js` doesn't change, and nothing production-side ever imports `grid.js`. The runner gains one side-effect import — `test.js` imports `grid.js` before calling `runDatabaseTests()`, so registration precedes the run. The `SQL()` schema blocks stay in the level files beside the functions they describe; pglite builds its tables from the same registry either way.
+
+The friction to expect: a moved case that reached for a module-private helper now needs that helper exported, and a new icarus export mirrors in four places, with `runImportTests` guarding the lambda side. Verification is `pnpm test` landing at the same counts as before the move, then a rebuild and the same greps: site output unchanged (already clean), and the grid probes gone from the lambda's icarus copy.
 
 ## The seam
 
@@ -130,4 +144,4 @@ Wallet software: connecting through an injected provider or the WalletConnect re
 
 **Nothing tests the store or the components.** Not a single assertion covers `apply()`, which is the one function every credential response passes through, and whose contract — an array of otps is truth even when success is false, and a failed task must not clobber refs — is real logic that could break silently.
 
-**Test closures ship in the bundle.** `test(f)` and `grid(f)` push into module-level arrays at import time, so every test body is in every build that imports the module. That is the price of keeping tests beside the code they exercise, which is a tradeoff we have chosen deliberately elsewhere, but it is worth knowing the price is paid in bytes and not only in file length.
+**Test closures ship in some builds, and the measurement is above.** `test(f)` and `grid(f)` push into module-level arrays at import time. The August 2026 greps found the real state more nuanced than "every test body in every build": `test()` bodies ship everywhere and deliberately (up3 runs them), grid bodies are already tree-shaken out of the site bundles by rollup's analysis, and the lambda ships them whole because icarus rides to Amazon unbundled. The grid.js move turns the site's lucky cleanliness into structure and takes the closures out of the lambda's files.
