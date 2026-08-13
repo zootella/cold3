@@ -1,4 +1,40 @@
 
+//grid tests--the integration suite over the simulated database, moved out of the level files august 2026
+//only the monorepo root's test.js imports this file; the icarus barrel, site, and net23 have no knowledge of it, so test closures never ride in a production bundle or the lambda artifact
+
+import {
+Data, Tag, Time, defined, hashText, makeObject, makeText, random32, totpGenerate,
+} from './core.js'
+import {
+Now, ageNow, enterSimulationMode, isExpired, isInSimulationMode, ok, runTests, hasText,
+} from './level0.js'
+import {
+Limit, validateEmail, validateEmailOrPhone, pgliteDynamicImport,
+} from './level1.js'
+import {
+decryptKeys, getDatabase, sqlList, setTestDatabase,
+sealEnvelope, openEnvelope, openBrownie, sealBrownie, brownieGet,
+originDomain,
+queryGet, queryGetAny, queryAddRow, queryAddRows, queryHide, queryTop, queryCountRows, queryCountAllRows,
+} from './level2.js'
+import {
+otpConstants, trailAdd, trailAddMany, trailCount, trailGet, trailGetAny, trailRecent,
+credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
+credentialNameGet, credentialNameSet, credentialNameRemove, credentialNameCheck,
+credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
+credentialTotpGet, credentialTotpSet, credentialTotpRemove, credentialTotpClear,
+credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover,
+credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialWalletHolder, credentialWalletRefusal,
+credentialWalletProve1, credentialWalletProve2,
+credentialOauthGet, credentialOauthSet, credentialOauthRemove, credentialOauthChallenge,
+credentialOtpGet, credentialOtpSend, credentialOtpEnter, credentialOtpRemove, credentialOtpHolder,
+credentialOtpMentioned, credentialOtpChallenged, credentialOtpValidated,
+credentialCloseAccount,
+} from './level3.js'
+
+let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
+function grid(f) { _grid.push(f) }
+
 grid(async () => {//otp: sanity check
 	let userTag = Tag()//otp flows require a signed-in user; the endpoint resolves the tag from the browser and passes it down
 	let letter = {notes: []}
@@ -1159,7 +1195,19 @@ export async function runDatabaseTests() {
 	}
 	await decryptKeys('grid', sources)//grid() tests can use public and secret keys with Key()
 
+	await setupTestDatabase()//stand up PGlite and park it in level2 before any test calls getDatabase()
+
 	return await runTests(_grid)
+}
+async function setupTestDatabase() {//build ephemeral in-memory PostgreSQL, wrap it in the supafake adapter, and register the package so getDatabase() returns it in simulation mode
+	let {pglite} = await pgliteDynamicImport()
+	let p = new pglite.PGlite()
+	for (let sql of sqlList()) await p.exec(sql)//make fake empty tables that match the real ones up in supabase
+	let database = {from(table) { return new FakeSupabaseQueryBuilder(p, table) }}//our adapter which matches the parts of the supabase api our code here uses
+	setTestDatabase({
+		context: 'Test.', database, pglite: p,
+		clear: async (table) => await p.exec(`DELETE FROM ${table}`),
+	})
 }
 
 //grid tests run in simulation mode, where Now() and Tag() act differently

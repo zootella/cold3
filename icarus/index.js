@@ -166,7 +166,7 @@ sealEnvelope, openEnvelope,
 composeCookieName, composeCookieValue, parseCookieValue,
 
 /* level 2 query */
-SQL, grid, getDatabase, runDatabaseTests,
+SQL, getDatabase,
 
 //query snippet
 queryCountRows, queryCountAllRows,

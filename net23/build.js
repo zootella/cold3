@@ -58,6 +58,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 	await fs.ensureDir('dist/node_modules/icarus')//as though there's a node module named "icarus"
 	let files = await fs.readdir('../icarus')
 	for (let file of files) {
+		if (file == 'grid.js') continue//grid tests run in local Node only; the lambda never imports them, so keep the bytes out of the artifact
 		if (file == 'package.json' || file.endsWith('.js')) await fs.copy('../icarus/'+file, 'dist/node_modules/icarus/'+file)
 	}
 

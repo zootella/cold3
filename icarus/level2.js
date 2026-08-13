@@ -195,6 +195,10 @@ process.env.NUXT_ENV to be set, and process.env.NODE_ENV to 'development' or 'pr
 
 
 
+//the challenge this little drawing keeps: build the whole application without filling one retro floppy disk 💾
+//codeSize is the bytes of code and configuration a reader is acutely responsible for--the seal counts it, leaving out what's hashed as identity but isn't reader weight, like lockfiles, markdown, generated reports, and the grid suite
+//the point isn't to save every word or keystroke; it's to keep one steady eye on bloat, which has killed many, many software projects--a number glanced at on every seal is a number that never quietly gets away from you
+
 const floppy_capacity = 1_474_560//1.44 MB capacity of a 3.5" floppy disk
 const floppy_width = 16
 export function sayFloppy(wrapper) {
@@ -1109,7 +1113,7 @@ function brownieApply({action, envelope}) {//execute a response's command; priva
 	} else { toss('action', {action}) }//our own server speaks this protocol, so an unrecognized command is our own bug
 }
 
-async function openBrownie({envelope, browserHash}) {//open an arriving brownie envelope into its letter of notes, or false when none arrived--the pair to sealBrownie below
+export async function openBrownie({envelope, browserHash}) {//open an arriving brownie envelope into its letter of notes, or false when none arrived--the pair to sealBrownie below
 	if (!hasText(envelope)) return false//no brownie sent, the common case; no letter, and the response will say nothing
 	let letter
 	try {
@@ -1119,7 +1123,7 @@ async function openBrownie({envelope, browserHash}) {//open an arriving brownie 
 	letter.notes = Array.isArray(letter.notes) ? letter.notes.filter(n => Number.isSafeInteger(n?.expiration) && Now() <= n.expiration) : []//every note must carry its own expiration, a positive integer epoch still in the future; expired and malformed notes are discarded here, so request code only ever sees live ones
 	return letter
 }
-async function sealBrownie({letter, browserHash, arrived}) {//seal a request's brownie letter back up, returning the command that tells the page what to keep: BrownieSet. with the replacement envelope, BrownieDelete. when the notes are gone, or undefined for no command--undefined rather than false, because assigning it to response.brownie leaves the serialized response without the field at all, which is the protocol's silence
+export async function sealBrownie({letter, browserHash, arrived}) {//seal a request's brownie letter back up, returning the command that tells the page what to keep: BrownieSet. with the replacement envelope, BrownieDelete. when the notes are gone, or undefined for no command--undefined rather than false, because assigning it to response.brownie leaves the serialized response without the field at all, which is the protocol's silence
 	if (!letter) return//no brownie arrived and no request code created one; the response will say nothing, and the page will leave its storage alone
 	if (letter.notes.length == 0) return {action: 'BrownieDelete.'}//nothing in flight; the page clears what it holds. An explicit command, never inferred from silence--and decided before the unchanged check below, so a letter that arrived empty, like junk that wouldn't open, still gets cleaned up
 	if (arrived && makeText(letter.notes) == arrived) return//request code carried the letter and left it exactly as it arrived, so the response says nothing--most requests during a flow are unrelated to it, and a stale replacement from one of them, landing late, would clobber state the page stored after this request departed
@@ -1513,31 +1517,17 @@ the design is simple:
 //                                            
 
 let _supabase//Supabase client connected to real cloud database; used in all environments except grid tests
-let _pglite//PGlite instance providing in-memory PostgreSQL for grid tests; ephemeral, gone when local Node exits
-let _supafake//Supabase-compatible adapter wrapping PGlite; lets query functions work unchanged in grid tests
+let _testDatabase//in simulation mode, runDatabaseTests in grid.js builds PGlite and the supafake adapter, and parks the package here
 
-let _sql = []//SQL schema statements collected by SQL(); executed when we setup PGlite
-let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
+let _sql = []//SQL schema statements collected by SQL(); grid.js reads them with sqlList() to build matching PGlite tables
 export function SQL(s) { _sql.push(s) }
-export function grid(f) { _grid.push(f) }
-
+export function sqlList() { return _sql }
+export function setTestDatabase(o) { _testDatabase = o }
 
 export async function getDatabase() {
 	if (isInSimulationMode()) {//running in local Node, $ yarn test has entered simulation mode to run grid tests
-		if (!_pglite) {//first call in this mode, setup pglite
-			let {pglite} = await pgliteDynamicImport()
-			_pglite = new pglite.PGlite()
-			for (let sql of _sql) await _pglite.exec(sql)//make fake empty tables that match the real ones up in supabase
-			_supafake = {//create our adapter which matches the parts of the supabase api our code here uses
-				from(table) {
-					return new FakeSupabaseQueryBuilder(_pglite, table)
-				}
-			}
-		}
-		return {
-			context: 'Test.', database: _supafake, pglite: _pglite,
-			clear: async (table) => await _pglite.exec(`DELETE FROM ${table}`),
-		}
+		if (!_testDatabase) toss('state')//runDatabaseTests in grid.js registers the test database before any grid test runs
+		return _testDatabase
 	} else {//every other environment and runtime, including local development and deployed production
 		if (!_supabase) {//first call in this mode, setup supabase
 			_supabase = createClient(Key('supabase real1, url'), Key('supabase real1, secret'))

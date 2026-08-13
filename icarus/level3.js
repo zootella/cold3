@@ -35,7 +35,7 @@ sealEnvelope, openEnvelope, originDomain,
 brownieGet, brownieGetAll, brownieRemove, brownieSet, brownieAdd,
 
 /* level 2 query */
-SQL, grid, getDatabase,
+SQL, getDatabase,
 
 //query snippet
 queryCountRows, queryCountAllRows,

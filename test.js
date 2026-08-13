@@ -1,8 +1,9 @@
 
 import {
-wrapper, sayFloppy, runTests, runDatabaseTests,
+wrapper, sayFloppy, runTests,
 log, addLogSink, look,
 } from 'icarus'
+import {runDatabaseTests} from './icarus/grid.js'//the grid tests and their runner live outside the barrel; this local test runner is the only code anywhere that imports them
 import {promises as fs} from 'fs'
 async function main() {
 	process.loadEnvFile()//load .env to be able to access secrets
