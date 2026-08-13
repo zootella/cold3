@@ -86,6 +86,10 @@ The migration itself, additive first, destructive last:
 
 hit_table's stakes make this sequence gentle practice; for credential_table the same order will actually be load-bearing.
 
+### Verified: the registry matches the cloud (August 13, 2026)
+
+The first drift check ran ahead of any DDL: `supabase db dump --schema public` (Docker running — the CLI pulls the postgres image matching the remote, 15.1.1.47, cached after the first run) and a reading comparison of the dump against the SQL() registry. Result: all six cloud tables — credential, delay, hit, service, settings, trail — match cell-for-cell and index-for-index: every column name, type, and NOT NULL in order, the six primary keys, all twenty-one secondary indexes with their partial WHERE clauses and the settings1 unique, and hit_table's hit1 unique hash constraint. The registry also declares four tables the cloud doesn't have — example_table (the grid tests' playground, PGlite-only by design), address_table (deprecated, and the cloud side is already clean), and the user_table and profile_table sketches — which sharpens the discipline's wording: the registry is the PGlite schema, a superset of the cloud; for tables that exist in the cloud, the registry must match exactly, and as of this check it does. Rerun the same check after any live DDL — especially right after the hit_table migration, when it becomes the proof that step 2 did exactly what it said.
+
 ## Sequencing
 
 Three steps, in order, the first importantly separate:
