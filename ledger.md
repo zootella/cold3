@@ -109,6 +109,8 @@ If we're going to do this migration, the time to decide is when we have a concre
 
 ## A separate, orthogonal question: should jsonb be an approved column type?
 
+**Answered August 2026: yes.** The question became its own sprint with its own document, jsonb.md — json approved as a cell type (suffix `_json`, DDL type JSONB), first adoption hit_table rather than the k1–k8 collapse proposed below, which remains future work that will ride on the proven pattern. The notes below are the original proposal, kept for the record.
+
 **This is a different architectural decision from the ledger-vs-traditional question above.** It does not depend on whether tables stay ledger or move to edit-in-place, whether removes hide or append, whether audit lives in shadow tables or a unified one. It's specifically about *column shape*: are we using Postgres's structured-but-flexible jsonb type where it would fit better than our current generic-text-columns approach?
 
 The trigger is concrete: credential_table has k1_text through k8_text — eight generic text columns we widened from four. Oauth uses six of those eight slots with three "reserved" for future use. Each new credential type needs a hand-maintained mapping of "which k-slot holds which field for this type." The widening signal — "what about k12 next year?" — is the smell that points at jsonb.

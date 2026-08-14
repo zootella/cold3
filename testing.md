@@ -26,7 +26,7 @@ One trap worth knowing: keys resolve in tests. `runDatabaseTests` calls `decrypt
 
 Which is why the rule is worth verifying rather than believing. Booby-trapping `fetch`, `net.connect`, `tls.connect`, `http.request`, and `https.request` to throw, then running both suites, is a few lines and proves the property outright.
 
-## Next structural change: move the grid tests to their own file
+## Done: grid tests moved to grid.js (August 13, 2026)
 
 **Unit tests stay inline, and grid tests move out**, to `./icarus/grid.js`. The two kinds want opposite things from their location.
 
@@ -51,6 +51,8 @@ Greps against the day's build outputs, working tree clean at HEAD. The probes ar
 The move itself is copy and paste: the 58 cases leave the level files for `grid.js`, which imports `grid` and every function the cases exercise from the level files directly — `index.js` doesn't change, and nothing production-side ever imports `grid.js`. The runner gains one side-effect import — `test.js` imports `grid.js` before calling `runDatabaseTests()`, so registration precedes the run. The `SQL()` schema blocks stay in the level files beside the functions they describe; pglite builds its tables from the same registry either way.
 
 The friction to expect: a moved case that reached for a module-private helper now needs that helper exported, and a new icarus export mirrors in four places, with `runImportTests` guarding the lambda side. Verification is `pnpm test` landing at the same counts as before the move, then a rebuild and the same greps: site output unchanged (already clean), and the grid probes gone from the lambda's icarus copy.
+
+**And it landed, August 13.** The cut-and-paste moved the 58 cases plus `runDatabaseTests` and the supafake adapter; the wiring that followed put a registration seam where a circular import threatened — level2's `getDatabase()` no longer builds PGlite, it returns whatever grid.js's `setupTestDatabase()` parked via `setTestDatabase()`, with `sqlList()` handing the schema registry across the same boundary. The private-helper friction landed on exactly two names, `openBrownie` and `sealBrownie`, which gained `export` in level2 without joining the barrel; the wallet signing helpers dodged it by moving with their tests. The barrel dropped `grid` and `runDatabaseTests`, test.js became grid.js's only importer anywhere, and net23's build skips the file entirely. Verified after the next deploy: same test counts (373 assertions in 58 cases), zero probe strings in the site output — now by structure rather than tree-shaking cleverness — no grid.js in the lambda's icarus copy, and net23.zip 16KB smaller. The seal keeps hashing grid.js as identity but stopped counting it as reader weight, the lockfile's category, which took the floppy from 88% to 83% full.
 
 ## The seam
 

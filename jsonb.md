@@ -23,6 +23,8 @@ The columns rename as they retype: `geography_text` and `browser_text` become `g
 
 The new cell type is named by the suffix `_json`, and a table whose payload column needs no more specific name can title it just `json` — the same way tables now hold hash values in a column titled just `hash`. The dispatch already supports both spellings for free: `_type()` in level2 clips the suffix after the last underscore and returns the whole title when there's no underscore, which is exactly how bare `hash` resolves to the hash check today. `isQueryTitle` needs no change; the existing lowercase-and-underscores rule covers these names.
 
+Decided August 2026, over two alternatives, and the existing conventions decided both. Not `_object`: the suffix vocabulary names the stored thing in the storage world's language — the same rule that made it `text` and not `string` — and object is the JavaScript-side name for the value on its way in and out. Not `_jsonb`: suffixes name our checked cell concept, never the exact SQL type — `_tag` and `_hash` ride on CHAR(21) and CHAR(52) without naming them — and the b is storage engineering that belongs in the DDL beneath the checks, plus a Postgres-specific spelling stamped into every column title forever fights the portability instinct above. So the DDL says JSONB, the binary canonicalizing indexable one, and our vocabulary says json.
+
 ## Checks: what the json type guarantees
 
 At the same level where we make sure something is an integer before saving it to a table, or make sure something is text, the new check makes sure a value is fit to be a json cell:
@@ -55,9 +57,11 @@ One reassuring detail from the trace: hit_table's hashed row includes `wrapper_h
 
 ## The grid system
 
-`getDatabase()` in simulation mode swaps in `_supafake`, a supabase-api-compatible adapter (`FakeSupabaseQueryBuilder`) wrapping PGlite — real Postgres compiled to WASM — and builds the tables by executing the same `_sql` registry the SQL() calls collect. This is the best possible situation for jsonb: grid tests will exercise genuine jsonb semantics, key sorting and canonicalization included, not an in-memory lookalike's polite imitation. The stub can't lie to us about the very behaviors the round-trip section worries about.
+Since the grid move (August 13), the grid system lives in grid.js: `setupTestDatabase()` dynamic-imports PGlite — real Postgres compiled to WASM — executes the same `_sql` registry the SQL() calls collect via level2's `sqlList()`, wraps the instance in the supafake adapter (`FakeSupabaseQueryBuilder`), and registers the package into level2 with `setTestDatabase()`, which is what `getDatabase()` returns in simulation mode. This is the best possible situation for jsonb: grid tests will exercise genuine jsonb semantics, key sorting and canonicalization included, not an in-memory lookalike's polite imitation. The stub can't lie to us about the very behaviors the round-trip section worries about.
 
-What the sprint verifies here, as a spike with a grid test:
+**The spike's vehicle is example_table.** The drift check proved it registry-only — it exists in PGlite and not in the cloud — so it can gain a json column in its `SQL()` block with zero live DDL, and the capability's whole test surface runs before any real table changes: insert an object, read it back parsed, watch the keys canonicalize, watch the check refuse what must be refused.
+
+What the sprint verifies here, as a spike with grid tests:
 
 - **Insert.** The adapter passes row values as query parameters; PGlite's driver should stringify a plain object bound to a jsonb column (this is standard node-postgres-family behavior, and the plain-object mandate avoids the array-parameter trap). The real path does the same job differently — supabase-js carries the object in the PostgREST request body. Both are expected to just work; the spike proves it rather than trusting it.
 - **Select.** Both paths return the jsonb column as a parsed object. The grid test asserts structural equality, not textual — key order after storage is Postgres's, not ours.
@@ -94,7 +98,7 @@ The first drift check ran ahead of any DDL: `supabase db dump --schema public` (
 
 Three steps, in order, the first importantly separate:
 
-1. **jsonb becomes an approved type in icarus.** The check function, the dispatch branch, the grid spike proving PGlite and the adapter handle objects, the essay and comment updates. This lands and deploys on its own and changes no live behavior — no table has a json column yet.
+1. **jsonb becomes an approved type in icarus.** The check function, the dispatch branch, the grid spike proving PGlite and the adapter handle objects, the essay and comment updates. This lands and deploys on its own and changes no live behavior — the spike's json column lives on example_table, which exists only in PGlite, so the capability arrives fully tested with zero cloud contact.
 2. **The live database migration**, additive steps first, per the sequence above.
 3. **The code refactor**: recordHit and report.js write objects, deploy, watch the dashboard, then the destructive DDL and registry sync close it out.
 
@@ -108,7 +112,8 @@ The facts, from well-established Postgres behavior:
 - **Statistics are the honest planner cost.** ANALYZE collects statistics on expression-index expressions, so indexed paths get decent row estimates. Ad-hoc predicates on paths with no index fall back to default selectivity guesses, and the planner can pick worse plans than it would with a real column's statistics.
 - **GIN covers the ad-hoc case at a write cost.** A GIN index over the whole column supports any containment or key-exists query without per-path declarations; it's larger and slower to write. Fine for occasionally-queried payloads, wrong for hot narrow lookups.
 - **Extraction is cheap until TOAST.** Reading `->>'city'` from a small object is negligible; objects big enough to be compressed out of line (roughly 2KB+) pay a decompression cost per row touched. Our payloads are far below that.
-- **Keys repeat per row.** A jsonb object stores its key names in every row; real columns store names once in the catalog. Negligible for a few keys, real for high-volume narrow tables.
+- **Keys repeat per row — except where it matters.** A jsonb object stores its key names in every row it appears in; real columns store names once in the catalog. Negligible for a few keys, real for high-volume narrow tables — but the complaint inverts for sparse fields: an absent key costs nothing at all, while a blank-sentinel `NOT NULL` text column pays its small per-row cost in every row. And absent-key extracts to NULL, so `WHERE (json->>'x') IS NOT NULL` in a partial expression index is the precise analogue of the `WHERE k1_text != ''` pattern the schema uses today, with absent-means-blank arguably cleaner than empty-string-means-blank.
+- **One operational trap, neutralized structurally.** An expression index matches only queries that spell the expression exactly as indexed — `->>` versus `->`, casts included. A real trap in raw SQL; not here, because the level2 query helpers will generate the one canonical spelling for both the index DDL and the filters.
 - **What jsonb can't do:** per-field NOT NULL and type enforcement at the SQL level (our application checks carry that, which is our doctrine anyway), foreign keys, and being the workhorse for joins and sorts.
 
 The guidance that falls out, for deciding what splays into columns — even when lots of cells might be blank — versus what bundles into a json column where properties are few, well understood, frequently all present, frequently only some present:
@@ -117,6 +122,6 @@ The guidance that falls out, for deciding what splays into columns — even when
 - **A json column is for the payload bag** — keys read together, rarely filtered on, variable in presence, whose shape may differ across rows or types.
 - **Promote when a real query arrives.** The day a json property becomes something we filter on, give it an expression index; give it a real column when it also wants constraints, or when legibility warrants. Expression indexes mean promotion is never urgent for speed alone.
 
-So the answer to the direct question: with the right index, near-equivalent, and jsonb is safe to use where it makes sense rather than only where speed doesn't matter. The cost that remains is planner statistics on unindexed ad-hoc queries and the general loss of SQL-level shape enforcement — the second of which our conventions never leaned on anyway.
+So the answer to the direct question: with the right index, near-equivalent, and jsonb is safe to use where it makes sense rather than only where speed doesn't matter. The cost that remains is planner statistics on unindexed ad-hoc queries and the general loss of SQL-level shape enforcement — the second of which our conventions never leaned on anyway. Conclusion recorded from the August 2026 discussion: for our common uses, instance by instance, a tie or a wash — the decision between a dedicated column and a json property is about legibility, constraints, and query patterns, not speed.
 
 Worth naming while we're here: delay_table's d1 through d5, with report.js literally passing `d3: -1, d4: -1, d5: -1` and a comment about room to grow, is the same widening smell as credential_table's k1–k8 — a third instance of the pattern this sprint's template eventually answers. Noted, not scoped.
