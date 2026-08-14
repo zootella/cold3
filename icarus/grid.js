@@ -1145,15 +1145,51 @@ grid(async () => {
 	await clear('example_table')
 	let hash = random32()
 	await queryAddRows({table: 'example_table', rows: [
-		{name_text: 'alice', hits: 1, some_hash: hash},
-		{name_text: 'bob',   hits: 2, some_hash: hash},
-		{name_text: 'carol', hits: 2, some_hash: hash},
+		{name_text: 'alice', hits: 1, some_hash: hash, some_json: {}},
+		{name_text: 'bob',   hits: 2, some_hash: hash, some_json: {}},
+		{name_text: 'carol', hits: 2, some_hash: hash, some_json: {}},
 	]})
 
 	let q0 = await queryGetAny({table: 'example_table', title: 'hits', cells: [3]}); ok(q0.length == 0)//correctly nothing found
 	let q1 = await queryGetAny({table: 'example_table', title: 'hits', cells: [1]}); ok(q1.length == 1); ok(q1[0].name_text == 'alice')
 	let q2 = await queryGetAny({table: 'example_table', title: 'hits', cells: [2]}); ok(q2.length == 2)
 	let q3 = await queryGetAny({table: 'example_table', title: 'hits', cells: [1, 2, 3]}); ok(q3.length == 3)//finds 1 and both 2s, ignores missing 3
+})
+
+grid(async () => {//json: an object rides into a json column and comes back an object, canonicalized by the database
+	let {clear} = await getDatabase()
+	await clear('example_table')
+
+	let sent = {bb: 'two letters', a: 1, nested: {list: [1, 2, 3], ok: true}}//keys deliberately not in postgres's order
+	await queryAddRow({table: 'example_table', row: {name_text: 'alice', hits: 1, some_hash: random32(), some_json: sent}})
+
+	let got = (await queryGet('example_table', {name_text: 'alice'}))[0].some_json
+	ok(typeof got == 'object' && !Array.isArray(got))//arrives parsed, an object rather than text
+	ok(got.a == 1 && got.bb == 'two letters')//values intact
+	ok(got.nested.ok && got.nested.list.length == 3 && got.nested.list[2] == 3)//nesting and arrays intact
+	ok(makeText(got) == '{"a":1,"bb":"two letters","nested":{"ok":true,"list":[1,2,3]}}')//jsonb re-sorted every level's keys by length then bytes: the stored data is ours, the stored text is postgres's
+	ok(makeText(got) != makeText(sent))//the never-rehash rule's premise in one line: same data back, different text back--so hash a json value at write, keep the hash in its own column, and never recompute one from a read
+
+	//the blank is {}, and an absent key is the blank of a property
+	await queryAddRow({table: 'example_table', row: {name_text: 'bob', hits: 2, some_hash: random32(), some_json: {}}})
+	let blank = (await queryGet('example_table', {name_text: 'bob'}))[0].some_json
+	ok(makeText(blank) == '{}')
+	ok(blank.anything === undefined)
+})
+grid(async () => {//json: the check at the write path refuses what stringification would quietly change, before anything reaches the database
+	let {clear} = await getDatabase()
+	await clear('example_table')
+	let good = {name_text: 'carol', hits: 3, some_hash: random32()}
+
+	let tossed
+	tossed = false; try { await queryAddRow({table: 'example_table', row: {...good, some_json: [1, 2, 3]}}) } catch (e) { tossed = true }
+	ok(tossed)//an array can't be the whole cell
+	tossed = false; try { await queryAddRow({table: 'example_table', row: {...good, some_json: '{"a":1}'}}) } catch (e) { tossed = true }
+	ok(tossed)//pre-stringified text isn't an object
+	tossed = false; try { await queryAddRow({table: 'example_table', row: {...good, some_json: {n: 9007199254740993}}}) } catch (e) { tossed = true }
+	ok(tossed)//an integer past 2^53 would parse back as a different number
+
+	ok((await queryGet('example_table', {name_text: 'carol'})).length == 0)//nothing got through; the value-level refusals have unit tests beside isQueryJson in level2
 })
 
 grid(async () => {
@@ -1164,9 +1200,9 @@ grid(async () => {
 	let hash2 = random32()
 
 	await queryAddRows({table: 'example_table', rows: [
-		{name_text: 'alice', hits: 10, some_hash: hash1},//matches both conditions
-		{name_text: 'alice', hits: 20, some_hash: hash2},//matches only name
-		{name_text: 'bob', hits: 30, some_hash: hash1},//matches only hash
+		{name_text: 'alice', hits: 10, some_hash: hash1, some_json: {}},//matches both conditions
+		{name_text: 'alice', hits: 20, some_hash: hash2, some_json: {}},//matches only name
+		{name_text: 'bob', hits: 30, some_hash: hash1, some_json: {}},//matches only hash
 	]})
 	await queryHide('example_table', {name_text: 'alice', some_hash: hash1})
 
@@ -1231,7 +1267,8 @@ grid(async () => {
 	let row = {
 		name_text: 'hello from grid test',
 		hits: 42,
-		some_hash: await hashText('example data')
+		some_hash: await hashText('example data'),
+		some_json: {},
 	}
 	await queryAddRow({table: 'example_table', row})
 	let result = await queryTop({table: 'example_table', title: 'name_text', cell: 'hello from grid test'})
@@ -1250,13 +1287,13 @@ grid(async () => {//exercise query helper functions with example_table
 	ok(await queryCountAllRows({table: 'example_table'}) == 0)//start empty
 
 	let hash1 = random32()
-	await queryAddRow({table: 'example_table', row: {name_text: 'alice', hits: 10, some_hash: hash1}})
+	await queryAddRow({table: 'example_table', row: {name_text: 'alice', hits: 10, some_hash: hash1, some_json: {}}})
 	ok(await queryCountAllRows({table: 'example_table'}) == 1)//add one row
 	ageNow(Time.second)//ensure next rows have a later timestamp
 	let hash2 = random32()
 	await queryAddRows({table: 'example_table', rows: [//add two more
-		{name_text: 'alice', hits: 20, some_hash: hash2},
-		{name_text: 'bob', hits: 30, some_hash: hash2},
+		{name_text: 'alice', hits: 20, some_hash: hash2, some_json: {}},
+		{name_text: 'bob', hits: 30, some_hash: hash2, some_json: {}},
 	]})
 	ok(await queryCountAllRows({table: 'example_table'}) == 3)
 
@@ -1355,7 +1392,7 @@ class FakeSupabaseQueryBuilder {
 		let rows = Array.isArray(this.insertData) ? this.insertData : [this.insertData]
 		for (let row of rows) {
 			let cols = Object.keys(row)
-			let vals = Object.values(row)
+			let vals = Object.values(row).map(v => (v && typeof v == 'object' && !Array.isArray(v)) ? makeText(v) : v)//a json cell binds as its printed text, which postgres parses into the jsonb column--the same trip the object takes through the supabase api in production
 			let placeholders = cols.map((_, i) => `$${i + 1}`)
 			let sql = `INSERT INTO ${this.table} (${cols.join(', ')}) VALUES (${placeholders.join(', ')})`
 			if (this.insertOpts?.onConflict) sql += ` ON CONFLICT (${this.insertOpts.onConflict}) DO NOTHING`

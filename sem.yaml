@@ -1,5 +1,5 @@
 summary:
-  generated: 2026aug14.1817.41275
+  generated: 2026aug14.2330.53320
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -205,8 +205,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1110.0 on 2026aug13 0m old
-      latest: 3.1110.0 on 2026aug13 0m old
+      current: 3.1111.0 on 2026aug14 0m old
+      latest: 3.1111.0 on 2026aug14 0m old
     downloads:
       weekly: 32,869,651
       on: 2026jul18.2043.124
@@ -218,8 +218,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1110.0 on 2026aug13 0m old
-      latest: 3.1110.0 on 2026aug13 0m old
+      current: 3.1111.0 on 2026aug14 0m old
+      latest: 3.1111.0 on 2026aug14 0m old
     downloads:
       weekly: 3,185,574
       on: 2026jul18.2043.124
@@ -231,8 +231,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1110.0 on 2026aug13 0m old
-      latest: 3.1110.0 on 2026aug13 0m old
+      current: 3.1111.0 on 2026aug14 0m old
+      latest: 3.1111.0 on 2026aug14 0m old
     downloads:
       weekly: 3,929,471
       on: 2026jul18.2043.124
@@ -244,8 +244,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1110.0 on 2026aug13 0m old
-      latest: 3.1110.0 on 2026aug13 0m old
+      current: 3.1111.0 on 2026aug14 0m old
+      latest: 3.1111.0 on 2026aug14 0m old
     downloads:
       weekly: 14,947,489
       on: 2026jul18.2043.124
@@ -967,7 +967,7 @@ modules:
       declared: ^4.6.4 on 2025dec11 8m old
       installed: 4.6.4 on 2025dec11 8m old
       current: 4.6.4 on 2025dec11 8m old
-      latest: 5.2.0 on 2026jul15 0m old 🎁 Major new version available
+      latest: 5.2.0 on 2026jul15 1m old 🎁 Major new version available
     downloads:
       weekly: 6,827,195
       on: 2026jul18.2043.124

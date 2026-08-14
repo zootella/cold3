@@ -40,8 +40,9 @@ hide            BIGINT    0 to start, nonzero to ignore this row in regular use
 
 password_hash   CHAR(52)  52 characters of a sha256 hash value encoded to base32
 user_name_text  TEXT      text which can be blank or long
+settings_json   JSONB     a plain json object of plain data; the blank cell is {}
 
-_tag, _hash, and _text are strings; everything else must be an integer
+_tag, _hash, and _text are strings, and _json is a plain object; everything else must be an integer
 a column which can be a tag or blank is _text
 as is a column which can be text or numerals
 
@@ -49,7 +50,15 @@ all numbers are BIGINT, even if we only planning on storing 0 or 1 there
 BIGINT has a larger range than JavaScript's Number.MAX_SAFE_INTEGER
 
 we intentionally avoiding PostgreSQL date, time zone, duration, and UUID types
-ARRAY and JSON might be useful in the future, but are not in use now
+
+a _json column, or one titled just json the way a column can be titled just hash, is JSONB:
+a plain object of plain data--strings, safe numbers, booleans, null, arrays, and nested objects
+{} is the blank of the cell, and an absent key is the blank of a property
+level2 checks each json cell at write, refusing values stringification would quietly change,
+like BigInt, NaN, integers past 2^53, Dates, and class instances
+postgres stores parsed data rather than our text, and returns keys sorted its own way,
+so a hash of a json value is made at write and kept in a neighboring column, never recomputed from a read
+we still avoid the plain ARRAY and the text-preserving JSON column types; a json array rides inside a json cell
 we use cloudflare's clock, Date.now() in a worker, and no clock from Supabase or PostgreSQL
 
 row_tag is the PRIMARY KEY of every table, intentionally avoiding SERIAL,

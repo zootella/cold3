@@ -33,11 +33,15 @@ At the same level where we make sure something is an integer before saving it to
 - **Round-trip hash equivalence.** The value must survive our own serialization unchanged — its own section below.
 - **The blank convention.** `{}` is the blank of json, the way `''` is the blank of text. Columns stay `NOT NULL`.
 
-Open questions for the check's strictness, to decide during implementation:
+The strictness questions, decided during implementation (August 2026) — the rule that settled all of them: toss on anything stringification would quietly change, because a silent conversion inside a payload is a code mistake we want to hear about at the boundary, not discover in a row.
 
-- **BigInt inside the object.** makeText prints BigInt as numerals in a string, and that round-trips stably — but the type has silently changed from number to string. Toss loudly, or allow the coercion?
-- **NaN and Infinity.** JSON.stringify turns them into null, also stably. Same question: is silent null acceptable, or a code mistake worth tossing over?
-- **Number magnitude.** JSON numbers read back as JavaScript doubles; integers beyond 2^53 corrupt silently. Our millisecond ticks are around 1.7e12, far inside the safe range, but the rule is worth writing: big identifiers ride as strings inside json cells, never as numbers.
+- **BigInt** — refused. It would print as a string of numerals, a silent type change.
+- **NaN and Infinity** — refused. They print as null, stably, which is exactly the trap: the round trip can't see the lie, so the walk refuses them first.
+- **Integers past 2^53** — refused; they parse back as a different number. Big identifiers ride as strings. (Our millisecond ticks, around 1.7e12, are far inside the safe range.)
+- **Dates, Errors, Maps, class instances** — refused by a prototype check, the walk's reason to exist: a Date prints as a string and round-trips stably from then on, so the fixed point alone would bless the conversion it just performed.
+- **Circular references** — refused; makeText would print a marker, not data.
+- **An undefined array element** — refused; it would print as null.
+- **An undefined property value** — allowed, the one deliberate permissiveness: print drops the key, and absent is exactly what undefined means here, matching absent-key-is-the-blank-of-a-property.
 
 Beyond the check itself, the icarus changes: `recordHit`'s contract takes objects instead of pre-flattened strings, moving the boundary check to where it belongs; report.js drops its two makeText calls; the comments in level2's query check section and hit_table's SQL() block tell the new story; and the read convention gets a sentence — a `_json` column arrives from a select already parsed, so no makeObject on read, ever.
 
@@ -50,6 +54,8 @@ How that dedup actually works today, traced: `recordHit` computes `hashText(roun
 Two layers of protection keep this sound when objects join the row:
 
 **Our own serialization must be a fixed point.** The json check round-trips the value through makeText, makeObject, makeText, and requires the first and second texts identical. A value whose textual form mutates under our own round trip — whatever exotic thing that turns out to be — never reaches a table. This sits in the check layer exactly beside is-it-an-integer and is-it-text: certainty, established at the trusted boundary, that stringification of this value is stable and deterministic.
+
+Implementation sharpened this (August 2026): the fixed point alone would pass values that stabilize *after* one silent conversion — a Date prints as a string and round-trips stably from then on, NaN prints as null and stays null — so a plain-data walk refuses those first, naming each lie precisely, and the fixed point stands behind it as the closing certainty. The walk and the round trip together are `isQueryJson` in level2, with the unit tests beside it as the contract's demonstration.
 
 **Never rehash what the database returns.** This one can't be a check; it has to be a rule, because jsonb genuinely does not preserve text. Postgres parses the value into a binary tree at write: key order is discarded (jsonb returns keys sorted by length, then bytewise), duplicate keys are dropped, number formatting can change. What you SELECT may stringify differently from what you INSERTed, by design. (Postgres's other type, plain `json`, preserves the exact text but forfeits the binary operators and indexing; we're choosing jsonb and accepting its canonicalization.) So the rule: hashes are computed at write over makeText of the values in hand, stored beside the data, and compared as stored values — never recomputed from a read-back jsonb cell. hit_table already obeys, and always has.
 
@@ -66,6 +72,8 @@ What the sprint verifies here, as a spike with grid tests:
 - **Insert.** The adapter passes row values as query parameters; PGlite's driver should stringify a plain object bound to a jsonb column (this is standard node-postgres-family behavior, and the plain-object mandate avoids the array-parameter trap). The real path does the same job differently — supabase-js carries the object in the PostgREST request body. Both are expected to just work; the spike proves it rather than trusting it.
 - **Select.** Both paths return the jsonb column as a parsed object. The grid test asserts structural equality, not textual — key order after storage is Postgres's, not ours.
 - **A first test for recordHit.** hit_table has no grid test today; the conversion adds one that walks a hit through recordHit against PGlite, reads the row back, and proves the objects arrive as objects and the dedup hash still dedups.
+
+The insert and select verifications landed with step 1 (August 14): binding needed one line in the adapter — objects print to text, postgres casts the text into the jsonb column — and reading needed nothing, because PGlite parses jsonb back to objects natively. The recordHit test waits for step 3 with the conversion itself.
 
 Out of scope this sprint: filtering on json paths (`.eq('json->>provider', ...)`). hit_table has no readers, `checkQueryTitle` would rightly reject an arrow-path title today, and that work belongs to the credential_table adoption when a real query needs it.
 
@@ -99,6 +107,8 @@ The first drift check ran ahead of any DDL: `supabase db dump --schema public` (
 Three steps, in order, the first importantly separate:
 
 1. **jsonb becomes an approved type in icarus.** The check function, the dispatch branch, the grid spike proving PGlite and the adapter handle objects, the essay and comment updates. This lands and deploys on its own and changes no live behavior — the spike's json column lives on example_table, which exists only in PGlite, so the capability arrives fully tested with zero cloud contact.
+
+   **Done, August 14.** Landed as scoped: `isQueryJson` and its walker in level2 with the demonstration and refusal unit tests beside them, the `'json'` dispatch branch, example_table's `some_json JSONB` column, the five existing grid inserts carrying the explicit `{}` blank, the adapter binding objects as printed text, two grid tests proving parsed round-trip, canonicalized keys, and refusals at the write path, and tables.txt telling the type's story with its siblings. The known unknown resolved the good way: PGlite parses jsonb back to objects natively, so the read side needed nothing.
 2. **The live database migration**, additive steps first, per the sequence above.
 3. **The code refactor**: recordHit and report.js write objects, deploy, watch the dashboard, then the destructive DDL and registry sync close it out.
 

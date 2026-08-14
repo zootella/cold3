@@ -1753,6 +1753,7 @@ function checkQueryCell(title, cell){//in a column with the given title, check t
 	if      (type == 'tag')  checkQueryTag(cell)
 	else if (type == 'hash') checkQueryHash(cell)
 	else if (type == 'text') checkQueryText(cell)
+	else if (type == 'json') checkQueryJson(cell)
 	else                     checkQueryInt(cell)
 }
 function _type(s) {//from a column title like "name_type", clip out "type"
@@ -1764,6 +1765,7 @@ function checkQueryTag(cell)  { if (!isQueryTag(cell))  toss('check', {cell}) }
 function checkQueryHash(cell) { if (!isQueryHash(cell)) toss('check', {cell}) }
 function checkQueryText(cell) { if (!isQueryText(cell)) toss('check', {cell}) }
 function checkQueryInt(cell)  { if (!isQueryInt(cell))  toss('check', {cell}) }
+function checkQueryJson(cell) { if (!isQueryJson(cell)) toss('check', {cell}) }
 
 function checkQueryTagOrBlank(cell) { if (!isQueryTagOrBlank(cell)) toss('check', {cell}) }
 function isQueryTagOrBlank(cell) {
@@ -1801,6 +1803,47 @@ function isQueryInt(i) {//make sure i is an integer within range, negative is fi
 		/^-?[1-9]\d*$/.test(i+'')//and make sure it looks like an integer as text
 	)
 }
+function isQueryJson(o) {//a json cell must be a plain object of plain data; the blank cell is {}, and inside, an absent key is how a property says blank
+	if (typeof o != 'object' || o === null || Array.isArray(o)) return false//the top is always an object, never an array, null, or pre-stringified text, so every cell is self-describing
+	if (!_jsonValue(o, new WeakSet())) return false//and everything inside is plain data that a trip through print and parse can't change
+	let text = makeText(o)
+	return text == makeText(makeObject(text))//round-trip certainty: print, parse, and print again lands on identical text, so a hash of the text we write is a hash this value can always reproduce
+}
+function _jsonValue(v, seen) {//is v plain data that survives stringification unchanged? the walk refuses what makeText would quietly convert rather than letting the conversion pass
+	if (v === null) return true
+	let t = typeof v
+	if (t == 'string' || t == 'boolean') return true
+	if (t == 'number') return Number.isFinite(v) && (!Number.isInteger(v) || Number.isSafeInteger(v))//NaN and Infinity print as null, and an integer past 2^53 parses back different, so all of those toss here instead
+	if (t == 'object') {
+		if (seen.has(v)) return false//a circular reference would print as a marker, not data
+		seen.add(v)
+		if (Array.isArray(v)) return v.every(e => e !== undefined && _jsonValue(e, seen))//an undefined element would print as null
+		if (Object.getPrototypeOf(v) != Object.prototype) return false//a Date, Error, Map, or class instance isn't plain data, even when print would quietly turn it into some
+		return Object.values(v).every(e => e === undefined || _jsonValue(e, seen))//an undefined property is dropped by print, which correctly means absent
+	}
+	return false//bigint, function, symbol, and undefined itself have no honest json form
+}
+test(() => {//what a json cell holds: a plain object of strings, safe numbers, booleans, null, arrays, and more plain objects
+	ok(isQueryJson({}))//the blank
+	ok(isQueryJson({provider: 'Discord.', identifier: 'abc123'}))//the common shape: a flat bag of named strings
+	ok(isQueryJson({country: 'US', city: 'Akron', ok: true, ratio: 1.5, n: -7, missing: null}))//every plain kind of value
+	ok(isQueryJson({nested: {list: [1, 'two', {three: 3}]}}))//nesting and arrays ride inside
+	ok(isQueryJson({absent: undefined}))//an undefined property is dropped by print, the same meaning as leaving the key out
+})
+test(() => {//what a json cell refuses: everything a trip through stringification would quietly change
+	ok(!isQueryJson())//nothing isn't an object
+	ok(!isQueryJson(null))//neither is null; the blank is {}
+	ok(!isQueryJson([1, 2, 3]))//an array can't be the whole cell; it can ride inside one
+	ok(!isQueryJson('{"a":1}'))//pre-stringified text isn't an object; pass the object
+	ok(!isQueryJson({n: NaN}))//would print as null
+	ok(!isQueryJson({n: Infinity}))//so would this
+	ok(!isQueryJson({n: 9007199254740993}))//an integer past 2^53 parses back as a different number; big identifiers ride as strings
+	ok(!isQueryJson({n: 9n}))//bigint would print as a string, a silent type change
+	ok(!isQueryJson({when: new Date()}))//a Date would print as a string; store a tick or a text form deliberately instead
+	ok(!isQueryJson({list: [1, undefined, 3]}))//an undefined element would print as null
+	let circular = {}; circular.self = circular
+	ok(!isQueryJson(circular))//would print as a marker, not data
+})
 test(() => {
 	checkQueryRow({
 		'name_text': 'bob',
@@ -1809,6 +1852,7 @@ test(() => {
 		'some_tag': 'yz5OjTi1aeD4YnEM47gUD',
 		'some_hash': 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ',
 		'preference': -1,
+		'settings_json': {sound: true, volume: 7},
 	})
 })
 test(() => {
@@ -1817,11 +1861,15 @@ test(() => {
 	checkQueryCell('name_text', 'bob')//because column title ends "_text" cell value must be a string
 	checkQueryCell('name_text', '')//blank is ok
 	checkQueryCell('count', 7)//without a type suffix in the title, the cell must hold an integer
+	checkQueryCell('geography_json', {country: 'US'})//because column title ends "_json" cell value must be a plain object
+	checkQueryCell('json', {})//a column can be titled just json, the way a column can be titled just hash; blank is the empty object
 })
 test(() => {
 	ok(_type('name_text') == 'text')
 	ok(_type('other') == 'other')
 	ok(_type('longer_name_hash') == 'hash')
+	ok(_type('browser_json') == 'json')
+	ok(_type('json') == 'json')//no underscore returns the whole title, which is how bare json and bare hash columns resolve
 })
 test(() => {
 

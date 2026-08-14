@@ -1287,7 +1287,8 @@ CREATE TABLE example_table (
 
 	name_text  TEXT      NOT NULL,  -- example holding any text including blank
 	hits       BIGINT    NOT NULL,  -- examle holding any integer
-	some_hash  CHAR(52)  NOT NULL   -- example holding hash values
+	some_hash  CHAR(52)  NOT NULL,  -- example holding hash values
+	some_json  JSONB     NOT NULL   -- example holding a plain json object; the blank is {}
 );
 
 CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get visible rows, sorted recent first, quickly
