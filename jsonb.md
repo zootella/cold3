@@ -87,16 +87,41 @@ Three ways to run DDL against the hosted database:
 
 The CLI is the recommendation. It gives Claude the same warm, authenticated reach into supabase that aws and wrangler already give into Amazon and Cloudflare, and migration files in the repo become a versioned record of every DDL change — something the SQL() registry currently approximates by hand. Which raises the discipline this sprint must establish regardless of path: **the SQL() registry text is what PGlite builds, so it must keep matching production** — any live DDL change and its SQL() text change land together, in the same commit, or grid tests quietly diverge from the real schema.
 
-The migration itself, additive first, destructive last:
+The migration follows **expand and contract** — the standard zero-downtime choreography, chosen deliberately (August 2026) over a big-bang migrate-and-deploy-together. The principle: code and schema never change at the same time, because deploys are never atomic with anything; instead the schema temporarily speaks both dialects, and each move becomes a small, boring, individually safe step. The stakes are real even here — recordHit runs on the Hello. every page load sends, so a naive mismatch in either direction errors on every visit — and the scaffolding that dissolves them is DEFAULT clauses, temporary by design, leaving with the contract so the schema returns to house style: every column NOT NULL, no defaults, every cell provided explicitly.
 
-1. Add the new columns: `ALTER TABLE hit_table ADD COLUMN geography_json JSONB NOT NULL DEFAULT '{}'`, and browser_json likewise. Additive; deployed code doesn't notice.
-2. Give the old columns a default: `ALTER COLUMN geography_text SET DEFAULT ''`, and browser_text likewise — so code that stops mentioning them can still insert. (They're `NOT NULL` with no default today; skipping this step makes step 3 fail its inserts.)
-3. Deploy the refactored code, which writes objects into the `_json` columns and omits the `_text` ones.
-4. Optionally backfill history: `UPDATE hit_table SET geography_json = geography_text::jsonb, browser_json = browser_text::jsonb` — makeText output is valid JSON, so the cast just works. With no readers, we could equally let old rows sit at `{}`.
-5. Verify by refreshing the supabase dashboard and watching new rows arrive with real objects in the new columns.
-6. Drop `geography_text` and `browser_text`, and update the SQL() registry in the same commit.
+**Phase 1 — expand, schema only.** `supabase migration new hit_table_json` creates the timestamped file in supabase/migrations, holding:
 
-hit_table's stakes make this sequence gentle practice; for credential_table the same order will actually be load-bearing.
+```sql
+ALTER TABLE hit_table ADD COLUMN geography_json JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE hit_table ADD COLUMN browser_json   JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE hit_table ALTER COLUMN geography_text SET DEFAULT '';
+ALTER TABLE hit_table ALTER COLUMN browser_text   SET DEFAULT '';
+```
+
+`supabase db push --dry-run` to preview, then `db push` to apply — Kevin's command, since it changes production; this first push also creates the CLI's migration history table. All four ALTERs are metadata-only operations in modern Postgres (ADD COLUMN with a default stopped rewriting tables in PG 11), instant at any size. Deployed code doesn't notice: old inserts keep filling the text columns while the defaults fill `{}` into the json ones. Rollback, if ever needed: a new migration dropping the added columns — roll forward, never down; the CLI has no down migrations and neither do we.
+
+**Phase 2 — verify.** A fresh row in the dashboard shows `{}` riding in the new columns; or Docker up for one `supabase db dump` and the normalize-and-diff against the registry.
+
+**Phase 3 — migrate, code only, whenever.** recordHit's contract takes the objects, report.js drops its two makeText flattenings, the first hit_table grid test lands beside the change, deploy — minutes or days after phase 1, no coordination required. New rows carry real objects, with `''` defaulted into the old text columns. During the window the table documents its own transition: every row's wrapper_hash names the deploy that wrote it, so text-era and json-era rows are separated by a visible seam in the data itself. Rollback: redeploy old code, which still works — the text columns remain, defaults intact.
+
+**Phase 4 — contract, schema only, last, the one irreversible step.** After the deploy has soaked:
+
+```sql
+ALTER TABLE hit_table DROP COLUMN geography_text;
+ALTER TABLE hit_table DROP COLUMN browser_text;
+ALTER TABLE hit_table ALTER COLUMN geography_json DROP DEFAULT;
+ALTER TABLE hit_table ALTER COLUMN browser_json   DROP DEFAULT;
+```
+
+House style restored — and unlike the industry habit of letting `_old` fossils linger for months, the contract actually runs here, because a fossil would sit in the SQL() registry text annoying every reader of level3.
+
+**Phase 5 — the closing drift check**, proving live schema and registry agree at the final shape.
+
+**One decision deliberately open: the backfill.** `UPDATE hit_table SET geography_json = geography_text::jsonb, browser_json = browser_text::jsonb` between phases 3 and 4 converts history — makeText output is valid JSON, so the cast just works. With zero readers it's pure aesthetics: whether pre-migration telemetry ends uniform, or sits at `{}` and leaves with the contract anyway. Decide at phase 4 time.
+
+**The lockstep rule threads every phase**: each migration file and its SQL() registry edit land in the same commit — the expand commit shows both column sets with their temporary defaults, the contract commit shows the final shape — so the registry mirrors production at every point in git history, and grid tests exercise each phase's code against that phase's true schema.
+
+hit_table's stakes make this choreography gentle practice; for credential_table the same steps will be load-bearing.
 
 ### Verified: the registry matches the cloud (August 13, 2026)
 
@@ -109,8 +134,8 @@ Three steps, in order, the first importantly separate:
 1. **jsonb becomes an approved type in icarus.** The check function, the dispatch branch, the grid spike proving PGlite and the adapter handle objects, the essay and comment updates. This lands and deploys on its own and changes no live behavior — the spike's json column lives on example_table, which exists only in PGlite, so the capability arrives fully tested with zero cloud contact.
 
    **Done, August 14.** Landed as scoped: `isQueryJson` and its walker in level2 with the demonstration and refusal unit tests beside them, the `'json'` dispatch branch, example_table's `some_json JSONB` column, the five existing grid inserts carrying the explicit `{}` blank, the adapter binding objects as printed text, two grid tests proving parsed round-trip, canonicalized keys, and refusals at the write path, and tables.txt telling the type's story with its siblings. The known unknown resolved the good way: PGlite parses jsonb back to objects natively, so the read side needed nothing.
-2. **The live database migration**, additive steps first, per the sequence above.
-3. **The code refactor**: recordHit and report.js write objects, deploy, watch the dashboard, then the destructive DDL and registry sync close it out.
+2. **The live database migration** — the expand phase and its verification, per the choreography above.
+3. **The code refactor** — recordHit and report.js write objects, deploy, watch the dashboard; then the contract migration and the closing drift check finish the sprint.
 
 ## How far to take jsonb: efficiency, and guidance for future columns
 
