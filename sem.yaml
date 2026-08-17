@@ -1,5 +1,5 @@
 summary:
-  generated: 2026aug16.1736.27507
+  generated: 2026aug17.1759.45017
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -605,10 +605,10 @@ modules:
     note: "widget: browser detection; runs everywhere, only meaningful in browser"
     from: icarus
     versions:
-      declared: ^5.0.0 on 2024oct16 21m old
-      installed: 5.0.0 on 2024oct16 21m old 🕰️ Installed version 1+ year old
-      current: 5.0.0 on 2024oct16 21m old
-      latest: 5.0.0 on 2024oct16 21m old
+      declared: ^5.0.0 on 2024oct16 22m old
+      installed: 5.0.0 on 2024oct16 22m old 🕰️ Installed version 1+ year old
+      current: 5.0.0 on 2024oct16 22m old
+      latest: 5.0.0 on 2024oct16 22m old
     downloads:
       weekly: 2,546,476
       on: 2026jul18.1911.8649
@@ -828,7 +828,7 @@ modules:
     note: "front: merges classes without style conflicts; shadcn pattern"
     from: site
     versions:
-      declared: ^3.4.1 on 2026feb15 5m old
+      declared: ^3.4.1 on 2026feb15 6m old
       installed: 3.6.0 on 2026may10 3m old
       current: 3.6.0 on 2026may10 3m old
       latest: 3.6.0 on 2026may10 3m old
@@ -923,8 +923,8 @@ modules:
     versions:
       declared: ^2.45.1 on 2026jan29 6m old
       installed: 2.53.1 on 2026jun20 1m old
-      current: 2.55.16 on 2026aug14 0m old
-      latest: 2.55.16 on 2026aug14 0m old
+      current: 2.55.17 on 2026aug17 0m old
+      latest: 2.55.17 on 2026aug17 0m old
     downloads:
       weekly: 4,589,639
       on: 2026jul18.1911.8649
