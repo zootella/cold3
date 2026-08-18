@@ -20,6 +20,7 @@ This document positions itself on the map of styles you already know — your ow
 - End every line of a multi-line literal with a trailing comma, so reordering or adding a line never touches its neighbor.
 - Give blocks spaces inside their braces `{ return false }`; give object literals none `{key: 'value'}`.
 - Write comments in conversational lowercase, for the same reason syntax highlighting paints them dim gray: to let the code, and its capitalization, stand out. The one exception is the essay, described with the other comment forms below, which is written in a `/* */` block in normal English prose.
+- Write comments in the active voice, and reach for the imperative when the comment says what the line does: _check m too_, not _m is checked too_. The passive costs a word and drops the actor, which is usually the very thing the reader came for — and once the actor is missing it's easy to leave out why, too. This holds in essays as well: _this check turns it away_ rather than _it is turned away_.
 
 ## Names
 

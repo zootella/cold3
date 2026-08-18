@@ -292,32 +292,19 @@ test(() => {
 })
 
 export function checkInt(i, m) { if (!minInt(i, m)) toss('bounds', {i, m}) }
-export function minInt(i, m = 0) { // Note (0)
-	return (
-		i === 0 &&                     // Note (1)
-		i >= m                         /* Note (2)
-		Default minimum m 0 in arguments (Note 0); Negative works fine, but must specify allowed negative minimum.
-		Zero needs a branch of its own (1), because the regular expression below blocks a leading zero, and so blocks "0" itself; the minimum still applies (2). */
-	) || (
-		Number.isInteger(i)          && // Note (3)
-		i >= m                       && // Note (4)
-		i <= Number.MAX_SAFE_INTEGER && // Note (5)
-		i >= Number.MIN_SAFE_INTEGER && // Note (5)
-		/^-?[1-9]\d*$/.test(i+'')       /* Note (6)
-		(3) Includes typeof i == 'number' and !isNaN(i) checks, according to MDN, and turns away 2.5 and 5e-7, which are numbers but not integers.
-		(4) At or above the given minimum.
-		(5) Small enough, in both directions, to stay an integer everywhere; biggest integers are:
-				(2^53)-1 ==     9,007,199,254,740,991 in JavaScript;
-				(2^63)-1 == 9,223,372,036,854,775,807 in a BIGINT PostgreSQL field, a signed 8 byte integer.
-			The minimum (4) is usually zero and would turn away anything negative anyway, but the promise of the range belongs here, in the check that makes it, rather than in whatever a caller passes.
-		(6) Plus blank for quick convert, then regular expression that:
-				allows one optional minus sign at the start;
-				blocks a leading zero;
-				and ensures all numerals, which turns away a number so large JavaScript prints it in scientific notation, like -1e21.
-				With both bounds set in (5), nothing that gets this far would fail here; it stands as the same promise read a second way, in text rather than arithmetic. */
-	)
+export function minInt(i, m = 0) {//is i a whole number javascript holds exactly, at or above the minimum m, which defaults to zero because counts and ticks only go negative when a caller asks
+	return Number.isSafeInteger(i) && Number.isSafeInteger(m) && i >= m//check m too, so a malformed minimum fails here rather than quietly turning away every value it meets
 }
 test(() => {
+	/*
+	JavaScript has no integer type. Every count, tick, and index we keep is a 64 bit float that lands on a whole number, so 5 and 5.0 are the same value. BigInt is a separate type that will not mix with arithmetic, so this check turns it away rather than treating it as a way to hold a count.
+
+	A value arriving in minInt() may be a fraction like 2.5, or written in scientific notation like 5e-7. It may be NaN, which is not equal to itself and makes every comparison against it false, so a NaN minimum would reject every value forever. It may be Infinity or -Infinity, or -0, which equals zero and prints without its sign. It may also not be a number at all while behaving like one: "5" compares as five but concatenates instead of adding, null compares as zero, true compares as one, an object with a valueOf method converts on contact, and a BigInt throws if you add it to a number.
+
+	minInt() uses Number.isSafeInteger to turn all of that away. It requires a real number, whole, within plus or minus (2^53)-1, which is 9,007,199,254,740,991. The range matters because past it, floating point values stop holding every whole number: the literal 9007199254740993 is already 9007199254740992 before any code runs.
+
+	A PostgreSQL BIGINT reaches (2^63)-1, much further, so JavaScript sets the limit here. Inside the range a whole number has one exact decimal form, so it makes the trip to text, into the database, and back without changing.
+	*/
 	ok(minInt(0))//these are fine integers
 	ok(minInt(7))
 
@@ -344,6 +331,11 @@ test(() => {
 	ok(minInt(-1, -1))//a negative minimum lets negative values through, for a count where -1 means something other than none
 	ok(minInt(0, -1))
 	ok(!minInt(-2, -1))//but only down as far as the minimum given
+
+	ok(minInt(-0))//negative zero is a distinct value that equals zero, prints as "0", and reaches a BIGINT column as plain zero
+	ok(!minInt(5, NaN))//a minimum that isn't a number says so here, rather than turning away every value it gets compared against
+	ok(!minInt(5, 2.5))
+	ok(!minInt(5, '3'))//and a minimum that would have quietly coerced its way to an answer
 })
 
 //use when you don't just need if truthy, you really need the type boolean
