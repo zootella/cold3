@@ -1046,7 +1046,6 @@ grid(async () => {//hit: what cloudflare and the page say about a visit rides in
 	let row = (await queryGet('hit_table', {browser_hash: hit.browserHash}))[0]
 	ok(row.geography_json.country == 'US' && row.geography_json.city == 'Akron')//arrives parsed, an object rather than text
 	ok(row.browser_json.agent == 'Mozilla/5.0' && row.browser_json.renderer == 'ANGLE (Intel)')
-	ok(row.geography_text == '' && row.browser_text == '')//nothing sends these, so the database fills its own blank
 
 	await recordHit(hit)//the same visitor says hello again a moment later
 	ok((await queryGet('hit_table', {browser_hash: hit.browserHash})).length == 1)//same hour, same values, so the same hash, and the unique constraint swallows it

@@ -1317,16 +1317,12 @@ CREATE TABLE hit_table (
 	browser_hash    CHAR(52)  NOT NULL,  -- Reported: the browser that hit us
 	user_tag_text   TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
 	ip_text         TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare
-	geography_text  TEXT      NOT NULL DEFAULT '',  -- Trusted: geographic information, according to cloudflare
-	browser_text    TEXT      NOT NULL DEFAULT '',  -- Reported: user agent string and WebGL hardware, according to the browser
+	geography_json  JSONB     NOT NULL,  -- Trusted: geographic information, according to cloudflare
+	browser_json    JSONB     NOT NULL,  -- Reported: user agent string and WebGL hardware, according to the browser
 
 	wrapper_hash    CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
 
 	hash            CHAR(52)  NOT NULL,  -- hash of printed cells to prevent duplicates within each hour
-
-	-- mid conversion, geography and browser ride in both text and json pairs; the defaults fill whichever pair the running code doesn't send; the json pair sits last, matching the cloud's column order
-	geography_json  JSONB     NOT NULL DEFAULT '{}',  -- Trusted: geographic information, according to cloudflare
-	browser_json    JSONB     NOT NULL DEFAULT '{}',  -- Reported: user agent string and WebGL hardware, according to the browser
 	CONSTRAINT hit1 UNIQUE (hash)        -- and corresponding constraint to enforce this and make upserts quick
 );
 

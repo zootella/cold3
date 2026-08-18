@@ -2905,7 +2905,7 @@ function _plainValue(v, seen) {//is v plain data that survives stringification u
 	if (v === null) return true
 	let t = typeof v
 	if (t == 'string' || t == 'boolean') return true
-	if (t == 'number') return Number.isFinite(v) && (!Number.isInteger(v) || Number.isSafeInteger(v))//NaN and Infinity print as null, and an integer past 2^53 parses back different, so all of those toss here instead
+	if (t == 'number') return Number.isFinite(v) && (!Number.isInteger(v) || Number.isSafeInteger(v))//NaN and Infinity print as null; and past 2^53 javascript is already holding a number nobody wrote, as the literal 9007199254740993 is really ...992 before json is anywhere near it
 	if (t == 'object') {
 		if (seen.has(v)) return false//a circular reference would print as a marker, not data
 		seen.add(v)
@@ -2947,7 +2947,7 @@ test(() => {//what it refuses: everything a trip through stringification would q
 	ok(!isPlain('{"a":1}'))//pre-stringified text isn't an object; pass the object
 	ok(!isPlain({n: NaN}))//would print as null
 	ok(!isPlain({n: Infinity}))//so would this
-	ok(!isPlain({n: 9007199254740993}))//an integer past 2^53 parses back as a different number; big identifiers ride as strings
+	ok(!isPlain({n: 9007199254740993}))//javascript already lost this one, holding ...992 instead; big identifiers ride as strings
 	ok(!isPlain({n: 9n}))//bigint would print as a string, a silent type change
 	ok(!isPlain({when: new Date()}))//a Date would print as a string; store a tick or a text form deliberately instead
 	ok(!isPlain({list: [1, undefined, 3]}))//an undefined element would print as null

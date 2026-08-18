@@ -43,7 +43,7 @@ Four distinct things stack up here, and naming them separately dissolves most co
 - **Read rows or inspect state, ad hoc**: `supabase db query --linked` — full SQL, aggregates, the system catalogs, hidden rows included, one reviewable command with zero setup; a peek is naturally one-off, and this is the one-off tool. The dashboard to browse as a human. A one-off script only for the rare question that needs the app's own eyes on live rows — and if the answer is worth checking twice, it isn't a script, it's a grid test.
 - **Write rows, ad hoc**: a one-off script through the app's own helpers, so the checks run; or the dashboard, with human hands.
 - **Change schema**: a migration file, pushed by the CLI — no Docker involved. The paired rule: the migration file and the matching SQL() registry edit land in the same commit, so the registry mirrors production at every point in git history.
-- **Copy or introspect schema**: the CLI with Docker awake — `db dump`, then compare against the SQL() registry (the drift check).
+- **Copy or introspect schema**: the CLI with Docker awake — `db dump`, then compare against the SQL() registry (the drift check). Match columns by name, not by position: the registry orders them for legibility while the cloud keeps them in the order they were added, and column order carries no meaning because nothing here reaches a column positionally. Column order inside an index or constraint is a different matter and must match exactly.
 - **Test flows**: grid tests on PGlite — no database stack at all.
 - **Browse as a human**: the dashboard.
 
