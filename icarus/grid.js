@@ -3,7 +3,7 @@
 //only the monorepo root's test.js imports this file; the icarus barrel, site, and net23 have no knowledge of it, so test closures never ride in a production bundle or the lambda artifact
 
 import {
-Data, Tag, Time, defined, hashText, makeObject, makeText, random32, totpGenerate,
+Data, Tag, Time, defined, hashText, hashObject, makeObject, makeText, random32, totpGenerate,
 } from './core.js'
 import {
 Now, ageNow, enterSimulationMode, isExpired, isInSimulationMode, ok, runTests, hasText,
@@ -18,7 +18,8 @@ originDomain,
 queryGet, queryGetAny, queryAddRow, queryAddRows, queryHide, queryTop, queryCountRows, queryCountAllRows,
 } from './level2.js'
 import {
-otpConstants, trailAdd, trailAddMany, trailCount, trailGet, trailGetAny, trailRecent,
+otpConstants, recordHit,
+trailAdd, trailAddMany, trailCount, trailGet, trailGetAny, trailRecent,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameSet, credentialNameRemove, credentialNameCheck,
 credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
@@ -1029,6 +1030,32 @@ grid(async () => {
 	ok((await trailGetAny([m4], horizon)).length == 0)//never added
 })
 
+grid(async () => {//hit: what cloudflare and the page say about a visit rides in as objects and comes back as objects, and within the hour an unchanged visit is recorded once
+	let {clear} = await getDatabase()
+	await clear('hit_table')
+	let hit = {
+		origin: 'https://example.com',
+		browserHash: await hashText('a browser'),
+		userTag: '',//nobody signed in at this browser
+		ipText: '203.0.113.7',
+		geography: {country: 'US', city: 'Akron'},//from cloudflare's headers, where only country is always present
+		browser: {agent: 'Mozilla/5.0', renderer: 'ANGLE (Intel)'},//the agent header, and what the page said about its graphics
+	}
+	await recordHit(hit)
+
+	let row = (await queryGet('hit_table', {browser_hash: hit.browserHash}))[0]
+	ok(row.geography_json.country == 'US' && row.geography_json.city == 'Akron')//arrives parsed, an object rather than text
+	ok(row.browser_json.agent == 'Mozilla/5.0' && row.browser_json.renderer == 'ANGLE (Intel)')
+	ok(row.geography_text == '' && row.browser_text == '')//nothing sends these, so the database fills its own blank
+
+	await recordHit(hit)//the same visitor says hello again a moment later
+	ok((await queryGet('hit_table', {browser_hash: hit.browserHash})).length == 1)//same hour, same values, so the same hash, and the unique constraint swallows it
+
+	ageNow(Time.hour)
+	await recordHit(hit)//an hour on, the same visit is worth knowing about again
+	ok((await queryGet('hit_table', {browser_hash: hit.browserHash})).length == 2)
+})
+
 grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, error3, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first
 	let browserHash = random32()
 	let envelope = await sealEnvelope('TestEnvelope.', Time.minute, {message: 'hello', browserHash})
@@ -1168,7 +1195,9 @@ grid(async () => {//json: an object rides into a json column and comes back an o
 	ok(got.a == 1 && got.bb == 'two letters')//values intact
 	ok(got.nested.ok && got.nested.list.length == 3 && got.nested.list[2] == 3)//nesting and arrays intact
 	ok(makeText(got) == '{"a":1,"bb":"two letters","nested":{"ok":true,"list":[1,2,3]}}')//jsonb re-sorted every level's keys by length then bytes: the stored data is ours, the stored text is postgres's
-	ok(makeText(got) != makeText(sent))//the never-rehash rule's premise in one line: same data back, different text back--so hash a json value at write, keep the hash in its own column, and never recompute one from a read
+	ok(makeText(got) != makeText(sent))//same data back, different text back, which is why a hash of a json value is never taken from the plain text
+
+	ok((await hashObject(got)) == (await hashObject(sent)))//hashObject sorts before hashing, so both sides land on one hash even though the database ordered these keys by length and we order ours by string: two sorts that never compare against each other, because what comes back over the boundary is data rather than text
 
 	//the blank is {}, and an absent key is the blank of a property
 	await queryAddRow({table: 'example_table', row: {name_text: 'bob', hits: 2, some_hash: random32(), some_json: {}}})
@@ -1189,7 +1218,7 @@ grid(async () => {//json: the check at the write path refuses what stringificati
 	tossed = false; try { await queryAddRow({table: 'example_table', row: {...good, some_json: {n: 9007199254740993}}}) } catch (e) { tossed = true }
 	ok(tossed)//an integer past 2^53 would parse back as a different number
 
-	ok((await queryGet('example_table', {name_text: 'carol'})).length == 0)//nothing got through; the value-level refusals have unit tests beside isQueryJson in level2
+	ok((await queryGet('example_table', {name_text: 'carol'})).length == 0)//nothing got through; the value-level refusals have unit tests beside isPlain in core
 })
 
 grid(async () => {

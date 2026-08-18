@@ -977,6 +977,10 @@ export function checkHash(s) {
 export async function hashText(s) {//convenience function which goes text encoder to base 32
 	return (await hashData(Data({text: s}))).base32()//uses Normalization Form C inside Data
 }
+export async function hashObject(o) {//hash a plain object by what it holds rather than the order it was built in: checkPlain refuses anything printing would change, and the keys sort before printing, so equal data always gives an equal hash--including data that has been to the database and back, where postgres returns json in its own key order
+	checkPlain(o)
+	return await hashText(sortObjectToText(o))
+}
 export async function hashData(data) {
 	return Data({buffer: await crypto.subtle.digest('SHA-256', data.array())})
 }
@@ -2749,7 +2753,7 @@ export function makePlain(o) { return makeObject(makeText(o)) }//Mojo Jojo and P
 
 //you wanted to name these parse and print, but should avoid a conflict window.print, which shows the print preview dialog box, rockin' the 90s
 export const makeObject = JSON.parse//same as JSON.parse(s), but without having to shout JSON all the time
-export function makeText(o) {//like JSON.stringify(o) but deals with BigInt values, circular references, and doesn't omit Error objects
+export function makeText(o) {//like JSON.stringify(o), which throws on a BigInt or a circular reference and flattens an Error to an empty object; here those print as numerals, as a marker, and as the error's name, message, and stack
 	const seen = new WeakSet()//keep track of objects we've seen so far to note circular references rather than throwing on them
 	try {
 		return JSON.stringify(o, (k, v) => {//use custom replacer function, letting us look at each key and value in o all the way down
@@ -2887,6 +2891,68 @@ test(() => { if (true) return//leave false because errors are slow; this is just
 	let s2 = makeText(examine)//next, with your wrapped stringify()
 	log(s2)
 	includesAll(s1, mustHave)
+})
+
+//makePlain above forces a value into plain form, changing whatever it must; these ask instead, and refuse rather than convert
+export function checkPlain(o) { if (!isPlain(o)) toss('type', {o}) }
+export function isPlain(o) {//true if o is a plain object of plain data--the shape that stores in a json cell, prints, parses, and hashes without anything changing on the way
+	if (typeof o != 'object' || o === null || Array.isArray(o)) return false//the top is always an object, never an array, null, or text someone already stringified
+	if (!_plainValue(o, new WeakSet())) return false//and everything inside is plain data that a trip through print and parse can't change
+	let text = makeText(o)
+	return text == makeText(makeObject(text))//round-trip certainty: print, parse, and print again lands on identical text, so a hash of the text we write is a hash this value can always reproduce
+}
+function _plainValue(v, seen) {//is v plain data that survives stringification unchanged? the walk refuses what makeText would quietly convert, rather than letting the conversion pass
+	if (v === null) return true
+	let t = typeof v
+	if (t == 'string' || t == 'boolean') return true
+	if (t == 'number') return Number.isFinite(v) && (!Number.isInteger(v) || Number.isSafeInteger(v))//NaN and Infinity print as null, and an integer past 2^53 parses back different, so all of those toss here instead
+	if (t == 'object') {
+		if (seen.has(v)) return false//a circular reference would print as a marker, not data
+		seen.add(v)
+		if (Array.isArray(v)) return v.every(e => e !== undefined && _plainValue(e, seen))//an undefined element would print as null
+		if (Object.getPrototypeOf(v) != Object.prototype) return false//a Date, Error, Map, or class instance isn't plain data, even when print would quietly turn it into some
+		return Object.values(v).every(e => e === undefined || _plainValue(e, seen))//an undefined property is dropped by print, which correctly means absent
+	}
+	return false//bigint, function, symbol, and undefined itself have no honest json form
+}
+//postgres sorts jsonb keys its own way, by length and then bytes, where we sort plainly in javascript's string order; the two never have to match, because neither side compares its text against the other's--a value crosses that boundary as data, and is sorted again by whichever side is about to hash it
+function sortObjectToText(o) { return makeText(_sortedCopy(o)) }//print o with its keys in sorted order, so the same data always prints the same however it was assembled; o itself is never touched, as the sorting happens in a copy made here and dropped with the call
+function _sortedCopy(v) {//build a new value with every object's keys in order, leaving the caller's untouched; arrays copy in place order, which is data rather than assembly
+	if (Array.isArray(v)) return v.map(_sortedCopy)
+	if (v && typeof v == 'object') {
+		let sorted = {}
+		for (let k of Object.keys(v).sort()) sorted[k] = _sortedCopy(v[k])
+		return sorted
+	}
+	return v
+}
+test(() => {
+	ok(sortObjectToText({b: 2, a: 1}) == sortObjectToText({a: 1, b: 2}))//the same data built in either order prints the same
+	ok(sortObjectToText({b: 2, a: 1}) == '{"a":1,"b":2}')
+	ok(sortObjectToText({o: {z: 1, y: 2}}) == '{"o":{"y":2,"z":1}}')//sorted at every level, not just the top
+	ok(sortObjectToText({list: [{b: 1, a: 2}, 'x']}) == '{"list":[{"a":2,"b":1},"x"]}')//objects inside arrays sort too, while the array's own order is data
+	ok(sortObjectToText({a: 1}) == makeText({a: 1}))//with one key, or keys already in order, it's the plain text
+})
+test(() => {//what a plain object holds: strings, safe numbers, booleans, null, arrays, and more plain objects
+	ok(isPlain({}))//the blank
+	ok(isPlain({provider: 'Discord.', identifier: 'abc123'}))//the common shape: a flat bag of named strings
+	ok(isPlain({country: 'US', city: 'Akron', ok: true, ratio: 1.5, n: -7, missing: null}))//every plain kind of value
+	ok(isPlain({nested: {list: [1, 'two', {three: 3}]}}))//nesting and arrays ride inside
+	ok(isPlain({absent: undefined}))//an undefined property is dropped by print, the same meaning as leaving the key out
+})
+test(() => {//what it refuses: everything a trip through stringification would quietly change
+	ok(!isPlain())//nothing isn't an object
+	ok(!isPlain(null))//neither is null; the blank is {}
+	ok(!isPlain([1, 2, 3]))//an array can't be the whole thing; it can ride inside one
+	ok(!isPlain('{"a":1}'))//pre-stringified text isn't an object; pass the object
+	ok(!isPlain({n: NaN}))//would print as null
+	ok(!isPlain({n: Infinity}))//so would this
+	ok(!isPlain({n: 9007199254740993}))//an integer past 2^53 parses back as a different number; big identifiers ride as strings
+	ok(!isPlain({n: 9n}))//bigint would print as a string, a silent type change
+	ok(!isPlain({when: new Date()}))//a Date would print as a string; store a tick or a text form deliberately instead
+	ok(!isPlain({list: [1, undefined, 3]}))//an undefined element would print as null
+	let circular = {}; circular.self = circular
+	ok(!isPlain(circular))//would print as a marker, not data
 })
 
 

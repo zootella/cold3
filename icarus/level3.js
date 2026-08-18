@@ -9,10 +9,10 @@ Tag, checkTagOrBlank, checkTag,
 Data, decryptData, hash_size, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
-checkHash, hashText, given,
+checkHash, hashText, hashObject, given,
 totpEnroll, totpValidate, totpGenerate, checkTotpCode, checkTotpSecret,
 otpGenerate, otpPrefix, prefix_alphabet,
-makePlain, makeObject, makeText,
+makePlain, makeObject, makeText, checkPlain,
 safefill, deindent,
 random32,
 } from './core.js'
@@ -1336,10 +1336,10 @@ CREATE INDEX hit3 ON hit_table (user_tag_text, row_tick DESC) WHERE hide = 0;
 ALTER TABLE hit_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
 
-export async function recordHit({origin, browserHash, userTag, ipText, geographyText, browserText}) {
+export async function recordHit({origin, browserHash, userTag, ipText, geography, browser}) {
 	checkText(origin)
 	checkHash(browserHash); checkTagOrBlank(userTag)
-	checkTextOrBlank(ipText); checkTextOrBlank(geographyText); checkTextOrBlank(browserText)
+	checkTextOrBlank(ipText); checkPlain(geography); checkPlain(browser)
 	checkHash(wrapper.hash)
 
 	let now = Now()//tick count now, of this hit
@@ -1349,15 +1349,15 @@ export async function recordHit({origin, browserHash, userTag, ipText, geography
 		browser_hash: browserHash,
 		user_tag_text: userTag,
 		ip_text: ipText,
-		geography_text: geographyText,
-		browser_text: browserText,
+		geography_json: geography,
+		browser_json: browser,
 
 		wrapper_hash: wrapper.hash,
 	}
-	row.hash = await hashText(//compute the hash of (below) and include it in the row we will add if it's unique
-		roundDown(now, Time.hour)//the tick count of the start of the hour now is in
-		+':'+
-		makeText(row))//the values of those cells
+	row.hash = await hashObject({//compute the hash of (below) and include it in the row we will add if it's unique
+		hour: roundDown(now, Time.hour),//the tick count of the start of the hour now is in
+		row,//and the values of those cells, hashed by what they hold rather than the order they were assembled in
+	})
 	row.row_tick = now//add the exact time, note we excluded this from the hash
 	await queryAddRowIfHashUnique({table: 'hit_table', row})
 }
