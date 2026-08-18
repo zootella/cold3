@@ -1,5 +1,5 @@
 summary:
-  generated: 2026aug17.1759.45017
+  generated: 2026aug18.1543.13357
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -118,72 +118,73 @@ summary:
   🩸 Latest tag is behind installed:
     - vidstack
   downloads:
+    5 figure:
+      vidstack: 69,431
     6 figure:
-      vidstack: 100,645
-      nuxt-og-image: 122,281
-      "@nuxtjs/color-mode": 502,424
-      "@uppy/aws-s3": 510,040
-      "@uppy/dashboard": 580,132
-      serverless-offline: 627,578
-      "@pinia/nuxt": 733,633
-      lucide-vue-next: 840,002
-      "@wagmi/connectors": 872,558
-      "@wagmi/core": 878,870
-      "@uppy/core": 990,873
+      nuxt-og-image: 124,309
+      "@uppy/aws-s3": 417,211
+      "@nuxtjs/color-mode": 512,639
+      "@pinia/nuxt": 546,311
+      serverless-offline: 609,265
+      "@uppy/dashboard": 613,323
+      lucide-vue-next: 766,390
+      "@uppy/core": 804,831
+      "@wagmi/connectors": 859,282
+      "@wagmi/core": 868,693
+      serverless: 926,530
     7 figure:
-      "@walletconnect/ethereum-provider": 1,097,755
-      serverless: 1,308,042
-      reka-ui: 1,373,166
-      credit-card-type: 1,388,437
-      nuxt: 1,581,688
-      nitropack: 1,685,773
-      otpauth: 1,710,783
-      "@resvg/resvg-wasm": 1,830,577
-      "@resvg/resvg-js": 1,998,081
-      satori: 2,419,728
-      "@unhead/vue": 2,502,961
-      is-mobile: 2,546,476
-      "@aws-sdk/client-ses": 3,185,574
-      "@tailwindcss/forms": 3,747,913
-      "@aws-sdk/client-sns": 3,929,471
-      "@sendgrid/mail": 3,958,924
-      pinia: 4,019,701
+      credit-card-type: 1,073,282
+      "@walletconnect/ethereum-provider": 1,077,164
+      reka-ui: 1,419,737
+      nuxt: 1,675,613
+      nitropack: 1,701,472
+      otpauth: 1,900,484
+      "@resvg/resvg-js": 2,077,680
+      is-mobile: 2,333,059
+      "@unhead/vue": 2,753,431
+      "@resvg/resvg-wasm": 2,965,471
+      "@aws-sdk/client-sns": 3,078,359
+      "@aws-sdk/client-ses": 3,186,203
+      satori: 3,742,212
+      "@tailwindcss/forms": 3,743,453
+      "@sendgrid/mail": 3,858,786
+      pinia: 3,958,735
       "@auth/core": 4,024,920
-      viem: 4,589,639
-      twilio: 5,082,551
-      "@vercel/nft": 6,657,480
-      vue-router: 6,827,195
-      "@vitejs/plugin-vue": 7,200,333
-      "@scure/bip39": 7,440,719
-      "@vueuse/core": 8,366,627
+      viem: 4,704,818
+      twilio: 4,891,316
+      "@vercel/nft": 5,761,349
+      vue-router: 6,630,697
+      "@vitejs/plugin-vue": 7,126,186
+      "@scure/bip39": 7,182,875
+      "@vueuse/core": 8,467,612
+      vue: 9,793,131
     8 figure:
-      "@electric-sql/pglite": 10,857,136
-      vue: 12,787,656
-      "@aws-sdk/s3-request-presigner": 14,947,489
+      "@electric-sql/pglite": 12,117,969
       wrangler: 15,295,217
-      qrcode: 16,893,188
-      "@supabase/supabase-js": 19,091,355
-      libphonenumber-js: 19,641,750
-      unstorage: 21,023,155
-      ofetch: 22,959,341
-      tw-animate-css: 31,986,231
-      "@aws-sdk/client-s3": 32,869,651
-      h3: 37,425,942
-      "@tailwindcss/vite": 37,939,420
-      class-variance-authority: 54,147,307
-      sharp: 67,890,476
-      tailwind-merge: 69,530,338
+      libphonenumber-js: 15,907,364
+      "@aws-sdk/s3-request-presigner": 16,337,605
+      unstorage: 17,576,915
+      qrcode: 18,826,156
+      "@supabase/supabase-js": 21,127,352
+      ofetch: 23,785,900
+      tw-animate-css: 31,822,665
+      "@aws-sdk/client-s3": 34,442,501
+      h3: 38,341,300
+      "@tailwindcss/vite": 38,411,217
+      class-variance-authority: 54,195,947
+      tailwind-merge: 70,009,512
+      sharp: 74,893,373
+      tailwindcss: 85,411,470
     9 figure:
-      clsx: 103,711,634
-      tailwindcss: 111,003,487
-      fast-glob: 136,358,982
-      vite: 143,804,839
-      yaml: 161,402,533
-      fs-extra: 185,896,354
-      nanoid: 209,839,767
-      zod: 212,737,786
-      typescript: 218,992,255
-      semver: 745,551,727
+      clsx: 102,317,809
+      fast-glob: 129,278,749
+      vite: 142,923,941
+      yaml: 163,067,115
+      nanoid: 163,468,313
+      typescript: 180,404,383
+      fs-extra: 180,972,821
+      zod: 224,127,336
+      semver: 716,789,236
 modules:
   "@auth/core":
     homepage: https://authjs.dev
@@ -205,11 +206,11 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1111.0 on 2026aug14 0m old
-      latest: 3.1111.0 on 2026aug14 0m old
+      current: 3.1112.0 on 2026aug17 0m old
+      latest: 3.1112.0 on 2026aug17 0m old
     downloads:
-      weekly: 32,869,651
-      on: 2026jul18.2043.124
+      weekly: 34,442,501
+      on: 2026aug18.1523.45867
   "@aws-sdk/client-ses":
     homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-ses
     description: AWS SDK for JavaScript Ses Client for Node.js, Browser and React Native
@@ -218,11 +219,11 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1111.0 on 2026aug14 0m old
-      latest: 3.1111.0 on 2026aug14 0m old
+      current: 3.1112.0 on 2026aug17 0m old
+      latest: 3.1112.0 on 2026aug17 0m old
     downloads:
-      weekly: 3,185,574
-      on: 2026jul18.2043.124
+      weekly: 3,186,203
+      on: 2026aug18.1523.45867
   "@aws-sdk/client-sns":
     homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/clients/client-sns
     description: AWS SDK for JavaScript Sns Client for Node.js, Browser and React Native
@@ -231,11 +232,11 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1111.0 on 2026aug14 0m old
-      latest: 3.1111.0 on 2026aug14 0m old
+      current: 3.1112.0 on 2026aug17 0m old
+      latest: 3.1112.0 on 2026aug17 0m old
     downloads:
-      weekly: 3,929,471
-      on: 2026jul18.2043.124
+      weekly: 3,078,359
+      on: 2026aug18.1523.45867
   "@aws-sdk/s3-request-presigner":
     homepage: https://github.com/aws/aws-sdk-js-v3/tree/main/packages/s3-request-presigner
     description: "[![NPM version](https://img.shields.io/npm/v/@aws-sdk/s3-request-presigner/latest.svg)](https://www.npmjs.com/package/@aws-sdk/s3-request-presigner) [![NPM downloads](https://img.shields.io/npm/dm/@aws-sdk/s3-request-presigner.svg)](https://www.npmjs.com/"
@@ -244,11 +245,11 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1111.0 on 2026aug14 0m old
-      latest: 3.1111.0 on 2026aug14 0m old
+      current: 3.1112.0 on 2026aug17 0m old
+      latest: 3.1112.0 on 2026aug17 0m old
     downloads:
-      weekly: 14,947,489
-      on: 2026jul18.2043.124
+      weekly: 16,337,605
+      on: 2026aug18.1523.45867
   "@electric-sql/pglite":
     homepage: https://pglite.dev
     description: PGlite is a WASM Postgres build packaged into a TypeScript client library that enables you to run Postgres in the browser, Node.js and Bun, with no need to install any other dependencies. It is only 3.7mb gzipped.
@@ -260,8 +261,8 @@ modules:
       current: 0.3.16 on 2026mar10 5m old
       latest: 0.5.5 on 2026aug13 0m old
     downloads:
-      weekly: 10,857,136
-      on: 2026jul18.1911.8649
+      weekly: 12,117,969
+      on: 2026aug18.1523.29150
   "@nuxtjs/color-mode":
     homepage: null
     description: Dark and light mode for Nuxt with auto detection
@@ -273,8 +274,8 @@ modules:
       current: 4.0.1 on 2026jun09 2m old
       latest: 4.0.1 on 2026jun09 2m old
     downloads:
-      weekly: 502,424
-      on: 2026jul18.2043.15133
+      weekly: 512,639
+      on: 2026aug18.1523.58589
   "@pinia/nuxt":
     homepage: https://pinia.vuejs.org/ssr/nuxt.html
     description: Nuxt Module for pinia
@@ -286,8 +287,8 @@ modules:
       current: 0.11.3 on 2025nov05 9m old
       latest: 1.0.2 on 2026aug12 0m old 🎁 Major new version available
     downloads:
-      weekly: 733,633
-      on: 2026jul18.2043.15133
+      weekly: 546,311
+      on: 2026aug18.1523.58589
   "@resvg/resvg-js":
     homepage: https://github.com/yisibl/resvg-js#readme
     description: A high-performance SVG renderer and toolkit, powered by Rust based resvg and napi-rs
@@ -299,8 +300,8 @@ modules:
       current: 2.6.2 on 2024mar26 28m old
       latest: 2.6.2 on 2024mar26 28m old
     downloads:
-      weekly: 1,998,081
-      on: 2026jul18.2043.15133
+      weekly: 2,077,680
+      on: 2026aug18.1524.24524
   "@resvg/resvg-wasm":
     homepage: https://github.com/yisibl/resvg-js#readme
     description: A high-performance SVG renderer and toolkit, powered by Rust based resvg and napi-rs
@@ -312,8 +313,8 @@ modules:
       current: 2.6.2 on 2024mar26 28m old
       latest: 2.6.2 on 2024mar26 28m old
     downloads:
-      weekly: 1,830,577
-      on: 2026jul18.2043.15133
+      weekly: 2,965,471
+      on: 2026aug18.1523.58589
   "@scure/bip39":
     homepage: https://paulmillr.com/noble/#scure
     description: Secure, audited & minimal implementation of BIP39 mnemonic phrases
@@ -325,8 +326,8 @@ modules:
       current: 1.6.0 on 2025apr24 15m old
       latest: 2.3.0 on 2026aug08 0m old 🎁 Major new version available
     downloads:
-      weekly: 7,440,719
-      on: 2026jul18.1911.8649
+      weekly: 7,182,875
+      on: 2026aug18.1523.29150
   "@sendgrid/mail":
     homepage: https://sendgrid.com
     description: Twilio SendGrid NodeJS mail service
@@ -338,8 +339,8 @@ modules:
       current: 8.1.6 on 2025sep19 10m old
       latest: 8.1.6 on 2025sep19 10m old
     downloads:
-      weekly: 3,958,924
-      on: 2026jul18.2043.124
+      weekly: 3,858,786
+      on: 2026aug18.1523.45867
   "@supabase/supabase-js":
     homepage: https://github.com/supabase/supabase-js/tree/master/packages/core/supabase-js
     description: Isomorphic Javascript SDK for Supabase
@@ -351,21 +352,21 @@ modules:
       current: 2.112.3 on 2026aug11 0m old
       latest: 2.112.3 on 2026aug11 0m old
     downloads:
-      weekly: 19,091,355
-      on: 2026jul18.1911.8649
+      weekly: 21,127,352
+      on: 2026aug18.1523.29150
   "@tailwindcss/forms":
     homepage: https://github.com/tailwindlabs/tailwindcss-forms#readme
     description: A plugin that provides a basic reset for form styles that makes form elements easy to override with utilities.
     note: "front: form control normalization plugin, loaded via @plugin in css"
     from: site
     versions:
-      declared: ^0.5.11 on 2025dec17 7m old
-      installed: 0.5.11 on 2025dec17 7m old 🐣 Pre-1.0 version installed
-      current: 0.5.11 on 2025dec17 7m old
-      latest: 0.5.11 on 2025dec17 7m old
+      declared: ^0.5.11 on 2025dec17 8m old
+      installed: 0.5.11 on 2025dec17 8m old 🐣 Pre-1.0 version installed
+      current: 0.5.11 on 2025dec17 8m old
+      latest: 0.5.11 on 2025dec17 8m old
     downloads:
-      weekly: 3,747,913
-      on: 2026jul18.2043.15133
+      weekly: 3,743,453
+      on: 2026aug18.1523.58589
   "@tailwindcss/vite":
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
@@ -377,8 +378,8 @@ modules:
       current: 4.3.3 on 2026jul16 1m old
       latest: 4.3.3 on 2026jul16 1m old
     downloads:
-      weekly: 37,939,420
-      on: 2026jul18.2043.15133
+      weekly: 38,411,217
+      on: 2026aug18.1523.58589
   "@unhead/vue":
     homepage: https://unhead.unjs.io
     description: Full-stack <head> manager built for Vue.
@@ -390,8 +391,8 @@ modules:
       current: 2.1.17 on 2026aug04 0m old
       latest: 3.3.2 on 2026aug13 0m old 🎁 Major new version available
     downloads:
-      weekly: 2,502,961
-      on: 2026jul18.2043.15133
+      weekly: 2,753,431
+      on: 2026aug18.1524.24524
   "@uppy/aws-s3":
     homepage: https://uppy.io
     description: Upload to Amazon S3 with Uppy
@@ -405,8 +406,8 @@ modules:
       current: 5.1.0 on 2025dec02 8m old
       latest: 5.1.0 on 2025dec02 8m old
     downloads:
-      weekly: 510,040
-      on: 2026jul18.1911.8649
+      weekly: 417,211
+      on: 2026aug18.1523.29150
   "@uppy/core":
     homepage: https://uppy.io
     description: "Core module for the extensible JavaScript file upload widget with support for drag&drop, resumable uploads, previews, restrictions, file processing/encoding, remote providers like Instagram, Dropbox, Google Drive, S3 and more :dog:"
@@ -420,8 +421,8 @@ modules:
       current: 5.2.0 on 2025dec02 8m old
       latest: 5.2.0 on 2025dec02 8m old
     downloads:
-      weekly: 990,873
-      on: 2026jul18.1911.8649
+      weekly: 804,831
+      on: 2026aug18.1523.29150
   "@uppy/dashboard":
     homepage: https://uppy.io
     description: Universal UI plugin for Uppy.
@@ -435,8 +436,8 @@ modules:
       current: 5.1.1 on 2026feb03 6m old
       latest: 5.1.1 on 2026feb03 6m old
     downloads:
-      weekly: 580,132
-      on: 2026jul18.1911.8649
+      weekly: 613,323
+      on: 2026aug18.1523.29150
   "@vercel/nft":
     homepage: https://github.com/vercel/nft#readme
     description: Used to determine exactly which files (including `node_modules`) are necessary for the application runtime.
@@ -448,8 +449,8 @@ modules:
       current: 1.10.2 on 2026may28 2m old
       latest: 1.10.2 on 2026may28 2m old
     downloads:
-      weekly: 6,657,480
-      on: 2026jul18.2043.124
+      weekly: 5,761,349
+      on: 2026aug18.1523.45867
   "@vitejs/plugin-vue":
     homepage: https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue#readme
     description: The official plugin for Vue SFC support in Vite.
@@ -461,8 +462,8 @@ modules:
       current: 5.2.4 on 2025may09 15m old
       latest: 6.0.8 on 2026jul14 1m old 🎁 Major new version available
     downloads:
-      weekly: 7,200,333
-      on: 2026jul18.2043.124
+      weekly: 7,126,186
+      on: 2026aug18.1523.45867
   "@vueuse/core":
     homepage: https://github.com/vueuse/vueuse#readme
     description: Collection of essential Vue Composition Utilities
@@ -474,8 +475,8 @@ modules:
       current: 14.4.0 on 2026jul29 0m old
       latest: 14.4.0 on 2026jul29 0m old
     downloads:
-      weekly: 8,366,627
-      on: 2026jul18.2043.124
+      weekly: 8,467,612
+      on: 2026aug18.1523.45867
   "@wagmi/connectors":
     homepage: https://github.com/wevm/wagmi#readme
     description: Collection of connectors for Wagmi
@@ -489,8 +490,8 @@ modules:
       current: 7.2.1 on 2026feb18 5m old
       latest: 8.1.0 on 2026aug03 0m old 🎁 Major new version available
     downloads:
-      weekly: 872,558
-      on: 2026jul18.1911.8649
+      weekly: 859,282
+      on: 2026aug18.1523.29150
   "@wagmi/core":
     homepage: https://github.com/wevm/wagmi#readme
     description: VanillaJS library for Ethereum
@@ -504,8 +505,8 @@ modules:
       current: 3.6.4 on 2026jul22 0m old
       latest: 3.6.4 on 2026jul22 0m old
     downloads:
-      weekly: 878,870
-      on: 2026jul18.1911.8649
+      weekly: 868,693
+      on: 2026aug18.1523.29150
   "@walletconnect/ethereum-provider":
     homepage: https://github.com/walletconnect/walletconnect-monorepo/
     description: Ethereum Provider for WalletConnect Protocol
@@ -519,8 +520,8 @@ modules:
       current: 2.23.10 on 2026jun24 1m old
       latest: 2.23.10 on 2026jun24 1m old
     downloads:
-      weekly: 1,097,755
-      on: 2026jul18.2043.15133
+      weekly: 1,077,164
+      on: 2026aug18.1524.24524
   class-variance-authority:
     homepage: https://github.com/joe-bell/cva#readme
     description: Class Variance Authority 🧬
@@ -532,8 +533,8 @@ modules:
       current: 0.7.1 on 2024nov26 20m old
       latest: 0.7.1 on 2024nov26 20m old
     downloads:
-      weekly: 54,147,307
-      on: 2026jul18.2043.124
+      weekly: 54,195,947
+      on: 2026aug18.1523.45867
   clsx:
     homepage: https://github.com/lukeed/clsx#readme
     description: A tiny (239B) utility for constructing className strings conditionally.
@@ -545,8 +546,8 @@ modules:
       current: 2.1.1 on 2024apr23 27m old
       latest: 2.1.1 on 2024apr23 27m old
     downloads:
-      weekly: 103,711,634
-      on: 2026jul18.2043.124
+      weekly: 102,317,809
+      on: 2026aug18.1523.45867
   credit-card-type:
     homepage: https://github.com/braintree/credit-card-type
     description: A library for determining credit card type
@@ -558,8 +559,8 @@ modules:
       current: 10.3.0 on 2026jun30 1m old
       latest: 10.3.0 on 2026jun30 1m old
     downloads:
-      weekly: 1,388,437
-      on: 2026jul18.1911.8649
+      weekly: 1,073,282
+      on: 2026aug18.1523.29150
   fast-glob:
     homepage: https://github.com/mrmlnc/fast-glob#readme
     description: It's a very fast and efficient glob library for Node.js
@@ -571,8 +572,8 @@ modules:
       current: 3.3.3 on 2025jan05 19m old
       latest: 3.3.3 on 2025jan05 19m old
     downloads:
-      weekly: 136,358,982
-      on: 2026jul18.1911.8649
+      weekly: 129,278,749
+      on: 2026aug18.1523.29150
   fs-extra:
     homepage: https://github.com/jprichardson/node-fs-extra
     description: fs-extra contains methods that aren't included in the vanilla Node.js fs package. Such as recursive mkdir, copy, and remove.
@@ -584,8 +585,8 @@ modules:
       current: 11.4.0 on 2026jul23 0m old
       latest: 11.4.0 on 2026jul23 0m old
     downloads:
-      weekly: 185,896,354
-      on: 2026jul18.2043.124
+      weekly: 180,972,821
+      on: 2026aug18.1523.45867
   h3:
     homepage: https://h3.dev
     description: Minimal H(TTP) framework built for high performance and portability.
@@ -597,8 +598,8 @@ modules:
       current: 1.15.11 on 2026apr01 4m old
       latest: 2.0.1-rc.26 on 2026jul24 0m old 🎁 Major new version available
     downloads:
-      weekly: 37,425,942
-      on: 2026jul18.1911.8649
+      weekly: 38,341,300
+      on: 2026aug18.1523.29150
   is-mobile:
     homepage: https://github.com/juliangruber/is-mobile
     description: Check if mobile browser.
@@ -610,8 +611,8 @@ modules:
       current: 5.0.0 on 2024oct16 22m old
       latest: 5.0.0 on 2024oct16 22m old
     downloads:
-      weekly: 2,546,476
-      on: 2026jul18.1911.8649
+      weekly: 2,333,059
+      on: 2026aug18.1523.29150
   libphonenumber-js:
     homepage: https://gitlab.com/catamphetamine/libphonenumber-js#readme
     description: A simpler (and smaller) rewrite of Google Android's libphonenumber library in javascript
@@ -623,8 +624,8 @@ modules:
       current: 1.13.11 on 2026aug14 0m old
       latest: 1.13.11 on 2026aug14 0m old
     downloads:
-      weekly: 19,641,750
-      on: 2026jul18.1911.8649
+      weekly: 15,907,364
+      on: 2026aug18.1523.29150
   lucide-vue-next:
     homepage: https://lucide.dev
     description: A Lucide icon library package for Vue 3 applications.
@@ -636,8 +637,8 @@ modules:
       current: 0.574.0 on 2026feb17 5m old
       latest: 1.0.0 on 2026mar23 4m old 🎁 Major new version available
     downloads:
-      weekly: 840,002
-      on: 2026jul18.2043.124
+      weekly: 766,390
+      on: 2026aug18.1523.45867
   nanoid:
     homepage: https://github.com/ai/nanoid#readme
     description: A tiny (118 bytes), secure URL-friendly unique string ID generator
@@ -649,8 +650,8 @@ modules:
       current: 5.1.16 on 2026jun24 1m old
       latest: 6.0.1 on 2026aug03 0m old 🎁 Major new version available
     downloads:
-      weekly: 209,839,767
-      on: 2026jul18.1911.8649
+      weekly: 163,468,313
+      on: 2026aug18.1523.29150
   nitropack:
     homepage: https://github.com/nitrojs/nitro#readme
     description: Build and Deploy Universal JavaScript Servers
@@ -662,8 +663,8 @@ modules:
       current: 2.13.4 on 2026apr29 3m old
       latest: 2.13.4 on 2026apr29 3m old
     downloads:
-      weekly: 1,685,773
-      on: 2026jul18.2043.15133
+      weekly: 1,701,472
+      on: 2026aug18.1524.24524
   nuxt:
     homepage: https://nuxt.com
     description: Nuxt is a free and open-source framework with an intuitive and extendable way to create type-safe, performant and production-grade full-stack web applications and websites with Vue.js.
@@ -675,8 +676,8 @@ modules:
       current: 4.5.2 on 2026aug05 0m old
       latest: 4.5.2 on 2026aug05 0m old
     downloads:
-      weekly: 1,581,688
-      on: 2026jul18.2043.15133
+      weekly: 1,675,613
+      on: 2026aug18.1523.58589
   nuxt-og-image:
     homepage: https://nuxtseo.com/og-image
     description: Enlightened OG Image generation for Nuxt.
@@ -688,8 +689,8 @@ modules:
       current: 6.7.8 on 2026aug10 0m old
       latest: 6.7.8 on 2026aug10 0m old
     downloads:
-      weekly: 122,281
-      on: 2026jul18.2043.15133
+      weekly: 124,309
+      on: 2026aug18.1523.58589
   ofetch:
     homepage: https://github.com/unjs/ofetch#readme
     description: A better fetch API. Works on node, browser and workers.
@@ -701,8 +702,8 @@ modules:
       current: 1.5.1 on 2025nov01 9m old
       latest: 1.5.1 on 2025nov01 9m old
     downloads:
-      weekly: 22,959,341
-      on: 2026jul18.1911.8649
+      weekly: 23,785,900
+      on: 2026aug18.1523.29150
   otpauth:
     homepage: https://github.com/hectorm/otpauth
     description: One Time Password (HOTP/TOTP) library for Node.js, Deno, Bun and browsers
@@ -714,8 +715,8 @@ modules:
       current: 9.5.1 on 2026apr25 3m old
       latest: 9.5.1 on 2026apr25 3m old
     downloads:
-      weekly: 1,710,783
-      on: 2026jul18.1911.8649
+      weekly: 1,900,484
+      on: 2026aug18.1523.29150
   pinia:
     homepage: https://pinia.vuejs.org
     description: Intuitive, type safe and flexible Store for Vue
@@ -727,8 +728,8 @@ modules:
       current: 3.0.4 on 2025nov05 9m old
       latest: 4.0.3 on 2026aug12 0m old 🎁 Major new version available
     downloads:
-      weekly: 4,019,701
-      on: 2026jul18.2043.15133
+      weekly: 3,958,735
+      on: 2026aug18.1524.24524
   qrcode:
     homepage: http://github.com/soldair/node-qrcode
     description: QRCode / 2d Barcode api with both server side and client side support using canvas
@@ -742,8 +743,8 @@ modules:
       current: 1.5.4 on 2024aug05 24m old
       latest: 1.5.4 on 2024aug05 24m old
     downloads:
-      weekly: 16,893,188
-      on: 2026jul18.1911.8649
+      weekly: 18,826,156
+      on: 2026aug18.1523.29150
   reka-ui:
     homepage: https://github.com/unovue/reka-ui
     description: Vue port for Radix UI Primitives.
@@ -755,8 +756,8 @@ modules:
       current: 2.10.3 on 2026aug10 0m old
       latest: 2.10.3 on 2026aug10 0m old
     downloads:
-      weekly: 1,373,166
-      on: 2026jul18.2043.15133
+      weekly: 1,419,737
+      on: 2026aug18.1523.58589
   satori:
     homepage: https://github.com/vercel/satori#readme
     description: Enlightened library to convert HTML and CSS to SVG.
@@ -768,8 +769,8 @@ modules:
       current: 0.26.0 on 2026mar20 4m old
       latest: 0.29.0 on 2026jul23 0m old
     downloads:
-      weekly: 2,419,728
-      on: 2026jul18.2043.15133
+      weekly: 3,742,212
+      on: 2026aug18.1523.58589
   semver:
     homepage: https://github.com/npm/node-semver#readme
     description: The semantic version parser used by npm.
@@ -781,8 +782,8 @@ modules:
       current: 7.8.5 on 2026jun19 1m old
       latest: 7.8.5 on 2026jun19 1m old
     downloads:
-      weekly: 745,551,727
-      on: 2026jul18.1911.8649
+      weekly: 716,789,236
+      on: 2026aug18.1523.29150
   serverless:
     homepage: https://github.com/serverless/serverless#readme
     description: "[![Serverless Framework AWS Lambda AWS DynamoDB AWS API Gateway](https://github.com/serverless/serverless/assets/2752551/66a8c6a9-bc4a-4116-b139-90c12963337e)](https://serverless.com)"
@@ -794,8 +795,8 @@ modules:
       current: 4.41.0 on 2026aug10 0m old
       latest: 4.41.0 on 2026aug10 0m old
     downloads:
-      weekly: 1,308,042
-      on: 2026jul18.2043.124
+      weekly: 926,530
+      on: 2026aug18.1523.45867
   serverless-offline:
     homepage: https://github.com/dherault/serverless-offline
     description: Emulate AWS λ and API Gateway locally when developing your Serverless project
@@ -807,8 +808,8 @@ modules:
       current: 14.8.0 on 2026aug07 0m old
       latest: 14.8.0 on 2026aug07 0m old
     downloads:
-      weekly: 627,578
-      on: 2026jul18.2043.124
+      weekly: 609,265
+      on: 2026aug18.1523.45867
   sharp:
     homepage: https://sharp.pixelplumbing.com
     description: High performance Node.js image processing, the fastest module to resize JPEG, PNG, WebP, GIF, AVIF and TIFF images
@@ -820,8 +821,8 @@ modules:
       current: 0.34.5 on 2025nov06 9m old
       latest: 0.35.3 on 2026jul01 1m old
     downloads:
-      weekly: 67,890,476
-      on: 2026jul18.2043.124
+      weekly: 74,893,373
+      on: 2026aug18.1523.45867
   tailwind-merge:
     homepage: https://github.com/dcastil/tailwind-merge
     description: Merge Tailwind CSS classes without style conflicts
@@ -833,8 +834,8 @@ modules:
       current: 3.6.0 on 2026may10 3m old
       latest: 3.6.0 on 2026may10 3m old
     downloads:
-      weekly: 69,530,338
-      on: 2026jul18.2043.15133
+      weekly: 70,009,512
+      on: 2026aug18.1524.24524
   tailwindcss:
     homepage: https://tailwindcss.com
     description: A utility-first CSS framework for rapidly building custom user interfaces.
@@ -846,8 +847,8 @@ modules:
       current: 4.3.3 on 2026jul16 1m old
       latest: 4.3.3 on 2026jul16 1m old
     downloads:
-      weekly: 111,003,487
-      on: 2026jul18.2043.15133
+      weekly: 85,411,470
+      on: 2026aug18.1523.58589
   tw-animate-css:
     homepage: https://github.com/Wombosvideo/tw-animate-css#readme
     description: TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`.
@@ -859,8 +860,8 @@ modules:
       current: 1.4.0 on 2025sep24 10m old
       latest: 1.4.0 on 2025sep24 10m old
     downloads:
-      weekly: 31,986,231
-      on: 2026jul18.2043.15133
+      weekly: 31,822,665
+      on: 2026aug18.1523.58589
   twilio:
     homepage: https://github.com/twilio/twilio-node#readme
     description: A Twilio helper library
@@ -872,8 +873,8 @@ modules:
       current: 5.13.1 on 2026mar24 4m old
       latest: 6.1.0 on 2026aug11 0m old 🎁 Major new version available
     downloads:
-      weekly: 5,082,551
-      on: 2026jul18.2043.124
+      weekly: 4,891,316
+      on: 2026aug18.1523.45867
   typescript:
     homepage: https://www.typescriptlang.org/
     description: TypeScript is a language for application scale JavaScript development
@@ -885,8 +886,8 @@ modules:
       current: 5.9.3 on 2025sep30 10m old
       latest: 7.0.2 on 2026jul08 1m old 🎁 Major new version available
     downloads:
-      weekly: 218,992,255
-      on: 2026jul18.2043.15133
+      weekly: 180,404,383
+      on: 2026aug18.1523.58589
   unstorage:
     homepage: https://unstorage.unjs.io
     description: Universal Storage Layer
@@ -898,8 +899,8 @@ modules:
       current: 1.17.5 on 2026mar26 4m old
       latest: 1.17.5 on 2026mar26 4m old
     downloads:
-      weekly: 21,023,155
-      on: 2026jul18.2043.15133
+      weekly: 17,576,915
+      on: 2026aug18.1523.58589
   vidstack:
     homepage: null
     description: Build awesome media experiences on the web.
@@ -911,8 +912,8 @@ modules:
       current: 1.15.6 on 2026jun10 2m old
       latest: 0.6.15 on 2024apr19 27m old 🩸 Latest tag is behind installed
     downloads:
-      weekly: 100,645
-      on: 2026jul18.2043.15133
+      weekly: 69,431
+      on: 2026aug18.1523.58589
   viem:
     homepage: https://viem.sh
     description: TypeScript Interface for Ethereum
@@ -923,11 +924,11 @@ modules:
     versions:
       declared: ^2.45.1 on 2026jan29 6m old
       installed: 2.53.1 on 2026jun20 1m old
-      current: 2.55.17 on 2026aug17 0m old
-      latest: 2.55.17 on 2026aug17 0m old
+      current: 2.55.18 on 2026aug17 0m old
+      latest: 2.55.18 on 2026aug17 0m old
     downloads:
-      weekly: 4,589,639
-      on: 2026jul18.1911.8649
+      weekly: 4,704,818
+      on: 2026aug18.1523.29150
   vite:
     homepage: https://vite.dev
     description: Native-ESM powered web dev build tool
@@ -939,8 +940,8 @@ modules:
       current: 6.4.3 on 2026jun01 2m old
       latest: 8.2.1 on 2026aug06 0m old 🎁 Major new version available
     downloads:
-      weekly: 143,804,839
-      on: 2026jul18.2043.124
+      weekly: 142,923,941
+      on: 2026aug18.1523.45867
   vue:
     homepage: https://vuejs.org/
     description: The progressive JavaScript framework for building modern web UI.
@@ -954,8 +955,8 @@ modules:
       current: 3.5.41 on 2026aug05 0m old
       latest: 3.5.41 on 2026aug05 0m old
     downloads:
-      weekly: 12,787,656
-      on: 2026jul18.2043.124
+      weekly: 9,793,131
+      on: 2026aug18.1523.45867
   vue-router:
     homepage: https://router.vuejs.org
     description: "> To see what versions are currently supported, please refer to the [Security Policy](./packages/router/SECURITY.md)."
@@ -969,8 +970,8 @@ modules:
       current: 4.6.4 on 2025dec11 8m old
       latest: 5.2.0 on 2026jul15 1m old 🎁 Major new version available
     downloads:
-      weekly: 6,827,195
-      on: 2026jul18.2043.124
+      weekly: 6,630,697
+      on: 2026aug18.1523.45867
   wrangler:
     homepage: https://github.com/cloudflare/workers-sdk#readme
     description: Command-line interface for all things Cloudflare Workers
@@ -979,8 +980,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 6m old
       installed: 4.105.0 on 2026jun25 1m old
-      current: 4.123.0 on 2026aug13 0m old
-      latest: 4.123.0 on 2026aug13 0m old
+      current: 4.124.0 on 2026aug18 0m old
+      latest: 4.124.0 on 2026aug18 0m old
     downloads:
       weekly: 15,295,217
       on: 2026jul21.1759.35951
@@ -995,8 +996,8 @@ modules:
       current: 2.9.0 on 2026may11 3m old
       latest: 2.9.0 on 2026may11 3m old
     downloads:
-      weekly: 161,402,533
-      on: 2026jul18.1911.8649
+      weekly: 163,067,115
+      on: 2026aug18.1523.29150
   zod:
     homepage: https://zod.dev
     description: TypeScript-first schema declaration and validation library with static type inference
@@ -1008,5 +1009,5 @@ modules:
       current: 4.4.3 on 2026may04 3m old
       latest: 4.4.3 on 2026may04 3m old
     downloads:
-      weekly: 212,737,786
-      on: 2026jul18.2043.124
+      weekly: 224,127,336
+      on: 2026aug18.1523.45867

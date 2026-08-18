@@ -75,7 +75,7 @@ const note_stale_current = '⏰ Current version 6+ months newer'; const duration
 const note_major_available = '🎁 Major new version available'
 const note_latest_behind = '🩸 Latest tag is behind installed'
 
-const duration_stale_download_counts = Time.month//get fresh weekly download counts if our records for a module are more than a month old
+const duration_stale_download_counts = 100*Time.day//get fresh weekly download counts if our records for a module are more than 100 days old
 
 // Helper to format version with publication date and age
 function formatVersion(version, tick, now) {
@@ -228,12 +228,12 @@ async function main() {
 		}
 	}
 
-	// Build list of modules needing fetch: missing first, then stale (>1 month old)
-	let oneMonthAgo = now - duration_stale_download_counts
+	// Build list of modules needing fetch: missing first, then stale (older than duration_stale_download_counts)
+	let staleBefore = now - duration_stale_download_counts
 
 	let allNeedsFetch = [...modules.values()]
 		.map(m => ({name: m.name, on: downloadsData.get(m.name)?.on || null}))
-		.filter(m => !m.on || m.on < oneMonthAgo)
+		.filter(m => !m.on || m.on < staleBefore)
 		.sort((a, b) => {
 			if (!a.on && b.on) return -1
 			if (a.on && !b.on) return 1
