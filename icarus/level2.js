@@ -16,7 +16,7 @@ random32,
 import {//from level0
 Now, sayDate, sayTick, isExpired,
 log, logTo, noop, test, ok, toss,
-checkInt, hasText, checkText,
+checkInt, minInt, hasText, checkText,
 toTextOrBlank,
 parseKeyFile, parseKeyBlock, lookupKey, listAllKeyValues,
 sameIgnoringCase, sameIgnoringTrailingSlash,
@@ -1120,7 +1120,7 @@ export async function openBrownie({envelope, browserHash}) {//open an arriving b
 		letter = await openEnvelope('Brownie.', envelope, {skipExpirationCheck: true})//decrypting proves the letter is authentic, stayed secret, and wasn't tampered with; the note expirations checked below are what govern the contents
 	} catch (e) { letter = {} }//an envelope that won't open--corruption, tampering, or sealed by an older shape of our own protocol; arrive empty, which the response turns into BrownieDelete., cleaning this browser up in one request
 	if (!(hasText(letter.browserHash) && hasTextSame(letter.browserHash, browserHash))) letter.notes = []//wipe the notes unless the sealed browserHash matches the request's; hasText guards hasTextSame, which tosses over a blank
-	letter.notes = Array.isArray(letter.notes) ? letter.notes.filter(n => Number.isSafeInteger(n?.expiration) && Now() <= n.expiration) : []//every note must carry its own expiration, a positive integer epoch still in the future; expired and malformed notes are discarded here, so request code only ever sees live ones
+	letter.notes = Array.isArray(letter.notes) ? letter.notes.filter(n => minInt(n?.expiration, 1) && Now() <= n.expiration) : []//every note must carry its own expiration, a positive integer epoch still in the future; expired and malformed notes are discarded here, so request code only ever sees live ones
 	return letter
 }
 export async function sealBrownie({letter, browserHash, arrived}) {//seal a request's brownie letter back up, returning the command that tells the page what to keep: BrownieSet. with the replacement envelope, BrownieDelete. when the notes are gone, or undefined for no command--undefined rather than false, because assigning it to response.brownie leaves the serialized response without the field at all, which is the protocol's silence
@@ -1793,15 +1793,8 @@ function isQueryTag(s) {//a tag must be 21 letters and numbers
 function isQueryHash(s) {//a sha256 hash value in base32 without padding is 52 A-Z and 2-7
 	return typeof s == 'string' && s.length == hash_length && /^[A-Z2-7]+$/.test(s)
 }
-function isQueryInt(i) {//make sure i is an integer within range, negative is fine
-	return (
-		i === 0//let zero through quickly
-	) || (
-		Number.isInteger(i)          &&//covers typeof, isNaN, isFinite, and Math.floor checks
-		i >= Number.MIN_SAFE_INTEGER &&//BIGINT's range is 2^63, wider than JavaScript's 2^53
-		i <= Number.MAX_SAFE_INTEGER &&
-		/^-?[1-9]\d*$/.test(i+'')//and make sure it looks like an integer as text
-	)
+function isQueryInt(i) {//minInt is the integer check the whole codebase asks, and here the minimum opens all the way down, because a column may hold negative numbers
+	return minInt(i, Number.MIN_SAFE_INTEGER)
 }
 test(() => {
 	checkQueryRow({
@@ -1875,14 +1868,10 @@ test(() => {
 	ok(!isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO38A'))//invalid character
 	ok(!isQueryHash('3LZ6DTMBR2LHVN66AF4I2UU3BK5NFMZEVPH5UWEF3O7A3PMGO3EA2'))//too long
 
-	//negative integers are fine in the database
+	//a cell with no type suffix holds an integer, and negative ones are fine here, unlike minInt's default minimum of zero; what an integer must be, and everything it can't be, is minInt's own test
 	ok(isQueryInt(0))
 	ok(isQueryInt(-500))
 	ok(isQueryInt(1737493381245))
-	ok(!isQueryInt())
-	ok(!isQueryInt(''))
-	ok(!isQueryInt(null))
-	ok(!isQueryInt(2.5))
 	//chat suggested 012 decimal, which is just 10
 	//strict mode blocks code with negative decimal like -09
 	//negative zero literal, -0, makes it through, but -0+'' is "0"
