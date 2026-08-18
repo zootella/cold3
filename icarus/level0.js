@@ -297,21 +297,24 @@ export function minInt(i, m = 0) { // Note (0)
 		i === 0 &&                     // Note (1)
 		i >= m                         /* Note (2)
 		Default minimum m 0 in arguments (Note 0); Negative works fine, but must specify allowed negative minimum.
-		Frequently, i will be zero (1); check value and type (1), and bounds (2) quickly. */
+		Zero needs a branch of its own (1), because the regular expression below blocks a leading zero, and so blocks "0" itself; the minimum still applies (2). */
 	) || (
 		Number.isInteger(i)          && // Note (3)
 		i >= m                       && // Note (4)
 		i <= Number.MAX_SAFE_INTEGER && // Note (5)
+		i >= Number.MIN_SAFE_INTEGER && // Note (5)
 		/^-?[1-9]\d*$/.test(i+'')       /* Note (6)
-		(3) Includes typeof i == 'number' and !isNaN(i) checks, according to MDN.
+		(3) Includes typeof i == 'number' and !isNaN(i) checks, according to MDN, and turns away 2.5 and 5e-7, which are numbers but not integers.
 		(4) At or above the given minimum.
-		(5) Small enough to stay an integer everywhere; biggest integers are:
-				(2^53)-1 ==      9,007,199,254,740,991 in JavaScript;
-				(2^63)-1 == 19,223,372,036,854,775,807 in a BIGINT PostgreSQL field, a signed 8 byte integer.
+		(5) Small enough, in both directions, to stay an integer everywhere; biggest integers are:
+				(2^53)-1 ==     9,007,199,254,740,991 in JavaScript;
+				(2^63)-1 == 9,223,372,036,854,775,807 in a BIGINT PostgreSQL field, a signed 8 byte integer.
+			The minimum (4) is usually zero and would turn away anything negative anyway, but the promise of the range belongs here, in the check that makes it, rather than in whatever a caller passes.
 		(6) Plus blank for quick convert, then regular expression that:
 				allows one optional minus sign at the start;
 				blocks a leading zero;
-				and ensures all numerals, blocking JavaScript numbers like 2.5 decimal and 5e-7 scientific notation. */
+				and ensures all numerals, which turns away a number so large JavaScript prints it in scientific notation, like -1e21.
+				With both bounds set in (5), nothing that gets this far would fail here; it stands as the same promise read a second way, in text rather than arithmetic. */
 	)
 }
 test(() => {
@@ -322,15 +325,25 @@ test(() => {
 	ok(!minInt(3.14))//fractional
 	ok(!minInt('potato'))//not even a number
 	ok(!minInt(NaN))//that thing
+	ok(!minInt(Infinity))//nor that one
+	ok(!minInt(null))//nothing at all
+	ok(!minInt())
+
+	ok(minInt(Number.MAX_SAFE_INTEGER))//the largest javascript still holds exactly
+	ok(!minInt(Number.MAX_SAFE_INTEGER + 1))//one past it, where javascript starts rounding without saying so
+	ok(!minInt(-1e18, -1e19))//and going the other way, a minimum below the safe range still doesn't admit a value from outside it
 
 	ok(minInt(0, 0))//confirming common minimums
-	ok(minInt(1, 0))
 	ok(minInt(1, 0))
 	ok(minInt(1, 1))
 	ok(minInt(10, 5))
 
 	ok(!minInt(0, 1))//doesn't reach the minimum
 	ok(!minInt(3, 5))
+
+	ok(minInt(-1, -1))//a negative minimum lets negative values through, for a count where -1 means something other than none
+	ok(minInt(0, -1))
+	ok(!minInt(-2, -1))//but only down as far as the minimum given
 })
 
 //use when you don't just need if truthy, you really need the type boolean
