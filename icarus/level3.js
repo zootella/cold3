@@ -1001,6 +1001,8 @@ CREATE INDEX credential9  ON credential_table (hide, type_text, k5_text) WHERE k
 CREATE INDEX credential10 ON credential_table (hide, type_text, k6_text) WHERE k6_text != '';
 CREATE INDEX credential11 ON credential_table (hide, type_text, k7_text) WHERE k7_text != '';
 CREATE INDEX credential12 ON credential_table (hide, type_text, k8_text) WHERE k8_text != '';
+
+ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
 //ttd november2025, should event be a tag instead of a number? it's a litle arcane
 
@@ -1251,6 +1253,8 @@ CREATE TABLE delay_table (
 
 CREATE INDEX delay1 ON delay_table               (task_text, row_tick DESC) WHERE hide = 0;
 CREATE INDEX delay2 ON delay_table (wrapper_hash, task_text, row_tick DESC) WHERE hide = 0;
+
+ALTER TABLE delay_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
 
 export async function recordDelay({task, d1, d2, d3, d4, d5, origin, browserHash, userTag, ipText}) {
@@ -1324,6 +1328,8 @@ CREATE TABLE hit_table (
 
 CREATE INDEX hit2 ON hit_table (browser_hash,  row_tick DESC) WHERE hide = 0;
 CREATE INDEX hit3 ON hit_table (user_tag_text, row_tick DESC) WHERE hide = 0;
+
+ALTER TABLE hit_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
 
 export async function recordHit({origin, browserHash, userTag, ipText, geographyText, browserText}) {
@@ -1451,6 +1457,8 @@ CREATE TABLE service_table (
 
 CREATE INDEX service1 ON service_table (hide, user_tag,                 row_tick DESC);
 CREATE INDEX service2 ON service_table (hide, type_text, address0_text, row_tick DESC);
+
+ALTER TABLE service_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
 /*
 here's where you record what you send apis, and what you got back
@@ -1511,6 +1519,8 @@ CREATE TABLE settings_table (
 );
 
 CREATE UNIQUE INDEX settings1 ON settings_table (setting_name_text) WHERE hide = 0;  -- among visible rows, setting names must be unique
+
+ALTER TABLE settings_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
 
 export async function settingReadInt(name, defaultValue) {
@@ -1590,6 +1600,8 @@ CREATE TABLE trail_table (
 
 CREATE INDEX trail1 ON trail_table (hide,       row_tick DESC);  -- hide or delete old rows quickly
 CREATE INDEX trail2 ON trail_table (hide, hash, row_tick DESC);  -- get time sorted rows by hash
+
+ALTER TABLE trail_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
 
 //                        _        _     _      

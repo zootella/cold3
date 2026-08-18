@@ -117,9 +117,9 @@ House style restored — and unlike the industry habit of letting `_old` fossils
 
 **Phase 5 — the closing drift check**, proving live schema and registry agree at the final shape.
 
-**One decision deliberately open: the backfill.** `UPDATE hit_table SET geography_json = geography_text::jsonb, browser_json = browser_text::jsonb` between phases 3 and 4 converts history — makeText output is valid JSON, so the cast just works. With zero readers it's pure aesthetics: whether pre-migration telemetry ends uniform, or sits at `{}` and leaves with the contract anyway. Decide at phase 4 time.
+**The backfill — decided yes, August 18.** `UPDATE hit_table SET geography_json = geography_text::jsonb, browser_json = browser_text::jsonb` rides at the top of the phase 4 migration file, before the drops and in the same transaction, converting history — makeText output is valid JSON, so the cast just works. With zero readers it's pure aesthetics, and the aesthetics say uniform: pre-migration telemetry ends as objects rather than sitting at `{}`.
 
-**The lockstep rule threads every phase**: each migration file and its SQL() registry edit land in the same commit — the expand commit shows both column sets with their temporary defaults, the contract commit shows the final shape — so the registry mirrors production at every point in git history, and grid tests exercise each phase's code against that phase's true schema.
+**The lockstep rule threads every phase**: each migration file and its SQL() registry edit land in the same commit — the expand commit shows both column sets with their temporary defaults, the contract commit shows the final shape — so the registry mirrors production at every point in git history, and grid tests exercise each phase's code against that phase's true schema. Mirroring includes column order (decided August 18): ADD COLUMN appends at the physical end and nothing ever reorders, so the registry lists geography_json and browser_json after hash, where the cloud actually keeps them, keeping the drift check's every-column-in-order rule strict; a comment beside the two columns says why they sit apart from their siblings.
 
 hit_table's stakes make this choreography gentle practice; for credential_table the same steps will be load-bearing.
 
