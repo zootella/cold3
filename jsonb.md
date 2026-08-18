@@ -98,7 +98,7 @@ ALTER TABLE hit_table ALTER COLUMN geography_text SET DEFAULT '';
 ALTER TABLE hit_table ALTER COLUMN browser_text   SET DEFAULT '';
 ```
 
-`supabase db push --dry-run` to preview, then `db push` to apply — Kevin's command, since it changes production; this first push also creates the CLI's migration history table. All four ALTERs are metadata-only operations in modern Postgres (ADD COLUMN with a default stopped rewriting tables in PG 11), instant at any size. Deployed code doesn't notice: old inserts keep filling the text columns while the defaults fill `{}` into the json ones. Rollback, if ever needed: a new migration dropping the added columns — roll forward, never down; the CLI has no down migrations and neither do we.
+`supabase db push --dry-run` to preview, then `db push` to apply — run at the user's explicit go-ahead, since it changes production; this first push also creates the CLI's migration history table. All four ALTERs are metadata-only operations in modern Postgres (ADD COLUMN with a default stopped rewriting tables in PG 11), instant at any size. Deployed code doesn't notice: old inserts keep filling the text columns while the defaults fill `{}` into the json ones. Rollback, if ever needed: a new migration dropping the added columns — roll forward, never down; the CLI has no down migrations and neither do we.
 
 **Phase 2 — verify.** A fresh row in the dashboard shows `{}` riding in the new columns; or Docker up for one `supabase db dump` and the normalize-and-diff against the registry.
 

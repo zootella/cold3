@@ -34,7 +34,7 @@ Then the jsonb work. Phase 1 of the hit_table migration, **expand** (schema only
 
 1. Write the migration file: `supabase migration new hit_table_json`, containing the four ALTERs — add `geography_json` and `browser_json` as `JSONB NOT NULL DEFAULT '{}'`, and set `geography_text` and `browser_text` to `DEFAULT ''`. The defaults are temporary scaffolding so both old and new code can insert during the window; they leave in phase 4.
 2. Make the **lockstep registry edit** in level3's hit_table SQL() block in the same commit, so the registry mirrors production.
-3. Kevin runs `supabase db push --dry-run` then `supabase db push` (he runs all push/deploy/git/system commands; Claude writes the files and can read the live table read-only — `supabase db query --linked` or the icarus-plus-Key() script pattern — to verify rows before and after).
+3. Claude runs `supabase db push --dry-run`, then `supabase db push` at the user's explicit go-ahead (Claude writes the files and can read the live table read-only — `supabase db query --linked` or the icarus-plus-Key() script pattern — to verify rows before and after).
 
 Then phases 2–5: verify, migrate the code (recordHit + report.js write objects, first hit_table grid test), contract (drop the text columns and the json defaults), and a closing drift check.
 
@@ -42,7 +42,7 @@ hit_table is the gentle first migration because it has zero readers — every ri
 
 ## Working conventions
 
-- Kevin runs all git commits, deploys, `supabase db push`, and system-wide commands (brew, Docker) himself; Claude proposes and reviews output. Claude writes repo files and reads the live database read-only.
+- The user runs all git commits, deploys, and system-wide commands (brew, Docker); Claude proposes and reviews output. Claude writes repo files, reads the live database read-only, and (decided August 18) runs `supabase db push` itself — but only as the sole step in a turn, at the user's explicit go-ahead, so the output lands in the conversation with no drift between what each of us knows.
 - Each migration file and its SQL() registry edit land in the same commit.
 - Docker is needed only for the `db dump` drift check, not for `db push`. It can stay closed until then.
 
@@ -51,6 +51,6 @@ hit_table is the gentle first migration because it has zero readers — every ri
 - **database-stack.md is uncommitted** in the working tree as of this handoff — commit it alongside this document.
 - level2 still imports `pgliteDynamicImport`, now unused there after the grid.js move — prunable, low priority.
 - jsonb.md and these newer docs have no lines in contents.md yet (the credential-doc index) — deferred pending a possible rename/combine.
-- **xray** — a stubbed-out out-of-band system to confirm what gets built into bundles (secrets verification). Kevin flagged it as worth looking at when the migration work reaches a resting point; a good capstone to the secrets-management context.
+- **xray** — a stubbed-out out-of-band system to confirm what gets built into bundles (secrets verification). The user flagged it as worth looking at when the migration work reaches a resting point; a good capstone to the secrets-management context.
 
 (The RLS hardening, formerly parked here, is now a planned first step — see "The next action" above.)

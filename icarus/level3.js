@@ -1317,12 +1317,16 @@ CREATE TABLE hit_table (
 	browser_hash    CHAR(52)  NOT NULL,  -- Reported: the browser that hit us
 	user_tag_text   TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
 	ip_text         TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare
-	geography_text  TEXT      NOT NULL,  -- Trusted: geographic information, according to cloudflare
-	browser_text    TEXT      NOT NULL,  -- Reported: user agent string and WebGL hardware, according to the browser
+	geography_text  TEXT      NOT NULL DEFAULT '',  -- Trusted: geographic information, according to cloudflare; retiring in the json conversion, the temporary default leaves with the contract
+	browser_text    TEXT      NOT NULL DEFAULT '',  -- Reported: user agent string and WebGL hardware, according to the browser; retiring likewise
 
 	wrapper_hash    CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
 
 	hash            CHAR(52)  NOT NULL,  -- hash of printed cells to prevent duplicates within each hour
+
+	geography_json  JSONB     NOT NULL DEFAULT '{}',  -- Trusted: geographic information, according to cloudflare; replaces geography_text
+	browser_json    JSONB     NOT NULL DEFAULT '{}',  -- Reported: user agent string and WebGL hardware, according to the browser; replaces browser_text
+	-- the json columns sit last because ADD COLUMN appends physically, and the registry mirrors the cloud's true column order; their temporary defaults leave with the contract
 	CONSTRAINT hit1 UNIQUE (hash)        -- and corresponding constraint to enforce this and make upserts quick
 );
 

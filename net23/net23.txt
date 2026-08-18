@@ -2121,7 +2121,7 @@ ok, so that means way more recent than 2019 or 2020
 
 $ nuxt build was the simplest command to hit the big int literal error:
 
-	Kevin@ncom3 MINGW64 /.../repot1 (main)
+	user@ncom3 MINGW64 /.../repot1 (main)
 	$ npm run build
 	> nuxt build
 	Nuxt 3.12.3 with Nitro 2.9.7
