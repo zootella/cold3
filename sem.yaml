@@ -1,5 +1,5 @@
 summary:
-  generated: 2026aug18.1912.46389
+  generated: 2026aug18.2354.18276
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -907,7 +907,7 @@ modules:
     note: "widget: video player; latest tag is behind installed, riding post-1.0 channel"
     from: site
     versions:
-      declared: ^1.12.13 on 2025feb16 17m old 🏺 Declared release 6+ months earlier than installed
+      declared: ^1.12.13 on 2025feb16 18m old 🏺 Declared release 6+ months earlier than installed
       installed: 1.15.6 on 2026jun10 2m old
       current: 1.15.6 on 2026jun10 2m old
       latest: 0.6.15 on 2024apr19 27m old 🩸 Latest tag is behind installed

@@ -333,7 +333,7 @@ test(() => {
 	ok(!minInt(-2, -1))//but only down as far as the minimum given
 
 	ok(minInt(-0))//negative zero is a distinct value that equals zero, prints as "0", and reaches a BIGINT column as plain zero
-	ok(!minInt(5, NaN))//a minimum that isn't a number says so here, rather than turning away every value it gets compared against
+	ok(!minInt(5, NaN))//a minimum that isn't a number fails here, rather than quietly turning away every value it meets
 	ok(!minInt(5, 2.5))
 	ok(!minInt(5, '3'))//and a minimum that would have quietly coerced its way to an answer
 })

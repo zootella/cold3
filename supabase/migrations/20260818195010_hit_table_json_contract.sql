@@ -1,4 +1,4 @@
--- Contract phase of the hit_table json conversion (see jsonb.md): the text columns retire, and the
+-- Contract phase of the hit_table json conversion: the text columns retire, and the
 -- temporary defaults retire with them, leaving the table in house style -- every column NOT NULL,
 -- no defaults, every cell provided explicitly.
 

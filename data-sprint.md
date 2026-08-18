@@ -1,56 +1,59 @@
 # data sprint — session handoff
 
-Start-here orientation for resuming the jsonb sprint in a fresh session. The goal for this session is to run the actual hit_table migration; everything before it — the capability, the research, the reference docs — is finished and committed. Read this, then the documents it points to, and pick up at "the next action" below.
+Start-here orientation for resuming the jsonb sprint in a fresh session. Most of the work is done and deployed; what remains is one production push and one verification. Read this, then the documents it points to, and pick up at "the next action" below.
 
 Use Fable 5 for this work.
 
 ## Where we are
 
-The sprint adds jsonb as an approved database column type (column titles ending `_json`, or bare `json`), and its first real use converts hit_table's two stringified-JSON text columns to real jsonb.
+The sprint made jsonb an approved database cell type and converted hit_table's two stringified-JSON text columns to real jsonb. Live production now writes objects.
 
-**Done and committed** (through the `Ceil05` seal):
+**Done, pushed, deployed, and verified:**
 
-- **Step 1 — the capability.** json is an available cell type in level2 alongside `_text`, `_tag`, `_hash`, and integers: `isQueryJson` and its `_jsonValue` walker with unit tests, the `'json'` dispatch branch, example_table's `some_json JSONB` column (example_table exists only in PGlite, so this needed zero cloud DDL), grid tests proving object round-trip and canonicalization and write-path refusals, the FakeSupabaseQueryBuilder binding objects as printed text, and tables.txt documenting the type. The suite is green; it deploys without changing any live behavior, because nothing production-side uses json yet.
-- **The supabase CLI is set up** — installed, logged in, linked to the real1 project, drift-check capability proven. Migration flow and Docker's role are understood.
-- **A drift check ran clean** — the live cloud schema matches the SQL() registry exactly for all six cloud tables; the registry is a deliberate superset (example_table, address_table, user_table, profile_table exist only in the registry).
-- **The grid tests moved** out of the level files into icarus/grid.js, imported only by root test.js.
+- **Row-level security**, on all six cloud tables with zero policies, plus a REVOKE of the anon and authenticated grants. Not originally part of this sprint — it went first as a real gap-closer that doubled as a rehearsal of the migration flow. Verified live: `relrowsecurity` true on all six, no grants left for those roles, `service_role` still carrying BYPASSRLS so nothing about the app changed, and `supabase db advisors --linked` reporting nothing about RLS.
+- **hit_table expand**, adding `geography_json` and `browser_json` beside their text siblings with temporary defaults on all four columns.
+- **The code**, deployed: recordHit takes objects, report.js dropped its two makeText flattenings, and the first hit_table grid test landed. A visit to the live site produces a row with real geography and browser objects in the json columns and `''` in the text ones.
+- **A pile of icarus refactoring** that came out of the code step and is most of what the diff shows. See "what the diff holds" below.
 
-**Not done — the actual migration.** This is the session's work: run hit_table through the expand-and-contract choreography, converting `geography_text`/`browser_text` to `geography_json`/`browser_json`, then refactoring recordHit and report.js to write objects.
+**Not done — the contract, and the closing check.** The contract migration is written and committed at `supabase/migrations/20260818195010_hit_table_json_contract.sql`, and level3's registry already shows the final shape. It has not been pushed. After it, the closing drift check.
 
 ## Read these, in this order
 
-1. **jsonb.md** — the sprint's own planning document and the primary read. Holds the whole plan: why hit_table is the first target, the naming decision (`_json`, backed by JSONB), the round-trip / never-rehash rule, the grid-system mechanics, the efficiency research, and — most important for this session — the **five-phase expand-and-contract migration** with its exact SQL, per-phase rollback stories, and the registry-lockstep rule. The "Verified: the registry matches the cloud" and step-1-done marks are in here too.
-2. **database-stack.md** — reference for how the database stack works: the four protocol layers (SQL with its DDL/DML split, the Postgres wire protocol, PostgREST's HTTP grammar, supabase-js), every path from code to a table (worker, one-off scripts, grid/PGlite, dashboard, CLI with and without Docker), a choosing-a-path guide, the Key() seal design, and the "Row-level security" section — the live audit and the planned RLS hardening that is this sprint's first migration. Read this to understand which tool does what (especially that `db push` and `db query` need no Docker, only the `db dump` drift check does) and to hold the RLS mechanics before writing that migration.
-3. **ledger.md** — broader context the sprint sits inside: the ledger-vs-traditional and audit-table questions, and the jsonb question (now marked answered, pointing here). The future k1–k8 collapse on credential_table is the sprint's eventual sequel, riding on the pattern this migration proves.
-4. **testing.md** — the grid()/test() system and the record of the grid.js move, if the test architecture needs context.
-
-Auto-memory already carries the compressed versions: `project_jsonb_sprint.md`, `project_supabase_cli.md`, `project_inline_tests.md`.
+1. **jsonb.md** — the sprint's own planning document and the primary read. The whole plan and its outcomes: why hit_table was the first target, the `_json` naming decision, what the json cell type guarantees, the round-trip and hashing story, the grid-system mechanics, the efficiency research, and the five-phase expand-and-contract choreography with each phase now carrying its completion mark and what it taught.
+2. **database-stack.md** — reference for how the database stack works: the protocol layers, every path from code to a table, a choosing-a-path guide, the Key() seal design, and the row-level security section covering the audit and the hardening that shipped.
+3. **ledger.md** — broader context the sprint sits inside. The future k1–k8 collapse on credential_table is the sequel that rides on the pattern this sprint proved.
+4. **testing.md** — the grid()/test() system, if the test architecture needs context.
 
 ## The next action
 
-Two migrations are queued, and the **RLS hardening goes first** — it's a genuine security gap-closer and a zero-risk rehearsal of the exact `migration new → db push` flow hit_table needs. An audit (in database-stack.md, "Row-level security") found RLS disabled on all six tables while the `anon`/`authenticated` roles hold full grants including over credential_table, so the app's safety currently rests on a single wall (the anon key never having left the dashboard) with no backstop. The fix: one migration file enabling RLS on all six tables with zero policies, plus optionally revoking the anon/authenticated grants — `service_role` carries BYPASSRLS (verified), so the worker, local dev, scripts, and PGlite tests are all untouched, and the change ends the advisor emails. The SQL() registry notes the RLS state in the same commit. Read the database-stack.md section for the full mechanics before writing the file.
+Two steps close the sprint.
 
-Then the jsonb work. Phase 1 of the hit_table migration, **expand** (schema only), per jsonb.md:
+**Push the contract migration.** It backfills 2,808 rows of history by casting the text columns into their json counterparts, drops both text columns, and drops the temporary defaults, leaving hit_table in house style — every column NOT NULL, no defaults, every cell provided explicitly. The backfill is guarded with `WHERE geography_text != ''` because rows written since the deploy hold a blank there and `''::jsonb` is a syntax error that would fail the whole migration. A read-only check confirmed every non-blank value casts cleanly before the file was written. This is the sprint's one irreversible step, so it runs from a committed tree, at the user's explicit go-ahead, alone in its turn.
 
-1. Write the migration file: `supabase migration new hit_table_json`, containing the four ALTERs — add `geography_json` and `browser_json` as `JSONB NOT NULL DEFAULT '{}'`, and set `geography_text` and `browser_text` to `DEFAULT ''`. The defaults are temporary scaffolding so both old and new code can insert during the window; they leave in phase 4.
-2. Make the **lockstep registry edit** in level3's hit_table SQL() block in the same commit, so the registry mirrors production.
-3. Claude runs `supabase db push --dry-run`, then `supabase db push` at the user's explicit go-ahead (Claude writes the files and can read the live table read-only — `supabase db query --linked` or the icarus-plus-Key() script pattern — to verify rows before and after).
+**Then the closing drift check.** Docker up, `supabase db dump --schema public`, compare against the SQL() registry. Match columns by name rather than position — the registry orders columns for legibility while the cloud keeps them in the order they were added, and column order carries no meaning since nothing here reaches a column positionally. Column order *inside* an index or constraint is a different matter and must match exactly. This is also the first drift check run under that rule, so it doubles as a test of the rule.
 
-Then phases 2–5: verify, migrate the code (recordHit + report.js write objects, first hit_table grid test), contract (drop the text columns and the json defaults), and a closing drift check.
+## What the diff holds
 
-hit_table is the gentle first migration because it has zero readers — every risk is on the write path, which the defaults cover. A naive mismatch would error on every page load (recordHit runs on the Hello. every visit sends), which is exactly why expand-and-contract is used rather than a big-bang swap.
+A fresh session diffing from `Use743` sees far more icarus change than "convert two columns" suggests. The sprint's own code is small: recordHit's contract, report.js's two lines, the registry, one grid test. The rest came from the first real use of the new cell type asking questions the spike hadn't, and all of it is in core and level2:
+
+- **`isPlain` and `checkPlain` moved down into core**, beside `makePlain`, which forces a value into plain form while these ask and refuse instead. They started as `isQueryJson` in level2; recordHit needed the same answer, and duplicating the walker was the thing worth avoiding.
+- **`hashObject` arrived** because `{a:1,b:2}` and `{b:2,a:1}` are the same data and print differently, so a hash over plain text names assembly order rather than content. It checks the value is plain, sorts the keys through a private printer, and hashes that. It retired the old rule about never recomputing a hash from a read-back jsonb cell — that now works, proven by a grid test against real Postgres.
+- **`minInt` collapsed** from twenty-five lines to one, with an essay above its test explaining what a number can be in JavaScript. It also gained a check on its own minimum argument. Verified equivalent to the original across 1.8 million caller-shaped pairs, and portable by specification rather than by testing on one engine.
+- **level2's query checkers stopped repeating themselves**, with `isQueryInt` now asking `minInt` rather than hand-rolling the same rule.
 
 ## Working conventions
 
-- The user runs all git commits, deploys, and system-wide commands (brew, Docker); Claude proposes and reviews output. Claude writes repo files, reads the live database read-only, and (decided August 18) runs `supabase db push` itself — but only as the sole step in a turn, at the user's explicit go-ahead, so the output lands in the conversation with no drift between what each of us knows.
+- The user runs every command that changes the git repository — sem, seal, commit, push, branches — and all deploys and system-wide commands. Claude reads git freely and never writes.
+- Claude runs `supabase db push`, but only as the sole step in a turn, at the user's explicit go-ahead, so the output lands in the conversation with no drift between what each of us knows. Dry runs anytime.
+- Claude proposes commit points and gives a one-line message plus a few sentences of what changed, so both mental models match before the snapshot.
 - Each migration file and its SQL() registry edit land in the same commit.
-- Docker is needed only for the `db dump` drift check, not for `db push`. It can stay closed until then.
+- Repository files say "the user," never a name.
+- Docker is needed only for the `db dump` drift check, not for `db push`.
 
 ## Parked, non-blocking
 
-- **database-stack.md is uncommitted** in the working tree as of this handoff — commit it alongside this document.
-- level2 still imports `pgliteDynamicImport`, now unused there after the grid.js move — prunable, low priority.
-- jsonb.md and these newer docs have no lines in contents.md yet (the credential-doc index) — deferred pending a possible rename/combine.
-- **xray** — a stubbed-out out-of-band system to confirm what gets built into bundles (secrets verification). The user flagged it as worth looking at when the migration work reaches a resting point; a good capstone to the secrets-management context.
-
-(The RLS hardening, formerly parked here, is now a planned first step — see "The next action" above.)
+- **This document and jsonb.md both outlive their usefulness soon.** Once the contract lands and the drift check passes, jsonb.md holds the whole story and this handoff has nothing left to hand off. Retire it then, the way brownie.md was retired when its work landed.
+- level2 still imports `pgliteDynamicImport`, unused there since the grid.js move — prunable, low priority.
+- The newer documents have no lines in contents.md yet, deferred pending a possible rename or combine.
+- **xray** — a stubbed-out out-of-band system to confirm what gets built into bundles. The user flagged it as worth looking at when the migration work reaches a resting point; a good capstone to the secrets-management context.
+- The default privileges in the public schema would still auto-grant anon and authenticated on any table created later through the dashboard. A one-line migration would close that; the six existing tables are already covered.

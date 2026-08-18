@@ -1215,7 +1215,7 @@ grid(async () => {//json: the check at the write path refuses what stringificati
 	tossed = false; try { await queryAddRow({table: 'example_table', row: {...good, some_json: '{"a":1}'}}) } catch (e) { tossed = true }
 	ok(tossed)//pre-stringified text isn't an object
 	tossed = false; try { await queryAddRow({table: 'example_table', row: {...good, some_json: {n: 9007199254740993}}}) } catch (e) { tossed = true }
-	ok(tossed)//an integer past 2^53 would parse back as a different number
+	ok(tossed)//past 2^53 javascript is already holding a different number than the one written here
 
 	ok((await queryGet('example_table', {name_text: 'carol'})).length == 0)//nothing got through; the value-level refusals have unit tests beside isPlain in core
 })
