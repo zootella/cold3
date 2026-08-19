@@ -197,9 +197,10 @@ export const otpConstants = {//factory settings for OTP codes to prove email and
 }
 Object.freeze(otpConstants)
 
-export async function credentialOtpSend({letter, v, provider, userTag}) {
+export async function credentialOtpSend({letter, v, provider, userTag, browserHash}) {
 	checkTag(userTag)//the endpoint resolved the signed-in user and answered SignedOut. if there wasn't one; an otp flow requires a signed-in user from send through enter
 	checkAction(provider)//and the endpoint mapped the page's provider letter to a canonical tag like 'Amazon.' or 'Twilio.'; fail loud here, before anything reaches the lambda
+	checkHash(browserHash)//and the door hashed the browser tag it requires on every request
 
 	// 📬 Step 0 Claim: Has another user already proven they control this address?
 	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
@@ -237,8 +238,9 @@ export async function credentialOtpSend({letter, v, provider, userTag}) {
 	o.messageHtml = `<html><body><p style="font-size:24px; font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;"><span style="color:#ff00ff;">${o.subjectText}</span><span style="color:#808080;">${warning}${sticker}</span></p></body></html>`
 
 	// 📬 Step 3 Send: Have Network 23 actually send the email or SMS
+	let sent
 	if (!isInSimulationMode()) {//ttd january, have grid tests work but not actually send messages or need net23 local running
-		await fetchLambda({from: 'Worker.', route: '/message', action: 'Send.', body: {
+		sent = await fetchLambda({from: 'Worker.', route: '/message', action: 'Send.', body: {
 			provider: o.provider,
 			service: o.address.type,//"Email." or "Phone." from verifyEmailOrPhone
 			address: o.address.f1,//form 1, canonical, for use with APIs
@@ -273,6 +275,8 @@ export async function credentialOtpSend({letter, v, provider, userTag}) {
 
 	//here is where you need to take care of address_table and maybe also service_table, ttd january
 	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider})//the event 3 row, recording which provider carried the code
+
+	if (sent) await ledgerAdd({action: 'MessageSent.', browserHash, userTag, note: sent})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
 
 	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }

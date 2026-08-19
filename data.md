@@ -2,27 +2,9 @@
 
 The queue of data-layer work: none of it difficult, each task multiple turns, done in an order we choose. Pick one; the others stay recorded and ready. Live-table changes ride the proven migration flow — expansion and contraction, each migration file and its SQL() registry edit in the same commit, grid tests beside code changes.
 
-## new ledger table
+## smaller dog
 
-ledger_table, the concrete start of the audit-in-our-own-database direction — this is where logAudit content eventually lands, per the Datadog-deprecation thinking in ledger.md. More data-lake storage than active filtering, but some live requests may need to filter, so it starts intentionally ultra-flexible — the kind of table that's possible now that json is a cell type:
-
-```sql
-CREATE TABLE ledger_table (
-	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,
-	row_tick       BIGINT    NOT NULL,
-	hide           BIGINT    NOT NULL,
-
-	user_tag_text  TEXT      NOT NULL,  -- the user involved, or blank if none
-	browser_hash   CHAR(52)  NOT NULL,  -- the browser involved
-	json           JSONB     NOT NULL   -- everything else about the event; {} if nothing
-);
-```
-
-A new table is one migration creating it whole — no expansion and contraction, no temporary defaults, since there are no existing rows or existing callers. Decisions to settle when we pick this up:
-
-- **Which margins earn real columns.** jsonb.md's guidance says anything filtered on lives in its own column. Is there an event- or task-name column for cheap live filtering, or does the kind of event ride in json until a real query arrives and an expression index promotes it? Same question for browser_hash: does every ledger row have a browser (lambda and scheduled work may not), and if not, what does that column hold?
-- **Indexes**, decided with the write path — likely (hide, row_tick DESC) and a by-user index, following the neighbors.
-- **The grants check.** The schema's default privileges still auto-grant anon and authenticated on newly created tables, so the creation migration should carry its own REVOKE and the RLS enable line — or first close the default-privileges remainder noted in database-stack.md, for which this table is the natural vehicle. Verify grants after creation either way.
+Shrink the Datadog and logging apparatus to almost nothing, planned in smaller-dog.md: the three logAudit call sites convert to ledgerAdd first, then a removal pass takes the function suite, the double-hulled door catches, the keepPromise parking lot, and the pluggable log sinks, leaving one async dog. The document holds the inventory, where each of the old four purposes goes, and the decisions the sprint must make — dog's destination, the attention channel, the layering seam, audit latency.
 
 ## backup plan
 

@@ -122,7 +122,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		else toss('form')//temporary to get started; the round robin system, not the page, should choose the provider, ttd january
 
 		if (!door.brownie) door.brownie = {notes: []}//starting a flow where no brownie arrived; the door seals whatever the letter holds on the way out
-		task = await credentialOtpSend({letter: door.brownie, v, provider, userTag: user.userTag})//sets task.success itself, with task.outcome 'CoolSoft.', 'CoolHard.', or 'Held.' when the answer is no
+		task = await credentialOtpSend({letter: door.brownie, v, provider, userTag: user.userTag, browserHash})//sets task.success itself, with task.outcome 'CoolSoft.', 'CoolHard.', or 'Held.' when the answer is no
 		await attachState(task, browserHash, door.brownie)
 		return task//return here rather than falling through to the bottom, which would overwrite the success credentialOtpSend decided
 
