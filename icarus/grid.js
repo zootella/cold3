@@ -18,7 +18,7 @@ originDomain,
 queryGet, queryGetAny, queryAddRow, queryAddRows, queryHide, queryTop, queryCountRows, queryCountAllRows,
 } from './level2.js'
 import {
-otpConstants, recordHit,
+ledgerAdd, ledgerAddMany, otpConstants, recordHit,
 trailAdd, trailAddMany, trailCount, trailGet, trailGetAny, trailRecent,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameSet, credentialNameRemove, credentialNameCheck,
@@ -1064,6 +1064,28 @@ grid(async () => {//hit: what cloudflare and the page say about a visit rides in
 	ageNow(Time.hour)
 	await recordHit(hit)//an hour on, the same visit is worth knowing about again
 	ok((await queryGet('hit_table', {browser_hash: hit.browserHash})).length == 2)
+})
+
+grid(async () => {//ledger: an audit record lands durable in our own database, margins for filtering and a note of details as data
+	let {clear} = await getDatabase()
+	await clear('ledger_table')
+	let browserHash = await hashText('a browser')
+
+	await ledgerAdd({action: 'ExampleHappened.', browserHash, ip: '203.0.113.7', userTag: '', note: {color: 'Green.', count: 7}})
+	let row = (await queryGet('ledger_table', {action_text: 'ExampleHappened.'}))[0]
+	ok(row.browser_hash == browserHash && row.user_tag_text == '' && row.ip_text == '203.0.113.7')
+	ok(row.note_json.color == 'Green.' && row.note_json.count == 7)//the note arrives back parsed, an object rather than text
+
+	await ledgerAdd({action: 'QuickExample.', browserHash})//only the action and browser are required; the rest defaults to blanks
+	let quick = (await queryGet('ledger_table', {action_text: 'QuickExample.'}))[0]
+	ok(quick.user_tag_text == '' && quick.ip_text == '' && makeText(quick.note_json) == '{}')
+	ok(quick.wrapper_hash.length == 52)//the version of the software that wrote the row rides along
+
+	await ledgerAddMany([//a batch lands in a single query, every element its own complete record
+		{action: 'BatchExample.', browserHash, note: {n: 1}},
+		{action: 'BatchExample.', browserHash, note: {n: 2}},
+	])
+	ok((await queryGet('ledger_table', {action_text: 'BatchExample.'})).length == 2)
 })
 
 grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, error3, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first

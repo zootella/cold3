@@ -1361,6 +1361,69 @@ export async function recordHit({origin, browserHash, userTag, ipText, geography
 
 
 
+
+
+
+//  _          _                   _        _     _      
+// | | ___  __| | __ _  ___ _ __  | |_ __ _| |__ | | ___ 
+// | |/ _ \/ _` |/ _` |/ _ \ '__| | __/ _` | '_ \| |/ _ \
+// | |  __/ (_| | (_| |  __/ |    | || (_| | |_) | |  __/
+// |_|\___|\__,_|\__, |\___|_|     \__\__,_|_.__/|_|\___|
+//               |___/                                   
+
+SQL(`
+-- durable audit in our own database: what happened, who was there, and complete details, for a variety of uses
+CREATE TABLE ledger_table (
+	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick       BIGINT    NOT NULL,
+	hide           BIGINT    NOT NULL,
+
+	ip_text        TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare, or blank
+	browser_hash   CHAR(52)  NOT NULL,  -- Reported: the browser that was here for this
+	user_tag_text  TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identified
+
+	wrapper_hash   CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
+	action_text    TEXT      NOT NULL,  -- title of what happened
+	note_json      JSONB     NOT NULL   -- everything else about what happened; {} when the margins say it all
+);
+
+CREATE INDEX ledger1 ON ledger_table (browser_hash,  row_tick DESC) WHERE hide = 0;
+CREATE INDEX ledger2 ON ledger_table (user_tag_text, row_tick DESC) WHERE hide = 0;
+CREATE INDEX ledger3 ON ledger_table (action_text,   row_tick DESC) WHERE hide = 0;
+
+ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
+`)
+
+export async function ledgerAdd({action, browserHash, ip, userTag, note}) { return await ledgerAddMany([{action, browserHash, ip, userTag, note}]) }
+export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
+	checkHash(wrapper.hash)
+	let now = Now()
+	let rows = a.map(e => {
+		let {
+			action,//title of what happened
+			browserHash,//the browser that was here for this
+			ip = '',//the ip address if the caller has it
+			userTag = '',//the user, or blank if nobody's identified
+			note = {},//everything else about what happened, kept as data a later reader can query and read back
+		} = e
+		checkAction(action); checkHash(browserHash)
+		checkTextOrBlank(ip); checkTagOrBlank(userTag); checkPlain(note)
+		return {
+			row_tick: now,
+			ip_text: ip,
+			browser_hash: browserHash,
+			user_tag_text: userTag,
+			wrapper_hash: wrapper.hash,
+			action_text: action,
+			note_json: note,
+		}
+	})
+	await queryAddRows({table: 'ledger_table', rows})
+}
+
+
+
+
 //                                        _   _        _     _      
 //  _ __   ___ _ __ ___  ___  _ __   __ _| | | |_ __ _| |__ | | ___ 
 // | '_ \ / _ \ '__/ __|/ _ \| '_ \ / _` | | | __/ _` | '_ \| |/ _ \

@@ -118,7 +118,7 @@ otpConstants, walletConstants,
 /* level 3 query */
 
 settingReadInt, settingRead, settingWrite,
-recordDelay, recordHit,
+ledgerAdd, ledgerAddMany, recordDelay, recordHit,
 
 trailRecent, trailCount, trailGet, trailGetAny, trailAdd, trailAddMany,
 
