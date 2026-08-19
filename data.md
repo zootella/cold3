@@ -1,21 +1,6 @@
 # data tasks
 
-The queue of data-layer work: none of it difficult, each task multiple turns, done in an order we choose. Pick one; the others stay recorded and ready. Live-table changes ride the proven migration flow — expand and contract, each migration file and its SQL() registry edit in the same commit, grid tests beside code changes.
-
-## trail table expansion
-
-Add two columns to trail_table, ready before any caller uses them:
-
-- `expiration` BIGINT — an integer epoch; 0 means no expiration, a future tick means past that date the row really isn't needed at all anymore.
-- `json` JSONB — a place for additional notes; {} when there are none. The first column titled bare json, which the level2 dispatch already supports the way bare hash resolves.
-
-hit_table's flow, made simpler by having no data to convert and no columns to drop:
-
-1. Expand migration: add both columns NOT NULL with temporary defaults, 0 and '{}' — which also correctly backfills every historical row, since no expiration and no notes is exactly what history holds.
-2. Code: trailAdd and trailAddMany provide the two cells explicitly, the registry shows the new shape in the same commit, and the trail grid tests exercise it.
-3. After the deploy, contract migration: drop the two defaults, returning the table to house style.
-
-Nothing reads the new cells yet; they wait for the caller that needs them.
+The queue of data-layer work: none of it difficult, each task multiple turns, done in an order we choose. Pick one; the others stay recorded and ready. Live-table changes ride the proven migration flow — expansion and contraction, each migration file and its SQL() registry edit in the same commit, grid tests beside code changes.
 
 ## new ledger table
 
@@ -33,7 +18,7 @@ CREATE TABLE ledger_table (
 );
 ```
 
-A new table is one migration creating it whole — no expand and contract, no temporary defaults, since there are no existing rows or existing callers. Decisions to settle when we pick this up:
+A new table is one migration creating it whole — no expansion and contraction, no temporary defaults, since there are no existing rows or existing callers. Decisions to settle when we pick this up:
 
 - **Which margins earn real columns.** jsonb.md's guidance says anything filtered on lives in its own column. Is there an event- or task-name column for cheap live filtering, or does the kind of event ride in json until a real query arrives and an expression index promotes it? Same question for browser_hash: does every ledger row have a browser (lambda and scheduled work may not), and if not, what does that column hold?
 - **Indexes**, decided with the write path — likely (hide, row_tick DESC) and a by-user index, following the neighbors.

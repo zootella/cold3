@@ -6,7 +6,7 @@ Three further documents are done and retired. svelteless.md: the spike confirmed
 
 # Up next — the data task queue
 
-The current work is the queue of data-layer tasks enumerated in data.md, done in an order we choose: the trail_table expansion, the new ledger_table, the backup-plan decision, the credential_table k1–k8 collapse, the delay_table d1–d5 evaluation, and xray — whose scope awaits the user's explanation.
+The current work is the queue of data-layer tasks enumerated in data.md, done in an order we choose: the new ledger_table, the backup-plan decision, the credential_table k1–k8 collapse, the delay_table d1–d5 evaluation, and xray — whose scope awaits the user's explanation.
 
 # For now — the front row
 
