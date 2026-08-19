@@ -1237,6 +1237,10 @@ grid(async () => {//json: an object rides into a json column and comes back an o
 	let blank = (await queryGet('example_table', {name_text: 'bob'}))[0].some_json
 	ok(makeText(blank) == '{}')
 	ok(blank.anything === undefined)
+
+	//a whole number past 2^53 rides through as the value javascript holds
+	await queryAddRow({table: 'example_table', row: {name_text: 'dave', hits: 3, some_hash: random32(), some_json: {big: 9007199254740992}}})
+	ok((await queryGet('example_table', {name_text: 'dave'}))[0].some_json.big == 9007199254740992)//postgres holds the value exactly and hands the same number back
 })
 grid(async () => {//json: the check at the write path refuses what stringification would quietly change, before anything reaches the database
 	let {clear} = await getDatabase()
@@ -1248,9 +1252,6 @@ grid(async () => {//json: the check at the write path refuses what stringificati
 	ok(tossed)//an array can't be the whole cell
 	tossed = false; try { await queryAddRow({table: 'example_table', row: {...good, some_json: '{"a":1}'}}) } catch (e) { tossed = true }
 	ok(tossed)//pre-stringified text isn't an object
-	tossed = false; try { await queryAddRow({table: 'example_table', row: {...good, some_json: {n: 9007199254740993}}}) } catch (e) { tossed = true }
-	ok(tossed)//past 2^53 javascript is already holding a different number than the one written here
-
 	ok((await queryGet('example_table', {name_text: 'carol'})).length == 0)//nothing got through; the value-level refusals have unit tests beside isPlain in core
 })
 

@@ -56,7 +56,8 @@ a _json column, or one titled just json the way a column can be titled just hash
 a plain object of plain data--strings, safe numbers, booleans, null, arrays, and nested objects
 {} is the blank of the cell, and an absent key is the blank of a property
 level2 checks each json cell at write with isPlain, refusing values stringification would quietly change,
-like BigInt, NaN, integers past 2^53, Dates, and class instances
+like BigInt, NaN, Dates, and class instances
+a number of any size rides through as the value javascript holds; minInt guards the spot where code reads one to use it as an integer
 postgres stores parsed data rather than our text, and returns keys sorted its own way, by length and then bytes,
 so hash a json value with hashObject, which sorts the keys before printing and names the data rather than its order
 that makes a hash the same on both sides of the trip, and our sort never has to match postgres's,

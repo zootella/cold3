@@ -2905,7 +2905,7 @@ function _plainValue(v, seen) {//is v plain data that survives stringification u
 	if (v === null) return true
 	let t = typeof v
 	if (t == 'string' || t == 'boolean') return true
-	if (t == 'number') return Number.isFinite(v) && (!Number.isInteger(v) || Number.isSafeInteger(v))//NaN and Infinity print as null; and past 2^53 javascript is already holding a number nobody wrote, as the literal 9007199254740993 is really ...992 before json is anywhere near it
+	if (t == 'number') return Number.isFinite(v)//NaN and Infinity have no json form and would print as null, a silent type change, so they're refused; any finite number prints and parses back to exactly the value held, including a whole number past 2^53 that javascript rounded when it first read it--whether a number is usable as an exact integer is minInt's question, asked where code reads it
 	if (t == 'object') {
 		if (seen.has(v)) return false//a circular reference would print as a marker, not data
 		seen.add(v)
@@ -2933,12 +2933,13 @@ test(() => {
 	ok(sortObjectToText({list: [{b: 1, a: 2}, 'x']}) == '{"list":[{"a":2,"b":1},"x"]}')//objects inside arrays sort too, while the array's own order is data
 	ok(sortObjectToText({a: 1}) == makeText({a: 1}))//with one key, or keys already in order, it's the plain text
 })
-test(() => {//what a plain object holds: strings, safe numbers, booleans, null, arrays, and more plain objects
+test(() => {//what a plain object holds: strings, finite numbers, booleans, null, arrays, and more plain objects
 	ok(isPlain({}))//the blank
 	ok(isPlain({provider: 'Discord.', identifier: 'abc123'}))//the common shape: a flat bag of named strings
 	ok(isPlain({country: 'US', city: 'Akron', ok: true, ratio: 1.5, n: -7, missing: null}))//every plain kind of value
 	ok(isPlain({nested: {list: [1, 'two', {three: 3}]}}))//nesting and arrays ride inside
 	ok(isPlain({absent: undefined}))//an undefined property is dropped by print, the same meaning as leaving the key out
+	ok(isPlain({n: 9007199254740992}))//a whole number past 2^53, like an identifier a third party sent as a number, which javascript rounded when it read it; it stores exactly as held, and minInt refuses it at the moment code reads a number to use it as an integer
 })
 test(() => {//what it refuses: everything a trip through stringification would quietly change
 	ok(!isPlain())//nothing isn't an object
@@ -2947,7 +2948,6 @@ test(() => {//what it refuses: everything a trip through stringification would q
 	ok(!isPlain('{"a":1}'))//pre-stringified text isn't an object; pass the object
 	ok(!isPlain({n: NaN}))//would print as null
 	ok(!isPlain({n: Infinity}))//so would this
-	ok(!isPlain({n: 9007199254740993}))//javascript already lost this one, holding ...992 instead; big identifiers ride as strings
 	ok(!isPlain({n: 9n}))//bigint would print as a string, a silent type change
 	ok(!isPlain({when: new Date()}))//a Date would print as a string; store a tick or a text form deliberately instead
 	ok(!isPlain({list: [1, undefined, 3]}))//an undefined element would print as null
