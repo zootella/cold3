@@ -4,9 +4,9 @@ A guide to the in-progress planning and architecture documents. This is a high-l
 
 Three further documents are done and retired. svelteless.md: the spike confirmed, the SvelteKit workspace at oauth.cold3.cc is deleted, and the OAuth flow now runs on @auth/core directly inside the apex worker at `site/server/api/oauth/[...all].js`. brownie.md: the brownie is built and shipped with both credential tenants aboard — totp enrollments and otp challenges ride as notes, no side cookie remains — and its design essay moved inline to icarus/level2.js, above the brownie functions, where the finished code documents itself. data-sprint.md: the jsonb sprint it handed off is complete — json is an approved cell type, hit_table converted — and its remainder folded into this guide.
 
-# Up next — xray
+# Up next — the data task queue
 
-The next piece of work, related to the security of the database; the user will explain the scope. The stub exists as xray.js, sketched as an out-of-band system to confirm what gets built into bundles, a capstone to the secrets-management context.
+The current work is the queue of data-layer tasks enumerated in data.md, done in an order we choose: the trail_table expansion, the new ledger_table, the backup-plan decision, the credential_table k1–k8 collapse, the delay_table d1–d5 evaluation, and xray — whose scope awaits the user's explanation.
 
 # For now — the front row
 
