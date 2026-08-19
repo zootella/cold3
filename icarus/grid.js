@@ -997,6 +997,17 @@ grid(async () => {//trail: count, get, and recent all respect horizon
 	let first = await trailRecent(message)//tick of first add
 	ok((await trailCount(message, horizon)) == 1)//find one
 	ok((await trailGet(message, horizon)).length == 1)
+	let row = (await trailGet(message, horizon))[0]
+	ok(row.expiration == 0 && makeText(row.json) == '{}')//without options, the blanks ride in the new cells, written explicitly
+
+	let extras = {expiration: Now() + Time.day, note: {secret: 'recoverable beside the proof'}}//a caller can grant permission to delete the record after a tick passes, and keep what the one-way hash can't give back
+	await trailAdd('began an enrollment', extras)
+	let got = (await trailGet('began an enrollment', horizon))[0]
+	ok(got.expiration == extras.expiration && makeText(got.json) == '{"secret":"recoverable beside the proof"}')//the note comes back as the row's json cell
+
+	await trailAddMany([{message: 'first of two'}, {message: 'second of two', note: {n: 2}}])//every element is an object with a message; expiration and note ride along when a caller has them
+	ok(makeText((await trailGet('first of two', horizon))[0].json) == '{}')
+	ok((await trailGet('second of two', horizon))[0].json.n == 2)
 
 	ageNow(10*Time.second)
 	await trailAdd(message)//add a second, 10s after first
@@ -1011,7 +1022,7 @@ grid(async () => {//trail: count, get, and recent all respect horizon
 	ok((await trailRecent(message)) == second)//recent still returns the second add
 })
 grid(async () => {
-	await trailAddMany(['1 of 2', '2 of 2'])//add two messages at once, they're hashed simultaenously and added in a single query
+	await trailAddMany([{message: '1 of 2'}, {message: '2 of 2'}])//add two messages at once, they're hashed simultaenously and added in a single query
 	ok((await trailCount('1 of 2', Time.minute)) == 1)
 	ok((await trailCount('2 of 2', Time.minute)) == 1)
 })
@@ -1022,7 +1033,7 @@ grid(async () => {
 	ok((await trailGetAny([m1, m2, m3], horizon)).length == 0)//none yet
 	ageNow(Time.second); await trailAdd(m1)
 	ok((await trailGetAny([m1, m2, m3], horizon)).length == 1)//only m1 found
-	ageNow(Time.second); await trailAddMany([m2, m3])
+	ageNow(Time.second); await trailAddMany([{message: m2}, {message: m3}])
 	ageNow(Time.second); await trailAdd(m3)
 	ok((await trailGetAny([m1, m2, m3], horizon)).length == 4)//all three found, including 2x m3
 	ok((await trailGetAny([m1, m2], horizon)).length == 2)//two different messages

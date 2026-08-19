@@ -263,12 +263,12 @@ export async function credentialOtpSend({letter, v, provider, userTag}) {
 	let messages = []
 	let x = brownieGetAll(letter, s.type, userTag).find(f => f.address.f0 == o.address.f0)//look for this user's preexisting challenge to this same address; scoped by owner, so a housemate's challenge to the same address rides on
 	if (x) {//if we found one, the new one must replace it
-		messages.push(safefill`OTP closed challenge: tag ${x.tag}`)//close x on the trail
+		messages.push({message: safefill`OTP closed challenge: tag ${x.tag}`})//close x on the trail
 		letter.notes = letter.notes.filter(f => f.tag != x.tag)//remove x from the letter; challenge tags are globally unique
 	}
 	brownieAdd(letter, s)//add rather than set, because one user holds several live challenges at once, one per address
-	messages.push(safefill`OTP opened challenge: address ${o.address.f0}`)//record we bothered this address
-	messages.push(safefill`OTP opened challenge: tag ${o.tag}`)//record we created this challenge
+	messages.push({message: safefill`OTP opened challenge: address ${o.address.f0}`})//record we bothered this address
+	messages.push({message: safefill`OTP opened challenge: tag ${o.tag}`})//record we created this challenge
 	await trailAddMany(messages)
 
 	//here is where you need to take care of address_table and maybe also service_table, ttd january
@@ -1580,11 +1580,18 @@ export async function trailGetAny(messages, horizon) {//messages like [message1,
 	let hashes = await Promise.all(messages.map(hashText))
 	return await queryGetAny({table: 'trail_table', title: 'hash', cells: hashes, since: Now() - horizon})
 }
-export async function trailAdd(message) { return await trailAddMany([message]) }
-export async function trailAddMany(a) {//use like trailAddMany([message1, message2])
-	a.forEach(checkText)//call checkText on each message in a
+export async function trailAdd(message, o) { return await trailAddMany([{...o, message}]) }//o is optional {expiration, note}, described below
+export async function trailAddMany(a) {//use like trailAddMany([{message: message1}, {message: message2, expiration, note}]): every element is an object with a message, and optionally its expiration and note
 	let now = Now()
-	let rows = await Promise.all(a.map(async message => ({row_tick: now, hash: await hashText(message)})))
+	let rows = await Promise.all(a.map(async e => {
+		let {
+			message,//text message with details about the event we're recording proof of; we save the hash of this message
+			expiration = 0,//a tick when we could delete this row, or 0 for keep forever
+			note = {},//an object where you can keep additional details, and unlike parts of the message, get them back
+		} = e
+		checkText(message); checkInt(expiration); checkPlain(note)
+		return {row_tick: now, hash: await hashText(message), expiration, json: note}//the note rides in the json column
+	}))
 	await queryAddRows({table: 'trail_table', rows})
 }
 
@@ -1593,11 +1600,11 @@ SQL(`
 CREATE TABLE trail_table (
 	row_tag     CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick    BIGINT    NOT NULL,
-	hide        BIGINT    NOT NULL,  -- not used, in the future we might hide old rows, or actually delete them!
+	hide        BIGINT    NOT NULL,  -- not used
 
 	hash        CHAR(52)  NOT NULL,               -- the hash of the message about the event that happened on row tick
-	expiration  BIGINT    NOT NULL DEFAULT 0,     -- tick after which this row isn't needed at all anymore, or 0 for no expiration
-	json        JSONB     NOT NULL DEFAULT '{}'   -- additional notes about the event; {} when there are none
+	expiration  BIGINT    NOT NULL DEFAULT 0,     -- the caller indicating when this row could be removed from the database; 0 for never; no system presently clears expired rows
+	json        JSONB     NOT NULL DEFAULT '{}'   -- recoverable information beside the one-way hash proof; {} when the proof alone is enough
 );
 
 CREATE INDEX trail1 ON trail_table (hide,       row_tick DESC);  -- hide or delete old rows quickly
