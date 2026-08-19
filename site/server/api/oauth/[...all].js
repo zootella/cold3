@@ -19,7 +19,7 @@ import discordProvider from '@auth/core/providers/discord'
 //import redditProvider  from '@auth/core/providers/reddit'//twitch and reddit, ready to go: uncomment these and add them to the providers list below once we have their keys — commented for now so the bundler doesn't warn about unused imports
 import {toWebRequest} from 'h3'//converts the nitro event to a web Request; h3 also auto-sends a returned web Response, so the handler is just: return Auth(toWebRequest(event), authOptions)
 import {
-checkTag, decryptKeys, hashText, makePlain, originApex,
+checkTag, decryptKeys, hashText, headerGetOne, makePlain, originApex, toTextOrBlank,
 credentialBrowserGet, credentialOauthChallenge, credentialOauthParse, credentialOauthSet, ledgerAdd, oauthProviders,
 } from 'icarus'//Key, hasTag, toss, log, look, logAudit, sealEnvelope, Limit, setResponseStatus, defined are auto-globalized in site/server by icarusServerPlugin; these are not, so import them (same pattern as credential.js)
 
@@ -82,7 +82,7 @@ async function runOauth(event) {//the flow itself; the membrane above runs this 
 				let parsed = credentialOauthParse(providerInfo.tag, {account, profile, user})//per-provider field extraction lives in level3; this handler stays dumb
 				let result = await credentialOauthSet({userTag: signedIn.userTag, ...parsed})
 				logAudit('oauth done', {browserHash, userTag: signedIn.userTag, account, profile, user, outcome: result.outcome})//accumulate real examples of oauth provider responses, which carry lots of provider-specific detail and can be different or broken in unexpected ways at any time
-				await ledgerAdd({action: 'OauthDone.', browserHash, userTag: signedIn.userTag, note: makePlain({account, profile, user, outcome: result.outcome})})//makePlain deliberately flattens whatever provider-specific shape came back into plain data the note can hold
+				await ledgerAdd({action: 'OauthDone.', browserHash, userTag: signedIn.userTag, ip: toTextOrBlank(headerGetOne(event.req.headers, 'cf-connecting-ip')), note: makePlain({account, profile, user, outcome: result.outcome})})//makePlain deliberately flattens whatever provider-specific shape came back into plain data the note can hold
 				log('Auth.js signIn() handler', look({account, profile, user, outcome: result.outcome}))//operational visibility in datadog, separate from the audit store above
 
 				//on success the panel shows the freshly-linked row on its next Get, so it needs no message. on a collision we wrote nothing: OauthClaimedElsewhere. owes the user an explanation — they proved control, but another cold3 user already holds this provider identity — so hand back a one-shot ?oauth-done hint the panel reads and strips. OauthAlreadyLinked. is the rare same-account re-prove (a stale tab) and stays silent; the panel just shows it linked
@@ -116,7 +116,7 @@ async function runOauth(event) {//the flow itself; the membrane above runs this 
 		toss('oauth', {errorType, path: event.path, error: authError})
 	} else if (errorType) {//a provider changing things on us (loves us monday, hates us tuesday), or a user cancelling at the provider — not ours to fix
 		logAudit('oauth sad path', {errorType, path: event.path, error: authError})//don't crash the site; record the provider interaction for the team to analyse — and the underlying error disambiguates the shared OAuthCallbackError type (a user declining vs our own misconfig, like a wrong secret or unregistered redirect uri)
-		await ledgerAdd({action: 'OauthSadPath.', browserHash: await hashText(checkTag(event.context.browserTag)), note: makePlain({errorType, path: event.path, error: authError})})
+		await ledgerAdd({action: 'OauthSadPath.', browserHash: await hashText(checkTag(event.context.browserTag)), ip: toTextOrBlank(headerGetOne(event.req.headers, 'cf-connecting-ip')), note: makePlain({errorType, path: event.path, error: authError})})
 		//the attempt didn't complete — most often the user cancelled at the provider, sometimes startled the provider window even appeared. rather than drop them on a bare /page1 with no idea what happened, hand back a one-shot ?oauth-done hint the panel reads and strips, nudging them to try again
 		return new Response(null, {status: 303, headers: {location: '/page1?oauth-done=Cancelled'}})
 	}
