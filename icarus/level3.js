@@ -1602,9 +1602,9 @@ CREATE TABLE trail_table (
 	row_tick    BIGINT    NOT NULL,
 	hide        BIGINT    NOT NULL,  -- not used
 
-	hash        CHAR(52)  NOT NULL,               -- the hash of the message about the event that happened on row tick
-	expiration  BIGINT    NOT NULL DEFAULT 0,     -- the caller indicating when this row could be removed from the database; 0 for never; no system presently clears expired rows
-	json        JSONB     NOT NULL DEFAULT '{}'   -- recoverable information beside the one-way hash proof; {} when the proof alone is enough
+	hash        CHAR(52)  NOT NULL,  -- the hash of the message about the event that happened on row tick
+	expiration  BIGINT    NOT NULL,  -- the caller indicating when this row could be removed from the database; 0 for never; no system presently clears expired rows
+	json        JSONB     NOT NULL   -- recoverable information beside the one-way hash proof; {} when the proof alone is enough
 );
 
 CREATE INDEX trail1 ON trail_table (hide,       row_tick DESC);  -- hide or delete old rows quickly
