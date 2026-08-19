@@ -107,113 +107,19 @@ The ledger pattern was a real design choice — appealing for its uniformity. Bu
 
 If we're going to do this migration, the time to decide is when we have a concrete forensic need that the current pattern can't satisfy — not a hypothetical. The signal "we need to investigate account X's compromise" is the right trigger.
 
-## A separate, orthogonal question: should jsonb be an approved column type?
+## A separate, orthogonal initiative: collapse k1–k8 into a json cell
 
-**Answered August 2026: yes.** The question became its own sprint with its own document, jsonb.md — json approved as a cell type (suffix `_json`, DDL type JSONB), first adoption hit_table rather than the k1–k8 collapse proposed below, which remains future work that will ride on the proven pattern. The notes below are the original proposal, kept for the record.
+json is an approved cell type, proven end to end on hit_table — tables.txt tells the type's story, and jsonb.md holds the efficiency research and guidance. This section plans the second adoption. It is purely about column shape, with no dependence on whether tables stay ledger or move to edit-in-place, how removes work, or where audit lives — the two decisions don't interact.
 
-**This is a different architectural decision from the ledger-vs-traditional question above.** It does not depend on whether tables stay ledger or move to edit-in-place, whether removes hide or append, whether audit lives in shadow tables or a unified one. It's specifically about *column shape*: are we using Postgres's structured-but-flexible jsonb type where it would fit better than our current generic-text-columns approach?
+The trigger is concrete: credential_table has k1_text through k8_text — eight generic text columns we widened from four. Oauth uses six of those eight slots with three "reserved" for future use. Each new credential type needs a hand-maintained mapping of "which k-slot holds which field for this type." The widening signal — "what about k12 next year?" — is the smell that points at jsonb. delay_table's d1 through d5 is a third instance of the same pattern, noted in jsonb.md and not yet scoped.
 
-The trigger is concrete: credential_table has k1_text through k8_text — eight generic text columns we widened from four. Oauth uses six of those eight slots with three "reserved" for future use. Each new credential type needs a hand-maintained mapping of "which k-slot holds which field for this type." The widening signal — "what about k12 next year?" — is the smell that points at jsonb.
+### The shape of the collapse
 
-### What jsonb is (brief background)
+The eight columns and their eight partial indexes (credential5 through credential12) become one json cell holding a per-type payload like `{provider: 'Discord.', identifier: 'abc123', handle: 'zootella', name: 'Zoo Tella', proof: {...}}` — self-labeled keys a reader decodes without a slot map, no more widening migrations, and per-type shapes that differ naturally. For the paths queries actually filter on — likely just provider and identifier, for the cross-row uniqueness lookups — expression indexes make an indexed json path read like a real column; jsonb.md's efficiency section holds that research and the promote-when-a-query-arrives guidance. The known cost is losing SQL-level type enforcement on inner fields, which our conventions never leaned on: the application checks at level2 are the boundary that matters.
 
-Postgres has two JSON column types: `json` (text, reparsed on every read) and `jsonb` (binary decomposed, parsed once at write). jsonb is the preferred form for nearly all use cases. It is first-class — not a wrapper, not bolted on. Internally it stores a parsed tree of keys/values with key deduplication; reads are cheap, indexes work.
+The migration rides the choreography hit_table proved — expand (the json column beside k1–k8), migrate the code, backfill per type mapping slots to named keys, contract (drop the columns and their indexes) — with the lockstep rule holding each migration file and its SQL() registry edit to the same commit. What this sprint will need that hit_table's didn't: json-path filtering in the level2 query helpers, with the helpers generating the one canonical spelling for both the index DDL and the filters, deliberately unbuilt until this sprint needs it. At our scale the work is measured in hours, and the cost asymmetry still applies: collapsing while oauth is the main consumer of the k slots is dramatically cheaper than after several credential types depend on them.
 
-Query operators:
-- `data->>'provider'` returns text at that key
-- `data->'profile'` returns jsonb (preserves nesting)
-- `data #>> '{profile,username}'` returns text at path
-- `data @> '{"provider":"Discord."}'` containment (subset)
-- `data ? 'provider'` does this key exist
-
-Indexing:
-- **Expression indexes** target specific paths: `CREATE INDEX ON credential_table ((data->>'provider'))`. Same query speed as a B-tree on a regular column for that path.
-- **GIN indexes** cover the whole column for ad-hoc queries: `CREATE INDEX ON credential_table USING gin (data)`. Larger, slightly slower to write, but supports any containment or key-exists pattern.
-
-Both are well-trodden, production-grade. jsonb isn't experimental.
-
-### Concrete proposal: collapse k1-8 into one jsonb column
-
-**Before** (current):
-```sql
-k1_text TEXT NOT NULL,  -- 'Discord.'
-k2_text TEXT NOT NULL,  -- 'abc123'
-k3_text TEXT NOT NULL,  -- 'zootella'
-k4_text TEXT NOT NULL,  -- 'Zoo Tella'
-k5_text TEXT NOT NULL,  -- reserved
-k6_text TEXT NOT NULL,  -- reserved
-k7_text TEXT NOT NULL,  -- reserved
-k8_text TEXT NOT NULL,  -- '{"account":...}'  (audit blob)
-```
-Plus 8 partial indexes (credential5-12).
-
-**After** (jsonb):
-```sql
-data JSONB NOT NULL DEFAULT '{}'
--- contents: {"provider":"Discord.","identifier":"abc123","handle":"zootella","name":"Zoo Tella","proof":{...}}
-```
-Plus expression indexes for paths we actually query — likely just `provider` and `identifier` for the cross-row uniqueness lookups.
-
-Application-side credentialOauthSet becomes:
-```js
-await credentialSet({
-    userTag, type: 'Oauth.', event: 4,
-    f0, f1, f2,
-    data: {provider, identifier, handle, name, proof},
-})
-```
-
-### What jsonb buys
-
-- **No more widening migrations.** Adding a field to a credential type is a new key in the object, not a schema change.
-- **Self-documenting per row.** A reader sees `{"provider":"Discord.","handle":"zootella"}` instead of `k1='Discord.', k3='zootella'` and the mental decode of which-slot-means-what.
-- **Per-type shapes can differ naturally.** Password rows have `{hash, cycles}`; Oauth rows have `{provider, identifier, handle, name, proof}`; Browser rows have something else. No need to standardize on positional slots across types.
-- **Eliminates a recurring smell.** The k1-8 column-widening conversation goes away.
-
-### What jsonb costs
-
-- **SQL-level type enforcement is gone for inner fields.** `k3_text TEXT NOT NULL` guaranteed text at the column level; `data->>'handle'` could be null, missing, the wrong type. Application code (`checkText`, `checkAction`) carries the burden.
-- **Vendor-specific.** jsonb is Postgres-only. Supabase is Postgres, so fine for us today, but moving databases becomes harder.
-- **Index setup is more explicit.** Per-path expression indexes need to be declared per query pattern, or rely on GIN. With named columns the index list was obvious from the schema.
-- **Field renames cost an UPDATE.** Changing key `handle` to `username` in jsonb requires `UPDATE ... SET data = jsonb_set(...)`. Renaming a column is one ALTER.
-
-### Why this is orthogonal to the ledger decision
-
-This change is purely a *column-shape* refactor inside credential_table. It does not depend on:
-- Whether we stay ledger or move to edit-in-place
-- Whether removes hide or append
-- Whether audit is a shadow table, a unified table, or absent
-- The Datadog audit channel
-
-We could collapse k1-8 to jsonb today (a focused 1-2 day migration) and revisit the ledger-vs-traditional question separately. Or do the ledger sprint first and tackle jsonb later. The decisions don't interact.
-
-If we do go to C+D later, the audit table would likely also benefit from a jsonb payload column for its variable per-action details. So an "approve jsonb as a column type" decision now sets up future work cleanly.
-
-### What a jsonb migration would look like
-
-Phased, with both old and new alive during the transition (safer than swap-in-place):
-
-1. **Add `data JSONB NOT NULL DEFAULT '{}'`** to credential_table alongside k1-8. Live database can carry both during transition.
-2. **Update credentialSet** to write to both: still accepts k1-8 params for any caller that uses them, *and* accepts `data` for callers that have migrated.
-3. **Backfill existing rows.** Per credential type, map k1-8 values to named keys in `data`. For Oauth: `data = {provider: k1, identifier: k2, handle: k3, name: k4, proof: parse(k8)}`. One-time `UPDATE` queries; small dataset right now.
-4. **Switch credentialOauthSet, credentialOauthGet, and any other readers/writers** to use `data` instead of k1-8. Tests update.
-5. **Drop k1-8 columns** and their indexes (credential5-12) once no code references them.
-6. **Add expression indexes** for the jsonb paths we actually query — probably `data->>'provider'` and `data->>'identifier'`.
-
-For our current scale, the whole migration is hours of work. The cost asymmetry argument from the C+D discussion above applies even more strongly here: doing this now while there's one consumer (Oauth) is dramatically cheaper than doing it later when several credential types depend on the k-slot conventions.
-
-### Claude's thoughts on jsonb specifically
-
-I'd approve jsonb as a column type and do the k1-8 collapse soon. Reasons:
-
-- **The "what about k12 next" smell is real.** We widened once; we'll widen again. Each widening is a migration. jsonb stops that cycle.
-- **The decode-cost-per-read is gone.** "k3 means handle for Oauth but cycles for Password" is a real cost that contributors absorb. Self-labeled keys remove it.
-- **The technical risk is low.** jsonb is well-trodden, indexable, performant at our scale. Postgres handles it natively. Supabase fully supports it.
-- **Migration is cheap right now.** Few rows, few callers, only one credential type using k3-8 in real ways. Future jsonb adoption (e.g., audit table payloads) gets paved.
-
-The one real cost is losing SQL-level type enforcement on inner fields. But we already enforce shapes in application code (`checkText`, `checkAction`, `validateEmail`); the schema-level guarantee was a thin layer of defense we partially relied on. Application-level validation is the more meaningful boundary anyway.
-
-If we approve, the credential_table jsonb collapse can be its own focused mini-sprint without waiting for the bigger ledger-vs-traditional decision. They don't interact.
+If we go to C+D later, the audit table would likely also want a json payload column for its variable per-action details — the approved type sets that up cleanly.
 
 ## Claude's thoughts on the ledger-vs-traditional question
 

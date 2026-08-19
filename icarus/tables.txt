@@ -45,6 +45,7 @@ settings_json   JSONB     a plain json object of plain data; the blank cell is {
 _tag, _hash, and _text are strings, and _json is a plain object; everything else must be an integer
 a column which can be a tag or blank is _text
 as is a column which can be text or numerals
+suffixes name our checked kind of cell, never the exact sql type--_hash rides CHAR(52), and _json rides JSONB
 
 all numbers are BIGINT, even if we only planning on storing 0 or 1 there
 BIGINT has a larger range than JavaScript's Number.MAX_SAFE_INTEGER
@@ -88,6 +89,12 @@ they can only make things slower, not faster, for the user
 they make it harder to count and follow individual queries,
 which is important in our stack where each query costs 150ms
 we're thinking about the database as a grid of text and numbers, not objects
+
+the same instinct keeps enforcement out of the schema:
+no CHECK constraints, no triggers, no stored procedures,
+even though you can write a whole application down there,
+and some braver, older, or mistaken sites have, finding themselves essentially tied to Oracle
+our values are checked correct at write by our own trusted JavaScript in level2, portable code we can take anywhere
 
 all in all, the idea is to keep our use of the database simple enough that we can
 reason about it as just a grid of text and numbers, and nothing is tied to
