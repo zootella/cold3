@@ -1591,11 +1591,13 @@ export async function trailAddMany(a) {//use like trailAddMany([message1, messag
 SQL(`
 -- a thing that may be happening recently, is it too late? too soon? too frequent?
 CREATE TABLE trail_table (
-	row_tag   CHAR(21)  NOT NULL PRIMARY KEY,
-	row_tick  BIGINT    NOT NULL,
-	hide      BIGINT    NOT NULL,  -- not used, in the future we might hide old rows, or actually delete them!
+	row_tag     CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick    BIGINT    NOT NULL,
+	hide        BIGINT    NOT NULL,  -- not used, in the future we might hide old rows, or actually delete them!
 
-	hash      CHAR(52)  NOT NULL   -- the hash of the message about the event that happened on row tick
+	hash        CHAR(52)  NOT NULL,               -- the hash of the message about the event that happened on row tick
+	expiration  BIGINT    NOT NULL DEFAULT 0,     -- tick after which this row isn't needed at all anymore, or 0 for no expiration
+	json        JSONB     NOT NULL DEFAULT '{}'   -- additional notes about the event; {} when there are none
 );
 
 CREATE INDEX trail1 ON trail_table (hide,       row_tick DESC);  -- hide or delete old rows quickly
