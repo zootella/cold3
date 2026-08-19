@@ -1,12 +1,16 @@
 # Contents
 
-A guide to the in-progress planning and architecture documents, all touching the credential system at different scopes. This is a high-level orientation: read this first to understand which to open for a given concern, and where each sits relative to the others. The documents are grouped by readiness — **for now** in the front row, **for soon** and **for later** in piles a distance further away.
+A guide to the in-progress planning and architecture documents. This is a high-level orientation, and the place a fresh session starts: read this first to understand what's next, which document to open for a given concern, and where each sits relative to the others. The documents are grouped by readiness — **for now** in the front row, **for soon** and **for later** in piles a distance further away.
 
-Two further documents are done and retired. svelteless.md: the spike confirmed, the SvelteKit workspace at oauth.cold3.cc is deleted, and the OAuth flow now runs on @auth/core directly inside the apex worker at `site/server/api/oauth/[...all].js`. brownie.md: the brownie is built and shipped with both credential tenants aboard — totp enrollments and otp challenges ride as notes, no side cookie remains — and its design essay moved inline to icarus/level2.js, above the brownie functions, where the finished code documents itself.
+Three further documents are done and retired. svelteless.md: the spike confirmed, the SvelteKit workspace at oauth.cold3.cc is deleted, and the OAuth flow now runs on @auth/core directly inside the apex worker at `site/server/api/oauth/[...all].js`. brownie.md: the brownie is built and shipped with both credential tenants aboard — totp enrollments and otp challenges ride as notes, no side cookie remains — and its design essay moved inline to icarus/level2.js, above the brownie functions, where the finished code documents itself. data-sprint.md: the jsonb sprint it handed off is complete — json is an approved cell type, hit_table converted — and its remainder folded into this guide.
+
+# Up next — xray
+
+The next piece of work, related to the security of the database; the user will explain the scope. The stub exists as xray.js, sketched as an out-of-band system to confirm what gets built into bundles, a capstone to the secrets-management context.
 
 # For now — the front row
 
-The documents in active use. This guide (contents.md) is the orientation itself and belongs here too; the working set is the umbrella you steer by, the current-state map whose per-type grid is the immediate next step, and the OTP integration kept open as the reference implementation.
+The documents in active use. This guide (contents.md) is the orientation itself and belongs here too; the working set is the umbrella you steer by, the current-state map whose per-type grid is the immediate next step, the OTP integration kept open as the reference implementation, and the database references any data work starts from.
 
 ## credential.md — umbrella for the credential system
 
@@ -19,6 +23,18 @@ Created July 2026 to stage the storage sprint that became the brownie: before ch
 ## otp.md — OTP in the credential stack (integration done, July 2026)
 
 The integration this document planned is complete: `/api/otp`, `pageStore.otps`, and the separate recovery flow migrated into `/api/credential` and `credentialStore`, with EmailPanel and PhonePanel in CredentialPanel, lifecycle rows (mentioned/challenged/validated) in credential_table, a claim guard so a proven address has one holder, and flows requiring a signed-in user from send through enter. The document remains as reference for the otp helpers and constants, plus one open agenda item: near-happy-path UI polish (wrong guesses, rate-limit messaging, can't-find-code help). Its signup-era notes feed the early-userTag design tracked in credential.md.
+
+## database-stack.md — reference for the database stack
+
+How cold3 uses its database, in production and development: the four protocol layers, every path from our code to a table, the choosing-a-path guide with the migration and drift-check rules, the Key() seal design, row-level security's two walls, and the backup plan bookmark — three approaches (Supabase's managed backups, the pg_dump pair, the CSV cold copy) presented for a later epic to choose among. Reference, not planning. Carries the one known RLS remainder: the default-privileges one-liner that rides along with a future migration.
+
+## jsonb.md — guidance for json columns
+
+json is an approved cell type, proven end to end on hit_table; tables.txt tells the type's story. This document holds the efficiency research and the guidance for deciding future columns — payload bags ride as json, margins and identity stay real columns, and a path gets an expression index the day a real query arrives. The next adoption is credential_table's k1–k8 collapse, planned in ledger.md; delay_table's d1–d5 is a noted third instance of the same widening smell.
+
+## testing.md — the test system
+
+The test() and grid() architecture: inline unit tests that live beside the code they demonstrate, and integration grid tests that run whole flows against PGlite — real Postgres compiled to WASM — with no network and no credentials. Open when the test architecture needs context.
 
 # For soon — the next pile
 
@@ -52,7 +68,7 @@ The three piles above are the readiness view. Two other lenses cut across them.
 
 - **One credential type**: oauth.md (refinement), otp.md (integration, done)
 - **Whole credential system**: credential.md (umbrella, direction-setting), map.md (current-state map, staging the storage sprint), first-night-accounts.md (forward-looking signup-flow preview)
-- **Whole application data layer**: ledger.md (storage patterns underneath everything)
+- **Whole application data layer**: ledger.md (storage patterns underneath everything), with database-stack.md, jsonb.md, and testing.md as its reference shelf
 - **Outside sprint sequencing**: digital-authentication.md (reference survey of the wider world)
 
 **By kind of change:**
@@ -65,4 +81,4 @@ The three piles above are the readiness view. Two other lenses cut across them.
 
 **Common threads:**
 
-They all involve credentials. The OTP integration that otp.md planned and credential.md framed landed in July 2026; the brownie stood up and took both flows' provisional state in August, resolving the relocate-or-eliminate fork in favor of notes — provisional state lives in the brownie, durable credentials in credential_table, and no temporary cookie remains. first-night-accounts.md builds on credential.md's early-userTag and visitor-first material, carrying the signup-side design into its own document. ledger.md sits underneath all the others: its outcome shapes the data layer that every credential type rests on.
+The planning documents all involve credentials, with the database references standing beneath them. The OTP integration that otp.md planned and credential.md framed landed in July 2026; the brownie stood up and took both flows' provisional state in August, resolving the relocate-or-eliminate fork in favor of notes — provisional state lives in the brownie, durable credentials in credential_table, and no temporary cookie remains. first-night-accounts.md builds on credential.md's early-userTag and visitor-first material, carrying the signup-side design into its own document. ledger.md sits underneath all the others: its outcome shapes the data layer that every credential type rests on.

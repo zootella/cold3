@@ -220,8 +220,8 @@ but even that should be rare--when performing an audit for a staff member, or so
 
 
 
-json rides in _json columns, described up above with the other cell types
-and only in instances where you never need to filter or query on it
+json cells are payload bags: keys read together, rarely filtered on, variable in presence
+the day a real query wants a json path, an expression index makes it as fast as a real column
 
 another thing we're not doing
 labeling any columns UNIQUE in the schema

@@ -26,7 +26,6 @@ enterSimulationMode, isInSimulationMode, ageNow,
 } from './level0.js'
 import {//from level1
 Limit, checkAction, checkActions,
-pgliteDynamicImport,
 } from './level1.js'
 
 import {
