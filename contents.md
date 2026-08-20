@@ -4,9 +4,11 @@ A guide to the in-progress planning and architecture documents. This is a high-l
 
 Three further documents are done and retired. svelteless.md: the spike confirmed, the SvelteKit workspace at oauth.cold3.cc is deleted, and the OAuth flow now runs on @auth/core directly inside the apex worker at `site/server/api/oauth/[...all].js`. brownie.md: the brownie is built and shipped with both credential tenants aboard — totp enrollments and otp challenges ride as notes, no side cookie remains — and its design essay moved inline to icarus/level2.js, above the brownie functions, where the finished code documents itself. data-sprint.md: the jsonb sprint it handed off is complete — json is an approved cell type, hit_table converted — and its remainder folded into this guide.
 
-# Up next — the data task queue
+# Up next — the credential migration
 
-The current work is the queue of data-layer tasks enumerated in data.md, done in an order we choose: the smaller-dog logging simplification (planned in smaller-dog.md), the backup-plan decision, the credential_table k1–k8 collapse, the delay_table d1–d5 evaluation, and xray — whose scope awaits the user's explanation.
+The selected current work of the data sprint is **credential-migration.md**: collapsing credential_table's k1–k8 slots into one json column named note_json — expansion and contraction with two deploys, a per-type data migration with a read-only survey first and a grid rehearsal of the backfill. A fresh session starts there; the document holds the scope decision (the f columns stay), the per-type payload map, the full choreography, and the open decisions, beginning with level2's json-path filtering design.
+
+Behind it in the queue, enumerated in data.md: xray (whose scope awaits the user's explanation) — and outside this sprint, recorded for future ones: the smaller-dog logging simplification (smaller-dog.md) and the backup-plan decision (database-stack.md's bookmark).
 
 # For now — the front row
 

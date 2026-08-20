@@ -12,11 +12,7 @@ Pick from the three approaches presented in database-stack.md's backup-plan sect
 
 ## credential table consolidation
 
-The k1–k8 collapse, planned in ledger.md's "collapse k1–k8 into a json cell" section: eight generic text columns and their eight partial indexes become one json payload cell, riding the proven choreography with a per-type backfill. This is the sprint that brings json-path filtering to the level2 query helpers — the helpers generating the one canonical spelling for both the index DDL and the filters.
-
-## delay table
-
-delay_table's d1–d5 is the third instance of the widening smell — report.js literally passes `d3: -1, d4: -1, d5: -1` with a comment about room to grow. Evaluate against jsonb.md's guidance: if the duration slots are read together and rarely filtered, they're a payload bag that folds into a json cell on the same template; if we query them numerically, they're margins and stay columns. Evaluate, then either scope or close.
+The k1–k8 collapse, now planned in full in credential-migration.md: eight positional text columns and their eight partial indexes become named properties in one note_json cell, by expansion and contraction with two deploys, a per-type backfill, and json-path filtering built into level2 first. The f columns stay — f0 and f2 are live uniqueness margins, and f1 rides with its validate* family. This is the selected current task.
 
 ## xray
 
