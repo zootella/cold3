@@ -1582,12 +1582,25 @@ export async function queryTop({table, title, cell}) {
 	return data[0]//data is an array with one element, or empty if none found
 }
 
+//apply the given cells to a query as equality filters; queryGet and queryHide share this so the select and the update speak identical filters
+//a plain-object value holds json path filters on the column titled title_json: note: {provider: 'Discord.'} filters note_json->>provider
+//level2 alone spells the path--callers pass bare property names, PostgREST single-quotes the key when it renders SQL, and supafake in grid renders that same spelling for PGlite
+function applyQueryCells(query, cells) {
+	for (let [title, cell] of Object.entries(cells)) {
+		if (isPlain(cell)) {
+			for (let [key, value] of Object.entries(cell)) query = query.eq(`${title}_json->>${key}`, value)
+		} else {
+			query = query.eq(title, cell)
+		}
+	}
+	return query
+}
+
 //get all the visible rows matching the given column values
-export async function queryGet(table, cells, options) {//cells is like {title1: 'cell1', title2: 'cell2', ...}
-	checkQueryTitle(table); checkQueryRow(cells)
+export async function queryGet(table, cells, options) {//cells is like {title1: 'cell1', title2: 'cell2', ...}; a plain-object value like note: {provider} filters properties inside the json column
+	checkQueryTitle(table); checkQueryCells(cells)
 	const {database} = await getDatabase()
-	let query = database.from(table).select('*').eq('hide', 0)//start our query
-	for (let [title, cell] of Object.entries(cells)) query = query.eq(title, cell)//build it up
+	let query = applyQueryCells(database.from(table).select('*').eq('hide', 0), cells)
 	if (options?.since) { checkInt(options.since); query = query.gte('row_tick', options.since) }//optionally filter by time
 	let {data, error} = await query.order('row_tick', {ascending: false})//send it to supabase
 	if (error) toss('supabase', {error})
@@ -1621,12 +1634,11 @@ export async function queryAddRows({table, rows}) {
 }
 
 //hide visible rows matching the given column values, changing hide from 0 to hideSet (default 1)
-export async function queryHide(table, cells, options) {
+export async function queryHide(table, cells, options) {//cells filters the same way queryGet's does, json paths included
 	let hideSet = options?.hideSet || 1
-	checkQueryTitle(table); checkQueryRow(cells)
+	checkQueryTitle(table); checkQueryCells(cells)
 	const {database} = await getDatabase()
-	let query = database.from(table).update({hide: hideSet}).eq('hide', 0)
-	for (let [title, cell] of Object.entries(cells)) query = query.eq(title, cell)
+	let query = applyQueryCells(database.from(table).update({hide: hideSet}).eq('hide', 0), cells)
 	let {data, error} = await query.select()
 	if (error) toss('supabase', {error})
 }
@@ -1746,6 +1758,28 @@ function checkQueryTitle(title) {//make sure the given title looks ok as a table
 function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
 	for (let [title, cell] of Object.entries(row)) checkQueryCell(title, cell)
 }
+function checkQueryCells(cells) {//check filter cells for queryGet and queryHide, where a plain-object value holds json path filters
+	for (let [title, cell] of Object.entries(cells)) {
+		if (isPlain(cell)) {
+			checkQueryTitle(title+'_json')//the object rides under the column's caller-facing word, note for note_json
+			if (!Object.keys(cell).length) toss('query', {title, cell})//an empty object filters nothing, so a caller passing one is confused
+			for (let [key, value] of Object.entries(cell)) { checkQueryPathKey(key); checkText(value) }//path filters compare the text ->> extracts, never blank, because an absent key is the blank
+		} else {
+			checkQueryCell(title, cell)
+		}
+	}
+}
+function checkQueryPathKey(key) { if (!isQueryPathKey(key)) toss('check path', {key}) }
+function isQueryPathKey(key) {//a path key is a bare word in javascript property style, like provider or browserHash
+	return typeof key == 'string' && key.length > 0 && key.length <= 63 && /^[A-Za-z][A-Za-z0-9]*$/.test(key)
+}
+test(() => {
+	ok(isQueryPathKey('provider'))
+	ok(isQueryPathKey('browserHash'))
+	ok(!isQueryPathKey('note_json'))//underscores are for column titles, never path keys
+	ok(!isQueryPathKey('4score'))//must start with a letter
+	ok(!isQueryPathKey(''))
+})
 function checkQueryCell(title, cell){//in a column with the given title, check the value in a cell
 	if (!isQueryTitle(title)) toss('check title', {title, cell})
 	let type = _type(title)

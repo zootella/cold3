@@ -1254,6 +1254,36 @@ grid(async () => {//json: the check at the write path refuses what stringificati
 	ok(tossed)//pre-stringified text isn't an object
 	ok((await queryGet('example_table', {name_text: 'carol'})).length == 0)//nothing got through; the value-level refusals have unit tests beside isPlain in core
 })
+grid(async () => {//json: path filters--a plain-object value in the cells reads properties inside the json column, for queryGet and queryHide both
+	let {clear} = await getDatabase()
+	await clear('example_table')
+
+	await queryAddRows({table: 'example_table', rows: [
+		{name_text: 'alice', hits: 1, some_hash: random32(), some_json: {city: 'Tokyo', crew: 'alpha'}},
+		{name_text: 'bob',   hits: 2, some_hash: random32(), some_json: {city: 'Osaka'}},
+		{name_text: 'carol', hits: 3, some_hash: random32(), some_json: {}},
+	]})
+
+	let rows
+	rows = await queryGet('example_table', {some: {city: 'Tokyo'}})//the caller-facing word is the column title without _json, the way note speaks for note_json
+	ok(rows.length == 1 && rows[0].name_text == 'alice')
+	rows = await queryGet('example_table', {some: {city: 'Kyoto'}})
+	ok(rows.length == 0)//no row holds this value
+	rows = await queryGet('example_table', {some: {crew: 'alpha'}})
+	ok(rows.length == 1)//bob and carol don't have the key at all: absent extracts to null, which never equals
+
+	rows = await queryGet('example_table', {hits: 1, some: {city: 'Tokyo', crew: 'alpha'}})//regular titles and several paths ride in one cells object, all ANDed together
+	ok(rows.length == 1)
+	rows = await queryGet('example_table', {hits: 2, some: {city: 'Tokyo'}})//each filter must hold
+	ok(rows.length == 0)
+
+	let tossed = false; try { await queryGet('example_table', {some: {city: ''}}) } catch (e) { tossed = true }
+	ok(tossed)//a blank path value is refused: absent is the blank, so nothing blank is ever filtered for
+
+	await queryHide('example_table', {some: {city: 'Tokyo'}})//the UPDATE filters the same way, the shape of the oauth remove
+	ok((await queryGet('example_table', {some: {city: 'Tokyo'}})).length == 0)//hidden now
+	ok((await queryGet('example_table', {some: {city: 'Osaka'}})).length == 1)//the neighbor rides on
+})
 
 grid(async () => {
 	let {clear} = await getDatabase()
@@ -1415,18 +1445,22 @@ class FakeSupabaseQueryBuilder {
 	then(resolve, reject) {//makes the chain thenable; called when you await the chain
 		this._execute().then(resolve).catch(e => resolve({data: null, error: e}))
 	}
+	_col(col) {//a json path filter arrives spelled note_json->>provider; PostgREST quotes the key when it renders SQL, so supafake renders the same spelling for PGlite
+		let i = col.indexOf('->>')
+		return i == -1 ? col : `${col.slice(0, i)}->>'${col.slice(i + 3)}'`
+	}
 	_where() {
 		if (!this.wheres.length) return {sql: '', params: []}
 		let parts = [], params = []
 		for (let w of this.wheres) {
 			if (w.val === null) {
-				parts.push(w.op === '=' ? `${w.col} IS NULL` : `${w.col} IS NOT NULL`)
+				parts.push(w.op === '=' ? `${this._col(w.col)} IS NULL` : `${this._col(w.col)} IS NOT NULL`)
 			} else if (w.op === 'IN') {
 				let placeholders = w.val.map((_, i) => `$${params.length + i + 1}`)
-				parts.push(`${w.col} IN (${placeholders.join(', ')})`)
+				parts.push(`${this._col(w.col)} IN (${placeholders.join(', ')})`)
 				params.push(...w.val)
 			} else {
-				parts.push(`${w.col} ${w.op} $${params.length + 1}`)
+				parts.push(`${this._col(w.col)} ${w.op} $${params.length + 1}`)
 				params.push(w.val)
 			}
 		}
