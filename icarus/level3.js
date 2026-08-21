@@ -980,15 +980,19 @@ CREATE TABLE credential_table (
 	f1_text    TEXT      NOT NULL,  -- formal form of address, to send messages
 	f2_text    TEXT      NOT NULL,  -- page form of address, to show the user
 
-	-- alternatively or additionally, a credential of this type may have some tag, hash, secret key, or something else, maybe just a note:
-	k1_text    TEXT      NOT NULL,
-	k2_text    TEXT      NOT NULL,
-	k3_text    TEXT      NOT NULL,
-	k4_text    TEXT      NOT NULL,
-	k5_text    TEXT      NOT NULL,
-	k6_text    TEXT      NOT NULL,
-	k7_text    TEXT      NOT NULL,
-	k8_text    TEXT      NOT NULL
+	-- the two destinations of the k collapse; in the window both column sets live, and the defaults are scaffolding
+	hash_text  TEXT      NOT NULL DEFAULT '',    -- the row's one meaningful hash, like Browser.'s browserHash or Password.'s password hash; '' when the type has none
+	note_json  JSONB     NOT NULL DEFAULT '{}',  -- payload bag of everything else about this credential; {} the blank, an absent key the blank of a property
+
+	-- the retiring slots: positional text whose meaning depends on type_text, translating into hash_text and note_json above
+	k1_text    TEXT      NOT NULL DEFAULT '',
+	k2_text    TEXT      NOT NULL DEFAULT '',
+	k3_text    TEXT      NOT NULL DEFAULT '',
+	k4_text    TEXT      NOT NULL DEFAULT '',
+	k5_text    TEXT      NOT NULL DEFAULT '',
+	k6_text    TEXT      NOT NULL DEFAULT '',
+	k7_text    TEXT      NOT NULL DEFAULT '',
+	k8_text    TEXT      NOT NULL DEFAULT ''
 );
 
 CREATE INDEX credential1 ON credential_table (hide, user_tag, row_tick DESC);  -- filter by user
@@ -1005,6 +1009,9 @@ CREATE INDEX credential9  ON credential_table (hide, type_text, k5_text) WHERE k
 CREATE INDEX credential10 ON credential_table (hide, type_text, k6_text) WHERE k6_text != '';
 CREATE INDEX credential11 ON credential_table (hide, type_text, k7_text) WHERE k7_text != '';
 CREATE INDEX credential12 ON credential_table (hide, type_text, k8_text) WHERE k8_text != '';
+
+CREATE INDEX credential13 ON credential_table (hide, type_text, hash_text) WHERE hash_text != '';  -- the Browser. signed-in lookup
+CREATE INDEX credential14 ON credential_table (hide, type_text, (note_json->>'identifier')) WHERE note_json->>'identifier' IS NOT NULL;  -- the oauth claim, spelled ->> with no casts, the spelling level2's filters generate
 
 ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
