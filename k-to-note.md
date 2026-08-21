@@ -156,6 +156,12 @@ The road ahead this positions for: ecosystem neighbors like Doge. or Solana. arr
 
 Backfill: `SET f0_text = lower(f0_text), f1_text = f0_text, f2_text = f0_text WHERE type_text = 'Ethereum.' AND f1_text = ''` — every SET expression reads the old row, so f1 and f2 receive the checksummed original in the same statement that lowercases f0; idempotent behind the f1 blank guard, which also skips rows the converted code already wrote complete.
 
+## Discord., a remnant
+
+The read-only survey (August 21, 2026) censused the table: Browser., Email., Ethereum., Name., Oauth., Password., Phone., Totp. — all matching this map, with Name. untouched by this migration (f triad only, no k slots, nothing moves) — plus one visible row of type_text 'Discord.', from the April 2026 demo era before oauth unified under 'Oauth.'. Its f slots follow a retired convention (handle in f0, an email in f1, a display combination in f2) and its k1 holds the Discord account id. The survey traced it superseded: the same account and same user are properly linked as a visible Oauth. event-4 row, with the demo era's hidden churn behind it. Nothing here is worth translating.
+
+Disposition: one statement rides the data migration and hides it — `UPDATE credential_table SET hide = 1 WHERE type_text = 'Discord.' AND hide = 0` — the ledger way, history kept, nothing deleted, and the contraction then drops its k1 along with everyone else's.
+
 ## What this changes upstream
 
 Absorbed: every delta this document forced — hash_text in the expansion, the credential13 and credential14 index set, the EXPLAIN subject shift, checkHashOrBlank, validateWallet, credentialSet's new parameters, the survey additions, and the per-type backfill sketches — is reconciled into credential-migration.md's choreography (August 21, 2026). This map is the per-type reference; that document moves what this one maps.

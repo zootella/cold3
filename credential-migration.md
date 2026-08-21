@@ -48,6 +48,8 @@ Three disciplines for the hard part:
 
 **A read-only survey first.** Before the backfill file is written, one query groups production rows by type_text and event and reports which k slots are non-blank in each combination — testing the slot map against what the table actually holds, rather than what the code suggests it should. The survey also runs both casts read-only across every non-blank value — the oauth proof cast (k8_text::jsonb) and the Password. cycles cast (k2_text::bigint) — the same proof hit_table's backfill got. And it proves hash_text's tenants and the f repair safe before either lands: every Browser. and Password. k1 is 52-character base32, and every Ethereum. f0 is a 42-character 0x address with f1 and f2 blank.
 
+Ran August 21, 2026, via supabase db query. The map held exactly: every type uses precisely the slots k-to-note.md says it does, k5 through k7 are empty everywhere, all 15 oauth proofs cast to jsonb, all 13 password cycles cast to bigint, both hash tenants are clean, and all 99 Ethereum. f0 cells are checksummed address-shaped. One finding: a single visible Discord. row, a pre-unification remnant — census and disposition recorded in k-to-note.md.
+
 **One idempotent UPDATE per type, absorbing event variance automatically.** jsonb_strip_nulls over NULLIF turns blank slots into absent keys, so one statement per type handles every event shape without branching. The strip runs over the scalar keys only, because jsonb_strip_nulls is recursive and the proof legitimately holds nulls — Discord's global_name, GitHub's profile name — which are data to keep verbatim, not blanks to drop; the proof concatenates on separately:
 
 ```sql
