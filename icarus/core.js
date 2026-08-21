@@ -974,6 +974,7 @@ export function checkHash(s) {
 	checkText(s); if (s.length != hash_length) toss('data', {s})
 	Data({base32: s})//this will do a round trip check and throw if not ok, but may be slow for every request
 }
+export function checkHashOrBlank(s) { if (s === ''); else checkHash(s); return s }//a cell that holds a hash or the blank, like credential_table's hash_text
 export async function hashText(s) {//convenience function which goes text encoder to base 32
 	return (await hashData(Data({text: s}))).base32()//uses Normalization Form C inside Data
 }
@@ -987,6 +988,10 @@ export async function hashData(data) {
 test(() => {
 	checkHash('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//fine
 	//also tried blank, bad character, too short, too long
+	checkHashOrBlank('OJW3O2W4BCQTNLXSZPFMOTMVRSAXI354UD4HIHNQC6U35ZW3QZBA')//a real hash passes
+	checkHashOrBlank('')//and so does the blank
+	let tossed = false; try { checkHashOrBlank('not a hash') } catch (e) { tossed = true }
+	ok(tossed)//but nothing in between
 })
 test(async () => {
 	ok((await hashText('example')) == 'KDMFRYEYL3GH6YCBRKXQZRNLLB7UFQSXBKEEBFNJ5DGKZUHWKROA')

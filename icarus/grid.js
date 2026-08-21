@@ -26,7 +26,7 @@ credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove, credentialTotpClear,
 credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialWalletHolder, credentialWalletRefusal,
-credentialWalletProve1, credentialWalletProve2,
+credentialWalletProve1, credentialWalletProve2, validateWallet,
 credentialOauthGet, credentialOauthSet, credentialOauthRemove, credentialOauthChallenge,
 credentialOtpGet, credentialOtpSend, credentialOtpEnter, credentialOtpRemove, credentialOtpHolder,
 credentialOtpMentioned, credentialOtpChallenged, credentialOtpValidated,
@@ -234,12 +234,13 @@ grid(async () => {//password: set, change, verify single active, remove
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
+	let hash1 = random32(), hash2 = random32()//real-shaped hashes, because credentialSet checks the hash cell's format
 	ok((await credentialPasswordGet({userTag})) == false)//no password yet
-	await credentialPasswordSet({userTag, hash: 'hash1', cycles: 100})//set initial
-	ok((await credentialPasswordGet({userTag})).hash == 'hash1')//verify set
-	await credentialPasswordSet({userTag, hash: 'hash2', cycles: 200})//change password
+	await credentialPasswordSet({userTag, hash: hash1, cycles: 100})//set initial
+	ok((await credentialPasswordGet({userTag})).hash == hash1)//verify set
+	await credentialPasswordSet({userTag, hash: hash2, cycles: 200})//change password
 	let result = await credentialPasswordGet({userTag})
-	ok(result.hash == 'hash2' && result.cycles == 200)//verify changed
+	ok(result.hash == hash2 && result.cycles == 200)//verify changed
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
 	ok(rows.length == 1)//only one active password after change
 	await credentialPasswordRemove({userTag})
@@ -572,8 +573,9 @@ grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wal
 	ok(prove.outcome == 'WalletFull.')
 	ok(!prove.nonce && !prove.envelope)//nothing to sign against, so the page can't open a signature request
 
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3.toLowerCase()})//mentions write the triad now, f0 in the matching lowercase form
 	ok(rows.length == 1 && rows[0].event == 2)//the mention is on the record, and no challenge row, because we never challenged
+	ok(rows[0].f1_text == wallet3 && rows[0].f2_text == wallet3)//and the mention carries the whole triad: the backfill's blank-f1 guard trusts that every row the new code writes is complete
 })
 grid(async () => {//oauth: link multiple providers, re-link single active per provider, remove
 	let {clear} = await getDatabase()
@@ -698,6 +700,78 @@ grid(async () => {//browser: multi-user flow, sign out doesn't affect other user
 	ok((await credentialBrowserGet({browserHash: browserC})) == false)
 	ok((await credentialBrowserGet({browserHash: browserB})).userTag == user2)//user2 unaffected at B
 })
+grid(async () => {//dual write: every per-type Set fills the k slots it always has, and now also hash_text and the note, per the k-to-note map
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+
+	let hash = random32(), cycles = 40
+	await credentialPasswordSet({userTag, hash, cycles})
+	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.'}))[0]
+	ok(row.hash_text == hash && row.k1_text == hash)//the hash rides in both homes during the window
+	ok(row.note_json.cycles === 40 && row.k2_text == '40')//cycles a real number in the note, text in the slot
+	ok((await credentialPasswordGet({userTag})).hash == hash)//reads still ride the k columns
+
+	let secret = 'X7C25WC6CUCF77BO7BOCVUHAZ553UKYA'
+	await credentialTotpSet({userTag, secret})
+	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.'}))[0]
+	ok(row.note_json.secret == secret && row.k1_text == secret && row.hash_text == '')//a secret is a key, not a hash, so it rides in the note
+
+	let browserHash = random32()
+	await credentialBrowserSet({userTag, browserHash})
+	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Browser.'}))[0]
+	ok(row.hash_text == browserHash && row.k1_text == browserHash)
+	ok(makeText(row.note_json) == '{}')//browser rows carry no note
+
+	await credentialOauthChallenge({userTag, provider: 'Discord.'})
+	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3}))[0]
+	ok(row.note_json.provider == 'Discord.' && row.k1_text == 'Discord.')//a challenge row's note carries only the provider
+
+	let v = validateEmailOrPhone('alice@example.com')
+	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})//the email and phone challenged row, the map's other {provider} note
+	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Email.', event: 3}))[0]
+	ok(row.note_json.provider == 'Amazon.' && row.k1_text == 'Amazon.')
+})
+grid(async () => {//dual write, oauth: the note carries the named account, null from the provider becomes an absent key, and the k slots take blanks
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd1', handle: 'alex_dev_42', name: null, proof: {account: {providerAccountId: 'd1'}, profile: {global_name: null}, user: {}}})//discord with no display name set hands over null
+	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 4}))[0]
+	ok(row.note_json.provider == 'Discord.' && row.note_json.identifier == 'd1' && row.note_json.handle == 'alex_dev_42')
+	ok(!('name' in row.note_json))//null became absence, the blank of a property
+	ok(row.k4_text == '')//and the k slot took its blank, where a null used to toss at checkTextOrBlank
+	ok(row.note_json.proof.profile.global_name === null)//inside the proof, null is data and rides verbatim
+	ok(makeObject(row.k8_text).profile.global_name === null)//matching the k8 text copy
+	ok((await credentialOauthGet({userTag}))[0].handle == 'alex_dev_42')//reads still ride the k columns
+})
+grid(async () => {//dual write, wallet: new rows carry the full f triad, and matching finds rows in the old spelling until the backfill converges them
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let alice = Tag(), bob = Tag()
+	let checksummed = '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'//an EIP-55 example address
+	let lower = checksummed.toLowerCase()
+
+	let v = await validateWallet(lower)//validate accepts any casing
+	ok(v.ok && v.f0 == lower && v.f1 == checksummed && v.f2 == checksummed)//and mints the triad: lowercase to match, checksummed to face
+	ok(!(await validateWallet('0xnothexatall')).ok)//text that isn't an address doesn't validate
+
+	ok((await credentialWalletSet({userTag: alice, address: checksummed})).ok)
+	let row = (await queryGet('credential_table', {user_tag: alice, type_text: 'Ethereum.', event: 4}))[0]
+	ok(row.f0_text == lower && row.f1_text == checksummed && row.f2_text == checksummed)//the new shape
+	ok((await credentialWalletGet({userTag: alice}))[0] == checksummed)//and callers still see the checksummed face
+	ok((await credentialWalletRefusal({userTag: alice, address: lower})) == 'WalletAlreadyProven.')//her own address in the other spelling is still her own address
+
+	//an old-shape row, the way rows sat before this deploy: checksummed alone in f0, f1 and f2 blank
+	let old = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
+	await queryAddRow({table: 'credential_table', row: {user_tag: bob, type_text: 'Ethereum.', event: 4, f0_text: old, f1_text: '', f2_text: ''}})
+	ok((await credentialWalletHolder({f0: old.toLowerCase()})).userTag == bob)//lowercase input finds the checksummed old row
+	ok((await credentialWalletHolder({f0: old})).userTag == bob)//as does checksummed input
+	ok((await credentialWalletGet({userTag: bob}))[0] == old)//the old row's face comes from f0 until the backfill fills its triad
+	ok((await credentialWalletRefusal({userTag: alice, address: old.toLowerCase()})) == 'WalletClaimedElsewhere.')//the claim guard sees through the spelling difference, which is the window bug the dual-form matching prevents
+	await credentialWalletRemove({userTag: bob, f0: old.toLowerCase()})//remove reaches the old spelling too
+	ok((await credentialWalletHolder({f0: old})) == false)//released
+})
 grid(async () => {//name: get by userTag, get by raw1, check collisions
 	let {clear} = await getDatabase()
 	await clear('credential_table')
@@ -753,7 +827,7 @@ grid(async () => {//sign-up creates three credentials, then user removes name an
 	let userTag = Tag()
 	let browserHash = random32()
 	await credentialNameSet({userTag, raw1: 'New-User', raw2: 'New User'})
-	await credentialPasswordSet({userTag, hash: 'testhash', cycles: 42})
+	await credentialPasswordSet({userTag, hash: random32(), cycles: 42})
 	await credentialBrowserSet({userTag, browserHash})
 
 	//verify all three credentials exist
@@ -781,7 +855,7 @@ grid(async () => {//close account: user signs up, closes account, can't sign bac
 	let userTag = Tag()
 	let browserHash = random32()
 	await credentialNameSet({userTag, raw1: 'Closing-User', raw2: 'Closing User'})
-	await credentialPasswordSet({userTag, hash: 'myhash', cycles: 50})
+	await credentialPasswordSet({userTag, hash: random32(), cycles: 50})
 	await credentialBrowserSet({userTag, browserHash})
 
 	//verify all three credentials exist

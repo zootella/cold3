@@ -9,7 +9,7 @@ Tag, checkTagOrBlank, checkTag,
 Data, decryptData, hash_size, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
-checkHash, hashText, hashObject, given,
+checkHash, checkHashOrBlank, hashText, hashObject, given,
 totpEnroll, totpValidate, totpGenerate, checkTotpCode, checkTotpSecret,
 otpGenerate, otpPrefix, prefix_alphabet,
 makePlain, makeObject, makeText, checkPlain,
@@ -436,7 +436,7 @@ export async function credentialPasswordGet({userTag}) {
 export async function credentialPasswordSet({userTag, hash, cycles}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
-	await credentialSet({userTag, type: 'Password.', event: 4, k1: hash, k2: cycles+''})
+	await credentialSet({userTag, type: 'Password.', event: 4, hash, note: {cycles}, k1: hash, k2: cycles+''})//the window's dual write: hash in both homes, cycles a real number in the note and text in the slot
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
@@ -450,7 +450,7 @@ export async function credentialPasswordRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \__\___/ \__| .__/ 
 //                                                             |_|    
 
-//totp: a user can have a single verified enrollment or nothing; k1 is the shared secret key which generates codes
+//totp: a user can have a single verified enrollment or nothing; the shared secret key which generates codes rides in the note and k1 during the window
 export async function credentialTotpGet({userTag}) {
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
@@ -461,7 +461,7 @@ export async function credentialTotpGet({userTag}) {
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
-	await credentialSet({userTag, type: 'Totp.', event: 4, k1: secret})
+	await credentialSet({userTag, type: 'Totp.', event: 4, note: {secret}, k1: secret})//the window's dual write
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
@@ -575,16 +575,31 @@ export const walletConstants = Object.freeze({
 	*/
 })
 
-//wallet: a user can prove they control up to walletConstants.limit Ethereum addresses; f0 is the checksummed address, and no two users can hold the same one
-export async function credentialWalletGet({userTag}) {//list the addresses this user has proven, newest first
-	checkTag(userTag)
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
-	return rows.map(row => row.f0_text)//[address, ...] checksummed, zero to the limit of them
+//wallet: a user can prove they control up to walletConstants.limit Ethereum addresses, and no two users can hold the same one
+//the address rides the f triad: f0 the lowercased address to match as unique, f1 and f2 both the EIP-55 checksummed face
+//in the window before the backfill converges them, old rows hold the checksummed address alone in f0 with f1 and f2 blank,
+//so the lookups here match both spellings; the read-switch deploy narrows them to lowercase alone
+
+//validate an ethereum address into the three forms; any casing is accepted, and text that isn't an address returns {ok: false}
+export async function validateWallet(raw) {
+	if (typeof raw != 'string') return {ok: false}
+	let {viem} = await viemDynamicImport()
+	let checksummed
+	try { checksummed = viem.getAddress(raw.toLowerCase()) } catch (e) { return {ok: false} }//getAddress computes the checksum casing, and throws on text that isn't a 20 byte hex address
+	return {ok: true, f0: checksummed.toLowerCase(), f1: checksummed, f2: checksummed}
 }
 
-export async function credentialWalletHolder({f0}) {//which user, if any, has proven they control this address?
+export async function credentialWalletGet({userTag}) {//list the addresses this user has proven, newest first, as checksummed faces
+	checkTag(userTag)
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
+	return rows.map(row => row.f2_text || row.f0_text)//[address, ...] checksummed, zero to the limit of them; an old-shape row keeps its checksummed face in f0 until the backfill fills its triad
+}
+
+export async function credentialWalletHolder({f0}) {//which user, if any, has proven they control this address? any spelling accepted
 	checkText(f0)
-	let rows = await queryGet('credential_table', {type_text: 'Ethereum.', f0_text: f0, event: 4})
+	let v = await validateWallet(f0); if (!v.ok) toss('use', {f0})//callers hold addresses a wallet or our own table handed them, so anything else is a broken caller
+	let rows = await queryGet('credential_table', {type_text: 'Ethereum.', f0_text: v.f0, event: 4})//the matching form
+	if (!rows.length) rows = await queryGet('credential_table', {type_text: 'Ethereum.', f0_text: v.f1, event: 4})//the old spelling, until the backfill
 	let row = rows[0]
 	if (row) return {userTag: row.user_tag}
 	return false//nobody has proven it; mentions and challenges reserve an address for no one
@@ -596,8 +611,8 @@ export async function credentialWalletRefusal({userTag, address}) {
 	checkTag(userTag); checkText(address)
 	let holder = await credentialWalletHolder({f0: address})
 	if (holder && holder.userTag != userTag) return 'WalletClaimedElsewhere.'//one address, one holder; the account that has it must remove it before anyone else can prove it
-	let mine = await credentialWalletGet({userTag})//both sides of this comparison are checksummed, so they match exactly
-	if (mine.includes(address)) return 'WalletAlreadyProven.'//this user holds it already, so there's nothing here left to prove
+	let mine = await credentialWalletGet({userTag})//checksummed faces
+	if (mine.some(a => a.toLowerCase() == address.toLowerCase())) return 'WalletAlreadyProven.'//compared in lowercase, the matching form, so no spelling difference slips a duplicate through
 	if (mine.length >= walletConstants.limit) return 'WalletFull.'//at the limit; the remedy is to remove one and make room
 	return false
 }
@@ -608,13 +623,16 @@ export async function credentialWalletSet({userTag, address}) {
 	checkTag(userTag); checkText(address)
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) return {ok: false, outcome}
-	await credentialSet({userTag, type: 'Ethereum.', event: 4, f0: address})
+	let v = await validateWallet(address); if (!v.ok) toss('use', {address})
+	await credentialSet({userTag, type: 'Ethereum.', event: 4, f0: v.f0, f1: v.f1, f2: v.f2})
 	return {ok: true}
 }
 
 export async function credentialWalletRemove({userTag, f0}) {//hide this user's proof of one address, freeing their slot and releasing the address for anyone to prove
 	checkTag(userTag); checkText(f0)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: f0, event: 4})
+	let v = await validateWallet(f0); if (!v.ok) toss('use', {f0})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event: 4})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f1, event: 4})//the old spelling, until the backfill
 }
 
 /*
@@ -640,15 +658,16 @@ again shortly" during an outage instead of being told their good signature is ba
 //returns {outcome} when a rule declines the flow before it starts, or {nonce, envelope} to go ahead
 export async function credentialWalletProve1({userTag, browserHash, address}) {
 	checkTag(userTag); checkHash(browserHash); checkText(address)
+	let v = await validateWallet(address); if (!v.ok) toss('use', {address})//the page connected a real wallet, so anything else is a broken caller
 
-	await credentialSet({userTag, type: 'Ethereum.', event: 2, f0: address})//event 2: this browser mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
+	await credentialSet({userTag, type: 'Ethereum.', event: 2, f0: v.f0, f1: v.f1, f2: v.f2})//event 2: this browser mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
 
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) return {outcome}//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
 
 	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
 	let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {nonce, address, browserHash})
-	await credentialSet({userTag, type: 'Ethereum.', event: 3, f0: address})//event 3: we challenged this address with a nonce
+	await credentialSet({userTag, type: 'Ethereum.', event: 3, f0: v.f0, f1: v.f1, f2: v.f2})//event 3: we challenged this address with a nonce
 	return {nonce, envelope}
 }
 
@@ -744,11 +763,11 @@ export function credentialOauthParse(provider, proof) {//back from provider's oa
 
 /*
 oauth: a user can link any number of oauth accounts but only have one account for each provider
-all oauth rows share type Oauth. the provider like Discord. or Google. lives in k1
+all oauth rows share type Oauth. the provider like Discord. or Google. rides in the note and k1 during the window
 */
 export async function credentialOauthChallenge({userTag, provider}) {//record we're sending the user into a third party oauth flow
 	checkTag(userTag); checkAction(provider)
-	await credentialSet({userTag, type: 'Oauth.', event: 3, k1: provider})//event 3 challenged; be able to see how long users take or if for whatever reason they don't make it through in significant numbers
+	await credentialSet({userTag, type: 'Oauth.', event: 3, note: {provider}, k1: provider})//event 3 challenged; be able to see how long users take or if for whatever reason they don't make it through in significant numbers
 }
 
 /*
@@ -779,10 +798,11 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	await credentialSet({
 		userTag, type: 'Oauth.', event: 4,
 		f0: email?.f0, f1: email?.f1, f2: email?.f2,//store email from provider here
+		note: {provider, identifier, handle: handle ?? undefined, name: name ?? undefined, proof},//the named account; ?? undefined turns the null a provider hands over into an absent key, the blank of a property, while the proof keeps its inner nulls verbatim
 		k1: provider,//provider name like 'Discord.'
 		k2: identifier,//user's account number with that provider; user doesn't know it, stays the same through handle edits
-		k3: handle,//provider's @-style handle (or gmail address as stand-in for Google)
-		k4: name,//provider's display name, separate from handle so both are queryable; panel's fallback chain handles the "show whichever we have" case
+		k3: handle ?? '',//provider's @-style handle (or gmail address as stand-in for Google); discord and github hand over null when the user never set one, and the slot's blank is ''
+		k4: name ?? '',//provider's display name, separate from handle so both are queryable; panel's fallback chain handles the "show whichever we have" case
 		//(leaving k5-7 blank for future use, then at the end, for auditability, we save the whole proof)
 		k8: makeText(proof),//auth.js/provider slice (drops our envelope wrapper) for audit and future re-parsing beyond datadog's retention
 	})
@@ -831,7 +851,7 @@ export async function credentialOtpMentioned({userTag, type, v}) {//record a use
 
 export async function credentialOtpChallenged({userTag, type, v, provider}) {//record we used provider to send a code to address v
 	checkTag(userTag); checkAction(provider)//provider is a canonical tag like 'Amazon.' or 'Twilio.'; the endpoint maps the page's single letter before any of this
-	await credentialSet({userTag, type, event: 3, f0: v.f0, f1: v.f1, f2: v.f2, k1: provider})//keep a record of which provider we used
+	await credentialSet({userTag, type, event: 3, f0: v.f0, f1: v.f1, f2: v.f2, note: {provider}, k1: provider})//keep a record of which provider we used
 }
 
 export async function credentialOtpValidated({userTag, type, v}) {//the user typed the correct code; save proof they control this address
@@ -871,7 +891,7 @@ export async function credentialOtpRemove({userTag, type, f0}) {//hide every eve
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_| |_.__/|_|  \___/ \_/\_/ |___/\___|_|   
 //                                                                                       
 
-//browser: user is signed in at this browser; k1 is browserHash
+//browser: user is signed in at this browser; browserHash rides in hash_text and k1 during the window
 export async function credentialBrowserGet({browserHash}) {//what user, if any, is signed in at this browser?
 	checkHash(browserHash)
 	let rows = await queryGet('credential_table', {type_text: 'Browser.', k1_text: browserHash, event: 4})
@@ -881,7 +901,7 @@ export async function credentialBrowserGet({browserHash}) {//what user, if any, 
 }
 export async function credentialBrowserSet({userTag, browserHash}) {//sign this user in at this browser
 	checkTag(userTag); checkHash(browserHash)
-	await credentialSet({userTag, type: 'Browser.', event: 4, k1: browserHash})
+	await credentialSet({userTag, type: 'Browser.', event: 4, hash: browserHash, k1: browserHash})//the window's dual write: the hash in both homes, and no note at all
 }
 export async function credentialBrowserRemove({userTag}) {//sign this user out everywhere
 	checkTag(userTag)
@@ -1020,15 +1040,17 @@ ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: defau
 export async function credentialGet({userTag}) {//get all the credential information about the given user
 	//ttd november2025
 }
-export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', k1 = '', k2 = '', k3 = '', k4 = '', k5 = '', k6 = '', k7 = '', k8 = ''}) {
+export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', hash = '', note = {}, k1 = '', k2 = '', k3 = '', k4 = '', k5 = '', k6 = '', k7 = '', k8 = ''}) {
 	checkTag(userTag); checkText(type); checkInt(event, 1)//these three are required, everything else is optional
 	checkTextOrBlank(f0); checkTextOrBlank(f1); checkTextOrBlank(f2)
+	checkHashOrBlank(hash)//the row's one meaningful hash, or blank; note is guarded below by level2's isPlain check on the json cell
 	checkTextOrBlank(k1); checkTextOrBlank(k2); checkTextOrBlank(k3); checkTextOrBlank(k4); checkTextOrBlank(k5); checkTextOrBlank(k6); checkTextOrBlank(k7); checkTextOrBlank(k8)
 	await queryAddRow({table: 'credential_table', row: {
 		user_tag: userTag,
 		type_text: type,
 		event: event,
 		f0_text: f0, f1_text: f1, f2_text: f2,
+		hash_text: hash, note_json: note,
 		k1_text: k1, k2_text: k2, k3_text: k3, k4_text: k4, k5_text: k5, k6_text: k6, k7_text: k7, k8_text: k8,
 	}})
 }
