@@ -1,6 +1,6 @@
 # data tasks
 
-The queue of data-layer work: none of it difficult, each task multiple turns, done in an order we choose. Pick one; the others stay recorded and ready. Live-table changes ride the proven migration flow — expansion and contraction, each migration file and its SQL() registry edit in the same commit, grid tests beside code changes.
+The queue of data-layer work: none of it difficult, each task multiple turns, done in an order we choose. Pick one; the others stay recorded and ready. Live-table changes ride the proven migration flow — migration.md holds the playbook, each migration file and its SQL() registry edit in the same commit, grid tests beside code changes.
 
 ## smaller dog
 
@@ -12,7 +12,7 @@ Pick from the three approaches presented in database-stack.md's backup-plan sect
 
 ## credential table consolidation
 
-The k1–k8 collapse, now planned in full in credential-migration.md: eight positional text columns and their eight partial indexes become named properties in one note_json cell, by expansion and contraction with two deploys, a per-type backfill, and json-path filtering built into level2 first. The f columns stay — f0 and f2 are live uniqueness margins, and f1 rides with its validate* family. This is the selected current task.
+Done August 22, 2026: the k slots collapsed into hash_text and note_json by expansion and contraction with two deploys, every station verified, the drift check clean. The playbook the sprint proved lives in migration.md; the doctrine it refined lives in jsonb.md.
 
 ## xray
 

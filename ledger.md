@@ -107,20 +107,6 @@ The ledger pattern was a real design choice — appealing for its uniformity. Bu
 
 If we're going to do this migration, the time to decide is when we have a concrete forensic need that the current pattern can't satisfy — not a hypothetical. The signal "we need to investigate account X's compromise" is the right trigger.
 
-## A separate, orthogonal initiative: collapse k1–k8 into a json cell
-
-json is an approved cell type, proven end to end on hit_table — tables.txt tells the type's story, and jsonb.md holds the efficiency research and guidance. This section plans the second adoption. It is purely about column shape, with no dependence on whether tables stay ledger or move to edit-in-place, how removes work, or where audit lives — the two decisions don't interact.
-
-The trigger is concrete: credential_table has k1_text through k8_text — eight generic text columns we widened from four. Oauth uses six of those eight slots with three "reserved" for future use. Each new credential type needs a hand-maintained mapping of "which k-slot holds which field for this type." The widening signal — "what about k12 next year?" — is the smell that points at jsonb. delay_table's d1 through d5 is a third instance of the same pattern, noted in jsonb.md and not yet scoped.
-
-### The shape of the collapse
-
-The eight columns and their eight partial indexes (credential5 through credential12) become one json cell holding a per-type payload like `{provider: 'Discord.', identifier: 'abc123', handle: 'zootella', name: 'Zoo Tella', proof: {...}}` — self-labeled keys a reader decodes without a slot map, no more widening migrations, and per-type shapes that differ naturally. For the paths queries actually filter on — likely just provider and identifier, for the cross-row uniqueness lookups — expression indexes make an indexed json path read like a real column; jsonb.md's efficiency section holds that research and the promote-when-a-query-arrives guidance. The known cost is losing SQL-level type enforcement on inner fields, which our conventions never leaned on: the application checks at level2 are the boundary that matters.
-
-The migration rides the choreography hit_table proved — expansion (the json column beside k1–k8), then the code, then the backfill per type mapping slots to named keys, then contraction (drop the columns and their indexes) — with the lockstep rule holding each migration file and its SQL() registry edit to the same commit. What this sprint will need that hit_table's didn't: json-path filtering in the level2 query helpers, with the helpers generating the one canonical spelling for both the index DDL and the filters, deliberately unbuilt until this sprint needs it. At our scale the work is measured in hours, and the cost asymmetry still applies: collapsing while oauth is the main consumer of the k slots is dramatically cheaper than after several credential types depend on them.
-
-If we go to C+D later, the audit table would likely also want a json payload column for its variable per-action details — the approved type sets that up cleanly.
-
 ## Claude's thoughts on the ledger-vs-traditional question
 
 I'd lean toward C+D when we do this sprint. Reasons:
@@ -152,6 +138,6 @@ If we build an `audit_table` (the C+D pattern, or the unified-audit variant), it
 - Datadog shrinks dramatically, or goes away entirely. If it stays, it stays small — just `dog()` for fire-and-forget debug logging, not the audit channel.
 - This aligns with the Robin system, which already plans to use Supabase. The pattern "our operational records live in our own database" becomes consistent across features rather than split between Supabase and a third-party log vendor.
 
-**Why this is appealing.** The audit-in-Supabase approach doesn't have Datadog's fatal flaw — a broken state that can't reach an external service can still, often, write a row to the same database the app already talks to. And our own database has no retention cliff: Datadog retention is finite; `audit_table` rows last as long as we want. The forensic-reconstruction goal from the C+D discussion above is better served by audit-in-our-own-DB than by audit-in-Datadog.
+**Why this is appealing.** The audit-in-Supabase approach doesn't have Datadog's fatal flaw — a broken state that can't reach an external service can still, often, write a row to the same database the app already talks to. And our own database has no retention cliff: Datadog retention is finite; `audit_table` rows last as long as we want. The forensic-reconstruction goal from the C+D discussion above is better served by audit-in-our-own-DB than by audit-in-Datadog. The audit table's variable per-action details would ride a json payload cell — the type is proven, ledger_table's note_json already works this way.
 
-**What to weigh before committing.** Datadog does some things a plain table doesn't: alerting, dashboards, full-text search across unstructured logs, cross-service correlation. If we deprecate it we either lose those or rebuild lightweight versions. The honest scope: this is a third large initiative alongside ledger-vs-traditional and jsonb-adoption, and it should be decided together with the audit_table design — the audit_table's schema is the thing that determines whether it can absorb what `logAudit` does today.
+**What to weigh before committing.** Datadog does some things a plain table doesn't: alerting, dashboards, full-text search across unstructured logs, cross-service correlation. If we deprecate it we either lose those or rebuild lightweight versions. The honest scope: this is a large initiative alongside ledger-vs-traditional, and it should be decided together with the audit_table design — the audit_table's schema is the thing that determines whether it can absorb what `logAudit` does today.

@@ -44,6 +44,7 @@ settings_json   JSONB     a plain json object of plain data; the blank cell is {
 
 _tag, _hash, and _text are strings, and _json is a plain object; everything else must be an integer
 a column which can be a tag or blank is _text
+as is a column which can be a hash or blank, like credential's hash_text
 as is a column which can be text or numerals
 suffixes name our checked kind of cell, never the exact sql type--_hash rides CHAR(52), and _json rides JSONB
 

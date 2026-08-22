@@ -2,13 +2,11 @@
 
 A guide to the in-progress planning and architecture documents. This is a high-level orientation, and the place a fresh session starts: read this first to understand what's next, which document to open for a given concern, and where each sits relative to the others. The documents are grouped by readiness — **for now** in the front row, **for soon** and **for later** in piles a distance further away.
 
-Three further documents are done and retired. svelteless.md: the spike confirmed, the SvelteKit workspace at oauth.cold3.cc is deleted, and the OAuth flow now runs on @auth/core directly inside the apex worker at `site/server/api/oauth/[...all].js`. brownie.md: the brownie is built and shipped with both credential tenants aboard — totp enrollments and otp challenges ride as notes, no side cookie remains — and its design essay moved inline to icarus/level2.js, above the brownie functions, where the finished code documents itself. data-sprint.md: the jsonb sprint it handed off is complete — json is an approved cell type, hit_table converted — and its remainder folded into this guide.
+Five further documents are done and retired. svelteless.md: the spike confirmed, the SvelteKit workspace at oauth.cold3.cc is deleted, and the OAuth flow now runs on @auth/core directly inside the apex worker at `site/server/api/oauth/[...all].js`. brownie.md: the brownie is built and shipped with both credential tenants aboard — totp enrollments and otp challenges ride as notes, no side cookie remains — and its design essay moved inline to icarus/level2.js, above the brownie functions, where the finished code documents itself. data-sprint.md: the jsonb sprint it handed off is complete — json is an approved cell type, hit_table converted — and its remainder folded into this guide. credential-migration.md and k-to-note.md: the k collapse they planned shipped in August 2026 — credential_table's k slots became hash_text and note_json, the Ethereum f triad repaired along the way — with the choreography they proved generalized into migration.md and the doctrine they refined folded into jsonb.md and credential.md.
 
-# Up next — the credential migration
+# Up next — the data queue continues
 
-The selected current work of the data sprint is **credential-migration.md**: collapsing credential_table's k1–k8 slots into one json column named note_json — expansion and contraction with two deploys, a per-type data migration with a read-only survey first and a grid rehearsal of the backfill. A fresh session starts there; the document holds the scope decision (the f columns stay), the per-type payload map, the full choreography, and the open decisions, beginning with level2's json-path filtering design.
-
-Behind it in the queue, enumerated in data.md: xray (whose scope awaits the user's explanation) — and outside this sprint, recorded for future ones: the smaller-dog logging simplification (smaller-dog.md) and the backup-plan decision (database-stack.md's bookmark).
+The credential migration is complete, so the queue in data.md leads: xray, whose scope awaits the user's explanation, with the smaller-dog logging simplification (smaller-dog.md) and the backup-plan decision (database-stack.md's bookmark) recorded for future sprints.
 
 # For now — the front row
 
@@ -32,7 +30,11 @@ How cold3 uses its database, in production and development: the four protocol la
 
 ## jsonb.md — guidance for json columns
 
-json is an approved cell type, proven end to end on hit_table; tables.txt tells the type's story. This document holds the efficiency research and the guidance for deciding future columns — payload bags ride as json, margins and identity stay real columns, and a path gets an expression index the day a real query arrives. The next adoption is credential_table's k1–k8 collapse, planned in ledger.md; delay_table's d1–d5 is a noted third instance of the same widening smell.
+json is an approved cell type, proven in two adoptions — hit_table's cast and credential_table's per-type translation; tables.txt tells the type's story. This document holds the efficiency research and the guidance for deciding future columns — payload bags ride as json, margins and identity stay real columns even when meaning varies by type (credential's hash_text), and a path gets an expression index the day a real query arrives. delay_table's d1–d5 looked like the widening smell and deliberately stays numeric.
+
+## migration.md — how a live table changes shape
+
+The expansion-and-contraction playbook, proven on hit_table and then credential_table: the choreography step by step with the why at each — scaffolding defaults on both column generations, the dual-write deploy splitting the problem by date, the three data-migration disciplines, the read-switch, the contraction, and the drift-check close — plus the one-deploy-or-two rule and the matching-key variant. Read before any sprint that touches a live table.
 
 ## testing.md — the test system
 
@@ -44,7 +46,7 @@ Picked up once the front-row work lands. ledger.md sits here on its own merits n
 
 ## ledger.md — data layer patterns for the whole application
 
-The deepest architectural document. Three orthogonal questions about how `credential_table` (and analogous tables) should be shaped: (1) ledger-vs-traditional — keep appending rows and flipping hide flags, or move to edit-in-place with a paired `audit_table`; (2) jsonb adoption — collapse `k1`–`k8` into one jsonb column so the recurring "what about k12 next year" smell goes away; (3) Datadog deprecation — replace `logAudit` with an `audit_table` that lives in our own database, since Datadog's fatal flaw (broken state can't reach Datadog) makes the audit channel unreliable exactly when it's needed. Each decision can be made independently but they share an "audit belongs in Supabase" direction. Whole application data layer; the broadest scope and the highest-cost migration. It sits in this pile only for the parts the storage fork forces — whether provisional state becomes rows, and how that interacts with ledger-vs-traditional — while the full migration hasn't started and waits for a concrete forensic need, which is later work.
+The deepest architectural document. Two orthogonal questions about how `credential_table` (and analogous tables) should be shaped: (1) ledger-vs-traditional — keep appending rows and flipping hide flags, or move to edit-in-place with a paired `audit_table`; (2) Datadog deprecation — replace `logAudit` with an `audit_table` that lives in our own database, since Datadog's fatal flaw (broken state can't reach Datadog) makes the audit channel unreliable exactly when it's needed. (A third question it once held — collapsing the k columns into a json cell — shipped in August 2026.) Each decision can be made independently but they share an "audit belongs in Supabase" direction. Whole application data layer; the broadest scope and the highest-cost migration. It sits in this pile only for the parts the storage fork forces — whether provisional state becomes rows, and how that interacts with ledger-vs-traditional — while the full migration hasn't started and waits for a concrete forensic need, which is later work.
 
 # For later — a distance further away
 
@@ -70,7 +72,7 @@ The three piles above are the readiness view. Two other lenses cut across them.
 
 - **One credential type**: oauth.md (refinement), otp.md (integration, done)
 - **Whole credential system**: credential.md (umbrella, direction-setting), map.md (current-state map, staging the storage sprint), first-night-accounts.md (forward-looking signup-flow preview)
-- **Whole application data layer**: ledger.md (storage patterns underneath everything), with database-stack.md, jsonb.md, and testing.md as its reference shelf
+- **Whole application data layer**: ledger.md (storage patterns underneath everything), with database-stack.md, jsonb.md, migration.md, and testing.md as its reference shelf
 - **Outside sprint sequencing**: digital-authentication.md (reference survey of the wider world)
 
 **By kind of change:**
