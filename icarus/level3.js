@@ -430,13 +430,13 @@ export async function credentialPasswordGet({userTag}) {
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
 	let row = rows[0]
-	if (row) return {hash: row.k1_text, cycles: textToInt(row.k2_text)}
+	if (row) return {hash: row.hash_text, cycles: row.note_json.cycles}
 	return false//no current password
 }
 export async function credentialPasswordSet({userTag, hash, cycles}) {
-	checkTag(userTag)
+	checkTag(userTag); checkInt(cycles, 1)//the note holds cycles as a real number, so the boundary checks it is one
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
-	await credentialSet({userTag, type: 'Password.', event: 4, hash, note: {cycles}, k1: hash, k2: cycles+''})//the window's dual write: hash in both homes, cycles a real number in the note and text in the slot
+	await credentialSet({userTag, type: 'Password.', event: 4, hash, note: {cycles}})
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
@@ -450,18 +450,18 @@ export async function credentialPasswordRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \__\___/ \__| .__/ 
 //                                                             |_|    
 
-//totp: a user can have a single verified enrollment or nothing; the shared secret key which generates codes rides in the note and k1 during the window
+//totp: a user can have a single verified enrollment or nothing; the note holds the shared secret key which generates codes
 export async function credentialTotpGet({userTag}) {
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
 	let row = rows[0]
-	if (row) return row.k1_text//return their totp secret in base32
+	if (row) return row.note_json.secret//return their totp secret in base32
 	return false//no current totp enrollment
 }
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
-	await credentialSet({userTag, type: 'Totp.', event: 4, note: {secret}, k1: secret})//the window's dual write
+	await credentialSet({userTag, type: 'Totp.', event: 4, note: {secret}})
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
@@ -577,8 +577,6 @@ export const walletConstants = Object.freeze({
 
 //wallet: a user can prove they control up to walletConstants.limit Ethereum addresses, and no two users can hold the same one
 //the address rides the f triad: f0 the lowercased address to match as unique, f1 and f2 both the EIP-55 checksummed face
-//in the window before the backfill converges them, old rows hold the checksummed address alone in f0 with f1 and f2 blank,
-//so the lookups here match both spellings; the read-switch deploy narrows them to lowercase alone
 
 //validate an ethereum address into the three forms; any casing is accepted, and text that isn't an address returns {ok: false}
 export async function validateWallet(raw) {
@@ -592,14 +590,13 @@ export async function validateWallet(raw) {
 export async function credentialWalletGet({userTag}) {//list the addresses this user has proven, newest first, as checksummed faces
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event: 4})
-	return rows.map(row => row.f2_text || row.f0_text)//[address, ...] checksummed, zero to the limit of them; an old-shape row keeps its checksummed face in f0 until the backfill fills its triad
+	return rows.map(row => row.f2_text)//[address, ...] checksummed, zero to the limit of them
 }
 
 export async function credentialWalletHolder({f0}) {//which user, if any, has proven they control this address? any spelling accepted
 	checkText(f0)
 	let v = await validateWallet(f0); if (!v.ok) toss('use', {f0})//callers hold addresses a wallet or our own table handed them, so anything else is a broken caller
 	let rows = await queryGet('credential_table', {type_text: 'Ethereum.', f0_text: v.f0, event: 4})//the matching form
-	if (!rows.length) rows = await queryGet('credential_table', {type_text: 'Ethereum.', f0_text: v.f1, event: 4})//the old spelling, until the backfill
 	let row = rows[0]
 	if (row) return {userTag: row.user_tag}
 	return false//nobody has proven it; mentions and challenges reserve an address for no one
@@ -632,7 +629,6 @@ export async function credentialWalletRemove({userTag, f0}) {//hide this user's 
 	checkTag(userTag); checkText(f0)
 	let v = await validateWallet(f0); if (!v.ok) toss('use', {f0})
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event: 4})
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f1, event: 4})//the old spelling, until the backfill
 }
 
 /*
@@ -763,11 +759,11 @@ export function credentialOauthParse(provider, proof) {//back from provider's oa
 
 /*
 oauth: a user can link any number of oauth accounts but only have one account for each provider
-all oauth rows share type Oauth. the provider like Discord. or Google. rides in the note and k1 during the window
+all oauth rows share type Oauth. the provider like Discord. or Google. rides in the note
 */
 export async function credentialOauthChallenge({userTag, provider}) {//record we're sending the user into a third party oauth flow
 	checkTag(userTag); checkAction(provider)
-	await credentialSet({userTag, type: 'Oauth.', event: 3, note: {provider}, k1: provider})//event 3 challenged; be able to see how long users take or if for whatever reason they don't make it through in significant numbers
+	await credentialSet({userTag, type: 'Oauth.', event: 3, note: {provider}})//event 3 challenged; be able to see how long users take or if for whatever reason they don't make it through in significant numbers
 }
 
 /*
@@ -780,12 +776,12 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	checkTag(userTag); checkAction(provider); checkText(identifier)
 
 	//check 1: this user already has SOME account linked for this provider
-	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: provider, event: 4})
+	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note: {provider}, event: 4})
 	if (mine.length) return {ok: false, outcome: 'OauthAlreadyLinked.'}//already linked; caller must prompt user to Remove first to switch accounts
 
 	//check 2: any OTHER user has THIS specific providerId linked — one provider identity, one cold3 account; queryGet filters hidden rows, so a removed claim is releasable to a new owner
-	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim
-	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', k1_text: provider, k2_text: identifier, event: 4})
+	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim; credential14 indexes the identifier path this filter rides
+	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', note: {provider, identifier}, event: 4})
 	if (claimed.some(r => r.user_tag != userTag)) return {ok: false, outcome: 'OauthClaimedElsewhere.'}
 
 	/*
@@ -798,27 +794,27 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	await credentialSet({
 		userTag, type: 'Oauth.', event: 4,
 		f0: email?.f0, f1: email?.f1, f2: email?.f2,//store email from provider here
-		note: {provider, identifier, handle: handle ?? undefined, name: name ?? undefined, proof},//the named account; ?? undefined turns the null a provider hands over into an absent key, the blank of a property, while the proof keeps its inner nulls verbatim
-		k1: provider,//provider name like 'Discord.'
-		k2: identifier,//user's account number with that provider; user doesn't know it, stays the same through handle edits
-		k3: handle ?? '',//provider's @-style handle (or gmail address as stand-in for Google); discord and github hand over null when the user never set one, and the slot's blank is ''
-		k4: name ?? '',//provider's display name, separate from handle so both are queryable; panel's fallback chain handles the "show whichever we have" case
-		//(leaving k5-7 blank for future use, then at the end, for auditability, we save the whole proof)
-		k8: makeText(proof),//auth.js/provider slice (drops our envelope wrapper) for audit and future re-parsing beyond datadog's retention
+		note: {
+			provider,//provider name like 'Discord.'
+			identifier,//user's account number with that provider; user doesn't know it, stays the same through handle edits
+			handle: handle ?? undefined,//provider's @-style handle (or gmail address as stand-in for Google); discord and github hand over null when the user never set one, and ?? undefined turns that into an absent key, the blank of a property
+			name: name ?? undefined,//provider's display name, separate from handle so both are readable; panel's fallback chain handles the "show whichever we have" case
+			proof,//auth.js/provider slice (drops our envelope wrapper) as real nested json, inner nulls verbatim, for audit and future re-parsing
+		},
 	})
 	return {ok: true}
 }
 export async function credentialOauthRemove({userTag, provider}) {
 	checkTag(userTag); checkAction(provider)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', k1_text: provider, event: 4})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', note: {provider}, event: 4})
 }
 export async function credentialOauthGet({userTag}) {//list this user's linked oauth credentials across providers we currently support
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 4})
 	let providerSet = new Set(oauthProviders().map(p => p.tag))
 	return rows
-		.filter(r => providerSet.has(r.k1_text))
-		.map(r => ({provider: r.k1_text, identifier: r.k2_text, handle: r.k3_text, name: r.k4_text, email: r.f2_text}))
+		.filter(r => providerSet.has(r.note_json.provider))
+		.map(r => ({provider: r.note_json.provider, identifier: r.note_json.identifier, handle: r.note_json.handle ?? '', name: r.note_json.name ?? '', email: r.f2_text}))//an absent key is the note's blank, and callers keep getting ''
 }
 
 //                    _            _   _       _         _         
@@ -851,7 +847,7 @@ export async function credentialOtpMentioned({userTag, type, v}) {//record a use
 
 export async function credentialOtpChallenged({userTag, type, v, provider}) {//record we used provider to send a code to address v
 	checkTag(userTag); checkAction(provider)//provider is a canonical tag like 'Amazon.' or 'Twilio.'; the endpoint maps the page's single letter before any of this
-	await credentialSet({userTag, type, event: 3, f0: v.f0, f1: v.f1, f2: v.f2, note: {provider}, k1: provider})//keep a record of which provider we used
+	await credentialSet({userTag, type, event: 3, f0: v.f0, f1: v.f1, f2: v.f2, note: {provider}})//keep a record of which provider we used
 }
 
 export async function credentialOtpValidated({userTag, type, v}) {//the user typed the correct code; save proof they control this address
@@ -891,17 +887,17 @@ export async function credentialOtpRemove({userTag, type, f0}) {//hide every eve
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_| |_.__/|_|  \___/ \_/\_/ |___/\___|_|   
 //                                                                                       
 
-//browser: user is signed in at this browser; browserHash rides in hash_text and k1 during the window
+//browser: user is signed in at this browser; browserHash is the row's hash, and the note stays empty
 export async function credentialBrowserGet({browserHash}) {//what user, if any, is signed in at this browser?
 	checkHash(browserHash)
-	let rows = await queryGet('credential_table', {type_text: 'Browser.', k1_text: browserHash, event: 4})
+	let rows = await queryGet('credential_table', {type_text: 'Browser.', hash_text: browserHash, event: 4})//the hottest query in the application, riding credential13
 	let row = rows[0]
 	if (row) return {userTag: row.user_tag}
 	return false//no one signed in at this browser
 }
 export async function credentialBrowserSet({userTag, browserHash}) {//sign this user in at this browser
 	checkTag(userTag); checkHash(browserHash)
-	await credentialSet({userTag, type: 'Browser.', event: 4, hash: browserHash, k1: browserHash})//the window's dual write: the hash in both homes, and no note at all
+	await credentialSet({userTag, type: 'Browser.', event: 4, hash: browserHash})
 }
 export async function credentialBrowserRemove({userTag}) {//sign this user out everywhere
 	checkTag(userTag)
@@ -1040,18 +1036,16 @@ ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: defau
 export async function credentialGet({userTag}) {//get all the credential information about the given user
 	//ttd november2025
 }
-export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', hash = '', note = {}, k1 = '', k2 = '', k3 = '', k4 = '', k5 = '', k6 = '', k7 = '', k8 = ''}) {
+export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', hash = '', note = {}}) {
 	checkTag(userTag); checkText(type); checkInt(event, 1)//these three are required, everything else is optional
 	checkTextOrBlank(f0); checkTextOrBlank(f1); checkTextOrBlank(f2)
 	checkHashOrBlank(hash)//the row's one meaningful hash, or blank; note is guarded below by level2's isPlain check on the json cell
-	checkTextOrBlank(k1); checkTextOrBlank(k2); checkTextOrBlank(k3); checkTextOrBlank(k4); checkTextOrBlank(k5); checkTextOrBlank(k6); checkTextOrBlank(k7); checkTextOrBlank(k8)
-	await queryAddRow({table: 'credential_table', row: {
+	await queryAddRow({table: 'credential_table', row: {//the retiring k columns aren't mentioned here; their database defaults fill '' until the contraction drops them
 		user_tag: userTag,
 		type_text: type,
 		event: event,
 		f0_text: f0, f1_text: f1, f2_text: f2,
 		hash_text: hash, note_json: note,
-		k1_text: k1, k2_text: k2, k3_text: k3, k4_text: k4, k5_text: k5, k6_text: k6, k7_text: k7, k8_text: k8,
 	}})
 }
 
