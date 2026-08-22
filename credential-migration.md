@@ -22,6 +22,8 @@ Two indexes replace the eight partial k indexes. credential13, a plain partial o
 
 The Browser. lookup is the hottest query in the application — credentialBrowserGet runs on essentially every signed-in request — and it now rides a plain column and a proven index shape, off the new json machinery entirely. The EXPLAIN verification therefore takes the oauth claim check as its subject, where the novel expression-index machinery actually lives: once in grid with enable_seqscan off (the planner never picks an index over a seq scan on a handful of rehearsal rows, so grid proves the query's spelling matches the index) and once live read-only (proving the planner chooses it). A live read-only EXPLAIN of the Browser. lookup rides along since it costs nothing.
 
+Ran August 22, 2026, all three ways: grid chose credential14 with enable_seqscan off; live production chose credential14 for the claim and credential13 for the Browser. lookup with seqscan off, every predicate inside the Index Cond; and at default settings the live planner picks credential13 for the Browser. lookup unaided, the partial index winning even at today's table size.
+
 ## The choreography: expansion and contraction with two deploys
 
 hit_table's dance had one deploy because nothing read the converted columns. credential_table has live readers, so reads and writes switch in separate deploys:

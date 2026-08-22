@@ -700,7 +700,7 @@ grid(async () => {//browser: multi-user flow, sign out doesn't affect other user
 	ok((await credentialBrowserGet({browserHash: browserC})) == false)
 	ok((await credentialBrowserGet({browserHash: browserB})).userTag == user2)//user2 unaffected at B
 })
-grid(async () => {//per-type writes fill hash_text and the note per the k-to-note map, and the retiring k slots stay blank through their database defaults
+grid(async () => {//per-type writes fill hash_text and the note per the k-to-note map
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
@@ -708,7 +708,7 @@ grid(async () => {//per-type writes fill hash_text and the note per the k-to-not
 	let hash = random32(), cycles = 40
 	await credentialPasswordSet({userTag, hash, cycles})
 	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.'}))[0]
-	ok(row.hash_text == hash && row.k1_text == '')//the hash in its one home; the insert never mentions the retiring slot, whose default fills the blank
+	ok(row.hash_text == hash)//the hash in its one home
 	ok(row.note_json.cycles === 40)//cycles a real number in the note
 	ok((await credentialPasswordGet({userTag})).hash == hash)//and the read answers from the new cells
 
@@ -777,121 +777,6 @@ grid(async () => {//the oauth claim's expression index: the filter's spelling ma
 	let plan = (await pglite.query(`EXPLAIN SELECT * FROM credential_table WHERE hide = 0 AND type_text = 'Oauth.' AND note_json->>'identifier' = 'd123'`)).rows.map(r => Object.values(r)[0]).join('\n')
 	await pglite.query('SET enable_seqscan = on')
 	ok(plan.includes('credential14'))//the index built from the registry DDL serves the exact expression level2's filter generates
-})
-//rehearsal of the k collapse backfill, scaffolding that retires with the sprint: synthetic old-shape rows for every
-//type-and-event combination the read-only survey found in production, then the verbatim statements of the three
-//backfill migration files, then per-row assertions -- the whole translation proven against real postgres semantics
-//before anything pushes
-const backfillRehearsalSql = `
-UPDATE credential_table SET note_json = jsonb_build_object('secret', k1_text)
-WHERE type_text = 'Totp.' AND note_json = '{}'::jsonb AND k1_text != '';
-
-UPDATE credential_table SET note_json = jsonb_build_object('provider', k1_text)
-WHERE type_text IN ('Email.', 'Phone.') AND note_json = '{}'::jsonb AND k1_text != '';
-
-UPDATE credential_table SET hash_text = k1_text
-WHERE type_text = 'Browser.' AND hash_text = '' AND k1_text != '';
-
-UPDATE credential_table SET hash_text = k1_text, note_json = jsonb_build_object('cycles', k2_text::bigint)
-WHERE type_text = 'Password.' AND hash_text = '' AND k1_text != '';
-
-UPDATE credential_table SET hide = 1 WHERE type_text = 'Discord.' AND hide = 0;
-
-UPDATE credential_table SET note_json =
-	jsonb_strip_nulls(jsonb_build_object(
-		'provider',   NULLIF(k1_text, ''),
-		'identifier', NULLIF(k2_text, ''),
-		'handle',     NULLIF(k3_text, ''),
-		'name',       NULLIF(k4_text, '')
-	))
-	|| CASE WHEN k8_text != '' THEN jsonb_build_object('proof', k8_text::jsonb) ELSE '{}'::jsonb END
-WHERE type_text = 'Oauth.' AND note_json = '{}'::jsonb;
-
-UPDATE credential_table SET f0_text = lower(f0_text), f1_text = f0_text, f2_text = f0_text
-WHERE type_text = 'Ethereum.' AND f1_text = '';
-`
-grid(async () => {//backfill rehearsal: every old shape translates, guards skip dual-written rows, and running twice changes nothing
-	let {clear, pglite} = await getDatabase()
-	await clear('credential_table')
-	let user = Tag()
-	let secret1 = 'X7C25WC6CUCF77BO7BOCVUHAZ553UKYA', secret2 = 'ABCDEFHJKMNPQRTUVWXYZ234567ABCDE', secretKept = 'KEPTKEPTKEPTKEPTKEPTKEPTKEPTKEPT'
-	let browserHash = random32(), passwordHash = random32()
-	let checksummed = '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
-	let proof = {account: {providerAccountId: 'd123'}, profile: {global_name: null}, user: {}}//the nested null is data the strip must not reach
-
-	let plant = (cells) => queryAddRow({table: 'credential_table', row: {user_tag: user, f0_text: '', f1_text: '', f2_text: '', ...cells}})
-	await plant({type_text: 'Totp.', event: 4, k1_text: secret1})
-	await plant({type_text: 'Totp.', event: 4, k1_text: secret2, hide: 1})//hidden history translates too
-	await plant({type_text: 'Totp.', event: 4, k1_text: secret1, note_json: {secret: secretKept}})//a dual-written row; the deliberate mismatch with k1 detects any overwrite
-	await plant({type_text: 'Email.', event: 2, f0_text: 'a@x.com', f1_text: 'a@x.com', f2_text: 'a@x.com'})
-	await plant({type_text: 'Email.', event: 3, f0_text: 'a@x.com', f1_text: 'a@x.com', f2_text: 'a@x.com', k1_text: 'Amazon.'})
-	await plant({type_text: 'Email.', event: 4, f0_text: 'a@x.com', f1_text: 'a@x.com', f2_text: 'a@x.com'})
-	await plant({type_text: 'Phone.', event: 2, f0_text: '15551234567', f1_text: '+15551234567', f2_text: '(555) 123-4567'})
-	await plant({type_text: 'Phone.', event: 3, f0_text: '15551234567', f1_text: '+15551234567', f2_text: '(555) 123-4567', k1_text: 'Twilio.'})
-	await plant({type_text: 'Phone.', event: 4, f0_text: '15551234567', f1_text: '+15551234567', f2_text: '(555) 123-4567'})
-	await plant({type_text: 'Browser.', event: 4, k1_text: browserHash})
-	await plant({type_text: 'Password.', event: 4, k1_text: passwordHash, k2_text: '40'})
-	await plant({type_text: 'Oauth.', event: 3, k1_text: 'Discord.'})
-	await plant({type_text: 'Oauth.', event: 4, f0_text: 'a@x.com', f1_text: 'a@x.com', f2_text: 'a@x.com', k1_text: 'Discord.', k2_text: 'd123', k3_text: 'alex_dev_42', k4_text: 'Alex Dev', k8_text: makeText(proof)})
-	await plant({type_text: 'Oauth.', event: 4, k1_text: 'GitHub.', k2_text: 'g456', k8_text: makeText(proof)})//blank k3 and k4, the way old rows sit when a provider had no handle or name
-	await plant({type_text: 'Ethereum.', event: 2, f0_text: checksummed})
-	await plant({type_text: 'Ethereum.', event: 3, f0_text: checksummed})
-	await plant({type_text: 'Ethereum.', event: 4, f0_text: checksummed})
-	await plant({type_text: 'Name.', event: 4, f0_text: 'zoe', f1_text: 'Zoe', f2_text: 'Zoe'})//no statement names this type; the control that proves untouched
-	await plant({type_text: 'Discord.', event: 4, f0_text: 'zootella', f1_text: 'z@x.com', f2_text: '@zootella Z', k1_text: '523229028308746263'})//the remnant, in its retired convention
-
-	await pglite.exec(backfillRehearsalSql)//the migration files' statements, verbatim
-
-	let one = async (cells) => (await queryGet('credential_table', cells))[0]
-	let row = await one({type_text: 'Totp.', event: 4, note: {secret: secret1}})//found through the json path filter; rows planted in the same tick have no stable order, and only the translated row's note holds this secret
-	ok(defined(row) && row.k1_text == secret1)//the secret became the note's one property
-	row = (await pglite.query(`SELECT * FROM credential_table WHERE type_text = 'Totp.' AND hide = 1`)).rows[0]
-	ok(row.note_json.secret == secret2)//the hidden row translated too
-	row = (await pglite.query(`SELECT * FROM credential_table WHERE type_text = 'Totp.' AND note_json->>'secret' = '${secretKept}'`)).rows[0]
-	ok(defined(row) && row.k1_text == secret1)//the dual-written row's note survived untouched: the guard skipped it
-
-	ok(!(await one({type_text: 'Email.', event: 2})).note_json.provider)//mention rows carry no payload
-	ok((await one({type_text: 'Email.', event: 3})).note_json.provider == 'Amazon.')//challenged rows name their provider
-	ok(!(await one({type_text: 'Email.', event: 4})).note_json.provider)
-	ok((await one({type_text: 'Phone.', event: 3})).note_json.provider == 'Twilio.')
-	ok(!(await one({type_text: 'Phone.', event: 2})).note_json.provider)//phone's mention and validated rows sit blank like email's
-	ok(!(await one({type_text: 'Phone.', event: 4})).note_json.provider)
-
-	row = await one({type_text: 'Browser.', event: 4})
-	ok(row.hash_text == browserHash && makeText(row.note_json) == '{}')//the hash moved home, and no note
-
-	row = await one({type_text: 'Password.', event: 4})
-	ok(row.hash_text == passwordHash && row.note_json.cycles === 40)//the number became a number
-
-	row = await one({type_text: 'Oauth.', event: 3})
-	ok(makeText(row.note_json) == '{"provider":"Discord."}')//a challenge row's whole note
-
-	row = await one({type_text: 'Oauth.', event: 4, note: {identifier: 'd123'}})//found through the json path filter, the way the claim check will look
-	ok(row.note_json.provider == 'Discord.' && row.note_json.handle == 'alex_dev_42' && row.note_json.name == 'Alex Dev')
-	ok(row.note_json.proof.profile.global_name === null)//the nested null rode verbatim: the strip ran over the scalar keys only
-	ok(row.note_json.proof.account.providerAccountId == 'd123')
-
-	row = await one({type_text: 'Oauth.', event: 4, note: {identifier: 'g456'}})
-	ok(!('handle' in row.note_json) && !('name' in row.note_json))//blank slots became absent keys, the blank of a property
-
-	for (let event of [2, 3, 4]) {
-		row = await one({type_text: 'Ethereum.', event})
-		ok(row.f0_text == checksummed.toLowerCase() && row.f1_text == checksummed && row.f2_text == checksummed)//the fan-out: every event row's triad filled from the one checksummed original
-	}
-
-	row = await one({type_text: 'Name.', event: 4})
-	ok(row.f0_text == 'zoe' && makeText(row.note_json) == '{}')//the control: no statement names Name., and nothing touched it
-
-	row = (await pglite.query(`SELECT * FROM credential_table WHERE type_text = 'Discord.'`)).rows[0]
-	ok(row.hide == 1 && row.k1_text == '523229028308746263')//the remnant hid, its cells otherwise untouched
-
-	await pglite.exec(backfillRehearsalSql)//run the whole thing again: every statement is idempotent behind its guard
-	row = await one({type_text: 'Oauth.', event: 4, note: {identifier: 'd123'}})
-	ok(row.note_json.proof.profile.global_name === null)//still exactly right
-	row = await one({type_text: 'Ethereum.', event: 4})
-	ok(row.f1_text == checksummed)//a second fan-out would have overwritten the face with lowercase; the guard prevented it
-	row = (await pglite.query(`SELECT * FROM credential_table WHERE type_text = 'Totp.' AND note_json->>'secret' = '${secretKept}'`)).rows[0]
-	ok(defined(row))//the skipped row is still skipped
 })
 grid(async () => {//name: get by userTag, get by raw1, check collisions
 	let {clear} = await getDatabase()
