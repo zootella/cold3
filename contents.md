@@ -26,7 +26,7 @@ The integration this document planned is complete: `/api/otp`, `pageStore.otps`,
 
 ## database-stack.md — reference for the database stack
 
-How cold3 uses its database, in production and development: the four protocol layers, every path from our code to a table, the choosing-a-path guide with the migration and drift-check rules, the Key() seal design, row-level security's two walls, and the backup plan bookmark — three approaches (Supabase's managed backups, the pg_dump pair, the CSV cold copy) presented for a later epic to choose among. Reference, not planning. Carries the one known RLS remainder: the default-privileges one-liner that rides along with a future migration.
+How cold3 uses its database, in production and development: the four protocol layers, every path from our code to a table, the choosing-a-path guide with the migration and drift-check rules, row-level security's two walls, and the backup plan bookmark — three approaches (Supabase's managed backups, the pg_dump pair, the CSV cold copy) presented for a later epic to choose among. Reference, not planning. Carries the one known RLS remainder: the default-privileges one-liner that rides along with a future migration.
 
 ## jsonb.md — guidance for json columns
 
@@ -35,6 +35,10 @@ json is an approved cell type, proven in two adoptions — hit_table's cast and 
 ## migration.md — how a live table changes shape
 
 The expansion-and-contraction playbook, proven on hit_table and then credential_table: the choreography step by step with the why at each — scaffolding defaults on both column generations, the dual-write deploy splitting the problem by date, the three data-migration disciplines, the read-switch, the contraction, and the drift-check close — plus the one-deploy-or-two rule and the matching-key variant. Read before any sprint that touches a live table.
+
+## xray.md — secrets verified by search
+
+Our guide to how we manage and secure secrets, and the current work of the data sprint: the key system that seals .env.keys into the wrapper (and the why of one seal over two provider dashboards), the tracer families that make sealed values searchable by design (real families spelled broken so no document is a false positive; the X family reserved for examples), the three delivered bundles and the exact expected picture of which tracers ride where, the provider-side secret homes, the detailed on-disk pipeline of both builds — documented behavior audited against observed artifacts — the named residue a clean census matches, and two recorded-not-scheduled future stories: dual-layer encryption and pruning the ciphertext from the client bundle. The tool is xray.js at the root, run like `pnpm xray`, deliberately light so the operator thinks.
 
 ## testing.md — the test system
 
