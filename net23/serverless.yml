@@ -12,8 +12,8 @@ provider:
   runtime: nodejs22.x #updated 2025oct, Node 22 on Amazon Linux 2023 and good until 2027apr30, https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
   architecture: arm64 #choose Amazon's custom Graviton2 chip for up to 30% quicker start, 25% faster execution, and 20% lower cost compared to default x86_64
   stage: prod #set production by default, as this script includes resources like buckets
-  environment: #build these secret values from the local .env file into the server bundle
-    ACCESS_K10_SECRET:         ${env:ACCESS_K10_SECRET}
+  environment: #environment variables for the lambdas
+    ACCESS_K10_SECRET:         ${env:ACCESS_K10_SECRET} #build.js will rewrite this line to get the key from AWS Secrets Manager instead
     ACCESS_AMAZON_CERTIFICATE: ${env:ACCESS_AMAZON_CERTIFICATE} #promises not to change through automatic renewals; not sensitive or a secret but looks like one
   iam: #grant the identity role that runs the lambda functions additional permissions
     role:

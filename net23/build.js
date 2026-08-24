@@ -18,6 +18,7 @@ async function main() {//build a lean net23/dist/.serverless/net23.zip with the 
 
 	let c = await fs.readFile('serverless.yml', 'utf8')
 	c = c.split(/\r?\n/).filter(line => !line.includes('BuildRemove')).join('\n')//strip lines marked BuildRemove; they let serverless-offline emulate API Gateway-style; we deploy to Lambda Function URLs instead
+	c = c.replace('${env:ACCESS_K10_SECRET}', "'{{resolve:secretsmanager:cold3/k10}}'")//local code gets the key from .env; deployed, it comes from AWS Secrets Manager; the key is not in the zip file nor sent to amazon as part of the deploy
 	await fs.writeFile('dist/serverless.yml', c)
 
 	//make a package.json for dist based on net23's, with icarus's dependencies merged in
