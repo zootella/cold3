@@ -16,4 +16,4 @@ Done August 22, 2026: the k slots collapsed into hash_text and note_json by expa
 
 ## xray
 
-Related to the security of the database; the user will explain the scope. The stub exists as xray.js, sketched as an out-of-band system to confirm what gets built into bundles, a capstone to the secrets-management context.
+Done August 24, 2026: xray.js became a census tool over ripgrep — a search term in, a list of paths and counts out — and xray.md became the guide to how we manage and secure secrets, holding the tracer families, the expected picture for all three bundles, the provider-side homes, both build pipelines mapped on disk, and a recorded clean run. K10 moved into AWS Secrets Manager along the way, so no build or deploy script carries it on either provider.

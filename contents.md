@@ -6,11 +6,11 @@ Five further documents are done and retired. svelteless.md: the spike confirmed,
 
 # Up next — the data queue continues
 
-The credential migration is complete, so the queue in data.md leads: xray, whose scope awaits the user's explanation, with the smaller-dog logging simplification (smaller-dog.md) and the backup-plan decision (database-stack.md's bookmark) recorded for future sprints.
+The credential migration and xray are both complete, leaving two entries in data.md's queue, either ready to pick up. The smaller-dog logging simplification, planned in smaller-dog.md, shrinks the Datadog apparatus to one async dog and starts by converting the three logAudit call sites to ledgerAdd. The backup-plan decision chooses among the three approaches database-stack.md's bookmark presents — managed backups, the pg_dump pair, the CSV cold copy — and settles cadence and where the files sleep.
 
 # For now — the front row
 
-The documents in active use. This guide (contents.md) is the orientation itself and belongs here too; the working set is the umbrella you steer by, the current-state map whose per-type grid is the immediate next step, the OTP integration kept open as the reference implementation, and the database references any data work starts from.
+The documents in active use. This guide (contents.md) is the orientation itself and belongs here too; the working set is the umbrella you steer by, the current-state map whose per-type grid is the immediate next step, the OTP integration kept open as the reference implementation, the database references any data work starts from, and the secrets guide standing beside them.
 
 ## credential.md — umbrella for the credential system
 
@@ -38,7 +38,7 @@ The expansion-and-contraction playbook, proven on hit_table and then credential_
 
 ## xray.md — secrets verified by search
 
-Our guide to how we manage and secure secrets, and the current work of the data sprint: the key system that seals .env.keys into the wrapper (and the why of one seal over two provider dashboards), the tracer families that make sealed values searchable by design (real families spelled broken so no document is a false positive; the X family reserved for examples), the three delivered bundles and the exact expected picture of which tracers ride where, the provider-side secret homes, the detailed on-disk pipeline of both builds — documented behavior audited against observed artifacts — the named residue a clean census matches, and two recorded-not-scheduled future stories: dual-layer encryption and pruning the ciphertext from the client bundle. The tool is xray.js at the root, run like `pnpm xray`, deliberately light so the operator thinks.
+Our guide to how we manage and secure secrets: the key system that seals .env.keys into the wrapper (and the why of one seal over two provider dashboards), the tracer families that make sealed values searchable by design (real families spelled broken so no document is a false positive; the X family reserved for examples), the three delivered bundles and the exact expected picture of which tracers ride where, the provider-side secret homes, the detailed on-disk pipeline of both builds — documented behavior audited against observed artifacts — the named residue a clean census matches, and two recorded-not-scheduled future stories: dual-layer encryption and pruning the ciphertext from the client bundle. The tool is xray.js at the root, run like `pnpm xray`, deliberately light so the operator thinks.
 
 ## testing.md — the test system
 
