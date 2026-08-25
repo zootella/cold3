@@ -41,12 +41,12 @@ The old essay names four purposes, and each has a new home:
 - **The layering seam.** ledgerAdd is level3; the turnstile check and the doors are level2, which cannot import upward. The clean resolution: alerts and door errors go to console (level2 needs no ledger), and business audits move to code that already lives at level3 or in site endpoints — the turnstile audit moving up to its callers, or the turnstile check moving up to level3, with browserHash passed down either way. Decide which.
 - **Latency at audit sites.** An awaited ledger write costs ~100ms on the few paths that audit. Accept it plainly, or keep some small successor to fire-and-forget for just those calls.
 
-## The first bites, ready before the sprint
+## The first bites, two of three in
 
-The three logAudit call sites convert to ledgerAdd ahead of any removal, each proving a piece:
+The three logAudit call sites convert to ledgerAdd ahead of any removal, each proving a piece. Two are in, and the third is the one this sprint's layering decision blocks:
 
-1. **oauth done and oauth sad path** — browserHash and userTag already in hand, site code imports freely; the "accumulate real examples of provider responses" motivation is a database use case that was living in a log.
-2. **The message task** — the lambda returns the whole task object (provider, parameters, request, response, error, duration) to the worker through the door, so the worker calls ledgerAdd with full context and the lambda never needs database access. The http response from lambda to worker is reliable enough: losing it means the worker sees a door error and records the failure — the event is never silently lost, only, in the rarest window, the provider's detail.
-3. **turnstile failure** — waits on the layering decision, then converts with browserHash threaded down.
+1. **oauth done and oauth sad path** — in, both channels writing. browserHash and userTag were already in hand and site code imports freely, so ledgerAdd sits beside logAudit at each site, landing OauthDone. and OauthSadPath. rows while the old audit still sends; the old calls leave with the removal pass. The "accumulate real examples of provider responses" motivation is a database use case that was living in a log.
+2. **The message task** — in, and on ledgerAdd alone: the MessageSent. row is the whole record. The lambda returns the whole task object (provider, parameters, request, response, error, duration) to the worker through the door, so the worker calls ledgerAdd with full context and the lambda never needs database access. The http response from lambda to worker is reliable enough: losing it means the worker sees a door error and records the failure — the event is never silently lost, only, in the rarest window, the provider's detail.
+3. **turnstile failure** — the one still on logAudit alone, held by the layering decision above: the check lives in level2, which cannot import ledgerAdd from level3. It converts with browserHash threaded down once that decision lands.
 
 After the conversions soak, the removal lands as its own focused pass, and the deployed smoke is simply: break something small, and find it in the cloudflare dashboard, the amazon dashboard, and the ledger — the three surfaces that remain.

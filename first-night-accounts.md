@@ -1,6 +1,6 @@
 # First-Night Accounts
 
-The lightest possible path from stranger to durable account, and the rules that keep it safe. This document is a preview of work we haven't started — notes and worked examples for a third phase, written now while the thinking is fresh, to be built after the credential types are unified and stable.
+The lightest possible path from stranger to durable account, and the rules that keep it safe. This document is a preview of work we haven't started — notes and worked examples for the intercredential flows, written now while the thinking is fresh, to be built after the credential types are unified and stable.
 
 ## What we're building toward
 
@@ -15,15 +15,15 @@ Around those four, four aims:
 
 The tension across all four is that easy and secure pull against each other, and the resolution is to make the account's *capabilities* grow with its *credentials* rather than trying to make a one-finger account safe enough for everything at once.
 
-## The three phases: where this sits
+## Where this sits in the credential work
 
-The credential work in this project has moved through three conceptual phases, and this document is a preview of the third.
+The credential work has come through two named stretches, and this document previews what follows them.
 
-**Phase 1 — standalone demos.** Each credential type was first built as a standalone demo that proves the full flow through the real stack: can we actually send an email or an SMS through the provider, how does the page catch the code the user types back, what do the notification components look like, how do the envelope-and-cookie round trips carry provisional state between steps. The plumbing is real — Twilio and Amazon reached through the net23 lambdas, live components, real cookies. This was a significant starting effort, and its point was to prove each mechanism works end to end before building anything on top of it.
+**The standalone demos.** Each credential type was first built as a standalone demo that proves the full flow through the real stack: can we actually send an email or an SMS through the provider, how does the page catch the code the user types back, what do the notification components look like, how do the envelope-and-cookie round trips carry provisional state between steps. The plumbing is real — Twilio and Amazon reached through the net23 lambdas, live components, real cookies. This was a significant starting effort, and its point was to prove each mechanism works end to end before building anything on top of it.
 
-**Phase 2 — migration into the unified credential system.** Take those proven demos and fold them into one full-stack system: rows in `credential_table`, refs and methods in `credentialStore`, UI in `CredentialPanel`, actions on one endpoint. This is the current work. Browser, Name, Password, TOTP, Wallet, OAuth, and OTP (email/phone) are integrated; the storage refactor that moves envelopes off cookies and the ledger-vs-traditional questions are in flight.
+**The unification.** Take those proven demos and fold them into one full-stack system: rows in `credential_table`, refs and methods in `credentialStore`, UI in `CredentialPanel`, actions on one endpoint. This is the current work. Browser, Name, Password, TOTP, Wallet, OAuth, and OTP (email/phone) are integrated; the storage refactor that moves envelopes off cookies and the ledger-vs-traditional questions are in flight.
 
-**Phase 3 — intercredential flows.** Once the types are secure and correct standing side by side, design the flows that cross between them — and between different people, devices, and sessions. This is where we put the whole cast on one whiteboard, decide what's easy and therefore common, resolve the conflicts, and keep it all secure. The flows in this document are that phase's early notes: none of it is built, and some of it revises rules the earlier phases shipped.
+**The intercredential flows.** Once the types are secure and correct standing side by side, design the flows that cross between them — and between different people, devices, and sessions. This is where we put the whole cast on one whiteboard, decide what's easy and therefore common, resolve the conflicts, and keep it all secure. The flows in this document are their early notes: none of it is built, and some of it revises rules the earlier work shipped.
 
 ## The design lens: easy, common, reasonably secure, expected
 
@@ -97,7 +97,7 @@ Two things hold across all three. First, the mirror: **Bob possesses but doesn't
 
 ## An example concern: resume-by-mention routing
 
-The kind of rule phase 3 will have to define, worked out here as one example. Edward's night-three return needs it, and it sits in tension with a rule the system already shipped.
+The kind of rule the intercredential flows will have to define, worked out here as one example. Edward's night-three return needs it, and it sits in tension with a rule the system already shipped.
 
 Today a proven address has a holder and an unproven one does not: `credentialOtpHolder` finds a holder only on an event-4 (validated) row. Edward's address is event-2/3 only — mentioned and challenged, never proven — so a plain lookup-or-create at proof time would find no holder and mint a fresh account, the duplicate his flow is supposed to prevent. But we can't simply let a mention reserve an address, because the shipped mistyped-address rule says an unproven mention reserves *nothing* — that's exactly what lets Alfred claim the address Alice typo'd into someone else's.
 
@@ -109,7 +109,7 @@ Both rules survive if routing is conditioned on the **thinness of the mentioner*
 
 A *real* account's stray mention routes nothing, which preserves Alfred's claim against mistyped Alice. One corner remains to settle: two thin tags that both mention the same address (Edward tried twice without completing) need a tiebreak — most-recent mentioner, probably, with the loser expiring into garbage.
 
-The shape of that reasoning is the point, more than the specific rule: a phase-3 flow rule is derived by holding two scenarios side by side — the honest resume and the innocent collision — and finding the single condition (here, is the mentioner sub-real?) that keeps the honest user's convenience while denying the attacker and the accident. That is the work phase 3 is made of.
+The shape of that reasoning is the point, more than the specific rule: an intercredential flow rule is derived by holding two scenarios side by side — the honest resume and the innocent collision — and finding the single condition (here, is the mentioner sub-real?) that keeps the honest user's convenience while denying the attacker and the accident. That is what this work is made of.
 
 ## Testing method: flow story, then grid test
 

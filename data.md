@@ -4,15 +4,11 @@ The queue of data-layer work: none of it difficult, each task multiple turns, do
 
 ## smaller dog
 
-Shrink the Datadog and logging apparatus to almost nothing, planned in smaller-dog.md: the three logAudit call sites convert to ledgerAdd first, then a removal pass takes the function suite, the double-hulled door catches, the keepPromise parking lot, and the pluggable log sinks, leaving one async dog. The document holds the inventory, where each of the old four purposes goes, and the decisions the sprint must make — dog's destination, the attention channel, the layering seam, audit latency.
+Shrink the Datadog and logging apparatus to almost nothing, planned in smaller-dog.md: the ledgerAdd conversions that lead the sprint are two of three in — the message task writes its MessageSent. row alone, both oauth sites write ledger rows beside the old audit, and turnstile waits on the layering decision — and then a removal pass takes the function suite, the double-hulled door catches, the keepPromise parking lot, and the pluggable log sinks, leaving one async dog. The document holds the inventory, where each of the old four purposes goes, and the decisions the sprint must make — dog's destination, the attention channel, the layering seam, audit latency.
 
 ## backup plan
 
 Pick from the three approaches presented in database-stack.md's backup-plan section — the plan-gated managed backups, the pg_dump schema-and-data pair, the CSV cold copy — which combination, on what cadence, and where the sensitive files sleep, since a held backup is exactly as sensitive as the database. A likely first move: run the data half of the pg_dump pair once to see the artifact, then design the CSV export script down the scripts path. The sprint also carries a secrets question the two documents only imply together: a held backup is a fourth place secrets live, beside the workstation, the bundles, and the providers' secret services, so whatever encrypts one wants a home in the key system and a tracer family of its own.
-
-## the drift check's scope
-
-The SQL() registry is deliberately a superset of the cloud: eleven tables in level3.js against seven in Supabase, with example_table the grid sandbox, address_table superseded by credential_table, and profile_table and user_table built but unshipped. All of that stays as it is. The gap is documentation — database-stack.md's drift-check rule says to compare a dump against the registry and to match columns by name, without naming the four tables that will always differ — so the work is a sentence in that rule before the next drift check meets the surprise.
 
 ## credential table consolidation
 
