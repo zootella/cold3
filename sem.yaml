@@ -1,5 +1,5 @@
 summary:
-  generated: 2026aug24.1637.11605
+  generated: 2026aug25.1355.37386
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -206,8 +206,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1116.0 on 2026aug21 0m old
-      latest: 3.1116.0 on 2026aug21 0m old
+      current: 3.1117.0 on 2026aug24 0m old
+      latest: 3.1117.0 on 2026aug24 0m old
     downloads:
       weekly: 34,442,501
       on: 2026aug18.1523.45867
@@ -219,8 +219,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1116.0 on 2026aug21 0m old
-      latest: 3.1116.0 on 2026aug21 0m old
+      current: 3.1117.0 on 2026aug24 0m old
+      latest: 3.1117.0 on 2026aug24 0m old
     downloads:
       weekly: 3,186,203
       on: 2026aug18.1523.45867
@@ -232,8 +232,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1116.0 on 2026aug21 0m old
-      latest: 3.1116.0 on 2026aug21 0m old
+      current: 3.1117.0 on 2026aug24 0m old
+      latest: 3.1117.0 on 2026aug24 0m old
     downloads:
       weekly: 3,078,359
       on: 2026aug18.1523.45867
@@ -245,8 +245,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1116.0 on 2026aug21 0m old
-      latest: 3.1116.0 on 2026aug21 0m old
+      current: 3.1117.0 on 2026aug24 0m old
+      latest: 3.1117.0 on 2026aug24 0m old
     downloads:
       weekly: 16,337,605
       on: 2026aug18.1523.45867
@@ -444,7 +444,7 @@ modules:
     note: "build: node file trace to build lean net23.zip"
     from: net23
     versions:
-      declared: ^1.3.2 on 2026feb23 5m old
+      declared: ^1.3.2 on 2026feb23 6m old
       installed: 1.10.2 on 2026may28 2m old
       current: 1.11.0 on 2026aug18 0m old
       latest: 1.11.0 on 2026aug18 0m old
@@ -711,9 +711,9 @@ modules:
     from: root
     versions:
       declared: ^9.5.0 on 2026feb04 6m old
-      installed: 9.5.1 on 2026apr25 3m old
-      current: 9.5.1 on 2026apr25 3m old
-      latest: 9.5.1 on 2026apr25 3m old
+      installed: 9.5.1 on 2026apr25 4m old
+      current: 9.5.1 on 2026apr25 4m old
+      latest: 9.5.1 on 2026apr25 4m old
     downloads:
       weekly: 1,900,484
       on: 2026aug18.1523.29150
@@ -753,8 +753,8 @@ modules:
     versions:
       declared: ^2.8.0 on 2026jan28 6m old
       installed: 2.10.1 on 2026jun26 1m old
-      current: 2.10.3 on 2026aug10 0m old
-      latest: 2.10.3 on 2026aug10 0m old
+      current: 2.10.4 on 2026aug25 0m old
+      latest: 2.10.4 on 2026aug25 0m old
     downloads:
       weekly: 1,419,737
       on: 2026aug18.1523.58589
@@ -855,10 +855,10 @@ modules:
     note: "front: v4 replacement for tailwindcss-animate"
     from: site
     versions:
-      declared: ^1.4.0 on 2025sep24 10m old
-      installed: 1.4.0 on 2025sep24 10m old
-      current: 1.4.0 on 2025sep24 10m old
-      latest: 1.4.0 on 2025sep24 10m old
+      declared: ^1.4.0 on 2025sep24 11m old
+      installed: 1.4.0 on 2025sep24 11m old
+      current: 1.4.0 on 2025sep24 11m old
+      latest: 1.4.0 on 2025sep24 11m old
     downloads:
       weekly: 31,822,665
       on: 2026aug18.1523.58589
@@ -951,7 +951,7 @@ modules:
       - site
     versions:
       declared: ^3.5.27 on 2026jan19 7m old
-      installed: 3.5.39 on 2026jun25 1m old
+      installed: 3.5.39 on 2026jun25 2m old
       current: 3.5.41 on 2026aug05 0m old
       latest: 3.5.41 on 2026aug05 0m old
     downloads:
@@ -979,7 +979,7 @@ modules:
     from: site
     versions:
       declared: ^4.63.0 on 2026feb05 6m old
-      installed: 4.105.0 on 2026jun25 1m old
+      installed: 4.105.0 on 2026jun25 2m old
       current: 4.125.0 on 2026aug20 0m old
       latest: 4.125.0 on 2026aug20 0m old
     downloads:

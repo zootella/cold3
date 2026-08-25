@@ -26,7 +26,7 @@ The integration this document planned is complete: `/api/otp`, `pageStore.otps`,
 
 ## database-stack.md — reference for the database stack
 
-How cold3 uses its database, in production and development: the four protocol layers, every path from our code to a table, the choosing-a-path guide with the migration and drift-check rules, row-level security's two walls, and the backup plan bookmark — three approaches (Supabase's managed backups, the pg_dump pair, the CSV cold copy) presented for a later epic to choose among. Reference, not planning. Carries the one known RLS remainder: the default-privileges one-liner that rides along with a future migration.
+How cold3 uses its database, in production and development: the four protocol layers, every path from our code to a table, the choosing-a-path guide with the migration and drift-check rules, row-level security's two walls, standing on every table and carried forward to tables not yet created, and the backup plan bookmark — three approaches (Supabase's managed backups, the pg_dump pair, the CSV cold copy) presented for a later epic to choose among. Reference, not planning.
 
 ## jsonb.md — guidance for json columns
 
