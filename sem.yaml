@@ -1,5 +1,5 @@
 summary:
-  generated: 2026aug25.1520.13932
+  generated: 2026aug26.1912.25401
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -105,6 +105,9 @@ summary:
     - "@pinia/nuxt"
     - "@scure/bip39"
     - "@unhead/vue"
+    - "@uppy/aws-s3"
+    - "@uppy/core"
+    - "@uppy/dashboard"
     - "@vitejs/plugin-vue"
     - "@wagmi/connectors"
     - h3
@@ -206,8 +209,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1117.0 on 2026aug24 0m old
-      latest: 3.1117.0 on 2026aug24 0m old
+      current: 3.1119.0 on 2026aug26 0m old
+      latest: 3.1119.0 on 2026aug26 0m old
     downloads:
       weekly: 34,442,501
       on: 2026aug18.1523.45867
@@ -219,8 +222,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1117.0 on 2026aug24 0m old
-      latest: 3.1117.0 on 2026aug24 0m old
+      current: 3.1118.0 on 2026aug25 0m old
+      latest: 3.1118.0 on 2026aug25 0m old
     downloads:
       weekly: 3,186,203
       on: 2026aug18.1523.45867
@@ -232,8 +235,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1117.0 on 2026aug24 0m old
-      latest: 3.1117.0 on 2026aug24 0m old
+      current: 3.1118.0 on 2026aug25 0m old
+      latest: 3.1118.0 on 2026aug25 0m old
     downloads:
       weekly: 3,078,359
       on: 2026aug18.1523.45867
@@ -245,8 +248,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1117.0 on 2026aug24 0m old
-      latest: 3.1117.0 on 2026aug24 0m old
+      current: 3.1119.0 on 2026aug26 0m old
+      latest: 3.1119.0 on 2026aug26 0m old
     downloads:
       weekly: 16,337,605
       on: 2026aug18.1523.45867
@@ -259,7 +262,7 @@ modules:
       declared: ^0.3.15 on 2026jan15 7m old
       installed: 0.3.16 on 2026mar10 5m old 🐣 Pre-1.0 version installed
       current: 0.3.16 on 2026mar10 5m old
-      latest: 0.5.7 on 2026aug23 0m old
+      latest: 0.5.8 on 2026aug26 0m old
     downloads:
       weekly: 12,117,969
       on: 2026aug18.1523.29150
@@ -295,10 +298,10 @@ modules:
     note: "og: svg to png via native n-api for local dev; nuxt-og-image selects from nitro preset"
     from: site
     versions:
-      declared: ^2.6.2 on 2024mar26 28m old
-      installed: 2.6.2 on 2024mar26 28m old 🕰️ Installed version 1+ year old
-      current: 2.6.2 on 2024mar26 28m old
-      latest: 2.6.2 on 2024mar26 28m old
+      declared: ^2.6.2 on 2024mar26 29m old
+      installed: 2.6.2 on 2024mar26 29m old 🕰️ Installed version 1+ year old
+      current: 2.6.2 on 2024mar26 29m old
+      latest: 2.6.2 on 2024mar26 29m old
     downloads:
       weekly: 2,077,680
       on: 2026aug18.1524.24524
@@ -308,10 +311,10 @@ modules:
     note: "og: svg to png via rust/wasm for production workers; largest artifact is 2.48mb"
     from: site
     versions:
-      declared: ^2.6.2 on 2024mar26 28m old
-      installed: 2.6.2 on 2024mar26 28m old 🕰️ Installed version 1+ year old
-      current: 2.6.2 on 2024mar26 28m old
-      latest: 2.6.2 on 2024mar26 28m old
+      declared: ^2.6.2 on 2024mar26 29m old
+      installed: 2.6.2 on 2024mar26 29m old 🕰️ Installed version 1+ year old
+      current: 2.6.2 on 2024mar26 29m old
+      latest: 2.6.2 on 2024mar26 29m old
     downloads:
       weekly: 2,965,471
       on: 2026aug18.1523.58589
@@ -404,13 +407,13 @@ modules:
       declared: ^5.1.0 on 2025dec02 8m old
       installed: 5.1.0 on 2025dec02 8m old
       current: 5.1.0 on 2025dec02 8m old
-      latest: 5.1.0 on 2025dec02 8m old
+      latest: 6.0.0 on 2026aug26 0m old 🎁 Major new version available
     downloads:
       weekly: 417,211
       on: 2026aug18.1523.29150
   "@uppy/core":
     homepage: https://uppy.io
-    description: "Core module for the extensible JavaScript file upload widget with support for drag&drop, resumable uploads, previews, restrictions, file processing/encoding, remote providers like Instagram, Dropbox, Google Drive, S3 and more :dog:"
+    description: "Core module for the extensible JavaScript file upload widget with support for drag&drop, resumable uploads, previews, restrictions, file processing/encoding, remote providers like Dropbox, Google Drive, S3 and more :dog:"
     note: "widget: file upload orchestrator; state, events, restrictions, plugin system"
     from:
       - icarus
@@ -419,7 +422,7 @@ modules:
       declared: ^5.2.0 on 2025dec02 8m old
       installed: 5.2.0 on 2025dec02 8m old
       current: 5.2.0 on 2025dec02 8m old
-      latest: 5.2.0 on 2025dec02 8m old
+      latest: 6.0.0 on 2026aug26 0m old 🎁 Major new version available
     downloads:
       weekly: 804,831
       on: 2026aug18.1523.29150
@@ -434,7 +437,7 @@ modules:
       declared: ^5.1.1 on 2026feb03 6m old
       installed: 5.1.1 on 2026feb03 6m old
       current: 5.1.1 on 2026feb03 6m old
-      latest: 5.1.1 on 2026feb03 6m old
+      latest: 6.0.0 on 2026aug26 0m old 🎁 Major new version available
     downloads:
       weekly: 613,323
       on: 2026aug18.1523.29150
@@ -752,7 +755,7 @@ modules:
     from: site
     versions:
       declared: ^2.8.0 on 2026jan28 6m old
-      installed: 2.10.1 on 2026jun26 1m old
+      installed: 2.10.1 on 2026jun26 2m old
       current: 2.10.4 on 2026aug25 0m old
       latest: 2.10.4 on 2026aug25 0m old
     downloads:
@@ -792,8 +795,8 @@ modules:
     versions:
       declared: ^4.33.0 on 2026feb19 6m old
       installed: 4.38.1 on 2026jun19 2m old
-      current: 4.41.0 on 2026aug10 0m old
-      latest: 4.41.0 on 2026aug10 0m old
+      current: 4.41.1 on 2026aug26 0m old
+      latest: 4.41.1 on 2026aug26 0m old
     downloads:
       weekly: 926,530
       on: 2026aug18.1523.45867
@@ -803,7 +806,7 @@ modules:
     note: "provider: local lambda emulator for dev"
     from: net23
     versions:
-      declared: ^14.5.0 on 2026feb24 5m old
+      declared: ^14.5.0 on 2026feb24 6m old
       installed: 14.7.4 on 2026jun23 2m old
       current: 14.8.0 on 2026aug07 0m old
       latest: 14.8.0 on 2026aug07 0m old
@@ -819,7 +822,7 @@ modules:
       declared: ^0.34.5 on 2025nov06 9m old
       installed: 0.34.5 on 2025nov06 9m old 🐣 Pre-1.0 version installed
       current: 0.34.5 on 2025nov06 9m old
-      latest: 0.35.3 on 2026jul01 1m old
+      latest: 0.35.4 on 2026aug26 0m old
     downloads:
       weekly: 74,893,373
       on: 2026aug18.1523.45867
@@ -895,9 +898,9 @@ modules:
     from: site
     versions:
       declared: ^1.17.4 on 2026jan15 7m old
-      installed: 1.17.5 on 2026mar26 4m old
-      current: 1.17.5 on 2026mar26 4m old
-      latest: 1.17.5 on 2026mar26 4m old
+      installed: 1.17.5 on 2026mar26 5m old
+      current: 1.17.5 on 2026mar26 5m old
+      latest: 1.17.5 on 2026mar26 5m old
     downloads:
       weekly: 17,576,915
       on: 2026aug18.1523.58589
@@ -980,8 +983,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 6m old
       installed: 4.105.0 on 2026jun25 2m old
-      current: 4.125.0 on 2026aug20 0m old
-      latest: 4.125.0 on 2026aug20 0m old
+      current: 4.126.0 on 2026aug25 0m old
+      latest: 4.126.0 on 2026aug25 0m old
     downloads:
       weekly: 15,295,217
       on: 2026jul21.1759.35951

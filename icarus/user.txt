@@ -41,7 +41,7 @@ to do the above, you don't need a provisional user level
 the first browser to challenge a never before seen address gets:
 - a new user tag made
 - that user tag is signed into that browser (fully, without expiration)
-- the user tag in address_table has Challenged. that address (and code sent which user ignores, in this scenario)
+- that user tag has Challenged. that address in credential_table (and code sent which user ignores, in this scenario)
 then, the person goes to the second device, and enters the same address
 now, they have to verify to be able to use the site (make sure this doesn't put the site into an unusable state, there's a stop trying to sign in button sorta like sign out, or something)
 

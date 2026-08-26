@@ -20,7 +20,7 @@ The deeper lesson learned from operating it: **Datadog is only reliably reachabl
 
 The old essay names four purposes, and each has a new home:
 
-- **Audit** — records of transactions, especially the large complex objects from unreliable third-party apis — is ledger_table's literal design, and an upgrade in custody: log pipelines are notoriously leaky and needed the redaction pass, while the database already holds full credentials and is secured accordingly. Before the general-purpose ledger, several plans reached for this same place — logAudit, service_table for third-party performance, address_table for per-address events — all charting a course to one generic, multi-use table.
+- **Audit** — records of transactions, especially the large complex objects from unreliable third-party apis — is ledger_table's literal design, and an upgrade in custody: log pipelines are notoriously leaky and needed the redaction pass, while the database already holds full credentials and is secured accordingly. Before the general-purpose ledger, several plans reached for this same place — logAudit here, and a pair of purpose-built tables specified years earlier for third-party performance and for per-address events — all charting a course to one generic, multi-use table, which is the one that got built.
 - **Robin** — high-frequency performance records, queryable — partly exists already as delay_table, and ledger_table can carry the rest.
 - **Debug** — dog survives as the one remaining function, async (today's awaitDog shape), for development help.
 - **Alert** — the one purpose a database row cannot serve, because its job is attention, not record. Held aside; its own section below.

@@ -136,7 +136,7 @@ The event column stops being dead weight and becomes the actual mechanism. `quer
 
 ## Standalone, planned for integration
 
-(none remaining — OTP was the last, integrated above; `address_table` was steered around rather than migrated, and its cleanup waits for the ledger work)
+(none remaining — OTP was the last, integrated above)
 
 ## Future wallet types, mapped
 
@@ -144,7 +144,7 @@ The road ahead for cryptocurrency credentials, positioned by the August 2026 f-t
 
 # Integrating OTP into credential_table
 
-**This landed.** The plan below is kept for the record; where what shipped differs: `FoundEnvelope.` dissolved into `Get.` via a second named body field `envelopeOtp` rather than waiting for the unified envelope; `address_table` was steered around, not migrated; the signup wrinkle resolved for now as "otp flows require a signed-in user, the whole time, as the same user," pending the early-userTag design; and a claim guard shipped with the integration — a proven address returns `Held.` to everyone else, checked at send and at enter.
+**This landed.** The plan below is kept for the record; where what shipped differs: `FoundEnvelope.` dissolved into `Get.` via a second named body field `envelopeOtp` rather than waiting for the unified envelope; the signup wrinkle resolved for now as "otp flows require a signed-in user, the whole time, as the same user," pending the early-userTag design; and a claim guard shipped with the integration — a proven address returns `Held.` to everyone else, checked at send and at enter.
 
 Before replacing envelope cookies with event-3 rows, the simpler prerequisite is getting OTP into the unified credential system — the same way TOTP, Wallet, and OAuth were integrated. Actions in `/api/credential`, refs and methods in `credentialStore`, UI in `CredentialPanel`, rows in `credential_table`. The envelope/cookie mechanism stays the same for now; we're just consolidating where the logic lives.
 
@@ -154,7 +154,7 @@ The largest integration — OTP has the most moving parts.
 
 **Server.** `/api/otp.js` logic moves into `/api/credential.js`. Actions: `OtpSendTurnstile.`, `OtpEnter.`. `FoundEnvelope.` merges into `Get.` (same pattern as TOTP recovery). `attachState` extends to return validated email/phone credentials (type `'Email.'`/`'Phone.'`, event 4). Rate limiting stays in trail_table.
 
-**Database.** Validated addresses move from `address_table` into `credential_table` (f0=normalized, f1=formal, f2=display). `address_table` can be retired.
+**Database.** Validated addresses land in `credential_table` (f0=normalized, f1=formal, f2=display).
 
 **Store.** `pageStore.otps` migrates into `credentialStore`. `useOtpCookie()` stays for now (cookie replacement is a separate later step).
 
@@ -164,7 +164,7 @@ The largest integration — OTP has the most moving parts.
 
 ## Sequencing
 
-Wallet done (see wallet.md for dev panel and test scenarios). OAuth done. OTP done — the architectural questions that remain (signup flow, early userTag assignment, address_table cleanup) carry forward on their own.
+Wallet done (see wallet.md for dev panel and test scenarios). OAuth done. OTP done — the architectural questions that remain (signup flow, early userTag assignment) carry forward on their own.
 
 ## Consumer identity menu (deferred)
 

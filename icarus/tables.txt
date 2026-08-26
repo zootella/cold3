@@ -485,12 +485,6 @@ we could instead when a new person first clicks Follow, or sets their nickname
 
 
 
-totally make the service_table
-which is a history and audit of every request and every response to every api
-so you can see what worked and what didn't work
-and how quickly the api responded
-and how quickly the user was able to complete the task related to the api
-start recording this information even before you have a system that uses it
 
 
 

@@ -64,7 +64,7 @@ remaining from the original notes: sign-up and sign-in by code (the user stories
 for instance, let's say that Twilio stops working, but Amazon is still going strong
 or, more insidious, Amazon says it's working, but we (need to be able to) notice that users who we send codes through one provider take far longer to complete the flow compared to another provider
 
-address_table and service_table remain stubs and notes in level3.js--we steered around them here; those tables can go away, but our user stories about them remain to be completed!
+the user stories behind that ambition remain to be completed: the records exist now, in credential_table and ledger_table, but nothing yet reads them to choose a provider.
 
 # reduced notesfile
 
@@ -240,7 +240,7 @@ or for a single transaction
 the first user will have two codes sent
 the second user will have lots of codes sent
 
-it would be great if address_table just recorded challenges and validations
+it would be great if the record just held challenges and validations
 and didn't care what they were for
 but of course, if user1 has validated address1 with code1
 and then (either to second factor or sign in another device) requests code2

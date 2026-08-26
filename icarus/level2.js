@@ -1204,7 +1204,6 @@ test(() => {//the helpers above, walked with two housemates sharing one letter
 
 
 
-//ttd february, with reliable worker and lambda logs, and service_table, you could deprecate datadog entirely, you now ironically realize. it was helpful last year, but doesn't really work, as lots of errors are before your code even runs, or about something that is also going to prevent us from being able to use datadog, so then you have to head into the amazon and cloudflare dashboards, anyway. and for logAudit, you're going to want to query those, so that should be service_table instead 🐶💧 summer 2024, tho
 
 /*
 very brief notes about logging:

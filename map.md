@@ -53,7 +53,7 @@ Every credential type in the system, plus what remains outside the stack, plus t
 - **OAuth** (`Oauth.`) — one type for every provider, k1 carrying the provider tag; Google, Twitter, Discord, and GitHub are configured today, and adding a provider is a configuration change, not a new type. (Twitch appears in the grid tests only as the fixture proving unlisted providers get filtered out.)
 - **Email and Phone** (`Email.`, `Phone.`) — two type strings sharing the one OTP mechanism; any number held, all peers with no main or default.
 
-**Nothing credential-shaped floats outside the stack anymore.** What's left in the site workspace is remnants and demo UI, not parallel systems: `address_table` and `service_table` schemas and their surrounding functions sit deprecated in level3 awaiting deletion (level3's own July note says credential_table has superseded them; cleanup waits for the ledger work); `site/server/api/signin.js` is a stub that answers only `Hi.`, its old sign-in actions commented out; and the demo components (PasswordDemo's hashing playground, the page4 otp box) are demonstration UI over integrated types.
+**Nothing credential-shaped floats outside the stack anymore.** What's left in the site workspace is remnants and demo UI, not parallel systems: `site/server/api/signin.js` is a stub that answers only `Hi.`, its old sign-in actions commented out; and the demo components (PasswordDemo's hashing playground, the page4 otp box) are demonstration UI over integrated types.
 
 **Mentioned in notes, not planned for v1.** To cover everything:
 
