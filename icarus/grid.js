@@ -1159,7 +1159,7 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 
 	await ledgerAdd({action: 'QuickExample.', browserHash})//only the action and browser are required; the rest defaults to blanks
 	let quick = (await queryGet('ledger_table', {action_text: 'QuickExample.'}))[0]
-	ok(quick.user_tag_text == '' && quick.ip_text == '' && makeText(quick.note_json) == '{}')
+	ok(quick.user_tag_text == '' && quick.ip_text == '' && quick.hash_text == '' && makeText(quick.note_json) == '{}')
 	ok(quick.wrapper_hash.length == 52)//the version of the software that wrote the row rides along
 
 	await ledgerAddMany([//a batch lands in a single query, every element its own complete record
@@ -1167,6 +1167,33 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 		{action: 'BatchExample.', browserHash, note: {n: 2}},
 	])
 	ok((await queryGet('ledger_table', {action_text: 'BatchExample.'})).length == 2)
+})
+
+grid(async () => {//ledger: the hash margin gathers every record about one thing, whatever the action was, and the planner reaches them through ledger4
+	let {clear, pglite} = await getDatabase()
+	await clear('ledger_table')
+	let browserHash = await hashText('a browser')
+	let subject = await hashText('alice1980@example.com')//the thing the records are about; hashed, so the ledger indexes it without holding the address in a margin
+	let other = await hashText('someone else')
+
+	await ledgerAddMany([//three actions, two subjects: the hash is what ties records together, not the action
+		{action: 'ExampleSent.',    browserHash, hash: subject, note: {n: 1}},
+		{action: 'ExampleProven.',  browserHash, hash: subject, note: {n: 2}},
+		{action: 'ExampleRemoved.', browserHash, hash: other,   note: {n: 3}},
+		{action: 'ExampleSent.',    browserHash},//no subject, so no hash--the common case
+	])
+	let mine = await queryGet('ledger_table', {hash_text: subject})
+	ok(mine.length == 2)//both records about this subject, across two different actions
+	ok(mine.every(r => r.hash_text == subject))
+	ok((await queryGet('ledger_table', {hash_text: other})).length == 1)
+
+	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves the partial predicate is provable from the filter
+	let plan = (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND hash_text = '${subject}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	await pglite.query('SET enable_seqscan = on')
+	ok(plan.includes('ledger4'))//postgres proves hash_text = a nonblank constant implies hash_text != '', so the partial index serves the lookup
+
+	let tossed = false; try { await ledgerAdd({action: 'ExampleSent.', browserHash, hash: 'not a hash'}) } catch (e) { tossed = true }
+	ok(tossed)//the cell holds a hash or the blank, nothing else
 })
 
 grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, error3, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first

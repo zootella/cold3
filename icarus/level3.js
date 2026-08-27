@@ -1216,7 +1216,7 @@ CREATE INDEX ledger4 ON ledger_table (hash_text,     row_tick DESC) WHERE hide =
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
 
-export async function ledgerAdd({action, browserHash, ip, userTag, note}) { return await ledgerAddMany([{action, browserHash, ip, userTag, note}]) }
+export async function ledgerAdd({action, browserHash, ip, userTag, hash, note}) { return await ledgerAddMany([{action, browserHash, ip, userTag, hash, note}]) }
 export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
 	checkHash(wrapper.hash)
 	let now = Now()
@@ -1226,10 +1226,11 @@ export async function ledgerAddMany(a) {//keep a lasting record of something tha
 			browserHash,//the browser that was here for this
 			ip = '',//the ip address if the caller has it
 			userTag = '',//the user, or blank if nobody's identified
+			hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
 			note = {},//everything else about what happened, kept as data a later reader can query and read back
 		} = e
 		checkAction(action); checkHash(browserHash)
-		checkTextOrBlank(ip); checkTagOrBlank(userTag); checkPlain(note)
+		checkTextOrBlank(ip); checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
 		return {
 			row_tick: now,
 			ip_text: ip,
@@ -1237,6 +1238,7 @@ export async function ledgerAddMany(a) {//keep a lasting record of something tha
 			user_tag_text: userTag,
 			wrapper_hash: wrapper.hash,
 			action_text: action,
+			hash_text: hash,
 			note_json: note,
 		}
 	})
