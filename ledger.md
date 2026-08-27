@@ -1,7 +1,9 @@
 
 # Ledger vs Edit-in-Place
 
-How we store credential changes is currently an under-decided question. The codebase mixes two sub-patterns inconsistently. This document lays out the options so we can pick a single rule and apply it everywhere — likely as a focused sprint, not an incremental change.
+**Provisionally decided: mutate tables like an ordinary program, and be complete and verbose in ledger_table as we do it.** Rows get edited when data changes and removed when their absence is the correct current picture, and every one of those mutations writes an audit row carrying who, where, and when. That settles the direction; it does not settle that the direction works. We have not migrated a table this way yet, and unforeseen difficulty is exactly the kind of thing this argument was written to anticipate — so the case below is preserved in full, as it was written, with neither side softened.
+
+Read it that way: not as an open question waiting for a verdict, but as the reasoning the verdict was reached against, and the place to come back to if the first real migration turns up something the argument missed. What follows lays out both patterns and their costs so a single rule can be applied everywhere — likely as a focused sprint, not an incremental change.
 
 ## What we have today: ledger-style tables
 
@@ -15,7 +17,7 @@ The schema explicitly defines `event = 2 mentioned, 3 challenged, 4 validated, 1
 In current code, we **never actually write event-1 rows.** We use Pattern B instead.
 
 **Pattern B — hide rows to reverse a fact.**
-`queryHide` (level2.js:1547) flips a row's `hide` column from 0 to 1. The row stays in the table but is excluded from default queries. Used by every credentialXxxRemove function today: oauth, password, totp, wallet, name, browser.
+`queryHide` (level2.js:1636) flips a row's `hide` column from 0 to 1. The row stays in the table but is excluded from default queries. Used by every credentialXxxRemove function today: oauth, password, totp, wallet, name, browser.
 
 The `hide` column today is a **flag**, not a timestamp. We do not record when the hide happened. We do not record which browser initiated it. We do not record the IP. The DB alone cannot reconstruct the "when" or "from where" of a removal.
 
@@ -83,7 +85,7 @@ The audit table is append-only, indexed for the audit access pattern (mostly wri
 
 Until we decide, stay consistent with **Pattern B (hide on remove)** for new code, including credentialOauthRemove. Don't introduce event-1 row writes — that creates a third sub-pattern we'd have to migrate twice.
 
-Acknowledge the limitation: today's hide loses removal timestamps and forensic context. If a real "how did this account get compromised" case lands before we make the bigger decision, we'll lean on Datadog audit logs (which capture browserHash and request context per action) rather than the database.
+Acknowledge the limitation: today's hide loses removal timestamps and forensic context. Until the credential flows write their ledger rows, a real "how did this account get compromised" case leans on what ledger_table already holds beside hit_table's connection records — thinner than it will be, and in our own database rather than in a log pipeline.
 
 ## What a future sprint might look like (if we go C+D)
 

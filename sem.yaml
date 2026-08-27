@@ -1,5 +1,5 @@
 summary:
-  generated: 2026aug26.1912.25401
+  generated: 2026aug27.1420.12789
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -222,8 +222,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1118.0 on 2026aug25 0m old
-      latest: 3.1118.0 on 2026aug25 0m old
+      current: 3.1119.0 on 2026aug26 0m old
+      latest: 3.1119.0 on 2026aug26 0m old
     downloads:
       weekly: 3,186,203
       on: 2026aug18.1523.45867
@@ -235,8 +235,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 1m old
-      current: 3.1118.0 on 2026aug25 0m old
-      latest: 3.1118.0 on 2026aug25 0m old
+      current: 3.1119.0 on 2026aug26 0m old
+      latest: 3.1119.0 on 2026aug26 0m old
     downloads:
       weekly: 3,078,359
       on: 2026aug18.1523.45867
@@ -448,7 +448,7 @@ modules:
     from: net23
     versions:
       declared: ^1.3.2 on 2026feb23 6m old
-      installed: 1.10.2 on 2026may28 2m old
+      installed: 1.10.2 on 2026may28 3m old
       current: 1.11.0 on 2026aug18 0m old
       latest: 1.11.0 on 2026aug18 0m old
     downloads:
@@ -531,10 +531,10 @@ modules:
     note: "front: variant styling for components; shadcn pattern, pre-1.0 but 15m weekly downloads"
     from: site
     versions:
-      declared: ^0.7.1 on 2024nov26 20m old
-      installed: 0.7.1 on 2024nov26 20m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
-      current: 0.7.1 on 2024nov26 20m old
-      latest: 0.7.1 on 2024nov26 20m old
+      declared: ^0.7.1 on 2024nov26 21m old
+      installed: 0.7.1 on 2024nov26 21m old 🕰️ Installed version 1+ year old 🐣 Pre-1.0 version installed
+      current: 0.7.1 on 2024nov26 21m old
+      latest: 0.7.1 on 2024nov26 21m old
     downloads:
       weekly: 54,195,947
       on: 2026aug18.1523.45867
@@ -624,8 +624,8 @@ modules:
     versions:
       declared: ^1.12.36 on 2026jan30 6m old
       installed: 1.13.7 on 2026jun18 2m old
-      current: 1.13.11 on 2026aug14 0m old
-      latest: 1.13.11 on 2026aug14 0m old
+      current: 1.13.12 on 2026aug27 0m old
+      latest: 1.13.12 on 2026aug27 0m old
     downloads:
       weekly: 15,907,364
       on: 2026aug18.1523.29150
@@ -927,8 +927,8 @@ modules:
     versions:
       declared: ^2.45.1 on 2026jan29 6m old
       installed: 2.53.1 on 2026jun20 2m old
-      current: 2.55.19 on 2026aug19 0m old
-      latest: 2.55.19 on 2026aug19 0m old
+      current: 2.56.0 on 2026aug26 0m old
+      latest: 2.56.0 on 2026aug26 0m old
     downloads:
       weekly: 4,704,818
       on: 2026aug18.1523.29150
@@ -955,14 +955,14 @@ modules:
     versions:
       declared: ^3.5.27 on 2026jan19 7m old
       installed: 3.5.39 on 2026jun25 2m old
-      current: 3.5.41 on 2026aug05 0m old
-      latest: 3.5.41 on 2026aug05 0m old
+      current: 3.5.42 on 2026aug27 0m old
+      latest: 3.5.42 on 2026aug27 0m old
     downloads:
       weekly: 9,793,131
       on: 2026aug18.1523.45867
   vue-router:
     homepage: https://router.vuejs.org
-    description: "> To see what versions are currently supported, please refer to the [Security Policy](./packages/router/SECURITY.md)."
+    description: null
     note: "nuxt: routing; held at v4, v5 is a major rewrite that nuxt must adopt first"
     from:
       - icarus
@@ -971,7 +971,7 @@ modules:
       declared: ^4.6.4 on 2025dec11 8m old
       installed: 4.6.4 on 2025dec11 8m old
       current: 4.6.4 on 2025dec11 8m old
-      latest: 5.2.0 on 2026jul15 1m old 🎁 Major new version available
+      latest: 5.3.0 on 2026aug27 0m old 🎁 Major new version available
     downloads:
       weekly: 6,630,697
       on: 2026aug18.1523.45867
@@ -983,8 +983,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 6m old
       installed: 4.105.0 on 2026jun25 2m old
-      current: 4.126.0 on 2026aug25 0m old
-      latest: 4.126.0 on 2026aug25 0m old
+      current: 4.127.0 on 2026aug27 0m old
+      latest: 4.127.0 on 2026aug27 0m old
     downloads:
       weekly: 15,295,217
       on: 2026jul21.1759.35951

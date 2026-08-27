@@ -8,7 +8,7 @@ Two suites, both run by `$ pnpm test`, which is `node test.js` and nothing more.
 
 **`test()` — isomorphic unit tests.** Registered by `test(f)` (`icarus/level0.js:30`) and run by `runTests()` (`:40`). Plain JavaScript, no database, no clock tricks: validators, formatters, encoders, the TOTP generator against the RFC 6238 vectors. The whole suite finishes in tens of milliseconds.
 
-**`grid()` — database tests.** Registered by `grid(f)` (`icarus/level2.js:1419`) and run by `runDatabaseTests()` (`:1860`). On first call, `getDatabase()` notices simulation mode and stands up pglite in memory, executing the same `SQL()` schema strings that define the real Supabase tables, then hands back an adapter matching the slice of the Supabase API our query helpers use (`level2.js:1447`). The helpers that run against the real database in production run against this one in the test, unchanged. Standing up the database costs most of the runtime, and the whole suite still lands in about a second.
+**`grid()` — database tests.** Registered by `grid(f)` (`icarus/grid.js:37`) and run by `runDatabaseTests()` (`:1425`), both living in `grid.js` outside the barrel, which is why no test closure rides in a production bundle. `setupTestDatabase()` stands up pglite in memory, executes the `SQL()` schema strings that define the real Supabase tables — handed across the boundary by `sqlList()` — and parks an adapter matching the slice of the Supabase API our query helpers use (`grid.js:1515`) where `getDatabase()` finds it in simulation mode. The helpers that run against the real database in production run against this one in the test, unchanged. Standing up the database costs most of the runtime, and the whole suite still lands in about a second.
 
 Four things the grid environment gives us that are easy to forget:
 
@@ -124,11 +124,11 @@ What came under test:
 
 **And two behaviors were wrong, which is what moving the code surfaced.** Recovery never checked whose envelope it held, so Alice could start an enrollment, sign out, and Bob signing in at the same browser would be shown a QR code built from her secret — completing it then tossed him to the error page. Recovery now checks the same binding the other two steps check, so Bob sees an ordinary panel. Separately, recovery ran for a signed-out browser too, labeling the entry with a userTag; an enrollment belongs to a user, so it now requires one. Both were latent because the binding lived in two places and the third place forgot it.
 
-## Next: OTP envelope handling
+## Next: the otp projection in attachState
 
-The third instance. `openLetterOtp` and `attachLetterOtp` live in `credential.js` and own the challenge letter's whole lifecycle: opening the cookie's envelope bound to this browser, filtering expired challenges, resealing, and stripping the answers out of what goes back to the page. That last part is a security boundary — the sealed letter holds each challenge's correct answer, and the response must carry only the tag, the start, and the address.
+The OTP rules themselves are the best-covered thing we have — rate limits, guess exhaustion, replay, code length by history, the holder rule, challenge ownership. The envelope-and-cookie plumbing that used to sit above them is gone rather than untested: the brownie took it, and the door opens and reseals the letter in level2 under grid tests of its own.
 
-The OTP rules themselves are the best-covered thing we have: rate limits, guess exhaustion, envelope replay, code length by history, the holder rule, and challenge ownership all have grid tests. It is only the envelope-and-cookie plumbing around them that sits above the seam.
+What remains above the seam is one projection. `attachState` maps the viewer's live challenge notes onto `task.otps`, stripping each challenge's answer and scoping the list to the signed-in viewer — a security boundary and a shared-browser boundary, neither asserted anywhere, because `attachState` is an endpoint function. Same box as `apply()` in the gripes below.
 
 ## What stays manual, honestly
 

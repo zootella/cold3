@@ -15,11 +15,11 @@ The credential system flows through one endpoint (`/api/credential`), one store 
 
 ## Current endpoint and store map
 
-**`/api/credential` + `credentialStore`** — the main credential system. Handles Browser, Password, Name, TOTP, and Wallet. Every successful response includes `attachState` (full credential snapshot). Store exposes refs and methods for all credential types. Used by CredentialPanel and its sub-components (SetPasswordForm, TotpPanel, WalletPanel, etc).
+**`/api/credential` + `credentialStore`** — the credential system, and the only one: Browser, Name, Password, TOTP, Wallet, OAuth removal, and Email and Phone all ride here. Every successful response includes `attachState` (full credential snapshot). Store exposes refs and methods for all credential types. Used by CredentialPanel and its sub-components (SetPasswordForm, TotpPanel, WalletPanel, etc).
 
 Actions: `Get.`, `SignUpAndSignInTurnstile.`, `SignIn.`, `SignOut.`, `SetName.`, `RemoveName.`, `SetPassword.`, `RemovePassword.`, `CheckNameTurnstile.`, `GetPasswordCyclesTurnstile.`, `CloseAccount.`, `TotpEnroll1.`, `TotpEnroll2.`, `TotpRemove.`, `TotpValidate.`, `WalletProve1.`, `WalletProve2.`, `WalletRemove.`, `OauthRemove.`, `OtpSendTurnstile.`, `OtpEnter.`, `EmailRemove.`, `PhoneRemove.` (the OAuth prove flow isn't an action here — it's a browser navigation through `/api/oauth/*`, where the signIn callback writes the row directly)
 
-**Email/phone one-time passwords** ride the same endpoint and store. Challenge state lives in `credentialStore.otps`, and the store is the only code that touches the `useOtpCookie()` cookie: any response that carries `task.otps` also carries `task.envelopeOtp` as the resealed ciphertext, or blank when nothing is live — the store keeps text, and on blank clears the cookie if it's holding one. Text or blank, plus the store's local knowledge of what it holds; no meanings loaded onto null versus undefined. Recovery after refresh rides `Get.`, which reads the cookie's envelope from `body.envelopeOtp` and returns the non-secret display parts, replacing the old `FoundEnvelope.` round trip.
+**Email/phone one-time passwords** ride the same endpoint and store, and hold no cookie of their own. Live challenges are notes in the brownie: the door opens the letter, `attachState` projects the viewer's own notes onto `task.otps` as the non-secret display parts, and the door reseals whatever request code left behind. The store reads that snapshot and holds nothing durable itself. Recovery after a refresh needs no special round trip — every response carries the full picture, so `Get.` answers it like anything else, and `brownieHeld()` lets the store skip the follow-up entirely when the browser is holding nothing.
 
 # Envelope and cookie analysis across credential types
 
@@ -55,15 +55,17 @@ Resolved: the brownie holds it all. Totp's singleton shape is one `'Totp.'` note
 
 # Credential events and audit trail
 
+**Decided: the audit trail moves to ledger_table, and credential_table becomes a snapshot.** Every addition, deletion, and mutation of a credential writes a ledger row recording who did it, at which browser, from what address, and when — full and verbose, because that table exists to be written to constantly and read rarely. Freed of carrying its own history, credential_table becomes what it looks like it should be: the currently correct picture, edited when something changes and emptied of a row when the row's absence is the truth. The direction is settled; the shape of the migration that gets there is not, and nothing below has been built.
+
 ## Current state: hide does the work, events are underused
 
 `credential_table` has an `event` column defined as: 1 removed, 2 mentioned, 3 challenged, 4 validated. Most credential functions hardcode `event: 4`. Removal uses `queryHide` (sets the `hide` column), which makes rows invisible to `queryGet`. Wallet is the first type to use events 2 and 3 (WalletProve1 writes mentioned and challenged rows).
 
-The `hide` mechanism is convenient (level2 query helpers skip hidden rows by default) but destroys history. A user who enrolls TOTP, removes it, enrolls again — the first enrollment is gone. No record of credential lifecycle.
+The `hide` mechanism is convenient (level2 query helpers skip hidden rows by default) but destroys history. A user who enrolls TOTP, removes it, enrolls again — the first enrollment is gone, and hide records neither when it happened nor from where. That gap is real and is what the ledger rows answer, with more context than a hidden row could ever have carried.
 
-## Proposed direction: event rows replace hiding
+## The road not taken: event rows replace hiding
 
-Instead of hiding credential rows, write new rows with event numbers. A credential's lifecycle becomes a sequence of rows ordered by `row_tick`:
+This was the competing answer, and it is worth keeping because it is the one that made credential_table the shape it is today, and because the reasoning is what the decision above was made against. It kept history and current state in one table: instead of hiding credential rows, write new rows with event numbers. A credential's lifecycle becomes a sequence of rows ordered by `row_tick`:
 
 - Event 4 (validated): credential is active — the user has a password, a TOTP enrollment, a browser sign-in
 - Event 1 (removed): credential is no longer active
@@ -74,9 +76,9 @@ No rows are hidden. The history accumulates. The current state is determined by 
 
 An event-1 row acts as a watermark — everything before it is dead, everything after it is alive.
 
-**Browser** is the cleanest example. A user signs into 5 browsers (5 event-4 rows, each with a browserHash in k1). Then they sign out. Instead of hiding all 5 rows, write a single event-1 row of type Browser. Any browser sign-ins with an earlier tick than the most recent event-1 are dead. Any sign-ins after it are alive. One removal row wipes the slate without touching the original rows.
+**Browser** is the cleanest example. A user signs into 5 browsers (5 event-4 rows, each with a browserHash in hash_text). Then they sign out. Instead of hiding all 5 rows, write a single event-1 row of type Browser. Any browser sign-ins with an earlier tick than the most recent event-1 are dead. Any sign-ins after it are alive. One removal row wipes the slate without touching the original rows.
 
-**TOTP** works naturally. Enroll: event-4 row with the secret in k1. Remove: event-1 row. The secret in the event-4 row ties the pair together — and TOTP secrets are globally unique. But even without linking, the watermark tells you the current state: most recent row for type Totp is event 4? Enrolled. Event 1? Not enrolled.
+**TOTP** works naturally. Enroll: event-4 row with the secret in the note. Remove: event-1 row. The secret in the event-4 row ties the pair together — and TOTP secrets are globally unique. But even without linking, the watermark tells you the current state: most recent row for type Totp is event 4? Enrolled. Event 1? Not enrolled.
 
 **Name** is the same shape. Set a name: event-4 row with f0/f1/f2. Remove it: event-1 row. Change it: event-4 row with the new name (the previous event-4 is now superseded by a later one). History shows every name a user has had.
 
@@ -114,7 +116,7 @@ These flows matter to the storage decisions, not just to signup: what lives in t
 
 One query gets all rows for a user, ordered by tick (a few dozen rows at most). `attachState` already assembles the complete picture — it would change from four separate queries (browser, name, password, totp) each filtering by `event: 4` to one query, walking the rows and applying watermark logic per type. Event-2/3 provisionals come back in the same query — no extra round trip for recovery.
 
-The event column stops being dead weight and becomes the actual mechanism. `queryHide` exits credential lifecycle (except perhaps `credentialCloseAccount` as a hard cutoff).
+Under that design the event column would have become the actual mechanism rather than dead weight. What happens to `event` under the decision above is genuinely open: a snapshot table has no use for a lifecycle vocabulary, but a live challenge is in-flight state rather than history, so mentioned and challenged may want a home that validated does not. That question opens when the migration is planned, not before.
 
 # Credential integration status
 
@@ -134,41 +136,13 @@ The event column stops being dead weight and becomes the actual mechanism. `quer
 
 **Email/Phone (OTP)** — any number of addresses per user, all peers, no main or default. f0/f1/f2 = normalized/formal/display forms from `validateEmailOrPhone`; type `'Email.'` or `'Phone.'`. Each address's lifecycle is event rows: 2 mentioned, 3 challenged (note={provider}, `Amazon.`/`Twilio.`, so time-to-validate per provider is queryable), 4 validated — current status is the highest visible event, and remove hides the whole lifecycle. A proven address is held: no other user can be challenged at it or claim it (outcome `Held.`, checked at send and again at enter to close the race where two users held live codes). Otp flows require a signed-in user from send through enter, full stop — each sealed challenge records the userTag that started it, and enter refuses anyone else (outcome `SignedOut.`) — until the early-userTag design opens these flows to signup. Two-step challenge with each live code riding as an owner-scoped note in the brownie, several at once; all codes are entered in the TopBar `OtpEnterList` box, one enter system for demo and credential flows alike. UI in EmailPanel and PhonePanel. One level3 family does all of it, taking type as a parameter: `credentialOtpSend/Enter/Get/Remove/Holder/Mentioned/Challenged/Validated` (the endpoint resolves the signed-in userTag and passes it down; browser binding is the door's).
 
-## Standalone, planned for integration
-
-(none remaining — OTP was the last, integrated above)
-
 ## Future wallet types, mapped
 
 The road ahead for cryptocurrency credentials, positioned by the August 2026 f-triad repair. Ecosystem neighbors like Doge. or Solana. arrive as new type_text values with their own validate and prove flows — different address formats, different signature schemes, genuinely new ways to sign in, which is what type_text exists for; f0 is whatever exact string that type's validate mints for matching. EVM network variance like Base is proof metadata, not identity: an address is the same address on every EVM chain, and an ordinary wallet's signature proves key control regardless of chain. The one place chain matters is the smart-contract-wallet corner, where EIP-1271 verification asks a contract deployed per chain — so if we ever verify proofs against multiple chains, challenge and validated rows grow note {chain}, absent meaning mainnet. Neither future needs a migration.
 
-# Integrating OTP into credential_table
+# Consumer identity menu
 
-**This landed.** The plan below is kept for the record; where what shipped differs: `FoundEnvelope.` dissolved into `Get.` via a second named body field `envelopeOtp` rather than waiting for the unified envelope; the signup wrinkle resolved for now as "otp flows require a signed-in user, the whole time, as the same user," pending the early-userTag design; and a claim guard shipped with the integration — a proven address returns `Held.` to everyone else, checked at send and at enter.
-
-Before replacing envelope cookies with event-3 rows, the simpler prerequisite is getting OTP into the unified credential system — the same way TOTP, Wallet, and OAuth were integrated. Actions in `/api/credential`, refs and methods in `credentialStore`, UI in `CredentialPanel`, rows in `credential_table`. The envelope/cookie mechanism stays the same for now; we're just consolidating where the logic lives.
-
-## OTP (Email/Phone) — medium effort
-
-The largest integration — OTP has the most moving parts.
-
-**Server.** `/api/otp.js` logic moves into `/api/credential.js`. Actions: `OtpSendTurnstile.`, `OtpEnter.`. `FoundEnvelope.` merges into `Get.` (same pattern as TOTP recovery). `attachState` extends to return validated email/phone credentials (type `'Email.'`/`'Phone.'`, event 4). Rate limiting stays in trail_table.
-
-**Database.** Validated addresses land in `credential_table` (f0=normalized, f1=formal, f2=display).
-
-**Store.** `pageStore.otps` migrates into `credentialStore`. `useOtpCookie()` stays for now (cookie replacement is a separate later step).
-
-**Components.** OTP components wire into `CredentialPanel`, calling `credentialStore` methods instead of `fetchWorker` directly.
-
-**Wrinkle: the signup flow.** OTP is used both for credential management (signed-in user adds an email) and signup (new person proves address control). The credential endpoint requires a signed-in user for most actions. The signup path needs to work without one — either by making OTP actions available without a user (like `CheckNameTurnstile.` already is), or by creating a userTag early as discussed above.
-
-## Sequencing
-
-Wallet done (see wallet.md for dev panel and test scenarios). OAuth done. OTP done — the architectural questions that remain (signup flow, early userTag assignment) carry forward on their own.
-
-## Consumer identity menu (deferred)
-
-Once all credential types are integrated (OAuth and OTP alongside Browser, Name, Password, TOTP, Wallet), the per-type dev panels collapse into a single unified "ways to identify yourself" menu. Discord and X sign-ins alongside MetaMask and WalletConnect wallet connections alongside email/phone OTP alongside TOTP and password, one coherent surface for the user.
+All seven types are integrated now, so the precondition this waited on is met and what remains is a judgment about timing. The per-type dev panels collapse into a single unified "ways to identify yourself" menu. Discord and X sign-ins alongside MetaMask and WalletConnect wallet connections alongside email/phone OTP alongside TOTP and password, one coherent surface for the user.
 
 Under the hood nothing changes — per-type stores, endpoints, and reconciliation logic carry over unchanged. It's purely a template and UX question. The dev panels (CredentialPanel and its sub-components) stay as a diagnostic tool during integration; replacing them before the underlying credential system is stable would just mean throwing away the replacement.
 

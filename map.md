@@ -45,12 +45,12 @@ Every credential type in the system, plus what remains outside the stack, plus t
 
 **The seven integrated types.** Since July 2026, every credential type lives in the unified stack — rows in credential_table, actions on `/api/credential`, refs in credentialStore, UI in CredentialPanel. The `type_text` strings in the table are the ground truth:
 
-- **Browser** (`Browser.`) — the sign-in session itself; an event-4 row ties a userTag to a browserHash.
+- **Browser** (`Browser.`) — the sign-in session itself; an event-4 row ties a userTag to a browserHash, which rides in `hash_text` and is the lookup `credential13` indexes.
 - **Name** (`Name.`) — the username in three forms: f0 normalized for routes, f1 formal, f2 display.
-- **Password** (`Password.`) — k1 holds the hash, k2 the cycles; the page runs pbkdf2 before sending.
-- **TOTP** (`Totp.`) — authenticator app enrollment; k1 holds the base32 secret.
+- **Password** (`Password.`) — `hash_text` holds the hash and the note holds the cycles; the page runs pbkdf2 before sending.
+- **TOTP** (`Totp.`) — authenticator app enrollment; the note holds the base32 secret.
 - **Wallet** (`Ethereum.`) — proven Ethereum addresses via Sign-In with Ethereum, up to two of them, and no two users can hold the same one. The type string names the chain, so a second chain would arrive as a sibling type, not a change to this one.
-- **OAuth** (`Oauth.`) — one type for every provider, k1 carrying the provider tag; Google, Twitter, Discord, and GitHub are configured today, and adding a provider is a configuration change, not a new type. (Twitch appears in the grid tests only as the fixture proving unlisted providers get filtered out.)
+- **OAuth** (`Oauth.`) — one type for every provider, the note carrying the provider tag and the account identifier `credential14` indexes; Google, Twitter, Discord, and GitHub are configured today, and adding a provider is a configuration change, not a new type. (Twitch appears in the grid tests only as the fixture proving unlisted providers get filtered out.)
 - **Email and Phone** (`Email.`, `Phone.`) — two type strings sharing the one OTP mechanism; any number held, all peers with no main or default.
 
 **Nothing credential-shaped floats outside the stack anymore.** What's left in the site workspace is remnants and demo UI, not parallel systems: `site/server/api/signin.js` is a stub that answers only `Hi.`, its old sign-in actions commented out; and the demo components (PasswordDemo's hashing playground, the page4 otp box) are demonstration UI over integrated types.

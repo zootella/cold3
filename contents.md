@@ -28,7 +28,7 @@ The expansion-and-contraction playbook, proven on hit_table and then credential_
 
 ## testing.md — the test system
 
-The test() and grid() architecture: inline unit tests that live beside the code they demonstrate, and integration grid tests that run whole flows against PGlite — real Postgres compiled to WASM — with no network and no credentials. It records where test code ships in each bundle, and the thesis underneath both suites: we don't want a harness that can drive a web framework, we want endpoints thin enough that nothing in them is worth driving. Open when the test architecture needs context. Two parts of it aren't finished-end description and are marked as such: the OTP envelope handling that still sits above the seam, and a gripes list of what the suites can't yet see.
+The test() and grid() architecture: inline unit tests that live beside the code they demonstrate, and integration grid tests that run whole flows against PGlite — real Postgres compiled to WASM — with no network and no credentials. It records where test code ships in each bundle, and the thesis underneath both suites: we don't want a harness that can drive a web framework, we want endpoints thin enough that nothing in them is worth driving. Open when the test architecture needs context. Two parts of it aren't finished-end description and are marked as such: the one otp projection in attachState that still sits above the seam, and a gripes list of what the suites can't yet see.
 
 # Mostly done — the scraps worth keeping
 
@@ -60,7 +60,7 @@ The queue this category's other entries wait in: none of the work difficult, eac
 
 ## smaller-dog.md — shrinking the logging apparatus
 
-The sprint that takes the Datadog and logging apparatus down to almost nothing, now that ledger_table gives audits a durable, queryable home in our own database. It holds why the apparatus grew as large as it did — a Pages-era platform hole, a codebase with no database yet, and the operating lesson that Datadog is only reliably reachable when everything is working — the inventory of what exists today, the four old purposes mapped to new homes (audit to ledger_table, robin to delay_table, debug to a single async dog, and alert as the one gap a database row can't fill), the removal list, the four decisions the sprint must make, and the three logAudit conversions that lead it — two already in, with turnstile held by the layering decision.
+The sprint that takes the Datadog and logging apparatus down to almost nothing, now that ledger_table gives audits a durable, queryable home in our own database. It holds why the apparatus grew as large as it did — a Pages-era platform hole, a codebase with no database yet, and the operating lesson that Datadog is only reliably reachable when everything is working — the inventory of what exists today, the four old purposes mapped to new homes (audit to ledger_table, robin to delay_table, debug to a single async dog, and alert as the one gap a database row can't fill), the removal list, the decisions the sprint must make — dog's destination now settled, Datadog kept for deliberate diagnostics while log() leans on the provider dashboards — a new small task stamping the wrapper label on every line so a log says which build wrote it, a how-to-find-logs guidebook covering all four squares of provider and dashboard-or-cli, and the three logAudit conversions that lead it, two already in, with turnstile held by the layering decision.
 
 ## ledger.md — data layer patterns for the whole application
 
