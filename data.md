@@ -10,6 +10,10 @@ Shrink the Datadog and logging apparatus to almost nothing, planned in smaller-d
 
 Pick from the three approaches presented in database-stack.md's backup-plan section — the plan-gated managed backups, the pg_dump schema-and-data pair, the CSV cold copy — which combination, on what cadence, and where the sensitive files sleep, since a held backup is exactly as sensitive as the database. A likely first move: run the data half of the pg_dump pair once to see the artifact, then design the CSV export script down the scripts path. The sprint also carries a secrets question the two documents only imply together: a held backup is a fourth place secrets live, beside the workstation, the bundles, and the providers' secret services, so whatever encrypts one wants a home in the key system and a tracer family of its own.
 
+## address and service table cleanup
+
+Done August 26, 2026: address_table and service_table left the code, the schema, and the planning documents that mentioned them. service_table was the only one in the cloud — zero rows, nothing referencing it — and went by a single DROP paired with its registry edit; address_table was registry-only, so deleting its `SQL()` block was the whole schema change. Eight functions went with them, along with the ttds and essays that pointed at them. What survives is data-cleanup.md, which holds the design both tables carried and the list of what that design wanted that nothing does yet, each item waiting to be built into credential_table or ledger_table or waived on the record.
+
 ## credential table consolidation
 
 Done August 22, 2026: the k slots collapsed into hash_text and note_json by expansion and contraction with two deploys, every station verified, the drift check clean. The playbook the sprint proved lives in migration.md; the doctrine it refined lives in jsonb.md.

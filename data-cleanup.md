@@ -1,8 +1,8 @@
 # data cleanup
 
-The sprint that removes address_table and service_table from the database and from the code. Both were superseded by tables we since built and use: address_table's job is credential_table's, and service_table's job is split between ledger_table, trail_table, and credential_table. Ultimately this is a small schema and code change — one table dropped in the cloud, one `SQL()` block deleted from the registry, eight functions and a scattering of ttds removed with them.
+address_table and service_table are gone — out of the code, out of the schema, and out of the planning documents. Both were superseded by tables we since built and use: address_table's job is credential_table's, and service_table's job is split between ledger_table, trail_table, and credential_table. The removal itself was small, and this document is not a record of it. It is the design those two tables held, rescued before their scaffolding was deleted, and the list of what that design asked for that nothing does yet.
 
-**This document illuminates; it does not resolve.** Every open question below is written down so it can be answered later, in its own turn, with the attention it deserves. Nothing here should be read as a decision, and the value of the document is that it makes the full set of loose ends visible at once, so a later pass can resolve them and shrink this file rather than discover them one at a time.
+**This document illuminates; it does not resolve.** Every open question below is written down so it can be answered later, in its own turn, with the attention it deserves. Nothing here should be read as a decision, and the value of the document is that it makes the full set of loose ends visible at once, so a later pass can resolve them and shrink this file rather than discover them one at a time. As each open item is built or waived, it leaves — and when the last one does, so does the document.
 
 ## Why we can't just excise them
 
@@ -104,11 +104,15 @@ Provider failure is covered better than it first looks. `sendMessage` catches pr
 
 **The OTP code itself rides in the ledger note in plaintext.** The task object's parameters carry `subjectText` and `messageText`, and both contain the answer the user is about to type. trail_table deliberately keeps only hashes of its messages; ledger_table keeps the whole task, and the rows never expire. This is not new — the same object already went to Datadog through `logAudit` — but the cleanup is the moment we bless ledger_table as service_table's successor, so what a `MessageSent.` row should hold is fair to settle while doing it. The options are to keep it as is on the grounds that the database already holds full credentials and is secured accordingly, to drop the composed message text and keep the rest, or to keep it under an expiration the way trail rows can carry one.
 
-## The removal, once the gaps are settled
+## How the removal went
 
-**service_table exists in the cloud and needs a migration.** It is the only part of this cleanup that touches the hosted database. With no writers there is no dual-write, no backfill, and no read-switch — the playbook collapses to a single `DROP TABLE` paired with the registry edit in the same commit. Confirm the row count is zero first. Note that the older RLS migration names service_table in an `ALTER TABLE` and a `REVOKE`; that file is history and is not rewritten, and the migration history is already not replayable from an empty database, since only ledger_table was ever created by a migration file rather than by hand in the dashboard.
+Done August 26, 2026, and recorded briefly because the shape is the template for retiring any table nobody uses.
 
-**address_table is registry-only and needs no migration.** Deleting its `SQL()` block from level3 is the whole schema change. PGlite stops building it, and the drift check gains nothing to explain.
+**service_table was the only part that touched the hosted database.** It held zero rows, and the catalogs confirmed nothing pointed at it — no foreign key, no view, no policy — so with no writers there was no dual-write, no backfill, and no read-switch, and the playbook collapsed to a single `DROP TABLE` paired with its registry edit in the same commit. Its three indexes and its grants fell with it. The older RLS migration still names it in an `ALTER TABLE` and a `REVOKE`; that file is history and was not rewritten, and the migration history was already not replayable from an empty database, since ledger_table is the only table a migration file ever created rather than a hand in the dashboard.
+
+**address_table was registry-only, so deleting its `SQL()` block was the whole schema change.** PGlite stopped building it and the drift check lost nothing to explain, which is what registry-only means in practice.
+
+**The registry is now nine tables against the cloud's six,** and the superset is exactly the three sketches — example_table, profile_table, user_table — each still legible as registry-only by carrying no `ENABLE ROW LEVEL SECURITY` line.
 
 **The code that goes with them.** Eight exported functions, none of which reach the icarus barrel: `addressRemoved`, `addressMentioned`, `addressChallenged`, and `addressValidated` over the shared `address_add`, which have working bodies and no callers; `addressToUser` and `userToAddress`, which are comment blocks with no bodies; and `browserChallengedAddress` and `browserValidatedAddress`, which are empty and name both dead tables in their would-be bodies.
 
