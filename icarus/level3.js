@@ -1204,7 +1204,7 @@ CREATE TABLE ledger_table (
 
 	wrapper_hash   CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
 	action_text    TEXT      NOT NULL,  -- title of what happened
-	hash_text      TEXT      NOT NULL DEFAULT '',  -- the row's one meaningful hash, when what happened was about something we can name that way; '' when it wasn't
+	hash_text      TEXT      NOT NULL,  -- the row's one meaningful hash, when what happened was about something we can name that way; '' when it wasn't
 	note_json      JSONB     NOT NULL   -- everything else about what happened; {} when the margins say it all
 );
 
