@@ -2,7 +2,7 @@
 
 Melting hit_table into ledger_table, so one table and one ordering by tick tell the whole story of what a person at a browser did.
 
-**Where we are, September 3, 2026.** The first two tasks are done: ledger_table has its vocabulary, the contraction is pushed, and the drift check is clean across every cloud table. Nothing is in flight. Next is the third task, renaming credential_table's note_json to json, starting with its expansion migration and the dual-write deploy.
+**Where we are, September 3, 2026.** The first two tasks are done. The third is at its first station: the working tree holds the expansion migration, the registry with both columns, credentialSet writing both, and a grid test, none of it committed or pushed. Next, in order: review, commit, push the expansion, deploy the dual-write, then the survey and the data migration.
 
 Each heading below is one task, and they run in the order they appear. Finish one, then start the next. A single task can take several rounds of coding, review, commit, and smoke testing before it is done. Live-table changes ride migration.md's playbook: the migration file and its `SQL()` registry edit in the same commit, grid tests beside code changes.
 
@@ -50,7 +50,7 @@ The same rename on a table with live readers, so it is the full playbook: two de
 
 **The expansion migration:**
 
-- `json` JSONB NOT NULL DEFAULT '{}'.
+- `json` JSONB NOT NULL DEFAULT '{}', and `note_json` gets `SET DEFAULT '{}'`, the old column's scaffolding so inserts stay whole after the read-switch stops sending it.
 - `CREATE INDEX credential15 ON credential_table (hide, type_text, (json->>'identifier')) WHERE json->>'identifier' IS NOT NULL` — credential14's successor, same spelling level2 generates.
 
 **The dual-write deploy:** `credentialSet` writes both `note_json` and `json`. Every read still uses `note_json`.

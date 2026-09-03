@@ -734,6 +734,19 @@ grid(async () => {//per-type writes fill hash_text and the note per the k-to-not
 	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Email.', event: 3}))[0]
 	ok(row.note_json.provider == 'Amazon.')
 })
+grid(async () => {//credential: while json replaces note_json, every write fills both bags alike, and reads still answer from note_json
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+
+	await credentialOauthChallenge({userTag, provider: 'Discord.'})//a write with a note
+	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3}))[0]
+	ok(makeText(row.json) == makeText(row.note_json) && row.json.provider == 'Discord.')//the same bag in both columns
+
+	await credentialBrowserSet({userTag, browserHash: random32()})//a write with no note
+	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Browser.'}))[0]
+	ok(makeText(row.json) == '{}' && makeText(row.note_json) == '{}')//both hold the blank
+})
 grid(async () => {//oauth notes: the named account rides the note, and null from the provider becomes an absent key
 	let {clear} = await getDatabase()
 	await clear('credential_table')
@@ -774,9 +787,10 @@ grid(async () => {//wallet: writes store the triad, and the lookups normalize an
 grid(async () => {//the oauth claim's expression index: the filter's spelling matches credential14, proven by the planner choosing it
 	let {pglite} = await getDatabase()
 	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves the spelling agreement; the live read-only EXPLAIN after deploy proves the real planner's own choice
-	let plan = (await pglite.query(`EXPLAIN SELECT * FROM credential_table WHERE hide = 0 AND type_text = 'Oauth.' AND note_json->>'identifier' = 'd123'`)).rows.map(r => Object.values(r)[0]).join('\n')
+	let plan = async (column) => (await pglite.query(`EXPLAIN SELECT * FROM credential_table WHERE hide = 0 AND type_text = 'Oauth.' AND ${column}->>'identifier' = 'd123'`)).rows.map(r => Object.values(r)[0]).join('\n')
+	ok((await plan('note_json')).includes('credential14'))//the index built from the registry DDL serves the exact expression level2's filter generates
+	ok((await plan('json')).includes('credential15'))//and its successor on json is ready for the read-switch to point the claim at it
 	await pglite.query('SET enable_seqscan = on')
-	ok(plan.includes('credential14'))//the index built from the registry DDL serves the exact expression level2's filter generates
 })
 grid(async () => {//name: get by userTag, get by raw1, check collisions
 	let {clear} = await getDatabase()

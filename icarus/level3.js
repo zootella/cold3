@@ -997,7 +997,8 @@ CREATE TABLE credential_table (
 
 	-- alternatively or additionally, a credential of this type may have a hash, a secret key, or something else, kept in a note:
 	hash_text  TEXT      NOT NULL,  -- the row's one meaningful hash, like Browser.'s browserHash or Password.'s password hash; '' when the type has none
-	note_json  JSONB     NOT NULL   -- payload bag of everything else about this credential; {} the blank, an absent key the blank of a property
+	note_json  JSONB     NOT NULL DEFAULT '{}',  -- payload bag of everything else about this credential; {} the blank, an absent key the blank of a property
+	json       JSONB     NOT NULL DEFAULT '{}'   -- note_json's replacement, the same bag under the name ledger_table uses; writes fill both while reads still take note_json, and both defaults are scaffolding for the window
 );
 
 CREATE INDEX credential1 ON credential_table (hide, user_tag, row_tick DESC);  -- filter by user
@@ -1008,6 +1009,7 @@ CREATE INDEX credential4 ON credential_table (hide, type_text, f2_text) WHERE f2
 
 CREATE INDEX credential13 ON credential_table (hide, type_text, hash_text) WHERE hash_text != '';  -- the Browser. signed-in lookup
 CREATE INDEX credential14 ON credential_table (hide, type_text, (note_json->>'identifier')) WHERE note_json->>'identifier' IS NOT NULL;  -- the oauth claim, spelled ->> with no casts, the spelling level2's filters generate
+CREATE INDEX credential15 ON credential_table (hide, type_text, (json->>'identifier'))      WHERE json->>'identifier'      IS NOT NULL;  -- credential14's successor on json; the claim rides it after the read-switch
 
 ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
@@ -1025,7 +1027,7 @@ export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 
 		type_text: type,
 		event: event,
 		f0_text: f0, f1_text: f1, f2_text: f2,
-		hash_text: hash, note_json: note,
+		hash_text: hash, note_json: note, json: note,//the same bag in both columns while json replaces note_json; every read still takes note_json
 	}})
 }
 
