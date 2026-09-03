@@ -2,7 +2,7 @@
 
 Melting hit_table into ledger_table, so one table and one ordering by tick tell the whole story of what a person at a browser did.
 
-**Where we are, September 3, 2026.** The first two tasks are done. The third is at its first station: the working tree holds the expansion migration, the registry with both columns, credentialSet writing both, and a grid test, none of it committed or pushed. Next, in order: review, commit, push the expansion, deploy the dual-write, then the survey and the data migration.
+**Where we are, September 3, 2026.** The first two tasks are done. The third is at its second station: the expansion is pushed and the dual-write deployed, the survey found 95 rows to copy and none with json filled yet, and the working tree holds the backfill migration and its grid rehearsal, uncommitted. Next, in order: review, commit, push the backfill, verify zero rows where json is blank and note_json is not, then the read-switch deploy.
 
 Each heading below is one task, and they run in the order they appear. Finish one, then start the next. A single task can take several rounds of coding, review, commit, and smoke testing before it is done. Live-table changes ride migration.md's playbook: the migration file and its `SQL()` registry edit in the same commit, grid tests beside code changes.
 

@@ -747,6 +747,44 @@ grid(async () => {//credential: while json replaces note_json, every write fills
 	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Browser.'}))[0]
 	ok(makeText(row.json) == '{}' && makeText(row.note_json) == '{}')//both hold the blank
 })
+//rehearsal of the json backfill, scaffolding that retires with the contraction: synthetic old-shape rows for the shapes the
+//read-only survey found in production, the verbatim statement of the backfill migration file, per-row assertions, and a
+//second run that must change nothing -- the copy proven against real postgres semantics before anything pushes
+const jsonBackfillRehearsalSql = `
+UPDATE credential_table SET json = note_json WHERE json = '{}'::jsonb AND note_json != '{}'::jsonb;
+`
+grid(async () => {//backfill rehearsal: every noted row copies, hidden rows too, the guard skips dual-written rows and blank notes, and running twice changes nothing
+	let {clear, pglite} = await getDatabase()
+	await clear('credential_table')
+	let user = Tag()
+	let secret = 'X7C25WC6CUCF77BO7BOCVUHAZ553UKYA', kept = {secret: 'KEPTKEPTKEPTKEPTKEPTKEPTKEPTKEPT'}
+	let proof = {account: {providerAccountId: 'd123'}, profile: {global_name: null}, user: {}}//a nested null is data that must copy verbatim
+
+	let plant = (cells) => queryAddRow({table: 'credential_table', row: {user_tag: user, f0_text: '', f1_text: '', f2_text: '', hash_text: '', ...cells}})//an old-shape row names note_json alone, and the registry's scaffolding default fills json with {}
+	await plant({type_text: 'Totp.', event: 4, note_json: {secret}})
+	await plant({type_text: 'Totp.', event: 4, note_json: {secret}, hide: 1})//hidden history copies too
+	await plant({type_text: 'Totp.', event: 4, note_json: {secret}, json: kept})//a dual-written row; the deliberate mismatch detects any overwrite
+	await plant({type_text: 'Password.', event: 4, hash_text: random32(), note_json: {cycles: 40}})
+	await plant({type_text: 'Email.', event: 3, f0_text: 'a@x.com', f1_text: 'a@x.com', f2_text: 'a@x.com', note_json: {provider: 'Amazon.'}})
+	await plant({type_text: 'Oauth.', event: 4, note_json: {provider: 'Discord.', identifier: 'd123', handle: 'alex_dev_42', proof}})
+	await plant({type_text: 'Browser.', event: 4, hash_text: random32()})//no note: the control that proves a blank stays blank
+	await plant({type_text: 'Name.', event: 4, f0_text: 'zoe', f1_text: 'Zoe', f2_text: 'Zoe'})
+
+	let run = async () => (await pglite.query(jsonBackfillRehearsalSql)).affectedRows//the migration file's statement, verbatim
+	ok((await run()) == 5)//the five noted old-shape rows copy; the dual-written row and the two blank notes match no guard
+
+	let rows = (await pglite.query(`SELECT * FROM credential_table`)).rows
+	ok(rows.length == 8)
+	let dualWritten = rows.find(r => r.json.secret == kept.secret)
+	ok(defined(dualWritten) && dualWritten.note_json.secret == secret)//the guard left the dual-written row's json alone
+	ok(rows.filter(r => r != dualWritten).every(r => makeText(r.json) == makeText(r.note_json)))//every other row's json is now its note, the blank ones still blank
+	ok(rows.find(r => r.hide == 1).json.secret == secret)//the hidden row copied too
+	let oauth = rows.find(r => r.type_text == 'Oauth.')
+	ok(oauth.json.identifier == 'd123' && oauth.json.proof.profile.global_name === null)//nested json and its null copied verbatim
+	ok(makeText(rows.find(r => r.type_text == 'Browser.').json) == '{}')
+
+	ok((await run()) == 0)//a second pass changes nothing
+})
 grid(async () => {//oauth notes: the named account rides the note, and null from the provider becomes an absent key
 	let {clear} = await getDatabase()
 	await clear('credential_table')
