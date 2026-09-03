@@ -94,6 +94,15 @@ One seam to expect: a visit already recorded under the old hash spelling can rec
 
 Every ledger row gets what hit_table knew about a request, all of it already free on the worker.
 
-- The door collects ip, origin, and Cloudflare's geography headers once, where `door.ip` and `door.origin` already sit.
-- They travel to ledger writes as one bundle rather than four named parameters threaded through every level3 function that audits. Decide the bundle's shape with the first two call sites in front of us.
-- Every existing call site takes the bundle.
+**The call sites, in front of us.** Three writes reach ledgerAdd today, and one more reaches the table through recordHit. `credentialOtpSend` in level3 writes the Challenged. row with an `ip` parameter that credential.js fills from `door.ip`, and no origin. The oauth endpoint writes the Validated., Refused., and Cancelled. rows with an ip it reads from the cf-connecting-ip header itself, because that handler runs under @auth/core's membrane rather than doorWorker, and no origin. recordHit takes origin, ip, and geography as three named parameters from report.js, which assembles geography from four Cloudflare headers by hand. So today the same facts about a request are gathered in three places and threaded through as one, two, or three parameters depending on the path.
+
+**The bundle: `where`.** One plain object, `{ip, origin, geography}`, saying where the request came from: the ip Cloudflare saw or blank, the origin like `https://cold3.cc`, and Cloudflare's geography as `{country, city, region, postal}` with absent headers left out and `{}` when there is no Cloudflare, like local development. One level2 function, `headerWhere({headers})`, builds it from the headers, with an inline test against fixed headers. doorWorker sets `door.where` in place of `door.ip` and `door.origin`, and the two readers of those switch; the oauth membrane calls the same function on its own headers. `ledgerAdd` and `ledgerAddMany` take `where` in place of `ip` and `origin`, and `_ledgerRow` spreads it into the three request columns. `credentialOtpSend` takes `where` in place of `ip`; `recordHit` takes it in place of its three; `recordDelay` takes it too, since report.js is its one caller and it wants the same origin and ip. The name is short and speakable, reads at the call site as the who, the where, and the what, and never collides with a column title.
+
+**Geography's column.** ledger_table has ip_text and origin_text but no column for geography. It is a fact about the request, Trusted from Cloudflare, present on every row a worker writes, so under the shape rules it is a real column rather than a reserved key inside json: `geography_json JSONB NOT NULL`, in the Trusted group beside ip_text and origin_text, `{}` when unknown. No index. The Hit. rows carry their geography inside json today, and the melt moves it into the column so geography has one home: the one-deploy variant, since nothing reads it.
+
+- The expansion migration adds `geography_json` with a scaffolding default of `'{}'`.
+- Deploy, with every write filling the column.
+- The contraction migration moves each Hit. row's `json->'geography'` into the column and out of json, behind a blank guard so rows the deploy wrote are untouched, then drops the default. A grid rehearsal runs the statement verbatim on planted old-shape rows, twice.
+- Registry, drift check.
+
+**Tests.** The inline test for `headerWhere`; the ledger grid test reading geography back from the column; the hit grid test asserting geography in the column and the browser bag still in json.
