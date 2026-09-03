@@ -2,7 +2,7 @@
 
 Melting hit_table into ledger_table, so one table and one ordering by tick tell the whole story of what a person at a browser did.
 
-**Where we are, September 3, 2026.** The first three tasks are done: ledger_table has its vocabulary and json, credential_table's note_json is json with credential15 carrying the oauth claim, every contraction is pushed, and the drift check is clean across every cloud table. The fourth is at its first station: the working tree holds the ledger7 expansion migration, recordHit writing Hit. rows to ledger_table through the plain insert, and the hit grid test moved, uncommitted. Next, in order: review, commit, push the expansion, deploy, then the contraction copies hit_table's rows in and drops the table.
+**Where we are, September 3, 2026.** The first three tasks are done: ledger_table has its vocabulary and json, credential_table's note_json is json with credential15 carrying the oauth claim, every contraction is pushed, and the drift check is clean across every cloud table. The fourth is expanded: ledger7 is in the cloud, and the committed code writes Hit. rows to ledger_table through the plain insert. Next, in order: deploy, then the contraction migration copies hit_table's rows in as Hit. rows and drops the table, then the registry and the drift check close the task.
 
 Each heading below is one task, and they run in the order they appear. Finish one, then start the next. A single task can take several rounds of coding, review, commit, and smoke testing before it is done. Live-table changes ride migration.md's playbook: the migration file and its `SQL()` registry edit in the same commit, grid tests beside code changes.
 
