@@ -50,7 +50,7 @@ queryUpdateCells,
 
 //query specialized
 queryCountSince,
-queryAddRowIfHashUnique,
+queryAddRowIfHashUnique, checkDoor,
 queryTopEqualGreater,
 queryTopSinceMatchGreater,
 queryGetAny,
@@ -197,10 +197,10 @@ export const otpConstants = {//factory settings for OTP codes to prove email and
 }
 Object.freeze(otpConstants)
 
-export async function credentialOtpSend({letter, v, provider, userTag, browserHash, ip = ''}) {
+export async function credentialOtpSend({letter, v, provider, userTag, browserHash}) {
 	checkTag(userTag)//the endpoint resolved the signed-in user and answered SignedOut. if there wasn't one; an otp flow requires a signed-in user from send through enter
 	checkAction(provider)//and the endpoint mapped the page's provider letter to a canonical tag like 'Amazon.' or 'Twilio.'; fail loud here, before anything reaches the lambda
-	checkHash(browserHash); checkTextOrBlank(ip)//and the door hashed the browser tag it requires on every request, and read the ip address cloudflare saw, blank when there's no cloudflare, like local development
+	checkHash(browserHash)//and the door hashed the browser tag it requires on every request
 
 	// 📬 Step 0 Claim: Has another user already proven they control this address?
 	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
@@ -275,7 +275,7 @@ export async function credentialOtpSend({letter, v, provider, userTag, browserHa
 
 	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider})//the event 3 row, recording which provider carried the code
 
-	if (sent) await ledgerAdd({action: o.address.type, event: 'Challenged.', provider: o.provider, browserHash, userTag, ip, hash: await hashText(o.address.f0), note: sent})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send; the hash of the address gathers it with every other record about that address; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
+	if (sent) await ledgerAdd({action: o.address.type, event: 'Challenged.', provider: o.provider, browserHash, userTag, hash: await hashText(o.address.f0), note: sent})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send; the hash of the address gathers it with every other record about that address; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
 
 	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
@@ -1178,32 +1178,31 @@ CREATE UNIQUE INDEX ledger7 ON ledger_table (hash_text) WHERE action_text = 'Hit
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
 
-export async function ledgerAdd({action, event, provider, browserHash, ip, origin, userTag, hash, note}) { return await ledgerAddMany([{action, event, provider, browserHash, ip, origin, userTag, hash, note}]) }
+export async function ledgerAdd({action, event, provider, browserHash, userTag, hash, note}) { return await ledgerAddMany([{action, event, provider, browserHash, userTag, hash, note}]) }
 export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
 	let now = Now()
 	let rows = a.map(e => _ledgerRow(e, now))
 	await queryAddRows({table: 'ledger_table', rows})
 }
 function _ledgerRow(e, now) {//check one record and shape it as a ledger_table row; the one place a ledger row is assembled, so a batch and a single insert can never drift apart
+	let door = checkDoor()//the request this record belongs to, for its ip and origin; a ledger row with no door above it is a bug in the caller, not a row with blanks
 	checkHash(wrapper.hash)
 	let {
 		action,//the subject of the record, like 'Email.'
 		event = '',//the verb, like 'Challenged.'; blank when the action says it all
 		provider = '',//the third party involved, like 'Twilio.'; blank when none was
 		browserHash,//the browser that was here for this
-		ip = '',//the ip address if the caller has it
-		origin = '',//the site this happened at, if the caller has it
 		userTag = '',//the user, or blank if nobody's identified
 		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
 		note = {},//everything else about what happened, kept as data a later reader can query and read back; rides in the json column
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
-	checkTextOrBlank(ip); checkTextOrBlank(origin); checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
+	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
 	return {
 		row_tick: now,
 		wrapper_hash: wrapper.hash,
-		ip_text: ip,
-		origin_text: origin,
+		ip_text: door.ip,
+		origin_text: door.origin,
 		browser_hash: browserHash,
 		user_tag_text: userTag,
 		action_text: action,
@@ -1214,18 +1213,17 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 	}
 }
 
-export async function recordHit({origin, browserHash, userTag, ipText, geography, browser}) {//record a visit as a Hit. row, once per browser per hour
-	checkText(origin)
-	checkHash(browserHash); checkTagOrBlank(userTag)
-	checkTextOrBlank(ipText); checkPlain(geography); checkPlain(browser)
+export async function recordHit({browserHash, userTag, geography, browser}) {//record a visit as a Hit. row, once per browser per hour
+	checkHash(browserHash); checkTagOrBlank(userTag); checkPlain(geography); checkPlain(browser)
 	checkHash(wrapper.hash)//the hash below folds it in, so it's checked here before use as well as in the row
+	let door = checkDoor()//the origin and ip come from the request above, not from the caller
 
 	let now = Now()
 	let hash = await hashObject({//what makes two hits the same visit, named input by input, so a cell added to the row later can't quietly redefine a duplicate
 		hour: roundDown(now, Time.hour),//the start of the hour this hit is in; the exact tick stays out, so the hour's repeats hash alike
-		origin, browserHash, userTag, ip: ipText, geography, browser, wrapper: wrapper.hash,
+		origin: door.origin, browserHash, userTag, ip: door.ip, geography, browser, wrapper: wrapper.hash,
 	})
-	let row = _ledgerRow({action: 'Hit.', browserHash, ip: ipText, origin, userTag, hash, note: {geography, browser}}, now)
+	let row = _ledgerRow({action: 'Hit.', browserHash, userTag, hash, note: {geography, browser}}, now)
 	await queryAddRowIfHashUnique({table: 'ledger_table', row})//ledger7 refuses the row when this hour already holds the visit, and the helper takes that quietly
 }
 

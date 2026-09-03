@@ -36,11 +36,9 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 
 	} else if (action == 'Hello.') {
 
-		await recordHit({
-			origin: door.origin,
+		await recordHit({//the origin and ip ride on the door above, so the hit doesn't name them
 			browserHash,
 			userTag: toTextOrBlank(r.browser.user?.userTag),
-			ipText: toTextOrBlank(r.worker.ip),
 			geography: r.worker.geography,
 			browser: {agent: r.browser.agent, ...r.page.graphics},//agent is from the browser, graphics renderer and vendor is from the page
 		})

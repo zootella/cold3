@@ -26,6 +26,7 @@ enterSimulationMode, isInSimulationMode, ageNow,
 } from './level0.js'
 import {//from level1
 Limit, checkAction, checkActions,
+asyncHooksDynamicImport,
 } from './level1.js'
 
 import {
@@ -601,14 +602,14 @@ export async function doorWorker(method, {
 			let browserHash = await hashText(checkTag(door.workerEvent.context.browserTag))//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
 			door.brownie = await openBrownie({envelope: door.body?.brownie, browserHash})//if the page sent a brownie, pin the opened letter for request code to read and change in place; the door never matches users--request code touches only notes whose userTag matches the signed-in user it resolved from the database
 			let brownieArrived = door.brownie ? makeText(door.brownie.notes) : ''//snapshot the notes as request code first sees them, so sealBrownie below can tell an untouched letter from a changed one
-			response = await doorHandleBelow({
+			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({//run the handler with the door retrievable beneath it, so getDoor() answers anywhere below, however deep
 				door,//give our handler the door object, and convenient shortcut access to:
 				query: door.query,//query string from a GET request
 				body: door.body,//content body from a POST
 				action: door.body?.action,
 				headers: door.headers,
 				browserHash,
-			})
+			}))
 			response.brownie = await sealBrownie({letter: door.brownie, browserHash, arrived: brownieArrived})//from what the letter now holds, command the page: a complete replacement when this request changed it, a delete when its notes are gone, or undefined, which vanishes when the response serializes--and also answers a carried letter left unchanged, so this response landing late can't clobber newer state with a stale copy
 
 		} catch (e1) { error = e1 }
@@ -638,12 +639,12 @@ export async function doorLambda(method, {
 
 			door = await doorLambdaOpen({from, method, lambdaEvent, lambdaContext})
 			await doorLambdaCheck({door, actions})
-			response = await doorHandleBelow({
+			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({//the door retrievable beneath the handler, the same as on the worker
 				door,
 				query: door.query,//lambda GET not in use, but here for the future, ttd november2025
 				body: door.body,
 				action: door.body?.action,
-			})
+			}))
 
 		} catch (e) { error = e }
 		try {
@@ -666,6 +667,40 @@ so, we use console.error, which won't show up in datadog,
 but should still be findable in the amazon or cloudflare dashboard
 */
 
+/*
+The door beneath the door
+
+Everything a request knows about itself is on the door, and doorWorker and doorLambda hand the door to the handler beneath them. A ledger write happens several calls further down, in code with no business taking a request as a parameter, so the door has to reach it another way. Not a module variable: one isolate on Cloudflare interleaves requests at every await, and request A would read request B's door whenever they overlap. AsyncLocalStorage is the mechanism built for this: Node's request-scoped context, in Node since version 12, native in workerd under the nodejs_compat flag the worker turns on, and implemented by every serverless JavaScript runtime that matters, with a language proposal following it. run(door, f) sets door as the store's current value, calls f, and stamps every continuation f creates with that value, so when an await resumes, even after other requests have run on the same isolate, the runtime reinstates this request's door before the resumed code asks for it. The door follows the chain of continuations rooted in f, and only that chain. It costs a reference per continuation and promises nothing about lifetime.
+
+The api is two ends. Each door invokes its handler through doorAsyncLocalStorageRun, the single writer. Code that needs the request calls getDoor, or checkDoor where running without one would be a bug. Outside any door there is no store: a script, a cron, a test without the grid door, a handler we gave a framework that runs without opening one. checkDoor tosses there on purpose, because a ledger row written with no request behind it is a mistake to fix in code, and the grid runner opens a test door around its tests.
+*/
+let _doorAsyncLocalStorage//the one AsyncLocalStorage instance, holding the door for everything running beneath one; unset until the first door runs on this isolate
+async function _doorAsyncLocalStorageLoad() {//the instance, importing and constructing it the first time
+	if (!_doorAsyncLocalStorage) {//the first door to run on this isolate pays for the import; every door after finds it here
+		let {asyncHooks} = await asyncHooksDynamicImport()//level1 keeps every dynamic import in one place; this one is loaded here, the first time a door runs, never by the page
+		_doorAsyncLocalStorage = new asyncHooks.AsyncLocalStorage()//one instance for the whole isolate; the separation between requests happens inside it, per continuation, not by having many
+	}
+	return _doorAsyncLocalStorage
+}
+export async function doorAsyncLocalStorageRun(door, f) {//call f now, with door retrievable from getDoor() anywhere beneath f, however many calls deep and across every await
+	let storage = await _doorAsyncLocalStorageLoad()
+	return await storage.run(door, f)//run sets door as the current value, calls f, and stamps every continuation f creates with door; when f settles, the current value reverts to what it was, so nothing outside sees the door
+}
+export function getDoor() {//the door above the code asking, or false when nothing above opened one
+	if (!_doorAsyncLocalStorage) return false//no door has ever run on this isolate, so nothing can be above us: a script, the page, a test without the grid door
+	return _doorAsyncLocalStorage.getStore() || false//the door stamped on the continuation we're running in, or undefined outside any run, which becomes the blank false
+}
+export function checkDoor() { let door = getDoor(); if (!door) toss('no door', {door}); return door }//getDoor for code that would be a bug to run without one, like a ledger write
+
+export function doorLite({workerEvent}) {//the part of a door any request has from its headers alone: the event, the origin, and the ip. doorWorkerOpen builds the full door from this, and a handler that runs outside doorWorker, like the @auth/core membrane, opens this much so the ledger writes beneath it have a door
+	let door = {}
+	door.workerEvent = workerEvent//save everything they gave us about the request
+	door.headers = getWorkerHeaders(workerEvent)
+	door.origin = headerOrigin({headers: door.headers})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
+	door.ip = toTextOrBlank(headerGetOne(door.headers, 'cf-connecting-ip'))//the address cloudflare saw, or blank without cloudflare, like local development
+	return door
+}
+
 async function doorWorkerOpen({method, workerEvent}) {
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
@@ -686,11 +721,7 @@ async function doorWorkerOpen({method, workerEvent}) {
 	}//seeing w50 never, which is ironic as this is the correct Nuxt way to do things! ttd december2025 probably because you aren't setting nuxt.config.js configuration.runtimeConfig.name1 = process.env.name1 so you could do that
 	await decryptKeys('worker', sources)
 
-	let door = {}//make door object to bundle everything together about this request we're doing
-	door.workerEvent = workerEvent//save everything they gave us about the request
-	door.headers = getWorkerHeaders(workerEvent)
-	door.origin = headerOrigin({headers: door.headers})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
-	door.ip = headerGetOne(door.headers, 'cf-connecting-ip')
+	let door = doorLite({workerEvent})//make door object to bundle everything together about this request we're doing, starting with what the headers say
 
 	let requestMethod = getWorkerMethod(workerEvent)
 	if (method != requestMethod) toss('method mismatch', {method, requestMethod, door})//check the method

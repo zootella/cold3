@@ -15,6 +15,7 @@ import {
 decryptKeys, getDatabase, sqlList, setTestDatabase,
 sealEnvelope, openEnvelope, openBrownie, sealBrownie, brownieGet,
 originDomain,
+doorAsyncLocalStorageRun,
 queryGet, queryGetAny, queryAddRow, queryAddRows, queryHide, queryTop, queryCountRows, queryCountAllRows,
 } from './level2.js'
 import {
@@ -34,6 +35,7 @@ credentialCloseAccount,
 } from './level3.js'
 
 let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
+const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7'}//the door grid tests run beneath, holding the two cells ledger writes read from a door, so they find the request they belong to
 function grid(f) { _grid.push(f) }
 const browserHash52 = 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ'//a well-formed browser hash for tests whose function contracts require one
 
@@ -1126,10 +1128,8 @@ grid(async () => {//hit: a visit lands as a Hit. row in the ledger, cloudflare's
 	let {clear} = await getDatabase()
 	await clear('ledger_table')
 	let hit = {
-		origin: 'https://example.com',
 		browserHash: await hashText('a browser'),
 		userTag: '',//nobody signed in at this browser
-		ipText: '203.0.113.7',
 		geography: {country: 'US', city: 'Akron'},//from cloudflare's headers, where only country is always present
 		browser: {agent: 'Mozilla/5.0', renderer: 'ANGLE (Intel)'},//the agent header, and what the page said about its graphics
 	}
@@ -1137,7 +1137,7 @@ grid(async () => {//hit: a visit lands as a Hit. row in the ledger, cloudflare's
 
 	let hits = () => queryGet('ledger_table', {action_text: 'Hit.', browser_hash: hit.browserHash})
 	let row = (await hits())[0]
-	ok(row.origin_text == 'https://example.com' && row.ip_text == '203.0.113.7' && row.user_tag_text == '')//the margins carry what cloudflare and the door knew
+	ok(row.origin_text == gridDoor.origin && row.ip_text == gridDoor.ip && row.user_tag_text == '')//the origin and ip come from the door above, not from the caller
 	ok(row.json.geography.country == 'US' && row.json.geography.city == 'Akron')//arrives parsed, an object rather than text
 	ok(row.json.browser.agent == 'Mozilla/5.0' && row.json.browser.renderer == 'ANGLE (Intel)')
 	ok(row.hash_text.length == 52 && row.event_text == '' && row.provider_text == '')//the dedup hash rides in hash_text, and a hit has no verb and no third party
@@ -1159,16 +1159,20 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 	await clear('ledger_table')
 	let browserHash = await hashText('a browser')
 
-	await ledgerAdd({action: 'ExampleHappened.', browserHash, ip: '203.0.113.7', origin: 'https://example.com', userTag: '', note: {color: 'Green.', count: 7}})
+	await ledgerAdd({action: 'ExampleHappened.', browserHash, userTag: '', note: {color: 'Green.', count: 7}})
 	let row = (await queryGet('ledger_table', {action_text: 'ExampleHappened.'}))[0]
-	ok(row.browser_hash == browserHash && row.user_tag_text == '' && row.ip_text == '203.0.113.7' && row.origin_text == 'https://example.com')
+	ok(row.browser_hash == browserHash && row.user_tag_text == '' && row.ip_text == gridDoor.ip && row.origin_text == gridDoor.origin)//the request's ip and origin come from the door above
 	ok(row.json.color == 'Green.' && row.json.count == 7)//the note arrives back parsed, an object rather than text
 
 	await ledgerAdd({action: 'QuickExample.', browserHash})//only the action and browser are required; the rest defaults to blanks
 	let quick = (await queryGet('ledger_table', {action_text: 'QuickExample.'}))[0]
-	ok(quick.user_tag_text == '' && quick.ip_text == '' && quick.origin_text == '' && quick.hash_text == '' && makeText(quick.json) == '{}')
+	ok(quick.user_tag_text == '' && quick.hash_text == '' && makeText(quick.json) == '{}')
+	ok(quick.ip_text == gridDoor.ip && quick.origin_text == gridDoor.origin)//never blank beneath a door, because the door always knows them
 	ok(quick.event_text == '' && quick.provider_text == '')//the verb and the third party are blank when the action says it all
 	ok(quick.wrapper_hash.length == 52)//the version of the software that wrote the row rides along
+
+	let tossed = false; try { await doorAsyncLocalStorageRun(false, () => ledgerAdd({action: 'Homeless.', browserHash})) } catch (e) { tossed = true }
+	ok(tossed)//a ledger write with no door above it is a bug, and blows up rather than writing blanks
 
 	await ledgerAddMany([//a batch lands in a single query, every element its own complete record
 		{action: 'BatchExample.', browserHash, note: {n: 1}},
@@ -1483,7 +1487,7 @@ export async function runDatabaseTests() {
 
 	await setupTestDatabase()//stand up PGlite and park it in level2 before any test calls getDatabase()
 
-	return await runTests(_grid)
+	return await doorAsyncLocalStorageRun(gridDoor, () => runTests(_grid))//every grid test runs with the test door retrievable beneath it, the way request code does
 }
 async function setupTestDatabase() {//build ephemeral in-memory PostgreSQL, wrap it in the supafake adapter, and register the package so getDatabase() returns it in simulation mode
 	let {pglite} = await pgliteDynamicImport()

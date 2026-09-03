@@ -78,7 +78,7 @@ export async function wagmiDynamicImport() {//wagmi is the wallet-connection lay
 }
 
 //(3) dynamic imports that use vite ignore to stay out of all bundles
-let _node, _fuzz, _grid, _wordlist
+let _node, _asyncHooks, _fuzz, _grid, _wordlist
 export async function nodeDynamicImport() {//modules for calls from lambda and local node testing; don't call from web worker or page!
 	if (!_node) {
 		let [fs, stream] = await Promise.all([
@@ -88,6 +88,15 @@ export async function nodeDynamicImport() {//modules for calls from lambda and l
 		_node = {fs, stream}
 	}
 	return _node
+}
+export async function asyncHooksDynamicImport() {//node:async_hooks for the door beneath the door in level2. The rule above still stands, the worker doesn't use node modules, and this is the one exception: workerd provides AsyncLocalStorage natively under nodejs_compat rather than as a polyfill shim, and it was the first Node api Cloudflare shipped that way, in 2023, before Buffer or EventEmitter, because it can't be polyfilled safely and they wanted it themselves. Node provides it on the lambda; the page never opens a door and never calls this
+	if (!_asyncHooks) {
+		let [asyncHooks] = await Promise.all([
+			import(/* @vite-ignore */ 'node:async_hooks'),
+		])
+		_asyncHooks = {asyncHooks}
+	}
+	return _asyncHooks
 }
 export async function fuzzDynamicImport() {//modules for fuzz testing to sanity check our implementations match what nanoid and otpauth do
 	if (!_fuzz) {
