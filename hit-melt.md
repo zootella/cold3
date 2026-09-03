@@ -2,7 +2,7 @@
 
 Melting hit_table into ledger_table, so one table and one ordering by tick tell the whole story of what a person at a browser did.
 
-**Where we are, September 2, 2026.** The first task is done and pushed. The second is coded and green but nothing is committed: the working tree holds the expansion migration, the registry edit, and all the code and grid tests below, and the cloud has 14 of 15 migration files applied. Next, in order: commit, push the expansion, deploy, then write the contraction migration and close with a drift check. Docker is running, which the drift check needs.
+**Where we are, September 3, 2026.** The first task is done and pushed. The second is expanded and deployed: the vocabulary migration is in the cloud, the deployed worker writes json and the three new words, and the working tree holds the contraction migration and the registry at its final shape, uncommitted. Next, in order: review, commit, push the contraction, verify with a query that note_json and the defaults are gone, and close with a drift check, which needs Docker. Then the third task begins.
 
 Each heading below is one task, and they run in the order they appear. Finish one, then start the next. A single task can take several rounds of coding, review, commit, and smoke testing before it is done. Live-table changes ride migration.md's playbook: the migration file and its `SQL()` registry edit in the same commit, grid tests beside code changes.
 

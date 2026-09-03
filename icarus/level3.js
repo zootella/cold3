@@ -1202,21 +1202,19 @@ CREATE TABLE ledger_table (
 	-- who was here, each cell labeled by how far we can trust it: Trusted is from outside the request's control, cloudflare's word or our own software's; Reported is the browser's own word; Derived is a conclusion we drew ourselves
 	wrapper_hash   CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
 	ip_text        TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare, or blank
-	origin_text    TEXT      NOT NULL DEFAULT '',  -- Trusted: the origin like "http://localhost:3000" or "https://example.com"
+	origin_text    TEXT      NOT NULL,  -- Trusted: the origin like "http://localhost:3000" or "https://example.com"
 
 	browser_hash   CHAR(52)  NOT NULL,  -- Reported: the browser that was here for this
 	user_tag_text  TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identified
 
 	-- what happened, in three tags rather than numeric codes, so a query result reads without a legend
 	action_text    TEXT      NOT NULL,  -- the subject, like "Email."; the one of the three every row names
-	event_text     TEXT      NOT NULL DEFAULT '',  -- the verb, like "Challenged."; blank when the action says it all
-	provider_text  TEXT      NOT NULL DEFAULT '',  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
+	event_text     TEXT      NOT NULL,  -- the verb, like "Challenged."; blank when the action says it all
+	provider_text  TEXT      NOT NULL,  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
 
 	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it; blank when the row is about no such thing
 
-	-- json is note_json's replacement; in the window both live, and the defaults are scaffolding
-	json           JSONB     NOT NULL DEFAULT '{}',  -- everything else about what happened; {} when the columns say it all
-	note_json      JSONB     NOT NULL DEFAULT '{}'
+	json           JSONB     NOT NULL   -- everything else about what happened; {} when the columns say it all
 );
 
 CREATE INDEX ledger1 ON ledger_table (browser_hash,  row_tick DESC) WHERE hide = 0;
