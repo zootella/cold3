@@ -1152,32 +1152,6 @@ CREATE INDEX hit3 ON hit_table (user_tag_text, row_tick DESC) WHERE hide = 0;
 ALTER TABLE hit_table ENABLE ROW LEVEL SECURITY;
 `)
 
-export async function recordHit({origin, browserHash, userTag, ipText, geography, browser}) {
-	checkText(origin)
-	checkHash(browserHash); checkTagOrBlank(userTag)
-	checkTextOrBlank(ipText); checkPlain(geography); checkPlain(browser)
-	checkHash(wrapper.hash)
-
-	let now = Now()//tick count now, of this hit
-	let row = {
-		origin_text: origin,
-
-		browser_hash: browserHash,
-		user_tag_text: userTag,
-		ip_text: ipText,
-		geography_json: geography,
-		browser_json: browser,
-
-		wrapper_hash: wrapper.hash,
-	}
-	row.hash = await hashObject({//compute the hash of (below) and include it in the row we will add if it's unique
-		hour: roundDown(now, Time.hour),//the tick count of the start of the hour now is in
-		row,//and the values of those cells, hashed by what they hold rather than the order they were assembled in
-	})
-	row.row_tick = now//add the exact time, note we excluded this from the hash
-	await queryAddRowIfHashUnique({table: 'hit_table', row})
-}
-
 
 
 
@@ -1212,7 +1186,7 @@ CREATE TABLE ledger_table (
 	event_text     TEXT      NOT NULL,  -- the verb, like "Challenged."; blank when the action says it all
 	provider_text  TEXT      NOT NULL,  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
 
-	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it; blank when the row is about no such thing
+	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it, or for Hit. the hash of the hour and the visit that ledger7 keeps unique; blank when the row is about no such thing
 
 	json           JSONB     NOT NULL   -- everything else about what happened; {} when the columns say it all
 );
@@ -1223,43 +1197,60 @@ CREATE INDEX ledger3 ON ledger_table (action_text,   row_tick DESC) WHERE hide =
 CREATE INDEX ledger4 ON ledger_table (hash_text,     row_tick DESC) WHERE hide = 0 AND hash_text != '';  -- every record about one thing, newest first
 CREATE INDEX ledger5 ON ledger_table (event_text,    row_tick DESC) WHERE hide = 0 AND event_text != '';  -- everything of one kind, newest first
 CREATE INDEX ledger6 ON ledger_table (provider_text, row_tick DESC) WHERE hide = 0 AND provider_text != '';  -- everything around one third party, newest first
+CREATE UNIQUE INDEX ledger7 ON ledger_table (hash_text) WHERE action_text = 'Hit.';  -- one Hit. per browser per hour: partial, because rows of other actions share a hash on purpose, and recordHit's plain insert lets it raise 23505 to say the visit is already recorded
 
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
 
 export async function ledgerAdd({action, event, provider, browserHash, ip, origin, userTag, hash, note}) { return await ledgerAddMany([{action, event, provider, browserHash, ip, origin, userTag, hash, note}]) }
 export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
-	checkHash(wrapper.hash)
 	let now = Now()
-	let rows = a.map(e => {
-		let {
-			action,//the subject of the record, like 'Email.'
-			event = '',//the verb, like 'Challenged.'; blank when the action says it all
-			provider = '',//the third party involved, like 'Twilio.'; blank when none was
-			browserHash,//the browser that was here for this
-			ip = '',//the ip address if the caller has it
-			origin = '',//the site this happened at, if the caller has it
-			userTag = '',//the user, or blank if nobody's identified
-			hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
-			note = {},//everything else about what happened, kept as data a later reader can query and read back; rides in the json column
-		} = e
-		checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
-		checkTextOrBlank(ip); checkTextOrBlank(origin); checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
-		return {
-			row_tick: now,
-			wrapper_hash: wrapper.hash,
-			ip_text: ip,
-			origin_text: origin,
-			browser_hash: browserHash,
-			user_tag_text: userTag,
-			action_text: action,
-			event_text: event,
-			provider_text: provider,
-			hash_text: hash,
-			json: note,
-		}
-	})
+	let rows = a.map(e => _ledgerRow(e, now))
 	await queryAddRows({table: 'ledger_table', rows})
+}
+function _ledgerRow(e, now) {//check one record and shape it as a ledger_table row; the one place a ledger row is assembled, so a batch and a single insert can never drift apart
+	checkHash(wrapper.hash)
+	let {
+		action,//the subject of the record, like 'Email.'
+		event = '',//the verb, like 'Challenged.'; blank when the action says it all
+		provider = '',//the third party involved, like 'Twilio.'; blank when none was
+		browserHash,//the browser that was here for this
+		ip = '',//the ip address if the caller has it
+		origin = '',//the site this happened at, if the caller has it
+		userTag = '',//the user, or blank if nobody's identified
+		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
+		note = {},//everything else about what happened, kept as data a later reader can query and read back; rides in the json column
+	} = e
+	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
+	checkTextOrBlank(ip); checkTextOrBlank(origin); checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
+	return {
+		row_tick: now,
+		wrapper_hash: wrapper.hash,
+		ip_text: ip,
+		origin_text: origin,
+		browser_hash: browserHash,
+		user_tag_text: userTag,
+		action_text: action,
+		event_text: event,
+		provider_text: provider,
+		hash_text: hash,
+		json: note,
+	}
+}
+
+export async function recordHit({origin, browserHash, userTag, ipText, geography, browser}) {//record a visit as a Hit. row, once per browser per hour
+	checkText(origin)
+	checkHash(browserHash); checkTagOrBlank(userTag)
+	checkTextOrBlank(ipText); checkPlain(geography); checkPlain(browser)
+	checkHash(wrapper.hash)//the hash below folds it in, so it's checked here before use as well as in the row
+
+	let now = Now()
+	let hash = await hashObject({//what makes two hits the same visit, named input by input, so a cell added to the row later can't quietly redefine a duplicate
+		hour: roundDown(now, Time.hour),//the start of the hour this hit is in; the exact tick stays out, so the hour's repeats hash alike
+		origin, browserHash, userTag, ip: ipText, geography, browser, wrapper: wrapper.hash,
+	})
+	let row = _ledgerRow({action: 'Hit.', browserHash, ip: ipText, origin, userTag, hash, note: {geography, browser}}, now)
+	await queryAddRowIfHashUnique({table: 'ledger_table', row})//ledger7 refuses the row when this hour already holds the visit, and the helper takes that quietly
 }
 
 

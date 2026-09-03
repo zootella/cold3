@@ -1679,25 +1679,13 @@ export async function queryCountSince({table, title, cell, since}) {
 	return count
 }
 
-//add row if table doesn't already have one with the same row.hash
+//add the row unless a unique index on the table already holds one that matches it, like ledger7 holding one Hit. per browser per hour
+//PostgREST's on_conflict takes a column list and no predicate, so nothing postgrest-js offers can name a partial unique index; a plain insert that lets the index raise 23505 is the one mechanism that reaches it from this stack, and it's one round trip with no race, because the index decides inside the same statement
 export async function queryAddRowIfHashUnique({table, row}) {
 	checkQueryTitle(table); checkQueryFillRows([row])
 	const {database} = await getDatabase()
-	let {data, error} = (await database
-		.from(table)
-		.insert(row, {
-			onConflict: 'hash',//look for a row with matching values in this one column
-			ignoreDuplicates: true,//if you find one, do nothing
-			upsert: false,//don't update on conflict
-		})
-	)
-	if (error) {
-		if (error.code == '23505') {
-			//we expect PostgreSQL error 23505 with a message like 'duplicate key value violates unique constraint "hit1"'
-		} else {
-			toss('supabase', {error})//we got some other error
-		}
-	}
+	let {error} = await database.from(table).insert(row)
+	if (error && error.code != '23505') toss('supabase', {error})//23505 is the index refusing a duplicate, the quiet answer this helper exists for; anything else is a real failure
 }
 
 //get the most recent visible row with title1: cell1 and title2: a number greater than cell2GreaterThan, like 1 or 2 fine if you pass in 0

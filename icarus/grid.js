@@ -1122,9 +1122,9 @@ grid(async () => {
 	ok((await trailGetAny([m4], horizon)).length == 0)//never added
 })
 
-grid(async () => {//hit: what cloudflare and the page say about a visit rides in as objects and comes back as objects, and within the hour an unchanged visit is recorded once
+grid(async () => {//hit: a visit lands as a Hit. row in the ledger, cloudflare's and the page's objects riding in json, and within the hour an unchanged visit is recorded once
 	let {clear} = await getDatabase()
-	await clear('hit_table')
+	await clear('ledger_table')
 	let hit = {
 		origin: 'https://example.com',
 		browserHash: await hashText('a browser'),
@@ -1135,16 +1135,23 @@ grid(async () => {//hit: what cloudflare and the page say about a visit rides in
 	}
 	await recordHit(hit)
 
-	let row = (await queryGet('hit_table', {browser_hash: hit.browserHash}))[0]
-	ok(row.geography_json.country == 'US' && row.geography_json.city == 'Akron')//arrives parsed, an object rather than text
-	ok(row.browser_json.agent == 'Mozilla/5.0' && row.browser_json.renderer == 'ANGLE (Intel)')
+	let hits = () => queryGet('ledger_table', {action_text: 'Hit.', browser_hash: hit.browserHash})
+	let row = (await hits())[0]
+	ok(row.origin_text == 'https://example.com' && row.ip_text == '203.0.113.7' && row.user_tag_text == '')//the margins carry what cloudflare and the door knew
+	ok(row.json.geography.country == 'US' && row.json.geography.city == 'Akron')//arrives parsed, an object rather than text
+	ok(row.json.browser.agent == 'Mozilla/5.0' && row.json.browser.renderer == 'ANGLE (Intel)')
+	ok(row.hash_text.length == 52 && row.event_text == '' && row.provider_text == '')//the dedup hash rides in hash_text, and a hit has no verb and no third party
 
 	await recordHit(hit)//the same visitor says hello again a moment later
-	ok((await queryGet('hit_table', {browser_hash: hit.browserHash})).length == 1)//same hour, same values, so the same hash, and the unique constraint swallows it
+	ok((await hits()).length == 1)//same hour, same values, so the same hash, and ledger7 refuses the duplicate
 
 	ageNow(Time.hour)
 	await recordHit(hit)//an hour on, the same visit is worth knowing about again
-	ok((await queryGet('hit_table', {browser_hash: hit.browserHash})).length == 2)
+	ok((await hits()).length == 2)
+
+	await ledgerAdd({action: 'Example.', browserHash: hit.browserHash, hash: row.hash_text})//another kind of record about the same hash lands beside the hit
+	await ledgerAdd({action: 'Example.', browserHash: hit.browserHash, hash: row.hash_text})//and so does a second, because only Hit. rows are held unique
+	ok((await queryGet('ledger_table', {hash_text: row.hash_text})).length == 3)//the partial predicate keeps ledger7 off every other action
 })
 
 grid(async () => {//ledger: an audit record lands durable in our own database, margins for filtering and a note of details as data
@@ -1588,7 +1595,7 @@ class FakeSupabaseQueryBuilder {
 	order(col, opts) { this.orderCol = col; this.orderAsc = opts?.ascending ?? true; return this }
 	limit(n) { this.limitN = n; return this }
 
-	insert(data, opts) { this.op = 'insert'; this.insertData = data; this.insertOpts = opts; return this }
+	insert(data) { this.op = 'insert'; this.insertData = data; return this }//a plain insert, the way postgrest-js sends one; the options it accepts here and ignores are not modeled
 	update(data) { this.op = 'update'; this.updateData = data; return this }
 	delete() { this.op = 'delete'; return this }
 
@@ -1642,15 +1649,11 @@ class FakeSupabaseQueryBuilder {
 			let vals = Object.values(row).map(v => (v && typeof v == 'object' && !Array.isArray(v)) ? makeText(v) : v)//a json cell binds as its printed text, which postgres parses into the jsonb column--the same trip the object takes through the supabase api in production
 			let placeholders = cols.map((_, i) => `$${i + 1}`)
 			let sql = `INSERT INTO ${this.table} (${cols.join(', ')}) VALUES (${placeholders.join(', ')})`
-			if (this.insertOpts?.onConflict) sql += ` ON CONFLICT (${this.insertOpts.onConflict}) DO NOTHING`
 			try {
 				await this.pglite.query(sql, vals)
 			} catch (e) {
-				if (e.code === '23505' || e.message?.includes('duplicate')) {
-					if (!this.insertOpts?.ignoreDuplicates) return {data: null, error: {code: '23505', message: e.message}}
-				} else {
-					return {data: null, error: e}
-				}
+				if (e.code === '23505' || e.message?.includes('duplicate')) return {data: null, error: {code: '23505', message: e.message}}//a unique index refused the row; the code rides through the way postgrest-js hands it back, for the caller to decide
+				return {data: null, error: e}
 			}
 		}
 		return {data: this.insertData, error: null}
