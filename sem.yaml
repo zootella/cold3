@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep2.2014.5217
+  generated: 2026sep3.0251.19167
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -488,7 +488,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^7.1.6 on 2026feb01 6m old
+      declared: ^7.1.6 on 2026feb01 7m old
       installed: 7.2.1 on 2026feb18 6m old
       current: 7.2.1 on 2026feb18 6m old
       latest: 8.2.0 on 2026aug27 0m old 🎁 Major new version available
@@ -503,7 +503,7 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^3.3.2 on 2026feb01 6m old
+      declared: ^3.3.2 on 2026feb01 7m old
       installed: 3.5.5 on 2026jun25 2m old
       current: 3.6.5 on 2026aug27 0m old
       latest: 3.6.5 on 2026aug27 0m old
@@ -651,7 +651,7 @@ modules:
       declared: ^5.1.6 on 2025sep22 11m old
       installed: 5.1.16 on 2026jun24 2m old
       current: 5.1.16 on 2026jun24 2m old
-      latest: 6.0.1 on 2026aug03 0m old 🎁 Major new version available
+      latest: 6.0.1 on 2026aug03 1m old 🎁 Major new version available
     downloads:
       weekly: 163,468,313
       on: 2026aug18.1523.29150
@@ -1008,7 +1008,7 @@ modules:
     from: icarus
     versions:
       declared: ^4.3.6 on 2026jan22 7m old
-      installed: 4.4.3 on 2026may04 3m old
+      installed: 4.4.3 on 2026may04 4m old
       current: 4.5.4 on 2026aug29 0m old
       latest: 4.5.4 on 2026aug29 0m old
     downloads:

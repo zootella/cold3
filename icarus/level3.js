@@ -26,7 +26,7 @@ isInSimulationMode, ageNow,
 import {//from level1
 Limit, checkName, validateName,
 bundleValid, validateEmail, validateEmailOrPhone,
-checkAction, viemDynamicImport,
+checkAction, checkActionOrBlank, viemDynamicImport,
 } from './level1.js'
 import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
@@ -275,7 +275,7 @@ export async function credentialOtpSend({letter, v, provider, userTag, browserHa
 
 	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider})//the event 3 row, recording which provider carried the code
 
-	if (sent) await ledgerAdd({action: 'MessageSent.', browserHash, userTag, ip, note: sent})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
+	if (sent) await ledgerAdd({action: o.address.type, event: 'Challenged.', provider: o.provider, browserHash, userTag, ip, hash: await hashText(o.address.f0), note: sent})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send; the hash of the address gathers it with every other record about that address; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
 
 	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
@@ -775,12 +775,12 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	checkTag(userTag); checkAction(provider); checkText(identifier)
 
 	//check 1: this user already has SOME account linked for this provider
-	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note: {provider}, event: 4})
+	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note_json: {provider}, event: 4})
 	if (mine.length) return {ok: false, outcome: 'OauthAlreadyLinked.'}//already linked; caller must prompt user to Remove first to switch accounts
 
 	//check 2: any OTHER user has THIS specific providerId linked — one provider identity, one cold3 account; queryGet filters hidden rows, so a removed claim is releasable to a new owner
 	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim; credential14 indexes the identifier path this filter rides
-	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', note: {provider, identifier}, event: 4})
+	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', note_json: {provider, identifier}, event: 4})
 	if (claimed.some(r => r.user_tag != userTag)) return {ok: false, outcome: 'OauthClaimedElsewhere.'}
 
 	/*
@@ -805,7 +805,7 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 }
 export async function credentialOauthRemove({userTag, provider}) {
 	checkTag(userTag); checkAction(provider)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', note: {provider}, event: 4})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', note_json: {provider}, event: 4})
 }
 export async function credentialOauthGet({userTag}) {//list this user's linked oauth credentials across providers we currently support
 	checkTag(userTag)
@@ -1192,54 +1192,73 @@ export async function recordHit({origin, browserHash, userTag, ipText, geography
 //               |___/                                   
 
 SQL(`
--- durable audit in our own database: what happened, who was there, and complete details, for a variety of uses
+-- durable audit in our own database: what happened, who was here, and everything else about it
+-- we write here constantly and query rarely; a staff member reads these to reconstruct a story long after the moment
 CREATE TABLE ledger_table (
 	row_tag        CHAR(21)  NOT NULL PRIMARY KEY,
 	row_tick       BIGINT    NOT NULL,
 	hide           BIGINT    NOT NULL,
 
+	-- who was here, each cell labeled by how far we can trust it: Trusted is from outside the request's control, cloudflare's word or our own software's; Reported is the browser's own word; Derived is a conclusion we drew ourselves
+	wrapper_hash   CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
 	ip_text        TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare, or blank
+	origin_text    TEXT      NOT NULL DEFAULT '',  -- Trusted: the origin like "http://localhost:3000" or "https://example.com"
+
 	browser_hash   CHAR(52)  NOT NULL,  -- Reported: the browser that was here for this
 	user_tag_text  TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identified
 
-	wrapper_hash   CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
-	action_text    TEXT      NOT NULL,  -- title of what happened
-	hash_text      TEXT      NOT NULL,  -- the row's one meaningful hash, when what happened was about something we can name that way; '' when it wasn't
-	note_json      JSONB     NOT NULL   -- everything else about what happened; {} when the margins say it all
+	-- what happened, in three tags rather than numeric codes, so a query result reads without a legend
+	action_text    TEXT      NOT NULL,  -- the subject, like "Email."; the one of the three every row names
+	event_text     TEXT      NOT NULL DEFAULT '',  -- the verb, like "Challenged."; blank when the action says it all
+	provider_text  TEXT      NOT NULL DEFAULT '',  -- the third party we dealt with, like "Twilio."; blank when we dealt with none
+
+	hash_text      TEXT      NOT NULL,  -- the hash of the one thing this row is about, like an address, gathering every record about it; blank when the row is about no such thing
+
+	-- json is note_json's replacement; in the window both live, and the defaults are scaffolding
+	json           JSONB     NOT NULL DEFAULT '{}',  -- everything else about what happened; {} when the columns say it all
+	note_json      JSONB     NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX ledger1 ON ledger_table (browser_hash,  row_tick DESC) WHERE hide = 0;
 CREATE INDEX ledger2 ON ledger_table (user_tag_text, row_tick DESC) WHERE hide = 0;
 CREATE INDEX ledger3 ON ledger_table (action_text,   row_tick DESC) WHERE hide = 0;
 CREATE INDEX ledger4 ON ledger_table (hash_text,     row_tick DESC) WHERE hide = 0 AND hash_text != '';  -- every record about one thing, newest first
+CREATE INDEX ledger5 ON ledger_table (event_text,    row_tick DESC) WHERE hide = 0 AND event_text != '';  -- everything of one kind, newest first
+CREATE INDEX ledger6 ON ledger_table (provider_text, row_tick DESC) WHERE hide = 0 AND provider_text != '';  -- everything around one third party, newest first
 
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
 
-export async function ledgerAdd({action, browserHash, ip, userTag, hash, note}) { return await ledgerAddMany([{action, browserHash, ip, userTag, hash, note}]) }
+export async function ledgerAdd({action, event, provider, browserHash, ip, origin, userTag, hash, note}) { return await ledgerAddMany([{action, event, provider, browserHash, ip, origin, userTag, hash, note}]) }
 export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
 	checkHash(wrapper.hash)
 	let now = Now()
 	let rows = a.map(e => {
 		let {
-			action,//title of what happened
+			action,//the subject of the record, like 'Email.'
+			event = '',//the verb, like 'Challenged.'; blank when the action says it all
+			provider = '',//the third party involved, like 'Twilio.'; blank when none was
 			browserHash,//the browser that was here for this
 			ip = '',//the ip address if the caller has it
+			origin = '',//the site this happened at, if the caller has it
 			userTag = '',//the user, or blank if nobody's identified
 			hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
-			note = {},//everything else about what happened, kept as data a later reader can query and read back
+			note = {},//everything else about what happened, kept as data a later reader can query and read back; rides in the json column
 		} = e
-		checkAction(action); checkHash(browserHash)
-		checkTextOrBlank(ip); checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
+		checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
+		checkTextOrBlank(ip); checkTextOrBlank(origin); checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
 		return {
 			row_tick: now,
+			wrapper_hash: wrapper.hash,
 			ip_text: ip,
+			origin_text: origin,
 			browser_hash: browserHash,
 			user_tag_text: userTag,
-			wrapper_hash: wrapper.hash,
 			action_text: action,
+			event_text: event,
+			provider_text: provider,
 			hash_text: hash,
-			note_json: note,
+			json: note,
 		}
 	})
 	await queryAddRows({table: 'ledger_table', rows})

@@ -6,6 +6,8 @@ The sort is by kind of document rather than by subject, because the kind is what
 
 # Up next
 
+**Active work: hit-melt.md.** Five tasks in order, melting hit_table into ledger_table so one table tells the whole story of what a person at a browser did. Its opening says which task is in flight and what the next step is, so start there. The two entries below wait behind it.
+
 Two pieces of data-layer work are scoped and ready to pick up, both waiting in data.md's queue, and a document above them sets the direction they now run toward. The smaller-dog logging simplification, planned in smaller-dog.md, shrinks the Datadog apparatus to one async dog; the ledgerAdd conversions that lead it are two of three in, leaving the turnstile site, which waits on the sprint's own layering decision, and then the removal pass. The backup-plan decision chooses among the three approaches database-stack.md's bookmark presents — managed backups, the pg_dump pair, the CSV cold copy — and settles the cadence, and where the sensitive files sleep. The address and service table cleanup that ran ahead of both is done; what it left behind is data-cleanup.md's list of design intents still to be built or waived, which the sprints below will pick up one topic area at a time.
 
 Above both sits data-plan.md, which says where the data layer is headed — ledger_table carrying the history, every other table going back to ordinary edit-and-delete. It settles no individual question, but it is the frame these sprints, and the larger schema passes after them, now fit into.
@@ -16,7 +18,7 @@ How a part of the system actually works, written once the work landed and true u
 
 ## database-stack.md — how cold3 uses its database
 
-The database stack in production and in development: the four protocol layers, every path from our code to a table, and the choosing-a-path guide with the migration and drift-check rules — including the registry's deliberate superset of the cloud, so the tables that live only in the registry never read as drift. Also row-level security's two walls, standing on every table and carried forward to tables not yet created, and the backup-plan bookmark, where three approaches (Supabase's managed backups, the pg_dump pair, the CSV cold copy) wait for the sprint that picks among them. Reference, not planning.
+The database stack in production and in development: the four protocol layers, every path from our code to a table, and the choosing-a-path guide with the migration and drift-check rules — including the registry's deliberate superset of the cloud, so the tables that live only in the registry never read as drift. Also how a table is shaped — the margin triad, what each column-title suffix admits, and the rule that a blank cell is an answer rather than a gap — plus row-level security's two walls, standing on every table and carried forward to tables not yet created, and the backup-plan bookmark, where three approaches (Supabase's managed backups, the pg_dump pair, the CSV cold copy) wait for the sprint that picks among them. Reference, not planning. It is also where icarus/tables.txt is melting to: that notes file holds the oldest and roughest database planning, is deprecated, and only shrinks — corrected in place when leaving a line alone would make it wrong, and emptied section by section as what it holds lands here.
 
 ## xray.md — secrets verified by search
 
@@ -53,6 +55,10 @@ After the demo flow was retired, OAuth was integrated into the unified credentia
 # New initiatives — scoped, not started
 
 A targeted piece of work nobody has begun. Each document holds the general idea, notes on scope and research, and the questions the sprint will have to answer along the way. Reading one tells you what the work is and what's undecided; none of it is built.
+
+## hit-melt.md — melting hit_table into ledger_table
+
+The active sprint, and the one a fresh session picks up. Five tasks in order, each a heading naming what it does: finishing the hash_text migration, giving ledger_table its event, provider, and origin columns and renaming note_json to json, renaming credential_table's note_json the same way, moving hit_table's rows in as Hit. records and dropping the table, and finally recording the ip, origin, and geography of the request on every ledger row. It opens with a bookmark saying where the work stands. It also carries the two findings that shaped the melt: a partial unique index is what keeps one hit per browser per hour once every kind of record shares a table, and the plain insert that lets error 23505 fire is the only way to reach a partial unique index through PostgREST.
 
 ## data.md — the data-layer queue
 

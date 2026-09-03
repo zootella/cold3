@@ -558,9 +558,11 @@ export function validatePost(raw, limit) {//returns an array of paragraphs
 
 export function checkAction(action) { if (!hasAction(action)) toss('form', {action}) }
 export function checkActions({action, actions}) { if (actions?.length && !hasActions({action, actions})) toss('form', {action, actions}) }//optional convenience for api endpoint code; only checks if actions list is provided
+export function checkActionOrBlank(action) { if (!hasActionOrBlank(action)) toss('form', {action}) }
 function hasAction(action) {
 	return hasText(action) && /^[A-Z][A-Za-z0-9]*\.$/.test(action)
 }
+function hasActionOrBlank(action) { return action === '' || hasAction(action) }//a cell that names a tag when there is one to name, and is blank when there isn't; === because 0 and false are not the blank
 function hasActions({action, actions}) {
 	return hasAction(action) && actions.length && actions.includes(action)
 }
@@ -569,6 +571,11 @@ test(() => {
 	ok(!hasAction('Go'))//period required
 	ok(hasAction('Go.'))
 	ok(hasAction('Go2.'))//number is fine
+
+	ok(hasActionOrBlank(''))//blank passes, because blank is what a cell holds when there's no tag to name
+	ok(hasActionOrBlank('Go.'))
+	ok(!hasActionOrBlank('Go'))//anything else is still held to the tag shape
+	ok(!hasActionOrBlank(0))//and neither 0 nor false is the blank
 
 	ok(hasActions({action: 'Action2.', actions: ['Action1.', 'Action2.']}))
 	ok(!hasActions({action: 'Action3.', actions: ['Action1.', 'Action2.']}))//named but missing

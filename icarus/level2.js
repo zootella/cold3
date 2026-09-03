@@ -1582,12 +1582,12 @@ export async function queryTop({table, title, cell}) {
 }
 
 //apply the given cells to a query as equality filters; queryGet and queryHide share this so the select and the update speak identical filters
-//a plain-object value holds json path filters on the column titled title_json: note: {provider: 'Discord.'} filters note_json->>provider
+//a plain-object value holds json path filters on that column, named like every other cell by its own column title: some_json: {city: 'Akron'} filters some_json->>city
 //level2 alone spells the path--callers pass bare property names, PostgREST single-quotes the key when it renders SQL, and supafake in grid renders that same spelling for PGlite
 function applyQueryCells(query, cells) {
 	for (let [title, cell] of Object.entries(cells)) {
 		if (isPlain(cell)) {
-			for (let [key, value] of Object.entries(cell)) query = query.eq(`${title}_json->>${key}`, value)
+			for (let [key, value] of Object.entries(cell)) query = query.eq(`${title}->>${key}`, value)
 		} else {
 			query = query.eq(title, cell)
 		}
@@ -1596,7 +1596,7 @@ function applyQueryCells(query, cells) {
 }
 
 //get all the visible rows matching the given column values
-export async function queryGet(table, cells, options) {//cells is like {title1: 'cell1', title2: 'cell2', ...}; a plain-object value like note: {provider} filters properties inside the json column
+export async function queryGet(table, cells, options) {//cells is like {title1: 'cell1', title2: 'cell2', ...}; a plain-object value like note_json: {provider} filters properties inside that json column
 	checkQueryTitle(table); checkQueryCells(cells)
 	const {database} = await getDatabase()
 	let query = applyQueryCells(database.from(table).select('*').eq('hide', 0), cells)
@@ -1752,7 +1752,7 @@ function checkQueryFillRows(rows) {
 }
 
 function checkQueryTitle(title) {//make sure the given title looks ok as a table name or column title
-	if (!isQueryTitle(title)) toss('check title', {title, cell})
+	if (!isQueryTitle(title)) toss('check title', {title})
 }
 function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789}
 	for (let [title, cell] of Object.entries(row)) checkQueryCell(title, cell)
@@ -1760,7 +1760,7 @@ function checkQueryRow(row) {//check a row like {"name_text": "bob", "hits": 789
 function checkQueryCells(cells) {//check filter cells for queryGet and queryHide, where a plain-object value holds json path filters
 	for (let [title, cell] of Object.entries(cells)) {
 		if (isPlain(cell)) {
-			checkQueryTitle(title+'_json')//the object rides under the column's caller-facing word, note for note_json
+			checkQueryTitle(title)//a path filter names its column the same way every other cell does
 			if (!Object.keys(cell).length) toss('query', {title, cell})//an empty object filters nothing, so a caller passing one is confused
 			for (let [key, value] of Object.entries(cell)) { checkQueryPathKey(key); checkText(value) }//path filters compare the text ->> extracts, never blank, because an absent key is the blank
 		} else {

@@ -586,7 +586,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 
 	//challenge row written by the oauth endpoint on the signin action; audit trail
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
-	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3, note: {provider: 'Discord.'}})
+	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3, note_json: {provider: 'Discord.'}})
 	ok(challenged.length == 1)
 
 	//link Discord; verify row fields via get+find
@@ -595,7 +595,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd123', handle: 'alice_d', name: 'Alice D.', email: aliceEmailObj, proof: {account: {a: 1}, profile: {p: 2}, user: {u: 3}}})
 	let got = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
 	ok(got.identifier == 'd123' && got.handle == 'alice_d' && got.email == 'alice@example.com')
-	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note: {provider: 'Discord.'}, event: 4}))[0]
+	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note_json: {provider: 'Discord.'}, event: 4}))[0]
 	ok(discordRow.f0_text == 'alice@example.com' && discordRow.f2_text == 'alice@example.com')//validated email filled into f0/1/2
 	ok(discordRow.note_json.proof.account.a == 1)//the note preserves the auth.js slice as real nested json
 
@@ -611,7 +611,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	//to switch accounts the user must Remove first, then Set succeeds and points at the new account
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
 	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).ok)//wrote now that the slot is free
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note: {provider: 'Discord.'}, event: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note_json: {provider: 'Discord.'}, event: 4})
 	ok(rows.length == 1)//only one active Discord row
 	ok((await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.').identifier == 'd789')//new account wins
 
@@ -627,7 +627,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	//Set with no email: f0/1/2 stay blank
 	let userTag2 = Tag()
 	await credentialOauthSet({userTag: userTag2, provider: 'Discord.', identifier: 'd2', handle: 'bob'})
-	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', note: {provider: 'Discord.'}, event: 4}))[0]
+	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', note_json: {provider: 'Discord.'}, event: 4}))[0]
 	ok(bobRow.f0_text == '' && bobRow.f1_text == '' && bobRow.f2_text == '')//no email passed → f columns blank
 })
 grid(async () => {//oauth: cross-user providerId uniqueness — one provider identity, one cold3 account; released claim is reclaimable
@@ -1152,14 +1152,15 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 	await clear('ledger_table')
 	let browserHash = await hashText('a browser')
 
-	await ledgerAdd({action: 'ExampleHappened.', browserHash, ip: '203.0.113.7', userTag: '', note: {color: 'Green.', count: 7}})
+	await ledgerAdd({action: 'ExampleHappened.', browserHash, ip: '203.0.113.7', origin: 'https://example.com', userTag: '', note: {color: 'Green.', count: 7}})
 	let row = (await queryGet('ledger_table', {action_text: 'ExampleHappened.'}))[0]
-	ok(row.browser_hash == browserHash && row.user_tag_text == '' && row.ip_text == '203.0.113.7')
-	ok(row.note_json.color == 'Green.' && row.note_json.count == 7)//the note arrives back parsed, an object rather than text
+	ok(row.browser_hash == browserHash && row.user_tag_text == '' && row.ip_text == '203.0.113.7' && row.origin_text == 'https://example.com')
+	ok(row.json.color == 'Green.' && row.json.count == 7)//the note arrives back parsed, an object rather than text
 
 	await ledgerAdd({action: 'QuickExample.', browserHash})//only the action and browser are required; the rest defaults to blanks
 	let quick = (await queryGet('ledger_table', {action_text: 'QuickExample.'}))[0]
-	ok(quick.user_tag_text == '' && quick.ip_text == '' && quick.hash_text == '' && makeText(quick.note_json) == '{}')
+	ok(quick.user_tag_text == '' && quick.ip_text == '' && quick.origin_text == '' && quick.hash_text == '' && makeText(quick.json) == '{}')
+	ok(quick.event_text == '' && quick.provider_text == '')//the verb and the third party are blank when the action says it all
 	ok(quick.wrapper_hash.length == 52)//the version of the software that wrote the row rides along
 
 	await ledgerAddMany([//a batch lands in a single query, every element its own complete record
@@ -1167,6 +1168,48 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 		{action: 'BatchExample.', browserHash, note: {n: 2}},
 	])
 	ok((await queryGet('ledger_table', {action_text: 'BatchExample.'})).length == 2)
+})
+
+grid(async () => {//ledger: the three words say subject, verb, and third party, each filterable on its own, and the planner reaches the two optional ones through ledger5 and ledger6
+	let {clear, pglite} = await getDatabase()
+	await clear('ledger_table')
+	let browserHash = await hashText('a browser')
+
+	await ledgerAddMany([//one address challenged by two providers, and a second address proven
+		{action: 'Email.', event: 'Challenged.', provider: 'Twilio.', browserHash, note: {n: 1}},
+		{action: 'Email.', event: 'Challenged.', provider: 'Amazon.', browserHash, note: {n: 2}},
+		{action: 'Email.', event: 'Validated.', browserHash, note: {n: 3}},
+		{action: 'Oauth.', event: 'Cancelled.', provider: 'Discord.', browserHash, note: {n: 4}},
+	])
+	ok((await queryGet('ledger_table', {action_text: 'Email.'})).length == 3)//everything about email, whatever happened to it
+	ok((await queryGet('ledger_table', {event_text: 'Challenged.'})).length == 2)//everything we challenged, whatever kind it was
+	ok((await queryGet('ledger_table', {provider_text: 'Twilio.'})).length == 1)//everything around one third party
+	ok((await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Validated.'}))[0].provider_text == '')//a proof involves no third party, so the column stays blank
+
+	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves each partial predicate is provable from its filter
+	let plan = async (title, cell) => (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND ${title} = '${cell}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')
+	ok((await plan('event_text', 'Challenged.')).includes('ledger5'))
+	ok((await plan('provider_text', 'Twilio.')).includes('ledger6'))
+	await pglite.query('SET enable_seqscan = on')
+
+	let tossed
+	tossed = false; try { await ledgerAdd({action: 'Email.', event: 'challenged', browserHash}) } catch (e) { tossed = true }
+	ok(tossed)//the verb is a tag or the blank, nothing else
+	tossed = false; try { await ledgerAdd({action: 'Email.', provider: 'Twilio', browserHash}) } catch (e) { tossed = true }
+	ok(tossed)//and so is the third party
+})
+
+grid(async () => {//ledger: a plain-object value spelled json filters properties inside the column titled just json, the same path filtering a _json column gets
+	let {clear} = await getDatabase()
+	await clear('ledger_table')
+	let browserHash = await hashText('a browser')
+
+	await ledgerAddMany([
+		{action: 'Example.', browserHash, note: {city: 'Akron', count: 1}},
+		{action: 'Example.', browserHash, note: {city: 'Tokyo', count: 2}},
+	])
+	let rows = await queryGet('ledger_table', {action_text: 'Example.', json: {city: 'Akron'}})
+	ok(rows.length == 1 && rows[0].json.count == 1)//level2 spells the path from the column's own word
 })
 
 grid(async () => {//ledger: the hash margin gathers every record about one thing, whatever the action was, and the planner reaches them through ledger4
@@ -1372,24 +1415,24 @@ grid(async () => {//json: path filters--a plain-object value in the cells reads 
 	]})
 
 	let rows
-	rows = await queryGet('example_table', {some: {city: 'Tokyo'}})//the caller-facing word is the column title without _json, the way note speaks for note_json
+	rows = await queryGet('example_table', {some_json: {city: 'Tokyo'}})//a path filter names its column exactly, the way every other cell in the object does
 	ok(rows.length == 1 && rows[0].name_text == 'alice')
-	rows = await queryGet('example_table', {some: {city: 'Kyoto'}})
+	rows = await queryGet('example_table', {some_json: {city: 'Kyoto'}})
 	ok(rows.length == 0)//no row holds this value
-	rows = await queryGet('example_table', {some: {crew: 'alpha'}})
+	rows = await queryGet('example_table', {some_json: {crew: 'alpha'}})
 	ok(rows.length == 1)//bob and carol don't have the key at all: absent extracts to null, which never equals
 
-	rows = await queryGet('example_table', {hits: 1, some: {city: 'Tokyo', crew: 'alpha'}})//regular titles and several paths ride in one cells object, all ANDed together
+	rows = await queryGet('example_table', {hits: 1, some_json: {city: 'Tokyo', crew: 'alpha'}})//regular titles and several paths ride in one cells object, all ANDed together
 	ok(rows.length == 1)
-	rows = await queryGet('example_table', {hits: 2, some: {city: 'Tokyo'}})//each filter must hold
+	rows = await queryGet('example_table', {hits: 2, some_json: {city: 'Tokyo'}})//each filter must hold
 	ok(rows.length == 0)
 
-	let tossed = false; try { await queryGet('example_table', {some: {city: ''}}) } catch (e) { tossed = true }
+	let tossed = false; try { await queryGet('example_table', {some_json: {city: ''}}) } catch (e) { tossed = true }
 	ok(tossed)//a blank path value is refused: absent is the blank, so nothing blank is ever filtered for
 
-	await queryHide('example_table', {some: {city: 'Tokyo'}})//the UPDATE filters the same way, the shape of the oauth remove
-	ok((await queryGet('example_table', {some: {city: 'Tokyo'}})).length == 0)//hidden now
-	ok((await queryGet('example_table', {some: {city: 'Osaka'}})).length == 1)//the neighbor rides on
+	await queryHide('example_table', {some_json: {city: 'Tokyo'}})//the UPDATE filters the same way, the shape of the oauth remove
+	ok((await queryGet('example_table', {some_json: {city: 'Tokyo'}})).length == 0)//hidden now
+	ok((await queryGet('example_table', {some_json: {city: 'Osaka'}})).length == 1)//the neighbor rides on
 })
 
 grid(async () => {
@@ -1552,7 +1595,7 @@ class FakeSupabaseQueryBuilder {
 	then(resolve, reject) {//makes the chain thenable; called when you await the chain
 		this._execute().then(resolve).catch(e => resolve({data: null, error: e}))
 	}
-	_col(col) {//a json path filter arrives spelled note_json->>provider; PostgREST quotes the key when it renders SQL, so supafake renders the same spelling for PGlite
+	_col(col) {//a json path filter arrives spelled json->>provider or some_json->>city; PostgREST quotes the key when it renders SQL, so supafake renders the same spelling for PGlite
 		let i = col.indexOf('->>')
 		return i == -1 ? col : `${col.slice(0, i)}->>'${col.slice(i + 3)}'`
 	}

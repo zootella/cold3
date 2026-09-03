@@ -1,5 +1,8 @@
 notesfile
 
+_Note: Every file whose first line is the greppable tag above is deprecated. These are the oldest and roughest planning in the repository, written years before the markdown documents at the root and in a different voice, and they are not kept the way those are. The root documents get rewritten whole and stay current. These only shrink: correct a line when leaving it alone would make the file wrong, delete a section once its subject is gone, and never write new thinking into one. Whatever still matters moves out to the living document that owns the subject, which for this file is database-stack.md. Grep for the tag to find the others._
+
+
 
 
 
@@ -225,14 +228,15 @@ but even that should be rare--when performing an audit for a staff member, or so
 json cells are payload bags: keys read together, rarely filtered on, variable in presence
 the day a real query wants a json path, an expression index makes it as fast as a real column
 
-another thing we're not doing
-labeling any columns UNIQUE in the schema
+another thing we're sparing with
+labeling columns UNIQUE in the schema
 tags are globally unique
 and row_tag column is unique, as the PRIMARY KEY must be unique
 but other columns that have tags absolutely have duplicates! multiple rows need to record facts about the same tag, like browser tag or user tag!
 unique makes postgres autoatically make an index
 but we're adding compound indices designed to match common queries by design
 so we don't need more individual indices
+where unique does appear it earns it by doing work an index alone can't: settings1 keeps setting names distinct, and hit1 is what lets one call record a hit only when it's new
 
 
 
@@ -485,6 +489,13 @@ we could instead when a new person first clicks Follow, or sets their nickname
 
 
 
+totally make the service_table
+which is a history and audit of every request and every response to every api
+so you can see what worked and what didn't work
+and how quickly the api responded
+and how quickly the user was able to complete the task related to the api
+start recording this information even before you have a system that uses it
+(note: insetad of a separate table for recording events around our interactions with services, we're adding rows that enable these goals in ledger_table)
 
 
 
