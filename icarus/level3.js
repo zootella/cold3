@@ -1127,6 +1127,21 @@ CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get v
 // |_|\___|\__,_|\__, |\___|_|     \__\__,_|_.__/|_|\___|
 //               |___/                                   
 
+/*
+Provenance: who says so, for every cell in a ledger row
+
+Several parties speak in every row here, and which cell a fact sits in fixes who said it. A reader who knows the ladder below can look at any key and value, know where it came from, and know who could have faked it. The ladder runs from the weakest word to the strongest.
+
+The page speaks weakest. Script running in the user's browser came from our bundle, but an extension or an injected script can change anything it reports, so whatever a page sends in a request body, like the graphics renderer and vendor a Hit. row carries in its browser bag, is the page's claim and nothing more.
+
+The browser speaks more strongly. The browser tag rides in a first-party cookie marked HttpOnly, Secure, and SameSite=Lax, which page script can neither read nor change. The middleware issues it, the browser attaches it to every request on its own, and the door hashes it one way into browser_hash, so the tag itself never reaches a table. A row's browser_hash says which cookie jar was here, and only someone holding that jar could have produced it.
+
+Cloudflare speaks more strongly still, from outside the request's control. ip_text is the cf-connecting-ip header Cloudflare writes on the way in, overwriting anything the client sent, and the geography a Hit. row carries is what Cloudflare derived from that address at that moment. A user can choose a network or a vpn, but neither page nor browser can name a different address. origin_text comes from the host and forwarded-protocol headers Cloudflare routes on. Without Cloudflare, as in local development, ip and geography are blank, and blank means exactly that; origin still assembles from the local host.
+
+Our own code speaks last. wrapper_hash is the build that wrote the row, row_tick is the worker's clock, user_tag_text is our lookup of who was signed in at that browser_hash, and action_text, event_text, provider_text, and hash_text are what our code says happened. Inside json a row may also carry a third party's word, like the response Twilio returned, kept verbatim as what they said rather than what we concluded.
+
+None of this is labeled in the data. The schema does not sort cells into trusted and reported, and no row carries a bag per source, because a label on every cell would repeat what this essay says once and get in the way of reading the row. The cell is the label.
+*/
 SQL(`
 -- durable audit in our own database: what happened, who was here, and everything else about it
 -- we write here constantly and query rarely; a staff member reads these to reconstruct a story long after the moment
@@ -1135,13 +1150,12 @@ CREATE TABLE ledger_table (
 	row_tick       BIGINT    NOT NULL,
 	hide           BIGINT    NOT NULL,
 
-	-- who was here, each cell labeled by how far we can trust it: Trusted is from outside the request's control, cloudflare's word or our own software's; Reported is the browser's own word; Derived is a conclusion we drew ourselves
-	wrapper_hash   CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
-	ip_text        TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare, or blank
-	origin_text    TEXT      NOT NULL,  -- Trusted: the origin like "http://localhost:3000" or "https://example.com"
-
-	browser_hash   CHAR(52)  NOT NULL,  -- Reported: the browser that was here for this
-	user_tag_text  TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identified
+	-- where this happened, and who was here; the essay above says who vouches for each cell
+	wrapper_hash   CHAR(52)  NOT NULL,  -- the build of our software that wrote the row
+	ip_text        TEXT      NOT NULL,  -- the ip address cloudflare saw, or blank without cloudflare
+	origin_text    TEXT      NOT NULL,  -- the origin like "http://localhost:3000" or "https://example.com"
+	browser_hash   CHAR(52)  NOT NULL,  -- the browser that was here, by the hash of its tag
+	user_tag_text  TEXT      NOT NULL,  -- the user signed in at that browser, or blank if none
 
 	-- what happened, in three tags rather than numeric codes, so a query result reads without a legend
 	action_text    TEXT      NOT NULL,  -- the subject, like "Email."; the one of the three every row names
