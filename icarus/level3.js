@@ -997,8 +997,7 @@ CREATE TABLE credential_table (
 
 	-- alternatively or additionally, a credential of this type may have a hash, a secret key, or something else, kept in a note:
 	hash_text  TEXT      NOT NULL,  -- the row's one meaningful hash, like Browser.'s browserHash or Password.'s password hash; '' when the type has none
-	json       JSONB     NOT NULL DEFAULT '{}',  -- payload bag of everything else about this credential; {} the blank, an absent key the blank of a property
-	note_json  JSONB     NOT NULL DEFAULT '{}'   -- json's old name, no longer read or written; it and both defaults are scaffolding that leaves with the contraction
+	json       JSONB     NOT NULL   -- payload bag of everything else about this credential; {} the blank, an absent key the blank of a property
 );
 
 CREATE INDEX credential1 ON credential_table (hide, user_tag, row_tick DESC);  -- filter by user
@@ -1008,8 +1007,7 @@ CREATE INDEX credential3 ON credential_table (hide, type_text, f1_text) WHERE f1
 CREATE INDEX credential4 ON credential_table (hide, type_text, f2_text) WHERE f2_text != '';
 
 CREATE INDEX credential13 ON credential_table (hide, type_text, hash_text) WHERE hash_text != '';  -- the Browser. signed-in lookup
-CREATE INDEX credential14 ON credential_table (hide, type_text, (note_json->>'identifier')) WHERE note_json->>'identifier' IS NOT NULL;  -- on json's old name, unused now; leaves with note_json in the contraction
-CREATE INDEX credential15 ON credential_table (hide, type_text, (json->>'identifier'))      WHERE json->>'identifier'      IS NOT NULL;  -- the oauth claim, spelled ->> with no casts, the spelling level2's filters generate
+CREATE INDEX credential15 ON credential_table (hide, type_text, (json->>'identifier')) WHERE json->>'identifier' IS NOT NULL;  -- the oauth claim, spelled ->> with no casts, the spelling level2's filters generate
 
 ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)

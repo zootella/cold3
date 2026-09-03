@@ -2,7 +2,7 @@
 
 Melting hit_table into ledger_table, so one table and one ordering by tick tell the whole story of what a person at a browser did.
 
-**Where we are, September 3, 2026.** The first two tasks are done. The third is at its read-switch station: the backfill is pushed and verified, every row's json equal to its note_json, and the working tree holds the read-switch, uncommitted: reads take json, the claim filters spell json, credentialSet writes json alone. Next, in order: review, commit, deploy, then the contraction migration and the drift check close the task.
+**Where we are, September 3, 2026.** The first two tasks are done. The third is at its last station: the read-switch is deployed, and the working tree holds the contraction migration and the registry at its final shape, uncommitted. Next, in order: review, commit, push the contraction, and close with a drift check, which needs Docker. Then the fourth task begins.
 
 Each heading below is one task, and they run in the order they appear. Finish one, then start the next. A single task can take several rounds of coding, review, commit, and smoke testing before it is done. Live-table changes ride migration.md's playbook: the migration file and its `SQL()` registry edit in the same commit, grid tests beside code changes.
 

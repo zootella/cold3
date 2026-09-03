@@ -1596,7 +1596,7 @@ function applyQueryCells(query, cells) {
 }
 
 //get all the visible rows matching the given column values
-export async function queryGet(table, cells, options) {//cells is like {title1: 'cell1', title2: 'cell2', ...}; a plain-object value like note_json: {provider} filters properties inside that json column
+export async function queryGet(table, cells, options) {//cells is like {title1: 'cell1', title2: 'cell2', ...}; a plain-object value like json: {provider} filters properties inside that json column
 	checkQueryTitle(table); checkQueryCells(cells)
 	const {database} = await getDatabase()
 	let query = applyQueryCells(database.from(table).select('*').eq('hide', 0), cells)
@@ -1775,7 +1775,7 @@ function isQueryPathKey(key) {//a path key is a bare word in javascript property
 test(() => {
 	ok(isQueryPathKey('provider'))
 	ok(isQueryPathKey('browserHash'))
-	ok(!isQueryPathKey('note_json'))//underscores are for column titles, never path keys
+	ok(!isQueryPathKey('some_json'))//underscores are for column titles, never path keys
 	ok(!isQueryPathKey('4score'))//must start with a letter
 	ok(!isQueryPathKey(''))
 })

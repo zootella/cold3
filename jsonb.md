@@ -1,7 +1,7 @@
 
 # jsonb
 
-json is an approved cell type: a column suffixed `_json`, or titled just `json`, is JSONB holding a plain object of plain data, with `{}` the blank of the cell. tables.txt tells the type's story beside its siblings, and the checks and hashing live in core beside their tests. The type is proven in two adoptions — hit_table's cast, and credential_table's per-type translation of the k slots into note_json (August 2026, the choreography in migration.md). This document holds the efficiency research and the guidance for deciding future columns.
+json is an approved cell type: a column suffixed `_json`, or titled just `json`, is JSONB holding a plain object of plain data, with `{}` the blank of the cell. tables.txt tells the type's story beside its siblings, and the checks and hashing live in core beside their tests. The type is proven in two adoptions — hit_table's cast, and credential_table's per-type translation of the k slots into note_json, since renamed json (August and September 2026, the choreography in migration.md). This document holds the efficiency research and the guidance for deciding future columns.
 
 ## How far to take jsonb: efficiency, and guidance for future columns
 
