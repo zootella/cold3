@@ -1154,6 +1154,60 @@ grid(async () => {//hit: a visit lands as a Hit. row in the ledger, cloudflare's
 	ok((await queryGet('ledger_table', {hash_text: row.hash_text})).length == 3)//the partial predicate keeps ledger7 off every other action
 })
 
+//rehearsal of the hit melt, scaffolding that retires once the contraction is pushed: hit_table built from its last registry shape, rows of the
+//two shapes the survey found in production, then the migration file's statements verbatim, then assertions that every row arrives as a Hit. row
+//keeping its tag, tick, margins, and both bags, that a second copy changes nothing, and that the drop takes the table while fresh visits still land
+const hitMeltTableSql = `
+CREATE TABLE hit_table (
+	row_tag         CHAR(21)  NOT NULL PRIMARY KEY,
+	row_tick        BIGINT    NOT NULL,
+	hide            BIGINT    NOT NULL,
+	origin_text     TEXT      NOT NULL,
+	browser_hash    CHAR(52)  NOT NULL,
+	user_tag_text   TEXT      NOT NULL,
+	ip_text         TEXT      NOT NULL,
+	geography_json  JSONB     NOT NULL,
+	browser_json    JSONB     NOT NULL,
+	wrapper_hash    CHAR(52)  NOT NULL,
+	hash            CHAR(52)  NOT NULL,
+	CONSTRAINT hit1 UNIQUE (hash)
+);
+`
+const hitMeltCopySql = `
+INSERT INTO ledger_table (row_tag, row_tick, hide, wrapper_hash, ip_text, origin_text, browser_hash, user_tag_text, action_text, event_text, provider_text, hash_text, json)
+SELECT row_tag, row_tick, hide, wrapper_hash, ip_text, origin_text, browser_hash, user_tag_text, 'Hit.', '', '', hash, jsonb_build_object('geography', geography_json, 'browser', browser_json)
+FROM hit_table h
+WHERE NOT EXISTS (SELECT 1 FROM ledger_table l WHERE l.row_tag = h.row_tag);
+`
+const hitMeltDropSql = `DROP TABLE hit_table;`
+grid(async () => {//hit melt rehearsal: every old hit arrives as a Hit. row with its tick and both bags, the copy runs twice without change, and the table drops
+	let {clear, pglite} = await getDatabase()
+	await clear('ledger_table')
+	await pglite.exec(hitMeltTableSql)
+	let userTag = Tag(), b1 = random32(), b2 = random32(), h1 = random32(), h2 = random32()
+	let plant = (cells) => queryAddRow({table: 'hit_table', row: {origin_text: 'https://example.com', user_tag_text: '', ip_text: '', geography_json: {}, browser_json: {agent: 'Mozilla/5.0', renderer: 'ANGLE (Intel)', vendor: 'Google Inc.'}, wrapper_hash: random32(), ...cells}})
+	await plant({browser_hash: b1, hash: h1, row_tick: 1745437785606, user_tag_text: userTag, ip_text: '203.0.113.7', geography_json: {country: 'US', city: 'Akron', region: 'OH', postal: '44301'}})//a cloud hit from the table's first day, signed in, cloudflare's geography complete
+	await plant({browser_hash: b2, hash: h2})//a local development hit: blank ip, blank geography, nobody signed in
+
+	let run = async () => (await pglite.query(hitMeltCopySql)).affectedRows//the migration file's copy, verbatim
+	ok((await run()) == 2)
+	let rows = await queryGet('ledger_table', {action_text: 'Hit.'})
+	ok(rows.length == 2)
+	let r1 = rows.find(r => r.browser_hash == b1)
+	ok(r1.row_tick == 1745437785606 && r1.hash_text == h1 && r1.user_tag_text == userTag && r1.ip_text == '203.0.113.7')//keeps its tick and margins, its hash now in hash_text
+	ok(r1.json.geography.city == 'Akron' && r1.json.browser.vendor == 'Google Inc.')//both bags ride inside json under the names recordHit uses
+	ok(r1.event_text == '' && r1.provider_text == '')//a hit names no verb and no third party
+	let r2 = rows.find(r => r.browser_hash == b2)
+	ok(r2.ip_text == '' && makeText(r2.json.geography) == '{}' && r2.user_tag_text == '')//the blanks stay blank
+	ok((await run()) == 0)//a second copy changes nothing
+
+	await pglite.exec(hitMeltDropSql)//the migration file's drop, verbatim
+	let gone = false; try { await pglite.query('SELECT 1 FROM hit_table') } catch (e) { gone = true }
+	ok(gone)//hit1 through hit3 fell with it
+	await recordHit({origin: 'https://example.com', browserHash: b1, userTag: '', ipText: '', geography: {}, browser: {}})//and a fresh visit lands beside the moved history
+	ok((await queryGet('ledger_table', {action_text: 'Hit.'})).length == 3)
+})
+
 grid(async () => {//ledger: an audit record lands durable in our own database, margins for filtering and a note of details as data
 	let {clear} = await getDatabase()
 	await clear('ledger_table')

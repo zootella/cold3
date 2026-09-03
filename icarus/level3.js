@@ -1118,44 +1118,6 @@ CREATE TABLE example_table (
 CREATE INDEX example1 ON example_table (hide, row_tick DESC);  -- index to get visible rows, sorted recent first, quickly
 `)
 
-//  _     _ _     _        _     _      
-// | |__ (_) |_  | |_ __ _| |__ | | ___ 
-// | '_ \| | __| | __/ _` | '_ \| |/ _ \
-// | | | | | |_  | || (_| | |_) | |  __/
-// |_| |_|_|\__|  \__\__,_|_.__/|_|\___|
-//                                      
-
-SQL(`
--- where is this hit coming from?
-CREATE TABLE hit_table (
-	row_tag         CHAR(21)  NOT NULL PRIMARY KEY,
-	row_tick        BIGINT    NOT NULL,  -- Trusted: exact time within hour_tick of the hit
-	hide            BIGINT    NOT NULL,
-
-	origin_text     TEXT      NOT NULL,  -- Trusted: the origin like "http://localhost:3000" or "https://example.com"
-
-	browser_hash    CHAR(52)  NOT NULL,  -- Reported: the browser that hit us
-	user_tag_text   TEXT      NOT NULL,  -- Derived: the user at that browser, or blank if none identifed
-	ip_text         TEXT      NOT NULL,  -- Trusted: ip address, according to cloudflare
-	geography_json  JSONB     NOT NULL,  -- Trusted: geographic information, according to cloudflare
-	browser_json    JSONB     NOT NULL,  -- Reported: user agent string and WebGL hardware, according to the browser
-
-	wrapper_hash    CHAR(52)  NOT NULL,  -- Trusted: software version hash from wrapper
-
-	hash            CHAR(52)  NOT NULL,  -- hash of printed cells to prevent duplicates within each hour
-	CONSTRAINT hit1 UNIQUE (hash)        -- and corresponding constraint to enforce this and make upserts quick
-);
-
-CREATE INDEX hit2 ON hit_table (browser_hash,  row_tick DESC) WHERE hide = 0;
-CREATE INDEX hit3 ON hit_table (user_tag_text, row_tick DESC) WHERE hide = 0;
-
-ALTER TABLE hit_table ENABLE ROW LEVEL SECURITY;
-`)
-
-
-
-
-
 
 
 //  _          _                   _        _     _      

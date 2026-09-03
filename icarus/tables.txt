@@ -236,7 +236,7 @@ but other columns that have tags absolutely have duplicates! multiple rows need 
 unique makes postgres autoatically make an index
 but we're adding compound indices designed to match common queries by design
 so we don't need more individual indices
-where unique does appear it earns it by doing work an index alone can't: settings1 keeps setting names distinct, and hit1 is what lets one call record a hit only when it's new
+where unique does appear it earns it by doing work an index alone can't: settings1 keeps setting names distinct, and ledger7, a partial unique index, is what lets one call record a hit only when it's new
 
 
 
