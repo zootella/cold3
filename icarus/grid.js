@@ -586,7 +586,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 
 	//challenge row written by the oauth endpoint on the signin action; audit trail
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
-	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3, note_json: {provider: 'Discord.'}})
+	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3, json: {provider: 'Discord.'}})
 	ok(challenged.length == 1)
 
 	//link Discord; verify row fields via get+find
@@ -595,9 +595,9 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd123', handle: 'alice_d', name: 'Alice D.', email: aliceEmailObj, proof: {account: {a: 1}, profile: {p: 2}, user: {u: 3}}})
 	let got = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
 	ok(got.identifier == 'd123' && got.handle == 'alice_d' && got.email == 'alice@example.com')
-	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note_json: {provider: 'Discord.'}, event: 4}))[0]
+	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event: 4}))[0]
 	ok(discordRow.f0_text == 'alice@example.com' && discordRow.f2_text == 'alice@example.com')//validated email filled into f0/1/2
-	ok(discordRow.note_json.proof.account.a == 1)//the note preserves the auth.js slice as real nested json
+	ok(discordRow.json.proof.account.a == 1)//the note preserves the auth.js slice as real nested json
 
 	//link Google too; get returns both
 	await credentialOauthSet({userTag, provider: 'Google.', identifier: 'g456', handle: 'alice@gmail.com', name: 'Alice G.', email: aliceEmailObj})
@@ -611,7 +611,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	//to switch accounts the user must Remove first, then Set succeeds and points at the new account
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
 	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).ok)//wrote now that the slot is free
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note_json: {provider: 'Discord.'}, event: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event: 4})
 	ok(rows.length == 1)//only one active Discord row
 	ok((await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.').identifier == 'd789')//new account wins
 
@@ -627,7 +627,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	//Set with no email: f0/1/2 stay blank
 	let userTag2 = Tag()
 	await credentialOauthSet({userTag: userTag2, provider: 'Discord.', identifier: 'd2', handle: 'bob'})
-	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', note_json: {provider: 'Discord.'}, event: 4}))[0]
+	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', json: {provider: 'Discord.'}, event: 4}))[0]
 	ok(bobRow.f0_text == '' && bobRow.f1_text == '' && bobRow.f2_text == '')//no email passed → f columns blank
 })
 grid(async () => {//oauth: cross-user providerId uniqueness — one provider identity, one cold3 account; released claim is reclaimable
@@ -709,43 +709,30 @@ grid(async () => {//per-type writes fill hash_text and the note per the k-to-not
 	await credentialPasswordSet({userTag, hash, cycles})
 	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.'}))[0]
 	ok(row.hash_text == hash)//the hash in its one home
-	ok(row.note_json.cycles === 40)//cycles a real number in the note
+	ok(row.json.cycles === 40)//cycles a real number in the note
 	ok((await credentialPasswordGet({userTag})).hash == hash)//and the read answers from the new cells
 
 	let secret = 'X7C25WC6CUCF77BO7BOCVUHAZ553UKYA'
 	await credentialTotpSet({userTag, secret})
 	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.'}))[0]
-	ok(row.note_json.secret == secret && row.hash_text == '')//a secret is a key, not a hash, so it rides in the note
+	ok(row.json.secret == secret && row.hash_text == '')//a secret is a key, not a hash, so it rides in the note
 	ok((await credentialTotpGet({userTag})) == secret)
 
 	let browserHash = random32()
 	await credentialBrowserSet({userTag, browserHash})
 	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Browser.'}))[0]
 	ok(row.hash_text == browserHash)
-	ok(makeText(row.note_json) == '{}')//browser rows carry no note
+	ok(makeText(row.json) == '{}')//browser rows carry no note
 	ok((await credentialBrowserGet({browserHash})).userTag == userTag)//the hottest lookup answers from hash_text
 
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
 	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3}))[0]
-	ok(row.note_json.provider == 'Discord.')//a challenge row's note carries only the provider
+	ok(row.json.provider == 'Discord.')//a challenge row's note carries only the provider
 
 	let v = validateEmailOrPhone('alice@example.com')
 	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})//the email and phone challenged row, the map's other {provider} note
 	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Email.', event: 3}))[0]
-	ok(row.note_json.provider == 'Amazon.')
-})
-grid(async () => {//credential: while json replaces note_json, every write fills both bags alike, and reads still answer from note_json
-	let {clear} = await getDatabase()
-	await clear('credential_table')
-	let userTag = Tag()
-
-	await credentialOauthChallenge({userTag, provider: 'Discord.'})//a write with a note
-	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3}))[0]
-	ok(makeText(row.json) == makeText(row.note_json) && row.json.provider == 'Discord.')//the same bag in both columns
-
-	await credentialBrowserSet({userTag, browserHash: random32()})//a write with no note
-	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Browser.'}))[0]
-	ok(makeText(row.json) == '{}' && makeText(row.note_json) == '{}')//both hold the blank
+	ok(row.json.provider == 'Amazon.')
 })
 //rehearsal of the json backfill, scaffolding that retires with the contraction: synthetic old-shape rows for the shapes the
 //read-only survey found in production, the verbatim statement of the backfill migration file, per-row assertions, and a
@@ -791,9 +778,9 @@ grid(async () => {//oauth notes: the named account rides the note, and null from
 	let userTag = Tag()
 	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd1', handle: 'alex_dev_42', name: null, proof: {account: {providerAccountId: 'd1'}, profile: {global_name: null}, user: {}}})//discord with no display name set hands over null
 	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 4}))[0]
-	ok(row.note_json.provider == 'Discord.' && row.note_json.identifier == 'd1' && row.note_json.handle == 'alex_dev_42')
-	ok(!('name' in row.note_json))//null became absence, the blank of a property
-	ok(row.note_json.proof.profile.global_name === null)//inside the proof, null is data and rides verbatim
+	ok(row.json.provider == 'Discord.' && row.json.identifier == 'd1' && row.json.handle == 'alex_dev_42')
+	ok(!('name' in row.json))//null became absence, the blank of a property
+	ok(row.json.proof.profile.global_name === null)//inside the proof, null is data and rides verbatim
 	let got = (await credentialOauthGet({userTag}))[0]
 	ok(got.handle == 'alex_dev_42' && got.name == '')//the read answers from the note, feeding '' where a key is absent, so callers see the blank they always have
 })

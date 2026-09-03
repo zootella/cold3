@@ -429,7 +429,7 @@ export async function credentialPasswordGet({userTag}) {
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
 	let row = rows[0]
-	if (row) return {hash: row.hash_text, cycles: row.note_json.cycles}
+	if (row) return {hash: row.hash_text, cycles: row.json.cycles}
 	return false//no current password
 }
 export async function credentialPasswordSet({userTag, hash, cycles}) {
@@ -454,7 +454,7 @@ export async function credentialTotpGet({userTag}) {
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
 	let row = rows[0]
-	if (row) return row.note_json.secret//return their totp secret in base32
+	if (row) return row.json.secret//return their totp secret in base32
 	return false//no current totp enrollment
 }
 export async function credentialTotpSet({userTag, secret}) {
@@ -775,12 +775,12 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	checkTag(userTag); checkAction(provider); checkText(identifier)
 
 	//check 1: this user already has SOME account linked for this provider
-	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', note_json: {provider}, event: 4})
+	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider}, event: 4})
 	if (mine.length) return {ok: false, outcome: 'OauthAlreadyLinked.'}//already linked; caller must prompt user to Remove first to switch accounts
 
 	//check 2: any OTHER user has THIS specific providerId linked — one provider identity, one cold3 account; queryGet filters hidden rows, so a removed claim is releasable to a new owner
-	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim; credential14 indexes the identifier path this filter rides
-	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', note_json: {provider, identifier}, event: 4})
+	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim; credential15 indexes the identifier path this filter rides
+	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', json: {provider, identifier}, event: 4})
 	if (claimed.some(r => r.user_tag != userTag)) return {ok: false, outcome: 'OauthClaimedElsewhere.'}
 
 	/*
@@ -805,15 +805,15 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 }
 export async function credentialOauthRemove({userTag, provider}) {
 	checkTag(userTag); checkAction(provider)
-	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', note_json: {provider}, event: 4})
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider}, event: 4})
 }
 export async function credentialOauthGet({userTag}) {//list this user's linked oauth credentials across providers we currently support
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 4})
 	let providerSet = new Set(oauthProviders().map(p => p.tag))
 	return rows
-		.filter(r => providerSet.has(r.note_json.provider))
-		.map(r => ({provider: r.note_json.provider, identifier: r.note_json.identifier, handle: r.note_json.handle ?? '', name: r.note_json.name ?? '', email: r.f2_text}))//an absent key is the note's blank, and callers keep getting ''
+		.filter(r => providerSet.has(r.json.provider))
+		.map(r => ({provider: r.json.provider, identifier: r.json.identifier, handle: r.json.handle ?? '', name: r.json.name ?? '', email: r.f2_text}))//an absent key is the note's blank, and callers keep getting ''
 }
 
 //                    _            _   _       _         _         
@@ -997,8 +997,8 @@ CREATE TABLE credential_table (
 
 	-- alternatively or additionally, a credential of this type may have a hash, a secret key, or something else, kept in a note:
 	hash_text  TEXT      NOT NULL,  -- the row's one meaningful hash, like Browser.'s browserHash or Password.'s password hash; '' when the type has none
-	note_json  JSONB     NOT NULL DEFAULT '{}',  -- payload bag of everything else about this credential; {} the blank, an absent key the blank of a property
-	json       JSONB     NOT NULL DEFAULT '{}'   -- note_json's replacement, the same bag under the name ledger_table uses; writes fill both while reads still take note_json, and both defaults are scaffolding for the window
+	json       JSONB     NOT NULL DEFAULT '{}',  -- payload bag of everything else about this credential; {} the blank, an absent key the blank of a property
+	note_json  JSONB     NOT NULL DEFAULT '{}'   -- json's old name, no longer read or written; it and both defaults are scaffolding that leaves with the contraction
 );
 
 CREATE INDEX credential1 ON credential_table (hide, user_tag, row_tick DESC);  -- filter by user
@@ -1008,8 +1008,8 @@ CREATE INDEX credential3 ON credential_table (hide, type_text, f1_text) WHERE f1
 CREATE INDEX credential4 ON credential_table (hide, type_text, f2_text) WHERE f2_text != '';
 
 CREATE INDEX credential13 ON credential_table (hide, type_text, hash_text) WHERE hash_text != '';  -- the Browser. signed-in lookup
-CREATE INDEX credential14 ON credential_table (hide, type_text, (note_json->>'identifier')) WHERE note_json->>'identifier' IS NOT NULL;  -- the oauth claim, spelled ->> with no casts, the spelling level2's filters generate
-CREATE INDEX credential15 ON credential_table (hide, type_text, (json->>'identifier'))      WHERE json->>'identifier'      IS NOT NULL;  -- credential14's successor on json; the claim rides it after the read-switch
+CREATE INDEX credential14 ON credential_table (hide, type_text, (note_json->>'identifier')) WHERE note_json->>'identifier' IS NOT NULL;  -- on json's old name, unused now; leaves with note_json in the contraction
+CREATE INDEX credential15 ON credential_table (hide, type_text, (json->>'identifier'))      WHERE json->>'identifier'      IS NOT NULL;  -- the oauth claim, spelled ->> with no casts, the spelling level2's filters generate
 
 ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
@@ -1027,7 +1027,7 @@ export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 
 		type_text: type,
 		event: event,
 		f0_text: f0, f1_text: f1, f2_text: f2,
-		hash_text: hash, note_json: note, json: note,//the same bag in both columns while json replaces note_json; every read still takes note_json
+		hash_text: hash, json: note,
 	}})
 }
 
