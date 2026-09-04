@@ -18,6 +18,7 @@ on the error trail: Nuxt error page
 ./site/app/stores/pageStore.js     - holds errorDetails between the plugin and error2
 ./site/app/error.vue               - Nuxt's fatal error page, deliberately minimal, no custom components
 ./site/app/pages/error2.vue        - auto-reports the error with Turnstile, then hard-replaces home
+./site/app/pages/error3.vue        - landing for an error a door caught on a browser navigation; the door logged it, this page just shows error.vue
 
 Something throws. A toss, a TypeError, a ReferenceError -- anything uncaught. If it happens on the server, doorWorker catches it, logs to Datadog, and returns a 500. On the client, $fetch sees the 500 and throws a FetchError. So a server-side toss becomes a client-side exception -- it crosses the HTTP boundary and keeps bubbling.
 

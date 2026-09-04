@@ -1250,7 +1250,7 @@ grid(async () => {//ledger: the hash margin gathers every record about one thing
 	ok(tossed)//the cell holds a hash or the blank, nothing else
 })
 
-grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, error3, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first
+grid(async () => {//envelope: the security checks in openEnvelope, which totp, otp, wallet, media, and the worker to lambda door all lean on; the test lives down here rather than beside the envelope functions because grid() itself must be defined first
 	let browserHash = random32()
 	let envelope = await sealEnvelope('TestEnvelope.', Time.minute, {message: 'hello', browserHash})
 

@@ -663,7 +663,7 @@ export async function doorLambda(method, {
 	if (from == 'Page.') handleLambdaCorsResponse(headers)
 	return {statusCode: 500, headers, body: ''}//body must be string, not null, for lambda function urls
 }
-export async function doorWorkerLite({//the third door: doorWorker with fewer requirements in the middle, for a handler where a module we host owns the request and the response, like @auth/core under /api/oauth. lighter because it pins no method, leaves the body unread, asks for no action, and runs no brownie. the hull is the same as the other doors'; what differs is what the shut does when the handler threw: rather than logging and answering 500 to a fetch that can handle one, it redirects the browser, which is mid-navigation and can only follow a redirect, to error3, where the error is logged and shown
+export async function doorWorkerLite({//the third door: doorWorker with fewer requirements in the middle, for a handler where a module we host owns the request and the response, like @auth/core under /api/oauth. lighter because it pins no method, leaves the body unread, asks for no action, and runs no brownie. the hull is the same as the other doors', and so is the log when the handler threw; what differs is the answer: rather than a 500 to a fetch that can handle one, a redirect for the browser, which is mid-navigation and can only follow one, to error3, which shows error.vue
 	workerEvent,//nitro's event, which the module reads as a web Request
 	doorHandleBelow,//your function that runs the module and governs its response
 }) {
@@ -683,7 +683,7 @@ export async function doorWorkerLite({//the third door: doorWorker with fewer re
 
 			return await doorWorkerLiteShut({door, response, error})//the module's response, or the redirect to error3 when something threw
 
-		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }//sealing the error3 envelope itself failed, like keys never decrypted; tell staff, and if that throws too, e3 and the 500 below
+		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }
 	} catch (e3) { console.error('[OUTER]', e3) }
 	setResponseStatus(workerEvent, 500); return null
 }
@@ -881,11 +881,11 @@ async function doorWorkerLiteShut({door, response, error}) {
 	door.error = error
 
 	let r
-	if (error) {//our own code or the module threw: a database write below, a key that didn't decrypt, the module crashing; ours or our infra, not the provider. nothing logs here, because error3 is the one place that does, so this door and the handler's own governance of the module's error redirect reach it identically
-		let envelope = await sealEnvelope('Error3.', Limit.handoff, {error})//the error rides sealed in the query, so the page can open it and nothing on the way can read or forge it
+	if (error) {//our own code or the module threw: a database write below, a key that didn't decrypt, the module crashing; ours or our infra, not the provider
+		logAlert('door lite shut', {method: door.method, path: door.workerEvent.path, response, error})//tell staff about it
 		r = new Response(null, {//a web Response, the shape the module's own answers take, so h3 sends it the same way
 			status: 303,//the redirect built for after a POST: the browser always follows it with a GET and never resends the body, where a 302 leaves the method to the browser and a 307 keeps the POST on purpose
-			headers: {location: `/error3?envelope=${envelope}`},//send the browser to error3, which opens the envelope, logs the error, and blows up error.vue
+			headers: {location: '/error3'},//the browser is mid-navigation and can only follow a redirect, so send it to the landing page that shows error.vue; the error is in the log above, not in the url
 		})
 	} else {
 		r = response//the module's own response, passed through untouched

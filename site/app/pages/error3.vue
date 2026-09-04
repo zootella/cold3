@@ -3,17 +3,16 @@
 /*
 on the error trail: error3 landing page
 
-a catcher (today: the oauth endpoint) sealed an error that arrived outside our normal page/fetchWorker flow into an
-Error3. envelope and redirected the browser here. we post it to /error3, whose toss logs it to Datadog and blows up
-error.vue — surfacing it the same way every other fatal error is. (error3.js has the full picture.)
+a door caught an error on a request that arrived as a browser navigation, with no page and no fetchWorker in the loop to
+reach errorPlugin's hooks. today that door is doorWorkerLite under the oauth endpoint. the door logged the error and
+redirected the browser here, and this page's one job is to show error.vue the way every other fatal error does.
+showError sets the error state without firing the plugin's hooks, so nothing logs a second time; the door's log is the record
 */
 
-const route = useRoute()
-
-let envelope = route.query.envelope
-checkText(envelope)
-
-await fetchWorker('/error3', 'Error3.', {envelope})
+showError({//put the response into the error.vue state
+	statusCode: 500,//the request the browser was on failed on our side
+	statusMessage: 'error3',//names the trail stop, not the error, which is in the door's log
+})
 
 </script>
 <template>
