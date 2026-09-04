@@ -89,7 +89,7 @@ export async function nodeDynamicImport() {//modules for calls from lambda and l
 	}
 	return _node
 }
-export async function asyncHooksDynamicImport() {//node:async_hooks for the door beneath the door in level2. The rule above still stands, the worker doesn't use node modules, and this is the one exception: workerd provides AsyncLocalStorage natively under nodejs_compat rather than as a polyfill shim, and it was the first Node api Cloudflare shipped that way, in 2023, before Buffer or EventEmitter, because it can't be polyfilled safely and they wanted it themselves. Node provides it on the lambda; the page never opens a door and never calls this
+export async function asyncHooksDynamicImport() {//node:async_hooks for level2's door store, which lets code below a door get the door without being handed it. The rule above still stands, the worker doesn't use node modules, and this is the one exception: workerd provides AsyncLocalStorage natively under nodejs_compat rather than as a polyfill shim, and it was the first Node api Cloudflare shipped that way, in 2023, before Buffer or EventEmitter, because it can't be polyfilled safely and they wanted it themselves. Node provides it on the lambda; the page never opens a door and never calls this
 	if (!_asyncHooks) {
 		let [asyncHooks] = await Promise.all([
 			import(/* @vite-ignore */ 'node:async_hooks'),

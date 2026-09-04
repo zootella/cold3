@@ -35,7 +35,7 @@ credentialCloseAccount,
 } from './level3.js'
 
 let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
-const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7'}//the door grid tests run beneath, holding the two cells ledger writes read from a door, so they find the request they belong to
+const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7'}//the door grid tests run below, holding the two cells ledger writes read from a door, so they find the request they belong to
 function grid(f) { _grid.push(f) }
 const browserHash52 = 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ'//a well-formed browser hash for tests whose function contracts require one
 
@@ -1167,7 +1167,7 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 	await ledgerAdd({action: 'QuickExample.', browserHash})//only the action and browser are required; the rest defaults to blanks
 	let quick = (await queryGet('ledger_table', {action_text: 'QuickExample.'}))[0]
 	ok(quick.user_tag_text == '' && quick.hash_text == '' && makeText(quick.json) == '{}')
-	ok(quick.ip_text == gridDoor.ip && quick.origin_text == gridDoor.origin)//never blank beneath a door, because the door always knows them
+	ok(quick.ip_text == gridDoor.ip && quick.origin_text == gridDoor.origin)//never blank below a door, because the door always knows them
 	ok(quick.event_text == '' && quick.provider_text == '')//the verb and the third party are blank when the action says it all
 	ok(quick.wrapper_hash.length == 52)//the version of the software that wrote the row rides along
 
@@ -1487,7 +1487,7 @@ export async function runDatabaseTests() {
 
 	await setupTestDatabase()//stand up PGlite and park it in level2 before any test calls getDatabase()
 
-	return await doorAsyncLocalStorageRun(gridDoor, () => runTests(_grid))//every grid test runs with the test door retrievable beneath it, the way request code does
+	return await doorAsyncLocalStorageRun(gridDoor, () => runTests(_grid))//every grid test runs with the test door retrievable below it, the way request code does
 }
 async function setupTestDatabase() {//build ephemeral in-memory PostgreSQL, wrap it in the supafake adapter, and register the package so getDatabase() returns it in simulation mode
 	let {pglite} = await pgliteDynamicImport()

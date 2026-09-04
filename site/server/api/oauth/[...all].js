@@ -17,19 +17,19 @@ import githubProvider  from '@auth/core/providers/github'
 import discordProvider from '@auth/core/providers/discord'
 //import twitchProvider  from '@auth/core/providers/twitch'
 //import redditProvider  from '@auth/core/providers/reddit'//twitch and reddit, ready to go: uncomment these and add them to the providers list below once we have their keys — commented for now so the bundler doesn't warn about unused imports
-import {toWebRequest} from 'h3'//converts the nitro event to a web Request; h3 also auto-sends a returned web Response, so the handler is just: return Auth(toWebRequest(event), authOptions)
+import {toWebRequest} from 'h3'//converts the nitro event to a web Request; h3 also auto-sends a returned web Response, so the handler is just: return Auth(toWebRequest(workerEvent), authOptions)
 import {
 makePlain, originApex, toTextOrBlank,
 credentialBrowserGet, credentialOauthChallenge, credentialOauthParse, credentialOauthSet,
 ledgerAdd, oauthProviders,
-doorFramework,
+doorWorkerLite,
 } from 'icarus'//Key, toss, log, look, logAudit are auto-globalized in site/server by icarusServerPlugin; these are not, so import them (same pattern as credential.js)
 
-export default defineEventHandler(async (workerEvent) => {//every url under /api/oauth/* arrives here, GET and POST alike; the framework door decrypts keys, opens the door, hashes the browser tag, and forwards anything thrown to error3, so this file is about oauth and nothing else
-	return await doorFramework({workerEvent, doorHandleBelow})
+export default defineEventHandler(async (workerEvent) => {//every url under /api/oauth/* arrives here, GET and POST alike; the lite door decrypts keys, opens the door, hashes the browser tag, and forwards anything thrown to error3, so this file is about oauth and nothing else
+	return await doorWorkerLite({workerEvent, doorHandleBelow})
 })
 
-async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow itself, beneath the framework door: Auth.js routes on the path internally (/api/oauth/signin/discord, /api/oauth/callback/discord, ...)
+async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow itself, below the lite door: Auth.js routes on the path internally (/api/oauth/signin/discord, /api/oauth/callback/discord, ...)
 
 	let authError//@auth/core catches its in-flow errors and only hands us a normalized type via the ?error= redirect below — but its logger.error fires with the real error first, so we stash it here to report the underlying cause too
 	let authOptions = {
@@ -92,7 +92,7 @@ async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow its
 	//Auth.js hands a cancel or an error back as a redirect to our pages.* carrying ?error=<type>. read it here (keys are decrypted) and sort it by governance: could only WE have caused this, or could the provider have?
 	let errorType = new URL(response.headers.get('location') || '/', originApex()).searchParams.get('error')
 	if (errorType == 'Configuration') {//our bug to fix. Configuration is also @auth/core's fallback bucket for any non-client-safe error (a bad secret, a malformed provider, our own signIn callback throwing), so it catches the unexpected too. (add more types here if auth.js surfaces other our-fault ones)
-		//@auth/core catches its in-flow errors and hands them back as this ?error= redirect rather than throwing, so the door never sees them on its own. bridge them: toss here, and the door above forwards it to error3 Error3. → error3.vue → Datadog + error.vue, the one place that does
+		//@auth/core catches its in-flow errors and hands them back as this ?error= redirect rather than throwing, so the door never sees them on its own. bridge them: toss here, and the door above seals Error3. → error3.vue → Datadog + error.vue, the one place that does
 		toss('oauth', {errorType, path: workerEvent.path, error: authError})
 	} else if (errorType) {//a provider changing things on us (loves us monday, hates us tuesday), or a user cancelling at the provider — not ours to fix
 		logAudit('oauth sad path', {errorType, path: workerEvent.path, error: authError})//don't crash the site; record the provider interaction for the team to analyse — and the underlying error disambiguates the shared OAuthCallbackError type (a user declining vs our own misconfig, like a wrong secret or unregistered redirect uri)

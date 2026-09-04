@@ -584,9 +584,9 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	return await doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
 
-//copypasta for a handler we host for a framework that owns the request and the response, like the @auth/core callback:
+//copypasta for a handler where a module we host owns the request and the response, like @auth/core running the oauth flow:
 export default defineEventHandler(async (workerEvent) => {
-	return await doorFramework({workerEvent, doorHandleBelow})
+	return await doorWorkerLite({workerEvent, doorHandleBelow})
 })
 
 then write your code in doorHandleBelow() beneath
@@ -607,7 +607,7 @@ export async function doorWorker(method, {
 			let browserHash = await hashText(checkTag(door.workerEvent.context.browserTag))//the browser tag must always be present; toss if not a valid tag; valid tag passes through; hash to prevent worry of leaking back to untrusted page
 			door.brownie = await openBrownie({envelope: door.body?.brownie, browserHash})//if the page sent a brownie, pin the opened letter for request code to read and change in place; the door never matches users--request code touches only notes whose userTag matches the signed-in user it resolved from the database
 			let brownieArrived = door.brownie ? makeText(door.brownie.notes) : ''//snapshot the notes as request code first sees them, so sealBrownie below can tell an untouched letter from a changed one
-			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({//run the handler with the door retrievable beneath it, so getDoor() answers anywhere below, however deep
+			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({//run the handler with the door retrievable below it, so getDoor() answers anywhere below, however deep, and even through awaits! 🪄🎩
 				door,//give our handler the door object, and convenient shortcut access to:
 				query: door.query,//query string from a GET request
 				body: door.body,//content body from a POST
@@ -644,7 +644,7 @@ export async function doorLambda(method, {
 
 			door = await doorLambdaOpen({from, method, lambdaEvent, lambdaContext})
 			await doorLambdaCheck({door, actions})
-			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({//the door retrievable beneath the handler, the same as on the worker
+			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({
 				door,
 				query: door.query,//lambda GET not in use, but here for the future, ttd november2025
 				body: door.body,
@@ -663,27 +663,27 @@ export async function doorLambda(method, {
 	if (from == 'Page.') handleLambdaCorsResponse(headers)
 	return {statusCode: 500, headers, body: ''}//body must be string, not null, for lambda function urls
 }
-export async function doorFramework({
-	workerEvent,//nitro's event, which the framework reads as a web Request
-	doorHandleBelow,//your function that runs the framework's handler and governs its response
-}) {//the third door, for a handler we host for a framework that owns the request and the response, like the @auth/core callback under /api/oauth: GET and POST both arrive, the body is the framework's to parse, and the response is the framework's, mostly redirects. the door decrypts keys, opens the same start of a door doorWorker does, runs the handler beneath it, and forwards anything thrown to error3
+export async function doorWorkerLite({//the third door: doorWorker with fewer requirements in the middle, for a handler where a module we host owns the request and the response, like @auth/core under /api/oauth. lighter because it pins no method, leaves the body unread, asks for no action, and runs no brownie. the hull is the same as the other doors'; what differs is what the shut does when the handler threw: rather than logging and answering 500 to a fetch that can handle one, it redirects the browser, which is mid-navigation and can only follow a redirect, to error3, where the error is logged and shown
+	workerEvent,//nitro's event, which the module reads as a web Request
+	doorHandleBelow,//your function that runs the module and governs its response
+}) {
 	try {
 		let door = {}, response, error
 		try {
 
-			door = await doorFrameworkOpen({workerEvent})
-			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({//the door retrievable beneath the handler, the same as the other two doors
+			door = await doorWorkerLiteOpen({workerEvent})//keys decrypted, the door started from the headers, the browser tag hashed; GET and POST both arrive, and the body stays the module's to parse
+			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({
 				door,
-				workerEvent,//the framework wants the raw event, to read the request its own way
+				workerEvent,//the module wants the raw event, to read the request its own way
 				browserHash: door.browserHash,
 			}))
 
 		} catch (e1) { error = e1 }
 		try {
 
-			return await doorFrameworkShut({door, response, error})//the framework's response, or the redirect to error3 when something threw
+			return await doorWorkerLiteShut({door, response, error})//the module's response, or the redirect to error3 when something threw
 
-		} catch (e2) { console.error('[OUTER] framework door shut', e2, error) }//sealing the error3 envelope itself failed, like keys never decrypted; last resort below
+		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }//sealing the error3 envelope itself failed, like keys never decrypted; tell staff, and if that throws too, e3 and the 500 below
 	} catch (e3) { console.error('[OUTER]', e3) }
 	setResponseStatus(workerEvent, 500); return null
 }
@@ -698,13 +698,13 @@ but should still be findable in the amazon or cloudflare dashboard
 */
 
 /*
-The door beneath the door
+Getting the door from code below it
 
-Everything a request knows about itself is on the door, and doorWorker and doorLambda hand the door to the handler beneath them. A ledger write happens several calls further down, in code with no business taking a request as a parameter, so the door has to reach it another way. Not a module variable: one isolate on Cloudflare interleaves requests at every await, and request A would read request B's door whenever they overlap. AsyncLocalStorage is the mechanism built for this: Node's request-scoped context, in Node since version 12, native in workerd under the nodejs_compat flag the worker turns on, and implemented by every serverless JavaScript runtime that matters, with a language proposal following it. run(door, f) sets door as the store's current value, calls f, and stamps every continuation f creates with that value, so when an await resumes, even after other requests have run on the same isolate, the runtime reinstates this request's door before the resumed code asks for it. The door follows the chain of continuations rooted in f, and only that chain. It costs a reference per continuation and promises nothing about lifetime.
+Everything a request knows about itself is on the door, and each of the three doors hands the door to the handler below it. A ledger write happens several calls further down, in code with no business taking a request as a parameter, so the door has to reach it another way. Not a module variable: one isolate on Cloudflare interleaves requests at every await, and request A would read request B's door whenever they overlap. AsyncLocalStorage is the mechanism built for this: Node's request-scoped context, in Node since version 12, native in workerd under the nodejs_compat flag the worker turns on, and implemented by every serverless JavaScript runtime that matters, with a language proposal following it. run(door, f) sets door as the store's current value, calls f, and stamps every continuation f creates with that value, so when an await resumes, even after other requests have run on the same isolate, the runtime reinstates this request's door before the resumed code asks for it. The door follows the chain of continuations rooted in f, and only that chain. It costs a reference per continuation and promises nothing about lifetime.
 
-The api is two ends. Each door invokes its handler through doorAsyncLocalStorageRun, the single writer. Code that needs the request calls getDoor, or checkDoor where running without one would be a bug. Outside any door there is no store: a script, a cron, a test without the grid door, a handler we host for a framework that doesn't wear doorFramework. checkDoor tosses there on purpose, because a ledger row written with no request behind it is a mistake to fix in code, and the grid runner opens a test door around its tests.
+The api is two ends. Each door invokes its handler through doorAsyncLocalStorageRun, the single writer. Code that needs the request calls getDoor, or checkDoor where running without one would be a bug. Outside any door there is no store: a script, a cron, a test without the grid door, a handler that hosts a module without wearing doorWorkerLite. checkDoor tosses there on purpose, because a ledger row written with no request behind it is a mistake to fix in code, and the grid runner opens a test door around its tests.
 */
-let _doorAsyncLocalStorage//the one AsyncLocalStorage instance, holding the door for everything running beneath one; unset until the first door runs on this isolate
+let _doorAsyncLocalStorage//the one AsyncLocalStorage instance, holding the door for everything running below one; unset until the first door runs on this isolate
 async function _doorAsyncLocalStorageLoad() {//the instance, importing and constructing it the first time
 	if (!_doorAsyncLocalStorage) {//the first door to run on this isolate pays for the import; every door after finds it here
 		let {asyncHooks} = await asyncHooksDynamicImport()//level1 keeps every dynamic import in one place; this one is loaded here, the first time a door runs, never by the page
@@ -712,7 +712,7 @@ async function _doorAsyncLocalStorageLoad() {//the instance, importing and const
 	}
 	return _doorAsyncLocalStorage
 }
-export async function doorAsyncLocalStorageRun(door, f) {//call f now, with door retrievable from getDoor() anywhere beneath f, however many calls deep and across every await
+export async function doorAsyncLocalStorageRun(door, f) {//call f now, with door retrievable from getDoor() anywhere below f, however many calls deep and across every await
 	let storage = await _doorAsyncLocalStorageLoad()
 	return await storage.run(door, f)//run sets door as the current value, calls f, and stamps every continuation f creates with door; when f settles, the current value reverts to what it was, so nothing outside sees the door
 }
@@ -722,7 +722,7 @@ export function getDoor() {//the door above the code asking, or false when nothi
 }
 export function checkDoor() { let door = getDoor(); if (!door) toss('no door', {door}); return door }//getDoor for code that would be a bug to run without one, like a ledger write
 
-function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker request has from its headers alone: the event, the origin, and the ip; doorWorkerOpen and doorFrameworkOpen both begin here
+function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker request has from its headers alone: the event, the origin, and the ip; doorWorkerOpen and doorWorkerLiteOpen both begin here
 	let door = {}
 	door.workerEvent = workerEvent//save everything they gave us about the request
 	door.headers = getWorkerHeaders(workerEvent)
@@ -731,7 +731,7 @@ function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker req
 	return door
 }
 
-function _doorWorkerSources(workerEvent) {//the places a worker's environment variables may be, for decryptKeys; doorWorkerOpen and doorFrameworkOpen both gather them here
+function _doorWorkerSources(workerEvent) {//the places a worker's environment variables may be, for decryptKeys; doorWorkerOpen and doorWorkerLiteOpen both gather them here
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
 		sources.push({note: 'w10', environment: process.env})
@@ -809,15 +809,15 @@ async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 	} else { toss('method not supported', {door}) }
 	return door
 }
-async function doorFrameworkOpen({workerEvent}) {
-	await decryptKeys('framework', _doorWorkerSources(workerEvent))//so Key() works below and the credential functions can reach the database; self-guards, so it's a no-op when another door already decrypted in this isolate
+async function doorWorkerLiteOpen({workerEvent}) {
+	await decryptKeys('lite', _doorWorkerSources(workerEvent))//so Key() works below and the credential functions can reach the database; self-guards, so it's a no-op when another door already decrypted in this isolate
 
 	let door = _doorWorkerHeaders({workerEvent})//the event, headers, origin, and ip, the same start as doorWorkerOpen
-	door.method = getWorkerMethod(workerEvent)//GET for the provider's callback and the flow's redirects, POST for the form that starts it; both are the framework's to route
+	door.method = getWorkerMethod(workerEvent)//GET for the provider's callback and the flow's redirects, POST for the form that starts it; both are the module's to route
 	checkForwardedSecure(door.headers)//https, the same check every worker post passes
-	if (door.method == 'POST') checkOriginOmittedOrValid(door.headers)//a post comes from our own origin or from nowhere; this is the same-origin check the framework's own csrf check is skipped in favor of
+	if (door.method == 'POST') checkOriginOmittedOrValid(door.headers)//a post must come from our own origin or carry no origin at all; this is the same-origin check we rely on in place of the module's csrf check, which the handler skips
 	door.browserHash = await hashText(checkTag(workerEvent.context.browserTag))//the middleware tags every request, so the tag is always here; hash it at once, and the handler never sees the tag itself
-	return door//the body stays unread: the framework parses the request itself, form post and all
+	return door//the body stays unread: the module parses the request itself, form post and all
 }
 
 async function doorWorkerCheck({door, actions, useTurnstile}) {
@@ -876,16 +876,19 @@ async function doorLambdaShut({door, response, error}) {
 	await awaitDoorPromises()
 	return r
 }
-async function doorFrameworkShut({door, response, error}) {
+async function doorWorkerLiteShut({door, response, error}) {
 	door.response = response
 	door.error = error
 
 	let r
-	if (error) {//our own code or the framework threw: a database write beneath, a key that didn't decrypt, the framework crashing; ours or our infra, not the provider. nothing logs here, because error3 is the one place that does, so this door and the handler's own governance of the framework's error redirect reach it identically
-		let envelope = await sealEnvelope('Error3.', Limit.handoff, {error})
-		r = new Response(null, {status: 303, headers: {location: `/error3?envelope=${envelope}`}})//send the browser to error3, which logs the error and blows up error.vue
+	if (error) {//our own code or the module threw: a database write below, a key that didn't decrypt, the module crashing; ours or our infra, not the provider. nothing logs here, because error3 is the one place that does, so this door and the handler's own governance of the module's error redirect reach it identically
+		let envelope = await sealEnvelope('Error3.', Limit.handoff, {error})//the error rides sealed in the query, so the page can open it and nothing on the way can read or forge it
+		r = new Response(null, {//a web Response, the shape the module's own answers take, so h3 sends it the same way
+			status: 303,//the redirect built for after a POST: the browser always follows it with a GET and never resends the body, where a 302 leaves the method to the browser and a 307 keeps the POST on purpose
+			headers: {location: `/error3?envelope=${envelope}`},//send the browser to error3, which opens the envelope, logs the error, and blows up error.vue
+		})
 	} else {
-		r = response//the framework's own response, passed through untouched
+		r = response//the module's own response, passed through untouched
 	}
 	await awaitDoorPromises()
 	return r
