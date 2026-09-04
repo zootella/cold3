@@ -1,6 +1,6 @@
 
 import {
-headerGetOne, credentialBrowserGet, recordHit, recordDelay,
+headerGetOne, isPlain, credentialBrowserGet, recordHit, recordDelay,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {
@@ -14,7 +14,7 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 			details:  body.details,//error details the untrusted page is reporting; the point of all of this
 		},
 		browser: {//source (2) browser: information the browser is telling us; more trustworthy
-			agent: headerGetOne(headers, 'user-agent'),
+			agent: door.browser.agent,//the door read the header
 			browserHash,
 			user: await credentialBrowserGet({browserHash}),//look up what user is signed in to this browser
 		},
@@ -31,10 +31,10 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 
 	} else if (action == 'Hello.') {
 
-		await recordHit({//the origin, ip, and geography ride on the door above, so the hit doesn't name them
+		await recordHit({//the origin, ip, geography, and agent ride on the door above, so the hit names only what the page told us
 			browserHash,
 			userTag: toTextOrBlank(r.browser.user?.userTag),
-			browser: {agent: r.browser.agent, ...r.page.graphics},//agent is from the browser, graphics renderer and vendor is from the page
+			graphics: isPlain(r.page.graphics) ? r.page.graphics : {},//the renderer and vendor, the page's word; the body is untrusted, and a post without them records a hit that knows less rather than failing
 		})
 
 		await recordDelay({

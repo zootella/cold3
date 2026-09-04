@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep4.1805.28672
+  generated: 2026sep4.1907.38748
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -209,8 +209,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1126.0 on 2026sep03 0m old
-      latest: 3.1126.0 on 2026sep03 0m old
+      current: 3.1127.0 on 2026sep04 0m old
+      latest: 3.1127.0 on 2026sep04 0m old
     downloads:
       weekly: 34,442,501
       on: 2026aug18.1523.45867
@@ -222,8 +222,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1126.0 on 2026sep03 0m old
-      latest: 3.1126.0 on 2026sep03 0m old
+      current: 3.1127.0 on 2026sep04 0m old
+      latest: 3.1127.0 on 2026sep04 0m old
     downloads:
       weekly: 3,186,203
       on: 2026aug18.1523.45867
@@ -235,8 +235,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1126.0 on 2026sep03 0m old
-      latest: 3.1126.0 on 2026sep03 0m old
+      current: 3.1127.0 on 2026sep04 0m old
+      latest: 3.1127.0 on 2026sep04 0m old
     downloads:
       weekly: 3,078,359
       on: 2026aug18.1523.45867
@@ -248,8 +248,8 @@ modules:
     versions:
       declared: ^3.1008.0 on 2026mar12 5m old
       installed: 3.1076.0 on 2026jun29 2m old
-      current: 3.1126.0 on 2026sep03 0m old
-      latest: 3.1126.0 on 2026sep03 0m old
+      current: 3.1127.0 on 2026sep04 0m old
+      latest: 3.1127.0 on 2026sep04 0m old
     downloads:
       weekly: 16,337,605
       on: 2026aug18.1523.45867
@@ -808,8 +808,8 @@ modules:
     versions:
       declared: ^14.5.0 on 2026feb24 6m old
       installed: 14.7.4 on 2026jun23 2m old
-      current: 14.8.0 on 2026aug07 0m old
-      latest: 14.8.0 on 2026aug07 0m old
+      current: 14.8.1 on 2026sep04 0m old
+      latest: 14.8.1 on 2026sep04 0m old
     downloads:
       weekly: 609,265
       on: 2026aug18.1523.45867

@@ -1132,11 +1132,11 @@ Provenance: who says so, for every cell in a ledger row
 
 Several parties speak in every row here, and which cell a fact sits in fixes who said it. A reader who knows the ladder below can look at any key and value, know where it came from, and know who could have faked it. The ladder runs from the weakest word to the strongest.
 
-The page speaks weakest. Script running in the user's browser came from our bundle, but an extension or an injected script can change anything it reports, so whatever a page sends in a request body, like the graphics renderer and vendor a Hit. row carries in its browser bag, is the page's claim and nothing more.
+The page speaks weakest. Script running in the user's browser came from our bundle, but an extension or an injected script can change anything it reports, so whatever a page sends in a request body, like the graphics renderer and vendor a Hit. row carries in client_json's browser, is the page's claim and nothing more.
 
-The browser speaks more strongly. The browser tag rides in a first-party cookie marked HttpOnly, Secure, and SameSite=Lax, which page script can neither read nor change. The middleware issues it, the browser attaches it to every request on its own, and the door hashes it one way into browser_hash, so the tag itself never reaches a table. A row's browser_hash says which cookie jar was here, and only someone holding that jar could have produced it.
+The browser speaks more strongly. Its user-agent string, the agent in client_json's browser, is the browser's own account of itself, which a user can change but page script can't. The browser tag rides in a first-party cookie marked HttpOnly, Secure, and SameSite=Lax, which page script can neither read nor change. The middleware issues it, the browser attaches it to every request on its own, and the door hashes it one way into browser_hash, so the tag itself never reaches a table. A row's browser_hash says which cookie jar was here, and only someone holding that jar could have produced it.
 
-Cloudflare speaks more strongly still, from outside the request's control. ip_text is the cf-connecting-ip header Cloudflare writes on the way in, overwriting anything the client sent, and the geography a Hit. row carries is what Cloudflare derived from that address at that moment. A user can choose a network or a vpn, but neither page nor browser can name a different address. origin_text comes from the host and forwarded-protocol headers Cloudflare routes on. Without Cloudflare, as in local development, ip and geography are blank, and blank means exactly that; origin still assembles from the local host.
+Cloudflare speaks more strongly still, from outside the request's control. ip_text is the cf-connecting-ip header Cloudflare writes on the way in, overwriting anything the client sent, and the geography every row carries in client_json is what Cloudflare derived from that address at that moment. A user can choose a network or a vpn, but neither page nor browser can name a different address. origin_text comes from the host and forwarded-protocol headers Cloudflare routes on. Without Cloudflare, as in local development, ip and geography are blank, and blank means exactly that; origin still assembles from the local host.
 
 Our own code speaks last. wrapper_hash is the build that wrote the row, row_tick is the worker's clock, user_tag_text is our lookup of who was signed in at that browser_hash, and action_text, event_text, provider_text, and hash_text are what our code says happened. Inside json a row may also carry a third party's word, like the response Twilio returned, kept verbatim as what they said rather than what we concluded.
 
@@ -1154,7 +1154,7 @@ CREATE TABLE ledger_table (
 	wrapper_hash   CHAR(52)  NOT NULL,  -- the build of our software that wrote the row
 	ip_text        TEXT      NOT NULL,  -- the ip address cloudflare saw, or blank without cloudflare
 	origin_text    TEXT      NOT NULL,  -- the origin like "http://localhost:3000" or "https://example.com"
-	geography_json JSONB     NOT NULL DEFAULT '{}',  -- where cloudflare placed the ip: country, and city, region, and postal when it knows them; {} without cloudflare. the default is scaffolding until the deploy fills the cell
+	client_json    JSONB     NOT NULL DEFAULT '{}',  -- what we're told about the client beyond its ip and origin: geography, where cloudflare placed the ip, and browser, the agent string, plus for a hit what the page said about its graphics. the default is scaffolding until the deploy fills the cell
 	browser_hash   CHAR(52)  NOT NULL,  -- the browser that was here, by the hash of its tag
 	user_tag_text  TEXT      NOT NULL,  -- the user signed in at that browser, or blank if none
 
@@ -1196,16 +1196,17 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		userTag = '',//the user, or blank if nobody's identified
 		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
 		note = {},//everything else about what happened, kept as data a later reader can query and read back; rides in the json column
+		browser = door.browser,//the browser's account of itself, the door's agent string unless the record extends it, as a hit does with what the page said about its graphics
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
-	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
-	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography)//what the ledger requires of the door above it: a worker door always has all three, a lambda door has none, and a test door is whatever the test made
+	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note); checkPlain(browser)
+	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography); checkPlain(door.browser)//what the ledger requires of the door above it: a worker door always has all four, a lambda door has none, and a test door is whatever the test made
 	return {
 		row_tick: now,
 		wrapper_hash: wrapper.hash,
 		ip_text: door.ip,
 		origin_text: door.origin,
-		geography_json: door.geography,
+		client_json: {geography: door.geography, browser},//the two objects about the client, in the same shape on every row
 		browser_hash: browserHash,
 		user_tag_text: userTag,
 		action_text: action,
@@ -1216,17 +1217,18 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 	}
 }
 
-export async function recordHit({browserHash, userTag, browser}) {//record a visit as a Hit. row, once per browser per hour
-	checkHash(browserHash); checkTagOrBlank(userTag); checkPlain(browser)
+export async function recordHit({browserHash, userTag, graphics}) {//record a visit as a Hit. row, once per browser per hour; graphics is what the page said about its renderer and vendor, the one thing about a visit only the page knows
+	checkHash(browserHash); checkTagOrBlank(userTag); checkPlain(graphics)
 	checkHash(wrapper.hash)//the hash below folds it in, so it's checked here before use as well as in the row
-	let door = getDoor()//the origin, ip, and geography come from the request above, not from the caller
+	let door = getDoor()//the origin, ip, geography, and agent come from the request above, not from the caller
 
 	let now = Now()
+	let browser = {...door.browser, ...graphics}//the browser's account of itself, plus the page's account of the browser's graphics
 	let hash = await hashObject({//what makes two hits the same visit, named input by input, so a cell added to the row later can't quietly redefine a duplicate
 		hour: roundDown(now, Time.hour),//the start of the hour this hit is in; the exact tick stays out, so the hour's repeats hash alike
 		origin: door.origin, browserHash, userTag, ip: door.ip, geography: door.geography, browser, wrapper: wrapper.hash,
 	})
-	let row = _ledgerRow({action: 'Hit.', browserHash, userTag, hash, note: {browser}}, now)//geography rides in its own column now; the browser's word stays in json
+	let row = _ledgerRow({action: 'Hit.', browserHash, userTag, hash, browser}, now)//everything a hit knows has a column, so its json stays {}
 	await queryAddRowIfHashUnique({table: 'ledger_table', row})//ledger7 refuses the row when this hour already holds the visit, and the helper takes that quietly
 }
 

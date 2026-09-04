@@ -725,13 +725,14 @@ export function getDoor() {//the door above the code asking. tosses rather than 
 	return door
 }
 
-function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker request has from its headers alone: the event, the origin, the ip, and the geography; doorWorkerOpen and doorWorkerLiteOpen both begin here
+function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker request has from its headers alone: the event, the origin, the ip, the geography, and the browser; doorWorkerOpen and doorWorkerLiteOpen both begin here
 	let door = {}
 	door.workerEvent = workerEvent//save everything they gave us about the request
 	door.headers = getWorkerHeaders(workerEvent)
 	door.origin = headerOrigin({headers: door.headers})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
 	door.ip = toTextOrBlank(headerGetOne(door.headers, 'cf-connecting-ip'))//the address cloudflare saw, or blank without cloudflare, like local development
 	door.geography = headerGeography({headers: door.headers})//and where cloudflare placed it, or {} without cloudflare
+	door.browser = headerBrowser({headers: door.headers})//the browser's own account of itself, its agent string
 	return door
 }
 
@@ -1029,6 +1030,15 @@ test(() => {
 	let g = headerGeography({headers: {host: 'cold3.cc', 'cf-ipcountry': 'US', 'cf-ipcity': 'Akron', 'cf-region-code': 'OH', 'cf-postal-code': '44301'}})
 	ok(g.country == 'US' && g.city == 'Akron' && g.region == 'OH' && g.postal == '44301')
 	ok(!('city' in headerGeography({headers: {host: 'cold3.cc', 'cf-ipcountry': 'US'}})))//only the country, when that's all cloudflare knew
+})
+function headerBrowser({headers}) {//the browser's account of itself from the headers: its user-agent string, or {} on the rare request that sends none
+	let browser = {}
+	let agent = headerGetOne(headers, 'user-agent'); if (agent) browser.agent = agent
+	return browser
+}
+test(() => {
+	ok(headerBrowser({headers: {host: 'cold3.cc', 'user-agent': 'Mozilla/5.0'}}).agent == 'Mozilla/5.0')
+	ok(makeText(headerBrowser({headers: {host: 'cold3.cc'}})) == '{}')//no agent header, no claim
 })
 
 /*
