@@ -2,7 +2,7 @@
 
 Melting hit_table into ledger_table, so one table and one ordering by tick tell the whole story of what a person at a browser did.
 
-**Where we are, September 3, 2026.** The first four tasks are done, every contraction pushed and the drift check clean, and the fifth is at its first station, with a detour agreed before it lands. The working tree holds the door in AsyncLocalStorage with its essay, the ledger reading ip and origin from the door, the call sites without their request parameters, the oauth membrane's lite door, and the grid runner's test door. The review of that diff turned up the third door, below, which replaces the lite door, so the two ship together as one change. The steps, in order:
+**Where we are, September 3, 2026.** The first four tasks are done, every contraction pushed and the drift check clean, and the fifth is at its first station, with a detour agreed before it lands. The working tree holds the door in AsyncLocalStorage with its essay, the ledger reading ip and origin from the door, the call sites without their request parameters, the oauth membrane's lite door, and the grid runner's test door. The review of that diff turned up the third door, below, which replaces the lite door, so the two ship together as one change. Steps one and two are done: the store is committed, and the third door is coded in the working tree, uncommitted. The steps, in order:
 
 1. Commit the store as it stands, unreviewed and unsmoked, so the third door builds on a snapshot.
 2. Build the third door: the oauth handler's own door machinery moves into level2 beside doorWorker and doorLambda, and doorLite goes away. Commit again, unreviewed.

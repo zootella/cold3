@@ -584,6 +584,11 @@ export const handler = async (lambdaEvent, lambdaContext) => {
 	return await doorLambda('POST', {lambdaEvent, lambdaContext, doorHandleBelow})
 }
 
+//copypasta for a handler we host for a framework that owns the request and the response, like the @auth/core callback:
+export default defineEventHandler(async (workerEvent) => {
+	return await doorFramework({workerEvent, doorHandleBelow})
+})
+
 then write your code in doorHandleBelow() beneath
 */
 
@@ -658,6 +663,31 @@ export async function doorLambda(method, {
 	if (from == 'Page.') handleLambdaCorsResponse(headers)
 	return {statusCode: 500, headers, body: ''}//body must be string, not null, for lambda function urls
 }
+export async function doorFramework({
+	workerEvent,//nitro's event, which the framework reads as a web Request
+	doorHandleBelow,//your function that runs the framework's handler and governs its response
+}) {//the third door, for a handler we host for a framework that owns the request and the response, like the @auth/core callback under /api/oauth: GET and POST both arrive, the body is the framework's to parse, and the response is the framework's, mostly redirects. the door decrypts keys, opens the same start of a door doorWorker does, runs the handler beneath it, and forwards anything thrown to error3
+	try {
+		let door = {}, response, error
+		try {
+
+			door = await doorFrameworkOpen({workerEvent})
+			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({//the door retrievable beneath the handler, the same as the other two doors
+				door,
+				workerEvent,//the framework wants the raw event, to read the request its own way
+				browserHash: door.browserHash,
+			}))
+
+		} catch (e1) { error = e1 }
+		try {
+
+			return await doorFrameworkShut({door, response, error})//the framework's response, or the redirect to error3 when something threw
+
+		} catch (e2) { console.error('[OUTER] framework door shut', e2, error) }//sealing the error3 envelope itself failed, like keys never decrypted; last resort below
+	} catch (e3) { console.error('[OUTER]', e3) }
+	setResponseStatus(workerEvent, 500); return null
+}
+
 /*
 note on this design catching exceptions
 e1 is likely, on bad user input
@@ -672,7 +702,7 @@ The door beneath the door
 
 Everything a request knows about itself is on the door, and doorWorker and doorLambda hand the door to the handler beneath them. A ledger write happens several calls further down, in code with no business taking a request as a parameter, so the door has to reach it another way. Not a module variable: one isolate on Cloudflare interleaves requests at every await, and request A would read request B's door whenever they overlap. AsyncLocalStorage is the mechanism built for this: Node's request-scoped context, in Node since version 12, native in workerd under the nodejs_compat flag the worker turns on, and implemented by every serverless JavaScript runtime that matters, with a language proposal following it. run(door, f) sets door as the store's current value, calls f, and stamps every continuation f creates with that value, so when an await resumes, even after other requests have run on the same isolate, the runtime reinstates this request's door before the resumed code asks for it. The door follows the chain of continuations rooted in f, and only that chain. It costs a reference per continuation and promises nothing about lifetime.
 
-The api is two ends. Each door invokes its handler through doorAsyncLocalStorageRun, the single writer. Code that needs the request calls getDoor, or checkDoor where running without one would be a bug. Outside any door there is no store: a script, a cron, a test without the grid door, a handler we gave a framework that runs without opening one. checkDoor tosses there on purpose, because a ledger row written with no request behind it is a mistake to fix in code, and the grid runner opens a test door around its tests.
+The api is two ends. Each door invokes its handler through doorAsyncLocalStorageRun, the single writer. Code that needs the request calls getDoor, or checkDoor where running without one would be a bug. Outside any door there is no store: a script, a cron, a test without the grid door, a handler we host for a framework that doesn't wear doorFramework. checkDoor tosses there on purpose, because a ledger row written with no request behind it is a mistake to fix in code, and the grid runner opens a test door around its tests.
 */
 let _doorAsyncLocalStorage//the one AsyncLocalStorage instance, holding the door for everything running beneath one; unset until the first door runs on this isolate
 async function _doorAsyncLocalStorageLoad() {//the instance, importing and constructing it the first time
@@ -692,7 +722,7 @@ export function getDoor() {//the door above the code asking, or false when nothi
 }
 export function checkDoor() { let door = getDoor(); if (!door) toss('no door', {door}); return door }//getDoor for code that would be a bug to run without one, like a ledger write
 
-export function doorLite({workerEvent}) {//the part of a door any request has from its headers alone: the event, the origin, and the ip. doorWorkerOpen builds the full door from this, and a handler that runs outside doorWorker, like the @auth/core membrane, opens this much so the ledger writes beneath it have a door
+function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker request has from its headers alone: the event, the origin, and the ip; doorWorkerOpen and doorFrameworkOpen both begin here
 	let door = {}
 	door.workerEvent = workerEvent//save everything they gave us about the request
 	door.headers = getWorkerHeaders(workerEvent)
@@ -701,7 +731,7 @@ export function doorLite({workerEvent}) {//the part of a door any request has fr
 	return door
 }
 
-async function doorWorkerOpen({method, workerEvent}) {
+function _doorWorkerSources(workerEvent) {//the places a worker's environment variables may be, for decryptKeys; doorWorkerOpen and doorFrameworkOpen both gather them here
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
 		sources.push({note: 'w10', environment: process.env})
@@ -719,9 +749,12 @@ async function doorWorkerOpen({method, workerEvent}) {
 		let c = useRuntimeConfig(workerEvent)
 		if (c) sources.push({note: 'w50', environment: c})//seeing flow reach here local and cloud
 	}//seeing w50 never, which is ironic as this is the correct Nuxt way to do things! ttd december2025 probably because you aren't setting nuxt.config.js configuration.runtimeConfig.name1 = process.env.name1 so you could do that
-	await decryptKeys('worker', sources)
+	return sources
+}
+async function doorWorkerOpen({method, workerEvent}) {
+	await decryptKeys('worker', _doorWorkerSources(workerEvent))
 
-	let door = doorLite({workerEvent})//make door object to bundle everything together about this request we're doing, starting with what the headers say
+	let door = _doorWorkerHeaders({workerEvent})//make door object to bundle everything together about this request we're doing, starting with what the headers say
 
 	let requestMethod = getWorkerMethod(workerEvent)
 	if (method != requestMethod) toss('method mismatch', {method, requestMethod, door})//check the method
@@ -776,6 +809,16 @@ async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 	} else { toss('method not supported', {door}) }
 	return door
 }
+async function doorFrameworkOpen({workerEvent}) {
+	await decryptKeys('framework', _doorWorkerSources(workerEvent))//so Key() works below and the credential functions can reach the database; self-guards, so it's a no-op when another door already decrypted in this isolate
+
+	let door = _doorWorkerHeaders({workerEvent})//the event, headers, origin, and ip, the same start as doorWorkerOpen
+	door.method = getWorkerMethod(workerEvent)//GET for the provider's callback and the flow's redirects, POST for the form that starts it; both are the framework's to route
+	checkForwardedSecure(door.headers)//https, the same check every worker post passes
+	if (door.method == 'POST') checkOriginOmittedOrValid(door.headers)//a post comes from our own origin or from nowhere; this is the same-origin check the framework's own csrf check is skipped in favor of
+	door.browserHash = await hashText(checkTag(workerEvent.context.browserTag))//the middleware tags every request, so the tag is always here; hash it at once, and the handler never sees the tag itself
+	return door//the body stays unread: the framework parses the request itself, form post and all
+}
 
 async function doorWorkerCheck({door, actions, useTurnstile}) {
 
@@ -829,6 +872,20 @@ async function doorLambdaShut({door, response, error}) {
 		let headers = {'Content-Type': 'application/json'}
 		if (door.from == 'Page.') handleLambdaCorsResponse(headers)//missing or mismatched access control allow origin will cause the (trustworthy) browser to swallow the response rather than giving it to the (suspect) script on the page
 		r = {statusCode: 200, headers, body: makeText(response)}//by comparison, amazon wants it raw
+	}
+	await awaitDoorPromises()
+	return r
+}
+async function doorFrameworkShut({door, response, error}) {
+	door.response = response
+	door.error = error
+
+	let r
+	if (error) {//our own code or the framework threw: a database write beneath, a key that didn't decrypt, the framework crashing; ours or our infra, not the provider. nothing logs here, because error3 is the one place that does, so this door and the handler's own governance of the framework's error redirect reach it identically
+		let envelope = await sealEnvelope('Error3.', Limit.handoff, {error})
+		r = new Response(null, {status: 303, headers: {location: `/error3?envelope=${envelope}`}})//send the browser to error3, which logs the error and blows up error.vue
+	} else {
+		r = response//the framework's own response, passed through untouched
 	}
 	await awaitDoorPromises()
 	return r

@@ -19,34 +19,17 @@ import discordProvider from '@auth/core/providers/discord'
 //import redditProvider  from '@auth/core/providers/reddit'//twitch and reddit, ready to go: uncomment these and add them to the providers list below once we have their keys — commented for now so the bundler doesn't warn about unused imports
 import {toWebRequest} from 'h3'//converts the nitro event to a web Request; h3 also auto-sends a returned web Response, so the handler is just: return Auth(toWebRequest(event), authOptions)
 import {
-checkTag, decryptKeys, hashText, headerGetOne, makePlain, originApex, toTextOrBlank,
+makePlain, originApex, toTextOrBlank,
 credentialBrowserGet, credentialOauthChallenge, credentialOauthParse, credentialOauthSet,
 ledgerAdd, oauthProviders,
-doorLite, doorAsyncLocalStorageRun,
-} from 'icarus'//Key, hasTag, toss, log, look, logAudit, sealEnvelope, Limit, setResponseStatus, defined are auto-globalized in site/server by icarusServerPlugin; these are not, so import them (same pattern as credential.js)
+doorFramework,
+} from 'icarus'//Key, toss, log, look, logAudit are auto-globalized in site/server by icarusServerPlugin; these are not, so import them (same pattern as credential.js)
 
-export default defineEventHandler(async (event) => {//the outer membrane around the Auth.js callback we host — same shape as doorWorker: catch anything our own code or Auth.js throws and forward it to error3, rather than letting it escape as a bare 500. (we can't wear doorWorker itself here: it blocks GET, and the oauth flow's responses are redirects, not json tasks)
-	try {
-		return await doorAsyncLocalStorageRun(doorLite({workerEvent: event}), () => runOauth(event))//this handler runs outside doorWorker, so open the part of a door the headers give and run beneath it, for the ledger writes below
-	} catch (e) {//our own code or Auth.js itself threw (a db write below, a decryptKeys failure, an Auth.js crash) — ours or our infra, not the provider
-		try {
-			//forward it to error3, which logs it to Datadog and blows up error.vue. we deliberately don't log here: error3 is the single place that does, so both feeders — this membrane and the governance block in runOauth — reach it identically
-			let envelope = await sealEnvelope('Error3.', Limit.handoff, {error: e})
-			return new Response(null, {status: 303, headers: {location: `/error3?envelope=${envelope}`}})
-		} catch (e2) { console.error('[OUTER] oauth', e2, e); setResponseStatus(event, 500); return null }//if the seal itself fails (e.g. keys never decrypted), last-resort console + 500, mirroring doorWorker's nested catch
-	}
+export default defineEventHandler(async (workerEvent) => {//every url under /api/oauth/* arrives here, GET and POST alike; the framework door decrypts keys, opens the door, hashes the browser tag, and forwards anything thrown to error3, so this file is about oauth and nothing else
+	return await doorFramework({workerEvent, doorHandleBelow})
 })
 
-async function runOauth(event) {//the flow itself; the membrane above runs this for every url under /api/oauth/* — Auth.js routes on the path internally (/api/oauth/signin/discord, /api/oauth/callback/discord, ...)
-
-	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
-	if (defined(typeof process) && process.env) {
-		sources.push({note: 'o10', environment: process.env})
-	}//env built into the worker bundle at deploy
-	if (event?.context?.cloudflare?.env) {
-		sources.push({note: 'o20', environment: event.context.cloudflare.env})
-	}//the cloudflare runtime env nitro hangs on the request event
-	await decryptKeys('oauth', sources)//must run here at the top so Key() works below and the credential functions can reach the database; self-guards with _alreadyDecrypted, so it's a no-op if doorWorker already decrypted in this isolate
+async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow itself, beneath the framework door: Auth.js routes on the path internally (/api/oauth/signin/discord, /api/oauth/callback/discord, ...)
 
 	let authError//@auth/core catches its in-flow errors and only hands us a normalized type via the ?error= redirect below — but its logger.error fires with the real error first, so we stash it here to report the underlying cause too
 	let authOptions = {
@@ -67,14 +50,9 @@ async function runOauth(event) {//the flow itself; the membrane above runs this 
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
 
-				//the middleware reads or makes a browser tag on every request and leaves it in context; it identifies the browser, and through it the user signed in here
-				let browserTag = event.context.browserTag
-				if (!hasTag(browserTag)) return false//Auth.js treats false as deny sign-in
-				let browserHash = await hashText(browserTag)//browser tag is sensitive; hash it immediately
-
-				//oauth is a credential we attach to an existing account, so someone must be signed in at this browser
+				//oauth is a credential we attach to an existing account, so someone must be signed in at this browser; the door hashed the tag the middleware puts on every request, and the handler never sees the tag itself
 				let signedIn = await credentialBrowserGet({browserHash})
-				if (!signedIn) return false//no one to attach the proof to; deny
+				if (!signedIn) return false//no one to attach the proof to; deny, which Auth.js treats as deny sign-in
 
 				//identify which provider this is against our whitelist (Auth.js may be configured with more providers than our .env.keys list)
 				let providerInfo = oauthProviders().find(p => p.name == account?.provider)
@@ -102,23 +80,23 @@ async function runOauth(event) {//the flow itself; the membrane above runs this 
 	}
 
 	//when a flow starts (the signin action) record an audit-trail event-3 row that we're sending this user into the provider — the funnel "started" marker, paired with the "oauth done" completion logged in signIn above
-	let [authAction, authProviderName] = (event.path.split('?')[0].split('/api/oauth/')[1] || '').split('/')//the action and provider Auth.js routes on, e.g. signin / discord
-	if (authAction == 'signin' && hasTag(event.context.browserTag)) {
-		let signedIn = await credentialBrowserGet({browserHash: await hashText(event.context.browserTag)})
+	let [authAction, authProviderName] = (workerEvent.path.split('?')[0].split('/api/oauth/')[1] || '').split('/')//the action and provider Auth.js routes on, e.g. signin / discord
+	if (authAction == 'signin') {
+		let signedIn = await credentialBrowserGet({browserHash})
 		let providerInfo = oauthProviders().find(p => p.name == authProviderName)
 		if (signedIn && providerInfo) await credentialOauthChallenge({userTag: signedIn.userTag, provider: providerInfo.tag})
 	}
 
-	let response = await Auth(toWebRequest(event), authOptions)//run the flow
+	let response = await Auth(toWebRequest(workerEvent), authOptions)//run the flow
 
 	//Auth.js hands a cancel or an error back as a redirect to our pages.* carrying ?error=<type>. read it here (keys are decrypted) and sort it by governance: could only WE have caused this, or could the provider have?
 	let errorType = new URL(response.headers.get('location') || '/', originApex()).searchParams.get('error')
 	if (errorType == 'Configuration') {//our bug to fix. Configuration is also @auth/core's fallback bucket for any non-client-safe error (a bad secret, a malformed provider, our own signIn callback throwing), so it catches the unexpected too. (add more types here if auth.js surfaces other our-fault ones)
-		//@auth/core catches its in-flow errors and hands them back as this ?error= redirect rather than throwing, so the membrane never sees them on its own. bridge them: toss here, and the membrane above catches it and seals Error3. → error3.vue → Datadog + error.vue, the one place that does
-		toss('oauth', {errorType, path: event.path, error: authError})
+		//@auth/core catches its in-flow errors and hands them back as this ?error= redirect rather than throwing, so the door never sees them on its own. bridge them: toss here, and the door above forwards it to error3 Error3. → error3.vue → Datadog + error.vue, the one place that does
+		toss('oauth', {errorType, path: workerEvent.path, error: authError})
 	} else if (errorType) {//a provider changing things on us (loves us monday, hates us tuesday), or a user cancelling at the provider — not ours to fix
-		logAudit('oauth sad path', {errorType, path: event.path, error: authError})//don't crash the site; record the provider interaction for the team to analyse — and the underlying error disambiguates the shared OAuthCallbackError type (a user declining vs our own misconfig, like a wrong secret or unregistered redirect uri)
-		await ledgerAdd({action: 'Oauth.', event: 'Cancelled.', provider: toTextOrBlank(oauthProviders().find(p => p.name == authProviderName)?.tag), browserHash: await hashText(checkTag(event.context.browserTag)), note: makePlain({errorType, path: event.path, error: authError})})//the provider is blank when the flow broke before the path named one
+		logAudit('oauth sad path', {errorType, path: workerEvent.path, error: authError})//don't crash the site; record the provider interaction for the team to analyse — and the underlying error disambiguates the shared OAuthCallbackError type (a user declining vs our own misconfig, like a wrong secret or unregistered redirect uri)
+		await ledgerAdd({action: 'Oauth.', event: 'Cancelled.', provider: toTextOrBlank(oauthProviders().find(p => p.name == authProviderName)?.tag), browserHash, note: makePlain({errorType, path: workerEvent.path, error: authError})})//the provider is blank when the flow broke before the path named one
 		//the attempt didn't complete — most often the user cancelled at the provider, sometimes startled the provider window even appeared. rather than drop them on a bare /page1 with no idea what happened, hand back a one-shot ?oauth-done hint the panel reads and strips, nudging them to try again
 		return new Response(null, {status: 303, headers: {location: '/page1?oauth-done=Cancelled'}})
 	}
@@ -220,7 +198,7 @@ because our client opens the flow with an empty form POST that carries none of A
 the payoff is that the whole cross-origin contraption from (6) evaporates
 with the engine running inside the apex worker,
 our signIn callback reaches the database directly and writes the credential row right there
-the browser's identity comes straight off event.context.browserTag, where the middleware already left it,
+the browser's identity comes down from the door, which hashed the tag the middleware left in context,
 instead of a hash sealed at the apex and re-checked across a subdomain
 and the two cookies coexist on one response because h3's sendWebResponse appends Set-Cookie instead of clobbering,
 so the middleware's browser-tag cookie rides right alongside Auth.js's own

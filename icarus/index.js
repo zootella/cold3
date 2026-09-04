@@ -150,7 +150,7 @@ export {
 
 Sticker, stickerParts, isLocal, isCloud,
 Key, decryptKeys,
-doorWorker, doorLambda, doorAsyncLocalStorageRun, getDoor, checkDoor, doorLite,
+doorWorker, doorLambda, doorFramework, getDoor, checkDoor,
 checkForwardedSecure, checkOriginOmittedOrValid, checkOriginOmitted, checkOriginValid,
 headerCount, headerGet, headerGetOne,
 keepPromise, awaitDoorPromises,
