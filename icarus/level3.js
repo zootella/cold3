@@ -1154,6 +1154,7 @@ CREATE TABLE ledger_table (
 	wrapper_hash   CHAR(52)  NOT NULL,  -- the build of our software that wrote the row
 	ip_text        TEXT      NOT NULL,  -- the ip address cloudflare saw, or blank without cloudflare
 	origin_text    TEXT      NOT NULL,  -- the origin like "http://localhost:3000" or "https://example.com"
+	geography_json JSONB     NOT NULL DEFAULT '{}',  -- where cloudflare placed the ip: country, and city, region, and postal when it knows them; {} without cloudflare. the default is scaffolding until the deploy fills the cell
 	browser_hash   CHAR(52)  NOT NULL,  -- the browser that was here, by the hash of its tag
 	user_tag_text  TEXT      NOT NULL,  -- the user signed in at that browser, or blank if none
 
@@ -1198,12 +1199,13 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
 	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
-	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin)//what the ledger requires of the door above it: a worker door always has both, a lambda door has neither, and a test door is whatever the test made
+	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography)//what the ledger requires of the door above it: a worker door always has all three, a lambda door has none, and a test door is whatever the test made
 	return {
 		row_tick: now,
 		wrapper_hash: wrapper.hash,
 		ip_text: door.ip,
 		origin_text: door.origin,
+		geography_json: door.geography,
 		browser_hash: browserHash,
 		user_tag_text: userTag,
 		action_text: action,
@@ -1214,17 +1216,17 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 	}
 }
 
-export async function recordHit({browserHash, userTag, geography, browser}) {//record a visit as a Hit. row, once per browser per hour
-	checkHash(browserHash); checkTagOrBlank(userTag); checkPlain(geography); checkPlain(browser)
+export async function recordHit({browserHash, userTag, browser}) {//record a visit as a Hit. row, once per browser per hour
+	checkHash(browserHash); checkTagOrBlank(userTag); checkPlain(browser)
 	checkHash(wrapper.hash)//the hash below folds it in, so it's checked here before use as well as in the row
-	let door = getDoor()//the origin and ip come from the request above, not from the caller
+	let door = getDoor()//the origin, ip, and geography come from the request above, not from the caller
 
 	let now = Now()
 	let hash = await hashObject({//what makes two hits the same visit, named input by input, so a cell added to the row later can't quietly redefine a duplicate
 		hour: roundDown(now, Time.hour),//the start of the hour this hit is in; the exact tick stays out, so the hour's repeats hash alike
-		origin: door.origin, browserHash, userTag, ip: door.ip, geography, browser, wrapper: wrapper.hash,
+		origin: door.origin, browserHash, userTag, ip: door.ip, geography: door.geography, browser, wrapper: wrapper.hash,
 	})
-	let row = _ledgerRow({action: 'Hit.', browserHash, userTag, hash, note: {geography, browser}}, now)
+	let row = _ledgerRow({action: 'Hit.', browserHash, userTag, hash, note: {browser}}, now)//geography rides in its own column now; the browser's word stays in json
 	await queryAddRowIfHashUnique({table: 'ledger_table', row})//ledger7 refuses the row when this hour already holds the visit, and the helper takes that quietly
 }
 

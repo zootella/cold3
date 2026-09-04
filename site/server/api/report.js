@@ -18,15 +18,10 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 			browserHash,
 			user: await credentialBrowserGet({browserHash}),//look up what user is signed in to this browser
 		},
-		worker: {//source (3) worker: information cloudflare is telling us; trustworthy
+		worker: {//source (3) worker: information cloudflare is telling us; trustworthy, and the door already read it from the headers
 			sticker: Sticker(),
-			ip: headerGetOne(headers, 'cf-connecting-ip'),//returns undefined so stringification will omit the property!
-			geography: {
-				country: headerGetOne(headers, 'cf-ipcountry'),//this one is always present
-				city:    headerGetOne(headers, 'cf-ipcity'),//remaining ones are sometimes present
-				region:  headerGetOne(headers, 'cf-region-code'),
-				postal:  headerGetOne(headers, 'cf-postal-code'),
-			},
+			ip: door.ip,
+			geography: door.geography,
 		},
 	}
 
@@ -36,10 +31,9 @@ async function doorHandleBelow({door, body, action, headers, browserHash}) {
 
 	} else if (action == 'Hello.') {
 
-		await recordHit({//the origin and ip ride on the door above, so the hit doesn't name them
+		await recordHit({//the origin, ip, and geography ride on the door above, so the hit doesn't name them
 			browserHash,
 			userTag: toTextOrBlank(r.browser.user?.userTag),
-			geography: r.worker.geography,
 			browser: {agent: r.browser.agent, ...r.page.graphics},//agent is from the browser, graphics renderer and vendor is from the page
 		})
 

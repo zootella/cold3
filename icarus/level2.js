@@ -725,12 +725,13 @@ export function getDoor() {//the door above the code asking. tosses rather than 
 	return door
 }
 
-function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker request has from its headers alone: the event, the origin, and the ip; doorWorkerOpen and doorWorkerLiteOpen both begin here
+function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker request has from its headers alone: the event, the origin, the ip, and the geography; doorWorkerOpen and doorWorkerLiteOpen both begin here
 	let door = {}
 	door.workerEvent = workerEvent//save everything they gave us about the request
 	door.headers = getWorkerHeaders(workerEvent)
 	door.origin = headerOrigin({headers: door.headers})//put together the origin url like "https://cold3.cc" or "http://localhost:3000"
 	door.ip = toTextOrBlank(headerGetOne(door.headers, 'cf-connecting-ip'))//the address cloudflare saw, or blank without cloudflare, like local development
+	door.geography = headerGeography({headers: door.headers})//and where cloudflare placed it, or {} without cloudflare
 	return door
 }
 
@@ -1015,6 +1016,20 @@ function headerOrigin({headers}) {
 	//workerEvent.req.url should be useful, but it's just the route, like "/api/something", which is the part we don't need!
 	//we don't need the origin on the lambda side, and it's likely harder to get, anyway
 }
+function headerGeography({headers}) {//where cloudflare placed the request's ip, from the headers it adds: country always, and city, region, and postal when it knows them; a key cloudflare didn't send stays absent, and without cloudflare the object is {}
+	let geography = {}
+	let country = headerGetOne(headers, 'cf-ipcountry');   if (country) geography.country = country
+	let city    = headerGetOne(headers, 'cf-ipcity');      if (city)    geography.city    = city
+	let region  = headerGetOne(headers, 'cf-region-code'); if (region)  geography.region  = region
+	let postal  = headerGetOne(headers, 'cf-postal-code'); if (postal)  geography.postal  = postal
+	return geography
+}
+test(() => {
+	ok(makeText(headerGeography({headers: {host: 'localhost:3000'}})) == '{}')//no cloudflare, no geography
+	let g = headerGeography({headers: {host: 'cold3.cc', 'cf-ipcountry': 'US', 'cf-ipcity': 'Akron', 'cf-region-code': 'OH', 'cf-postal-code': '44301'}})
+	ok(g.country == 'US' && g.city == 'Akron' && g.region == 'OH' && g.postal == '44301')
+	ok(!('city' in headerGeography({headers: {host: 'cold3.cc', 'cf-ipcountry': 'US'}})))//only the country, when that's all cloudflare knew
+})
 
 /*
 CORS

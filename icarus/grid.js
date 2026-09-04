@@ -35,7 +35,7 @@ credentialCloseAccount,
 } from './level3.js'
 
 let _grid = []//grid test functions collected by grid(); run by runDatabaseTests()
-const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7'}//the door grid tests run below, holding the two cells ledger writes read from a door, so they find the request they belong to
+const gridDoor = {origin: 'https://example.com', ip: '203.0.113.7', geography: {country: 'US', city: 'Akron'}}//the door grid tests run below, holding the three cells ledger writes read from a door, so they find the request they belong to
 function grid(f) { _grid.push(f) }
 const browserHash52 = 'VNTDBXDMLKBBT7YICWOHGYE2DKIM7HND55KNAMXXFOWUYAK6CXJQ'//a well-formed browser hash for tests whose function contracts require one
 
@@ -1130,7 +1130,6 @@ grid(async () => {//hit: a visit lands as a Hit. row in the ledger, cloudflare's
 	let hit = {
 		browserHash: await hashText('a browser'),
 		userTag: '',//nobody signed in at this browser
-		geography: {country: 'US', city: 'Akron'},//from cloudflare's headers, where only country is always present
 		browser: {agent: 'Mozilla/5.0', renderer: 'ANGLE (Intel)'},//the agent header, and what the page said about its graphics
 	}
 	await recordHit(hit)
@@ -1138,8 +1137,8 @@ grid(async () => {//hit: a visit lands as a Hit. row in the ledger, cloudflare's
 	let hits = () => queryGet('ledger_table', {action_text: 'Hit.', browser_hash: hit.browserHash})
 	let row = (await hits())[0]
 	ok(row.origin_text == gridDoor.origin && row.ip_text == gridDoor.ip && row.user_tag_text == '')//the origin and ip come from the door above, not from the caller
-	ok(row.json.geography.country == 'US' && row.json.geography.city == 'Akron')//arrives parsed, an object rather than text
-	ok(row.json.browser.agent == 'Mozilla/5.0' && row.json.browser.renderer == 'ANGLE (Intel)')
+	ok(row.geography_json.country == 'US' && row.geography_json.city == 'Akron')//cloudflare's word, from the door, in its own column, parsed
+	ok(row.json.browser.agent == 'Mozilla/5.0' && row.json.browser.renderer == 'ANGLE (Intel)' && !('geography' in row.json))//the browser's word stays in json, and geography no longer rides there
 	ok(row.hash_text.length == 52 && row.event_text == '' && row.provider_text == '')//the dedup hash rides in hash_text, and a hit has no verb and no third party
 
 	await recordHit(hit)//the same visitor says hello again a moment later
@@ -1162,6 +1161,7 @@ grid(async () => {//ledger: an audit record lands durable in our own database, m
 	await ledgerAdd({action: 'ExampleHappened.', browserHash, userTag: '', note: {color: 'Green.', count: 7}})
 	let row = (await queryGet('ledger_table', {action_text: 'ExampleHappened.'}))[0]
 	ok(row.browser_hash == browserHash && row.user_tag_text == '' && row.ip_text == gridDoor.ip && row.origin_text == gridDoor.origin)//the request's ip and origin come from the door above
+	ok(row.geography_json.city == 'Akron')//and so does its geography, on every kind of row
 	ok(row.json.color == 'Green.' && row.json.count == 7)//the note arrives back parsed, an object rather than text
 
 	await ledgerAdd({action: 'QuickExample.', browserHash})//only the action and browser are required; the rest defaults to blanks

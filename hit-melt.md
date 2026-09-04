@@ -2,13 +2,7 @@
 
 Melting hit_table into ledger_table, so one table and one ordering by tick tell the whole story of what a person at a browser did.
 
-**Where we are, September 3, 2026.** The first four tasks are done, every contraction pushed and the drift check clean, and the fifth is at its first station, with a detour agreed before it lands. The working tree holds the door in AsyncLocalStorage with its essay, the ledger reading ip and origin from the door, the call sites without their request parameters, the oauth membrane's lite door, and the grid runner's test door. The review of that diff turned up the third door, below, which replaces the lite door, so the two ship together as one change. Steps one and two are done: the store is committed, and the third door is coded in the working tree, uncommitted. The steps, in order:
-
-1. Commit the store as it stands, unreviewed and unsmoked, so the third door builds on a snapshot.
-2. Build the third door: the oauth handler's own door machinery moves into level2 beside doorWorker and doorLambda, and doorLite goes away. Commit again, unreviewed.
-3. From a clean tree, check out the commit before the store and smoke the oauth flow locally and in the cloud, so a flow that was already broken can't be blamed on either change.
-4. Return to the head, seal, and review the store and the third door together as one integrated change.
-5. Deploy, smoke the four environments and the oauth flow again, then the geography column's expansion.
+**Where we are, September 4, 2026.** The first four tasks are done, and the fifth's first station is live: Pluc40 carries the door in AsyncLocalStorage, the ledger reading ip and origin from it, doorWorkerLite with the oauth handler on it, and the Error3. round trip gone. The diff from Dirt33 was reviewed file by file, both builds pass, and the smoke test ran clean locally and in the cloud, page load, up3's four locations, and the Discord remove-and-add; the Oauth. ledger row in the cloud carries origin and ip together for the first time. The second station, geography's column, is coded in the working tree, uncommitted: the expansion migration, the registry, the door gathering Cloudflare's geography, the ledger writing it on every row, and recordHit moving it out of json. Next, in order: review, commit, push the expansion, deploy, then the contraction moves the Hit. rows' geography into the column and drops the default.
 
 Each heading below is one task, and they run in the order they appear. Finish one, then start the next. A single task can take several rounds of coding, review, commit, and smoke testing before it is done. Live-table changes ride migration.md's playbook: the migration file and its `SQL()` registry edit in the same commit, grid tests beside code changes.
 
