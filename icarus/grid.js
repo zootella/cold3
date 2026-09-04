@@ -1154,6 +1154,41 @@ grid(async () => {//hit: a visit lands as a Hit. row in the ledger, cloudflare's
 	ok((await queryGet('ledger_table', {hash_text: row.hash_text})).length == 3)//the partial predicate keeps ledger7 off every other action
 })
 
+//rehearsal of the client_json contraction, scaffolding that retires once it's pushed: Hit. rows planted in the shape the melt and
+//recordHit left them, both bags inside json and client_json blank, beside a row the deploy wrote and a row of another action, then the
+//migration file's statement verbatim, then assertions that only the old hits moved and that a second run changes nothing
+const clientContractRehearsalSql = `
+UPDATE ledger_table SET
+	client_json = jsonb_build_object('geography', json->'geography', 'browser', json->'browser'),
+	json = '{}'::jsonb
+WHERE action_text = 'Hit.' AND client_json = '{}'::jsonb AND json ? 'geography';
+`
+grid(async () => {//client_json rehearsal: old hits move their two bags into the column and empty json, new rows and other actions stay, and running twice changes nothing
+	let {clear, pglite} = await getDatabase()
+	await clear('ledger_table')
+	let geography = {country: 'US', city: 'Akron'}, browser = {agent: 'Mozilla/5.0', renderer: 'ANGLE (Intel)'}
+	let plant = (cells) => queryAddRow({table: 'ledger_table', row: {wrapper_hash: random32(), ip_text: '', origin_text: 'https://example.com', browser_hash: random32(), user_tag_text: '', action_text: 'Hit.', event_text: '', provider_text: '', hash_text: random32(), ...cells}})
+	await plant({json: {geography, browser}, client_json: {}})//an old hit, both bags in json
+	await plant({json: {geography: {}, browser}, client_json: {}, hide: 1})//a hidden local hit, geography blank inside json
+	await plant({json: {}, client_json: {geography, browser}})//a hit the deploy wrote; the guard must leave it alone
+	await plant({action_text: 'Example.', json: {geography: {city: 'Tokyo'}}, client_json: {geography, browser}})//another action whose payload happens to hold a geography key; only hits move
+
+	let run = async () => (await pglite.query(clientContractRehearsalSql)).affectedRows//the migration file's statement, verbatim
+	ok((await run()) == 2)//the two old hits, hidden one included
+
+	let rows = (await pglite.query(`SELECT * FROM ledger_table ORDER BY row_tick`)).rows
+	ok(rows.length == 4)
+	let moved = rows.filter(r => r.action_text == 'Hit.' && makeText(r.json) == '{}')
+	ok(moved.length == 3)//every hit's json is empty now, the two moved and the one that already was
+	ok(moved.every(r => r.client_json.browser.agent == 'Mozilla/5.0'))//the browser bag arrived whole
+	let hidden = moved.find(r => r.hide == 1)
+	ok(makeText(hidden.client_json.geography) == '{}')//the hidden hit's blank geography moved as the blank, not as nothing
+	let example = rows.find(r => r.action_text == 'Example.')
+	ok(example.json.geography.city == 'Tokyo' && example.client_json.geography.city == 'Akron')//untouched, both cells as planted
+
+	ok((await run()) == 0)//a second pass changes nothing
+})
+
 grid(async () => {//ledger: an audit record lands durable in our own database, margins for filtering and a note of details as data
 	let {clear} = await getDatabase()
 	await clear('ledger_table')

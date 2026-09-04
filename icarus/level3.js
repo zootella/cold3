@@ -1154,7 +1154,7 @@ CREATE TABLE ledger_table (
 	wrapper_hash   CHAR(52)  NOT NULL,  -- the build of our software that wrote the row
 	ip_text        TEXT      NOT NULL,  -- the ip address cloudflare saw, or blank without cloudflare
 	origin_text    TEXT      NOT NULL,  -- the origin like "http://localhost:3000" or "https://example.com"
-	client_json    JSONB     NOT NULL DEFAULT '{}',  -- what we're told about the client beyond its ip and origin: geography, where cloudflare placed the ip, and browser, the agent string, plus for a hit what the page said about its graphics. the default is scaffolding until the deploy fills the cell
+	client_json    JSONB     NOT NULL,  -- what we're told about the client beyond its ip and origin: geography, where cloudflare placed the ip, and browser, the agent string, plus for a hit what the page said about its graphics
 	browser_hash   CHAR(52)  NOT NULL,  -- the browser that was here, by the hash of its tag
 	user_tag_text  TEXT      NOT NULL,  -- the user signed in at that browser, or blank if none
 
