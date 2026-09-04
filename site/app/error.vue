@@ -20,7 +20,7 @@ on the error trail: Nuxt error page
 ./site/app/pages/error2.vue        - auto-reports the error with Turnstile, then hard-replaces home
 ./site/app/pages/error3.vue        - landing for an error a door caught on a browser navigation; the door logged it, this page just shows error.vue
 
-Something throws. A toss, a TypeError, a ReferenceError -- anything uncaught. If it happens on the server, doorWorker catches it, logs to Datadog, and returns a 500. On the client, $fetch sees the 500 and throws a FetchError. So a server-side toss becomes a client-side exception -- it crosses the HTTP boundary and keeps bubbling.
+Something throws. A toss, a TypeError, a ReferenceError -- anything uncaught. If it happens on the server, doorWorker catches it, logs to Datadog, and returns a 500. On the client, $fetch sees the 500 and throws a FetchError. So a server-side toss becomes a client-side exception -- it crosses the HTTP boundary and keeps bubbling. The one request with no fetch to carry a 500 back is a browser navigation straight to a server endpoint, the oauth callback: there doorWorkerLite catches it, logs to Datadog, and redirects the browser to error3, a page whose only job is to show this one.
 
 The exception reaches Nuxt's error hooks (vue:error or app:error), both registered in errorPlugin.js. On the server, the plugin logs to Datadog and Nuxt renders error.vue in the response. On the client, the plugin saves error details to pageStore.errorDetails and calls showError(), which replaces the entire SPA with error.vue.
 
@@ -28,7 +28,7 @@ The app is now broken. Some ref is null, some store is half-loaded, the componen
 
 "Reload Site" is a plain <a href="/"> -- no JavaScript, just a full page navigation that kills the SPA and starts fresh. "Report Error" navigates to /error2, a regular page (not a Nuxt convention) that attempts to use the broken SPA to report what happened. On mount, error2 takes the error details from the store into a local variable and immediately clears the store. This clearing matters: if the report itself throws, errorPlugin's guard (if pageStore.errorDetails) sees null, processes the new error normally, and sends the user back to error.vue. Without clearing first, the guard would block the second error.
 
-Error2 auto-submits the report via a hidden Button (for Turnstile and fetchWorker), then hard-replaces home. If the POST throws, errorPlugin catches it and the user lands on error.vue again. If there's nothing to report (direct navigation or drag-refresh), it bounces home immediately.
+Error2 auto-submits the report via a hidden Button (for Turnstile and fetchWorker), then hard-replaces home. If the POST throws, errorPlugin catches it and the user lands on error.vue again. If there's nothing to report (direct navigation, drag-refresh, or arrival by way of error3, where the door already logged), it bounces home immediately.
 
 This is never an infinite loop. The only path to error2 is the user's click on error.vue. That manual click is the circuit breaker.
 

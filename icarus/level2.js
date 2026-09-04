@@ -671,17 +671,20 @@ export async function doorWorkerLite({//the third door: doorWorker with fewer re
 		let door = {}, response, error
 		try {
 
-			door = await doorWorkerLiteOpen({workerEvent})//keys decrypted, the door started from the headers, the browser tag hashed; GET and POST both arrive, and the body stays the module's to parse
+			door = await doorWorkerLiteOpen({workerEvent})
+			//no check step here: there is no action to check against a list, and the module validates its own request
+			let browserHash = await hashText(checkTag(door.workerEvent.context.browserTag))
 			response = await doorAsyncLocalStorageRun(door, () => doorHandleBelow({
 				door,
 				workerEvent,//the module wants the raw event, to read the request its own way
-				browserHash: door.browserHash,
+				browserHash,
 			}))
 
 		} catch (e1) { error = e1 }
 		try {
 
-			return await doorWorkerLiteShut({door, response, error})//the module's response, or the redirect to error3 when something threw
+			let r = await doorWorkerLiteShut({door, response, error})
+			return r//always, not only on success: on error r is the redirect to error3, where the other doors return null and fall through to the 500 below
 
 		} catch (e2) { await awaitLogAlert('door shut', {e2, door, response, error}) }
 	} catch (e3) { console.error('[OUTER]', e3) }
@@ -702,7 +705,7 @@ Getting the door from code below it
 
 Everything a request knows about itself is on the door, and each of the three doors hands the door to the handler below it. A ledger write happens several calls further down, in code with no business taking a request as a parameter, so the door has to reach it another way. Not a module variable: one isolate on Cloudflare interleaves requests at every await, and request A would read request B's door whenever they overlap. AsyncLocalStorage is the mechanism built for this: Node's request-scoped context, in Node since version 12, native in workerd under the nodejs_compat flag the worker turns on, and implemented by every serverless JavaScript runtime that matters, with a language proposal following it. run(door, f) sets door as the store's current value, calls f, and stamps every continuation f creates with that value, so when an await resumes, even after other requests have run on the same isolate, the runtime reinstates this request's door before the resumed code asks for it. The door follows the chain of continuations rooted in f, and only that chain. It costs a reference per continuation and promises nothing about lifetime.
 
-The api is two ends. Each door invokes its handler through doorAsyncLocalStorageRun, the single writer. Code that needs the request calls getDoor, or checkDoor where running without one would be a bug. Outside any door there is no store: a script, a cron, a test without the grid door, a handler that hosts a module without wearing doorWorkerLite. checkDoor tosses there on purpose, because a ledger row written with no request behind it is a mistake to fix in code, and the grid runner opens a test door around its tests.
+The api is two ends. Each door invokes its handler through doorAsyncLocalStorageRun, the single writer. Code that needs the request calls getDoor. Outside any door there is no store: a script, a cron, a test without the grid door, a handler that hosts a module without wearing doorWorkerLite. getDoor tosses there on purpose, because a ledger row written with no request behind it is a mistake to fix in code, and the grid runner opens a test door around its tests.
 */
 let _doorAsyncLocalStorage//the one AsyncLocalStorage instance, holding the door for everything running below one; unset until the first door runs on this isolate
 async function _doorAsyncLocalStorageLoad() {//the instance, importing and constructing it the first time
@@ -716,11 +719,11 @@ export async function doorAsyncLocalStorageRun(door, f) {//call f now, with door
 	let storage = await _doorAsyncLocalStorageLoad()
 	return await storage.run(door, f)//run sets door as the current value, calls f, and stamps every continuation f creates with door; when f settles, the current value reverts to what it was, so nothing outside sees the door
 }
-export function getDoor() {//the door above the code asking, or false when nothing above opened one
-	if (!_doorAsyncLocalStorage) return false//no door has ever run on this isolate, so nothing can be above us: a script, the page, a test without the grid door
-	return _doorAsyncLocalStorage.getStore() || false//the door stamped on the continuation we're running in, or undefined outside any run, which becomes the blank false
+export function getDoor() {//the door above the code asking. tosses rather than returning false when nothing above opened one, because no code that asks for a door may run without one: a ledger write with no request behind it is a bug to fix in code, not a row with blanks
+	let door = _doorAsyncLocalStorage ? _doorAsyncLocalStorage.getStore() : undefined//undefined until the first door has run on this isolate, and outside any run after that: a script, the page, a test without the grid door, a hosted module without doorWorkerLite
+	if (!door) toss('no door', {door})
+	return door
 }
-export function checkDoor() { let door = getDoor(); if (!door) toss('no door', {door}); return door }//getDoor for code that would be a bug to run without one, like a ledger write
 
 function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker request has from its headers alone: the event, the origin, and the ip; doorWorkerOpen and doorWorkerLiteOpen both begin here
 	let door = {}
@@ -731,7 +734,7 @@ function _doorWorkerHeaders({workerEvent}) {//the start of a door any worker req
 	return door
 }
 
-function _doorWorkerSources(workerEvent) {//the places a worker's environment variables may be, for decryptKeys; doorWorkerOpen and doorWorkerLiteOpen both gather them here
+async function doorWorkerOpen({method, workerEvent}) {
 	let sources = []//collect possible sources of environment variables; there are a lot of them 😓
 	if (defined(typeof process) && process.env) {
 		sources.push({note: 'w10', environment: process.env})
@@ -749,10 +752,7 @@ function _doorWorkerSources(workerEvent) {//the places a worker's environment va
 		let c = useRuntimeConfig(workerEvent)
 		if (c) sources.push({note: 'w50', environment: c})//seeing flow reach here local and cloud
 	}//seeing w50 never, which is ironic as this is the correct Nuxt way to do things! ttd december2025 probably because you aren't setting nuxt.config.js configuration.runtimeConfig.name1 = process.env.name1 so you could do that
-	return sources
-}
-async function doorWorkerOpen({method, workerEvent}) {
-	await decryptKeys('worker', _doorWorkerSources(workerEvent))
+	await decryptKeys('worker', sources)
 
 	let door = _doorWorkerHeaders({workerEvent})//make door object to bundle everything together about this request we're doing, starting with what the headers say
 
@@ -810,14 +810,31 @@ async function doorLambdaOpen({from, method, lambdaEvent, lambdaContext}) {
 	return door
 }
 async function doorWorkerLiteOpen({workerEvent}) {
-	await decryptKeys('lite', _doorWorkerSources(workerEvent))//so Key() works below and the credential functions can reach the database; self-guards, so it's a no-op when another door already decrypted in this isolate
+	let sources = []//the same nuxt worker as doorWorkerOpen, so the same places its environment variables may be, under this door's own codes, so a log says which door decrypted, and so the two can differ the day a hosted module's entry point finds keys somewhere else
+	if (defined(typeof process) && process.env) {
+		sources.push({note: 'e10', environment: process.env})
+	}//env built into the worker bundle at deploy
+	if (workerEvent.context?.cloudflare?.env) {
+		sources.push({note: 'e20', environment: workerEvent.context.cloudflare.env})
+	}//the cloudflare runtime env nitro hangs on the request event
+	await decryptKeys('lite', sources)
 
-	let door = _doorWorkerHeaders({workerEvent})//the event, headers, origin, and ip, the same start as doorWorkerOpen
-	door.method = getWorkerMethod(workerEvent)//GET for the provider's callback and the flow's redirects, POST for the form that starts it; both are the module's to route
-	checkForwardedSecure(door.headers)//https, the same check every worker post passes
-	if (door.method == 'POST') checkOriginOmittedOrValid(door.headers)//a post must come from our own origin or carry no origin at all; this is the same-origin check we rely on in place of the module's csrf check, which the handler skips
-	door.browserHash = await hashText(checkTag(workerEvent.context.browserTag))//the middleware tags every request, so the tag is always here; hash it at once, and the handler never sees the tag itself
-	return door//the body stays unread: the module parses the request itself, form post and all
+	let door = _doorWorkerHeaders({workerEvent})//make door object to bundle everything together about this request we're doing, starting with what the headers say
+
+	door.method = getWorkerMethod(workerEvent)//no method to enforce: the module routes both, so the door records which arrived
+	if (door.method == 'GET') {//the provider's callback, and the flow's own redirects; nothing of ours to parse
+
+		//authenticate lite get request: (1) https
+		checkForwardedSecure(door.headers)
+
+	} else if (door.method == 'POST') {//the form that starts the flow; the body stays unread, the module parses it itself
+
+		//authenticate lite post request: (1) https; (2) origin omitted or valid, the same-origin check we rely on in place of the module's csrf check, which the handler skips
+		checkForwardedSecure(door.headers)
+		checkOriginOmittedOrValid(door.headers)
+
+	} else { toss('method not supported', {door}) }
+	return door
 }
 
 async function doorWorkerCheck({door, actions, useTurnstile}) {
@@ -882,7 +899,7 @@ async function doorWorkerLiteShut({door, response, error}) {
 
 	let r
 	if (error) {//our own code or the module threw: a database write below, a key that didn't decrypt, the module crashing; ours or our infra, not the provider
-		logAlert('door lite shut', {method: door.method, path: door.workerEvent.path, response, error})//tell staff about it
+		logAlert('door lite shut', {method: door.method, response, error})//tell staff about it; only cells that are plainly absent when the open itself threw and the door is still empty
 		r = new Response(null, {//a web Response, the shape the module's own answers take, so h3 sends it the same way
 			status: 303,//the redirect built for after a POST: the browser always follows it with a GET and never resends the body, where a 302 leaves the method to the browser and a 307 keeps the POST on purpose
 			headers: {location: '/error3'},//the browser is mid-navigation and can only follow a redirect, so send it to the landing page that shows error.vue; the error is in the log above, not in the url

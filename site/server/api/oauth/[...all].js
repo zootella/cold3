@@ -23,11 +23,11 @@ makePlain, originApex, toTextOrBlank,
 credentialBrowserGet, credentialOauthChallenge, credentialOauthParse, credentialOauthSet,
 ledgerAdd, oauthProviders,
 doorWorkerLite,
-} from 'icarus'//Key, toss, log, look, logAudit are auto-globalized in site/server by icarusServerPlugin; these are not, so import them (same pattern as credential.js)
+} from 'icarus'
 
-export default defineEventHandler(async (workerEvent) => {//every url under /api/oauth/* arrives here, GET and POST alike; the lite door decrypts keys, opens the door, hashes the browser tag, and forwards anything thrown to error3, so this file is about oauth and nothing else
+export default defineEventHandler(async (workerEvent) => {
 	return await doorWorkerLite({workerEvent, doorHandleBelow})
-})
+})//every url under /api/oauth/* arrives here, GET and POST alike; the lite door decrypts keys, opens the door, hashes the browser tag, and forwards anything thrown to error3, so this file is about oauth and nothing else
 
 async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow itself, below the lite door: Auth.js routes on the path internally (/api/oauth/signin/discord, /api/oauth/callback/discord, ...)
 
@@ -50,7 +50,7 @@ async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow its
 
 			async signIn({account, profile, user}) {//Auth calls our signIn() method once when the user and Auth have finished successfully with the third-party provider
 
-				//oauth is a credential we attach to an existing account, so someone must be signed in at this browser; the door hashed the tag the middleware puts on every request, and the handler never sees the tag itself
+				//oauth is a credential we attach to an existing account, so someone must be signed in at this browser
 				let signedIn = await credentialBrowserGet({browserHash})
 				if (!signedIn) return false//no one to attach the proof to; deny, which Auth.js treats as deny sign-in
 

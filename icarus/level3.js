@@ -50,7 +50,7 @@ queryUpdateCells,
 
 //query specialized
 queryCountSince,
-queryAddRowIfHashUnique, checkDoor,
+queryAddRowIfHashUnique, getDoor,
 queryTopEqualGreater,
 queryTopSinceMatchGreater,
 queryGetAny,
@@ -1185,7 +1185,7 @@ export async function ledgerAddMany(a) {//keep a lasting record of something tha
 	await queryAddRows({table: 'ledger_table', rows})
 }
 function _ledgerRow(e, now) {//check one record and shape it as a ledger_table row; the one place a ledger row is assembled, so a batch and a single insert can never drift apart
-	let door = checkDoor()//the request this record belongs to, for its ip and origin; a ledger row with no door above it is a bug in the caller, not a row with blanks
+	let door = getDoor()//the request this record belongs to, for its ip and origin; tosses when there is none, because a ledger row with no request behind it is a bug in the caller
 	checkHash(wrapper.hash)
 	let {
 		action,//the subject of the record, like 'Email.'
@@ -1198,6 +1198,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
 	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note)
+	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin)//what the ledger requires of the door above it: a worker door always has both, a lambda door has neither, and a test door is whatever the test made
 	return {
 		row_tick: now,
 		wrapper_hash: wrapper.hash,
@@ -1216,7 +1217,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 export async function recordHit({browserHash, userTag, geography, browser}) {//record a visit as a Hit. row, once per browser per hour
 	checkHash(browserHash); checkTagOrBlank(userTag); checkPlain(geography); checkPlain(browser)
 	checkHash(wrapper.hash)//the hash below folds it in, so it's checked here before use as well as in the row
-	let door = checkDoor()//the origin and ip come from the request above, not from the caller
+	let door = getDoor()//the origin and ip come from the request above, not from the caller
 
 	let now = Now()
 	let hash = await hashObject({//what makes two hits the same visit, named input by input, so a cell added to the row later can't quietly redefine a duplicate
