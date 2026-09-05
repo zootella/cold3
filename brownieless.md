@@ -56,12 +56,12 @@ totp uses the brownie and credential_table. It uses no page-held envelope and no
 
 ```
 brownie letter
-	browserHash: 'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA' # the binding: openBrownie empties the notes unless this equals the request's browserHash
+	browserHash: 'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # the binding: openBrownie empties the notes unless this equals the request's browserHash
 	notes:
 		- type:       'Totp.'
 		  expiration: 1788559050091
-		  userTag:    '8quOfIYWkS1cmzj6nsgMm' # the owner: the flow touches only notes whose userTag is the signed-in user's
-		  secret:     'SSCLAFVSDO6XNPML7JOHL4C2YGERHQUU' # 20 bytes in base 32; shorter than a 32 byte SHA-256 hash value
+		  userTag:    '8quOfIYWkS1cmzj6nsgMm'     # the owner: the flow touches only notes whose userTag is the signed-in user's
+		  secret:     'SSCLAFVSDO6XNPML7JOHL4C2YGERHQUU'     # 20 bytes in base32; shorter than a 32 byte SHA-256 hash value
 ```
 
 The response's snapshot carries the enrollment, which attachState's recover step rebuilds from the note; this is what the page draws as a qr code:
@@ -84,7 +84,7 @@ credential_table
 	f0_text:   ''
 	f1_text:   ''
 	f2_text:   ''
-	hash_text: '' # we don't put the secret here because hashes in the database are 32 bytes, SHA-256 values
+	hash_text: ''     # we don't put the secret here because hashes in the database are 32 bytes, SHA-256 values
 	json:
 		secret: 'SSCLAFVSDO6XNPML7JOHL4C2YGERHQUU'
 ```
@@ -101,10 +101,9 @@ credential_table
 	f0_text:   ''
 	f1_text:   ''
 	f2_text:   ''
-	hash_text: 'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA' # the browser that started the enrollment
-	json: {
+	hash_text: 'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # the browser that started the enrollment
+	json:
 		secret: 'SSCLAFVSDO6XNPML7JOHL4C2YGERHQUU'
-	}
 
 credential_table
 	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
@@ -114,14 +113,13 @@ credential_table
 	f1_text:   ''
 	f2_text:   ''
 	hash_text: ''
-	json: {
+	json:
 		secret: 'SSCLAFVSDO6XNPML7JOHL4C2YGERHQUU'
-	}
 ```
 
-No trail messages, since the secret must be recoverable, to validate the first code and to redraw the qr code. The brownie note and letter are gone. The enrollment the page draws is the same object as today, rebuilt from the challenged row's secret on every snapshot, including the server render, so the qr code is on the page at first paint and survives a refresh without the second round trip.
+No trail messages, since the secret must be recoverable: every code she ever types is validated against it, the first one at enroll2 and all the later ones against the enrolled row, which is why that row holds it in cleartext for good. During enrollment it is also what recover rebuilds the uri from, so a refresh puts the same qr code back on the page rather than minting a new one; the qr code is never drawn again after enrollment. The brownie note and letter are gone. The enrollment the page draws is the same object as today, rebuilt from the challenged row's secret on every snapshot, including the server render, so the qr code is on the page at first paint and survives a refresh without the second round trip.
 
-**enroll1** writes the challenged row — the first time the start of an enrollment is recorded anywhere. **enroll2** reads the newest visible challenged row for the user, checks its row_tick against twenty minutes and its hash_text against the request's browserHash, validates the code against its secret, and writes the enrolled row as today; the challenged row stays as it is, outranked by the enrolled one. **recover** reads the same row, gated by its existence, and rebuilds the uri from its secret. **clear** hides it, the house's removal mechanism, and the row remains in the table as evidence. The challenged row and the enrolled row share a json shape, so validation is a copy today and an edit in place once the table holds current state.
+**enroll1** writes the challenged row — the first time the start of an enrollment is recorded anywhere. **enroll2** reads the newest visible challenged row for the user, checks its row_tick against twenty minutes and its hash_text against the request's browserHash, validates the code against its secret, and writes the enrolled row as today; the challenged row stays as it is, outranked by the enrolled one. **recover** reads the same row, gated by its existence, and rebuilds the uri from its secret, so a refresh mid-enrollment shows the same qr code she already scanned. **clear** hides it, the house's removal mechanism, and the row remains in the table as evidence. The challenged row and the enrolled row share a json shape, so validation is a copy today and an edit in place once the table holds current state.
 
 ### Testing and refactoring steps
 

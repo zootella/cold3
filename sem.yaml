@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep4.1907.38748
+  generated: 2026sep5.2248.17489
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -285,9 +285,9 @@ modules:
     note: "nuxt: pinia integration module; exact pin from nuxi module add, pre-1.0"
     from: site
     versions:
-      declared: 0.11.3 on 2025nov05 9m old 📌 Exact version pinned
-      installed: 0.11.3 on 2025nov05 9m old 🐣 Pre-1.0 version installed
-      current: 0.11.3 on 2025nov05 9m old
+      declared: 0.11.3 on 2025nov05 10m old 📌 Exact version pinned
+      installed: 0.11.3 on 2025nov05 10m old 🐣 Pre-1.0 version installed
+      current: 0.11.3 on 2025nov05 10m old
       latest: 1.0.2 on 2026aug12 0m old 🎁 Major new version available
     downloads:
       weekly: 546,311
@@ -584,7 +584,7 @@ modules:
     from: net23
     versions:
       declared: ^11.3.4 on 2026mar03 6m old
-      installed: 11.3.5 on 2026may06 3m old
+      installed: 11.3.5 on 2026may06 4m old
       current: 11.4.0 on 2026jul23 1m old
       latest: 11.4.0 on 2026jul23 1m old
     downloads:
@@ -676,8 +676,8 @@ modules:
     versions:
       declared: ^4.3.0 on 2026jan22 7m old
       installed: 4.4.8 on 2026jun08 2m old
-      current: 4.5.2 on 2026aug05 0m old
-      latest: 4.5.2 on 2026aug05 0m old
+      current: 4.5.2 on 2026aug05 1m old
+      latest: 4.5.2 on 2026aug05 1m old
     downloads:
       weekly: 1,675,613
       on: 2026aug18.1523.58589
@@ -713,7 +713,7 @@ modules:
     note: "test: totp library; in root for fuzz tests in level1"
     from: root
     versions:
-      declared: ^9.5.0 on 2026feb04 6m old
+      declared: ^9.5.0 on 2026feb04 7m old
       installed: 9.5.1 on 2026apr25 4m old
       current: 9.5.2 on 2026sep03 0m old
       latest: 9.5.2 on 2026sep03 0m old
@@ -726,9 +726,9 @@ modules:
     note: "nuxt: state management; paired with @pinia/nuxt"
     from: site
     versions:
-      declared: ^3.0.4 on 2025nov05 9m old
-      installed: 3.0.4 on 2025nov05 9m old
-      current: 3.0.4 on 2025nov05 9m old
+      declared: ^3.0.4 on 2025nov05 10m old
+      installed: 3.0.4 on 2025nov05 10m old
+      current: 3.0.4 on 2025nov05 10m old
       latest: 4.0.3 on 2026aug12 0m old 🎁 Major new version available
     downloads:
       weekly: 3,958,735
@@ -741,10 +741,10 @@ modules:
       - icarus
       - site
     versions:
-      declared: ^1.5.4 on 2024aug05 24m old
-      installed: 1.5.4 on 2024aug05 24m old 🕰️ Installed version 1+ year old
-      current: 1.5.4 on 2024aug05 24m old
-      latest: 1.5.4 on 2024aug05 24m old
+      declared: ^1.5.4 on 2024aug05 25m old
+      installed: 1.5.4 on 2024aug05 25m old 🕰️ Installed version 1+ year old
+      current: 1.5.4 on 2024aug05 25m old
+      latest: 1.5.4 on 2024aug05 25m old
     downloads:
       weekly: 18,826,156
       on: 2026aug18.1523.29150
