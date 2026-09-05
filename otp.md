@@ -4,6 +4,7 @@
 one-time password challenges for email and phone verification
 a user provides an address, the server generates a short code and delivers it, and the user types it back to prove they control the address
 otp uses no dedicated database table--each live challenge rides as a note in the brownie, the sealed letter in localStorage that carries all provisional credential state, the same pattern totp uses
+brownieless.md plans to move each challenge into json on the event-3 row send already writes, retiring the brownie; until that lands, the note is what runs
 
 ## (1) helper functions
 

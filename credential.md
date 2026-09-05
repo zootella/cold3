@@ -7,7 +7,7 @@ The credential system flows through one endpoint (`/api/credential`), one store 
 
 `Get.` returns a complete snapshot of every credential type in one response, `attachState` assembles that snapshot, and `apply()` in the store unpacks it into refs. Adding a new credential type means extending attachState and apply — not creating a new endpoint.
 
-**Envelopes unified into the brownie.** This direction landed as the brownie — one localStorage entry, one sealed letter, self-describing notes for whatever's in progress; the design essay lives inline in icarus/level2.js above the brownie functions. TOTP enrollments and OTP challenges both ride as notes; no temporary cookie remains, and the browserTag is cold3's one cookie. The brownie's next tenant is the sudo note, which shapes itself when it arrives — a type, an expiration, an owner, whatever the elevated action needs.
+**Envelopes unified into the brownie.** This direction landed as the brownie — one localStorage entry, one sealed letter, self-describing notes for whatever's in progress; the design essay lives inline in icarus/level2.js above the brownie functions. TOTP enrollments and OTP challenges both ride as notes; no temporary cookie remains, and the browserTag is cold3's one cookie. The brownie's next tenant is the sudo note, which shapes itself when it arrives — a type, an expiration, an owner, whatever the elevated action needs. brownieless.md now proposes retiring the brownie altogether: json columns arrived on credential_table days after the letter did, and provisional state can ride the rows that already record the start of each flow, so the sudo hour, when it comes, would be a row or a column rather than a note.
 
 **Reducing fetch calls is the goal.** A page load should be one GET to the credential endpoint. That one response tells credentialStore everything: which credentials exist, what their display values are, and whether any multi-step flows were interrupted. Components render from the store. When a user takes an action (enroll, remove, verify), that's one POST, and the response includes a fresh attachState snapshot so the store stays in sync. The number of fetch calls should be proportional to the number of user actions, not the number of credential types.
 
@@ -47,11 +47,11 @@ These flows use envelopes for tamper-proof state, but the envelope travels a dif
 
 **OAuth** — since svelteless, no envelope of ours at all. The flow is a browser navigation run by @auth/core inside the apex worker; the transient state of the dance (CSRF, PKCE) lives in Auth.js's own short-lived internal cookies, and our part begins when the signIn callback writes the credential row directly.
 
-**Wallet** — the envelope stays in the request body. The signing happens in-page via a wallet popup (MetaMask, etc.), so there's no navigation away and no need for cookie persistence.
+**Wallet** — the envelope stays in the request body. The signing happens in-page via a wallet popup (MetaMask, etc.), so there's no navigation away and no need for cookie persistence. brownieless.md moves the nonce onto the event-3 row the flow already writes, so the page carries nothing sealed.
 
 ## Unification direction
 
-Resolved: the brownie holds it all. Totp's singleton shape is one `'Totp.'` note per user, replaced on restart; otp's multiplicity is one note per challenge, several per owner at once. OAuth and wallet never needed reload-surviving state, so they stay out.
+Resolved: the brownie holds it all. Totp's singleton shape is one `'Totp.'` note per user, replaced on restart; otp's multiplicity is one note per challenge, several per owner at once. OAuth and wallet never needed reload-surviving state, so they stay out. That resolution is what runs today, and brownieless.md is the plan to supersede it with rows.
 
 # Credential events and audit trail
 
@@ -90,6 +90,8 @@ An event-1 row acts as a watermark — everything before it is dead, everything 
 
 Two futures competed for provisional flow state: relocate the envelope cookies into the brownie, or eliminate them into credential_table event-3 rows. The brownie won (August 2026) — both totp and otp ride as notes, and the trajectory record stands at three steps, each simpler: OTP started with `code_table` (a dedicated table for challenge state), refactored to envelopes in cookies (eliminating the table), then to notes in the brownie (eliminating the cookies). Rows remain available case by case for future state that wants durability or cross-device reach — nothing built today needs it.
 
+**Reopened, September 2026.** The fork was decided days before jsonb entered the menu, and the objection that carried it — a dedicated table or sparse columns per type — does not apply to a json cell on a row that already exists. brownieless.md plans the fourth step of the trajectory: notes become json on credential_table's event-3 rows, and the letter retires, so the browser holds its identity and nothing else. Until that sprint lands, the brownie is what runs.
+
 ## Browser binding: every provisional flow is single-browser
 
 Every provisional flow must be started and completed at the same browserHash. The brownie's letter is bound to the browser at the door — `openBrownie` wipes the notes of a letter whose sealed browserHash disagrees with the one the request's cookie proves — so no flow re-checks it. (OTP: "requested on laptop, reading email on phone" is an edge case — the code must be typed back at the browser that asked, which is simpler and more secure.)
@@ -110,7 +112,7 @@ The early userTag isn't only about credentials. The happy paths that matter most
 
 That's exactly what the early userTag is for. Under "a userTag is an identity we're tracking," pre-signup stars and follows are ordinary rows against the early tag, and signup moves nothing: the tag the person has been using simply acquires proven credentials. The genuinely hard case is the other direction — a visitor accumulates activity as a tracked identity, then signs in to an account that already exists — and now two userTags hold state that needs combining, deliberately and exactly once. The lazy-user flows sketched at the bottom of otp.md (enter a code tomorrow, sign in from a second device without finishing the first) are all variations of this.
 
-These flows matter to the storage decisions, not just to signup: what lives in tables against an early tag versus what the page holds locally before any tag exists follows the settled pattern — provisional state as brownie notes, durable state as credential_table rows — and the signup-era question is where each piece of a not-yet-user's state belongs on that line. Designing the visitor-first flows may motivate or even decide those choices — get them right early, because they're the front door. The signup-side design these flows imply — one-finger first-night accounts, returning without a duplicate, the strengthening ladder — is its own line of work; the concern here is only what state such an early tag parks and where.
+These flows matter to the storage decisions, not just to signup: what lives in tables against an early tag versus what the page holds locally before any tag exists follows the pattern in force — provisional state as brownie notes today, and as json on provisional rows once brownieless.md lands; durable state as credential_table rows — and the signup-era question is where each piece of a not-yet-user's state belongs on that line. Designing the visitor-first flows may motivate or even decide those choices — get them right early, because they're the front door. The signup-side design these flows imply — one-finger first-night accounts, returning without a duplicate, the strengthening ladder — is its own line of work; the concern here is only what state such an early tag parks and where.
 
 ## One query, application logic sifts
 
