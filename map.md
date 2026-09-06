@@ -15,7 +15,7 @@ For instance, Wallet: prove step 1 seals the SIWE nonce into an envelope, and th
 **Does the prove flow need that state to survive a browser reload? (currently by notes in the brownie)**
 For instance, TOTP: by the time the page holds the sealed enrollment secret, the user has already scanned the QR code into their authenticator app. If a reload discards the secret, the entry they just created in their app is orphaned — regeneration is expensive and user-visible. OTP is the same shape: the code already landed in a real inbox, and discarding the challenge invalidates a code the user is about to type, forcing a resend into the rate limits.
 
-**Does the flow involve starting information we should record as mentioned or challenged? (with event 2 and 3 rows)**
+**Does the flow involve starting information we should record as mentioned or challenged? (with Mentioned. and Challenged. rows)**
 For instance, if the server uses Twilio to send an OTP code to alice@example.com, we want a record of that even if Alice never completes the flow — this helps us understand whether Alice, or Twilio, is broken or untrustworthy.
 
 **Can a user hold one, or any number, of this type of credential?**
@@ -45,7 +45,7 @@ Every credential type in the system, plus what remains outside the stack, plus t
 
 **The seven integrated types.** Since July 2026, every credential type lives in the unified stack — rows in credential_table, actions on `/api/credential`, refs in credentialStore, UI in CredentialPanel. The `type_text` strings in the table are the ground truth:
 
-- **Browser** (`Browser.`) — the sign-in session itself; an event-4 row ties a userTag to a browserHash, which rides in `hash_text` and is the lookup `credential13` indexes.
+- **Browser** (`Browser.`) — the sign-in session itself; a Proven. row ties a userTag to a browserHash, which rides in `hash_text` and is the lookup `credential13` indexes.
 - **Name** (`Name.`) — the username in three forms: f0 normalized for routes, f1 formal, f2 display.
 - **Password** (`Password.`) — `hash_text` holds the hash and the note holds the cycles; the page runs pbkdf2 before sending.
 - **TOTP** (`Totp.`) — authenticator app enrollment; the note holds the base32 secret.
@@ -98,7 +98,7 @@ Zero is acceptable everywhere. No credential type is required, and none is more 
 
 **Two enforcement styles, and TOTP is the outlier.** Wallet and OAuth both answer a caller who asks for one too many with a graceful outcome, writing nothing: `WalletFull.` and `WalletClaimedElsewhere.` for wallet, `OauthAlreadyLinked.` and `OauthClaimedElsewhere.` for oauth. TOTP instead tosses, so a second enrollment attempt lands on the error page. The realistic trigger for all of these is a panel that rendered before another tab changed something, which is tier-two innocence getting a tier-three answer, so totp's toss is the one left to reconsider whenever stale-tab handling gets standardized across the signed-in credential actions.
 
-**Where wallet's limit is enforced, and why in two places.** Both prove steps ask `credentialWalletRefusal`. `credentialWalletProve1` asks before any nonce is minted, so a user is never sent to their wallet to sign for a proof we would decline at the end — the signature request itself is the expensive, alarming thing, and a doomed flow should never reach it. `credentialWalletProve2` asks again through `credentialWalletSet`, because the minutes a user spends signing are long enough for another tab to fill the last slot or another account to claim the address. Both live in `icarus/level3.js` rather than at the endpoint, so nothing can reach the table around them and a grid test can walk the whole flow. The event-2 mention row is written before the refusal check, the way an otp mention is, so a refused attempt still leaves its trace.
+**Where wallet's limit is enforced, and why in two places.** Both prove steps ask `credentialWalletRefusal`. `credentialWalletProve1` asks before any nonce is minted, so a user is never sent to their wallet to sign for a proof we would decline at the end — the signature request itself is the expensive, alarming thing, and a doomed flow should never reach it. `credentialWalletProve2` asks again through `credentialWalletSet`, because the minutes a user spends signing are long enough for another tab to fill the last slot or another account to claim the address. Both live in `icarus/level3.js` rather than at the endpoint, so nothing can reach the table around them and a grid test can walk the whole flow. The Mentioned. row is written before the refusal check, the way an otp mention is, so a refused attempt still leaves its trace.
 
 **No floor, yet.** Every remove action is available unconditionally, so a user can remove their name, password, totp, wallet, oauth links, and every address while remaining signed in on the Browser row alone — and then signing out closes the door behind them. The safeguard against emptying an account into an unreachable state is not built.
 

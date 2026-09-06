@@ -1,6 +1,6 @@
 # brownieless
 
-The plan for the sprint that retires the brownie and the page-held envelope. Three credential proof flows have a gap in the middle — totp between the qr scan and the first code, wallet between minting a nonce and receiving the signature, otp between sending a code and hearing it typed back — and today each keeps something across that gap outside the database: totp and otp as notes in the brownie, the sealed letter in localStorage, and wallet as a sealed envelope the page holds in memory. After this sprint each keeps it in the database, on the event-3 row credential_table already writes or gains at the start of the flow, with the trail carrying the one value a hash can carry. The database becomes the only place that knows what a browser is in the middle of, which is the right shape for serverless code in replicated isolates, where no instance can be trusted to remember anything for the next request.
+The plan for the sprint that retires the brownie and the page-held envelope. Three credential proof flows have a gap in the middle — totp between the qr scan and the first code, wallet between minting a nonce and receiving the signature, otp between sending a code and hearing it typed back — and today each keeps something across that gap outside the database: totp and otp as notes in the brownie, the sealed letter in localStorage, and wallet as a sealed envelope the page holds in memory. After this sprint each keeps it in the database, on the Challenged. row credential_table already writes or gains at the start of the flow, with the trail carrying the one value a hash can carry. The database becomes the only place that knows what a browser is in the middle of, which is the right shape for serverless code in replicated isolates, where no instance can be trusted to remember anything for the next request.
 
 Nothing about what the flows do for the user changes, and no migration is needed: credential_table's json column and level2's json-path filter already exist, so the whole sprint is code. It is the first of a run of simplifications, ahead of the smaller dog, and it reopens a fork credential.md recorded as decided in August 2026, two days before jsonb arrived and removed the objection that decided it.
 
@@ -27,7 +27,7 @@ the nonce the wallet signs            nonce        'ygJTo9qkhSTeRoUQg44Kx'
 the brand in the message              brand        'e.fans'
 ```
 
-Tags are twenty-one characters of base62. A hash is thirty-two bytes, fifty-two characters of base32, and the same text always hashes the same; a totp secret is twenty bytes, thirty-two characters of base32, a key rather than a hash, which is why hash_text, guarded to the shape of a hash, never holds one. The three forms of an address are one string for email and diverge for a wallet, which is why all three are always shown. Every credential_table row also carries row_tag, row_tick, and hide, filled by the query helpers, and every trail row row_tick and hide the same way. credential_table's event column is a number — 2 mentioned, 3 challenged, 4 proven — spelled out beside each below; a tag style like Challenged. and Proven. is the likely successor when the credential_table pass gets there. The shapes are the hosted database's as of September 4, 2026. otp also writes a ledger row at send, the whole task the lambda returned, and the document leaves it out: nothing reads ledger_table, the row is a record beside the flow rather than a part of it, and a later pass adds many more like it.
+Tags are twenty-one characters of base62. A hash is thirty-two bytes, fifty-two characters of base32, and the same text always hashes the same; a totp secret is twenty bytes, thirty-two characters of base32, a key rather than a hash, which is why hash_text, guarded to the shape of a hash, never holds one. The three forms of an address are one string for email and diverge for a wallet, which is why all three are always shown. Every credential_table row also carries row_tag, row_tick, and hide, filled by the query helpers, and every trail row row_tick and hide the same way. credential_table's event_text column holds the stage of a row as a word, Mentioned., Challenged., or Proven. The shapes are the hosted database's as of September 6, 2026. otp also writes a ledger row at send, the whole task the lambda returned, and the document leaves it out: nothing reads ledger_table, the row is a record beside the flow rather than a part of it, and a later pass adds many more like it.
 
 **The two sealed shapes.** An envelope is what sealEnvelope makes: a letter object, given an action and an expiration, encrypted under the envelope key into an opaque text the server alone can open, and openEnvelope refuses a letter whose action doesn't match the purpose it was asked for. The brownie is one envelope with the action `'Brownie.'`, whose letter holds a browserHash above a list of notes, each note with a type, an expiration, and an owner; the page parks the text under the localStorage key `brownie`, fetchWorker puts it in the body of every POST, and doorWorker opens it into door.brownie and reseals whatever request code left, answering the page with BrownieSet., BrownieDelete., or nothing. The browserHash is the letter's binding to one browser: sealBrownie stamps it fresh from the request's cookie every time it seals, and openBrownie compares it to the request's browserHash on every open and wipes the notes when they disagree, so a letter transplanted to another browser arrives empty and the response deletes it. That check is the door's, in level2, and every flow relies on it rather than repeating it; the owner on each note is the second binding, and the flow functions check that one themselves, touching only notes whose userTag is the signed-in user's. On the wire and in storage a sealed letter is opaque text; the totp letter below, sealed, is this:
 
@@ -39,7 +39,7 @@ It was sealed with the real envelope key on a workstation and carries the dummy 
 
 **Rules every flow follows after the sprint.**
 
-- The provisional record of a flow is a challenged row, event 3, in credential_table, and hash_text on that row is the browser that started the flow. That is already where a browser hash lives on a credential row — sign-in writes the Browser. row with the browserHash in hash_text, and credentialBrowserGet, the hottest query in the application, reads it back through credential13 — so the rule reads once: on a Browser. row the hash is the browser signed in, and on any event-3 row it is the browser that started the flow. The second step of every flow compares it to the request's browserHash and refuses any other, which is the door's letter binding moved to the one place it matters. credential_table has no browser_hash column, ledger_table and delay_table do, and it does not grow one, because under data-plan.md who and where belong to the ledger. Every challenged row enters credential13, partial on hash_text being non-blank, carrying a value nothing looks up; a b-tree a few thousand entries larger costs storage, not latency.
+- The provisional record of a flow is a Challenged. row in credential_table, and hash_text on that row is the browser that started the flow. That is already where a browser hash lives on a credential row — sign-in writes the Browser. row with the browserHash in hash_text, and credentialBrowserGet, the hottest query in the application, reads it back through credential13 — so the rule reads once: on a Browser. row the hash is the browser signed in, and on any Challenged. row it is the browser that started the flow. The second step of every flow compares it to the request's browserHash and refuses any other, which is the door's letter binding moved to the one place it matters. credential_table has no browser_hash column, ledger_table and delay_table do, and it does not grow one, because under data-plan.md who and where belong to the ledger. Every challenged row enters credential13, partial on hash_text being non-blank, carrying a value nothing looks up; a b-tree a few thousand entries larger costs storage, not latency.
 - The row's start is row_tick, its life is twenty minutes, and both are checked at read. Nothing stores an expiration.
 - Provisional rows stay. A finished, abandoned, or expired challenged row is evidence that the user tried to start something, and a later audit wants it. Nothing deletes or scrubs one; row_tick checked at read is what keeps a stale row from acting live. The credential_table pass will decide what a challenged row becomes when the table holds current state, and this sprint makes that easier by having the rows already in place.
 - A secret that must be recoverable rides the row's json. A value that only needs a yes-or-no check rides the trail as a hash, in a message the flow already looks up, so it costs no new query. Never cold-call the trail with a question like "does this browser have a code out": that is one query per question for every user, nearly all of whom are mid-nothing, and an early otp design built that way was a pile of such queries. The clue that a flow is in flight comes from credential_table, in the queries Get. already makes; only when a flow exists and the user acts does one trail query validate.
@@ -78,41 +78,41 @@ If she cancels instead, `TotpClear.` removes the note and the letter is empty.
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Totp.'
-	event:     4 (proven)
-	f0_text:   ''
-	f1_text:   ''
-	f2_text:   ''
-	hash_text: ''     # we don't put the secret here because hashes in the database are 32 bytes, SHA-256 values
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Totp.'
+	event_text: 'Proven.'
+	f0_text:    ''
+	f1_text:    ''
+	f2_text:    ''
+	hash_text:  ''     # we don't put the secret here because hashes in the database are 32 bytes, SHA-256 values
 	json:
 		secret: 'SSCLAFVSDO6XNPML7JOHL4C2YGERHQUU'
 ```
 
-Then it removes the note, and the letter is empty. Between the two steps the database knew nothing had happened, and an abandoned enrollment leaves no trace anywhere: the hosted table shows it, every Totp. row at event 4, thirty-seven of them, four visible and the rest hidden by re-enrollments.
+Then it removes the note, and the letter is empty. Between the two steps the database knew nothing had happened, and an abandoned enrollment leaves no trace anywhere: the hosted table shows it, every Totp. row Proven., thirty-seven of them, four visible and the rest hidden by re-enrollments.
 
 ### How it works brownieless
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Totp.'
-	event:     3 (challenged)
-	f0_text:   ''
-	f1_text:   ''
-	f2_text:   ''
-	hash_text: 'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # the browser that started the enrollment
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Totp.'
+	event_text: 'Challenged.'
+	f0_text:    ''
+	f1_text:    ''
+	f2_text:    ''
+	hash_text:  'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # the browser that started the enrollment
 	json:
 		secret: 'SSCLAFVSDO6XNPML7JOHL4C2YGERHQUU'
 
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Totp.'
-	event:     4 (proven)
-	f0_text:   ''
-	f1_text:   ''
-	f2_text:   ''
-	hash_text: ''
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Totp.'
+	event_text: 'Proven.'
+	f0_text:    ''
+	f1_text:    ''
+	f2_text:    ''
+	hash_text:  ''
 	json:
 		secret: 'SSCLAFVSDO6XNPML7JOHL4C2YGERHQUU'
 ```
@@ -127,7 +127,7 @@ The grid tests that walk this flow today are the totp enroll suite — the whole
 
 1. credentialTotpEnroll1 writes the challenged row, hash_text the browserHash and json the secret, and loses its letter parameter. It keeps the read that tosses when she is already enrolled.
 2. credentialTotpEnroll2 reads the newest visible challenged row for the user in place of the note, checks row_tick and hash_text, and otherwise runs as today. credentialTotpRecover reads the same row. credentialTotpClear hides it. All three lose the letter parameter; the four gates recover has today become three, since the row's existence replaces the note's.
-3. The endpoint's `TotpEnroll1.`, `TotpEnroll2.`, and `TotpClear.` branches stop passing door.brownie, and attachState's enrollment projection asks recover without a letter. The totp query in attachState widens from event 4 to every event, with the code deciding enrolled or in flight; that is the one filter that changes.
+3. The endpoint's `TotpEnroll1.`, `TotpEnroll2.`, and `TotpClear.` branches stop passing door.brownie, and attachState's enrollment projection asks recover without a letter. The totp query in attachState widens from Proven. to every stage, with the code deciding enrolled or in flight; that is the one filter that changes.
 4. The totp essay above the functions in level3 is rewritten around rows, and the grid tests follow: the letter tests go, the rest pass a browserHash where they passed a letter, and one new case proves a challenged row from another browser is refused.
 5. Smoke, local and deployed: start an enrollment, refresh, and see the qr code on first paint; cancel and see it go; sign in as the same user at a second browser and see an ordinary panel, no qr code; finish the enrollment and see the proven row beside the challenged one in the dashboard.
 
@@ -153,14 +153,14 @@ wallet uses credential_table and a page-held envelope. It uses no brownie note a
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Ethereum.'
-	event:     2 (mentioned)
-	f0_text:   '0x8ba1f109551bd432803012645ac136ddd64dba72'
-	f1_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	f2_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Ethereum.'
+	event_text: 'Mentioned.'
+	f0_text:    '0x8ba1f109551bd432803012645ac136ddd64dba72'
+	f1_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	f2_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	hash_text:  ''
+	json:       {}
 ```
 
 Then it reads credential_table twice for the refusal rules, another holder of the address and her own proven wallets against the limit, and refuses here rather than after she has signed. Passing, it mints the nonce and seals the envelope:
@@ -178,14 +178,14 @@ And writes the challenge:
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Ethereum.'
-	event:     3 (challenged)
-	f0_text:   '0x8ba1f109551bd432803012645ac136ddd64dba72'
-	f1_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	f2_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Ethereum.'
+	event_text: 'Challenged.'
+	f0_text:    '0x8ba1f109551bd432803012645ac136ddd64dba72'
+	f1_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	f2_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	hash_text:  ''
+	json:       {}
 ```
 
 The response carries the nonce and the sealed envelope. The page holds both in memory only, embeds the nonce in the SIWE message it builds, and asks the wallet to sign it. A refresh here drops the page's memory of the nonce and the envelope and orphans any signature request the wallet was showing, while wagmi reconnects the wallet on its own from notes it keeps in localStorage; she is connected again and starts the proof over with one click. Nothing outside the page was created that a restart would orphan, which is the difference from totp and otp, and why the envelope never needed to survive a refresh.
@@ -194,14 +194,14 @@ The response carries the nonce and the sealed envelope. The page holds both in m
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Ethereum.'
-	event:     4 (proven)
-	f0_text:   '0x8ba1f109551bd432803012645ac136ddd64dba72'
-	f1_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	f2_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Ethereum.'
+	event_text: 'Proven.'
+	f0_text:    '0x8ba1f109551bd432803012645ac136ddd64dba72'
+	f1_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	f2_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	hash_text:  ''
+	json:       {}
 ```
 
 The envelope is discarded with the response; nothing the page held survives.
@@ -210,38 +210,38 @@ The envelope is discarded with the response; nothing the page held survives.
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Ethereum.'
-	event:     2 (mentioned)
-	f0_text:   '0x8ba1f109551bd432803012645ac136ddd64dba72'
-	f1_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	f2_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Ethereum.'
+	event_text: 'Mentioned.'
+	f0_text:    '0x8ba1f109551bd432803012645ac136ddd64dba72'
+	f1_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	f2_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	hash_text:  ''
+	json:       {}
 
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Ethereum.'
-	event:     3 (challenged)
-	f0_text:   '0x8ba1f109551bd432803012645ac136ddd64dba72'
-	f1_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	f2_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	hash_text: 'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # new: the browser that started the proof
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Ethereum.'
+	event_text: 'Challenged.'
+	f0_text:    '0x8ba1f109551bd432803012645ac136ddd64dba72'
+	f1_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	f2_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	hash_text:  'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # new: the browser that started the proof
 	json:
 		nonce: 'ygJTo9qkhSTeRoUQg44Kx'                                   # new
 
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Ethereum.'
-	event:     4 (proven)
-	f0_text:   '0x8ba1f109551bd432803012645ac136ddd64dba72'
-	f1_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	f2_text:   '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Ethereum.'
+	event_text: 'Proven.'
+	f0_text:    '0x8ba1f109551bd432803012645ac136ddd64dba72'
+	f1_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	f2_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+	hash_text:  ''
+	json:       {}
 ```
 
-No trail messages. The envelope is gone, and prove1 returns the nonce alone. Of the envelope's five fields only the nonce needed a home: the address is the row's f triad, the browserHash is hash_text, the action is the row's type and event, and the expiration is row_tick plus twenty minutes. The nonce is not a secret from anyone, since the page embeds it in the message the wallet displays before signing, so it rides json rather than the trail; a trail message would prove we issued it, but the row proves that already, and it would be a second read where the row is one.
+No trail messages. The envelope is gone, and prove1 returns the nonce alone. Of the envelope's five fields only the nonce needed a home: the address is the row's f triad, the browserHash is hash_text, the action is the row's type and event_text, and the expiration is row_tick plus twenty minutes. The nonce is not a secret from anyone, since the page embeds it in the message the wallet displays before signing, so it rides json rather than the trail; a trail message would prove we issued it, but the row proves that already, and it would be a second read where the row is one.
 
 **prove1** writes the challenged row with the nonce in json and the browserHash in hash_text. **prove2** parses the nonce out of the signed message and finds the visible challenged row for the user and address that carries it — by the nonce, never by newest, so two tabs proving the same address each find their own challenge, as they do today — then checks the row's row_tick against twenty minutes and its hash_text against the request's browserHash, and verifies the signature around that nonce. The page carries nothing sealed at all: it embeds the nonce in the message it signs, and the server finds the challenge by who, what, and which. A replayed proof after success meets the proven row and the refusal rules, as today.
 
@@ -252,7 +252,7 @@ On the page, the nonce and the envelope are local variables inside one function 
 The grid tests that walk this flow today are the wallet prove suite: the whole flow from nonce to saved proof with a real signature, the envelope tying step two to the browser and the address step one was for, only the connected wallet's own signature over our own nonce proving anything, and a refused flow never minting a nonce. The second becomes the row tying step two to the browser and the address; the rest pass a browserHash where they passed an envelope.
 
 1. credentialWalletProve1 puts the nonce on the challenged row's json and the browserHash in its hash_text, and returns the nonce alone.
-2. credentialWalletProve2 loses its envelope parameter, parses the nonce from the message with viem's parseSiweMessage, finds the challenged row by user, address, event 3, and json nonce, checks row_tick and hash_text, and otherwise runs as today.
+2. credentialWalletProve2 loses its envelope parameter, parses the nonce from the message with viem's parseSiweMessage, finds the challenged row by user, address, Challenged., and json nonce, checks row_tick and hash_text, and otherwise runs as today.
 3. WalletPanel stops destructuring an envelope from prove1's answer and stops passing one to prove2; credentialStore.walletProve2 drops the parameter. The `'ProveWallet.'` envelope action leaves.
 4. The grid tests follow, with two new cases: two challenges for one address, each proving with its own nonce, the second meeting WalletAlreadyProven.; and Alice starting a proof, signing out, and Carol at the same browser finding no challenge of hers.
 5. Smoke, local and deployed: prove a wallet end to end; refresh between the steps and start over; open two tabs and prove in each.
@@ -273,7 +273,7 @@ the nonce is authentic       today: sealed under the envelope key            aft
 for this address             letter.address must match, else toss            the lookup is by user, address, and nonce
 from this browser            letter.browserHash must equal the request's     hash_text must equal the request's
 fresh                        letter.expiration, sealed                       row_tick plus twenty minutes
-for this purpose             action 'ProveWallet.'                           type_text 'Ethereum.' and event 3
+for this purpose             action 'ProveWallet.'                           type_text 'Ethereum.' and event_text 'Challenged.'
 for this user                not checked                                     the lookup is scoped by the signed-in user
 replay after success         WalletAlreadyProven. from the refusal rules     the same
 the page is told             the nonce and an opaque envelope                the nonce
@@ -294,14 +294,14 @@ otp uses credential_table, trail_table, and the brownie. It uses no page-held en
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Email.'
-	event:     2 (mentioned)
-	f0_text:   'alice@example.com'
-	f1_text:   'alice@example.com'
-	f2_text:   'alice@example.com'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Email.'
+	event_text: 'Mentioned.'
+	f0_text:    'alice@example.com'
+	f1_text:    'alice@example.com'
+	f2_text:    'alice@example.com'
+	hash_text:  ''
+	json:       {}
 ```
 
 *Permit.* It reads the trail for one message within five days, and what comes back is a count of the codes this address has had:
@@ -346,13 +346,13 @@ The challenged row:
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Email.'
-	event:     3 (challenged)
-	f0_text:   'alice@example.com'
-	f1_text:   'alice@example.com'
-	f2_text:   'alice@example.com'
-	hash_text: ''
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Email.'
+	event_text: 'Challenged.'
+	f0_text:    'alice@example.com'
+	f1_text:    'alice@example.com'
+	f2_text:    'alice@example.com'
+	hash_text:  ''
 	json:
 		provider: 'Twilio.'
 ```
@@ -400,54 +400,54 @@ A right guess then calls credentialOtpProven, which reads for a holder again, re
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Email.'
-	event:     4 (proven)
-	f0_text:   'alice@example.com'
-	f1_text:   'alice@example.com'
-	f2_text:   'alice@example.com'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Email.'
+	event_text: 'Proven.'
+	f0_text:    'alice@example.com'
+	f1_text:    'alice@example.com'
+	f2_text:    'alice@example.com'
+	hash_text:  ''
+	json:       {}
 ```
 
 The note is gone from the letter, and the snapshot in the same response no longer lists the challenge, so the enter box goes.
 
-**What the page does with all this.** On every page render, on the server, credentialStore.load sends `Get.`, and attachState answers with the whole picture from credential_table: eight queries for a signed-in user, one for the Browser. row by hash and one per type by user, including the Email. and Phone. rows at every event. From door.brownie it adds `task.otps`, the tag, start, and address of each live challenge with the answer left out, and `task.enrollment`, the qr uri rebuilt from the totp note's secret. But the server render cannot see localStorage, so the page's first paint never shows an in-flight flow; after hydration, app.vue's second onMounted asks the store whether the browser holds a brownie, and only then sends a second `Get.` carrying it, and OtpEnterList and TotpPanel fill in a beat later.
+**What the page does with all this.** On every page render, on the server, credentialStore.load sends `Get.`, and attachState answers with the whole picture from credential_table: eight queries for a signed-in user, one for the Browser. row by hash and one per type by user, including the Email. and Phone. rows at every stage. From door.brownie it adds `task.otps`, the tag, start, and address of each live challenge with the answer left out, and `task.enrollment`, the qr uri rebuilt from the totp note's secret. But the server render cannot see localStorage, so the page's first paint never shows an in-flight flow; after hydration, app.vue's second onMounted asks the store whether the browser holds a brownie, and only then sends a second `Get.` carrying it, and OtpEnterList and TotpPanel fill in a beat later.
 
 ### How it works brownieless
 
 ```
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Email.'
-	event:     2 (mentioned)
-	f0_text:   'alice@example.com'
-	f1_text:   'alice@example.com'
-	f2_text:   'alice@example.com'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Email.'
+	event_text: 'Mentioned.'
+	f0_text:    'alice@example.com'
+	f1_text:    'alice@example.com'
+	f2_text:    'alice@example.com'
+	hash_text:  ''
+	json:       {}
 
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Email.'
-	event:     3 (challenged)
-	f0_text:   'alice@example.com'
-	f1_text:   'alice@example.com'
-	f2_text:   'alice@example.com'
-	hash_text: 'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # new: the browser that started the challenge
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Email.'
+	event_text: 'Challenged.'
+	f0_text:    'alice@example.com'
+	f1_text:    'alice@example.com'
+	f2_text:    'alice@example.com'
+	hash_text:  'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # new: the browser that started the challenge
 	json:
 		provider: 'Twilio.'
 		tag:      'swrRT6UA0ZiywklAdfya7'                                # new; the start is row_tick, and the answer is in the trail
 
 credential_table
-	user_tag:  '8quOfIYWkS1cmzj6nsgMm'
-	type_text: 'Email.'
-	event:     4 (proven)
-	f0_text:   'alice@example.com'
-	f1_text:   'alice@example.com'
-	f2_text:   'alice@example.com'
-	hash_text: ''
-	json:      {}
+	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
+	type_text:  'Email.'
+	event_text: 'Proven.'
+	f0_text:    'alice@example.com'
+	f1_text:    'alice@example.com'
+	f2_text:    'alice@example.com'
+	hash_text:  ''
+	json:       {}
 ```
 
 Trail messages at send, the three of today and one new one:
@@ -466,7 +466,7 @@ The brownie note and letter are gone. task.otps is the same shape as today, buil
 
 **Enter, after.** The page sends `OtpEnter.` with the tag and the guess, and nothing else; the endpoint resolves the signed-in user as today. Then credentialOtpEnter, in order:
 
-1. **Find the challenged row by tag**, a json-path filter on event-3 rows, with an expression index the day a real query arrives, per jsonb.md. By tag alone, not by owner, so the housemate case below still lands on SignedOut. Not found, or row_tick older than twenty minutes: Expired.
+1. **Find the challenged row by tag**, a json-path filter on Challenged. rows, with an expression index the day a real query arrives, per jsonb.md. By tag alone, not by owner, so the housemate case below still lands on SignedOut. Not found, or row_tick older than twenty minutes: Expired.
 2. **Browser.** hash_text must equal the request's browserHash. This is the door's binding check moved to the one place it matters: a tag typed at another browser gets Expired., which is what a transplanted letter produces today by arriving empty.
 3. **Owner.** user_tag must be the signed-in user, else SignedOut., without spending a guess. Same rule, same outcome as today.
 4. **Read the trail**, one call, four hashes where today there are three:
@@ -483,9 +483,9 @@ trail read, within twenty minutes
 5. **Holder.** One credential_table read, as today: if another user proved this address while the challenge was live, write closed and answer Held.
 6. **Correct means the fourth hash was found.** Right: write closed, then credentialOtpProven as today, which reads for a holder again and for a visible challenged row of hers, then writes the proven row. Wrong: write guessed-wrong, compute the lives left; none left means write closed and Expired.; otherwise Wrong. with the count. No branch has a note to remove, because the closed trail message is the whole closing.
 
-**What the snapshot must know about closed challenges.** The brownie removed a note the instant its challenge closed, so the enter box vanished with it. A row does not vanish. A resend supersedes naturally, since credentialOtpGet already keeps only the newest row per address; proof supersedes, since event 4 outranks 3; expiration is row_tick plus twenty minutes, checked at read; removal hides every row. Two closings leave no mark on the row: guesses exhausted, and Held. at enter. The trail knows both, because enter wrote the closed message, so the snapshot asks it — one trailGetAny over the tags of the challenges that look live, made only when any do, which is minutes per month. The evidence row stays untouched, and the trail answers the question it already records.
+**What the snapshot must know about closed challenges.** The brownie removed a note the instant its challenge closed, so the enter box vanished with it. A row does not vanish. A resend supersedes naturally, since credentialOtpGet already keeps only the newest row per address; proof supersedes, since Proven. outranks Challenged.; expiration is row_tick plus twenty minutes, checked at read; removal hides every row. Two closings leave no mark on the row: guesses exhausted, and Held. at enter. The trail knows both, because enter wrote the closed message, so the snapshot asks it — one trailGetAny over the tags of the challenges that look live, made only when any do, which is minutes per month. The evidence row stays untouched, and the trail answers the question it already records.
 
-**The snapshot pays nothing new for the signal.** Get. already runs on every page render, on the server, with its eight queries, and the challenged rows already come back in the Email. and Phone. queries, which read every event and already drive the event the page shows. Surfacing a live challenge is projecting the tag out of the newest challenged row's json, and its start from row_tick, when it is under twenty minutes old, inside a collapse that already tracks the newest row per rank. So the query count on page load stays where it is, the mounted follow-up's second round trip leaves, and the enter boxes are on the page at first paint.
+**The snapshot pays nothing new for the signal.** Get. already runs on every page render, on the server, with its eight queries, and the challenged rows already come back in the Email. and Phone. queries, which read every stage and already drive the stage the page shows. Surfacing a live challenge is projecting the tag out of the newest challenged row's json, and its start from row_tick, when it is under twenty minutes old, inside a collapse that already tracks the newest row per rank. So the query count on page load stays where it is, the mounted follow-up's second round trip leaves, and the enter boxes are on the page at first paint.
 
 ### Testing and refactoring steps
 

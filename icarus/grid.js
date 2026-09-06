@@ -921,38 +921,6 @@ grid(async () => {//email and phone: the lifecycle sift, and highest event wins
 	ok(list.length == 1 && list[0].event == 'Proven.' && list[0].f2 == v2.f2)//now the new face has a proof row behind it, and shows
 })
 
-//rehearsal of the event_text backfill, scaffolding that retires with the contraction: synthetic old-shape rows for the three
-//numbers the read-only survey found in production, the verbatim statement of the backfill migration file, per-row assertions,
-//and a second run that must change nothing -- the translation proven against real postgres semantics before anything pushes
-const eventBackfillRehearsalSql = `
-UPDATE credential_table SET event_text = CASE event WHEN 2 THEN 'Mentioned.' WHEN 3 THEN 'Challenged.' WHEN 4 THEN 'Proven.' END WHERE event_text = '';
-`
-grid(async () => {//backfill rehearsal: every numbered row gets its word, hidden rows too, the guard skips dual-written rows, and running twice changes nothing
-	let {clear, pglite} = await getDatabase()
-	await clear('credential_table')
-	let user = Tag()
-
-	let plant = (cells) => queryAddRow({table: 'credential_table', row: {user_tag: user, type_text: 'Email.', f0_text: 'a@x.com', f1_text: 'a@x.com', f2_text: 'a@x.com', hash_text: '', json: {}, ...cells}})//an old-shape row names event alone, and the registry's scaffolding default leaves event_text blank
-	await plant({event: 2})
-	await plant({event: 3})
-	await plant({event: 4})
-	await plant({event: 4, hide: 1})//hidden history translates too
-	await plant({event: 4, event_text: 'Proven.'})//a dual-written row, which the guard must leave alone
-	await plant({type_text: 'Totp.', f0_text: '', f1_text: '', f2_text: '', event: 4, json: {secret: 'X7C25WC6CUCF77BO7BOCVUHAZ553UKYA'}})//another type, to show the statement doesn't care which
-
-	let run = async () => (await pglite.query(eventBackfillRehearsalSql)).affectedRows//the migration file's statement, verbatim
-	ok((await run()) == 5)//the five blank rows translate; the dual-written row matches no guard
-
-	let rows = (await pglite.query(`SELECT * FROM credential_table`)).rows
-	ok(rows.length == 6)
-	let words = {2: 'Mentioned.', 3: 'Challenged.', 4: 'Proven.'}
-	ok(rows.every(r => r.event_text == words[r.event]))//every row's word is the word for its number, the dual-written row included
-	ok(rows.find(r => r.hide == 1).event_text == 'Proven.')//the hidden row translated too
-	ok(rows.find(r => r.type_text == 'Totp.').event_text == 'Proven.')
-
-	ok((await run()) == 0)//a second pass changes nothing
-})
-
 grid(async () => {//email and phone: any number of peer addresses; remove hides the whole lifecycle
 	let {clear} = await getDatabase()
 	await clear('credential_table')

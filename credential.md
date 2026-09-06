@@ -47,7 +47,7 @@ These flows use envelopes for tamper-proof state, but the envelope travels a dif
 
 **OAuth** — since svelteless, no envelope of ours at all. The flow is a browser navigation run by @auth/core inside the apex worker; the transient state of the dance (CSRF, PKCE) lives in Auth.js's own short-lived internal cookies, and our part begins when the signIn callback writes the credential row directly.
 
-**Wallet** — the envelope stays in the request body. The signing happens in-page via a wallet popup (MetaMask, etc.), so there's no navigation away and no need for cookie persistence. brownieless.md moves the nonce onto the event-3 row the flow already writes, so the page carries nothing sealed.
+**Wallet** — the envelope stays in the request body. The signing happens in-page via a wallet popup (MetaMask, etc.), so there's no navigation away and no need for cookie persistence. brownieless.md moves the nonce onto the Challenged. row the flow already writes, so the page carries nothing sealed.
 
 ## Unification direction
 
@@ -59,7 +59,7 @@ Resolved: the brownie holds it all. Totp's singleton shape is one `'Totp.'` note
 
 ## Current state: hide does the work, events are underused
 
-`credential_table` has an `event` column defined as: 1 removed, 2 mentioned, 3 challenged, 4 proven. Most credential functions hardcode `event: 4`. Removal uses `queryHide` (sets the `hide` column), which makes rows invisible to `queryGet`. Wallet is the first type to use events 2 and 3 (WalletProve1 writes mentioned and challenged rows).
+`credential_table` has an `event_text` column holding Mentioned., Challenged., or Proven. Most credential functions write Proven. Removal uses `queryHide` (sets the `hide` column), which makes rows invisible to `queryGet`. Wallet was the first type to write Mentioned. and Challenged. rows (WalletProve1 writes both).
 
 The `hide` mechanism is convenient (level2 query helpers skip hidden rows by default) but destroys history. A user who enrolls TOTP, removes it, enrolls again — the first enrollment is gone, and hide records neither when it happened nor from where. That gap is real and is what the ledger rows answer, with more context than a hidden row could ever have carried.
 
@@ -88,9 +88,9 @@ An event-1 row acts as a watermark — everything before it is dead, everything 
 
 ## Provisional state: the fork, decided
 
-Two futures competed for provisional flow state: relocate the envelope cookies into the brownie, or eliminate them into credential_table event-3 rows. The brownie won (August 2026) — both totp and otp ride as notes, and the trajectory record stands at three steps, each simpler: OTP started with `code_table` (a dedicated table for challenge state), refactored to envelopes in cookies (eliminating the table), then to notes in the brownie (eliminating the cookies). Rows remain available case by case for future state that wants durability or cross-device reach — nothing built today needs it.
+Two futures competed for provisional flow state: relocate the envelope cookies into the brownie, or eliminate them into credential_table Challenged. rows. The brownie won (August 2026) — both totp and otp ride as notes, and the trajectory record stands at three steps, each simpler: OTP started with `code_table` (a dedicated table for challenge state), refactored to envelopes in cookies (eliminating the table), then to notes in the brownie (eliminating the cookies). Rows remain available case by case for future state that wants durability or cross-device reach — nothing built today needs it.
 
-**Reopened, September 2026.** The fork was decided days before jsonb entered the menu, and the objection that carried it — a dedicated table or sparse columns per type — does not apply to a json cell on a row that already exists. brownieless.md plans the fourth step of the trajectory: notes become json on credential_table's event-3 rows, and the letter retires, so the browser holds its identity and nothing else. Until that sprint lands, the brownie is what runs.
+**Reopened, September 2026.** The fork was decided days before jsonb entered the menu, and the objection that carried it — a dedicated table or sparse columns per type — does not apply to a json cell on a row that already exists. brownieless.md plans the fourth step of the trajectory: notes become json on credential_table's Challenged. rows, and the letter retires, so the browser holds its identity and nothing else. Until that sprint lands, the brownie is what runs.
 
 ## Browser binding: every provisional flow is single-browser
 
@@ -100,11 +100,11 @@ Every provisional flow must be started and completed at the same browserHash. Th
 
 TOTP is simple — a user adding TOTP is always already signed in with a userTag. But for signup flows (username+password, email, SMS), this is a brand new person at a browser. They have a browserHash (always), but no userTag. And credential_table requires a valid userTag on every row.
 
-The solution: generate and assign a userTag immediately, at the very first moment there's anything about a person at a browser worth remembering. A userTag is just a random 21-character string — generating one commits to nothing. The moment someone starts any enrollment flow, mint a userTag, write a Browser event-4 row tying it to their browserHash, and provisional credential rows have somewhere to live.
+The solution: generate and assign a userTag immediately, at the very first moment there's anything about a person at a browser worth remembering. A userTag is just a random 21-character string — generating one commits to nothing. The moment someone starts any enrollment flow, mint a userTag, write a Browser. Proven. row tying it to their browserHash, and provisional credential rows have somewhere to live.
 
-This means a userTag no longer implies "this is a user" — it implies "this is an identity we're tracking." The distinction between a signup-in-progress and a full user lives in what credentials have reached event 4, not in whether a userTag exists. This is the right foundation anyway — the system needs to reason about what credentials a userTag has (creator vs fan vs staff), not just whether the tag exists.
+This means a userTag no longer implies "this is a user" — it implies "this is an identity we're tracking." The distinction between a signup-in-progress and a full user lives in what credentials have reached Proven., not in whether a userTag exists. This is the right foundation anyway — the system needs to reason about what credentials a userTag has (creator vs fan vs staff), not just whether the tag exists.
 
-Orphaned userTags (abandoned signups) are not a problem — event-3 rows expire naturally after 20 minutes.
+Orphaned userTags (abandoned signups) are not a problem — Challenged. rows expire naturally after 20 minutes.
 
 ## Pre-user activity: the visitor who acts before signing up
 
@@ -116,7 +116,7 @@ These flows matter to the storage decisions, not just to signup: what lives in t
 
 ## One query, application logic sifts
 
-One query gets all rows for a user, ordered by tick (a few dozen rows at most). `attachState` already assembles the complete picture — it would change from four separate queries (browser, name, password, totp) each filtering by `event: 4` to one query, walking the rows and applying watermark logic per type. Event-2/3 provisionals come back in the same query — no extra round trip for recovery.
+One query gets all rows for a user, ordered by tick (a few dozen rows at most). `attachState` already assembles the complete picture — it would change from four separate queries (browser, name, password, totp) each filtering by `event_text: 'Proven.'` to one query, walking the rows and applying watermark logic per type. Event-2/3 provisionals come back in the same query — no extra round trip for recovery.
 
 Under that design the event column would have become the actual mechanism rather than dead weight. What happens to `event` under the decision above is genuinely open: a snapshot table has no use for a lifecycle vocabulary, but a live challenge is in-flight state rather than history, so mentioned and challenged may want a home that proven does not. That question opens when the migration is planned, not before.
 
@@ -134,7 +134,7 @@ Under that design the event column would have become the actual mechanism rather
 
 **Wallet/Ethereum** — the address rides the f triad per `validateWallet`: f0=lowercased to match as unique, f1=f2=the EIP-55 checksummed face; zero, one, or two proven addresses per user, held as peers, and no two users can hold the same one. Two-step prove flow with envelope in request body (no cookie — signing happens in-page via wallet popup). UI in WalletPanel, wagmi lifecycle in wagmiStore (Pinia), wagmi loaded on demand via `wagmiDynamicImport()` and viem via `viemDynamicImport()` (viem is full-stack — the worker validates SIWE signatures with it too). Two connectors: injected and WalletConnect. First credential type to write events 2/3 (mentioned/challenged in WalletProve1). The prove flow lives in level3 (`credentialWalletProve1/Prove2`) with the cap and one-holder rule enforced by `credentialWalletRefusal`/`credentialWalletHolder`; `credentialWalletGet/Set/Remove` round it out.
 
-**OAuth** (Google, Twitter, Discord, GitHub) — since svelteless, the flow runs on @auth/core directly inside the apex worker: the catch-all at `site/server/api/oauth/[...all].js` owns every url under `/api/oauth/*`, a hidden form POST starts a browser navigation through the provider, and our signIn callback writes the credential row directly, with one-shot `?oauth-done` hints carrying the outcomes that owe the user a word. Provider list in `oauthProviders()` factory keyed off `.env.keys 'oauth, providers, public'`. UI in OauthPanel inside CredentialPanel. Per-row layout: note={provider, identifier, handle, name, proof}, with proof the `{account, profile, user}` auth.js slice as real nested json, a provider's null handle or name becoming an absent key, and identifier carrying the claim check on the credential14 expression index. Writes event-3 (challenged, note={provider}) when the flow starts and event-4 (proven) in the signIn callback. `credentialOauthGet/Set/Remove/Parse/Challenge`.
+**OAuth** (Google, Twitter, Discord, GitHub) — since svelteless, the flow runs on @auth/core directly inside the apex worker: the catch-all at `site/server/api/oauth/[...all].js` owns every url under `/api/oauth/*`, a hidden form POST starts a browser navigation through the provider, and our signIn callback writes the credential row directly, with one-shot `?oauth-done` hints carrying the outcomes that owe the user a word. Provider list in `oauthProviders()` factory keyed off `.env.keys 'oauth, providers, public'`. UI in OauthPanel inside CredentialPanel. Per-row layout: note={provider, identifier, handle, name, proof}, with proof the `{account, profile, user}` auth.js slice as real nested json, a provider's null handle or name becoming an absent key, and identifier carrying the claim check on the credential14 expression index. Writes Challenged. (note={provider}) when the flow starts and Proven. in the signIn callback. `credentialOauthGet/Set/Remove/Parse/Challenge`.
 
 **Email/Phone (OTP)** — any number of addresses per user, all peers, no main or default. f0/f1/f2 = normalized/formal/display forms from `validateEmailOrPhone`; type `'Email.'` or `'Phone.'`. Each address's lifecycle is event rows: 2 mentioned, 3 challenged (note={provider}, `Amazon.`/`Twilio.`, so time-to-validate per provider is queryable), 4 proven — current status is the highest visible event, and remove hides the whole lifecycle. A proven address is held: no other user can be challenged at it or claim it (outcome `Held.`, checked at send and again at enter to close the race where two users held live codes). Otp flows require a signed-in user from send through enter, full stop — each sealed challenge records the userTag that started it, and enter refuses anyone else (outcome `SignedOut.`) — until the early-userTag design opens these flows to signup. Two-step challenge with each live code riding as an owner-scoped note in the brownie, several at once; all codes are entered in the TopBar `OtpEnterList` box, one enter system for demo and credential flows alike. UI in EmailPanel and PhonePanel. One level3 family does all of it, taking type as a parameter: `credentialOtpSend/Enter/Get/Remove/Holder/Mentioned/Challenged/Validated` (the endpoint resolves the signed-in userTag and passes it down; browser binding is the door's).
 
@@ -163,7 +163,7 @@ Now Alice, still certain that address is hers, types it again. This time we don'
 The rules this scenario fixes:
 
 - An unproven mention reserves nothing. Only completed proof claims an address.
-- A proven claim blocks challenges to that address from *other* users. We record the mention, event 2, and stop there — no code is sent. (The holder herself can still be challenged at her own address — that's proving it again, sudo, or signing in a new device.)
+- A proven claim blocks challenges to that address from *other* users. We record the mention, a Mentioned. row, and stop there — no code is sent. (The holder herself can still be challenged at her own address — that's proving it again, sudo, or signing in a new device.)
 - History survives every turn. Alice's mentions, her expired challenge, Alfred's proof — all of it stays in the table.
 
 A neighboring corner: both users hold live challenges to the same address at once (rate limits allow two back-to-back codes), and Alfred proves first. If the claim check runs only at send time, Alice's still-live code would be accepted too, and two users would hold proof of the same address. So the check runs at enter time as well as send time — the second proof records the mention and declines the claim.
@@ -188,6 +188,6 @@ The middle tier isn't a credential thing. A stale tab will eventually click for 
 
 ## The Held. outcome is a quiet enumeration oracle — recorded, accepted
 
-The notification copy is deliberately vague, but the API response still says `outcome: 'Held.'`, and a signed-in user reading their own network tab can probe addresses one at a time: Held. means registered and proven here, success means unclaimed. Three properties temper it, all by design rather than luck: every probe costs a turnstile solve; probing requires a signed-in account, so it's attributable; and every probe writes an event-2 mention row under the prober's own userTag — an enumeration campaign generates its own evidence trail as it runs, and those mentions are exactly the "confused user keeps typing an address that isn't theirs" record from the mistyped-address scenario above, now doing double duty as audit.
+The notification copy is deliberately vague, but the API response still says `outcome: 'Held.'`, and a signed-in user reading their own network tab can probe addresses one at a time: Held. means registered and proven here, success means unclaimed. Three properties temper it, all by design rather than luck: every probe costs a turnstile solve; probing requires a signed-in account, so it's attributable; and every probe writes a Mentioned. row under the prober's own userTag — an enumeration campaign generates its own evidence trail as it runs, and those mentions are exactly the "confused user keeps typing an address that isn't theirs" record from the mistyped-address scenario above, now doing double duty as audit.
 
 We don't hide the outcome, because making Held. indistinguishable from success would lie to the legitimate case it exists for — Alice, who typed her own address wrong and deserves to be blocked with a word. If probing ever shows up in the mention rows, the guard sketch is credential-level: rate-limit Held. responses per requesting user, and alert on mention-row bursts.

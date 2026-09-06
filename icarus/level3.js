@@ -866,7 +866,7 @@ export async function credentialOtpGet({userTag, type}) {//list a user's address
 	for (let row of rows) {
 		let x = m.get(row.f0_text)
 		if (!x) m.set(row.f0_text, x = {f0: row.f0_text, f1: row.f1_text, f2: row.f2_text, event: row.event_text})
-		else if (credentialEventNumbers[row.event_text] > credentialEventNumbers[x.event]) {//rows arrive newest first, so the first row we see at each rank is the newest of that rank
+		else if (credentialEventRanks[row.event_text] > credentialEventRanks[x.event]) {//rows arrive newest first, so the first row we see at each rank is the newest of that rank
 			x.event = row.event_text
 			x.f1 = row.f1_text; x.f2 = row.f2_text//the face follows the proof; an abandoned mention of a variant form can't rewrite how a proven address shows
 		}
@@ -988,8 +988,7 @@ CREATE TABLE credential_table (
 
 	user_tag   CHAR(21)  NOT NULL,  -- the user who mentioned a credential, like an address, was challenged to prove it, proved it, or removed it
 	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Twitter.", "Ethereum.", "Totp.", "Password." or others
-	event      BIGINT    NOT NULL DEFAULT 0,   -- 2 mentioned, 3 challenged, 4 proven; event_text's predecessor, leaving with the contraction
-	event_text TEXT      NOT NULL DEFAULT '',  -- 'Mentioned.', 'Challenged.', or 'Proven.', the same three stages as words; writes fill both while reads still take event, and both defaults are scaffolding until the contraction
+	event_text TEXT      NOT NULL,  -- 'Mentioned.', 'Challenged.', or 'Proven.': the stage of the credential's life this row records
 
 	-- if this credential is a name or address, like email, phone, oauth, web3 wallet, store the validated forms here:
 	f0_text    TEXT      NOT NULL,  -- normalized form of address or name, to match as unique
@@ -1017,8 +1016,8 @@ ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: defau
 export async function credentialGet({userTag}) {//get all the credential information about the given user
 	//ttd november2025
 }
-const credentialEventNumbers = {'Mentioned.': 2, 'Challenged.': 3, 'Proven.': 4}//the three stages of a credential's life, in order, so the collapse below can rank a row by its stage; until the contraction these are also the numbers the old event column held
-export function hasEvent(event) { return hasText(event) && credentialEventNumbers[event] > 0 }//true for one of the three event tags, and nothing else
+const credentialEventRanks = {'Mentioned.': 1, 'Challenged.': 2, 'Proven.': 3}//the three stages of a credential's life, in order, so credentialOtpGet can rank a row by its stage
+export function hasEvent(event) { return hasText(event) && credentialEventRanks[event] > 0 }//true for one of the three event tags, and nothing else
 export function checkEvent(event) { if (!hasEvent(event)) toss('check', {event}) }
 test(() => {
 	ok(hasEvent('Mentioned.') && hasEvent('Challenged.') && hasEvent('Proven.'))
@@ -1032,7 +1031,7 @@ export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 
 	await queryAddRow({table: 'credential_table', row: {
 		user_tag: userTag,
 		type_text: type,
-		event_text: event,//the old event column keeps its scaffolding default until the contraction drops it
+		event_text: event,
 		f0_text: f0, f1_text: f1, f2_text: f2,
 		hash_text: hash, json: note,
 	}})

@@ -9,7 +9,7 @@ Since svelteless the flow runs entirely in the apex worker and ends with a serve
 
 A flow ends one of four ways, and only one of them is a permanent fact:
 
-- **success** — the user proved control of a provider account they hadn't linked. `credentialOauthSet` writes the `event 4` proof row, and the panel shows "linked as X" from that row on its next `Get`. A fact in the database, read like any other credential — no hint needed, correct whether the flow finished a moment or a month ago.
+- **success** — the user proved control of a provider account they hadn't linked. `credentialOauthSet` writes the Proven. row, and the panel shows "linked as X" from that row on its next `Get`. A fact in the database, read like any other credential — no hint needed, correct whether the flow finished a moment or a month ago.
 - **already linked, same account** — only reachable via a stale panel (a second tab, or a bfcache-restored page, still showing the button after another tab linked). Rare and accidental. Silent no-op: nothing is written, and the user lands on a fresh panel that simply shows the provider linked.
 - **claimed elsewhere** — the user genuinely proved control, but another cold3 user already holds that provider identity (one identity, one account), so we decline and write nothing. They're owed an explanation.
 - **cancelled at the provider** — they backed out at the provider's screen, often startled it appeared at all, maybe in the wrong browser profile. No proof. They're owed a nudge to try again.
@@ -22,7 +22,7 @@ The two that owe the user a word — claimed-elsewhere and cancelled — produce
 
 **Guardrails.** Because the value is user-visible and tamperable, the panel maps known outcome keys to fixed copy and renders nothing for anything else — it never echoes the raw param, which would be an XSS hole. It captures the value once for first paint, then `history.replaceState`s it off the URL so a reload, a back button, or a shared link doesn't replay the message.
 
-The collision and cancel outcomes are still recorded for the team in Datadog via `logAudit` ("oauth done" carries `outcome`, "oauth sad path" carries `errorType`) — that's where the funnel lives, paired with the `event 3` challenge row that marks "we sent this user in." The query-string hint is only the user-facing word; nothing transient lands in the database. This is the first place we pass an outcome through the route this way; if another server-driven redirect ever needs to tell the page something, it's the precedent.
+The collision and cancel outcomes are still recorded for the team in Datadog via `logAudit` ("oauth done" carries `outcome`, "oauth sad path" carries `errorType`) — that's where the funnel lives, paired with the Challenged. row that marks "we sent this user in." The query-string hint is only the user-facing word; nothing transient lands in the database. This is the first place we pass an outcome through the route this way; if another server-driven redirect ever needs to tell the page something, it's the precedent.
 
 ## Open items
 

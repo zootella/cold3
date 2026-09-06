@@ -99,7 +99,7 @@ Two things hold across all three. First, the mirror: **Bob possesses but doesn't
 
 The kind of rule the intercredential flows will have to define, worked out here as one example. Edward's night-three return needs it, and it sits in tension with a rule the system already shipped.
 
-Today a proven address has a holder and an unproven one does not: `credentialOtpHolder` finds a holder only on an event-4 (proven) row. Edward's address is event-2/3 only — mentioned and challenged, never proven — so a plain lookup-or-create at proof time would find no holder and mint a fresh account, the duplicate his flow is supposed to prevent. But we can't simply let a mention reserve an address, because the shipped mistyped-address rule says an unproven mention reserves *nothing* — that's exactly what lets Alfred claim the address Alice typo'd into someone else's.
+Today a proven address has a holder and an unproven one does not: `credentialOtpHolder` finds a holder only on a Proven. row. Edward's address is Mentioned. and Challenged. only, never proven — so a plain lookup-or-create at proof time would find no holder and mint a fresh account, the duplicate his flow is supposed to prevent. But we can't simply let a mention reserve an address, because the shipped mistyped-address rule says an unproven mention reserves *nothing* — that's exactly what lets Alfred claim the address Alice typo'd into someone else's.
 
 Both rules survive if routing is conditioned on the **thinness of the mentioner**. Completed anonymous proof of an address routes to:
 

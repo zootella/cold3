@@ -97,7 +97,7 @@ What that bought, all of it previously untested:
 - An envelope past twenty minutes returns a graceful `Expired.` rather than an exception.
 - A signature from the wrong wallet is refused, and so is the right wallet's signature over a nonce we never issued.
 - A completed proof replayed a second time is refused.
-- A refused flow returns no nonce and no envelope at all, and writes its event-2 mention without an event-3 challenge — which is what proves the guard runs *before* the user's wallet is ever opened.
+- A refused flow returns no nonce and no envelope at all, and writes its Mentioned. row without a Challenged. row — which is what proves the guard runs *before* the user's wallet is ever opened.
 
 **What made it possible.** viem is already an icarus dependency, and `privateKeyToAccount` signs the very message `WalletPanel` builds, so a generated key stands in for MetaMask and the whole flow runs without a wallet. That part worked exactly as hoped.
 
