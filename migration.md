@@ -18,6 +18,10 @@ How a live table changes shape while the application runs against it. The patter
 
 When nothing reads the converting columns — a table of records written and rarely queried — the dance collapses to one deploy: code switches to writing the new columns, and the contraction migration carries the backfill inline before the drop. Live readers are what force reads and writes to switch in separate deploys, with the data migration between them.
 
+## A data-only migration
+
+When only the contents of cells change and no column does, there is no expansion and no contraction. One migration file holds one UPDATE, and it is pushed once. The one thing to decide is the order of the push and the deploy. Deploy the code that writes the new value first, then push the UPDATE, so a row written between the two is caught by the update instead of being left with the old value. First done in September 2026, when the ledger's Validated. rows became Proven.
+
 ## When a matching key changes form
 
 The variant for when a value that lookups filter on changes spelling — a case change, a normalization. Either single-form order breaks matching during its window: matching only the new form misses old rows before the backfill converges them, and backfilling first makes old-form matching miss converted rows. So the dual-write deploy writes the new form while its lookups match both spellings, the backfill converges the old rows, and the read-switch narrows matching to the new form alone.

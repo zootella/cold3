@@ -30,7 +30,7 @@ credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialWall
 credentialWalletProve1, credentialWalletProve2, validateWallet,
 credentialOauthGet, credentialOauthSet, credentialOauthRemove, credentialOauthChallenge,
 credentialOtpGet, credentialOtpSend, credentialOtpEnter, credentialOtpRemove, credentialOtpHolder,
-credentialOtpMentioned, credentialOtpChallenged, credentialOtpValidated,
+credentialOtpMentioned, credentialOtpChallenged, credentialOtpProven,
 credentialCloseAccount,
 } from './level3.js'
 
@@ -900,7 +900,7 @@ grid(async () => {//email and phone: the lifecycle sift, and highest event wins
 	list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list.length == 1 && list[0].event == 3)//challenged, still one entry per address
 
-	ok(await credentialOtpValidated({userTag, type: v.type, v}))//saves because a visible challenge started this flow
+	ok(await credentialOtpProven({userTag, type: v.type, v}))//saves because a visible challenge started this flow
 	list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list.length == 1 && list[0].event == 4 && list[0].f0 == v.f0)//proven
 
@@ -914,7 +914,7 @@ grid(async () => {//email and phone: the lifecycle sift, and highest event wins
 	list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list.length == 1 && list[0].event == 4 && list[0].f2 == v.f2)//the face follows the proof; her abandoned mention doesn't rewrite how the proven address shows
 
-	ok(await credentialOtpValidated({userTag, type: v.type, v: v2}))//she completes the re-proof with the variant form
+	ok(await credentialOtpProven({userTag, type: v.type, v: v2}))//she completes the re-proof with the variant form
 	list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list.length == 1 && list[0].event == 4 && list[0].f2 == v2.f2)//now the new face has a proof row behind it, and shows
 })
@@ -930,10 +930,10 @@ grid(async () => {//email and phone: any number of peer addresses; remove hides 
 	//alice proves email a and phone p
 	await credentialOtpMentioned({userTag, type: a.type, v: a})
 	await credentialOtpChallenged({userTag, type: a.type, v: a, provider: 'Amazon.'})
-	ok(await credentialOtpValidated({userTag, type: a.type, v: a}))
+	ok(await credentialOtpProven({userTag, type: a.type, v: a}))
 	await credentialOtpMentioned({userTag, type: p.type, v: p})
 	await credentialOtpChallenged({userTag, type: p.type, v: p, provider: 'Twilio.'})
-	ok(await credentialOtpValidated({userTag, type: p.type, v: p}))
+	ok(await credentialOtpProven({userTag, type: p.type, v: p}))
 	ok((await credentialOtpGet({userTag, type: 'Email.'})).length == 1)
 	ok((await credentialOtpGet({userTag, type: 'Phone.'})).length == 1)//each type keeps its own list
 
@@ -943,7 +943,7 @@ grid(async () => {//email and phone: any number of peer addresses; remove hides 
 	ok((await credentialOtpGet({userTag, type: 'Phone.'}))[0].event == 4)
 	await credentialOtpMentioned({userTag, type: b.type, v: b})
 	await credentialOtpChallenged({userTag, type: b.type, v: b, provider: 'Amazon.'})
-	ok(await credentialOtpValidated({userTag, type: b.type, v: b}))
+	ok(await credentialOtpProven({userTag, type: b.type, v: b}))
 	let list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list.length == 1 && list[0].f0 == b.f0)
 
@@ -969,11 +969,11 @@ grid(async () => {//email and phone: an unproven mention reserves nothing; compl
 	//alfred proves it--the address was his all along, alice typed hers wrong
 	await credentialOtpMentioned({userTag: alfred, type: v.type, v})
 	await credentialOtpChallenged({userTag: alfred, type: v.type, v, provider: 'Amazon.'})
-	ok(await credentialOtpValidated({userTag: alfred, type: v.type, v}))
+	ok(await credentialOtpProven({userTag: alfred, type: v.type, v}))
 	ok((await credentialOtpHolder({type: v.type, f0: v.f0})).userTag == alfred)
 
 	//alice's still-live challenge can no longer complete; an address never has two holders
-	ok((await credentialOtpValidated({userTag: alice, type: v.type, v})) == false)
+	ok((await credentialOtpProven({userTag: alice, type: v.type, v})) == false)
 	ok((await credentialOtpGet({userTag: alice, type: 'Email.'}))[0].event == 3)//her list shows it never got past challenged
 	ok((await credentialOtpHolder({type: v.type, f0: v.f0})).userTag == alfred)//alfred's claim is undisturbed
 })
@@ -1190,13 +1190,13 @@ grid(async () => {//ledger: the three words say subject, verb, and third party, 
 	await ledgerAddMany([//one address challenged by two providers, and a second address proven
 		{action: 'Email.', event: 'Challenged.', provider: 'Twilio.', browserHash, note: {n: 1}},
 		{action: 'Email.', event: 'Challenged.', provider: 'Amazon.', browserHash, note: {n: 2}},
-		{action: 'Email.', event: 'Validated.', browserHash, note: {n: 3}},
+		{action: 'Email.', event: 'Proven.', browserHash, note: {n: 3}},
 		{action: 'Oauth.', event: 'Cancelled.', provider: 'Discord.', browserHash, note: {n: 4}},
 	])
 	ok((await queryGet('ledger_table', {action_text: 'Email.'})).length == 3)//everything about email, whatever happened to it
 	ok((await queryGet('ledger_table', {event_text: 'Challenged.'})).length == 2)//everything we challenged, whatever kind it was
 	ok((await queryGet('ledger_table', {provider_text: 'Twilio.'})).length == 1)//everything around one third party
-	ok((await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Validated.'}))[0].provider_text == '')//a proof involves no third party, so the column stays blank
+	ok((await queryGet('ledger_table', {action_text: 'Email.', event_text: 'Proven.'}))[0].provider_text == '')//a proof involves no third party, so the column stays blank
 
 	await pglite.query('SET enable_seqscan = off')//a handful of rows would always seq scan, so forcing index consideration is what proves each partial predicate is provable from its filter
 	let plan = async (title, cell) => (await pglite.query(`EXPLAIN SELECT * FROM ledger_table WHERE hide = 0 AND ${title} = '${cell}' ORDER BY row_tick DESC`)).rows.map(r => Object.values(r)[0]).join('\n')

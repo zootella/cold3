@@ -12,7 +12,7 @@ credential_table is designed as a **ledger** — every state change is captured 
 Two sub-patterns are in use:
 
 **Pattern A — append rows for state changes.**
-The schema explicitly defines `event = 2 mentioned, 3 challenged, 4 validated, 1 removed`. Validating a credential writes a new event-4 row. The schema's design intent is that removing it would write an event-1 row alongside.
+The schema explicitly defines `event = 2 mentioned, 3 challenged, 4 proven, 1 removed`. Proving a credential writes a new event-4 row. The schema's design intent is that removing it would write an event-1 row alongside.
 
 In current code, we **never actually write event-1 rows.** We use Pattern B instead.
 

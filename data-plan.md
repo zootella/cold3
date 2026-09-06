@@ -56,7 +56,7 @@ None of this happens at once. Each table changes in its own pass, on the expansi
 
 ## Where each table stands
 
-**credential_table is the whole of the work.** It is the one table built fully in the ledger style — event rows for mentioned, challenged, and validated, hide for removal, and a collapse rule in JavaScript on every read. Converting it is the significant migration this direction implies, and it is worth doing carefully and late rather than first.
+**credential_table is the whole of the work.** It is the one table built fully in the ledger style — event rows for mentioned, challenged, and proven, hide for removal, and a collapse rule in JavaScript on every read. Converting it is the significant migration this direction implies, and it is worth doing carefully and late rather than first.
 
 **settings_table is already there.** `settingWrite` performs an ordinary update on the cell, with no new row and no hide. It is the one table that never adopted the ledger style, and it turns out to have been ahead.
 
@@ -70,7 +70,7 @@ None of this happens at once. Each table changes in its own pass, on the expansi
 
 **Every mutating path gets slower by one write.** A call to Supabase costs on the order of a hundred milliseconds, and paths that mutate will now make an extra one. Some of these are already slow and rare — changing a name, proving an address — and will not notice. The direction should say plainly whether any path is hot enough to want batching, or a deferred write, or its own exception.
 
-**The event vocabulary needs a successor.** If credential_table holds current state, mentioned, challenged, and validated stop being rows and become something else: a column on the live row, a transient thing that lives in the brownie, or a fact recorded only in the ledger — and brownieless.md, which moves provisional state out of the brownie and into rows, removes the middle candidate and weakens the third, since a live challenge is state that enter has to read, and ledger_table is queried rarely by design. A challenge is genuinely in-flight state rather than history, so it is not obvious that all three collapse the same way, and that is the first question the credential_table pass has to answer.
+**The event vocabulary needs a successor.** If credential_table holds current state, mentioned, challenged, and proven stop being rows and become something else: a column on the live row, a transient thing that lives in the brownie, or a fact recorded only in the ledger — and brownieless.md, which moves provisional state out of the brownie and into rows, removes the middle candidate and weakens the third, since a live challenge is state that enter has to read, and ledger_table is queried rarely by design. A challenge is genuinely in-flight state rather than history, so it is not obvious that all three collapse the same way, and that is the first question the credential_table pass has to answer.
 
 **The audit is only as good as the call sites.** The old design at least made the history a structural consequence of writing a row. Under this direction, a mutation whose ledger row somebody forgot to write leaves no trace at all. That is a discipline problem rather than a schema problem, and it wants a convention — ideally a shape where the helper that mutates is the same helper that records, so the two cannot come apart.
 

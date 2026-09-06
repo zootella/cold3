@@ -242,7 +242,7 @@ export async function credentialOtpSend({letter, v, provider, userTag, browserHa
 	if (!isInSimulationMode()) {//ttd january, have grid tests work but not actually send messages or need net23 local running
 		sent = await fetchLambda({from: 'Worker.', route: '/message', action: 'Send.', body: {
 			provider: o.provider,
-			service: o.address.type,//"Email." or "Phone." from verifyEmailOrPhone
+			service: o.address.type,//"Email." or "Phone." from validateEmailOrPhone
 			address: o.address.f1,//form 1, canonical, for use with APIs
 			subjectText: o.subjectText, messageText: o.messageText, messageHtml: o.messageHtml,
 		}})
@@ -319,7 +319,7 @@ export async function credentialOtpEnter({letter, tag, guess, userTag}) {
 
 		await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//kill the satisified challenge in the trail
 		letter.notes = letter.notes.filter(o => o.tag != tag)//kill the satisified challenge in the letter
-		await credentialOtpValidated({userTag, type: o.address.type, v: o.address})
+		await credentialOtpProven({userTag, type: o.address.type, v: o.address})
 
 		return {success: true}
 
@@ -449,7 +449,7 @@ export async function credentialPasswordRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \__\___/ \__| .__/ 
 //                                                             |_|    
 
-//totp: a user can have a single verified enrollment or nothing; the note holds the shared secret key which generates codes
+//totp: a user can have a single proven enrollment or nothing; the note holds the shared secret key which generates codes
 export async function credentialTotpGet({userTag}) {
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
@@ -778,7 +778,7 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	let mine = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider}, event: 4})
 	if (mine.length) return {ok: false, outcome: 'OauthAlreadyLinked.'}//already linked; caller must prompt user to Remove first to switch accounts
 
-	//check 2: any OTHER user has THIS specific providerId linked — one provider identity, one cold3 account; queryGet filters hidden rows, so a removed claim is releasable to a new owner
+	//check 2: any OTHER user has THIS specific providerId linked — one provider identity, one cold3 account; queryGet filters hidden rows, so a removed claim is releasable to a new holder
 	//trust the provider: the identifier is unique per user on their side, and is in the normalized form they hand to us — we store it verbatim; credential15 indexes the identifier path this filter rides
 	let claimed = await queryGet('credential_table', {type_text: 'Oauth.', json: {provider, identifier}, event: 4})
 	if (claimed.some(r => r.user_tag != userTag)) return {ok: false, outcome: 'OauthClaimedElsewhere.'}
@@ -825,7 +825,7 @@ export async function credentialOauthGet({userTag}) {//list this user's linked o
 
 /*
 email and phone: a user can prove they control any number of addresses; they're all peers, with no main or default
-each address's lifecycle is a sequence of rows for (userTag, type, f0): event 2 mentioned, 3 challenged, 4 validated
+each address's lifecycle is a sequence of rows for (userTag, type, f0): event 2 mentioned, 3 challenged, 4 proven
 the current status of an address is the highest visible event, not the most recent--a proven address that's later re-challenged and ignored (a sudo check the user abandoned) stays proven; the earlier proof isn't undone by a newer unanswered code
 remove hides every row about that address, so a removed address doesn't linger looking pending; adding it again starts fresh
 v throughout is the result of validateEmailOrPhone, carrying the three forms and .type like 'Email.' or 'Phone.'
@@ -849,7 +849,7 @@ export async function credentialOtpChallenged({userTag, type, v, provider}) {//r
 	await credentialSet({userTag, type, event: 3, f0: v.f0, f1: v.f1, f2: v.f2, note: {provider}})//keep a record of which provider we used
 }
 
-export async function credentialOtpValidated({userTag, type, v}) {//the user typed the correct code; save proof they control this address
+export async function credentialOtpProven({userTag, type, v}) {//the user typed the correct code; save proof they control this address
 	checkTag(userTag)
 	let holder = await credentialOtpHolder({type, f0: v.f0})
 	if (holder && holder.userTag != userTag) return false//another user proved it first, maybe while this challenge was live; decline the claim so an address never has two holders
@@ -972,7 +972,7 @@ export async function credentialNameRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \___|_|\___/|___/\___|  \__,_|\___\___\___/ \__,_|_| |_|\__|
 //
 
-//permanently close a user's account, hiding all their validated credentials across types — challenge-row audit trail (event=3) is preserved
+//permanently close a user's account, hiding all their proven credentials across types — challenge-row audit trail (event=3) is preserved
 export async function credentialCloseAccount({userTag}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, event: 4})//hide active credentials across all types in one shot; event-3 challenges stay visible as audit
@@ -986,9 +986,9 @@ CREATE TABLE credential_table (
 	row_tick   BIGINT    NOT NULL,
 	hide       BIGINT    NOT NULL,
 
-	user_tag   CHAR(21)  NOT NULL,  -- the user who has mentioned, controls, or removed a credential, like an address
+	user_tag   CHAR(21)  NOT NULL,  -- the user who mentioned a credential, like an address, was challenged to prove it, proved it, or removed it
 	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Twitter.", "Ethereum.", "Totp.", "Password." or others
-	event      BIGINT    NOT NULL,  -- 2 mentioned, 3 challenged, 4 validated, 1 removed
+	event      BIGINT    NOT NULL,  -- 2 mentioned, 3 challenged, 4 proven, 1 removed
 
 	-- if this credential is a name or address, like email, phone, oauth, web3 wallet, store the validated forms here:
 	f0_text    TEXT      NOT NULL,  -- normalized form of address or name, to match as unique

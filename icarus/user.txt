@@ -28,7 +28,7 @@ person navigates new device to site
 clicks sign in (or maybe sign up or sign in?! :)
 enters same address (does not require additional matching information, like dob beforehand)
 now, finding the code is required! and when the user does this, there are two positive outcomes:
-- they've validated the address
+- they've proven the address
 - they're signed in on the new device (as well as, still, the first device)
 
 

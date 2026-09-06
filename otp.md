@@ -1,7 +1,7 @@
 
 # OTP Summary
 
-one-time password challenges for email and phone verification
+one-time password challenges that prove email and phone addresses
 a user provides an address, the server generates a short code and delivers it, and the user types it back to prove they control the address
 otp uses no dedicated database table--each live challenge rides as a note in the brownie, the sealed letter in localStorage that carries all provisional credential state, the same pattern totp uses
 brownieless.md plans to move each challenge into json on the event-3 row send already writes, retiring the brownie; until that lands, the note is what runs
@@ -59,7 +59,7 @@ but need to do more on the near-happy path, such as
 
 ## 8[x]integration
 
-done: otp lives in the credential system now. /api/otp is deleted; OtpSendTurnstile. and OtpEnter. are actions on /api/credential. otp flows require a signed-in user from send through enter, full stop--each sealed challenge records the userTag that started it, and enter refuses anyone else--which matches every other credential flow and keeps the audit surface small. the flow writes credential_table rows--event 2 mentioned, 3 challenged (the note remembers the provider), 4 validated--and EmailPanel and PhonePanel in CredentialPanel list and remove addresses. a proven address is held: nobody else can be challenged at it or claim it. the early-userTag design for signup is still ahead, and the old stub functions browserChallengedAddress and browserValidatedAddress, superseded by the credentialOtp family, are deleted.
+done: otp lives in the credential system now. /api/otp is deleted; OtpSendTurnstile. and OtpEnter. are actions on /api/credential. otp flows require a signed-in user from send through enter, full stop--each sealed challenge records the userTag that started it, and enter refuses anyone else--which matches every other credential flow and keeps the audit surface small. the flow writes credential_table rows--event 2 mentioned, 3 challenged (the note remembers the provider), 4 proven--and EmailPanel and PhonePanel in CredentialPanel list and remove addresses. a proven address is held: nobody else can be challenged at it or claim it. the early-userTag design for signup is still ahead, and the old stub functions browserChallengedAddress and browserValidatedAddress, superseded by the credentialOtp family, are deleted.
 
 remaining from the original notes: sign-up and sign-in by code (the user stories below), and provider performance monitoring--the provider on event-3 rows, and the MessageSent. ledger row beside it, are the first queryable pieces of that
 for instance, let's say that Twilio stops working, but Amazon is still going strong
@@ -243,7 +243,7 @@ the second user will have lots of codes sent
 
 it would be great if the record just held challenges and validations
 and didn't care what they were for
-but of course, if user1 has validated address1 with code1
+but of course, if user1 has proven address1 with code1
 and then (either to second factor or sign in another device) requests code2
 but never validates it (they get sidetracked)
 user1 *still* controls address1!
@@ -258,7 +258,7 @@ so make sure your rules allow for that
 later, be able to add
 "Is +1 789 555 1234 still your number? [Yes] [No]"
 "Is name@example.com still your email? [Yes] [No]"
-do that if the haven't validated it in 6 months or whatever, either initial validation, or a later validation for sudo hour or individual destructive transaction permission
+do that if the haven't proven it in 6 months or whatever, either the initial proof, or a later proof for sudo hour or individual destructive transaction permission
 also, if they say no, but that's the only way you have to identify them, what do you do?
 ```
 
@@ -300,7 +300,7 @@ also, if they say no, but that's the only way you have to identify them, what do
 
 
 ```
-We've seen this address at another browser: require verification; outcomes verified and signed in
+We've seen this address at another browser: require proof; outcomes proven and signed in
 Address totally new: challenge address but let them in anyway; new user tag; signed into that browser
 
 Then move on to:
