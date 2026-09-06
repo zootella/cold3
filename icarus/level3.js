@@ -435,7 +435,7 @@ export async function credentialPasswordGet({userTag}) {
 export async function credentialPasswordSet({userTag, hash, cycles}) {
 	checkTag(userTag); checkInt(cycles, 1)//the note holds cycles as a real number, so the boundary checks it is one
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
-	await credentialSet({userTag, type: 'Password.', event: 4, hash, note: {cycles}})
+	await credentialSet({userTag, type: 'Password.', event: 'Proven.', hash, note: {cycles}})
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
@@ -460,7 +460,7 @@ export async function credentialTotpGet({userTag}) {
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
-	await credentialSet({userTag, type: 'Totp.', event: 4, note: {secret}})
+	await credentialSet({userTag, type: 'Totp.', event: 'Proven.', note: {secret}})
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
@@ -620,7 +620,7 @@ export async function credentialWalletSet({userTag, address}) {
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) return {ok: false, outcome}
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})
-	await credentialSet({userTag, type: 'Ethereum.', event: 4, f0: v.f0, f1: v.f1, f2: v.f2})
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})
 	return {ok: true}
 }
 
@@ -655,14 +655,14 @@ export async function credentialWalletProve1({userTag, browserHash, address}) {
 	checkTag(userTag); checkHash(browserHash); checkText(address)
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})//the page connected a real wallet, so anything else is a broken caller
 
-	await credentialSet({userTag, type: 'Ethereum.', event: 2, f0: v.f0, f1: v.f1, f2: v.f2})//event 2: this browser mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})//event 2: this browser mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
 
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) return {outcome}//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
 
 	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
 	let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {nonce, address, browserHash})
-	await credentialSet({userTag, type: 'Ethereum.', event: 3, f0: v.f0, f1: v.f1, f2: v.f2})//event 3: we challenged this address with a nonce
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2})//event 3: we challenged this address with a nonce
 	return {nonce, envelope}
 }
 
@@ -762,7 +762,7 @@ all oauth rows share type Oauth. the provider like Discord. or Google. rides in 
 */
 export async function credentialOauthChallenge({userTag, provider}) {//record we're sending the user into a third party oauth flow
 	checkTag(userTag); checkAction(provider)
-	await credentialSet({userTag, type: 'Oauth.', event: 3, note: {provider}})//event 3 challenged; be able to see how long users take or if for whatever reason they don't make it through in significant numbers
+	await credentialSet({userTag, type: 'Oauth.', event: 'Challenged.', note: {provider}})//event 3 challenged; be able to see how long users take or if for whatever reason they don't make it through in significant numbers
 }
 
 /*
@@ -791,7 +791,7 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	*/
 
 	await credentialSet({
-		userTag, type: 'Oauth.', event: 4,
+		userTag, type: 'Oauth.', event: 'Proven.',
 		f0: email?.f0, f1: email?.f1, f2: email?.f2,//store email from provider here
 		note: {
 			provider,//provider name like 'Discord.'
@@ -841,12 +841,12 @@ export async function credentialOtpHolder({type, f0}) {//which user, if any, has
 
 export async function credentialOtpMentioned({userTag, type, v}) {//record a user mentioned an address
 	checkTag(userTag)
-	await credentialSet({userTag, type, event: 2, f0: v.f0, f1: v.f1, f2: v.f2})
+	await credentialSet({userTag, type, event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})
 }
 
 export async function credentialOtpChallenged({userTag, type, v, provider}) {//record we used provider to send a code to address v
 	checkTag(userTag); checkAction(provider)//provider is a canonical tag like 'Amazon.' or 'Twilio.'; the endpoint maps the page's single letter before any of this
-	await credentialSet({userTag, type, event: 3, f0: v.f0, f1: v.f1, f2: v.f2, note: {provider}})//keep a record of which provider we used
+	await credentialSet({userTag, type, event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, note: {provider}})//keep a record of which provider we used
 }
 
 export async function credentialOtpProven({userTag, type, v}) {//the user typed the correct code; save proof they control this address
@@ -855,7 +855,7 @@ export async function credentialOtpProven({userTag, type, v}) {//the user typed 
 	if (holder && holder.userTag != userTag) return false//another user proved it first, maybe while this challenge was live; decline the claim so an address never has two holders
 	let challenges = await queryGet('credential_table', {user_tag: userTag, type_text: type, f0_text: v.f0, event: 3})
 	if (!challenges.length) return false//no visible start of this flow; the user removed the address mid-challenge, and a late correct code shouldn't resurrect it
-	await credentialSet({userTag, type, event: 4, f0: v.f0, f1: v.f1, f2: v.f2})
+	await credentialSet({userTag, type, event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})
 	return true
 }
 
@@ -896,7 +896,7 @@ export async function credentialBrowserGet({browserHash}) {//what user, if any, 
 }
 export async function credentialBrowserSet({userTag, browserHash}) {//sign this user in at this browser
 	checkTag(userTag); checkHash(browserHash)
-	await credentialSet({userTag, type: 'Browser.', event: 4, hash: browserHash})
+	await credentialSet({userTag, type: 'Browser.', event: 'Proven.', hash: browserHash})
 }
 export async function credentialBrowserRemove({userTag}) {//sign this user out everywhere
 	checkTag(userTag)
@@ -940,7 +940,7 @@ export async function credentialNameSet({userTag, raw1, raw2}) {
 	let v = await credentialNameCheck({raw1, raw2})
 	if (!v) return false
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Name.', event: 4})
-	await credentialSet({userTag, type: 'Name.', event: 4, f0: v.f0, f1: v.f1, f2: v.f2})
+	await credentialSet({userTag, type: 'Name.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})
 	return v
 }
 
@@ -988,7 +988,8 @@ CREATE TABLE credential_table (
 
 	user_tag   CHAR(21)  NOT NULL,  -- the user who mentioned a credential, like an address, was challenged to prove it, proved it, or removed it
 	type_text  TEXT      NOT NULL,  -- credential type, like "Phone.", "Twitter.", "Ethereum.", "Totp.", "Password." or others
-	event      BIGINT    NOT NULL,  -- 2 mentioned, 3 challenged, 4 proven, 1 removed
+	event      BIGINT    NOT NULL DEFAULT 0,   -- 2 mentioned, 3 challenged, 4 proven; event_text's predecessor, leaving with the contraction
+	event_text TEXT      NOT NULL DEFAULT '',  -- 'Mentioned.', 'Challenged.', or 'Proven.', the same three stages as words; writes fill both while reads still take event, and both defaults are scaffolding until the contraction
 
 	-- if this credential is a name or address, like email, phone, oauth, web3 wallet, store the validated forms here:
 	f0_text    TEXT      NOT NULL,  -- normalized form of address or name, to match as unique
@@ -1016,14 +1017,22 @@ ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: defau
 export async function credentialGet({userTag}) {//get all the credential information about the given user
 	//ttd november2025
 }
+const credentialEventNumbers = {'Mentioned.': 2, 'Challenged.': 3, 'Proven.': 4}//the three stages of a credential's life: the tags event_text holds, and the numbers event held before it
+export function hasEvent(event) { return hasText(event) && credentialEventNumbers[event] > 0 }//true for one of the three event tags, and nothing else
+export function checkEvent(event) { if (!hasEvent(event)) toss('check', {event}) }
+test(() => {
+	ok(hasEvent('Mentioned.') && hasEvent('Challenged.') && hasEvent('Proven.'))
+	ok(!hasEvent('Validated.') && !hasEvent('proven.') && !hasEvent('') && !hasEvent(4))
+})
+
 export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', hash = '', note = {}}) {
-	checkTag(userTag); checkText(type); checkInt(event, 1)//these three are required, everything else is optional
+	checkTag(userTag); checkText(type); checkEvent(event)//these three are required, everything else is optional; event is a tag like 'Proven.'
 	checkTextOrBlank(f0); checkTextOrBlank(f1); checkTextOrBlank(f2)
 	checkHashOrBlank(hash)//the row's one meaningful hash, or blank; note is guarded below by level2's isPlain check on the json cell
 	await queryAddRow({table: 'credential_table', row: {
 		user_tag: userTag,
 		type_text: type,
-		event: event,
+		event: credentialEventNumbers[event], event_text: event,//the same stage in both columns while event_text replaces event; every read still takes the number
 		f0_text: f0, f1_text: f1, f2_text: f2,
 		hash_text: hash, json: note,
 	}})

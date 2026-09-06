@@ -735,6 +735,7 @@ grid(async () => {//per-type writes fill hash_text and the note per the k-to-not
 	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})//the email and phone challenged row, the map's other {provider} note
 	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Email.', event: 3}))[0]
 	ok(row.json.provider == 'Amazon.')
+	ok(row.event == 3 && row.event_text == 'Challenged.')//the dual write fills the words beside the number until the contraction
 })
 grid(async () => {//oauth notes: the named account rides the note, and null from the provider becomes an absent key
 	let {clear} = await getDatabase()
@@ -743,6 +744,7 @@ grid(async () => {//oauth notes: the named account rides the note, and null from
 	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd1', handle: 'alex_dev_42', name: null, proof: {account: {providerAccountId: 'd1'}, profile: {global_name: null}, user: {}}})//discord with no display name set hands over null
 	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 4}))[0]
 	ok(row.json.provider == 'Discord.' && row.json.identifier == 'd1' && row.json.handle == 'alex_dev_42')
+	ok(row.event == 4 && row.event_text == 'Proven.')//both columns, as above
 	ok(!('name' in row.json))//null became absence, the blank of a property
 	ok(row.json.proof.profile.global_name === null)//inside the proof, null is data and rides verbatim
 	let got = (await credentialOauthGet({userTag}))[0]

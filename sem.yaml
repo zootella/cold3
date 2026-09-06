@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep5.2248.17489
+  generated: 2026sep6.1433.1571
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -570,10 +570,10 @@ modules:
     note: "build: used by pnpm seal"
     from: root
     versions:
-      declared: ^3.3.3 on 2025jan05 19m old
-      installed: 3.3.3 on 2025jan05 19m old 🕰️ Installed version 1+ year old
-      current: 3.3.3 on 2025jan05 19m old
-      latest: 3.3.3 on 2025jan05 19m old
+      declared: ^3.3.3 on 2025jan05 20m old
+      installed: 3.3.3 on 2025jan05 20m old 🕰️ Installed version 1+ year old
+      current: 3.3.3 on 2025jan05 20m old
+      latest: 3.3.3 on 2025jan05 20m old
     downloads:
       weekly: 129,278,749
       on: 2026aug18.1523.29150
@@ -808,8 +808,8 @@ modules:
     versions:
       declared: ^14.5.0 on 2026feb24 6m old
       installed: 14.7.4 on 2026jun23 2m old
-      current: 14.8.1 on 2026sep04 0m old
-      latest: 14.8.1 on 2026sep04 0m old
+      current: 14.8.2 on 2026sep06 0m old
+      latest: 14.8.2 on 2026sep06 0m old
     downloads:
       weekly: 609,265
       on: 2026aug18.1523.45867
@@ -981,7 +981,7 @@ modules:
     note: "provider: cloudflare cli; oauth and site workspaces"
     from: site
     versions:
-      declared: ^4.63.0 on 2026feb05 6m old
+      declared: ^4.63.0 on 2026feb05 7m old
       installed: 4.105.0 on 2026jun25 2m old
       current: 4.129.0 on 2026sep03 0m old
       latest: 4.129.0 on 2026sep03 0m old
