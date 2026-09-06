@@ -1011,7 +1011,6 @@ CREATE INDEX credential15 ON credential_table (hide, type_text, (json->>'identif
 
 ALTER TABLE credential_table ENABLE ROW LEVEL SECURITY;  -- zero policies: default-deny for supabase's unused anon and authenticated roles; the worker's service_role and PGlite's table owner both bypass
 `)
-//ttd november2025, should event be a tag instead of a number? it's a litle arcane
 
 export async function credentialGet({userTag}) {//get all the credential information about the given user
 	//ttd november2025
