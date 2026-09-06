@@ -79,7 +79,7 @@ async function doorHandleBelow({door, workerEvent, browserHash}) {//the flow its
 		logger: {error(e) { authError = e }},//capture the real error @auth/core caught before it normalizes to a ?error= type; setLogger only overrides the level we pass, so warn/debug keep their defaults
 	}
 
-	//when a flow starts (the signin action) record an audit-trail event-3 row that we're sending this user into the provider — the funnel "started" marker, paired with the "oauth done" completion logged in signIn above
+	//when a flow starts (the signin action) record a Challenged. row that we're sending this user into the provider — the funnel "started" marker, paired with the "oauth done" completion logged in signIn above
 	let [authAction, authProviderName] = (workerEvent.path.split('?')[0].split('/api/oauth/')[1] || '').split('/')//the action and provider Auth.js routes on, e.g. signin / discord
 	if (authAction == 'signin') {
 		let signedIn = await credentialBrowserGet({browserHash})

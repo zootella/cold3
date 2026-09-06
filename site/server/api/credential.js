@@ -41,7 +41,7 @@ async function attachState(task, browserHash, letter) {//attach complete credent
 		}
 		task.wallets = await credentialWalletGet({userTag: user.userTag})//[address, ...] checksummed, zero one or two
 		task.oauths = await credentialOauthGet({userTag: user.userTag})
-		task.emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//[{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
+		task.emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//[{f0, f1, f2, event}, ...] event 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.'
 		task.phones = await credentialOtpGet({userTag: user.userTag, type: 'Phone.'})
 	}
 	task.otps = []//in-flight flow truth rides every snapshot, owner-scoped to the signed-in viewer or none--so signing out clears the enter boxes and enrollment ui, and signing in reveals them

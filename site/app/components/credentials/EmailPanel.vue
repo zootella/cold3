@@ -31,8 +31,8 @@ async function onRemove(f0) {
 <div v-for="a in credentialStore.emails" :key="a.f0">
 	<p class="my-space">
 		<code>{{a.f2}}</code>
-		<template v-if="a.event == 4">proven</template>
-		<template v-else-if="a.event == 3">pending, code sent</template>
+		<template v-if="a.event == 'Proven.'">proven</template>
+		<template v-else-if="a.event == 'Challenged.'">pending, code sent</template>
 		<template v-else>mentioned, no code sent</template>
 		<Button v-if="editing" :click="() => onRemove(a.f0)">Remove</Button>
 	</p>

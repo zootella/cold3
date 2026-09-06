@@ -243,7 +243,7 @@ grid(async () => {//password: set, change, verify single active, remove
 	await credentialPasswordSet({userTag, hash: hash2, cycles: 200})//change password
 	let result = await credentialPasswordGet({userTag})
 	ok(result.hash == hash2 && result.cycles == 200)//verify changed
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
 	ok(rows.length == 1)//only one active password after change
 	await credentialPasswordRemove({userTag})
 	ok((await credentialPasswordGet({userTag})) == false)//now gone
@@ -257,7 +257,7 @@ grid(async () => {//totp: set, re-enroll, verify single active, remove
 	ok((await credentialTotpGet({userTag})) == 'SECRETAAAAAAAAA1')//verify enrolled
 	await credentialTotpSet({userTag, secret: 'SECRETBBBBBBBBB2'})//re-enroll (new phone)
 	ok((await credentialTotpGet({userTag})) == 'SECRETBBBBBBBBB2')//verify new secret
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
 	ok(rows.length == 1)//only one active totp after re-enroll
 	await credentialTotpRemove({userTag})
 	ok((await credentialTotpGet({userTag})) == false)//now gone
@@ -576,7 +576,7 @@ grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wal
 	ok(!prove.nonce && !prove.envelope)//nothing to sign against, so the page can't open a signature request
 
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3.toLowerCase()})//mentions write the triad now, f0 in the matching lowercase form
-	ok(rows.length == 1 && rows[0].event == 2)//the mention is on the record, and no challenge row, because we never challenged
+	ok(rows.length == 1 && rows[0].event_text == 'Mentioned.')//the mention is on the record, and no challenge row, because we never challenged
 	ok(rows[0].f1_text == wallet3 && rows[0].f2_text == wallet3)//and the mention carries the whole triad: the backfill's blank-f1 guard trusts that every row the new code writes is complete
 })
 grid(async () => {//oauth: link multiple providers, re-link single active per provider, remove
@@ -588,7 +588,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 
 	//challenge row written by the oauth endpoint on the signin action; audit trail
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
-	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3, json: {provider: 'Discord.'}})
+	let challenged = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.', json: {provider: 'Discord.'}})
 	ok(challenged.length == 1)
 
 	//link Discord; verify row fields via get+find
@@ -597,7 +597,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd123', handle: 'alice_d', name: 'Alice D.', email: aliceEmailObj, proof: {account: {a: 1}, profile: {p: 2}, user: {u: 3}}})
 	let got = (await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.')
 	ok(got.identifier == 'd123' && got.handle == 'alice_d' && got.email == 'alice@example.com')
-	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event: 4}))[0]
+	let discordRow = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
 	ok(discordRow.f0_text == 'alice@example.com' && discordRow.f2_text == 'alice@example.com')//validated email filled into f0/1/2
 	ok(discordRow.json.proof.account.a == 1)//the note preserves the auth.js slice as real nested json
 
@@ -613,7 +613,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	//to switch accounts the user must Remove first, then Set succeeds and points at the new account
 	await credentialOauthRemove({userTag, provider: 'Discord.'})
 	ok((await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd789', handle: 'alice_new', email: aliceEmailObj})).ok)//wrote now that the slot is free
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event: 4})
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'})
 	ok(rows.length == 1)//only one active Discord row
 	ok((await credentialOauthGet({userTag})).find(o => o.provider == 'Discord.').identifier == 'd789')//new account wins
 
@@ -629,7 +629,7 @@ grid(async () => {//oauth: link multiple providers, re-link single active per pr
 	//Set with no email: f0/1/2 stay blank
 	let userTag2 = Tag()
 	await credentialOauthSet({userTag: userTag2, provider: 'Discord.', identifier: 'd2', handle: 'bob'})
-	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', json: {provider: 'Discord.'}, event: 4}))[0]
+	let bobRow = (await queryGet('credential_table', {user_tag: userTag2, type_text: 'Oauth.', json: {provider: 'Discord.'}, event_text: 'Proven.'}))[0]
 	ok(bobRow.f0_text == '' && bobRow.f1_text == '' && bobRow.f2_text == '')//no email passed → f columns blank
 })
 grid(async () => {//oauth: cross-user providerId uniqueness — one provider identity, one cold3 account; released claim is reclaimable
@@ -728,23 +728,23 @@ grid(async () => {//per-type writes fill hash_text and the note per the k-to-not
 	ok((await credentialBrowserGet({browserHash})).userTag == userTag)//the hottest lookup answers from hash_text
 
 	await credentialOauthChallenge({userTag, provider: 'Discord.'})
-	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 3}))[0]
+	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Challenged.'}))[0]
 	ok(row.json.provider == 'Discord.')//a challenge row's note carries only the provider
 
 	let v = validateEmailOrPhone('alice@example.com')
 	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})//the email and phone challenged row, the map's other {provider} note
-	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Email.', event: 3}))[0]
+	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Email.', event_text: 'Challenged.'}))[0]
 	ok(row.json.provider == 'Amazon.')
-	ok(row.event == 3 && row.event_text == 'Challenged.')//the dual write fills the words beside the number until the contraction
+	ok(row.event_text == 'Challenged.')//the word column, which every read now takes
 })
 grid(async () => {//oauth notes: the named account rides the note, and null from the provider becomes an absent key
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
 	await credentialOauthSet({userTag, provider: 'Discord.', identifier: 'd1', handle: 'alex_dev_42', name: null, proof: {account: {providerAccountId: 'd1'}, profile: {global_name: null}, user: {}}})//discord with no display name set hands over null
-	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event: 4}))[0]
+	let row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Oauth.', event_text: 'Proven.'}))[0]
 	ok(row.json.provider == 'Discord.' && row.json.identifier == 'd1' && row.json.handle == 'alex_dev_42')
-	ok(row.event == 4 && row.event_text == 'Proven.')//both columns, as above
+	ok(row.event_text == 'Proven.')//as above
 	ok(!('name' in row.json))//null became absence, the blank of a property
 	ok(row.json.proof.profile.global_name === null)//inside the proof, null is data and rides verbatim
 	let got = (await credentialOauthGet({userTag}))[0]
@@ -762,7 +762,7 @@ grid(async () => {//wallet: writes store the triad, and the lookups normalize an
 	ok(!(await validateWallet('0xnothexatall')).ok)//text that isn't an address doesn't validate
 
 	ok((await credentialWalletSet({userTag: alice, address: checksummed})).ok)
-	let row = (await queryGet('credential_table', {user_tag: alice, type_text: 'Ethereum.', event: 4}))[0]
+	let row = (await queryGet('credential_table', {user_tag: alice, type_text: 'Ethereum.', event_text: 'Proven.'}))[0]
 	ok(row.f0_text == lower && row.f1_text == checksummed && row.f2_text == checksummed)//the stored triad
 	ok((await credentialWalletGet({userTag: alice}))[0] == checksummed)//callers see the checksummed face from f2
 	ok((await credentialWalletRefusal({userTag: alice, address: lower})) == 'WalletAlreadyProven.')//her own address in the other spelling is still her own address
@@ -896,29 +896,29 @@ grid(async () => {//email and phone: the lifecycle sift, and highest event wins
 	let v = validateEmailOrPhone('alice@example.com')
 	await credentialOtpMentioned({userTag, type: v.type, v})
 	let list = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(list.length == 1 && list[0].event == 2)//mentioned
+	ok(list.length == 1 && list[0].event == 'Mentioned.')//mentioned
 
 	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})
 	list = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(list.length == 1 && list[0].event == 3)//challenged, still one entry per address
+	ok(list.length == 1 && list[0].event == 'Challenged.')//challenged, still one entry per address
 
 	ok(await credentialOtpProven({userTag, type: v.type, v}))//saves because a visible challenge started this flow
 	list = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(list.length == 1 && list[0].event == 4 && list[0].f0 == v.f0)//proven
+	ok(list.length == 1 && list[0].event == 'Proven.' && list[0].f0 == v.f0)//proven
 
 	await credentialOtpChallenged({userTag, type: v.type, v, provider: 'Amazon.'})//a later re-challenge she ignores, like an abandoned sudo check
 	list = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(list[0].event == 4)//highest event wins; the unanswered newer code doesn't demote her proof
+	ok(list[0].event == 'Proven.')//highest event wins; the unanswered newer code doesn't demote her proof
 
 	//she starts adding the address typed differently--a variant raw form that normalizes to the same f0, like a dotted gmail
 	let v2 = {f0: v.f0, f1: 'Alice@Example.com', f2: 'Alice@Example.com'}//hand-built forms stand in for whatever a variant raw would validate to
 	await credentialOtpMentioned({userTag, type: v.type, v: v2})
 	list = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(list.length == 1 && list[0].event == 4 && list[0].f2 == v.f2)//the face follows the proof; her abandoned mention doesn't rewrite how the proven address shows
+	ok(list.length == 1 && list[0].event == 'Proven.' && list[0].f2 == v.f2)//the face follows the proof; her abandoned mention doesn't rewrite how the proven address shows
 
 	ok(await credentialOtpProven({userTag, type: v.type, v: v2}))//she completes the re-proof with the variant form
 	list = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(list.length == 1 && list[0].event == 4 && list[0].f2 == v2.f2)//now the new face has a proof row behind it, and shows
+	ok(list.length == 1 && list[0].event == 'Proven.' && list[0].f2 == v2.f2)//now the new face has a proof row behind it, and shows
 })
 
 //rehearsal of the event_text backfill, scaffolding that retires with the contraction: synthetic old-shape rows for the three
@@ -974,7 +974,7 @@ grid(async () => {//email and phone: any number of peer addresses; remove hides 
 	//she removes a and proves b instead; the phone is undisturbed throughout
 	await credentialOtpRemove({userTag, type: 'Email.', f0: a.f0})
 	ok((await credentialOtpGet({userTag, type: 'Email.'})).length == 0)//a removed address doesn't linger looking pending
-	ok((await credentialOtpGet({userTag, type: 'Phone.'}))[0].event == 4)
+	ok((await credentialOtpGet({userTag, type: 'Phone.'}))[0].event == 'Proven.')
 	await credentialOtpMentioned({userTag, type: b.type, v: b})
 	await credentialOtpChallenged({userTag, type: b.type, v: b, provider: 'Amazon.'})
 	ok(await credentialOtpProven({userTag, type: b.type, v: b}))
@@ -985,8 +985,8 @@ grid(async () => {//email and phone: any number of peer addresses; remove hides 
 	await credentialOtpMentioned({userTag, type: a.type, v: a})
 	list = await credentialOtpGet({userTag, type: 'Email.'})
 	ok(list.length == 2)
-	ok(list.find(x => x.f0 == a.f0).event == 2)
-	ok(list.find(x => x.f0 == b.f0).event == 4)
+	ok(list.find(x => x.f0 == a.f0).event == 'Mentioned.')
+	ok(list.find(x => x.f0 == b.f0).event == 'Proven.')
 })
 
 grid(async () => {//email and phone: an unproven mention reserves nothing; completed proof claims exclusively
@@ -1008,7 +1008,7 @@ grid(async () => {//email and phone: an unproven mention reserves nothing; compl
 
 	//alice's still-live challenge can no longer complete; an address never has two holders
 	ok((await credentialOtpProven({userTag: alice, type: v.type, v})) == false)
-	ok((await credentialOtpGet({userTag: alice, type: 'Email.'}))[0].event == 3)//her list shows it never got past challenged
+	ok((await credentialOtpGet({userTag: alice, type: 'Email.'}))[0].event == 'Challenged.')//her list shows it never got past challenged
 	ok((await credentialOtpHolder({type: v.type, f0: v.f0})).userTag == alfred)//alfred's claim is undisturbed
 })
 
@@ -1021,12 +1021,12 @@ grid(async () => {//otp into credential: the full flow writes lifecycle rows for
 
 	ok((await credentialOtpSend({browserHash: browserHash52, letter, v, provider: 'Amazon.', userTag})).success)
 	let list = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(list.length == 1 && list[0].event == 3)//the send wrote the mention and the challenge
+	ok(list.length == 1 && list[0].event == 'Challenged.')//the send wrote the mention and the challenge
 
 	let o = letter.notes[0]
 	ok((await credentialOtpEnter({letter, tag: o.tag, guess: o.answer, userTag})).success)
 	list = await credentialOtpGet({userTag, type: 'Email.'})
-	ok(list[0].event == 4)//the correct code promoted the address to proven
+	ok(list[0].event == 'Proven.')//the correct code promoted the address to proven
 })
 
 grid(async () => {//otp into credential: a challenge belongs to the user who started it
@@ -1046,7 +1046,7 @@ grid(async () => {//otp into credential: a challenge belongs to the user who sta
 
 	//the owner finishes the flow
 	ok((await credentialOtpEnter({letter, tag: o.tag, guess: o.answer, userTag})).success)
-	ok((await credentialOtpGet({userTag, type: 'Email.'}))[0].event == 4)
+	ok((await credentialOtpGet({userTag, type: 'Email.'}))[0].event == 'Proven.')
 })
 
 grid(async () => {//otp into credential: a held address can't be challenged or claimed by anyone else
@@ -1067,7 +1067,7 @@ grid(async () => {//otp into credential: a held address can't be challenged or c
 	let r = await credentialOtpSend({browserHash: browserHash52, letter: letter2, v, provider: 'Amazon.', userTag: alfred})
 	ok(!r.success && r.outcome == 'Held.')
 	ok(letter2.notes.length == 0)//no challenge was created
-	ok((await credentialOtpGet({userTag: alfred, type: 'Email.'}))[0].event == 2)//the mention is on the record
+	ok((await credentialOtpGet({userTag: alfred, type: 'Email.'}))[0].event == 'Mentioned.')//the mention is on the record
 
 	//alice herself can still request another code to her own address, for a future sudo check or new device
 	let letter3 = {notes: []}

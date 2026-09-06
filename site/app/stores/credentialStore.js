@@ -15,7 +15,7 @@ const enrollment = ref(null)//the signed-in user's in-flight TOTP enrollment {ur
 const recovering = ref(false)//true while mounted()'s recovery Get. is in flight; the totp panel ghosts Add so a fresh enrollment can't race the arriving snapshot
 const wallets = ref([])//checksummed Ethereum addresses the user has proven they control: [address, ...] zero, one, or two
 const oauths = ref([])//array of linked third-party accounts: [{provider, identifier, handle, name, email}, ...]
-const emails = ref([])//the user's email addresses: [{f0, f1, f2, event}, ...] event 4 proven, 3 code sent, 2 only mentioned
+const emails = ref([])//the user's email addresses: [{f0, f1, f2, event}, ...] event 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.'
 const phones = ref([])//the user's phone numbers, same shape
 const otps = ref([])//the signed-in user's live otp code challenges: [{tag, start, address}, ...]; the answers stay sealed in the brownie
 
