@@ -61,7 +61,7 @@ but need to do more on the near-happy path, such as
 
 done: otp lives in the credential system now. /api/otp is deleted; OtpSendTurnstile. and OtpEnter. are actions on /api/credential. otp flows require a signed-in user from send through enter, full stop--each sealed challenge records the userTag that started it, and enter refuses anyone else--which matches every other credential flow and keeps the audit surface small. the flow writes credential_table rows--Mentioned., Challenged. (the note remembers the provider), and Proven.--and EmailPanel and PhonePanel in CredentialPanel list and remove addresses. a proven address is held: nobody else can be challenged at it or claim it. the early-userTag design for signup is still ahead, and the old stub functions browserChallengedAddress and browserValidatedAddress, superseded by the credentialOtp family, are deleted.
 
-remaining from the original notes: sign-up and sign-in by code (the user stories below), and provider performance monitoring--the provider on Challenged. rows, and the MessageSent. ledger row beside it, are the first queryable pieces of that
+remaining from the original notes: sign-up and sign-in by code (the user stories below), and provider performance monitoring--the provider on credential_table's Challenged. rows, and the ledger's Challenged. row beside each send carrying the whole task the lambda returned, are the first queryable pieces of that
 for instance, let's say that Twilio stops working, but Amazon is still going strong
 or, more insidious, Amazon says it's working, but we (need to be able to) notice that users who we send codes through one provider take far longer to complete the flow compared to another provider
 

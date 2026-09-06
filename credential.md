@@ -57,7 +57,7 @@ Resolved: the brownie holds it all. Totp's singleton shape is one `'Totp.'` note
 
 **Decided: the audit trail moves to ledger_table, and credential_table becomes a snapshot.** Every addition, deletion, and mutation of a credential writes a ledger row recording who did it, at which browser, from what address, and when — full and verbose, because that table exists to be written to constantly and read rarely. Freed of carrying its own history, credential_table becomes what it looks like it should be: the currently correct picture, edited when something changes and emptied of a row when the row's absence is the truth. The direction is settled; the shape of the migration that gets there is not, and nothing below has been built.
 
-## Current state: hide does the work, events are underused
+## Current state: hide does the work
 
 `credential_table` has an `event_text` column holding Mentioned., Challenged., or Proven. Most credential functions write Proven. Removal uses `queryHide` (sets the `hide` column), which makes rows invisible to `queryGet`. Wallet was the first type to write Mentioned. and Challenged. rows (WalletProve1 writes both).
 
@@ -116,9 +116,9 @@ These flows matter to the storage decisions, not just to signup: what lives in t
 
 ## One query, application logic sifts
 
-One query gets all rows for a user, ordered by tick (a few dozen rows at most). `attachState` already assembles the complete picture — it would change from four separate queries (browser, name, password, totp) each filtering by `event_text: 'Proven.'` to one query, walking the rows and applying watermark logic per type. Event-2/3 provisionals come back in the same query — no extra round trip for recovery.
+One query gets all rows for a user, ordered by tick (a few dozen rows at most). `attachState` already assembles the complete picture — it would change from four separate queries (browser, name, password, totp) each filtering by `event_text: 'Proven.'` to one query, walking the rows and applying watermark logic per type. Mentioned. and Challenged. provisionals come back in the same query — no extra round trip for recovery.
 
-Under that design the event column would have become the actual mechanism rather than dead weight. What happens to `event` under the decision above is genuinely open: a snapshot table has no use for a lifecycle vocabulary, but a live challenge is in-flight state rather than history, so mentioned and challenged may want a home that proven does not. That question opens when the migration is planned, not before.
+Under that design the stage column would have become the actual mechanism rather than dead weight. What happens to `event_text` under the decision above is genuinely open: a snapshot table has no use for a lifecycle vocabulary, but a live challenge is in-flight state rather than history, so mentioned and challenged may want a home that proven does not. That question opens when the migration is planned, not before.
 
 # Credential integration status
 
