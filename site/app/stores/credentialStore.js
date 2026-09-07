@@ -126,8 +126,8 @@ async function totpRemove() {
 	apply(task)
 }
 
-async function walletProve1({address}) {
-	let task = await fetchWorker('/credential', 'WalletProve1.', {address})
+async function walletProve1({address, connector}) {//connector is 'Injected.' or 'WalletConnect.', how the page connected this wallet; the server keeps it on the challenge
+	let task = await fetchWorker('/credential', 'WalletProve1.', {address, connector})
 	apply(task)
 	return task
 }

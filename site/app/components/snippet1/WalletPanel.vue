@@ -79,7 +79,7 @@ async function onInjectedConnect() {
 			refConnecting.value = false; return
 		} else { log('⛔ on connect caught:', look(e)); refConnecting.value = false; throw e }
 	}
-	await afterConnect(address)
+	await afterConnect(address, 'Injected.')
 	refConnecting.value = false
 }
 async function onWalletConnect() {
@@ -90,7 +90,7 @@ async function onWalletConnect() {
 			onDisplayUri: (uri) => { refUri.value = uri }
 		})
 		refUri.value = ''//hide QR code on success
-		await afterConnect(address)
+		await afterConnect(address, 'WalletConnect.')
 	} catch (e) {
 		refUri.value = ''//hide QR code on any error
 		if (e.name == 'UserRejectedRequestError') {
@@ -109,7 +109,7 @@ async function onWalletConnect() {
 //after a successful connect, decide what to do based on existing proof state
 //address comes from connect()'s return value, not the reactive store, to avoid watchConnection timing races
 //already proven → nothing to do. room for another → prove it. at the limit → disconnect and tell the user to remove one first
-async function afterConnect(address) {
+async function afterConnect(address, connector) {//connector names how the wallet connected, and rides up with the proof as context
 	if (isProven(address)) return//we already hold proof of this wallet
 	if (!hasRoom()) {
 		await disconnect()//was (full, connected) → now (full, none); reject the extra, keep the proofs already held
@@ -117,7 +117,7 @@ async function afterConnect(address) {
 		return
 	}
 	refProving.value = true//claim the connection for the length of the flow; proveConnectedWallet handles its own sad paths and doesn't throw, so there's nothing to unwind
-	await proveConnectedWallet(address)
+	await proveConnectedWallet(address, connector)
 	refProving.value = false
 }
 //called when wagmi reports a new connected address mid-session, e.g. user switched accounts in MetaMask while the tab was open
@@ -129,8 +129,8 @@ async function afterAccountChange(address) {
 	if (hasRoom()) refInstructionalMessage.value = messageSwitched
 	else           refInstructionalMessage.value = messageWalletFull
 }
-async function proveConnectedWallet(address) {
-	let task = await credentialStore.walletProve1({address})
+async function proveConnectedWallet(address, connector) {
+	let task = await credentialStore.walletProve1({address, connector})
 	if (!task.success) {//the server declined to start the flow, which means this panel was working from a stale view of the wallets
 		if (task.outcome == 'WalletAlreadyProven.') return//it turns out we hold this one already; the connection is fine and the next load shows it
 		await disconnect()//was (?, connected) → now (?, none); this wallet can't be proven here, so shave back to the connect buttons

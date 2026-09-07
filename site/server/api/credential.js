@@ -234,7 +234,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//the flow itself is in level3 where grid tests reach it; here we only normalize what the page sent
 		} else if (action == 'WalletProve1.') {
 			let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
-			let prove = await credentialWalletProve1({userTag: user.userTag, address})
+			let prove = await credentialWalletProve1({userTag: user.userTag, address, connector: body.connector})//the page says which connector it used, Injected. or WalletConnect., and the flow refuses any other word
 			if (prove.outcome) return {success: false, outcome: prove.outcome}//a rule declined before any nonce was minted, so the user's wallet is never opened for a proof we'd refuse
 			task.walletProve = prove//{nonce} for the page to sign against
 

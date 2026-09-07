@@ -550,6 +550,7 @@ export async function credentialTotpClear({userTag}) {
 export const walletConstants = Object.freeze({
 
 	limit: 2,//a user can hold two proven addresses at once, and no more 🔑
+	connectors: ['Injected.', 'WalletConnect.'],//the two ways the page connects a wallet, wagmi's injected connector for an extension like MetaMask and the WalletConnect relay for a phone app; the challenged row keeps which one, context for the timing story rather than anything the proof needs
 
 	/*
 	Two is the smallest limit that lets a wallet-only user rotate keys safely. Retiring an old wallet in favor of a
@@ -608,12 +609,13 @@ export async function credentialWalletRefusal({userTag, address}) {
 
 //record proof a user controls an Ethereum address; returns {ok: true} on insert, or {ok: false, outcome} when a rule declines it
 //the rules live here beside the write rather than up at the endpoint, so no path can reach the table around them
-export async function credentialWalletSet({userTag, address}) {
-	checkTag(userTag); checkText(address)
+//nonce is the challenge that proved it, kept in the row's json so the proof points at its history; blank for a proof set directly, as the tests do
+export async function credentialWalletSet({userTag, address, nonce = ''}) {
+	checkTag(userTag); checkText(address); checkTagOrBlank(nonce)
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) return {ok: false, outcome}
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})
-	await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, note: nonce ? {nonce} : {}})//an absent key is the blank of a property
 	return {ok: true}
 }
 
@@ -631,7 +633,9 @@ one we issued: it parses the nonce out of the signed message and looks for this 
 carries it, written in the last twenty minutes. A nonce we never minted, one minted for someone else or another address,
 one past its time, or one already spent all fail that lookup the same way. Once the signature checks out, step 2 hides
 the challenge, so a captured signature replayed later finds its nonce gone; EIP-4361 gives the nonce to prevent replay
-and leaves how to us, and spending it is the plain way.
+and leaves how to us, and spending it is the plain way. The proof keeps the nonce in its own json, so from the proven
+row a person finds the hidden challenge it answered, and the challenge keeps which connector the page used, so the two
+rows together tell how the proof went: started when, over the extension or the relay, and finished when.
 
 Both steps live here rather than at the endpoint so a grid test can walk the whole flow, including a real signature from
 a generated key. The endpoint above is left holding only what it alone knows: the shape of the request.
@@ -646,8 +650,9 @@ again shortly" during an outage instead of being told their good signature is ba
 
 //wallet prove step 1: the page has connected a wallet and wants to prove the person at this browser controls it
 //returns {outcome} when a rule declines the flow before it starts, or {nonce} to go ahead
-export async function credentialWalletProve1({userTag, address}) {
-	checkTag(userTag); checkText(address)
+export async function credentialWalletProve1({userTag, address, connector}) {
+	checkTag(userTag); checkText(address); checkAction(connector)
+	if (!walletConstants.connectors.includes(connector)) toss('use', {connector})//the page names one of the two connectors it has; anything else is a broken caller
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})//the page connected a real wallet, so anything else is a broken caller
 
 	await credentialSet({userTag, type: 'Ethereum.', event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})//the mention: this user mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
@@ -656,7 +661,7 @@ export async function credentialWalletProve1({userTag, address}) {
 	if (outcome) return {outcome}//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
 
 	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
-	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, note: {nonce}})//the challenge: we challenged this address with this nonce, and row_tick is its clock
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, note: {nonce, connector}})//the challenge: we challenged this address with this nonce, row_tick is its clock, and the connector is how she connected
 	return {nonce}
 }
 
@@ -703,7 +708,7 @@ export async function credentialWalletProve2({userTag, address, message, signatu
 
 	//the signature checks out: spend the nonce, then save the proof
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce}})//this challenge alone, so a captured signature replayed later finds its nonce gone; hidden before the write, so a failure between leaves a spent nonce and no proof, and she starts over with a fresh one
-	return await credentialWalletSet({userTag, address})//the rules run again here, because the minutes the user spent signing were long enough for another tab or another account to change the answer
+	return await credentialWalletSet({userTag, address, nonce})//the rules run again here, because the minutes the user spent signing were long enough for another tab or another account to change the answer
 }
 
 //                    _            _   _       _                     _   _     

@@ -466,15 +466,16 @@ grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a r
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
 	const challenges = async () => await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})//her visible challenges
 
-	let prove = await credentialWalletProve1({userTag, address: account.address})//step 1: the page asks for a nonce
+	let prove = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})//step 1: the page asks for a nonce
 	ok(!prove.outcome && hasText(prove.nonce))
 	ok((await credentialWalletGet({userTag})).length == 0)//nothing proven yet; step 1 only wrote the mention and the challenge
 	let rows = await challenges()
-	ok(rows.length == 1 && rows[0].json.nonce == prove.nonce && rows[0].hash_text == '')//the challenge carries the nonce, and belongs to the user, not to a browser
+	ok(rows.length == 1 && rows[0].json.nonce == prove.nonce && rows[0].json.connector == 'Injected.' && rows[0].hash_text == '')//the challenge carries the nonce and how she connected, and belongs to the user, not to a browser
 
 	let signed = await _walletTestSign({account, nonce: prove.nonce})//the wallet signs what the page built
 	ok((await credentialWalletProve2({userTag, address: account.address, ...signed})).ok)
 	ok((await credentialWalletGet({userTag}))[0] == account.address)//step 2 checked the signature and saved the proof
+	ok((await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Proven.'}))[0].json.nonce == prove.nonce)//and the proof names the challenge that proved it
 	ok((await challenges()).length == 0)//and spent the nonce: the challenge is hidden
 })
 grid(async () => {//wallet prove: the challenge belongs to the user and the address step 1 was for, and lives twenty minutes
@@ -484,7 +485,7 @@ grid(async () => {//wallet prove: the challenge belongs to the user and the addr
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
 	let other = await _walletTestAccount('0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba')
 
-	let prove = await credentialWalletProve1({userTag, address: account.address})
+	let prove = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})
 	let signed = await _walletTestSign({account, nonce: prove.nonce})
 	const submit = async (o) => await credentialWalletProve2(//everything correct except what the caller overrides
 		{userTag, address: account.address, ...signed, ...o})
@@ -502,7 +503,7 @@ grid(async () => {//wallet prove: only the connected wallet's own signature, ove
 	let userTag = Tag()
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
 	let other = await _walletTestAccount('0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba')
-	let prove = await credentialWalletProve1({userTag, address: account.address})
+	let prove = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})
 	const submit = async (signed) => await credentialWalletProve2({userTag, address: account.address, ...signed})
 
 	let forged = await _walletTestSign({account: other, nonce: prove.nonce})//somebody else signs the message this user was to sign
@@ -527,8 +528,8 @@ grid(async () => {//wallet prove: two tabs proving the same address each hold th
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
 	const challenges = async () => await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})
 
-	let tab1 = await credentialWalletProve1({userTag, address: account.address})
-	let tab2 = await credentialWalletProve1({userTag, address: account.address})
+	let tab1 = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})
+	let tab2 = await credentialWalletProve1({userTag, address: account.address, connector: 'Injected.'})
 	ok(tab1.nonce != tab2.nonce && (await challenges()).length == 2)//two challenges, one per tab
 
 	let signed2 = await _walletTestSign({account, nonce: tab2.nonce})
@@ -548,7 +549,7 @@ grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wal
 	await credentialWalletSet({userTag, address: wallet1})
 	await credentialWalletSet({userTag, address: wallet2})//this user is at the limit
 
-	let prove = await credentialWalletProve1({userTag, address: wallet3})
+	let prove = await credentialWalletProve1({userTag, address: wallet3, connector: 'WalletConnect.'})
 	ok(prove.outcome == 'WalletFull.')
 	ok(!prove.nonce)//nothing to sign against, so the page can't open a signature request
 
