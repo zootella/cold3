@@ -1,19 +1,25 @@
 # First-Night Accounts
 
-The lightest possible path from stranger to durable account, and the rules that keep it safe. This document is a preview of work we haven't started — notes and worked examples for the intercredential flows, written now while the thinking is fresh, to be built after the credential types are unified and stable.
+The lightest possible path from stranger to durable account, and the rules that keep it safe. This document is a preview of work we haven't started — notes and worked examples for the intercredential flows, written now while the thinking is fresh, to be built after the credential types are unified and stable. Its subject is the moment a credential enters the picture: which credential types a stranger may sign up with, what each one's first night looks like, and how a thin new account stays reasonably safe while it grows. What comes before that moment, the anonymous user who stars and follows with no account at all, and what happens to that state when an account arrives, is anonymous-users.md's subject.
 
-## What we're building toward
+## Which credentials a stranger may sign up with
 
-A guess about which credential types will turn out to be the easy ones, and therefore the popular ones: **oauth, phone, email, and date of birth**. Easy to do with one finger, so the ones real users in real numbers will actually reach for. (Three of the four are integrated credential types today; date of birth is not a type yet — it was floated early, dismissed, and revived by the one-thumb design below.)
+A verdict per type, from the seven the credential system integrates, by how easy each is with one finger and how many real users will reach for it:
 
-Around those four, four aims:
+- **Email and phone: yes, and they will be the popular ones.** A code to an inbox or a handset is the flow everyone has completed elsewhere, and both are built: the code flows run on Challenged. rows since September 2026, so a first-night account is a mention and a challenge that already exist. Phone pairs with a knowledge factor for the one-thumb flow below; email stands alone.
+- **OAuth: yes, and it will be common.** A tap into the provider's already-installed app and a biometric, no inbox trip. Integrated, and the flow the provider owns is the one users have done a hundred times.
+- **Wallet: yes, and it matters here.** Connect-and-sign is unfamiliar to nearly everyone and completely routine to crypto-native users, who are a population this product is for. Sign-In with Ethereum proves control of an address in one signature, and the prove flow runs on rows too. Its first night is the same connect-and-sign as adding a wallet today, with no account behind it yet.
+- **TOTP: no, by choice.** An authenticator app is a second factor, never a first, and the reasons are in map.md: the highest friction possible for a first step, no channel left to reach the person, and a strong contrary expectation that the app comes after you are identified.
+- **Name and password: exists today.** The sign-up that runs now, and the one that stays behind the easier doors for people who want it.
+- **Date of birth: not a credential type, and proposed as a knowledge factor.** Floated early, dismissed, and revived by the one-thumb design below as the thing that rides beside a phone number to block the person who inherits the number.
 
-- **Let people favorite and follow before any account exists.** A visitor can act — star a post, follow a creator — without being forced through signup first, and that activity is waiting for them when they come back.
+Around those, three aims:
+
 - **Let a person make an account with one finger, without leaving the page, on their first night.** No inbox trip, no app install, no password manager — the whole thing completes on the screen in front of them.
 - **Let them return to that account without minting a duplicate.** Later, from the same device or a new one, the system recognizes them and leads them back to the account they already have, rather than starting a second one beside it.
 - **Make these accounts reasonably secure, but deliberately not secure enough to hold content or move money.** First-night users are getting their feet wet. The account should resist a casual nearby attacker, but it is explicitly not trusted with anything valuable — the system requires additional setup before a user crosses into creating content or moving money.
 
-The tension across all four is that easy and secure pull against each other, and the resolution is to make the account's *capabilities* grow with its *credentials* rather than trying to make a one-finger account safe enough for everything at once.
+The tension across all three is that easy and secure pull against each other, and the resolution is to make the account's *capabilities* grow with its *credentials* rather than trying to make a one-finger account safe enough for everything at once.
 
 ## Where this sits in the credential work
 
@@ -21,7 +27,7 @@ The credential work has come through two named stretches, and this document prev
 
 **The standalone demos.** Each credential type was first built as a standalone demo that proves the full flow through the real stack: can we actually send an email or an SMS through the provider, how does the page catch the code the user types back, what do the notification components look like, how do the envelope-and-cookie round trips carry provisional state between steps. The plumbing is real — Twilio and Amazon reached through the net23 lambdas, live components, real cookies. This was a significant starting effort, and its point was to prove each mechanism works end to end before building anything on top of it.
 
-**The unification.** Take those proven demos and fold them into one full-stack system: rows in `credential_table`, refs and methods in `credentialStore`, UI in `CredentialPanel`, actions on one endpoint. This is the current work. Browser, Name, Password, TOTP, Wallet, OAuth, and OTP (email/phone) are integrated; the storage refactor that moves envelopes off cookies and the ledger-vs-traditional questions are in flight.
+**The unification.** Take those proven demos and fold them into one full-stack system: rows in `credential_table`, refs and methods in `credentialStore`, UI in `CredentialPanel`, actions on one endpoint. Done: Browser, Name, Password, TOTP, Wallet, OAuth, and OTP (email/phone) are integrated, and as of September 2026 every flow's provisional state is a Challenged. row in credential_table, found by userTag, with nothing held in a cookie or a letter. Every flow function takes a userTag and never a browser, which is the seam the sign-up work builds above: sign-up changes who calls those functions, not what they do.
 
 **The intercredential flows.** Once the types are secure and correct standing side by side, design the flows that cross between them — and between different people, devices, and sessions. This is where we put the whole cast on one whiteboard, decide what's easy and therefore common, resolve the conflicts, and keep it all secure. The flows in this document are their early notes: none of it is built, and some of it revises rules the earlier work shipped.
 
@@ -42,10 +48,6 @@ The payoff is that a familiar flow arrives with **folk rules** already attached.
 ## The flows
 
 Worked examples, each a short story followed by what it demands of the system. The cast recurs: Alice and Edward are the honest users; Bob and the roommate are the nearby attackers; Alfred is the innocent collision.
-
-### Following and favoriting before any account
-
-A visitor follows a creator and stars a post with no signup. The activity saves against an identity we're already tracking — an early userTag, or before that the browser itself. Returning the next day on the same browser, they see it, and can build on it. This is the front door, and the early-identity machinery it rests on is the umbrella credential-system concern: pre-signup stars and follows are ordinary rows against an early tag, and a later signup moves nothing, because the tag simply acquires proven credentials. The genuinely hard direction is a visitor who accumulates activity and then signs into an account that already exists — two identities that must be combined, deliberately and exactly once.
 
 ### The one-thumb flow (Alice)
 
