@@ -10,6 +10,8 @@ Nearly every mutation elsewhere in the database will be accompanied by one or se
 
 The traffic profile is lopsided on purpose: **written to constantly, queried rarely.** It is not in the path of any page render, and no application logic waits on reading it. It exists for the investigation that comes later, and it has two kinds of reader. A staff member reconstructing what happened to somebody who has written in with a story is one. The running application is the other — the round robin idea, where server code notices that a provider has broken without telling us, is a query over exactly this record, and so is anything that wants to know how a class of interaction has been going lately.
 
+Each row is one granular fact, and never an analysis of others. A duration is not a cell: two rows about the same thing, each with its own tick, are the duration, and reading it is server code's job, the way round robin will read the seconds from a code's send to its proof as the gap between the challenge's row and the proof's, both carrying the challenge's tag. Keeping the tables to facts is what keeps every later question askable, including the ones nobody has thought of yet.
+
 What makes this workable now is that ledger_table is already built and already general. It was designed as one table for a variety of uses rather than as the audit half of any particular table, so adopting it broadly asks nothing new of its schema. The work ahead is call sites, not columns.
 
 ## Reconstructing the worst day

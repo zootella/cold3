@@ -6,7 +6,7 @@ sayPlural,
 const credentialStore = useCredentialStore()
 
 //this component is on TopBar, so we mount once and always at the start of the spa
-//live challenges arrive owner-scoped in the store's otps; the server render paints signed-in state, and challenges held in the brownie land a beat later, when the mounted follow-up Get. sends it up--localStorage is invisible to ssr
+//live challenges arrive owner-scoped in the store's otps, painted with the server render like the rest of the snapshot
 let p = credentialStore.load()
 if (import.meta.server) await p//flex: block the server render so the store's snapshot paints with the page; on the client, loaded state arrived in the payload
 

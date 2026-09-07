@@ -32,7 +32,6 @@ import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
 fetchWorker, fetchLambda, fetchProvider, Key,
 originDomain,
-brownieGetAll, brownieAdd,
 
 /* level 2 query */
 SQL, getDatabase,
@@ -197,10 +196,10 @@ export const otpConstants = {//factory settings for OTP codes to prove email and
 }
 Object.freeze(otpConstants)
 
-export async function credentialOtpSend({letter, v, provider, userTag, browserHash}) {
+export async function credentialOtpSend({v, provider, userTag, browserHash}) {
 	checkTag(userTag)//the endpoint resolved the signed-in user and answered SignedOut. if there wasn't one; an otp flow requires a signed-in user from send through enter
 	checkAction(provider)//and the endpoint mapped the page's provider letter to a canonical tag like 'Amazon.' or 'Twilio.'; fail loud here, before anything reaches the lambda
-	checkHash(browserHash)//and the door hashed the browser tag it requires on every request
+	checkHash(browserHash)//the door hashed the browser tag it requires on every request; the challenge never binds to it, but the ledger row at the end names it as who and where
 
 	// 📬 Step 0 Claim: Has another user already proven they control this address?
 	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
@@ -224,9 +223,8 @@ export async function credentialOtpSend({letter, v, provider, userTag, browserHa
 
 	// 📬 Step 2 Compose: Make a new random code and compose message text about it
 	let o = {//o holds information about this new challenge
-		tag: Tag(),//identifier of the challenge
-		answer: otpGenerate(strength),//the correct answer, which we'll send to address and encrypt in envelope
-		start: Now(),//challenge creation time; user has 20 minutes from now to enter correct answer
+		tag: Tag(),//identifier of the challenge; the page sends it back with each guess, and every row and message about the challenge carries it
+		answer: otpGenerate(strength),//the correct answer, which we'll send to address and keep only as a hash in the trail
 		provider: provider,//ttd january, robin system will choose this
 		address: v,//validated address with three forms as well as .type like "Email." or "Phone."
 	}
@@ -246,81 +244,53 @@ export async function credentialOtpSend({letter, v, provider, userTag, browserHa
 			address: o.address.f1,//form 1, canonical, for use with APIs
 			subjectText: o.subjectText, messageText: o.messageText, messageHtml: o.messageHtml,
 		}})
+	} else {
+		(await getDatabase()).inbox.push({type: o.address.type, f0: o.address.f0, tag: o.tag, answer: o.answer})//the message lands in the inbox the simulation database carries instead, so a grid test learns the code the way a person does, by reading the message
 	}
 
-	// 📬 Step 4 Sent: Record to trail and update letter
-	let s = {//o is big, with text and HTML message text; the note keeps just what credentialOtpEnter needs
-		type: o.address.type,//the note names the credential type its flow is proving, 'Email.' or 'Phone.', matching credential_table's ground truth
-		expiration: o.start + otpConstants.expiration,//the note's own deadline; the door filters expired notes at open, and trail enforces the same horizon for callers beneath the endpoint
-		tag: o.tag,
-		answer: o.answer,
-		start: o.start,
-		userTag,//the user who started this challenge, sealed in; credentialOtpEnter refuses anyone else, and display is scoped to the signed-in viewer
-		address: {
-			ok: o.address.ok,
-			f0: o.address.f0, f1: o.address.f1, f2: o.address.f2,
-			type: o.address.type,
-		},
-	}
-	let messages = []
-	let x = brownieGetAll(letter, s.type, userTag).find(f => f.address.f0 == o.address.f0)//look for this user's preexisting challenge to this same address; scoped by owner, so a housemate's challenge to the same address rides on
-	if (x) {//if we found one, the new one must replace it
-		messages.push({message: safefill`OTP closed challenge: tag ${x.tag}`})//close x on the trail
-		letter.notes = letter.notes.filter(f => f.tag != x.tag)//remove x from the letter; challenge tags are globally unique
-	}
-	brownieAdd(letter, s)//add rather than set, because one user holds several live challenges at once, one per address
-	messages.push({message: safefill`OTP opened challenge: address ${o.address.f0}`})//record we bothered this address
-	messages.push({message: safefill`OTP opened challenge: tag ${o.tag}`})//record we created this challenge
-	await trailAddMany(messages)
+	// 📬 Step 4 Sent: Record the challenge, in the trail and in credential_table
+	await queryHide('credential_table', {user_tag: userTag, type_text: o.address.type, f0_text: o.address.f0, event_text: 'Challenged.'})//a resend replaces her earlier live challenge to this address: hidden, its code is dead and the snapshot shows one enter box per address; scoped by owner, so a housemate's challenge to the same address rides on
+	await trailAddMany([
+		{message: safefill`OTP opened challenge: address ${o.address.f0}`},//record we bothered this address; the permit step counts these across every user who ever asked for a code here
+		{message: safefill`OTP answer: tag ${o.tag} answer ${o.answer}`},//the answer, as the hash of this message; enter hashes the guess into the same words and looks for a match
+	])
+	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider, tag: o.tag})//the Challenged. row: the state of the flow, with the tag that names it and the provider that carried the code
 
-	await credentialOtpChallenged({userTag, type: o.address.type, v: o.address, provider: o.provider})//the Challenged. row, recording which provider carried the code
-
-	if (sent) await ledgerAdd({action: o.address.type, event: 'Challenged.', provider: o.provider, browserHash, userTag, hash: await hashText(o.address.f0), note: sent})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send; the hash of the address gathers it with every other record about that address; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
+	if (sent) await ledgerAdd({action: o.address.type, event: 'Challenged.', provider: o.provider, browserHash, userTag, hash: await hashText(o.address.f0), json: {tag: o.tag, ...sent}})//the whole task the lambda returned--provider, parameters, request, response, error, duration--kept as a queryable record of this third party send, with the tag so the record is found by the challenge it belongs to; the hash of the address gathers it with every other record about that address; last, after the challenge is fully recorded, so a refused note can't strand a code that's already in the user's inbox
 
 	return {success: true}//ttd january, if the lambda fails, but doesn't throw, we know there's no email waiting, but don't tell the page, or try a second provider; revisit this choice at some point
 }
 
 //the user entered a code on the page, which could be right or wrong
-export async function credentialOtpEnter({letter, tag, guess, userTag}) {
-	checkTag(userTag)//as at send, the endpoint resolved the signed-in user before calling us
+export async function credentialOtpEnter({tag, guess, userTag}) {
+	checkTag(userTag); checkTag(tag)//as at send, the endpoint resolved the signed-in user before calling us; the tag is the page's handle on the enter box she typed into, learned from the snapshot
 
-	//find the challenge by tag alone, not by owner: a housemate entering at someone else's challenge must hear SignedOut. below, not Expired., because the remedies differ
-	let o = letter.notes.find(o => o.tag == tag)//the door filtered expired notes at open, and the trail check below enforces the same horizon for callers beneath the endpoint
-	if (!o) return {success: false, outcome: 'Expired.'}//probably expired, maybe never existed, either way lead the user to try again with a new challenge
+	//find the challenge: this user's visible challenged row carrying this tag; starting from the user is what keeps a housemate's guess at her box from finding anything
+	let challenge = (await queryGet('credential_table', {user_tag: userTag, event_text: 'Challenged.', json: {tag}}))[0]
+	if (!challenge || Now() >= challenge.row_tick + otpConstants.expiration) return {success: false, outcome: 'Expired.'}//no live challenge: never hers, past its twenty minutes, replaced by a resend, or already closed; every way, lead the user to request a new code
+	let v = {ok: true, f0: challenge.f0_text, f1: challenge.f1_text, f2: challenge.f2_text, type: challenge.type_text}//the address, in the shape validateEmailOrPhone gave send
 
 	let rows = await trailGetAny([
-		safefill`OTP opened challenge: tag ${tag}`,
-		safefill`OTP closed challenge: tag ${tag}`,
 		safefill`OTP guessed wrong: tag ${tag}`,
-	], otpConstants.expiration)//we need to find three different messages in the trail table, but it only takes one call out to supabase
-
-	const openedHash = await hashText(safefill`OTP opened challenge: tag ${tag}`)
-	const closedHash = await hashText(safefill`OTP closed challenge: tag ${tag}`)
-	const missedHash = await hashText(safefill`OTP guessed wrong: tag ${tag}`)//compute same message hashes here to find and filter next
-
-	let opened = rows.find(r => r.hash == openedHash)//true if we have proof we opened a challenge with this tag in the last 20min
-	let closed = rows.find(r => r.hash == closedHash)//true if we found proof we closed this challenge in the same time horizon
+		safefill`OTP answer: tag ${tag} answer ${guess}`,
+	], otpConstants.expiration)//two hashes in one call to supabase: the wrong guesses so far, and the answer message, which the guess hashes into only when it's right
+	const missedHash = await hashText(safefill`OTP guessed wrong: tag ${tag}`)
+	const answerHash = await hashText(safefill`OTP answer: tag ${tag} answer ${guess}`)//compute the same message hashes here to find and filter next
 	let missed = rows.filter(r => r.hash == missedHash).length//number of wrong guesses we recorded on this challenge
-
-	if (!(opened && !closed && missed < otpConstants.guesses)) return {success: false, outcome: 'Expired.'}//make sure trail agrees that this is a challenge we opened, didn't close, and still has guesses; very unlikely, possible with race condition, or tampering; ok to treat like "Expired, please request a new code" rather than blowing up the page
-
-	//an otp flow requires being signed in as the same user from send through enter, full stop
-	if (userTag != o.userTag) return {success: false, outcome: 'SignedOut.'}//signed in as someone other than the user who started this challenge; refuse without spending a guess, and the challenge stays live for its owner
+	let correct = rows.some(r => r.hash == answerHash)//true if the guess is the answer
+	if (missed >= otpConstants.guesses) return {success: false, outcome: 'Expired.'}//the fourth wrong guess hides the challenge, so this can't be reached; the guard stays beneath it
 
 	//before considering the guess, make sure another user hasn't proven this address while this challenge was live; the send guard can't catch a race where both users held live codes and the other validated first
-	let holder = await credentialOtpHolder({type: o.address.type, f0: o.address.f0})
+	let holder = await credentialOtpHolder({type: v.type, f0: v.f0})
 	if (holder && holder.userTag != userTag) {
-		await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//the challenge is dead no matter what the guess was; the address is spoken for
-		letter.notes = letter.notes.filter(f => f.tag != tag)
+		await _otpHideChallenge({userTag, tag})//the challenge is dead no matter what the guess was; the address is spoken for
 		return {success: false, outcome: 'Held.'}
 	}
 
-	if (hasTextSame(guess, o.answer)) {// ✍🏻 correct guess
+	if (correct) {// ✍🏻 correct guess
 
-		await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//kill the satisified challenge in the trail
-		letter.notes = letter.notes.filter(o => o.tag != tag)//kill the satisified challenge in the letter
-		await credentialOtpProven({userTag, type: o.address.type, v: o.address})
-
+		await credentialOtpProven({userTag, type: v.type, v, tag})//save the proof, which wants to see the visible challenge it finishes
+		await _otpHideChallenge({userTag, tag})//then close the challenge; hidden, it's found by nobody and painted for nobody
 		return {success: true}
 
 	} else {// ✍🏻 wrong guess
@@ -330,9 +300,7 @@ export async function credentialOtpEnter({letter, tag, guess, userTag}) {
 
 		if (lives <= 0) {// ✍🏻 expired by too many wrong guesses
 
-			await trailAdd(safefill`OTP closed challenge: tag ${tag}`)//mark it as such
-			letter.notes = letter.notes.filter(o => o.tag != tag)//letter is a convenience; trail is a necessity here--otherwise an attacker could just replay the same valid brownie, guessing sequentially until they hit the correct answer!
-
+			await _otpHideChallenge({userTag, tag})//the trail counted the guesses; hiding the row is what ends the challenge
 			return {success: false, outcome: 'Expired.'}//treat exhausted guesses like expired; user remedy is the same: request a new code
 
 		} else {// ✍🏻 person can guess again
@@ -341,28 +309,9 @@ export async function credentialOtpEnter({letter, tag, guess, userTag}) {
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+async function _otpHideChallenge({userTag, tag}) {//close one challenge, this user's row carrying this tag; hidden, enter can't find it and the snapshot doesn't list it, and it stays in the table as evidence
+	await queryHide('credential_table', {user_tag: userTag, event_text: 'Challenged.', json: {tag}})
+}
 
 
 //      _       _        _                    
@@ -435,7 +384,7 @@ export async function credentialPasswordGet({userTag}) {
 export async function credentialPasswordSet({userTag, hash, cycles}) {
 	checkTag(userTag); checkInt(cycles, 1)//the note holds cycles as a real number, so the boundary checks it is one
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Password.', event_text: 'Proven.'})
-	await credentialSet({userTag, type: 'Password.', event: 'Proven.', hash, note: {cycles}})
+	await credentialSet({userTag, type: 'Password.', event: 'Proven.', hash, json: {cycles}})
 }
 export async function credentialPasswordRemove({userTag}) {
 	checkTag(userTag)
@@ -473,7 +422,7 @@ export async function credentialTotpGet({userTag}) {//the totp snapshot: {secret
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
 	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
-	await credentialSet({userTag, type: 'Totp.', event: 'Proven.', note: {secret}})
+	await credentialSet({userTag, type: 'Totp.', event: 'Proven.', json: {secret}})
 }
 export async function credentialTotpRemove({userTag}) {
 	checkTag(userTag)
@@ -512,7 +461,7 @@ export async function credentialTotpEnroll1({userTag}) {
 
 	let enrollment = await totpEnroll({brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
 	await _totpHideStarts({userTag})//one enrollment in flight per user, so starting again replaces an abandoned start
-	await credentialSet({userTag, type: 'Totp.', event: 'Challenged.', note: {secret: enrollment.secret}})//the start, with row_tick as its clock
+	await credentialSet({userTag, type: 'Totp.', event: 'Challenged.', json: {secret: enrollment.secret}})//the start, with row_tick as its clock
 	return {uri: enrollment.uri, identifier: enrollment.identifier}
 }
 
@@ -615,7 +564,7 @@ export async function credentialWalletSet({userTag, address, nonce = ''}) {
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) return {ok: false, outcome}
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})
-	await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, note: nonce ? {nonce} : {}})//an absent key is the blank of a property
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: nonce ? {nonce} : {}})//an absent key is the blank of a property
 	return {ok: true}
 }
 
@@ -661,7 +610,7 @@ export async function credentialWalletProve1({userTag, address, connector}) {
 	if (outcome) return {outcome}//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
 
 	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
-	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, note: {nonce, connector}})//the challenge: we challenged this address with this nonce, row_tick is its clock, and the connector is how she connected
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, json: {nonce, connector}})//the challenge: we challenged this address with this nonce, row_tick is its clock, and the connector is how she connected
 	return {nonce}
 }
 
@@ -765,7 +714,7 @@ all oauth rows share type Oauth. the provider like Discord. or Google. rides in 
 */
 export async function credentialOauthChallenge({userTag, provider}) {//record we're sending the user into a third party oauth flow
 	checkTag(userTag); checkAction(provider)
-	await credentialSet({userTag, type: 'Oauth.', event: 'Challenged.', note: {provider}})//the challenge, so we can see how long users take or if for whatever reason they don't make it through in significant numbers
+	await credentialSet({userTag, type: 'Oauth.', event: 'Challenged.', json: {provider}})//the challenge, so we can see how long users take or if for whatever reason they don't make it through in significant numbers
 }
 
 /*
@@ -796,7 +745,7 @@ export async function credentialOauthSet({userTag, provider, proof, identifier, 
 	await credentialSet({
 		userTag, type: 'Oauth.', event: 'Proven.',
 		f0: email?.f0, f1: email?.f1, f2: email?.f2,//store email from provider here
-		note: {
+		json: {
 			provider,//provider name like 'Discord.'
 			identifier,//user's account number with that provider; user doesn't know it, stays the same through handle edits
 			handle: handle ?? undefined,//provider's @-style handle (or gmail address as stand-in for Google); discord and github hand over null when the user never set one, and ?? undefined turns that into an absent key, the blank of a property
@@ -847,26 +796,30 @@ export async function credentialOtpMentioned({userTag, type, v}) {//record a use
 	await credentialSet({userTag, type, event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})
 }
 
-export async function credentialOtpChallenged({userTag, type, v, provider}) {//record we used provider to send a code to address v
-	checkTag(userTag); checkAction(provider)//provider is a canonical tag like 'Amazon.' or 'Twilio.'; the endpoint maps the page's single letter before any of this
-	await credentialSet({userTag, type, event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, note: {provider}})//keep a record of which provider we used
+export async function credentialOtpChallenged({userTag, type, v, provider, tag = ''}) {//record we used provider to send a code to address v; tag names the challenge, and a row without one, like a fixture in the tests, never reads as live
+	checkTag(userTag); checkAction(provider); checkTagOrBlank(tag)//provider is a canonical tag like 'Amazon.' or 'Twilio.'; the endpoint maps the page's single letter before any of this
+	await credentialSet({userTag, type, event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {provider, tag} : {provider}})//which provider carried the code, and which challenge this is; an absent key is the blank of a property
 }
 
-export async function credentialOtpProven({userTag, type, v}) {//the user typed the correct code; save proof they control this address
-	checkTag(userTag)
+export async function credentialOtpProven({userTag, type, v, tag = ''}) {//the user typed the correct code; save proof they control this address, naming the challenge that proved it so the proof points at its history
+	checkTag(userTag); checkTagOrBlank(tag)
 	let holder = await credentialOtpHolder({type, f0: v.f0})
 	if (holder && holder.userTag != userTag) return false//another user proved it first, maybe while this challenge was live; decline the claim so an address never has two holders
 	let challenges = await queryGet('credential_table', {user_tag: userTag, type_text: type, f0_text: v.f0, event_text: 'Challenged.'})
 	if (!challenges.length) return false//no visible start of this flow; the user removed the address mid-challenge, and a late correct code shouldn't resurrect it
-	await credentialSet({userTag, type, event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2})
+	await credentialSet({userTag, type, event: 'Proven.', f0: v.f0, f1: v.f1, f2: v.f2, json: tag ? {tag} : {}})
 	return true
 }
 
-export async function credentialOtpGet({userTag, type}) {//list a user's addresses of one type; each entry is the newest row of its highest event--that one row is both the status and the face
+export async function credentialOtpGet({userTag, type}) {//a user's addresses of one type, and her live challenges among them, from one read: {addresses, challenges}. Each address is the newest row of its highest event--that one row is both the status and the face--and each challenge is the newest visible challenged row of an address, while it carries a tag and is under twenty minutes old
 	checkTag(userTag)
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: type})//every visible event row, newest first
 	let m = new Map()//group by normalized address
+	let challenges = []
 	for (let row of rows) {
+		if (row.event_text == 'Challenged.' && hasText(row.json.tag) && Now() < row.row_tick + otpConstants.expiration && !challenges.some(c => c.address.f0 == row.f0_text)) {//live, and the first seen for its address is the newest; a resend hides the earlier ones anyway, and a row from before tags rode json never reads as live
+			challenges.push({tag: row.json.tag, start: row.row_tick, address: {ok: true, f0: row.f0_text, f1: row.f1_text, f2: row.f2_text, type: row.type_text}})//what the page needs to draw an enter box: the tag it sends back with the guess, the start for the clock, and the address; never the answer
+		}
 		let x = m.get(row.f0_text)
 		if (!x) m.set(row.f0_text, x = {f0: row.f0_text, f1: row.f1_text, f2: row.f2_text, event: row.event_text})
 		else if (credentialEventRanks[row.event_text] > credentialEventRanks[x.event]) {//rows arrive newest first, so the first row we see at each rank is the newest of that rank
@@ -874,7 +827,7 @@ export async function credentialOtpGet({userTag, type}) {//list a user's address
 			x.f1 = row.f1_text; x.f2 = row.f2_text//the face follows the proof; an abandoned mention of a variant form can't rewrite how a proven address shows
 		}
 	}
-	return [...m.values()]//[{f0, f1, f2, event}, ...] where event is 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.'
+	return {addresses: [...m.values()], challenges}//addresses [{f0, f1, f2, event}, ...] where event is 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.'; challenges [{tag, start, address}, ...] for the enter boxes
 }
 
 export async function credentialOtpRemove({userTag, type, f0}) {//hide every event row about this address, proven or pending
@@ -998,7 +951,7 @@ CREATE TABLE credential_table (
 	f1_text    TEXT      NOT NULL,  -- formal form of address, to send messages
 	f2_text    TEXT      NOT NULL,  -- page form of address, to show the user
 
-	-- alternatively or additionally, a credential of this type may have a hash, a secret key, or something else, kept in a note:
+	-- alternatively or additionally, a credential of this type may have a hash, a secret key, or something else, kept in json:
 	hash_text  TEXT      NOT NULL,  -- the row's one meaningful hash, like Browser.'s browserHash or Password.'s password hash; '' when the type has none
 	json       JSONB     NOT NULL   -- payload bag of everything else about this credential; {} the blank, an absent key the blank of a property
 );
@@ -1026,16 +979,16 @@ test(() => {
 	ok(!hasEvent('Validated.') && !hasEvent('proven.') && !hasEvent('') && !hasEvent(4))
 })
 
-export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', hash = '', note = {}}) {
+export async function credentialSet({userTag, type, event, f0 = '', f1 = '', f2 = '', hash = '', json = {}}) {
 	checkTag(userTag); checkText(type); checkEvent(event)//these three are required, everything else is optional; event is a tag like 'Proven.'
 	checkTextOrBlank(f0); checkTextOrBlank(f1); checkTextOrBlank(f2)
-	checkHashOrBlank(hash)//the row's one meaningful hash, or blank; note is guarded below by level2's isPlain check on the json cell
+	checkHashOrBlank(hash)//the row's one meaningful hash, or blank; json is guarded below by level2's isPlain check on the cell
 	await queryAddRow({table: 'credential_table', row: {
 		user_tag: userTag,
 		type_text: type,
 		event_text: event,
 		f0_text: f0, f1_text: f1, f2_text: f2,
-		hash_text: hash, json: note,
+		hash_text: hash, json,
 	}})
 }
 
@@ -1189,7 +1142,7 @@ CREATE UNIQUE INDEX ledger7 ON ledger_table (hash_text) WHERE action_text = 'Hit
 ALTER TABLE ledger_table ENABLE ROW LEVEL SECURITY;
 `)
 
-export async function ledgerAdd({action, event, provider, browserHash, userTag, hash, note}) { return await ledgerAddMany([{action, event, provider, browserHash, userTag, hash, note}]) }
+export async function ledgerAdd({action, event, provider, browserHash, userTag, hash, json}) { return await ledgerAddMany([{action, event, provider, browserHash, userTag, hash, json}]) }
 export async function ledgerAddMany(a) {//keep a lasting record of something that happened, durable and queryable in our own database; every element in a is its own complete record
 	let now = Now()
 	let rows = a.map(e => _ledgerRow(e, now))
@@ -1205,11 +1158,11 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		browserHash,//the browser that was here for this
 		userTag = '',//the user, or blank if nobody's identified
 		hash = '',//the row's one meaningful hash when what happened was about something we can name that way, so every record about that thing is an indexed lookup; blank when it wasn't
-		note = {},//everything else about what happened, kept as data a later reader can query and read back; rides in the json column
+		json = {},//everything else about what happened, kept as data a later reader can query and read back
 		browser = door.browser,//the browser's account of itself, the door's agent string unless the record extends it, as a hit does with what the page said about its graphics
 	} = e
 	checkAction(action); checkActionOrBlank(event); checkActionOrBlank(provider); checkHash(browserHash)
-	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(note); checkPlain(browser)
+	checkTagOrBlank(userTag); checkHashOrBlank(hash); checkPlain(json); checkPlain(browser)
 	checkTextOrBlank(door.ip); checkTextOrBlank(door.origin); checkPlain(door.geography); checkPlain(door.browser)//what the ledger requires of the door above it: a worker door always has all four, a lambda door has none, and a test door is whatever the test made
 	return {
 		row_tick: now,
@@ -1223,7 +1176,7 @@ function _ledgerRow(e, now) {//check one record and shape it as a ledger_table r
 		event_text: event,
 		provider_text: provider,
 		hash_text: hash,
-		json: note,
+		json,
 	}
 }
 
@@ -1379,17 +1332,17 @@ export async function trailGetAny(messages, horizon) {//messages like [message1,
 	let hashes = await Promise.all(messages.map(hashText))
 	return await queryGetAny({table: 'trail_table', title: 'hash', cells: hashes, since: Now() - horizon})
 }
-export async function trailAdd(message, o) { return await trailAddMany([{...o, message}]) }//o is optional {expiration, note}, described below
-export async function trailAddMany(a) {//use like trailAddMany([{message: message1}, {message: message2, expiration, note}]): every element is an object with a message, and optionally its expiration and note
+export async function trailAdd(message, o) { return await trailAddMany([{...o, message}]) }//o is optional {expiration, json}, described below
+export async function trailAddMany(a) {//use like trailAddMany([{message: message1}, {message: message2, expiration, json}]): every element is an object with a message, and optionally its expiration and json
 	let now = Now()
 	let rows = await Promise.all(a.map(async e => {
 		let {
 			message,//text message with details about the event we're recording proof of; we save the hash of this message
 			expiration = 0,//a tick when we could delete this row, or 0 for keep forever
-			note = {},//an object where you can keep additional details, and unlike parts of the message, get them back
+			json = {},//an object where you can keep additional details, and unlike parts of the message, get them back
 		} = e
-		checkText(message); checkInt(expiration); checkPlain(note)
-		return {row_tick: now, hash: await hashText(message), expiration, json: note}//the note rides in the json column
+		checkText(message); checkInt(expiration); checkPlain(json)
+		return {row_tick: now, hash: await hashText(message), expiration, json}
 	}))
 	await queryAddRows({table: 'trail_table', rows})
 }

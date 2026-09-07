@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep6.1651.15352
+  generated: 2026sep7.1719.55233
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -350,10 +350,10 @@ modules:
     note: "provider: database; works local and deployed, worker and lambda"
     from: icarus
     versions:
-      declared: ^2.95.3 on 2026feb06 6m old
+      declared: ^2.95.3 on 2026feb06 7m old
       installed: 2.108.2 on 2026jun15 2m old
-      current: 2.115.0 on 2026sep03 0m old
-      latest: 2.115.0 on 2026sep03 0m old
+      current: 2.116.0 on 2026sep07 0m old
+      latest: 2.116.0 on 2026sep07 0m old
     downloads:
       weekly: 21,127,352
       on: 2026aug18.1523.29150
@@ -389,8 +389,8 @@ modules:
     note: "og: head management peer dep; injected by nuxi module add, load-bearing for og-image"
     from: site
     versions:
-      declared: ^2.1.3 on 2026feb06 6m old
-      installed: 2.1.15 on 2026may08 3m old
+      declared: ^2.1.3 on 2026feb06 7m old
+      installed: 2.1.15 on 2026may08 4m old
       current: 2.1.17 on 2026aug04 1m old
       latest: 3.4.0 on 2026aug21 0m old 🎁 Major new version available
     downloads:
@@ -407,7 +407,7 @@ modules:
       declared: ^5.1.0 on 2025dec02 9m old
       installed: 5.1.0 on 2025dec02 9m old
       current: 5.1.0 on 2025dec02 9m old
-      latest: 6.0.0 on 2026aug26 0m old 🎁 Major new version available
+      latest: 6.1.0 on 2026sep07 0m old 🎁 Major new version available
     downloads:
       weekly: 417,211
       on: 2026aug18.1523.29150
@@ -422,7 +422,7 @@ modules:
       declared: ^5.2.0 on 2025dec02 9m old
       installed: 5.2.0 on 2025dec02 9m old
       current: 5.2.0 on 2025dec02 9m old
-      latest: 6.0.0 on 2026aug26 0m old 🎁 Major new version available
+      latest: 6.0.1 on 2026sep07 0m old 🎁 Major new version available
     downloads:
       weekly: 804,831
       on: 2026aug18.1523.29150
@@ -780,7 +780,7 @@ modules:
     note: "build: used by sem.js"
     from: root
     versions:
-      declared: ^7.7.4 on 2026feb05 6m old
+      declared: ^7.7.4 on 2026feb05 7m old
       installed: 7.8.5 on 2026jun19 2m old
       current: 7.8.5 on 2026jun19 2m old
       latest: 7.8.5 on 2026jun19 2m old
@@ -819,9 +819,9 @@ modules:
     note: "lambda: image processing; needs native modules via build.js into net23.zip"
     from: net23
     versions:
-      declared: ^0.34.5 on 2025nov06 9m old
-      installed: 0.34.5 on 2025nov06 9m old 🐣 Pre-1.0 version installed
-      current: 0.34.5 on 2025nov06 9m old
+      declared: ^0.34.5 on 2025nov06 10m old
+      installed: 0.34.5 on 2025nov06 10m old 🐣 Pre-1.0 version installed
+      current: 0.34.5 on 2025nov06 10m old
       latest: 0.35.4 on 2026aug26 0m old
     downloads:
       weekly: 74,893,373
@@ -887,7 +887,7 @@ modules:
       declared: ^5.9.3 on 2025sep30 11m old
       installed: 5.9.3 on 2025sep30 11m old
       current: 5.9.3 on 2025sep30 11m old
-      latest: 7.0.2 on 2026jul08 1m old 🎁 Major new version available
+      latest: 7.0.2 on 2026jul08 2m old 🎁 Major new version available
     downloads:
       weekly: 180,404,383
       on: 2026aug18.1523.58589
@@ -983,8 +983,8 @@ modules:
     versions:
       declared: ^4.63.0 on 2026feb05 7m old
       installed: 4.105.0 on 2026jun25 2m old
-      current: 4.129.0 on 2026sep03 0m old
-      latest: 4.129.0 on 2026sep03 0m old
+      current: 4.129.1 on 2026sep07 0m old
+      latest: 4.129.1 on 2026sep07 0m old
     downloads:
       weekly: 15,295,217
       on: 2026jul21.1759.35951

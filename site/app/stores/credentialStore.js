@@ -17,7 +17,7 @@ const wallets = ref([])//checksummed Ethereum addresses the user has proven they
 const oauths = ref([])//array of linked third-party accounts: [{provider, identifier, handle, name, email}, ...]
 const emails = ref([])//the user's email addresses: [{f0, f1, f2, event}, ...] event 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.'
 const phones = ref([])//the user's phone numbers, same shape
-const otps = ref([])//the signed-in user's live otp code challenges: [{tag, start, address}, ...]; the answers stay sealed in the brownie
+const otps = ref([])//the signed-in user's live otp code challenges: [{tag, start, address}, ...]; the answers live in the trail as hashes
 
 const userDisplayName = computed(() => {//best available display name for page
 	if (name.value?.f2) return name.value.f2
@@ -26,7 +26,7 @@ const userDisplayName = computed(() => {//best available display name for page
 
 function apply(task) {//update all refs from task - called after any action that returns state
 	if (task.otps) {//an array, even an empty one, marks a snapshot, so flow-state truth arrives even when the action's answer was no, like a wrong guess or a rate limit
-		otps.value = task.otps//the signed-in viewer's live code challenges, owner-scoped by the server, with the answers sealed in the brownie
+		otps.value = task.otps//the signed-in viewer's live code challenges, owner-scoped by the server, with the answers in the trail as hashes
 		enrollment.value = task.enrollment || null//and the viewer's in-flight totp enrollment; a snapshot without one collapses the enrollment ui, because the truth it renders from is gone
 	}
 	if (!task.success) return//taken name, wrong password, paths like those that still aren't toss

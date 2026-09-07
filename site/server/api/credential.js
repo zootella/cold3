@@ -12,7 +12,6 @@ credentialOauthRemove, credentialOauthGet, oauthProviders,
 credentialOtpSend, credentialOtpEnter, credentialOtpGet, credentialOtpRemove,
 credentialCloseAccount,
 totpValidate, totpIdentifier, totpConstants,
-brownieGetAll,
 checkTotpCode, checkTotpSecret, checkWallet, Data,
 trailCount, trailAdd, toTextOrBlank,
 } from 'icarus'
@@ -22,8 +21,9 @@ export default defineEventHandler(async (workerEvent) => {
 })
 
 // 🟠 get
-async function attachState(task, browserHash, letter) {//attach complete credential state to task — every credential type, every time, so one call gives the store everything it needs to render the full credential panel; letter is door.brownie, carrying the viewer's live otp challenges
+async function attachState(task, browserHash) {//attach complete credential state to task — every credential type, every time, so one call gives the store everything it needs to render the full credential panel
 	task.browserHash = browserHash
+	task.otps = []//in-flight flow truth rides every snapshot, owner-scoped to the signed-in viewer or none--so signing out clears the enter boxes and enrollment ui, and signing in reveals them
 	let user = await credentialBrowserGet({browserHash})
 	if (user) {
 		task.userTag = user.userTag
@@ -42,18 +42,11 @@ async function attachState(task, browserHash, letter) {//attach complete credent
 		if (totp.enrollment) task.enrollment = totp.enrollment//{uri, identifier}, rebuilt from the row's secret, so every snapshot agrees, the server render included; absent when nothing is in flight, which collapses the page's enrollment ui
 		task.wallets = await credentialWalletGet({userTag: user.userTag})//[address, ...] checksummed, zero one or two
 		task.oauths = await credentialOauthGet({userTag: user.userTag})
-		task.emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//[{f0, f1, f2, event}, ...] event 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.'
-		task.phones = await credentialOtpGet({userTag: user.userTag, type: 'Phone.'})
-	}
-	task.otps = []//in-flight flow truth rides every snapshot, owner-scoped to the signed-in viewer or none--so signing out clears the enter boxes and enrollment ui, and signing in reveals them
-	if (user && letter) {
-		let otps = [...brownieGetAll(letter, 'Email.', user.userTag), ...brownieGetAll(letter, 'Phone.', user.userTag)].sort((a, b) => a.start - b.start)//both types, back in the order they were sent
-		task.otps = otps.map(o => ({//non-secret information about currently active challenges
-			tag: o.tag,//a tag identifies each challenge; the page will tell us which one it's guessing at
-			start: o.start,//the birthdate of this challenge, which lives for 20 minutes
-			address: o.address,//the full address object with ok, f0, f1, f2, and type
-			//the secret code we sent, like "123456" is o.answer; it stays sealed in the brownie, and critically is not leaked here to the page!
-		}))
+		let emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//{addresses, challenges} from one read: [{f0, f1, f2, event}, ...] with event 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.', and the live challenges among them
+		let phones = await credentialOtpGet({userTag: user.userTag, type: 'Phone.'})
+		task.emails = emails.addresses
+		task.phones = phones.addresses
+		task.otps = [...emails.challenges, ...phones.challenges].sort((a, b) => a.start - b.start)//the viewer's live code challenges, both types in the order they were sent, each a tag the page sends back with its guess, a start for the clock, and an address; the answer lives in the trail as a hash, and critically is not leaked here to the page!
 	}
 	//ttd march, lots of database chatter here, replace with a single query for all rows about userTag, and then careful trusted server side logic to sift through them to figure out what's applicable and what's historical. and in this process, decide if you're going to hide rows or not
 }
@@ -62,7 +55,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	// 🟠 get
 	if (action == 'Get.') {
-		await attachState(task, browserHash, door.brownie)//the snapshot carries the viewer's live challenges from the letter and in-flight enrollment from credential_table, so recovery after a refresh is just the page rendering the snapshot
+		await attachState(task, browserHash)//the snapshot carries the viewer's live challenges and in-flight enrollment from credential_table, so recovery after a refresh is just the page rendering the snapshot
 
 	// 🟠 name
 	} else if (action == 'CheckNameTurnstile.') {
@@ -77,7 +70,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		if (!v) return {success: false, outcome: 'NameNotAvailable.'}
 		await credentialPasswordSet({userTag, hash: body.hash, cycles: body.cycles})
 		await credentialBrowserSet({userTag, browserHash})
-		await attachState(task, browserHash, door.brownie)
+		await attachState(task, browserHash)
 
 	// 🟠 name and password
 	} else if (action == 'GetPasswordCyclesTurnstile.') {
@@ -100,7 +93,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			return {success: false, outcome: 'InvalidCredentials.'}
 		}
 		await credentialBrowserSet({userTag: nameRecord.userTag, browserHash})
-		await attachState(task, browserHash, door.brownie)
+		await attachState(task, browserHash)
 
 	// 🟠 otp send
 	//the person at the page has entered their email or phone to get a code there; an otp flow requires being signed in, the whole time, as the same user--answered with a graceful SignedOut. rather than a toss, because the demo box on page4 is reachable signed out
@@ -120,22 +113,21 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		else if (provider == 'T') provider = 'Twilio.'
 		else toss('form')//temporary to get started; the round robin system, not the page, should choose the provider, ttd january
 
-		if (!door.brownie) door.brownie = {notes: []}//starting a flow where no brownie arrived; the door seals whatever the letter holds on the way out
-		task = await credentialOtpSend({letter: door.brownie, v, provider, userTag: user.userTag, browserHash})//sets task.success itself, with task.outcome 'CoolSoft.', 'CoolHard.', or 'Held.' when the answer is no
-		await attachState(task, browserHash, door.brownie)
+		task = await credentialOtpSend({v, provider, userTag: user.userTag, browserHash})//sets task.success itself, with task.outcome 'CoolSoft.', 'CoolHard.', or 'Held.' when the answer is no
+		await attachState(task, browserHash)
 		return task//return here rather than falling through to the bottom, which would overwrite the success credentialOtpSend decided
 
 	// 🟠 otp enter
 	//the person at page has entered their guess at a code their browser knows about
 	} else if (action == 'OtpEnter.') {
 		let user = await credentialBrowserGet({browserHash})
-		if (!user) return {success: false, outcome: 'SignedOut.'}//if they sign back in as the user who started the challenge, it's still live in their cookie
+		if (!user) return {success: false, outcome: 'SignedOut.'}//if they sign back in as the user who started the challenge, it's still live in the table
 
 		let {tag, guess} = body//tag identifes the challenge; guess is what they entered (hopefully correctly from their email or texts)
 		checkTag(tag); checkNumerals(guess)
 
-		task = await credentialOtpEnter({letter: door.brownie || {notes: []}, tag, guess, userTag: user.userTag})//sets task.success itself, with task.outcome 'Wrong.', 'Expired.', 'Held.', or 'SignedOut.' (a different user's challenge) when the answer is no; no brownie arrived means no challenge to find, and the graceful Expired. inside
-		await attachState(task, browserHash, door.brownie)
+		task = await credentialOtpEnter({tag, guess, userTag: user.userTag})//sets task.success itself, with task.outcome 'Wrong.', 'Expired.', or 'Held.' when the answer is no; a tag that isn't this user's live challenge gets the graceful Expired. inside
+		await attachState(task, browserHash)
 		return task
 
 	} else {//remaining actions all require that there's a user signed into the requesting browser
@@ -181,7 +173,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			let result = await credentialTotpEnroll2({userTag: user.userTag, code: body.code})
 			if (!result.ok) {//the failure response still carries the snapshot: BadCode. left the start standing, so the enrollment ui stays; Expired. found none, so the ui collapses
 				task.success = false; task.outcome = result.outcome
-				await attachState(task, browserHash, door.brownie)
+				await attachState(task, browserHash)
 				return task
 			}
 
@@ -273,7 +265,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 			await credentialCloseAccount({userTag: user.userTag})
 		}
 
-		await attachState(task, browserHash, door.brownie)
+		await attachState(task, browserHash)
 	}
 
 	task.success = true

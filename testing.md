@@ -124,11 +124,11 @@ What came under test:
 
 **And two behaviors were wrong, which is what moving the code surfaced.** Recovery never checked whose envelope it held, so Alice could start an enrollment, sign out, and Bob signing in at the same browser would be shown a QR code built from her secret — completing it then tossed him to the error page. Recovery now checks the same binding the other two steps check, so Bob sees an ordinary panel. Separately, recovery ran for a signed-out browser too, labeling the entry with a userTag; an enrollment belongs to a user, so it now requires one. Both were latent because the binding lived in two places and the third place forgot it.
 
-## Next: the otp projection in attachState
+## Done: the otp projection moved below the seam (September 2026)
 
-The OTP rules themselves are the best-covered thing we have — rate limits, guess exhaustion, replay, code length by history, the holder rule, challenge ownership. The envelope-and-cookie plumbing that used to sit above them is gone rather than untested: the brownie took it, and the door opens and reseals the letter in level2 under grid tests of its own.
+The OTP rules themselves were always the best-covered thing we have — rate limits, guess exhaustion, code length by history, the holder rule, challenge ownership. What sat above the seam was one projection: `attachState` mapped the viewer's live challenge notes from the brownie onto `task.otps`, stripping each challenge's answer and scoping the list to the signed-in viewer, a security boundary and a shared-browser boundary that no test could reach because `attachState` is an endpoint function.
 
-What remains above the seam is one projection. `attachState` maps the viewer's live challenge notes onto `task.otps`, stripping each challenge's answer and scoping the list to the signed-in viewer — a security boundary and a shared-browser boundary, neither asserted anywhere, because `attachState` is an endpoint function. Same box as `apply()` in the gripes below.
+The brownieless sprint moved it. Live challenges are Challenged. rows now, and `credentialOtpGet` projects them beside the address list from the one query it already ran, owner-scoped by the query and answer-free because the answer is a hash in the trail. `attachState` joins the two types and sorts. The grid suite asserts the projection directly: what a live challenge carries, that a fixture without a tag never reads as live, that a housemate sees nothing, and that a closed challenge leaves the list. `apply()` in the gripes below is still above the seam.
 
 ## What stays manual, honestly
 
