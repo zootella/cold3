@@ -3,8 +3,8 @@
 
 one-time password challenges that prove email and phone addresses
 a user provides an address, the server generates a short code and delivers it, and the user types it back to prove they control the address
-otp uses no dedicated database table--each live challenge rides as a note in the brownie, the sealed letter in localStorage that carries all provisional credential state, the same pattern totp uses
-brownieless.md plans to move each challenge into json on the Challenged. row send already writes, retiring the brownie; until that lands, the note is what runs
+otp uses no dedicated database table--each live challenge is a Challenged. row in credential_table, the row send already writes, carrying the provider and the challenge's tag in json, with the answer a hash in the trail; the same pattern totp uses
+the brownie, the sealed letter in localStorage that carried challenges from August 12 to September 7, 2026, stands empty pending its removal; the row is what runs
 
 ## (1) helper functions
 
@@ -17,7 +17,7 @@ otpConstants (expiration, rate limits, digit length by address history)
 
 otp actions live in the unified credential endpoint:
 
-./site/server/api/credential.js - OtpSendTurnstile. and OtpEnter. require a signed-in user; every snapshot carries the viewer's live challenges from the brownie, so recovery is the page rendering the snapshot; EmailRemove. and PhoneRemove. manage saved addresses
+./site/server/api/credential.js - OtpSendTurnstile. and OtpEnter. require a signed-in user; every snapshot carries the viewer's live challenges from credential_table, so recovery is the page rendering the snapshot, on first paint included; EmailRemove. and PhoneRemove. manage saved addresses
 
 ## (3) vue components
 
@@ -40,7 +40,7 @@ the first is trail_table, and functions above like trailRecent through trailAddM
 you can see grid() tests below the exported functions as a demosntration of capability
 
 the second used system is envelope, with functions like sealEnvelope, openEnvelope, and isExpired
-for a demonstration of a production system using envelope correctly, check out the wallet prove flow (credentialWalletProve1/Prove2 in level3.js, envelope riding in the request body)--totp, the old reference here, moved its provisional state into the brownie in August 2026, where the door seals and opens one letter for all flows
+for a demonstration of a production system using envelope correctly, check out the media upload path (site/server/api/media.js, sealEnvelope carrying the upload permission to the page and openEnvelope taking the lambda's hashed result back)--the wallet prove flow and totp, the old references here, moved their provisional state onto Challenged. rows in September 2026, and no credential flow seals anything
 
 
 # Agenda

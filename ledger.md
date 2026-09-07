@@ -3,7 +3,7 @@
 
 **Provisionally decided: mutate tables like an ordinary program, and be complete and verbose in ledger_table as we do it.** Rows get edited when data changes and removed when their absence is the correct current picture, and every one of those mutations writes an audit row carrying who, where, and when. That settles the direction; it does not settle that the direction works. We have not migrated a table this way yet, and unforeseen difficulty is exactly the kind of thing this argument was written to anticipate — so the case below is preserved in full, as it was written, with neither side softened.
 
-Read it that way: not as an open question waiting for a verdict, but as the reasoning the verdict was reached against, and the place to come back to if the first real migration turns up something the argument missed. What follows lays out both patterns and their costs so a single rule can be applied everywhere — likely as a focused sprint, not an incremental change.
+Read it that way: not as an open question waiting for a verdict, but as the reasoning the verdict was reached against, and the place to come back to if the first real migration turns up something the argument missed. What follows lays out both patterns and their costs so a single rule can be applied everywhere — likely as a focused sprint, not an incremental change. That sprint is now planned: hideless.md converts the tables, and ledgerathon.md, before it, writes the audit rows the conversion depends on.
 
 ## What we have today: ledger-style tables
 
