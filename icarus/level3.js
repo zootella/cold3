@@ -32,7 +32,7 @@ import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
 fetchWorker, fetchLambda, fetchProvider, Key,
 sealEnvelope, openEnvelope, originDomain,
-brownieGet, brownieGetAll, brownieRemove, brownieSet, brownieAdd,
+brownieGetAll, brownieAdd,
 
 /* level 2 query */
 SQL, getDatabase,
@@ -449,13 +449,26 @@ export async function credentialPasswordRemove({userTag}) {
 //  \___|_|  \___|\__,_|\___|_| |_|\__|_|\__,_|_|  \__\___/ \__| .__/ 
 //                                                             |_|    
 
-//totp: a user can have a single proven enrollment or nothing; the note holds the shared secret key which generates codes
-export async function credentialTotpGet({userTag}) {
+//totp: a user can have a single proven enrollment or nothing, and one enrollment in flight; each is a row in credential_table, with the shared secret key that generates codes in json
+async function _totpRead({userTag}) {//one query for everything totp knows about a user: her secret if enrolled, and the one she's enrolling with if mid-flow, each blank otherwise; the one place a start is read, so the clock below holds everywhere
 	checkTag(userTag)
-	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
-	let row = rows[0]
-	if (row) return row.json.secret//return their totp secret in base32
-	return false//no current totp enrollment
+	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.'})//every visible Totp. row, newest first
+	let proven = rows.find(r => r.event_text == 'Proven.')
+	let enrolling = rows.find(r => r.event_text == 'Challenged.')//the newest start; enroll1 hides earlier ones, so at most one is visible
+	let live = enrolling && Now() < enrolling.row_tick + Limit.expirationUser//a start lives twenty minutes; a stale one reads as none, which is graceful for a slow user, not an attacker
+	return {secret: proven ? proven.json.secret : '', enrollingSecret: live ? enrolling.json.secret : ''}
+}
+async function _totpHideStarts({userTag}) {//hide every visible start of this user's; a hidden start stays in the table as evidence that she tried
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Challenged.'})
+}
+export async function credentialTotpGet({userTag}) {//the totp snapshot: {secret, enrollment}, the proven secret in base32 or blank, and the in-flight enrollment {uri, identifier} for the page to draw as a qr code, or false
+	let {secret, enrollingSecret} = await _totpRead({userTag})
+	let enrollment = false
+	if (!secret && enrollingSecret) {//worth showing only while she isn't enrolled
+		let e = await totpEnroll({secret: Data({base32: enrollingSecret}), brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})//the same uri enroll1 gave her, so every snapshot draws the qr code she already scanned
+		enrollment = {uri: e.uri, identifier: e.identifier}
+	}
+	return {secret, enrollment}
 }
 export async function credentialTotpSet({userTag, secret}) {
 	checkTag(userTag)
@@ -470,18 +483,20 @@ export async function credentialTotpRemove({userTag}) {
 /*
 Enrolling an authenticator app is two steps with a gap in the middle that we can't see: step 1 generates a secret and
 shows it as a QR code, the user scans it into their app, and step 2 asks them to type the first code it produces.
-Nothing is saved until that code checks out, so between the steps the secret lives only as a note in the brownie--the
-sealed letter of in-flight state the page parks in localStorage, opaque to the page, opened and resealed by the door.
+Nothing is proven until that code checks out, so between the steps the secret lives on a Challenged. row in
+credential_table, the start of the enrollment: the secret in json, and row_tick as its clock. The row is also why the
+qr code survives a refresh: by the time the page holds it, the user has already scanned it into their app, and throwing
+it away orphans the entry they just made there. Every snapshot rebuilds the same uri from the row, the server render
+included, so the qr code is back on first paint, at any browser signed in as her.
 
-Two bindings make step 2 safe, each enforced where it lives. The letter is bound to the browser: openBrownie wipes
-the notes of a letter whose sealed browserHash disagrees with the one the request's cookie proves, so a letter
-carried to another browser arrives empty. And each note is bound to its owner: the functions below touch only the
-note whose userTag matches the signed-in user they were handed, so the next person to sign in at a shared browser
-finds nothing of theirs to resume, while the first person's note rides along untouched.
+The row belongs to its owner, and that is the whole of what keeps step 2 safe: the query is by user_tag, so the next
+person to sign in at a shared browser finds nothing of theirs to resume, and only a request signed in as her, which the
+Browser. row already vouches for, can find her start at all. A start lives twenty minutes from its row_tick, checked in
+_totpRead, the one place a start is read, so a stale start is inert everywhere at once and nothing needs to sweep it.
 
-The gap is also why the secret must survive a page refresh: by the time the page holds it, the user has already
-scanned it into their app, and throwing it away orphans the entry they just made there. So the brownie survives on
-the page, rides up with the next POST, and recover() decides whether there is really an enrollment to resume.
+One enrollment is in flight per user, so starting again hides the earlier start, at this browser or any other, and at
+most one is visible. Finishing hides it too, or she could enroll, remove the enrollment inside its twenty minutes, and
+be shown the qr code of the enrollment she just discarded. Hidden starts stay in the table as evidence that she tried.
 */
 
 async function _totpEnrollAccount(userTag) {//name the entry in the user's authenticator app, so they can tell ours apart from everyone else's
@@ -489,62 +504,40 @@ async function _totpEnrollAccount(userTag) {//name the entry in the user's authe
 	return userName?.name?.f1 ? `@${userName.name.f1}` : null//later use email if the user has that, ttd march
 }
 
-//totp enrollment step 1: the user wants an authenticator app as a second factor, so make them a secret and put it in their note for step 2
-//returns the enrollment for the page to show as a QR code; the secret rides only in the letter, which the door seals into the brownie
-export async function credentialTotpEnroll1({letter, userTag}) {
-	checkTag(userTag)
-	let existing = await credentialTotpGet({userTag})
-	if (existing) toss('state', {userTag, existing})//the page thought enrollment was possible, and one user holds one enrollment
+//totp enrollment step 1: the user wants an authenticator app as a second factor, so make them a secret and write the start of the enrollment for step 2
+//returns the enrollment for the page to show as a QR code; the snapshot rebuilds the same one from the row on every render
+export async function credentialTotpEnroll1({userTag}) {
+	let {secret} = await _totpRead({userTag})
+	if (secret) toss('state', {userTag})//the page thought enrollment was possible, and one user holds one enrollment
 
 	let enrollment = await totpEnroll({brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
-	brownieSet(letter, {type: 'Totp.', expiration: Now() + Limit.expirationUser, userTag, secret: enrollment.secret})//one enrollment in flight per user, so starting again replaces an abandoned start; the note carries its own deadline and owner, and the letter around it carries the browser binding
+	await _totpHideStarts({userTag})//one enrollment in flight per user, so starting again replaces an abandoned start
+	await credentialSet({userTag, type: 'Totp.', event: 'Challenged.', note: {secret: enrollment.secret}})//the start, with row_tick as its clock
 	return {uri: enrollment.uri, identifier: enrollment.identifier}
 }
 
 //totp enrollment step 2: the secret is in their app and they've typed the first code it gave them
 //returns {ok: true} once the enrollment is saved, or {ok: false, outcome} for a sad path the page can act on
-export async function credentialTotpEnroll2({letter, userTag, code}) {
-	checkTag(userTag); checkTotpCode(code)
-	let existing = await credentialTotpGet({userTag})
-	if (existing) toss('state', {userTag, existing})//as at step 1, the page thought enrollment was possible
+export async function credentialTotpEnroll2({userTag, code}) {
+	checkTotpCode(code)
+	let {secret, enrollingSecret} = await _totpRead({userTag})
+	if (secret) toss('state', {userTag})//as at step 1, the page thought enrollment was possible
+	if (!enrollingSecret) return {ok: false, outcome: 'Expired.'}//she took too long, cancelled, or never started; every way, the remedy is the same, start over
+	checkTotpSecret(enrollingSecret)
 
-	let note = brownieGet(letter, 'Totp.', userTag)//the enrollment from step 1, come back sealed through the page and a possible refresh; scoped by owner
-	if (!note) return {ok: false, outcome: 'Expired.'}//gone: expired notes are filtered at the door, a cancelled one was removed, and a housemate at a shared browser never had one--every way, the remedy is the same, start over
-	let secret = note.secret
-	checkTotpSecret(secret)
-	if (isExpired(note.expiration)) {//they took more than twenty minutes, so start them over; the door filters expired notes at open, and this covers callers below the endpoint
-		brownieRemove(letter, 'Totp.', userTag)//dead, so it leaves the letter
-		return {ok: false, outcome: 'Expired.'}
-	}
+	let valid = await totpValidate({secret: Data({base32: enrollingSecret}), code})
+	if (!valid) return {ok: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment, because the page is already showing the secret in the qr uri, so guarding guesses would defend nothing; the start stands, so she can try again with the code in front of her
 
-	let valid = await totpValidate({secret: Data({base32: secret}), code})
-	if (!valid) return {ok: false, outcome: 'BadCode.'}//rate limiting not necessary during enrollment, because the page is already showing the secret in the qr uri, so guarding guesses here would defend nothing; the note stays in the letter, so she can try again with the code in front of her
-
-	await credentialTotpSet({userTag, secret})
-	brownieRemove(letter, 'Totp.', userTag)//finished; nothing left in flight to resume
+	await credentialTotpSet({userTag, secret: enrollingSecret})
+	await _totpHideStarts({userTag})//finished; nothing left in flight to resume, even if she removes the enrollment inside the start's twenty minutes
 	return {ok: true}
 }
 
-//an enrollment was interrupted, and the page has sent up the brownie it kept
-//returns the enrollment to put back on the screen, or false when there's nothing here to resume
-export async function credentialTotpRecover({letter, userTag}) {
-	checkTag(userTag)
-
-	let note = brownieGet(letter, 'Totp.', userTag)//scoped by owner: bob, signed in at the browser alice left, finds nothing of his and sees an ordinary panel, not her qr code
-	if (!note) return false//nothing in flight to resume
-	if (!hasText(note.secret)) return false//a note sealed by an older shape of our own protocol, missing what this deploy expects inside; decline rather than toss, because recover runs on every page load while a note rides--the door guards the letter's shape, but only the flow knows its note's
-	if (isExpired(note.expiration)) return false//too old to resume, and the app entry they scanned is already orphaned
-	if (await credentialTotpGet({userTag})) return false//they finished this enrollment somewhere else, so nothing is in flight; the stale note ages out on its own
-
-	let enrollment = await totpEnroll({secret: Data({base32: note.secret}), brand: Key('domain, public'), account: await _totpEnrollAccount(userTag), label: true})
-	return {uri: enrollment.uri, identifier: enrollment.identifier}//nothing extra goes back out; the brownie the page already holds is the persistence
-}
-
-//the user backed out of an enrollment in flight; take their note out of the letter, and the door's delete or reseal cleans the page up
+//the user backed out of an enrollment in flight; hide her start, and the snapshot in the same response cleans the page up
 //idempotent, because a stale tab can cancel what another tab already finished or cancelled
-export function credentialTotpClear({letter, userTag}) {
+export async function credentialTotpClear({userTag}) {
 	checkTag(userTag)
-	brownieRemove(letter, 'Totp.', userTag)
+	await _totpHideStarts({userTag})
 }
 
 //                    _            _   _       _                 _ _      _   

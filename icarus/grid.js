@@ -13,7 +13,7 @@ Limit, validateEmail, validateEmailOrPhone, pgliteDynamicImport,
 } from './level1.js'
 import {
 decryptKeys, getDatabase, sqlList, setTestDatabase,
-sealEnvelope, openEnvelope, openBrownie, sealBrownie, brownieGet,
+sealEnvelope, openEnvelope, openBrownie, sealBrownie,
 originDomain,
 doorAsyncLocalStorageRun,
 queryGet, queryGetAny, queryAddRow, queryAddRows, queryHide, queryTop, queryCountRows, queryCountAllRows,
@@ -25,7 +25,7 @@ credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameSet, credentialNameRemove, credentialNameCheck,
 credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove, credentialTotpClear,
-credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover,
+credentialTotpEnroll1, credentialTotpEnroll2,
 credentialWalletGet, credentialWalletSet, credentialWalletRemove, credentialWalletHolder, credentialWalletRefusal,
 credentialWalletProve1, credentialWalletProve2, validateWallet,
 credentialOauthGet, credentialOauthSet, credentialOauthRemove, credentialOauthChallenge,
@@ -198,7 +198,7 @@ grid(async () => {//otp: getting a challenge correct closes it on the trail
 	ok((await credentialOtpEnter({letter: replay(), tag: o.tag, guess: o.answer, userTag})).success)//correct
 	ok((await credentialOtpEnter({letter: replay(), tag: o.tag, guess: o.answer, userTag})).outcome == 'Expired.')//replay envelope to try to get that same right answer on that same challenge correcct again; trail knows it's closed
 })
-grid(async () => {//otp and totp: one person's email, phone, and authenticator enrollment all in flight in one letter--mild chaos on a realistic happy path
+grid(async () => {//otp: one person's email and phone challenges in flight in one letter--mild chaos on a realistic happy path
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
@@ -206,12 +206,7 @@ grid(async () => {//otp and totp: one person's email, phone, and authenticator e
 
 	await credentialOtpSend({browserHash: browserHash52, letter, v: validateEmailOrPhone(Tag() + '@example.com'), provider: 'Amazon.', userTag}); ageNow(Time.minute)
 	await credentialOtpSend({browserHash: browserHash52, letter, v: validateEmailOrPhone('(510) 555-9876'), provider: 'Twilio.', userTag})
-	await credentialTotpEnroll1({letter, userTag})
-	ok(letter.notes.length == 3)//two challenges and an enrollment, side by side, all hers
-
-	let code = await totpGenerate({secret: Data({base32: brownieGet(letter, 'Totp.', userTag).secret}), now: Now()})
-	ok((await credentialTotpEnroll2({letter, userTag, code})).ok)//finishing the enrollment doesn't touch the challenges
-	ok(letter.notes.length == 2)
+	ok(letter.notes.length == 2)//two challenges, side by side, both hers
 
 	let e = letter.notes.find(n => n.type == 'Email.')
 	ok((await credentialOtpEnter({letter, tag: e.tag, guess: e.answer, userTag})).success)
@@ -252,156 +247,118 @@ grid(async () => {//totp: set, re-enroll, verify single active, remove
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	ok((await credentialTotpGet({userTag})) == false)//no totp yet
+	ok((await credentialTotpGet({userTag})).secret == '')//no totp yet
 	await credentialTotpSet({userTag, secret: 'SECRETAAAAAAAAA1'})//enroll
-	ok((await credentialTotpGet({userTag})) == 'SECRETAAAAAAAAA1')//verify enrolled
+	ok((await credentialTotpGet({userTag})).secret == 'SECRETAAAAAAAAA1')//verify enrolled
 	await credentialTotpSet({userTag, secret: 'SECRETBBBBBBBBB2'})//re-enroll (new phone)
-	ok((await credentialTotpGet({userTag})) == 'SECRETBBBBBBBBB2')//verify new secret
+	ok((await credentialTotpGet({userTag})).secret == 'SECRETBBBBBBBBB2')//verify new secret
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Proven.'})
 	ok(rows.length == 1)//only one active totp after re-enroll
 	await credentialTotpRemove({userTag})
-	ok((await credentialTotpGet({userTag})) == false)//now gone
+	ok((await credentialTotpGet({userTag})).secret == '')//now gone
 })
+async function _totpStarts(userTag) {//a user's visible starts, newest first, at most one; the enroll tests read the secret from the row the way her authenticator app holds it from the qr code
+	return await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.', event_text: 'Challenged.'})
+}
 grid(async () => {//totp enroll: the whole flow, secret to saved enrollment, with a code the secret really makes
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	let letter = {notes: []}//the door opens this from the brownie the page sent, or request code makes it fresh when the page held nothing
 
-	let enrollment = await credentialTotpEnroll1({letter, userTag})//step 1: she asks to enroll and gets a secret to scan
-	ok(hasText(enrollment.uri) && letter.notes.length == 1)
-	let secret = letter.notes[0].secret//the secret rides in the letter, which only the server can read once sealed
+	let enrollment = await credentialTotpEnroll1({userTag})//step 1: she asks to enroll and gets a secret to scan
+	ok(hasText(enrollment.uri))
+	let starts = await _totpStarts(userTag)
+	ok(starts.length == 1 && starts[0].hash_text == '')//the start is a challenged row of hers, bound to no browser
+	let secret = starts[0].json.secret//the secret rides in the row, which only the server reads
 	ok(hasText(secret))
-	ok(letter.notes[0].userTag == userTag)//and the note names her as its owner
-	ok((await credentialTotpGet({userTag})) == false)//nothing saved yet; the secret lives only in the letter she's holding sealed
+	let snapshot = await credentialTotpGet({userTag})
+	ok(snapshot.secret == '' && snapshot.enrollment.uri == enrollment.uri)//nothing proven yet, and the snapshot rebuilds the same qr code from the row, so a refresh shows what she already scanned
 
 	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})//her authenticator app, which now has the secret
-	ok((await credentialTotpEnroll2({letter, userTag, code})).ok)
-	ok((await credentialTotpGet({userTag})) == secret)//step 2 checked the code and saved the enrollment
-	ok(letter.notes.length == 0)//and the finished enrollment left the letter
+	ok((await credentialTotpEnroll2({userTag, code})).ok)
+	snapshot = await credentialTotpGet({userTag})
+	ok(snapshot.secret == secret && snapshot.enrollment == false)//step 2 checked the code and saved the enrollment, and nothing is in flight
+	ok((await _totpStarts(userTag)).length == 0)//the finished start left the visible table
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 2)//and stays in it, hidden, beside the proven row
 })
-grid(async () => {//totp enroll: cancel empties the letter, a wrong code is refused, and enrolling twice is a mistake by the page above us
+grid(async () => {//totp enroll: cancel hides the start, a wrong code is refused, a restart leaves one visible start, and enrolling twice is a mistake by the page above us
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let userTag = Tag()
-	let letter = {notes: []}
 
-	await credentialTotpEnroll1({letter, userTag})//she starts,
-	let abandoned = letter.notes[0].secret
-	await credentialTotpEnroll1({letter, userTag})//starts over without cancelling,
-	ok(letter.notes.length == 1 && letter.notes[0].secret != abandoned)//and the restart replaced the abandoned start--one enrollment in flight per user
+	await credentialTotpEnroll1({userTag})//she starts,
+	let abandoned = (await _totpStarts(userTag))[0].json.secret
+	await credentialTotpEnroll1({userTag})//starts over without cancelling,
+	let starts = await _totpStarts(userTag)
+	ok(starts.length == 1 && starts[0].json.secret != abandoned)//and the restart hid the abandoned start--one enrollment in flight per user
+	let stale = await totpGenerate({secret: Data({base32: abandoned}), now: Now()})
+	ok((await credentialTotpEnroll2({userTag, code: stale})).outcome == 'BadCode.')//a code from the first qr code checks against the secret that replaced it
 
-	credentialTotpClear({letter, userTag})//then backs out
-	ok(letter.notes.length == 0)//the abandoned enrollment left the letter
-	credentialTotpClear({letter, userTag})//a stale tab cancels what's already gone, harmlessly
-	ok(letter.notes.length == 0)
+	await credentialTotpClear({userTag})//then backs out
+	ok((await _totpStarts(userTag)).length == 0)//the abandoned start is hidden
+	ok((await credentialTotpGet({userTag})).enrollment == false)//and the snapshot offers nothing to resume
+	await credentialTotpClear({userTag})//a stale tab cancels what's already gone, harmlessly
+	ok((await _totpStarts(userTag)).length == 0)
 
-	await credentialTotpEnroll1({letter, userTag})//she starts again and gets a fresh secret
-	let secret = letter.notes[0].secret
+	await credentialTotpEnroll1({userTag})//she starts again and gets a fresh secret
+	let secret = (await _totpStarts(userTag))[0].json.secret
 
-	let wrong = await credentialTotpEnroll2({letter, userTag, code: '000000'})
+	let wrong = await credentialTotpEnroll2({userTag, code: '000000'})
 	ok(!wrong.ok && wrong.outcome == 'BadCode.')//six digits that aren't the six digits her app shows
-	ok((await credentialTotpGet({userTag})) == false)//and nothing saved
-	ok(letter.notes.length == 1)//the note stays in the letter, so she can try again with the code in front of her
+	ok((await credentialTotpGet({userTag})).secret == '')//and nothing saved
+	ok((await _totpStarts(userTag)).length == 1)//the start stands, so she can try again with the code in front of her
 
 	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
-	ok((await credentialTotpEnroll2({letter, userTag, code})).ok)
+	ok((await credentialTotpEnroll2({userTag, code})).ok)
 
 	//now enrolled, both steps refuse to start over; the page ghosts these controls, so reaching here means it was wrong about the state
 	let tossed
-	tossed = false; try { await credentialTotpEnroll1({letter, userTag}) } catch (e) { tossed = true }
+	tossed = false; try { await credentialTotpEnroll1({userTag}) } catch (e) { tossed = true }
 	ok(tossed)
-	tossed = false; try { await credentialTotpEnroll2({letter, userTag, code}) } catch (e) { tossed = true }
+	tossed = false; try { await credentialTotpEnroll2({userTag, code}) } catch (e) { tossed = true }
 	ok(tossed)
 })
-grid(async () => {//totp enroll: notes are scoped by owner, so a shared browser never crosses enrollments between users
+grid(async () => {//totp enroll: a start belongs to the user who made it, not to a browser; a housemate at her computer hears Expired., and she herself finishes from her phone
 	let {clear} = await getDatabase()
 	await clear('credential_table')
 	let alice = Tag(), bob = Tag()
-	let letter = {notes: []}//alice and bob share a browser profile, so their notes share the one letter; a letter carried to a different browser is wiped at the door, a rule openBrownie's test in level2 walks
-	await credentialTotpEnroll1({letter, userTag: alice})
-	let code = await totpGenerate({secret: Data({base32: letter.notes[0].secret}), now: Now()})
+	await credentialTotpEnroll1({userTag: alice})//alice starts at the kitchen computer and steps away
+	let secret = (await _totpStarts(alice))[0].json.secret
+	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
 
-	let his = await credentialTotpEnroll2({letter, userTag: bob, code})//bob, signed in at the browser alice left, tries to finish her enrollment as his own
-	ok(!his.ok && his.outcome == 'Expired.')//no note of his, so the graceful answer: nothing in flight, start over
-	ok((await credentialTotpGet({userTag: bob})) == false)//nothing written for him
-	ok(letter.notes.length == 1)//and alice's note rides on, untouched
+	let his = await credentialTotpEnroll2({userTag: bob, code})//bob, signed in at the browser alice left, tries to finish her enrollment as his own
+	ok(!his.ok && his.outcome == 'Expired.')//no start of his, so the graceful answer: nothing in flight, start over
+	let bobs = await credentialTotpGet({userTag: bob})
+	ok(bobs.secret == '' && bobs.enrollment == false)//nothing written for him, and his snapshot shows an ordinary panel, not her qr code
+	ok((await _totpStarts(alice)).length == 1)//and her start rides on, untouched
 
-	ageNow(Limit.expirationUser + Time.minute)//alice walked away mid-enrollment and came back tomorrow
-	let late = await credentialTotpEnroll2({letter, userTag: alice, code})
+	ok(hasText((await credentialTotpGet({userTag: alice})).enrollment.uri))//alice, signed in at her phone, sees the same qr code there
+	ok((await credentialTotpEnroll2({userTag: alice, code})).ok)//and finishes there, with the code from the kitchen computer's screen; nothing ties a start to a browser
+	ok((await credentialTotpGet({userTag: alice})).secret == secret)
+})
+grid(async () => {//totp enroll: finishing hides the start, so a removed enrollment can't come back as a qr code; and a start left past twenty minutes resumes for nobody
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+
+	await credentialTotpEnroll1({userTag})
+	let secret = (await _totpStarts(userTag))[0].json.secret
+	let code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
+	ok((await credentialTotpEnroll2({userTag, code})).ok)//she enrolls
+	await credentialTotpRemove({userTag})//and minutes later removes the enrollment, well inside the start's twenty minutes
+	let snapshot = await credentialTotpGet({userTag})
+	ok(snapshot.secret == '' && snapshot.enrollment == false)//not enrolled, and not offered the qr code of the enrollment she just discarded, because enroll2 hid the start when it finished
+	ok((await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.'})).length == 0)//nothing visible
+	ok((await queryCountRows({table: 'credential_table', titleFind: 'user_tag', cellFind: userTag})) == 2)//and both rows are still in the table as evidence, hidden
+
+	await credentialTotpEnroll1({userTag})//she starts once more, and this time walks away
+	secret = (await _totpStarts(userTag))[0].json.secret
+	code = await totpGenerate({secret: Data({base32: secret}), now: Now()})
+	ageNow(Limit.expirationUser + Time.minute)//and comes back tomorrow
+	let late = await credentialTotpEnroll2({userTag, code})
 	ok(!late.ok && late.outcome == 'Expired.')//answered gracefully, so the page can start her over
-	ok(letter.notes.length == 0)//and the dead note left the letter
-})
-grid(async () => {//totp recover: an interrupted enrollment comes back, but only for the person who started it
-	let {clear} = await getDatabase()
-	await clear('credential_table')
-	let alice = Tag(), bob = Tag()
-	let letter = {notes: []}
-	let enrollment = await credentialTotpEnroll1({letter, userTag: alice})
-
-	let resumed = await credentialTotpRecover({letter, userTag: alice})
-	ok(resumed.uri == enrollment.uri)//she refreshed the page and gets the same qr code back, matching what she already scanned
-
-	ok((await credentialTotpRecover({letter, userTag: bob})) == false)//bob signs in at the browser alice left; no note of his, so he sees an ordinary panel, not her qr code
-	//a mangled brownie is caught a layer up: openBrownie arrives empty, and recovery finds nothing to resume
-
-	let letterOld = {notes: [{type: 'Totp.', expiration: Now() + Time.minute, userTag: alice}]}//a note sealed before a deploy renamed its insides: shape intact, secret gone
-	ok((await credentialTotpRecover({letter: letterOld, userTag: alice})) == false)//declined, never tossed, because recover runs on every page load while a note rides
-	let tossed = false; try { await credentialTotpEnroll2({letter: letterOld, userTag: alice, code: '000000'}) } catch (e) { tossed = true }
-	ok(tossed)//the same note at step 2 tosses instead--reached only by a user action, loud once, and the reload lands on recover's decline above
-
-	let letterPhone = {notes: []}//she also started once on her phone, and that note is still parked there
-	await credentialTotpEnroll1({letter: letterPhone, userTag: alice})
-
-	//once she finishes, there's nothing left in flight to resume
-	let code = await totpGenerate({secret: Data({base32: letter.notes[0].secret}), now: Now()})
-	ok((await credentialTotpEnroll2({letter, userTag: alice, code})).ok)
-	ok((await credentialTotpRecover({letter, userTag: alice})) == false)
-	ok((await credentialTotpRecover({letter: letterPhone, userTag: alice})) == false)//the phone's stale note doesn't resume either--she finished this enrollment somewhere else
-	ok(letterPhone.notes.length == 1)//and recover reads, never mutates; the stale note ages out on its own
-
-	let letter2 = {notes: []}//bob starts his own enrollment at his own browser and walks away
-	await credentialTotpEnroll1({letter: letter2, userTag: bob})
-	ageNow(Limit.expirationUser + Time.minute)
-	ok((await credentialTotpRecover({letter: letter2, userTag: bob})) == false)//an expired enrollment resumes for nobody
-})
-grid(async () => {//totp in the brownie: the letter survives the seal and open between steps, the way it rides between requests in production
-	let {clear} = await getDatabase()
-	await clear('credential_table')
-	let userTag = Tag(), browserHash = random32()
-
-	//step 1 runs at the door, and the letter it filled rides to the page sealed
-	let letter = {browserHash, notes: []}
-	await credentialTotpEnroll1({letter, userTag})
-	let envelope = await sealEnvelope('Brownie.', Time.hour, letter)//what sealBrownie does, its derived horizon aside
-
-	//the page refreshes; the brownie rides back up, and recovery resumes from the reopened letter
-	let arrived = await openEnvelope('Brownie.', envelope, {skipExpirationCheck: true})
-	ok(arrived.notes.length == 1 && arrived.notes[0].secret == letter.notes[0].secret)//the note crossed the crypto intact, field for field
-	let resumed = await credentialTotpRecover({letter: arrived, userTag})
-	ok(hasText(resumed.uri))
-
-	//step 2 finishes from the same reopened letter
-	let code = await totpGenerate({secret: Data({base32: arrived.notes[0].secret}), now: Now()})
-	ok((await credentialTotpEnroll2({letter: arrived, userTag, code})).ok)
-	ok(arrived.notes.length == 0)//the finished enrollment left the letter, and sealBrownie would answer BrownieDelete.
-})
-grid(async () => {//totp in the brownie: housemates' notes ride side by side in the one letter, and each finishes their own
-	let {clear} = await getDatabase()
-	await clear('credential_table')
-	let alice = Tag(), bob = Tag()
-	let letter = {notes: []}
-	await credentialTotpEnroll1({letter, userTag: alice})
-	await credentialTotpEnroll1({letter, userTag: bob})//bob signs in after alice steps away mid-flow, and starts his own
-	ok(letter.notes.length == 2)
-
-	let code = await totpGenerate({secret: Data({base32: letter.notes.find(n => n.userTag == bob).secret}), now: Now()})
-	ok((await credentialTotpEnroll2({letter, userTag: bob, code})).ok)//bob finishes his
-	ok(letter.notes.length == 1 && letter.notes[0].userTag == alice)//alice's note rides on for her return
-
-	code = await totpGenerate({secret: Data({base32: letter.notes[0].secret}), now: Now()})
-	ok((await credentialTotpEnroll2({letter, userTag: alice, code})).ok)//and alice finishes hers
-	ok(letter.notes.length == 0)
+	ok((await credentialTotpGet({userTag})).enrollment == false)//and her snapshot no longer offers the stale qr code
+	ok((await _totpStarts(userTag)).length == 1)//the stale start is still visible in the table; nothing sweeps it, and nothing honors it
 })
 grid(async () => {//wallet: a user proves two addresses, and the third is refused until they remove one
 	let {clear} = await getDatabase()
@@ -718,7 +675,7 @@ grid(async () => {//per-type writes fill hash_text and the note per the k-to-not
 	await credentialTotpSet({userTag, secret})
 	row = (await queryGet('credential_table', {user_tag: userTag, type_text: 'Totp.'}))[0]
 	ok(row.json.secret == secret && row.hash_text == '')//a secret is a key, not a hash, so it rides in the note
-	ok((await credentialTotpGet({userTag})) == secret)
+	ok((await credentialTotpGet({userTag})).secret == secret)
 
 	let browserHash = random32()
 	await credentialBrowserSet({userTag, browserHash})

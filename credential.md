@@ -92,9 +92,9 @@ Two futures competed for provisional flow state: relocate the envelope cookies i
 
 **Reopened, September 2026.** The fork was decided days before jsonb entered the menu, and the objection that carried it — a dedicated table or sparse columns per type — does not apply to a json cell on a row that already exists. brownieless.md plans the fourth step of the trajectory: notes become json on credential_table's Challenged. rows, and the letter retires, so the browser holds its identity and nothing else. Until that sprint lands, the brownie is what runs.
 
-## Browser binding: every provisional flow is single-browser
+## Browser binding: a brownie rule, not a row rule
 
-Every provisional flow must be started and completed at the same browserHash. The brownie's letter is bound to the browser at the door — `openBrownie` wipes the notes of a letter whose sealed browserHash disagrees with the one the request's cookie proves — so no flow re-checks it. (OTP: "requested on laptop, reading email on phone" is an edge case — the code must be typed back at the browser that asked, which is simpler and more secure.)
+A flow that rides the brownie must be started and completed at the same browserHash. The letter is a bearer token in the client, so it is bound to the browser at the door — `openBrownie` wipes the notes of a letter whose sealed browserHash disagrees with the one the request's cookie proves — and no flow re-checks it. A flow that rides a Challenged. row has no such need: nothing presents a row, the query is by user_tag, and the signed-in session a request does present is already tied to the user by the Browser. row. totp moved to rows in September 2026 and binds to no browser: any browser signed in as the user shows the qr code and can finish. Wallet and otp decide for themselves as each moves, and otp is where the "requested on laptop, reading email on phone" question lives — the code typed back at the browser that asked is simpler, and brownieless.md weighs whether it is also worth keeping.
 
 ## The userTag problem: early assignment for new users
 

@@ -124,7 +124,7 @@ trailRecent, trailCount, trailGet, trailGetAny, trailAdd, trailAddMany,
 
 credentialPasswordGet, credentialPasswordSet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpSet, credentialTotpRemove,
-credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover, credentialTotpClear,
+credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpClear,
 credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameGet, credentialNameCheck, credentialNameSet, credentialNameRemove,
 credentialWalletGet, credentialWalletHolder, credentialWalletRefusal, credentialWalletSet, credentialWalletRemove,

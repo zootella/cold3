@@ -16,7 +16,7 @@ If contents.md is present, read it first. It is the guide to the others and says
 
 ## How we work
 
-The work moves in a fixed order, and every turn sits at a known point in it: you code, the user seals and makes diff.diff, the two of you review that diff over several turns, and only after the review settles comes the commit. Only after the commit comes the smoke test, the deploy, or the database push.
+The work moves in a known order, and every turn sits at a known point in it. The fixed part: you code, the user seals and makes diff.diff, and the two of you review that diff over several turns. What follows varies with the work, and the user says which comes next rather than the last task's order repeating: a smoke test often comes before the commit for a code-only change, and after it when a migration ships alongside; the deploy and the database push come only after a commit.
 
 ### The coding turn
 

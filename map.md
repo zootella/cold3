@@ -12,8 +12,8 @@ For instance, TOTP only helps an existing user additionally secure their account
 **Does the prove flow need the page to hold server state? (currently in an envelope)**
 For instance, Wallet: prove step 1 seals the SIWE nonce into an envelope, and the server needs the page to hold it and send it back alongside the signed message in step 2 — but we don't need to worry about a browser refresh, because a refresh kills the wallet connection and pending popup anyway, so no envelope of ours could resume the flow; the user restarts with one invisible click.
 
-**Does the prove flow need that state to survive a browser reload? (currently by notes in the brownie)**
-For instance, TOTP: by the time the page holds the sealed enrollment secret, the user has already scanned the QR code into their authenticator app. If a reload discards the secret, the entry they just created in their app is orphaned — regeneration is expensive and user-visible. OTP is the same shape: the code already landed in a real inbox, and discarding the challenge invalidates a code the user is about to type, forcing a resend into the rate limits.
+**Does the prove flow need that state to survive a browser reload? (by notes in the brownie for otp; by a Challenged. row for totp since September 2026)**
+For instance, TOTP: by the time the page holds the qr code, the user has already scanned the QR code into their authenticator app. If a reload discards the secret, the entry they just created in their app is orphaned — regeneration is expensive and user-visible. OTP is the same shape: the code already landed in a real inbox, and discarding the challenge invalidates a code the user is about to type, forcing a resend into the rate limits.
 
 **Does the flow involve starting information we should record as mentioned or challenged? (with Mentioned. and Challenged. rows)**
 For instance, if the server uses Twilio to send an OTP code to alice@example.com, we want a record of that even if Alice never completes the flow — this helps us understand whether Alice, or Twilio, is broken or untrustworthy.
@@ -22,10 +22,10 @@ For instance, if the server uses Twilio to send an OTP code to alice@example.com
 For instance, a user holds zero or one TOTP enrollment, but any number of proven email addresses and phone numbers. In-flight proofs follow the same multiplicity: one TOTP enrollment in flight, several live OTP challenges at once — though never more than one per address, since a resend replaces the older challenge. The one case where an in-flight proof doesn't correspond to a new credential slot is re-proof — the holder re-challenged at her own already-proven address for sudo or a new device — but even there the one-per-address rule holds.
 
 **Must a proof flow start and finish at the same browser?**
-Today the answer is yes for every type. For instance, OTP: request a code from your laptop, and even if you read the email on your phone, the code must be typed back into the laptop, because the challenge lives at the browser that started it. The imaginable alternative — start a proof on one device, finish it on another — is supported nowhere today, and single-browser is simpler and more secure. The question per type is whether that ever needs to change.
+Yes for otp and wallet today, and no for totp since September 2026: its start is a row that belongs to the user, so any browser signed in as her shows the qr code and can finish. For instance, OTP: request a code from your laptop, and even if you read the email on your phone, the code must be typed back into the laptop, because the challenge lives at the browser that started it. The imaginable alternative — start a proof on one device, finish it on another — is what totp now does, and for the brownie flows single-browser is simpler and more secure. brownieless.md asks the question of wallet and otp as each moves to rows.
 
 **Where is this flow's expiration enforced?**
-Provisional state must die on its own in tens of minutes — the concern is who checks the clock. For instance, TOTP: the deadline rides inside the sealed note, so only the server can read it and only the server enforces it — openBrownie filters expired notes at the door. The page can hold stale ciphertext indefinitely, and finds out only when recovery declines or the response commands a delete.
+Provisional state must die on its own in tens of minutes — the concern is who checks the clock. For instance, TOTP: the start's row_tick plus twenty minutes is the deadline, checked in the one function in level3 that reads a start, so a stale start never reaches the page, which learns on its next snapshot. OTP: the deadline rides inside the sealed note, so only the server can read it and only the server enforces it — openBrownie filters expired notes at the door. The page can hold stale ciphertext indefinitely, and finds out only when the response commands a delete.
 
 ## System concerns
 
@@ -94,7 +94,7 @@ Zero is acceptable everywhere. No credential type is required, and none is more 
 
 **Email and Phone** — any number, all peers, with no main or default. Nothing in the code caps them, deliberately: a user should add a personal address alongside an organizational one, so that losing the organization does not lose the account. Holding several also carries its own reassurance, because an address proven here cannot be claimed by anyone else.
 
-**TOTP** — one. Enforced twice over: `credentialTotpSet` hides the previous row before inserting, and both `credentialTotpEnroll1` and `credentialTotpEnroll2` refuse outright when the user is already enrolled.
+**TOTP** — one, and one in flight. Enforced twice over: `credentialTotpSet` hides the previous row before inserting, and both `credentialTotpEnroll1` and `credentialTotpEnroll2` refuse outright when the user is already enrolled; `credentialTotpEnroll1` hides earlier starts before writing a new one.
 
 **Two enforcement styles, and TOTP is the outlier.** Wallet and OAuth both answer a caller who asks for one too many with a graceful outcome, writing nothing: `WalletFull.` and `WalletClaimedElsewhere.` for wallet, `OauthAlreadyLinked.` and `OauthClaimedElsewhere.` for oauth. TOTP instead tosses, so a second enrollment attempt lands on the error page. The realistic trigger for all of these is a panel that rendered before another tab changed something, which is tier-two innocence getting a tier-three answer, so totp's toss is the one left to reconsider whenever stale-tab handling gets standardized across the signed-in credential actions.
 

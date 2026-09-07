@@ -1,6 +1,6 @@
 
 import {
-headerGetOne, isPlain, credentialBrowserGet, recordHit, recordDelay,
+isPlain, credentialBrowserGet, recordHit, recordDelay,
 } from 'icarus'
 
 export default defineEventHandler(async (workerEvent) => {

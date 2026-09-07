@@ -11,7 +11,7 @@ const name = ref(null)//the user's name {f0, f1, f2}, or null if not signed in o
 const passwordCycles = ref(0)//the signed-in user's password hash cycles, or 0 if not signed in or no password (set via apply after auth)
 const totpEnrolled = ref(false)//true if the user has a proven TOTP enrollment
 const totpIdentifier = ref('')//short identifier like "g3" to help user find the right authenticator entry
-const enrollment = ref(null)//the signed-in user's in-flight TOTP enrollment {uri, identifier}, riding every snapshot while its note is in the brownie, or null
+const enrollment = ref(null)//the signed-in user's in-flight TOTP enrollment {uri, identifier}, riding every snapshot while its start is live in credential_table, or null
 const recovering = ref(false)//true while mounted()'s recovery Get. is in flight; the totp panel ghosts Add so a fresh enrollment can't race the arriving snapshot
 const wallets = ref([])//checksummed Ethereum addresses the user has proven they control: [address, ...] zero, one, or two
 const oauths = ref([])//array of linked third-party accounts: [{provider, identifier, handle, name, email}, ...]
@@ -47,7 +47,7 @@ async function load() { if (loaded.value) return; loaded.value = true
 	apply(task)
 }
 
-async function mounted() {//called once per spa from app.vue's onMounted; the server render couldn't see localStorage, so if this browser holds a brownie, send it up now to recover in-flight flows--totp enrollments and otp challenges alike
+async function mounted() {//called once per spa from app.vue's onMounted; the server render couldn't see localStorage, so if this browser holds a brownie, send it up now to recover in-flight flows
 	if (!brownieHeld()) return//almost always; a brownie exists only during the minutes of an in-flight flow
 	recovering.value = true
 	let task = await fetchWorker('/credential', 'Get.')//the brownie rides automatically; fetchWorker appends it to every POST from the page
@@ -116,7 +116,7 @@ async function totpEnroll2({code}) {
 	return task
 }
 
-async function totpClear() {//the user backed out of an enrollment; the server removes the note, and the response's brownie command cleans the page up
+async function totpClear() {//the user backed out of an enrollment; the server hides the start, and the response's snapshot cleans the page up
 	let task = await fetchWorker('/credential', 'TotpClear.')
 	apply(task)
 }

@@ -6,7 +6,7 @@ credentialBrowserGet, credentialBrowserSet, credentialBrowserRemove,
 credentialNameCheck, credentialNameSet, credentialNameGet, credentialNameRemove,
 credentialPasswordSet, credentialPasswordGet, credentialPasswordRemove,
 credentialTotpGet, credentialTotpRemove,
-credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpRecover, credentialTotpClear,
+credentialTotpEnroll1, credentialTotpEnroll2, credentialTotpClear,
 credentialWalletGet, credentialWalletProve1, credentialWalletProve2, credentialWalletRemove,
 credentialOauthRemove, credentialOauthGet, oauthProviders,
 credentialOtpSend, credentialOtpEnter, credentialOtpGet, credentialOtpRemove,
@@ -31,14 +31,15 @@ async function attachState(task, browserHash, letter) {//attach complete credent
 		if (name) task.user = name.name
 		let password = await credentialPasswordGet({userTag: user.userTag})
 		if (password) task.passwordCycles = password.cycles
-		let totpSecret = await credentialTotpGet({userTag: user.userTag})
-		if (totpSecret) {
+		let totp = await credentialTotpGet({userTag: user.userTag})//{secret, enrollment} from one read: the proven secret or blank, and the in-flight enrollment or false
+		if (totp.secret) {
 			task.totpEnrolled = true
-			task.totpIdentifier = await totpIdentifier({secret: Data({base32: totpSecret})})
+			task.totpIdentifier = await totpIdentifier({secret: Data({base32: totp.secret})})
 		} else {
 			task.totpEnrolled = false
 			task.totpIdentifier = ''
 		}
+		if (totp.enrollment) task.enrollment = totp.enrollment//{uri, identifier}, rebuilt from the row's secret, so every snapshot agrees, the server render included; absent when nothing is in flight, which collapses the page's enrollment ui
 		task.wallets = await credentialWalletGet({userTag: user.userTag})//[address, ...] checksummed, zero one or two
 		task.oauths = await credentialOauthGet({userTag: user.userTag})
 		task.emails = await credentialOtpGet({userTag: user.userTag, type: 'Email.'})//[{f0, f1, f2, event}, ...] event 'Proven.', 'Challenged.' for a code sent, or 'Mentioned.'
@@ -53,8 +54,6 @@ async function attachState(task, browserHash, letter) {//attach complete credent
 			address: o.address,//the full address object with ok, f0, f1, f2, and type
 			//the secret code we sent, like "123456" is o.answer; it stays sealed in the brownie, and critically is not leaked here to the page!
 		}))
-		let enrollment = await credentialTotpRecover({letter, userTag: user.userTag})//the viewer's in-flight totp enrollment rides the same way; cheap, because recover answers false as soon as it finds no note
-		if (enrollment) task.enrollment = enrollment//{uri, identifier}, deterministic from the sealed secret, so every snapshot agrees; absent when nothing is in flight, which collapses the page's enrollment ui
 	}
 	//ttd march, lots of database chatter here, replace with a single query for all rows about userTag, and then careful trusted server side logic to sift through them to figure out what's applicable and what's historical. and in this process, decide if you're going to hide rows or not
 }
@@ -63,7 +62,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 	// 🟠 get
 	if (action == 'Get.') {
-		await attachState(task, browserHash, door.brownie)//the snapshot carries the viewer's live challenges and in-flight enrollment from the letter, so recovery after a refresh is just the page rendering the snapshot
+		await attachState(task, browserHash, door.brownie)//the snapshot carries the viewer's live challenges from the letter and in-flight enrollment from credential_table, so recovery after a refresh is just the page rendering the snapshot
 
 	// 🟠 name
 	} else if (action == 'CheckNameTurnstile.') {
@@ -174,23 +173,22 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		// 🟠 totp
 		//TOTP enrollment step 1: the user at browser wants to setup totp as a second factor. here at the server, we make sure they're not already enrolled, and generate a new random secret for the qr code
 		} else if (action == 'TotpEnroll1.') {
-			if (!door.brownie) door.brownie = {notes: []}//starting a flow where no brownie arrived; the door seals whatever the letter holds on the way out
-			await credentialTotpEnroll1({letter: door.brownie, userTag: user.userTag})//puts the note in the letter; the tail's attachState reads it back into the snapshot, which is where the page gets the QR to show--the secret stays sealed in the brownie
+			await credentialTotpEnroll1({userTag: user.userTag})//writes the start as a challenged row; the tail's attachState reads it back into the snapshot, which is where the page gets the QR to show
 
 		// 🟠 totp
 		//TOTP enrollment step 2: the user has gotten the secret into their authenticator app, and has their first code to validate. if they're right, we create their enrollment
 		} else if (action == 'TotpEnroll2.') {
-			let result = await credentialTotpEnroll2({letter: door.brownie || {notes: []}, userTag: user.userTag, code: body.code})//no brownie arrived means no note to find, and the graceful Expired. answer below
-			if (!result.ok) {//the failure response still carries the snapshot: BadCode. kept the note, so the enrollment ui stays; Expired. dropped it, so the ui collapses
+			let result = await credentialTotpEnroll2({userTag: user.userTag, code: body.code})
+			if (!result.ok) {//the failure response still carries the snapshot: BadCode. left the start standing, so the enrollment ui stays; Expired. found none, so the ui collapses
 				task.success = false; task.outcome = result.outcome
 				await attachState(task, browserHash, door.brownie)
 				return task
 			}
 
 		// 🟠 totp
-		//the user backed out of an enrollment in flight; take their note out of the letter, and the door's delete or reseal cleans the page up
+		//the user backed out of an enrollment in flight; hide their start, and the tail's snapshot cleans the page up
 		} else if (action == 'TotpClear.') {
-			if (door.brownie) credentialTotpClear({letter: door.brownie, userTag: user.userTag})//without a brownie there's nothing to cancel; a stale tab cancelling twice is a harmless no-op
+			await credentialTotpClear({userTag: user.userTag})//a stale tab cancelling twice is a harmless no-op
 
 		// 🟠 totp
 		//an enrolled user wants to remove their totp enrollment, likely to setup a different one
@@ -202,7 +200,7 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 		//having previously enrolled, the user is signing in with totp
 		//here on the server, we validate the code
 		} else if (action == 'TotpValidate.') {
-			let secret = await credentialTotpGet({userTag: user.userTag})
+			let {secret} = await credentialTotpGet({userTag: user.userTag})
 			if (!secret) toss('state')
 			checkTotpSecret(secret)
 			checkTotpCode(body.code)

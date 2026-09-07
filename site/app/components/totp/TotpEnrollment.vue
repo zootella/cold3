@@ -24,12 +24,12 @@ function onAdd() {//mobile: hand off to authenticator app
 
 async function onValidate() {//confirm the 6-digit code, finish enrollment
 	refStatus.value = 'Validating...'
-	let task = await credentialStore.totpEnroll2({code: computedCode.value})//the brownie carries the secret up alongside; nothing for the page to hand back
-	if (task.outcome == 'BadCode.') refStatus.value = "That code didn't work. Please try again."//wrong digits, or correct digits but the 30-second TOTP window rolled over; the note stays, so the user can try again
+	let task = await credentialStore.totpEnroll2({code: computedCode.value})//the start's row holds the secret; the code is all the page hands back
+	if (task.outcome == 'BadCode.') refStatus.value = "That code didn't work. Please try again."//wrong digits, or correct digits but the 30-second TOTP window rolled over; the start stays, so the user can try again
 	//success and Expired. answer with a snapshot that has no enrollment, which unmounts this component
 }
 
-async function onCancel() {//the user backs out; the server removes the note, and the response's snapshot unmounts this component
+async function onCancel() {//the user backs out; the server hides the start, and the response's snapshot unmounts this component
 	await credentialStore.totpClear()
 }
 
