@@ -5,7 +5,7 @@ wrapper,
 import {//from core
 Time, inSeconds,
 say, look, defined,
-Tag, checkTagOrBlank, checkTag,
+Tag, hasTag, checkTagOrBlank, checkTag,
 Data, decryptData, hash_size, hasTextSame,
 replaceAll, replaceOne,
 hmacSign,
@@ -20,7 +20,7 @@ import {//from level0
 Now, sayDate, sayTick,
 log, logTo, noop, test, ok, toss,
 textToInt, hasText, checkText, checkTextOrBlank,
-checkInt, roundDown, isExpired,
+checkInt, roundDown,
 isInSimulationMode, ageNow,
 } from './level0.js'
 import {//from level1
@@ -31,7 +31,7 @@ checkAction, checkActionOrBlank, viemDynamicImport,
 import {//from level2
 Sticker, stickerParts, isLocal, isCloud,
 fetchWorker, fetchLambda, fetchProvider, Key,
-sealEnvelope, openEnvelope, originDomain,
+originDomain,
 brownieGetAll, brownieAdd,
 
 /* level 2 query */
@@ -625,14 +625,16 @@ export async function credentialWalletRemove({userTag, f0}) {//hide this user's 
 
 /*
 Proving a wallet is Sign-In with Ethereum, EIP-4361, in two steps. Step 1 we mint a nonce and hand it to the page,
-which builds the SIWE message and asks the wallet to sign it; step 2 the signed message comes back and we check it.
-The two steps are stateless on the server, tied together only by a sealed envelope the page carries between them,
-holding the nonce, the address, and the browserHash. That envelope is what makes step 2 safe: it proves the nonce
-is one we issued, to this browser, for this address, within the last twenty minutes.
+which builds the SIWE message around it and asks the wallet to sign; step 2 the signed message comes back and we check
+it. Between the steps the nonce lives on the Challenged. row step 1 writes, in json, so step 2 can prove the nonce is
+one we issued: it parses the nonce out of the signed message and looks for this user's challenge for this address that
+carries it, written in the last twenty minutes. A nonce we never minted, one minted for someone else or another address,
+one past its time, or one already spent all fail that lookup the same way. Once the signature checks out, step 2 hides
+the challenge, so a captured signature replayed later finds its nonce gone; EIP-4361 gives the nonce to prevent replay
+and leaves how to us, and spending it is the plain way.
 
 Both steps live here rather than at the endpoint so a grid test can walk the whole flow, including a real signature from
-a generated key. The endpoint above is left holding only what it alone knows: the shape of the request, and the
-browserHash from the door.
+a generated key. The endpoint above is left holding only what it alone knows: the shape of the request.
 
 Checking the signature is deliberately two steps, and the reason is worth knowing. viem's verifySiweMessage handles
 ordinary wallets and smart contract wallets by one uniform path, and that path reaches the chain for both — so using
@@ -643,43 +645,45 @@ again shortly" during an outage instead of being told their good signature is ba
 */
 
 //wallet prove step 1: the page has connected a wallet and wants to prove the person at this browser controls it
-//returns {outcome} when a rule declines the flow before it starts, or {nonce, envelope} to go ahead
-export async function credentialWalletProve1({userTag, browserHash, address}) {
-	checkTag(userTag); checkHash(browserHash); checkText(address)
+//returns {outcome} when a rule declines the flow before it starts, or {nonce} to go ahead
+export async function credentialWalletProve1({userTag, address}) {
+	checkTag(userTag); checkText(address)
 	let v = await validateWallet(address); if (!v.ok) toss('use', {address})//the page connected a real wallet, so anything else is a broken caller
 
-	await credentialSet({userTag, type: 'Ethereum.', event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})//the mention: this browser mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Mentioned.', f0: v.f0, f1: v.f1, f2: v.f2})//the mention: this user mentioned this address, recorded before we decide, so a refused attempt still leaves its trace
 
 	let outcome = await credentialWalletRefusal({userTag, address})
 	if (outcome) return {outcome}//refuse at the start, so the user is never sent to their wallet to sign for a proof we would decline at the end
 
 	let nonce = Tag()//21 base62 characters; the page embeds this in the SIWE message it asks the wallet to sign
-	let envelope = await sealEnvelope('ProveWallet.', Limit.expirationUser, {nonce, address, browserHash})
-	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2})//the challenge: we challenged this address with a nonce
-	return {nonce, envelope}
+	await credentialSet({userTag, type: 'Ethereum.', event: 'Challenged.', f0: v.f0, f1: v.f1, f2: v.f2, note: {nonce}})//the challenge: we challenged this address with this nonce, and row_tick is its clock
+	return {nonce}
 }
 
 //wallet prove step 2: the page returns the SIWE message it built and the wallet's signature over it
 //returns {ok: true} once the proof is saved, or {ok: false, outcome} for a sad path the page can act on
-export async function credentialWalletProve2({userTag, browserHash, address, message, signature, envelope}) {
-	checkTag(userTag); checkHash(browserHash); checkText(address)
+export async function credentialWalletProve2({userTag, address, message, signature}) {
+	checkTag(userTag); checkText(address)
 	checkText(message)//the SIWE-formatted message the page constructed and signed
 	checkText(signature)//0x followed by 130 or 132 base16 characters
+	let v = await validateWallet(address); if (!v.ok) toss('use', {address})//the endpoint hands us the checksummed face; the rows hold the lowercase f0
 
-	//open the envelope from step 1 to recover the nonce, address, and browserHash we sealed
-	let letter = await openEnvelope('ProveWallet.', envelope, {skipExpirationCheck: true})
-	if (isExpired(letter.expiration)) return {ok: false, outcome: 'Expired.'}//user walked away
-	if (letter.browserHash != browserHash) toss('state', {userTag, browserHash, letter})//envelope from a different browser
-	if (letter.address != address) toss('state', {userTag, browserHash, letter})//envelope was for a different address
-
-	//viem arrives through the dynamic import helper rather than a static import at the top of this file: these modules are big, static imports of them have broken the cloudflare deploy before, and the grid tests below name this function, which keeps whatever it references alive in every bundle a tree shaker looks at
+	//viem arrives through the dynamic import helper rather than a static import at the top of this file: these modules are big, static imports of them have broken the cloudflare deploy before, and the grid tests name this function, which keeps whatever it references alive in every bundle a tree shaker looks at
 	let {viem, viem_chains, viem_siwe, viem_utils} = await viemDynamicImport()
+
+	//find the challenge this message answers, by the nonce inside it
+	let parsed = viem_siwe.parseSiweMessage(message)//never throws: garbage parses to an empty object, and an edited message to whatever was typed into it
+	if (!hasTag(parsed.nonce)) return {ok: false, outcome: 'BadSignature.'}//the boundary check on text the page sent, so a broken message gets this answer rather than a toss from the query helper below; the lookup is what proves the nonce is ours
+	let challenges = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce: parsed.nonce}})//this user's challenge for this address under this nonce; by the nonce rather than newest, so two tabs proving one address each find their own
+	let challenge = challenges[0]
+	if (!challenge || Now() >= challenge.row_tick + Limit.expirationUser) return {ok: false, outcome: 'Expired.'}//no live challenge: a nonce we never issued, or issued to someone else, or past its twenty minutes, or already spent; every way, start over
+	let nonce = challenge.json.nonce//the row's, never the parsed one: validateSiweMessage skips its nonce check when handed undefined
 
 	let now = new Date()//one reading of the clock for both steps below, so a slow check can't judge the message by two different moments
 
 	// 🔑 step 1, offline: does the message say what it should, and did this address sign it?
-	//validateSiweMessage enforces that the message was signed for our origin, around the nonce we sealed, by the address being claimed, and inside the lifetime the message declares for itself--defense in depth alongside the envelope's own nonce and expiration
-	if (!viem_siwe.validateSiweMessage({message: viem_siwe.parseSiweMessage(message), domain: originDomain(), nonce: letter.nonce, address, time: now})) {
+	//validateSiweMessage enforces that the message was signed for our origin, around our nonce, by the address being claimed, and inside the lifetime the message declares for itself--defense in depth alongside the row's own clock
+	if (!viem_siwe.validateSiweMessage({message: parsed, domain: originDomain(), nonce, address, time: now})) {
 		return {ok: false, outcome: 'BadSignature.'}//the message itself is wrong, and no wallet of any kind could make that right
 	}
 	let valid = await viem_utils.verifyMessage({address, message, signature})//recover the signer from the signature; an ordinary key-backed wallet--very nearly every wallet--proves itself right here, touching no network at all
@@ -693,11 +697,12 @@ export async function credentialWalletProve2({userTag, browserHash, address, mes
 		} catch (e) {
 			return {ok: false, outcome: 'Later.'}//our provider is down, so we can't judge a contract wallet at all; the remedy is to wait and try again, which is what Later. means everywhere it appears
 		}
-		valid = await viem_siwe.verifySiweMessage(client, {message, signature, domain: originDomain(), nonce: letter.nonce, address, time: now})//EIP-1271: ask the wallet's own contract whether it accepts this signature
+		valid = await viem_siwe.verifySiweMessage(client, {message, signature, domain: originDomain(), nonce, address, time: now})//EIP-1271: ask the wallet's own contract whether it accepts this signature
 	}
 	if (!valid) return {ok: false, outcome: 'BadSignature.'}
 
-	//save this proven wallet address as a credential for this user
+	//the signature checks out: spend the nonce, then save the proof
+	await queryHide('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: v.f0, event_text: 'Challenged.', json: {nonce}})//this challenge alone, so a captured signature replayed later finds its nonce gone; hidden before the write, so a failure between leaves a spent nonce and no proof, and she starts over with a fresh one
 	return await credentialWalletSet({userTag, address})//the rules run again here, because the minutes the user spent signing were long enough for another tab or another account to change the answer
 }
 

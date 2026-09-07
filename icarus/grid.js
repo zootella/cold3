@@ -462,80 +462,101 @@ async function _walletTestSign({account, nonce}) {//build and sign the same SIWE
 grid(async () => {//wallet prove: the whole flow, nonce to saved proof, with a real signature
 	let {clear} = await getDatabase()
 	await clear('credential_table')
-	let userTag = Tag(), browserHash = random32()
+	let userTag = Tag()
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
+	const challenges = async () => await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})//her visible challenges
 
-	let prove = await credentialWalletProve1({userTag, browserHash, address: account.address})//step 1: the page asks for a nonce
-	ok(!prove.outcome && hasText(prove.nonce) && hasText(prove.envelope))
+	let prove = await credentialWalletProve1({userTag, address: account.address})//step 1: the page asks for a nonce
+	ok(!prove.outcome && hasText(prove.nonce))
 	ok((await credentialWalletGet({userTag})).length == 0)//nothing proven yet; step 1 only wrote the mention and the challenge
+	let rows = await challenges()
+	ok(rows.length == 1 && rows[0].json.nonce == prove.nonce && rows[0].hash_text == '')//the challenge carries the nonce, and belongs to the user, not to a browser
 
 	let signed = await _walletTestSign({account, nonce: prove.nonce})//the wallet signs what the page built
-	ok((await credentialWalletProve2({userTag, browserHash, address: account.address, ...signed, envelope: prove.envelope})).ok)
+	ok((await credentialWalletProve2({userTag, address: account.address, ...signed})).ok)
 	ok((await credentialWalletGet({userTag}))[0] == account.address)//step 2 checked the signature and saved the proof
+	ok((await challenges()).length == 0)//and spent the nonce: the challenge is hidden
 })
-grid(async () => {//wallet prove: the envelope ties step 2 to the browser and the address step 1 was for
+grid(async () => {//wallet prove: the challenge belongs to the user and the address step 1 was for, and lives twenty minutes
 	let {clear} = await getDatabase()
 	await clear('credential_table')
-	let userTag = Tag(), browserHash = random32()
+	let userTag = Tag(), carol = Tag()
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
 	let other = await _walletTestAccount('0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba')
 
-	let prove = await credentialWalletProve1({userTag, browserHash, address: account.address})
+	let prove = await credentialWalletProve1({userTag, address: account.address})
 	let signed = await _walletTestSign({account, nonce: prove.nonce})
 	const submit = async (o) => await credentialWalletProve2(//everything correct except what the caller overrides
-		{userTag, browserHash, address: account.address, ...signed, envelope: prove.envelope, ...o})
+		{userTag, address: account.address, ...signed, ...o})
 
-	let tossed
-	tossed = false; try { await submit({browserHash: random32()}) } catch (e) { tossed = true }
-	ok(tossed)//an envelope carried to another browser can't be spent there
-
-	tossed = false; try { await submit({address: other.address}) } catch (e) { tossed = true }
-	ok(tossed)//nor can an envelope sealed for one address be spent on another
-	ok((await credentialWalletGet({userTag})).length == 0)//neither attempt wrote anything
+	ok((await submit({address: other.address})).outcome == 'Expired.')//a challenge for one address can't be spent on another: the lookup by address finds nothing
+	ok((await submit({userTag: carol})).outcome == 'Expired.')//alice signed out and carol signed in at the same browser: the lookup by user finds nothing of hers
+	ok((await credentialWalletGet({userTag})).length == 0 && (await credentialWalletGet({userTag: carol})).length == 0)//neither attempt wrote anything
 
 	ageNow(Limit.expirationUser + Time.minute)//the user walked away mid-flow and came back tomorrow
 	ok((await submit({})).outcome == 'Expired.')//answered gracefully, because a slow user is not an attacker
 })
-grid(async () => {//wallet prove: only the connected wallet's own signature, over our own nonce, proves anything
+grid(async () => {//wallet prove: only the connected wallet's own signature, over a nonce we issued and haven't spent, proves anything
 	let {clear} = await getDatabase()
 	await clear('credential_table')
-	let userTag = Tag(), browserHash = random32()
+	let userTag = Tag()
 	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
 	let other = await _walletTestAccount('0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba')
-	let prove = await credentialWalletProve1({userTag, browserHash, address: account.address})
-	const submit = async (signed) => await credentialWalletProve2(
-		{userTag, browserHash, address: account.address, ...signed, envelope: prove.envelope})
+	let prove = await credentialWalletProve1({userTag, address: account.address})
+	const submit = async (signed) => await credentialWalletProve2({userTag, address: account.address, ...signed})
 
 	let forged = await _walletTestSign({account: other, nonce: prove.nonce})//somebody else signs the message this user was to sign
 	ok((await submit(forged)).outcome == 'BadSignature.')
 
 	let stale = await _walletTestSign({account, nonce: Tag()})//the right wallet signs, but over a nonce we never issued
-	ok((await submit(stale)).outcome == 'BadSignature.')
+	ok((await submit(stale)).outcome == 'Expired.')//well-formed, but no challenge carries it, so the lookup finds nothing
+	ok((await submit({message: 'hello world', signature: stale.signature})).outcome == 'BadSignature.')//text that isn't a SIWE message parses to no nonce at all
 	ok((await credentialWalletGet({userTag})).length == 0)//still nothing proven
 
 	let signed = await _walletTestSign({account, nonce: prove.nonce})
 	ok((await submit(signed)).ok)//the real thing works
-	let replay = await submit(signed)//and then the same envelope and signature are spent a second time
-	ok(!replay.ok && replay.outcome == 'WalletAlreadyProven.')//which proves nothing new, because the address already has its holder
+	ok((await submit(signed)).outcome == 'Expired.')//and the same signature spent a second time finds its nonce gone
+	await credentialWalletRemove({userTag, f0: account.address})//she removes the wallet a minute later
+	ok((await submit(signed)).outcome == 'Expired.')//and the captured signature can't bring it back; the nonce was spent at the first proof
+	ok((await credentialWalletGet({userTag})).length == 0)
+})
+grid(async () => {//wallet prove: two tabs proving the same address each hold their own nonce, and the slower one meets the rules
+	let {clear} = await getDatabase()
+	await clear('credential_table')
+	let userTag = Tag()
+	let account = await _walletTestAccount('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d')
+	const challenges = async () => await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', event_text: 'Challenged.'})
+
+	let tab1 = await credentialWalletProve1({userTag, address: account.address})
+	let tab2 = await credentialWalletProve1({userTag, address: account.address})
+	ok(tab1.nonce != tab2.nonce && (await challenges()).length == 2)//two challenges, one per tab
+
+	let signed2 = await _walletTestSign({account, nonce: tab2.nonce})
+	ok((await credentialWalletProve2({userTag, address: account.address, ...signed2})).ok)//the second tab finishes first
+	let signed1 = await _walletTestSign({account, nonce: tab1.nonce})
+	let late = await credentialWalletProve2({userTag, address: account.address, ...signed1})
+	ok(!late.ok && late.outcome == 'WalletAlreadyProven.')//the first tab's challenge was still its own, found by its nonce and signed correctly, and the rules answer that the address is already hers
+	ok((await challenges()).length == 0)//both nonces spent
 })
 grid(async () => {//wallet prove: a refused flow never mints a nonce, so the wallet is never opened
 	let {clear} = await getDatabase()
 	await clear('credential_table')
-	let userTag = Tag(), browserHash = random32()
+	let userTag = Tag()
 	let wallet1 = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'
 	let wallet2 = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'
 	let wallet3 = '0x00000000219ab540356cBB839Cbe05303d7705Fa'
 	await credentialWalletSet({userTag, address: wallet1})
 	await credentialWalletSet({userTag, address: wallet2})//this user is at the limit
 
-	let prove = await credentialWalletProve1({userTag, browserHash, address: wallet3})
+	let prove = await credentialWalletProve1({userTag, address: wallet3})
 	ok(prove.outcome == 'WalletFull.')
-	ok(!prove.nonce && !prove.envelope)//nothing to sign against, so the page can't open a signature request
+	ok(!prove.nonce)//nothing to sign against, so the page can't open a signature request
 
 	let rows = await queryGet('credential_table', {user_tag: userTag, type_text: 'Ethereum.', f0_text: wallet3.toLowerCase()})//mentions write the triad now, f0 in the matching lowercase form
 	ok(rows.length == 1 && rows[0].event_text == 'Mentioned.')//the mention is on the record, and no challenge row, because we never challenged
 	ok(rows[0].f1_text == wallet3 && rows[0].f2_text == wallet3)//and the mention carries the whole triad: the backfill's blank-f1 guard trusts that every row the new code writes is complete
 })
+
 grid(async () => {//oauth: link multiple providers, re-link single active per provider, remove
 	let {clear} = await getDatabase()
 	await clear('credential_table')

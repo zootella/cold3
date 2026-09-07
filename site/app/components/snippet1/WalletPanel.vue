@@ -138,7 +138,7 @@ async function proveConnectedWallet(address) {
 		else                                           refInstructionalMessage.value = messageWalletFull
 		return
 	}
-	let {nonce, envelope} = task.walletProve
+	let {nonce} = task.walletProve
 
 	//construct the SIWE message client-side; wallets like MetaMask parse this structured format and enforce domain binding
 	let message = wagmiStore.createSiweMessage({
@@ -148,9 +148,9 @@ async function proveConnectedWallet(address) {
 		uri: window.location.origin,
 		version: '1',
 		chainId: 1,//ethereum mainnet
-		nonce,//from the server, sealed in the envelope
+		nonce,//from the server, on the challenged row it wrote
 		issuedAt: new Date(),//Date object; wagmi will format to ISO 8601 internally
-		expirationTime: new Date(Now() + Limit.expirationUser),//20 minutes, same as envelope lifespan; verifySiweMessage on the server will enforce
+		expirationTime: new Date(Now() + Limit.expirationUser),//20 minutes, same as the challenge's; the server enforces both
 	})
 
 	let signature, signError
@@ -162,14 +162,14 @@ async function proveConnectedWallet(address) {
 	}
 
 	if (signature) {
-		let task2 = await credentialStore.walletProve2({address, message, signature, envelope})
+		let task2 = await credentialStore.walletProve2({address, message, signature})
 		if (task2.success) {
 			refInstructionalMessage.value = 'Proof verified.'
 		} else if (task2.outcome == 'BadSignature.') {
 			await disconnect()//was (none, connected) → now (none, none); server rejected the signature
 			refInstructionalMessage.value = 'Signature verification failed.'
 		} else if (task2.outcome == 'Expired.') {
-			await disconnect()//was (none, connected) → now (none, none); envelope expired while user was signing
+			await disconnect()//was (none, connected) → now (none, none); the challenge expired while user was signing
 			refInstructionalMessage.value = 'Request expired. Please try again.'
 		} else if (task2.outcome == 'WalletClaimedElsewhere.') {
 			await disconnect()//another account proved this address during the minutes we spent signing

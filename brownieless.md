@@ -183,7 +183,7 @@ the render, mid-flow    2 reads and the name lookup     1 read and the name look
 
 wallet uses credential_table and a page-held envelope. It uses no brownie note and no trail messages.
 
-**Alice connects a wallet.** The page sends `WalletProve1.` with the address. credentialWalletProve1 validates it into its three forms and writes the mention before any rule can refuse, so a refused attempt still leaves its trace:
+**Alice connects a wallet.** The page connects through wagmi with one of two connectors: injected, a browser extension like MetaMask that put window.ethereum on the page, or WalletConnect, a relay the page shows as a qr code for a phone's wallet app to scan, with a deep link for the same device. Either way the connection ends as an address in wagmi's state, and from there the proof is one flow: when the address isn't proven and there is room, the page starts it by itself. It sends `WalletProve1.` with the address, checksummed, because the endpoint's checkWallet from level1 corrects the case and passes that face down; credentialWalletProve1's own validateWallet lowercases it for f0. It writes the mention before any rule can refuse, so a refused attempt still leaves its trace:
 
 ```
 credential_table
@@ -222,7 +222,7 @@ credential_table
 	json:       {}
 ```
 
-The response carries the nonce and the sealed envelope. The page holds both in memory only, embeds the nonce in the SIWE message it builds, and asks the wallet to sign it. A refresh here drops the page's memory of the nonce and the envelope and orphans any signature request the wallet was showing, while wagmi reconnects the wallet on its own from notes it keeps in localStorage; she is connected again and starts the proof over with one click. Nothing outside the page was created that a restart would orphan, which is the difference from totp and otp, and why the envelope never needed to survive a refresh.
+The response carries the nonce and the sealed envelope. The page holds both in memory only, embeds the nonce in the SIWE message it builds, and asks the wallet to sign it, in the extension or over the relay to the phone. A refresh here drops the page's memory of the nonce and the envelope and orphans any signature request the wallet was showing. wagmi reconnects the wallet on its own from notes it keeps in localStorage, but WalletPanel's mount disconnects any connection whose address isn't already proven, so she lands on the connect buttons: one click for an injected wallet, which reconnects and starts the proof over by itself, and a fresh qr scan for WalletConnect. Nothing outside the page was created that a restart would orphan, which is the difference from totp and otp, and why the envelope never needed to survive a refresh.
 
 **She signs.** The page sends `WalletProve2.` with the message, the signature, and the envelope. credentialWalletProve2 opens the envelope, checks its expiration, that its browserHash is the request's, and that its address is the one being claimed, then verifies the signature around the nonce it holds: offline for an ordinary wallet, and through the chain provider for a contract wallet. credentialWalletSet runs the refusal rules again, since minutes have passed, and writes the proof:
 
@@ -238,7 +238,7 @@ credential_table
 	json:       {}
 ```
 
-The envelope is discarded with the response; nothing the page held survives.
+The envelope is discarded with the response; nothing the page held survives. The flow never hides a Mentioned. or Challenged. wallet row; remove and close-account hide Proven. rows alone. The hosted table shows one user's history: a mention, a challenge, and a proof from July 24, 2026, visible beside the hidden proof they replaced, and thirty hidden mentions and challenges from March and April that predate the July integration.
 
 ### How it works brownieless
 
@@ -253,14 +253,14 @@ credential_table
 	hash_text:  ''
 	json:       {}
 
-credential_table
+credential_table                                  # hidden by prove2 the moment the signature checks out, so the nonce works once
 	user_tag:   '8quOfIYWkS1cmzj6nsgMm'
 	type_text:  'Ethereum.'
 	event_text: 'Challenged.'
 	f0_text:    '0x8ba1f109551bd432803012645ac136ddd64dba72'
 	f1_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
 	f2_text:    '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-	hash_text:  'LS3EXO6W6XTR6N6FYZJAY56WBDOV2XHPJSSF2I2BRUAKWLCJANBA'     # new: the browser that started the proof
+	hash_text:  ''
 	json:
 		nonce: 'ygJTo9qkhSTeRoUQg44Kx'                                   # new
 
@@ -275,45 +275,57 @@ credential_table
 	json:       {}
 ```
 
-No trail messages. The envelope is gone, and prove1 returns the nonce alone. Of the envelope's five fields only the nonce needed a home: the address is the row's f triad, the browserHash is hash_text, the action is the row's type and event_text, and the expiration is row_tick plus twenty minutes. The nonce is not a secret from anyone, since the page embeds it in the message the wallet displays before signing, so it rides json rather than the trail; a trail message would prove we issued it, but the row proves that already, and it would be a second read where the row is one.
+No trail messages. The envelope is gone, and prove1 returns the nonce alone. Of the envelope's five fields only the nonce needed a home: the address is the row's f triad, the action is the row's type and event_text, the expiration is row_tick plus twenty minutes, and the browserHash needs none, since the row belongs to its user and the signature is the proof of the wallet. The nonce is not a secret from anyone, since the page embeds it in the message the wallet displays before signing, so it rides json rather than the trail; a trail message would prove we issued it, but the row proves that already, and it would be a second read where the row is one.
 
-**prove1** writes the challenged row with the nonce in json and the browserHash in hash_text. **prove2** parses the nonce out of the signed message and finds the visible challenged row for the user and address that carries it — by the nonce, never by newest, so two tabs proving the same address each find their own challenge, as they do today — then checks the row's row_tick against twenty minutes and its hash_text against the request's browserHash, and verifies the signature around that nonce. The page carries nothing sealed at all: it embeds the nonce in the message it signs, and the server finds the challenge by who, what, and which. A replayed proof after success meets the proven row and the refusal rules, as today.
+**prove1** writes the challenged row with the nonce in json and returns the nonce. **prove2**, in order:
 
-On the page, the nonce and the envelope are local variables inside one function in WalletPanel, never a ref and never storage, so the change there is that prove1 stops returning an envelope and prove2 stops sending one. A refresh behaves exactly as it does now: the function's stack is gone, wagmi reconnects, and she starts over with a click. The row's survival is left deliberately unused — the snapshot never carries wallet challenges — because offering to resume would mean reconciling the challenged address with whatever account the wallet reconnected as, for the sake of one saved click.
+1. **Parse the nonce out of the signed message** with viem's parseSiweMessage. The parser never throws: garbage comes back as an empty object, so the nonce is undefined, and an edited message comes back with whatever nonce was typed into it. So check the nonce has the shape of a tag, and answer BadSignature. if it doesn't. This check adds no security, since the lookup below finds only nonces we minted, which are well-formed by construction; it is the boundary check that keeps a broken message from reaching the query helper, which throws on an undefined cell, and turns that 500 into the answer the rest of prove2 already gives for a message that doesn't say what it should.
+2. **Find the challenge.** Lowercase the address through validateWallet, since the endpoint hands prove2 the checksummed face and f0_text holds the matching form, then read the visible challenged rows for this user, type Ethereum., this f0, carrying this nonce in json. By the nonce, never by newest, so two tabs proving the same address each find their own challenge. No row, or a row older than twenty minutes: Expired. That one answer covers a nonce we never issued, one issued to another user, one past its time, and one already spent.
+3. **Validate the message** with viem's validateSiweMessage as today, passing the row's nonce, never the parsed one: the validator skips the nonce check when handed undefined and answers true, so the value it gets must be one the lookup already proved. Then recover the signer with verifyMessage, and for a contract wallet ask the chain, as today.
+4. **Spend the nonce.** Once the signature checks out, hide the challenge, by user, address, and nonce, so a captured signature replayed a minute later finds nothing. Then write the proof through credentialWalletSet, whose refusal rules run as today. Hiding before writing means a failure between the two leaves a spent nonce and no proof, and she starts over with a fresh one, which is the safe side to fail on.
+
+The page carries nothing sealed at all: it embeds the nonce in the message it signs, and the server finds the challenge by who, what, and which. On the page, the nonce and the envelope are local variables inside one function in WalletPanel, never a ref and never storage, so the change there is that prove1 stops returning an envelope and prove2 stops sending one. A refresh behaves exactly as it does now: the function's stack is gone, wagmi reconnects, the panel disconnects the unproven address, and she starts over with a click or a rescan, leaving a second challenged row with a second nonce that the lookup by nonce never confuses with the first. The row's survival is left deliberately unused — the snapshot never carries wallet challenges — because offering to resume would mean reconciling the challenged address with whatever account the wallet reconnected as, for the sake of one saved click.
+
+**What the wallet sees is unchanged.** A wallet, whether the MetaMask extension, a phone app over the WalletConnect relay, or the MetaMask mobile app's built-in browser with its injected provider, sees two things from us: a request to connect, and a request to sign the SIWE message text. The envelope traveled from our server to the page and back and never reached a wallet, so no connector, device, or app-switch behavior changes, and the smoke matrix doesn't grow: one connector on one device proves the server change.
+
+The audit of the change, property by property. Nothing gets weaker, one thing gets stricter twice, and one restriction is dropped on purpose.
+
+```
+the nonce is authentic       today: sealed under the envelope key            after: exists only as a row the server wrote
+for this address             letter.address must match, else toss            the lookup is by user, address, and nonce
+fresh                        letter.expiration, sealed                       row_tick plus twenty minutes
+for this purpose             action 'ProveWallet.'                           type_text 'Ethereum.' and event_text 'Challenged.'
+for this user                not checked                                     the lookup is scoped by the signed-in user
+from this browser            letter.browserHash must equal the request's     not checked: the row is not a bearer token, and the signature is the proof
+replay after success         WalletAlreadyProven. from the refusal rules     the nonce is spent, so the lookup finds nothing: Expired.
+replay after a remove        accepted for the envelope's twenty minutes      the same: the nonce was spent at the first proof
+the page is told             the nonce and an opaque envelope                the nonce
+the page can send            any envelope; only ours opens                   any message; only an unspent nonce we wrote for this user and address is found
+```
 
 ### Testing and refactoring steps
 
-The grid tests that walk this flow today are the wallet prove suite: the whole flow from nonce to saved proof with a real signature, the envelope tying step two to the browser and the address step one was for, only the connected wallet's own signature over our own nonce proving anything, and a refused flow never minting a nonce. The second becomes the row tying step two to the browser and the address; the rest pass a browserHash where they passed an envelope.
+The grid tests that walk this flow today are the wallet prove suite: the whole flow from nonce to saved proof with a real signature, the envelope tying step two to the browser and the address step one was for, only the connected wallet's own signature over our own nonce proving anything, and a refused flow never minting a nonce. The second becomes the row tying step two to the user and the address, with the browser gone; the rest pass a userTag alone where they passed a browserHash and an envelope. Two outcomes change: a signature over a nonce we never issued hears Expired. where it heard BadSignature., because the lookup finds nothing before the validator runs, and a replayed proof hears Expired. where it heard WalletAlreadyProven., because the nonce is spent.
 
-1. credentialWalletProve1 puts the nonce on the challenged row's json and the browserHash in its hash_text, and returns the nonce alone.
-2. credentialWalletProve2 loses its envelope parameter, parses the nonce from the message with viem's parseSiweMessage, finds the challenged row by user, address, Challenged., and json nonce, checks row_tick and hash_text, and otherwise runs as today.
-3. WalletPanel stops destructuring an envelope from prove1's answer and stops passing one to prove2; credentialStore.walletProve2 drops the parameter. The `'ProveWallet.'` envelope action leaves.
-4. The grid tests follow, with two new cases: two challenges for one address, each proving with its own nonce, the second meeting WalletAlreadyProven.; and Alice starting a proof, signing out, and Carol at the same browser finding no challenge of hers.
-5. Smoke, local and deployed: prove a wallet end to end; refresh between the steps and start over; open two tabs and prove in each.
+1. credentialWalletProve1 loses its browserHash parameter, puts the nonce on the challenged row's json, and returns {nonce}.
+2. credentialWalletProve2 loses its browserHash and envelope parameters, and runs the four steps above: parse and shape-check the nonce, find the challenge, validate and verify with the row's nonce, spend the nonce and write the proof.
+3. The endpoint's two branches stop passing browserHash and the envelope; WalletPanel stops destructuring an envelope from prove1's answer and stops passing one to prove2; credentialStore.walletProve2 drops the parameter. The `'ProveWallet.'` envelope action leaves with its last caller.
+4. The grid tests, with these cases: the whole flow, with the challenge hidden beside the proof at the end; a signature over another address's challenge, and Carol at the same browser after Alice signs out, both hearing Expired.; the wrong wallet's signature hearing BadSignature., the right wallet over a nonce we never issued hearing Expired., and the real thing working; a replay after success hearing Expired., and a replay after a remove hearing Expired. too; a garbage message hearing BadSignature.; two tabs proving the same address, each with its own nonce, the second meeting WalletAlreadyProven.; a refused flow never minting a nonce; and a proof twenty minutes late, by ageNow, hearing Expired.
+5. Smoke, local: prove a wallet end to end with each connector at hand; refresh between the steps and start over; remove a proven wallet and prove it again, which mints a fresh nonce; open two tabs and prove in each.
 
 Independent of the other two flows, so it can land in either order beside them.
 
 ### Additional notes
 
 - The proof is SIWE. The page builds an EIP-4361 message with viem's createSiweMessage, through wagmiStore, around the nonce the server minted, and the wallet signs the whole text after showing it: domain, address, statement, uri, version, chain, nonce, issued-at, and expiration. prove2 parses and validates it with viem's siwe helpers, checking the domain, the nonce, the address, and the message's own time window, then recovers the signer with verifyMessage. A contract wallet holds no key to recover, so its proof goes to the chain through Alchemy for EIP-1271, and the code asks the chain something trivial first to tell a declined proof from an unreachable provider.
-- The message carries its own expiration, twenty minutes, the same as the envelope's, and the server enforces both: defense in depth around one lifetime.
+- EIP-4361 says the nonce exists to prevent replay, where an attacker captures a signature and sends it again, and leaves how to the relying party. A stateless envelope could only bound the replay window to twenty minutes and lean on the refusal rules inside it; a row can be spent. Spending it at the first proof is the natural way to honor the spec, and it is stricter than today in the one case the rules didn't cover, a replay after a remove.
+- The message carries its own expiration, twenty minutes, the same as the row's, and the server enforces both: defense in depth around one lifetime.
 - The refusal rules run at both steps, two reads each, another holder of the address and her own wallets against the limit of two: at prove1 so she is never sent to sign for a proof we would decline, and again inside credentialWalletSet at prove2, because the minutes she spent signing are long enough for another tab or another account to change the answer.
 - The mention is written before the refusal rules and the challenge after them, so a refused attempt leaves its trace and only a permitted one carries a nonce.
+- Two validators, two forms. level1's checkWallet, which the endpoint runs, returns the checksummed face in all three forms and is what prove1 and prove2 receive as address; level3's validateWallet returns the lowercase f0 beside the checksummed face and is what the rows hold. Every f0 lookup lowercases first, as credentialWalletHolder already does. viem's validator compares addresses case-insensitively, so either form satisfies it.
 - refProving in WalletPanel holds the connection still while a signature request is up, so a live account switch can't change the address under it, and an Expired. outcome makes the page disconnect.
-- The audit of the change, property by property. Nothing gets weaker, and one thing gets stricter: today, if Alice starts a proof and signs out, and Carol signs in at the same browser within twenty minutes, Carol can submit Alice's envelope with a signature from the wallet and the proof is written for Carol. Whoever produced the signature controls the wallet, so it was never a hole, but the challenge did belong to Alice; with rows the lookup is scoped by the signed-in user, so Carol finds nothing and starts her own.
-
-```
-the nonce is authentic       today: sealed under the envelope key            after: exists only as a row the server wrote
-for this address             letter.address must match, else toss            the lookup is by user, address, and nonce
-from this browser            letter.browserHash must equal the request's     hash_text must equal the request's
-fresh                        letter.expiration, sealed                       row_tick plus twenty minutes
-for this purpose             action 'ProveWallet.'                           type_text 'Ethereum.' and event_text 'Challenged.'
-for this user                not checked                                     the lookup is scoped by the signed-in user
-replay after success         WalletAlreadyProven. from the refusal rules     the same
-the page is told             the nonce and an opaque envelope                the nonce
-the page can send            any envelope; only ours opens                   any nonce; only one we wrote for this user, address, and browser is found
-```
-
+- Carol's case, for the record: today, if Alice starts a proof and signs out, and Carol signs in at the same browser within twenty minutes, Carol can submit Alice's envelope with a signature from the wallet and the proof is written for Carol. Whoever produced the signature controls the wallet, so it was never a hole, but the challenge did belong to Alice; with rows the lookup is scoped by the signed-in user, so Carol finds nothing and starts her own.
+- Mentioned. rows and hidden challenges accumulate at one row each per attempt, as they do today, and nothing reads them but a person at the dashboard. The credential_table pass decides what they become.
 - One implementation rule to hold if the two-query snapshot ever happens: the projection stays explicit per type, so a challenged Ethereum row's json never rides to the page by accident. The nonce is not secret, but the habit is the point.
 
 ## otp

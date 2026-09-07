@@ -231,21 +231,18 @@ async function doorHandleBelow({door, body, action, browserHash}) {
 
 		// 🟠 wallet
 		//wallet proof step 1: page requests a nonce for SIWE (Sign-In with Ethereum, EIP-4361)
-		//the flow itself is in level3 where grid tests reach it; here we only normalize what the page sent and add the browserHash the door resolved
+		//the flow itself is in level3 where grid tests reach it; here we only normalize what the page sent
 		} else if (action == 'WalletProve1.') {
 			let address = checkWallet(body.address).f0//make sure the page gave us a good wallet address, and correct the case checksum
-			let prove = await credentialWalletProve1({userTag: user.userTag, browserHash, address})
+			let prove = await credentialWalletProve1({userTag: user.userTag, address})
 			if (prove.outcome) return {success: false, outcome: prove.outcome}//a rule declined before any nonce was minted, so the user's wallet is never opened for a proof we'd refuse
-			task.walletProve = prove//{nonce, envelope} for the page to sign against and hand back at step 2
+			task.walletProve = prove//{nonce} for the page to sign against
 
 		// 🟠 wallet
 		//wallet proof step 2: page calls back with the SIWE message it constructed using createSiweMessage (viem/siwe) and the wallet's signature over it
 		} else if (action == 'WalletProve2.') {
 			let address = checkWallet(body.address).f0
-			let result = await credentialWalletProve2({
-				userTag: user.userTag, browserHash, address,
-				message: body.message, signature: body.signature, envelope: body.envelope,
-			})
+			let result = await credentialWalletProve2({userTag: user.userTag, address, message: body.message, signature: body.signature})
 			if (!result.ok) return {success: false, outcome: result.outcome}
 
 		// 🟠 wallet

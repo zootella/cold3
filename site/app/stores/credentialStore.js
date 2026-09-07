@@ -132,8 +132,8 @@ async function walletProve1({address}) {
 	return task
 }
 
-async function walletProve2({address, message, signature, envelope}) {
-	let task = await fetchWorker('/credential', 'WalletProve2.', {address, message, signature, envelope})
+async function walletProve2({address, message, signature}) {
+	let task = await fetchWorker('/credential', 'WalletProve2.', {address, message, signature})
 	apply(task)
 	return task
 }
