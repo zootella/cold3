@@ -64,7 +64,7 @@ The sprint that takes the Datadog and logging apparatus down to almost nothing, 
 
 ## ledgerathon.md — every mutation writes its ledger row
 
-The plan for the first of data.md's three sprints: every function that mutates a live table writes the ledger row beside it, from the same function so no caller can forget, and from then on a new mutation arrives with its row as standing policy. It holds what the ledger holds today, the verb vocabulary, the actor-and-subject rule, what json carries and never carries, an inventory of every mutation and its row, credential flows and beyond, the order of the two writes and what a failed second one does, the cost, the ledgerGet reader that tests need first, and the decisions the sprint must make, each with a recommendation. Turnstile stays out as not a change to our data. Soaks a week before hideless deletes anything. Nothing built.
+The plan for the first of data.md's three sprints: every function that mutates a live table writes the ledger row beside it, from the same function so no caller can forget, and from then on a new mutation arrives with its row as standing policy. It holds what the ledger holds today, the verb vocabulary, the rule that a row records what the function was asked to do from its inputs and never what the table held, what json carries and never carries, an inventory of every mutation and its row, credential flows and beyond, the order of the two writes and what a failed one does, the cost, the tests, and the decisions the sprint must make, each with a recommendation. Turnstile stays out as not a change to our data. Soaks a week before hideless deletes anything. Nothing built.
 
 ## hideless.md — every table an ordinary table
 

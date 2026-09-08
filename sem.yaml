@@ -1,5 +1,5 @@
 summary:
-  generated: 2026sep7.1719.55233
+  generated: 2026sep8.1354.485
   notes:
     build:
       "@scure/bip39": "build: mnemonic phrases for seal"
@@ -460,9 +460,9 @@ modules:
     note: "build: vue vite plugin in icarus TDD runner; held at v5, v6 arrives with vite 7 and nuxt 5"
     from: icarus
     versions:
-      declared: ^5.2.4 on 2025may09 15m old
-      installed: 5.2.4 on 2025may09 15m old 🕰️ Installed version 1+ year old
-      current: 5.2.4 on 2025may09 15m old
+      declared: ^5.2.4 on 2025may09 16m old
+      installed: 5.2.4 on 2025may09 16m old 🕰️ Installed version 1+ year old
+      current: 5.2.4 on 2025may09 16m old
       latest: 6.0.8 on 2026jul14 1m old 🎁 Major new version available
     downloads:
       weekly: 7,126,186
@@ -558,7 +558,7 @@ modules:
     from: icarus
     versions:
       declared: ^10.1.2 on 2026jan28 7m old
-      installed: 10.2.0 on 2026jun08 2m old
+      installed: 10.2.0 on 2026jun08 3m old
       current: 10.3.0 on 2026jun30 2m old
       latest: 10.3.0 on 2026jun30 2m old
     downloads:
@@ -675,7 +675,7 @@ modules:
     from: site
     versions:
       declared: ^4.3.0 on 2026jan22 7m old
-      installed: 4.4.8 on 2026jun08 2m old
+      installed: 4.4.8 on 2026jun08 3m old
       current: 4.5.2 on 2026aug05 1m old
       latest: 4.5.2 on 2026aug05 1m old
     downloads:
